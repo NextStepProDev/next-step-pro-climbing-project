@@ -118,7 +118,7 @@ export function Navbar() {
               <div className="flex items-center gap-2">
                 <Link to="/login">
                   <Button variant="ghost" size="sm">
-                    Zaloguj się
+                    Zaloguj się / Załóż konto
                   </Button>
                 </Link>
               </div>
