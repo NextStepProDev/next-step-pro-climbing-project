@@ -34,9 +34,11 @@ export function Navbar() {
   }, [])
 
   // Close dropdown on route change
-  useEffect(() => {
+  const [prevPathname, setPrevPathname] = useState(location.pathname)
+  if (prevPathname !== location.pathname) {
+    setPrevPathname(location.pathname)
     setUserMenuOpen(false)
-  }, [location.pathname])
+  }
 
   const userInitial = user?.firstName?.charAt(0).toUpperCase() ?? '?'
 

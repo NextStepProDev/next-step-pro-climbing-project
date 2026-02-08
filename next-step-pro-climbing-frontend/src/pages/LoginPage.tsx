@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { useAuth, consumeRedirectPath } from '../context/AuthContext'
+import { useAuth } from '../context/AuthContext'
+import { consumeRedirectPath } from '../utils/redirect'
 import { Button } from '../components/ui/Button'
 import logoWhite from '../assets/logo/logo-white.png'
 

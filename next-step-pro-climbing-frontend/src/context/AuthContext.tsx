@@ -5,18 +5,6 @@ import { loginUser as apiLogin } from '../api/auth'
 import { saveTokens, clearTokens, hasTokens } from '../utils/tokenStorage'
 import type { User } from '../types'
 
-const REDIRECT_KEY = 'nsp_redirect_after_login'
-
-export function saveRedirectPath(path: string): void {
-  sessionStorage.setItem(REDIRECT_KEY, path)
-}
-
-export function consumeRedirectPath(): string | null {
-  const path = sessionStorage.getItem(REDIRECT_KEY)
-  sessionStorage.removeItem(REDIRECT_KEY)
-  return path
-}
-
 interface AuthContextType {
   user: User | null
   isLoading: boolean
@@ -95,6 +83,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   )
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useAuth() {
   const context = useContext(AuthContext)
   if (context === undefined) {
@@ -102,3 +91,4 @@ export function useAuth() {
   }
   return context
 }
+

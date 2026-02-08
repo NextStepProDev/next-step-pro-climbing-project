@@ -1,6 +1,6 @@
 import { LogIn } from 'lucide-react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
-import { saveRedirectPath } from '../../context/AuthContext'
+import { saveRedirectPath } from '../../utils/redirect'
 import { Button } from './Button'
 
 interface LoginPromptProps {

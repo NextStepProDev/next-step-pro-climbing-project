@@ -7,13 +7,10 @@ export function VerifyEmailPage() {
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading')
   const [message, setMessage] = useState('')
 
+  const token = searchParams.get('token')
+
   useEffect(() => {
-    const token = searchParams.get('token')
-    if (!token) {
-      setStatus('error')
-      setMessage('Brak tokenu weryfikacyjnego w URL')
-      return
-    }
+    if (!token) return
 
     verifyEmail(token)
       .then((res) => {
@@ -24,7 +21,26 @@ export function VerifyEmailPage() {
         setStatus('error')
         setMessage(err instanceof Error ? err.message : 'Weryfikacja nie powiodła się')
       })
-  }, [searchParams])
+  }, [token])
+
+  if (!token) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] px-4">
+        <div className="bg-dark-900 rounded-xl p-8 max-w-md w-full border border-dark-800 text-center">
+          <div className="w-12 h-12 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg className="w-6 h-6 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </div>
+          <h2 className="text-xl font-bold text-dark-100 mb-2">Błąd weryfikacji</h2>
+          <p className="text-dark-400 mb-6">Brak tokenu weryfikacyjnego w URL</p>
+          <Link to="/login" className="text-primary-400 hover:text-primary-300 font-medium">
+            Przejdź do logowania
+          </Link>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] px-4">
