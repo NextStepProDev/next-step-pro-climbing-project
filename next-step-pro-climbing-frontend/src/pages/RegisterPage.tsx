@@ -155,13 +155,13 @@ export function RegisterPage() {
               id="password"
               type="password"
               required
-              minLength={8}
+              minLength={4}
               value={form.password}
               onChange={(e) => updateField('password', e.target.value)}
               className="w-full px-3 py-2 bg-dark-800 border border-dark-700 rounded-lg text-dark-100 placeholder-dark-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             />
             <p className="text-xs text-dark-500 mt-1">
-              Min. 8 znaków, wielka i mała litera, cyfra, znak specjalny (@$!%*?&)
+              Min. 4 znaki
             </p>
           </div>
 
