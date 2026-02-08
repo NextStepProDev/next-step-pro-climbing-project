@@ -280,6 +280,24 @@ public class AdminController {
 
     @Tag(name = "Admin - Users")
     @Operation(
+        summary = "Odbierz uprawnienia administratora",
+        description = "Zmienia rolę użytkownika z ADMIN na USER."
+    )
+    @ApiResponses({
+        @ApiResponse(responseCode = "204", description = "Uprawnienia odebrane"),
+        @ApiResponse(responseCode = "404", description = "Użytkownik nie istnieje"),
+        @ApiResponse(responseCode = "400", description = "Użytkownik nie jest administratorem"),
+        @ApiResponse(responseCode = "403", description = "Brak uprawnień administratora")
+    })
+    @PostMapping("/users/{userId}/remove-admin")
+    public ResponseEntity<Void> removeAdmin(
+            @Parameter(description = "UUID użytkownika") @PathVariable UUID userId) {
+        adminService.removeAdmin(userId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @Tag(name = "Admin - Users")
+    @Operation(
         summary = "Usuń użytkownika",
         description = "Usuwa użytkownika wraz ze wszystkimi jego rezerwacjami i wpisami na liście rezerwowej. Nie można usunąć administratora."
     )

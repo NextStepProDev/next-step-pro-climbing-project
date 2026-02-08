@@ -9,8 +9,10 @@ import pl.nextsteppro.climbing.api.auth.AuthDtos.*;
 import pl.nextsteppro.climbing.domain.auth.AuthToken;
 import pl.nextsteppro.climbing.domain.auth.AuthTokenRepository;
 import pl.nextsteppro.climbing.domain.auth.TokenType;
+import pl.nextsteppro.climbing.config.AdminEmailConfig;
 import pl.nextsteppro.climbing.domain.user.User;
 import pl.nextsteppro.climbing.domain.user.UserRepository;
+import pl.nextsteppro.climbing.domain.user.UserRole;
 import pl.nextsteppro.climbing.infrastructure.mail.AuthMailService;
 import pl.nextsteppro.climbing.infrastructure.security.JwtService;
 
@@ -30,18 +32,21 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final AuthMailService authMailService;
+    private final AdminEmailConfig adminEmailConfig;
 
     public AuthService(
             UserRepository userRepository,
             AuthTokenRepository authTokenRepository,
             PasswordEncoder passwordEncoder,
             JwtService jwtService,
-            AuthMailService authMailService) {
+            AuthMailService authMailService,
+            AdminEmailConfig adminEmailConfig) {
         this.userRepository = userRepository;
         this.authTokenRepository = authTokenRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
         this.authMailService = authMailService;
+        this.adminEmailConfig = adminEmailConfig;
     }
 
     @Transactional
@@ -58,6 +63,11 @@ public class AuthService {
             generateNickname(request.firstName())
         );
         user.setPasswordHash(passwordEncoder.encode(request.password()));
+
+        if (adminEmailConfig.isAdminEmail(user.getEmail())) {
+            user.setRole(UserRole.ADMIN);
+            log.info("AUTO-ADMIN-PROMOTION: {} promoted to ADMIN during registration", user.getEmail());
+        }
 
         userRepository.save(user);
         log.info("User registered: {}", user.getEmail());
@@ -83,6 +93,12 @@ public class AuthService {
 
         if (!user.isEmailVerified()) {
             throw new IllegalStateException("Adres email nie został potwierdzony. Sprawdź swoją skrzynkę email.");
+        }
+
+        if (!user.isAdmin() && adminEmailConfig.isAdminEmail(user.getEmail())) {
+            user.setRole(UserRole.ADMIN);
+            userRepository.save(user);
+            log.info("AUTO-ADMIN-PROMOTION: {} promoted to ADMIN during login", user.getEmail());
         }
 
         log.info("User logged in: {}", user.getEmail());

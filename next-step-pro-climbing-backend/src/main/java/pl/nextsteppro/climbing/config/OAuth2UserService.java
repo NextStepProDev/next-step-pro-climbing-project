@@ -1,5 +1,7 @@
 package pl.nextsteppro.climbing.config;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
@@ -15,10 +17,14 @@ import java.util.Optional;
 @Service
 public class OAuth2UserService extends DefaultOAuth2UserService {
 
-    private final UserRepository userRepository;
+    private static final Logger log = LoggerFactory.getLogger(OAuth2UserService.class);
 
-    public OAuth2UserService(UserRepository userRepository) {
+    private final UserRepository userRepository;
+    private final AdminEmailConfig adminEmailConfig;
+
+    public OAuth2UserService(UserRepository userRepository, AdminEmailConfig adminEmailConfig) {
         this.userRepository = userRepository;
+        this.adminEmailConfig = adminEmailConfig;
     }
 
     @Override
@@ -43,6 +49,7 @@ public class OAuth2UserService extends DefaultOAuth2UserService {
         User user;
         if (existingUser.isPresent()) {
             user = existingUser.get();
+            promoteToAdminIfConfigured(user);
         } else {
             // Try to find by email and link OAuth
             Optional<User> userByEmail = userRepository.findByEmail(email);
@@ -50,6 +57,7 @@ public class OAuth2UserService extends DefaultOAuth2UserService {
                 user = userByEmail.get();
                 user.setOauthProvider(provider);
                 user.setOauthId(oauthId);
+                promoteToAdminIfConfigured(user);
                 userRepository.save(user);
             } else {
                 // Create new user
@@ -70,8 +78,19 @@ public class OAuth2UserService extends DefaultOAuth2UserService {
         );
         user.setOauthProvider(provider);
         user.setOauthId(oauthId);
-        user.setRole(UserRole.USER);
+        user.setRole(adminEmailConfig.isAdminEmail(email) ? UserRole.ADMIN : UserRole.USER);
+        if (user.isAdmin()) {
+            log.info("AUTO-ADMIN-PROMOTION: {} promoted to ADMIN during OAuth2 registration", email);
+        }
         return userRepository.save(user);
+    }
+
+    private void promoteToAdminIfConfigured(User user) {
+        if (!user.isAdmin() && adminEmailConfig.isAdminEmail(user.getEmail())) {
+            user.setRole(UserRole.ADMIN);
+            userRepository.save(user);
+            log.info("AUTO-ADMIN-PROMOTION: {} promoted to ADMIN during OAuth2 login", user.getEmail());
+        }
     }
 
     private String extractOAuthId(String provider, Map<String, Object> attributes) {

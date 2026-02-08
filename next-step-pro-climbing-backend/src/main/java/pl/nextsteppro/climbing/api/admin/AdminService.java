@@ -305,6 +305,18 @@ public class AdminService {
         userRepository.save(user);
     }
 
+    public void removeAdmin(UUID userId) {
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        if (!user.isAdmin()) {
+            throw new IllegalStateException("Użytkownik nie jest administratorem");
+        }
+
+        user.setRole(UserRole.USER);
+        userRepository.save(user);
+    }
+
     public void deleteUser(UUID userId) {
         User user = userRepository.findById(userId)
             .orElseThrow(() -> new IllegalArgumentException("User not found"));
