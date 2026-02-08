@@ -22,21 +22,28 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${POSTGRES_DB}
+      DB_USER: ${POSTGRES_USER}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
       SPRING_MAIL_HOST: ${MAIL_HOST}
       SPRING_MAIL_PORT: ${MAIL_PORT}
       SPRING_MAIL_USERNAME: ${MAIL_USERNAME}
       SPRING_MAIL_PASSWORD: ${MAIL_PASSWORD}
+      MAIL_AUTH: "true"
+      MAIL_STARTTLS: "true"
       OAUTH2_GOOGLE_CLIENT_ID: ${OAUTH2_GOOGLE_CLIENT_ID}
       OAUTH2_GOOGLE_CLIENT_SECRET: ${OAUTH2_GOOGLE_CLIENT_SECRET}
       OAUTH2_APPLE_CLIENT_ID: ${OAUTH2_APPLE_CLIENT_ID}
       OAUTH2_APPLE_CLIENT_SECRET: ${OAUTH2_APPLE_CLIENT_SECRET}
       ADMIN_EMAIL: ${ADMIN_EMAIL}
+      JWT_SECRET: ${JWT_SECRET}
+      CORS_ORIGINS: https://nextsteppro.pl,https://www.nextsteppro.pl
+      APP_BASE_URL: https://nextsteppro.pl
     depends_on:
       postgres:
         condition: service_healthy
-    networks:
-      - default
-      - npm_network
     restart: unless-stopped
 
   frontend:
