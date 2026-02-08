@@ -194,6 +194,8 @@ public class AdminService {
         );
         event.setDescription(request.description());
         event.setLocation(request.location());
+        event.setStartTime(request.startTime());
+        event.setEndTime(request.endTime());
 
         event = eventRepository.save(event);
 
@@ -212,6 +214,8 @@ public class AdminService {
         if (request.endDate() != null) event.setEndDate(request.endDate());
         if (request.maxParticipants() != null) event.setMaxParticipants(request.maxParticipants());
         if (request.active() != null) event.setActive(request.active());
+        if (request.startTime() != null) event.setStartTime(request.startTime());
+        if (request.endTime() != null) event.setEndTime(request.endTime());
 
         event = eventRepository.save(event);
         return toEventAdminDto(event);
@@ -253,6 +257,8 @@ public class AdminService {
             event.getEndDate(),
             event.getMaxParticipants(),
             event.isActive(),
+            event.getStartTime(),
+            event.getEndTime(),
             slotDtos
         );
     }
@@ -391,7 +397,9 @@ public class AdminService {
             event.getStartDate(),
             event.getEndDate(),
             event.getMaxParticipants(),
-            event.isActive()
+            event.isActive(),
+            event.getStartTime(),
+            event.getEndTime()
         );
     }
 }

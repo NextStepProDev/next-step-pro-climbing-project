@@ -1,12 +1,13 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { format } from 'date-fns'
-import { Plus, Trash2, Eye, EyeOff } from 'lucide-react'
+import { Plus, Trash2, Eye, EyeOff, Clock } from 'lucide-react'
 import { adminApi } from '../../api/client'
 import { getErrorMessage } from '../../utils/errors'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
 import { Button } from '../../components/ui/Button'
 import { Modal } from '../../components/ui/Modal'
+import { TimeScrollPicker } from '../../components/ui/TimeScrollPicker'
 import type { CreateEventRequest, EventType } from '../../types'
 
 export function AdminEventsPanel() {
@@ -76,6 +77,14 @@ export function AdminEventsPanel() {
                       {event.startDate !== event.endDate && (
                         <> - {format(new Date(event.endDate), 'dd.MM.yyyy')}</>
                       )}
+                      {event.startTime && event.endTime ? (
+                        <span className="ml-2 inline-flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          {event.startTime.slice(0, 5)} - {event.endTime.slice(0, 5)}
+                        </span>
+                      ) : (
+                        <span className="ml-2 text-dark-500">Cały dzień</span>
+                      )}
                     </div>
                     {event.location && (
                       <div className="text-sm text-dark-400">
@@ -139,6 +148,7 @@ function CreateEventModal({
   isOpen: boolean
   onClose: () => void
 }) {
+  const [allDay, setAllDay] = useState(true)
   const [form, setForm] = useState<CreateEventRequest>({
     title: '',
     description: '',
@@ -157,6 +167,7 @@ function CreateEventModal({
       queryClient.invalidateQueries({ queryKey: ['admin', 'events'] })
       queryClient.invalidateQueries({ queryKey: ['calendar'] })
       onClose()
+      setAllDay(true)
       setForm({
         title: '',
         description: '',
@@ -169,13 +180,20 @@ function CreateEventModal({
     },
   })
 
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    const payload: CreateEventRequest = { ...form }
+    if (allDay) {
+      delete payload.startTime
+      delete payload.endTime
+    }
+    createMutation.mutate(payload)
+  }
+
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Dodaj nowe wydarzenie">
       <form
-        onSubmit={(e) => {
-          e.preventDefault()
-          createMutation.mutate(form)
-        }}
+        onSubmit={handleSubmit}
         className="space-y-4"
       >
         <div>
@@ -228,7 +246,10 @@ function CreateEventModal({
             <input
               type="date"
               value={form.startDate}
-              onChange={(e) => setForm({ ...form, startDate: e.target.value })}
+              onChange={(e) => {
+                setForm({ ...form, startDate: e.target.value })
+                e.target.blur()
+              }}
               className="w-full bg-dark-800 border border-dark-700 rounded-lg px-4 py-2 text-dark-100"
             />
           </div>
@@ -237,10 +258,48 @@ function CreateEventModal({
             <input
               type="date"
               value={form.endDate}
-              onChange={(e) => setForm({ ...form, endDate: e.target.value })}
+              onChange={(e) => {
+                setForm({ ...form, endDate: e.target.value })
+                e.target.blur()
+              }}
               className="w-full bg-dark-800 border border-dark-700 rounded-lg px-4 py-2 text-dark-100"
             />
           </div>
+        </div>
+
+        {/* Time section */}
+        <div>
+          <label className="flex items-center gap-2 cursor-pointer mb-2">
+            <input
+              type="checkbox"
+              checked={allDay}
+              onChange={(e) => {
+                setAllDay(e.target.checked)
+                if (e.target.checked) {
+                  setForm({ ...form, startTime: undefined, endTime: undefined })
+                } else {
+                  setForm({ ...form, startTime: '10:00', endTime: '17:00' })
+                }
+              }}
+              className="w-4 h-4 rounded border-dark-700 bg-dark-800 text-primary-500 focus:ring-primary-500"
+            />
+            <span className="text-sm text-dark-300">Cały dzień</span>
+          </label>
+
+          {!allDay && (
+            <div className="grid grid-cols-2 gap-4">
+              <TimeScrollPicker
+                label="Od"
+                value={form.startTime || '10:00'}
+                onChange={(v) => setForm({ ...form, startTime: v })}
+              />
+              <TimeScrollPicker
+                label="Do"
+                value={form.endTime || '17:00'}
+                onChange={(v) => setForm({ ...form, endTime: v })}
+              />
+            </div>
+          )}
         </div>
 
         <div>

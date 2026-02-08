@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useSearchParams } from 'react-router-dom'
 import { format } from 'date-fns'
@@ -21,6 +21,7 @@ export function CalendarPage() {
   )
   const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null)
   const [selectedEvent, setSelectedEvent] = useState<EventSummary | null>(null)
+  const eventsRef = useRef<HTMLDivElement>(null)
 
   const yearMonth = format(currentMonth, 'yyyy-MM')
 
@@ -42,9 +43,27 @@ export function CalendarPage() {
   })
 
   const handleDayClick = useCallback((date: string) => {
-    setSelectedDate(date)
-    setSearchParams({ date })
-  }, [setSearchParams])
+    const dayInfo = monthData?.days.find(d => d.date === date)
+    const hasSlots = dayInfo && dayInfo.totalSlots > 0
+
+    if (hasSlots) {
+      // Day has time slots (trainings or event-linked) - open day view
+      setSelectedDate(date)
+      setSearchParams({ date })
+      return
+    }
+
+    // Day has only events (no time slots) - find matching events
+    const dayEvents = monthData?.events.filter(e => date >= e.startDate && date <= e.endDate) || []
+
+    if (dayEvents.length === 1) {
+      // Single event - open signup modal directly
+      setSelectedEvent(dayEvents[0])
+    } else if (dayEvents.length > 1) {
+      // Multiple events - scroll to events section
+      eventsRef.current?.scrollIntoView({ behavior: 'smooth' })
+    }
+  }, [monthData, setSearchParams])
 
   const handleBackToMonth = useCallback(() => {
     setSelectedDate(null)
@@ -92,7 +111,7 @@ export function CalendarPage() {
 
           {/* Events legend */}
           {monthData.events.length > 0 && (
-            <div className="mt-6 bg-dark-900 rounded-xl border border-dark-800 p-4">
+            <div ref={eventsRef} className="mt-6 bg-dark-900 rounded-xl border border-dark-800 p-4">
               <h3 className="text-sm font-medium text-dark-300 mb-3">
                 Wydarzenia w tym miesiącu:
               </h3>

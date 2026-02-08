@@ -5,6 +5,7 @@ import org.jspecify.annotations.Nullable;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.UUID;
 
 @Entity
@@ -37,6 +38,14 @@ public class Event {
 
     @Column(name = "max_participants", nullable = false)
     private int maxParticipants;
+
+    @Column(name = "start_time")
+    @Nullable
+    private LocalTime startTime;
+
+    @Column(name = "end_time")
+    @Nullable
+    private LocalTime endTime;
 
     @Column(name = "is_active", nullable = false)
     private boolean active = true;
@@ -144,6 +153,28 @@ public class Event {
 
     public Instant getUpdatedAt() {
         return updatedAt;
+    }
+
+    @Nullable
+    public LocalTime getStartTime() {
+        return startTime;
+    }
+
+    public void setStartTime(@Nullable LocalTime startTime) {
+        this.startTime = startTime;
+    }
+
+    @Nullable
+    public LocalTime getEndTime() {
+        return endTime;
+    }
+
+    public void setEndTime(@Nullable LocalTime endTime) {
+        this.endTime = endTime;
+    }
+
+    public boolean isAllDay() {
+        return startTime == null || endTime == null;
     }
 
     public boolean isMultiDay() {

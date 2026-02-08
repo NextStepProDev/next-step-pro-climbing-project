@@ -82,7 +82,9 @@ record CreateEventRequest(
     @NotBlank String eventType,
     @NotNull LocalDate startDate,
     @NotNull LocalDate endDate,
-    @Min(1) @Max(100) int maxParticipants
+    @Min(1) @Max(100) int maxParticipants,
+    @Nullable LocalTime startTime,
+    @Nullable LocalTime endTime
 ) {
     @AssertTrue(message = "Data zakończenia nie może być wcześniejsza niż data rozpoczęcia")
     boolean isDateRangeValid() {
@@ -98,7 +100,9 @@ record UpdateEventRequest(
     @Nullable LocalDate startDate,
     @Nullable LocalDate endDate,
     @Nullable Integer maxParticipants,
-    @Nullable Boolean active
+    @Nullable Boolean active,
+    @Nullable LocalTime startTime,
+    @Nullable LocalTime endTime
 ) {}
 
 record EventAdminDto(
@@ -109,7 +113,9 @@ record EventAdminDto(
     LocalDate startDate,
     LocalDate endDate,
     int maxParticipants,
-    boolean active
+    boolean active,
+    @Nullable LocalTime startTime,
+    @Nullable LocalTime endTime
 ) {}
 
 record EventDetailAdminDto(
@@ -122,6 +128,8 @@ record EventDetailAdminDto(
     LocalDate endDate,
     int maxParticipants,
     boolean active,
+    @Nullable LocalTime startTime,
+    @Nullable LocalTime endTime,
     List<TimeSlotAdminDto> slots
 ) {}
 

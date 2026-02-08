@@ -85,6 +85,8 @@ export interface EventDetail {
   endDate: string
   maxParticipants: number
   active: boolean
+  startTime: string | null
+  endTime: string | null
   slots?: TimeSlotAdmin[]
 }
 
@@ -212,4 +214,6 @@ export interface CreateEventRequest {
   startDate: string
   endDate: string
   maxParticipants: number
+  startTime?: string
+  endTime?: string
 }

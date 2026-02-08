@@ -340,9 +340,11 @@ public class ReservationService {
 
     private List<TimeSlot> createDefaultSlotsForEvent(Event event) {
         List<TimeSlot> slots = new ArrayList<>();
+        LocalTime slotStart = event.getStartTime() != null ? event.getStartTime() : LocalTime.of(0, 0);
+        LocalTime slotEnd = event.getEndTime() != null ? event.getEndTime() : LocalTime.of(23, 59);
         LocalDate date = event.getStartDate();
         while (!date.isAfter(event.getEndDate())) {
-            TimeSlot slot = new TimeSlot(event, date, LocalTime.of(9, 0), LocalTime.of(17, 0), event.getMaxParticipants());
+            TimeSlot slot = new TimeSlot(event, date, slotStart, slotEnd, event.getMaxParticipants());
             slots.add(timeSlotRepository.save(slot));
             date = date.plusDays(1);
         }
