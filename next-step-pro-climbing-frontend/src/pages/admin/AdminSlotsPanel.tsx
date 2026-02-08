@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { format } from 'date-fns'
 import { pl } from 'date-fns/locale'
@@ -161,6 +161,7 @@ export function AdminSlotsPanel() {
 
       {/* Edit Slot Modal */}
       <EditSlotModal
+        key={editingSlot?.id}
         isOpen={!!editingSlot}
         onClose={() => setEditingSlot(null)}
         slot={editingSlot}
@@ -303,24 +304,13 @@ function EditSlotModal({
   slot: TimeSlot | null
 }) {
   const [form, setForm] = useState({
-    startTime: '',
-    endTime: '',
+    startTime: slot?.startTime.slice(0, 5) ?? '',
+    endTime: slot?.endTime.slice(0, 5) ?? '',
     maxParticipants: 4,
-    title: '',
+    title: slot?.eventTitle ?? '',
   })
 
   const queryClient = useQueryClient()
-
-  useEffect(() => {
-    if (slot) {
-      setForm({
-        startTime: slot.startTime.slice(0, 5),
-        endTime: slot.endTime.slice(0, 5),
-        maxParticipants: 4,
-        title: slot.eventTitle || '',
-      })
-    }
-  }, [slot])
 
   const updateMutation = useMutation({
     mutationFn: (data: { startTime?: string; endTime?: string; maxParticipants?: number; title?: string }) =>
