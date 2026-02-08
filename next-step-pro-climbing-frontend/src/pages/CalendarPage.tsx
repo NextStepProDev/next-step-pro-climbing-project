@@ -1,0 +1,129 @@
+import { useState, useCallback } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import { useSearchParams } from 'react-router-dom'
+import { format } from 'date-fns'
+import { calendarApi } from '../api/client'
+import { MonthCalendar } from '../components/calendar/MonthCalendar'
+import { DayView } from '../components/calendar/DayView'
+import { SlotDetailModal } from '../components/calendar/SlotDetailModal'
+import { LoadingSpinner } from '../components/ui/LoadingSpinner'
+
+export function CalendarPage() {
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [currentMonth, setCurrentMonth] = useState(() => {
+    const dateParam = searchParams.get('date')
+    return dateParam ? new Date(dateParam) : new Date()
+  })
+  const [selectedDate, setSelectedDate] = useState<string | null>(
+    searchParams.get('date')
+  )
+  const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null)
+
+  const yearMonth = format(currentMonth, 'yyyy-MM')
+
+  const { data: monthData, isLoading: monthLoading } = useQuery({
+    queryKey: ['calendar', 'month', yearMonth],
+    queryFn: () => calendarApi.getMonthView(yearMonth),
+  })
+
+  const { data: dayData, isLoading: dayLoading } = useQuery({
+    queryKey: ['calendar', 'day', selectedDate],
+    queryFn: () => calendarApi.getDayView(selectedDate!),
+    enabled: !!selectedDate,
+  })
+
+  const { data: slotDetail } = useQuery({
+    queryKey: ['slot', selectedSlotId],
+    queryFn: () => calendarApi.getSlotDetails(selectedSlotId!),
+    enabled: !!selectedSlotId,
+  })
+
+  const handleDayClick = useCallback((date: string) => {
+    setSelectedDate(date)
+    setSearchParams({ date })
+  }, [setSearchParams])
+
+  const handleBackToMonth = useCallback(() => {
+    setSelectedDate(null)
+    setSearchParams({})
+  }, [setSearchParams])
+
+  const handleSlotClick = useCallback((slotId: string) => {
+    setSelectedSlotId(slotId)
+  }, [])
+
+  const handleModalClose = useCallback(() => {
+    setSelectedSlotId(null)
+  }, [])
+
+  return (
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold text-dark-100 mb-2">Kalendarz</h1>
+        <p className="text-dark-400">
+          Wybierz dzień, aby zobaczyć dostępne godziny i zapisać się na zajęcia.
+        </p>
+      </div>
+
+      {monthLoading ? (
+        <div className="flex justify-center py-12">
+          <LoadingSpinner size="lg" />
+        </div>
+      ) : selectedDate && dayData ? (
+        <DayView
+          date={selectedDate}
+          slots={dayData.slots}
+          events={dayData.events}
+          onBack={handleBackToMonth}
+          onSlotClick={handleSlotClick}
+        />
+      ) : monthData ? (
+        <>
+          <MonthCalendar
+            currentMonth={currentMonth}
+            onMonthChange={setCurrentMonth}
+            days={monthData.days}
+            onDayClick={handleDayClick}
+          />
+
+          {/* Events legend */}
+          {monthData.events.length > 0 && (
+            <div className="mt-6 bg-dark-900 rounded-xl border border-dark-800 p-4">
+              <h3 className="text-sm font-medium text-dark-300 mb-3">
+                Wydarzenia w tym miesiącu:
+              </h3>
+              <div className="space-y-2">
+                {monthData.events.map((event) => (
+                  <div
+                    key={event.id}
+                    className="flex items-center justify-between text-sm"
+                  >
+                    <span className="text-dark-100">{event.title}</span>
+                    <span className="text-dark-400">
+                      {format(new Date(event.startDate), 'dd.MM')}
+                      {event.isMultiDay && (
+                        <> - {format(new Date(event.endDate), 'dd.MM')}</>
+                      )}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </>
+      ) : null}
+
+      {dayLoading && (
+        <div className="flex justify-center py-12">
+          <LoadingSpinner size="lg" />
+        </div>
+      )}
+
+      <SlotDetailModal
+        slot={slotDetail ?? null}
+        isOpen={!!selectedSlotId}
+        onClose={handleModalClose}
+      />
+    </div>
+  )
+}

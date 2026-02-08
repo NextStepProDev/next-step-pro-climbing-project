@@ -1,0 +1,52 @@
+# ===== Environment / Secrets =====
+.env
+.env.local
+.env.*.local
+.env.production
+.env.development
+# KEEP: .env.example (template for other developers)
+
+# ===== Docker =====
+docker-compose.override.yml
+
+# ===== Docker volumes / data =====
+data/
+pgdata/
+postgres-data/
+redis-data/
+volumes/
+
+# ===== Logs =====
+*.log
+logs/
+
+# ===== SSL / Certificates =====
+*.pem
+*.key
+*.crt
+*.csr
+*.p12
+certs/
+
+# ===== OS =====
+.DS_Store
+Thumbs.db
+
+# ===== IDE =====
+.idea/
+.vscode/
+
+# ===== Temporary =====
+*.tmp
+*.temp
+*.bak
+*.orig
+*~
+
+# ===== build =====
+/build/
+/.gradle/
+
+# ===== node =====
+/node_modules/
+/dist/

@@ -1,0 +1,63 @@
+# ===== Java / Spring Boot =====
+*.class
+*.jar
+*.war
+*.ear
+
+# ===== Gradle =====
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+!gradle/wrapper/gradle-wrapper.properties
+
+# ===== IDE =====
+.idea/
+*.iml
+*.iws
+*.ipr
+.project
+.classpath
+.settings/
+.factorypath
+out/
+bin/
+
+# ===== Environment / Secrets =====
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+*.p12
+*.jks
+*.keystore
+application-local.yml
+application-local.properties
+application-secret.yml
+application-secret.properties
+
+# ===== Logs =====
+*.log
+logs/
+spring.log
+
+# ===== OS =====
+.DS_Store
+Thumbs.db
+
+# ===== Test outputs =====
+test-output/
+surefire-reports/
+
+# ===== Crash dumps =====
+hs_err_pid*
+replay_pid*
+
+# ===== Temporary =====
+*.tmp
+*.temp
+*.bak
+*.orig
+*.swp
+*.swo
+*~

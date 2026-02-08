@@ -1,0 +1,1 @@
+ALTER TABLE reservations ADD COLUMN participants INT NOT NULL DEFAULT 1;

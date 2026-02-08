@@ -1,0 +1,17 @@
+spring:
+  jpa:
+    show-sql: false
+
+  mail:
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+logging:
+  level:
+    pl.nextsteppro: INFO
+    org.springframework.security: WARN
+    org.hibernate: WARN

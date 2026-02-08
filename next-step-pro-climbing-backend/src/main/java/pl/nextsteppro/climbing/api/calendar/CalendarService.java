@@ -1,0 +1,214 @@
+package pl.nextsteppro.climbing.api.calendar;
+
+import org.jspecify.annotations.Nullable;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import pl.nextsteppro.climbing.domain.event.Event;
+import pl.nextsteppro.climbing.domain.event.EventRepository;
+import pl.nextsteppro.climbing.domain.reservation.Reservation;
+import pl.nextsteppro.climbing.domain.reservation.ReservationRepository;
+import pl.nextsteppro.climbing.domain.reservation.ReservationStatus;
+import pl.nextsteppro.climbing.domain.timeslot.TimeSlot;
+import pl.nextsteppro.climbing.domain.timeslot.TimeSlotRepository;
+import pl.nextsteppro.climbing.domain.waitlist.WaitlistRepository;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.YearMonth;
+import java.util.*;
+import java.util.stream.Collectors;
+
+@Service
+@Transactional(readOnly = true)
+public class CalendarService {
+
+    private final TimeSlotRepository timeSlotRepository;
+    private final ReservationRepository reservationRepository;
+    private final WaitlistRepository waitlistRepository;
+    private final EventRepository eventRepository;
+
+    public CalendarService(TimeSlotRepository timeSlotRepository,
+                          ReservationRepository reservationRepository,
+                          WaitlistRepository waitlistRepository,
+                          EventRepository eventRepository) {
+        this.timeSlotRepository = timeSlotRepository;
+        this.reservationRepository = reservationRepository;
+        this.waitlistRepository = waitlistRepository;
+        this.eventRepository = eventRepository;
+    }
+
+    @Cacheable(value = "calendarMonth", key = "#yearMonth", condition = "#userId == null")
+    public MonthViewDto getMonthView(YearMonth yearMonth, @Nullable UUID userId) {
+        LocalDate startDate = yearMonth.atDay(1);
+        LocalDate endDate = yearMonth.atEndOfMonth();
+
+        List<TimeSlot> slots = timeSlotRepository.findByDateRangeOrdered(startDate, endDate);
+        List<Event> events = eventRepository.findActiveEventsBetween(startDate, endDate);
+
+        // Batch: load all confirmed counts at once
+        List<UUID> allSlotIds = slots.stream().map(TimeSlot::getId).toList();
+        Map<UUID, Integer> countMap = buildCountMap(allSlotIds);
+
+        // Batch: load user's confirmed slot IDs at once
+        Set<UUID> userConfirmedSlotIds = userId != null && !allSlotIds.isEmpty()
+            ? new HashSet<>(reservationRepository.findUserConfirmedSlotIds(userId, allSlotIds))
+            : Set.of();
+
+        Map<LocalDate, List<TimeSlot>> slotsByDate = slots.stream()
+            .collect(Collectors.groupingBy(TimeSlot::getDate));
+
+        List<DaySummaryDto> days = new ArrayList<>();
+        for (LocalDate date = startDate; !date.isAfter(endDate); date = date.plusDays(1)) {
+            List<TimeSlot> daySlots = slotsByDate.getOrDefault(date, List.of());
+            days.add(createDaySummary(date, daySlots, countMap, userConfirmedSlotIds));
+        }
+
+        List<EventSummaryDto> eventSummaries = events.stream()
+            .map(this::toEventSummary)
+            .toList();
+
+        return new MonthViewDto(yearMonth.toString(), days, eventSummaries);
+    }
+
+    @Cacheable(value = "calendarDay", key = "#date", condition = "#userId == null")
+    public DayViewDto getDayView(LocalDate date, @Nullable UUID userId) {
+        List<TimeSlot> slots = timeSlotRepository.findByDate(date);
+        List<Event> events = eventRepository.findActiveEventsOnDate(date);
+
+        List<UUID> slotIds = slots.stream().map(TimeSlot::getId).toList();
+        Map<UUID, Integer> countMap = buildCountMap(slotIds);
+        Set<UUID> userConfirmedSlotIds = userId != null && !slotIds.isEmpty()
+            ? new HashSet<>(reservationRepository.findUserConfirmedSlotIds(userId, slotIds))
+            : Set.of();
+
+        List<TimeSlotDto> slotDtos = slots.stream()
+            .map(slot -> toTimeSlotDto(slot, countMap.getOrDefault(slot.getId(), 0),
+                                       userConfirmedSlotIds.contains(slot.getId())))
+            .toList();
+
+        List<EventSummaryDto> eventSummaries = events.stream()
+            .map(this::toEventSummary)
+            .toList();
+
+        return new DayViewDto(date, slotDtos, eventSummaries);
+    }
+
+    public TimeSlotDetailDto getSlotDetails(UUID slotId, @Nullable UUID userId) {
+        TimeSlot slot = timeSlotRepository.findById(slotId)
+            .orElseThrow(() -> new IllegalArgumentException("Time slot not found: " + slotId));
+
+        int confirmedCount = reservationRepository.countConfirmedByTimeSlotId(slotId);
+        int waitlistCount = waitlistRepository.countByTimeSlotId(slotId);
+
+        boolean isUserRegistered = false;
+        boolean isUserOnWaitlist = false;
+        @Nullable Integer waitlistPosition = null;
+        @Nullable UUID reservationId = null;
+        @Nullable UUID waitlistEntryId = null;
+
+        if (userId != null) {
+            Reservation reservation = reservationRepository.findByUserIdAndTimeSlotId(userId, slotId);
+            if (reservation != null && reservation.getStatus() == ReservationStatus.CONFIRMED) {
+                isUserRegistered = true;
+                reservationId = reservation.getId();
+            }
+            var waitlistEntry = waitlistRepository.findByUserIdAndTimeSlotId(userId, slotId);
+            if (waitlistEntry != null) {
+                isUserOnWaitlist = true;
+                waitlistPosition = waitlistEntry.getPosition();
+                waitlistEntryId = waitlistEntry.getId();
+            }
+        }
+
+        SlotStatus status = determineSlotStatus(slot, confirmedCount);
+
+        return new TimeSlotDetailDto(
+            slot.getId(),
+            slot.getDate(),
+            slot.getStartTime(),
+            slot.getEndTime(),
+            slot.getMaxParticipants(),
+            confirmedCount,
+            waitlistCount,
+            status,
+            isUserRegistered,
+            isUserOnWaitlist,
+            waitlistPosition,
+            slot.belongsToEvent() ? slot.getEvent().getId() : null,
+            slot.getDisplayTitle(),
+            reservationId,
+            waitlistEntryId
+        );
+    }
+
+    private DaySummaryDto createDaySummary(LocalDate date, List<TimeSlot> slots,
+                                          Map<UUID, Integer> countMap, Set<UUID> userConfirmedSlotIds) {
+        int totalSlots = slots.size();
+        int availableSlots = 0;
+        boolean hasUserReservation = false;
+
+        for (TimeSlot slot : slots) {
+            LocalDateTime slotDateTime = LocalDateTime.of(slot.getDate(), slot.getStartTime());
+            if (!slot.isBlocked() && !slotDateTime.isBefore(LocalDateTime.now())) {
+                int confirmed = countMap.getOrDefault(slot.getId(), 0);
+                if (confirmed < slot.getMaxParticipants()) {
+                    availableSlots++;
+                }
+            }
+            if (userConfirmedSlotIds.contains(slot.getId())) {
+                hasUserReservation = true;
+            }
+        }
+
+        return new DaySummaryDto(date, totalSlots, availableSlots, hasUserReservation);
+    }
+
+    private TimeSlotDto toTimeSlotDto(TimeSlot slot, int confirmedCount, boolean isUserRegistered) {
+        SlotStatus status = determineSlotStatus(slot, confirmedCount);
+
+        return new TimeSlotDto(
+            slot.getId(),
+            slot.getStartTime(),
+            slot.getEndTime(),
+            status,
+            isUserRegistered,
+            slot.getDisplayTitle()
+        );
+    }
+
+    private SlotStatus determineSlotStatus(TimeSlot slot, int confirmedCount) {
+        LocalDateTime slotDateTime = LocalDateTime.of(slot.getDate(), slot.getStartTime());
+        if (slotDateTime.isBefore(LocalDateTime.now())) {
+            return SlotStatus.PAST;
+        }
+        if (slot.isBlocked()) {
+            return SlotStatus.BLOCKED;
+        }
+        if (confirmedCount >= slot.getMaxParticipants()) {
+            return SlotStatus.FULL;
+        }
+        return SlotStatus.AVAILABLE;
+    }
+
+    private EventSummaryDto toEventSummary(Event event) {
+        return new EventSummaryDto(
+            event.getId(),
+            event.getTitle(),
+            event.getLocation(),
+            event.getEventType().name(),
+            event.getStartDate(),
+            event.getEndDate(),
+            event.isMultiDay()
+        );
+    }
+
+    private Map<UUID, Integer> buildCountMap(List<UUID> slotIds) {
+        if (slotIds.isEmpty()) return Map.of();
+        return reservationRepository.countConfirmedByTimeSlotIds(slotIds).stream()
+            .collect(Collectors.toMap(
+                row -> (UUID) row[0],
+                row -> ((Number) row[1]).intValue()
+            ));
+    }
+}

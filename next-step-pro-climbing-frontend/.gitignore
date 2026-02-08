@@ -1,0 +1,50 @@
+# ===== Dependencies =====
+node_modules/
+
+# ===== Build =====
+dist/
+dist-ssr/
+build/
+
+# ===== Environment / Secrets =====
+.env
+.env.local
+.env.*.local
+*.local
+
+# ===== Logs =====
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# ===== IDE =====
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# ===== OS =====
+.DS_Store
+Thumbs.db
+
+# ===== Testing =====
+coverage/
+*.lcov
+
+# ===== TypeScript cache =====
+*.tsbuildinfo
+
+# ===== Temporary =====
+*.tmp
+*.temp
+*.bak
+*.orig
+*~

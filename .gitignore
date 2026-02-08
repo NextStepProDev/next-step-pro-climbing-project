@@ -1,0 +1,55 @@
+# ===== IDE =====
+.idea/
+.vscode/
+*.iml
+*.iws
+*.ipr
+.project
+.classpath
+.settings/
+*.swp
+*.swo
+*~
+
+# ===== Environment / Secrets =====
+.env
+.env.local
+.env.*.local
+.env.development
+.env.production
+*.pem
+*.key
+*.p12
+*.jks
+*.keystore
+
+# ===== Build outputs =====
+target/
+build/
+dist/
+out/
+node_modules/
+
+# ===== Gradle =====
+.gradle/
+
+# ===== Logs =====
+*.log
+logs/
+
+# ===== OS =====
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# ===== Temporary =====
+*.tmp
+*.temp
+*.bak
+*.orig
+
+# ===== Claude Code =====
+.claude/
+claude/
+CLAUDE.md

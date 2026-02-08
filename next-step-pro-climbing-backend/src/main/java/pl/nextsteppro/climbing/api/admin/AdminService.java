@@ -1,0 +1,391 @@
+package pl.nextsteppro.climbing.api.admin;
+
+import org.jspecify.annotations.Nullable;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Caching;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import pl.nextsteppro.climbing.domain.event.Event;
+import pl.nextsteppro.climbing.domain.event.EventRepository;
+import pl.nextsteppro.climbing.domain.event.EventType;
+import pl.nextsteppro.climbing.domain.reservation.Reservation;
+import pl.nextsteppro.climbing.domain.reservation.ReservationRepository;
+import pl.nextsteppro.climbing.domain.timeslot.TimeSlot;
+import pl.nextsteppro.climbing.domain.timeslot.TimeSlotRepository;
+import pl.nextsteppro.climbing.domain.auth.AuthTokenRepository;
+import pl.nextsteppro.climbing.domain.user.User;
+import pl.nextsteppro.climbing.domain.user.UserRepository;
+import pl.nextsteppro.climbing.domain.user.UserRole;
+import pl.nextsteppro.climbing.domain.waitlist.WaitlistEntry;
+import pl.nextsteppro.climbing.domain.waitlist.WaitlistRepository;
+
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
+@Service
+@Transactional
+public class AdminService {
+
+    private final TimeSlotRepository timeSlotRepository;
+    private final EventRepository eventRepository;
+    private final ReservationRepository reservationRepository;
+    private final WaitlistRepository waitlistRepository;
+    private final UserRepository userRepository;
+    private final AuthTokenRepository authTokenRepository;
+
+    public AdminService(TimeSlotRepository timeSlotRepository,
+                       EventRepository eventRepository,
+                       ReservationRepository reservationRepository,
+                       WaitlistRepository waitlistRepository,
+                       UserRepository userRepository,
+                       AuthTokenRepository authTokenRepository) {
+        this.timeSlotRepository = timeSlotRepository;
+        this.eventRepository = eventRepository;
+        this.reservationRepository = reservationRepository;
+        this.waitlistRepository = waitlistRepository;
+        this.userRepository = userRepository;
+        this.authTokenRepository = authTokenRepository;
+    }
+
+    @Caching(evict = {
+        @CacheEvict(value = "calendarMonth", allEntries = true),
+        @CacheEvict(value = "calendarDay", allEntries = true)
+    })
+    public TimeSlotAdminDto createTimeSlot(CreateTimeSlotRequest request) {
+        if (!request.endTime().isAfter(request.startTime())) {
+            throw new IllegalArgumentException("Godzina zakończenia musi być późniejsza niż godzina rozpoczęcia");
+        }
+
+        Event event = null;
+        if (request.eventId() != null) {
+            event = eventRepository.findById(request.eventId())
+                .orElseThrow(() -> new IllegalArgumentException("Event not found"));
+        }
+
+        TimeSlot slot = new TimeSlot(
+            request.date(),
+            request.startTime(),
+            request.endTime(),
+            request.maxParticipants()
+        );
+        if (request.title() != null && !request.title().isBlank()) {
+            slot.setTitle(request.title());
+        }
+        if (event != null) {
+            slot.setEvent(event);
+        }
+
+        slot = timeSlotRepository.save(slot);
+        return toTimeSlotAdminDto(slot);
+    }
+
+    @Caching(evict = {
+        @CacheEvict(value = "calendarMonth", allEntries = true),
+        @CacheEvict(value = "calendarDay", allEntries = true)
+    })
+    public void blockTimeSlot(UUID slotId, @Nullable String reason) {
+        TimeSlot slot = timeSlotRepository.findById(slotId)
+            .orElseThrow(() -> new IllegalArgumentException("Time slot not found"));
+
+        slot.block(reason);
+        timeSlotRepository.save(slot);
+    }
+
+    @Caching(evict = {
+        @CacheEvict(value = "calendarMonth", allEntries = true),
+        @CacheEvict(value = "calendarDay", allEntries = true)
+    })
+    public void unblockTimeSlot(UUID slotId) {
+        TimeSlot slot = timeSlotRepository.findById(slotId)
+            .orElseThrow(() -> new IllegalArgumentException("Time slot not found"));
+
+        slot.unblock();
+        timeSlotRepository.save(slot);
+    }
+
+    @Caching(evict = {
+        @CacheEvict(value = "calendarMonth", allEntries = true),
+        @CacheEvict(value = "calendarDay", allEntries = true)
+    })
+    public void deleteTimeSlot(UUID slotId) {
+        timeSlotRepository.deleteById(slotId);
+    }
+
+    @Transactional(readOnly = true)
+    public SlotParticipantsDto getSlotParticipants(UUID slotId) {
+        TimeSlot slot = timeSlotRepository.findById(slotId)
+            .orElseThrow(() -> new IllegalArgumentException("Time slot not found"));
+
+        List<Reservation> reservations = reservationRepository.findConfirmedByTimeSlotId(slotId);
+        List<WaitlistEntry> waitlist = waitlistRepository.findByTimeSlotIdOrderByPosition(slotId);
+
+        List<ParticipantDto> participants = reservations.stream()
+            .map(r -> new ParticipantDto(
+                r.getUser().getId(),
+                r.getUser().getFullName(),
+                r.getUser().getEmail(),
+                r.getUser().getPhone(),
+                r.getComment(),
+                r.getParticipants(),
+                r.getCreatedAt()
+            ))
+            .toList();
+
+        List<WaitlistParticipantDto> waitlistParticipants = waitlist.stream()
+            .map(w -> new WaitlistParticipantDto(
+                w.getId(),
+                w.getUser().getId(),
+                w.getUser().getFullName(),
+                w.getUser().getEmail(),
+                w.getPosition(),
+                w.wasNotified()
+            ))
+            .toList();
+
+        return new SlotParticipantsDto(
+            slotId,
+            slot.getDate(),
+            slot.getStartTime(),
+            slot.getEndTime(),
+            slot.getMaxParticipants(),
+            participants,
+            waitlistParticipants
+        );
+    }
+
+    @Caching(evict = {
+        @CacheEvict(value = "calendarMonth", allEntries = true),
+        @CacheEvict(value = "calendarDay", allEntries = true)
+    })
+    public EventAdminDto createEvent(CreateEventRequest request) {
+        if (request.generateSlots() && request.dailyStartTime() != null && request.dailyEndTime() != null
+                && !request.dailyEndTime().isAfter(request.dailyStartTime())) {
+            throw new IllegalArgumentException("Godzina zakończenia musi być późniejsza niż godzina rozpoczęcia");
+        }
+
+        Event event = new Event(
+            request.title(),
+            EventType.valueOf(request.eventType()),
+            request.startDate(),
+            request.endDate(),
+            request.maxParticipants()
+        );
+        event.setDescription(request.description());
+        event.setLocation(request.location());
+
+        event = eventRepository.save(event);
+
+        if (request.generateSlots()) {
+            generateSlotsForEvent(event, request.slotDuration(), request.dailyStartTime(), request.dailyEndTime());
+        }
+
+        return toEventAdminDto(event);
+    }
+
+    public EventAdminDto updateEvent(UUID eventId, UpdateEventRequest request) {
+        Event event = eventRepository.findById(eventId)
+            .orElseThrow(() -> new IllegalArgumentException("Event not found"));
+
+        if (request.title() != null) event.setTitle(request.title());
+        if (request.description() != null) event.setDescription(request.description());
+        if (request.location() != null) event.setLocation(request.location());
+        if (request.eventType() != null) event.setEventType(EventType.valueOf(request.eventType()));
+        if (request.startDate() != null) event.setStartDate(request.startDate());
+        if (request.endDate() != null) event.setEndDate(request.endDate());
+        if (request.maxParticipants() != null) event.setMaxParticipants(request.maxParticipants());
+        if (request.active() != null) event.setActive(request.active());
+
+        event = eventRepository.save(event);
+        return toEventAdminDto(event);
+    }
+
+    @Caching(evict = {
+        @CacheEvict(value = "calendarMonth", allEntries = true),
+        @CacheEvict(value = "calendarDay", allEntries = true)
+    })
+    public void deleteEvent(UUID eventId) {
+        eventRepository.deleteById(eventId);
+    }
+
+    @Transactional(readOnly = true)
+    public List<EventAdminDto> getAllEvents() {
+        return eventRepository.findAll().stream()
+            .map(this::toEventAdminDto)
+            .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public EventDetailAdminDto getEventDetails(UUID eventId) {
+        Event event = eventRepository.findById(eventId)
+            .orElseThrow(() -> new IllegalArgumentException("Event not found"));
+
+        List<TimeSlot> slots = timeSlotRepository.findByEventId(eventId);
+        Map<UUID, Integer> countMap = buildCountMap(slots);
+        List<TimeSlotAdminDto> slotDtos = slots.stream()
+            .map(slot -> toTimeSlotAdminDto(slot, countMap.getOrDefault(slot.getId(), 0)))
+            .toList();
+
+        return new EventDetailAdminDto(
+            event.getId(),
+            event.getTitle(),
+            event.getDescription(),
+            event.getLocation(),
+            event.getEventType().name(),
+            event.getStartDate(),
+            event.getEndDate(),
+            event.getMaxParticipants(),
+            event.isActive(),
+            slotDtos
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public List<ReservationAdminDto> getAllUpcomingReservations() {
+        List<TimeSlot> slots = timeSlotRepository.findByDateRangeOrdered(LocalDate.now(), LocalDate.now().plusYears(1));
+        return buildReservationAdminDtos(slots);
+    }
+
+    @Transactional(readOnly = true)
+    public List<ReservationAdminDto> getReservationsByDate(LocalDate date) {
+        List<TimeSlot> slots = timeSlotRepository.findByDate(date);
+        return buildReservationAdminDtos(slots);
+    }
+
+    private List<ReservationAdminDto> buildReservationAdminDtos(List<TimeSlot> slots) {
+        if (slots.isEmpty()) return List.of();
+
+        List<UUID> slotIds = slots.stream().map(TimeSlot::getId).toList();
+        List<Reservation> allReservations = reservationRepository.findConfirmedByTimeSlotIds(slotIds);
+
+        Map<UUID, TimeSlot> slotMap = slots.stream()
+            .collect(Collectors.toMap(TimeSlot::getId, s -> s));
+
+        return allReservations.stream()
+            .map(r -> {
+                TimeSlot slot = slotMap.get(r.getTimeSlot().getId());
+                return new ReservationAdminDto(
+                    r.getId(),
+                    r.getUser().getFullName(),
+                    r.getUser().getEmail(),
+                    r.getUser().getPhone(),
+                    slot.getDate(),
+                    slot.getStartTime(),
+                    slot.getEndTime(),
+                    slot.getDisplayTitle(),
+                    r.getComment(),
+                    r.getParticipants()
+                );
+            })
+            .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<UserAdminDto> getAllUsers() {
+        return userRepository.findAll().stream()
+            .map(u -> new UserAdminDto(
+                u.getId(),
+                u.getFullName(),
+                u.getEmail(),
+                u.getPhone(),
+                u.getNickname(),
+                u.getRole().name(),
+                u.getCreatedAt()
+            ))
+            .toList();
+    }
+
+    public void makeAdmin(UUID userId) {
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        user.setRole(UserRole.ADMIN);
+        userRepository.save(user);
+    }
+
+    public void deleteUser(UUID userId) {
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        if (user.isAdmin()) {
+            throw new IllegalStateException("Nie można usunąć konta administratora");
+        }
+
+        for (Reservation reservation : reservationRepository.findByUserId(userId)) {
+            if (reservation.isConfirmed()) {
+                reservation.cancel();
+                reservationRepository.save(reservation);
+            }
+        }
+
+        waitlistRepository.deleteByUserId(userId);
+        authTokenRepository.deleteByUserId(userId);
+        userRepository.delete(user);
+    }
+
+    private void generateSlotsForEvent(Event event, int slotDurationMinutes,
+                                       java.time.LocalTime dailyStart, java.time.LocalTime dailyEnd) {
+        LocalDate current = event.getStartDate();
+        while (!current.isAfter(event.getEndDate())) {
+            java.time.LocalTime slotStart = dailyStart;
+            while (slotStart.plusMinutes(slotDurationMinutes).isBefore(dailyEnd) ||
+                   slotStart.plusMinutes(slotDurationMinutes).equals(dailyEnd)) {
+                TimeSlot slot = new TimeSlot(
+                    event,
+                    current,
+                    slotStart,
+                    slotStart.plusMinutes(slotDurationMinutes),
+                    event.getMaxParticipants()
+                );
+                timeSlotRepository.save(slot);
+                slotStart = slotStart.plusMinutes(slotDurationMinutes);
+            }
+            current = current.plusDays(1);
+        }
+    }
+
+    private TimeSlotAdminDto toTimeSlotAdminDto(TimeSlot slot) {
+        int confirmedCount = reservationRepository.countConfirmedByTimeSlotId(slot.getId());
+        return toTimeSlotAdminDto(slot, confirmedCount);
+    }
+
+    private TimeSlotAdminDto toTimeSlotAdminDto(TimeSlot slot, int confirmedCount) {
+        return new TimeSlotAdminDto(
+            slot.getId(),
+            slot.getDate(),
+            slot.getStartTime(),
+            slot.getEndTime(),
+            slot.getMaxParticipants(),
+            confirmedCount,
+            slot.isBlocked(),
+            slot.getBlockReason(),
+            slot.getDisplayTitle(),
+            slot.belongsToEvent() ? slot.getEvent().getId() : null
+        );
+    }
+
+    private Map<UUID, Integer> buildCountMap(List<TimeSlot> slots) {
+        if (slots.isEmpty()) return Map.of();
+        List<UUID> slotIds = slots.stream().map(TimeSlot::getId).toList();
+        return reservationRepository.countConfirmedByTimeSlotIds(slotIds).stream()
+            .collect(Collectors.toMap(
+                row -> (UUID) row[0],
+                row -> ((Number) row[1]).intValue()
+            ));
+    }
+
+    private EventAdminDto toEventAdminDto(Event event) {
+        return new EventAdminDto(
+            event.getId(),
+            event.getTitle(),
+            event.getLocation(),
+            event.getEventType().name(),
+            event.getStartDate(),
+            event.getEndDate(),
+            event.getMaxParticipants(),
+            event.isActive()
+        );
+    }
+}
