@@ -17,6 +17,7 @@
 .env.*.local
 .env.development
 .env.production
+.env.prod
 *.pem
 *.key
 *.p12
