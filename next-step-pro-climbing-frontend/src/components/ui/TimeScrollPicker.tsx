@@ -65,7 +65,7 @@ function ScrollColumn({
 }) {
   const containerRef = useRef<HTMLDivElement>(null)
   const isScrollingRef = useRef(false)
-  const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout>>()
+  const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
 
   // Scroll to selected item on mount and when selected changes externally
   useEffect(() => {
