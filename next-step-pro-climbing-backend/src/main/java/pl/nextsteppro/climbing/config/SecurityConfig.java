@@ -19,9 +19,11 @@ import pl.nextsteppro.climbing.infrastructure.security.JwtAuthenticationFilter;
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final AppConfig appConfig;
 
-    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter) {
+    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter, AppConfig appConfig) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+        this.appConfig = appConfig;
     }
 
     @Bean
@@ -61,7 +63,10 @@ public class SecurityConfig {
     @Bean
     public org.springframework.web.cors.CorsConfigurationSource corsConfigurationSource() {
         var configuration = new org.springframework.web.cors.CorsConfiguration();
-        configuration.setAllowedOriginPatterns(java.util.List.of("http://localhost:*"));
+        var origins = java.util.Arrays.stream(appConfig.getCors().getAllowedOrigins().split(","))
+                .map(String::trim)
+                .toList();
+        configuration.setAllowedOriginPatterns(origins);
         configuration.setAllowedMethods(java.util.List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(java.util.List.of("*"));
         configuration.setAllowCredentials(true);
