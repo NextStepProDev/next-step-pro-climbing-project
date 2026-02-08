@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { format } from 'date-fns'
-import { Shield, Trash2 } from 'lucide-react'
+import { Shield, ShieldOff, Trash2 } from 'lucide-react'
 import { adminApi } from '../../api/client'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
 import { Button } from '../../components/ui/Button'
@@ -15,6 +15,11 @@ export function AdminUsersPanel() {
 
   const makeAdminMutation = useMutation({
     mutationFn: adminApi.makeAdmin,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin', 'users'] }),
+  })
+
+  const removeAdminMutation = useMutation({
+    mutationFn: adminApi.removeAdmin,
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin', 'users'] }),
   })
 
@@ -76,7 +81,25 @@ export function AdminUsersPanel() {
                     {format(new Date(user.createdAt), 'dd.MM.yyyy')}
                   </td>
                   <td className="px-4 py-3 flex gap-1">
-                    {user.role !== 'ADMIN' && (
+                    {user.role === 'ADMIN' ? (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          if (
+                            window.confirm(
+                              `Czy na pewno chcesz odebrać uprawnienia administratora użytkownikowi ${user.firstName} ${user.lastName}?`
+                            )
+                          ) {
+                            removeAdminMutation.mutate(user.id)
+                          }
+                        }}
+                        title="Odbierz uprawnienia administratora"
+                        className="text-orange-400 hover:text-orange-300 hover:bg-orange-500/10"
+                      >
+                        <ShieldOff className="w-4 h-4" />
+                      </Button>
+                    ) : (
                       <>
                         <Button
                           variant="ghost"

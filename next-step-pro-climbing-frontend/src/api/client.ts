@@ -224,6 +224,9 @@ export const adminApi = {
   makeAdmin: (userId: string) =>
     fetchApi<void>(`/admin/users/${userId}/make-admin`, { method: 'POST' }),
 
+  removeAdmin: (userId: string) =>
+    fetchApi<void>(`/admin/users/${userId}/remove-admin`, { method: 'POST' }),
+
   deleteUser: (userId: string) =>
     fetchApi<void>(`/admin/users/${userId}`, { method: 'DELETE' }),
 }
