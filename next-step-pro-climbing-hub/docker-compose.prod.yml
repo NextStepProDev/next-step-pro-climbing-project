@@ -16,7 +16,7 @@ services:
     restart: unless-stopped
 
   backend:
-    image: nextsteppro/backend:${VERSION:-latest}
+    image: ghcr.io/${GHCR_OWNER}/nextsteppro-backend:${VERSION:-latest}
     container_name: nsp-backend-prod
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}
@@ -39,7 +39,7 @@ services:
     restart: unless-stopped
 
   frontend:
-    image: nextsteppro/frontend:${VERSION:-latest}
+    image: ghcr.io/${GHCR_OWNER}/nextsteppro-frontend:${VERSION:-latest}
     container_name: nsp-frontend-prod
     ports:
       - "80:80"
