@@ -70,11 +70,11 @@ public class AuthMailService {
     }
 
     private String buildVerificationUrl(String token) {
-        return appConfig.getCors().getAllowedOrigins() + "/verify-email?token=" + token;
+        return appConfig.getBaseUrl() + "/verify-email?token=" + token;
     }
 
     private String buildPasswordResetUrl(String token) {
-        return appConfig.getCors().getAllowedOrigins() + "/reset-password?token=" + token;
+        return appConfig.getBaseUrl() + "/reset-password?token=" + token;
     }
 
     private String buildVerificationEmailBody(String firstName, String verificationUrl) {
