@@ -12,11 +12,7 @@ public final class AuthDtos {
         String email,
 
         @NotBlank(message = "Hasło jest wymagane")
-        @Size(min = 8, max = 100, message = "Hasło musi mieć od 8 do 100 znaków")
-        @Pattern(
-            regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]+$",
-            message = "Hasło musi zawierać: małą literę, wielką literę, cyfrę i znak specjalny (@$!%*?&)"
-        )
+        @Size(min = 4, max = 100, message = "Hasło musi mieć od 4 do 100 znaków")
         String password,
 
         @NotBlank(message = "Imię jest wymagane")
@@ -63,11 +59,7 @@ public final class AuthDtos {
         String token,
 
         @NotBlank(message = "Hasło jest wymagane")
-        @Size(min = 8, max = 100, message = "Hasło musi mieć od 8 do 100 znaków")
-        @Pattern(
-            regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]+$",
-            message = "Hasło musi zawierać: małą literę, wielką literę, cyfrę i znak specjalny (@$!%*?&)"
-        )
+        @Size(min = 4, max = 100, message = "Hasło musi mieć od 4 do 100 znaków")
         String newPassword
     ) {}
 
