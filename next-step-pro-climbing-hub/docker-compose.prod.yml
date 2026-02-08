@@ -31,22 +31,28 @@ services:
       OAUTH2_APPLE_CLIENT_ID: ${OAUTH2_APPLE_CLIENT_ID}
       OAUTH2_APPLE_CLIENT_SECRET: ${OAUTH2_APPLE_CLIENT_SECRET}
       ADMIN_EMAIL: ${ADMIN_EMAIL}
-    ports:
-      - "8080:8080"
     depends_on:
       postgres:
         condition: service_healthy
+    networks:
+      - default
+      - npm_network
     restart: unless-stopped
 
   frontend:
     image: ghcr.io/${GHCR_OWNER}/nextsteppro-frontend:${VERSION:-latest}
     container_name: nsp-frontend-prod
-    ports:
-      - "80:80"
-      - "443:443"
     depends_on:
       - backend
+    networks:
+      - default
+      - npm_network
     restart: unless-stopped
 
 volumes:
   postgres_data_prod:
+
+networks:
+  npm_network:
+    external: true
+    name: first-aid-kit_default
