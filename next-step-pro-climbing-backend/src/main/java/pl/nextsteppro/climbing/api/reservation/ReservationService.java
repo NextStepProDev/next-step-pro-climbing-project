@@ -1,5 +1,6 @@
 package pl.nextsteppro.climbing.api.reservation;
 
+import org.jspecify.annotations.Nullable;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
@@ -17,13 +18,10 @@ import pl.nextsteppro.climbing.domain.waitlist.WaitlistEntry;
 import pl.nextsteppro.climbing.domain.waitlist.WaitlistRepository;
 import pl.nextsteppro.climbing.infrastructure.mail.MailService;
 
-import org.jspecify.annotations.Nullable;
-
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Service
 @Transactional
