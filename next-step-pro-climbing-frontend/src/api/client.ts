@@ -4,8 +4,10 @@ import type {
   DayView,
   TimeSlotDetail,
   UserReservation,
+  MyReservations,
   ReservationResult,
   WaitlistResult,
+  EventReservationResult,
   TimeSlotAdmin,
   SlotParticipants,
   CreateTimeSlotRequest,
@@ -156,13 +158,22 @@ export const reservationApi = {
     fetchApi<UserReservation[]>('/reservations/my'),
 
   getMyUpcoming: () =>
-    fetchApi<UserReservation[]>('/reservations/my/upcoming'),
+    fetchApi<MyReservations>('/reservations/my/upcoming'),
 
   joinWaitlist: (slotId: string) =>
     fetchApi<WaitlistResult>(`/reservations/waitlist/slot/${slotId}`, { method: 'POST' }),
 
   leaveWaitlist: (entryId: string) =>
     fetchApi<void>(`/reservations/waitlist/${entryId}`, { method: 'DELETE' }),
+
+  createForEvent: (eventId: string, comment?: string, participants?: number) =>
+    fetchApi<EventReservationResult>(`/reservations/event/${eventId}`, {
+      method: 'POST',
+      body: JSON.stringify({ comment: comment || null, participants: participants || 1 }),
+    }),
+
+  cancelForEvent: (eventId: string) =>
+    fetchApi<void>(`/reservations/event/${eventId}`, { method: 'DELETE' }),
 }
 
 // Admin
@@ -171,6 +182,12 @@ export const adminApi = {
   createTimeSlot: (data: CreateTimeSlotRequest) =>
     fetchApi<TimeSlotAdmin>('/admin/slots', {
       method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  updateTimeSlot: (slotId: string, data: { startTime?: string; endTime?: string; maxParticipants?: number; title?: string }) =>
+    fetchApi<TimeSlotAdmin>(`/admin/slots/${slotId}`, {
+      method: 'PUT',
       body: JSON.stringify(data),
     }),
 

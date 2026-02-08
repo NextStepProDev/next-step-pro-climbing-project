@@ -20,6 +20,7 @@ import pl.nextsteppro.climbing.domain.waitlist.WaitlistEntry;
 import pl.nextsteppro.climbing.domain.waitlist.WaitlistRepository;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -76,6 +77,29 @@ public class AdminService {
         }
         if (event != null) {
             slot.setEvent(event);
+        }
+
+        slot = timeSlotRepository.save(slot);
+        return toTimeSlotAdminDto(slot);
+    }
+
+    @Caching(evict = {
+        @CacheEvict(value = "calendarMonth", allEntries = true),
+        @CacheEvict(value = "calendarDay", allEntries = true)
+    })
+    public TimeSlotAdminDto updateTimeSlot(UUID slotId, UpdateTimeSlotRequest request) {
+        TimeSlot slot = timeSlotRepository.findById(slotId)
+            .orElseThrow(() -> new IllegalArgumentException("Time slot not found"));
+
+        if (request.startTime() != null) slot.setStartTime(request.startTime());
+        if (request.endTime() != null) slot.setEndTime(request.endTime());
+        if (request.maxParticipants() != null) slot.setMaxParticipants(request.maxParticipants());
+        if (request.title() != null) slot.setTitle(request.title().isBlank() ? null : request.title());
+
+        LocalTime start = slot.getStartTime();
+        LocalTime end = slot.getEndTime();
+        if (!end.isAfter(start)) {
+            throw new IllegalArgumentException("Godzina zakończenia musi być późniejsza niż godzina rozpoczęcia");
         }
 
         slot = timeSlotRepository.save(slot);
@@ -161,11 +185,6 @@ public class AdminService {
         @CacheEvict(value = "calendarDay", allEntries = true)
     })
     public EventAdminDto createEvent(CreateEventRequest request) {
-        if (request.generateSlots() && request.dailyStartTime() != null && request.dailyEndTime() != null
-                && !request.dailyEndTime().isAfter(request.dailyStartTime())) {
-            throw new IllegalArgumentException("Godzina zakończenia musi być późniejsza niż godzina rozpoczęcia");
-        }
-
         Event event = new Event(
             request.title(),
             EventType.valueOf(request.eventType()),
@@ -177,10 +196,6 @@ public class AdminService {
         event.setLocation(request.location());
 
         event = eventRepository.save(event);
-
-        if (request.generateSlots()) {
-            generateSlotsForEvent(event, request.slotDuration(), request.dailyStartTime(), request.dailyEndTime());
-        }
 
         return toEventAdminDto(event);
     }
@@ -335,27 +350,6 @@ public class AdminService {
         waitlistRepository.deleteByUserId(userId);
         authTokenRepository.deleteByUserId(userId);
         userRepository.delete(user);
-    }
-
-    private void generateSlotsForEvent(Event event, int slotDurationMinutes,
-                                       java.time.LocalTime dailyStart, java.time.LocalTime dailyEnd) {
-        LocalDate current = event.getStartDate();
-        while (!current.isAfter(event.getEndDate())) {
-            java.time.LocalTime slotStart = dailyStart;
-            while (slotStart.plusMinutes(slotDurationMinutes).isBefore(dailyEnd) ||
-                   slotStart.plusMinutes(slotDurationMinutes).equals(dailyEnd)) {
-                TimeSlot slot = new TimeSlot(
-                    event,
-                    current,
-                    slotStart,
-                    slotStart.plusMinutes(slotDurationMinutes),
-                    event.getMaxParticipants()
-                );
-                timeSlotRepository.save(slot);
-                slotStart = slotStart.plusMinutes(slotDurationMinutes);
-            }
-            current = current.plusDays(1);
-        }
     }
 
     private TimeSlotAdminDto toTimeSlotAdminDto(TimeSlot slot) {

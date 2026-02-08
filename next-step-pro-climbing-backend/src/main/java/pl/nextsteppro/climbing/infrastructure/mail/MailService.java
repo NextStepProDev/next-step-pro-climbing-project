@@ -9,6 +9,7 @@ import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import pl.nextsteppro.climbing.config.AppConfig;
+import pl.nextsteppro.climbing.domain.event.Event;
 import pl.nextsteppro.climbing.domain.reservation.Reservation;
 import pl.nextsteppro.climbing.domain.timeslot.TimeSlot;
 import pl.nextsteppro.climbing.domain.user.User;
@@ -81,6 +82,35 @@ public class MailService {
 
         String subject = "Anulowanie rezerwacji - Next Step Pro Climbing";
         String body = buildCancellationBody(user, slot);
+
+        sendEmail(user.getEmail(), subject, body, null);
+    }
+
+    @Async
+    public void sendEventReservationConfirmation(User user, Event event) {
+        if (!user.isEmailNotificationsEnabled()) return;
+
+        String subject = "Potwierdzenie zapisu na wydarzenie - Next Step Pro Climbing";
+        String body = buildEventReservationConfirmationBody(user, event);
+
+        sendEmail(user.getEmail(), subject, body, null);
+    }
+
+    @Async
+    public void sendEventAdminNotification(User user, Event event, int participants) {
+        String subject = "Nowy zapis na wydarzenie: " + user.getFullName();
+        String body = buildEventAdminNotificationBody(user, event, participants);
+        byte[] icsAttachment = iCalService.generateEventIcs(event);
+
+        sendEmail(appConfig.getAdmin().getEmail(), subject, body, icsAttachment);
+    }
+
+    @Async
+    public void sendEventCancellationConfirmation(User user, Event event) {
+        if (!user.isEmailNotificationsEnabled()) return;
+
+        String subject = "Anulowanie zapisu na wydarzenie - Next Step Pro Climbing";
+        String body = buildEventCancellationBody(user, event);
 
         sendEmail(user.getEmail(), subject, body, null);
     }
@@ -217,6 +247,91 @@ public class MailService {
             slot.getDate().format(DATE_FORMAT),
             slot.getStartTime().format(TIME_FORMAT),
             slot.getEndTime().format(TIME_FORMAT)
+        );
+    }
+
+    private String buildEventReservationConfirmationBody(User user, Event event) {
+        return """
+            <html>
+            <body style="font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5;">
+                <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden;">
+                    <div style="background: #0f0f1a; padding: 20px; text-align: center;">
+                        <img src="cid:logo" alt="Next Step Pro Climbing" style="height: 60px;" />
+                    </div>
+                    <div style="padding: 30px;">
+                        <h2 style="color: #1a1a2e; margin-top: 0;">Cześć %s!</h2>
+                        <p style="color: #333;">Twoja rezerwacja na wydarzenie została potwierdzona.</p>
+                        <div style="background: #1a1a2e; color: white; padding: 20px; border-radius: 8px;">
+                            <p><strong>Wydarzenie:</strong> %s</p>
+                            <p><strong>Termin:</strong> %s - %s</p>
+                        </div>
+                        <p style="margin-top: 20px; color: #333;">Do zobaczenia!</p>
+                        <p style="color: #666; font-size: 14px;">Zespół Next Step Pro Climbing</p>
+                    </div>
+                </div>
+            </body>
+            </html>
+            """.formatted(
+            user.getFirstName(),
+            event.getTitle(),
+            event.getStartDate().format(DATE_FORMAT),
+            event.getEndDate().format(DATE_FORMAT)
+        );
+    }
+
+    private String buildEventAdminNotificationBody(User user, Event event, int participants) {
+        return """
+            <html>
+            <body style="font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5;">
+                <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden;">
+                    <div style="background: #0f0f1a; padding: 20px; text-align: center;">
+                        <img src="cid:logo" alt="Next Step Pro Climbing" style="height: 60px;" />
+                    </div>
+                    <div style="padding: 30px;">
+                        <h2 style="color: #1a1a2e; margin-top: 0;">Nowy zapis na wydarzenie</h2>
+                        <div style="background: #f5f5f5; padding: 20px; border-radius: 8px;">
+                            <p><strong>Klient:</strong> %s</p>
+                            <p><strong>Email:</strong> %s</p>
+                            <p><strong>Telefon:</strong> %s</p>
+                            <p><strong>Wydarzenie:</strong> %s</p>
+                            <p><strong>Termin:</strong> %s - %s</p>
+                            <p><strong>Liczba osób:</strong> %d</p>
+                        </div>
+                        <p style="margin-top: 20px; color: #666; font-size: 14px;">Plik .ics w załączniku.</p>
+                    </div>
+                </div>
+            </body>
+            </html>
+            """.formatted(
+            user.getFullName(),
+            user.getEmail(),
+            user.getPhone(),
+            event.getTitle(),
+            event.getStartDate().format(DATE_FORMAT),
+            event.getEndDate().format(DATE_FORMAT),
+            participants
+        );
+    }
+
+    private String buildEventCancellationBody(User user, Event event) {
+        return """
+            <html>
+            <body style="font-family: Arial, sans-serif;">
+                <h2>Cześć %s!</h2>
+                <p>Twój zapis na wydarzenie został anulowany.</p>
+                <div style="background: #1a1a2e; color: white; padding: 20px; border-radius: 8px;">
+                    <p><strong>Wydarzenie:</strong> %s</p>
+                    <p><strong>Termin:</strong> %s - %s</p>
+                </div>
+                <p style="margin-top: 20px;">Mamy nadzieję, że wkrótce Cię zobaczymy!</p>
+                <p>Zespół Next Step Pro Climbing</p>
+            </body>
+            </html>
+            """.formatted(
+            user.getFirstName(),
+            event.getTitle(),
+            event.getStartDate().format(DATE_FORMAT),
+            event.getEndDate().format(DATE_FORMAT)
         );
     }
 }

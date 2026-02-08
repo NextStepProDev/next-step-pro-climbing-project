@@ -6,7 +6,9 @@ import { calendarApi } from '../api/client'
 import { MonthCalendar } from '../components/calendar/MonthCalendar'
 import { DayView } from '../components/calendar/DayView'
 import { SlotDetailModal } from '../components/calendar/SlotDetailModal'
+import { EventSignupModal } from '../components/calendar/EventSignupModal'
 import { LoadingSpinner } from '../components/ui/LoadingSpinner'
+import type { EventSummary } from '../types'
 
 export function CalendarPage() {
   const [searchParams, setSearchParams] = useSearchParams()
@@ -18,6 +20,7 @@ export function CalendarPage() {
     searchParams.get('date')
   )
   const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null)
+  const [selectedEvent, setSelectedEvent] = useState<EventSummary | null>(null)
 
   const yearMonth = format(currentMonth, 'yyyy-MM')
 
@@ -83,6 +86,7 @@ export function CalendarPage() {
             currentMonth={currentMonth}
             onMonthChange={setCurrentMonth}
             days={monthData.days}
+            events={monthData.events}
             onDayClick={handleDayClick}
           />
 
@@ -99,12 +103,31 @@ export function CalendarPage() {
                     className="flex items-center justify-between text-sm"
                   >
                     <span className="text-dark-100">{event.title}</span>
-                    <span className="text-dark-400">
-                      {format(new Date(event.startDate), 'dd.MM')}
-                      {event.isMultiDay && (
-                        <> - {format(new Date(event.endDate), 'dd.MM')}</>
-                      )}
-                    </span>
+                    <div className="flex items-center gap-3">
+                      <span className={
+                        event.currentParticipants >= event.maxParticipants
+                          ? 'text-amber-400'
+                          : 'text-green-400'
+                      }>
+                        {event.currentParticipants}/{event.maxParticipants} miejsc
+                      </span>
+                      <span className="text-dark-400">
+                        {format(new Date(event.startDate), 'dd.MM')}
+                        {event.isMultiDay && (
+                          <> - {format(new Date(event.endDate), 'dd.MM')}</>
+                        )}
+                      </span>
+                      <button
+                        onClick={() => setSelectedEvent(event)}
+                        className={
+                          event.isUserRegistered
+                            ? 'px-3 py-1 text-xs font-medium rounded transition-colors bg-primary-500/20 text-primary-400'
+                            : 'px-3 py-1 text-xs font-medium rounded transition-colors bg-primary-600 text-white hover:bg-primary-500'
+                        }
+                      >
+                        {event.isUserRegistered ? 'Zapisany' : 'Zapisz się'}
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -123,6 +146,12 @@ export function CalendarPage() {
         slot={slotDetail ?? null}
         isOpen={!!selectedSlotId}
         onClose={handleModalClose}
+      />
+
+      <EventSignupModal
+        event={selectedEvent}
+        isOpen={!!selectedEvent}
+        onClose={() => setSelectedEvent(null)}
       />
     </div>
   )

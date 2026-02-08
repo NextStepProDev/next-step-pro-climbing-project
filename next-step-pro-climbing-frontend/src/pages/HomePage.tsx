@@ -1,8 +1,8 @@
-import { Link } from 'react-router-dom'
-import { Calendar, Users, Award, ArrowRight } from 'lucide-react'
-import { Button } from '../components/ui/Button'
-import logoWhite from '../assets/logo/logo-white.png'
-import logoBlack from '../assets/logo/logo-black.png'
+import { Link } from "react-router-dom";
+import { Calendar, Users, Award, ArrowRight } from "lucide-react";
+import { Button } from "../components/ui/Button";
+import logoWhite from "../assets/logo/logo-white.png";
+import logoBlack from "../assets/logo/logo-black.png";
 
 export function HomePage() {
   return (
@@ -24,8 +24,8 @@ export function HomePage() {
               className="h-32 sm:h-40 lg:h-48 mx-auto mb-8 drop-shadow-[0_0_30px_rgba(59,130,246,0.3)]"
             />
             <p className="text-lg sm:text-xl text-dark-400 mb-8">
-              Profesjonalna szkoła wspinaczkowa. Kursy, treningi i warsztaty
-              dla każdego poziomu zaawansowania.
+              Profesjonalna szkoła wspinaczkowa. Kursy, treningi i warsztaty dla
+              każdego poziomu zaawansowania.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link to="/calendar">
@@ -35,7 +35,11 @@ export function HomePage() {
                 </Button>
               </Link>
               <a href="#offer">
-                <Button variant="secondary" size="lg" className="w-full sm:w-auto">
+                <Button
+                  variant="secondary"
+                  size="lg"
+                  className="w-full sm:w-auto"
+                >
                   Poznaj ofertę
                 </Button>
               </a>
@@ -48,9 +52,12 @@ export function HomePage() {
       <section id="offer" className="py-16 sm:py-24 bg-dark-900/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-dark-100 mb-4">Nasza oferta</h2>
+            <h2 className="text-3xl font-bold text-dark-100 mb-4">
+              Nasza oferta
+            </h2>
             <p className="text-dark-400 max-w-2xl mx-auto">
-              Wybierz formę treningu dopasowaną do Twoich potrzeb i poziomu zaawansowania
+              Wybierz formę treningu dopasowaną do Twoich potrzeb i poziomu
+              zaawansowania
             </p>
           </div>
 
@@ -60,23 +67,28 @@ export function HomePage() {
               <div className="w-12 h-12 bg-primary-500/10 rounded-lg flex items-center justify-center mb-4">
                 <Award className="w-6 h-6 text-primary-400" />
               </div>
-              <h3 className="text-xl font-semibold text-dark-100 mb-2">Kursy</h3>
+              <h3 className="text-xl font-semibold text-dark-100 mb-2">
+                Kursy
+              </h3>
               <p className="text-dark-400 mb-4">
-                Wielodniowe programy szkoleniowe. Od podstaw po zaawansowane techniki.
-                Certyfikowane zajęcia z doświadczonymi instruktorami.
+                Kursy wspinaczkowe przygotowujące do samodzielnego i
+                bezpiecznego wspinania w skałach oraz na sztucznej ścianie.
+                Szkolenia prowadzone są przez doświadczonych instruktorów PZA.
               </p>
               <ul className="space-y-2 text-sm text-dark-300">
                 <li className="flex items-center gap-2">
                   <span className="w-1.5 h-1.5 bg-primary-400 rounded-full" />
-                  Kurs podstawowy
+                  Kurs wspinaczkowy po drogach ubezpieczonych wg programu PZA -
+                  900zł
                 </li>
                 <li className="flex items-center gap-2">
                   <span className="w-1.5 h-1.5 bg-primary-400 rounded-full" />
-                  Kurs prowadzenia
+                  Wspinaczka wielowyciągowa po drogach ubezpieczonych 2 dni -
+                  800zł
                 </li>
                 <li className="flex items-center gap-2">
                   <span className="w-1.5 h-1.5 bg-primary-400 rounded-full" />
-                  Kurs ratownictwa
+                  Kurs autoratownictwa 1 - 2 dni - 700zł
                 </li>
               </ul>
             </div>
@@ -86,23 +98,30 @@ export function HomePage() {
               <div className="w-12 h-12 bg-green-500/10 rounded-lg flex items-center justify-center mb-4">
                 <Users className="w-6 h-6 text-green-400" />
               </div>
-              <h3 className="text-xl font-semibold text-dark-100 mb-2">Treningi</h3>
+              <h3 className="text-xl font-semibold text-dark-100 mb-2">
+                Treningi
+              </h3>
               <p className="text-dark-400 mb-4">
-                Regularne sesje treningowe w małych grupach. Rozwijaj siłę,
-                technikę i wytrzymałość pod okiem trenerów.
+                Regularne sesje treningowe w małych grupach lub indywidualnie.
+                Rozwijaj siłę, technikę i wytrzymałość pod okiem trenerów Next
+                Step Pro Climbing.
               </p>
               <ul className="space-y-2 text-sm text-dark-300">
                 <li className="flex items-center gap-2">
                   <span className="w-1.5 h-1.5 bg-green-400 rounded-full" />
-                  Trening siłowy
+                  Treningi indywidualne
                 </li>
                 <li className="flex items-center gap-2">
                   <span className="w-1.5 h-1.5 bg-green-400 rounded-full" />
-                  Trening techniczny
+                  Sekcje wspinaczkowe
                 </li>
                 <li className="flex items-center gap-2">
                   <span className="w-1.5 h-1.5 bg-green-400 rounded-full" />
-                  Trening wytrzymałościowy
+                  Wspinanie w skałach
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 bg-green-400 rounded-full" />
+                  Treningi klasy mistrzowskiej
                 </li>
               </ul>
             </div>
@@ -112,7 +131,9 @@ export function HomePage() {
               <div className="w-12 h-12 bg-amber-500/10 rounded-lg flex items-center justify-center mb-4">
                 <Calendar className="w-6 h-6 text-amber-400" />
               </div>
-              <h3 className="text-xl font-semibold text-dark-100 mb-2">Warsztaty</h3>
+              <h3 className="text-xl font-semibold text-dark-100 mb-2">
+                Warsztaty
+              </h3>
               <p className="text-dark-400 mb-4">
                 Specjalistyczne zajęcia tematyczne. Skup się na konkretnych
                 aspektach wspinaczki w intensywnej formie.
@@ -120,15 +141,15 @@ export function HomePage() {
               <ul className="space-y-2 text-sm text-dark-300">
                 <li className="flex items-center gap-2">
                   <span className="w-1.5 h-1.5 bg-amber-400 rounded-full" />
-                  Warsztat pracy na stopniach
+                  Doskonalenie techniki wspinaczkowej
                 </li>
                 <li className="flex items-center gap-2">
                   <span className="w-1.5 h-1.5 bg-amber-400 rounded-full" />
-                  Warsztat mentalny
+                  Mastermind
                 </li>
                 <li className="flex items-center gap-2">
                   <span className="w-1.5 h-1.5 bg-amber-400 rounded-full" />
-                  Warsztat boulderowy
+                  Wybrane techniki linowe i asekuracyjne
                 </li>
               </ul>
             </div>
@@ -149,8 +170,8 @@ export function HomePage() {
             Gotowy na pierwszy krok?
           </h2>
           <p className="text-dark-400 mb-8">
-            Sprawdź dostępne terminy i zapisz się na wybrane zajęcia.
-            Czekamy na Ciebie!
+            Sprawdź dostępne terminy i zapisz się na wybrane zajęcia. Czekamy na
+            Ciebie!
           </p>
           <Link to="/calendar">
             <Button size="lg">
@@ -161,5 +182,5 @@ export function HomePage() {
         </div>
       </section>
     </div>
-  )
+  );
 }

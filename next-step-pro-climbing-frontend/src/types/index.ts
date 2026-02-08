@@ -70,6 +70,9 @@ export interface EventSummary {
   startDate: string
   endDate: string
   isMultiDay: boolean
+  maxParticipants: number
+  currentParticipants: number
+  isUserRegistered: boolean
 }
 
 export interface EventDetail {
@@ -110,6 +113,30 @@ export interface WaitlistResult {
   entryId: string
   position: number
   message: string
+}
+
+export interface EventReservationResult {
+  eventId: string
+  success: boolean
+  message: string
+  slotsReserved: number
+}
+
+export interface UserEventReservation {
+  eventId: string
+  eventTitle: string
+  eventType: EventType
+  startDate: string
+  endDate: string
+  comment: string | null
+  participants: number
+  slotsCount: number
+  createdAt: string
+}
+
+export interface MyReservations {
+  slots: UserReservation[]
+  events: UserEventReservation[]
 }
 
 // Admin types
@@ -185,8 +212,4 @@ export interface CreateEventRequest {
   startDate: string
   endDate: string
   maxParticipants: number
-  generateSlots: boolean
-  slotDuration: number
-  dailyStartTime?: string
-  dailyEndTime?: string
 }

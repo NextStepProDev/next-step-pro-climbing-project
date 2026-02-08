@@ -130,7 +130,7 @@ export function AdminUsersPanel() {
                             }
                           }}
                           title="Usuń użytkownika"
-                          className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                          className="text-rose-400/70 hover:text-rose-300/80 hover:bg-rose-500/10"
                         >
                           <Trash2 className="w-4 h-4" />
                         </Button>

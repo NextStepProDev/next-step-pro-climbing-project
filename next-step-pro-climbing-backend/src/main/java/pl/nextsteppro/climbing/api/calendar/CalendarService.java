@@ -64,8 +64,12 @@ public class CalendarService {
             days.add(createDaySummary(date, daySlots, countMap, userConfirmedSlotIds));
         }
 
+        Map<UUID, Integer> eventParticipantsMap = computeEventParticipants(slots, countMap);
+        Set<UUID> userRegisteredEventIds = computeUserRegisteredEventIds(slots, userConfirmedSlotIds);
+
         List<EventSummaryDto> eventSummaries = events.stream()
-            .map(this::toEventSummary)
+            .map(event -> toEventSummary(event, eventParticipantsMap.getOrDefault(event.getId(), 0),
+                                         userRegisteredEventIds.contains(event.getId())))
             .toList();
 
         return new MonthViewDto(yearMonth.toString(), days, eventSummaries);
@@ -87,8 +91,12 @@ public class CalendarService {
                                        userConfirmedSlotIds.contains(slot.getId())))
             .toList();
 
+        Map<UUID, Integer> eventParticipantsMap = computeEventParticipants(slots, countMap);
+        Set<UUID> userRegisteredEventIds = computeUserRegisteredEventIds(slots, userConfirmedSlotIds);
+
         List<EventSummaryDto> eventSummaries = events.stream()
-            .map(this::toEventSummary)
+            .map(event -> toEventSummary(event, eventParticipantsMap.getOrDefault(event.getId(), 0),
+                                         userRegisteredEventIds.contains(event.getId())))
             .toList();
 
         return new DayViewDto(date, slotDtos, eventSummaries);
@@ -150,7 +158,7 @@ public class CalendarService {
 
         for (TimeSlot slot : slots) {
             LocalDateTime slotDateTime = LocalDateTime.of(slot.getDate(), slot.getStartTime());
-            if (!slot.isBlocked() && !slotDateTime.isBefore(LocalDateTime.now())) {
+            if (!slot.belongsToEvent() && !slot.isBlocked() && !slotDateTime.isBefore(LocalDateTime.now())) {
                 int confirmed = countMap.getOrDefault(slot.getId(), 0);
                 if (confirmed < slot.getMaxParticipants()) {
                     availableSlots++;
@@ -191,7 +199,7 @@ public class CalendarService {
         return SlotStatus.AVAILABLE;
     }
 
-    private EventSummaryDto toEventSummary(Event event) {
+    private EventSummaryDto toEventSummary(Event event, int currentParticipants, boolean isUserRegistered) {
         return new EventSummaryDto(
             event.getId(),
             event.getTitle(),
@@ -199,8 +207,33 @@ public class CalendarService {
             event.getEventType().name(),
             event.getStartDate(),
             event.getEndDate(),
-            event.isMultiDay()
+            event.isMultiDay(),
+            event.getMaxParticipants(),
+            currentParticipants,
+            isUserRegistered
         );
+    }
+
+    private Set<UUID> computeUserRegisteredEventIds(List<TimeSlot> slots, Set<UUID> userConfirmedSlotIds) {
+        Set<UUID> eventIds = new HashSet<>();
+        for (TimeSlot slot : slots) {
+            if (slot.belongsToEvent() && userConfirmedSlotIds.contains(slot.getId())) {
+                eventIds.add(slot.getEvent().getId());
+            }
+        }
+        return eventIds;
+    }
+
+    private Map<UUID, Integer> computeEventParticipants(List<TimeSlot> slots, Map<UUID, Integer> countMap) {
+        Map<UUID, Integer> eventParticipantsMap = new HashMap<>();
+        for (TimeSlot slot : slots) {
+            if (slot.belongsToEvent()) {
+                UUID eventId = slot.getEvent().getId();
+                int confirmed = countMap.getOrDefault(slot.getId(), 0);
+                eventParticipantsMap.merge(eventId, confirmed, Math::max);
+            }
+        }
+        return eventParticipantsMap;
     }
 
     private Map<UUID, Integer> buildCountMap(List<UUID> slotIds) {

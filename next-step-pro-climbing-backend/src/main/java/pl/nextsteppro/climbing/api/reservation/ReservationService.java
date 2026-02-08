@@ -4,6 +4,8 @@ import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import pl.nextsteppro.climbing.domain.event.Event;
+import pl.nextsteppro.climbing.domain.event.EventRepository;
 import pl.nextsteppro.climbing.domain.reservation.Reservation;
 import pl.nextsteppro.climbing.domain.reservation.ReservationRepository;
 import pl.nextsteppro.climbing.domain.reservation.ReservationStatus;
@@ -19,8 +21,9 @@ import org.jspecify.annotations.Nullable;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.UUID;
+import java.time.LocalTime;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -30,17 +33,20 @@ public class ReservationService {
     private final TimeSlotRepository timeSlotRepository;
     private final UserRepository userRepository;
     private final WaitlistRepository waitlistRepository;
+    private final EventRepository eventRepository;
     private final MailService mailService;
 
     public ReservationService(ReservationRepository reservationRepository,
                              TimeSlotRepository timeSlotRepository,
                              UserRepository userRepository,
                              WaitlistRepository waitlistRepository,
+                             EventRepository eventRepository,
                              MailService mailService) {
         this.reservationRepository = reservationRepository;
         this.timeSlotRepository = timeSlotRepository;
         this.userRepository = userRepository;
         this.waitlistRepository = waitlistRepository;
+        this.eventRepository = eventRepository;
         this.mailService = mailService;
     }
 
@@ -131,10 +137,41 @@ public class ReservationService {
     }
 
     @Transactional(readOnly = true)
-    public List<UserReservationDto> getUserUpcomingReservations(UUID userId) {
-        return reservationRepository.findUpcomingByUserId(userId, LocalDate.now()).stream()
-            .map(this::toUserReservationDto)
+    public MyReservationsDto getUserUpcomingReservations(UUID userId) {
+        List<Reservation> allReservations = reservationRepository.findUpcomingByUserId(userId, LocalDate.now());
+
+        List<UserReservationDto> standaloneSlots = new ArrayList<>();
+        Map<UUID, List<Reservation>> eventReservations = new LinkedHashMap<>();
+
+        for (Reservation r : allReservations) {
+            TimeSlot slot = r.getTimeSlot();
+            if (slot.belongsToEvent()) {
+                eventReservations.computeIfAbsent(slot.getEvent().getId(), k -> new ArrayList<>()).add(r);
+            } else {
+                standaloneSlots.add(toUserReservationDto(r));
+            }
+        }
+
+        List<UserEventReservationDto> eventDtos = eventReservations.entrySet().stream()
+            .map(entry -> {
+                List<Reservation> reservations = entry.getValue();
+                Reservation first = reservations.getFirst();
+                Event event = first.getTimeSlot().getEvent();
+                return new UserEventReservationDto(
+                    event.getId(),
+                    event.getTitle(),
+                    event.getEventType().name(),
+                    event.getStartDate(),
+                    event.getEndDate(),
+                    first.getComment(),
+                    first.getParticipants(),
+                    reservations.size(),
+                    first.getCreatedAt()
+                );
+            })
             .toList();
+
+        return new MyReservationsDto(standaloneSlots, eventDtos);
     }
 
     public WaitlistResultDto joinWaitlist(UUID slotId, UUID userId) {
@@ -181,6 +218,137 @@ public class ReservationService {
 
         waitlistRepository.delete(entry);
         waitlistRepository.decrementPositionsAfter(slotId, position);
+    }
+
+    @Caching(evict = {
+        @CacheEvict(value = "calendarMonth", allEntries = true),
+        @CacheEvict(value = "calendarDay", allEntries = true)
+    })
+    public EventReservationResultDto createEventReservation(UUID eventId, UUID userId, @Nullable String comment, int participants) {
+        if (participants < 1) {
+            throw new IllegalArgumentException("Liczba miejsc musi wynosić co najmniej 1");
+        }
+
+        Event event = eventRepository.findById(eventId)
+            .orElseThrow(() -> new IllegalArgumentException("Wydarzenie nie zostało znalezione"));
+
+        if (!event.isActive()) {
+            throw new IllegalStateException("To wydarzenie nie jest aktywne");
+        }
+
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        List<TimeSlot> allSlots = timeSlotRepository.findByEventId(eventId);
+
+        if (allSlots.isEmpty()) {
+            allSlots = createDefaultSlotsForEvent(event);
+        }
+
+        List<TimeSlot> activeSlots = allSlots.stream()
+            .filter(slot -> !slot.isBlocked())
+            .filter(slot -> !LocalDateTime.of(slot.getDate(), slot.getStartTime()).isBefore(LocalDateTime.now()))
+            .toList();
+
+        if (activeSlots.isEmpty()) {
+            throw new IllegalStateException("Brak aktywnych terminów dla tego wydarzenia");
+        }
+
+        boolean alreadyRegistered = activeSlots.stream()
+            .anyMatch(slot -> reservationRepository.existsByUserIdAndTimeSlotIdAndStatus(userId, slot.getId(), ReservationStatus.CONFIRMED));
+        if (alreadyRegistered) {
+            throw new IllegalStateException("Masz już rezerwację na to wydarzenie");
+        }
+
+        int currentParticipants = activeSlots.stream()
+            .mapToInt(slot -> reservationRepository.countConfirmedByTimeSlotId(slot.getId()))
+            .max()
+            .orElse(0);
+
+        int spotsLeft = event.getMaxParticipants() - currentParticipants;
+        if (spotsLeft <= 0) {
+            throw new IllegalStateException("Brak wolnych miejsc na to wydarzenie");
+        }
+        if (participants > spotsLeft) {
+            throw new IllegalStateException("Dostępnych miejsc: " + spotsLeft + ". Nie można zarezerwować " + participants + ".");
+        }
+
+        String sanitizedComment = null;
+        if (comment != null && !comment.isBlank()) {
+            sanitizedComment = comment.length() > 500 ? comment.substring(0, 500) : comment;
+        }
+
+        int slotsReserved = 0;
+        for (TimeSlot slot : activeSlots) {
+            Reservation existing = reservationRepository.findByUserIdAndTimeSlotId(userId, slot.getId());
+            Reservation reservation;
+            if (existing != null && existing.isCancelled()) {
+                existing.confirm();
+                existing.setParticipants(participants);
+                existing.setComment(sanitizedComment);
+                reservation = existing;
+            } else {
+                reservation = new Reservation(user, slot);
+                reservation.setParticipants(participants);
+                if (sanitizedComment != null) {
+                    reservation.setComment(sanitizedComment);
+                }
+            }
+            reservationRepository.save(reservation);
+            slotsReserved++;
+        }
+
+        mailService.sendEventReservationConfirmation(user, event);
+        mailService.sendEventAdminNotification(user, event, participants);
+
+        return new EventReservationResultDto(eventId, true, "Zapisano na wydarzenie!", slotsReserved);
+    }
+
+    @Caching(evict = {
+        @CacheEvict(value = "calendarMonth", allEntries = true),
+        @CacheEvict(value = "calendarDay", allEntries = true)
+    })
+    public void cancelEventReservation(UUID eventId, UUID userId) {
+        List<TimeSlot> slots = timeSlotRepository.findByEventId(eventId);
+        if (slots.isEmpty()) {
+            throw new IllegalArgumentException("Wydarzenie nie ma przypisanych terminów");
+        }
+
+        List<UUID> cancelledSlotIds = new ArrayList<>();
+        for (TimeSlot slot : slots) {
+            Reservation reservation = reservationRepository.findByUserIdAndTimeSlotId(userId, slot.getId());
+            if (reservation != null && reservation.isConfirmed()) {
+                reservation.cancel();
+                reservationRepository.save(reservation);
+                cancelledSlotIds.add(slot.getId());
+            }
+        }
+
+        if (cancelledSlotIds.isEmpty()) {
+            throw new IllegalStateException("Nie znaleziono rezerwacji na to wydarzenie");
+        }
+
+        for (UUID slotId : cancelledSlotIds) {
+            notifyNextOnWaitlist(slotId);
+        }
+
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new IllegalArgumentException("User not found"));
+        Event event = eventRepository.findById(eventId)
+            .orElseThrow(() -> new IllegalArgumentException("Event not found"));
+
+        mailService.sendEventCancellationConfirmation(user, event);
+    }
+
+    private List<TimeSlot> createDefaultSlotsForEvent(Event event) {
+        List<TimeSlot> slots = new ArrayList<>();
+        LocalDate date = event.getStartDate();
+        while (!date.isAfter(event.getEndDate())) {
+            TimeSlot slot = new TimeSlot(event, date, LocalTime.of(9, 0), LocalTime.of(17, 0), event.getMaxParticipants());
+            slots.add(timeSlotRepository.save(slot));
+            date = date.plusDays(1);
+        }
+        return slots;
     }
 
     private void notifyNextOnWaitlist(UUID slotId) {

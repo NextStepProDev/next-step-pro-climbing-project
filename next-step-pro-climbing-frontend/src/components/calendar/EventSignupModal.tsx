@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { format } from 'date-fns'
-import { pl } from 'date-fns/locale'
-import { Clock, Users, Calendar } from 'lucide-react'
+import { Calendar, Users } from 'lucide-react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { Modal } from '../ui/Modal'
@@ -10,15 +9,21 @@ import { useAuth } from '../../context/AuthContext'
 import { saveRedirectPath } from '../../utils/redirect'
 import { reservationApi } from '../../api/client'
 import { getErrorMessage } from '../../utils/errors'
-import type { TimeSlotDetail } from '../../types'
+import type { EventSummary } from '../../types'
 
-interface SlotDetailModalProps {
-  slot: TimeSlotDetail | null
+const EVENT_TYPE_LABELS: Record<string, string> = {
+  COURSE: 'Kurs',
+  TRAINING: 'Trening',
+  WORKSHOP: 'Warsztat',
+}
+
+interface EventSignupModalProps {
+  event: EventSummary | null
   isOpen: boolean
   onClose: () => void
 }
 
-export function SlotDetailModal({ slot, isOpen, onClose }: SlotDetailModalProps) {
+export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalProps) {
   const { isAuthenticated } = useAuth()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
@@ -26,126 +31,82 @@ export function SlotDetailModal({ slot, isOpen, onClose }: SlotDetailModalProps)
   const [participants, setParticipants] = useState(1)
 
   const reservationMutation = useMutation({
-    mutationFn: (data: { slotId: string; comment?: string; participants: number }) =>
-      reservationApi.create(data.slotId, data.comment, data.participants),
+    mutationFn: (data: { eventId: string; comment?: string; participants: number }) =>
+      reservationApi.createForEvent(data.eventId, data.comment, data.participants),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['calendar'] })
-      queryClient.invalidateQueries({ queryKey: ['slot'] })
       queryClient.invalidateQueries({ queryKey: ['reservations'] })
       setComment('')
-      onClose()
-    },
-  })
-
-  const waitlistMutation = useMutation({
-    mutationFn: (slotId: string) => reservationApi.joinWaitlist(slotId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['slot'] })
+      setParticipants(1)
       onClose()
     },
   })
 
   const cancelMutation = useMutation({
-    mutationFn: (reservationId: string) => reservationApi.cancel(reservationId),
+    mutationFn: (eventId: string) => reservationApi.cancelForEvent(eventId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['calendar'] })
-      queryClient.invalidateQueries({ queryKey: ['slot'] })
       queryClient.invalidateQueries({ queryKey: ['reservations'] })
       onClose()
     },
   })
 
-  const leaveWaitlistMutation = useMutation({
-    mutationFn: (entryId: string) => reservationApi.leaveWaitlist(entryId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['slot'] })
-      onClose()
-    },
-  })
+  if (!event) return null
 
-  if (!slot) return null
-
-  const dateObj = new Date(slot.date)
-  const spotsLeft = slot.maxParticipants - slot.currentParticipants
-  const isPast = slot.status === 'PAST'
-  const isAvailable = slot.status === 'AVAILABLE' && spotsLeft > 0
-  const isFull = slot.status === 'FULL' || spotsLeft === 0
+  const spotsLeft = event.maxParticipants - event.currentParticipants
+  const isFull = spotsLeft <= 0
 
   const handleLoginRedirect = () => {
-    saveRedirectPath(`/calendar?date=${slot.date}`)
+    saveRedirectPath('/calendar')
     navigate('/login')
   }
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Szczegóły terminu">
+    <Modal isOpen={isOpen} onClose={onClose} title="Zapisz się na wydarzenie">
       <div className="space-y-6">
-        {/* Date and time */}
-        <div className="flex items-center gap-4 text-dark-300">
-          <div className="flex items-center gap-2">
-            <Calendar className="w-5 h-5" />
-            <span className="capitalize">
-              {format(dateObj, 'EEEE, d MMMM', { locale: pl })}
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Clock className="w-5 h-5" />
-            <span>
-              {slot.startTime.slice(0, 5)} - {slot.endTime.slice(0, 5)}
-            </span>
-          </div>
+        {/* Event type badge */}
+        <div>
+          <span className="inline-block px-2 py-1 text-xs font-medium rounded bg-primary-500/20 text-primary-400">
+            {EVENT_TYPE_LABELS[event.eventType] || event.eventType}
+          </span>
         </div>
 
-        {/* Event info */}
-        {slot.eventTitle && (
-          <div className="p-3 bg-primary-500/10 border border-primary-500/20 rounded-lg">
-            <span className="text-sm text-primary-400">{slot.eventTitle}</span>
-          </div>
-        )}
+        {/* Title */}
+        <h3 className="text-lg font-semibold text-dark-100">{event.title}</h3>
+
+        {/* Date */}
+        <div className="flex items-center gap-2 text-dark-300">
+          <Calendar className="w-5 h-5" />
+          <span>
+            {format(new Date(event.startDate), 'dd.MM.yyyy')}
+            {event.isMultiDay && (
+              <> - {format(new Date(event.endDate), 'dd.MM.yyyy')}</>
+            )}
+          </span>
+        </div>
 
         {/* Capacity */}
         <div className="flex items-center gap-2 text-dark-300">
           <Users className="w-5 h-5" />
           <span>
-            {slot.currentParticipants} / {slot.maxParticipants} uczestników
+            {event.currentParticipants} / {event.maxParticipants} uczestników
             {spotsLeft > 0 && (
-              <span className="text-green-400 ml-2">({spotsLeft} wolne)</span>
+              <span className="text-green-400 ml-2">({spotsLeft} wolnych)</span>
             )}
           </span>
         </div>
 
-        {/* Past slot info */}
-        {isPast && (
-          <div className="p-3 bg-dark-800 border border-dark-700 rounded-lg">
-            <span className="text-dark-400 text-sm">Ten termin już się zakończył</span>
-          </div>
-        )}
-
-        {/* Waitlist info */}
-        {slot.waitlistCount > 0 && (
-          <div className="text-sm text-dark-400">
-            {slot.waitlistCount} osób na liście rezerwowej
-          </div>
-        )}
-
-        {/* User status */}
-        {slot.isUserRegistered && (
+        {/* User registered info */}
+        {event.isUserRegistered && (
           <div className="p-3 bg-primary-500/10 border border-primary-500/20 rounded-lg">
             <span className="text-primary-400 font-medium">
-              Masz rezerwację na ten termin
-            </span>
-          </div>
-        )}
-
-        {slot.isUserOnWaitlist && (
-          <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg">
-            <span className="text-amber-400 font-medium">
-              Jesteś na liście rezerwowej (pozycja {slot.waitlistPosition})
+              Masz rezerwację na to wydarzenie
             </span>
           </div>
         )}
 
         {/* Participants & Comment for reservation */}
-        {isAuthenticated && isAvailable && !slot.isUserRegistered && !slot.isUserOnWaitlist && (
+        {isAuthenticated && !event.isUserRegistered && !isFull && (
           <>
             {spotsLeft > 1 && (
               <div>
@@ -194,43 +155,37 @@ export function SlotDetailModal({ slot, isOpen, onClose }: SlotDetailModalProps)
             >
               Zaloguj się, aby zarezerwować
             </Button>
-          ) : slot.isUserRegistered && slot.reservationId ? (
+          ) : event.isUserRegistered ? (
             <Button
               variant="danger"
               className="flex-1"
               loading={cancelMutation.isPending}
-              onClick={() => cancelMutation.mutate(slot.reservationId as string)}
+              onClick={() => cancelMutation.mutate(event.id)}
             >
-              Anuluj rezerwację
+              Anuluj zapis na wydarzenie
             </Button>
-          ) : slot.isUserOnWaitlist && slot.waitlistEntryId ? (
+          ) : isFull ? (
             <Button
-              variant="danger"
+              variant="secondary"
               className="flex-1"
-              loading={leaveWaitlistMutation.isPending}
-              onClick={() => leaveWaitlistMutation.mutate(slot.waitlistEntryId as string)}
+              disabled
             >
-              Opuść listę rezerwową
+              Brak miejsc
             </Button>
-          ) : isAvailable ? (
+          ) : (
             <Button
               variant="primary"
               className="flex-1"
               loading={reservationMutation.isPending}
-              onClick={() => reservationMutation.mutate({ slotId: slot.id, comment: comment || undefined, participants })}
+              onClick={() => reservationMutation.mutate({
+                eventId: event.id,
+                comment: comment || undefined,
+                participants,
+              })}
             >
               {participants > 1 ? `Zapisz ${participants} osoby` : 'Zapisz się'}
             </Button>
-          ) : isFull && !slot.isUserOnWaitlist ? (
-            <Button
-              variant="secondary"
-              className="flex-1"
-              loading={waitlistMutation.isPending}
-              onClick={() => waitlistMutation.mutate(slot.id)}
-            >
-              Dołącz do listy rezerwowej
-            </Button>
-          ) : null}
+          )}
 
           <Button variant="ghost" onClick={onClose}>
             Zamknij
@@ -243,19 +198,9 @@ export function SlotDetailModal({ slot, isOpen, onClose }: SlotDetailModalProps)
             {getErrorMessage(reservationMutation.error)}
           </p>
         )}
-        {waitlistMutation.isError && (
-          <p className="text-sm text-rose-400/80">
-            {getErrorMessage(waitlistMutation.error)}
-          </p>
-        )}
         {cancelMutation.isError && (
           <p className="text-sm text-rose-400/80">
             {getErrorMessage(cancelMutation.error)}
-          </p>
-        )}
-        {leaveWaitlistMutation.isError && (
-          <p className="text-sm text-rose-400/80">
-            {getErrorMessage(leaveWaitlistMutation.error)}
           </p>
         )}
       </div>

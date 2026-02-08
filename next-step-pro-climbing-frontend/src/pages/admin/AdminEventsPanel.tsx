@@ -114,7 +114,7 @@ export function AdminEventsPanel() {
                         }
                       }}
                     >
-                      <Trash2 className="w-4 h-4 text-red-400" />
+                      <Trash2 className="w-4 h-4 text-rose-400/80" />
                     </Button>
                   </div>
                 </div>
@@ -147,10 +147,6 @@ function CreateEventModal({
     startDate: format(new Date(), 'yyyy-MM-dd'),
     endDate: format(new Date(), 'yyyy-MM-dd'),
     maxParticipants: 4,
-    generateSlots: false,
-    slotDuration: 60,
-    dailyStartTime: '10:00',
-    dailyEndTime: '18:00',
   })
 
   const queryClient = useQueryClient()
@@ -169,24 +165,15 @@ function CreateEventModal({
         startDate: format(new Date(), 'yyyy-MM-dd'),
         endDate: format(new Date(), 'yyyy-MM-dd'),
         maxParticipants: 4,
-        generateSlots: false,
-        slotDuration: 60,
-        dailyStartTime: '10:00',
-        dailyEndTime: '18:00',
       })
     },
   })
-
-  const timeError = form.generateSlots && form.dailyStartTime && form.dailyEndTime && form.dailyEndTime <= form.dailyStartTime
-    ? 'Godzina zakończenia musi być późniejsza niż rozpoczęcia'
-    : null
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Dodaj nowe wydarzenie">
       <form
         onSubmit={(e) => {
           e.preventDefault()
-          if (timeError) return
           createMutation.mutate(form)
         }}
         className="space-y-4"
@@ -267,70 +254,6 @@ function CreateEventModal({
           />
         </div>
 
-        {/* Auto-generate slots */}
-        <div className="border-t border-dark-800 pt-4">
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={form.generateSlots}
-              onChange={(e) => setForm({ ...form, generateSlots: e.target.checked })}
-              className="rounded border-dark-600 bg-dark-800 text-primary-500 focus:ring-primary-500"
-            />
-            <span className="text-sm text-dark-300">
-              Automatycznie generuj terminy
-            </span>
-          </label>
-
-          {form.generateSlots && (
-            <div className="mt-4 space-y-4 pl-6">
-              <div>
-                <label className="block text-sm text-dark-400 mb-1">
-                  Długość slotu (minuty)
-                </label>
-                <input
-                  type="number"
-                  min={15}
-                  step={15}
-                  value={form.slotDuration}
-                  onChange={(e) =>
-                    setForm({ ...form, slotDuration: parseInt(e.target.value) })
-                  }
-                  className="w-full bg-dark-800 border border-dark-700 rounded-lg px-4 py-2 text-dark-100"
-                />
-              </div>
-              <div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm text-dark-400 mb-1">Od godziny</label>
-                    <input
-                      type="time"
-                      value={form.dailyStartTime}
-                      onChange={(e) =>
-                        setForm({ ...form, dailyStartTime: e.target.value })
-                      }
-                      className="w-full bg-dark-800 border border-dark-700 rounded-lg px-4 py-2 text-dark-100"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm text-dark-400 mb-1">Do godziny</label>
-                    <input
-                      type="time"
-                      value={form.dailyEndTime}
-                      onChange={(e) =>
-                        setForm({ ...form, dailyEndTime: e.target.value })
-                      }
-                      className="w-full bg-dark-800 border border-dark-700 rounded-lg px-4 py-2 text-dark-100"
-                    />
-                  </div>
-                </div>
-                {timeError && (
-                  <p className="text-sm text-red-400 mt-1">{timeError}</p>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
-
         <div className="flex gap-3 pt-4">
           <Button type="submit" loading={createMutation.isPending} className="flex-1">
             Utwórz wydarzenie
@@ -341,7 +264,7 @@ function CreateEventModal({
         </div>
 
         {createMutation.isError && (
-          <p className="text-sm text-red-400">
+          <p className="text-sm text-rose-400/80">
             {getErrorMessage(createMutation.error)}
           </p>
         )}

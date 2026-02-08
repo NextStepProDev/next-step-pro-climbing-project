@@ -105,7 +105,7 @@ export function Navbar() {
                       </button>
                       <button
                         onClick={() => { setUserMenuOpen(false); logout() }}
-                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-400 hover:bg-dark-800 hover:text-red-300 transition-colors"
+                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-rose-400/70 hover:bg-dark-800 hover:text-rose-300/80 transition-colors"
                       >
                         <LogOut className="w-4 h-4" />
                         Wyloguj się
@@ -177,7 +177,7 @@ export function Navbar() {
                   </Link>
                   <button
                     onClick={() => { logout(); setMobileMenuOpen(false) }}
-                    className="flex items-center gap-3 px-1 py-2 text-red-400 text-sm"
+                    className="flex items-center gap-3 px-1 py-2 text-rose-400/70 text-sm"
                   >
                     <LogOut className="w-4 h-4" />
                     Wyloguj się

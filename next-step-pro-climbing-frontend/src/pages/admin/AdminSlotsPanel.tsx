@@ -1,20 +1,21 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { format } from 'date-fns'
 import { pl } from 'date-fns/locale'
-import { Plus, Lock, Unlock, Trash2, Users } from 'lucide-react'
+import { Plus, Lock, Unlock, Trash2, Users, Pencil } from 'lucide-react'
 import { calendarApi, adminApi } from '../../api/client'
 import { getErrorMessage } from '../../utils/errors'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
 import { Button } from '../../components/ui/Button'
 import { Modal } from '../../components/ui/Modal'
 import { TimeScrollPicker } from '../../components/ui/TimeScrollPicker'
-import type { CreateTimeSlotRequest, SlotParticipants } from '../../types'
+import type { CreateTimeSlotRequest, SlotParticipants, TimeSlot } from '../../types'
 
 export function AdminSlotsPanel() {
   const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'))
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [showParticipantsModal, setShowParticipantsModal] = useState(false)
+  const [editingSlot, setEditingSlot] = useState<TimeSlot | null>(null)
   const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null)
 
   const queryClient = useQueryClient()
@@ -103,6 +104,15 @@ export function AdminSlotsPanel() {
                     <Users className="w-4 h-4" />
                   </Button>
 
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    aria-label="Edytuj termin"
+                    onClick={() => setEditingSlot(slot)}
+                  >
+                    <Pencil className="w-4 h-4" />
+                  </Button>
+
                   {slot.status === 'BLOCKED' ? (
                     <Button
                       variant="ghost"
@@ -133,7 +143,7 @@ export function AdminSlotsPanel() {
                       }
                     }}
                   >
-                    <Trash2 className="w-4 h-4 text-red-400" />
+                    <Trash2 className="w-4 h-4 text-rose-400/80" />
                   </Button>
                 </div>
               </div>
@@ -147,6 +157,13 @@ export function AdminSlotsPanel() {
         isOpen={showCreateModal}
         onClose={() => setShowCreateModal(false)}
         defaultDate={selectedDate}
+      />
+
+      {/* Edit Slot Modal */}
+      <EditSlotModal
+        isOpen={!!editingSlot}
+        onClose={() => setEditingSlot(null)}
+        slot={editingSlot}
       />
 
       {/* Participants Modal */}
@@ -242,7 +259,7 @@ function CreateSlotModal({
             />
           </div>
           {timeError && (
-            <p className="text-sm text-red-400 mt-1">{timeError}</p>
+            <p className="text-sm text-rose-400/80 mt-1">{timeError}</p>
           )}
         </div>
 
@@ -267,8 +284,127 @@ function CreateSlotModal({
         </div>
 
         {createMutation.isError && (
-          <p className="text-sm text-red-400">
+          <p className="text-sm text-rose-400/80">
             {getErrorMessage(createMutation.error)}
+          </p>
+        )}
+      </form>
+    </Modal>
+  )
+}
+
+function EditSlotModal({
+  isOpen,
+  onClose,
+  slot,
+}: {
+  isOpen: boolean
+  onClose: () => void
+  slot: TimeSlot | null
+}) {
+  const [form, setForm] = useState({
+    startTime: '',
+    endTime: '',
+    maxParticipants: 4,
+    title: '',
+  })
+
+  const queryClient = useQueryClient()
+
+  useEffect(() => {
+    if (slot) {
+      setForm({
+        startTime: slot.startTime.slice(0, 5),
+        endTime: slot.endTime.slice(0, 5),
+        maxParticipants: 4,
+        title: slot.eventTitle || '',
+      })
+    }
+  }, [slot])
+
+  const updateMutation = useMutation({
+    mutationFn: (data: { startTime?: string; endTime?: string; maxParticipants?: number; title?: string }) =>
+      adminApi.updateTimeSlot(slot!.id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['calendar'] })
+      onClose()
+    },
+  })
+
+  if (!slot) return null
+
+  const timeError = form.endTime <= form.startTime
+    ? 'Godzina zakończenia musi być późniejsza niż rozpoczęcia'
+    : null
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title="Edytuj termin">
+      <form
+        onSubmit={(e) => {
+          e.preventDefault()
+          if (timeError) return
+          updateMutation.mutate({
+            startTime: form.startTime,
+            endTime: form.endTime,
+            maxParticipants: form.maxParticipants,
+            title: form.title || '',
+          })
+        }}
+        className="space-y-4"
+      >
+        <div>
+          <label className="block text-sm text-dark-400 mb-1">Tytuł</label>
+          <input
+            type="text"
+            value={form.title}
+            onChange={(e) => setForm({ ...form, title: e.target.value })}
+            placeholder="Tytuł terminu (opcjonalny)"
+            maxLength={200}
+            className="w-full bg-dark-800 border border-dark-700 rounded-lg px-4 py-2 text-dark-100"
+          />
+        </div>
+
+        <div>
+          <div className="grid grid-cols-2 gap-4">
+            <TimeScrollPicker
+              label="Od"
+              value={form.startTime}
+              onChange={(v) => setForm({ ...form, startTime: v })}
+            />
+            <TimeScrollPicker
+              label="Do"
+              value={form.endTime}
+              onChange={(v) => setForm({ ...form, endTime: v })}
+            />
+          </div>
+          {timeError && (
+            <p className="text-sm text-rose-400/80 mt-1">{timeError}</p>
+          )}
+        </div>
+
+        <div>
+          <label className="block text-sm text-dark-400 mb-1">Maks. uczestników</label>
+          <input
+            type="number"
+            min={1}
+            value={form.maxParticipants}
+            onChange={(e) => setForm({ ...form, maxParticipants: parseInt(e.target.value) })}
+            className="w-full bg-dark-800 border border-dark-700 rounded-lg px-4 py-2 text-dark-100"
+          />
+        </div>
+
+        <div className="flex gap-3 pt-4">
+          <Button type="submit" loading={updateMutation.isPending} className="flex-1">
+            Zapisz zmiany
+          </Button>
+          <Button type="button" variant="ghost" onClick={onClose}>
+            Anuluj
+          </Button>
+        </div>
+
+        {updateMutation.isError && (
+          <p className="text-sm text-rose-400/80">
+            {getErrorMessage(updateMutation.error)}
           </p>
         )}
       </form>

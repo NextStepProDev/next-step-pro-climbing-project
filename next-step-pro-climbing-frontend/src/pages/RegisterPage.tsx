@@ -180,7 +180,7 @@ export function RegisterPage() {
           </div>
 
           {error && (
-            <p className="text-sm text-red-400">{error}</p>
+            <p className="text-sm text-rose-400/80">{error}</p>
           )}
 
           <Button type="submit" variant="primary" className="w-full" loading={loading}>

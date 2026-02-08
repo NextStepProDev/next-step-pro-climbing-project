@@ -66,6 +66,13 @@ record WaitlistParticipantDto(
     boolean notified
 ) {}
 
+record UpdateTimeSlotRequest(
+    @Nullable LocalTime startTime,
+    @Nullable LocalTime endTime,
+    @Nullable @Min(1) @Max(100) Integer maxParticipants,
+    @Nullable String title
+) {}
+
 // Event DTOs
 
 record CreateEventRequest(
@@ -75,11 +82,7 @@ record CreateEventRequest(
     @NotBlank String eventType,
     @NotNull LocalDate startDate,
     @NotNull LocalDate endDate,
-    @Min(1) @Max(100) int maxParticipants,
-    boolean generateSlots,
-    int slotDuration,
-    @Nullable LocalTime dailyStartTime,
-    @Nullable LocalTime dailyEndTime
+    @Min(1) @Max(100) int maxParticipants
 ) {
     @AssertTrue(message = "Data zakończenia nie może być wcześniejsza niż data rozpoczęcia")
     boolean isDateRangeValid() {

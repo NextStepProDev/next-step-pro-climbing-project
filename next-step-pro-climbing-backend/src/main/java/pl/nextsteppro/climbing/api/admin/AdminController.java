@@ -49,6 +49,26 @@ public class AdminController {
 
     @Tag(name = "Admin - Slots")
     @Operation(
+        summary = "Edytuj termin",
+        description = "Aktualizuje dane terminu (godziny, maks. uczestników, tytuł)"
+    )
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Termin zaktualizowany",
+            content = @Content(schema = @Schema(implementation = TimeSlotAdminDto.class))),
+        @ApiResponse(responseCode = "404", description = "Termin nie istnieje"),
+        @ApiResponse(responseCode = "400", description = "Nieprawidłowe dane"),
+        @ApiResponse(responseCode = "403", description = "Brak uprawnień administratora")
+    })
+    @PutMapping("/slots/{slotId}")
+    public ResponseEntity<TimeSlotAdminDto> updateTimeSlot(
+            @Parameter(description = "UUID terminu") @PathVariable UUID slotId,
+            @Valid @RequestBody UpdateTimeSlotRequest request) {
+        TimeSlotAdminDto slot = adminService.updateTimeSlot(slotId, request);
+        return ResponseEntity.ok(slot);
+    }
+
+    @Tag(name = "Admin - Slots")
+    @Operation(
         summary = "Zablokuj termin",
         description = "Blokuje termin bez podawania danych rezerwującego. Użytkownicy zobaczą 'zarezerwowane'."
     )

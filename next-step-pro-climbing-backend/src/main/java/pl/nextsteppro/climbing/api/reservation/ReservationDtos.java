@@ -6,6 +6,7 @@ import org.jspecify.annotations.Nullable;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.List;
 import java.util.UUID;
 
 record ReservationResultDto(
@@ -35,4 +36,28 @@ record WaitlistResultDto(
     UUID entryId,
     int position,
     String message
+) {}
+
+record EventReservationResultDto(
+    UUID eventId,
+    boolean success,
+    String message,
+    int slotsReserved
+) {}
+
+record UserEventReservationDto(
+    UUID eventId,
+    String eventTitle,
+    String eventType,
+    LocalDate startDate,
+    LocalDate endDate,
+    @Nullable String comment,
+    int participants,
+    int slotsCount,
+    Instant createdAt
+) {}
+
+record MyReservationsDto(
+    List<UserReservationDto> slots,
+    List<UserEventReservationDto> events
 ) {}

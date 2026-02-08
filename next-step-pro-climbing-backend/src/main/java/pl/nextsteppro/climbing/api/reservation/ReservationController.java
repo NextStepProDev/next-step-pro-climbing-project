@@ -110,15 +110,15 @@ public class ReservationController {
 
     @Operation(
         summary = "Moje nadchodzące rezerwacje",
-        description = "Zwraca tylko przyszłe rezerwacje zalogowanego użytkownika"
+        description = "Zwraca przyszłe rezerwacje podzielone na pojedyncze terminy i wydarzenia"
     )
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "Lista nadchodzących rezerwacji",
-            content = @Content(array = @ArraySchema(schema = @Schema(implementation = UserReservationDto.class)))),
+            content = @Content(schema = @Schema(implementation = MyReservationsDto.class))),
         @ApiResponse(responseCode = "401", description = "Użytkownik niezalogowany")
     })
     @GetMapping("/my/upcoming")
-    public ResponseEntity<List<UserReservationDto>> getMyUpcomingReservations(
+    public ResponseEntity<MyReservationsDto> getMyUpcomingReservations(
             @Parameter(hidden = true) @AuthenticationPrincipal CustomOAuth2User oAuth2User,
             HttpServletRequest request) {
 
@@ -127,8 +127,60 @@ public class ReservationController {
             return ResponseEntity.status(401).build();
         }
 
-        List<UserReservationDto> reservations = reservationService.getUserUpcomingReservations(userId);
+        MyReservationsDto reservations = reservationService.getUserUpcomingReservations(userId);
         return ResponseEntity.ok(reservations);
+    }
+
+    @Operation(
+        summary = "Zapisz na wydarzenie",
+        description = "Tworzy rezerwacje na wszystkie aktywne sloty wydarzenia. Wymaga zalogowania."
+    )
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Zapisano na wydarzenie",
+            content = @Content(schema = @Schema(implementation = EventReservationResultDto.class))),
+        @ApiResponse(responseCode = "401", description = "Użytkownik niezalogowany"),
+        @ApiResponse(responseCode = "400", description = "Brak wolnych miejsc lub wydarzenie nieaktywne"),
+        @ApiResponse(responseCode = "409", description = "Użytkownik już jest zapisany na to wydarzenie")
+    })
+    @PostMapping("/event/{eventId}")
+    public ResponseEntity<EventReservationResultDto> createEventReservation(
+            @Parameter(description = "UUID wydarzenia") @PathVariable UUID eventId,
+            @Parameter(hidden = true) @AuthenticationPrincipal CustomOAuth2User oAuth2User,
+            @RequestBody(required = false) CreateReservationRequest body,
+            HttpServletRequest request) {
+
+        UUID userId = currentUserService.getCurrentUserId(oAuth2User, request).orElse(null);
+        if (userId == null) {
+            return ResponseEntity.status(401).build();
+        }
+
+        String comment = body != null ? body.comment() : null;
+        int participants = (body != null && body.participants() != null) ? body.participants() : 1;
+        return ResponseEntity.ok(reservationService.createEventReservation(eventId, userId, comment, participants));
+    }
+
+    @Operation(
+        summary = "Anuluj zapis na wydarzenie",
+        description = "Anuluje wszystkie rezerwacje użytkownika na wydarzenie."
+    )
+    @ApiResponses({
+        @ApiResponse(responseCode = "204", description = "Zapis anulowany"),
+        @ApiResponse(responseCode = "401", description = "Użytkownik niezalogowany"),
+        @ApiResponse(responseCode = "404", description = "Nie znaleziono rezerwacji na to wydarzenie")
+    })
+    @DeleteMapping("/event/{eventId}")
+    public ResponseEntity<Void> cancelEventReservation(
+            @Parameter(description = "UUID wydarzenia") @PathVariable UUID eventId,
+            @Parameter(hidden = true) @AuthenticationPrincipal CustomOAuth2User oAuth2User,
+            HttpServletRequest request) {
+
+        UUID userId = currentUserService.getCurrentUserId(oAuth2User, request).orElse(null);
+        if (userId == null) {
+            return ResponseEntity.status(401).build();
+        }
+
+        reservationService.cancelEventReservation(eventId, userId);
+        return ResponseEntity.noContent().build();
     }
 
     @Operation(

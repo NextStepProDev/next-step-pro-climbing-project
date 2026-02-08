@@ -10,8 +10,8 @@ export function Footer() {
           <div>
             <img src={logoWhite} alt="Next Step Pro Climbing" className="h-16 mb-4" />
             <p className="text-dark-400 text-sm">
-              Szkoła wspinaczkowa dla wszystkich poziomow zaawansowania.
-              Rozwijaj swoje umiejętności z nami!
+              Szkolenia wspinaczkowe dopasowane do Twojego poziomu i celów. 
+              Trenuj pod okiem doświadczonych instruktorów i rozwijaj się świadomie.
             </p>
           </div>
 
@@ -21,15 +21,15 @@ export function Footer() {
             <ul className="space-y-3">
               <li className="flex items-center gap-2 text-dark-400 text-sm">
                 <Phone className="w-4 h-4" />
-                <span>+48 123 456 789</span>
+                <span>+48 535 246 673</span>
               </li>
               <li className="flex items-center gap-2 text-dark-400 text-sm">
                 <Mail className="w-4 h-4" />
-                <span>kontakt@nextsteppro.pl</span>
+                <span>nextsteppro.team@gmail.com</span>
               </li>
               <li className="flex items-center gap-2 text-dark-400 text-sm">
                 <MapPin className="w-4 h-4" />
-                <span>ul. Wspinaczkowa 1, Warszawa</span>
+                <span>Mateusz Nawratek instruktor PZA</span>
               </li>
             </ul>
           </div>
@@ -40,15 +40,15 @@ export function Footer() {
             <ul className="space-y-2 text-dark-400 text-sm">
               <li className="flex justify-between">
                 <span>Poniedziałek - Piątek</span>
-                <span>10:00 - 21:00</span>
+                <span>kalendarz</span>
               </li>
               <li className="flex justify-between">
                 <span>Sobota</span>
-                <span>9:00 - 18:00</span>
+                <span>kalendarz</span>
               </li>
               <li className="flex justify-between">
                 <span>Niedziela</span>
-                <span>10:00 - 16:00</span>
+                <span>kalendarz</span>
               </li>
             </ul>
           </div>

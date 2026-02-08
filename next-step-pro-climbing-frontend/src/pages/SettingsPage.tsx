@@ -110,10 +110,10 @@ function ChangePasswordSection() {
         </Button>
 
         {validationError && (
-          <p className="text-sm text-red-400">{validationError}</p>
+          <p className="text-sm text-rose-400/80">{validationError}</p>
         )}
         {mutation.isError && (
-          <p className="text-sm text-red-400">
+          <p className="text-sm text-rose-400/80">
             {getErrorMessage(mutation.error)}
           </p>
         )}
@@ -159,7 +159,7 @@ function NotificationsSection({
         </label>
       </div>
       {mutation.isError && (
-        <p className="text-sm text-red-400 mt-2">
+        <p className="text-sm text-rose-400/80 mt-2">
           {getErrorMessage(mutation.error)}
         </p>
       )}
@@ -182,8 +182,8 @@ function DeleteAccountSection({ onDeleted }: { onDeleted: () => void }) {
   })
 
   return (
-    <section className="bg-dark-900 rounded-lg border border-red-900/30 p-6">
-      <h2 className="text-lg font-semibold text-red-400 mb-2">Usuwanie konta</h2>
+    <section className="bg-dark-900 rounded-lg border border-rose-900/20 p-6">
+      <h2 className="text-lg font-semibold text-rose-400/80 mb-2">Usuwanie konta</h2>
       <p className="text-sm text-dark-400 mb-4">
         Ta operacja jest nieodwracalna. Wszystkie Twoje rezerwacje zostaną anulowane,
         a dane konta trwale usunięte.
@@ -206,7 +206,7 @@ function DeleteAccountSection({ onDeleted }: { onDeleted: () => void }) {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Twoje hasło"
-            className="w-full bg-dark-800 border border-dark-700 rounded-lg px-4 py-2 text-dark-100 focus:outline-none focus:ring-2 focus:ring-red-500"
+            className="w-full bg-dark-800 border border-dark-700 rounded-lg px-4 py-2 text-dark-100 focus:outline-none focus:ring-2 focus:ring-rose-500/40"
           />
           <div className="flex gap-3">
             <Button
@@ -226,7 +226,7 @@ function DeleteAccountSection({ onDeleted }: { onDeleted: () => void }) {
             </Button>
           </div>
           {mutation.isError && (
-            <p className="text-sm text-red-400">
+            <p className="text-sm text-rose-400/80">
               {getErrorMessage(mutation.error)}
             </p>
           )}

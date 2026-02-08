@@ -63,7 +63,10 @@ record EventSummaryDto(
     String eventType,
     LocalDate startDate,
     LocalDate endDate,
-    boolean isMultiDay
+    boolean isMultiDay,
+    int maxParticipants,
+    int currentParticipants,
+    boolean isUserRegistered
 ) implements CalendarDtos {}
 
 enum SlotStatus {

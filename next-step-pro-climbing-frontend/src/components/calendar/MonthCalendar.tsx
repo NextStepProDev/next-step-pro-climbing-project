@@ -3,18 +3,19 @@ import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isToday, isBefore, startOfDay } from 'date-fns'
 import { pl } from 'date-fns/locale'
 import clsx from 'clsx'
-import type { DaySummary } from '../../types'
+import type { DaySummary, EventSummary } from '../../types'
 
 interface MonthCalendarProps {
   currentMonth: Date
   onMonthChange: (date: Date) => void
   days: DaySummary[]
+  events: EventSummary[]
   onDayClick: (date: string) => void
 }
 
 const WEEKDAYS = ['Pon', 'Wt', 'Śr', 'Czw', 'Pt', 'Sob', 'Nd']
 
-export function MonthCalendar({ currentMonth, onMonthChange, days, onDayClick }: MonthCalendarProps) {
+export function MonthCalendar({ currentMonth, onMonthChange, days, events, onDayClick }: MonthCalendarProps) {
   const calendarDays = useMemo(() => {
     const start = startOfMonth(currentMonth)
     const end = endOfMonth(currentMonth)
@@ -35,6 +36,21 @@ export function MonthCalendar({ currentMonth, onMonthChange, days, onDayClick }:
     days.forEach((day) => map.set(day.date, day))
     return map
   }, [days])
+
+  const dayEventsMap = useMemo(() => {
+    const map = new Map<string, EventSummary[]>()
+    events.forEach((event) => {
+      const start = new Date(event.startDate)
+      const end = new Date(event.endDate)
+      for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+        const key = format(d, 'yyyy-MM-dd')
+        const list = map.get(key) || []
+        list.push(event)
+        map.set(key, list)
+      }
+    })
+    return map
+  }, [events])
 
   const goToPreviousMonth = () => {
     const newDate = new Date(currentMonth)
@@ -90,27 +106,30 @@ export function MonthCalendar({ currentMonth, onMonthChange, days, onDayClick }:
 
           const dateString = format(day, 'yyyy-MM-dd')
           const dayData = dayDataMap.get(dateString)
+          const dayEvents = dayEventsMap.get(dateString) || []
           const isPast = isBefore(day, startOfDay(new Date()))
           const hasSlots = dayData && dayData.totalSlots > 0
-          const hasAvailable = dayData && dayData.availableSlots > 0
           const hasUserReservation = dayData?.hasUserReservation
+          const hasEvents = dayEvents.length > 0
+          const isClickable = !isPast && (hasSlots || hasEvents)
 
           return (
             <button
               key={dateString}
-              onClick={() => !isPast && hasSlots && onDayClick(dateString)}
-              disabled={isPast || !hasSlots}
+              onClick={() => isClickable && onDayClick(dateString)}
+              disabled={!isClickable}
               className={clsx(
                 'aspect-square p-1 sm:p-2 border-b border-r border-dark-800 transition-colors relative',
                 !isSameMonth(day, currentMonth) && 'opacity-30',
                 isPast && 'opacity-40 cursor-not-allowed',
-                hasSlots && !isPast && 'hover:bg-dark-800 cursor-pointer',
-                !hasSlots && 'cursor-default'
+                isClickable && 'hover:bg-dark-800 cursor-pointer',
+                !isClickable && 'cursor-default',
+                hasEvents && !isPast && 'bg-primary-500/10'
               )}
             >
               <div
                 className={clsx(
-                  'text-sm font-medium mb-1',
+                  'text-sm font-medium mb-0.5',
                   isToday(day) && 'text-primary-400',
                   !isToday(day) && 'text-dark-300'
                 )}
@@ -118,19 +137,26 @@ export function MonthCalendar({ currentMonth, onMonthChange, days, onDayClick }:
                 {format(day, 'd')}
               </div>
 
-              {hasSlots && (
-                <div className="space-y-0.5">
-                  {hasAvailable && !isPast ? (
-                    <div className="text-xs text-green-400 font-medium">
-                      {dayData.availableSlots} wolne
-                    </div>
-                  ) : hasSlots && !isPast ? (
-                    <div className="text-xs text-amber-400 font-medium">
-                      Brak miejsc
-                    </div>
-                  ) : null}
+              {dayEvents.length > 0 && !isPast && dayEvents.map((event) => (
+                <div key={event.id} className="text-[10px] leading-tight text-primary-400 font-medium truncate">
+                  {event.title}{' '}
+                  <span className={clsx(
+                    event.currentParticipants >= event.maxParticipants ? 'text-amber-400' : 'text-primary-300'
+                  )}>
+                    {event.currentParticipants}/{event.maxParticipants}
+                  </span>
                 </div>
-              )}
+              ))}
+
+              {dayData && dayData.availableSlots > 0 && !isPast ? (
+                <div className="text-xs text-green-400 font-medium">
+                  {dayData.availableSlots} wolne
+                </div>
+              ) : dayData && dayData.totalSlots > 0 && dayData.availableSlots === 0 && !hasEvents && !isPast ? (
+                <div className="text-xs text-amber-400 font-medium">
+                  Brak miejsc
+                </div>
+              ) : null}
 
               {hasUserReservation && (
                 <div className="absolute top-1 right-1 w-2 h-2 bg-primary-500 rounded-full" />
