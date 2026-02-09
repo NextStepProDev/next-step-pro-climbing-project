@@ -85,10 +85,23 @@ public class ReservationService {
             throw new IllegalStateException("Dostępnych miejsc: " + spotsLeft + ". Nie można zarezerwować " + participants + ".");
         }
 
-        Reservation reservation = new Reservation(user, slot);
-        reservation.setParticipants(participants);
-        if (comment != null && !comment.isBlank()) {
-            reservation.setComment(comment.length() > 500 ? comment.substring(0, 500) : comment);
+        Reservation existing = reservationRepository.findByUserIdAndTimeSlotId(userId, slotId);
+        Reservation reservation;
+        if (existing != null && existing.isCancelled()) {
+            existing.confirm();
+            existing.setParticipants(participants);
+            if (comment != null && !comment.isBlank()) {
+                existing.setComment(comment.length() > 500 ? comment.substring(0, 500) : comment);
+            } else {
+                existing.setComment(null);
+            }
+            reservation = existing;
+        } else {
+            reservation = new Reservation(user, slot);
+            reservation.setParticipants(participants);
+            if (comment != null && !comment.isBlank()) {
+                reservation.setComment(comment.length() > 500 ? comment.substring(0, 500) : comment);
+            }
         }
         reservation = reservationRepository.save(reservation);
 
