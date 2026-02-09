@@ -180,7 +180,7 @@ public class CalendarService {
             slot.getEndTime(),
             status,
             isUserRegistered,
-            slot.getDisplayTitle()
+            slot.belongsToEvent() ? slot.getEvent().getTitle() : null
         );
     }
 

@@ -88,8 +88,17 @@ export function DayView({ date, slots, events, onBack, onSlotClick, onEventClick
       }
     }
 
+    // Safety net: slots with eventTitle that don't match any event → treat as standalone
+    const eventTitles = new Set(events.map(e => e.title))
+    for (const [title, groupSlots] of grouped) {
+      if (!eventTitles.has(title)) {
+        standalone.push(...groupSlots)
+        grouped.delete(title)
+      }
+    }
+
     return { eventSlotGroups: grouped, standaloneSlots: standalone }
-  }, [slots])
+  }, [slots, events])
 
   const hasAnyContent = slots.length > 0 || events.length > 0
 
