@@ -108,7 +108,7 @@ export function SlotDetailModal({ slot, isOpen, onClose }: SlotDetailModalProps)
           <span>
             {slot.currentParticipants} / {slot.maxParticipants} uczestników
             {spotsLeft > 0 && (
-              <span className="text-green-400 ml-2">({spotsLeft} wolne)</span>
+              <span className="text-primary-400 ml-2">({spotsLeft} wolne)</span>
             )}
           </span>
         </div>

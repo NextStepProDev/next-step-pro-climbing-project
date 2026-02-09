@@ -1,54 +1,64 @@
-import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { ChevronDown, LogOut, Menu, User, X } from 'lucide-react'
-import { useState, useRef, useEffect } from 'react'
-import { useAuth } from '../../context/AuthContext'
-import { Button } from '../ui/Button'
-import clsx from 'clsx'
-import logoWhite from '../../assets/logo/logo-white.png'
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { ChevronDown, LogOut, Menu, User, X } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { useAuth } from "../../context/AuthContext";
+import { Button } from "../ui/Button";
+import clsx from "clsx";
+import logoWhite from "../../assets/logo/logo-white.png";
 
 export function Navbar() {
-  const { user, isAuthenticated, isAdmin, logout } = useAuth()
-  const location = useLocation()
-  const navigate = useNavigate()
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [userMenuOpen, setUserMenuOpen] = useState(false)
-  const userMenuRef = useRef<HTMLDivElement>(null)
+  const { user, isAuthenticated, isAdmin, logout } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
 
   const navLinks = [
-    { to: '/', label: 'Start' },
-    { to: '/calendar', label: 'Kalendarz' },
-    ...(isAuthenticated ? [
-      { to: '/my-reservations', label: 'Moje rezerwacje' },
-    ] : []),
-    ...(isAdmin ? [{ to: '/admin', label: 'Admin' }] : []),
-  ]
+    { to: "/", label: "Start" },
+    { to: "/calendar", label: "Kalendarz" },
+    ...(isAuthenticated
+      ? [{ to: "/my-reservations", label: "Moje rezerwacje" }]
+      : []),
+    ...(isAdmin ? [{ to: "/admin", label: "Admin" }] : []),
+  ];
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
-      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
-        setUserMenuOpen(false)
+      if (
+        userMenuRef.current &&
+        !userMenuRef.current.contains(e.target as Node)
+      ) {
+        setUserMenuOpen(false);
       }
     }
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   // Close dropdown on route change
-  const [prevPathname, setPrevPathname] = useState(location.pathname)
+  const [prevPathname, setPrevPathname] = useState(location.pathname);
   if (prevPathname !== location.pathname) {
-    setPrevPathname(location.pathname)
-    setUserMenuOpen(false)
+    setPrevPathname(location.pathname);
+    setUserMenuOpen(false);
   }
 
-  const userInitial = user?.firstName?.charAt(0).toUpperCase() ?? '?'
+  const userInitial = user?.firstName?.charAt(0).toUpperCase() ?? "?";
 
   return (
     <nav className="bg-dark-900/80 backdrop-blur-sm border-b border-dark-800 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-18">
           {/* Logo */}
-          <Link to="/" className="flex items-center hover:opacity-80 transition-opacity">
-            <img src={logoWhite} alt="Next Step Pro Climbing" className="h-10" />
+          <Link
+            to="/"
+            className="flex items-center hover:opacity-80 transition-opacity"
+          >
+            <img
+              src={logoWhite}
+              alt="Next Step Pro Climbing"
+              className="h-10"
+            />
           </Link>
 
           {/* Desktop Navigation */}
@@ -58,10 +68,10 @@ export function Navbar() {
                 key={link.to}
                 to={link.to}
                 className={clsx(
-                  'text-base font-semibold tracking-wide transition-colors',
+                  "text-base font-semibold tracking-wide transition-colors",
                   location.pathname === link.to
-                    ? 'text-primary-400'
-                    : 'text-dark-300 hover:text-dark-100'
+                    ? "text-primary-400"
+                    : "text-dark-300 hover:text-dark-100",
                 )}
               >
                 {link.label}
@@ -78,33 +88,44 @@ export function Navbar() {
                   className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-dark-800 transition-colors"
                 >
                   <div className="w-9 h-9 rounded-full bg-primary-600 flex items-center justify-center">
-                    <span className="text-sm font-bold text-white">{userInitial}</span>
+                    <span className="text-sm font-bold text-white">
+                      {userInitial}
+                    </span>
                   </div>
                   <span className="text-sm font-medium text-dark-200">
                     {user?.firstName}
                   </span>
-                  <ChevronDown className={clsx(
-                    'w-4 h-4 text-dark-400 transition-transform',
-                    userMenuOpen && 'rotate-180'
-                  )} />
+                  <ChevronDown
+                    className={clsx(
+                      "w-4 h-4 text-dark-400 transition-transform",
+                      userMenuOpen && "rotate-180",
+                    )}
+                  />
                 </button>
 
                 {userMenuOpen && (
                   <div className="absolute right-0 mt-2 w-56 bg-dark-900 border border-dark-700 rounded-xl shadow-lg shadow-black/30 overflow-hidden">
                     <div className="px-4 py-3 border-b border-dark-800">
-                      <p className="text-sm font-medium text-dark-100">{user?.firstName} {user?.lastName}</p>
-                      <p className="text-xs text-dark-500 mt-0.5">{user?.email}</p>
+                      <p className="text-sm font-medium text-dark-100">
+                        {user?.firstName} {user?.lastName}
+                      </p>
+                      <p className="text-xs text-dark-500 mt-0.5">
+                        {user?.email}
+                      </p>
                     </div>
                     <div className="py-1">
                       <button
-                        onClick={() => navigate('/settings')}
+                        onClick={() => navigate("/settings")}
                         className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-dark-300 hover:bg-dark-800 hover:text-dark-100 transition-colors"
                       >
                         <User className="w-4 h-4" />
                         Profil
                       </button>
                       <button
-                        onClick={() => { setUserMenuOpen(false); logout() }}
+                        onClick={() => {
+                          setUserMenuOpen(false);
+                          logout();
+                        }}
                         className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-rose-400/70 hover:bg-dark-800 hover:text-rose-300/80 transition-colors"
                       >
                         <LogOut className="w-4 h-4" />
@@ -117,8 +138,8 @@ export function Navbar() {
             ) : (
               <div className="flex items-center gap-2">
                 <Link to="/login">
-                  <Button variant="ghost" size="sm">
-                    Zaloguj się / Załóż konto
+                  <Button size="sm" className="px-4">
+                    Zaloguj się
                   </Button>
                 </Link>
               </div>
@@ -128,10 +149,14 @@ export function Navbar() {
           {/* Mobile menu button */}
           <button
             className="md:hidden text-dark-300"
-            aria-label={mobileMenuOpen ? 'Zamknij menu' : 'Otwórz menu'}
+            aria-label={mobileMenuOpen ? "Zamknij menu" : "Otwórz menu"}
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           >
-            {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            {mobileMenuOpen ? (
+              <X className="w-6 h-6" />
+            ) : (
+              <Menu className="w-6 h-6" />
+            )}
           </button>
         </div>
       </div>
@@ -146,10 +171,10 @@ export function Navbar() {
                 to={link.to}
                 onClick={() => setMobileMenuOpen(false)}
                 className={clsx(
-                  'block py-2 text-base font-semibold tracking-wide',
+                  "block py-2 text-base font-semibold tracking-wide",
                   location.pathname === link.to
-                    ? 'text-primary-400'
-                    : 'text-dark-300'
+                    ? "text-primary-400"
+                    : "text-dark-300",
                 )}
               >
                 {link.label}
@@ -160,10 +185,14 @@ export function Navbar() {
                 <div className="space-y-1">
                   <div className="flex items-center gap-3 px-1 py-2">
                     <div className="w-9 h-9 rounded-full bg-primary-600 flex items-center justify-center">
-                      <span className="text-sm font-bold text-white">{userInitial}</span>
+                      <span className="text-sm font-bold text-white">
+                        {userInitial}
+                      </span>
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-dark-200">{user?.firstName} {user?.lastName}</p>
+                      <p className="text-sm font-medium text-dark-200">
+                        {user?.firstName} {user?.lastName}
+                      </p>
                       <p className="text-xs text-dark-500">{user?.email}</p>
                     </div>
                   </div>
@@ -176,7 +205,10 @@ export function Navbar() {
                     Profil
                   </Link>
                   <button
-                    onClick={() => { logout(); setMobileMenuOpen(false) }}
+                    onClick={() => {
+                      logout();
+                      setMobileMenuOpen(false);
+                    }}
                     className="flex items-center gap-3 px-1 py-2 text-rose-400/70 text-sm"
                   >
                     <LogOut className="w-4 h-4" />
@@ -195,5 +227,5 @@ export function Navbar() {
         </div>
       )}
     </nav>
-  )
+  );
 }

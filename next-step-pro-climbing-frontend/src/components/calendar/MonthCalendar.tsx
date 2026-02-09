@@ -149,7 +149,7 @@ export function MonthCalendar({ currentMonth, onMonthChange, days, events, onDay
               ))}
 
               {dayData && dayData.availableSlots > 0 && !isPast ? (
-                <div className="text-xs text-green-400 font-medium">
+                <div className="text-xs text-primary-400 font-medium">
                   {dayData.availableSlots} wolne
                 </div>
               ) : dayData && dayData.totalSlots > 0 && dayData.availableSlots === 0 && !hasEvents && !isPast ? (

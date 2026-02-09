@@ -43,7 +43,7 @@ function SlotButton({ slot, onSlotClick }: { slot: TimeSlot; onSlotClick: (slotI
             </span>
           )}
           {slot.status === 'AVAILABLE' && !slot.isUserRegistered && (
-            <span className="px-2 py-1 text-xs font-medium bg-green-500/20 text-green-400 rounded">
+            <span className="px-2 py-1 text-xs font-medium bg-primary-500/20 text-primary-400 rounded">
               Dostępne
             </span>
           )}
@@ -203,8 +203,8 @@ export function DayView({ date, slots, events, onBack, onSlotClick, onEventClick
             {/* Standalone training slots */}
             {standaloneSlots.length > 0 && (
               <div>
-                <h3 className="text-base font-semibold text-green-400 mb-3">
-                  Treningi
+                <h3 className="text-base font-semibold text-primary-400 mb-3">
+                  Trening
                 </h3>
                 <div className="space-y-3">
                   {standaloneSlots.map((slot) => (

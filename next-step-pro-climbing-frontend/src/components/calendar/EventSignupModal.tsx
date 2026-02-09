@@ -91,7 +91,7 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
           <span>
             {event.currentParticipants} / {event.maxParticipants} uczestników
             {spotsLeft > 0 && (
-              <span className="text-green-400 ml-2">({spotsLeft} wolnych)</span>
+              <span className="text-primary-400 ml-2">({spotsLeft} wolnych)</span>
             )}
           </span>
         </div>

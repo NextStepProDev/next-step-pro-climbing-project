@@ -128,7 +128,7 @@ export function CalendarPage() {
                       <span className={
                         event.currentParticipants >= event.maxParticipants
                           ? 'text-amber-400'
-                          : 'text-green-400'
+                          : 'text-primary-400'
                       }>
                         {event.currentParticipants}/{event.maxParticipants} miejsc
                       </span>
