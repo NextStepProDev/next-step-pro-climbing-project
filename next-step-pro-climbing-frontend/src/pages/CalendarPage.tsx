@@ -98,6 +98,7 @@ export function CalendarPage() {
           events={dayData.events}
           onBack={handleBackToMonth}
           onSlotClick={handleSlotClick}
+          onEventClick={setSelectedEvent}
         />
       ) : monthData ? (
         <>
