@@ -77,17 +77,17 @@ export function HomePage() {
               </p>
               <ul className="space-y-2 text-sm text-dark-300">
                 <li className="flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 bg-primary-400 rounded-full" />
+                  <span className="w-1.5 h-1.5 bg-primary-400 rounded-full shrink-0" />
                   Kurs wspinaczkowy po drogach ubezpieczonych wg programu PZA -
                   900zł
                 </li>
                 <li className="flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 bg-primary-400 rounded-full" />
+                  <span className="w-1.5 h-1.5 bg-primary-400 rounded-full shrink-0" />
                   Wspinaczka wielowyciągowa po drogach ubezpieczonych 2 dni -
                   800zł
                 </li>
                 <li className="flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 bg-primary-400 rounded-full" />
+                  <span className="w-1.5 h-1.5 bg-primary-400 rounded-full shrink-0" />
                   Kurs autoratownictwa 1 - 2 dni - 700zł
                 </li>
               </ul>
