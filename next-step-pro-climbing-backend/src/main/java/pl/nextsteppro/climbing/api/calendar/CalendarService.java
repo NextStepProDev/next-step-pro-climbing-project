@@ -75,7 +75,6 @@ public class CalendarService {
         return new MonthViewDto(yearMonth.toString(), days, eventSummaries);
     }
 
-    @Cacheable(value = "calendarDay", key = "#date", condition = "#userId == null")
     public DayViewDto getDayView(LocalDate date, @Nullable UUID userId) {
         List<TimeSlot> slots = timeSlotRepository.findByDate(date);
         List<Event> events = eventRepository.findActiveEventsOnDate(date);

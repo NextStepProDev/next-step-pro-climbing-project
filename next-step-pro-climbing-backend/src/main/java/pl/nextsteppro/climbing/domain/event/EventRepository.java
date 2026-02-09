@@ -14,6 +14,6 @@ public interface EventRepository extends JpaRepository<Event, UUID> {
     @Query("SELECT e FROM Event e WHERE e.active = true AND e.startDate <= :date AND e.endDate >= :date")
     List<Event> findActiveEventsOnDate(LocalDate date);
 
-    @Query("SELECT e FROM Event e WHERE e.active = true AND e.startDate >= :startDate AND e.endDate <= :endDate")
+    @Query("SELECT e FROM Event e WHERE e.active = true AND e.startDate <= :endDate AND e.endDate >= :startDate")
     List<Event> findActiveEventsBetween(LocalDate startDate, LocalDate endDate);
 }

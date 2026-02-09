@@ -202,6 +202,10 @@ public class AdminService {
         return toEventAdminDto(event);
     }
 
+    @Caching(evict = {
+        @CacheEvict(value = "calendarMonth", allEntries = true),
+        @CacheEvict(value = "calendarDay", allEntries = true)
+    })
     public EventAdminDto updateEvent(UUID eventId, UpdateEventRequest request) {
         Event event = eventRepository.findById(eventId)
             .orElseThrow(() -> new IllegalArgumentException("Event not found"));

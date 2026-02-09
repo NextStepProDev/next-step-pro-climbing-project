@@ -34,6 +34,7 @@ export function CalendarPage() {
     queryKey: ['calendar', 'day', selectedDate],
     queryFn: () => calendarApi.getDayView(selectedDate!),
     enabled: !!selectedDate,
+    staleTime: 0,
   })
 
   const { data: slotDetail } = useQuery({
