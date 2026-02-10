@@ -53,6 +53,7 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
 
   if (!event) return null
 
+  const enrollmentClosed = !event.enrollmentOpen
   const spotsLeft = event.maxParticipants - event.currentParticipants
   const isFull = spotsLeft <= 0
 
@@ -105,8 +106,17 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
           </div>
         )}
 
+        {/* Enrollment closed info */}
+        {enrollmentClosed && !event.isUserRegistered && (
+          <div className="p-3 bg-dark-800 border border-dark-700 rounded-lg">
+            <span className="text-dark-400 font-medium">
+              Zapisy na to wydarzenie zostały zamknięte — kurs już się rozpoczął
+            </span>
+          </div>
+        )}
+
         {/* Participants & Comment for reservation */}
-        {isAuthenticated && !event.isUserRegistered && !isFull && (
+        {isAuthenticated && !event.isUserRegistered && !isFull && !enrollmentClosed && (
           <>
             {spotsLeft > 1 && (
               <div>
@@ -147,7 +157,11 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
 
         {/* Actions */}
         <div className="flex gap-3 pt-4 border-t border-dark-800">
-          {!isAuthenticated ? (
+          {enrollmentClosed && !event.isUserRegistered ? (
+            <Button variant="ghost" className="flex-1" onClick={onClose}>
+              Zamknij
+            </Button>
+          ) : !isAuthenticated ? (
             <Button
               variant="primary"
               className="flex-1"
@@ -187,9 +201,11 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
             </Button>
           )}
 
-          <Button variant="ghost" onClick={onClose}>
-            Zamknij
-          </Button>
+          {!(enrollmentClosed && !event.isUserRegistered) && (
+            <Button variant="ghost" onClick={onClose}>
+              Zamknij
+            </Button>
+          )}
         </div>
 
         {/* Error messages */}

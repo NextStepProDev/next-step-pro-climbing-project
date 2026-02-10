@@ -91,6 +91,7 @@ export function DayView({
   events,
   onBack,
   onSlotClick,
+  onEventClick,
 }: DayViewProps) {
   const dateObj = new Date(date);
 
@@ -118,6 +119,12 @@ export function DayView({
         grouped.delete(title);
       }
     }
+
+    for (const [, groupSlots] of grouped) {
+      groupSlots.sort((a, b) => a.startTime.localeCompare(b.startTime));
+    }
+
+    standalone.sort((a, b) => a.startTime.localeCompare(b.startTime));
 
     return { eventSlotGroups: grouped, standaloneSlots: standalone };
   }, [slots, events]);
@@ -196,11 +203,12 @@ export function DayView({
                 );
               }
 
-              /* Event WITHOUT slots → show only badge "Brak miejsc" */
+              /* Event WITHOUT slots on this day → show availability from EventSummary */
               return (
-                <div
+                <button
                   key={event.id}
-                  className="w-full rounded-lg border border-primary-500/30 bg-primary-500/5 p-4 text-left"
+                  onClick={() => onEventClick?.(event)}
+                  className="w-full rounded-lg border border-primary-500/30 bg-primary-500/5 p-4 text-left hover:border-primary-500 transition-all"
                 >
                   <div className="flex items-center justify-between">
                     <div>
@@ -209,15 +217,19 @@ export function DayView({
                       </h3>
 
                       <div className="flex items-center gap-4 mt-1 text-sm text-dark-400">
-                        <span className={`flex items-center gap-1 ${badgeClass}`}>
+                        <span
+                          className={`flex items-center gap-1 ${badgeClass}`}
+                        >
                           <Users className="w-4 h-4" />
-                          Brak dostępnych miejsc
+                          {label}
                         </span>
 
                         {event.isMultiDay && (
                           <span className="flex items-center gap-1">
                             <Calendar className="w-4 h-4" />
-                            {format(new Date(event.startDate), "d", { locale: pl })}{" "}
+                            {format(new Date(event.startDate), "d", {
+                              locale: pl,
+                            })}{" "}
                             -{" "}
                             {format(new Date(event.endDate), "d MMMM", {
                               locale: pl,
@@ -227,7 +239,7 @@ export function DayView({
                       </div>
                     </div>
                   </div>
-                </div>
+                </button>
               );
             })}
 

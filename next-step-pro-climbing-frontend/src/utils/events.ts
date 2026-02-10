@@ -1,6 +1,10 @@
 import type { EventSummary } from "../types";
 
 export function formatAvailability(event: EventSummary) {
+  if (!event.enrollmentOpen) {
+    return { label: "Zapisy zamknięte", badgeClass: "bg-dark-700 text-dark-400" };
+  }
+
   const free = event.maxParticipants - event.currentParticipants;
 
   if (free === 0) return { label: "Brak miejsc", badgeClass: "bg-amber-500/10 text-amber-400" };

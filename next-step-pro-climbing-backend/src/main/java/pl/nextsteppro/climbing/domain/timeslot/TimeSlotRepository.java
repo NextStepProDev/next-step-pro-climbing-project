@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 
 import java.time.LocalDate;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -27,4 +28,7 @@ public interface TimeSlotRepository extends JpaRepository<TimeSlot, UUID> {
 
     @Query("SELECT ts FROM TimeSlot ts WHERE ts.date BETWEEN :startDate AND :endDate ORDER BY ts.date, ts.startTime")
     List<TimeSlot> findByDateRangeOrdered(LocalDate startDate, LocalDate endDate);
+
+    @Query("SELECT ts FROM TimeSlot ts WHERE ts.event.id IN :eventIds")
+    List<TimeSlot> findByEventIdIn(Collection<UUID> eventIds);
 }

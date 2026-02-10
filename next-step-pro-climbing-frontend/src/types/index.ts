@@ -73,6 +73,7 @@ export interface EventSummary {
   maxParticipants: number
   currentParticipants: number
   isUserRegistered: boolean
+  enrollmentOpen: boolean
 }
 
 export interface EventDetail {

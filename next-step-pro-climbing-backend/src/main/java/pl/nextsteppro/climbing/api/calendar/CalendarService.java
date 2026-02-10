@@ -64,12 +64,11 @@ public class CalendarService {
             days.add(createDaySummary(date, daySlots, countMap, userConfirmedSlotIds));
         }
 
-        Map<UUID, Integer> eventParticipantsMap = computeEventParticipants(slots, countMap);
-        Set<UUID> userRegisteredEventIds = computeUserRegisteredEventIds(slots, userConfirmedSlotIds);
+        EventData eventData = computeEventData(events, userId);
 
         List<EventSummaryDto> eventSummaries = events.stream()
-            .map(event -> toEventSummary(event, eventParticipantsMap.getOrDefault(event.getId(), 0),
-                                         userRegisteredEventIds.contains(event.getId())))
+            .map(event -> toEventSummary(event, eventData.participantsMap().getOrDefault(event.getId(), 0),
+                                         eventData.userRegisteredEventIds().contains(event.getId())))
             .toList();
 
         return new MonthViewDto(yearMonth.toString(), days, eventSummaries);
@@ -90,12 +89,11 @@ public class CalendarService {
                                        userConfirmedSlotIds.contains(slot.getId())))
             .toList();
 
-        Map<UUID, Integer> eventParticipantsMap = computeEventParticipants(slots, countMap);
-        Set<UUID> userRegisteredEventIds = computeUserRegisteredEventIds(slots, userConfirmedSlotIds);
+        EventData eventData = computeEventData(events, userId);
 
         List<EventSummaryDto> eventSummaries = events.stream()
-            .map(event -> toEventSummary(event, eventParticipantsMap.getOrDefault(event.getId(), 0),
-                                         userRegisteredEventIds.contains(event.getId())))
+            .map(event -> toEventSummary(event, eventData.participantsMap().getOrDefault(event.getId(), 0),
+                                         eventData.userRegisteredEventIds().contains(event.getId())))
             .toList();
 
         return new DayViewDto(date, slotDtos, eventSummaries);
@@ -199,6 +197,7 @@ public class CalendarService {
     }
 
     private EventSummaryDto toEventSummary(Event event, int currentParticipants, boolean isUserRegistered) {
+        boolean enrollmentOpen = !event.isMultiDay() || event.getStartDate().isAfter(LocalDate.now());
         return new EventSummaryDto(
             event.getId(),
             event.getTitle(),
@@ -209,30 +208,44 @@ public class CalendarService {
             event.isMultiDay(),
             event.getMaxParticipants(),
             currentParticipants,
-            isUserRegistered
+            isUserRegistered,
+            enrollmentOpen
         );
     }
 
-    private Set<UUID> computeUserRegisteredEventIds(List<TimeSlot> slots, Set<UUID> userConfirmedSlotIds) {
-        Set<UUID> eventIds = new HashSet<>();
-        for (TimeSlot slot : slots) {
-            if (slot.belongsToEvent() && userConfirmedSlotIds.contains(slot.getId())) {
-                eventIds.add(slot.getEvent().getId());
-            }
-        }
-        return eventIds;
-    }
+    private record EventData(Map<UUID, Integer> participantsMap, Set<UUID> userRegisteredEventIds) {}
 
-    private Map<UUID, Integer> computeEventParticipants(List<TimeSlot> slots, Map<UUID, Integer> countMap) {
-        Map<UUID, Integer> eventParticipantsMap = new HashMap<>();
-        for (TimeSlot slot : slots) {
+    private EventData computeEventData(List<Event> events, @Nullable UUID userId) {
+        if (events.isEmpty()) {
+            return new EventData(Map.of(), Set.of());
+        }
+
+        List<UUID> eventIds = events.stream().map(Event::getId).toList();
+        List<TimeSlot> allEventSlots = timeSlotRepository.findByEventIdIn(eventIds);
+        List<UUID> allEventSlotIds = allEventSlots.stream().map(TimeSlot::getId).toList();
+        Map<UUID, Integer> countMap = buildCountMap(allEventSlotIds);
+
+        Map<UUID, Integer> participantsMap = new HashMap<>();
+        for (TimeSlot slot : allEventSlots) {
             if (slot.belongsToEvent()) {
                 UUID eventId = slot.getEvent().getId();
                 int confirmed = countMap.getOrDefault(slot.getId(), 0);
-                eventParticipantsMap.merge(eventId, confirmed, Math::max);
+                participantsMap.merge(eventId, confirmed, Math::max);
             }
         }
-        return eventParticipantsMap;
+
+        Set<UUID> userRegisteredEventIds = new HashSet<>();
+        if (userId != null && !allEventSlotIds.isEmpty()) {
+            Set<UUID> userConfirmedSlotIds = new HashSet<>(
+                reservationRepository.findUserConfirmedSlotIds(userId, allEventSlotIds));
+            for (TimeSlot slot : allEventSlots) {
+                if (slot.belongsToEvent() && userConfirmedSlotIds.contains(slot.getId())) {
+                    userRegisteredEventIds.add(slot.getEvent().getId());
+                }
+            }
+        }
+
+        return new EventData(participantsMap, userRegisteredEventIds);
     }
 
     private Map<UUID, Integer> buildCountMap(List<UUID> slotIds) {

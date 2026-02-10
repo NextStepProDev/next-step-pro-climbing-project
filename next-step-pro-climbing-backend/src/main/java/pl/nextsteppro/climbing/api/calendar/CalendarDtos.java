@@ -66,7 +66,8 @@ record EventSummaryDto(
     boolean isMultiDay,
     int maxParticipants,
     int currentParticipants,
-    boolean isUserRegistered
+    boolean isUserRegistered,
+    boolean enrollmentOpen
 ) implements CalendarDtos {}
 
 enum SlotStatus {

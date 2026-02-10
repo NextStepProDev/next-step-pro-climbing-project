@@ -247,6 +247,10 @@ public class ReservationService {
             throw new IllegalStateException("To wydarzenie nie jest aktywne");
         }
 
+        if (event.isMultiDay() && !event.getStartDate().isAfter(LocalDate.now())) {
+            throw new IllegalStateException("Zapisy na to wydarzenie zostały zamknięte — kurs już się rozpoczął");
+        }
+
         User user = userRepository.findById(userId)
             .orElseThrow(() -> new IllegalArgumentException("User not found"));
 

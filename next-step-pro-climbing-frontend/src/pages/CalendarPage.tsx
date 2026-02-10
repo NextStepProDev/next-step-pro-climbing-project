@@ -154,16 +154,22 @@ export function CalendarPage() {
                         </span>
 
                         {/* button */}
-                        <button
-                          onClick={() => setSelectedEvent(event)}
-                          className={
-                            event.isUserRegistered
-                              ? "px-3 py-1 text-xs font-medium rounded bg-primary-500/20 text-primary-400"
-                              : "px-3 py-1 text-xs font-medium rounded bg-primary-600 text-white hover:bg-primary-500 transition-colors"
-                          }
-                        >
-                          {event.isUserRegistered ? "Zapisany" : "Zapisz się"}
-                        </button>
+                        {!event.enrollmentOpen && !event.isUserRegistered ? (
+                          <span className="px-3 py-1 text-xs font-medium rounded bg-dark-700 text-dark-400">
+                            Zapisy zamknięte
+                          </span>
+                        ) : (
+                          <button
+                            onClick={() => setSelectedEvent(event)}
+                            className={
+                              event.isUserRegistered
+                                ? "px-3 py-1 text-xs font-medium rounded bg-primary-500/20 text-primary-400"
+                                : "px-3 py-1 text-xs font-medium rounded bg-primary-600 text-white hover:bg-primary-500 transition-colors"
+                            }
+                          >
+                            {event.isUserRegistered ? "Zapisany" : "Zapisz się"}
+                          </button>
+                        )}
                       </div>
                     </div>
                   );
