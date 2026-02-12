@@ -75,7 +75,7 @@ public class CalendarService {
     }
 
     public DayViewDto getDayView(LocalDate date, @Nullable UUID userId) {
-        List<TimeSlot> slots = timeSlotRepository.findByDateOrderByStartTimeAsc(date);
+        List<TimeSlot> slots = timeSlotRepository.findByDateSorted(date);
         List<Event> events = eventRepository.findActiveEventsOnDate(date);
 
         List<UUID> slotIds = slots.stream().map(TimeSlot::getId).toList();

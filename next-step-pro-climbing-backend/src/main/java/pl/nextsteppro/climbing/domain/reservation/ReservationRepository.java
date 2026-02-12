@@ -24,7 +24,7 @@ public interface ReservationRepository extends JpaRepository<Reservation, UUID> 
     @Query("SELECT r.timeSlot.id, COALESCE(SUM(r.participants), 0) FROM Reservation r WHERE r.timeSlot.id IN :slotIds AND r.status = 'CONFIRMED' GROUP BY r.timeSlot.id")
     List<Object[]> countConfirmedByTimeSlotIds(Collection<UUID> slotIds);
 
-    @Query("SELECT r FROM Reservation r JOIN FETCH r.user WHERE r.timeSlot.id IN :slotIds AND r.status = 'CONFIRMED'")
+    @Query("SELECT r FROM Reservation r JOIN FETCH r.user WHERE r.timeSlot.id IN :slotIds AND r.status = 'CONFIRMED' ORDER BY r.timeSlot.date, r.timeSlot.startTime")
     List<Reservation> findConfirmedByTimeSlotIds(Collection<UUID> slotIds);
 
     @Nullable

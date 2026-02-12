@@ -19,7 +19,8 @@ public interface TimeSlotRepository extends JpaRepository<TimeSlot, UUID> {
 
     List<TimeSlot> findByDate(LocalDate date);
 
-    List<TimeSlot> findByDateOrderByStartTimeAsc(LocalDate date);
+    @Query("SELECT ts FROM TimeSlot ts WHERE ts.date = :date ORDER BY ts.startTime ASC")
+    List<TimeSlot> findByDateSorted(LocalDate date);
 
     List<TimeSlot> findByDateBetween(LocalDate startDate, LocalDate endDate);
 

@@ -275,7 +275,7 @@ public class AdminService {
 
     @Transactional(readOnly = true)
     public List<ReservationAdminDto> getReservationsByDate(LocalDate date) {
-        List<TimeSlot> slots = timeSlotRepository.findByDateOrderByStartTimeAsc(date);
+        List<TimeSlot> slots = timeSlotRepository.findByDateSorted(date);
         return buildReservationAdminDtos(slots);
     }
 
