@@ -205,6 +205,8 @@ export interface ReservationAdmin {
   title: string | null
   comment: string | null
   participants: number
+  eventStartDate: string | null
+  eventEndDate: string | null
 }
 
 export interface CreateEventRequest {

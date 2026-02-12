@@ -8,6 +8,7 @@ import { DayView } from "../components/calendar/DayView";
 import { SlotDetailModal } from "../components/calendar/SlotDetailModal";
 import { EventSignupModal } from "../components/calendar/EventSignupModal";
 import { LoadingSpinner } from "../components/ui/LoadingSpinner";
+import { QueryError } from "../components/ui/QueryError";
 import { formatAvailability } from "../utils/events";
 import type { EventSummary } from "../types";
 
@@ -26,12 +27,12 @@ export function CalendarPage() {
 
   const yearMonth = format(currentMonth, "yyyy-MM");
 
-  const { data: monthData, isLoading: monthLoading } = useQuery({
+  const { data: monthData, isLoading: monthLoading, isError: monthError, error: monthErrorObj, refetch: refetchMonth } = useQuery({
     queryKey: ["calendar", "month", yearMonth],
     queryFn: () => calendarApi.getMonthView(yearMonth),
   });
 
-  const { data: dayData, isLoading: dayLoading } = useQuery({
+  const { data: dayData, isLoading: dayLoading, isError: dayError, error: dayErrorObj, refetch: refetchDay } = useQuery({
     queryKey: ["calendar", "day", selectedDate],
     queryFn: () => calendarApi.getDayView(selectedDate!),
     enabled: !!selectedDate,
@@ -95,6 +96,10 @@ export function CalendarPage() {
         <div className="flex justify-center py-12">
           <LoadingSpinner size="lg" />
         </div>
+      ) : monthError ? (
+        <QueryError error={monthErrorObj} onRetry={() => refetchMonth()} />
+      ) : selectedDate && dayError ? (
+        <QueryError error={dayErrorObj} onRetry={() => refetchDay()} />
       ) : selectedDate && dayData ? (
         <DayView
           date={selectedDate}

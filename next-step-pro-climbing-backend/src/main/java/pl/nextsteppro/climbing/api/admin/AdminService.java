@@ -235,7 +235,7 @@ public class AdminService {
 
     @Transactional(readOnly = true)
     public List<EventAdminDto> getAllEvents() {
-        return eventRepository.findAll().stream()
+        return eventRepository.findAllByOrderByStartDateAsc().stream()
             .map(this::toEventAdminDto)
             .toList();
     }
@@ -291,6 +291,7 @@ public class AdminService {
         return allReservations.stream()
             .map(r -> {
                 TimeSlot slot = slotMap.get(r.getTimeSlot().getId());
+                Event event = slot.belongsToEvent() ? slot.getEvent() : null;
                 return new ReservationAdminDto(
                     r.getId(),
                     r.getUser().getFullName(),
@@ -301,7 +302,9 @@ public class AdminService {
                     slot.getEndTime(),
                     slot.getDisplayTitle(),
                     r.getComment(),
-                    r.getParticipants()
+                    r.getParticipants(),
+                    event != null ? event.getStartDate() : null,
+                    event != null ? event.getEndDate() : null
                 );
             })
             .toList();

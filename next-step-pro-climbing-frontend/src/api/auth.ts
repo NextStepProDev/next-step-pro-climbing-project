@@ -24,15 +24,27 @@ export interface MessageResponse {
 }
 
 async function authFetch<T>(endpoint: string, body: unknown): Promise<T> {
-  const response = await fetch(`${API_BASE}${endpoint}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  })
+  let response: Response
+  try {
+    response = await fetch(`${API_BASE}${endpoint}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+  } catch {
+    throw new Error('Nie udało się połączyć z serwerem. Sprawdź połączenie internetowe.')
+  }
 
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ message: 'Wystąpił błąd' }))
-    throw new Error(error.message || `HTTP ${response.status}`)
+    const error = await response.json().catch(() => null)
+    const serverMessage = error?.message
+    if (serverMessage) {
+      throw new Error(serverMessage)
+    }
+    if (response.status >= 500) {
+      throw new Error('Błąd serwera. Spróbuj ponownie później.')
+    }
+    throw new Error(`Wystąpił błąd (${response.status}). Spróbuj ponownie.`)
   }
 
   return response.json()

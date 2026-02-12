@@ -3,12 +3,13 @@ import { format } from 'date-fns'
 import { Shield, ShieldOff, Trash2 } from 'lucide-react'
 import { adminApi } from '../../api/client'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
+import { QueryError } from '../../components/ui/QueryError'
 import { Button } from '../../components/ui/Button'
 
 export function AdminUsersPanel() {
   const queryClient = useQueryClient()
 
-  const { data: users, isLoading } = useQuery({
+  const { data: users, isLoading, isError, error, refetch } = useQuery({
     queryKey: ['admin', 'users'],
     queryFn: adminApi.getAllUsers,
   })
@@ -32,6 +33,8 @@ export function AdminUsersPanel() {
     <div>
       {isLoading ? (
         <LoadingSpinner />
+      ) : isError ? (
+        <QueryError error={error} onRetry={() => refetch()} />
       ) : (
         <div className="bg-dark-900 rounded-lg border border-dark-800 overflow-hidden">
           <table className="w-full">

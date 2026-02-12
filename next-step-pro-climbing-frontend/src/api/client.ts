@@ -77,28 +77,53 @@ async function fetchApi<T>(
     headers['Authorization'] = `Bearer ${token}`
   }
 
-  let response = await fetch(`${API_BASE}${endpoint}`, {
-    ...options,
-    headers,
-  })
+  let response: Response
+  try {
+    response = await fetch(`${API_BASE}${endpoint}`, {
+      ...options,
+      headers,
+    })
+  } catch {
+    throw new Error('Nie udało się połączyć z serwerem. Sprawdź połączenie internetowe.')
+  }
 
   // If 401, try one refresh and retry
   if (response.status === 401 && token) {
     const newToken = await doRefresh()
     if (newToken) {
       headers['Authorization'] = `Bearer ${newToken}`
-      response = await fetch(`${API_BASE}${endpoint}`, {
-        ...options,
-        headers,
-      })
+      try {
+        response = await fetch(`${API_BASE}${endpoint}`, {
+          ...options,
+          headers,
+        })
+      } catch {
+        throw new Error('Nie udało się połączyć z serwerem. Sprawdź połączenie internetowe.')
+      }
     } else {
       throw new Error('Sesja wygasła. Zaloguj się ponownie.')
     }
   }
 
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ message: 'Request failed' }))
-    throw new Error(error.message || `HTTP ${response.status}`)
+    const body = await response.json().catch(() => null)
+    const serverMessage = body?.message
+    if (serverMessage) {
+      throw new Error(serverMessage)
+    }
+    if (response.status === 500) {
+      throw new Error('Błąd serwera. Spróbuj ponownie później.')
+    }
+    if (response.status === 503) {
+      throw new Error('Serwer jest tymczasowo niedostępny. Spróbuj ponownie za chwilę.')
+    }
+    if (response.status === 404) {
+      throw new Error('Nie znaleziono zasobu.')
+    }
+    if (response.status === 403) {
+      throw new Error('Brak uprawnień do wykonania tej operacji.')
+    }
+    throw new Error(`Wystąpił błąd (${response.status}). Spróbuj ponownie.`)
   }
 
   if (response.status === 204) {

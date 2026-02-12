@@ -5,6 +5,7 @@ import { Calendar, Clock, MessageSquare, Users, X } from 'lucide-react'
 import { reservationApi } from '../api/client'
 import { getErrorMessage } from '../utils/errors'
 import { LoadingSpinner } from '../components/ui/LoadingSpinner'
+import { QueryError } from '../components/ui/QueryError'
 import { Button } from '../components/ui/Button'
 
 const EVENT_TYPE_LABELS: Record<string, string> = {
@@ -16,7 +17,7 @@ const EVENT_TYPE_LABELS: Record<string, string> = {
 export function MyReservationsPage() {
   const queryClient = useQueryClient()
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ['reservations', 'upcoming'],
     queryFn: reservationApi.getMyUpcoming,
   })
@@ -41,6 +42,14 @@ export function MyReservationsPage() {
     return (
       <div className="flex justify-center py-12">
         <LoadingSpinner size="lg" />
+      </div>
+    )
+  }
+
+  if (isError) {
+    return (
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <QueryError error={error} onRetry={() => refetch()} />
       </div>
     )
   }

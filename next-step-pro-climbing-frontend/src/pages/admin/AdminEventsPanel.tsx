@@ -5,6 +5,7 @@ import { Plus, Trash2, Eye, EyeOff, Clock } from 'lucide-react'
 import { adminApi } from '../../api/client'
 import { getErrorMessage } from '../../utils/errors'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
+import { QueryError } from '../../components/ui/QueryError'
 import { Button } from '../../components/ui/Button'
 import { Modal } from '../../components/ui/Modal'
 import { TimeScrollPicker } from '../../components/ui/TimeScrollPicker'
@@ -14,7 +15,7 @@ export function AdminEventsPanel() {
   const [showCreateModal, setShowCreateModal] = useState(false)
   const queryClient = useQueryClient()
 
-  const { data: events, isLoading } = useQuery({
+  const { data: events, isLoading, isError, error, refetch } = useQuery({
     queryKey: ['admin', 'events'],
     queryFn: adminApi.getAllEvents,
   })
@@ -47,6 +48,8 @@ export function AdminEventsPanel() {
 
       {isLoading ? (
         <LoadingSpinner />
+      ) : isError ? (
+        <QueryError error={error} onRetry={() => refetch()} />
       ) : (
         <div className="space-y-4">
           {events?.length === 0 ? (

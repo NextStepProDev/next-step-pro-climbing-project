@@ -6,6 +6,7 @@ import { Plus, Lock, Unlock, Trash2, Users, Pencil } from 'lucide-react'
 import { calendarApi, adminApi } from '../../api/client'
 import { getErrorMessage } from '../../utils/errors'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
+import { QueryError } from '../../components/ui/QueryError'
 import { Button } from '../../components/ui/Button'
 import { Modal } from '../../components/ui/Modal'
 import { TimeScrollPicker } from '../../components/ui/TimeScrollPicker'
@@ -20,7 +21,7 @@ export function AdminSlotsPanel() {
 
   const queryClient = useQueryClient()
 
-  const { data: dayData, isLoading } = useQuery({
+  const { data: dayData, isLoading, isError, error, refetch } = useQuery({
     queryKey: ['calendar', 'day', selectedDate],
     queryFn: () => calendarApi.getDayView(selectedDate),
   })
@@ -69,6 +70,8 @@ export function AdminSlotsPanel() {
       {/* Slots list */}
       {isLoading ? (
         <LoadingSpinner />
+      ) : isError ? (
+        <QueryError error={error} onRetry={() => refetch()} />
       ) : (
         <div className="space-y-3">
           {dayData?.slots.length === 0 ? (

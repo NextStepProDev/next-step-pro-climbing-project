@@ -145,7 +145,9 @@ record ReservationAdminDto(
     LocalTime endTime,
     @Nullable String title,
     @Nullable String comment,
-    int participants
+    int participants,
+    @Nullable LocalDate eventStartDate,
+    @Nullable LocalDate eventEndDate
 ) {}
 
 // User DTOs
