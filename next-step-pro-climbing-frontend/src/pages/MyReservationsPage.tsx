@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { format } from 'date-fns'
 import { pl } from 'date-fns/locale'
-import { Calendar, Clock, MessageSquare, Users, X } from 'lucide-react'
+import { Calendar, Clock, MessageSquare, Users, X, Ban } from 'lucide-react'
 import { reservationApi } from '../api/client'
 import { getErrorMessage } from '../utils/errors'
 import { LoadingSpinner } from '../components/ui/LoadingSpinner'
@@ -158,18 +158,32 @@ export function MyReservationsPage() {
               </h2>
               {slots.map((reservation) => {
                 const dateObj = new Date(reservation.date)
+                const isCancelledByAdmin = reservation.status === 'CANCELLED_BY_ADMIN'
                 return (
                   <div
                     key={reservation.id}
-                    className="bg-dark-900 rounded-xl border border-dark-800 p-4 sm:p-6"
+                    className={
+                      isCancelledByAdmin
+                        ? 'bg-rose-500/5 rounded-xl border border-rose-500/30 p-4 sm:p-6'
+                        : 'bg-dark-900 rounded-xl border border-dark-800 p-4 sm:p-6'
+                    }
                   >
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-2">
-                          <Calendar className="w-5 h-5 text-primary-400" />
+                          {isCancelledByAdmin ? (
+                            <Ban className="w-5 h-5 text-rose-400" />
+                          ) : (
+                            <Calendar className="w-5 h-5 text-primary-400" />
+                          )}
                           <span className="font-medium text-dark-100 capitalize">
                             {format(dateObj, 'EEEE, d MMMM yyyy', { locale: pl })}
                           </span>
+                          {isCancelledByAdmin && (
+                            <span className="inline-block px-2 py-0.5 text-xs font-medium rounded bg-rose-500/20 text-rose-400">
+                              Anulowany przez instruktora
+                            </span>
+                          )}
                         </div>
                         <div className="flex items-center gap-3 text-dark-400">
                           <Clock className="w-5 h-5" />
@@ -197,25 +211,27 @@ export function MyReservationsPage() {
                         )}
                       </div>
 
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant="danger"
-                          size="sm"
-                          loading={cancelMutation.isPending}
-                          onClick={() => {
-                            if (
-                              window.confirm(
-                                'Czy na pewno chcesz anulować tę rezerwację?'
-                              )
-                            ) {
-                              cancelMutation.mutate(reservation.id)
-                            }
-                          }}
-                        >
-                          <X className="w-4 h-4 mr-1" />
-                          Anuluj
-                        </Button>
-                      </div>
+                      {!isCancelledByAdmin && (
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="danger"
+                            size="sm"
+                            loading={cancelMutation.isPending}
+                            onClick={() => {
+                              if (
+                                window.confirm(
+                                  'Czy na pewno chcesz anulować tę rezerwację?'
+                                )
+                              ) {
+                                cancelMutation.mutate(reservation.id)
+                              }
+                            }}
+                          >
+                            <X className="w-4 h-4 mr-1" />
+                            Anuluj
+                          </Button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )

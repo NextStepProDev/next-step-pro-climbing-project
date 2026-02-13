@@ -33,6 +33,9 @@ public interface ReservationRepository extends JpaRepository<Reservation, UUID> 
     @Query("SELECT r FROM Reservation r WHERE r.user.id = :userId AND r.timeSlot.date >= :fromDate AND r.status = 'CONFIRMED' ORDER BY r.timeSlot.date, r.timeSlot.startTime")
     List<Reservation> findUpcomingByUserId(UUID userId, LocalDate fromDate);
 
+    @Query("SELECT r FROM Reservation r WHERE r.user.id = :userId AND r.timeSlot.date >= :fromDate AND r.status IN ('CONFIRMED', 'CANCELLED_BY_ADMIN') ORDER BY r.timeSlot.date, r.timeSlot.startTime")
+    List<Reservation> findUpcomingByUserIdIncludingAdminCancelled(UUID userId, LocalDate fromDate);
+
     boolean existsByUserIdAndTimeSlotIdAndStatus(UUID userId, UUID timeSlotId, ReservationStatus status);
 
     @Query("SELECT r.timeSlot.id FROM Reservation r WHERE r.user.id = :userId AND r.timeSlot.id IN :slotIds AND r.status = 'CONFIRMED'")

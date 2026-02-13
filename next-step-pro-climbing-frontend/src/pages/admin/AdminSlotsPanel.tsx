@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { format } from 'date-fns'
 import { pl } from 'date-fns/locale'
-import { Plus, Lock, Unlock, Trash2, Users, Pencil } from 'lucide-react'
+import { Plus, Lock, Unlock, Trash2, Users, Pencil, AlertTriangle } from 'lucide-react'
 import { calendarApi, adminApi } from '../../api/client'
 import { getErrorMessage } from '../../utils/errors'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
@@ -18,6 +18,7 @@ export function AdminSlotsPanel() {
   const [showParticipantsModal, setShowParticipantsModal] = useState(false)
   const [editingSlot, setEditingSlot] = useState<TimeSlot | null>(null)
   const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null)
+  const [confirmAction, setConfirmAction] = useState<{ slotId: string; action: 'block' | 'delete' } | null>(null)
 
   const queryClient = useQueryClient()
 
@@ -30,6 +31,12 @@ export function AdminSlotsPanel() {
     queryKey: ['admin', 'participants', selectedSlotId],
     queryFn: () => adminApi.getSlotParticipants(selectedSlotId!),
     enabled: !!selectedSlotId && showParticipantsModal,
+  })
+
+  const { data: confirmParticipants } = useQuery({
+    queryKey: ['admin', 'participants', confirmAction?.slotId],
+    queryFn: () => adminApi.getSlotParticipants(confirmAction!.slotId),
+    enabled: !!confirmAction,
   })
 
   const blockMutation = useMutation({
@@ -133,7 +140,7 @@ export function AdminSlotsPanel() {
                       variant="ghost"
                       size="sm"
                       aria-label="Zablokuj termin"
-                      onClick={() => blockMutation.mutate({ slotId: slot.id })}
+                      onClick={() => setConfirmAction({ slotId: slot.id, action: 'block' })}
                     >
                       <Lock className="w-4 h-4" />
                     </Button>
@@ -143,11 +150,7 @@ export function AdminSlotsPanel() {
                     variant="ghost"
                     size="sm"
                     aria-label="Usuń termin"
-                    onClick={() => {
-                      if (window.confirm('Czy na pewno chcesz usunąć ten termin?')) {
-                        deleteMutation.mutate(slot.id)
-                      }
-                    }}
+                    onClick={() => setConfirmAction({ slotId: slot.id, action: 'delete' })}
                   >
                     <Trash2 className="w-4 h-4 text-rose-400/80" />
                   </Button>
@@ -182,6 +185,24 @@ export function AdminSlotsPanel() {
             setSelectedSlotId(null)
           }}
           data={participants}
+        />
+      )}
+
+      {/* Confirm Block/Delete Modal */}
+      {confirmAction && confirmParticipants && (
+        <ConfirmBlockModal
+          isOpen={!!confirmAction}
+          onClose={() => setConfirmAction(null)}
+          action={confirmAction.action}
+          data={confirmParticipants}
+          onConfirm={() => {
+            if (confirmAction.action === 'block') {
+              blockMutation.mutate({ slotId: confirmAction.slotId })
+            } else {
+              deleteMutation.mutate(confirmAction.slotId)
+            }
+            setConfirmAction(null)
+          }}
         />
       )}
     </div>
@@ -407,6 +428,85 @@ function EditSlotModal({
           </p>
         )}
       </form>
+    </Modal>
+  )
+}
+
+function ConfirmBlockModal({
+  isOpen,
+  onClose,
+  action,
+  data,
+  onConfirm,
+}: {
+  isOpen: boolean
+  onClose: () => void
+  action: 'block' | 'delete'
+  data: SlotParticipants
+  onConfirm: () => void
+}) {
+  const hasParticipants = data.participants.length > 0
+  const actionLabel = action === 'block' ? 'Zablokuj' : 'Usuń'
+
+  return (
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={hasParticipants ? 'Uwaga - aktywne rezerwacje!' : `${actionLabel} termin`}
+    >
+      <div className="space-y-4">
+        <div className="text-sm text-dark-400">
+          {format(new Date(data.date), 'EEEE, d MMMM', { locale: pl })} |{' '}
+          {data.startTime.slice(0, 5)} - {data.endTime.slice(0, 5)}
+        </div>
+
+        {hasParticipants ? (
+          <>
+            <div className="flex items-start gap-3 p-3 bg-rose-500/10 border border-rose-500/20 rounded-lg">
+              <AlertTriangle className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
+              <div className="text-sm text-rose-300">
+                <p className="font-medium mb-1">Ten termin ma aktywne rezerwacje!</p>
+                <p className="text-rose-400/80">
+                  {action === 'block' ? 'Zablokowanie' : 'Usunięcie'} terminu spowoduje anulowanie rezerwacji i powiadomienie użytkowników e-mailem.
+                </p>
+              </div>
+            </div>
+
+            <div>
+              <h3 className="text-sm font-medium text-dark-300 mb-2">
+                Zapisani ({data.participants.length})
+              </h3>
+              <ul className="space-y-2 max-h-48 overflow-y-auto">
+                {data.participants.map((p) => (
+                  <li key={p.userId} className="bg-dark-800 rounded-lg p-3">
+                    <div className="font-medium text-dark-100">{p.fullName}</div>
+                    <div className="text-sm text-dark-400">{p.email}</div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </>
+        ) : (
+          <p className="text-dark-400 text-sm">
+            Brak zapisanych osób na ten termin.
+          </p>
+        )}
+
+        <div className="flex gap-3 pt-2">
+          <Button
+            variant="danger"
+            className="flex-1"
+            onClick={onConfirm}
+          >
+            {hasParticipants
+              ? `${actionLabel} i anuluj rezerwacje`
+              : `${actionLabel} termin`}
+          </Button>
+          <Button variant="ghost" onClick={onClose}>
+            Anuluj
+          </Button>
+        </div>
+      </div>
     </Modal>
   )
 }

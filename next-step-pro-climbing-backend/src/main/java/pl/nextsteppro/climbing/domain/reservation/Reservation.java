@@ -81,6 +81,10 @@ public class Reservation {
         this.status = ReservationStatus.CANCELLED;
     }
 
+    public void cancelByAdmin() {
+        this.status = ReservationStatus.CANCELLED_BY_ADMIN;
+    }
+
     public void confirm() {
         this.status = ReservationStatus.CONFIRMED;
     }
@@ -90,7 +94,11 @@ public class Reservation {
     }
 
     public boolean isCancelled() {
-        return status == ReservationStatus.CANCELLED;
+        return status == ReservationStatus.CANCELLED || status == ReservationStatus.CANCELLED_BY_ADMIN;
+    }
+
+    public boolean isCancelledByAdmin() {
+        return status == ReservationStatus.CANCELLED_BY_ADMIN;
     }
 
     public Instant getCreatedAt() {

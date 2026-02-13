@@ -92,6 +92,19 @@ public class MailService {
     }
 
     @Async
+    public void sendAdminCancellationNotification(Reservation reservation) {
+        User user = reservation.getUser();
+        if (!user.isEmailNotificationsEnabled()) return;
+
+        TimeSlot slot = reservation.getTimeSlot();
+
+        String subject = "Trening odwołany - Next Step Pro Climbing";
+        String body = buildAdminCancellationBody(user, slot);
+
+        sendEmail(user.getEmail(), subject, body, null);
+    }
+
+    @Async
     public void sendEventCancellationConfirmation(User user, Event event) {
         if (!user.isEmailNotificationsEnabled()) return;
 
@@ -268,6 +281,35 @@ public class MailService {
             event.getStartDate().format(DATE_FORMAT),
             event.getEndDate().format(DATE_FORMAT),
             participants
+        );
+    }
+
+    private String buildAdminCancellationBody(User user, TimeSlot slot) {
+        return """
+            <html>
+            <body style="font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5;">
+                <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden;">
+                    <div style="background: #0f0f1a; padding: 20px; text-align: center;">
+                        <img src="cid:logo" alt="Next Step Pro Climbing" style="height: 60px;" />
+                    </div>
+                    <div style="padding: 30px;">
+                        <h2 style="color: #1a1a2e; margin-top: 0;">Cześć %s!</h2>
+                        <p style="color: #333;">Niestety, Twój trening został <strong style="color: #e11d48;">odwołany przez instruktora</strong>.</p>
+                        <div style="background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; padding: 20px; border-radius: 8px;">
+                            <p style="margin: 0 0 8px 0;"><strong>Data:</strong> %s</p>
+                            <p style="margin: 0;"><strong>Godzina:</strong> %s - %s</p>
+                        </div>
+                        <p style="margin-top: 20px; color: #333;">Przepraszamy za utrudnienia. Zapraszamy do rezerwacji innego terminu!</p>
+                        <p style="color: #666; font-size: 14px;">Zespół Next Step Pro Climbing</p>
+                    </div>
+                </div>
+            </body>
+            </html>
+            """.formatted(
+            user.getFirstName(),
+            slot.getDate().format(DATE_FORMAT),
+            slot.getStartTime().format(TIME_FORMAT),
+            slot.getEndTime().format(TIME_FORMAT)
         );
     }
 

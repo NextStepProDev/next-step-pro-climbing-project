@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { format } from 'date-fns'
-import { Plus, Trash2, Eye, EyeOff, Clock, Pencil, ChevronDown, ChevronRight, MapPin, Users, Mail, Phone } from 'lucide-react'
+import { Plus, Trash2, Eye, EyeOff, Clock, Pencil, ChevronDown, ChevronRight, MapPin, Users, Mail, Phone, AlertTriangle } from 'lucide-react'
 import { adminApi } from '../../api/client'
 import { getErrorMessage } from '../../utils/errors'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
@@ -80,11 +80,7 @@ export function AdminEventsPanel() {
                   onToggleActive={() =>
                     updateMutation.mutate({ eventId: event.id, data: { active: !event.active } })
                   }
-                  onDelete={() => {
-                    if (window.confirm('Czy na pewno chcesz usunąć to wydarzenie?')) {
-                      deleteMutation.mutate(event.id)
-                    }
-                  }}
+                  onDelete={() => deleteMutation.mutate(event.id)}
                 />
               ))}
             </div>
@@ -157,11 +153,12 @@ function EventCard({
   onDelete: () => void
 }) {
   const [showParticipants, setShowParticipants] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
   const { data: participantsData, isLoading: participantsLoading } = useQuery({
     queryKey: ['admin', 'events', event.id, 'participants'],
     queryFn: () => adminApi.getEventParticipants(event.id),
-    enabled: showParticipants,
+    enabled: showParticipants || showDeleteConfirm,
   })
 
   return (
@@ -216,7 +213,7 @@ function EventCard({
           <Button variant="ghost" size="sm" onClick={onToggleActive} title={event.active ? 'Dezaktywuj' : 'Aktywuj'}>
             {event.active ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
           </Button>
-          <Button variant="ghost" size="sm" onClick={onDelete}>
+          <Button variant="ghost" size="sm" onClick={() => setShowDeleteConfirm(true)}>
             <Trash2 className="w-4 h-4 text-rose-400/80" />
           </Button>
         </div>
@@ -268,7 +265,88 @@ function EventCard({
           )}
         </div>
       )}
+
+      {/* Delete confirmation modal */}
+      {showDeleteConfirm && participantsData && (
+        <ConfirmDeleteEventModal
+          isOpen={showDeleteConfirm}
+          onClose={() => setShowDeleteConfirm(false)}
+          eventTitle={event.title}
+          participants={participantsData.participants}
+          onConfirm={() => {
+            onDelete()
+            setShowDeleteConfirm(false)
+          }}
+        />
+      )}
     </div>
+  )
+}
+
+function ConfirmDeleteEventModal({
+  isOpen,
+  onClose,
+  eventTitle,
+  participants,
+  onConfirm,
+}: {
+  isOpen: boolean
+  onClose: () => void
+  eventTitle: string
+  participants: { userId: string; fullName: string; email: string }[]
+  onConfirm: () => void
+}) {
+  const hasParticipants = participants.length > 0
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title={hasParticipants ? 'Uwaga - aktywne rezerwacje!' : 'Usuń wydarzenie'}>
+      <div className="space-y-4">
+        <div className="text-sm text-dark-400">
+          Wydarzenie: <span className="text-dark-200">{eventTitle}</span>
+        </div>
+
+        {hasParticipants ? (
+          <>
+            <div className="flex items-start gap-3 p-3 bg-rose-500/10 border border-rose-500/20 rounded-lg">
+              <AlertTriangle className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
+              <div className="text-sm text-rose-300">
+                <p className="font-medium mb-1">To wydarzenie ma zapisanych uczestników!</p>
+                <p className="text-rose-400/80">
+                  Usunięcie wydarzenia spowoduje anulowanie wszystkich rezerwacji i powiadomienie użytkowników e-mailem.
+                </p>
+              </div>
+            </div>
+
+            <div>
+              <h3 className="text-sm font-medium text-dark-300 mb-2">
+                Zapisani ({participants.length})
+              </h3>
+              <ul className="space-y-2 max-h-48 overflow-y-auto">
+                {participants.map((p) => (
+                  <li key={p.userId} className="bg-dark-800 rounded-lg p-3">
+                    <div className="font-medium text-dark-100">{p.fullName}</div>
+                    <div className="text-sm text-dark-400">{p.email}</div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </>
+        ) : (
+          <p className="text-dark-400 text-sm">
+            Brak zapisanych osób na to wydarzenie.
+          </p>
+        )}
+
+        <div className="flex gap-3 pt-2">
+          <Button variant="danger" className="flex-1" onClick={onConfirm}>
+            {hasParticipants ? 'Usuń i anuluj rezerwacje' : 'Usuń wydarzenie'}
+          </Button>
+          <Button variant="ghost" onClick={onClose}>
+            Anuluj
+          </Button>
+        </div>
+      </div>
+    </Modal>
   )
 }
 

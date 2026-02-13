@@ -17,6 +17,8 @@ import pl.nextsteppro.climbing.domain.user.User;
 import pl.nextsteppro.climbing.domain.user.UserRepository;
 import pl.nextsteppro.climbing.domain.user.UserRole;
 
+import pl.nextsteppro.climbing.infrastructure.mail.MailService;
+
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.LinkedHashMap;
@@ -34,17 +36,20 @@ public class AdminService {
     private final ReservationRepository reservationRepository;
     private final UserRepository userRepository;
     private final AuthTokenRepository authTokenRepository;
+    private final MailService mailService;
 
     public AdminService(TimeSlotRepository timeSlotRepository,
                        EventRepository eventRepository,
                        ReservationRepository reservationRepository,
                        UserRepository userRepository,
-                       AuthTokenRepository authTokenRepository) {
+                       AuthTokenRepository authTokenRepository,
+                       MailService mailService) {
         this.timeSlotRepository = timeSlotRepository;
         this.eventRepository = eventRepository;
         this.reservationRepository = reservationRepository;
         this.userRepository = userRepository;
         this.authTokenRepository = authTokenRepository;
+        this.mailService = mailService;
     }
 
     @Caching(evict = {
@@ -110,6 +115,13 @@ public class AdminService {
         TimeSlot slot = timeSlotRepository.findById(slotId)
             .orElseThrow(() -> new IllegalArgumentException("Time slot not found"));
 
+        List<Reservation> confirmed = reservationRepository.findConfirmedByTimeSlotId(slotId);
+        for (Reservation reservation : confirmed) {
+            reservation.cancelByAdmin();
+            reservationRepository.save(reservation);
+            mailService.sendAdminCancellationNotification(reservation);
+        }
+
         slot.block(reason);
         timeSlotRepository.save(slot);
     }
@@ -131,6 +143,13 @@ public class AdminService {
         @CacheEvict(value = "calendarDay", allEntries = true)
     })
     public void deleteTimeSlot(UUID slotId) {
+        List<Reservation> confirmed = reservationRepository.findConfirmedByTimeSlotId(slotId);
+        for (Reservation reservation : confirmed) {
+            reservation.cancelByAdmin();
+            reservationRepository.save(reservation);
+            mailService.sendAdminCancellationNotification(reservation);
+        }
+
         timeSlotRepository.deleteById(slotId);
     }
 
@@ -213,6 +232,17 @@ public class AdminService {
         @CacheEvict(value = "calendarDay", allEntries = true)
     })
     public void deleteEvent(UUID eventId) {
+        List<TimeSlot> slots = timeSlotRepository.findByEventId(eventId);
+        if (!slots.isEmpty()) {
+            List<UUID> slotIds = slots.stream().map(TimeSlot::getId).toList();
+            List<Reservation> confirmed = reservationRepository.findConfirmedByTimeSlotIds(slotIds);
+            for (Reservation reservation : confirmed) {
+                reservation.cancelByAdmin();
+                reservationRepository.save(reservation);
+                mailService.sendAdminCancellationNotification(reservation);
+            }
+        }
+
         eventRepository.deleteById(eventId);
     }
 

@@ -145,7 +145,7 @@ public class ReservationService {
 
     @Transactional(readOnly = true)
     public MyReservationsDto getUserUpcomingReservations(UUID userId) {
-        List<Reservation> allReservations = reservationRepository.findUpcomingByUserId(userId, LocalDate.now());
+        List<Reservation> allReservations = reservationRepository.findUpcomingByUserIdIncludingAdminCancelled(userId, LocalDate.now());
 
         List<UserReservationDto> standaloneSlots = new ArrayList<>();
         Map<UUID, List<Reservation>> eventReservations = new LinkedHashMap<>();
