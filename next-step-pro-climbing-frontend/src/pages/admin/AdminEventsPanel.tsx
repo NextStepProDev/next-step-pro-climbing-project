@@ -9,7 +9,7 @@ import { QueryError } from '../../components/ui/QueryError'
 import { Button } from '../../components/ui/Button'
 import { Modal } from '../../components/ui/Modal'
 import { TimeScrollPicker } from '../../components/ui/TimeScrollPicker'
-import type { CreateEventRequest, EventDetail, EventParticipants, EventType } from '../../types'
+import type { CreateEventRequest, EventDetail, EventType } from '../../types'
 
 const EVENT_TYPE_LABELS: Record<string, string> = {
   COURSE: 'Kurs',
