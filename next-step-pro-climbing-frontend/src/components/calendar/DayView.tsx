@@ -4,12 +4,13 @@ import { pl } from "date-fns/locale";
 import { ArrowLeft, Clock, Calendar, Users } from "lucide-react";
 import clsx from "clsx";
 import type { TimeSlot, EventSummary } from "../../types";
-import { formatAvailability, buildEventColorMap, getEventColor } from "../../utils/events";
+import { formatAvailability, getEventColor } from "../../utils/events";
 
 interface DayViewProps {
   date: string;
   slots: TimeSlot[];
   events: EventSummary[];
+  eventColorMap: Map<string, number>;
   onBack: () => void;
   onSlotClick: (slotId: string) => void;
   onEventClick?: (event: EventSummary) => void;
@@ -96,6 +97,7 @@ export function DayView({
   date,
   slots,
   events,
+  eventColorMap,
   onBack,
   onSlotClick,
   onEventClick,
@@ -135,8 +137,6 @@ export function DayView({
 
     return { eventSlotGroups: grouped, standaloneSlots: standalone };
   }, [slots, events]);
-
-  const eventColorMap = useMemo(() => buildEventColorMap(events), [events]);
 
   const hasAnyContent = slots.length > 0 || events.length > 0;
 

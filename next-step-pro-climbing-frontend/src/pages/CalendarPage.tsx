@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
 import { format } from "date-fns";
@@ -9,7 +9,7 @@ import { SlotDetailModal } from "../components/calendar/SlotDetailModal";
 import { EventSignupModal } from "../components/calendar/EventSignupModal";
 import { LoadingSpinner } from "../components/ui/LoadingSpinner";
 import { QueryError } from "../components/ui/QueryError";
-import { formatAvailability, getEventColor } from "../utils/events";
+import { formatAvailability, getEventColor, buildEventColorMap } from "../utils/events";
 import type { EventSummary } from "../types";
 
 export function CalendarPage() {
@@ -56,6 +56,11 @@ export function CalendarPage() {
     queryFn: () => calendarApi.getSlotDetails(selectedSlotId!),
     enabled: !!selectedSlotId,
   });
+
+  const monthEventColorMap = useMemo(
+    () => buildEventColorMap(monthData?.events ?? []),
+    [monthData?.events],
+  );
 
   const handleDayClick = useCallback(
     (date: string) => {
@@ -127,6 +132,7 @@ export function CalendarPage() {
           date={selectedDate}
           slots={dayData.slots}
           events={dayData.events}
+          eventColorMap={monthEventColorMap}
           onBack={handleBackToMonth}
           onSlotClick={handleSlotClick}
           onEventClick={setSelectedEvent}
