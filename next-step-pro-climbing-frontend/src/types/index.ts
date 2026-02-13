@@ -36,6 +36,7 @@ export interface TimeSlot {
   id: string
   startTime: string
   endTime: string
+  maxParticipants: number
   status: SlotStatus
   isUserRegistered: boolean
   eventTitle: string | null

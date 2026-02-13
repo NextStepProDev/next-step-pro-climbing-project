@@ -33,6 +33,7 @@ record TimeSlotDto(
     UUID id,
     LocalTime startTime,
     LocalTime endTime,
+    int maxParticipants,
     SlotStatus status,
     boolean isUserRegistered,
     @Nullable String eventTitle

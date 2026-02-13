@@ -176,9 +176,10 @@ public class CalendarService {
             slot.getId(),
             slot.getStartTime(),
             slot.getEndTime(),
+            slot.getMaxParticipants(),
             status,
             isUserRegistered,
-            slot.belongsToEvent() ? slot.getEvent().getTitle() : null
+            slot.getDisplayTitle()
         );
     }
 
