@@ -59,9 +59,9 @@ function groupReservations(reservations: ReservationAdmin[]) {
   const grouped = new Map<string, GroupItem[]>()
 
   for (const eg of eventMap.values()) {
-    const groupDate = eg.eventStartDate
-    if (!grouped.has(groupDate)) grouped.set(groupDate, [])
-    grouped.get(groupDate)!.push(eg)
+    const groupKey = `${eg.eventStartDate}:${eg.eventEndDate}`
+    if (!grouped.has(groupKey)) grouped.set(groupKey, [])
+    grouped.get(groupKey)!.push(eg)
   }
 
   for (const si of slotItems) {
