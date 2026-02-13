@@ -59,6 +59,9 @@ public class ReservationService {
         if (slotDateTime.isBefore(LocalDateTime.now())) {
             throw new IllegalArgumentException("Nie można zarezerwować terminu, który już minął");
         }
+        if (slotDateTime.isBefore(LocalDateTime.now().plusHours(12))) {
+            throw new IllegalStateException("Rezerwacja online jest możliwa do 12 godzin przed terminem. Skontaktuj się z instruktorem telefonicznie, aby sprawdzić dostępność.");
+        }
 
         User user = userRepository.findById(userId)
             .orElseThrow(() -> new IllegalArgumentException("User not found"));
@@ -194,8 +197,12 @@ public class ReservationService {
             throw new IllegalStateException("To wydarzenie nie jest aktywne");
         }
 
-        if (event.isMultiDay() && !event.getStartDate().isAfter(LocalDate.now())) {
-            throw new IllegalStateException("Zapisy na to wydarzenie zostały zamknięte — kurs już się rozpoczął");
+        LocalDateTime eventStart = LocalDateTime.of(
+            event.getStartDate(),
+            event.getStartTime() != null ? event.getStartTime() : LocalTime.of(0, 0)
+        );
+        if (eventStart.isBefore(LocalDateTime.now().plusHours(12))) {
+            throw new IllegalStateException("Rezerwacja online jest możliwa do 12 godzin przed wydarzeniem. Skontaktuj się z instruktorem telefonicznie, aby sprawdzić dostępność.");
         }
 
         User user = userRepository.findById(userId)

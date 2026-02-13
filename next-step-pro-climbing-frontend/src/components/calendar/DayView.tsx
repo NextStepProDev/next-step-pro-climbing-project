@@ -39,6 +39,8 @@ function SlotButton({
           "border-dark-800 bg-dark-900/50 cursor-not-allowed opacity-50",
         slot.status === "PAST" &&
           "border-dark-800 bg-dark-900/50 cursor-not-allowed opacity-40",
+        slot.status === "BOOKING_CLOSED" &&
+          "border-dark-700 hover:border-amber-500 hover:bg-dark-800",
         slot.isUserRegistered && "border-primary-500 bg-primary-500/10",
       )}
     >
@@ -69,6 +71,11 @@ function SlotButton({
           {slot.status === "BLOCKED" && (
             <span className="px-2 py-1 text-xs font-medium bg-dark-700 text-dark-400 rounded">
               Zarezerwowane
+            </span>
+          )}
+          {slot.status === "BOOKING_CLOSED" && !slot.isUserRegistered && (
+            <span className="px-2 py-1 text-xs font-medium bg-amber-500/10 text-amber-400 rounded">
+              Zadzwoń
             </span>
           )}
           {slot.status === "PAST" && (

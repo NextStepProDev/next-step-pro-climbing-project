@@ -14,6 +14,7 @@ import pl.nextsteppro.climbing.domain.timeslot.TimeSlotRepository;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.YearMonth;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -135,9 +136,10 @@ public class CalendarService {
         int availableSlots = 0;
         boolean hasUserReservation = false;
 
+        LocalDateTime cutoff = LocalDateTime.now().plusHours(BOOKING_CUTOFF_HOURS);
         for (TimeSlot slot : slots) {
             LocalDateTime slotDateTime = LocalDateTime.of(slot.getDate(), slot.getStartTime());
-            if (!slot.belongsToEvent() && !slot.isBlocked() && !slotDateTime.isBefore(LocalDateTime.now())) {
+            if (!slot.belongsToEvent() && !slot.isBlocked() && slotDateTime.isAfter(cutoff)) {
                 int confirmed = countMap.getOrDefault(slot.getId(), 0);
                 if (confirmed < slot.getMaxParticipants()) {
                     availableSlots++;
@@ -165,9 +167,12 @@ public class CalendarService {
         );
     }
 
+    private static final int BOOKING_CUTOFF_HOURS = 12;
+
     private SlotStatus determineSlotStatus(TimeSlot slot, int confirmedCount) {
         LocalDateTime slotDateTime = LocalDateTime.of(slot.getDate(), slot.getStartTime());
-        if (slotDateTime.isBefore(LocalDateTime.now())) {
+        LocalDateTime now = LocalDateTime.now();
+        if (slotDateTime.isBefore(now)) {
             return SlotStatus.PAST;
         }
         if (slot.isBlocked()) {
@@ -176,11 +181,18 @@ public class CalendarService {
         if (confirmedCount >= slot.getMaxParticipants()) {
             return SlotStatus.FULL;
         }
+        if (slotDateTime.isBefore(now.plusHours(BOOKING_CUTOFF_HOURS))) {
+            return SlotStatus.BOOKING_CLOSED;
+        }
         return SlotStatus.AVAILABLE;
     }
 
     private EventSummaryDto toEventSummary(Event event, int currentParticipants, boolean isUserRegistered) {
-        boolean enrollmentOpen = !event.isMultiDay() || event.getStartDate().isAfter(LocalDate.now());
+        LocalDateTime eventStart = LocalDateTime.of(
+            event.getStartDate(),
+            event.getStartTime() != null ? event.getStartTime() : LocalTime.of(0, 0)
+        );
+        boolean enrollmentOpen = eventStart.isAfter(LocalDateTime.now().plusHours(BOOKING_CUTOFF_HOURS));
         return new EventSummaryDto(
             event.getId(),
             event.getTitle(),

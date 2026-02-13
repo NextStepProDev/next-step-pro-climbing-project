@@ -162,9 +162,12 @@ export function CalendarPage() {
 
                         {/* button */}
                         {!event.enrollmentOpen && !event.isUserRegistered ? (
-                          <span className="px-3 py-1 text-xs font-medium rounded bg-dark-700 text-dark-400">
-                            Zapisy zamknięte
-                          </span>
+                          <button
+                            onClick={() => setSelectedEvent(event)}
+                            className="px-3 py-1 text-xs font-medium rounded bg-dark-700 text-dark-400 hover:bg-dark-600 transition-colors"
+                          >
+                            Zadzwoń
+                          </button>
                         ) : (
                           <button
                             onClick={() => setSelectedEvent(event)}

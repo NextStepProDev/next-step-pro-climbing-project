@@ -71,5 +71,6 @@ enum SlotStatus {
     AVAILABLE,
     FULL,
     BLOCKED,
-    PAST
+    PAST,
+    BOOKING_CLOSED
 }

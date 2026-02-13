@@ -13,9 +13,9 @@ public interface EventRepository extends JpaRepository<Event, UUID> {
 
     List<Event> findAllByOrderByStartDateAsc();
 
-    @Query("SELECT e FROM Event e WHERE e.active = true AND e.startDate <= :date AND e.endDate >= :date")
+    @Query("SELECT e FROM Event e WHERE e.active = true AND e.startDate <= :date AND e.endDate >= :date ORDER BY e.startDate ASC")
     List<Event> findActiveEventsOnDate(LocalDate date);
 
-    @Query("SELECT e FROM Event e WHERE e.active = true AND e.startDate <= :endDate AND e.endDate >= :startDate")
+    @Query("SELECT e FROM Event e WHERE e.active = true AND e.startDate <= :endDate AND e.endDate >= :startDate ORDER BY e.startDate ASC")
     List<Event> findActiveEventsBetween(LocalDate startDate, LocalDate endDate);
 }

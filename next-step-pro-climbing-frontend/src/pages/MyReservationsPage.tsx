@@ -83,133 +83,145 @@ export function MyReservationsPage() {
           </a>
         </div>
       ) : (
-        <div className="space-y-4">
-          {/* Event reservations */}
-          {events.map((event) => (
-            <div
-              key={event.eventId}
-              className="bg-dark-900 rounded-xl border border-dark-800 p-4 sm:p-6"
-            >
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-2">
-                    <span className="inline-block px-2 py-0.5 text-xs font-medium rounded bg-primary-500/20 text-primary-400">
-                      {EVENT_TYPE_LABELS[event.eventType] || event.eventType}
-                    </span>
-                    <span className="font-medium text-dark-100">
-                      {event.eventTitle}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-3 text-dark-400">
-                    <Calendar className="w-5 h-5" />
-                    <span>
-                      {format(new Date(event.startDate), 'd MMMM', { locale: pl })}
-                      {' - '}
-                      {format(new Date(event.endDate), 'd MMMM yyyy', { locale: pl })}
-                    </span>
-                  </div>
-                  {event.participants > 1 && (
-                    <div className="flex items-center gap-2 mt-2 text-sm text-dark-400">
-                      <Users className="w-4 h-4" />
-                      <span>{event.participants} miejsca zarezerwowane</span>
+        <div className="space-y-6">
+          {events.length > 0 && (
+            <div className="space-y-4">
+              <h2 className="text-sm font-medium text-dark-400 uppercase tracking-wider">
+                Wydarzenia
+              </h2>
+              {events.map((event) => (
+                <div
+                  key={event.eventId}
+                  className="bg-dark-900 rounded-xl border border-dark-800 p-4 sm:p-6"
+                >
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2">
+                        <span className="inline-block px-2 py-0.5 text-xs font-medium rounded bg-primary-500/20 text-primary-400">
+                          {EVENT_TYPE_LABELS[event.eventType] || event.eventType}
+                        </span>
+                        <span className="font-medium text-dark-100">
+                          {event.eventTitle}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-3 text-dark-400">
+                        <Calendar className="w-5 h-5" />
+                        <span>
+                          {format(new Date(event.startDate), 'd MMMM', { locale: pl })}
+                          {' - '}
+                          {format(new Date(event.endDate), 'd MMMM yyyy', { locale: pl })}
+                        </span>
+                      </div>
+                      {event.participants > 1 && (
+                        <div className="flex items-center gap-2 mt-2 text-sm text-dark-400">
+                          <Users className="w-4 h-4" />
+                          <span>{event.participants} miejsca zarezerwowane</span>
+                        </div>
+                      )}
+                      {event.comment && (
+                        <div className="flex items-start gap-2 mt-2 text-sm text-dark-400">
+                          <MessageSquare className="w-4 h-4 mt-0.5 shrink-0" />
+                          <span>"{event.comment}"</span>
+                        </div>
+                      )}
                     </div>
-                  )}
-                  {event.comment && (
-                    <div className="flex items-start gap-2 mt-2 text-sm text-dark-400">
-                      <MessageSquare className="w-4 h-4 mt-0.5 shrink-0" />
-                      <span>"{event.comment}"</span>
-                    </div>
-                  )}
-                </div>
 
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="danger"
-                    size="sm"
-                    loading={cancelEventMutation.isPending}
-                    onClick={() => {
-                      if (
-                        window.confirm(
-                          'Czy na pewno chcesz anulować zapis na całe wydarzenie?'
-                        )
-                      ) {
-                        cancelEventMutation.mutate(event.eventId)
-                      }
-                    }}
-                  >
-                    <X className="w-4 h-4 mr-1" />
-                    Anuluj wydarzenie
-                  </Button>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="danger"
+                        size="sm"
+                        loading={cancelEventMutation.isPending}
+                        onClick={() => {
+                          if (
+                            window.confirm(
+                              'Czy na pewno chcesz anulować zapis na całe wydarzenie?'
+                            )
+                          ) {
+                            cancelEventMutation.mutate(event.eventId)
+                          }
+                        }}
+                      >
+                        <X className="w-4 h-4 mr-1" />
+                        Anuluj wydarzenie
+                      </Button>
+                    </div>
+                  </div>
                 </div>
-              </div>
+              ))}
             </div>
-          ))}
+          )}
 
-          {/* Standalone slot reservations */}
-          {slots.map((reservation) => {
-            const dateObj = new Date(reservation.date)
-            return (
-              <div
-                key={reservation.id}
-                className="bg-dark-900 rounded-xl border border-dark-800 p-4 sm:p-6"
-              >
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <Calendar className="w-5 h-5 text-primary-400" />
-                      <span className="font-medium text-dark-100 capitalize">
-                        {format(dateObj, 'EEEE, d MMMM yyyy', { locale: pl })}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-3 text-dark-400">
-                      <Clock className="w-5 h-5" />
-                      <span>
-                        {reservation.startTime.slice(0, 5)} -{' '}
-                        {reservation.endTime.slice(0, 5)}
-                      </span>
-                    </div>
-                    {reservation.participants > 1 && (
-                      <div className="flex items-center gap-2 mt-2 text-sm text-dark-400">
-                        <Users className="w-4 h-4" />
-                        <span>{reservation.participants} miejsca zarezerwowane</span>
+          {slots.length > 0 && (
+            <div className="space-y-4">
+              <h2 className="text-sm font-medium text-dark-400 uppercase tracking-wider">
+                Treningi
+              </h2>
+              {slots.map((reservation) => {
+                const dateObj = new Date(reservation.date)
+                return (
+                  <div
+                    key={reservation.id}
+                    className="bg-dark-900 rounded-xl border border-dark-800 p-4 sm:p-6"
+                  >
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          <Calendar className="w-5 h-5 text-primary-400" />
+                          <span className="font-medium text-dark-100 capitalize">
+                            {format(dateObj, 'EEEE, d MMMM yyyy', { locale: pl })}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-3 text-dark-400">
+                          <Clock className="w-5 h-5" />
+                          <span>
+                            {reservation.startTime.slice(0, 5)} -{' '}
+                            {reservation.endTime.slice(0, 5)}
+                          </span>
+                        </div>
+                        {reservation.participants > 1 && (
+                          <div className="flex items-center gap-2 mt-2 text-sm text-dark-400">
+                            <Users className="w-4 h-4" />
+                            <span>{reservation.participants} miejsca zarezerwowane</span>
+                          </div>
+                        )}
+                        {reservation.eventTitle && (
+                          <div className="mt-2 inline-block px-2 py-1 bg-primary-500/10 text-primary-400 text-sm rounded">
+                            {reservation.eventTitle}
+                          </div>
+                        )}
+                        {reservation.comment && (
+                          <div className="flex items-start gap-2 mt-2 text-sm text-dark-400">
+                            <MessageSquare className="w-4 h-4 mt-0.5 shrink-0" />
+                            <span>"{reservation.comment}"</span>
+                          </div>
+                        )}
                       </div>
-                    )}
-                    {reservation.eventTitle && (
-                      <div className="mt-2 inline-block px-2 py-1 bg-primary-500/10 text-primary-400 text-sm rounded">
-                        {reservation.eventTitle}
-                      </div>
-                    )}
-                    {reservation.comment && (
-                      <div className="flex items-start gap-2 mt-2 text-sm text-dark-400">
-                        <MessageSquare className="w-4 h-4 mt-0.5 shrink-0" />
-                        <span>"{reservation.comment}"</span>
-                      </div>
-                    )}
-                  </div>
 
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="danger"
-                      size="sm"
-                      loading={cancelMutation.isPending}
-                      onClick={() => {
-                        if (
-                          window.confirm(
-                            'Czy na pewno chcesz anulować tę rezerwację?'
-                          )
-                        ) {
-                          cancelMutation.mutate(reservation.id)
-                        }
-                      }}
-                    >
-                      <X className="w-4 h-4 mr-1" />
-                      Anuluj
-                    </Button>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="danger"
+                          size="sm"
+                          loading={cancelMutation.isPending}
+                          onClick={() => {
+                            if (
+                              window.confirm(
+                                'Czy na pewno chcesz anulować tę rezerwację?'
+                              )
+                            ) {
+                              cancelMutation.mutate(reservation.id)
+                            }
+                          }}
+                        >
+                          <X className="w-4 h-4 mr-1" />
+                          Anuluj
+                        </Button>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
-            )
-          })}
+                )
+              })}
+            </div>
+          )}
         </div>
       )}
 

@@ -108,9 +108,9 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
 
         {/* Enrollment closed info */}
         {enrollmentClosed && !event.isUserRegistered && (
-          <div className="p-3 bg-dark-800 border border-dark-700 rounded-lg">
-            <span className="text-dark-400 font-medium">
-              Zapisy na to wydarzenie zostały zamknięte — kurs już się rozpoczął
+          <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg">
+            <span className="text-amber-400 text-sm">
+              Rezerwacja online jest możliwa do 12 godzin przed wydarzeniem. Skontaktuj się z instruktorem telefonicznie, aby sprawdzić dostępność.
             </span>
           </div>
         )}

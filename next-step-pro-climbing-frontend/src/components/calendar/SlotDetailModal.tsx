@@ -61,6 +61,7 @@ export function SlotDetailModal({
     (slot.maxParticipants ?? 0) - (slot.currentParticipants ?? 0);
 
   const isPast = slot.status === "PAST";
+  const isBookingClosed = slot.status === "BOOKING_CLOSED";
   const isAvailable = slot.status === "AVAILABLE" && spotsLeft > 0;
 
   const handleLoginRedirect = () => {
@@ -110,6 +111,15 @@ export function SlotDetailModal({
           <div className="p-3 bg-dark-800 border border-dark-700 rounded-lg">
             <span className="text-dark-400 text-sm">
               Ten termin już się zakończył
+            </span>
+          </div>
+        )}
+
+        {/* Booking closed info */}
+        {isBookingClosed && !slot.isUserRegistered && (
+          <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg">
+            <span className="text-amber-400 text-sm">
+              Rezerwacja online jest możliwa do 12 godzin przed terminem. Skontaktuj się z instruktorem telefonicznie, aby sprawdzić dostępność.
             </span>
           </div>
         )}
@@ -195,6 +205,14 @@ export function SlotDetailModal({
               }
             >
               Anuluj rezerwację
+            </Button>
+          ) : isBookingClosed ? (
+            <Button
+              variant="ghost"
+              className="flex-1"
+              onClick={onClose}
+            >
+              Zamknij
             </Button>
           ) : isAvailable ? (
             <Button

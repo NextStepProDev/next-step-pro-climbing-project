@@ -56,7 +56,7 @@ export interface TimeSlotDetail {
   reservationId: string | null
 }
 
-export type SlotStatus = 'AVAILABLE' | 'FULL' | 'BLOCKED' | 'PAST'
+export type SlotStatus = 'AVAILABLE' | 'FULL' | 'BLOCKED' | 'PAST' | 'BOOKING_CLOSED'
 
 // Event types
 export interface EventSummary {
