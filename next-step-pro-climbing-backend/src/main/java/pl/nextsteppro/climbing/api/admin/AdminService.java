@@ -250,6 +250,12 @@ public class AdminService {
             for (User user : notifiedUsers.values()) {
                 mailService.sendAdminEventCancellationNotification(user, event);
             }
+
+            // Delete all reservations and time slots before deleting the event
+            for (UUID slotId : slotIds) {
+                reservationRepository.deleteAll(reservationRepository.findByTimeSlotId(slotId));
+            }
+            timeSlotRepository.deleteAll(slots);
         }
 
         eventRepository.deleteById(eventId);

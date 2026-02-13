@@ -82,6 +82,7 @@ public class CalendarService {
             : Set.of();
 
         List<TimeSlotDto> slotDtos = slots.stream()
+            .filter(slot -> !slot.belongsToEvent())
             .map(slot -> toTimeSlotDto(slot, countMap.getOrDefault(slot.getId(), 0),
                                        userConfirmedSlotIds.contains(slot.getId())))
             .toList();
@@ -132,14 +133,18 @@ public class CalendarService {
 
     private DaySummaryDto createDaySummary(LocalDate date, List<TimeSlot> slots,
                                           Map<UUID, Integer> countMap, Set<UUID> userConfirmedSlotIds) {
-        int totalSlots = slots.size();
+        List<TimeSlot> standaloneSlots = slots.stream()
+            .filter(slot -> !slot.belongsToEvent())
+            .toList();
+
+        int totalSlots = standaloneSlots.size();
         int availableSlots = 0;
         boolean hasUserReservation = false;
 
         LocalDateTime cutoff = LocalDateTime.now().plusHours(BOOKING_CUTOFF_HOURS);
-        for (TimeSlot slot : slots) {
+        for (TimeSlot slot : standaloneSlots) {
             LocalDateTime slotDateTime = LocalDateTime.of(slot.getDate(), slot.getStartTime());
-            if (!slot.belongsToEvent() && !slot.isBlocked() && slotDateTime.isAfter(cutoff)) {
+            if (!slot.isBlocked() && slotDateTime.isAfter(cutoff)) {
                 int confirmed = countMap.getOrDefault(slot.getId(), 0);
                 if (confirmed < slot.getMaxParticipants()) {
                     availableSlots++;
