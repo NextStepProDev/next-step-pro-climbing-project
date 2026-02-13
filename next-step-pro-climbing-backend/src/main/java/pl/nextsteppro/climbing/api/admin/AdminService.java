@@ -232,14 +232,23 @@ public class AdminService {
         @CacheEvict(value = "calendarDay", allEntries = true)
     })
     public void deleteEvent(UUID eventId) {
+        Event event = eventRepository.findById(eventId)
+            .orElseThrow(() -> new IllegalArgumentException("Event not found"));
+
         List<TimeSlot> slots = timeSlotRepository.findByEventId(eventId);
         if (!slots.isEmpty()) {
             List<UUID> slotIds = slots.stream().map(TimeSlot::getId).toList();
             List<Reservation> confirmed = reservationRepository.findConfirmedByTimeSlotIds(slotIds);
+
+            Map<UUID, User> notifiedUsers = new LinkedHashMap<>();
             for (Reservation reservation : confirmed) {
                 reservation.cancelByAdmin();
                 reservationRepository.save(reservation);
-                mailService.sendAdminCancellationNotification(reservation);
+                notifiedUsers.putIfAbsent(reservation.getUser().getId(), reservation.getUser());
+            }
+
+            for (User user : notifiedUsers.values()) {
+                mailService.sendAdminEventCancellationNotification(user, event);
             }
         }
 
