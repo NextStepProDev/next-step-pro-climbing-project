@@ -95,6 +95,7 @@ export type EventType = 'COURSE' | 'TRAINING' | 'WORKSHOP'
 // Reservation types
 export interface UserReservation {
   id: string
+  timeSlotId: string
   date: string
   startTime: string
   endTime: string

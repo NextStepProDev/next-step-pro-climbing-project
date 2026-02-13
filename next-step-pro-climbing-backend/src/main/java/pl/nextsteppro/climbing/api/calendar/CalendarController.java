@@ -75,6 +75,26 @@ public class CalendarController {
     }
 
     @Operation(
+        summary = "Szczegóły wydarzenia",
+        description = "Zwraca pełne informacje o wydarzeniu: typ, daty, liczba miejsc, status zapisu użytkownika"
+    )
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Szczegóły wydarzenia",
+            content = @Content(schema = @Schema(implementation = EventSummaryDto.class))),
+        @ApiResponse(responseCode = "404", description = "Wydarzenie nie istnieje")
+    })
+    @GetMapping("/event/{eventId}")
+    public ResponseEntity<EventSummaryDto> getEventSummary(
+            @Parameter(description = "UUID wydarzenia") @PathVariable UUID eventId,
+            @Parameter(hidden = true) @AuthenticationPrincipal CustomOAuth2User oAuth2User,
+            HttpServletRequest request) {
+
+        UUID userId = currentUserService.getCurrentUserId(oAuth2User, request).orElse(null);
+        EventSummaryDto summary = calendarService.getEventSummary(eventId, userId);
+        return ResponseEntity.ok(summary);
+    }
+
+    @Operation(
         summary = "Szczegóły terminu",
         description = "Zwraca pełne informacje o terminie: godziny, liczba miejsc, status rezerwacji użytkownika"
     )

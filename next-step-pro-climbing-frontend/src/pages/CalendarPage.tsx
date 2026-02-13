@@ -165,7 +165,8 @@ export function CalendarPage() {
                   return (
                     <div
                       key={event.id}
-                      className="flex items-center justify-between text-sm bg-dark-800/40 rounded-lg px-3 py-2"
+                      className="flex items-center justify-between text-sm bg-dark-800/40 rounded-lg px-3 py-2 cursor-pointer hover:bg-dark-800/70 transition-colors"
+                      onClick={() => setSelectedEvent(event)}
                     >
                       <span className="flex items-center gap-2 text-dark-100 font-medium">
                         <span
@@ -190,25 +191,21 @@ export function CalendarPage() {
                           )}
                         </span>
 
-                        {/* button */}
+                        {/* status indicator */}
                         {!event.enrollmentOpen && !event.isUserRegistered ? (
-                          <button
-                            onClick={() => setSelectedEvent(event)}
-                            className="px-3 py-1 text-xs font-medium rounded bg-dark-700 text-dark-400 hover:bg-dark-600 transition-colors"
-                          >
+                          <span className="px-3 py-1 text-xs font-medium rounded bg-dark-700 text-dark-400">
                             Zadzwoń
-                          </button>
+                          </span>
                         ) : (
-                          <button
-                            onClick={() => setSelectedEvent(event)}
+                          <span
                             className={
                               event.isUserRegistered
                                 ? "px-3 py-1 text-xs font-medium rounded bg-primary-500/20 text-primary-400"
-                                : "px-3 py-1 text-xs font-medium rounded bg-primary-600 text-white hover:bg-primary-500 transition-colors"
+                                : "px-3 py-1 text-xs font-medium rounded bg-primary-600 text-white"
                             }
                           >
                             {event.isUserRegistered ? "Zapisany" : "Zapisz się"}
-                          </button>
+                          </span>
                         )}
                       </div>
                     </div>

@@ -3,6 +3,7 @@ import type {
   MonthView,
   DayView,
   TimeSlotDetail,
+  EventSummary,
   UserReservation,
   MyReservations,
   ReservationResult,
@@ -166,6 +167,9 @@ export const calendarApi = {
 
   getSlotDetails: (slotId: string) =>
     fetchApi<TimeSlotDetail>(`/calendar/slot/${slotId}`),
+
+  getEventSummary: (eventId: string) =>
+    fetchApi<EventSummary>(`/calendar/event/${eventId}`),
 }
 
 // Reservations

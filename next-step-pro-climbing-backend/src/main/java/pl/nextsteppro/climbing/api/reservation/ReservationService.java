@@ -360,6 +360,7 @@ public class ReservationService {
         TimeSlot slot = reservation.getTimeSlot();
         return new UserReservationDto(
             reservation.getId(),
+            slot.getId(),
             slot.getDate(),
             slot.getStartTime(),
             slot.getEndTime(),

@@ -17,6 +17,7 @@ record ReservationResultDto(
 
 record UserReservationDto(
     UUID id,
+    UUID timeSlotId,
     LocalDate date,
     LocalTime startTime,
     LocalTime endTime,

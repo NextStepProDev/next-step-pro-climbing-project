@@ -3,11 +3,13 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { format } from 'date-fns'
 import { pl } from 'date-fns/locale'
 import { Calendar, Clock, MessageSquare, Users, X, Ban, ChevronDown, ChevronRight } from 'lucide-react'
-import { reservationApi } from '../api/client'
+import { reservationApi, calendarApi } from '../api/client'
 import { getErrorMessage } from '../utils/errors'
 import { LoadingSpinner } from '../components/ui/LoadingSpinner'
 import { QueryError } from '../components/ui/QueryError'
 import { Button } from '../components/ui/Button'
+import { SlotDetailModal } from '../components/calendar/SlotDetailModal'
+import { EventSignupModal } from '../components/calendar/EventSignupModal'
 import type { MyReservations } from '../types'
 
 const EVENT_TYPE_LABELS: Record<string, string> = {
@@ -19,6 +21,8 @@ const EVENT_TYPE_LABELS: Record<string, string> = {
 export function MyReservationsPage() {
   const queryClient = useQueryClient()
   const [showArchive, setShowArchive] = useState(false)
+  const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null)
+  const [selectedEventId, setSelectedEventId] = useState<string | null>(null)
 
   const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ['reservations', 'upcoming'],
@@ -29,6 +33,18 @@ export function MyReservationsPage() {
     queryKey: ['reservations', 'past'],
     queryFn: reservationApi.getMyPast,
     enabled: showArchive,
+  })
+
+  const { data: slotDetail } = useQuery({
+    queryKey: ['slot', selectedSlotId],
+    queryFn: () => calendarApi.getSlotDetails(selectedSlotId!),
+    enabled: !!selectedSlotId,
+  })
+
+  const { data: eventSummary } = useQuery({
+    queryKey: ['event-summary', selectedEventId],
+    queryFn: () => calendarApi.getEventSummary(selectedEventId!),
+    enabled: !!selectedEventId,
   })
 
   const cancelMutation = useMutation({
@@ -71,6 +87,18 @@ export function MyReservationsPage() {
   const pastEvents = pastData?.events ?? []
   const hasPastData = pastSlots.length > 0 || pastEvents.length > 0
 
+  const handleSlotModalClose = () => {
+    setSelectedSlotId(null)
+    queryClient.invalidateQueries({ queryKey: ['reservations'] })
+    queryClient.invalidateQueries({ queryKey: ['calendar'] })
+  }
+
+  const handleEventModalClose = () => {
+    setSelectedEventId(null)
+    queryClient.invalidateQueries({ queryKey: ['reservations'] })
+    queryClient.invalidateQueries({ queryKey: ['calendar'] })
+  }
+
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="mb-8">
@@ -101,6 +129,8 @@ export function MyReservationsPage() {
           events={events}
           cancelMutation={cancelMutation}
           cancelEventMutation={cancelEventMutation}
+          onSlotClick={setSelectedSlotId}
+          onEventClick={setSelectedEventId}
         />
       )}
 
@@ -146,6 +176,18 @@ export function MyReservationsPage() {
           </div>
         )}
       </div>
+
+      <SlotDetailModal
+        slot={slotDetail ?? null}
+        isOpen={!!selectedSlotId}
+        onClose={handleSlotModalClose}
+      />
+
+      <EventSignupModal
+        event={eventSummary ?? null}
+        isOpen={!!selectedEventId}
+        onClose={handleEventModalClose}
+      />
     </div>
   )
 }
@@ -155,11 +197,15 @@ function UpcomingReservations({
   events,
   cancelMutation,
   cancelEventMutation,
+  onSlotClick,
+  onEventClick,
 }: {
   slots: MyReservations['slots']
   events: MyReservations['events']
   cancelMutation: ReturnType<typeof useMutation<void, Error, string>>
   cancelEventMutation: ReturnType<typeof useMutation<void, Error, string>>
+  onSlotClick: (slotId: string) => void
+  onEventClick: (eventId: string) => void
 }) {
   return (
     <div className="space-y-6">
@@ -171,7 +217,8 @@ function UpcomingReservations({
           {events.map((event) => (
             <div
               key={event.eventId}
-              className="bg-dark-900 rounded-xl border border-dark-800 p-4 sm:p-6"
+              className="bg-dark-900 rounded-xl border border-dark-800 p-4 sm:p-6 cursor-pointer hover:border-dark-700 transition-colors"
+              onClick={() => onEventClick(event.eventId)}
             >
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div className="flex-1">
@@ -210,7 +257,8 @@ function UpcomingReservations({
                     variant="danger"
                     size="sm"
                     loading={cancelEventMutation.isPending}
-                    onClick={() => {
+                    onClick={(e) => {
+                      e.stopPropagation()
                       if (
                         window.confirm(
                           'Czy na pewno chcesz anulować zapis na całe wydarzenie?'
@@ -243,9 +291,10 @@ function UpcomingReservations({
                 key={reservation.id}
                 className={
                   isCancelledByAdmin
-                    ? 'bg-rose-500/5 rounded-xl border border-rose-500/30 p-4 sm:p-6'
-                    : 'bg-dark-900 rounded-xl border border-dark-800 p-4 sm:p-6'
+                    ? 'bg-rose-500/5 rounded-xl border border-rose-500/30 p-4 sm:p-6 cursor-pointer hover:border-rose-500/50 transition-colors'
+                    : 'bg-dark-900 rounded-xl border border-dark-800 p-4 sm:p-6 cursor-pointer hover:border-dark-700 transition-colors'
                 }
+                onClick={() => onSlotClick(reservation.timeSlotId)}
               >
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                   <div className="flex-1">
@@ -296,7 +345,8 @@ function UpcomingReservations({
                         variant="danger"
                         size="sm"
                         loading={cancelMutation.isPending}
-                        onClick={() => {
+                        onClick={(e) => {
+                          e.stopPropagation()
                           if (
                             window.confirm(
                               'Czy na pewno chcesz anulować tę rezerwację?'

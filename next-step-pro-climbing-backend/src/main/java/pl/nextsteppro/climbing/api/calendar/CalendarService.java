@@ -97,6 +97,17 @@ public class CalendarService {
         return new DayViewDto(date, slotDtos, eventSummaries);
     }
 
+    public EventSummaryDto getEventSummary(UUID eventId, @Nullable UUID userId) {
+        Event event = eventRepository.findById(eventId)
+            .orElseThrow(() -> new IllegalArgumentException("Event not found: " + eventId));
+
+        EventData eventData = computeEventData(List.of(event), userId);
+        int currentParticipants = eventData.participantsMap().getOrDefault(event.getId(), 0);
+        boolean isUserRegistered = eventData.userRegisteredEventIds().contains(event.getId());
+
+        return toEventSummary(event, currentParticipants, isUserRegistered);
+    }
+
     public TimeSlotDetailDto getSlotDetails(UUID slotId, @Nullable UUID userId) {
         TimeSlot slot = timeSlotRepository.findById(slotId)
             .orElseThrow(() -> new IllegalArgumentException("Time slot not found: " + slotId));
