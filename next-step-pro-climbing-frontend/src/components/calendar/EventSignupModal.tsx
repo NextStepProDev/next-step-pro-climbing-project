@@ -75,6 +75,11 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
         {/* Title */}
         <h3 className="text-lg font-semibold text-dark-100">{event.title}</h3>
 
+        {/* Description */}
+        {event.description && (
+          <p className="text-sm text-dark-300 whitespace-pre-wrap">{event.description}</p>
+        )}
+
         {/* Date */}
         <div className="flex items-center gap-2 text-dark-300">
           <Calendar className="w-5 h-5" />

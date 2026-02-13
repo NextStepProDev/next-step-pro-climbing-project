@@ -57,6 +57,7 @@ record TimeSlotDetailDto(
 record EventSummaryDto(
     UUID id,
     String title,
+    @Nullable String description,
     @Nullable String location,
     String eventType,
     LocalDate startDate,

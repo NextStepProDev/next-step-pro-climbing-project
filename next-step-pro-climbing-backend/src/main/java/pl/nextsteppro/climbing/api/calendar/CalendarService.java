@@ -202,6 +202,7 @@ public class CalendarService {
         return new EventSummaryDto(
             event.getId(),
             event.getTitle(),
+            event.getDescription(),
             event.getLocation(),
             event.getEventType().name(),
             event.getStartDate(),

@@ -63,6 +63,7 @@ export type SlotStatus = 'AVAILABLE' | 'FULL' | 'BLOCKED' | 'PAST' | 'BOOKING_CL
 export interface EventSummary {
   id: string
   title: string
+  description: string | null
   location: string | null
   eventType: EventType
   startDate: string
