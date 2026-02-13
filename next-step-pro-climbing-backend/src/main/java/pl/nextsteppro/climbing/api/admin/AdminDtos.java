@@ -151,10 +151,10 @@ record ReservationAdminDto(
 
 record UserAdminDto(
     UUID id,
-    String fullName,
+    String firstName,
+    String lastName,
     String email,
     String phone,
-    String nickname,
     String role,
     Instant createdAt
 ) {}

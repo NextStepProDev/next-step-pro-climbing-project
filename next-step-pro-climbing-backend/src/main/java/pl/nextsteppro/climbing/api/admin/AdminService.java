@@ -298,10 +298,10 @@ public class AdminService {
         return userRepository.findAll().stream()
             .map(u -> new UserAdminDto(
                 u.getId(),
-                u.getFullName(),
+                u.getFirstName(),
+                u.getLastName(),
                 u.getEmail(),
                 u.getPhone(),
-                u.getNickname(),
                 u.getRole().name(),
                 u.getCreatedAt()
             ))

@@ -61,11 +61,8 @@ export function AdminUsersPanel() {
             <tbody className="divide-y divide-dark-800">
               {users?.map((user) => (
                 <tr key={user.id} className="hover:bg-dark-800/50">
-                  <td className="px-4 py-3">
-                    <div className="text-dark-100">
-                      {user.firstName} {user.lastName}
-                    </div>
-                    <div className="text-sm text-dark-500">@{user.nickname}</div>
+                  <td className="px-4 py-3 text-dark-100">
+                    {user.firstName} {user.lastName}
                   </td>
                   <td className="px-4 py-3 text-dark-300">{user.email}</td>
                   <td className="px-4 py-3 text-dark-300">{user.phone || '-'}</td>
