@@ -54,9 +54,9 @@ spring:
 app:
   admin:
     # Comma-separated list of emails auto-promoted to ADMIN on register/login
-    email: ${ADMIN_EMAIL:nextsteppro.team@gmail.com}
+    email: ${ADMIN_EMAIL:${MAIL_USERNAME:nextsteppro.team@gmail.com}}
   mail:
-    from: ${MAIL_FROM:${MAIL_USERNAME:noreply@nextsteppro.pl}}
+    from: ${MAIL_FROM:${MAIL_USERNAME:nextsteppro.team@gmail.com}}
   cors:
     allowed-origins: ${CORS_ORIGINS:http://localhost:5173}
   base-url: ${APP_BASE_URL:http://localhost:8080}

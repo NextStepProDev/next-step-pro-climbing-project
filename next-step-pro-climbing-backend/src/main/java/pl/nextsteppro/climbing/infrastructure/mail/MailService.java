@@ -13,6 +13,7 @@ import pl.nextsteppro.climbing.domain.event.Event;
 import pl.nextsteppro.climbing.domain.reservation.Reservation;
 import pl.nextsteppro.climbing.domain.timeslot.TimeSlot;
 import pl.nextsteppro.climbing.domain.user.User;
+import jakarta.annotation.PostConstruct;
 import java.time.format.DateTimeFormatter;
 
 @Service
@@ -30,6 +31,16 @@ public class MailService {
         this.appConfig = appConfig;
     }
 
+    @PostConstruct
+    void logMailConfiguration() {
+        String adminEmail = appConfig.getAdmin().getEmail();
+        String fromEmail = appConfig.getMail().getFrom();
+        log.info("Mail configuration — admin notifications to: '{}', from: '{}'", adminEmail, fromEmail);
+        if (adminEmail == null || adminEmail.isBlank()) {
+            log.error("ADMIN_EMAIL is not configured! Admin notifications will NOT be sent.");
+        }
+    }
+
     @Async
     public void sendReservationConfirmation(Reservation reservation) {
         User user = reservation.getUser();
@@ -45,14 +56,16 @@ public class MailService {
 
     @Async
     public void sendAdminNotification(Reservation reservation) {
-        String adminEmail = appConfig.getAdmin().getEmail();
-        log.info("Sending admin notification to: {} for reservation {}", adminEmail, reservation.getId());
+        String adminEmail = resolveAdminEmail();
+        if (adminEmail == null) return;
+
+        log.info("Sending admin notification to: '{}' for reservation {}", adminEmail, reservation.getId());
 
         User user = reservation.getUser();
         TimeSlot slot = reservation.getTimeSlot();
 
         String subject = "Nowa rezerwacja: " + user.getFullName();
-        String body = buildAdminNotificationBody(user, slot);
+        String body = buildAdminNotificationBody(user, slot, reservation.getComment(), reservation.getParticipants());
 
         sendEmail(adminEmail, subject, body, null);
     }
@@ -82,8 +95,10 @@ public class MailService {
 
     @Async
     public void sendEventAdminNotification(User user, Event event, int participants) {
-        String adminEmail = appConfig.getAdmin().getEmail();
-        log.info("Sending event admin notification to: {} for event {}", adminEmail, event.getId());
+        String adminEmail = resolveAdminEmail();
+        if (adminEmail == null) return;
+
+        log.info("Sending event admin notification to: '{}' for event {}", adminEmail, event.getId());
 
         String subject = "Nowy zapis na wydarzenie: " + user.getFullName();
         String body = buildEventAdminNotificationBody(user, event, participants);
@@ -116,8 +131,10 @@ public class MailService {
 
     @Async
     public void sendUserCancellationAdminNotification(Reservation reservation) {
-        String adminEmail = appConfig.getAdmin().getEmail();
-        log.info("Sending user cancellation admin notification to: {}", adminEmail);
+        String adminEmail = resolveAdminEmail();
+        if (adminEmail == null) return;
+
+        log.info("Sending user cancellation admin notification to: '{}'", adminEmail);
 
         User user = reservation.getUser();
         TimeSlot slot = reservation.getTimeSlot();
@@ -131,8 +148,10 @@ public class MailService {
 
     @Async
     public void sendUserEventCancellationAdminNotification(User user, Event event) {
-        String adminEmail = appConfig.getAdmin().getEmail();
-        log.info("Sending user event cancellation admin notification to: {}", adminEmail);
+        String adminEmail = resolveAdminEmail();
+        if (adminEmail == null) return;
+
+        log.info("Sending user event cancellation admin notification to: '{}'", adminEmail);
 
         String subject = "ANULOWANIE WYDARZENIA: " + user.getFullName() + " - " + event.getTitle();
         String body = buildUserEventCancellationAdminBody(user, event);
@@ -148,6 +167,20 @@ public class MailService {
         String body = buildEventCancellationBody(user, event);
 
         sendEmail(user.getEmail(), subject, body, null);
+    }
+
+    private @Nullable String resolveAdminEmail() {
+        String email = appConfig.getAdmin().getEmail();
+        if (email != null && !email.isBlank()) {
+            return email.trim();
+        }
+        String fallback = appConfig.getMail().getFrom();
+        if (fallback != null && !fallback.isBlank()) {
+            log.warn("ADMIN_EMAIL is empty, falling back to MAIL_FROM: '{}'", fallback);
+            return fallback.trim();
+        }
+        log.error("Cannot send admin notification: no admin email configured (ADMIN_EMAIL and MAIL_FROM are both empty)");
+        return null;
     }
 
     private void sendEmail(String to, String subject, String body, @Nullable byte[] icsAttachment) {
@@ -203,7 +236,13 @@ public class MailService {
         );
     }
 
-    private String buildAdminNotificationBody(User user, TimeSlot slot) {
+    private String buildAdminNotificationBody(User user, TimeSlot slot, @Nullable String comment, int participants) {
+        String commentLine = (comment != null && !comment.isBlank())
+            ? "<p><strong>Komentarz:</strong> %s</p>".formatted(comment)
+            : "";
+        String participantsLine = participants > 1
+            ? "<p><strong>Liczba osób:</strong> %d</p>".formatted(participants)
+            : "";
         return """
             <html>
             <body style="font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5;">
@@ -219,6 +258,8 @@ public class MailService {
                             <p><strong>Telefon:</strong> %s</p>
                             <p><strong>Data:</strong> %s</p>
                             <p><strong>Godzina:</strong> %s - %s</p>
+                            %s
+                            %s
                         </div>
                     </div>
                 </div>
@@ -230,7 +271,9 @@ public class MailService {
             user.getPhone(),
             slot.getDate().format(DATE_FORMAT),
             slot.getStartTime().format(TIME_FORMAT),
-            slot.getEndTime().format(TIME_FORMAT)
+            slot.getEndTime().format(TIME_FORMAT),
+            participantsLine,
+            commentLine
         );
     }
 
