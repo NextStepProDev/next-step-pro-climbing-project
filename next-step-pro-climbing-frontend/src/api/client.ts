@@ -256,6 +256,9 @@ export const adminApi = {
   getUpcomingReservations: () =>
     fetchApi<ReservationAdmin[]>('/admin/reservations/upcoming'),
 
+  getPastReservations: () =>
+    fetchApi<ReservationAdmin[]>('/admin/reservations/past'),
+
   getReservationsByDate: (date: string) =>
     fetchApi<ReservationAdmin[]>(`/admin/reservations/date/${date}`),
 

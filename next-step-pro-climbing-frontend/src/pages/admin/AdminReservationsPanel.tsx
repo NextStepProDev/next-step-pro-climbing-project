@@ -6,6 +6,7 @@ import { ChevronDown, ChevronRight, Users, Mail, Phone } from 'lucide-react'
 import { adminApi } from '../../api/client'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
 import { QueryError } from '../../components/ui/QueryError'
+import { getErrorMessage } from '../../utils/errors'
 import type { ReservationAdmin } from '../../types'
 
 function isMultiDayEvent(r: ReservationAdmin) {
@@ -28,25 +29,7 @@ interface SlotEntry {
 
 type GroupItem = EventGroup | SlotEntry
 
-export function AdminReservationsPanel() {
-  const { data: reservations, isLoading, isError, error, refetch } = useQuery({
-    queryKey: ['admin', 'reservations', 'upcoming'],
-    queryFn: () => adminApi.getUpcomingReservations(),
-  })
-
-  if (isLoading) return <LoadingSpinner />
-
-  if (isError) return <QueryError error={error} onRetry={() => refetch()} />
-
-  if (!reservations || reservations.length === 0) {
-    return (
-      <div className="bg-dark-900 rounded-lg border border-dark-800 p-8 text-center text-dark-400">
-        Brak nadchodzących rezerwacji
-      </div>
-    )
-  }
-
-  // Separate multi-day events from standalone slots
+function groupReservations(reservations: ReservationAdmin[]) {
   const eventMap = new Map<string, EventGroup>()
   const slotItems: SlotEntry[] = []
 
@@ -55,7 +38,6 @@ export function AdminReservationsPanel() {
       const eventKey = `${r.title}-${r.eventStartDate}-${r.eventEndDate}`
       const existing = eventMap.get(eventKey)
       if (existing) {
-        // Deduplicate by user email within the same event
         if (!existing.reservations.some(er => er.userEmail === r.userEmail)) {
           existing.reservations.push(r)
         }
@@ -74,7 +56,6 @@ export function AdminReservationsPanel() {
     }
   }
 
-  // Group everything by date for timeline display
   const grouped = new Map<string, GroupItem[]>()
 
   for (const eg of eventMap.values()) {
@@ -89,16 +70,101 @@ export function AdminReservationsPanel() {
     grouped.get(groupDate)!.push(si)
   }
 
-  const sortedDates = [...grouped.keys()].sort()
+  return { grouped, eventMap, slotItems }
+}
 
+export function AdminReservationsPanel() {
+  const [showArchive, setShowArchive] = useState(false)
+
+  const { data: reservations, isLoading, isError, error, refetch } = useQuery({
+    queryKey: ['admin', 'reservations', 'upcoming'],
+    queryFn: () => adminApi.getUpcomingReservations(),
+  })
+
+  const { data: pastReservations, isLoading: pastLoading, isError: pastError, error: pastErrorObj } = useQuery({
+    queryKey: ['admin', 'reservations', 'past'],
+    queryFn: () => adminApi.getPastReservations(),
+    enabled: showArchive,
+  })
+
+  if (isLoading) return <LoadingSpinner />
+
+  if (isError) return <QueryError error={error} onRetry={() => refetch()} />
+
+  const hasUpcoming = reservations && reservations.length > 0
+  const { grouped, eventMap, slotItems } = groupReservations(reservations ?? [])
+  const sortedDates = [...grouped.keys()].sort()
   const totalCount = slotItems.length + eventMap.size
 
   return (
     <div className="space-y-6">
-      <p className="text-sm text-dark-400">
-        Wszystkie nadchodzące rezerwacje ({totalCount})
-      </p>
+      {/* Upcoming */}
+      {!hasUpcoming ? (
+        <div className="bg-dark-900 rounded-lg border border-dark-800 p-8 text-center text-dark-400">
+          Brak nadchodzących rezerwacji
+        </div>
+      ) : (
+        <>
+          <p className="text-sm text-dark-400">
+            Wszystkie nadchodzące rezerwacje ({totalCount})
+          </p>
+          <ReservationList sortedDates={sortedDates} grouped={grouped} />
+        </>
+      )}
 
+      {/* Archive */}
+      <div>
+        <button
+          onClick={() => setShowArchive(!showArchive)}
+          className="flex items-center gap-2 text-sm text-dark-500 hover:text-dark-300 transition-colors mb-3"
+        >
+          {showArchive ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+          Archiwum
+        </button>
+
+        {showArchive && (
+          <div>
+            {pastLoading && (
+              <div className="flex justify-center py-6">
+                <LoadingSpinner />
+              </div>
+            )}
+            {pastError && (
+              <div className="p-4 bg-rose-500/5 border border-rose-500/15 rounded-lg text-rose-400/80">
+                {getErrorMessage(pastErrorObj)}
+              </div>
+            )}
+            {pastReservations && pastReservations.length === 0 && (
+              <p className="text-dark-500 text-sm">Brak minionych rezerwacji.</p>
+            )}
+            {pastReservations && pastReservations.length > 0 && (
+              <PastReservationList reservations={pastReservations} />
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function PastReservationList({ reservations }: { reservations: ReservationAdmin[] }) {
+  const { grouped, eventMap, slotItems } = groupReservations(reservations)
+  const sortedDates = [...grouped.keys()].sort().reverse()
+  const totalCount = slotItems.length + eventMap.size
+
+  return (
+    <div className="space-y-6 opacity-60">
+      <p className="text-sm text-dark-400">
+        Minione rezerwacje ({totalCount})
+      </p>
+      <ReservationList sortedDates={sortedDates} grouped={grouped} />
+    </div>
+  )
+}
+
+function ReservationList({ sortedDates, grouped }: { sortedDates: string[]; grouped: Map<string, GroupItem[]> }) {
+  return (
+    <>
       {sortedDates.map((date) => {
         const items = grouped.get(date)!
         const hasEvent = items.some(i => i.type === 'event')
@@ -124,7 +190,7 @@ export function AdminReservationsPanel() {
           </div>
         )
       })}
-    </div>
+    </>
   )
 }
 

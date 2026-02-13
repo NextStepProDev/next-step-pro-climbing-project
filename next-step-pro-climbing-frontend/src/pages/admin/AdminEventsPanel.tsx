@@ -45,9 +45,16 @@ export function AdminEventsPanel() {
     },
   })
 
-  const today = format(new Date(), 'yyyy-MM-dd')
-  const upcoming = events?.filter(e => e.endDate >= today) ?? []
-  const archive = events?.filter(e => e.endDate < today) ?? []
+  const now = new Date()
+  const todayStr = format(now, 'yyyy-MM-dd')
+  const currentTime = format(now, 'HH:mm')
+  const isEventPast = (e: EventDetail) => {
+    if (e.endDate < todayStr) return true
+    if (e.endDate === todayStr && e.endTime && e.endTime.slice(0, 5) <= currentTime) return true
+    return false
+  }
+  const upcoming = events?.filter(e => !isEventPast(e)) ?? []
+  const archive = events?.filter(e => isEventPast(e)) ?? []
 
   return (
     <div>

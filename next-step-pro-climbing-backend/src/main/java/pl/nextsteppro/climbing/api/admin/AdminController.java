@@ -265,6 +265,22 @@ public class AdminController {
 
     @Tag(name = "Admin - Reservations")
     @Operation(
+        summary = "Wszystkie minione rezerwacje",
+        description = "Zwraca wszystkie przeszłe rezerwacje z pełnymi danymi uczestników"
+    )
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Lista rezerwacji",
+            content = @Content(array = @ArraySchema(schema = @Schema(implementation = ReservationAdminDto.class)))),
+        @ApiResponse(responseCode = "403", description = "Brak uprawnień administratora")
+    })
+    @GetMapping("/reservations/past")
+    public ResponseEntity<List<ReservationAdminDto>> getAllPastReservations() {
+        List<ReservationAdminDto> reservations = adminService.getAllPastReservations();
+        return ResponseEntity.ok(reservations);
+    }
+
+    @Tag(name = "Admin - Reservations")
+    @Operation(
         summary = "Rezerwacje na dzień",
         description = "Zwraca wszystkie rezerwacje na wybrany dzień z pełnymi danymi uczestników"
     )

@@ -302,6 +302,12 @@ public class AdminService {
     }
 
     @Transactional(readOnly = true)
+    public List<ReservationAdminDto> getAllPastReservations() {
+        List<TimeSlot> slots = timeSlotRepository.findPastOrdered(LocalDate.now(), LocalTime.now());
+        return buildReservationAdminDtos(slots);
+    }
+
+    @Transactional(readOnly = true)
     public List<ReservationAdminDto> getReservationsByDate(LocalDate date) {
         List<TimeSlot> slots = timeSlotRepository.findByDateSorted(date);
         return buildReservationAdminDtos(slots);
