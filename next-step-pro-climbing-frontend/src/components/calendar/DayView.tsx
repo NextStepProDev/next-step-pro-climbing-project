@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { format } from "date-fns";
 import { pl } from "date-fns/locale";
-import { ArrowLeft, Clock, Calendar, Users } from "lucide-react";
+import { ArrowLeft, Clock, Calendar, Users, Plus } from "lucide-react";
 import clsx from "clsx";
 import type { TimeSlot, EventSummary } from "../../types";
 import { formatAvailability, getEventColor } from "../../utils/events";
@@ -14,6 +14,7 @@ interface DayViewProps {
   onBack: () => void;
   onSlotClick: (slotId: string) => void;
   onEventClick?: (event: EventSummary) => void;
+  onAddSlot?: () => void;
 }
 
 /* ===============================
@@ -101,6 +102,7 @@ export function DayView({
   onBack,
   onSlotClick,
   onEventClick,
+  onAddSlot,
 }: DayViewProps) {
   const dateObj = new Date(date);
 
@@ -151,9 +153,19 @@ export function DayView({
           <ArrowLeft className="w-5 h-5" />
         </button>
 
-        <h2 className="text-lg font-semibold text-dark-100 capitalize">
+        <h2 className="text-lg font-semibold text-dark-100 capitalize flex-1">
           {format(dateObj, "EEEE, d MMMM yyyy", { locale: pl })}
         </h2>
+
+        {onAddSlot && (
+          <button
+            onClick={onAddSlot}
+            title="Dodaj termin"
+            className="p-2 text-dark-400 hover:text-primary-400 hover:bg-dark-800 rounded-lg transition-colors"
+          >
+            <Plus className="w-5 h-5" />
+          </button>
+        )}
       </div>
 
       {/* Content */}

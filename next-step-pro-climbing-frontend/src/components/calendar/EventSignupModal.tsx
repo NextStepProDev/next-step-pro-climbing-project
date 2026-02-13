@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { format } from 'date-fns'
-import { Calendar, Users } from 'lucide-react'
+import { Calendar, MapPin, Users } from 'lucide-react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { Modal } from '../ui/Modal'
@@ -90,6 +90,14 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
             )}
           </span>
         </div>
+
+        {/* Location */}
+        {event.location && (
+          <div className="flex items-center gap-2 text-dark-300">
+            <MapPin className="w-5 h-5" />
+            <span>{event.location}</span>
+          </div>
+        )}
 
         {/* Capacity */}
         <div className="flex items-center gap-2 text-dark-300">

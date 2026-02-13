@@ -12,11 +12,12 @@ interface MonthCalendarProps {
   days: DaySummary[]
   events: EventSummary[]
   onDayClick: (date: string) => void
+  allDaysClickable?: boolean
 }
 
 const WEEKDAYS = ['Pon', 'Wt', 'Śr', 'Czw', 'Pt', 'Sob', 'Nd']
 
-export function MonthCalendar({ currentMonth, onMonthChange, days, events, onDayClick }: MonthCalendarProps) {
+export function MonthCalendar({ currentMonth, onMonthChange, days, events, onDayClick, allDaysClickable }: MonthCalendarProps) {
   const calendarDays = useMemo(() => {
     const start = startOfMonth(currentMonth)
     const end = endOfMonth(currentMonth)
@@ -114,7 +115,7 @@ export function MonthCalendar({ currentMonth, onMonthChange, days, events, onDay
           const hasSlots = dayData && dayData.totalSlots > 0
           const hasUserReservation = dayData?.hasUserReservation
           const hasEvents = dayEvents.length > 0
-          const isClickable = !isPast && (hasSlots || hasEvents)
+          const isClickable = !isPast && (hasSlots || hasEvents || allDaysClickable)
 
           return (
             <button

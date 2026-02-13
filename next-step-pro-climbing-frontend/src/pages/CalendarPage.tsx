@@ -3,16 +3,19 @@ import { useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
 import { format } from "date-fns";
 import { calendarApi } from "../api/client";
+import { useAuth } from "../context/AuthContext";
 import { MonthCalendar } from "../components/calendar/MonthCalendar";
 import { DayView } from "../components/calendar/DayView";
 import { SlotDetailModal } from "../components/calendar/SlotDetailModal";
 import { EventSignupModal } from "../components/calendar/EventSignupModal";
+import { CreateSlotModal } from "../components/calendar/CreateSlotModal";
 import { LoadingSpinner } from "../components/ui/LoadingSpinner";
 import { QueryError } from "../components/ui/QueryError";
 import { formatAvailability, getEventColor, buildEventColorMap } from "../utils/events";
 import type { EventSummary } from "../types";
 
 export function CalendarPage() {
+  const { isAdmin } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const [currentMonth, setCurrentMonth] = useState(() => {
     const dateParam = searchParams.get("date");
@@ -23,6 +26,7 @@ export function CalendarPage() {
   );
   const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<EventSummary | null>(null);
+  const [showCreateSlotModal, setShowCreateSlotModal] = useState(false);
   const eventsRef = useRef<HTMLDivElement>(null);
 
   const yearMonth = format(currentMonth, "yyyy-MM");
@@ -67,7 +71,7 @@ export function CalendarPage() {
       const dayInfo = monthData?.days.find((d) => d.date === date);
       const hasSlots = dayInfo && dayInfo.totalSlots > 0;
 
-      if (hasSlots) {
+      if (hasSlots || isAdmin) {
         setSelectedDate(date);
         setSearchParams({ date });
         return;
@@ -84,7 +88,7 @@ export function CalendarPage() {
         eventsRef.current?.scrollIntoView({ behavior: "smooth" });
       }
     },
-    [monthData, setSearchParams],
+    [monthData, setSearchParams, isAdmin],
   );
 
   const handleBackToMonth = useCallback(() => {
@@ -136,6 +140,7 @@ export function CalendarPage() {
           onBack={handleBackToMonth}
           onSlotClick={handleSlotClick}
           onEventClick={setSelectedEvent}
+          onAddSlot={isAdmin ? () => setShowCreateSlotModal(true) : undefined}
         />
       ) : monthData ? (
         <>
@@ -145,6 +150,7 @@ export function CalendarPage() {
             days={monthData.days}
             events={monthData.events}
             onDayClick={handleDayClick}
+            allDaysClickable={isAdmin}
           />
 
           {/* Events legend */}
@@ -234,6 +240,15 @@ export function CalendarPage() {
         isOpen={!!selectedEvent}
         onClose={() => setSelectedEvent(null)}
       />
+
+      {isAdmin && selectedDate && (
+        <CreateSlotModal
+          key={selectedDate}
+          isOpen={showCreateSlotModal}
+          onClose={() => setShowCreateSlotModal(false)}
+          defaultDate={selectedDate}
+        />
+      )}
     </div>
   );
 }
