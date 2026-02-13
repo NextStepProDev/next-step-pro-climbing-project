@@ -49,14 +49,23 @@ public class MailService {
 
     @Async
     public void sendAdminNotification(Reservation reservation) {
+        String adminEmail = appConfig.getAdmin().getEmail();
+        log.info("Sending admin notification to: {} for reservation {}", adminEmail, reservation.getId());
+
         User user = reservation.getUser();
         TimeSlot slot = reservation.getTimeSlot();
 
         String subject = "Nowa rezerwacja: " + user.getFullName();
         String body = buildAdminNotificationBody(user, slot);
-        byte[] icsAttachment = iCalService.generateReservationIcs(reservation);
 
-        sendEmail(appConfig.getAdmin().getEmail(), subject, body, icsAttachment);
+        byte @Nullable [] icsAttachment = null;
+        try {
+            icsAttachment = iCalService.generateReservationIcs(reservation);
+        } catch (Exception e) {
+            log.error("Failed to generate ICS for reservation {}, sending email without attachment: {}", reservation.getId(), e.getMessage(), e);
+        }
+
+        sendEmail(adminEmail, subject, body, icsAttachment);
     }
 
     @Async
@@ -84,11 +93,20 @@ public class MailService {
 
     @Async
     public void sendEventAdminNotification(User user, Event event, int participants) {
+        String adminEmail = appConfig.getAdmin().getEmail();
+        log.info("Sending event admin notification to: {} for event {}", adminEmail, event.getId());
+
         String subject = "Nowy zapis na wydarzenie: " + user.getFullName();
         String body = buildEventAdminNotificationBody(user, event, participants);
-        byte[] icsAttachment = iCalService.generateEventIcs(event);
 
-        sendEmail(appConfig.getAdmin().getEmail(), subject, body, icsAttachment);
+        byte @Nullable [] icsAttachment = null;
+        try {
+            icsAttachment = iCalService.generateEventIcs(event);
+        } catch (Exception e) {
+            log.error("Failed to generate ICS for event {}, sending email without attachment: {}", event.getId(), e.getMessage(), e);
+        }
+
+        sendEmail(adminEmail, subject, body, icsAttachment);
     }
 
     @Async
@@ -112,6 +130,32 @@ public class MailService {
         String body = buildAdminEventCancellationBody(user, event);
 
         sendEmail(user.getEmail(), subject, body, null);
+    }
+
+    @Async
+    public void sendUserCancellationAdminNotification(Reservation reservation) {
+        String adminEmail = appConfig.getAdmin().getEmail();
+        log.info("Sending user cancellation admin notification to: {}", adminEmail);
+
+        User user = reservation.getUser();
+        TimeSlot slot = reservation.getTimeSlot();
+
+        String subject = "ANULOWANIE: " + user.getFullName() + " - "
+            + slot.getDate().format(DATE_FORMAT) + " " + slot.getStartTime().format(TIME_FORMAT);
+        String body = buildUserCancellationAdminBody(user, slot);
+
+        sendEmail(adminEmail, subject, body, null);
+    }
+
+    @Async
+    public void sendUserEventCancellationAdminNotification(User user, Event event) {
+        String adminEmail = appConfig.getAdmin().getEmail();
+        log.info("Sending user event cancellation admin notification to: {}", adminEmail);
+
+        String subject = "ANULOWANIE WYDARZENIA: " + user.getFullName() + " - " + event.getTitle();
+        String body = buildUserEventCancellationAdminBody(user, event);
+
+        sendEmail(adminEmail, subject, body, null);
     }
 
     @Async
@@ -351,6 +395,68 @@ public class MailService {
             </html>
             """.formatted(
             user.getFirstName(),
+            event.getTitle(),
+            event.getStartDate().format(DATE_FORMAT),
+            event.getEndDate().format(DATE_FORMAT)
+        );
+    }
+
+    private String buildUserCancellationAdminBody(User user, TimeSlot slot) {
+        return """
+            <html>
+            <body style="font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5;">
+                <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden;">
+                    <div style="background: #0f0f1a; padding: 20px; text-align: center;">
+                        <img src="cid:logo" alt="Next Step Pro Climbing" style="height: 60px;" />
+                    </div>
+                    <div style="padding: 30px;">
+                        <h2 style="color: #e11d48; margin-top: 0;">Anulowanie rezerwacji</h2>
+                        <div style="background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; padding: 20px; border-radius: 8px;">
+                            <p><strong>Klient:</strong> %s</p>
+                            <p><strong>Email:</strong> %s</p>
+                            <p><strong>Telefon:</strong> %s</p>
+                            <p><strong>Data:</strong> %s</p>
+                            <p><strong>Godzina:</strong> %s - %s</p>
+                        </div>
+                    </div>
+                </div>
+            </body>
+            </html>
+            """.formatted(
+            user.getFullName(),
+            user.getEmail(),
+            user.getPhone(),
+            slot.getDate().format(DATE_FORMAT),
+            slot.getStartTime().format(TIME_FORMAT),
+            slot.getEndTime().format(TIME_FORMAT)
+        );
+    }
+
+    private String buildUserEventCancellationAdminBody(User user, Event event) {
+        return """
+            <html>
+            <body style="font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5;">
+                <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden;">
+                    <div style="background: #0f0f1a; padding: 20px; text-align: center;">
+                        <img src="cid:logo" alt="Next Step Pro Climbing" style="height: 60px;" />
+                    </div>
+                    <div style="padding: 30px;">
+                        <h2 style="color: #e11d48; margin-top: 0;">Anulowanie zapisu na wydarzenie</h2>
+                        <div style="background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; padding: 20px; border-radius: 8px;">
+                            <p><strong>Klient:</strong> %s</p>
+                            <p><strong>Email:</strong> %s</p>
+                            <p><strong>Telefon:</strong> %s</p>
+                            <p><strong>Wydarzenie:</strong> %s</p>
+                            <p><strong>Termin:</strong> %s - %s</p>
+                        </div>
+                    </div>
+                </div>
+            </body>
+            </html>
+            """.formatted(
+            user.getFullName(),
+            user.getEmail(),
+            user.getPhone(),
             event.getTitle(),
             event.getStartDate().format(DATE_FORMAT),
             event.getEndDate().format(DATE_FORMAT)

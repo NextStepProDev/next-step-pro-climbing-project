@@ -129,10 +129,17 @@ public class ReservationService {
             throw new IllegalStateException("This reservation is already cancelled");
         }
 
+        TimeSlot slot = reservation.getTimeSlot();
+        LocalDateTime slotDateTime = LocalDateTime.of(slot.getDate(), slot.getStartTime());
+        if (slotDateTime.isBefore(LocalDateTime.now().plusHours(12))) {
+            throw new IllegalStateException("Anulowanie online jest możliwe do 12 godzin przed terminem. Skontaktuj się z instruktorem telefonicznie.");
+        }
+
         reservation.cancel();
         reservationRepository.save(reservation);
 
         mailService.sendCancellationConfirmation(reservation);
+        mailService.sendUserCancellationAdminNotification(reservation);
     }
 
     @Transactional(readOnly = true)
@@ -321,6 +328,14 @@ public class ReservationService {
             throw new IllegalArgumentException("Wydarzenie nie ma przypisanych terminów");
         }
 
+        LocalDateTime earliestSlotDateTime = slots.stream()
+            .map(s -> LocalDateTime.of(s.getDate(), s.getStartTime()))
+            .min(LocalDateTime::compareTo)
+            .orElseThrow();
+        if (earliestSlotDateTime.isBefore(LocalDateTime.now().plusHours(12))) {
+            throw new IllegalStateException("Anulowanie online jest możliwe do 12 godzin przed terminem. Skontaktuj się z instruktorem telefonicznie.");
+        }
+
         List<UUID> cancelledSlotIds = new ArrayList<>();
         for (TimeSlot slot : slots) {
             Reservation reservation = reservationRepository.findByUserIdAndTimeSlotId(userId, slot.getId());
@@ -341,6 +356,7 @@ public class ReservationService {
             .orElseThrow(() -> new IllegalArgumentException("Event not found"));
 
         mailService.sendEventCancellationConfirmation(user, event);
+        mailService.sendUserEventCancellationAdminNotification(user, event);
     }
 
     private List<TimeSlot> createDefaultSlotsForEvent(Event event) {
