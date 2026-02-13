@@ -122,11 +122,7 @@ export function AdminEventsPanel() {
                         onToggleActive={() =>
                           updateMutation.mutate({ eventId: event.id, data: { active: !event.active } })
                         }
-                        onDelete={() => {
-                          if (window.confirm('Czy na pewno chcesz usunąć to wydarzenie?')) {
-                            deleteMutation.mutate(event.id)
-                          }
-                        }}
+                        onDelete={() => deleteMutation.mutate(event.id)}
                       />
                     ))}
 

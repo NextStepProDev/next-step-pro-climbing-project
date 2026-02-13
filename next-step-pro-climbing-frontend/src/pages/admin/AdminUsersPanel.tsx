@@ -6,12 +6,18 @@ import { adminApi } from '../../api/client'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
 import { QueryError } from '../../components/ui/QueryError'
 import { Button } from '../../components/ui/Button'
+import { ConfirmModal } from '../../components/ui/ConfirmModal'
 
 const PAGE_SIZE = 20
 
 export function AdminUsersPanel() {
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
+  const [confirmAction, setConfirmAction] = useState<{
+    type: 'makeAdmin' | 'removeAdmin' | 'delete'
+    userId: string
+    userName: string
+  } | null>(null)
   const queryClient = useQueryClient()
 
   const { data: users, isLoading, isError, error, refetch } = useQuery({
@@ -126,15 +132,7 @@ export function AdminUsersPanel() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => {
-                            if (
-                              window.confirm(
-                                `Czy na pewno chcesz odebrać uprawnienia administratora użytkownikowi ${user.firstName} ${user.lastName}?`
-                              )
-                            ) {
-                              removeAdminMutation.mutate(user.id)
-                            }
-                          }}
+                          onClick={() => setConfirmAction({ type: 'removeAdmin', userId: user.id, userName: `${user.firstName} ${user.lastName}` })}
                           title="Odbierz uprawnienia administratora"
                           className="text-orange-400 hover:text-orange-300 hover:bg-orange-500/10"
                         >
@@ -145,15 +143,7 @@ export function AdminUsersPanel() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => {
-                              if (
-                                window.confirm(
-                                  `Czy na pewno chcesz nadać uprawnienia administratora użytkownikowi ${user.firstName} ${user.lastName}?`
-                                )
-                              ) {
-                                makeAdminMutation.mutate(user.id)
-                              }
-                            }}
+                            onClick={() => setConfirmAction({ type: 'makeAdmin', userId: user.id, userName: `${user.firstName} ${user.lastName}` })}
                             title="Nadaj uprawnienia administratora"
                           >
                             <Shield className="w-4 h-4" />
@@ -161,15 +151,7 @@ export function AdminUsersPanel() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => {
-                              if (
-                                window.confirm(
-                                  `Czy na pewno chcesz usunąć użytkownika ${user.firstName} ${user.lastName}? Ta operacja jest nieodwracalna.`
-                                )
-                              ) {
-                                deleteUserMutation.mutate(user.id)
-                              }
-                            }}
+                            onClick={() => setConfirmAction({ type: 'delete', userId: user.id, userName: `${user.firstName} ${user.lastName}` })}
                             title="Usuń użytkownika"
                             className="text-rose-400/70 hover:text-rose-300/80 hover:bg-rose-500/10"
                           >
@@ -225,6 +207,43 @@ export function AdminUsersPanel() {
           )}
         </>
       )}
+
+      <ConfirmModal
+        isOpen={!!confirmAction}
+        onClose={() => setConfirmAction(null)}
+        onConfirm={() => {
+          if (!confirmAction) return
+          if (confirmAction.type === 'makeAdmin') {
+            makeAdminMutation.mutate(confirmAction.userId)
+          } else if (confirmAction.type === 'removeAdmin') {
+            removeAdminMutation.mutate(confirmAction.userId)
+          } else {
+            deleteUserMutation.mutate(confirmAction.userId)
+          }
+        }}
+        title={
+          confirmAction?.type === 'makeAdmin'
+            ? 'Nadaj uprawnienia'
+            : confirmAction?.type === 'removeAdmin'
+              ? 'Odbierz uprawnienia'
+              : 'Usuń użytkownika'
+        }
+        message={
+          confirmAction?.type === 'makeAdmin'
+            ? `Czy na pewno chcesz nadać uprawnienia administratora użytkownikowi ${confirmAction.userName}?`
+            : confirmAction?.type === 'removeAdmin'
+              ? `Czy na pewno chcesz odebrać uprawnienia administratora użytkownikowi ${confirmAction?.userName}?`
+              : `Czy na pewno chcesz usunąć użytkownika ${confirmAction?.userName}? Ta operacja jest nieodwracalna.`
+        }
+        confirmText={
+          confirmAction?.type === 'makeAdmin'
+            ? 'Tak, nadaj'
+            : confirmAction?.type === 'removeAdmin'
+              ? 'Tak, odbierz'
+              : 'Tak, usuń'
+        }
+        variant={confirmAction?.type === 'makeAdmin' ? 'primary' : 'danger'}
+      />
     </div>
   )
 }

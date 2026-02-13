@@ -8,6 +8,7 @@ import { getErrorMessage } from '../utils/errors'
 import { LoadingSpinner } from '../components/ui/LoadingSpinner'
 import { QueryError } from '../components/ui/QueryError'
 import { Button } from '../components/ui/Button'
+import { ConfirmModal } from '../components/ui/ConfirmModal'
 import { SlotDetailModal } from '../components/calendar/SlotDetailModal'
 import { EventSignupModal } from '../components/calendar/EventSignupModal'
 import type { MyReservations } from '../types'
@@ -207,6 +208,8 @@ function UpcomingReservations({
   onSlotClick: (slotId: string) => void
   onEventClick: (eventId: string) => void
 }) {
+  const [confirmCancel, setConfirmCancel] = useState<{ type: 'slot' | 'event'; id: string } | null>(null)
+
   return (
     <div className="space-y-6">
       {events.length > 0 && (
@@ -259,13 +262,7 @@ function UpcomingReservations({
                     loading={cancelEventMutation.isPending}
                     onClick={(e) => {
                       e.stopPropagation()
-                      if (
-                        window.confirm(
-                          'Czy na pewno chcesz anulować zapis na całe wydarzenie?'
-                        )
-                      ) {
-                        cancelEventMutation.mutate(event.eventId)
-                      }
+                      setConfirmCancel({ type: 'event', id: event.eventId })
                     }}
                   >
                     <X className="w-4 h-4 mr-1" />
@@ -347,13 +344,7 @@ function UpcomingReservations({
                         loading={cancelMutation.isPending}
                         onClick={(e) => {
                           e.stopPropagation()
-                          if (
-                            window.confirm(
-                              'Czy na pewno chcesz anulować tę rezerwację?'
-                            )
-                          ) {
-                            cancelMutation.mutate(reservation.id)
-                          }
+                          setConfirmCancel({ type: 'slot', id: reservation.id })
                         }}
                       >
                         <X className="w-4 h-4 mr-1" />
@@ -367,6 +358,25 @@ function UpcomingReservations({
           })}
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={!!confirmCancel}
+        onClose={() => setConfirmCancel(null)}
+        onConfirm={() => {
+          if (confirmCancel?.type === 'event') {
+            cancelEventMutation.mutate(confirmCancel.id)
+          } else if (confirmCancel) {
+            cancelMutation.mutate(confirmCancel.id)
+          }
+        }}
+        title="Anuluj rezerwację"
+        message={
+          confirmCancel?.type === 'event'
+            ? 'Czy na pewno chcesz anulować zapis na całe wydarzenie?'
+            : 'Czy na pewno chcesz anulować tę rezerwację?'
+        }
+        confirmText="Tak, anuluj"
+      />
     </div>
   )
 }

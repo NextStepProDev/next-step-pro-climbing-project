@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { format } from 'date-fns'
 import { pl } from 'date-fns/locale'
-import { Plus, Lock, Unlock, Trash2, Users, Pencil, AlertTriangle } from 'lucide-react'
+import { Plus, Lock, LockOpen, Trash2, Users, Pencil, AlertTriangle } from 'lucide-react'
 import { calendarApi, adminApi } from '../../api/client'
 import { getErrorMessage } from '../../utils/errors'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
@@ -132,18 +132,21 @@ export function AdminSlotsPanel() {
                       variant="ghost"
                       size="sm"
                       aria-label="Odblokuj termin"
+                      title="Zablokowany — kliknij aby odblokować"
                       onClick={() => unblockMutation.mutate(slot.id)}
+                      className="text-rose-400 hover:text-rose-300 hover:bg-rose-500/10"
                     >
-                      <Unlock className="w-4 h-4" />
+                      <Lock className="w-4 h-4" />
                     </Button>
                   ) : (
                     <Button
                       variant="ghost"
                       size="sm"
                       aria-label="Zablokuj termin"
+                      title="Dostępny — kliknij aby zablokować"
                       onClick={() => setConfirmAction({ slotId: slot.id, action: 'block' })}
                     >
-                      <Lock className="w-4 h-4" />
+                      <LockOpen className="w-4 h-4" />
                     </Button>
                   )}
 
