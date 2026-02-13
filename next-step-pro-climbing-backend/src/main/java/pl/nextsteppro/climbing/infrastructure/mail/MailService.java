@@ -13,8 +13,6 @@ import pl.nextsteppro.climbing.domain.event.Event;
 import pl.nextsteppro.climbing.domain.reservation.Reservation;
 import pl.nextsteppro.climbing.domain.timeslot.TimeSlot;
 import pl.nextsteppro.climbing.domain.user.User;
-import pl.nextsteppro.climbing.infrastructure.ical.ICalService;
-
 import java.time.format.DateTimeFormatter;
 
 @Service
@@ -26,12 +24,10 @@ public class MailService {
 
     private final JavaMailSender mailSender;
     private final AppConfig appConfig;
-    private final ICalService iCalService;
 
-    public MailService(JavaMailSender mailSender, AppConfig appConfig, ICalService iCalService) {
+    public MailService(JavaMailSender mailSender, AppConfig appConfig) {
         this.mailSender = mailSender;
         this.appConfig = appConfig;
-        this.iCalService = iCalService;
     }
 
     @Async
@@ -58,14 +54,7 @@ public class MailService {
         String subject = "Nowa rezerwacja: " + user.getFullName();
         String body = buildAdminNotificationBody(user, slot);
 
-        byte @Nullable [] icsAttachment = null;
-        try {
-            icsAttachment = iCalService.generateReservationIcs(reservation);
-        } catch (Exception e) {
-            log.error("Failed to generate ICS for reservation {}, sending email without attachment: {}", reservation.getId(), e.getMessage(), e);
-        }
-
-        sendEmail(adminEmail, subject, body, icsAttachment);
+        sendEmail(adminEmail, subject, body, null);
     }
 
     @Async
@@ -99,14 +88,7 @@ public class MailService {
         String subject = "Nowy zapis na wydarzenie: " + user.getFullName();
         String body = buildEventAdminNotificationBody(user, event, participants);
 
-        byte @Nullable [] icsAttachment = null;
-        try {
-            icsAttachment = iCalService.generateEventIcs(event);
-        } catch (Exception e) {
-            log.error("Failed to generate ICS for event {}, sending email without attachment: {}", event.getId(), e.getMessage(), e);
-        }
-
-        sendEmail(adminEmail, subject, body, icsAttachment);
+        sendEmail(adminEmail, subject, body, null);
     }
 
     @Async
@@ -238,7 +220,6 @@ public class MailService {
                             <p><strong>Data:</strong> %s</p>
                             <p><strong>Godzina:</strong> %s - %s</p>
                         </div>
-                        <p style="margin-top: 20px; color: #666; font-size: 14px;">Plik .ics w załączniku.</p>
                     </div>
                 </div>
             </body>
@@ -322,7 +303,6 @@ public class MailService {
                             <p><strong>Termin:</strong> %s - %s</p>
                             <p><strong>Liczba osób:</strong> %d</p>
                         </div>
-                        <p style="margin-top: 20px; color: #666; font-size: 14px;">Plik .ics w załączniku.</p>
                     </div>
                 </div>
             </body>
