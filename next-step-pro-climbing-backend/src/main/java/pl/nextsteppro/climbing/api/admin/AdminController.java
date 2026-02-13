@@ -12,6 +12,8 @@ import jakarta.validation.Valid;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import pl.nextsteppro.climbing.api.activitylog.ActivityLogDto;
+import pl.nextsteppro.climbing.api.activitylog.ActivityLogService;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -22,9 +24,11 @@ import java.util.UUID;
 public class AdminController {
 
     private final AdminService adminService;
+    private final ActivityLogService activityLogService;
 
-    public AdminController(AdminService adminService) {
+    public AdminController(AdminService adminService, ActivityLogService activityLogService) {
         this.adminService = adminService;
+        this.activityLogService = activityLogService;
     }
 
     // ==================== Time Slots Management ====================
@@ -366,5 +370,25 @@ public class AdminController {
             @Parameter(description = "UUID użytkownika") @PathVariable UUID userId) {
         adminService.deleteUser(userId);
         return ResponseEntity.noContent().build();
+    }
+
+    // ==================== Activity Logs ====================
+
+    @Tag(name = "Admin - Activity", description = "Logi aktywności użytkowników (tylko admin)")
+    @Operation(
+        summary = "Ostatnie logi aktywności",
+        description = "Zwraca ostatnie akcje użytkowników (zapisy, anulacje, blokady)"
+    )
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Lista logów",
+            content = @Content(array = @ArraySchema(schema = @Schema(implementation = ActivityLogDto.class)))),
+        @ApiResponse(responseCode = "403", description = "Brak uprawnień administratora")
+    })
+    @GetMapping("/activity-logs")
+    public ResponseEntity<List<ActivityLogDto>> getActivityLogs(
+            @Parameter(description = "Numer strony (od 0)") @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Rozmiar strony (domyślnie 20)") @RequestParam(defaultValue = "20") int size) {
+        List<ActivityLogDto> logs = activityLogService.getRecentLogs(page, Math.min(size, 100));
+        return ResponseEntity.ok(logs);
     }
 }

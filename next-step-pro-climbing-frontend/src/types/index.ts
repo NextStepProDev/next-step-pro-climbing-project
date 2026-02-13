@@ -210,3 +210,28 @@ export interface CreateEventRequest {
   startTime?: string
   endTime?: string
 }
+
+// Activity Log types
+export type ActivityActionType =
+  | 'RESERVATION_CREATED'
+  | 'RESERVATION_CANCELLED'
+  | 'RESERVATION_REACTIVATED'
+  | 'EVENT_RESERVATION_CREATED'
+  | 'EVENT_RESERVATION_CANCELLED'
+  | 'RESERVATION_CANCELLED_BY_ADMIN'
+
+export interface ActivityLog {
+  id: string
+  userFullName: string
+  userEmail: string
+  actionType: ActivityActionType
+  slotDate: string | null
+  slotStartTime: string | null
+  slotEndTime: string | null
+  slotTitle: string | null
+  eventTitle: string | null
+  eventStartDate: string | null
+  eventEndDate: string | null
+  participants: number | null
+  createdAt: string
+}

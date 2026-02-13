@@ -15,6 +15,7 @@ import pl.nextsteppro.climbing.domain.timeslot.TimeSlotRepository;
 import pl.nextsteppro.climbing.domain.user.User;
 import pl.nextsteppro.climbing.domain.user.UserRepository;
 import pl.nextsteppro.climbing.infrastructure.mail.MailService;
+import pl.nextsteppro.climbing.api.activitylog.ActivityLogService;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -30,17 +31,20 @@ public class ReservationService {
     private final UserRepository userRepository;
     private final EventRepository eventRepository;
     private final MailService mailService;
+    private final ActivityLogService activityLogService;
 
     public ReservationService(ReservationRepository reservationRepository,
                              TimeSlotRepository timeSlotRepository,
                              UserRepository userRepository,
                              EventRepository eventRepository,
-                             MailService mailService) {
+                             MailService mailService,
+                             ActivityLogService activityLogService) {
         this.reservationRepository = reservationRepository;
         this.timeSlotRepository = timeSlotRepository;
         this.userRepository = userRepository;
         this.eventRepository = eventRepository;
         this.mailService = mailService;
+        this.activityLogService = activityLogService;
     }
 
     @Caching(evict = {
@@ -84,8 +88,9 @@ public class ReservationService {
         }
 
         Reservation existing = reservationRepository.findByUserIdAndTimeSlotId(userId, slotId);
+        boolean isReactivation = existing != null && existing.isCancelled();
         Reservation reservation;
-        if (existing != null && existing.isCancelled()) {
+        if (isReactivation) {
             existing.confirm();
             existing.setParticipants(participants);
             if (comment != null && !comment.isBlank()) {
@@ -105,6 +110,12 @@ public class ReservationService {
 
         mailService.sendReservationConfirmation(reservation);
         mailService.sendAdminNotification(reservation);
+
+        if (isReactivation) {
+            activityLogService.logReservationReactivated(user, slot, participants);
+        } else {
+            activityLogService.logReservationCreated(user, slot, participants);
+        }
 
         return new ReservationResultDto(
             reservation.getId(),
@@ -140,6 +151,8 @@ public class ReservationService {
 
         mailService.sendCancellationConfirmation(reservation);
         mailService.sendUserCancellationAdminNotification(reservation);
+
+        activityLogService.logReservationCancelled(reservation.getUser(), slot, reservation.getParticipants());
     }
 
     @Transactional(readOnly = true)
@@ -315,6 +328,8 @@ public class ReservationService {
         mailService.sendEventReservationConfirmation(user, event);
         mailService.sendEventAdminNotification(user, event, participants);
 
+        activityLogService.logEventReservationCreated(user, event, participants);
+
         return new EventReservationResultDto(eventId, true, "Zapisano na wydarzenie!", slotsReserved);
     }
 
@@ -357,6 +372,8 @@ public class ReservationService {
 
         mailService.sendEventCancellationConfirmation(user, event);
         mailService.sendUserEventCancellationAdminNotification(user, event);
+
+        activityLogService.logEventReservationCancelled(user, event);
     }
 
     private List<TimeSlot> createDefaultSlotsForEvent(Event event) {

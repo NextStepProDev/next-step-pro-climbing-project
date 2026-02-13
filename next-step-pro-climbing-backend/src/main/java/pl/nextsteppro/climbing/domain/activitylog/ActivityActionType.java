@@ -1,0 +1,10 @@
+package pl.nextsteppro.climbing.domain.activitylog;
+
+public enum ActivityActionType {
+    RESERVATION_CREATED,
+    RESERVATION_CANCELLED,
+    RESERVATION_REACTIVATED,
+    EVENT_RESERVATION_CREATED,
+    EVENT_RESERVATION_CANCELLED,
+    RESERVATION_CANCELLED_BY_ADMIN
+}

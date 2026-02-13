@@ -18,6 +18,7 @@ import pl.nextsteppro.climbing.domain.user.UserRepository;
 import pl.nextsteppro.climbing.domain.user.UserRole;
 
 import pl.nextsteppro.climbing.infrastructure.mail.MailService;
+import pl.nextsteppro.climbing.api.activitylog.ActivityLogService;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -37,19 +38,22 @@ public class AdminService {
     private final UserRepository userRepository;
     private final AuthTokenRepository authTokenRepository;
     private final MailService mailService;
+    private final ActivityLogService activityLogService;
 
     public AdminService(TimeSlotRepository timeSlotRepository,
                        EventRepository eventRepository,
                        ReservationRepository reservationRepository,
                        UserRepository userRepository,
                        AuthTokenRepository authTokenRepository,
-                       MailService mailService) {
+                       MailService mailService,
+                       ActivityLogService activityLogService) {
         this.timeSlotRepository = timeSlotRepository;
         this.eventRepository = eventRepository;
         this.reservationRepository = reservationRepository;
         this.userRepository = userRepository;
         this.authTokenRepository = authTokenRepository;
         this.mailService = mailService;
+        this.activityLogService = activityLogService;
     }
 
     @Caching(evict = {
@@ -120,6 +124,7 @@ public class AdminService {
             reservation.cancelByAdmin();
             reservationRepository.save(reservation);
             mailService.sendAdminCancellationNotification(reservation);
+            activityLogService.logCancelledByAdmin(reservation.getUser(), slot, reservation.getParticipants());
         }
 
         slot.block(reason);
@@ -143,11 +148,15 @@ public class AdminService {
         @CacheEvict(value = "calendarDay", allEntries = true)
     })
     public void deleteTimeSlot(UUID slotId) {
+        TimeSlot slot = timeSlotRepository.findById(slotId)
+            .orElseThrow(() -> new IllegalArgumentException("Time slot not found"));
+
         List<Reservation> confirmed = reservationRepository.findConfirmedByTimeSlotId(slotId);
         for (Reservation reservation : confirmed) {
             reservation.cancelByAdmin();
             reservationRepository.save(reservation);
             mailService.sendAdminCancellationNotification(reservation);
+            activityLogService.logCancelledByAdmin(reservation.getUser(), slot, reservation.getParticipants());
         }
 
         timeSlotRepository.deleteById(slotId);
@@ -245,6 +254,7 @@ public class AdminService {
                 reservation.cancelByAdmin();
                 reservationRepository.save(reservation);
                 notifiedUsers.putIfAbsent(reservation.getUser().getId(), reservation.getUser());
+                activityLogService.logCancelledByAdmin(reservation.getUser(), reservation.getTimeSlot(), reservation.getParticipants());
             }
 
             for (User user : notifiedUsers.values()) {

@@ -1,16 +1,18 @@
 import { Routes, Route, Link, useLocation } from 'react-router-dom'
-import { Calendar, Users, Clock, ClipboardList } from 'lucide-react'
+import { Calendar, Users, Clock, ClipboardList, Activity } from 'lucide-react'
 import clsx from 'clsx'
 import { AdminSlotsPanel } from './admin/AdminSlotsPanel'
 import { AdminEventsPanel } from './admin/AdminEventsPanel'
 import { AdminUsersPanel } from './admin/AdminUsersPanel'
 import { AdminReservationsPanel } from './admin/AdminReservationsPanel'
+import { AdminActivityPanel } from './admin/AdminActivityPanel'
 
 const adminTabs = [
   { path: '/admin', label: 'Terminy', icon: Clock },
   { path: '/admin/reservations', label: 'Rezerwacje', icon: ClipboardList },
   { path: '/admin/events', label: 'Wydarzenia', icon: Calendar },
   { path: '/admin/users', label: 'Użytkownicy', icon: Users },
+  { path: '/admin/activity', label: 'Aktywność', icon: Activity },
 ]
 
 export function AdminPage() {
@@ -56,6 +58,7 @@ export function AdminPage() {
         <Route path="reservations" element={<AdminReservationsPanel />} />
         <Route path="events" element={<AdminEventsPanel />} />
         <Route path="users" element={<AdminUsersPanel />} />
+        <Route path="activity" element={<AdminActivityPanel />} />
       </Routes>
     </div>
   )

@@ -15,6 +15,7 @@ import type {
   EventDetail,
   EventParticipants,
   ReservationAdmin,
+  ActivityLog,
 } from '../types'
 import {
   getAccessToken,
@@ -278,4 +279,8 @@ export const adminApi = {
 
   deleteUser: (userId: string) =>
     fetchApi<void>(`/admin/users/${userId}`, { method: 'DELETE' }),
+
+  // Activity Logs
+  getActivityLogs: (page = 0, size = 20) =>
+    fetchApi<ActivityLog[]>(`/admin/activity-logs?page=${page}&size=${size}`),
 }
