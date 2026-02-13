@@ -451,31 +451,6 @@ function ParticipantsModal({
           )}
         </div>
 
-        {/* Waitlist */}
-        {data.waitlist.length > 0 && (
-          <div>
-            <h3 className="text-sm font-medium text-dark-300 mb-2">
-              Lista rezerwowa ({data.waitlist.length})
-            </h3>
-            <ul className="space-y-2">
-              {data.waitlist.map((w) => (
-                <li key={w.entryId} className="bg-dark-800 rounded-lg p-3">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="font-medium text-dark-100">
-                        {w.position}. {w.fullName}
-                      </div>
-                      <div className="text-sm text-dark-400">{w.email}</div>
-                    </div>
-                    {w.notified && (
-                      <span className="text-xs text-amber-400">Powiadomiony</span>
-                    )}
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
       </div>
     </Modal>
   )

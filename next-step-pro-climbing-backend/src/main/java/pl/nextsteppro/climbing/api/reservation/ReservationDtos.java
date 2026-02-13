@@ -32,12 +32,6 @@ record CreateReservationRequest(
     @Nullable Integer participants
 ) {}
 
-record WaitlistResultDto(
-    UUID entryId,
-    int position,
-    String message
-) {}
-
 record EventReservationResultDto(
     UUID eventId,
     boolean success,

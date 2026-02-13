@@ -46,15 +46,11 @@ record TimeSlotDetailDto(
     LocalTime endTime,
     int maxParticipants,
     int currentParticipants,
-    int waitlistCount,
     SlotStatus status,
     boolean isUserRegistered,
-    boolean isUserOnWaitlist,
-    @Nullable Integer waitlistPosition,
     @Nullable UUID eventId,
     @Nullable String eventTitle,
-    @Nullable UUID reservationId,
-    @Nullable UUID waitlistEntryId
+    @Nullable UUID reservationId
 ) implements CalendarDtos {}
 
 record EventSummaryDto(

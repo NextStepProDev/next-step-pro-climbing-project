@@ -11,7 +11,6 @@ import pl.nextsteppro.climbing.domain.reservation.ReservationRepository;
 import pl.nextsteppro.climbing.domain.reservation.ReservationStatus;
 import pl.nextsteppro.climbing.domain.timeslot.TimeSlot;
 import pl.nextsteppro.climbing.domain.timeslot.TimeSlotRepository;
-import pl.nextsteppro.climbing.domain.waitlist.WaitlistRepository;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -25,16 +24,13 @@ public class CalendarService {
 
     private final TimeSlotRepository timeSlotRepository;
     private final ReservationRepository reservationRepository;
-    private final WaitlistRepository waitlistRepository;
     private final EventRepository eventRepository;
 
     public CalendarService(TimeSlotRepository timeSlotRepository,
                           ReservationRepository reservationRepository,
-                          WaitlistRepository waitlistRepository,
                           EventRepository eventRepository) {
         this.timeSlotRepository = timeSlotRepository;
         this.reservationRepository = reservationRepository;
-        this.waitlistRepository = waitlistRepository;
         this.eventRepository = eventRepository;
     }
 
@@ -104,25 +100,15 @@ public class CalendarService {
             .orElseThrow(() -> new IllegalArgumentException("Time slot not found: " + slotId));
 
         int confirmedCount = reservationRepository.countConfirmedByTimeSlotId(slotId);
-        int waitlistCount = waitlistRepository.countByTimeSlotId(slotId);
 
         boolean isUserRegistered = false;
-        boolean isUserOnWaitlist = false;
-        @Nullable Integer waitlistPosition = null;
         @Nullable UUID reservationId = null;
-        @Nullable UUID waitlistEntryId = null;
 
         if (userId != null) {
             Reservation reservation = reservationRepository.findByUserIdAndTimeSlotId(userId, slotId);
             if (reservation != null && reservation.getStatus() == ReservationStatus.CONFIRMED) {
                 isUserRegistered = true;
                 reservationId = reservation.getId();
-            }
-            var waitlistEntry = waitlistRepository.findByUserIdAndTimeSlotId(userId, slotId);
-            if (waitlistEntry != null) {
-                isUserOnWaitlist = true;
-                waitlistPosition = waitlistEntry.getPosition();
-                waitlistEntryId = waitlistEntry.getId();
             }
         }
 
@@ -135,15 +121,11 @@ public class CalendarService {
             slot.getEndTime(),
             slot.getMaxParticipants(),
             confirmedCount,
-            waitlistCount,
             status,
             isUserRegistered,
-            isUserOnWaitlist,
-            waitlistPosition,
             slot.belongsToEvent() ? slot.getEvent().getId() : null,
             slot.getDisplayTitle(),
-            reservationId,
-            waitlistEntryId
+            reservationId
         );
     }
 

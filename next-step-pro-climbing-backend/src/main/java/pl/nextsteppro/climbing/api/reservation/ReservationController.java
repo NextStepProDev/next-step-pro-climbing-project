@@ -62,7 +62,7 @@ public class ReservationController {
 
     @Operation(
         summary = "Anuluj rezerwację",
-        description = "Anuluje rezerwację użytkownika. Automatycznie powiadamia pierwszą osobę z listy rezerwowej."
+        description = "Anuluje rezerwację użytkownika."
     )
     @ApiResponses({
         @ApiResponse(responseCode = "204", description = "Rezerwacja anulowana"),
@@ -180,57 +180,6 @@ public class ReservationController {
         }
 
         reservationService.cancelEventReservation(eventId, userId);
-        return ResponseEntity.noContent().build();
-    }
-
-    @Operation(
-        summary = "Zapisz na listę rezerwową",
-        description = "Dodaje użytkownika do listy rezerwowej gdy brak wolnych miejsc. Użytkownik otrzyma email gdy miejsce się zwolni."
-    )
-    @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Dodano do listy rezerwowej",
-            content = @Content(schema = @Schema(implementation = WaitlistResultDto.class))),
-        @ApiResponse(responseCode = "401", description = "Użytkownik niezalogowany"),
-        @ApiResponse(responseCode = "400", description = "Są jeszcze wolne miejsca - użyj rezerwacji"),
-        @ApiResponse(responseCode = "409", description = "Użytkownik już jest na liście rezerwowej")
-    })
-    @PostMapping("/waitlist/slot/{slotId}")
-    public ResponseEntity<WaitlistResultDto> joinWaitlist(
-            @Parameter(description = "UUID terminu") @PathVariable UUID slotId,
-            @Parameter(hidden = true) @AuthenticationPrincipal CustomOAuth2User oAuth2User,
-            HttpServletRequest request) {
-
-        UUID userId = currentUserService.getCurrentUserId(oAuth2User, request).orElse(null);
-        if (userId == null) {
-            return ResponseEntity.status(401).build();
-        }
-
-        WaitlistResultDto result = reservationService.joinWaitlist(slotId, userId);
-        return ResponseEntity.ok(result);
-    }
-
-    @Operation(
-        summary = "Usuń z listy rezerwowej",
-        description = "Usuwa użytkownika z listy rezerwowej"
-    )
-    @ApiResponses({
-        @ApiResponse(responseCode = "204", description = "Usunięto z listy rezerwowej"),
-        @ApiResponse(responseCode = "401", description = "Użytkownik niezalogowany"),
-        @ApiResponse(responseCode = "403", description = "Wpis nie należy do użytkownika"),
-        @ApiResponse(responseCode = "404", description = "Wpis nie istnieje")
-    })
-    @DeleteMapping("/waitlist/{entryId}")
-    public ResponseEntity<Void> leaveWaitlist(
-            @Parameter(description = "UUID wpisu na liście rezerwowej") @PathVariable UUID entryId,
-            @Parameter(hidden = true) @AuthenticationPrincipal CustomOAuth2User oAuth2User,
-            HttpServletRequest request) {
-
-        UUID userId = currentUserService.getCurrentUserId(oAuth2User, request).orElse(null);
-        if (userId == null) {
-            return ResponseEntity.status(401).build();
-        }
-
-        reservationService.leaveWaitlist(entryId, userId);
         return ResponseEntity.noContent().build();
     }
 }

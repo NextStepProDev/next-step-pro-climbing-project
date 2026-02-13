@@ -8,7 +8,6 @@ import pl.nextsteppro.climbing.domain.reservation.Reservation;
 import pl.nextsteppro.climbing.domain.reservation.ReservationRepository;
 import pl.nextsteppro.climbing.domain.user.User;
 import pl.nextsteppro.climbing.domain.user.UserRepository;
-import pl.nextsteppro.climbing.domain.waitlist.WaitlistRepository;
 import pl.nextsteppro.climbing.infrastructure.mail.AuthMailService;
 
 import java.util.UUID;
@@ -21,20 +20,17 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final AuthMailService authMailService;
     private final ReservationRepository reservationRepository;
-    private final WaitlistRepository waitlistRepository;
     private final AuthTokenRepository authTokenRepository;
 
     public UserService(UserRepository userRepository,
                        PasswordEncoder passwordEncoder,
                        AuthMailService authMailService,
                        ReservationRepository reservationRepository,
-                       WaitlistRepository waitlistRepository,
                        AuthTokenRepository authTokenRepository) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.authMailService = authMailService;
         this.reservationRepository = reservationRepository;
-        this.waitlistRepository = waitlistRepository;
         this.authTokenRepository = authTokenRepository;
     }
 
@@ -75,9 +71,6 @@ public class UserService {
                 reservationRepository.save(reservation);
             }
         }
-
-        // Remove from waitlists
-        waitlistRepository.deleteByUserId(userId);
 
         // Remove tokens
         authTokenRepository.deleteByUserId(userId);

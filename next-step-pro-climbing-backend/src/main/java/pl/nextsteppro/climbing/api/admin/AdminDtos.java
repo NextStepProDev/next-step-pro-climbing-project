@@ -43,8 +43,7 @@ record SlotParticipantsDto(
     LocalTime startTime,
     LocalTime endTime,
     int maxParticipants,
-    List<ParticipantDto> participants,
-    List<WaitlistParticipantDto> waitlist
+    List<ParticipantDto> participants
 ) {}
 
 record ParticipantDto(
@@ -55,15 +54,6 @@ record ParticipantDto(
     @Nullable String comment,
     int participants,
     Instant registeredAt
-) {}
-
-record WaitlistParticipantDto(
-    UUID entryId,
-    UUID userId,
-    String fullName,
-    String email,
-    int position,
-    boolean notified
 ) {}
 
 record UpdateTimeSlotRequest(

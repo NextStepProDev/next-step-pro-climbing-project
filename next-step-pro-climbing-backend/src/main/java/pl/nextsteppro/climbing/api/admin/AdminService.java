@@ -16,8 +16,6 @@ import pl.nextsteppro.climbing.domain.auth.AuthTokenRepository;
 import pl.nextsteppro.climbing.domain.user.User;
 import pl.nextsteppro.climbing.domain.user.UserRepository;
 import pl.nextsteppro.climbing.domain.user.UserRole;
-import pl.nextsteppro.climbing.domain.waitlist.WaitlistEntry;
-import pl.nextsteppro.climbing.domain.waitlist.WaitlistRepository;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -34,20 +32,17 @@ public class AdminService {
     private final TimeSlotRepository timeSlotRepository;
     private final EventRepository eventRepository;
     private final ReservationRepository reservationRepository;
-    private final WaitlistRepository waitlistRepository;
     private final UserRepository userRepository;
     private final AuthTokenRepository authTokenRepository;
 
     public AdminService(TimeSlotRepository timeSlotRepository,
                        EventRepository eventRepository,
                        ReservationRepository reservationRepository,
-                       WaitlistRepository waitlistRepository,
                        UserRepository userRepository,
                        AuthTokenRepository authTokenRepository) {
         this.timeSlotRepository = timeSlotRepository;
         this.eventRepository = eventRepository;
         this.reservationRepository = reservationRepository;
-        this.waitlistRepository = waitlistRepository;
         this.userRepository = userRepository;
         this.authTokenRepository = authTokenRepository;
     }
@@ -145,7 +140,6 @@ public class AdminService {
             .orElseThrow(() -> new IllegalArgumentException("Time slot not found"));
 
         List<Reservation> reservations = reservationRepository.findConfirmedByTimeSlotId(slotId);
-        List<WaitlistEntry> waitlist = waitlistRepository.findByTimeSlotIdOrderByPosition(slotId);
 
         List<ParticipantDto> participants = reservations.stream()
             .map(r -> new ParticipantDto(
@@ -159,25 +153,13 @@ public class AdminService {
             ))
             .toList();
 
-        List<WaitlistParticipantDto> waitlistParticipants = waitlist.stream()
-            .map(w -> new WaitlistParticipantDto(
-                w.getId(),
-                w.getUser().getId(),
-                w.getUser().getFullName(),
-                w.getUser().getEmail(),
-                w.getPosition(),
-                w.wasNotified()
-            ))
-            .toList();
-
         return new SlotParticipantsDto(
             slotId,
             slot.getDate(),
             slot.getStartTime(),
             slot.getEndTime(),
             slot.getMaxParticipants(),
-            participants,
-            waitlistParticipants
+            participants
         );
     }
 
@@ -361,7 +343,6 @@ public class AdminService {
             }
         }
 
-        waitlistRepository.deleteByUserId(userId);
         authTokenRepository.deleteByUserId(userId);
         userRepository.delete(user);
     }

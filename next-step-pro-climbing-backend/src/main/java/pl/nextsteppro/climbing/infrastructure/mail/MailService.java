@@ -13,7 +13,6 @@ import pl.nextsteppro.climbing.domain.event.Event;
 import pl.nextsteppro.climbing.domain.reservation.Reservation;
 import pl.nextsteppro.climbing.domain.timeslot.TimeSlot;
 import pl.nextsteppro.climbing.domain.user.User;
-import pl.nextsteppro.climbing.domain.waitlist.WaitlistEntry;
 import pl.nextsteppro.climbing.infrastructure.ical.ICalService;
 
 import java.time.format.DateTimeFormatter;
@@ -58,19 +57,6 @@ public class MailService {
         byte[] icsAttachment = iCalService.generateReservationIcs(reservation);
 
         sendEmail(appConfig.getAdmin().getEmail(), subject, body, icsAttachment);
-    }
-
-    @Async
-    public void sendWaitlistNotification(WaitlistEntry entry) {
-        User user = entry.getUser();
-        if (!user.isEmailNotificationsEnabled()) return;
-
-        TimeSlot slot = entry.getTimeSlot();
-
-        String subject = "Zwolniło się miejsce! - Next Step Pro Climbing";
-        String body = buildWaitlistNotificationBody(user, slot);
-
-        sendEmail(user.getEmail(), subject, body, null);
     }
 
     @Async
@@ -197,34 +183,6 @@ public class MailService {
             slot.getDate().format(DATE_FORMAT),
             slot.getStartTime().format(TIME_FORMAT),
             slot.getEndTime().format(TIME_FORMAT)
-        );
-    }
-
-    private String buildWaitlistNotificationBody(User user, TimeSlot slot) {
-        return """
-            <html>
-            <body style="font-family: Arial, sans-serif;">
-                <h2>Świetna wiadomość, %s!</h2>
-                <p>Zwolniło się miejsce na termin, na który byłeś/aś zapisany/a na liście rezerwowej.</p>
-                <div style="background: #1a1a2e; color: white; padding: 20px; border-radius: 8px;">
-                    <p><strong>Data:</strong> %s</p>
-                    <p><strong>Godzina:</strong> %s - %s</p>
-                </div>
-                <p style="margin-top: 20px;">
-                    <a href="%s/calendar?date=%s" style="background: #3b82f6; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">
-                        Zarezerwuj teraz
-                    </a>
-                </p>
-                <p>Zespół Next Step Pro Climbing</p>
-            </body>
-            </html>
-            """.formatted(
-            user.getFirstName(),
-            slot.getDate().format(DATE_FORMAT),
-            slot.getStartTime().format(TIME_FORMAT),
-            slot.getEndTime().format(TIME_FORMAT),
-            appConfig.getCors().getAllowedOrigins(),
-            slot.getDate()
         );
     }
 

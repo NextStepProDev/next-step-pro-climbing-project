@@ -49,15 +49,11 @@ export interface TimeSlotDetail {
   endTime: string
   maxParticipants: number
   currentParticipants: number
-  waitlistCount: number
   status: SlotStatus
   isUserRegistered: boolean
-  isUserOnWaitlist: boolean
-  waitlistPosition: number | null
   eventId: string | null
   eventTitle: string | null
   reservationId: string | null
-  waitlistEntryId: string | null
 }
 
 export type SlotStatus = 'AVAILABLE' | 'FULL' | 'BLOCKED' | 'PAST'
@@ -113,12 +109,6 @@ export interface ReservationResult {
   message: string
 }
 
-export interface WaitlistResult {
-  entryId: string
-  position: number
-  message: string
-}
-
 export interface EventReservationResult {
   eventId: string
   success: boolean
@@ -164,7 +154,6 @@ export interface SlotParticipants {
   endTime: string
   maxParticipants: number
   participants: Participant[]
-  waitlist: WaitlistParticipant[]
 }
 
 export interface Participant {
@@ -175,15 +164,6 @@ export interface Participant {
   comment: string | null
   participants: number
   registeredAt: string
-}
-
-export interface WaitlistParticipant {
-  entryId: string
-  userId: string
-  fullName: string
-  email: string
-  position: number
-  notified: boolean
 }
 
 export interface EventParticipants {

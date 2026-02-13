@@ -6,7 +6,6 @@ import type {
   UserReservation,
   MyReservations,
   ReservationResult,
-  WaitlistResult,
   EventReservationResult,
   TimeSlotAdmin,
   SlotParticipants,
@@ -185,12 +184,6 @@ export const reservationApi = {
 
   getMyUpcoming: () =>
     fetchApi<MyReservations>('/reservations/my/upcoming'),
-
-  joinWaitlist: (slotId: string) =>
-    fetchApi<WaitlistResult>(`/reservations/waitlist/slot/${slotId}`, { method: 'POST' }),
-
-  leaveWaitlist: (entryId: string) =>
-    fetchApi<void>(`/reservations/waitlist/${entryId}`, { method: 'DELETE' }),
 
   createForEvent: (eventId: string, comment?: string, participants?: number) =>
     fetchApi<EventReservationResult>(`/reservations/event/${eventId}`, {
