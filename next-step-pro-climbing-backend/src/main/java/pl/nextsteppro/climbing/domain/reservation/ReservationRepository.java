@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
@@ -33,8 +34,11 @@ public interface ReservationRepository extends JpaRepository<Reservation, UUID> 
     @Query("SELECT r FROM Reservation r WHERE r.user.id = :userId AND r.timeSlot.date >= :fromDate AND r.status = 'CONFIRMED' ORDER BY r.timeSlot.date, r.timeSlot.startTime")
     List<Reservation> findUpcomingByUserId(UUID userId, LocalDate fromDate);
 
-    @Query("SELECT r FROM Reservation r WHERE r.user.id = :userId AND r.timeSlot.date >= :fromDate AND r.status IN ('CONFIRMED', 'CANCELLED_BY_ADMIN') ORDER BY r.timeSlot.date, r.timeSlot.startTime")
-    List<Reservation> findUpcomingByUserIdIncludingAdminCancelled(UUID userId, LocalDate fromDate);
+    @Query("SELECT r FROM Reservation r WHERE r.user.id = :userId AND (r.timeSlot.date > :today OR (r.timeSlot.date = :today AND r.timeSlot.endTime > :now)) AND r.status IN ('CONFIRMED', 'CANCELLED_BY_ADMIN') ORDER BY r.timeSlot.date, r.timeSlot.startTime")
+    List<Reservation> findUpcomingByUserIdIncludingAdminCancelled(UUID userId, LocalDate today, LocalTime now);
+
+    @Query("SELECT r FROM Reservation r WHERE r.user.id = :userId AND (r.timeSlot.date < :today OR (r.timeSlot.date = :today AND r.timeSlot.endTime <= :now)) AND r.status IN ('CONFIRMED', 'CANCELLED', 'CANCELLED_BY_ADMIN') ORDER BY r.timeSlot.date DESC, r.timeSlot.startTime DESC")
+    List<Reservation> findPastByUserId(UUID userId, LocalDate today, LocalTime now);
 
     boolean existsByUserIdAndTimeSlotIdAndStatus(UUID userId, UUID timeSlotId, ReservationStatus status);
 

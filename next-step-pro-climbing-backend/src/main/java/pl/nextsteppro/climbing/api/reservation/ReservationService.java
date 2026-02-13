@@ -145,7 +145,45 @@ public class ReservationService {
 
     @Transactional(readOnly = true)
     public MyReservationsDto getUserUpcomingReservations(UUID userId) {
-        List<Reservation> allReservations = reservationRepository.findUpcomingByUserIdIncludingAdminCancelled(userId, LocalDate.now());
+        List<Reservation> allReservations = reservationRepository.findUpcomingByUserIdIncludingAdminCancelled(userId, LocalDate.now(), LocalTime.now());
+
+        List<UserReservationDto> standaloneSlots = new ArrayList<>();
+        Map<UUID, List<Reservation>> eventReservations = new LinkedHashMap<>();
+
+        for (Reservation r : allReservations) {
+            TimeSlot slot = r.getTimeSlot();
+            if (slot.belongsToEvent()) {
+                eventReservations.computeIfAbsent(slot.getEvent().getId(), k -> new ArrayList<>()).add(r);
+            } else {
+                standaloneSlots.add(toUserReservationDto(r));
+            }
+        }
+
+        List<UserEventReservationDto> eventDtos = eventReservations.entrySet().stream()
+            .map(entry -> {
+                List<Reservation> reservations = entry.getValue();
+                Reservation first = reservations.getFirst();
+                Event event = first.getTimeSlot().getEvent();
+                return new UserEventReservationDto(
+                    event.getId(),
+                    event.getTitle(),
+                    event.getEventType().name(),
+                    event.getStartDate(),
+                    event.getEndDate(),
+                    first.getComment(),
+                    first.getParticipants(),
+                    reservations.size(),
+                    first.getCreatedAt()
+                );
+            })
+            .toList();
+
+        return new MyReservationsDto(standaloneSlots, eventDtos);
+    }
+
+    @Transactional(readOnly = true)
+    public MyReservationsDto getUserPastReservations(UUID userId) {
+        List<Reservation> allReservations = reservationRepository.findPastByUserId(userId, LocalDate.now(), LocalTime.now());
 
         List<UserReservationDto> standaloneSlots = new ArrayList<>();
         Map<UUID, List<Reservation>> eventReservations = new LinkedHashMap<>();

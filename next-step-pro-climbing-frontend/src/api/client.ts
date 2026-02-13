@@ -185,6 +185,9 @@ export const reservationApi = {
   getMyUpcoming: () =>
     fetchApi<MyReservations>('/reservations/my/upcoming'),
 
+  getMyPast: () =>
+    fetchApi<MyReservations>('/reservations/my/past'),
+
   createForEvent: (eventId: string, comment?: string, participants?: number) =>
     fetchApi<EventReservationResult>(`/reservations/event/${eventId}`, {
       method: 'POST',

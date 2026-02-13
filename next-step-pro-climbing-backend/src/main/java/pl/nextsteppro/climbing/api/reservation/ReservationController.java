@@ -132,6 +132,29 @@ public class ReservationController {
     }
 
     @Operation(
+        summary = "Moje minione rezerwacje",
+        description = "Zwraca przeszłe rezerwacje podzielone na pojedyncze terminy i wydarzenia"
+    )
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Lista minionych rezerwacji",
+            content = @Content(schema = @Schema(implementation = MyReservationsDto.class))),
+        @ApiResponse(responseCode = "401", description = "Użytkownik niezalogowany")
+    })
+    @GetMapping("/my/past")
+    public ResponseEntity<MyReservationsDto> getMyPastReservations(
+            @Parameter(hidden = true) @AuthenticationPrincipal CustomOAuth2User oAuth2User,
+            HttpServletRequest request) {
+
+        UUID userId = currentUserService.getCurrentUserId(oAuth2User, request).orElse(null);
+        if (userId == null) {
+            return ResponseEntity.status(401).build();
+        }
+
+        MyReservationsDto reservations = reservationService.getUserPastReservations(userId);
+        return ResponseEntity.ok(reservations);
+    }
+
+    @Operation(
         summary = "Zapisz na wydarzenie",
         description = "Tworzy rezerwacje na wszystkie aktywne sloty wydarzenia. Wymaga zalogowania."
     )
