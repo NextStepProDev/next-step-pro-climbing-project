@@ -27,12 +27,24 @@ export function CalendarPage() {
 
   const yearMonth = format(currentMonth, "yyyy-MM");
 
-  const { data: monthData, isLoading: monthLoading, isError: monthError, error: monthErrorObj, refetch: refetchMonth } = useQuery({
+  const {
+    data: monthData,
+    isLoading: monthLoading,
+    isError: monthError,
+    error: monthErrorObj,
+    refetch: refetchMonth,
+  } = useQuery({
     queryKey: ["calendar", "month", yearMonth],
     queryFn: () => calendarApi.getMonthView(yearMonth),
   });
 
-  const { data: dayData, isLoading: dayLoading, isError: dayError, error: dayErrorObj, refetch: refetchDay } = useQuery({
+  const {
+    data: dayData,
+    isLoading: dayLoading,
+    isError: dayError,
+    error: dayErrorObj,
+    refetch: refetchDay,
+  } = useQuery({
     queryKey: ["calendar", "day", selectedDate],
     queryFn: () => calendarApi.getDayView(selectedDate!),
     enabled: !!selectedDate,
@@ -90,6 +102,16 @@ export function CalendarPage() {
         <p className="text-dark-400">
           Wybierz dzień, aby zobaczyć dostępne godziny i zapisać się na zajęcia.
         </p>
+
+        {/* PROMOCJA */}
+        <div className="mt-4 inline-block bg-amber-500/10 border border-amber-500/30 rounded-lg px-4 py-3">
+          <p className="text-amber-400 font-semibold text-sm">
+            🔥 Promocja tylko do końca lutego!!
+          </p>
+          <p className="text-amber-300/80 text-xs mt-1">
+            Kup 2 treningi i zapłać jak za dwa!!
+          </p>
+        </div>
       </div>
 
       {monthLoading ? (
@@ -140,7 +162,9 @@ export function CalendarPage() {
                       className="flex items-center justify-between text-sm bg-dark-800/40 rounded-lg px-3 py-2"
                     >
                       <span className="flex items-center gap-2 text-dark-100 font-medium">
-                        <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${color.dot}`} />
+                        <span
+                          className={`w-2.5 h-2.5 rounded-full shrink-0 ${color.dot}`}
+                        />
                         {event.title}
                       </span>
 
