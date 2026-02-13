@@ -163,6 +163,7 @@ export function AdminSlotsPanel() {
 
       {/* Create Slot Modal */}
       <CreateSlotModal
+        key={selectedDate}
         isOpen={showCreateModal}
         onClose={() => setShowCreateModal(false)}
         defaultDate={selectedDate}

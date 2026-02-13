@@ -4,7 +4,7 @@ import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isTod
 import { pl } from 'date-fns/locale'
 import clsx from 'clsx'
 import type { DaySummary, EventSummary } from '../../types'
-import { buildEventColorMap, getEventColor } from '../../utils/events'
+import { buildEventColorMap, getEventColor, pluralizeTraining } from '../../utils/events'
 
 interface MonthCalendarProps {
   currentMonth: Date
@@ -156,7 +156,7 @@ export function MonthCalendar({ currentMonth, onMonthChange, days, events, onDay
 
               {dayData && dayData.availableSlots > 0 && !isPast ? (
                 <div className="text-xs text-primary-400 font-medium">
-                  {dayData.availableSlots} wolne
+                  {pluralizeTraining(dayData.availableSlots)}
                 </div>
               ) : dayData && dayData.totalSlots > 0 && dayData.availableSlots === 0 && !hasEvents && !isPast ? (
                 <div className="text-xs text-amber-400 font-medium">
