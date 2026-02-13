@@ -53,6 +53,7 @@ export interface TimeSlotDetail {
   isUserRegistered: boolean
   eventId: string | null
   eventTitle: string | null
+  eventDescription: string | null
   reservationId: string | null
 }
 

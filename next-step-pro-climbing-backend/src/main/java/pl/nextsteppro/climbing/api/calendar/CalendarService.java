@@ -127,6 +127,7 @@ public class CalendarService {
             isUserRegistered,
             slot.belongsToEvent() ? slot.getEvent().getId() : null,
             slot.getDisplayTitle(),
+            slot.belongsToEvent() ? slot.getEvent().getDescription() : null,
             reservationId
         );
     }

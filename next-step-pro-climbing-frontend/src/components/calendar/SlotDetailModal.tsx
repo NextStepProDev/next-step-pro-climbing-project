@@ -91,7 +91,10 @@ export function SlotDetailModal({
         {/* Event info */}
         {slot.eventTitle && (
           <div className="p-3 bg-primary-500/10 border border-primary-500/20 rounded-lg">
-            <span className="text-sm text-primary-400">{slot.eventTitle}</span>
+            <span className="text-sm font-medium text-primary-400">{slot.eventTitle}</span>
+            {slot.eventDescription && (
+              <p className="text-sm text-dark-300 mt-2 whitespace-pre-wrap">{slot.eventDescription}</p>
+            )}
           </div>
         )}
 

@@ -50,6 +50,7 @@ record TimeSlotDetailDto(
     boolean isUserRegistered,
     @Nullable UUID eventId,
     @Nullable String eventTitle,
+    @Nullable String eventDescription,
     @Nullable UUID reservationId
 ) implements CalendarDtos {}
 
