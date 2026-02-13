@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { format } from 'date-fns'
 import { pl } from 'date-fns/locale'
-import { ChevronDown, ChevronRight, Users, Mail, Phone } from 'lucide-react'
+import { ChevronDown, ChevronRight, ChevronLeft, Users, Mail, Phone } from 'lucide-react'
 import { adminApi } from '../../api/client'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
 import { QueryError } from '../../components/ui/QueryError'
@@ -147,17 +147,54 @@ export function AdminReservationsPanel() {
   )
 }
 
+const ARCHIVE_PAGE_SIZE = 15
+
 function PastReservationList({ reservations }: { reservations: ReservationAdmin[] }) {
-  const { grouped, eventMap, slotItems } = groupReservations(reservations)
+  const [page, setPage] = useState(1)
+
+  const sorted = [...reservations].sort((a, b) => b.date.localeCompare(a.date))
+  const totalPages = Math.max(1, Math.ceil(sorted.length / ARCHIVE_PAGE_SIZE))
+  const safePage = Math.min(page, totalPages)
+  const paged = sorted.slice((safePage - 1) * ARCHIVE_PAGE_SIZE, safePage * ARCHIVE_PAGE_SIZE)
+
+  const { grouped, eventMap, slotItems } = groupReservations(paged)
   const sortedDates = [...grouped.keys()].sort().reverse()
   const totalCount = slotItems.length + eventMap.size
 
   return (
     <div className="space-y-6 opacity-60">
       <p className="text-sm text-dark-400">
-        Minione rezerwacje ({totalCount})
+        Minione rezerwacje ({reservations.length})
+        {totalPages > 1 && ` · strona ${safePage}/${totalPages} (${totalCount} na tej stronie)`}
       </p>
       <ReservationList sortedDates={sortedDates} grouped={grouped} />
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between pt-2">
+          <span className="text-sm text-dark-500">
+            {reservations.length} pozycji
+          </span>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={safePage <= 1}
+              className="p-2 text-dark-400 hover:text-dark-100 hover:bg-dark-800 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <span className="text-sm text-dark-300 min-w-[80px] text-center">
+              {safePage} / {totalPages}
+            </span>
+            <button
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={safePage >= totalPages}
+              className="p-2 text-dark-400 hover:text-dark-100 hover:bg-dark-800 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

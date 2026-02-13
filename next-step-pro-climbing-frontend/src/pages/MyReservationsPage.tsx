@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { format } from 'date-fns'
 import { pl } from 'date-fns/locale'
-import { Calendar, Clock, MessageSquare, Users, X, Ban, ChevronDown, ChevronRight } from 'lucide-react'
+import { Calendar, Clock, MessageSquare, Users, X, Ban, ChevronDown, ChevronRight, ChevronLeft } from 'lucide-react'
 import { reservationApi, calendarApi } from '../api/client'
 import { getErrorMessage } from '../utils/errors'
 import { LoadingSpinner } from '../components/ui/LoadingSpinner'
@@ -371,6 +371,8 @@ function UpcomingReservations({
   )
 }
 
+const ARCHIVE_PAGE_SIZE = 15
+
 function PastReservations({
   slots,
   events,
@@ -378,14 +380,32 @@ function PastReservations({
   slots: MyReservations['slots']
   events: MyReservations['events']
 }) {
+  const [page, setPage] = useState(1)
+
+  const totalItems = events.length + slots.length
+  const totalPages = Math.max(1, Math.ceil(totalItems / ARCHIVE_PAGE_SIZE))
+  const safePage = Math.min(page, totalPages)
+
+  const start = (safePage - 1) * ARCHIVE_PAGE_SIZE
+  const end = safePage * ARCHIVE_PAGE_SIZE
+
+  // Events come first, then slots
+  const visibleEvents = events.slice(
+    Math.max(0, start),
+    Math.min(events.length, end),
+  )
+  const slotsStart = Math.max(0, start - events.length)
+  const slotsEnd = Math.max(0, end - events.length)
+  const visibleSlots = slots.slice(slotsStart, slotsEnd)
+
   return (
     <div className="space-y-6 opacity-60">
-      {events.length > 0 && (
+      {visibleEvents.length > 0 && (
         <div className="space-y-3">
           <h2 className="text-sm font-medium text-dark-400 uppercase tracking-wider">
             Wydarzenia
           </h2>
-          {events.map((event) => (
+          {visibleEvents.map((event) => (
             <div
               key={event.eventId}
               className="bg-dark-900 rounded-xl border border-dark-800/50 p-4 sm:p-6"
@@ -419,12 +439,12 @@ function PastReservations({
         </div>
       )}
 
-      {slots.length > 0 && (
+      {visibleSlots.length > 0 && (
         <div className="space-y-3">
           <h2 className="text-sm font-medium text-dark-400 uppercase tracking-wider">
             Treningi
           </h2>
-          {slots.map((reservation) => {
+          {visibleSlots.map((reservation) => {
             const dateObj = new Date(reservation.date)
             const isCancelledByAdmin = reservation.status === 'CANCELLED_BY_ADMIN'
             const isCancelled = reservation.status === 'CANCELLED' || isCancelledByAdmin
@@ -467,6 +487,33 @@ function PastReservations({
               </div>
             )
           })}
+        </div>
+      )}
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between pt-2">
+          <span className="text-sm text-dark-500">
+            {totalItems} pozycji
+          </span>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={safePage <= 1}
+              className="p-2 text-dark-400 hover:text-dark-100 hover:bg-dark-800 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <span className="text-sm text-dark-300 min-w-[80px] text-center">
+              {safePage} / {totalPages}
+            </span>
+            <button
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={safePage >= totalPages}
+              className="p-2 text-dark-400 hover:text-dark-100 hover:bg-dark-800 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       )}
     </div>

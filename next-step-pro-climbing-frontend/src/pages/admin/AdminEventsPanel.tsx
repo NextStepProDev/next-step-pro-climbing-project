@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { format } from 'date-fns'
-import { Plus, Trash2, Eye, EyeOff, Clock, Pencil, ChevronDown, ChevronRight, MapPin, Users, Mail, Phone, AlertTriangle } from 'lucide-react'
+import { Plus, Trash2, Eye, EyeOff, Clock, Pencil, ChevronDown, ChevronRight, ChevronLeft, MapPin, Users, Mail, Phone, AlertTriangle } from 'lucide-react'
 import { adminApi } from '../../api/client'
 import { getErrorMessage } from '../../utils/errors'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
@@ -21,6 +21,7 @@ export function AdminEventsPanel() {
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [editingEvent, setEditingEvent] = useState<EventDetail | null>(null)
   const [showArchive, setShowArchive] = useState(false)
+  const [archivePage, setArchivePage] = useState(1)
   const queryClient = useQueryClient()
 
   const { data: events, isLoading, isError, error, refetch } = useQuery({
@@ -94,38 +95,72 @@ export function AdminEventsPanel() {
           )}
 
           {/* Archive */}
-          {archive.length > 0 && (
-            <div>
-              <button
-                onClick={() => setShowArchive(!showArchive)}
-                className="flex items-center gap-2 text-sm text-dark-500 hover:text-dark-300 transition-colors mb-3"
-              >
-                {showArchive ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-                Archiwum ({archive.length})
-              </button>
+          {archive.length > 0 && (() => {
+            const pageSize = 15
+            const totalPages = Math.max(1, Math.ceil(archive.length / pageSize))
+            const safePage = Math.min(archivePage, totalPages)
+            const paged = archive.slice((safePage - 1) * pageSize, safePage * pageSize)
 
-              {showArchive && (
-                <div className="space-y-3 max-h-96 overflow-y-auto pr-1">
-                  {archive.map((event) => (
-                    <EventCard
-                      key={event.id}
-                      event={event}
-                      archived
-                      onEdit={() => setEditingEvent(event)}
-                      onToggleActive={() =>
-                        updateMutation.mutate({ eventId: event.id, data: { active: !event.active } })
-                      }
-                      onDelete={() => {
-                        if (window.confirm('Czy na pewno chcesz usunąć to wydarzenie?')) {
-                          deleteMutation.mutate(event.id)
+            return (
+              <div>
+                <button
+                  onClick={() => setShowArchive(!showArchive)}
+                  className="flex items-center gap-2 text-sm text-dark-500 hover:text-dark-300 transition-colors mb-3"
+                >
+                  {showArchive ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                  Archiwum ({archive.length})
+                </button>
+
+                {showArchive && (
+                  <div className="space-y-3">
+                    {paged.map((event) => (
+                      <EventCard
+                        key={event.id}
+                        event={event}
+                        archived
+                        onEdit={() => setEditingEvent(event)}
+                        onToggleActive={() =>
+                          updateMutation.mutate({ eventId: event.id, data: { active: !event.active } })
                         }
-                      }}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
+                        onDelete={() => {
+                          if (window.confirm('Czy na pewno chcesz usunąć to wydarzenie?')) {
+                            deleteMutation.mutate(event.id)
+                          }
+                        }}
+                      />
+                    ))}
+
+                    {totalPages > 1 && (
+                      <div className="flex items-center justify-between pt-2">
+                        <span className="text-sm text-dark-500">
+                          {archive.length} wydarzeń
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => setArchivePage((p) => Math.max(1, p - 1))}
+                            disabled={safePage <= 1}
+                            className="p-2 text-dark-400 hover:text-dark-100 hover:bg-dark-800 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                          >
+                            <ChevronLeft className="w-4 h-4" />
+                          </button>
+                          <span className="text-sm text-dark-300 min-w-[80px] text-center">
+                            {safePage} / {totalPages}
+                          </span>
+                          <button
+                            onClick={() => setArchivePage((p) => Math.min(totalPages, p + 1))}
+                            disabled={safePage >= totalPages}
+                            className="p-2 text-dark-400 hover:text-dark-100 hover:bg-dark-800 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                          >
+                            <ChevronRight className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )
+          })()}
         </div>
       )}
 
