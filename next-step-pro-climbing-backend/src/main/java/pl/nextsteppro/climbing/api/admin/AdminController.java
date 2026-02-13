@@ -227,6 +227,24 @@ public class AdminController {
         return ResponseEntity.ok(event);
     }
 
+    @Tag(name = "Admin - Events")
+    @Operation(
+        summary = "Lista uczestników wydarzenia",
+        description = "Zwraca listę unikalnych uczestników zapisanych na wydarzenie (deduplikacja po użytkowniku)"
+    )
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Lista uczestników",
+            content = @Content(schema = @Schema(implementation = EventParticipantsDto.class))),
+        @ApiResponse(responseCode = "404", description = "Wydarzenie nie istnieje"),
+        @ApiResponse(responseCode = "403", description = "Brak uprawnień administratora")
+    })
+    @GetMapping("/events/{eventId}/participants")
+    public ResponseEntity<EventParticipantsDto> getEventParticipants(
+            @Parameter(description = "UUID wydarzenia") @PathVariable UUID eventId) {
+        EventParticipantsDto participants = adminService.getEventParticipants(eventId);
+        return ResponseEntity.ok(participants);
+    }
+
     // ==================== Reservations Overview ====================
 
     @Tag(name = "Admin - Reservations", description = "Przegląd rezerwacji (tylko admin)")

@@ -13,6 +13,7 @@ import type {
   CreateTimeSlotRequest,
   CreateEventRequest,
   EventDetail,
+  EventParticipants,
   ReservationAdmin,
 } from '../types'
 import {
@@ -251,6 +252,9 @@ export const adminApi = {
 
   getEventDetails: (eventId: string) =>
     fetchApi<EventDetail>(`/admin/events/${eventId}`),
+
+  getEventParticipants: (eventId: string) =>
+    fetchApi<EventParticipants>(`/admin/events/${eventId}/participants`),
 
   // Reservations
   getUpcomingReservations: () =>

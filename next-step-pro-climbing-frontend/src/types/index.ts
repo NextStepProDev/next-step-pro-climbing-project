@@ -185,6 +185,12 @@ export interface WaitlistParticipant {
   notified: boolean
 }
 
+export interface EventParticipants {
+  eventId: string
+  maxParticipants: number
+  participants: Participant[]
+}
+
 export interface CreateTimeSlotRequest {
   date: string
   startTime: string

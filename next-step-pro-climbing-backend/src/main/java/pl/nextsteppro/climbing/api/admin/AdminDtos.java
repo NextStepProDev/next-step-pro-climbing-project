@@ -108,6 +108,7 @@ record UpdateEventRequest(
 record EventAdminDto(
     UUID id,
     String title,
+    @Nullable String description,
     @Nullable String location,
     String eventType,
     LocalDate startDate,
@@ -131,6 +132,12 @@ record EventDetailAdminDto(
     @Nullable LocalTime startTime,
     @Nullable LocalTime endTime,
     List<TimeSlotAdminDto> slots
+) {}
+
+record EventParticipantsDto(
+    UUID eventId,
+    int maxParticipants,
+    List<ParticipantDto> participants
 ) {}
 
 // Reservation DTOs

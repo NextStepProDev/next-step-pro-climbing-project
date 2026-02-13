@@ -21,6 +21,7 @@ import pl.nextsteppro.climbing.domain.waitlist.WaitlistRepository;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -395,10 +396,45 @@ public class AdminService {
             ));
     }
 
+    @Transactional(readOnly = true)
+    public EventParticipantsDto getEventParticipants(UUID eventId) {
+        Event event = eventRepository.findById(eventId)
+            .orElseThrow(() -> new IllegalArgumentException("Event not found"));
+
+        List<TimeSlot> slots = timeSlotRepository.findByEventId(eventId);
+        if (slots.isEmpty()) {
+            return new EventParticipantsDto(eventId, event.getMaxParticipants(), List.of());
+        }
+
+        List<UUID> slotIds = slots.stream().map(TimeSlot::getId).toList();
+        List<Reservation> allReservations = reservationRepository.findConfirmedByTimeSlotIds(slotIds);
+
+        // Deduplicate by user - keep the earliest reservation per user
+        Map<UUID, Reservation> uniqueByUser = new LinkedHashMap<>();
+        for (Reservation r : allReservations) {
+            uniqueByUser.putIfAbsent(r.getUser().getId(), r);
+        }
+
+        List<ParticipantDto> participants = uniqueByUser.values().stream()
+            .map(r -> new ParticipantDto(
+                r.getUser().getId(),
+                r.getUser().getFullName(),
+                r.getUser().getEmail(),
+                r.getUser().getPhone(),
+                r.getComment(),
+                r.getParticipants(),
+                r.getCreatedAt()
+            ))
+            .toList();
+
+        return new EventParticipantsDto(eventId, event.getMaxParticipants(), participants);
+    }
+
     private EventAdminDto toEventAdminDto(Event event) {
         return new EventAdminDto(
             event.getId(),
             event.getTitle(),
+            event.getDescription(),
             event.getLocation(),
             event.getEventType().name(),
             event.getStartDate(),
