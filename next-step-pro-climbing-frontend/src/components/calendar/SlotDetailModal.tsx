@@ -206,14 +206,7 @@ export function SlotDetailModal({
             >
               Anuluj rezerwację
             </Button>
-          ) : isBookingClosed ? (
-            <Button
-              variant="ghost"
-              className="flex-1"
-              onClick={onClose}
-            >
-              Zamknij
-            </Button>
+          
           ) : isAvailable ? (
             <Button
               variant="primary"
