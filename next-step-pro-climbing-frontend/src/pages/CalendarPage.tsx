@@ -9,7 +9,7 @@ import { SlotDetailModal } from "../components/calendar/SlotDetailModal";
 import { EventSignupModal } from "../components/calendar/EventSignupModal";
 import { LoadingSpinner } from "../components/ui/LoadingSpinner";
 import { QueryError } from "../components/ui/QueryError";
-import { formatAvailability } from "../utils/events";
+import { formatAvailability, getEventColor } from "../utils/events";
 import type { EventSummary } from "../types";
 
 export function CalendarPage() {
@@ -130,15 +130,17 @@ export function CalendarPage() {
               </h3>
 
               <div className="space-y-2">
-                {monthData.events.map((event) => {
+                {monthData.events.map((event, index) => {
                   const { label, badgeClass } = formatAvailability(event);
+                  const color = getEventColor(index);
 
                   return (
                     <div
                       key={event.id}
                       className="flex items-center justify-between text-sm bg-dark-800/40 rounded-lg px-3 py-2"
                     >
-                      <span className="text-dark-100 font-medium">
+                      <span className="flex items-center gap-2 text-dark-100 font-medium">
+                        <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${color.dot}`} />
                         {event.title}
                       </span>
 

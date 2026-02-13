@@ -4,6 +4,7 @@ import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isTod
 import { pl } from 'date-fns/locale'
 import clsx from 'clsx'
 import type { DaySummary, EventSummary } from '../../types'
+import { buildEventColorMap, getEventColor } from '../../utils/events'
 
 interface MonthCalendarProps {
   currentMonth: Date
@@ -36,6 +37,8 @@ export function MonthCalendar({ currentMonth, onMonthChange, days, events, onDay
     days.forEach((day) => map.set(day.date, day))
     return map
   }, [days])
+
+  const eventColorMap = useMemo(() => buildEventColorMap(events), [events])
 
   const dayEventsMap = useMemo(() => {
     const map = new Map<string, EventSummary[]>()
@@ -137,16 +140,19 @@ export function MonthCalendar({ currentMonth, onMonthChange, days, events, onDay
                 {format(day, 'd')}
               </div>
 
-              {dayEvents.length > 0 && !isPast && dayEvents.map((event) => (
-                <div key={event.id} className="text-[10px] leading-tight text-primary-400 font-medium truncate">
-                  {event.title}{' '}
-                  <span className={clsx(
-                    event.currentParticipants >= event.maxParticipants ? 'text-amber-400' : 'text-primary-300'
-                  )}>
-                    {event.currentParticipants}/{event.maxParticipants}
-                  </span>
-                </div>
-              ))}
+              {dayEvents.length > 0 && !isPast && dayEvents.map((event) => {
+                const color = getEventColor(eventColorMap.get(event.id) ?? 0)
+                return (
+                  <div key={event.id} className={clsx("text-[10px] leading-tight font-medium truncate", color.text)}>
+                    {event.title}{' '}
+                    <span className={clsx(
+                      event.currentParticipants >= event.maxParticipants ? 'text-amber-400' : 'opacity-75'
+                    )}>
+                      {event.currentParticipants}/{event.maxParticipants}
+                    </span>
+                  </div>
+                )
+              })}
 
               {dayData && dayData.availableSlots > 0 && !isPast ? (
                 <div className="text-xs text-primary-400 font-medium">

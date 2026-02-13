@@ -4,7 +4,7 @@ import { pl } from "date-fns/locale";
 import { ArrowLeft, Clock, Calendar, Users } from "lucide-react";
 import clsx from "clsx";
 import type { TimeSlot, EventSummary } from "../../types";
-import { formatAvailability } from "../../utils/events";
+import { formatAvailability, buildEventColorMap, getEventColor } from "../../utils/events";
 
 interface DayViewProps {
   date: string;
@@ -129,6 +129,8 @@ export function DayView({
     return { eventSlotGroups: grouped, standaloneSlots: standalone };
   }, [slots, events]);
 
+  const eventColorMap = useMemo(() => buildEventColorMap(events), [events]);
+
   const hasAnyContent = slots.length > 0 || events.length > 0;
 
   return (
@@ -159,16 +161,17 @@ export function DayView({
             {events.map((event) => {
               const eventSlots = eventSlotGroups.get(event.title);
               const { label, badgeClass } = formatAvailability(event);
+              const color = getEventColor(eventColorMap.get(event.id) ?? 0);
 
               /* Event WITH time slots */
               if (eventSlots && eventSlots.length > 0) {
                 return (
                   <div
                     key={event.id}
-                    className="rounded-lg border border-primary-500/30 bg-primary-500/5 p-4"
+                    className={clsx("rounded-lg border p-4", color.border, color.bg)}
                   >
                     <div className="mb-3">
-                      <h3 className="text-base font-semibold text-primary-400">
+                      <h3 className={clsx("text-base font-semibold", color.text)}>
                         {event.title}
                       </h3>
 
@@ -208,11 +211,14 @@ export function DayView({
                 <button
                   key={event.id}
                   onClick={() => onEventClick?.(event)}
-                  className="w-full rounded-lg border border-primary-500/30 bg-primary-500/5 p-4 text-left hover:border-primary-500 transition-all"
+                  className={clsx(
+                    "w-full rounded-lg border p-4 text-left transition-all",
+                    color.border, color.bg, color.hoverBorder
+                  )}
                 >
                   <div className="flex items-center justify-between">
                     <div>
-                      <h3 className="text-base font-semibold text-primary-400">
+                      <h3 className={clsx("text-base font-semibold", color.text)}>
                         {event.title}
                       </h3>
 
