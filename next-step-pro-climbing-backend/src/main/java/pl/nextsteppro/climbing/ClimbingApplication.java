@@ -10,5 +10,6 @@ public class ClimbingApplication {
 
     static void main(String[] args) {
         SpringApplication.run(ClimbingApplication.class, args);
+
     }
 }
