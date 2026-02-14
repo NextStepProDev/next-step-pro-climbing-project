@@ -100,4 +100,4 @@ Production: `nextsteppro.pl`
 
 ## License
 
-Private project. All rights reserved.
+This project is licensed under the [MIT License](LICENSE).
