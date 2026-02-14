@@ -1,11 +1,11 @@
 # Etap 1: Budowanie (Build Stage)
 FROM eclipse-temurin:25-jdk-alpine AS build
 WORKDIR /app
+ARG APP_VERSION=dev
 
 # 1. Kopiujemy wrapper i konfigurację Gradle
 COPY gradlew .
 COPY gradle/ gradle/
-# TUTAJ DODAJEMY gradle.properties - to rozwiązuje błąd z wersjami!
 COPY build.gradle settings.gradle gradle.properties ./
 
 # 2. Kopiujemy kod źródłowy
@@ -13,7 +13,7 @@ COPY src src
 
 # 3. Budujemy aplikację
 RUN chmod +x gradlew
-RUN ./gradlew bootJar -x test
+RUN APP_VERSION=$APP_VERSION ./gradlew bootJar -x test
 
 # Etap 2: Uruchamianie (Runtime Stage)
 FROM eclipse-temurin:25-jre-alpine

@@ -5,7 +5,13 @@ plugins {
 }
 
 group = 'pl.nextsteppro'
-version = file("../VERSION").text.trim()
+version = (() -> {
+    def versionFile = file("../VERSION")
+    if (versionFile.exists()) {
+        return versionFile.text.trim()
+    }
+    return System.getenv("APP_VERSION") ?: "dev"
+})()
 
 java {
     toolchain {
