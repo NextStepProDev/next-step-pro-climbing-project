@@ -5,7 +5,7 @@ plugins {
 }
 
 group = 'pl.nextsteppro'
-version = '0.0.1-SNAPSHOT'
+version = file("../VERSION").text.trim()
 
 java {
     toolchain {
@@ -72,6 +72,14 @@ tasks.named('bootRun') {
                     }
                 }
             }
+        }
+    }
+}
+
+tasks.named('processResources') {
+    filesMatching('application*.yml') {
+        filter { line ->
+            line.replace('@version@', project.version.toString())
         }
     }
 }

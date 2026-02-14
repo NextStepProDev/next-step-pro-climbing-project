@@ -56,6 +56,7 @@ export function Footer() {
 
         <div className="mt-8 pt-8 border-t border-dark-800 text-center text-dark-500 text-sm">
           <p>&copy; {new Date().getFullYear()} Next Step Pro Climbing. Wszelkie prawa zastrzeżone.</p>
+          <p className="mt-1 text-dark-600 text-xs">v{__APP_VERSION__}</p>
         </div>
       </div>
     </footer>

@@ -21,12 +21,15 @@ public class OpenApiConfig {
     @Value("${app.base-url:http://localhost:8080}")
     private String baseUrl;
 
+    @Value("${app.version:dev}")
+    private String appVersion;
+
     @Bean
     public OpenAPI customOpenAPI() {
         return new OpenAPI()
             .info(new Info()
                 .title("Next Step Pro Climbing API")
-                .version("1.0.0")
+                .version(appVersion)
                 .description("""
                     System rezerwacji zajęć w szkole wspinaczkowej Next Step Pro Climbing.
 
