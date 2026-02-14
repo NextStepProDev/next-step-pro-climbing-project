@@ -155,7 +155,7 @@ export function RegisterPage() {
               id="password"
               type="password"
               required
-              minLength={4}
+              minLength={8}
               value={form.password}
               onChange={(e) => updateField('password', e.target.value)}
               className="w-full px-3 py-2 bg-dark-800 border border-dark-700 rounded-lg text-dark-100 placeholder-dark-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
