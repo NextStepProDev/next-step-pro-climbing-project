@@ -1,5 +1,6 @@
 package pl.nextsteppro.climbing.infrastructure.security;
 
+import jakarta.annotation.PostConstruct;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
@@ -11,6 +12,18 @@ public class JwtConfig {
     private long accessTokenExpirationMs;
     private long refreshTokenExpirationMs;
     private String issuer;
+
+    @PostConstruct
+    void validateSecret() {
+        if (secret == null || secret.isBlank()) {
+            throw new IllegalStateException(
+                "JWT secret is not configured. Set the JWT_SECRET environment variable (min 32 characters).");
+        }
+        if (secret.length() < 32) {
+            throw new IllegalStateException(
+                "JWT secret is too short. It must be at least 32 characters.");
+        }
+    }
 
     public String getSecret() {
         return secret;

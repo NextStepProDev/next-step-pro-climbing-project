@@ -7,5 +7,5 @@ export function saveRedirectPath(path: string): void {
 export function consumeRedirectPath(): string | null {
   const path = sessionStorage.getItem(REDIRECT_KEY)
   sessionStorage.removeItem(REDIRECT_KEY)
-  return path
+  return path?.startsWith('/') ? path : null
 }

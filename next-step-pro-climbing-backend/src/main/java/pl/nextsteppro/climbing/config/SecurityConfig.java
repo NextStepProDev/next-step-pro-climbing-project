@@ -42,11 +42,13 @@ public class SecurityConfig {
             .sessionManagement(session -> session
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> {
-                // Swagger/OpenAPI documentation
-                auth.requestMatchers("/swagger-ui/**", "/swagger-ui.html").permitAll()
-                    .requestMatchers("/v3/api-docs/**", "/v3/api-docs.yaml").permitAll()
-                    // Authentication endpoints
-                    .requestMatchers("/api/auth/**").permitAll()
+                // Swagger/OpenAPI documentation (only accessible in dev profile)
+                if (java.util.Arrays.asList(environment.getActiveProfiles()).contains("dev")) {
+                    auth.requestMatchers("/swagger-ui/**", "/swagger-ui.html").permitAll()
+                        .requestMatchers("/v3/api-docs/**", "/v3/api-docs.yaml").permitAll();
+                }
+                // Authentication endpoints
+                auth.requestMatchers("/api/auth/**").permitAll()
                     // Public calendar endpoints
                     .requestMatchers(HttpMethod.GET, "/api/calendar/**").permitAll()
                     .requestMatchers(HttpMethod.GET, "/api/events/**").permitAll();

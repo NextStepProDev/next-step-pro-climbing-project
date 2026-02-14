@@ -12,7 +12,7 @@ public final class AuthDtos {
         String email,
 
         @NotBlank(message = "Hasło jest wymagane")
-        @Size(min = 4, max = 100, message = "Hasło musi mieć od 4 do 100 znaków")
+        @Size(min = 8, max = 100, message = "Hasło musi mieć od 8 do 100 znaków")
         String password,
 
         @NotBlank(message = "Imię jest wymagane")
@@ -59,7 +59,7 @@ public final class AuthDtos {
         String token,
 
         @NotBlank(message = "Hasło jest wymagane")
-        @Size(min = 4, max = 100, message = "Hasło musi mieć od 4 do 100 znaków")
+        @Size(min = 8, max = 100, message = "Hasło musi mieć od 8 do 100 znaków")
         String newPassword
     ) {}
 

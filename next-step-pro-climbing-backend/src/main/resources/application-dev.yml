@@ -2,7 +2,19 @@ spring:
   jpa:
     show-sql: true
 
+app:
+  jwt:
+    secret: dev-secret-key-change-in-production-minimum-32-characters
+
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
+
 logging:
   level:
+    pl.nextsteppro: DEBUG
+    org.springframework.security: DEBUG
     org.hibernate.SQL: DEBUG
     org.hibernate.orm.jdbc.bind: TRACE

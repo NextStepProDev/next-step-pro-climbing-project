@@ -62,7 +62,7 @@ app:
     allowed-origins: ${CORS_ORIGINS:http://localhost:5173}
   base-url: ${APP_BASE_URL:http://localhost:8080}
   jwt:
-    secret: ${JWT_SECRET:dev-secret-key-change-in-production-minimum-32-characters}
+    secret: ${JWT_SECRET:}
     access-token-expiration-ms: 900000      # 15 minutes
     refresh-token-expiration-ms: 604800000  # 7 days
     issuer: nextsteppro.pl
@@ -74,10 +74,10 @@ server:
 springdoc:
   api-docs:
     path: /v3/api-docs
-    enabled: true
+    enabled: ${SWAGGER_ENABLED:false}
   swagger-ui:
     path: /swagger-ui.html
-    enabled: true
+    enabled: ${SWAGGER_ENABLED:false}
     operations-sorter: method
     tags-sorter: alpha
     doc-expansion: none
@@ -88,5 +88,5 @@ springdoc:
 
 logging:
   level:
-    pl.nextsteppro: DEBUG
-    org.springframework.security: DEBUG
+    pl.nextsteppro: ${LOG_LEVEL:INFO}
+    org.springframework.security: ${SECURITY_LOG_LEVEL:INFO}
