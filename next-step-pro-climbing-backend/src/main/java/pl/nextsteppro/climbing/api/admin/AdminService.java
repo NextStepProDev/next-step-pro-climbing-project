@@ -10,6 +10,7 @@ import pl.nextsteppro.climbing.domain.event.EventRepository;
 import pl.nextsteppro.climbing.domain.event.EventType;
 import pl.nextsteppro.climbing.domain.reservation.Reservation;
 import pl.nextsteppro.climbing.domain.reservation.ReservationRepository;
+import pl.nextsteppro.climbing.domain.reservation.SlotParticipantCount;
 import pl.nextsteppro.climbing.domain.timeslot.TimeSlot;
 import pl.nextsteppro.climbing.domain.timeslot.TimeSlotRepository;
 import pl.nextsteppro.climbing.domain.auth.AuthTokenRepository;
@@ -18,6 +19,7 @@ import pl.nextsteppro.climbing.domain.user.UserRepository;
 import pl.nextsteppro.climbing.domain.user.UserRole;
 
 import pl.nextsteppro.climbing.infrastructure.mail.MailService;
+import pl.nextsteppro.climbing.infrastructure.security.JwtAuthenticationFilter;
 import pl.nextsteppro.climbing.api.activitylog.ActivityLogService;
 
 import java.time.LocalDate;
@@ -39,6 +41,7 @@ public class AdminService {
     private final AuthTokenRepository authTokenRepository;
     private final MailService mailService;
     private final ActivityLogService activityLogService;
+    private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
     public AdminService(TimeSlotRepository timeSlotRepository,
                        EventRepository eventRepository,
@@ -46,7 +49,8 @@ public class AdminService {
                        UserRepository userRepository,
                        AuthTokenRepository authTokenRepository,
                        MailService mailService,
-                       ActivityLogService activityLogService) {
+                       ActivityLogService activityLogService,
+                       JwtAuthenticationFilter jwtAuthenticationFilter) {
         this.timeSlotRepository = timeSlotRepository;
         this.eventRepository = eventRepository;
         this.reservationRepository = reservationRepository;
@@ -54,6 +58,7 @@ public class AdminService {
         this.authTokenRepository = authTokenRepository;
         this.mailService = mailService;
         this.activityLogService = activityLogService;
+        this.jwtAuthenticationFilter = jwtAuthenticationFilter;
     }
 
     @Caching(evict = {
@@ -262,9 +267,7 @@ public class AdminService {
             }
 
             // Delete all reservations and time slots before deleting the event
-            for (UUID slotId : slotIds) {
-                reservationRepository.deleteAll(reservationRepository.findByTimeSlotId(slotId));
-            }
+            reservationRepository.deleteByTimeSlotIds(slotIds);
             timeSlotRepository.deleteAll(slots);
         }
 
@@ -375,6 +378,7 @@ public class AdminService {
 
         user.setRole(UserRole.ADMIN);
         userRepository.save(user);
+        jwtAuthenticationFilter.evictUser(userId);
     }
 
     public void removeAdmin(UUID userId) {
@@ -387,6 +391,7 @@ public class AdminService {
 
         user.setRole(UserRole.USER);
         userRepository.save(user);
+        jwtAuthenticationFilter.evictUser(userId);
     }
 
     public void deleteUser(UUID userId) {
@@ -406,6 +411,7 @@ public class AdminService {
 
         authTokenRepository.deleteByUserId(userId);
         userRepository.delete(user);
+        jwtAuthenticationFilter.evictUser(userId);
     }
 
     private TimeSlotAdminDto toTimeSlotAdminDto(TimeSlot slot) {
@@ -432,10 +438,7 @@ public class AdminService {
         if (slots.isEmpty()) return Map.of();
         List<UUID> slotIds = slots.stream().map(TimeSlot::getId).toList();
         return reservationRepository.countConfirmedByTimeSlotIds(slotIds).stream()
-            .collect(Collectors.toMap(
-                row -> (UUID) row[0],
-                row -> ((Number) row[1]).intValue()
-            ));
+            .collect(Collectors.toMap(SlotParticipantCount::slotId, SlotParticipantCount::countAsInt));
     }
 
     @Transactional(readOnly = true)

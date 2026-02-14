@@ -1,9 +1,9 @@
+import { lazy, Suspense } from 'react'
 import { Routes, Route } from 'react-router-dom'
 import { Layout } from './components/layout/Layout'
 import { HomePage } from './pages/HomePage'
 import { CalendarPage } from './pages/CalendarPage'
 import { MyReservationsPage } from './pages/MyReservationsPage'
-import { AdminPage } from './pages/AdminPage'
 import { EventPage } from './pages/EventPage'
 import { LoginPage } from './pages/LoginPage'
 import { RegisterPage } from './pages/RegisterPage'
@@ -15,12 +15,14 @@ import { SettingsPage } from './pages/SettingsPage'
 import { ProtectedRoute } from './components/layout/ProtectedRoute'
 import { AdminRoute } from './components/layout/AdminRoute'
 import { ErrorBoundary } from './components/ui/ErrorBoundary'
-import { ScrollToTop } from './components/ScrollToTop' // 👈 DODAJ
+import { ScrollToTop } from './components/ScrollToTop'
+
+const AdminPage = lazy(() => import('./pages/AdminPage').then(m => ({ default: m.AdminPage })))
 
 export default function App() {
   return (
     <ErrorBoundary>
-      <ScrollToTop /> {/* 👈 TUTAJ */}
+      <ScrollToTop />
 
       <Routes>
         <Route path="/" element={<Layout />}>
@@ -53,7 +55,9 @@ export default function App() {
             path="admin/*"
             element={
               <AdminRoute>
-                <AdminPage />
+                <Suspense fallback={null}>
+                  <AdminPage />
+                </Suspense>
               </AdminRoute>
             }
           />

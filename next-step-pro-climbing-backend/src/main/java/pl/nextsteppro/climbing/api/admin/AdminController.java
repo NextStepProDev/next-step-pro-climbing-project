@@ -11,6 +11,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import pl.nextsteppro.climbing.api.activitylog.ActivityLogDto;
 import pl.nextsteppro.climbing.api.activitylog.ActivityLogService;
@@ -21,6 +22,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/admin")
+@PreAuthorize("hasRole('ADMIN')")
 public class AdminController {
 
     private final AdminService adminService;

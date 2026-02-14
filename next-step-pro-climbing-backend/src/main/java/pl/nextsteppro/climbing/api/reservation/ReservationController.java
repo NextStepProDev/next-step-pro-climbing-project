@@ -8,12 +8,9 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-import pl.nextsteppro.climbing.config.CurrentUserService;
-import pl.nextsteppro.climbing.config.CustomOAuth2User;
+import pl.nextsteppro.climbing.config.CurrentUserId;
 
 import java.util.List;
 import java.util.UUID;
@@ -24,11 +21,9 @@ import java.util.UUID;
 public class ReservationController {
 
     private final ReservationService reservationService;
-    private final CurrentUserService currentUserService;
 
-    public ReservationController(ReservationService reservationService, CurrentUserService currentUserService) {
+    public ReservationController(ReservationService reservationService) {
         this.reservationService = reservationService;
-        this.currentUserService = currentUserService;
     }
 
     @Operation(
@@ -45,11 +40,9 @@ public class ReservationController {
     @PostMapping("/slot/{slotId}")
     public ResponseEntity<ReservationResultDto> createReservation(
             @Parameter(description = "UUID terminu") @PathVariable UUID slotId,
-            @Parameter(hidden = true) @AuthenticationPrincipal CustomOAuth2User oAuth2User,
-            @RequestBody(required = false) CreateReservationRequest body,
-            HttpServletRequest request) {
+            @Parameter(hidden = true) @CurrentUserId UUID userId,
+            @RequestBody(required = false) CreateReservationRequest body) {
 
-        UUID userId = currentUserService.getCurrentUserId(oAuth2User, request).orElse(null);
         if (userId == null) {
             return ResponseEntity.status(401).build();
         }
@@ -73,10 +66,8 @@ public class ReservationController {
     @DeleteMapping("/{reservationId}")
     public ResponseEntity<Void> cancelReservation(
             @Parameter(description = "UUID rezerwacji") @PathVariable UUID reservationId,
-            @Parameter(hidden = true) @AuthenticationPrincipal CustomOAuth2User oAuth2User,
-            HttpServletRequest request) {
+            @Parameter(hidden = true) @CurrentUserId UUID userId) {
 
-        UUID userId = currentUserService.getCurrentUserId(oAuth2User, request).orElse(null);
         if (userId == null) {
             return ResponseEntity.status(401).build();
         }
@@ -96,10 +87,8 @@ public class ReservationController {
     })
     @GetMapping("/my")
     public ResponseEntity<List<UserReservationDto>> getMyReservations(
-            @Parameter(hidden = true) @AuthenticationPrincipal CustomOAuth2User oAuth2User,
-            HttpServletRequest request) {
+            @Parameter(hidden = true) @CurrentUserId UUID userId) {
 
-        UUID userId = currentUserService.getCurrentUserId(oAuth2User, request).orElse(null);
         if (userId == null) {
             return ResponseEntity.status(401).build();
         }
@@ -119,10 +108,8 @@ public class ReservationController {
     })
     @GetMapping("/my/upcoming")
     public ResponseEntity<MyReservationsDto> getMyUpcomingReservations(
-            @Parameter(hidden = true) @AuthenticationPrincipal CustomOAuth2User oAuth2User,
-            HttpServletRequest request) {
+            @Parameter(hidden = true) @CurrentUserId UUID userId) {
 
-        UUID userId = currentUserService.getCurrentUserId(oAuth2User, request).orElse(null);
         if (userId == null) {
             return ResponseEntity.status(401).build();
         }
@@ -142,10 +129,8 @@ public class ReservationController {
     })
     @GetMapping("/my/past")
     public ResponseEntity<MyReservationsDto> getMyPastReservations(
-            @Parameter(hidden = true) @AuthenticationPrincipal CustomOAuth2User oAuth2User,
-            HttpServletRequest request) {
+            @Parameter(hidden = true) @CurrentUserId UUID userId) {
 
-        UUID userId = currentUserService.getCurrentUserId(oAuth2User, request).orElse(null);
         if (userId == null) {
             return ResponseEntity.status(401).build();
         }
@@ -168,11 +153,9 @@ public class ReservationController {
     @PostMapping("/event/{eventId}")
     public ResponseEntity<EventReservationResultDto> createEventReservation(
             @Parameter(description = "UUID wydarzenia") @PathVariable UUID eventId,
-            @Parameter(hidden = true) @AuthenticationPrincipal CustomOAuth2User oAuth2User,
-            @RequestBody(required = false) CreateReservationRequest body,
-            HttpServletRequest request) {
+            @Parameter(hidden = true) @CurrentUserId UUID userId,
+            @RequestBody(required = false) CreateReservationRequest body) {
 
-        UUID userId = currentUserService.getCurrentUserId(oAuth2User, request).orElse(null);
         if (userId == null) {
             return ResponseEntity.status(401).build();
         }
@@ -194,10 +177,8 @@ public class ReservationController {
     @DeleteMapping("/event/{eventId}")
     public ResponseEntity<Void> cancelEventReservation(
             @Parameter(description = "UUID wydarzenia") @PathVariable UUID eventId,
-            @Parameter(hidden = true) @AuthenticationPrincipal CustomOAuth2User oAuth2User,
-            HttpServletRequest request) {
+            @Parameter(hidden = true) @CurrentUserId UUID userId) {
 
-        UUID userId = currentUserService.getCurrentUserId(oAuth2User, request).orElse(null);
         if (userId == null) {
             return ResponseEntity.status(401).build();
         }

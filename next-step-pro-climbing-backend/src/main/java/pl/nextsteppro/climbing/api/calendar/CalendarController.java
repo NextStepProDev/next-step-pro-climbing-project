@@ -7,13 +7,10 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-import pl.nextsteppro.climbing.config.CurrentUserService;
-import pl.nextsteppro.climbing.config.CustomOAuth2User;
+import pl.nextsteppro.climbing.config.CurrentUserId;
 
 import java.time.LocalDate;
 import java.time.YearMonth;
@@ -25,11 +22,9 @@ import java.util.UUID;
 public class CalendarController {
 
     private final CalendarService calendarService;
-    private final CurrentUserService currentUserService;
 
-    public CalendarController(CalendarService calendarService, CurrentUserService currentUserService) {
+    public CalendarController(CalendarService calendarService) {
         this.calendarService = calendarService;
-        this.currentUserService = currentUserService;
     }
 
     @Operation(
@@ -45,10 +40,8 @@ public class CalendarController {
     public ResponseEntity<MonthViewDto> getMonthView(
             @Parameter(description = "Miesiąc w formacie yyyy-MM", example = "2026-02")
             @PathVariable @DateTimeFormat(pattern = "yyyy-MM") YearMonth yearMonth,
-            @Parameter(hidden = true) @AuthenticationPrincipal CustomOAuth2User oAuth2User,
-            HttpServletRequest request) {
+            @Parameter(hidden = true) @CurrentUserId UUID userId) {
 
-        UUID userId = currentUserService.getCurrentUserId(oAuth2User, request).orElse(null);
         MonthViewDto view = calendarService.getMonthView(yearMonth, userId);
         return ResponseEntity.ok(view);
     }
@@ -66,10 +59,8 @@ public class CalendarController {
     public ResponseEntity<DayViewDto> getDayView(
             @Parameter(description = "Data w formacie yyyy-MM-dd", example = "2026-02-07")
             @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
-            @Parameter(hidden = true) @AuthenticationPrincipal CustomOAuth2User oAuth2User,
-            HttpServletRequest request) {
+            @Parameter(hidden = true) @CurrentUserId UUID userId) {
 
-        UUID userId = currentUserService.getCurrentUserId(oAuth2User, request).orElse(null);
         DayViewDto view = calendarService.getDayView(date, userId);
         return ResponseEntity.ok(view);
     }
@@ -86,10 +77,8 @@ public class CalendarController {
     @GetMapping("/event/{eventId}")
     public ResponseEntity<EventSummaryDto> getEventSummary(
             @Parameter(description = "UUID wydarzenia") @PathVariable UUID eventId,
-            @Parameter(hidden = true) @AuthenticationPrincipal CustomOAuth2User oAuth2User,
-            HttpServletRequest request) {
+            @Parameter(hidden = true) @CurrentUserId UUID userId) {
 
-        UUID userId = currentUserService.getCurrentUserId(oAuth2User, request).orElse(null);
         EventSummaryDto summary = calendarService.getEventSummary(eventId, userId);
         return ResponseEntity.ok(summary);
     }
@@ -106,10 +95,8 @@ public class CalendarController {
     @GetMapping("/slot/{slotId}")
     public ResponseEntity<TimeSlotDetailDto> getSlotDetails(
             @Parameter(description = "UUID terminu") @PathVariable UUID slotId,
-            @Parameter(hidden = true) @AuthenticationPrincipal CustomOAuth2User oAuth2User,
-            HttpServletRequest request) {
+            @Parameter(hidden = true) @CurrentUserId UUID userId) {
 
-        UUID userId = currentUserService.getCurrentUserId(oAuth2User, request).orElse(null);
         TimeSlotDetailDto details = calendarService.getSlotDetails(slotId, userId);
         return ResponseEntity.ok(details);
     }

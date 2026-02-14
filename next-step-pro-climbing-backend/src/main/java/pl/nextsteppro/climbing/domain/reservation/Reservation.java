@@ -125,4 +125,12 @@ public class Reservation {
     public void setComment(@Nullable String comment) {
         this.comment = comment;
     }
+
+    @Nullable
+    public static String sanitizeComment(@Nullable String comment) {
+        if (comment == null || comment.isBlank()) {
+            return null;
+        }
+        return comment.length() > 500 ? comment.substring(0, 500) : comment;
+    }
 }

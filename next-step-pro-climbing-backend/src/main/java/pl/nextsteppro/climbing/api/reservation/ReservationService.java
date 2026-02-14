@@ -5,11 +5,13 @@ import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import pl.nextsteppro.climbing.domain.BookingTimeValidator;
 import pl.nextsteppro.climbing.domain.event.Event;
 import pl.nextsteppro.climbing.domain.event.EventRepository;
 import pl.nextsteppro.climbing.domain.reservation.Reservation;
 import pl.nextsteppro.climbing.domain.reservation.ReservationRepository;
 import pl.nextsteppro.climbing.domain.reservation.ReservationStatus;
+import pl.nextsteppro.climbing.domain.reservation.SlotParticipantCount;
 import pl.nextsteppro.climbing.domain.timeslot.TimeSlot;
 import pl.nextsteppro.climbing.domain.timeslot.TimeSlotRepository;
 import pl.nextsteppro.climbing.domain.user.User;
@@ -21,6 +23,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -59,11 +62,10 @@ public class ReservationService {
         TimeSlot slot = timeSlotRepository.findByIdForUpdate(slotId)
             .orElseThrow(() -> new IllegalArgumentException("Time slot not found"));
 
-        LocalDateTime slotDateTime = LocalDateTime.of(slot.getDate(), slot.getStartTime());
-        if (slotDateTime.isBefore(LocalDateTime.now())) {
+        if (BookingTimeValidator.isPast(slot.getDate(), slot.getStartTime())) {
             throw new IllegalArgumentException("Nie można zarezerwować terminu, który już minął");
         }
-        if (slotDateTime.isBefore(LocalDateTime.now().plusHours(12))) {
+        if (!BookingTimeValidator.isWithinBookingWindow(slot.getDate(), slot.getStartTime())) {
             throw new IllegalStateException("Rezerwacja online jest możliwa do 12 godzin przed terminem. Skontaktuj się z instruktorem telefonicznie, aby sprawdzić dostępność.");
         }
 
@@ -89,22 +91,17 @@ public class ReservationService {
 
         Reservation existing = reservationRepository.findByUserIdAndTimeSlotId(userId, slotId);
         boolean isReactivation = existing != null && existing.isCancelled();
+        String sanitizedComment = Reservation.sanitizeComment(comment);
         Reservation reservation;
         if (isReactivation) {
             existing.confirm();
             existing.setParticipants(participants);
-            if (comment != null && !comment.isBlank()) {
-                existing.setComment(comment.length() > 500 ? comment.substring(0, 500) : comment);
-            } else {
-                existing.setComment(null);
-            }
+            existing.setComment(sanitizedComment);
             reservation = existing;
         } else {
             reservation = new Reservation(user, slot);
             reservation.setParticipants(participants);
-            if (comment != null && !comment.isBlank()) {
-                reservation.setComment(comment.length() > 500 ? comment.substring(0, 500) : comment);
-            }
+            reservation.setComment(sanitizedComment);
         }
         reservation = reservationRepository.save(reservation);
 
@@ -141,8 +138,7 @@ public class ReservationService {
         }
 
         TimeSlot slot = reservation.getTimeSlot();
-        LocalDateTime slotDateTime = LocalDateTime.of(slot.getDate(), slot.getStartTime());
-        if (slotDateTime.isBefore(LocalDateTime.now().plusHours(12))) {
+        if (!BookingTimeValidator.isWithinBookingWindow(slot.getDate(), slot.getStartTime())) {
             throw new IllegalStateException("Anulowanie online jest możliwe do 12 godzin przed terminem. Skontaktuj się z instruktorem telefonicznie.");
         }
 
@@ -255,11 +251,8 @@ public class ReservationService {
             throw new IllegalStateException("To wydarzenie nie jest aktywne");
         }
 
-        LocalDateTime eventStart = LocalDateTime.of(
-            event.getStartDate(),
-            event.getStartTime() != null ? event.getStartTime() : LocalTime.of(0, 0)
-        );
-        if (eventStart.isBefore(LocalDateTime.now().plusHours(12))) {
+        LocalTime eventStartTime = event.getStartTime() != null ? event.getStartTime() : LocalTime.of(0, 0);
+        if (!BookingTimeValidator.isWithinBookingWindow(event.getStartDate(), eventStartTime)) {
             throw new IllegalStateException("Rezerwacja online jest możliwa do 12 godzin przed wydarzeniem. Skontaktuj się z instruktorem telefonicznie, aby sprawdzić dostępność.");
         }
 
@@ -287,10 +280,13 @@ public class ReservationService {
             throw new IllegalStateException("Masz już rezerwację na to wydarzenie");
         }
 
-        int currentParticipants = activeSlots.stream()
-            .mapToInt(slot -> reservationRepository.countConfirmedByTimeSlotId(slot.getId()))
-            .max()
-            .orElse(0);
+        List<UUID> activeSlotIds = activeSlots.stream().map(TimeSlot::getId).toList();
+        Map<UUID, Integer> countMap = reservationRepository.countConfirmedByTimeSlotIds(activeSlotIds).stream()
+            .collect(Collectors.toMap(
+                SlotParticipantCount::slotId,
+                SlotParticipantCount::countAsInt
+            ));
+        int currentParticipants = countMap.values().stream().mapToInt(Integer::intValue).max().orElse(0);
 
         int spotsLeft = event.getMaxParticipants() - currentParticipants;
         if (spotsLeft <= 0) {
@@ -300,10 +296,7 @@ public class ReservationService {
             throw new IllegalStateException("Dostępnych miejsc: " + spotsLeft + ". Nie można zarezerwować " + participants + ".");
         }
 
-        String sanitizedComment = null;
-        if (comment != null && !comment.isBlank()) {
-            sanitizedComment = comment.length() > 500 ? comment.substring(0, 500) : comment;
-        }
+        String sanitizedComment = Reservation.sanitizeComment(comment);
 
         int slotsReserved = 0;
         for (TimeSlot slot : activeSlots) {
@@ -317,9 +310,7 @@ public class ReservationService {
             } else {
                 reservation = new Reservation(user, slot);
                 reservation.setParticipants(participants);
-                if (sanitizedComment != null) {
-                    reservation.setComment(sanitizedComment);
-                }
+                reservation.setComment(sanitizedComment);
             }
             reservationRepository.save(reservation);
             slotsReserved++;
@@ -343,11 +334,11 @@ public class ReservationService {
             throw new IllegalArgumentException("Wydarzenie nie ma przypisanych terminów");
         }
 
-        LocalDateTime earliestSlotDateTime = slots.stream()
-            .map(s -> LocalDateTime.of(s.getDate(), s.getStartTime()))
-            .min(LocalDateTime::compareTo)
+        TimeSlot earliestSlot = slots.stream()
+            .min((a, b) -> LocalDateTime.of(a.getDate(), a.getStartTime())
+                .compareTo(LocalDateTime.of(b.getDate(), b.getStartTime())))
             .orElseThrow();
-        if (earliestSlotDateTime.isBefore(LocalDateTime.now().plusHours(12))) {
+        if (!BookingTimeValidator.isWithinBookingWindow(earliestSlot.getDate(), earliestSlot.getStartTime())) {
             throw new IllegalStateException("Anulowanie online jest możliwe do 12 godzin przed terminem. Skontaktuj się z instruktorem telefonicznie.");
         }
 

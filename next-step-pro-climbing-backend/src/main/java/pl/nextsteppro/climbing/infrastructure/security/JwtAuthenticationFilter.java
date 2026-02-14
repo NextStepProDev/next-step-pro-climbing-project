@@ -1,5 +1,7 @@
 package pl.nextsteppro.climbing.infrastructure.security;
 
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -16,6 +18,7 @@ import pl.nextsteppro.climbing.domain.user.User;
 import pl.nextsteppro.climbing.domain.user.UserRepository;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.util.List;
 import java.util.UUID;
 
@@ -28,10 +31,19 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
     private final UserRepository userRepository;
+    private final Cache<UUID, User> userCache;
 
     public JwtAuthenticationFilter(JwtService jwtService, UserRepository userRepository) {
         this.jwtService = jwtService;
         this.userRepository = userRepository;
+        this.userCache = Caffeine.newBuilder()
+            .maximumSize(1000)
+            .expireAfterWrite(Duration.ofSeconds(60))
+            .build();
+    }
+
+    public void evictUser(UUID userId) {
+        userCache.invalidate(userId);
     }
 
     @Override
@@ -60,7 +72,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         try {
             UUID userId = jwtService.extractUserId(jwt);
-            User user = userRepository.findById(userId).orElse(null);
+            User user = userCache.get(userId, id -> userRepository.findById(id).orElse(null));
 
             if (user == null) {
                 log.debug("User not found for JWT token");

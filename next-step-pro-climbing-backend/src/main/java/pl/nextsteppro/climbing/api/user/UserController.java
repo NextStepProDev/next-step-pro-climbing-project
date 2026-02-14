@@ -7,13 +7,10 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-import pl.nextsteppro.climbing.config.CurrentUserService;
-import pl.nextsteppro.climbing.config.CustomOAuth2User;
+import pl.nextsteppro.climbing.config.CurrentUserId;
 import pl.nextsteppro.climbing.domain.user.User;
 import pl.nextsteppro.climbing.domain.user.UserRepository;
 
@@ -25,12 +22,10 @@ import java.util.UUID;
 public class UserController {
 
     private final UserRepository userRepository;
-    private final CurrentUserService currentUserService;
     private final UserService userService;
 
-    public UserController(UserRepository userRepository, CurrentUserService currentUserService, UserService userService) {
+    public UserController(UserRepository userRepository, UserService userService) {
         this.userRepository = userRepository;
-        this.currentUserService = currentUserService;
         this.userService = userService;
     }
 
@@ -45,10 +40,12 @@ public class UserController {
     })
     @GetMapping("/me")
     public ResponseEntity<UserProfileDto> getCurrentUser(
-            @Parameter(hidden = true) @AuthenticationPrincipal CustomOAuth2User oAuth2User,
-            HttpServletRequest request) {
+            @Parameter(hidden = true) @CurrentUserId UUID userId) {
 
-        User user = currentUserService.getCurrentUser(oAuth2User, request).orElse(null);
+        if (userId == null) {
+            return ResponseEntity.status(401).build();
+        }
+        User user = userRepository.findById(userId).orElse(null);
         if (user == null) {
             return ResponseEntity.status(401).build();
         }
@@ -67,11 +64,13 @@ public class UserController {
     })
     @PutMapping("/me")
     public ResponseEntity<UserProfileDto> updateProfile(
-            @Parameter(hidden = true) @AuthenticationPrincipal CustomOAuth2User oAuth2User,
-            @Valid @RequestBody UpdateProfileRequest request,
-            HttpServletRequest httpRequest) {
+            @Parameter(hidden = true) @CurrentUserId UUID userId,
+            @Valid @RequestBody UpdateProfileRequest request) {
 
-        User user = currentUserService.getCurrentUser(oAuth2User, httpRequest).orElse(null);
+        if (userId == null) {
+            return ResponseEntity.status(401).build();
+        }
+        User user = userRepository.findById(userId).orElse(null);
         if (user == null) {
             return ResponseEntity.status(401).build();
         }
@@ -96,11 +95,9 @@ public class UserController {
     })
     @PutMapping("/me/password")
     public ResponseEntity<Void> changePassword(
-            @Parameter(hidden = true) @AuthenticationPrincipal CustomOAuth2User oAuth2User,
-            @Valid @RequestBody ChangePasswordRequest request,
-            HttpServletRequest httpRequest) {
+            @Parameter(hidden = true) @CurrentUserId UUID userId,
+            @Valid @RequestBody ChangePasswordRequest request) {
 
-        UUID userId = currentUserService.getCurrentUserId(oAuth2User, httpRequest).orElse(null);
         if (userId == null) {
             return ResponseEntity.status(401).build();
         }
@@ -117,11 +114,9 @@ public class UserController {
     })
     @DeleteMapping("/me")
     public ResponseEntity<Void> deleteAccount(
-            @Parameter(hidden = true) @AuthenticationPrincipal CustomOAuth2User oAuth2User,
-            @Valid @RequestBody DeleteAccountRequest request,
-            HttpServletRequest httpRequest) {
+            @Parameter(hidden = true) @CurrentUserId UUID userId,
+            @Valid @RequestBody DeleteAccountRequest request) {
 
-        UUID userId = currentUserService.getCurrentUserId(oAuth2User, httpRequest).orElse(null);
         if (userId == null) {
             return ResponseEntity.status(401).build();
         }
@@ -137,11 +132,9 @@ public class UserController {
     })
     @PutMapping("/me/notifications")
     public ResponseEntity<Void> updateNotifications(
-            @Parameter(hidden = true) @AuthenticationPrincipal CustomOAuth2User oAuth2User,
-            @Valid @RequestBody UpdateNotificationsRequest request,
-            HttpServletRequest httpRequest) {
+            @Parameter(hidden = true) @CurrentUserId UUID userId,
+            @Valid @RequestBody UpdateNotificationsRequest request) {
 
-        UUID userId = currentUserService.getCurrentUserId(oAuth2User, httpRequest).orElse(null);
         if (userId == null) {
             return ResponseEntity.status(401).build();
         }

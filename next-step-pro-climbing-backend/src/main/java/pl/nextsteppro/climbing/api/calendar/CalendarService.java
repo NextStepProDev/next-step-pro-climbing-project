@@ -9,6 +9,7 @@ import pl.nextsteppro.climbing.domain.event.EventRepository;
 import pl.nextsteppro.climbing.domain.reservation.Reservation;
 import pl.nextsteppro.climbing.domain.reservation.ReservationRepository;
 import pl.nextsteppro.climbing.domain.reservation.ReservationStatus;
+import pl.nextsteppro.climbing.domain.reservation.SlotParticipantCount;
 import pl.nextsteppro.climbing.domain.timeslot.TimeSlot;
 import pl.nextsteppro.climbing.domain.timeslot.TimeSlotRepository;
 
@@ -264,9 +265,6 @@ public class CalendarService {
     private Map<UUID, Integer> buildCountMap(List<UUID> slotIds) {
         if (slotIds.isEmpty()) return Map.of();
         return reservationRepository.countConfirmedByTimeSlotIds(slotIds).stream()
-            .collect(Collectors.toMap(
-                row -> (UUID) row[0],
-                row -> ((Number) row[1]).intValue()
-            ));
+            .collect(Collectors.toMap(SlotParticipantCount::slotId, SlotParticipantCount::countAsInt));
     }
 }
