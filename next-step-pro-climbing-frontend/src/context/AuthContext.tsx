@@ -3,7 +3,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { authApi } from '../api/client'
 import { loginUser as apiLogin } from '../api/auth'
-import { saveTokens, clearTokens, hasTokens } from '../utils/tokenStorage'
+import { saveTokens, clearTokens, hasTokens, type AuthTokens } from '../utils/tokenStorage'
 import type { User } from '../types'
 
 interface AuthContextType {
@@ -12,6 +12,7 @@ interface AuthContextType {
   isAuthenticated: boolean
   isAdmin: boolean
   login: (email: string, password: string) => Promise<void>
+  loginWithTokens: (tokens: AuthTokens) => Promise<void>
   logout: () => void
   refreshUser: () => Promise<void>
 }
@@ -70,6 +71,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     syncLanguage(currentUser.preferredLanguage)
   }
 
+  const loginWithTokens = async (tokens: AuthTokens) => {
+    saveTokens(tokens)
+    const currentUser = await authApi.getCurrentUser()
+    setUser(currentUser)
+    syncLanguage(currentUser.preferredLanguage)
+  }
+
   const logout = useCallback(() => {
     authApi.logout()
     setUser(null)
@@ -84,6 +92,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isAuthenticated: !!user,
         isAdmin: user?.isAdmin ?? false,
         login,
+        loginWithTokens,
         logout,
         refreshUser: fetchUser,
       }}

@@ -11,6 +11,7 @@ import { VerifyEmailPage } from './pages/VerifyEmailPage'
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage'
 import { ResetPasswordPage } from './pages/ResetPasswordPage'
 import { ResendVerificationPage } from './pages/ResendVerificationPage'
+import { OAuthCallbackPage } from './pages/OAuthCallbackPage'
 import { SettingsPage } from './pages/SettingsPage'
 import { ProtectedRoute } from './components/layout/ProtectedRoute'
 import { AdminRoute } from './components/layout/AdminRoute'
@@ -35,6 +36,7 @@ export default function App() {
           <Route path="forgot-password" element={<ForgotPasswordPage />} />
           <Route path="reset-password" element={<ResetPasswordPage />} />
           <Route path="resend-verification" element={<ResendVerificationPage />} />
+          <Route path="oauth-callback" element={<OAuthCallbackPage />} />
           <Route
             path="my-reservations"
             element={

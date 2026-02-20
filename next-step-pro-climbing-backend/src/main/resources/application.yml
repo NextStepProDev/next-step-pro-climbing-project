@@ -41,15 +41,15 @@ spring:
           starttls:
             enable: ${MAIL_STARTTLS:true}
 
-  # OAuth2 disabled for dev - configure credentials in .env for production
-  # security:
-  #   oauth2:
-  #     client:
-  #       registration:
-  #         google:
-  #           client-id: ${OAUTH2_GOOGLE_CLIENT_ID}
-  #           client-secret: ${OAUTH2_GOOGLE_CLIENT_SECRET}
-  #           scope: email, profile
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${OAUTH2_GOOGLE_CLIENT_ID}
+            client-secret: ${OAUTH2_GOOGLE_CLIENT_SECRET}
+            scope: email, profile
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
 
 app:
   version: '@version@'
@@ -69,6 +69,7 @@ app:
 
 server:
   port: 8080
+  forward-headers-strategy: framework
 
 # OpenAPI / Swagger documentation
 springdoc:

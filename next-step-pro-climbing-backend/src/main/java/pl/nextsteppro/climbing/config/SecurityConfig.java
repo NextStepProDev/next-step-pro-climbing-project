@@ -22,11 +22,16 @@ public class SecurityConfig {
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final AppConfig appConfig;
     private final Environment environment;
+    private final OAuth2UserService oAuth2UserService;
+    private final OAuth2SuccessHandler oAuth2SuccessHandler;
 
-    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter, AppConfig appConfig, Environment environment) {
+    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter, AppConfig appConfig, Environment environment,
+                          OAuth2UserService oAuth2UserService, OAuth2SuccessHandler oAuth2SuccessHandler) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
         this.appConfig = appConfig;
         this.environment = environment;
+        this.oAuth2UserService = oAuth2UserService;
+        this.oAuth2SuccessHandler = oAuth2SuccessHandler;
     }
 
     @Bean
@@ -40,7 +45,7 @@ public class SecurityConfig {
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session
-                .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
             .authorizeHttpRequests(auth -> {
                 // Swagger/OpenAPI documentation (only accessible in dev profile)
                 if (java.util.Arrays.asList(environment.getActiveProfiles()).contains("dev")) {
@@ -49,6 +54,8 @@ public class SecurityConfig {
                 }
                 // Authentication endpoints
                 auth.requestMatchers("/api/auth/**").permitAll()
+                    // OAuth2 endpoints
+                    .requestMatchers("/oauth2/**", "/login/oauth2/**").permitAll()
                     // Public calendar endpoints
                     .requestMatchers(HttpMethod.GET, "/api/calendar/**").permitAll()
                     .requestMatchers(HttpMethod.GET, "/api/events/**").permitAll();
@@ -64,6 +71,10 @@ public class SecurityConfig {
                     // Default: require authentication
                     .anyRequest().authenticated();
             })
+            .oauth2Login(oauth2 -> oauth2
+                .userInfoEndpoint(userInfo -> userInfo.userService(oAuth2UserService))
+                .successHandler(oAuth2SuccessHandler)
+            )
             .headers(headers -> headers
                 .contentTypeOptions(contentType -> {})
                 .frameOptions(frame -> frame.deny())

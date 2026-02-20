@@ -57,6 +57,9 @@ public class OAuth2UserService extends DefaultOAuth2UserService {
                 user = userByEmail.get();
                 user.setOauthProvider(provider);
                 user.setOauthId(oauthId);
+                if (!user.isEmailVerified()) {
+                    user.markEmailVerified();
+                }
                 promoteToAdminIfConfigured(user);
                 userRepository.save(user);
             } else {
@@ -78,6 +81,7 @@ public class OAuth2UserService extends DefaultOAuth2UserService {
         );
         user.setOauthProvider(provider);
         user.setOauthId(oauthId);
+        user.markEmailVerified();
         user.setRole(adminEmailConfig.isAdminEmail(email) ? UserRole.ADMIN : UserRole.USER);
         if (user.isAdmin()) {
             log.info("AUTO-ADMIN-PROMOTION: {} promoted to ADMIN during OAuth2 registration", email);
@@ -96,7 +100,6 @@ public class OAuth2UserService extends DefaultOAuth2UserService {
     private String extractOAuthId(String provider, Map<String, Object> attributes) {
         return switch (provider) {
             case "google" -> (String) attributes.get("sub");
-            case "apple" -> (String) attributes.get("sub");
             default -> throw new OAuth2AuthenticationException("Unsupported provider: " + provider);
         };
     }
@@ -112,11 +115,6 @@ public class OAuth2UserService extends DefaultOAuth2UserService {
     private String extractFirstName(String provider, Map<String, Object> attributes) {
         return switch (provider) {
             case "google" -> getStringOrDefault(attributes, "given_name", "User");
-            case "apple" -> {
-                @SuppressWarnings("unchecked")
-                Map<String, Object> name = (Map<String, Object>) attributes.get("name");
-                yield name != null ? getStringOrDefault(name, "firstName", "User") : "User";
-            }
             default -> "User";
         };
     }
@@ -124,11 +122,6 @@ public class OAuth2UserService extends DefaultOAuth2UserService {
     private String extractLastName(String provider, Map<String, Object> attributes) {
         return switch (provider) {
             case "google" -> getStringOrDefault(attributes, "family_name", "");
-            case "apple" -> {
-                @SuppressWarnings("unchecked")
-                Map<String, Object> name = (Map<String, Object>) attributes.get("name");
-                yield name != null ? getStringOrDefault(name, "lastName", "") : "";
-            }
             default -> "";
         };
     }
