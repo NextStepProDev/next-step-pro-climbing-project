@@ -1,6 +1,14 @@
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Calendar, Users, Award, ArrowRight } from "lucide-react";
+import {
+  Calendar,
+  Users,
+  Award,
+  ArrowRight,
+  Search,
+  CalendarCheck,
+  UserPlus,
+} from "lucide-react";
 import { Button } from "../components/ui/Button";
 import logoWhite from "../assets/logo/logo-white.png";
 import logoBlack from "../assets/logo/logo-black.png";
@@ -26,7 +34,10 @@ export function HomePage() {
               alt="Next Step Pro Climbing"
               className="h-32 sm:h-40 lg:h-48 mx-auto mb-8 drop-shadow-[0_0_30px_rgba(59,130,246,0.3)]"
             />
-            <p className="text-lg sm:text-xl text-dark-400 mb-8">
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-dark-50 mb-4">
+              {t("hero.tagline")}
+            </h1>
+            <p className="text-base sm:text-lg text-dark-400 mb-8 max-w-2xl mx-auto">
               {t("hero.subtitle")}
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -50,6 +61,40 @@ export function HomePage() {
         </div>
       </section>
 
+      {/* Steps Section */}
+      <section className="py-16 sm:py-24">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <h2 className="text-3xl font-bold text-dark-100 mb-12 text-center">
+            {t("steps.title")}
+          </h2>
+          <div className="grid md:grid-cols-3 gap-8 md:gap-0">
+            {[
+              { num: "01", icon: Search, key: "step1" },
+              { num: "02", icon: CalendarCheck, key: "step2" },
+              { num: "03", icon: UserPlus, key: "step3" },
+            ].map((step, i) => (
+              <div
+                key={step.key}
+                className={`flex flex-col items-center text-center px-6 ${i < 2 ? "md:border-r md:border-dark-800" : ""}`}
+              >
+                <span className="text-sm font-mono text-primary-400 mb-3">
+                  {step.num}
+                </span>
+                <div className="w-12 h-12 bg-primary-500/10 rounded-lg flex items-center justify-center mb-4">
+                  <step.icon className="w-6 h-6 text-primary-400" />
+                </div>
+                <h3 className="text-lg font-semibold text-dark-100 mb-2">
+                  {t(`steps.${step.key}.title`)}
+                </h3>
+                <p className="text-dark-400 text-sm">
+                  {t(`steps.${step.key}.description`)}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Features Section */}
       <section id="offer" className="py-16 sm:py-24 bg-dark-900/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -64,7 +109,7 @@ export function HomePage() {
 
           <div className="grid md:grid-cols-3 gap-8">
             {/* Course */}
-            <div className="bg-dark-900 rounded-xl border border-dark-800 p-6 hover:border-primary-500/50 transition-colors">
+            <div className="bg-dark-900 rounded-xl border border-dark-800 p-6 hover:border-primary-500/50 hover:-translate-y-1 transition-all duration-300">
               <div className="w-12 h-12 bg-primary-500/10 rounded-lg flex items-center justify-center mb-4">
                 <Award className="w-6 h-6 text-primary-400" />
               </div>
@@ -91,7 +136,7 @@ export function HomePage() {
             </div>
 
             {/* Training */}
-            <div className="bg-dark-900 rounded-xl border border-dark-800 p-6 hover:border-primary-500/50 transition-colors">
+            <div className="bg-dark-900 rounded-xl border border-dark-800 p-6 hover:border-primary-500/50 hover:-translate-y-1 transition-all duration-300">
               <div className="w-12 h-12 bg-green-500/10 rounded-lg flex items-center justify-center mb-4">
                 <Users className="w-6 h-6 text-green-400" />
               </div>
@@ -122,7 +167,7 @@ export function HomePage() {
             </div>
 
             {/* Workshop */}
-            <div className="bg-dark-900 rounded-xl border border-dark-800 p-6 hover:border-primary-500/50 transition-colors">
+            <div className="bg-dark-900 rounded-xl border border-dark-800 p-6 hover:border-primary-500/50 hover:-translate-y-1 transition-all duration-300">
               <div className="w-12 h-12 bg-amber-500/10 rounded-lg flex items-center justify-center mb-4">
                 <Calendar className="w-6 h-6 text-amber-400" />
               </div>
@@ -152,7 +197,7 @@ export function HomePage() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-16 sm:py-24 relative overflow-hidden">
+      <section className="py-16 sm:py-24 relative overflow-hidden bg-gradient-to-b from-transparent via-primary-950/10 to-transparent">
         <img
           src={logoBlack}
           alt=""

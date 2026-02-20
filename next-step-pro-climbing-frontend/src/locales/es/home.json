@@ -1,8 +1,24 @@
 {
   "hero": {
+    "tagline": "Tu siguiente paso en la escalada comienza aquí",
     "subtitle": "El apoyo profesional en el camino hacia tu maestría comienza con la elección del entrenador o instructor adecuado. Estoy aquí para ayudarte a alcanzar tus metas en la escalada y crecer en esta apasionante disciplina. Juntos podemos crear un plan de entrenamiento adaptado a tus necesidades y capacidades, gracias al cual alcanzarás tus objetivos. ¡Nos vemos en el entrenamiento! ¡Gracias por tu confianza!",
     "viewCalendar": "Ver calendario",
     "seeOffer": "Conoce nuestra oferta"
+  },
+  "steps": {
+    "title": "Cómo funciona",
+    "step1": {
+      "title": "Explora el calendario",
+      "description": "Consulta las fechas disponibles para entrenamientos, cursos y talleres en nuestro calendario."
+    },
+    "step2": {
+      "title": "Elige una fecha",
+      "description": "Encuentra el horario que mejor se adapte a tu agenda y nivel de habilidad."
+    },
+    "step3": {
+      "title": "Inscríbete",
+      "description": "Inicia sesión y reserva tu plaza con un solo clic. ¡Así de fácil!"
+    }
   },
   "offer": {
     "title": "Nuestra oferta",

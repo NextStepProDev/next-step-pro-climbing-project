@@ -1,8 +1,24 @@
 {
   "hero": {
+    "tagline": "Your next step in climbing starts here",
     "subtitle": "Professional support on the path to your mastery starts with choosing the right coach or instructor. I'm here to help you achieve your climbing goals and grow in this exciting discipline. Together, we can create a training plan tailored to your needs and abilities, helping you reach your goals. See you at training! Thank you for your trust!",
     "viewCalendar": "View calendar",
     "seeOffer": "See our offer"
+  },
+  "steps": {
+    "title": "How it works",
+    "step1": {
+      "title": "Browse the calendar",
+      "description": "Check available dates for trainings, courses, and workshops in our calendar."
+    },
+    "step2": {
+      "title": "Choose a date",
+      "description": "Find a time slot that best fits your schedule and skill level."
+    },
+    "step3": {
+      "title": "Sign up",
+      "description": "Log in and reserve your spot with a single click. It's that simple!"
+    }
   },
   "offer": {
     "title": "Our offer",

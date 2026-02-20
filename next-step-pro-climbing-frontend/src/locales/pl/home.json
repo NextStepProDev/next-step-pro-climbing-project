@@ -1,8 +1,24 @@
 {
   "hero": {
+    "tagline": "Twój następny krok we wspinaczce zaczyna się tutaj",
     "subtitle": "Profesjonalne wsparcie w drodze do Twojego mistrzostwa zaczyna się od wyboru trenera lub instruktora. Jestem tu, aby pomóc Ci osiągnąć Twoje wspinaczkowe cele i rozwijać się w tej pasjonującej dyscyplinie. Razem możemy stworzyć plan treningowy dopasowany do Twoich potrzeb i możliwości, dzięki któremu osiągniesz swoje cele. Do zobaczenia na treningu! Dziękuję za zaufanie!",
     "viewCalendar": "Zobacz kalendarz",
     "seeOffer": "Poznaj ofertę"
+  },
+  "steps": {
+    "title": "Jak to działa",
+    "step1": {
+      "title": "Przeglądaj kalendarz",
+      "description": "Sprawdź dostępne terminy treningów, kursów i warsztatów w naszym kalendarzu."
+    },
+    "step2": {
+      "title": "Wybierz termin",
+      "description": "Znajdź termin, który najlepiej pasuje do Twojego planu i poziomu zaawansowania."
+    },
+    "step3": {
+      "title": "Zapisz się",
+      "description": "Zaloguj się i zarezerwuj miejsce jednym kliknięciem. To takie proste!"
+    }
   },
   "offer": {
     "title": "Nasza oferta",
