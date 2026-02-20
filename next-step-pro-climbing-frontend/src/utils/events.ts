@@ -1,3 +1,4 @@
+import i18n from "../i18n";
 import type { EventSummary } from "../types";
 
 export const EVENT_ACCENT_COLORS = [
@@ -20,21 +21,17 @@ export function buildEventColorMap(events: { id: string }[]) {
 }
 
 export function pluralizeTraining(n: number): string {
-  if (n === 1) return `${n} trening`;
-  const mod10 = n % 10;
-  const mod100 = n % 100;
-  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return `${n} treningi`;
-  return `${n} treningów`;
+  return i18n.t('training', { count: n, ns: 'calendar' });
 }
 
 export function formatAvailability(event: EventSummary) {
   if (!event.enrollmentOpen) {
-    return { label: "Zapisy zamknięte", badgeClass: "bg-dark-700 text-dark-400" };
+    return { label: i18n.t('availability.closed', { ns: 'calendar' }), badgeClass: "bg-dark-700 text-dark-400" };
   }
 
   const free = event.maxParticipants - event.currentParticipants;
 
-  if (free === 0) return { label: "Brak miejsc", badgeClass: "bg-amber-500/10 text-amber-400" };
-  if (free === 1) return { label: "1 miejsce wolne", badgeClass: "bg-primary-500/10 text-primary-400" };
-  return { label: `${free}/${event.maxParticipants} wolne`, badgeClass: "bg-primary-500/10 text-primary-400" };
+  if (free === 0) return { label: i18n.t('availability.noSpots', { ns: 'calendar' }), badgeClass: "bg-amber-500/10 text-amber-400" };
+  if (free === 1) return { label: i18n.t('availability.oneSpot', { ns: 'calendar' }), badgeClass: "bg-primary-500/10 text-primary-400" };
+  return { label: i18n.t('availability.freeSpots', { free, max: event.maxParticipants, ns: 'calendar' }), badgeClass: "bg-primary-500/10 text-primary-400" };
 }

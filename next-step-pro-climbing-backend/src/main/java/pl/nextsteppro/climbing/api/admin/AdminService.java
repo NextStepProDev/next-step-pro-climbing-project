@@ -18,6 +18,7 @@ import pl.nextsteppro.climbing.domain.user.User;
 import pl.nextsteppro.climbing.domain.user.UserRepository;
 import pl.nextsteppro.climbing.domain.user.UserRole;
 
+import pl.nextsteppro.climbing.infrastructure.i18n.MessageService;
 import pl.nextsteppro.climbing.infrastructure.mail.MailService;
 import pl.nextsteppro.climbing.infrastructure.security.JwtAuthenticationFilter;
 import pl.nextsteppro.climbing.api.activitylog.ActivityLogService;
@@ -42,6 +43,7 @@ public class AdminService {
     private final MailService mailService;
     private final ActivityLogService activityLogService;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final MessageService msg;
 
     public AdminService(TimeSlotRepository timeSlotRepository,
                        EventRepository eventRepository,
@@ -50,7 +52,8 @@ public class AdminService {
                        AuthTokenRepository authTokenRepository,
                        MailService mailService,
                        ActivityLogService activityLogService,
-                       JwtAuthenticationFilter jwtAuthenticationFilter) {
+                       JwtAuthenticationFilter jwtAuthenticationFilter,
+                       MessageService msg) {
         this.timeSlotRepository = timeSlotRepository;
         this.eventRepository = eventRepository;
         this.reservationRepository = reservationRepository;
@@ -59,6 +62,7 @@ public class AdminService {
         this.mailService = mailService;
         this.activityLogService = activityLogService;
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+        this.msg = msg;
     }
 
     @Caching(evict = {
@@ -67,7 +71,7 @@ public class AdminService {
     })
     public TimeSlotAdminDto createTimeSlot(CreateTimeSlotRequest request) {
         if (!request.endTime().isAfter(request.startTime())) {
-            throw new IllegalArgumentException("Godzina zakończenia musi być późniejsza niż godzina rozpoczęcia");
+            throw new IllegalArgumentException(msg.get("admin.slot.end.after.start"));
         }
 
         Event event = null;
@@ -109,7 +113,7 @@ public class AdminService {
         LocalTime start = slot.getStartTime();
         LocalTime end = slot.getEndTime();
         if (!end.isAfter(start)) {
-            throw new IllegalArgumentException("Godzina zakończenia musi być późniejsza niż godzina rozpoczęcia");
+            throw new IllegalArgumentException(msg.get("admin.slot.end.after.start"));
         }
 
         slot = timeSlotRepository.save(slot);
@@ -386,7 +390,7 @@ public class AdminService {
             .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
         if (!user.isAdmin()) {
-            throw new IllegalStateException("Użytkownik nie jest administratorem");
+            throw new IllegalStateException(msg.get("admin.user.not.admin"));
         }
 
         user.setRole(UserRole.USER);
@@ -399,7 +403,7 @@ public class AdminService {
             .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
         if (user.isAdmin()) {
-            throw new IllegalStateException("Nie można usunąć konta administratora");
+            throw new IllegalStateException(msg.get("admin.user.cannot.delete.admin"));
         }
 
         for (Reservation reservation : reservationRepository.findByUserId(userId)) {

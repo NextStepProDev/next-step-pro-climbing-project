@@ -1,0 +1,28 @@
+{
+  "title": "Ajustes",
+  "changePassword": {
+    "title": "Cambiar contraseña",
+    "currentPassword": "Contraseña actual",
+    "newPassword": "Nueva contraseña",
+    "confirmPassword": "Confirmar nueva contraseña",
+    "submit": "Cambiar contraseña",
+    "tooShort": "La contraseña debe tener al menos 8 caracteres",
+    "mismatch": "Las contraseñas no coinciden",
+    "success": "La contraseña se ha cambiado"
+  },
+  "notifications": {
+    "title": "Notificaciones por email",
+    "reservations": "Notificaciones de reservas",
+    "description": "Confirmaciones de reservas, cancelaciones y notificaciones de lista de espera"
+  },
+  "deleteAccount": {
+    "title": "Eliminar cuenta",
+    "description": "Esta operación es irreversible. Todas tus reservas serán canceladas y los datos de tu cuenta eliminados permanentemente.",
+    "button": "Eliminar cuenta",
+    "modalTitle": "Confirmación de eliminación de cuenta",
+    "modalMessage": "Para confirmar la eliminación de tu cuenta, introduce tu contraseña:",
+    "passwordPlaceholder": "Tu contraseña",
+    "confirmDelete": "Eliminar cuenta permanentemente",
+    "cancel": "Cancelar"
+  }
+}

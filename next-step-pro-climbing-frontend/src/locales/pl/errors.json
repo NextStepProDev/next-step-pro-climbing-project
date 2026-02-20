@@ -1,0 +1,25 @@
+{
+  "network": "Nie udało się połączyć z serwerem. Sprawdź połączenie internetowe.",
+  "sessionExpired": "Sesja wygasła. Zaloguj się ponownie.",
+  "server": "Błąd serwera. Spróbuj ponownie później.",
+  "serviceUnavailable": "Serwer jest tymczasowo niedostępny. Spróbuj ponownie za chwilę.",
+  "notFound": "Nie znaleziono zasobu.",
+  "forbidden": "Brak uprawnień do wykonania tej operacji.",
+  "generic": "Wystąpił błąd ({{status}}). Spróbuj ponownie.",
+  "unexpected": "Wystąpił nieoczekiwany błąd",
+  "boundary": {
+    "title": "Coś poszło nie tak",
+    "message": "Wystąpił nieoczekiwany błąd. Spróbuj odświeżyć stronę.",
+    "backHome": "Wróć na stronę główną"
+  },
+  "queryError": {
+    "title": "Nie udało się załadować danych",
+    "retry": "Spróbuj ponownie"
+  },
+  "validation": {
+    "passwordsMismatch": "Hasła nie są identyczne",
+    "passwordTooShort": "Hasło musi mieć co najmniej 8 znaków"
+  },
+  "authServer": "Błąd serwera. Spróbuj ponownie później.",
+  "authGeneric": "Wystąpił błąd ({{status}}). Spróbuj ponownie."
+}

@@ -16,6 +16,7 @@ import pl.nextsteppro.climbing.domain.timeslot.TimeSlot;
 import pl.nextsteppro.climbing.domain.timeslot.TimeSlotRepository;
 import pl.nextsteppro.climbing.domain.user.User;
 import pl.nextsteppro.climbing.domain.user.UserRepository;
+import pl.nextsteppro.climbing.infrastructure.i18n.MessageService;
 import pl.nextsteppro.climbing.infrastructure.mail.MailService;
 import pl.nextsteppro.climbing.api.activitylog.ActivityLogService;
 
@@ -35,19 +36,22 @@ public class ReservationService {
     private final EventRepository eventRepository;
     private final MailService mailService;
     private final ActivityLogService activityLogService;
+    private final MessageService msg;
 
     public ReservationService(ReservationRepository reservationRepository,
                              TimeSlotRepository timeSlotRepository,
                              UserRepository userRepository,
                              EventRepository eventRepository,
                              MailService mailService,
-                             ActivityLogService activityLogService) {
+                             ActivityLogService activityLogService,
+                             MessageService msg) {
         this.reservationRepository = reservationRepository;
         this.timeSlotRepository = timeSlotRepository;
         this.userRepository = userRepository;
         this.eventRepository = eventRepository;
         this.mailService = mailService;
         this.activityLogService = activityLogService;
+        this.msg = msg;
     }
 
     @Caching(evict = {
@@ -56,17 +60,17 @@ public class ReservationService {
     })
     public ReservationResultDto createReservation(UUID slotId, UUID userId, @Nullable String comment, int participants) {
         if (participants < 1) {
-            throw new IllegalArgumentException("Liczba miejsc musi wynosić co najmniej 1");
+            throw new IllegalArgumentException(msg.get("reservation.min.participants"));
         }
 
         TimeSlot slot = timeSlotRepository.findByIdForUpdate(slotId)
             .orElseThrow(() -> new IllegalArgumentException("Time slot not found"));
 
         if (BookingTimeValidator.isPast(slot.getDate(), slot.getStartTime())) {
-            throw new IllegalArgumentException("Nie można zarezerwować terminu, który już minął");
+            throw new IllegalArgumentException(msg.get("reservation.slot.past"));
         }
         if (!BookingTimeValidator.isWithinBookingWindow(slot.getDate(), slot.getStartTime())) {
-            throw new IllegalStateException("Rezerwacja online jest możliwa do 12 godzin przed terminem. Skontaktuj się z instruktorem telefonicznie, aby sprawdzić dostępność.");
+            throw new IllegalStateException(msg.get("reservation.booking.window"));
         }
 
         User user = userRepository.findById(userId)
@@ -77,16 +81,16 @@ public class ReservationService {
         }
 
         if (reservationRepository.existsByUserIdAndTimeSlotIdAndStatus(userId, slotId, ReservationStatus.CONFIRMED)) {
-            throw new IllegalStateException("Masz już rezerwację na ten termin");
+            throw new IllegalStateException(msg.get("reservation.already.exists"));
         }
 
         int currentCount = reservationRepository.countConfirmedByTimeSlotId(slotId);
         int spotsLeft = slot.getMaxParticipants() - currentCount;
         if (spotsLeft <= 0) {
-            throw new IllegalStateException("Brak wolnych miejsc.");
+            throw new IllegalStateException(msg.get("reservation.no.spots"));
         }
         if (participants > spotsLeft) {
-            throw new IllegalStateException("Dostępnych miejsc: " + spotsLeft + ". Nie można zarezerwować " + participants + ".");
+            throw new IllegalStateException(msg.get("reservation.spots.available", spotsLeft, participants));
         }
 
         Reservation existing = reservationRepository.findByUserIdAndTimeSlotId(userId, slotId);
@@ -117,7 +121,7 @@ public class ReservationService {
         return new ReservationResultDto(
             reservation.getId(),
             true,
-            "Rezerwacja potwierdzona!"
+            msg.get("reservation.confirmed")
         );
     }
 
@@ -139,7 +143,7 @@ public class ReservationService {
 
         TimeSlot slot = reservation.getTimeSlot();
         if (!BookingTimeValidator.isWithinBookingWindow(slot.getDate(), slot.getStartTime())) {
-            throw new IllegalStateException("Anulowanie online jest możliwe do 12 godzin przed terminem. Skontaktuj się z instruktorem telefonicznie.");
+            throw new IllegalStateException(msg.get("reservation.cancel.window"));
         }
 
         reservation.cancel();
@@ -241,19 +245,19 @@ public class ReservationService {
     })
     public EventReservationResultDto createEventReservation(UUID eventId, UUID userId, @Nullable String comment, int participants) {
         if (participants < 1) {
-            throw new IllegalArgumentException("Liczba miejsc musi wynosić co najmniej 1");
+            throw new IllegalArgumentException(msg.get("reservation.min.participants"));
         }
 
         Event event = eventRepository.findById(eventId)
-            .orElseThrow(() -> new IllegalArgumentException("Wydarzenie nie zostało znalezione"));
+            .orElseThrow(() -> new IllegalArgumentException(msg.get("reservation.event.not.found")));
 
         if (!event.isActive()) {
-            throw new IllegalStateException("To wydarzenie nie jest aktywne");
+            throw new IllegalStateException(msg.get("reservation.event.inactive"));
         }
 
         LocalTime eventStartTime = event.getStartTime() != null ? event.getStartTime() : LocalTime.of(0, 0);
         if (!BookingTimeValidator.isWithinBookingWindow(event.getStartDate(), eventStartTime)) {
-            throw new IllegalStateException("Rezerwacja online jest możliwa do 12 godzin przed wydarzeniem. Skontaktuj się z instruktorem telefonicznie, aby sprawdzić dostępność.");
+            throw new IllegalStateException(msg.get("reservation.event.booking.window"));
         }
 
         User user = userRepository.findById(userId)
@@ -271,13 +275,13 @@ public class ReservationService {
             .toList();
 
         if (activeSlots.isEmpty()) {
-            throw new IllegalStateException("Brak aktywnych terminów dla tego wydarzenia");
+            throw new IllegalStateException(msg.get("reservation.event.no.active.slots"));
         }
 
         boolean alreadyRegistered = activeSlots.stream()
             .anyMatch(slot -> reservationRepository.existsByUserIdAndTimeSlotIdAndStatus(userId, slot.getId(), ReservationStatus.CONFIRMED));
         if (alreadyRegistered) {
-            throw new IllegalStateException("Masz już rezerwację na to wydarzenie");
+            throw new IllegalStateException(msg.get("reservation.event.already.registered"));
         }
 
         List<UUID> activeSlotIds = activeSlots.stream().map(TimeSlot::getId).toList();
@@ -290,10 +294,10 @@ public class ReservationService {
 
         int spotsLeft = event.getMaxParticipants() - currentParticipants;
         if (spotsLeft <= 0) {
-            throw new IllegalStateException("Brak wolnych miejsc na to wydarzenie");
+            throw new IllegalStateException(msg.get("reservation.event.no.spots"));
         }
         if (participants > spotsLeft) {
-            throw new IllegalStateException("Dostępnych miejsc: " + spotsLeft + ". Nie można zarezerwować " + participants + ".");
+            throw new IllegalStateException(msg.get("reservation.event.spots.available", spotsLeft, participants));
         }
 
         String sanitizedComment = Reservation.sanitizeComment(comment);
@@ -321,7 +325,7 @@ public class ReservationService {
 
         activityLogService.logEventReservationCreated(user, event, participants);
 
-        return new EventReservationResultDto(eventId, true, "Zapisano na wydarzenie!", slotsReserved);
+        return new EventReservationResultDto(eventId, true, msg.get("reservation.event.confirmed"), slotsReserved);
     }
 
     @Caching(evict = {
@@ -331,7 +335,7 @@ public class ReservationService {
     public void cancelEventReservation(UUID eventId, UUID userId) {
         List<TimeSlot> slots = timeSlotRepository.findByEventId(eventId);
         if (slots.isEmpty()) {
-            throw new IllegalArgumentException("Wydarzenie nie ma przypisanych terminów");
+            throw new IllegalArgumentException(msg.get("reservation.event.no.slots"));
         }
 
         TimeSlot earliestSlot = slots.stream()
@@ -339,7 +343,7 @@ public class ReservationService {
                 .compareTo(LocalDateTime.of(b.getDate(), b.getStartTime())))
             .orElseThrow();
         if (!BookingTimeValidator.isWithinBookingWindow(earliestSlot.getDate(), earliestSlot.getStartTime())) {
-            throw new IllegalStateException("Anulowanie online jest możliwe do 12 godzin przed terminem. Skontaktuj się z instruktorem telefonicznie.");
+            throw new IllegalStateException(msg.get("reservation.cancel.window"));
         }
 
         List<UUID> cancelledSlotIds = new ArrayList<>();
@@ -353,7 +357,7 @@ public class ReservationService {
         }
 
         if (cancelledSlotIds.isEmpty()) {
-            throw new IllegalStateException("Nie znaleziono rezerwacji na to wydarzenie");
+            throw new IllegalStateException(msg.get("reservation.event.not.found.cancel"));
         }
 
         User user = userRepository.findById(userId)

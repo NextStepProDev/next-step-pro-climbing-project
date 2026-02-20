@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { verifyEmail } from '../api/auth'
 
 export function VerifyEmailPage() {
+  const { t } = useTranslation('auth')
   const [searchParams] = useSearchParams()
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading')
   const [message, setMessage] = useState('')
@@ -19,7 +21,7 @@ export function VerifyEmailPage() {
       })
       .catch((err) => {
         setStatus('error')
-        setMessage(err instanceof Error ? err.message : 'Weryfikacja nie powiodła się')
+        setMessage(err instanceof Error ? err.message : t('verify.failed'))
       })
   }, [token])
 
@@ -32,10 +34,10 @@ export function VerifyEmailPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </div>
-          <h2 className="text-xl font-bold text-dark-100 mb-2">Błąd weryfikacji</h2>
-          <p className="text-dark-400 mb-6">Brak tokenu weryfikacyjnego w URL</p>
+          <h2 className="text-xl font-bold text-dark-100 mb-2">{t('verify.errorTitle')}</h2>
+          <p className="text-dark-400 mb-6">{t('verify.noToken')}</p>
           <Link to="/login" className="text-primary-400 hover:text-primary-300 font-medium">
-            Przejdź do logowania
+            {t('verify.goToLogin')}
           </Link>
         </div>
       </div>
@@ -46,7 +48,7 @@ export function VerifyEmailPage() {
     <div className="flex flex-col items-center justify-center min-h-[60vh] px-4">
       <div className="bg-dark-900 rounded-xl p-8 max-w-md w-full border border-dark-800 text-center">
         {status === 'loading' && (
-          <p className="text-dark-300">Weryfikacja email...</p>
+          <p className="text-dark-300">{t('verify.loading')}</p>
         )}
 
         {status === 'success' && (
@@ -56,13 +58,13 @@ export function VerifyEmailPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
             </div>
-            <h2 className="text-xl font-bold text-dark-100 mb-2">Email zweryfikowany</h2>
+            <h2 className="text-xl font-bold text-dark-100 mb-2">{t('verify.successTitle')}</h2>
             <p className="text-dark-400 mb-6">{message}</p>
             <Link
               to="/login"
               className="text-primary-400 hover:text-primary-300 font-medium"
             >
-              Przejdź do logowania
+              {t('verify.goToLogin')}
             </Link>
           </>
         )}
@@ -74,13 +76,13 @@ export function VerifyEmailPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </div>
-            <h2 className="text-xl font-bold text-dark-100 mb-2">Błąd weryfikacji</h2>
+            <h2 className="text-xl font-bold text-dark-100 mb-2">{t('verify.errorTitle')}</h2>
             <p className="text-dark-400 mb-6">{message}</p>
             <Link
               to="/login"
               className="text-primary-400 hover:text-primary-300 font-medium"
             >
-              Przejdź do logowania
+              {t('verify.goToLogin')}
             </Link>
           </>
         )}

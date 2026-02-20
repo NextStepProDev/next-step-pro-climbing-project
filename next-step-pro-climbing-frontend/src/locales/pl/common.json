@@ -1,0 +1,42 @@
+{
+  "nav": {
+    "home": "Start",
+    "calendar": "Kalendarz",
+    "myReservations": "Moje rezerwacje",
+    "admin": "Admin",
+    "profile": "Profil",
+    "logout": "Wyloguj się",
+    "login": "Zaloguj się",
+    "closeMenu": "Zamknij menu",
+    "openMenu": "Otwórz menu"
+  },
+  "footer": {
+    "description": "Szkolenia wspinaczkowe dopasowane do Twojego poziomu i celów. Trenuj pod okiem doświadczonych instruktorów i rozwijaj się świadomie.",
+    "contact": "Kontakt",
+    "hours": "Godziny otwarcia",
+    "weekdays": "Poniedziałek - Piątek",
+    "saturday": "Sobota",
+    "sunday": "Niedziela",
+    "seeCalendar": "kalendarz",
+    "instructor": "Mateusz Nawratek instruktor PZA",
+    "copyright": "Wszelkie prawa zastrzeżone."
+  },
+  "confirm": "Potwierdź",
+  "cancel": "Anuluj",
+  "close": "Zamknij",
+  "save": "Zapisz",
+  "delete": "Usuń",
+  "edit": "Edytuj",
+  "loading": "Ładowanie...",
+  "callPhone": "Zadzwoń",
+  "eventTypes": {
+    "COURSE": "Kurs",
+    "TRAINING": "Trening",
+    "WORKSHOP": "Warsztat"
+  },
+  "allDay": "Cały dzień",
+  "participants_one": "{{count}} uczestnik",
+  "participants_few": "{{count}} uczestników",
+  "participants_many": "{{count}} uczestników",
+  "maxParticipants": "Maks. {{count}} uczestników"
+}

@@ -30,8 +30,8 @@ record UserReservationDto(
 ) {}
 
 record CreateReservationRequest(
-    @Nullable @Size(max = 500, message = "Komentarz może mieć maksymalnie 500 znaków") String comment,
-    @Nullable @Min(value = 1, message = "Liczba miejsc musi wynosić co najmniej 1") Integer participants
+    @Nullable @Size(max = 500, message = "{validation.comment.size}") String comment,
+    @Nullable @Min(value = 1, message = "{validation.min.participants}") Integer participants
 ) {}
 
 record EventReservationResultDto(

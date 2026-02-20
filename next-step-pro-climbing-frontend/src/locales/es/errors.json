@@ -1,0 +1,25 @@
+{
+  "network": "No se pudo conectar con el servidor. Comprueba tu conexión a internet.",
+  "sessionExpired": "La sesión ha expirado. Inicia sesión de nuevo.",
+  "server": "Error del servidor. Inténtalo de nuevo más tarde.",
+  "serviceUnavailable": "El servidor no está disponible temporalmente. Inténtalo de nuevo en unos momentos.",
+  "notFound": "Recurso no encontrado.",
+  "forbidden": "No tienes permisos para realizar esta operación.",
+  "generic": "Se ha producido un error ({{status}}). Inténtalo de nuevo.",
+  "unexpected": "Se ha producido un error inesperado",
+  "boundary": {
+    "title": "Algo ha salido mal",
+    "message": "Se ha producido un error inesperado. Intenta recargar la página.",
+    "backHome": "Volver a la página principal"
+  },
+  "queryError": {
+    "title": "No se pudieron cargar los datos",
+    "retry": "Intentar de nuevo"
+  },
+  "validation": {
+    "passwordsMismatch": "Las contraseñas no coinciden",
+    "passwordTooShort": "La contraseña debe tener al menos 8 caracteres"
+  },
+  "authServer": "Error del servidor. Inténtalo de nuevo más tarde.",
+  "authGeneric": "Se ha producido un error ({{status}}). Inténtalo de nuevo."
+}

@@ -1,0 +1,42 @@
+{
+  "nav": {
+    "home": "Inicio",
+    "calendar": "Calendario",
+    "myReservations": "Mis reservas",
+    "admin": "Admin",
+    "profile": "Perfil",
+    "logout": "Cerrar sesión",
+    "login": "Iniciar sesión",
+    "closeMenu": "Cerrar menú",
+    "openMenu": "Abrir menú"
+  },
+  "footer": {
+    "description": "Formación en escalada adaptada a tu nivel y objetivos. Entrena con instructores experimentados y progresa de forma consciente.",
+    "contact": "Contacto",
+    "hours": "Horario de apertura",
+    "weekdays": "Lunes - Viernes",
+    "saturday": "Sábado",
+    "sunday": "Domingo",
+    "seeCalendar": "calendario",
+    "instructor": "Mateusz Nawratek instructor PZA",
+    "copyright": "Todos los derechos reservados."
+  },
+  "confirm": "Confirmar",
+  "cancel": "Cancelar",
+  "close": "Cerrar",
+  "save": "Guardar",
+  "delete": "Eliminar",
+  "edit": "Editar",
+  "loading": "Cargando...",
+  "callPhone": "Llamar",
+  "eventTypes": {
+    "COURSE": "Curso",
+    "TRAINING": "Entrenamiento",
+    "WORKSHOP": "Taller"
+  },
+  "allDay": "Todo el día",
+  "participants_one": "{{count}} participante",
+  "participants_few": "{{count}} participantes",
+  "participants_many": "{{count}} participantes",
+  "maxParticipants": "Máx. {{count}} participantes"
+}

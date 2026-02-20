@@ -13,6 +13,7 @@ import pl.nextsteppro.climbing.domain.event.Event;
 import pl.nextsteppro.climbing.domain.reservation.Reservation;
 import pl.nextsteppro.climbing.domain.timeslot.TimeSlot;
 import pl.nextsteppro.climbing.domain.user.User;
+import pl.nextsteppro.climbing.infrastructure.i18n.MessageService;
 import jakarta.annotation.PostConstruct;
 import java.time.format.DateTimeFormatter;
 
@@ -22,13 +23,16 @@ public class MailService {
     private static final Logger log = LoggerFactory.getLogger(MailService.class);
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("dd.MM.yyyy");
     private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm");
+    private static final String ADMIN_LANG = "pl";
 
     private final JavaMailSender mailSender;
     private final AppConfig appConfig;
+    private final MessageService msg;
 
-    public MailService(JavaMailSender mailSender, AppConfig appConfig) {
+    public MailService(JavaMailSender mailSender, AppConfig appConfig, MessageService msg) {
         this.mailSender = mailSender;
         this.appConfig = appConfig;
+        this.msg = msg;
     }
 
     @PostConstruct
@@ -46,10 +50,11 @@ public class MailService {
         User user = reservation.getUser();
         if (!user.isEmailNotificationsEnabled()) return;
 
+        String lang = user.getPreferredLanguage();
         TimeSlot slot = reservation.getTimeSlot();
 
-        String subject = "Potwierdzenie rezerwacji - Next Step Pro Climbing";
-        String body = buildReservationConfirmationBody(user, slot);
+        String subject = msg.get("email.reservation.subject", lang);
+        String body = buildReservationConfirmationBody(lang, user, slot);
 
         sendEmail(user.getEmail(), subject, body, null);
     }
@@ -64,7 +69,7 @@ public class MailService {
         User user = reservation.getUser();
         TimeSlot slot = reservation.getTimeSlot();
 
-        String subject = "Nowa rezerwacja: " + user.getFullName();
+        String subject = msg.get("email.admin.new.reservation.subject", ADMIN_LANG, user.getFullName());
         String body = buildAdminNotificationBody(user, slot, reservation.getComment(), reservation.getParticipants());
 
         sendEmail(adminEmail, subject, body, null);
@@ -75,10 +80,11 @@ public class MailService {
         User user = reservation.getUser();
         if (!user.isEmailNotificationsEnabled()) return;
 
+        String lang = user.getPreferredLanguage();
         TimeSlot slot = reservation.getTimeSlot();
 
-        String subject = "Anulowanie rezerwacji - Next Step Pro Climbing";
-        String body = buildCancellationBody(user, slot);
+        String subject = msg.get("email.cancellation.subject", lang);
+        String body = buildCancellationBody(lang, user, slot);
 
         sendEmail(user.getEmail(), subject, body, null);
     }
@@ -87,8 +93,9 @@ public class MailService {
     public void sendEventReservationConfirmation(User user, Event event) {
         if (!user.isEmailNotificationsEnabled()) return;
 
-        String subject = "Potwierdzenie zapisu na wydarzenie - Next Step Pro Climbing";
-        String body = buildEventReservationConfirmationBody(user, event);
+        String lang = user.getPreferredLanguage();
+        String subject = msg.get("email.event.reservation.subject", lang);
+        String body = buildEventReservationConfirmationBody(lang, user, event);
 
         sendEmail(user.getEmail(), subject, body, null);
     }
@@ -100,7 +107,7 @@ public class MailService {
 
         log.info("Sending event admin notification to: '{}' for event {}", adminEmail, event.getId());
 
-        String subject = "Nowy zapis na wydarzenie: " + user.getFullName();
+        String subject = msg.get("email.admin.event.subject", ADMIN_LANG, user.getFullName());
         String body = buildEventAdminNotificationBody(user, event, participants);
 
         sendEmail(adminEmail, subject, body, null);
@@ -111,10 +118,11 @@ public class MailService {
         User user = reservation.getUser();
         if (!user.isEmailNotificationsEnabled()) return;
 
+        String lang = user.getPreferredLanguage();
         TimeSlot slot = reservation.getTimeSlot();
 
-        String subject = "Trening odwołany - Next Step Pro Climbing";
-        String body = buildAdminCancellationBody(user, slot);
+        String subject = msg.get("email.admin.cancel.subject", lang);
+        String body = buildAdminCancellationBody(lang, user, slot);
 
         sendEmail(user.getEmail(), subject, body, null);
     }
@@ -123,8 +131,9 @@ public class MailService {
     public void sendAdminEventCancellationNotification(User user, Event event) {
         if (!user.isEmailNotificationsEnabled()) return;
 
-        String subject = "Wydarzenie odwołane - Next Step Pro Climbing";
-        String body = buildAdminEventCancellationBody(user, event);
+        String lang = user.getPreferredLanguage();
+        String subject = msg.get("email.admin.event.cancel.subject", lang);
+        String body = buildAdminEventCancellationBody(lang, user, event);
 
         sendEmail(user.getEmail(), subject, body, null);
     }
@@ -139,8 +148,10 @@ public class MailService {
         User user = reservation.getUser();
         TimeSlot slot = reservation.getTimeSlot();
 
-        String subject = "ANULOWANIE: " + user.getFullName() + " - "
-            + slot.getDate().format(DATE_FORMAT) + " " + slot.getStartTime().format(TIME_FORMAT);
+        String subject = msg.get("email.user.cancel.admin.subject", ADMIN_LANG,
+            user.getFullName(),
+            slot.getDate().format(DATE_FORMAT),
+            slot.getStartTime().format(TIME_FORMAT));
         String body = buildUserCancellationAdminBody(user, slot);
 
         sendEmail(adminEmail, subject, body, null);
@@ -153,7 +164,8 @@ public class MailService {
 
         log.info("Sending user event cancellation admin notification to: '{}'", adminEmail);
 
-        String subject = "ANULOWANIE WYDARZENIA: " + user.getFullName() + " - " + event.getTitle();
+        String subject = msg.get("email.user.event.cancel.admin.subject", ADMIN_LANG,
+            user.getFullName(), event.getTitle());
         String body = buildUserEventCancellationAdminBody(user, event);
 
         sendEmail(adminEmail, subject, body, null);
@@ -163,8 +175,9 @@ public class MailService {
     public void sendEventCancellationConfirmation(User user, Event event) {
         if (!user.isEmailNotificationsEnabled()) return;
 
-        String subject = "Anulowanie zapisu na wydarzenie - Next Step Pro Climbing";
-        String body = buildEventCancellationBody(user, event);
+        String lang = user.getPreferredLanguage();
+        String subject = msg.get("email.event.cancellation.subject", lang);
+        String body = buildEventCancellationBody(lang, user, event);
 
         sendEmail(user.getEmail(), subject, body, null);
     }
@@ -207,7 +220,7 @@ public class MailService {
         }
     }
 
-    private String buildReservationConfirmationBody(User user, TimeSlot slot) {
+    private String buildReservationConfirmationBody(String lang, User user, TimeSlot slot) {
         return """
             <html>
             <body style="font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5;">
@@ -216,32 +229,37 @@ public class MailService {
                         <img src="cid:logo" alt="Next Step Pro Climbing" style="height: 60px;" />
                     </div>
                     <div style="padding: 30px;">
-                        <h2 style="color: #1a1a2e; margin-top: 0;">Cześć %s!</h2>
-                        <p style="color: #333;">Twoja rezerwacja została potwierdzona.</p>
+                        <h2 style="color: #1a1a2e; margin-top: 0;">%s</h2>
+                        <p style="color: #333;">%s</p>
                         <div style="background: #1a1a2e; color: white; padding: 20px; border-radius: 8px;">
-                            <p><strong>Data:</strong> %s</p>
-                            <p><strong>Godzina:</strong> %s - %s</p>
+                            <p><strong>%s</strong> %s</p>
+                            <p><strong>%s</strong> %s - %s</p>
                         </div>
-                        <p style="margin-top: 20px; color: #333;">Do zobaczenia na ścianie!</p>
-                        <p style="color: #666; font-size: 14px;">Zespół Next Step Pro Climbing</p>
+                        <p style="margin-top: 20px; color: #333;">%s</p>
+                        <p style="color: #666; font-size: 14px;">%s</p>
                     </div>
                 </div>
             </body>
             </html>
             """.formatted(
-            user.getFirstName(),
+            msg.get("email.reservation.greeting", lang, user.getFirstName()),
+            msg.get("email.reservation.body", lang),
+            msg.get("email.reservation.date", lang),
             slot.getDate().format(DATE_FORMAT),
+            msg.get("email.reservation.time", lang),
             slot.getStartTime().format(TIME_FORMAT),
-            slot.getEndTime().format(TIME_FORMAT)
+            slot.getEndTime().format(TIME_FORMAT),
+            msg.get("email.reservation.see.you", lang),
+            msg.get("email.reservation.team", lang)
         );
     }
 
     private String buildAdminNotificationBody(User user, TimeSlot slot, @Nullable String comment, int participants) {
         String commentLine = (comment != null && !comment.isBlank())
-            ? "<p><strong>Komentarz:</strong> %s</p>".formatted(comment)
+            ? "<p><strong>%s</strong> %s</p>".formatted(msg.get("email.admin.comment", ADMIN_LANG), comment)
             : "";
         String participantsLine = participants > 1
-            ? "<p><strong>Liczba osób:</strong> %d</p>".formatted(participants)
+            ? "<p><strong>%s</strong> %d</p>".formatted(msg.get("email.admin.participants", ADMIN_LANG), participants)
             : "";
         return """
             <html>
@@ -251,13 +269,13 @@ public class MailService {
                         <img src="cid:logo" alt="Next Step Pro Climbing" style="height: 60px;" />
                     </div>
                     <div style="padding: 30px;">
-                        <h2 style="color: #1a1a2e; margin-top: 0;">Nowa rezerwacja</h2>
+                        <h2 style="color: #1a1a2e; margin-top: 0;">%s</h2>
                         <div style="background: #f5f5f5; padding: 20px; border-radius: 8px;">
-                            <p><strong>Klient:</strong> %s</p>
-                            <p><strong>Email:</strong> %s</p>
-                            <p><strong>Telefon:</strong> %s</p>
-                            <p><strong>Data:</strong> %s</p>
-                            <p><strong>Godzina:</strong> %s - %s</p>
+                            <p><strong>%s</strong> %s</p>
+                            <p><strong>%s</strong> %s</p>
+                            <p><strong>%s</strong> %s</p>
+                            <p><strong>%s</strong> %s</p>
+                            <p><strong>%s</strong> %s - %s</p>
                             %s
                             %s
                         </div>
@@ -266,40 +284,42 @@ public class MailService {
             </body>
             </html>
             """.formatted(
-            user.getFullName(),
-            user.getEmail(),
-            user.getPhone(),
-            slot.getDate().format(DATE_FORMAT),
-            slot.getStartTime().format(TIME_FORMAT),
-            slot.getEndTime().format(TIME_FORMAT),
+            msg.get("email.admin.new.reservation", ADMIN_LANG),
+            msg.get("email.admin.client", ADMIN_LANG), user.getFullName(),
+            msg.get("email.admin.email", ADMIN_LANG), user.getEmail(),
+            msg.get("email.admin.phone", ADMIN_LANG), user.getPhone(),
+            msg.get("email.admin.date", ADMIN_LANG), slot.getDate().format(DATE_FORMAT),
+            msg.get("email.admin.time", ADMIN_LANG), slot.getStartTime().format(TIME_FORMAT), slot.getEndTime().format(TIME_FORMAT),
             participantsLine,
             commentLine
         );
     }
 
-    private String buildCancellationBody(User user, TimeSlot slot) {
+    private String buildCancellationBody(String lang, User user, TimeSlot slot) {
         return """
             <html>
             <body style="font-family: Arial, sans-serif;">
-                <h2>Cześć %s!</h2>
-                <p>Twoja rezerwacja została anulowana.</p>
+                <h2>%s</h2>
+                <p>%s</p>
                 <div style="background: #1a1a2e; color: white; padding: 20px; border-radius: 8px;">
-                    <p><strong>Data:</strong> %s</p>
-                    <p><strong>Godzina:</strong> %s - %s</p>
+                    <p><strong>%s</strong> %s</p>
+                    <p><strong>%s</strong> %s - %s</p>
                 </div>
-                <p style="margin-top: 20px;">Mamy nadzieję, że wkrótce Cię zobaczymy!</p>
-                <p>Zespół Next Step Pro Climbing</p>
+                <p style="margin-top: 20px;">%s</p>
+                <p>%s</p>
             </body>
             </html>
             """.formatted(
-            user.getFirstName(),
-            slot.getDate().format(DATE_FORMAT),
-            slot.getStartTime().format(TIME_FORMAT),
-            slot.getEndTime().format(TIME_FORMAT)
+            msg.get("email.cancellation.greeting", lang, user.getFirstName()),
+            msg.get("email.cancellation.body", lang),
+            msg.get("email.reservation.date", lang), slot.getDate().format(DATE_FORMAT),
+            msg.get("email.reservation.time", lang), slot.getStartTime().format(TIME_FORMAT), slot.getEndTime().format(TIME_FORMAT),
+            msg.get("email.cancellation.hope", lang),
+            msg.get("email.reservation.team", lang)
         );
     }
 
-    private String buildEventReservationConfirmationBody(User user, Event event) {
+    private String buildEventReservationConfirmationBody(String lang, User user, Event event) {
         return """
             <html>
             <body style="font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5;">
@@ -308,23 +328,25 @@ public class MailService {
                         <img src="cid:logo" alt="Next Step Pro Climbing" style="height: 60px;" />
                     </div>
                     <div style="padding: 30px;">
-                        <h2 style="color: #1a1a2e; margin-top: 0;">Cześć %s!</h2>
-                        <p style="color: #333;">Twoja rezerwacja na wydarzenie została potwierdzona.</p>
+                        <h2 style="color: #1a1a2e; margin-top: 0;">%s</h2>
+                        <p style="color: #333;">%s</p>
                         <div style="background: #1a1a2e; color: white; padding: 20px; border-radius: 8px;">
-                            <p><strong>Wydarzenie:</strong> %s</p>
-                            <p><strong>Termin:</strong> %s - %s</p>
+                            <p><strong>%s</strong> %s</p>
+                            <p><strong>%s</strong> %s - %s</p>
                         </div>
-                        <p style="margin-top: 20px; color: #333;">Do zobaczenia!</p>
-                        <p style="color: #666; font-size: 14px;">Zespół Next Step Pro Climbing</p>
+                        <p style="margin-top: 20px; color: #333;">%s</p>
+                        <p style="color: #666; font-size: 14px;">%s</p>
                     </div>
                 </div>
             </body>
             </html>
             """.formatted(
-            user.getFirstName(),
-            event.getTitle(),
-            event.getStartDate().format(DATE_FORMAT),
-            event.getEndDate().format(DATE_FORMAT)
+            msg.get("email.event.reservation.greeting", lang, user.getFirstName()),
+            msg.get("email.event.reservation.body", lang),
+            msg.get("email.event.reservation.event", lang), event.getTitle(),
+            msg.get("email.event.reservation.dates", lang), event.getStartDate().format(DATE_FORMAT), event.getEndDate().format(DATE_FORMAT),
+            msg.get("email.see.you", lang),
+            msg.get("email.reservation.team", lang)
         );
     }
 
@@ -337,33 +359,34 @@ public class MailService {
                         <img src="cid:logo" alt="Next Step Pro Climbing" style="height: 60px;" />
                     </div>
                     <div style="padding: 30px;">
-                        <h2 style="color: #1a1a2e; margin-top: 0;">Nowy zapis na wydarzenie</h2>
+                        <h2 style="color: #1a1a2e; margin-top: 0;">%s</h2>
                         <div style="background: #f5f5f5; padding: 20px; border-radius: 8px;">
-                            <p><strong>Klient:</strong> %s</p>
-                            <p><strong>Email:</strong> %s</p>
-                            <p><strong>Telefon:</strong> %s</p>
-                            <p><strong>Wydarzenie:</strong> %s</p>
-                            <p><strong>Termin:</strong> %s - %s</p>
-                            <p><strong>Liczba osób:</strong> %d</p>
+                            <p><strong>%s</strong> %s</p>
+                            <p><strong>%s</strong> %s</p>
+                            <p><strong>%s</strong> %s</p>
+                            <p><strong>%s</strong> %s</p>
+                            <p><strong>%s</strong> %s - %s</p>
+                            <p><strong>%s</strong> %d</p>
                         </div>
                     </div>
                 </div>
             </body>
             </html>
             """.formatted(
-            user.getFullName(),
-            user.getEmail(),
-            user.getPhone(),
-            event.getTitle(),
-            event.getStartDate().format(DATE_FORMAT),
-            event.getEndDate().format(DATE_FORMAT),
-            participants
+            msg.get("email.admin.event.title", ADMIN_LANG),
+            msg.get("email.admin.client", ADMIN_LANG), user.getFullName(),
+            msg.get("email.admin.email", ADMIN_LANG), user.getEmail(),
+            msg.get("email.admin.phone", ADMIN_LANG), user.getPhone(),
+            msg.get("email.admin.event.event", ADMIN_LANG), event.getTitle(),
+            msg.get("email.admin.event.dates", ADMIN_LANG), event.getStartDate().format(DATE_FORMAT), event.getEndDate().format(DATE_FORMAT),
+            msg.get("email.admin.participants", ADMIN_LANG), participants
         );
     }
 
-    private String buildAdminCancellationBody(User user, TimeSlot slot) {
+    private String buildAdminCancellationBody(String lang, User user, TimeSlot slot) {
         String titleLine = slot.getDisplayTitle() != null
-            ? "<p style=\"margin: 0 0 8px 0;\"><strong>Termin:</strong> %s</p>".formatted(slot.getDisplayTitle())
+            ? "<p style=\"margin: 0 0 8px 0;\"><strong>%s</strong> %s</p>".formatted(
+                msg.get("email.admin.cancel.slot.label", lang), slot.getDisplayTitle())
             : "";
         return """
             <html>
@@ -373,29 +396,31 @@ public class MailService {
                         <img src="cid:logo" alt="Next Step Pro Climbing" style="height: 60px;" />
                     </div>
                     <div style="padding: 30px;">
-                        <h2 style="color: #1a1a2e; margin-top: 0;">Cześć %s!</h2>
-                        <p style="color: #333;">Niestety, Twój trening został <strong style="color: #e11d48;">odwołany przez instruktora</strong>.</p>
+                        <h2 style="color: #1a1a2e; margin-top: 0;">%s</h2>
+                        <p style="color: #333;">%s</p>
                         <div style="background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; padding: 20px; border-radius: 8px;">
                             %s
-                            <p style="margin: 0 0 8px 0;"><strong>Data:</strong> %s</p>
-                            <p style="margin: 0;"><strong>Godzina:</strong> %s - %s</p>
+                            <p style="margin: 0 0 8px 0;"><strong>%s</strong> %s</p>
+                            <p style="margin: 0;"><strong>%s</strong> %s - %s</p>
                         </div>
-                        <p style="margin-top: 20px; color: #333;">Przepraszamy za utrudnienia. Zapraszamy do rezerwacji innego terminu!</p>
-                        <p style="color: #666; font-size: 14px;">Zespół Next Step Pro Climbing</p>
+                        <p style="margin-top: 20px; color: #333;">%s</p>
+                        <p style="color: #666; font-size: 14px;">%s</p>
                     </div>
                 </div>
             </body>
             </html>
             """.formatted(
-            user.getFirstName(),
+            msg.get("email.admin.cancel.greeting", lang, user.getFirstName()),
+            msg.get("email.admin.cancel.body", lang),
             titleLine,
-            slot.getDate().format(DATE_FORMAT),
-            slot.getStartTime().format(TIME_FORMAT),
-            slot.getEndTime().format(TIME_FORMAT)
+            msg.get("email.reservation.date", lang), slot.getDate().format(DATE_FORMAT),
+            msg.get("email.reservation.time", lang), slot.getStartTime().format(TIME_FORMAT), slot.getEndTime().format(TIME_FORMAT),
+            msg.get("email.admin.cancel.sorry", lang),
+            msg.get("email.reservation.team", lang)
         );
     }
 
-    private String buildAdminEventCancellationBody(User user, Event event) {
+    private String buildAdminEventCancellationBody(String lang, User user, Event event) {
         return """
             <html>
             <body style="font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5;">
@@ -404,23 +429,25 @@ public class MailService {
                         <img src="cid:logo" alt="Next Step Pro Climbing" style="height: 60px;" />
                     </div>
                     <div style="padding: 30px;">
-                        <h2 style="color: #1a1a2e; margin-top: 0;">Cześć %s!</h2>
-                        <p style="color: #333;">Niestety, Twoje wydarzenie zostało <strong style="color: #e11d48;">odwołane przez instruktora</strong>.</p>
+                        <h2 style="color: #1a1a2e; margin-top: 0;">%s</h2>
+                        <p style="color: #333;">%s</p>
                         <div style="background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; padding: 20px; border-radius: 8px;">
-                            <p style="margin: 0 0 8px 0;"><strong>Wydarzenie:</strong> %s</p>
-                            <p style="margin: 0;"><strong>Termin:</strong> %s - %s</p>
+                            <p style="margin: 0 0 8px 0;"><strong>%s</strong> %s</p>
+                            <p style="margin: 0;"><strong>%s</strong> %s - %s</p>
                         </div>
-                        <p style="margin-top: 20px; color: #333;">Przepraszamy za utrudnienia. Zapraszamy do rezerwacji innego terminu!</p>
-                        <p style="color: #666; font-size: 14px;">Zespół Next Step Pro Climbing</p>
+                        <p style="margin-top: 20px; color: #333;">%s</p>
+                        <p style="color: #666; font-size: 14px;">%s</p>
                     </div>
                 </div>
             </body>
             </html>
             """.formatted(
-            user.getFirstName(),
-            event.getTitle(),
-            event.getStartDate().format(DATE_FORMAT),
-            event.getEndDate().format(DATE_FORMAT)
+            msg.get("email.admin.event.cancel.greeting", lang, user.getFirstName()),
+            msg.get("email.admin.event.cancel.body", lang),
+            msg.get("email.event.reservation.event", lang), event.getTitle(),
+            msg.get("email.event.reservation.dates", lang), event.getStartDate().format(DATE_FORMAT), event.getEndDate().format(DATE_FORMAT),
+            msg.get("email.admin.cancel.sorry", lang),
+            msg.get("email.reservation.team", lang)
         );
     }
 
@@ -433,25 +460,25 @@ public class MailService {
                         <img src="cid:logo" alt="Next Step Pro Climbing" style="height: 60px;" />
                     </div>
                     <div style="padding: 30px;">
-                        <h2 style="color: #e11d48; margin-top: 0;">Anulowanie rezerwacji</h2>
+                        <h2 style="color: #e11d48; margin-top: 0;">%s</h2>
                         <div style="background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; padding: 20px; border-radius: 8px;">
-                            <p><strong>Klient:</strong> %s</p>
-                            <p><strong>Email:</strong> %s</p>
-                            <p><strong>Telefon:</strong> %s</p>
-                            <p><strong>Data:</strong> %s</p>
-                            <p><strong>Godzina:</strong> %s - %s</p>
+                            <p><strong>%s</strong> %s</p>
+                            <p><strong>%s</strong> %s</p>
+                            <p><strong>%s</strong> %s</p>
+                            <p><strong>%s</strong> %s</p>
+                            <p><strong>%s</strong> %s - %s</p>
                         </div>
                     </div>
                 </div>
             </body>
             </html>
             """.formatted(
-            user.getFullName(),
-            user.getEmail(),
-            user.getPhone(),
-            slot.getDate().format(DATE_FORMAT),
-            slot.getStartTime().format(TIME_FORMAT),
-            slot.getEndTime().format(TIME_FORMAT)
+            msg.get("email.user.cancel.admin.title", ADMIN_LANG),
+            msg.get("email.admin.client", ADMIN_LANG), user.getFullName(),
+            msg.get("email.admin.email", ADMIN_LANG), user.getEmail(),
+            msg.get("email.admin.phone", ADMIN_LANG), user.getPhone(),
+            msg.get("email.admin.date", ADMIN_LANG), slot.getDate().format(DATE_FORMAT),
+            msg.get("email.admin.time", ADMIN_LANG), slot.getStartTime().format(TIME_FORMAT), slot.getEndTime().format(TIME_FORMAT)
         );
     }
 
@@ -464,47 +491,49 @@ public class MailService {
                         <img src="cid:logo" alt="Next Step Pro Climbing" style="height: 60px;" />
                     </div>
                     <div style="padding: 30px;">
-                        <h2 style="color: #e11d48; margin-top: 0;">Anulowanie zapisu na wydarzenie</h2>
+                        <h2 style="color: #e11d48; margin-top: 0;">%s</h2>
                         <div style="background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; padding: 20px; border-radius: 8px;">
-                            <p><strong>Klient:</strong> %s</p>
-                            <p><strong>Email:</strong> %s</p>
-                            <p><strong>Telefon:</strong> %s</p>
-                            <p><strong>Wydarzenie:</strong> %s</p>
-                            <p><strong>Termin:</strong> %s - %s</p>
+                            <p><strong>%s</strong> %s</p>
+                            <p><strong>%s</strong> %s</p>
+                            <p><strong>%s</strong> %s</p>
+                            <p><strong>%s</strong> %s</p>
+                            <p><strong>%s</strong> %s - %s</p>
                         </div>
                     </div>
                 </div>
             </body>
             </html>
             """.formatted(
-            user.getFullName(),
-            user.getEmail(),
-            user.getPhone(),
-            event.getTitle(),
-            event.getStartDate().format(DATE_FORMAT),
-            event.getEndDate().format(DATE_FORMAT)
+            msg.get("email.user.event.cancel.admin.title", ADMIN_LANG),
+            msg.get("email.admin.client", ADMIN_LANG), user.getFullName(),
+            msg.get("email.admin.email", ADMIN_LANG), user.getEmail(),
+            msg.get("email.admin.phone", ADMIN_LANG), user.getPhone(),
+            msg.get("email.admin.event.event", ADMIN_LANG), event.getTitle(),
+            msg.get("email.admin.event.dates", ADMIN_LANG), event.getStartDate().format(DATE_FORMAT), event.getEndDate().format(DATE_FORMAT)
         );
     }
 
-    private String buildEventCancellationBody(User user, Event event) {
+    private String buildEventCancellationBody(String lang, User user, Event event) {
         return """
             <html>
             <body style="font-family: Arial, sans-serif;">
-                <h2>Cześć %s!</h2>
-                <p>Twój zapis na wydarzenie został anulowany.</p>
+                <h2>%s</h2>
+                <p>%s</p>
                 <div style="background: #1a1a2e; color: white; padding: 20px; border-radius: 8px;">
-                    <p><strong>Wydarzenie:</strong> %s</p>
-                    <p><strong>Termin:</strong> %s - %s</p>
+                    <p><strong>%s</strong> %s</p>
+                    <p><strong>%s</strong> %s - %s</p>
                 </div>
-                <p style="margin-top: 20px;">Mamy nadzieję, że wkrótce Cię zobaczymy!</p>
-                <p>Zespół Next Step Pro Climbing</p>
+                <p style="margin-top: 20px;">%s</p>
+                <p>%s</p>
             </body>
             </html>
             """.formatted(
-            user.getFirstName(),
-            event.getTitle(),
-            event.getStartDate().format(DATE_FORMAT),
-            event.getEndDate().format(DATE_FORMAT)
+            msg.get("email.event.cancellation.greeting", lang, user.getFirstName()),
+            msg.get("email.event.cancellation.body", lang),
+            msg.get("email.event.reservation.event", lang), event.getTitle(),
+            msg.get("email.event.reservation.dates", lang), event.getStartDate().format(DATE_FORMAT), event.getEndDate().format(DATE_FORMAT),
+            msg.get("email.event.cancellation.hope", lang),
+            msg.get("email.reservation.team", lang)
         );
     }
 }

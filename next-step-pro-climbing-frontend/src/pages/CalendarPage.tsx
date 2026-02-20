@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { format } from "date-fns";
 import { calendarApi } from "../api/client";
 import { useAuth } from "../context/AuthContext";
@@ -15,6 +16,7 @@ import { formatAvailability, getEventColor, buildEventColorMap } from "../utils/
 import type { EventSummary } from "../types";
 
 export function CalendarPage() {
+  const { t } = useTranslation('calendar');
   const { isAdmin } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const [currentMonth, setCurrentMonth] = useState(() => {
@@ -107,18 +109,18 @@ export function CalendarPage() {
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-dark-100 mb-2">Kalendarz</h1>
+        <h1 className="text-2xl font-bold text-dark-100 mb-2">{t('title')}</h1>
         <p className="text-dark-400">
-          Wybierz dzień, aby zobaczyć dostępne godziny i zapisać się na zajęcia.
+          {t('subtitle')}
         </p>
 
         {/* PROMOCJA */}
         <div className="mt-4 inline-block bg-amber-500/10 border border-amber-500/30 rounded-lg px-4 py-3">
           <p className="text-amber-400 font-semibold text-sm">
-            🔥 Promocja tylko do końca lutego!!
+            {t('promo.title')}
           </p>
           <p className="text-amber-300/80 text-xs mt-1">
-            Kup 2 treningi i zapłać jak za dwa!!
+            {t('promo.description')}
           </p>
         </div>
       </div>
@@ -160,7 +162,7 @@ export function CalendarPage() {
               className="mt-6 bg-dark-900 rounded-xl border border-dark-800 p-4"
             >
               <h3 className="text-sm font-medium text-dark-300 mb-3">
-                Wydarzenia w tym miesiącu:
+                {t('eventsThisMonth')}
               </h3>
 
               <div className="space-y-2">
@@ -200,7 +202,7 @@ export function CalendarPage() {
                         {/* status indicator */}
                         {!event.enrollmentOpen && !event.isUserRegistered ? (
                           <span className="px-3 py-1 text-xs font-medium rounded bg-dark-700 text-dark-400">
-                            Zadzwoń
+                            {t('common:callPhone')}
                           </span>
                         ) : (
                           <span
@@ -210,7 +212,7 @@ export function CalendarPage() {
                                 : "px-3 py-1 text-xs font-medium rounded bg-primary-600 text-white"
                             }
                           >
-                            {event.isUserRegistered ? "Zapisany" : "Zapisz się"}
+                            {event.isUserRegistered ? t('signedUp') : t('signUp')}
                           </span>
                         )}
                       </div>

@@ -13,6 +13,7 @@ import pl.nextsteppro.climbing.config.AdminEmailConfig;
 import pl.nextsteppro.climbing.domain.user.User;
 import pl.nextsteppro.climbing.domain.user.UserRepository;
 import pl.nextsteppro.climbing.domain.user.UserRole;
+import pl.nextsteppro.climbing.infrastructure.i18n.MessageService;
 import pl.nextsteppro.climbing.infrastructure.mail.AuthMailService;
 import pl.nextsteppro.climbing.infrastructure.security.JwtService;
 
@@ -33,6 +34,7 @@ public class AuthService {
     private final JwtService jwtService;
     private final AuthMailService authMailService;
     private final AdminEmailConfig adminEmailConfig;
+    private final MessageService msg;
 
     public AuthService(
             UserRepository userRepository,
@@ -40,19 +42,21 @@ public class AuthService {
             PasswordEncoder passwordEncoder,
             JwtService jwtService,
             AuthMailService authMailService,
-            AdminEmailConfig adminEmailConfig) {
+            AdminEmailConfig adminEmailConfig,
+            MessageService msg) {
         this.userRepository = userRepository;
         this.authTokenRepository = authTokenRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
         this.authMailService = authMailService;
         this.adminEmailConfig = adminEmailConfig;
+        this.msg = msg;
     }
 
     @Transactional
     public MessageResponse register(RegisterRequest request) {
         if (userRepository.existsByEmail(request.email())) {
-            throw new IllegalArgumentException("Konto z tym adresem email już istnieje");
+            throw new IllegalArgumentException(msg.get("auth.email.exists"));
         }
 
         User user = new User(
@@ -74,25 +78,25 @@ public class AuthService {
 
         sendVerificationEmail(user);
 
-        return new MessageResponse("Konto zostało utworzone. Sprawdź swoją skrzynkę email, aby potwierdzić adres.");
+        return new MessageResponse(msg.get("auth.register.success"));
     }
 
     @Transactional
     public AuthTokensResponse login(LoginRequest request) {
         User user = userRepository.findByEmail(request.email())
-            .orElseThrow(() -> new IllegalArgumentException("Nieprawidłowy email lub hasło"));
+            .orElseThrow(() -> new IllegalArgumentException(msg.get("auth.login.invalid")));
 
         if (user.getPasswordHash() == null) {
-            throw new IllegalArgumentException("Konto zostało utworzone przez OAuth. Użyj logowania przez Google/Apple.");
+            throw new IllegalArgumentException(msg.get("auth.login.oauth"));
         }
 
         if (!passwordEncoder.matches(request.password(), user.getPasswordHash())) {
             log.debug("Invalid password attempt for: {}", request.email());
-            throw new IllegalArgumentException("Nieprawidłowy email lub hasło");
+            throw new IllegalArgumentException(msg.get("auth.login.invalid"));
         }
 
         if (!user.isEmailVerified()) {
-            throw new IllegalStateException("Adres email nie został potwierdzony. Sprawdź swoją skrzynkę email.");
+            throw new IllegalStateException(msg.get("auth.email.not.verified"));
         }
 
         if (!user.isAdmin() && adminEmailConfig.isAdminEmail(user.getEmail())) {
@@ -110,7 +114,7 @@ public class AuthService {
         String tokenHash = jwtService.hashToken(token);
 
         AuthToken authToken = authTokenRepository.findValidToken(tokenHash, TokenType.EMAIL_VERIFICATION, Instant.now())
-            .orElseThrow(() -> new IllegalArgumentException("Nieprawidłowy lub wygasły link weryfikacyjny"));
+            .orElseThrow(() -> new IllegalArgumentException(msg.get("auth.verify.invalid")));
 
         User user = authToken.getUser();
         user.markEmailVerified();
@@ -120,7 +124,7 @@ public class AuthService {
         authTokenRepository.save(authToken);
 
         log.info("Email verified for: {}", user.getEmail());
-        return new MessageResponse("Adres email został potwierdzony. Możesz się teraz zalogować.");
+        return new MessageResponse(msg.get("auth.verify.success"));
     }
 
     @Transactional
@@ -129,20 +133,20 @@ public class AuthService {
 
         // Return success even if user doesn't exist (security - don't reveal if email exists)
         if (user == null) {
-            return new MessageResponse("Jeśli konto istnieje, email weryfikacyjny został wysłany.");
+            return new MessageResponse(msg.get("auth.resend.success"));
         }
 
         if (user.isEmailVerified()) {
-            return new MessageResponse("Adres email jest już potwierdzony.");
+            return new MessageResponse(msg.get("auth.resend.already.verified"));
         }
 
         // Check cooldown
         if (authTokenRepository.hasRecentUnusedToken(user.getId(), TokenType.EMAIL_VERIFICATION, Instant.now().minus(RESEND_COOLDOWN))) {
-            throw new IllegalStateException("Poczekaj chwilę przed ponownym wysłaniem emaila.");
+            throw new IllegalStateException(msg.get("auth.resend.cooldown"));
         }
 
         sendVerificationEmail(user);
-        return new MessageResponse("Jeśli konto istnieje, email weryfikacyjny został wysłany.");
+        return new MessageResponse(msg.get("auth.resend.success"));
     }
 
     @Transactional
@@ -151,21 +155,21 @@ public class AuthService {
 
         // Return success even if user doesn't exist (security)
         if (user == null) {
-            return new MessageResponse("Jeśli konto istnieje, email z linkiem do resetu hasła został wysłany.");
+            return new MessageResponse(msg.get("auth.forgot.success"));
         }
 
         if (user.getPasswordHash() == null) {
             // User registered via OAuth, no password to reset
-            return new MessageResponse("Jeśli konto istnieje, email z linkiem do resetu hasła został wysłany.");
+            return new MessageResponse(msg.get("auth.forgot.success"));
         }
 
         // Check cooldown
         if (authTokenRepository.hasRecentUnusedToken(user.getId(), TokenType.PASSWORD_RESET, Instant.now().minus(RESEND_COOLDOWN))) {
-            throw new IllegalStateException("Poczekaj chwilę przed ponownym wysłaniem emaila.");
+            throw new IllegalStateException(msg.get("auth.forgot.cooldown"));
         }
 
         sendPasswordResetEmail(user);
-        return new MessageResponse("Jeśli konto istnieje, email z linkiem do resetu hasła został wysłany.");
+        return new MessageResponse(msg.get("auth.forgot.success"));
     }
 
     @Transactional
@@ -173,7 +177,7 @@ public class AuthService {
         String tokenHash = jwtService.hashToken(request.token());
 
         AuthToken authToken = authTokenRepository.findValidToken(tokenHash, TokenType.PASSWORD_RESET, Instant.now())
-            .orElseThrow(() -> new IllegalArgumentException("Nieprawidłowy lub wygasły link do resetu hasła"));
+            .orElseThrow(() -> new IllegalArgumentException(msg.get("auth.reset.invalid")));
 
         User user = authToken.getUser();
         user.setPasswordHash(passwordEncoder.encode(request.newPassword()));
@@ -188,7 +192,7 @@ public class AuthService {
         authMailService.sendPasswordChangedNotification(user);
 
         log.info("Password reset for: {}", user.getEmail());
-        return new MessageResponse("Hasło zostało zmienione. Możesz się teraz zalogować.");
+        return new MessageResponse(msg.get("auth.reset.success"));
     }
 
     @Transactional
@@ -196,17 +200,17 @@ public class AuthService {
         String refreshToken = request.refreshToken();
 
         if (!jwtService.validateToken(refreshToken)) {
-            throw new IllegalArgumentException("Nieprawidłowy refresh token");
+            throw new IllegalArgumentException(msg.get("auth.refresh.invalid"));
         }
 
         if (!jwtService.isRefreshToken(refreshToken)) {
-            throw new IllegalArgumentException("Nieprawidłowy typ tokena");
+            throw new IllegalArgumentException(msg.get("auth.refresh.invalid.type"));
         }
 
         // Verify refresh token exists in database (not revoked)
         String tokenHash = jwtService.hashToken(refreshToken);
         AuthToken storedToken = authTokenRepository.findValidToken(tokenHash, TokenType.REFRESH_TOKEN, Instant.now())
-            .orElseThrow(() -> new IllegalArgumentException("Refresh token został unieważniony"));
+            .orElseThrow(() -> new IllegalArgumentException(msg.get("auth.refresh.revoked")));
 
         User user = storedToken.getUser();
 

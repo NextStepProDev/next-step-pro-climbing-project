@@ -1,4 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react'
+import i18n from '../../i18n'
 import { Button } from './Button'
 
 interface Props {
@@ -26,14 +27,15 @@ export class ErrorBoundary extends Component<Props, State> {
 
   render() {
     if (this.state.hasError) {
+      const t = i18n.t.bind(i18n)
       return (
         <div className="flex flex-col items-center justify-center min-h-[60vh] px-4">
           <div className="bg-dark-900 rounded-xl p-8 max-w-md w-full border border-dark-800 text-center">
             <h2 className="text-xl font-bold text-dark-100 mb-2">
-              Coś poszło nie tak
+              {t('boundary.title', { ns: 'errors' })}
             </h2>
             <p className="text-dark-400 mb-6">
-              Wystąpił nieoczekiwany błąd. Spróbuj odświeżyć stronę.
+              {t('boundary.message', { ns: 'errors' })}
             </p>
             <Button
               variant="primary"
@@ -42,7 +44,7 @@ export class ErrorBoundary extends Component<Props, State> {
                 window.location.href = '/'
               }}
             >
-              Wróć na stronę główną
+              {t('boundary.backHome', { ns: 'errors' })}
             </Button>
           </div>
         </div>

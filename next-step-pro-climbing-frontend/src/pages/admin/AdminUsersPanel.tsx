@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 import { format } from 'date-fns'
 import { Shield, ShieldOff, Trash2, Search, ChevronLeft, ChevronRight } from 'lucide-react'
 import { adminApi } from '../../api/client'
@@ -11,6 +12,7 @@ import { ConfirmModal } from '../../components/ui/ConfirmModal'
 const PAGE_SIZE = 20
 
 export function AdminUsersPanel() {
+  const { t } = useTranslation('admin')
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
   const [confirmAction, setConfirmAction] = useState<{
@@ -72,7 +74,7 @@ export function AdminUsersPanel() {
           type="text"
           value={search}
           onChange={(e) => handleSearchChange(e.target.value)}
-          placeholder="Szukaj po imieniu, nazwisku lub e-mailu..."
+          placeholder={t('users.searchPlaceholder')}
           className="w-full bg-dark-800 border border-dark-700 rounded-lg pl-10 pr-4 py-2 text-dark-100 placeholder:text-dark-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
         />
       </div>
@@ -88,19 +90,19 @@ export function AdminUsersPanel() {
               <thead className="bg-dark-800">
                 <tr>
                   <th className="text-left px-4 py-3 text-sm font-medium text-dark-300">
-                    Użytkownik
+                    {t('users.userColumn')}
                   </th>
                   <th className="text-left px-4 py-3 text-sm font-medium text-dark-300">
-                    Email
+                    {t('users.emailColumn')}
                   </th>
                   <th className="text-left px-4 py-3 text-sm font-medium text-dark-300">
-                    Telefon
+                    {t('users.phoneColumn')}
                   </th>
                   <th className="text-left px-4 py-3 text-sm font-medium text-dark-300">
-                    Rola
+                    {t('users.roleColumn')}
                   </th>
                   <th className="text-left px-4 py-3 text-sm font-medium text-dark-300">
-                    Data rejestracji
+                    {t('users.registrationDate')}
                   </th>
                   <th className="px-4 py-3"></th>
                 </tr>
@@ -133,7 +135,7 @@ export function AdminUsersPanel() {
                           variant="ghost"
                           size="sm"
                           onClick={() => setConfirmAction({ type: 'removeAdmin', userId: user.id, userName: `${user.firstName} ${user.lastName}` })}
-                          title="Odbierz uprawnienia administratora"
+                          title={t('users.revokeAdmin')}
                           className="text-orange-400 hover:text-orange-300 hover:bg-orange-500/10"
                         >
                           <ShieldOff className="w-4 h-4" />
@@ -144,7 +146,7 @@ export function AdminUsersPanel() {
                             variant="ghost"
                             size="sm"
                             onClick={() => setConfirmAction({ type: 'makeAdmin', userId: user.id, userName: `${user.firstName} ${user.lastName}` })}
-                            title="Nadaj uprawnienia administratora"
+                            title={t('users.grantAdmin')}
                           >
                             <Shield className="w-4 h-4" />
                           </Button>
@@ -152,7 +154,7 @@ export function AdminUsersPanel() {
                             variant="ghost"
                             size="sm"
                             onClick={() => setConfirmAction({ type: 'delete', userId: user.id, userName: `${user.firstName} ${user.lastName}` })}
-                            title="Usuń użytkownika"
+                            title={t('users.deleteUser')}
                             className="text-rose-400/70 hover:text-rose-300/80 hover:bg-rose-500/10"
                           >
                             <Trash2 className="w-4 h-4" />
@@ -168,8 +170,8 @@ export function AdminUsersPanel() {
             {paged.length === 0 && (
               <div className="p-8 text-center text-dark-400">
                 {search.trim()
-                  ? 'Brak wyników dla podanego wyszukiwania'
-                  : 'Brak zarejestrowanych użytkowników'}
+                  ? t('users.noSearchResults')
+                  : t('users.noUsers')}
               </div>
             )}
           </div>
@@ -178,8 +180,8 @@ export function AdminUsersPanel() {
           {filtered.length > PAGE_SIZE && (
             <div className="flex items-center justify-between mt-4">
               <span className="text-sm text-dark-400">
-                {filtered.length} {filtered.length === 1 ? 'użytkownik' : 'użytkowników'}
-                {search.trim() && users ? ` (z ${users.length})` : ''}
+                {t('users.userCount', { count: filtered.length })}
+                {search.trim() && users ? ` (${t('users.ofTotal', { count: users.length })})` : ''}
               </span>
 
               <div className="flex items-center gap-2">
@@ -223,24 +225,24 @@ export function AdminUsersPanel() {
         }}
         title={
           confirmAction?.type === 'makeAdmin'
-            ? 'Nadaj uprawnienia'
+            ? t('users.grantAdminTitle')
             : confirmAction?.type === 'removeAdmin'
-              ? 'Odbierz uprawnienia'
-              : 'Usuń użytkownika'
+              ? t('users.revokeAdminTitle')
+              : t('users.deleteUserTitle')
         }
         message={
           confirmAction?.type === 'makeAdmin'
-            ? `Czy na pewno chcesz nadać uprawnienia administratora użytkownikowi ${confirmAction.userName}?`
+            ? t('users.grantAdminMessage', { name: confirmAction.userName })
             : confirmAction?.type === 'removeAdmin'
-              ? `Czy na pewno chcesz odebrać uprawnienia administratora użytkownikowi ${confirmAction?.userName}?`
-              : `Czy na pewno chcesz usunąć użytkownika ${confirmAction?.userName}? Ta operacja jest nieodwracalna.`
+              ? t('users.revokeAdminMessage', { name: confirmAction?.userName })
+              : t('users.deleteUserMessage', { name: confirmAction?.userName })
         }
         confirmText={
           confirmAction?.type === 'makeAdmin'
-            ? 'Tak, nadaj'
+            ? t('users.confirmGrant')
             : confirmAction?.type === 'removeAdmin'
-              ? 'Tak, odbierz'
-              : 'Tak, usuń'
+              ? t('users.confirmRevoke')
+              : t('users.confirmDelete')
         }
         variant={confirmAction?.type === 'makeAdmin' ? 'primary' : 'danger'}
       />

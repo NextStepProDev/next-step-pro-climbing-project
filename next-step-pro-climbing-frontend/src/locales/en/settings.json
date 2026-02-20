@@ -1,0 +1,28 @@
+{
+  "title": "Settings",
+  "changePassword": {
+    "title": "Change password",
+    "currentPassword": "Current password",
+    "newPassword": "New password",
+    "confirmPassword": "Confirm new password",
+    "submit": "Change password",
+    "tooShort": "Password must be at least 8 characters long",
+    "mismatch": "Passwords do not match",
+    "success": "Password has been changed"
+  },
+  "notifications": {
+    "title": "Email notifications",
+    "reservations": "Reservation notifications",
+    "description": "Reservation confirmations, cancellations, and waitlist notifications"
+  },
+  "deleteAccount": {
+    "title": "Delete account",
+    "description": "This action is irreversible. All your reservations will be cancelled and your account data will be permanently deleted.",
+    "button": "Delete account",
+    "modalTitle": "Confirm account deletion",
+    "modalMessage": "To confirm account deletion, enter your password:",
+    "passwordPlaceholder": "Your password",
+    "confirmDelete": "Delete account permanently",
+    "cancel": "Cancel"
+  }
+}

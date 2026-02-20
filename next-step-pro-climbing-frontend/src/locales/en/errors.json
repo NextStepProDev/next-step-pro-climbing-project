@@ -1,0 +1,25 @@
+{
+  "network": "Could not connect to the server. Check your internet connection.",
+  "sessionExpired": "Your session has expired. Please log in again.",
+  "server": "Server error. Please try again later.",
+  "serviceUnavailable": "The server is temporarily unavailable. Please try again in a moment.",
+  "notFound": "Resource not found.",
+  "forbidden": "You do not have permission to perform this action.",
+  "generic": "An error occurred ({{status}}). Please try again.",
+  "unexpected": "An unexpected error occurred",
+  "boundary": {
+    "title": "Something went wrong",
+    "message": "An unexpected error occurred. Try refreshing the page.",
+    "backHome": "Back to home page"
+  },
+  "queryError": {
+    "title": "Failed to load data",
+    "retry": "Try again"
+  },
+  "validation": {
+    "passwordsMismatch": "Passwords do not match",
+    "passwordTooShort": "Password must be at least 8 characters long"
+  },
+  "authServer": "Server error. Please try again later.",
+  "authGeneric": "An error occurred ({{status}}). Please try again."
+}

@@ -1,0 +1,38 @@
+{
+  "hero": {
+    "subtitle": "Escuela profesional de escalada. Cursos, entrenamientos y talleres para todos los niveles.",
+    "viewCalendar": "Ver calendario",
+    "seeOffer": "Conoce nuestra oferta"
+  },
+  "offer": {
+    "title": "Nuestra oferta",
+    "subtitle": "Elige la forma de entrenamiento adaptada a tus necesidades y nivel",
+    "courses": {
+      "title": "Cursos",
+      "description": "Cursos de escalada que te preparan para escalar de forma autónoma y segura en roca y en rocódromo. Las formaciones están dirigidas por instructores experimentados de la PZA.",
+      "item1": "Curso de escalada en vías equipadas según el programa PZA - 900zł",
+      "item2": "Escalada de varios largos en vías equipadas 2 días - 800zł",
+      "item3": "Curso de autorrescate 1 - 2 días - 700zł"
+    },
+    "trainings": {
+      "title": "Entrenamientos",
+      "description": "Sesiones regulares de entrenamiento en grupos reducidos o de forma individual. Desarrolla fuerza, técnica y resistencia con los entrenadores de Next Step Pro Climbing.",
+      "item1": "Entrenamientos individuales",
+      "item2": "Secciones de escalada",
+      "item3": "Escalada en roca",
+      "item4": "Entrenamientos de clase magistral"
+    },
+    "workshops": {
+      "title": "Talleres",
+      "description": "Sesiones temáticas especializadas. Concéntrate en aspectos concretos de la escalada en un formato intensivo.",
+      "item1": "Perfeccionamiento de la técnica de escalada",
+      "item2": "Mastermind",
+      "item3": "Técnicas seleccionadas de cuerda y aseguramiento"
+    }
+  },
+  "cta": {
+    "title": "¿Listo para dar el primer paso?",
+    "subtitle": "Consulta los horarios disponibles e inscríbete en las sesiones que prefieras. ¡Te esperamos!",
+    "button": "Ir al calendario"
+  }
+}

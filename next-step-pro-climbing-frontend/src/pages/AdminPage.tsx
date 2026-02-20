@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { Routes, Route, Link, useLocation } from 'react-router-dom'
 import { Calendar, Users, Clock, ClipboardList, Activity } from 'lucide-react'
 import clsx from 'clsx'
@@ -8,24 +9,25 @@ import { AdminReservationsPanel } from './admin/AdminReservationsPanel'
 import { AdminActivityPanel } from './admin/AdminActivityPanel'
 
 const adminTabs = [
-  { path: '/admin', label: 'Terminy', icon: Clock },
-  { path: '/admin/reservations', label: 'Rezerwacje', icon: ClipboardList },
-  { path: '/admin/events', label: 'Wydarzenia', icon: Calendar },
-  { path: '/admin/users', label: 'Użytkownicy', icon: Users },
-  { path: '/admin/activity', label: 'Aktywność', icon: Activity },
+  { path: '/admin', labelKey: 'tabs.slots', icon: Clock },
+  { path: '/admin/reservations', labelKey: 'tabs.reservations', icon: ClipboardList },
+  { path: '/admin/events', labelKey: 'tabs.events', icon: Calendar },
+  { path: '/admin/users', labelKey: 'tabs.users', icon: Users },
+  { path: '/admin/activity', labelKey: 'tabs.activity', icon: Activity },
 ]
 
 export function AdminPage() {
+  const { t } = useTranslation('admin')
   const location = useLocation()
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-dark-100 mb-2">
-          Panel administratora
+          {t('title')}
         </h1>
         <p className="text-dark-400">
-          Zarządzaj terminami, wydarzeniami i użytkownikami.
+          {t('subtitle')}
         </p>
       </div>
 
@@ -46,7 +48,7 @@ export function AdminPage() {
               )}
             >
               <Icon className="w-4 h-4" />
-              {tab.label}
+              {t(tab.labelKey)}
             </Link>
           )
         })}

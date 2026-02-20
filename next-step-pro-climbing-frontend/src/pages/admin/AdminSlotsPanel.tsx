@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 import { format } from 'date-fns'
-import { pl } from 'date-fns/locale'
 import { Plus, Lock, LockOpen, Trash2, Users, Pencil, AlertTriangle } from 'lucide-react'
 import { calendarApi, adminApi } from '../../api/client'
 import { getErrorMessage } from '../../utils/errors'
@@ -11,9 +11,11 @@ import { Button } from '../../components/ui/Button'
 import { Modal } from '../../components/ui/Modal'
 import { TimeScrollPicker } from '../../components/ui/TimeScrollPicker'
 import { CreateSlotModal } from '../../components/calendar/CreateSlotModal'
+import { useDateLocale } from '../../utils/dateFnsLocale'
 import type { SlotParticipants, TimeSlot } from '../../types'
 
 export function AdminSlotsPanel() {
+  const { t } = useTranslation('admin')
   const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'))
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [showParticipantsModal, setShowParticipantsModal] = useState(false)
@@ -71,7 +73,7 @@ export function AdminSlotsPanel() {
         />
         <Button onClick={() => setShowCreateModal(true)}>
           <Plus className="w-4 h-4 mr-2" />
-          Dodaj termin
+          {t('slots.addSlot')}
         </Button>
       </div>
 
@@ -84,7 +86,7 @@ export function AdminSlotsPanel() {
         <div className="space-y-3">
           {dayData?.slots.length === 0 ? (
             <div className="bg-dark-900 rounded-lg border border-dark-800 p-8 text-center text-dark-400">
-              Brak terminów w tym dniu
+              {t('slots.noSlots')}
             </div>
           ) : (
             dayData?.slots.map((slot) => (
@@ -101,7 +103,7 @@ export function AdminSlotsPanel() {
                   )}
                   <div className="text-sm text-dark-400">
                     Status: {slot.status}
-                    {slot.isUserRegistered && ' (Twoja rezerwacja)'}
+                    {slot.isUserRegistered && ` ${t('slots.yourReservation')}`}
                   </div>
                 </div>
 
@@ -109,7 +111,7 @@ export function AdminSlotsPanel() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    aria-label="Pokaż uczestników"
+                    aria-label={t('slots.showParticipants')}
                     onClick={() => {
                       setSelectedSlotId(slot.id)
                       setShowParticipantsModal(true)
@@ -121,7 +123,7 @@ export function AdminSlotsPanel() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    aria-label="Edytuj termin"
+                    aria-label={t('slots.editSlot')}
                     onClick={() => setEditingSlot(slot)}
                   >
                     <Pencil className="w-4 h-4" />
@@ -131,8 +133,8 @@ export function AdminSlotsPanel() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      aria-label="Odblokuj termin"
-                      title="Zablokowany — kliknij aby odblokować"
+                      aria-label={t('slots.unblockSlot')}
+                      title={t('slots.blockedClickToUnblock')}
                       onClick={() => unblockMutation.mutate(slot.id)}
                       className="text-rose-400 hover:text-rose-300 hover:bg-rose-500/10"
                     >
@@ -142,8 +144,8 @@ export function AdminSlotsPanel() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      aria-label="Zablokuj termin"
-                      title="Dostępny — kliknij aby zablokować"
+                      aria-label={t('slots.blockSlot')}
+                      title={t('slots.availableClickToBlock')}
                       onClick={() => setConfirmAction({ slotId: slot.id, action: 'block' })}
                     >
                       <LockOpen className="w-4 h-4" />
@@ -153,7 +155,7 @@ export function AdminSlotsPanel() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    aria-label="Usuń termin"
+                    aria-label={t('slots.deleteSlot')}
                     onClick={() => setConfirmAction({ slotId: slot.id, action: 'delete' })}
                   >
                     <Trash2 className="w-4 h-4 text-rose-400/80" />
@@ -223,6 +225,7 @@ function EditSlotModal({
   onClose: () => void
   slot: TimeSlot | null
 }) {
+  const { t } = useTranslation('admin')
   const [form, setForm] = useState({
     startTime: slot?.startTime.slice(0, 5) ?? '',
     endTime: slot?.endTime.slice(0, 5) ?? '',
@@ -244,11 +247,11 @@ function EditSlotModal({
   if (!slot) return null
 
   const timeError = form.endTime <= form.startTime
-    ? 'Godzina zakończenia musi być późniejsza niż rozpoczęcia'
+    ? t('slots.endAfterStart')
     : null
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Edytuj termin">
+    <Modal isOpen={isOpen} onClose={onClose} title={t('slots.editTitle')}>
       <form
         onSubmit={(e) => {
           e.preventDefault()
@@ -263,12 +266,12 @@ function EditSlotModal({
         className="space-y-4"
       >
         <div>
-          <label className="block text-sm text-dark-400 mb-1">Tytuł</label>
+          <label className="block text-sm text-dark-400 mb-1">{t('slots.titleLabel')}</label>
           <input
             type="text"
             value={form.title}
             onChange={(e) => setForm({ ...form, title: e.target.value })}
-            placeholder="Tytuł terminu (opcjonalny)"
+            placeholder={t('slots.titlePlaceholder')}
             maxLength={200}
             className="w-full bg-dark-800 border border-dark-700 rounded-lg px-4 py-2 text-dark-100"
           />
@@ -277,12 +280,12 @@ function EditSlotModal({
         <div>
           <div className="grid grid-cols-2 gap-4">
             <TimeScrollPicker
-              label="Od"
+              label={t('slots.from')}
               value={form.startTime}
               onChange={(v) => setForm({ ...form, startTime: v })}
             />
             <TimeScrollPicker
-              label="Do"
+              label={t('slots.to')}
               value={form.endTime}
               onChange={(v) => setForm({ ...form, endTime: v })}
             />
@@ -293,7 +296,7 @@ function EditSlotModal({
         </div>
 
         <div>
-          <label className="block text-sm text-dark-400 mb-1">Maks. uczestników</label>
+          <label className="block text-sm text-dark-400 mb-1">{t('slots.maxParticipants')}</label>
           <input
             type="number"
             min={1}
@@ -305,10 +308,10 @@ function EditSlotModal({
 
         <div className="flex gap-3 pt-4">
           <Button type="submit" loading={updateMutation.isPending} className="flex-1">
-            Zapisz zmiany
+            {t('slots.saveChanges')}
           </Button>
           <Button type="button" variant="ghost" onClick={onClose}>
-            Anuluj
+            {t('slots.cancel')}
           </Button>
         </div>
 
@@ -335,18 +338,21 @@ function ConfirmBlockModal({
   data: SlotParticipants
   onConfirm: () => void
 }) {
+  const { t } = useTranslation('admin')
+  const locale = useDateLocale()
   const hasParticipants = data.participants.length > 0
-  const actionLabel = action === 'block' ? 'Zablokuj' : 'Usuń'
 
   return (
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={hasParticipants ? 'Uwaga - aktywne rezerwacje!' : `${actionLabel} termin`}
+      title={hasParticipants
+        ? t('slots.warningActiveReservations')
+        : action === 'block' ? t('slots.blockTitle') : t('slots.deleteTitle')}
     >
       <div className="space-y-4">
         <div className="text-sm text-dark-400">
-          {format(new Date(data.date), 'EEEE, d MMMM', { locale: pl })} |{' '}
+          {format(new Date(data.date), 'EEEE, d MMMM', { locale })} |{' '}
           {data.startTime.slice(0, 5)} - {data.endTime.slice(0, 5)}
         </div>
 
@@ -355,16 +361,16 @@ function ConfirmBlockModal({
             <div className="flex items-start gap-3 p-3 bg-rose-500/10 border border-rose-500/20 rounded-lg">
               <AlertTriangle className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
               <div className="text-sm text-rose-300">
-                <p className="font-medium mb-1">Ten termin ma aktywne rezerwacje!</p>
+                <p className="font-medium mb-1">{t('slots.hasActiveReservations')}</p>
                 <p className="text-rose-400/80">
-                  {action === 'block' ? 'Zablokowanie' : 'Usunięcie'} terminu spowoduje anulowanie rezerwacji i powiadomienie użytkowników e-mailem.
+                  {action === 'block' ? t('slots.blockWarning') : t('slots.deleteWarning')}
                 </p>
               </div>
             </div>
 
             <div>
               <h3 className="text-sm font-medium text-dark-300 mb-2">
-                Zapisani ({data.participants.length})
+                {t('slots.registered', { count: data.participants.length })}
               </h3>
               <ul className="space-y-2 max-h-48 overflow-y-auto">
                 {data.participants.map((p) => (
@@ -378,7 +384,7 @@ function ConfirmBlockModal({
           </>
         ) : (
           <p className="text-dark-400 text-sm">
-            Brak zapisanych osób na ten termin.
+            {t('slots.noRegistered')}
           </p>
         )}
 
@@ -389,11 +395,11 @@ function ConfirmBlockModal({
             onClick={onConfirm}
           >
             {hasParticipants
-              ? `${actionLabel} i anuluj rezerwacje`
-              : `${actionLabel} termin`}
+              ? action === 'block' ? t('slots.blockAndCancel') : t('slots.deleteAndCancel')
+              : action === 'block' ? t('slots.blockSimple') : t('slots.deleteSimple')}
           </Button>
           <Button variant="ghost" onClick={onClose}>
-            Anuluj
+            {t('slots.cancel')}
           </Button>
         </div>
       </div>
@@ -410,21 +416,24 @@ function ParticipantsModal({
   onClose: () => void
   data: SlotParticipants
 }) {
+  const { t } = useTranslation('admin')
+  const locale = useDateLocale()
+
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Uczestnicy terminu">
+    <Modal isOpen={isOpen} onClose={onClose} title={t('slots.participantsTitle')}>
       <div className="space-y-4">
         <div className="text-sm text-dark-400">
-          {format(new Date(data.date), 'EEEE, d MMMM', { locale: pl })} |{' '}
+          {format(new Date(data.date), 'EEEE, d MMMM', { locale })} |{' '}
           {data.startTime.slice(0, 5)} - {data.endTime.slice(0, 5)}
         </div>
 
         {/* Confirmed participants */}
         <div>
           <h3 className="text-sm font-medium text-dark-300 mb-2">
-            Zapisani ({data.participants.length}/{data.maxParticipants})
+            {t('slots.registeredOf', { count: data.participants.length, max: data.maxParticipants })}
           </h3>
           {data.participants.length === 0 ? (
-            <p className="text-dark-500 text-sm">Brak zapisanych osób</p>
+            <p className="text-dark-500 text-sm">{t('slots.noRegisteredShort')}</p>
           ) : (
             <ul className="space-y-2">
               {data.participants.map((p) => (

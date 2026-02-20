@@ -1,10 +1,12 @@
 import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { Mail } from 'lucide-react'
 import { resendVerification } from '../api/auth'
 import { Button } from '../components/ui/Button'
 
 export function ResendVerificationPage() {
+  const { t } = useTranslation('auth')
   const [email, setEmail] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
@@ -19,7 +21,7 @@ export function ResendVerificationPage() {
       await resendVerification(email)
       setSuccess(true)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Wystąpił błąd')
+      setError(err instanceof Error ? err.message : t('resendVerification.error'))
     } finally {
       setLoading(false)
     }
@@ -34,12 +36,12 @@ export function ResendVerificationPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
             </svg>
           </div>
-          <h2 className="text-xl font-bold text-dark-100 mb-2">Email wysłany</h2>
+          <h2 className="text-xl font-bold text-dark-100 mb-2">{t('resendVerification.successTitle')}</h2>
           <p className="text-dark-400 mb-6">
-            Jeśli konto z tym adresem email istnieje i nie zostało jeszcze zweryfikowane, otrzymasz nowy email weryfikacyjny.
+            {t('resendVerification.successMessage')}
           </p>
           <Link to="/login" className="text-primary-400 hover:text-primary-300 font-medium">
-            Wróć do logowania
+            {t('resendVerification.backToLogin')}
           </Link>
         </div>
       </div>
@@ -51,16 +53,16 @@ export function ResendVerificationPage() {
       <div className="bg-dark-900 rounded-xl p-8 max-w-md w-full border border-dark-800">
         <div className="text-center mb-6">
           <Mail className="w-10 h-10 text-primary-500 mx-auto mb-3" />
-          <h1 className="text-2xl font-bold text-dark-100">Ponowna weryfikacja</h1>
+          <h1 className="text-2xl font-bold text-dark-100">{t('resendVerification.title')}</h1>
           <p className="text-dark-400 mt-2 text-sm">
-            Podaj swój adres email, aby otrzymać nowy link weryfikacyjny.
+            {t('resendVerification.description')}
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-dark-300 mb-1">
-              Email
+              {t('resendVerification.email')}
             </label>
             <input
               id="email"
@@ -69,7 +71,7 @@ export function ResendVerificationPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full px-3 py-2 bg-dark-800 border border-dark-700 rounded-lg text-dark-100 placeholder-dark-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-              placeholder="jan@example.com"
+              placeholder={t('resendVerification.emailPlaceholder')}
             />
           </div>
 
@@ -78,13 +80,13 @@ export function ResendVerificationPage() {
           )}
 
           <Button type="submit" variant="primary" className="w-full" loading={loading}>
-            Wyślij ponownie
+            {t('resendVerification.submit')}
           </Button>
         </form>
 
         <p className="mt-6 text-center text-sm text-dark-400">
           <Link to="/login" className="text-primary-400 hover:text-primary-300">
-            Wróć do logowania
+            {t('resendVerification.backToLogin')}
           </Link>
         </p>
       </div>

@@ -1,11 +1,13 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { KeyRound } from 'lucide-react'
 import { resetPassword } from '../api/auth'
 import { validatePassword } from '../utils/validation'
 import { Button } from '../components/ui/Button'
 
 export function ResetPasswordPage() {
+  const { t } = useTranslation('auth')
   const [searchParams] = useSearchParams()
   const token = searchParams.get('token')
   const [password, setPassword] = useState('')
@@ -18,10 +20,10 @@ export function ResetPasswordPage() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] px-4">
         <div className="bg-dark-900 rounded-xl p-8 max-w-md w-full border border-dark-800 text-center">
-          <h2 className="text-xl font-bold text-dark-100 mb-2">Nieprawidłowy link</h2>
-          <p className="text-dark-400 mb-6">Brak tokenu resetowania hasła w URL.</p>
+          <h2 className="text-xl font-bold text-dark-100 mb-2">{t('resetPassword.invalidLink')}</h2>
+          <p className="text-dark-400 mb-6">{t('resetPassword.noToken')}</p>
           <Link to="/forgot-password" className="text-primary-400 hover:text-primary-300 font-medium">
-            Poproś o nowy link
+            {t('resetPassword.requestNewLink')}
           </Link>
         </div>
       </div>
@@ -47,7 +49,7 @@ export function ResetPasswordPage() {
       await resetPassword(token, password)
       setSuccess(true)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Wystąpił błąd')
+      setError(err instanceof Error ? err.message : t('resetPassword.error'))
     } finally {
       setLoading(false)
     }
@@ -62,10 +64,10 @@ export function ResetPasswordPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
             </svg>
           </div>
-          <h2 className="text-xl font-bold text-dark-100 mb-2">Hasło zmienione</h2>
-          <p className="text-dark-400 mb-6">Twoje hasło zostało pomyślnie zmienione.</p>
+          <h2 className="text-xl font-bold text-dark-100 mb-2">{t('resetPassword.successTitle')}</h2>
+          <p className="text-dark-400 mb-6">{t('resetPassword.successMessage')}</p>
           <Link to="/login" className="text-primary-400 hover:text-primary-300 font-medium">
-            Zaloguj się
+            {t('resetPassword.login')}
           </Link>
         </div>
       </div>
@@ -77,13 +79,13 @@ export function ResetPasswordPage() {
       <div className="bg-dark-900 rounded-xl p-8 max-w-md w-full border border-dark-800">
         <div className="text-center mb-6">
           <KeyRound className="w-10 h-10 text-primary-500 mx-auto mb-3" />
-          <h1 className="text-2xl font-bold text-dark-100">Nowe hasło</h1>
+          <h1 className="text-2xl font-bold text-dark-100">{t('resetPassword.title')}</h1>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label htmlFor="password" className="block text-sm font-medium text-dark-300 mb-1">
-              Nowe hasło
+              {t('resetPassword.newPassword')}
             </label>
             <input
               id="password"
@@ -95,13 +97,13 @@ export function ResetPasswordPage() {
               className="w-full px-3 py-2 bg-dark-800 border border-dark-700 rounded-lg text-dark-100 placeholder-dark-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             />
             <p className="text-xs text-dark-500 mt-1">
-              Min. 4 znaki
+              {t('resetPassword.passwordHint')}
             </p>
           </div>
 
           <div>
             <label htmlFor="confirmPassword" className="block text-sm font-medium text-dark-300 mb-1">
-              Potwierdź hasło
+              {t('resetPassword.confirmPassword')}
             </label>
             <input
               id="confirmPassword"
@@ -118,7 +120,7 @@ export function ResetPasswordPage() {
           )}
 
           <Button type="submit" variant="primary" className="w-full" loading={loading}>
-            Ustaw nowe hasło
+            {t('resetPassword.submit')}
           </Button>
         </form>
       </div>

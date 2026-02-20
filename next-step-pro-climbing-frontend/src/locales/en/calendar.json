@@ -1,0 +1,95 @@
+{
+  "title": "Calendar",
+  "subtitle": "Select a day to see available time slots and sign up for sessions.",
+  "promo": {
+    "title": "Promotion until end of February only!!",
+    "description": "Buy 2 training sessions and pay for two!!"
+  },
+  "eventsThisMonth": "Events this month:",
+  "signedUp": "Signed up",
+  "signUp": "Sign up",
+  "weekdays": {
+    "mon": "Mon",
+    "tue": "Tue",
+    "wed": "Wed",
+    "thu": "Thu",
+    "fri": "Fri",
+    "sat": "Sat",
+    "sun": "Sun"
+  },
+  "noSpots": "No spots",
+  "training_one": "{{count}} training",
+  "training_few": "{{count}} trainings",
+  "training_many": "{{count}} trainings",
+  "day": {
+    "available": "Available",
+    "full": "Full",
+    "blocked": "Reserved",
+    "bookingClosed": "Call",
+    "past": "Finished",
+    "yourReservation": "Your reservation",
+    "noSlots": "No available time slots on this day",
+    "training": "Training"
+  },
+  "slot": {
+    "title": "Slot details",
+    "past": "This time slot has already ended",
+    "bookingClosed": "Online booking is available up to 12 hours before the slot. Contact the instructor by phone to check availability.",
+    "hasReservation": "You have a reservation for this slot",
+    "spotsLabel": "Number of spots",
+    "spotsOf": "of {{count}} available",
+    "commentPlaceholder": "Comment for the instructor (optional)...",
+    "commentCount": "{{count}}/500",
+    "loginToBook": "Log in to book",
+    "cancelReservation": "Cancel reservation",
+    "noSpots": "No available spots",
+    "close": "Close",
+    "bookMultiple": "{{count}} people",
+    "bookSingle": "Sign up",
+    "participants": "{{current}} / {{max}} participants",
+    "spotsFree": "({{count}} available)"
+  },
+  "event": {
+    "title": "Sign up for event",
+    "bookingClosed": "Online booking is available up to 12 hours before the event. Contact the instructor by phone to check availability.",
+    "hasReservation": "You have a reservation for this event",
+    "spotsLabel": "Number of spots",
+    "spotsOf": "of {{count}} available",
+    "commentPlaceholder": "Comment for the instructor (optional)...",
+    "commentCount": "{{count}}/500",
+    "loginToBook": "Log in to book",
+    "cancelSignup": "Cancel event signup",
+    "noSpots": "No spots",
+    "close": "Close",
+    "bookMultiple": "{{count}} people",
+    "bookSingle": "Sign up",
+    "participants": "{{current}} / {{max}} participants",
+    "spotsFree": "({{count}} available)"
+  },
+  "eventPage": {
+    "notFound": "Event not found",
+    "notFoundDesc": "This event does not exist or has been removed.",
+    "backToCalendar": "Back to calendar",
+    "maxParticipants": "Max. {{count}} participants",
+    "description": "Description",
+    "viewSlots": "View available time slots"
+  },
+  "createSlot": {
+    "title": "Add new time slot",
+    "slotTitle": "Title (e.g. \"Climbing wall training\")",
+    "slotTitlePlaceholder": "Slot title (visible to clients)",
+    "date": "Date",
+    "from": "From",
+    "to": "To",
+    "maxParticipants": "Max. participants",
+    "endAfterStart": "End time must be later than start time",
+    "submit": "Create slot",
+    "cancel": "Cancel"
+  },
+  "availability": {
+    "closed": "Bookings closed",
+    "noSpots": "No spots",
+    "oneSpot": "1 spot available",
+    "freeSpots": "{{free}}/{{max}} available"
+  }
+}

@@ -143,6 +143,24 @@ public class UserController {
         return ResponseEntity.noContent().build();
     }
 
+    @Operation(summary = "Zmień język", description = "Ustawia preferowany język użytkownika")
+    @ApiResponses({
+        @ApiResponse(responseCode = "204", description = "Język zmieniony"),
+        @ApiResponse(responseCode = "401", description = "Użytkownik niezalogowany")
+    })
+    @PutMapping("/me/language")
+    public ResponseEntity<Void> updateLanguage(
+            @Parameter(hidden = true) @CurrentUserId UUID userId,
+            @Valid @RequestBody UpdateLanguageRequest request) {
+
+        if (userId == null) {
+            return ResponseEntity.status(401).build();
+        }
+
+        userService.updateLanguagePreference(userId, request.language());
+        return ResponseEntity.noContent().build();
+    }
+
     private UserProfileDto toProfileDto(User user) {
         return new UserProfileDto(
             user.getId(),
@@ -154,6 +172,7 @@ public class UserController {
             user.getRole().name(),
             user.isAdmin(),
             user.isEmailNotificationsEnabled(),
+            user.getPreferredLanguage(),
             user.getCreatedAt()
         );
     }
@@ -170,6 +189,7 @@ record UserProfileDto(
     @Schema(description = "Rola: USER lub ADMIN") String role,
     @Schema(description = "Czy użytkownik jest adminem") boolean isAdmin,
     @Schema(description = "Czy powiadomienia email są włączone") boolean emailNotificationsEnabled,
+    @Schema(description = "Preferowany język (pl, en, es)") String preferredLanguage,
     @Schema(description = "Data utworzenia konta") java.time.Instant createdAt
 ) {}
 
@@ -193,4 +213,9 @@ record DeleteAccountRequest(
 @Schema(description = "Ustawienia powiadomień")
 record UpdateNotificationsRequest(
     @Schema(description = "Czy włączyć powiadomienia email") boolean enabled
+) {}
+
+@Schema(description = "Zmiana języka")
+record UpdateLanguageRequest(
+    @Schema(description = "Kod języka (pl, en, es)", example = "pl") String language
 ) {}

@@ -1,12 +1,13 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 import { format } from 'date-fns'
-import { pl } from 'date-fns/locale'
 import { ChevronDown, ChevronRight, ChevronLeft, Users, Mail, Phone } from 'lucide-react'
 import { adminApi } from '../../api/client'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
 import { QueryError } from '../../components/ui/QueryError'
 import { getErrorMessage } from '../../utils/errors'
+import { useDateLocale } from '../../utils/dateFnsLocale'
 import type { ReservationAdmin } from '../../types'
 
 function isMultiDayEvent(r: ReservationAdmin) {
@@ -74,6 +75,7 @@ function groupReservations(reservations: ReservationAdmin[]) {
 }
 
 export function AdminReservationsPanel() {
+  const { t } = useTranslation('admin')
   const [showArchive, setShowArchive] = useState(false)
 
   const { data: reservations, isLoading, isError, error, refetch } = useQuery({
@@ -101,12 +103,12 @@ export function AdminReservationsPanel() {
       {/* Upcoming */}
       {!hasUpcoming ? (
         <div className="bg-dark-900 rounded-lg border border-dark-800 p-8 text-center text-dark-400">
-          Brak nadchodzących rezerwacji
+          {t('reservations.noUpcoming')}
         </div>
       ) : (
         <>
           <p className="text-sm text-dark-400">
-            Wszystkie nadchodzące rezerwacje ({totalCount})
+            {t('reservations.allUpcoming', { count: totalCount })}
           </p>
           <ReservationList sortedDates={sortedDates} grouped={grouped} />
         </>
@@ -119,7 +121,7 @@ export function AdminReservationsPanel() {
           className="flex items-center gap-2 text-sm text-dark-500 hover:text-dark-300 transition-colors mb-3"
         >
           {showArchive ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-          Archiwum
+          {t('reservations.archive')}
         </button>
 
         {showArchive && (
@@ -135,7 +137,7 @@ export function AdminReservationsPanel() {
               </div>
             )}
             {pastReservations && pastReservations.length === 0 && (
-              <p className="text-dark-500 text-sm">Brak minionych rezerwacji.</p>
+              <p className="text-dark-500 text-sm">{t('reservations.noPast')}</p>
             )}
             {pastReservations && pastReservations.length > 0 && (
               <PastReservationList reservations={pastReservations} />
@@ -150,6 +152,7 @@ export function AdminReservationsPanel() {
 const ARCHIVE_PAGE_SIZE = 15
 
 function PastReservationList({ reservations }: { reservations: ReservationAdmin[] }) {
+  const { t } = useTranslation('admin')
   const [page, setPage] = useState(1)
 
   const sorted = [...reservations].sort((a, b) => b.date.localeCompare(a.date))
@@ -164,15 +167,15 @@ function PastReservationList({ reservations }: { reservations: ReservationAdmin[
   return (
     <div className="space-y-6 opacity-60">
       <p className="text-sm text-dark-400">
-        Minione rezerwacje ({reservations.length})
-        {totalPages > 1 && ` · strona ${safePage}/${totalPages} (${totalCount} na tej stronie)`}
+        {t('reservations.pastReservations', { count: reservations.length })}
+        {totalPages > 1 && ` · ${t('reservations.pageInfo', { page: safePage, total: totalPages, count: totalCount })}`}
       </p>
       <ReservationList sortedDates={sortedDates} grouped={grouped} />
 
       {totalPages > 1 && (
         <div className="flex items-center justify-between pt-2">
           <span className="text-sm text-dark-500">
-            {reservations.length} pozycji
+            {t('reservations.totalItems', { count: reservations.length })}
           </span>
           <div className="flex items-center gap-2">
             <button
@@ -200,6 +203,7 @@ function PastReservationList({ reservations }: { reservations: ReservationAdmin[
 }
 
 function ReservationList({ sortedDates, grouped }: { sortedDates: string[]; grouped: Map<string, GroupItem[]> }) {
+  const locale = useDateLocale()
   return (
     <>
       {sortedDates.map((date) => {
@@ -212,7 +216,7 @@ function ReservationList({ sortedDates, grouped }: { sortedDates: string[]; grou
             <h3 className="text-sm font-semibold text-primary-400 mb-3 capitalize">
               {hasEvent && firstEvent
                 ? `${format(new Date(firstEvent.eventStartDate), 'dd.MM')} - ${format(new Date(firstEvent.eventEndDate), 'dd.MM.yyyy')}`
-                : format(new Date(date), 'EEEE, d MMMM yyyy', { locale: pl })
+                : format(new Date(date), 'EEEE, d MMMM yyyy', { locale })
               }
             </h3>
             <div className="space-y-2">
@@ -232,6 +236,7 @@ function ReservationList({ sortedDates, grouped }: { sortedDates: string[]; grou
 }
 
 function EventReservationCard({ group }: { group: EventGroup }) {
+  const { t } = useTranslation('admin')
   const [expanded, setExpanded] = useState(false)
 
   return (
@@ -249,7 +254,7 @@ function EventReservationCard({ group }: { group: EventGroup }) {
       >
         {expanded ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
         <Users className="w-3.5 h-3.5" />
-        Uczestnicy ({group.reservations.length})
+        {t('reservations.participants', { count: group.reservations.length })}
       </button>
 
       {expanded && (
@@ -267,7 +272,7 @@ function EventReservationCard({ group }: { group: EventGroup }) {
                   {r.userPhone}
                 </span>
                 {r.participants > 1 && (
-                  <span>{r.participants} miejsca</span>
+                  <span>{t('reservations.spots', { count: r.participants })}</span>
                 )}
               </div>
               {r.comment && (
@@ -282,6 +287,7 @@ function EventReservationCard({ group }: { group: EventGroup }) {
 }
 
 function SlotReservationCard({ r }: { r: ReservationAdmin }) {
+  const { t } = useTranslation('admin')
   return (
     <div className="bg-dark-900 rounded-lg border border-dark-800 p-4 flex items-start justify-between gap-4">
       <div className="flex-1 min-w-0">
@@ -298,7 +304,7 @@ function SlotReservationCard({ r }: { r: ReservationAdmin }) {
         </div>
         {r.participants > 1 && (
           <div className="text-sm text-primary-400 mt-1">
-            {r.participants} miejsca
+            {t('reservations.spots', { count: r.participants })}
           </div>
         )}
         {r.comment && (

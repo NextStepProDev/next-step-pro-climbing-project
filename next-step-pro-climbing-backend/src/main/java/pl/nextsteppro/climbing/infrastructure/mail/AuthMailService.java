@@ -9,6 +9,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import pl.nextsteppro.climbing.config.AppConfig;
 import pl.nextsteppro.climbing.domain.user.User;
+import pl.nextsteppro.climbing.infrastructure.i18n.MessageService;
 
 @Service
 public class AuthMailService {
@@ -17,34 +18,39 @@ public class AuthMailService {
 
     private final JavaMailSender mailSender;
     private final AppConfig appConfig;
+    private final MessageService msg;
 
-    public AuthMailService(JavaMailSender mailSender, AppConfig appConfig) {
+    public AuthMailService(JavaMailSender mailSender, AppConfig appConfig, MessageService msg) {
         this.mailSender = mailSender;
         this.appConfig = appConfig;
+        this.msg = msg;
     }
 
     @Async
     public void sendVerificationEmail(User user, String token) {
+        String lang = user.getPreferredLanguage();
         String verificationUrl = buildVerificationUrl(token);
-        String subject = "Potwierdź swój adres email - Next Step Pro Climbing";
-        String body = buildVerificationEmailBody(user.getFirstName(), verificationUrl);
+        String subject = msg.get("email.verification.subject", lang);
+        String body = buildVerificationEmailBody(lang, user.getFirstName(), verificationUrl);
 
         sendEmail(user.getEmail(), subject, body);
     }
 
     @Async
     public void sendPasswordResetEmail(User user, String token) {
+        String lang = user.getPreferredLanguage();
         String resetUrl = buildPasswordResetUrl(token);
-        String subject = "Reset hasła - Next Step Pro Climbing";
-        String body = buildPasswordResetEmailBody(user.getFirstName(), resetUrl);
+        String subject = msg.get("email.reset.subject", lang);
+        String body = buildPasswordResetEmailBody(lang, user.getFirstName(), resetUrl);
 
         sendEmail(user.getEmail(), subject, body);
     }
 
     @Async
     public void sendPasswordChangedNotification(User user) {
-        String subject = "Twoje hasło zostało zmienione - Next Step Pro Climbing";
-        String body = buildPasswordChangedEmailBody(user.getFirstName());
+        String lang = user.getPreferredLanguage();
+        String subject = msg.get("email.password.changed.subject", lang);
+        String body = buildPasswordChangedEmailBody(lang, user.getFirstName());
 
         sendEmail(user.getEmail(), subject, body);
     }
@@ -77,7 +83,7 @@ public class AuthMailService {
         return appConfig.getBaseUrl() + "/reset-password?token=" + token;
     }
 
-    private String buildVerificationEmailBody(String firstName, String verificationUrl) {
+    private String buildVerificationEmailBody(String lang, String firstName, String verificationUrl) {
         return """
             <html>
             <body style="font-family: Arial, sans-serif; background-color: #0f0f1a; color: #e0e0e0; padding: 20px;">
@@ -86,12 +92,12 @@ public class AuthMailService {
                         <img src="cid:logo" alt="Next Step Pro Climbing" style="height: 60px;" />
                     </div>
                     <div style="padding: 20px 30px 30px;">
-                    <h1 style="color: #3b82f6; margin-bottom: 20px;">Witaj, %s!</h1>
+                    <h1 style="color: #3b82f6; margin-bottom: 20px;">%s</h1>
                     <p style="font-size: 16px; line-height: 1.6;">
-                        Dziękujemy za rejestrację w Next Step Pro Climbing.
+                        %s
                     </p>
                     <p style="font-size: 16px; line-height: 1.6;">
-                        Kliknij poniższy przycisk, aby potwierdzić swój adres email:
+                        %s
                     </p>
                     <div style="text-align: center; margin: 30px 0;">
                         <a href="%s"
@@ -103,28 +109,38 @@ public class AuthMailService {
                                   font-weight: bold;
                                   font-size: 16px;
                                   display: inline-block;">
-                            Potwierdź email
+                            %s
                         </a>
                     </div>
                     <p style="font-size: 14px; color: #9ca3af;">
-                        Link jest ważny przez 15 minut.
+                        %s
                     </p>
                     <p style="font-size: 14px; color: #9ca3af;">
-                        Jeśli nie rejestrowałeś/aś się w naszym serwisie, zignoruj tę wiadomość.
+                        %s
                     </p>
                     <hr style="border: none; border-top: 1px solid #2d2d44; margin: 30px 0;">
                     <p style="font-size: 12px; color: #6b7280; text-align: center;">
-                        Next Step Pro Climbing<br>
-                        Wspinaj się z nami!
+                        %s<br>
+                        %s
                     </p>
                     </div>
                 </div>
             </body>
             </html>
-            """.formatted(firstName, verificationUrl);
+            """.formatted(
+            msg.get("email.verification.greeting", lang, firstName),
+            msg.get("email.verification.body", lang),
+            msg.get("email.verification.action", lang),
+            verificationUrl,
+            msg.get("email.verification.button", lang),
+            msg.get("email.verification.expiry", lang),
+            msg.get("email.verification.ignore", lang),
+            msg.get("email.footer", lang),
+            msg.get("email.footer.slogan", lang)
+        );
     }
 
-    private String buildPasswordResetEmailBody(String firstName, String resetUrl) {
+    private String buildPasswordResetEmailBody(String lang, String firstName, String resetUrl) {
         return """
             <html>
             <body style="font-family: Arial, sans-serif; background-color: #0f0f1a; color: #e0e0e0; padding: 20px;">
@@ -133,12 +149,12 @@ public class AuthMailService {
                         <img src="cid:logo" alt="Next Step Pro Climbing" style="height: 60px;" />
                     </div>
                     <div style="padding: 20px 30px 30px;">
-                    <h1 style="color: #3b82f6; margin-bottom: 20px;">Cześć, %s!</h1>
+                    <h1 style="color: #3b82f6; margin-bottom: 20px;">%s</h1>
                     <p style="font-size: 16px; line-height: 1.6;">
-                        Otrzymaliśmy prośbę o reset hasła do Twojego konta.
+                        %s
                     </p>
                     <p style="font-size: 16px; line-height: 1.6;">
-                        Kliknij poniższy przycisk, aby ustawić nowe hasło:
+                        %s
                     </p>
                     <div style="text-align: center; margin: 30px 0;">
                         <a href="%s"
@@ -150,28 +166,38 @@ public class AuthMailService {
                                   font-weight: bold;
                                   font-size: 16px;
                                   display: inline-block;">
-                            Ustaw nowe hasło
+                            %s
                         </a>
                     </div>
                     <p style="font-size: 14px; color: #9ca3af;">
-                        Link jest ważny przez 1 godzinę.
+                        %s
                     </p>
                     <p style="font-size: 14px; color: #9ca3af;">
-                        Jeśli nie prosiłeś/aś o reset hasła, zignoruj tę wiadomość. Twoje konto jest bezpieczne.
+                        %s
                     </p>
                     <hr style="border: none; border-top: 1px solid #2d2d44; margin: 30px 0;">
                     <p style="font-size: 12px; color: #6b7280; text-align: center;">
-                        Next Step Pro Climbing<br>
-                        Wspinaj się z nami!
+                        %s<br>
+                        %s
                     </p>
                     </div>
                 </div>
             </body>
             </html>
-            """.formatted(firstName, resetUrl);
+            """.formatted(
+            msg.get("email.reset.greeting", lang, firstName),
+            msg.get("email.reset.body", lang),
+            msg.get("email.reset.action", lang),
+            resetUrl,
+            msg.get("email.reset.button", lang),
+            msg.get("email.reset.expiry", lang),
+            msg.get("email.reset.ignore", lang),
+            msg.get("email.footer", lang),
+            msg.get("email.footer.slogan", lang)
+        );
     }
 
-    private String buildPasswordChangedEmailBody(String firstName) {
+    private String buildPasswordChangedEmailBody(String lang, String firstName) {
         return """
             <html>
             <body style="font-family: Arial, sans-serif; background-color: #0f0f1a; color: #e0e0e0; padding: 20px;">
@@ -180,22 +206,28 @@ public class AuthMailService {
                         <img src="cid:logo" alt="Next Step Pro Climbing" style="height: 60px;" />
                     </div>
                     <div style="padding: 20px 30px 30px;">
-                    <h1 style="color: #3b82f6; margin-bottom: 20px;">Cześć, %s!</h1>
+                    <h1 style="color: #3b82f6; margin-bottom: 20px;">%s</h1>
                     <p style="font-size: 16px; line-height: 1.6;">
-                        Twoje hasło zostało pomyślnie zmienione.
+                        %s
                     </p>
                     <p style="font-size: 16px; line-height: 1.6;">
-                        Jeśli to nie Ty zmieniłeś/aś hasło, skontaktuj się z nami natychmiast.
+                        %s
                     </p>
                     <hr style="border: none; border-top: 1px solid #2d2d44; margin: 30px 0;">
                     <p style="font-size: 12px; color: #6b7280; text-align: center;">
-                        Next Step Pro Climbing<br>
-                        Wspinaj się z nami!
+                        %s<br>
+                        %s
                     </p>
                     </div>
                 </div>
             </body>
             </html>
-            """.formatted(firstName);
+            """.formatted(
+            msg.get("email.password.changed.greeting", lang, firstName),
+            msg.get("email.password.changed.body", lang),
+            msg.get("email.password.changed.warning", lang),
+            msg.get("email.footer", lang),
+            msg.get("email.footer.slogan", lang)
+        );
     }
 }

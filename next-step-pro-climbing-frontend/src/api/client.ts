@@ -1,3 +1,4 @@
+import i18n from '../i18n'
 import type {
   User,
   MonthView,
@@ -72,6 +73,7 @@ async function fetchApi<T>(
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
+    'Accept-Language': i18n.language,
     ...(options?.headers as Record<string, string>),
   }
 
@@ -86,7 +88,7 @@ async function fetchApi<T>(
       headers,
     })
   } catch {
-    throw new Error('Nie udało się połączyć z serwerem. Sprawdź połączenie internetowe.')
+    throw new Error(i18n.t('network', { ns: 'errors' }))
   }
 
   // If 401, try one refresh and retry
@@ -100,10 +102,10 @@ async function fetchApi<T>(
           headers,
         })
       } catch {
-        throw new Error('Nie udało się połączyć z serwerem. Sprawdź połączenie internetowe.')
+        throw new Error(i18n.t('network', { ns: 'errors' }))
       }
     } else {
-      throw new Error('Sesja wygasła. Zaloguj się ponownie.')
+      throw new Error(i18n.t('sessionExpired', { ns: 'errors' }))
     }
   }
 
@@ -114,18 +116,18 @@ async function fetchApi<T>(
       throw new Error(serverMessage)
     }
     if (response.status === 500) {
-      throw new Error('Błąd serwera. Spróbuj ponownie później.')
+      throw new Error(i18n.t('server', { ns: 'errors' }))
     }
     if (response.status === 503) {
-      throw new Error('Serwer jest tymczasowo niedostępny. Spróbuj ponownie za chwilę.')
+      throw new Error(i18n.t('serviceUnavailable', { ns: 'errors' }))
     }
     if (response.status === 404) {
-      throw new Error('Nie znaleziono zasobu.')
+      throw new Error(i18n.t('notFound', { ns: 'errors' }))
     }
     if (response.status === 403) {
-      throw new Error('Brak uprawnień do wykonania tej operacji.')
+      throw new Error(i18n.t('forbidden', { ns: 'errors' }))
     }
-    throw new Error(`Wystąpił błąd (${response.status}). Spróbuj ponownie.`)
+    throw new Error(i18n.t('generic', { status: response.status, ns: 'errors' }))
   }
 
   if (response.status === 204) {
@@ -155,6 +157,11 @@ export const authApi = {
     fetchApi<void>('/user/me/notifications', {
       method: 'PUT',
       body: JSON.stringify({ enabled }),
+    }),
+  updateLanguage: (language: string) =>
+    fetchApi<void>('/user/me/language', {
+      method: 'PUT',
+      body: JSON.stringify({ language }),
     }),
 }
 

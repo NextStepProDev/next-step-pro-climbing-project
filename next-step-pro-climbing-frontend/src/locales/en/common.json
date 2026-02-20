@@ -1,0 +1,42 @@
+{
+  "nav": {
+    "home": "Home",
+    "calendar": "Calendar",
+    "myReservations": "My reservations",
+    "admin": "Admin",
+    "profile": "Profile",
+    "logout": "Log out",
+    "login": "Log in",
+    "closeMenu": "Close menu",
+    "openMenu": "Open menu"
+  },
+  "footer": {
+    "description": "Climbing courses tailored to your level and goals. Train under the guidance of experienced instructors and develop your skills consciously.",
+    "contact": "Contact",
+    "hours": "Opening hours",
+    "weekdays": "Monday - Friday",
+    "saturday": "Saturday",
+    "sunday": "Sunday",
+    "seeCalendar": "calendar",
+    "instructor": "Mateusz Nawratek PZA instructor",
+    "copyright": "All rights reserved."
+  },
+  "confirm": "Confirm",
+  "cancel": "Cancel",
+  "close": "Close",
+  "save": "Save",
+  "delete": "Delete",
+  "edit": "Edit",
+  "loading": "Loading...",
+  "callPhone": "Call",
+  "eventTypes": {
+    "COURSE": "Course",
+    "TRAINING": "Training",
+    "WORKSHOP": "Workshop"
+  },
+  "allDay": "All day",
+  "participants_one": "{{count}} participant",
+  "participants_few": "{{count}} participants",
+  "participants_many": "{{count}} participants",
+  "maxParticipants": "Max. {{count}} participants"
+}

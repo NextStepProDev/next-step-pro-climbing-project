@@ -1,0 +1,25 @@
+{
+  "title": "My reservations",
+  "subtitle": "Upcoming sessions you are signed up for.",
+  "empty": {
+    "title": "No reservations",
+    "message": "You don't have any upcoming sessions.",
+    "goToCalendar": "Go to calendar"
+  },
+  "events": "Events",
+  "trainings": "Training sessions",
+  "cancelEvent": "Cancel event",
+  "cancelSlot": "Cancel",
+  "archive": "Archive",
+  "noPastReservations": "No past reservations.",
+  "confirmCancel": {
+    "title": "Cancel reservation",
+    "eventMessage": "Are you sure you want to cancel your signup for this entire event?",
+    "slotMessage": "Are you sure you want to cancel this reservation?",
+    "confirm": "Yes, cancel"
+  },
+  "spotsReserved": "{{count}} spots reserved",
+  "cancelledByAdmin": "Cancelled by instructor",
+  "cancelled": "Cancelled",
+  "totalItems": "{{count}} items"
+}

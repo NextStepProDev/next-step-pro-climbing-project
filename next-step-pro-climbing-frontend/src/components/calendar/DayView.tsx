@@ -1,10 +1,11 @@
 import { useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { format } from "date-fns";
-import { pl } from "date-fns/locale";
 import { ArrowLeft, Clock, Calendar, Users, Plus } from "lucide-react";
 import clsx from "clsx";
 import type { TimeSlot, EventSummary } from "../../types";
 import { formatAvailability, getEventColor } from "../../utils/events";
+import { useDateLocale } from "../../utils/dateFnsLocale";
 
 interface DayViewProps {
   date: string;
@@ -27,6 +28,8 @@ function SlotButton({
   slot: TimeSlot;
   onSlotClick: (slotId: string) => void;
 }) {
+  const { t } = useTranslation('calendar');
+
   return (
     <button
       onClick={() => onSlotClick(slot.id)}
@@ -57,32 +60,32 @@ function SlotButton({
         <div className="flex items-center gap-2">
           {slot.isUserRegistered && (
             <span className="px-2 py-1 text-xs font-medium bg-primary-500/20 text-primary-400 rounded">
-              Twoja rezerwacja
+              {t('day.yourReservation')}
             </span>
           )}
           {slot.status === "AVAILABLE" && !slot.isUserRegistered && (
             <span className="px-2 py-1 text-xs font-medium bg-primary-500/10 text-primary-400 rounded">
-              Dostępne
+              {t('day.available')}
             </span>
           )}
           {slot.status === "FULL" && !slot.isUserRegistered && (
             <span className="px-2 py-1 text-xs font-medium bg-amber-500/10 text-amber-400 rounded">
-              Pełne
+              {t('day.full')}
             </span>
           )}
           {slot.status === "BLOCKED" && (
             <span className="px-2 py-1 text-xs font-medium bg-dark-700 text-dark-400 rounded">
-              Zarezerwowane
+              {t('day.blocked')}
             </span>
           )}
           {slot.status === "BOOKING_CLOSED" && !slot.isUserRegistered && (
             <span className="px-2 py-1 text-xs font-medium bg-amber-500/10 text-amber-400 rounded">
-              Zadzwoń
+              {t('day.bookingClosed')}
             </span>
           )}
           {slot.status === "PAST" && (
             <span className="px-2 py-1 text-xs font-medium bg-dark-700 text-dark-500 rounded">
-              Zakończone
+              {t('day.past')}
             </span>
           )}
         </div>
@@ -104,6 +107,8 @@ export function DayView({
   onEventClick,
   onAddSlot,
 }: DayViewProps) {
+  const { t } = useTranslation('calendar');
+  const locale = useDateLocale();
   const dateObj = new Date(date);
 
   const { eventSlotGroups, standaloneSlots } = useMemo(() => {
@@ -154,13 +159,13 @@ export function DayView({
         </button>
 
         <h2 className="text-lg font-semibold text-dark-100 capitalize flex-1">
-          {format(dateObj, "EEEE, d MMMM yyyy", { locale: pl })}
+          {format(dateObj, "EEEE, d MMMM yyyy", { locale })}
         </h2>
 
         {onAddSlot && (
           <button
             onClick={onAddSlot}
-            title="Dodaj termin"
+            title={t('createSlot.title')}
             className="p-2 text-dark-400 hover:text-primary-400 hover:bg-dark-800 rounded-lg transition-colors"
           >
             <Plus className="w-5 h-5" />
@@ -172,7 +177,7 @@ export function DayView({
       <div className="p-4 space-y-6">
         {!hasAnyContent ? (
           <div className="text-center py-8 text-dark-400">
-            Brak dostępnych godzin w tym dniu
+            {t('day.noSlots')}
           </div>
         ) : (
           <>
@@ -201,11 +206,11 @@ export function DayView({
                             {" "}
                             ·{" "}
                             {format(new Date(event.startDate), "d", {
-                              locale: pl,
+                              locale,
                             })}{" "}
                             -{" "}
                             {format(new Date(event.endDate), "d MMMM", {
-                              locale: pl,
+                              locale,
                             })}
                           </span>
                         )}
@@ -253,11 +258,11 @@ export function DayView({
                           <span className="flex items-center gap-1">
                             <Calendar className="w-4 h-4" />
                             {format(new Date(event.startDate), "d", {
-                              locale: pl,
+                              locale,
                             })}{" "}
                             -{" "}
                             {format(new Date(event.endDate), "d MMMM", {
-                              locale: pl,
+                              locale,
                             })}
                           </span>
                         )}
@@ -272,7 +277,7 @@ export function DayView({
             {standaloneSlots.length > 0 && (
               <div>
                 <h3 className="text-base font-semibold text-primary-400 mb-3">
-                  Trening
+                  {t('day.training')}
                 </h3>
 
                 <div className="space-y-3">

@@ -1,0 +1,38 @@
+{
+  "hero": {
+    "subtitle": "Profesjonalna szkoła wspinaczkowa. Kursy, treningi i warsztaty dla każdego poziomu zaawansowania.",
+    "viewCalendar": "Zobacz kalendarz",
+    "seeOffer": "Poznaj ofertę"
+  },
+  "offer": {
+    "title": "Nasza oferta",
+    "subtitle": "Wybierz formę treningu dopasowaną do Twoich potrzeb i poziomu zaawansowania",
+    "courses": {
+      "title": "Kursy",
+      "description": "Kursy wspinaczkowe przygotowujące do samodzielnego i bezpiecznego wspinania w skałach oraz na sztucznej ścianie. Szkolenia prowadzone są przez doświadczonych instruktorów PZA.",
+      "item1": "Kurs wspinaczkowy po drogach ubezpieczonych wg programu PZA - 900zł",
+      "item2": "Wspinaczka wielowyciągowa po drogach ubezpieczonych 2 dni - 800zł",
+      "item3": "Kurs autoratownictwa 1 - 2 dni - 700zł"
+    },
+    "trainings": {
+      "title": "Treningi",
+      "description": "Regularne sesje treningowe w małych grupach lub indywidualnie. Rozwijaj siłę, technikę i wytrzymałość pod okiem trenerów Next Step Pro Climbing.",
+      "item1": "Treningi indywidualne",
+      "item2": "Sekcje wspinaczkowe",
+      "item3": "Wspinanie w skałach",
+      "item4": "Treningi klasy mistrzowskiej"
+    },
+    "workshops": {
+      "title": "Warsztaty",
+      "description": "Specjalistyczne zajęcia tematyczne. Skup się na konkretnych aspektach wspinaczki w intensywnej formie.",
+      "item1": "Doskonalenie techniki wspinaczkowej",
+      "item2": "Mastermind",
+      "item3": "Wybrane techniki linowe i asekuracyjne"
+    }
+  },
+  "cta": {
+    "title": "Gotowy na pierwszy krok?",
+    "subtitle": "Sprawdź dostępne terminy i zapisz się na wybrane zajęcia. Czekamy na Ciebie!",
+    "button": "Przejdź do kalendarza"
+  }
+}

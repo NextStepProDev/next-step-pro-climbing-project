@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { format } from 'date-fns'
 import { Calendar, MapPin, Users } from 'lucide-react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
@@ -11,12 +12,6 @@ import { reservationApi } from '../../api/client'
 import { getErrorMessage } from '../../utils/errors'
 import type { EventSummary } from '../../types'
 
-const EVENT_TYPE_LABELS: Record<string, string> = {
-  COURSE: 'Kurs',
-  TRAINING: 'Trening',
-  WORKSHOP: 'Warsztat',
-}
-
 interface EventSignupModalProps {
   event: EventSummary | null
   isOpen: boolean
@@ -24,6 +19,8 @@ interface EventSignupModalProps {
 }
 
 export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalProps) {
+  const { t } = useTranslation('calendar')
+  const { t: tc } = useTranslation('common')
   const { isAuthenticated } = useAuth()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
@@ -63,12 +60,12 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
   }
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Zapisz się na wydarzenie">
+    <Modal isOpen={isOpen} onClose={onClose} title={t('event.title')}>
       <div className="space-y-6">
         {/* Event type badge */}
         <div>
           <span className="inline-block px-2 py-1 text-xs font-medium rounded bg-primary-500/20 text-primary-400">
-            {EVENT_TYPE_LABELS[event.eventType] || event.eventType}
+            {tc(`eventTypes.${event.eventType}`)}
           </span>
         </div>
 
@@ -103,9 +100,9 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
         <div className="flex items-center gap-2 text-dark-300">
           <Users className="w-5 h-5" />
           <span>
-            {event.currentParticipants} / {event.maxParticipants} uczestników
+            {t('event.participants', { current: event.currentParticipants, max: event.maxParticipants })}
             {spotsLeft > 0 && (
-              <span className="text-primary-400 ml-2">({spotsLeft} wolnych)</span>
+              <span className="text-primary-400 ml-2">{t('event.spotsFree', { count: spotsLeft })}</span>
             )}
           </span>
         </div>
@@ -114,7 +111,7 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
         {event.isUserRegistered && (
           <div className="p-3 bg-primary-500/10 border border-primary-500/20 rounded-lg">
             <span className="text-primary-400 font-medium">
-              Masz rezerwację na to wydarzenie
+              {t('event.hasReservation')}
             </span>
           </div>
         )}
@@ -123,7 +120,7 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
         {enrollmentClosed && !event.isUserRegistered && (
           <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg">
             <span className="text-amber-400 text-sm">
-              Rezerwacja online jest możliwa do 12 godzin przed wydarzeniem. Skontaktuj się z instruktorem telefonicznie, aby sprawdzić dostępność.
+              {t('event.bookingClosed')}
             </span>
           </div>
         )}
@@ -133,7 +130,7 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
           <>
             {spotsLeft > 1 && (
               <div>
-                <label className="block text-sm text-dark-400 mb-1">Liczba miejsc</label>
+                <label className="block text-sm text-dark-400 mb-1">{t('event.spotsLabel')}</label>
                 <div className="flex items-center gap-3">
                   <button
                     type="button"
@@ -150,7 +147,7 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
                   >
                     +
                   </button>
-                  <span className="text-sm text-dark-500">z {spotsLeft} wolnych</span>
+                  <span className="text-sm text-dark-500">{t('event.spotsOf', { count: spotsLeft })}</span>
                 </div>
               </div>
             )}
@@ -158,7 +155,7 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
               <textarea
                 value={comment}
                 onChange={(e) => setComment(e.target.value.slice(0, 500))}
-                placeholder="Komentarz dla instruktora (opcjonalny)..."
+                placeholder={t('event.commentPlaceholder')}
                 maxLength={500}
                 rows={2}
                 className="w-full bg-dark-800 border border-dark-700 rounded-lg px-4 py-2 text-dark-100 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary-500 placeholder:text-dark-500"
@@ -172,7 +169,7 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
         <div className="flex gap-3 pt-4 border-t border-dark-800">
           {enrollmentClosed && !event.isUserRegistered ? (
             <Button variant="ghost" className="flex-1" onClick={onClose}>
-              Zamknij
+              {t('event.close')}
             </Button>
           ) : !isAuthenticated ? (
             <Button
@@ -180,7 +177,7 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
               className="flex-1"
               onClick={handleLoginRedirect}
             >
-              Zaloguj się, aby zarezerwować
+              {t('event.loginToBook')}
             </Button>
           ) : event.isUserRegistered ? (
             <Button
@@ -189,7 +186,7 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
               loading={cancelMutation.isPending}
               onClick={() => cancelMutation.mutate(event.id)}
             >
-              Anuluj zapis na wydarzenie
+              {t('event.cancelSignup')}
             </Button>
           ) : isFull ? (
             <Button
@@ -197,7 +194,7 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
               className="flex-1"
               disabled
             >
-              Brak miejsc
+              {t('event.noSpots')}
             </Button>
           ) : (
             <Button
@@ -210,13 +207,13 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
                 participants,
               })}
             >
-              {participants > 1 ? `Zapisz ${participants} osoby` : 'Zapisz się'}
+              {participants > 1 ? t('event.bookMultiple', { count: participants }) : t('event.bookSingle')}
             </Button>
           )}
 
           {!(enrollmentClosed && !event.isUserRegistered) && (
             <Button variant="ghost" onClick={onClose}>
-              Zamknij
+              {t('event.close')}
             </Button>
           )}
         </div>

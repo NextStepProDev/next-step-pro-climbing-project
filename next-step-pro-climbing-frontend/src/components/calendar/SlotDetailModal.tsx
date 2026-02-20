@@ -1,6 +1,6 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { format } from "date-fns";
-import { pl } from "date-fns/locale";
 import { Clock, Users, Calendar } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
@@ -10,6 +10,7 @@ import { useAuth } from "../../context/AuthContext";
 import { saveRedirectPath } from "../../utils/redirect";
 import { reservationApi } from "../../api/client";
 import { getErrorMessage } from "../../utils/errors";
+import { useDateLocale } from "../../utils/dateFnsLocale";
 import type { TimeSlotDetail } from "../../types";
 
 interface SlotDetailModalProps {
@@ -23,6 +24,8 @@ export function SlotDetailModal({
   isOpen,
   onClose,
 }: SlotDetailModalProps) {
+  const { t } = useTranslation('calendar');
+  const locale = useDateLocale();
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -70,14 +73,14 @@ export function SlotDetailModal({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Szczegóły terminu">
+    <Modal isOpen={isOpen} onClose={onClose} title={t('slot.title')}>
       <div className="space-y-6">
         {/* Date and time */}
         <div className="flex items-center gap-4 text-dark-300">
           <div className="flex items-center gap-2">
             <Calendar className="w-5 h-5" />
             <span className="capitalize">
-              {format(dateObj, "EEEE, d MMMM", { locale: pl })}
+              {format(dateObj, "EEEE, d MMMM", { locale })}
             </span>
           </div>
           <div className="flex items-center gap-2">
@@ -102,9 +105,9 @@ export function SlotDetailModal({
         <div className="flex items-center gap-2 text-dark-300">
           <Users className="w-5 h-5" />
           <span>
-            {slot.currentParticipants} / {slot.maxParticipants} uczestników
+            {t('slot.participants', { current: slot.currentParticipants, max: slot.maxParticipants })}
             {spotsLeft > 0 && (
-              <span className="text-primary-400 ml-2">({spotsLeft} wolne)</span>
+              <span className="text-primary-400 ml-2">{t('slot.spotsFree', { count: spotsLeft })}</span>
             )}
           </span>
         </div>
@@ -113,7 +116,7 @@ export function SlotDetailModal({
         {isPast && (
           <div className="p-3 bg-dark-800 border border-dark-700 rounded-lg">
             <span className="text-dark-400 text-sm">
-              Ten termin już się zakończył
+              {t('slot.past')}
             </span>
           </div>
         )}
@@ -122,7 +125,7 @@ export function SlotDetailModal({
         {isBookingClosed && !slot.isUserRegistered && (
           <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg">
             <span className="text-amber-400 text-sm">
-              Rezerwacja online jest możliwa do 12 godzin przed terminem. Skontaktuj się z instruktorem telefonicznie, aby sprawdzić dostępność.
+              {t('slot.bookingClosed')}
             </span>
           </div>
         )}
@@ -131,7 +134,7 @@ export function SlotDetailModal({
         {slot.isUserRegistered && (
           <div className="p-3 bg-primary-500/10 border border-primary-500/20 rounded-lg">
             <span className="text-primary-400 font-medium">
-              Masz rezerwację na ten termin
+              {t('slot.hasReservation')}
             </span>
           </div>
         )}
@@ -142,7 +145,7 @@ export function SlotDetailModal({
             {spotsLeft > 1 && (
               <div>
                 <label className="block text-sm text-dark-400 mb-1">
-                  Liczba miejsc
+                  {t('slot.spotsLabel')}
                 </label>
                 <div className="flex items-center gap-3">
                   <button
@@ -167,7 +170,7 @@ export function SlotDetailModal({
                     +
                   </button>
                   <span className="text-sm text-dark-500">
-                    z {spotsLeft} wolnych
+                    {t('slot.spotsOf', { count: spotsLeft })}
                   </span>
                 </div>
               </div>
@@ -176,7 +179,7 @@ export function SlotDetailModal({
               <textarea
                 value={comment}
                 onChange={(e) => setComment(e.target.value.slice(0, 500))}
-                placeholder="Komentarz dla instruktora (opcjonalny)..."
+                placeholder={t('slot.commentPlaceholder')}
                 maxLength={500}
                 rows={2}
                 className="w-full bg-dark-800 border border-dark-700 rounded-lg px-4 py-2 text-dark-100 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary-500 placeholder:text-dark-500"
@@ -196,7 +199,7 @@ export function SlotDetailModal({
               className="flex-1"
               onClick={handleLoginRedirect}
             >
-              Zaloguj się, aby zarezerwować
+              {t('slot.loginToBook')}
             </Button>
           ) : slot.isUserRegistered && slot.reservationId ? (
             <Button
@@ -207,9 +210,9 @@ export function SlotDetailModal({
                 cancelMutation.mutate(slot.reservationId as string)
               }
             >
-              Anuluj rezerwację
+              {t('slot.cancelReservation')}
             </Button>
-          
+
           ) : isAvailable ? (
             <Button
               variant="primary"
@@ -223,7 +226,7 @@ export function SlotDetailModal({
                 })
               }
             >
-              {participants > 1 ? `Zapisz ${participants} osoby` : "Zapisz się"}
+              {participants > 1 ? t('slot.bookMultiple', { count: participants }) : t('slot.bookSingle')}
             </Button>
           ) : (
             <Button
@@ -231,12 +234,12 @@ export function SlotDetailModal({
               className="flex-1 cursor-not-allowed opacity-50"
               disabled
             >
-              Brak dostępnych miejsc
+              {t('slot.noSpots')}
             </Button>
           )}
 
           <Button variant="ghost" onClick={onClose}>
-            Zamknij
+            {t('slot.close')}
           </Button>
         </div>
 

@@ -8,6 +8,7 @@ import pl.nextsteppro.climbing.domain.reservation.Reservation;
 import pl.nextsteppro.climbing.domain.reservation.ReservationRepository;
 import pl.nextsteppro.climbing.domain.user.User;
 import pl.nextsteppro.climbing.domain.user.UserRepository;
+import pl.nextsteppro.climbing.infrastructure.i18n.MessageService;
 import pl.nextsteppro.climbing.infrastructure.mail.AuthMailService;
 
 import java.util.UUID;
@@ -21,17 +22,20 @@ public class UserService {
     private final AuthMailService authMailService;
     private final ReservationRepository reservationRepository;
     private final AuthTokenRepository authTokenRepository;
+    private final MessageService msg;
 
     public UserService(UserRepository userRepository,
                        PasswordEncoder passwordEncoder,
                        AuthMailService authMailService,
                        ReservationRepository reservationRepository,
-                       AuthTokenRepository authTokenRepository) {
+                       AuthTokenRepository authTokenRepository,
+                       MessageService msg) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.authMailService = authMailService;
         this.reservationRepository = reservationRepository;
         this.authTokenRepository = authTokenRepository;
+        this.msg = msg;
     }
 
     public void changePassword(UUID userId, String currentPassword, String newPassword) {
@@ -39,11 +43,11 @@ public class UserService {
             .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
         if (!user.hasPassword()) {
-            throw new IllegalStateException("Konto nie posiada hasła (logowanie przez OAuth)");
+            throw new IllegalStateException(msg.get("user.no.password"));
         }
 
         if (!passwordEncoder.matches(currentPassword, user.getPasswordHash())) {
-            throw new IllegalStateException("Nieprawidłowe aktualne hasło");
+            throw new IllegalStateException(msg.get("user.wrong.current.password"));
         }
 
         user.setPasswordHash(passwordEncoder.encode(newPassword));
@@ -57,11 +61,11 @@ public class UserService {
             .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
         if (!user.hasPassword()) {
-            throw new IllegalStateException("Konto nie posiada hasła (logowanie przez OAuth)");
+            throw new IllegalStateException(msg.get("user.no.password"));
         }
 
         if (!passwordEncoder.matches(password, user.getPasswordHash())) {
-            throw new IllegalStateException("Nieprawidłowe hasło");
+            throw new IllegalStateException(msg.get("user.wrong.password"));
         }
 
         // Cancel all confirmed reservations
@@ -84,6 +88,14 @@ public class UserService {
             .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
         user.setEmailNotificationsEnabled(enabled);
+        userRepository.save(user);
+    }
+
+    public void updateLanguagePreference(UUID userId, String language) {
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        user.setPreferredLanguage(language);
         userRepository.save(user);
     }
 }

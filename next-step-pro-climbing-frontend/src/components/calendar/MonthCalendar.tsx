@@ -1,10 +1,11 @@
 import { useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isToday, isBefore, startOfDay } from 'date-fns'
-import { pl } from 'date-fns/locale'
 import clsx from 'clsx'
 import type { DaySummary, EventSummary } from '../../types'
 import { buildEventColorMap, getEventColor, pluralizeTraining } from '../../utils/events'
+import { useDateLocale } from '../../utils/dateFnsLocale'
 
 interface MonthCalendarProps {
   currentMonth: Date
@@ -15,9 +16,15 @@ interface MonthCalendarProps {
   allDaysClickable?: boolean
 }
 
-const WEEKDAYS = ['Pon', 'Wt', 'Śr', 'Czw', 'Pt', 'Sob', 'Nd']
-
 export function MonthCalendar({ currentMonth, onMonthChange, days, events, onDayClick, allDaysClickable }: MonthCalendarProps) {
+  const { t } = useTranslation('calendar')
+  const locale = useDateLocale()
+
+  const weekdays = [
+    t('weekdays.mon'), t('weekdays.tue'), t('weekdays.wed'),
+    t('weekdays.thu'), t('weekdays.fri'), t('weekdays.sat'), t('weekdays.sun'),
+  ]
+
   const calendarDays = useMemo(() => {
     const start = startOfMonth(currentMonth)
     const end = endOfMonth(currentMonth)
@@ -79,7 +86,7 @@ export function MonthCalendar({ currentMonth, onMonthChange, days, events, onDay
           <ChevronLeft className="w-5 h-5" />
         </button>
         <h2 className="text-lg font-semibold text-dark-100 capitalize">
-          {format(currentMonth, 'LLLL yyyy', { locale: pl })}
+          {format(currentMonth, 'LLLL yyyy', { locale })}
         </h2>
         <button
           onClick={goToNextMonth}
@@ -91,7 +98,7 @@ export function MonthCalendar({ currentMonth, onMonthChange, days, events, onDay
 
       {/* Weekday headers */}
       <div className="grid grid-cols-7 border-b border-dark-800">
-        {WEEKDAYS.map((day) => (
+        {weekdays.map((day) => (
           <div
             key={day}
             className="py-2 text-center text-sm font-medium text-dark-500"
@@ -161,7 +168,7 @@ export function MonthCalendar({ currentMonth, onMonthChange, days, events, onDay
                 </div>
               ) : dayData && dayData.totalSlots > 0 && dayData.availableSlots === 0 && !hasEvents && !isPast ? (
                 <div className="text-xs text-amber-400 font-medium">
-                  Brak miejsc
+                  {t('noSpots')}
                 </div>
               ) : null}
 

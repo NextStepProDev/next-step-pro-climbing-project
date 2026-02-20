@@ -76,7 +76,7 @@ record CreateEventRequest(
     @Nullable LocalTime startTime,
     @Nullable LocalTime endTime
 ) {
-    @AssertTrue(message = "Data zakończenia nie może być wcześniejsza niż data rozpoczęcia")
+    @AssertTrue(message = "{validation.event.date.range}")
     boolean isDateRangeValid() {
         return startDate == null || endDate == null || !endDate.isBefore(startDate);
     }

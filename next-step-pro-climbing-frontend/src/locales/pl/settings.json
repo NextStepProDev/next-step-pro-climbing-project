@@ -1,0 +1,28 @@
+{
+  "title": "Ustawienia",
+  "changePassword": {
+    "title": "Zmiana hasła",
+    "currentPassword": "Aktualne hasło",
+    "newPassword": "Nowe hasło",
+    "confirmPassword": "Potwierdź nowe hasło",
+    "submit": "Zmień hasło",
+    "tooShort": "Hasło musi mieć co najmniej 8 znaków",
+    "mismatch": "Hasła nie są zgodne",
+    "success": "Hasło zostało zmienione"
+  },
+  "notifications": {
+    "title": "Powiadomienia email",
+    "reservations": "Powiadomienia o rezerwacjach",
+    "description": "Potwierdzenia rezerwacji, anulowania i powiadomienia z listy rezerwowej"
+  },
+  "deleteAccount": {
+    "title": "Usuwanie konta",
+    "description": "Ta operacja jest nieodwracalna. Wszystkie Twoje rezerwacje zostaną anulowane, a dane konta trwale usunięte.",
+    "button": "Usuń konto",
+    "modalTitle": "Potwierdzenie usuwania konta",
+    "modalMessage": "Aby potwierdzić usunięcie konta, wpisz swoje hasło:",
+    "passwordPlaceholder": "Twoje hasło",
+    "confirmDelete": "Usuń konto na stałe",
+    "cancel": "Anuluj"
+  }
+}

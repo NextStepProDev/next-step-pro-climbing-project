@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { adminApi } from '../../api/client'
 import { getErrorMessage } from '../../utils/errors'
@@ -20,6 +21,7 @@ export function CreateSlotModal({
   defaultDate,
   onSuccess,
 }: CreateSlotModalProps) {
+  const { t } = useTranslation('calendar')
   const [form, setForm] = useState<CreateTimeSlotRequest & { title: string }>({
     date: defaultDate,
     startTime: '10:00',
@@ -40,11 +42,11 @@ export function CreateSlotModal({
   })
 
   const timeError = form.endTime <= form.startTime
-    ? 'Godzina zakończenia musi być późniejsza niż rozpoczęcia'
+    ? t('createSlot.endAfterStart')
     : null
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Dodaj nowy termin">
+    <Modal isOpen={isOpen} onClose={onClose} title={t('createSlot.title')}>
       <form
         onSubmit={(e) => {
           e.preventDefault()
@@ -55,19 +57,19 @@ export function CreateSlotModal({
         className="space-y-4"
       >
         <div>
-          <label className="block text-sm text-dark-400 mb-1">Tytuł (np. "Trening na ściance")</label>
+          <label className="block text-sm text-dark-400 mb-1">{t('createSlot.slotTitle')}</label>
           <input
             type="text"
             value={form.title}
             onChange={(e) => setForm({ ...form, title: e.target.value })}
-            placeholder="Tytuł terminu (widoczny dla klientów)"
+            placeholder={t('createSlot.slotTitlePlaceholder')}
             maxLength={200}
             className="w-full bg-dark-800 border border-dark-700 rounded-lg px-4 py-2 text-dark-100"
           />
         </div>
 
         <div>
-          <label className="block text-sm text-dark-400 mb-1">Data</label>
+          <label className="block text-sm text-dark-400 mb-1">{t('createSlot.date')}</label>
           <input
             type="date"
             value={form.date}
@@ -82,12 +84,12 @@ export function CreateSlotModal({
         <div>
           <div className="grid grid-cols-2 gap-4">
             <TimeScrollPicker
-              label="Od"
+              label={t('createSlot.from')}
               value={form.startTime}
               onChange={(v) => setForm({ ...form, startTime: v })}
             />
             <TimeScrollPicker
-              label="Do"
+              label={t('createSlot.to')}
               value={form.endTime}
               onChange={(v) => setForm({ ...form, endTime: v })}
             />
@@ -98,7 +100,7 @@ export function CreateSlotModal({
         </div>
 
         <div>
-          <label className="block text-sm text-dark-400 mb-1">Maks. uczestników</label>
+          <label className="block text-sm text-dark-400 mb-1">{t('createSlot.maxParticipants')}</label>
           <input
             type="number"
             min={1}
@@ -110,10 +112,10 @@ export function CreateSlotModal({
 
         <div className="flex gap-3 pt-4">
           <Button type="submit" loading={createMutation.isPending} className="flex-1">
-            Utwórz termin
+            {t('createSlot.submit')}
           </Button>
           <Button type="button" variant="ghost" onClick={onClose}>
-            Anuluj
+            {t('createSlot.cancel')}
           </Button>
         </div>
 

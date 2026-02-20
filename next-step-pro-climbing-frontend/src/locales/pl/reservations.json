@@ -1,0 +1,25 @@
+{
+  "title": "Moje rezerwacje",
+  "subtitle": "Nadchodzące zajęcia, na które jesteś zapisany/a.",
+  "empty": {
+    "title": "Brak rezerwacji",
+    "message": "Nie masz żadnych nadchodzących zajęć.",
+    "goToCalendar": "Przejdź do kalendarza"
+  },
+  "events": "Wydarzenia",
+  "trainings": "Treningi",
+  "cancelEvent": "Anuluj wydarzenie",
+  "cancelSlot": "Anuluj",
+  "archive": "Archiwum",
+  "noPastReservations": "Brak minionych rezerwacji.",
+  "confirmCancel": {
+    "title": "Anuluj rezerwację",
+    "eventMessage": "Czy na pewno chcesz anulować zapis na całe wydarzenie?",
+    "slotMessage": "Czy na pewno chcesz anulować tę rezerwację?",
+    "confirm": "Tak, anuluj"
+  },
+  "spotsReserved": "{{count}} miejsca zarezerwowane",
+  "cancelledByAdmin": "Anulowany przez instruktora",
+  "cancelled": "Anulowany",
+  "totalItems": "{{count}} pozycji"
+}

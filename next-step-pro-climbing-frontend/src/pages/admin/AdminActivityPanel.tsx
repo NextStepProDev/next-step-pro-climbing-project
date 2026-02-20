@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 import { format } from 'date-fns'
-import { pl } from 'date-fns/locale'
 import {
   CalendarPlus,
   CalendarX,
@@ -13,46 +13,41 @@ import {
 import { adminApi } from '../../api/client'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
 import { QueryError } from '../../components/ui/QueryError'
+import { useDateLocale } from '../../utils/dateFnsLocale'
 import type { ActivityLog, ActivityActionType } from '../../types'
 
 const PAGE_SIZE = 20
 
 const ACTION_CONFIG: Record<
   ActivityActionType,
-  { label: string; icon: typeof CalendarPlus; color: string; bgColor: string }
+  { icon: typeof CalendarPlus; color: string; bgColor: string }
 > = {
   RESERVATION_CREATED: {
-    label: 'Nowa rezerwacja',
     icon: CalendarPlus,
     color: 'text-emerald-400',
     bgColor: 'bg-emerald-500/10',
   },
   RESERVATION_REACTIVATED: {
-    label: 'Ponowna rezerwacja',
     icon: CalendarCheck,
     color: 'text-emerald-400',
     bgColor: 'bg-emerald-500/10',
   },
   RESERVATION_CANCELLED: {
-    label: 'Anulacja rezerwacji',
     icon: CalendarX,
     color: 'text-rose-400',
     bgColor: 'bg-rose-500/10',
   },
   EVENT_RESERVATION_CREATED: {
-    label: 'Zapis na wydarzenie',
     icon: CalendarPlus,
     color: 'text-blue-400',
     bgColor: 'bg-blue-500/10',
   },
   EVENT_RESERVATION_CANCELLED: {
-    label: 'Anulacja wydarzenia',
     icon: CalendarX,
     color: 'text-rose-400',
     bgColor: 'bg-rose-500/10',
   },
   RESERVATION_CANCELLED_BY_ADMIN: {
-    label: 'Anulacja przez admina',
     icon: ShieldAlert,
     color: 'text-amber-400',
     bgColor: 'bg-amber-500/10',
@@ -60,6 +55,8 @@ const ACTION_CONFIG: Record<
 }
 
 export function AdminActivityPanel() {
+  const { t } = useTranslation('admin')
+  const locale = useDateLocale()
   const [allLogs, setAllLogs] = useState<ActivityLog[]>([])
   const [page, setPage] = useState(0)
   const [hasMore, setHasMore] = useState(true)
@@ -99,14 +96,14 @@ export function AdminActivityPanel() {
     <div>
       <div className="flex items-center justify-between mb-4">
         <p className="text-sm text-dark-400">
-          Aktywność klientów (auto-odświeżanie co 30s)
+          {t('activity.title')}
         </p>
         <button
           onClick={handleRefresh}
           className="flex items-center gap-1.5 text-sm text-dark-400 hover:text-dark-200 transition-colors"
         >
           <RefreshCw className="w-3.5 h-3.5" />
-          Odśwież
+          {t('activity.refresh')}
         </button>
       </div>
 
@@ -116,7 +113,7 @@ export function AdminActivityPanel() {
         <QueryError error={error} onRetry={handleRefresh} />
       ) : allLogs.length === 0 ? (
         <div className="bg-dark-900 rounded-lg border border-dark-800 p-8 text-center text-dark-400">
-          Brak aktywności do wyświetlenia
+          {t('activity.noActivity')}
         </div>
       ) : (
         <>
@@ -150,13 +147,13 @@ export function AdminActivityPanel() {
                       <span
                         className={`inline-flex px-2 py-0.5 text-xs rounded font-medium ${config.bgColor} ${config.color}`}
                       >
-                        {config.label}
+                        {t(`activity.actions.${log.actionType}`)}
                       </span>
 
                       {/* Slot info */}
                       {log.slotDate && (
                         <span className="text-dark-300 text-xs">
-                          {format(new Date(log.slotDate), 'd MMM yyyy', { locale: pl })}
+                          {format(new Date(log.slotDate), 'd MMM yyyy', { locale })}
                           {log.slotStartTime && log.slotEndTime && (
                             <>
                               {' '}
@@ -176,9 +173,9 @@ export function AdminActivityPanel() {
                           {log.eventStartDate && log.eventEndDate && (
                             <span className="text-dark-500">
                               {' '}
-                              ({format(new Date(log.eventStartDate), 'd MMM', { locale: pl })}
+                              ({format(new Date(log.eventStartDate), 'd MMM', { locale })}
                               {' - '}
-                              {format(new Date(log.eventEndDate), 'd MMM yyyy', { locale: pl })})
+                              {format(new Date(log.eventEndDate), 'd MMM yyyy', { locale })})
                             </span>
                           )}
                         </span>
@@ -187,7 +184,7 @@ export function AdminActivityPanel() {
                       {/* Participants */}
                       {log.participants != null && log.participants > 1 && (
                         <span className="text-dark-500 text-xs">
-                          ({log.participants} os.)
+                          {t('activity.persons', { count: log.participants })}
                         </span>
                       )}
                     </div>
@@ -196,7 +193,7 @@ export function AdminActivityPanel() {
                   {/* Timestamp */}
                   <div className="flex-shrink-0 text-right">
                     <div className="text-dark-500 text-xs">
-                      {format(new Date(log.createdAt), 'd MMM', { locale: pl })}
+                      {format(new Date(log.createdAt), 'd MMM', { locale })}
                     </div>
                     <div className="text-dark-500 text-xs">
                       {format(new Date(log.createdAt), 'HH:mm')}
@@ -220,7 +217,7 @@ export function AdminActivityPanel() {
                 ) : (
                   <>
                     <ChevronDown className="w-4 h-4" />
-                    Załaduj więcej
+                    {t('activity.loadMore')}
                   </>
                 )}
               </button>

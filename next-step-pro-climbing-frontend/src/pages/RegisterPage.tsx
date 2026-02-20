@@ -1,11 +1,13 @@
 import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { registerUser } from '../api/auth'
 import { validatePassword } from '../utils/validation'
 import { Button } from '../components/ui/Button'
 import logoWhite from '../assets/logo/logo-white.png'
 
 export function RegisterPage() {
+  const { t } = useTranslation('auth')
   const [form, setForm] = useState({
     email: '',
     password: '',
@@ -47,7 +49,7 @@ export function RegisterPage() {
       })
       setSuccess(true)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Wystąpił błąd rejestracji')
+      setError(err instanceof Error ? err.message : t('register.error'))
     } finally {
       setLoading(false)
     }
@@ -62,15 +64,15 @@ export function RegisterPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
             </svg>
           </div>
-          <h2 className="text-xl font-bold text-dark-100 mb-2">Rejestracja zakończona</h2>
+          <h2 className="text-xl font-bold text-dark-100 mb-2">{t('register.successTitle')}</h2>
           <p className="text-dark-400 mb-6">
-            Sprawdź swoją skrzynkę email i kliknij w link weryfikacyjny, aby aktywować konto.
+            {t('register.successMessage')}
           </p>
           <Link
             to="/login"
             className="text-primary-400 hover:text-primary-300 font-medium"
           >
-            Przejdź do logowania
+            {t('register.goToLogin')}
           </Link>
         </div>
       </div>
@@ -82,14 +84,14 @@ export function RegisterPage() {
       <div className="bg-dark-900 rounded-xl p-8 max-w-md w-full border border-dark-800">
         <div className="text-center mb-6">
           <img src={logoWhite} alt="Next Step Pro Climbing" className="h-16 mx-auto mb-4" />
-          <h1 className="text-2xl font-bold text-dark-100">Zarejestruj się</h1>
+          <h1 className="text-2xl font-bold text-dark-100">{t('register.title')}</h1>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label htmlFor="firstName" className="block text-sm font-medium text-dark-300 mb-1">
-                Imię
+                {t('register.firstName')}
               </label>
               <input
                 id="firstName"
@@ -103,7 +105,7 @@ export function RegisterPage() {
             </div>
             <div>
               <label htmlFor="lastName" className="block text-sm font-medium text-dark-300 mb-1">
-                Nazwisko
+                {t('register.lastName')}
               </label>
               <input
                 id="lastName"
@@ -119,7 +121,7 @@ export function RegisterPage() {
 
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-dark-300 mb-1">
-              Email
+              {t('register.email')}
             </label>
             <input
               id="email"
@@ -128,13 +130,13 @@ export function RegisterPage() {
               value={form.email}
               onChange={(e) => updateField('email', e.target.value)}
               className="w-full px-3 py-2 bg-dark-800 border border-dark-700 rounded-lg text-dark-100 placeholder-dark-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-              placeholder="jan@example.com"
+              placeholder={t('register.emailPlaceholder')}
             />
           </div>
 
           <div>
             <label htmlFor="phone" className="block text-sm font-medium text-dark-300 mb-1">
-              Numer telefonu
+              {t('register.phone')}
             </label>
             <input
               id="phone"
@@ -143,13 +145,13 @@ export function RegisterPage() {
               value={form.phone}
               onChange={(e) => updateField('phone', e.target.value)}
               className="w-full px-3 py-2 bg-dark-800 border border-dark-700 rounded-lg text-dark-100 placeholder-dark-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-              placeholder="+48123456789"
+              placeholder={t('register.phonePlaceholder')}
             />
           </div>
 
           <div>
             <label htmlFor="password" className="block text-sm font-medium text-dark-300 mb-1">
-              Hasło
+              {t('register.password')}
             </label>
             <input
               id="password"
@@ -161,13 +163,13 @@ export function RegisterPage() {
               className="w-full px-3 py-2 bg-dark-800 border border-dark-700 rounded-lg text-dark-100 placeholder-dark-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             />
             <p className="text-xs text-dark-500 mt-1">
-              Min. 4 znaki
+              {t('register.passwordHint')}
             </p>
           </div>
 
           <div>
             <label htmlFor="confirmPassword" className="block text-sm font-medium text-dark-300 mb-1">
-              Potwierdź hasło
+              {t('register.confirmPassword')}
             </label>
             <input
               id="confirmPassword"
@@ -184,14 +186,14 @@ export function RegisterPage() {
           )}
 
           <Button type="submit" variant="primary" className="w-full" loading={loading}>
-            Zarejestruj się
+            {t('register.submit')}
           </Button>
         </form>
 
         <p className="mt-6 text-center text-sm text-dark-400">
-          Masz już konto?{' '}
+          {t('register.hasAccount')}{' '}
           <Link to="/login" className="text-primary-400 hover:text-primary-300">
-            Zaloguj się
+            {t('register.login')}
           </Link>
         </p>
       </div>

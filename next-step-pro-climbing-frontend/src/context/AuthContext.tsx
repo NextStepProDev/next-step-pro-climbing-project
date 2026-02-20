@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 import { authApi } from '../api/client'
 import { loginUser as apiLogin } from '../api/auth'
 import { saveTokens, clearTokens, hasTokens } from '../utils/tokenStorage'
@@ -19,8 +20,15 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient()
+  const { i18n } = useTranslation()
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+
+  const syncLanguage = useCallback((preferredLanguage: string) => {
+    if (preferredLanguage && preferredLanguage !== i18n.language) {
+      i18n.changeLanguage(preferredLanguage)
+    }
+  }, [i18n])
 
   const fetchUser = useCallback(async () => {
     if (!hasTokens()) {
@@ -31,13 +39,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const currentUser = await authApi.getCurrentUser()
       setUser(currentUser)
+      syncLanguage(currentUser.preferredLanguage)
     } catch {
       clearTokens()
       setUser(null)
     } finally {
       setIsLoading(false)
     }
-  }, [])
+  }, [syncLanguage])
 
   useEffect(() => {
     fetchUser()
@@ -58,6 +67,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     saveTokens(tokens)
     const currentUser = await authApi.getCurrentUser()
     setUser(currentUser)
+    syncLanguage(currentUser.preferredLanguage)
   }
 
   const logout = useCallback(() => {

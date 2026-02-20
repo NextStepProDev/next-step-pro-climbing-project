@@ -1,0 +1,95 @@
+{
+  "title": "Kalendarz",
+  "subtitle": "Wybierz dzień, aby zobaczyć dostępne godziny i zapisać się na zajęcia.",
+  "promo": {
+    "title": "Promocja tylko do końca lutego!!",
+    "description": "Kup 2 treningi i zapłać jak za dwa!!"
+  },
+  "eventsThisMonth": "Wydarzenia w tym miesiącu:",
+  "signedUp": "Zapisany",
+  "signUp": "Zapisz się",
+  "weekdays": {
+    "mon": "Pon",
+    "tue": "Wt",
+    "wed": "Śr",
+    "thu": "Czw",
+    "fri": "Pt",
+    "sat": "Sob",
+    "sun": "Nd"
+  },
+  "noSpots": "Brak miejsc",
+  "training_one": "{{count}} trening",
+  "training_few": "{{count}} treningi",
+  "training_many": "{{count}} treningów",
+  "day": {
+    "available": "Dostępne",
+    "full": "Pełne",
+    "blocked": "Zarezerwowane",
+    "bookingClosed": "Zadzwoń",
+    "past": "Zakończone",
+    "yourReservation": "Twoja rezerwacja",
+    "noSlots": "Brak dostępnych godzin w tym dniu",
+    "training": "Trening"
+  },
+  "slot": {
+    "title": "Szczegóły terminu",
+    "past": "Ten termin już się zakończył",
+    "bookingClosed": "Rezerwacja online jest możliwa do 12 godzin przed terminem. Skontaktuj się z instruktorem telefonicznie, aby sprawdzić dostępność.",
+    "hasReservation": "Masz rezerwację na ten termin",
+    "spotsLabel": "Liczba miejsc",
+    "spotsOf": "z {{count}} wolnych",
+    "commentPlaceholder": "Komentarz dla instruktora (opcjonalny)...",
+    "commentCount": "{{count}}/500",
+    "loginToBook": "Zaloguj się, aby zarezerwować",
+    "cancelReservation": "Anuluj rezerwację",
+    "noSpots": "Brak dostępnych miejsc",
+    "close": "Zamknij",
+    "bookMultiple": "{{count}} osoby",
+    "bookSingle": "Zapisz się",
+    "participants": "{{current}} / {{max}} uczestników",
+    "spotsFree": "({{count}} wolne)"
+  },
+  "event": {
+    "title": "Zapisz się na wydarzenie",
+    "bookingClosed": "Rezerwacja online jest możliwa do 12 godzin przed wydarzeniem. Skontaktuj się z instruktorem telefonicznie, aby sprawdzić dostępność.",
+    "hasReservation": "Masz rezerwację na to wydarzenie",
+    "spotsLabel": "Liczba miejsc",
+    "spotsOf": "z {{count}} wolnych",
+    "commentPlaceholder": "Komentarz dla instruktora (opcjonalny)...",
+    "commentCount": "{{count}}/500",
+    "loginToBook": "Zaloguj się, aby zarezerwować",
+    "cancelSignup": "Anuluj zapis na wydarzenie",
+    "noSpots": "Brak miejsc",
+    "close": "Zamknij",
+    "bookMultiple": "{{count}} osoby",
+    "bookSingle": "Zapisz się",
+    "participants": "{{current}} / {{max}} uczestników",
+    "spotsFree": "({{count}} wolnych)"
+  },
+  "eventPage": {
+    "notFound": "Nie znaleziono wydarzenia",
+    "notFoundDesc": "To wydarzenie nie istnieje lub zostało usunięte.",
+    "backToCalendar": "Wróć do kalendarza",
+    "maxParticipants": "Maks. {{count}} uczestników",
+    "description": "Opis",
+    "viewSlots": "Zobacz dostępne terminy"
+  },
+  "createSlot": {
+    "title": "Dodaj nowy termin",
+    "slotTitle": "Tytuł (np. \"Trening na ściance\")",
+    "slotTitlePlaceholder": "Tytuł terminu (widoczny dla klientów)",
+    "date": "Data",
+    "from": "Od",
+    "to": "Do",
+    "maxParticipants": "Maks. uczestników",
+    "endAfterStart": "Godzina zakończenia musi być późniejsza niż rozpoczęcia",
+    "submit": "Utwórz termin",
+    "cancel": "Anuluj"
+  },
+  "availability": {
+    "closed": "Zapisy zamknięte",
+    "noSpots": "Brak miejsc",
+    "oneSpot": "1 miejsce wolne",
+    "freeSpots": "{{free}}/{{max}} wolne"
+  }
+}

@@ -1,3 +1,5 @@
+import i18n from '../i18n'
+
 const API_BASE = '/api/auth'
 
 export interface RegisterRequest {
@@ -28,11 +30,14 @@ async function authFetch<T>(endpoint: string, body: unknown): Promise<T> {
   try {
     response = await fetch(`${API_BASE}${endpoint}`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept-Language': i18n.language,
+      },
       body: JSON.stringify(body),
     })
   } catch {
-    throw new Error('Nie udało się połączyć z serwerem. Sprawdź połączenie internetowe.')
+    throw new Error(i18n.t('network', { ns: 'errors' }))
   }
 
   if (!response.ok) {
@@ -42,9 +47,9 @@ async function authFetch<T>(endpoint: string, body: unknown): Promise<T> {
       throw new Error(serverMessage)
     }
     if (response.status >= 500) {
-      throw new Error('Błąd serwera. Spróbuj ponownie później.')
+      throw new Error(i18n.t('authServer', { ns: 'errors' }))
     }
-    throw new Error(`Wystąpił błąd (${response.status}). Spróbuj ponownie.`)
+    throw new Error(i18n.t('authGeneric', { status: response.status, ns: 'errors' }))
   }
 
   return response.json()

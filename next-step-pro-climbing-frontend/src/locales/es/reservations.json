@@ -1,0 +1,25 @@
+{
+  "title": "Mis reservas",
+  "subtitle": "Próximas sesiones en las que estás inscrito/a.",
+  "empty": {
+    "title": "Sin reservas",
+    "message": "No tienes ninguna sesión próxima.",
+    "goToCalendar": "Ir al calendario"
+  },
+  "events": "Eventos",
+  "trainings": "Entrenamientos",
+  "cancelEvent": "Cancelar evento",
+  "cancelSlot": "Cancelar",
+  "archive": "Archivo",
+  "noPastReservations": "No hay reservas pasadas.",
+  "confirmCancel": {
+    "title": "Cancelar reserva",
+    "eventMessage": "¿Estás seguro/a de que quieres cancelar la inscripción en todo el evento?",
+    "slotMessage": "¿Estás seguro/a de que quieres cancelar esta reserva?",
+    "confirm": "Sí, cancelar"
+  },
+  "spotsReserved": "{{count}} plazas reservadas",
+  "cancelledByAdmin": "Cancelado por el instructor",
+  "cancelled": "Cancelado",
+  "totalItems": "{{count}} elementos"
+}

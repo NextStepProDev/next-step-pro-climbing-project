@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { AlertTriangle } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { Button } from './Button'
 
 interface ConfirmModalProps {
@@ -20,10 +21,12 @@ export function ConfirmModal({
   onConfirm,
   title,
   message,
-  confirmText = 'Potwierdź',
-  cancelText = 'Anuluj',
+  confirmText,
+  cancelText,
   variant = 'danger',
 }: ConfirmModalProps) {
+  const { t } = useTranslation('common')
+
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden'
@@ -70,7 +73,7 @@ export function ConfirmModal({
           </div>
           <div className="flex gap-3 justify-end">
             <Button variant="ghost" size="sm" onClick={onClose}>
-              {cancelText}
+              {cancelText ?? t('cancel')}
             </Button>
             <Button
               variant={variant === 'danger' ? 'danger' : 'primary'}
@@ -80,7 +83,7 @@ export function ConfirmModal({
                 onClose()
               }}
             >
-              {confirmText}
+              {confirmText ?? t('confirm')}
             </Button>
           </div>
         </div>

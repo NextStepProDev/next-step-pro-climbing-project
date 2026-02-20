@@ -1,7 +1,8 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { format } from 'date-fns'
-import { pl } from 'date-fns/locale'
+import { useDateLocale } from '../utils/dateFnsLocale'
 import { Calendar, Clock, MessageSquare, Users, X, Ban, ChevronDown, ChevronRight, ChevronLeft } from 'lucide-react'
 import { reservationApi, calendarApi } from '../api/client'
 import { getErrorMessage } from '../utils/errors'
@@ -13,13 +14,8 @@ import { SlotDetailModal } from '../components/calendar/SlotDetailModal'
 import { EventSignupModal } from '../components/calendar/EventSignupModal'
 import type { MyReservations } from '../types'
 
-const EVENT_TYPE_LABELS: Record<string, string> = {
-  COURSE: 'Kurs',
-  TRAINING: 'Trening',
-  WORKSHOP: 'Warsztat',
-}
-
 export function MyReservationsPage() {
+  const { t } = useTranslation('reservations')
   const queryClient = useQueryClient()
   const [showArchive, setShowArchive] = useState(false)
   const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null)
@@ -104,10 +100,10 @@ export function MyReservationsPage() {
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-dark-100 mb-2">
-          Moje rezerwacje
+          {t('title')}
         </h1>
         <p className="text-dark-400">
-          Nadchodzące zajęcia, na które jesteś zapisany/a.
+          {t('subtitle')}
         </p>
       </div>
 
@@ -115,13 +111,13 @@ export function MyReservationsPage() {
         <div className="bg-dark-900 rounded-xl border border-dark-800 p-8 text-center">
           <Calendar className="w-12 h-12 text-dark-600 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-dark-300 mb-2">
-            Brak rezerwacji
+            {t('empty.title')}
           </h3>
           <p className="text-dark-500 mb-4">
-            Nie masz żadnych nadchodzących zajęć.
+            {t('empty.message')}
           </p>
           <a href="/calendar">
-            <Button variant="primary">Przejdź do kalendarza</Button>
+            <Button variant="primary">{t('empty.goToCalendar')}</Button>
           </a>
         </div>
       ) : (
@@ -153,7 +149,7 @@ export function MyReservationsPage() {
           className="flex items-center gap-2 text-sm text-dark-500 hover:text-dark-300 transition-colors mb-3"
         >
           {showArchive ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-          Archiwum
+          {t('archive')}
         </button>
 
         {showArchive && (
@@ -169,7 +165,7 @@ export function MyReservationsPage() {
               </div>
             )}
             {pastData && !hasPastData && (
-              <p className="text-dark-500 text-sm">Brak minionych rezerwacji.</p>
+              <p className="text-dark-500 text-sm">{t('noPastReservations')}</p>
             )}
             {pastData && hasPastData && (
               <PastReservations slots={pastSlots} events={pastEvents} />
@@ -208,6 +204,9 @@ function UpcomingReservations({
   onSlotClick: (slotId: string) => void
   onEventClick: (eventId: string) => void
 }) {
+  const { t } = useTranslation('reservations')
+  const { t: tc } = useTranslation('common')
+  const locale = useDateLocale()
   const [confirmCancel, setConfirmCancel] = useState<{ type: 'slot' | 'event'; id: string } | null>(null)
 
   return (
@@ -215,7 +214,7 @@ function UpcomingReservations({
       {events.length > 0 && (
         <div className="space-y-4">
           <h2 className="text-sm font-medium text-dark-400 uppercase tracking-wider">
-            Wydarzenia
+            {t('events')}
           </h2>
           {events.map((event) => (
             <div
@@ -227,7 +226,7 @@ function UpcomingReservations({
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-2">
                     <span className="inline-block px-2 py-0.5 text-xs font-medium rounded bg-primary-500/20 text-primary-400">
-                      {EVENT_TYPE_LABELS[event.eventType] || event.eventType}
+                      {tc(`eventTypes.${event.eventType}`)}
                     </span>
                     <span className="font-medium text-dark-100">
                       {event.eventTitle}
@@ -236,15 +235,15 @@ function UpcomingReservations({
                   <div className="flex items-center gap-3 text-dark-400">
                     <Calendar className="w-5 h-5" />
                     <span>
-                      {format(new Date(event.startDate), 'd MMMM', { locale: pl })}
+                      {format(new Date(event.startDate), 'd MMMM', { locale })}
                       {' - '}
-                      {format(new Date(event.endDate), 'd MMMM yyyy', { locale: pl })}
+                      {format(new Date(event.endDate), 'd MMMM yyyy', { locale })}
                     </span>
                   </div>
                   {event.participants > 1 && (
                     <div className="flex items-center gap-2 mt-2 text-sm text-dark-400">
                       <Users className="w-4 h-4" />
-                      <span>{event.participants} miejsca zarezerwowane</span>
+                      <span>{t('spotsReserved', { count: event.participants })}</span>
                     </div>
                   )}
                   {event.comment && (
@@ -266,7 +265,7 @@ function UpcomingReservations({
                     }}
                   >
                     <X className="w-4 h-4 mr-1" />
-                    Anuluj wydarzenie
+                    {t('cancelEvent')}
                   </Button>
                 </div>
               </div>
@@ -278,7 +277,7 @@ function UpcomingReservations({
       {slots.length > 0 && (
         <div className="space-y-4">
           <h2 className="text-sm font-medium text-dark-400 uppercase tracking-wider">
-            Treningi
+            {t('trainings')}
           </h2>
           {slots.map((reservation) => {
             const dateObj = new Date(reservation.date)
@@ -302,11 +301,11 @@ function UpcomingReservations({
                         <Calendar className="w-5 h-5 text-primary-400" />
                       )}
                       <span className="font-medium text-dark-100 capitalize">
-                        {format(dateObj, 'EEEE, d MMMM yyyy', { locale: pl })}
+                        {format(dateObj, 'EEEE, d MMMM yyyy', { locale })}
                       </span>
                       {isCancelledByAdmin && (
                         <span className="inline-block px-2 py-0.5 text-xs font-medium rounded bg-rose-500/20 text-rose-400">
-                          Anulowany przez instruktora
+                          {t('cancelledByAdmin')}
                         </span>
                       )}
                     </div>
@@ -320,7 +319,7 @@ function UpcomingReservations({
                     {reservation.participants > 1 && (
                       <div className="flex items-center gap-2 mt-2 text-sm text-dark-400">
                         <Users className="w-4 h-4" />
-                        <span>{reservation.participants} miejsca zarezerwowane</span>
+                        <span>{t('spotsReserved', { count: reservation.participants })}</span>
                       </div>
                     )}
                     {reservation.eventTitle && (
@@ -348,7 +347,7 @@ function UpcomingReservations({
                         }}
                       >
                         <X className="w-4 h-4 mr-1" />
-                        Anuluj
+                        {t('cancelSlot')}
                       </Button>
                     </div>
                   )}
@@ -369,13 +368,13 @@ function UpcomingReservations({
             cancelMutation.mutate(confirmCancel.id)
           }
         }}
-        title="Anuluj rezerwację"
+        title={t('confirmCancel.title')}
         message={
           confirmCancel?.type === 'event'
-            ? 'Czy na pewno chcesz anulować zapis na całe wydarzenie?'
-            : 'Czy na pewno chcesz anulować tę rezerwację?'
+            ? t('confirmCancel.eventMessage')
+            : t('confirmCancel.slotMessage')
         }
-        confirmText="Tak, anuluj"
+        confirmText={t('confirmCancel.confirm')}
       />
     </div>
   )
@@ -390,6 +389,9 @@ function PastReservations({
   slots: MyReservations['slots']
   events: MyReservations['events']
 }) {
+  const { t } = useTranslation('reservations')
+  const { t: tc } = useTranslation('common')
+  const locale = useDateLocale()
   const [page, setPage] = useState(1)
 
   const totalItems = events.length + slots.length
@@ -413,7 +415,7 @@ function PastReservations({
       {visibleEvents.length > 0 && (
         <div className="space-y-3">
           <h2 className="text-sm font-medium text-dark-400 uppercase tracking-wider">
-            Wydarzenia
+            {t('events')}
           </h2>
           {visibleEvents.map((event) => (
             <div
@@ -423,7 +425,7 @@ function PastReservations({
               <div className="flex-1">
                 <div className="flex items-center gap-3 mb-2">
                   <span className="inline-block px-2 py-0.5 text-xs font-medium rounded bg-primary-500/20 text-primary-400">
-                    {EVENT_TYPE_LABELS[event.eventType] || event.eventType}
+                    {tc(`eventTypes.${event.eventType}`)}
                   </span>
                   <span className="font-medium text-dark-100">
                     {event.eventTitle}
@@ -432,15 +434,15 @@ function PastReservations({
                 <div className="flex items-center gap-3 text-dark-400">
                   <Calendar className="w-5 h-5" />
                   <span>
-                    {format(new Date(event.startDate), 'd MMMM', { locale: pl })}
+                    {format(new Date(event.startDate), 'd MMMM', { locale })}
                     {' - '}
-                    {format(new Date(event.endDate), 'd MMMM yyyy', { locale: pl })}
+                    {format(new Date(event.endDate), 'd MMMM yyyy', { locale })}
                   </span>
                 </div>
                 {event.participants > 1 && (
                   <div className="flex items-center gap-2 mt-2 text-sm text-dark-400">
                     <Users className="w-4 h-4" />
-                    <span>{event.participants} miejsca zarezerwowane</span>
+                    <span>{t('spotsReserved', { count: event.participants })}</span>
                   </div>
                 )}
               </div>
@@ -452,7 +454,7 @@ function PastReservations({
       {visibleSlots.length > 0 && (
         <div className="space-y-3">
           <h2 className="text-sm font-medium text-dark-400 uppercase tracking-wider">
-            Treningi
+            {t('trainings')}
           </h2>
           {visibleSlots.map((reservation) => {
             const dateObj = new Date(reservation.date)
@@ -467,11 +469,11 @@ function PastReservations({
                   <div className="flex items-center gap-3 mb-2">
                     <Calendar className="w-5 h-5 text-dark-500" />
                     <span className="font-medium text-dark-100 capitalize">
-                      {format(dateObj, 'EEEE, d MMMM yyyy', { locale: pl })}
+                      {format(dateObj, 'EEEE, d MMMM yyyy', { locale })}
                     </span>
                     {isCancelled && (
                       <span className="inline-block px-2 py-0.5 text-xs font-medium rounded bg-dark-700 text-dark-400">
-                        Anulowany
+                        {t('cancelled')}
                       </span>
                     )}
                   </div>
@@ -485,7 +487,7 @@ function PastReservations({
                   {reservation.participants > 1 && (
                     <div className="flex items-center gap-2 mt-2 text-sm text-dark-400">
                       <Users className="w-4 h-4" />
-                      <span>{reservation.participants} miejsca zarezerwowane</span>
+                      <span>{t('spotsReserved', { count: reservation.participants })}</span>
                     </div>
                   )}
                   {reservation.eventTitle && (
@@ -503,7 +505,7 @@ function PastReservations({
       {totalPages > 1 && (
         <div className="flex items-center justify-between pt-2">
           <span className="text-sm text-dark-500">
-            {totalItems} pozycji
+            {t('totalItems', { count: totalItems })}
           </span>
           <div className="flex items-center gap-2">
             <button

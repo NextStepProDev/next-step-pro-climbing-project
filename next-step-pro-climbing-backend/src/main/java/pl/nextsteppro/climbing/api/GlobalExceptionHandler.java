@@ -9,6 +9,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import pl.nextsteppro.climbing.infrastructure.i18n.MessageService;
 
 import java.time.Instant;
 import java.util.stream.Collectors;
@@ -17,6 +18,11 @@ import java.util.stream.Collectors;
 public class GlobalExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+    private final MessageService messageService;
+
+    public GlobalExceptionHandler(MessageService messageService) {
+        this.messageService = messageService;
+    }
 
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ErrorResponse> handleIllegalArgument(IllegalArgumentException ex) {
@@ -47,21 +53,21 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleJwtException(JwtException ex) {
         log.warn("JWT error: {}", ex.getMessage());
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-            .body(new ErrorResponse("UNAUTHORIZED", "Nieprawidłowy lub wygasły token", Instant.now()));
+            .body(new ErrorResponse("UNAUTHORIZED", messageService.get("error.invalid.token"), Instant.now()));
     }
 
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ErrorResponse> handleAccessDenied(AccessDeniedException ex) {
         log.warn("Access denied: {}", ex.getMessage());
         return ResponseEntity.status(HttpStatus.FORBIDDEN)
-            .body(new ErrorResponse("FORBIDDEN", "Brak uprawnień do wykonania tej operacji", Instant.now()));
+            .body(new ErrorResponse("FORBIDDEN", messageService.get("error.forbidden"), Instant.now()));
     }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGeneric(Exception ex) {
         log.error("Unexpected error", ex);
         return ResponseEntity.internalServerError()
-            .body(new ErrorResponse("INTERNAL_ERROR", "An unexpected error occurred", Instant.now()));
+            .body(new ErrorResponse("INTERNAL_ERROR", messageService.get("error.internal"), Instant.now()));
     }
 
     record ErrorResponse(String code, String message, Instant timestamp) {}

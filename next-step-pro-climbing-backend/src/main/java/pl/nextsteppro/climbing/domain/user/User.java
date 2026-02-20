@@ -55,6 +55,9 @@ public class User {
     @Column(name = "email_notifications_enabled", nullable = false)
     private boolean emailNotificationsEnabled = true;
 
+    @Column(name = "preferred_language", nullable = false)
+    private String preferredLanguage = "pl";
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -197,5 +200,13 @@ public class User {
 
     public void setEmailNotificationsEnabled(boolean emailNotificationsEnabled) {
         this.emailNotificationsEnabled = emailNotificationsEnabled;
+    }
+
+    public String getPreferredLanguage() {
+        return preferredLanguage;
+    }
+
+    public void setPreferredLanguage(String preferredLanguage) {
+        this.preferredLanguage = preferredLanguage;
     }
 }

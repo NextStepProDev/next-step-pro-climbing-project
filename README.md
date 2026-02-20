@@ -22,6 +22,7 @@ Users can browse a public calendar, reserve time slots and sign up for events. A
 - **Tailwind CSS 4**
 - TanStack React Query 5
 - React Router 7
+- react-i18next (internationalization)
 - date-fns, lucide-react, clsx
 
 ### Infrastructure
@@ -82,6 +83,15 @@ npm run dev
 ```
 
 Frontend starts at `http://localhost:5173`.
+
+## Internationalization (i18n)
+
+The application supports **3 languages**: Polish (default), English, and Spanish.
+
+- **Frontend:** react-i18next with 8 namespaces and bundled JSON locale files (`src/locales/{pl,en,es}/`)
+- **Backend:** Spring `MessageSource` with `AcceptHeaderLocaleResolver` — API errors and validation messages are returned in the language from the `Accept-Language` header
+- **Emails:** sent in the user's preferred language (stored in DB as `preferred_language`)
+- **Sync:** language preference is saved to the database and restored on login across devices
 
 ## API Documentation
 

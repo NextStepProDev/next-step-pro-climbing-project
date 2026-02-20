@@ -9,6 +9,7 @@ export interface User {
   role: 'USER' | 'ADMIN'
   isAdmin: boolean
   emailNotificationsEnabled: boolean
+  preferredLanguage: string
   createdAt: string
 }
 

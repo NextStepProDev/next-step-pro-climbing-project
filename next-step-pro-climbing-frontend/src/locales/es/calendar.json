@@ -1,0 +1,95 @@
+{
+  "title": "Calendario",
+  "subtitle": "Selecciona un día para ver los horarios disponibles e inscribirte en las sesiones.",
+  "promo": {
+    "title": "¡¡Promoción solo hasta fin de febrero!!",
+    "description": "¡¡Compra 2 entrenamientos y paga como por dos!!"
+  },
+  "eventsThisMonth": "Eventos de este mes:",
+  "signedUp": "Inscrito",
+  "signUp": "Inscribirse",
+  "weekdays": {
+    "mon": "Lun",
+    "tue": "Mar",
+    "wed": "Mié",
+    "thu": "Jue",
+    "fri": "Vie",
+    "sat": "Sáb",
+    "sun": "Dom"
+  },
+  "noSpots": "Sin plazas",
+  "training_one": "{{count}} entrenamiento",
+  "training_few": "{{count}} entrenamientos",
+  "training_many": "{{count}} entrenamientos",
+  "day": {
+    "available": "Disponible",
+    "full": "Completo",
+    "blocked": "Reservado",
+    "bookingClosed": "Llamar",
+    "past": "Finalizado",
+    "yourReservation": "Tu reserva",
+    "noSlots": "No hay horarios disponibles para este día",
+    "training": "Entrenamiento"
+  },
+  "slot": {
+    "title": "Detalles de la franja horaria",
+    "past": "Esta franja horaria ya ha finalizado",
+    "bookingClosed": "La reserva online es posible hasta 12 horas antes de la sesión. Contacta con el instructor por teléfono para consultar la disponibilidad.",
+    "hasReservation": "Tienes una reserva para esta franja horaria",
+    "spotsLabel": "Número de plazas",
+    "spotsOf": "de {{count}} libres",
+    "commentPlaceholder": "Comentario para el instructor (opcional)...",
+    "commentCount": "{{count}}/500",
+    "loginToBook": "Inicia sesión para reservar",
+    "cancelReservation": "Cancelar reserva",
+    "noSpots": "No hay plazas disponibles",
+    "close": "Cerrar",
+    "bookMultiple": "{{count}} personas",
+    "bookSingle": "Inscribirse",
+    "participants": "{{current}} / {{max}} participantes",
+    "spotsFree": "({{count}} libres)"
+  },
+  "event": {
+    "title": "Inscribirse en el evento",
+    "bookingClosed": "La reserva online es posible hasta 12 horas antes del evento. Contacta con el instructor por teléfono para consultar la disponibilidad.",
+    "hasReservation": "Tienes una reserva para este evento",
+    "spotsLabel": "Número de plazas",
+    "spotsOf": "de {{count}} libres",
+    "commentPlaceholder": "Comentario para el instructor (opcional)...",
+    "commentCount": "{{count}}/500",
+    "loginToBook": "Inicia sesión para reservar",
+    "cancelSignup": "Cancelar inscripción en el evento",
+    "noSpots": "Sin plazas",
+    "close": "Cerrar",
+    "bookMultiple": "{{count}} personas",
+    "bookSingle": "Inscribirse",
+    "participants": "{{current}} / {{max}} participantes",
+    "spotsFree": "({{count}} libres)"
+  },
+  "eventPage": {
+    "notFound": "Evento no encontrado",
+    "notFoundDesc": "Este evento no existe o ha sido eliminado.",
+    "backToCalendar": "Volver al calendario",
+    "maxParticipants": "Máx. {{count}} participantes",
+    "description": "Descripción",
+    "viewSlots": "Ver franjas horarias disponibles"
+  },
+  "createSlot": {
+    "title": "Añadir nueva franja horaria",
+    "slotTitle": "Título (ej. \"Entrenamiento en rocódromo\")",
+    "slotTitlePlaceholder": "Título de la franja horaria (visible para los clientes)",
+    "date": "Fecha",
+    "from": "Desde",
+    "to": "Hasta",
+    "maxParticipants": "Máx. participantes",
+    "endAfterStart": "La hora de fin debe ser posterior a la de inicio",
+    "submit": "Crear franja horaria",
+    "cancel": "Cancelar"
+  },
+  "availability": {
+    "closed": "Inscripciones cerradas",
+    "noSpots": "Sin plazas",
+    "oneSpot": "1 plaza libre",
+    "freeSpots": "{{free}}/{{max}} libres"
+  }
+}

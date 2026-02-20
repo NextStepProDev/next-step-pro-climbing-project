@@ -1,10 +1,13 @@
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Calendar, Users, Award, ArrowRight } from "lucide-react";
 import { Button } from "../components/ui/Button";
 import logoWhite from "../assets/logo/logo-white.png";
 import logoBlack from "../assets/logo/logo-black.png";
 
 export function HomePage() {
+  const { t } = useTranslation("home");
+
   return (
     <div>
       {/* Hero Section */}
@@ -24,14 +27,13 @@ export function HomePage() {
               className="h-32 sm:h-40 lg:h-48 mx-auto mb-8 drop-shadow-[0_0_30px_rgba(59,130,246,0.3)]"
             />
             <p className="text-lg sm:text-xl text-dark-400 mb-8">
-              Profesjonalna szkoła wspinaczkowa. Kursy, treningi i warsztaty dla
-              każdego poziomu zaawansowania.
+              {t("hero.subtitle")}
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link to="/calendar">
                 <Button size="lg" className="w-full sm:w-auto">
                   <Calendar className="w-5 h-5 mr-2" />
-                  Zobacz kalendarz
+                  {t("hero.viewCalendar")}
                 </Button>
               </Link>
               <a href="#offer">
@@ -40,7 +42,7 @@ export function HomePage() {
                   size="lg"
                   className="w-full sm:w-auto"
                 >
-                  Poznaj ofertę
+                  {t("hero.seeOffer")}
                 </Button>
               </a>
             </div>
@@ -53,11 +55,10 @@ export function HomePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-dark-100 mb-4">
-              Nasza oferta
+              {t("offer.title")}
             </h2>
             <p className="text-dark-400 max-w-2xl mx-auto">
-              Wybierz formę treningu dopasowaną do Twoich potrzeb i poziomu
-              zaawansowania
+              {t("offer.subtitle")}
             </p>
           </div>
 
@@ -68,27 +69,23 @@ export function HomePage() {
                 <Award className="w-6 h-6 text-primary-400" />
               </div>
               <h3 className="text-xl font-semibold text-dark-100 mb-2">
-                Kursy
+                {t("offer.courses.title")}
               </h3>
               <p className="text-dark-400 mb-4">
-                Kursy wspinaczkowe przygotowujące do samodzielnego i
-                bezpiecznego wspinania w skałach oraz na sztucznej ścianie.
-                Szkolenia prowadzone są przez doświadczonych instruktorów PZA.
+                {t("offer.courses.description")}
               </p>
               <ul className="space-y-2 text-sm text-dark-300">
                 <li className="flex items-center gap-2">
                   <span className="w-1.5 h-1.5 bg-primary-400 rounded-full shrink-0" />
-                  Kurs wspinaczkowy po drogach ubezpieczonych wg programu PZA -
-                  900zł
+                  {t("offer.courses.item1")}
                 </li>
                 <li className="flex items-center gap-2">
                   <span className="w-1.5 h-1.5 bg-primary-400 rounded-full shrink-0" />
-                  Wspinaczka wielowyciągowa po drogach ubezpieczonych 2 dni -
-                  800zł
+                  {t("offer.courses.item2")}
                 </li>
                 <li className="flex items-center gap-2">
                   <span className="w-1.5 h-1.5 bg-primary-400 rounded-full shrink-0" />
-                  Kurs autoratownictwa 1 - 2 dni - 700zł
+                  {t("offer.courses.item3")}
                 </li>
               </ul>
             </div>
@@ -99,29 +96,27 @@ export function HomePage() {
                 <Users className="w-6 h-6 text-green-400" />
               </div>
               <h3 className="text-xl font-semibold text-dark-100 mb-2">
-                Treningi
+                {t("offer.trainings.title")}
               </h3>
               <p className="text-dark-400 mb-4">
-                Regularne sesje treningowe w małych grupach lub indywidualnie.
-                Rozwijaj siłę, technikę i wytrzymałość pod okiem trenerów Next
-                Step Pro Climbing.
+                {t("offer.trainings.description")}
               </p>
               <ul className="space-y-2 text-sm text-dark-300">
                 <li className="flex items-center gap-2">
                   <span className="w-1.5 h-1.5 bg-green-400 rounded-full" />
-                  Treningi indywidualne
+                  {t("offer.trainings.item1")}
                 </li>
                 <li className="flex items-center gap-2">
                   <span className="w-1.5 h-1.5 bg-green-400 rounded-full" />
-                  Sekcje wspinaczkowe
+                  {t("offer.trainings.item2")}
                 </li>
                 <li className="flex items-center gap-2">
                   <span className="w-1.5 h-1.5 bg-green-400 rounded-full" />
-                  Wspinanie w skałach
+                  {t("offer.trainings.item3")}
                 </li>
                 <li className="flex items-center gap-2">
                   <span className="w-1.5 h-1.5 bg-green-400 rounded-full" />
-                  Treningi klasy mistrzowskiej
+                  {t("offer.trainings.item4")}
                 </li>
               </ul>
             </div>
@@ -132,24 +127,23 @@ export function HomePage() {
                 <Calendar className="w-6 h-6 text-amber-400" />
               </div>
               <h3 className="text-xl font-semibold text-dark-100 mb-2">
-                Warsztaty
+                {t("offer.workshops.title")}
               </h3>
               <p className="text-dark-400 mb-4">
-                Specjalistyczne zajęcia tematyczne. Skup się na konkretnych
-                aspektach wspinaczki w intensywnej formie.
+                {t("offer.workshops.description")}
               </p>
               <ul className="space-y-2 text-sm text-dark-300">
                 <li className="flex items-center gap-2">
                   <span className="w-1.5 h-1.5 bg-amber-400 rounded-full" />
-                  Doskonalenie techniki wspinaczkowej
+                  {t("offer.workshops.item1")}
                 </li>
                 <li className="flex items-center gap-2">
                   <span className="w-1.5 h-1.5 bg-amber-400 rounded-full" />
-                  Mastermind
+                  {t("offer.workshops.item2")}
                 </li>
                 <li className="flex items-center gap-2">
                   <span className="w-1.5 h-1.5 bg-amber-400 rounded-full" />
-                  Wybrane techniki linowe i asekuracyjne
+                  {t("offer.workshops.item3")}
                 </li>
               </ul>
             </div>
@@ -167,15 +161,14 @@ export function HomePage() {
         />
         <div className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-3xl font-bold text-dark-100 mb-4">
-            Gotowy na pierwszy krok?
+            {t("cta.title")}
           </h2>
           <p className="text-dark-400 mb-8">
-            Sprawdź dostępne terminy i zapisz się na wybrane zajęcia. Czekamy na
-            Ciebie!
+            {t("cta.subtitle")}
           </p>
           <Link to="/calendar">
             <Button size="lg">
-              Przejdź do kalendarza
+              {t("cta.button")}
               <ArrowRight className="w-5 h-5 ml-2" />
             </Button>
           </Link>

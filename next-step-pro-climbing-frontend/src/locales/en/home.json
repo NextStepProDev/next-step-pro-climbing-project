@@ -1,0 +1,38 @@
+{
+  "hero": {
+    "subtitle": "Professional climbing school. Courses, training sessions, and workshops for every skill level.",
+    "viewCalendar": "View calendar",
+    "seeOffer": "See our offer"
+  },
+  "offer": {
+    "title": "Our offer",
+    "subtitle": "Choose a training format that suits your needs and skill level",
+    "courses": {
+      "title": "Courses",
+      "description": "Climbing courses preparing you for independent and safe climbing on rock and artificial walls. Training sessions are led by experienced PZA instructors.",
+      "item1": "Via ferrata climbing course per PZA program - 900 PLN",
+      "item2": "Multi-pitch via ferrata climbing 2 days - 800 PLN",
+      "item3": "Self-rescue course 1 - 2 days - 700 PLN"
+    },
+    "trainings": {
+      "title": "Training sessions",
+      "description": "Regular training sessions in small groups or individually. Develop your strength, technique, and endurance under the guidance of Next Step Pro Climbing coaches.",
+      "item1": "Individual training sessions",
+      "item2": "Climbing sections",
+      "item3": "Rock climbing",
+      "item4": "Master class training sessions"
+    },
+    "workshops": {
+      "title": "Workshops",
+      "description": "Specialized thematic sessions. Focus on specific aspects of climbing in an intensive format.",
+      "item1": "Climbing technique improvement",
+      "item2": "Mastermind",
+      "item3": "Selected rope and belaying techniques"
+    }
+  },
+  "cta": {
+    "title": "Ready to take the first step?",
+    "subtitle": "Check available time slots and sign up for your chosen sessions. We look forward to seeing you!",
+    "button": "Go to calendar"
+  }
+}

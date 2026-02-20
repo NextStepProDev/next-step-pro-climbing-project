@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 import { format } from 'date-fns'
 import { Plus, Trash2, Eye, EyeOff, Clock, Pencil, ChevronDown, ChevronRight, ChevronLeft, MapPin, Users, Mail, Phone, AlertTriangle } from 'lucide-react'
 import { adminApi } from '../../api/client'
@@ -11,13 +12,8 @@ import { Modal } from '../../components/ui/Modal'
 import { TimeScrollPicker } from '../../components/ui/TimeScrollPicker'
 import type { CreateEventRequest, EventDetail, EventType } from '../../types'
 
-const EVENT_TYPE_LABELS: Record<string, string> = {
-  COURSE: 'Kurs',
-  TRAINING: 'Trening',
-  WORKSHOP: 'Warsztat',
-}
-
 export function AdminEventsPanel() {
+  const { t } = useTranslation('admin')
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [editingEvent, setEditingEvent] = useState<EventDetail | null>(null)
   const [showArchive, setShowArchive] = useState(false)
@@ -62,7 +58,7 @@ export function AdminEventsPanel() {
       <div className="flex justify-end mb-6">
         <Button onClick={() => setShowCreateModal(true)}>
           <Plus className="w-4 h-4 mr-2" />
-          Dodaj wydarzenie
+          {t('events.addEvent')}
         </Button>
       </div>
 
@@ -75,11 +71,11 @@ export function AdminEventsPanel() {
           {/* Upcoming events */}
           {upcoming.length === 0 ? (
             <div className="bg-dark-900 rounded-lg border border-dark-800 p-8 text-center text-dark-400">
-              Brak nadchodzących wydarzeń
+              {t('events.noUpcoming')}
             </div>
           ) : (
             <div className="space-y-3">
-              <p className="text-sm text-dark-400">Nadchodzące ({upcoming.length})</p>
+              <p className="text-sm text-dark-400">{t('events.upcoming', { count: upcoming.length })}</p>
               {upcoming.map((event) => (
                 <EventCard
                   key={event.id}
@@ -108,7 +104,7 @@ export function AdminEventsPanel() {
                   className="flex items-center gap-2 text-sm text-dark-500 hover:text-dark-300 transition-colors mb-3"
                 >
                   {showArchive ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-                  Archiwum ({archive.length})
+                  {t('events.archive', { count: archive.length })}
                 </button>
 
                 {showArchive && (
@@ -129,7 +125,7 @@ export function AdminEventsPanel() {
                     {totalPages > 1 && (
                       <div className="flex items-center justify-between pt-2">
                         <span className="text-sm text-dark-500">
-                          {archive.length} wydarzeń
+                          {t('events.totalEvents', { count: archive.length })}
                         </span>
                         <div className="flex items-center gap-2">
                           <button
@@ -190,6 +186,8 @@ function EventCard({
   onToggleActive: () => void
   onDelete: () => void
 }) {
+  const { t } = useTranslation('admin')
+  const { t: tc } = useTranslation('common')
   const [showParticipants, setShowParticipants] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
@@ -206,11 +204,11 @@ function EventCard({
           <div className="flex items-center gap-2 mb-1 flex-wrap">
             <span className="font-medium text-dark-100">{event.title}</span>
             <span className="px-2 py-0.5 text-xs rounded bg-primary-500/20 text-primary-400">
-              {EVENT_TYPE_LABELS[event.eventType] || event.eventType}
+              {tc(`eventTypes.${event.eventType}`)}
             </span>
             {!event.active && (
               <span className="px-2 py-0.5 text-xs rounded bg-dark-700 text-dark-400">
-                Nieaktywne
+                {t('events.inactive')}
               </span>
             )}
           </div>
@@ -225,7 +223,7 @@ function EventCard({
                 {event.startTime.slice(0, 5)} - {event.endTime.slice(0, 5)}
               </span>
             ) : (
-              <span className="ml-2 text-dark-500">Cały dzień</span>
+              <span className="ml-2 text-dark-500">{t('events.allDay')}</span>
             )}
           </div>
           {event.location && (
@@ -240,15 +238,15 @@ function EventCard({
             </div>
           )}
           <div className="text-sm text-dark-500 mt-0.5">
-            Maks. {event.maxParticipants} uczestników
+            {t('events.maxParticipants', { count: event.maxParticipants })}
           </div>
         </div>
 
         <div className="flex items-center gap-1 shrink-0 ml-2">
-          <Button variant="ghost" size="sm" onClick={onEdit} title="Edytuj">
+          <Button variant="ghost" size="sm" onClick={onEdit} title={t('events.edit')}>
             <Pencil className="w-4 h-4" />
           </Button>
-          <Button variant="ghost" size="sm" onClick={onToggleActive} title={event.active ? 'Dezaktywuj' : 'Aktywuj'}>
+          <Button variant="ghost" size="sm" onClick={onToggleActive} title={event.active ? t('events.deactivate') : t('events.activate')}>
             {event.active ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
           </Button>
           <Button variant="ghost" size="sm" onClick={() => setShowDeleteConfirm(true)}>
@@ -264,7 +262,7 @@ function EventCard({
       >
         {showParticipants ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
         <Users className="w-3.5 h-3.5" />
-        Uczestnicy
+        {t('events.participantsLabel')}
         {participantsData && (
           <span className="text-dark-500">({participantsData.participants.length})</span>
         )}
@@ -273,7 +271,7 @@ function EventCard({
       {showParticipants && (
         <div className="mt-2 ml-1">
           {participantsLoading ? (
-            <div className="text-sm text-dark-500 py-2">Ładowanie...</div>
+            <div className="text-sm text-dark-500 py-2">{t('events.loading')}</div>
           ) : participantsData && participantsData.participants.length > 0 ? (
             <div className="space-y-2">
               {participantsData.participants.map((p) => (
@@ -289,7 +287,7 @@ function EventCard({
                       {p.phone}
                     </span>
                     {p.participants > 1 && (
-                      <span>{p.participants} miejsca</span>
+                      <span>{t('events.spots', { count: p.participants })}</span>
                     )}
                   </div>
                   {p.comment && (
@@ -299,7 +297,7 @@ function EventCard({
               ))}
             </div>
           ) : (
-            <div className="text-sm text-dark-500 py-2">Brak zapisanych uczestników</div>
+            <div className="text-sm text-dark-500 py-2">{t('events.noParticipants')}</div>
           )}
         </div>
       )}
@@ -334,13 +332,14 @@ function ConfirmDeleteEventModal({
   participants: { userId: string; fullName: string; email: string }[]
   onConfirm: () => void
 }) {
+  const { t } = useTranslation('admin')
   const hasParticipants = participants.length > 0
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={hasParticipants ? 'Uwaga - aktywne rezerwacje!' : 'Usuń wydarzenie'}>
+    <Modal isOpen={isOpen} onClose={onClose} title={hasParticipants ? t('events.warningActiveReservations') : t('events.deleteTitle')}>
       <div className="space-y-4">
         <div className="text-sm text-dark-400">
-          Wydarzenie: <span className="text-dark-200">{eventTitle}</span>
+          {t('events.eventLabel')}<span className="text-dark-200">{eventTitle}</span>
         </div>
 
         {hasParticipants ? (
@@ -348,16 +347,16 @@ function ConfirmDeleteEventModal({
             <div className="flex items-start gap-3 p-3 bg-rose-500/10 border border-rose-500/20 rounded-lg">
               <AlertTriangle className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
               <div className="text-sm text-rose-300">
-                <p className="font-medium mb-1">To wydarzenie ma zapisanych uczestników!</p>
+                <p className="font-medium mb-1">{t('events.hasParticipants')}</p>
                 <p className="text-rose-400/80">
-                  Usunięcie wydarzenia spowoduje anulowanie wszystkich rezerwacji i powiadomienie użytkowników e-mailem.
+                  {t('events.deleteWarning')}
                 </p>
               </div>
             </div>
 
             <div>
               <h3 className="text-sm font-medium text-dark-300 mb-2">
-                Zapisani ({participants.length})
+                {t('events.registered', { count: participants.length })}
               </h3>
               <ul className="space-y-2 max-h-48 overflow-y-auto">
                 {participants.map((p) => (
@@ -371,16 +370,16 @@ function ConfirmDeleteEventModal({
           </>
         ) : (
           <p className="text-dark-400 text-sm">
-            Brak zapisanych osób na to wydarzenie.
+            {t('events.noRegistered')}
           </p>
         )}
 
         <div className="flex gap-3 pt-2">
           <Button variant="danger" className="flex-1" onClick={onConfirm}>
-            {hasParticipants ? 'Usuń i anuluj rezerwacje' : 'Usuń wydarzenie'}
+            {hasParticipants ? t('events.deleteAndCancel') : t('events.deleteSimple')}
           </Button>
           <Button variant="ghost" onClick={onClose}>
-            Anuluj
+            {t('events.cancel')}
           </Button>
         </div>
       </div>
@@ -399,6 +398,8 @@ function EditEventModal({
   isOpen: boolean
   onClose: () => void
 }) {
+  const { t } = useTranslation('admin')
+  const { t: tc } = useTranslation('common')
   const [allDay, setAllDay] = useState(!event?.startTime)
   const [form, setForm] = useState<CreateEventRequest>({
     title: event?.title ?? '',
@@ -437,10 +438,10 @@ function EditEventModal({
   }
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Edytuj wydarzenie">
+    <Modal isOpen={isOpen} onClose={onClose} title={t('events.editTitle')}>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm text-dark-400 mb-1">Tytuł</label>
+          <label className="block text-sm text-dark-400 mb-1">{t('events.titleLabel')}</label>
           <input
             type="text"
             value={form.title}
@@ -451,20 +452,20 @@ function EditEventModal({
         </div>
 
         <div>
-          <label className="block text-sm text-dark-400 mb-1">Typ</label>
+          <label className="block text-sm text-dark-400 mb-1">{t('events.typeLabel')}</label>
           <select
             value={form.eventType}
             onChange={(e) => setForm({ ...form, eventType: e.target.value as EventType })}
             className="w-full bg-dark-800 border border-dark-700 rounded-lg px-4 py-2 text-dark-100"
           >
-            <option value="COURSE">Kurs</option>
-            <option value="TRAINING">Trening</option>
-            <option value="WORKSHOP">Warsztat</option>
+            <option value="COURSE">{tc('eventTypes.COURSE')}</option>
+            <option value="TRAINING">{tc('eventTypes.TRAINING')}</option>
+            <option value="WORKSHOP">{tc('eventTypes.WORKSHOP')}</option>
           </select>
         </div>
 
         <div>
-          <label className="block text-sm text-dark-400 mb-1">Opis</label>
+          <label className="block text-sm text-dark-400 mb-1">{t('events.descriptionLabel')}</label>
           <textarea
             value={form.description}
             onChange={(e) => setForm({ ...form, description: e.target.value })}
@@ -473,19 +474,19 @@ function EditEventModal({
         </div>
 
         <div>
-          <label className="block text-sm text-dark-400 mb-1">Miejsce</label>
+          <label className="block text-sm text-dark-400 mb-1">{t('events.locationLabel')}</label>
           <input
             type="text"
             value={form.location}
             onChange={(e) => setForm({ ...form, location: e.target.value })}
-            placeholder="np. Ścianka wspinaczkowa XYZ"
+            placeholder={t('events.locationPlaceholder')}
             className="w-full bg-dark-800 border border-dark-700 rounded-lg px-4 py-2 text-dark-100"
           />
         </div>
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm text-dark-400 mb-1">Data od</label>
+            <label className="block text-sm text-dark-400 mb-1">{t('events.dateFrom')}</label>
             <input
               type="date"
               value={form.startDate}
@@ -497,7 +498,7 @@ function EditEventModal({
             />
           </div>
           <div>
-            <label className="block text-sm text-dark-400 mb-1">Data do</label>
+            <label className="block text-sm text-dark-400 mb-1">{t('events.dateTo')}</label>
             <input
               type="date"
               value={form.endDate}
@@ -525,18 +526,18 @@ function EditEventModal({
               }}
               className="w-4 h-4 rounded border-dark-700 bg-dark-800 text-primary-500 focus:ring-primary-500"
             />
-            <span className="text-sm text-dark-300">Cały dzień</span>
+            <span className="text-sm text-dark-300">{t('events.allDayCheckbox')}</span>
           </label>
 
           {!allDay && (
             <div className="grid grid-cols-2 gap-4">
               <TimeScrollPicker
-                label="Od"
+                label={t('events.from')}
                 value={form.startTime || '10:00'}
                 onChange={(v) => setForm({ ...form, startTime: v })}
               />
               <TimeScrollPicker
-                label="Do"
+                label={t('events.to')}
                 value={form.endTime || '17:00'}
                 onChange={(v) => setForm({ ...form, endTime: v })}
               />
@@ -545,7 +546,7 @@ function EditEventModal({
         </div>
 
         <div>
-          <label className="block text-sm text-dark-400 mb-1">Maks. uczestników</label>
+          <label className="block text-sm text-dark-400 mb-1">{t('events.maxParticipantsLabel')}</label>
           <input
             type="number"
             min={1}
@@ -557,10 +558,10 @@ function EditEventModal({
 
         <div className="flex gap-3 pt-4">
           <Button type="submit" loading={updateMutation.isPending} className="flex-1">
-            Zapisz zmiany
+            {t('events.saveChanges')}
           </Button>
           <Button type="button" variant="ghost" onClick={onClose}>
-            Anuluj
+            {t('events.cancel')}
           </Button>
         </div>
 
@@ -583,6 +584,8 @@ function CreateEventModal({
   isOpen: boolean
   onClose: () => void
 }) {
+  const { t } = useTranslation('admin')
+  const { t: tc } = useTranslation('common')
   const [allDay, setAllDay] = useState(true)
   const [form, setForm] = useState<CreateEventRequest>({
     title: '',
@@ -626,10 +629,10 @@ function CreateEventModal({
   }
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Dodaj nowe wydarzenie">
+    <Modal isOpen={isOpen} onClose={onClose} title={t('events.addTitle')}>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm text-dark-400 mb-1">Tytuł</label>
+          <label className="block text-sm text-dark-400 mb-1">{t('events.titleLabel')}</label>
           <input
             type="text"
             value={form.title}
@@ -640,20 +643,20 @@ function CreateEventModal({
         </div>
 
         <div>
-          <label className="block text-sm text-dark-400 mb-1">Typ</label>
+          <label className="block text-sm text-dark-400 mb-1">{t('events.typeLabel')}</label>
           <select
             value={form.eventType}
             onChange={(e) => setForm({ ...form, eventType: e.target.value as EventType })}
             className="w-full bg-dark-800 border border-dark-700 rounded-lg px-4 py-2 text-dark-100"
           >
-            <option value="COURSE">Kurs</option>
-            <option value="TRAINING">Trening</option>
-            <option value="WORKSHOP">Warsztat</option>
+            <option value="COURSE">{tc('eventTypes.COURSE')}</option>
+            <option value="TRAINING">{tc('eventTypes.TRAINING')}</option>
+            <option value="WORKSHOP">{tc('eventTypes.WORKSHOP')}</option>
           </select>
         </div>
 
         <div>
-          <label className="block text-sm text-dark-400 mb-1">Opis</label>
+          <label className="block text-sm text-dark-400 mb-1">{t('events.descriptionLabel')}</label>
           <textarea
             value={form.description}
             onChange={(e) => setForm({ ...form, description: e.target.value })}
@@ -662,19 +665,19 @@ function CreateEventModal({
         </div>
 
         <div>
-          <label className="block text-sm text-dark-400 mb-1">Miejsce</label>
+          <label className="block text-sm text-dark-400 mb-1">{t('events.locationLabel')}</label>
           <input
             type="text"
             value={form.location}
             onChange={(e) => setForm({ ...form, location: e.target.value })}
-            placeholder="np. Ścianka wspinaczkowa XYZ"
+            placeholder={t('events.locationPlaceholder')}
             className="w-full bg-dark-800 border border-dark-700 rounded-lg px-4 py-2 text-dark-100"
           />
         </div>
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm text-dark-400 mb-1">Data od</label>
+            <label className="block text-sm text-dark-400 mb-1">{t('events.dateFrom')}</label>
             <input
               type="date"
               value={form.startDate}
@@ -686,7 +689,7 @@ function CreateEventModal({
             />
           </div>
           <div>
-            <label className="block text-sm text-dark-400 mb-1">Data do</label>
+            <label className="block text-sm text-dark-400 mb-1">{t('events.dateTo')}</label>
             <input
               type="date"
               value={form.endDate}
@@ -714,18 +717,18 @@ function CreateEventModal({
               }}
               className="w-4 h-4 rounded border-dark-700 bg-dark-800 text-primary-500 focus:ring-primary-500"
             />
-            <span className="text-sm text-dark-300">Cały dzień</span>
+            <span className="text-sm text-dark-300">{t('events.allDayCheckbox')}</span>
           </label>
 
           {!allDay && (
             <div className="grid grid-cols-2 gap-4">
               <TimeScrollPicker
-                label="Od"
+                label={t('events.from')}
                 value={form.startTime || '10:00'}
                 onChange={(v) => setForm({ ...form, startTime: v })}
               />
               <TimeScrollPicker
-                label="Do"
+                label={t('events.to')}
                 value={form.endTime || '17:00'}
                 onChange={(v) => setForm({ ...form, endTime: v })}
               />
@@ -734,7 +737,7 @@ function CreateEventModal({
         </div>
 
         <div>
-          <label className="block text-sm text-dark-400 mb-1">Maks. uczestników</label>
+          <label className="block text-sm text-dark-400 mb-1">{t('events.maxParticipantsLabel')}</label>
           <input
             type="number"
             min={1}
@@ -746,10 +749,10 @@ function CreateEventModal({
 
         <div className="flex gap-3 pt-4">
           <Button type="submit" loading={createMutation.isPending} className="flex-1">
-            Utwórz wydarzenie
+            {t('events.createEvent')}
           </Button>
           <Button type="button" variant="ghost" onClick={onClose}>
-            Anuluj
+            {t('events.cancel')}
           </Button>
         </div>
 
