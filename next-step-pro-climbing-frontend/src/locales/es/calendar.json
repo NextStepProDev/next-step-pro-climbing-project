@@ -5,6 +5,14 @@
     "title": "¡¡Promoción solo hasta fin de abril!!",
     "description": "¡¡Compra 2 entrenamientos y paga como por dos!!"
   },
+  "viewMode": {
+    "month": "Mes",
+    "week": "Semana"
+  },
+  "week": {
+    "today": "Hoy",
+    "events": "Eventos de esta semana:"
+  },
   "eventsThisMonth": "Eventos de este mes:",
   "signedUp": "Inscrito",
   "signUp": "Inscribirse",

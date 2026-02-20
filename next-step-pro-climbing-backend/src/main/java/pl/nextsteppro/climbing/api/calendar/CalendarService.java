@@ -72,6 +72,43 @@ public class CalendarService {
         return new MonthViewDto(yearMonth.toString(), days, eventSummaries);
     }
 
+    @Cacheable(value = "calendarWeek", key = "#weekStart", condition = "#userId == null")
+    public WeekViewDto getWeekView(LocalDate weekStart, @Nullable UUID userId) {
+        LocalDate startDate = weekStart;
+        LocalDate endDate = weekStart.plusDays(6);
+
+        List<TimeSlot> slots = timeSlotRepository.findByDateRangeOrdered(startDate, endDate);
+        List<Event> events = eventRepository.findActiveEventsBetween(startDate, endDate);
+
+        List<UUID> allSlotIds = slots.stream().map(TimeSlot::getId).toList();
+        Map<UUID, Integer> countMap = buildCountMap(allSlotIds);
+        Set<UUID> userConfirmedSlotIds = userId != null && !allSlotIds.isEmpty()
+            ? new HashSet<>(reservationRepository.findUserConfirmedSlotIds(userId, allSlotIds))
+            : Set.of();
+
+        Map<LocalDate, List<TimeSlot>> slotsByDate = slots.stream()
+            .collect(Collectors.groupingBy(TimeSlot::getDate));
+
+        List<WeekDayDto> days = new ArrayList<>();
+        for (LocalDate date = startDate; !date.isAfter(endDate); date = date.plusDays(1)) {
+            List<TimeSlot> daySlots = slotsByDate.getOrDefault(date, List.of());
+            List<TimeSlotDto> slotDtos = daySlots.stream()
+                .filter(slot -> !slot.belongsToEvent())
+                .map(slot -> toTimeSlotDto(slot, countMap.getOrDefault(slot.getId(), 0),
+                                           userConfirmedSlotIds.contains(slot.getId())))
+                .toList();
+            days.add(new WeekDayDto(date, slotDtos));
+        }
+
+        EventData eventData = computeEventData(events, userId);
+        List<EventSummaryDto> eventSummaries = events.stream()
+            .map(event -> toEventSummary(event, eventData.participantsMap().getOrDefault(event.getId(), 0),
+                                         eventData.userRegisteredEventIds().contains(event.getId())))
+            .toList();
+
+        return new WeekViewDto(startDate, endDate, days, eventSummaries);
+    }
+
     public DayViewDto getDayView(LocalDate date, @Nullable UUID userId) {
         List<TimeSlot> slots = timeSlotRepository.findByDateSorted(date);
         List<Event> events = eventRepository.findActiveEventsOnDate(date);

@@ -5,6 +5,14 @@
     "title": "Promocja tylko do końca kwietnia!!",
     "description": "Kup 2 treningi i zapłać jak za dwa!!"
   },
+  "viewMode": {
+    "month": "Miesiąc",
+    "week": "Tydzień"
+  },
+  "week": {
+    "today": "Dziś",
+    "events": "Wydarzenia w tym tygodniu:"
+  },
   "eventsThisMonth": "Wydarzenia w tym miesiącu:",
   "signedUp": "Zapisany",
   "signUp": "Zapisz się",

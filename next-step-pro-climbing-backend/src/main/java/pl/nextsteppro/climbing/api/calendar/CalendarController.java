@@ -47,6 +47,25 @@ public class CalendarController {
     }
 
     @Operation(
+        summary = "Widok tygodnia",
+        description = "Zwraca listę terminów dla każdego dnia w tygodniu zaczynającym się od podanej daty (poniedziałek)"
+    )
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Dane tygodnia",
+            content = @Content(schema = @Schema(implementation = WeekViewDto.class))),
+        @ApiResponse(responseCode = "400", description = "Nieprawidłowy format daty")
+    })
+    @GetMapping("/week/{date}")
+    public ResponseEntity<WeekViewDto> getWeekView(
+            @Parameter(description = "Data poniedziałku w formacie yyyy-MM-dd", example = "2026-02-16")
+            @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+            @Parameter(hidden = true) @CurrentUserId UUID userId) {
+
+        WeekViewDto view = calendarService.getWeekView(date, userId);
+        return ResponseEntity.ok(view);
+    }
+
+    @Operation(
         summary = "Widok dnia",
         description = "Zwraca szczegółową listę terminów dla wybranego dnia z informacją o dostępności"
     )

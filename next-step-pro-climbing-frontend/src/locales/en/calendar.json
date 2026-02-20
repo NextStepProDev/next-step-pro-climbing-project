@@ -5,6 +5,14 @@
     "title": "Promotion until end of April only!!",
     "description": "Buy 2 training sessions and pay for two!!"
   },
+  "viewMode": {
+    "month": "Month",
+    "week": "Week"
+  },
+  "week": {
+    "today": "Today",
+    "events": "Events this week:"
+  },
   "eventsThisMonth": "Events this month:",
   "signedUp": "Signed up",
   "signUp": "Sign up",

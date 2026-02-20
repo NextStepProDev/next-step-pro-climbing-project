@@ -69,6 +69,18 @@ record EventSummaryDto(
     boolean enrollmentOpen
 ) implements CalendarDtos {}
 
+record WeekViewDto(
+    LocalDate startDate,
+    LocalDate endDate,
+    List<WeekDayDto> days,
+    List<EventSummaryDto> events
+) implements CalendarDtos {}
+
+record WeekDayDto(
+    LocalDate date,
+    List<TimeSlotDto> slots
+) implements CalendarDtos {}
+
 enum SlotStatus {
     AVAILABLE,
     FULL,

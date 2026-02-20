@@ -33,6 +33,18 @@ export interface DayView {
   events: EventSummary[]
 }
 
+export interface WeekView {
+  startDate: string
+  endDate: string
+  days: WeekDay[]
+  events: EventSummary[]
+}
+
+export interface WeekDay {
+  date: string
+  slots: TimeSlot[]
+}
+
 export interface TimeSlot {
   id: string
   startTime: string

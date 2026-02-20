@@ -17,6 +17,7 @@ public class CacheConfig {
     public CacheManager cacheManager() {
         CaffeineCacheManager manager = new CaffeineCacheManager(
             "calendarMonth",
+            "calendarWeek",
             "calendarDay"
         );
         manager.setCaffeine(Caffeine.newBuilder()

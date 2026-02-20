@@ -2,6 +2,7 @@ import i18n from '../i18n'
 import type {
   User,
   MonthView,
+  WeekView,
   DayView,
   TimeSlotDetail,
   EventSummary,
@@ -169,6 +170,9 @@ export const authApi = {
 export const calendarApi = {
   getMonthView: (yearMonth: string) =>
     fetchApi<MonthView>(`/calendar/month/${yearMonth}`),
+
+  getWeekView: (date: string) =>
+    fetchApi<WeekView>(`/calendar/week/${date}`),
 
   getDayView: (date: string) =>
     fetchApi<DayView>(`/calendar/day/${date}`),
