@@ -10,7 +10,15 @@ export function OAuthCallbackPage() {
   const { loginWithTokens } = useAuth()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(() => {
+    const accessToken = searchParams.get('accessToken')
+    const refreshToken = searchParams.get('refreshToken')
+    const expiresIn = searchParams.get('expiresIn')
+    if (!accessToken || !refreshToken || !expiresIn) {
+      return t('oauth.callbackError')
+    }
+    return null
+  })
   const processed = useRef(false)
 
   useEffect(() => {
@@ -22,12 +30,10 @@ export function OAuthCallbackPage() {
     const expiresIn = searchParams.get('expiresIn')
 
     if (!accessToken || !refreshToken || !expiresIn) {
-      setError(t('oauth.callbackError'))
       setTimeout(() => navigate('/login', { replace: true }), 2000)
       return
     }
 
-    // Clean tokens from URL
     window.history.replaceState({}, '', '/oauth-callback')
 
     loginWithTokens({
