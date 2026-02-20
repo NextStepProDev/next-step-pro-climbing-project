@@ -32,7 +32,7 @@ export function AdminPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-2 mb-6 border-b border-dark-800 pb-2">
+      <div className="flex gap-2 mb-6 border-b border-dark-800 pb-2 overflow-x-auto scrollbar-none">
         {adminTabs.map((tab) => {
           const Icon = tab.icon
           const isActive = location.pathname === tab.path
@@ -41,7 +41,7 @@ export function AdminPage() {
               key={tab.path}
               to={tab.path}
               className={clsx(
-                'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors',
+                'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap shrink-0',
                 isActive
                   ? 'bg-primary-500/10 text-primary-400'
                   : 'text-dark-400 hover:text-dark-200 hover:bg-dark-800'
