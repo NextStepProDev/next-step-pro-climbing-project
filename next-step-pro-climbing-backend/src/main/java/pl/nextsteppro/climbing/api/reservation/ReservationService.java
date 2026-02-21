@@ -56,6 +56,7 @@ public class ReservationService {
 
     @Caching(evict = {
         @CacheEvict(value = "calendarMonth", allEntries = true),
+        @CacheEvict(value = "calendarWeek", allEntries = true),
         @CacheEvict(value = "calendarDay", allEntries = true)
     })
     public ReservationResultDto createReservation(UUID slotId, UUID userId, @Nullable String comment, int participants) {
@@ -127,6 +128,7 @@ public class ReservationService {
 
     @Caching(evict = {
         @CacheEvict(value = "calendarMonth", allEntries = true),
+        @CacheEvict(value = "calendarWeek", allEntries = true),
         @CacheEvict(value = "calendarDay", allEntries = true)
     })
     public void cancelReservation(UUID reservationId, UUID userId) {
@@ -241,6 +243,7 @@ public class ReservationService {
 
     @Caching(evict = {
         @CacheEvict(value = "calendarMonth", allEntries = true),
+        @CacheEvict(value = "calendarWeek", allEntries = true),
         @CacheEvict(value = "calendarDay", allEntries = true)
     })
     public EventReservationResultDto createEventReservation(UUID eventId, UUID userId, @Nullable String comment, int participants) {
@@ -330,6 +333,7 @@ public class ReservationService {
 
     @Caching(evict = {
         @CacheEvict(value = "calendarMonth", allEntries = true),
+        @CacheEvict(value = "calendarWeek", allEntries = true),
         @CacheEvict(value = "calendarDay", allEntries = true)
     })
     public void cancelEventReservation(UUID eventId, UUID userId) {

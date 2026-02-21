@@ -22,7 +22,7 @@ spring:
     defer-datasource-initialization: true
     properties:
       hibernate:
-        format_sql: true
+        format_sql: ${HIBERNATE_FORMAT_SQL:false}
         jdbc:
           time_zone: UTC
 

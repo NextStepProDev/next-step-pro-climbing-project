@@ -67,6 +67,7 @@ public class AdminService {
 
     @Caching(evict = {
         @CacheEvict(value = "calendarMonth", allEntries = true),
+        @CacheEvict(value = "calendarWeek", allEntries = true),
         @CacheEvict(value = "calendarDay", allEntries = true)
     })
     public TimeSlotAdminDto createTimeSlot(CreateTimeSlotRequest request) {
@@ -99,6 +100,7 @@ public class AdminService {
 
     @Caching(evict = {
         @CacheEvict(value = "calendarMonth", allEntries = true),
+        @CacheEvict(value = "calendarWeek", allEntries = true),
         @CacheEvict(value = "calendarDay", allEntries = true)
     })
     public TimeSlotAdminDto updateTimeSlot(UUID slotId, UpdateTimeSlotRequest request) {
@@ -122,6 +124,7 @@ public class AdminService {
 
     @Caching(evict = {
         @CacheEvict(value = "calendarMonth", allEntries = true),
+        @CacheEvict(value = "calendarWeek", allEntries = true),
         @CacheEvict(value = "calendarDay", allEntries = true)
     })
     public void blockTimeSlot(UUID slotId, @Nullable String reason) {
@@ -142,6 +145,7 @@ public class AdminService {
 
     @Caching(evict = {
         @CacheEvict(value = "calendarMonth", allEntries = true),
+        @CacheEvict(value = "calendarWeek", allEntries = true),
         @CacheEvict(value = "calendarDay", allEntries = true)
     })
     public void unblockTimeSlot(UUID slotId) {
@@ -154,6 +158,7 @@ public class AdminService {
 
     @Caching(evict = {
         @CacheEvict(value = "calendarMonth", allEntries = true),
+        @CacheEvict(value = "calendarWeek", allEntries = true),
         @CacheEvict(value = "calendarDay", allEntries = true)
     })
     public void deleteTimeSlot(UUID slotId) {
@@ -202,6 +207,7 @@ public class AdminService {
 
     @Caching(evict = {
         @CacheEvict(value = "calendarMonth", allEntries = true),
+        @CacheEvict(value = "calendarWeek", allEntries = true),
         @CacheEvict(value = "calendarDay", allEntries = true)
     })
     public EventAdminDto createEvent(CreateEventRequest request) {
@@ -224,6 +230,7 @@ public class AdminService {
 
     @Caching(evict = {
         @CacheEvict(value = "calendarMonth", allEntries = true),
+        @CacheEvict(value = "calendarWeek", allEntries = true),
         @CacheEvict(value = "calendarDay", allEntries = true)
     })
     public EventAdminDto updateEvent(UUID eventId, UpdateEventRequest request) {
@@ -247,6 +254,7 @@ public class AdminService {
 
     @Caching(evict = {
         @CacheEvict(value = "calendarMonth", allEntries = true),
+        @CacheEvict(value = "calendarWeek", allEntries = true),
         @CacheEvict(value = "calendarDay", allEntries = true)
     })
     public void deleteEvent(UUID eventId) {

@@ -201,8 +201,14 @@ record UpdateProfileRequest(
 
 @Schema(description = "Zmiana hasła")
 record ChangePasswordRequest(
-    @Schema(description = "Aktualne hasło") String currentPassword,
-    @Schema(description = "Nowe hasło") String newPassword
+    @Schema(description = "Aktualne hasło")
+    @jakarta.validation.constraints.NotBlank(message = "{validation.password.required}")
+    String currentPassword,
+
+    @Schema(description = "Nowe hasło")
+    @jakarta.validation.constraints.NotBlank(message = "{validation.password.required}")
+    @jakarta.validation.constraints.Size(min = 8, max = 100, message = "{validation.password.size}")
+    String newPassword
 ) {}
 
 @Schema(description = "Usunięcie konta")

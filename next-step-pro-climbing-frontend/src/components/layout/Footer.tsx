@@ -1,4 +1,4 @@
-import { Phone, Mail, MapPin } from 'lucide-react'
+import { Phone, Mail, User, Facebook, Youtube } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import logoWhite from '../../assets/logo/logo-white.png'
 
@@ -30,8 +30,30 @@ export function Footer() {
                 <span>nextsteppro.team@gmail.com</span>
               </li>
               <li className="flex items-center gap-2 text-dark-400 text-sm">
-                <MapPin className="w-4 h-4" />
+                <User className="w-4 h-4" />
                 <span>{t('footer.instructor')}</span>
+              </li>
+              <li className="flex items-center gap-2 text-dark-400 text-sm">
+                <Facebook className="w-4 h-4" />
+                <a
+                  href="https://www.facebook.com/ClimbingTeamofPoland"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-primary-400 transition-colors"
+                >
+                  Facebook
+                </a>
+              </li>
+              <li className="flex items-center gap-2 text-dark-400 text-sm">
+                <Youtube className="w-4 h-4" />
+                <a
+                  href="https://www.youtube.com/@PureEssentialFilms-hd1kh"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-primary-400 transition-colors"
+                >
+                  YouTube
+                </a>
               </li>
             </ul>
           </div>

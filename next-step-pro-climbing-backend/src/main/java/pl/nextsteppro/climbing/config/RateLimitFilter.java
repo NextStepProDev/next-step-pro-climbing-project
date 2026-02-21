@@ -20,7 +20,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Order(Ordered.HIGHEST_PRECEDENCE + 1)
 public class RateLimitFilter extends OncePerRequestFilter {
 
-    private static final int MAX_REQUESTS_PER_MINUTE = 10;
+    private static final int AUTH_LIMIT = 10;
+    private static final int RESERVATION_LIMIT = 20;
+    private static final int USER_LIMIT = 20;
+    private static final int ADMIN_LIMIT = 60;
 
     private final Cache<String, AtomicInteger> requestCounts = Caffeine.newBuilder()
         .expireAfterWrite(Duration.ofMinutes(1))
@@ -32,16 +35,18 @@ public class RateLimitFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
 
         String path = request.getRequestURI();
-        if (!path.startsWith("/api/auth/")) {
+        int limit = resolveLimit(path);
+
+        if (limit <= 0) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        String clientIp = getClientIp(request);
-        AtomicInteger counter = requestCounts.get(clientIp, k -> new AtomicInteger(0));
+        String cacheKey = getClientIp(request) + ":" + resolveBucket(path);
+        AtomicInteger counter = requestCounts.get(cacheKey, k -> new AtomicInteger(0));
         int count = counter.incrementAndGet();
 
-        if (count > MAX_REQUESTS_PER_MINUTE) {
+        if (count > limit) {
             response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
             response.setContentType("application/json");
             response.getWriter().write("{\"error\":\"Zbyt wiele żądań. Spróbuj ponownie za minutę.\"}");
@@ -49,6 +54,22 @@ public class RateLimitFilter extends OncePerRequestFilter {
         }
 
         filterChain.doFilter(request, response);
+    }
+
+    private int resolveLimit(String path) {
+        if (path.startsWith("/api/auth/")) return AUTH_LIMIT;
+        if (path.startsWith("/api/reservations/")) return RESERVATION_LIMIT;
+        if (path.startsWith("/api/user/")) return USER_LIMIT;
+        if (path.startsWith("/api/admin/")) return ADMIN_LIMIT;
+        return 0;
+    }
+
+    private String resolveBucket(String path) {
+        if (path.startsWith("/api/auth/")) return "auth";
+        if (path.startsWith("/api/reservations/")) return "reservations";
+        if (path.startsWith("/api/user/")) return "user";
+        if (path.startsWith("/api/admin/")) return "admin";
+        return "default";
     }
 
     private String getClientIp(HttpServletRequest request) {

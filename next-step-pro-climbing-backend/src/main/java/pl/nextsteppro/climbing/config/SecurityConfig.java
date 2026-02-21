@@ -45,7 +45,7 @@ public class SecurityConfig {
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session
-                .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
+                .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> {
                 // Swagger/OpenAPI documentation (only accessible in dev profile)
                 if (java.util.Arrays.asList(environment.getActiveProfiles()).contains("dev")) {
@@ -78,6 +78,9 @@ public class SecurityConfig {
             .headers(headers -> headers
                 .contentTypeOptions(contentType -> {})
                 .frameOptions(frame -> frame.deny())
+                .referrerPolicy(referrer -> referrer.policy(
+                    org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN))
+                .permissionsPolicyHeader(permissions -> permissions.policy("camera=(), microphone=(), geolocation=()"))
             )
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
             .build();
