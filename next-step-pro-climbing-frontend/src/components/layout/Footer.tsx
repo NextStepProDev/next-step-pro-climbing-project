@@ -22,16 +22,16 @@ export function Footer() {
             <h3 className="font-semibold text-dark-100 mb-4">{t('footer.contact')}</h3>
             <ul className="space-y-3">
               <li className="flex items-center gap-2 text-dark-400 text-sm">
+                <User className="w-4 h-4" />
+                <span>{t('footer.instructor')}</span>
+              </li>
+              <li className="flex items-center gap-2 text-dark-400 text-sm">
                 <Phone className="w-4 h-4" />
                 <span>+48 535 246 673</span>
               </li>
               <li className="flex items-center gap-2 text-dark-400 text-sm">
                 <Mail className="w-4 h-4" />
                 <span>nextsteppro.team@gmail.com</span>
-              </li>
-              <li className="flex items-center gap-2 text-dark-400 text-sm">
-                <User className="w-4 h-4" />
-                <span>{t('footer.instructor')}</span>
               </li>
               <li className="flex items-center gap-2 text-dark-400 text-sm">
                 <Facebook className="w-4 h-4" />
