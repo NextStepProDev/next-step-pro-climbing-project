@@ -42,12 +42,18 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
       />
 
       {/* Modal */}
-      <div className="relative bg-dark-900 rounded-xl border border-dark-800 shadow-xl max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="modal-title"
+        className="relative bg-dark-900 rounded-xl border border-dark-800 shadow-xl max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto"
+      >
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-dark-800">
-          <h2 className="text-lg font-semibold text-dark-100">{title}</h2>
+          <h2 id="modal-title" className="text-lg font-semibold text-dark-100">{title}</h2>
           <button
             onClick={onClose}
+            aria-label={title ? `Close ${title}` : 'Close'}
             className="text-dark-400 hover:text-dark-200 transition-colors"
           >
             <X className="w-5 h-5" />

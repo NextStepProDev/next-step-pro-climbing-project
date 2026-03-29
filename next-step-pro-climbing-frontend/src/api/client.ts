@@ -82,13 +82,18 @@ async function fetchApi<T>(
     headers['Authorization'] = `Bearer ${token}`
   }
 
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), 30000)
+
   let response: Response
   try {
     response = await fetch(`${API_BASE}${endpoint}`, {
       ...options,
       headers,
+      signal: controller.signal,
     })
   } catch {
+    clearTimeout(timeoutId)
     throw new Error(i18n.t('network', { ns: 'errors' }))
   }
 
@@ -97,17 +102,26 @@ async function fetchApi<T>(
     const newToken = await doRefresh()
     if (newToken) {
       headers['Authorization'] = `Bearer ${newToken}`
+      clearTimeout(timeoutId)
+      const retryController = new AbortController()
+      const retryTimeoutId = setTimeout(() => retryController.abort(), 30000)
       try {
         response = await fetch(`${API_BASE}${endpoint}`, {
           ...options,
           headers,
+          signal: retryController.signal,
         })
       } catch {
+        clearTimeout(retryTimeoutId)
         throw new Error(i18n.t('network', { ns: 'errors' }))
       }
+      clearTimeout(retryTimeoutId)
     } else {
+      clearTimeout(timeoutId)
       throw new Error(i18n.t('sessionExpired', { ns: 'errors' }))
     }
+  } else {
+    clearTimeout(timeoutId)
   }
 
   if (!response.ok) {
