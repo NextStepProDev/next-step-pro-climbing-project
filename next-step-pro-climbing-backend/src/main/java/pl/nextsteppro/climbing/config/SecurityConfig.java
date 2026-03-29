@@ -43,6 +43,16 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+            // CSRF protection is disabled for stateless JWT-based API.
+            // Rationale:
+            // - JWT tokens are in Authorization header (not cookies), so browsers don't send them automatically
+            // - CSRF attacks rely on automatic credential transmission (cookies)
+            // - Same-Origin Policy prevents cross-origin access to localStorage
+            // Security measures in place:
+            // - XSS prevention via React auto-escaping + CSP headers (nginx.conf)
+            // - Input sanitization and validation
+            // - Rate limiting on auth endpoints
+            // - Proper CORS configuration
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS))

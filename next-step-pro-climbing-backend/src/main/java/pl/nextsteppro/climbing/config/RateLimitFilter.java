@@ -20,7 +20,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Order(Ordered.HIGHEST_PRECEDENCE + 1)
 public class RateLimitFilter extends OncePerRequestFilter {
 
-    private static final int AUTH_LIMIT = 10;
+    // Rate limits per IP per minute
+    private static final int AUTH_LIMIT = 5;  // Reduced from 10 to better protect against brute-force
     private static final int RESERVATION_LIMIT = 20;
     private static final int USER_LIMIT = 20;
     private static final int ADMIN_LIMIT = 60;

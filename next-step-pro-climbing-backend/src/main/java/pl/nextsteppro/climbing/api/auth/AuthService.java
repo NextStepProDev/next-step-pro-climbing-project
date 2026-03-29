@@ -90,13 +90,32 @@ public class AuthService {
             throw new IllegalArgumentException(msg.get("auth.login.oauth"));
         }
 
+        // Check if account is locked due to too many failed attempts
+        if (user.isAccountLocked()) {
+            log.warn("Login attempt for locked account: {}", request.email());
+            throw new IllegalStateException(msg.get("auth.login.locked"));
+        }
+
         if (!passwordEncoder.matches(request.password(), user.getPasswordHash())) {
             log.debug("Invalid password attempt for: {}", request.email());
+            // Increment failed attempts and potentially lock the account
+            user.incrementFailedLoginAttempts();
+            userRepository.save(user);
+            if (user.isAccountLocked()) {
+                log.warn("Account locked due to failed attempts: {}", request.email());
+                throw new IllegalStateException(msg.get("auth.login.locked"));
+            }
             throw new IllegalArgumentException(msg.get("auth.login.invalid"));
         }
 
         if (!user.isEmailVerified()) {
             throw new IllegalStateException(msg.get("auth.email.not.verified"));
+        }
+
+        // Successful login - reset failed attempts
+        if (user.getFailedLoginAttempts() > 0) {
+            user.resetFailedLoginAttempts();
+            userRepository.save(user);
         }
 
         if (!user.isAdmin() && adminEmailConfig.isAdminEmail(user.getEmail())) {

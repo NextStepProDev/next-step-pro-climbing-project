@@ -1,5 +1,6 @@
 package pl.nextsteppro.climbing.api.reservation;
 
+import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Size;
 import org.jspecify.annotations.Nullable;
@@ -31,7 +32,7 @@ record UserReservationDto(
 
 record CreateReservationRequest(
     @Nullable @Size(max = 500, message = "{validation.comment.size}") String comment,
-    @Nullable @Min(value = 1, message = "{validation.min.participants}") Integer participants
+    @Nullable @Min(value = 1, message = "{validation.min.participants}") @Max(value = 50, message = "{validation.max.participants}") Integer participants
 ) {}
 
 record EventReservationResultDto(

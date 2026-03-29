@@ -58,6 +58,13 @@ public class User {
     @Column(name = "preferred_language", nullable = false)
     private String preferredLanguage = "pl";
 
+    @Column(name = "failed_login_attempts", nullable = false)
+    private int failedLoginAttempts = 0;
+
+    @Column(name = "locked_until")
+    @Nullable
+    private Instant lockedUntil;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -208,5 +215,32 @@ public class User {
 
     public void setPreferredLanguage(String preferredLanguage) {
         this.preferredLanguage = preferredLanguage;
+    }
+
+    // Account lockout methods
+    public int getFailedLoginAttempts() {
+        return failedLoginAttempts;
+    }
+
+    @Nullable
+    public Instant getLockedUntil() {
+        return lockedUntil;
+    }
+
+    public boolean isAccountLocked() {
+        return lockedUntil != null && Instant.now().isBefore(lockedUntil);
+    }
+
+    public void incrementFailedLoginAttempts() {
+        this.failedLoginAttempts++;
+        // Lock account for 15 minutes after 5 failed attempts
+        if (this.failedLoginAttempts >= 5) {
+            this.lockedUntil = Instant.now().plusSeconds(15 * 60);
+        }
+    }
+
+    public void resetFailedLoginAttempts() {
+        this.failedLoginAttempts = 0;
+        this.lockedUntil = null;
     }
 }
