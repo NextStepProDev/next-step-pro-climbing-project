@@ -23,7 +23,7 @@ export function VerifyEmailPage() {
         setStatus('error')
         setMessage(err instanceof Error ? err.message : t('verify.failed'))
       })
-  }, [token])
+  }, [token, t])
 
   if (!token) {
     return (
