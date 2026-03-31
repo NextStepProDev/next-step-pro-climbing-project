@@ -1,28 +1,30 @@
 @import "tailwindcss";
 
 @theme {
-  --color-primary-50: #eff6ff;
-  --color-primary-100: #dbeafe;
-  --color-primary-200: #bfdbfe;
-  --color-primary-300: #93c5fd;
-  --color-primary-400: #60a5fa;
-  --color-primary-500: #3b82f6;
-  --color-primary-600: #2563eb;
-  --color-primary-700: #1d4ed8;
-  --color-primary-800: #1e40af;
-  --color-primary-900: #1e3a8a;
+  /* Matowy slate-blue - mniej nasycony, bardziej elegancki */
+  --color-primary-50: #f1f5f9;
+  --color-primary-100: #e2e8f0;
+  --color-primary-200: #cbd5e1;
+  --color-primary-300: #94a3b8;
+  --color-primary-400: #64748b;
+  --color-primary-500: #475569;
+  --color-primary-600: #334155;
+  --color-primary-700: #1e293b;
+  --color-primary-800: #0f172a;
+  --color-primary-900: #020617;
 
-  --color-dark-50: #f8fafc;
-  --color-dark-100: #f1f5f9;
-  --color-dark-200: #e2e8f0;
-  --color-dark-300: #cbd5e1;
-  --color-dark-400: #94a3b8;
-  --color-dark-500: #64748b;
-  --color-dark-600: #475569;
-  --color-dark-700: #334155;
-  --color-dark-800: #1e293b;
-  --color-dark-900: #0f172a;
-  --color-dark-950: #020617;
+  /* Cieplejsze, matowe ciemne szarości - rozjaśnione dla mniejszego kontrastu */
+  --color-dark-50: #fafaf9;
+  --color-dark-100: #f5f5f4;
+  --color-dark-200: #e7e5e4;
+  --color-dark-300: #d6d3d1;
+  --color-dark-400: #a8a29e;
+  --color-dark-500: #78716c;
+  --color-dark-600: #57534e;
+  --color-dark-700: #44403c;
+  --color-dark-800: #312e2b;
+  --color-dark-900: #252220;
+  --color-dark-950: #1a1816;
 }
 
 body {
