@@ -44,6 +44,9 @@ Thumbs.db
 ehthumbs.db
 Desktop.ini
 
+# ===== Uploads (local dev files) =====
+uploads/
+
 # ===== Temporary =====
 *.tmp
 *.temp
