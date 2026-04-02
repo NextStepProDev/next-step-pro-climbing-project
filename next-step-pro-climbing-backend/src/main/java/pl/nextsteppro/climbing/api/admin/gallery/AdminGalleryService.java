@@ -1,6 +1,8 @@
 package pl.nextsteppro.climbing.api.admin.gallery;
 
 import org.jspecify.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -8,6 +10,7 @@ import org.springframework.web.multipart.MultipartFile;
 import pl.nextsteppro.climbing.api.admin.gallery.AdminGalleryDtos.*;
 import pl.nextsteppro.climbing.domain.gallery.Album;
 import pl.nextsteppro.climbing.domain.gallery.AlbumRepository;
+import pl.nextsteppro.climbing.domain.gallery.AlbumSummaryProjection;
 import pl.nextsteppro.climbing.domain.gallery.Photo;
 import pl.nextsteppro.climbing.domain.gallery.PhotoRepository;
 import pl.nextsteppro.climbing.infrastructure.storage.FileStorageService;
@@ -19,6 +22,8 @@ import java.util.UUID;
 @Service
 @Transactional
 public class AdminGalleryService {
+
+    private static final Logger logger = LoggerFactory.getLogger(AdminGalleryService.class);
 
     private final AlbumRepository albumRepository;
     private final PhotoRepository photoRepository;
@@ -37,7 +42,7 @@ public class AdminGalleryService {
 
     // Album operations
     public List<AlbumAdminDto> getAllAlbums() {
-        return albumRepository.findAllByOrderByCreatedAtDesc()
+        return albumRepository.findAllAlbumSummaries()
                 .stream()
                 .map(this::toAlbumAdminDto)
                 .toList();
@@ -93,7 +98,7 @@ public class AdminGalleryService {
                 fileStorageService.delete(photo.getFilename(), "gallery");
             } catch (IOException e) {
                 // Log but continue
-                System.err.println("Failed to delete photo file: " + photo.getFilename() + " - " + e.getMessage());
+                logger.warn("Failed to delete photo file: {} - {}", photo.getFilename(), e.getMessage());
             }
         }
 
@@ -146,6 +151,18 @@ public class AdminGalleryService {
     }
 
     // Helper methods
+    private AlbumAdminDto toAlbumAdminDto(AlbumSummaryProjection projection) {
+        return new AlbumAdminDto(
+                projection.getId(),
+                projection.getName(),
+                projection.getDescription(),
+                projection.getFirstPhotoFilename() != null ? buildPhotoUrl(projection.getFirstPhotoFilename()) : null,
+                projection.getPhotoCount(),
+                projection.getCreatedAt(),
+                projection.getUpdatedAt()
+        );
+    }
+
     private AlbumAdminDto toAlbumAdminDto(Album album) {
         Photo firstPhoto = photoRepository.findFirstByAlbumId(album.getId()).orElse(null);
         long photoCount = photoRepository.countByAlbumId(album.getId());

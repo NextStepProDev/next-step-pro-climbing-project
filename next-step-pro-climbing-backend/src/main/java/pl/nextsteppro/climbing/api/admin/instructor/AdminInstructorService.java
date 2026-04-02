@@ -1,6 +1,8 @@
 package pl.nextsteppro.climbing.api.admin.instructor;
 
 import org.jspecify.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,6 +19,8 @@ import java.util.UUID;
 @Service
 @Transactional
 public class AdminInstructorService {
+
+    private static final Logger logger = LoggerFactory.getLogger(AdminInstructorService.class);
 
     private final InstructorRepository instructorRepository;
     private final FileStorageService fileStorageService;
@@ -89,7 +93,7 @@ public class AdminInstructorService {
                 fileStorageService.delete(instructor.getPhotoFilename(), "instructors");
             } catch (IOException e) {
                 // Log but don't fail the delete operation
-                System.err.println("Failed to delete instructor photo file: " + e.getMessage());
+                logger.warn("Failed to delete instructor photo file: {}", e.getMessage());
             }
         }
 
@@ -106,7 +110,7 @@ public class AdminInstructorService {
                 fileStorageService.delete(instructor.getPhotoFilename(), "instructors");
             } catch (IOException e) {
                 // Log but continue
-                System.err.println("Failed to delete old photo: " + e.getMessage());
+                logger.warn("Failed to delete old photo: {}", e.getMessage());
             }
         }
 

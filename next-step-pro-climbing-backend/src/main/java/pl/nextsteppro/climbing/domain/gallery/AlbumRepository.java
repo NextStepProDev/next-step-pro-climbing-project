@@ -24,6 +24,7 @@ public interface AlbumRepository extends JpaRepository<Album, UUID> {
             a.name AS name,
             a.description AS description,
             a.created_at AS createdAt,
+            a.updated_at AS updatedAt,
             (SELECT p.filename
              FROM photos p
              WHERE p.album_id = a.id
@@ -32,7 +33,7 @@ public interface AlbumRepository extends JpaRepository<Album, UUID> {
             COUNT(p.id) AS photoCount
         FROM albums a
         LEFT JOIN photos p ON p.album_id = a.id
-        GROUP BY a.id, a.name, a.description, a.created_at
+        GROUP BY a.id, a.name, a.description, a.created_at, a.updated_at
         ORDER BY a.created_at DESC
         """, nativeQuery = true)
     List<AlbumSummaryProjection> findAllAlbumSummaries();
