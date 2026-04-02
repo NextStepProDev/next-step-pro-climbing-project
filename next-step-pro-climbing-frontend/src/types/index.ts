@@ -248,3 +248,120 @@ export interface ActivityLog {
   participants: number | null
   createdAt: string
 }
+
+// Instructor types
+export interface InstructorPublic {
+  id: string
+  firstName: string
+  lastName: string
+  photoUrl: string | null
+  bio: string | null
+  certifications: string | null
+  createdAt: string
+}
+
+export interface InstructorAdmin {
+  id: string
+  firstName: string
+  lastName: string
+  photoFilename: string | null
+  photoUrl: string | null
+  bio: string | null
+  certifications: string | null
+  displayOrder: number
+  active: boolean
+  createdAt: string
+  updatedAt: string
+}
+
+export interface CreateInstructorRequest {
+  firstName: string
+  lastName: string
+  bio?: string
+  certifications?: string
+}
+
+export interface UpdateInstructorRequest {
+  firstName?: string
+  lastName?: string
+  bio?: string
+  certifications?: string
+  active?: boolean
+  displayOrder?: number
+}
+
+// Gallery types
+export interface AlbumSummary {
+  id: string
+  name: string
+  description: string | null
+  thumbnailUrl: string | null
+  photoCount: number
+  createdAt: string
+}
+
+export interface AlbumDetail {
+  id: string
+  name: string
+  description: string | null
+  photos: Photo[]
+  createdAt: string
+  updatedAt: string
+}
+
+export interface Photo {
+  id: string
+  url: string
+  caption: string | null
+  createdAt: string
+}
+
+export interface AlbumAdmin {
+  id: string
+  name: string
+  description: string | null
+  thumbnailUrl: string | null
+  photoCount: number
+  createdAt: string
+  updatedAt: string
+}
+
+export interface AlbumDetailAdmin {
+  id: string
+  name: string
+  description: string | null
+  photos: PhotoAdmin[]
+  createdAt: string
+  updatedAt: string
+}
+
+export interface PhotoAdmin {
+  id: string
+  filename: string
+  url: string
+  caption: string | null
+  displayOrder: number
+  createdAt: string
+  updatedAt: string
+}
+
+export interface CreateAlbumRequest {
+  name: string
+  description?: string
+}
+
+export interface UpdateAlbumRequest {
+  name?: string
+  description?: string
+}
+
+export interface UpdatePhotoRequest {
+  caption?: string
+  displayOrder?: number
+}
+
+export interface UploadPhotoResponse {
+  id: string
+  filename: string
+  url: string
+}

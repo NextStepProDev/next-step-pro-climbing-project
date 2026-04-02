@@ -19,6 +19,8 @@ services:
     image: ghcr.io/${GHCR_OWNER}/nextsteppro-backend:${VERSION:-latest}
     container_name: nsp-backend-prod
     mem_limit: 350m
+    volumes:
+      - uploads_data_prod:/app/uploads
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
@@ -58,6 +60,7 @@ services:
 
 volumes:
   postgres_data_prod:
+  uploads_data_prod:
 
 networks:
   npm_network:
