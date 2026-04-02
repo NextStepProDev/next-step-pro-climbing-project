@@ -64,6 +64,11 @@ class GalleryServiceTest {
             }
 
             @Override
+            public Instant getUpdatedAt() {
+                return Instant.now();
+            }
+
+            @Override
             public String getFirstPhotoFilename() {
                 return photoFilename;
             }
@@ -120,6 +125,11 @@ class GalleryServiceTest {
 
             @Override
             public Instant getCreatedAt() {
+                return Instant.now();
+            }
+
+            @Override
+            public Instant getUpdatedAt() {
                 return Instant.now();
             }
 
@@ -223,6 +233,11 @@ class GalleryServiceTest {
             }
 
             @Override
+            public Instant getUpdatedAt() {
+                return Instant.now();
+            }
+
+            @Override
             public String getFirstPhotoFilename() {
                 return filename;
             }
@@ -270,6 +285,11 @@ class GalleryServiceTest {
 
                 @Override
                 public Instant getCreatedAt() {
+                    return Instant.now();
+                }
+
+                @Override
+                public Instant getUpdatedAt() {
                     return Instant.now();
                 }
 
