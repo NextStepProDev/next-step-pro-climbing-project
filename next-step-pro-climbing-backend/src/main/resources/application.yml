@@ -8,9 +8,9 @@ spring:
     import: optional:file:.env[.properties]
 
   datasource:
-    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:next-step-pro-db}
-    username: ${DB_USER}
-    password: ${DB_PASSWORD}
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:nextsteppro}
+    username: ${DB_USER:nextsteppro}
+    password: ${DB_PASSWORD:nextsteppro_dev}
     hikari:
       maximum-pool-size: 10
       minimum-idle: 2
@@ -28,6 +28,11 @@ spring:
 
   flyway:
     enabled: ${FLYWAY_ENABLED:true}
+
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
 
   mail:
     host: ${MAIL_HOST:smtp.gmail.com}
@@ -53,6 +58,8 @@ spring:
 
 app:
   version: '@version@'
+  storage:
+    root: ${STORAGE_ROOT:./uploads}
   admin:
     # Comma-separated list of emails auto-promoted to ADMIN on register/login
     email: ${ADMIN_EMAIL:${MAIL_USERNAME:nextsteppro.team@gmail.com}}

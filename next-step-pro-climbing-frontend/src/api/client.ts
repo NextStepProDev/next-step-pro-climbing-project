@@ -18,6 +18,18 @@ import type {
   EventParticipants,
   ReservationAdmin,
   ActivityLog,
+  InstructorPublic,
+  InstructorAdmin,
+  CreateInstructorRequest,
+  UpdateInstructorRequest,
+  AlbumSummary,
+  AlbumDetail,
+  AlbumAdmin,
+  AlbumDetailAdmin,
+  CreateAlbumRequest,
+  UpdateAlbumRequest,
+  UpdatePhotoRequest,
+  UploadPhotoResponse,
 } from '../types'
 import {
   getAccessToken,
@@ -308,4 +320,115 @@ export const adminApi = {
   // Activity Logs
   getActivityLogs: (page = 0, size = 20) =>
     fetchApi<ActivityLog[]>(`/admin/activity-logs?page=${page}&size=${size}`),
+}
+
+// Instructors (public)
+export const instructorApi = {
+  getAll: () => fetchApi<InstructorPublic[]>('/instructors'),
+  getById: (id: string) => fetchApi<InstructorPublic>(`/instructors/${id}`),
+}
+
+// Gallery (public)
+export const galleryApi = {
+  getAlbums: () => fetchApi<AlbumSummary[]>('/gallery/albums'),
+  getAlbum: (id: string) => fetchApi<AlbumDetail>(`/gallery/albums/${id}`),
+}
+
+// Admin Instructors
+export const adminInstructorApi = {
+  getAll: () => fetchApi<InstructorAdmin[]>('/admin/instructors'),
+  getById: (id: string) => fetchApi<InstructorAdmin>(`/admin/instructors/${id}`),
+  create: (data: CreateInstructorRequest) =>
+    fetchApi<InstructorAdmin>('/admin/instructors', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  update: (id: string, data: UpdateInstructorRequest) =>
+    fetchApi<InstructorAdmin>(`/admin/instructors/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+  delete: (id: string) =>
+    fetchApi<void>(`/admin/instructors/${id}`, { method: 'DELETE' }),
+  uploadPhoto: async (id: string, file: File) => {
+    const token = await ensureValidToken()
+    const formData = new FormData()
+    formData.append('file', file)
+
+    const headers: Record<string, string> = {
+      'Accept-Language': i18n.language,
+    }
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`
+    }
+
+    const response = await fetch(`${API_BASE}/admin/instructors/${id}/photo`, {
+      method: 'POST',
+      headers,
+      body: formData,
+    })
+
+    if (!response.ok) {
+      const body = await response.json().catch(() => null)
+      throw new Error(body?.message || i18n.t('uploadFailed', { ns: 'errors' }))
+    }
+  },
+  deletePhoto: (id: string) =>
+    fetchApi<void>(`/admin/instructors/${id}/photo`, { method: 'DELETE' }),
+}
+
+// Admin Gallery
+export const adminGalleryApi = {
+  // Albums
+  getAllAlbums: () => fetchApi<AlbumAdmin[]>('/admin/gallery/albums'),
+  getAlbum: (id: string) => fetchApi<AlbumDetailAdmin>(`/admin/gallery/albums/${id}`),
+  createAlbum: (data: CreateAlbumRequest) =>
+    fetchApi<AlbumAdmin>('/admin/gallery/albums', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  updateAlbum: (id: string, data: UpdateAlbumRequest) =>
+    fetchApi<AlbumAdmin>(`/admin/gallery/albums/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+  deleteAlbum: (id: string) =>
+    fetchApi<void>(`/admin/gallery/albums/${id}`, { method: 'DELETE' }),
+
+  // Photos
+  uploadPhoto: async (albumId: string, file: File, caption?: string) => {
+    const token = await ensureValidToken()
+    const formData = new FormData()
+    formData.append('file', file)
+    if (caption) {
+      formData.append('caption', caption)
+    }
+
+    const headers: Record<string, string> = {
+      'Accept-Language': i18n.language,
+    }
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`
+    }
+
+    const response = await fetch(`${API_BASE}/admin/gallery/albums/${albumId}/photos`, {
+      method: 'POST',
+      headers,
+      body: formData,
+    })
+
+    if (!response.ok) {
+      const body = await response.json().catch(() => null)
+      throw new Error(body?.message || i18n.t('uploadFailed', { ns: 'errors' }))
+    }
+
+    return response.json() as Promise<UploadPhotoResponse>
+  },
+  updatePhoto: (photoId: string, data: UpdatePhotoRequest) =>
+    fetchApi<void>(`/admin/gallery/photos/${photoId}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+  deletePhoto: (photoId: string) =>
+    fetchApi<void>(`/admin/gallery/photos/${photoId}`, { method: 'DELETE' }),
 }

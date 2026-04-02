@@ -2,6 +2,8 @@
   "nav": {
     "home": "Home",
     "calendar": "Calendar",
+    "instructors": "Instructors",
+    "gallery": "Gallery",
     "myReservations": "My reservations",
     "admin": "Admin",
     "profile": "Profile",
@@ -38,5 +40,21 @@
   "participants_one": "{{count}} participant",
   "participants_few": "{{count}} participants",
   "participants_many": "{{count}} participants",
-  "maxParticipants": "Max. {{count}} participants"
+  "maxParticipants": "Max. {{count}} participants",
+  "instructors": {
+    "title": "Our Instructors",
+    "noInstructors": "No instructors to display",
+    "certifications": "Certifications:",
+    "about": "About me:"
+  },
+  "gallery": {
+    "title": "Gallery",
+    "noAlbums": "No albums to display",
+    "albumNotFound": "Album not found",
+    "backToGallery": "Back to gallery",
+    "noPhotos": "This album doesn't contain any photos yet",
+    "photo_one": "photo",
+    "photo_few": "photos",
+    "photo_many": "photos"
+  }
 }

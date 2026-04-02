@@ -1,17 +1,21 @@
 import { useTranslation } from 'react-i18next'
 import { Routes, Route, Link, useLocation } from 'react-router-dom'
-import { Calendar, Users, Clock, ClipboardList, Activity } from 'lucide-react'
+import { Calendar, Users, Clock, ClipboardList, Activity, User, Image } from 'lucide-react'
 import clsx from 'clsx'
 import { AdminSlotsPanel } from './admin/AdminSlotsPanel'
 import { AdminEventsPanel } from './admin/AdminEventsPanel'
 import { AdminUsersPanel } from './admin/AdminUsersPanel'
 import { AdminReservationsPanel } from './admin/AdminReservationsPanel'
 import { AdminActivityPanel } from './admin/AdminActivityPanel'
+import { AdminInstructorsPanel } from './admin/AdminInstructorsPanel'
+import { AdminGalleryPanel } from './admin/AdminGalleryPanel'
 
 const adminTabs = [
   { path: '/admin', labelKey: 'tabs.slots', icon: Clock },
   { path: '/admin/reservations', labelKey: 'tabs.reservations', icon: ClipboardList },
   { path: '/admin/events', labelKey: 'tabs.events', icon: Calendar },
+  { path: '/admin/instructors', labelKey: 'tabs.instructors', icon: User },
+  { path: '/admin/gallery', labelKey: 'tabs.gallery', icon: Image },
   { path: '/admin/users', labelKey: 'tabs.users', icon: Users },
   { path: '/admin/activity', labelKey: 'tabs.activity', icon: Activity },
 ]
@@ -59,6 +63,8 @@ export function AdminPage() {
         <Route index element={<AdminSlotsPanel />} />
         <Route path="reservations" element={<AdminReservationsPanel />} />
         <Route path="events" element={<AdminEventsPanel />} />
+        <Route path="instructors" element={<AdminInstructorsPanel />} />
+        <Route path="gallery" element={<AdminGalleryPanel />} />
         <Route path="users" element={<AdminUsersPanel />} />
         <Route path="activity" element={<AdminActivityPanel />} />
       </Routes>

@@ -5,6 +5,9 @@ import { HomePage } from './pages/HomePage'
 import { CalendarPage } from './pages/CalendarPage'
 import { MyReservationsPage } from './pages/MyReservationsPage'
 import { EventPage } from './pages/EventPage'
+import { InstructorsPage } from './pages/InstructorsPage'
+import { GalleryPage } from './pages/GalleryPage'
+import { AlbumPage } from './pages/AlbumPage'
 import { LoginPage } from './pages/LoginPage'
 import { RegisterPage } from './pages/RegisterPage'
 import { VerifyEmailPage } from './pages/VerifyEmailPage'
@@ -30,6 +33,9 @@ export default function App() {
           <Route index element={<HomePage />} />
           <Route path="calendar" element={<CalendarPage />} />
           <Route path="events/:eventId" element={<EventPage />} />
+          <Route path="instruktorzy" element={<InstructorsPage />} />
+          <Route path="galeria" element={<GalleryPage />} />
+          <Route path="galeria/:albumId" element={<AlbumPage />} />
           <Route path="login" element={<LoginPage />} />
           <Route path="register" element={<RegisterPage />} />
           <Route path="verify-email" element={<VerifyEmailPage />} />
