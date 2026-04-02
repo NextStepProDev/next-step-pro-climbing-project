@@ -14,6 +14,7 @@ public interface AlbumSummaryProjection {
     String getName();
     @Nullable String getDescription();
     Instant getCreatedAt();
+    Instant getUpdatedAt();
     @Nullable String getFirstPhotoFilename();
     Long getPhotoCount();
 }

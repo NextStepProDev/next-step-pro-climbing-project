@@ -37,21 +37,7 @@ public class FileController {
     @GetMapping("/instructors/{filename}")
     public ResponseEntity<Resource> getInstructorPhoto(
             @Parameter(description = "Nazwa pliku") @PathVariable String filename) throws IOException {
-
-        if (!fileStorageService.exists(filename, "instructors")) {
-            return ResponseEntity.notFound().build();
-        }
-
-        InputStream inputStream = fileStorageService.getInputStream(filename, "instructors");
-        long fileSize = fileStorageService.getFileSize(filename, "instructors");
-        MediaType mediaType = getMediaType(filename);
-
-        return ResponseEntity.ok()
-                .contentType(mediaType)
-                .contentLength(fileSize)
-                .cacheControl(CacheControl.maxAge(7, TimeUnit.DAYS).cachePublic())
-                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + filename + "\"")
-                .body(new InputStreamResource(inputStream));
+        return serveFile(filename, "instructors");
     }
 
     @Operation(summary = "Pobierz zdjęcie z galerii")
@@ -62,17 +48,19 @@ public class FileController {
     @GetMapping("/gallery/{filename}")
     public ResponseEntity<Resource> getGalleryPhoto(
             @Parameter(description = "Nazwa pliku") @PathVariable String filename) throws IOException {
+        return serveFile(filename, "gallery");
+    }
 
-        if (!fileStorageService.exists(filename, "gallery")) {
+    private ResponseEntity<Resource> serveFile(String filename, String folder) throws IOException {
+        if (!fileStorageService.exists(filename, folder)) {
             return ResponseEntity.notFound().build();
         }
 
-        InputStream inputStream = fileStorageService.getInputStream(filename, "gallery");
-        long fileSize = fileStorageService.getFileSize(filename, "gallery");
-        MediaType mediaType = getMediaType(filename);
+        InputStream inputStream = fileStorageService.getInputStream(filename, folder);
+        long fileSize = fileStorageService.getFileSize(filename, folder);
 
         return ResponseEntity.ok()
-                .contentType(mediaType)
+                .contentType(getMediaType(filename))
                 .contentLength(fileSize)
                 .cacheControl(CacheControl.maxAge(7, TimeUnit.DAYS).cachePublic())
                 .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + filename + "\"")

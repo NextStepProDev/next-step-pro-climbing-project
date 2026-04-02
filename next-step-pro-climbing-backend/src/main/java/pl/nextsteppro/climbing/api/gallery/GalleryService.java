@@ -53,22 +53,6 @@ public class GalleryService {
         );
     }
 
-    // Overload for Album entity (used by getAlbum, kept for backward compatibility)
-    private AlbumSummaryDto toSummaryDto(Album album) {
-        Photo firstPhoto = photoRepository.findFirstByAlbumId(album.getId()).orElse(null);
-        long photoCount = photoRepository.countByAlbumId(album.getId());
-
-        return new AlbumSummaryDto(
-                album.getId(),
-                album.getName(),
-                album.getDescription(),
-                firstPhoto != null ? buildPhotoUrl(firstPhoto.getFilename()) : null,
-                photoCount,
-                album.getCreatedAt()
-        );
-    }
-
-    // Optimized version for AlbumSummaryProjection (used by getAllAlbums)
     private AlbumSummaryDto toSummaryDto(pl.nextsteppro.climbing.domain.gallery.AlbumSummaryProjection projection) {
         return new AlbumSummaryDto(
                 projection.getId(),
