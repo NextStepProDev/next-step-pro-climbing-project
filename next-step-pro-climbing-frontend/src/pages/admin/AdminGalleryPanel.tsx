@@ -12,7 +12,7 @@ import { QueryError } from '../../components/ui/QueryError'
 
 export function AdminGalleryPanel() {
   const queryClient = useQueryClient()
-  const [orderedAlbums, setOrderedAlbums] = useState<AlbumAdmin[]>([])
+  const [localOrder, setLocalOrder] = useState<AlbumAdmin[] | null>(null)
   const [createAlbumModalOpen, setCreateAlbumModalOpen] = useState(false)
   const [editAlbumModalOpen, setEditAlbumModalOpen] = useState(false)
   const [uploadPhotoModalOpen, setUploadPhotoModalOpen] = useState(false)
@@ -32,11 +32,7 @@ export function AdminGalleryPanel() {
     queryFn: adminGalleryApi.getAllAlbums,
   })
 
-  useEffect(() => {
-    if (albums) {
-      setOrderedAlbums([...albums].sort((a, b) => a.displayOrder - b.displayOrder))
-    }
-  }, [albums])
+  const orderedAlbums = localOrder ?? (albums ? [...albums].sort((a, b) => a.displayOrder - b.displayOrder) : [])
 
   const { data: albumDetail } = useQuery({
     queryKey: ['admin', 'gallery', 'album', expandedAlbumId],
@@ -100,6 +96,7 @@ export function AdminGalleryPanel() {
     mutationFn: (orderedIds: string[]) =>
       adminGalleryApi.reorderAlbums({ orderedIds }),
     onSuccess: () => {
+      setLocalOrder(null)
       queryClient.invalidateQueries({ queryKey: ['admin', 'gallery', 'albums'] })
     },
   })
@@ -109,7 +106,7 @@ export function AdminGalleryPanel() {
     const targetIndex = direction === 'up' ? index - 1 : index + 1
     if (targetIndex < 0 || targetIndex >= newOrder.length) return
     ;[newOrder[index], newOrder[targetIndex]] = [newOrder[targetIndex], newOrder[index]]
-    setOrderedAlbums(newOrder)
+    setLocalOrder(newOrder)
     reorderMutation.mutate(newOrder.map(a => a.id))
   }
 
