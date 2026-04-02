@@ -72,14 +72,14 @@ export function InstructorsPage() {
 
                 {instructor.certifications && (
                   <div className="space-y-1">
-                    <h3 className="text-sm font-medium text-dark-300">{t('instructors.certifications')}</h3>
+                    <h3 className="text-xs font-bold tracking-widest uppercase text-primary-400">{t('instructors.certifications')}</h3>
                     <p className="text-dark-200 whitespace-pre-line">{instructor.certifications}</p>
                   </div>
                 )}
 
                 {instructor.bio && (
                   <div className="space-y-1">
-                    <h3 className="text-sm font-medium text-dark-300">{t('instructors.about')}</h3>
+                    <h3 className="text-xs font-bold tracking-widest uppercase text-primary-400">{t('instructors.about')}</h3>
                     <p className="text-dark-200 whitespace-pre-line">{instructor.bio}</p>
                   </div>
                 )}
