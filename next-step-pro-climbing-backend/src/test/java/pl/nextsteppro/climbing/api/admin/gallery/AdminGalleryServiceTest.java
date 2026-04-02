@@ -10,6 +10,7 @@ import org.springframework.web.multipart.MultipartFile;
 import pl.nextsteppro.climbing.api.admin.gallery.AdminGalleryDtos.*;
 import pl.nextsteppro.climbing.domain.gallery.Album;
 import pl.nextsteppro.climbing.domain.gallery.AlbumRepository;
+import pl.nextsteppro.climbing.domain.gallery.AlbumSummaryProjection;
 import pl.nextsteppro.climbing.domain.gallery.Photo;
 import pl.nextsteppro.climbing.domain.gallery.PhotoRepository;
 import pl.nextsteppro.climbing.infrastructure.storage.FileStorageService;
@@ -165,14 +166,14 @@ class AdminGalleryServiceTest {
     @Test
     void shouldGetAllAlbumsOrderedByCreatedDate() {
         // Given
-        Album album1 = new Album("Album 1");
-        setEntityIdViaReflection(album1, UUID.randomUUID());
+        UUID id1 = UUID.randomUUID();
+        UUID id2 = UUID.randomUUID();
+        Instant now = Instant.now();
 
-        Album album2 = new Album("Album 2");
-        setEntityIdViaReflection(album2, UUID.randomUUID());
-
-        when(albumRepository.findAllByOrderByCreatedAtDesc())
-            .thenReturn(List.of(album2, album1)); // Newest first
+        when(albumRepository.findAllAlbumSummaries()).thenReturn(List.of(
+            mockProjection(id2, "Album 2", null, now, now, null, 0L),
+            mockProjection(id1, "Album 1", null, now, now, null, 0L)
+        ));
 
         // When
         List<AlbumAdminDto> result = adminGalleryService.getAllAlbums();
@@ -187,9 +188,12 @@ class AdminGalleryServiceTest {
     @Test
     void shouldGetAlbumWithCoverPhoto() {
         // Given
-        when(albumRepository.findAllByOrderByCreatedAtDesc()).thenReturn(List.of(testAlbum));
-        when(photoRepository.findFirstByAlbumId(albumId)).thenReturn(Optional.of(testPhoto));
-        when(photoRepository.countByAlbumId(albumId)).thenReturn(5L);
+        String photoFilename = "photo123.jpg";
+        Instant now = Instant.now();
+
+        when(albumRepository.findAllAlbumSummaries()).thenReturn(List.of(
+            mockProjection(albumId, "Test Album", null, now, now, photoFilename, 5L)
+        ));
 
         // When
         List<AlbumAdminDto> result = adminGalleryService.getAllAlbums();
@@ -198,6 +202,20 @@ class AdminGalleryServiceTest {
         assertEquals(1, result.size());
         AlbumAdminDto album = result.get(0);
         assertEquals(5L, album.photoCount());
+        assertTrue(album.thumbnailUrl().contains(photoFilename));
+    }
+
+    private AlbumSummaryProjection mockProjection(UUID id, String name, String description,
+            Instant createdAt, Instant updatedAt, String firstPhotoFilename, long photoCount) {
+        return new AlbumSummaryProjection() {
+            @Override public UUID getId() { return id; }
+            @Override public String getName() { return name; }
+            @Override public String getDescription() { return description; }
+            @Override public Instant getCreatedAt() { return createdAt; }
+            @Override public Instant getUpdatedAt() { return updatedAt; }
+            @Override public String getFirstPhotoFilename() { return firstPhotoFilename; }
+            @Override public Long getPhotoCount() { return photoCount; }
+        };
     }
 
     // ========== UPDATE ALBUM TESTS ==========
