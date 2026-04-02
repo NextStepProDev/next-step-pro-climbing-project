@@ -322,6 +322,7 @@ export interface AlbumAdmin {
   description: string | null
   thumbnailUrl: string | null
   photoCount: number
+  displayOrder: number
   createdAt: string
   updatedAt: string
 }
@@ -355,6 +356,10 @@ export interface UpdateAlbumRequest {
   description?: string
 }
 
+export interface ReorderAlbumsRequest {
+  orderedIds: string[]
+}
+
 export interface UpdatePhotoRequest {
   caption?: string
   displayOrder?: number
@@ -364,4 +369,122 @@ export interface UploadPhotoResponse {
   id: string
   filename: string
   url: string
+}
+
+// ==================== News ====================
+
+export type BlockType = 'TEXT' | 'IMAGE'
+
+export interface ContentBlock {
+  id: string
+  blockType: BlockType
+  content: string | null
+  imageUrl: string | null
+  caption: string | null
+  displayOrder: number
+}
+
+export interface NewsSummary {
+  id: string
+  title: string
+  excerpt: string | null
+  thumbnailUrl: string | null
+  publishedAt: string
+}
+
+export interface NewsDetail {
+  id: string
+  title: string
+  excerpt: string | null
+  thumbnailUrl: string | null
+  blocks: ContentBlock[]
+  publishedAt: string
+}
+
+export interface ContentBlockAdmin {
+  id: string
+  blockType: BlockType
+  content: string | null
+  imageFilename: string | null
+  imageUrl: string | null
+  caption: string | null
+  displayOrder: number
+}
+
+export interface NewsAdmin {
+  id: string
+  title: string
+  excerpt: string | null
+  thumbnailUrl: string | null
+  published: boolean
+  publishedAt: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+export interface NewsDetailAdmin {
+  id: string
+  title: string
+  excerpt: string | null
+  thumbnailFilename: string | null
+  thumbnailUrl: string | null
+  published: boolean
+  publishedAt: string | null
+  blocks: ContentBlockAdmin[]
+  createdAt: string
+  updatedAt: string
+}
+
+export interface CreateNewsRequest {
+  title: string
+  excerpt?: string
+}
+
+export interface UpdateNewsMetaRequest {
+  title?: string
+  excerpt?: string
+}
+
+export interface AddTextBlockRequest {
+  content: string
+}
+
+export interface UpdateTextBlockRequest {
+  content: string
+}
+
+export interface UpdateImageBlockRequest {
+  caption?: string
+}
+
+export interface MoveBlockRequest {
+  direction: 'UP' | 'DOWN'
+}
+
+export interface UploadBlockImageResponse {
+  blockId: string
+  imageFilename: string
+  imageUrl: string
+  displayOrder: number
+}
+
+export interface UploadThumbnailResponse {
+  filename: string
+  url: string
+}
+
+export interface NewsPageDto {
+  content: NewsSummary[]
+  page: number
+  size: number
+  totalElements: number
+  hasNext: boolean
+}
+
+export interface AdminNewsPageDto {
+  content: NewsAdmin[]
+  page: number
+  size: number
+  totalElements: number
+  hasNext: boolean
 }

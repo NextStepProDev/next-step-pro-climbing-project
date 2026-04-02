@@ -28,8 +28,22 @@ import type {
   AlbumDetailAdmin,
   CreateAlbumRequest,
   UpdateAlbumRequest,
+  ReorderAlbumsRequest,
   UpdatePhotoRequest,
   UploadPhotoResponse,
+  NewsDetail,
+  NewsAdmin,
+  NewsDetailAdmin,
+  ContentBlockAdmin,
+  CreateNewsRequest,
+  UpdateNewsMetaRequest,
+  AddTextBlockRequest,
+  UpdateTextBlockRequest,
+  UpdateImageBlockRequest,
+  UploadBlockImageResponse,
+  UploadThumbnailResponse,
+  NewsPageDto,
+  AdminNewsPageDto,
 } from '../types'
 import {
   getAccessToken,
@@ -394,6 +408,11 @@ export const adminGalleryApi = {
     }),
   deleteAlbum: (id: string) =>
     fetchApi<void>(`/admin/gallery/albums/${id}`, { method: 'DELETE' }),
+  reorderAlbums: (data: ReorderAlbumsRequest) =>
+    fetchApi<void>('/admin/gallery/albums/reorder', {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
 
   // Photos
   uploadPhoto: async (albumId: string, file: File, caption?: string) => {
@@ -431,4 +450,104 @@ export const adminGalleryApi = {
     }),
   deletePhoto: (photoId: string) =>
     fetchApi<void>(`/admin/gallery/photos/${photoId}`, { method: 'DELETE' }),
+}
+
+// ==================== News (publiczne) ====================
+export const newsApi = {
+  getAll: (page = 0, size = 12) => fetchApi<NewsPageDto>(`/news?page=${page}&size=${size}`),
+  getById: (id: string) => fetchApi<NewsDetail>(`/news/${id}`),
+}
+
+// ==================== Admin News ====================
+export const adminNewsApi = {
+  getAll: (page = 0, size = 20) => fetchApi<AdminNewsPageDto>(`/admin/news?page=${page}&size=${size}`),
+  getById: (id: string) => fetchApi<NewsDetailAdmin>(`/admin/news/${id}`),
+
+  create: (data: CreateNewsRequest) =>
+    fetchApi<NewsAdmin>('/admin/news', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  updateMeta: (id: string, data: UpdateNewsMetaRequest) =>
+    fetchApi<NewsAdmin>(`/admin/news/${id}/meta`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+
+  publish: (id: string) =>
+    fetchApi<NewsAdmin>(`/admin/news/${id}/publish`, { method: 'POST' }),
+
+  unpublish: (id: string) =>
+    fetchApi<NewsAdmin>(`/admin/news/${id}/unpublish`, { method: 'POST' }),
+
+  delete: (id: string) =>
+    fetchApi<void>(`/admin/news/${id}`, { method: 'DELETE' }),
+
+  uploadThumbnail: async (id: string, file: File): Promise<UploadThumbnailResponse> => {
+    const token = await ensureValidToken()
+    const formData = new FormData()
+    formData.append('file', file)
+    const headers: Record<string, string> = { 'Accept-Language': i18n.language }
+    if (token) headers['Authorization'] = `Bearer ${token}`
+    const response = await fetch(`${API_BASE}/admin/news/${id}/thumbnail`, {
+      method: 'POST',
+      headers,
+      body: formData,
+    })
+    if (!response.ok) {
+      const body = await response.json().catch(() => null)
+      throw new Error(body?.message || i18n.t('uploadFailed', { ns: 'errors' }))
+    }
+    return response.json()
+  },
+
+  deleteThumbnail: (id: string) =>
+    fetchApi<void>(`/admin/news/${id}/thumbnail`, { method: 'DELETE' }),
+
+  addTextBlock: (newsId: string, data: AddTextBlockRequest) =>
+    fetchApi<ContentBlockAdmin>(`/admin/news/${newsId}/blocks/text`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  addImageBlock: async (newsId: string, file: File, caption?: string): Promise<UploadBlockImageResponse> => {
+    const token = await ensureValidToken()
+    const formData = new FormData()
+    formData.append('file', file)
+    if (caption) formData.append('caption', caption)
+    const headers: Record<string, string> = { 'Accept-Language': i18n.language }
+    if (token) headers['Authorization'] = `Bearer ${token}`
+    const response = await fetch(`${API_BASE}/admin/news/${newsId}/blocks/image`, {
+      method: 'POST',
+      headers,
+      body: formData,
+    })
+    if (!response.ok) {
+      const body = await response.json().catch(() => null)
+      throw new Error(body?.message || i18n.t('uploadFailed', { ns: 'errors' }))
+    }
+    return response.json()
+  },
+
+  updateTextBlock: (blockId: string, data: UpdateTextBlockRequest) =>
+    fetchApi<void>(`/admin/news/blocks/${blockId}/text`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+
+  updateImageBlock: (blockId: string, data: UpdateImageBlockRequest) =>
+    fetchApi<void>(`/admin/news/blocks/${blockId}/image`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+
+  moveBlock: (blockId: string, direction: 'UP' | 'DOWN') =>
+    fetchApi<void>(`/admin/news/blocks/${blockId}/move`, {
+      method: 'POST',
+      body: JSON.stringify({ direction }),
+    }),
+
+  deleteBlock: (blockId: string) =>
+    fetchApi<void>(`/admin/news/blocks/${blockId}`, { method: 'DELETE' }),
 }

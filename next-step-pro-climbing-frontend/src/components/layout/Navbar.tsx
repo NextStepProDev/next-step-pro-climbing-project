@@ -20,6 +20,7 @@ export function Navbar() {
   const navLinks = [
     { to: "/", label: t('nav.home') },
     { to: "/calendar", label: t('nav.calendar') },
+    { to: "/aktualnosci", label: t('nav.news') },
     { to: "/instruktorzy", label: t('nav.instructors') },
     { to: "/galeria", label: t('nav.gallery') },
     ...(isAuthenticated

@@ -2,6 +2,7 @@
   "nav": {
     "home": "Inicio",
     "calendar": "Calendario",
+    "news": "Noticias",
     "instructors": "Instructores",
     "gallery": "Galería",
     "myReservations": "Mis reservas",
@@ -56,5 +57,13 @@
     "photo_one": "foto",
     "photo_few": "fotos",
     "photo_many": "fotos"
+  },
+  "news": {
+    "title": "Noticias",
+    "noArticles": "No hay artículos para mostrar",
+    "articleNotFound": "Artículo no encontrado",
+    "backToNews": "Volver a noticias",
+    "published": "Publicado",
+    "loadMore": "Cargar más"
   }
 }

@@ -69,9 +69,10 @@ public class SecurityConfig {
                     // Public calendar endpoints
                     .requestMatchers(HttpMethod.GET, "/api/calendar/**").permitAll()
                     .requestMatchers(HttpMethod.GET, "/api/events/**").permitAll()
-                    // Public instructor and gallery endpoints
+                    // Public instructor, gallery and news endpoints
                     .requestMatchers(HttpMethod.GET, "/api/instructors/**").permitAll()
                     .requestMatchers(HttpMethod.GET, "/api/gallery/**").permitAll()
+                    .requestMatchers(HttpMethod.GET, "/api/news/**").permitAll()
                     .requestMatchers(HttpMethod.GET, "/api/files/**").permitAll();
                 // Dev endpoints only in dev profile
                 if (java.util.Arrays.asList(environment.getActiveProfiles()).contains("dev")) {

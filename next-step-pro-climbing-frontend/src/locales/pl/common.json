@@ -2,6 +2,7 @@
   "nav": {
     "home": "Start",
     "calendar": "Kalendarz",
+    "news": "Aktualności",
     "instructors": "Instruktorzy",
     "gallery": "Galeria",
     "myReservations": "Moje rezerwacje",
@@ -56,5 +57,13 @@
     "photo_one": "zdjęcie",
     "photo_few": "zdjęcia",
     "photo_many": "zdjęć"
+  },
+  "news": {
+    "title": "Aktualności",
+    "noArticles": "Brak aktualności do wyświetlenia",
+    "articleNotFound": "Artykuł nie znaleziony",
+    "backToNews": "Powrót do aktualności",
+    "published": "Opublikowano",
+    "loadMore": "Załaduj więcej"
   }
 }

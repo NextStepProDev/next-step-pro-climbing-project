@@ -17,7 +17,9 @@ import pl.nextsteppro.climbing.infrastructure.storage.FileStorageService;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -67,9 +69,26 @@ public class AdminGalleryService {
     public AlbumAdminDto createAlbum(CreateAlbumRequest request) {
         Album album = new Album(request.name());
         album.setDescription(request.description());
+        album.setDisplayOrder(albumRepository.findMaxDisplayOrder().orElse(-1) + 1);
 
         album = albumRepository.save(album);
         return toAlbumAdminDto(album);
+    }
+
+    public void reorderAlbums(List<UUID> orderedIds) {
+        List<Album> albums = albumRepository.findAllById(orderedIds);
+        if (albums.size() != orderedIds.size()) {
+            throw new IllegalArgumentException("One or more album IDs not found");
+        }
+
+        Map<UUID, Album> albumMap = albums.stream()
+                .collect(Collectors.toMap(Album::getId, a -> a));
+
+        for (int i = 0; i < orderedIds.size(); i++) {
+            albumMap.get(orderedIds.get(i)).setDisplayOrder(i);
+        }
+
+        albumRepository.saveAll(albums);
     }
 
     public AlbumAdminDto updateAlbum(UUID id, UpdateAlbumRequest request) {
@@ -158,6 +177,7 @@ public class AdminGalleryService {
                 projection.getDescription(),
                 projection.getFirstPhotoFilename() != null ? buildPhotoUrl(projection.getFirstPhotoFilename()) : null,
                 projection.getPhotoCount(),
+                projection.getDisplayOrder(),
                 projection.getCreatedAt(),
                 projection.getUpdatedAt()
         );
@@ -173,6 +193,7 @@ public class AdminGalleryService {
                 album.getDescription(),
                 firstPhoto != null ? buildPhotoUrl(firstPhoto.getFilename()) : null,
                 photoCount,
+                album.getDisplayOrder(),
                 album.getCreatedAt(),
                 album.getUpdatedAt()
         );

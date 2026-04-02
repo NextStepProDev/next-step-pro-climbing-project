@@ -117,6 +117,22 @@ public class AdminGalleryController {
         return ResponseEntity.noContent().build();
     }
 
+    @Operation(
+        summary = "Zmień kolejność albumów",
+        description = "Aktualizuje kolejność wyświetlania albumów na podstawie przesłanej listy ID"
+    )
+    @ApiResponses({
+        @ApiResponse(responseCode = "204", description = "Kolejność zaktualizowana"),
+        @ApiResponse(responseCode = "400", description = "Nieprawidłowe ID albumów"),
+        @ApiResponse(responseCode = "403", description = "Brak uprawnień administratora")
+    })
+    @PutMapping("/albums/reorder")
+    public ResponseEntity<Void> reorderAlbums(
+            @Valid @RequestBody ReorderAlbumsRequest request) {
+        adminGalleryService.reorderAlbums(request.orderedIds());
+        return ResponseEntity.noContent().build();
+    }
+
     // ==================== Photos Management ====================
 
     @Operation(

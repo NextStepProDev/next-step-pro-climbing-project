@@ -51,6 +51,17 @@ public class FileController {
         return serveFile(filename, "gallery");
     }
 
+    @Operation(summary = "Pobierz plik aktualności (miniaturka lub zdjęcie w treści)")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Plik znaleziony"),
+        @ApiResponse(responseCode = "404", description = "Plik nie istnieje")
+    })
+    @GetMapping("/news/{filename}")
+    public ResponseEntity<Resource> getNewsFile(
+            @Parameter(description = "Nazwa pliku") @PathVariable String filename) throws IOException {
+        return serveFile(filename, "news");
+    }
+
     private ResponseEntity<Resource> serveFile(String filename, String folder) throws IOException {
         if (!fileStorageService.exists(filename, folder)) {
             return ResponseEntity.notFound().build();

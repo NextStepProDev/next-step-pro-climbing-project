@@ -8,6 +8,8 @@ import { EventPage } from './pages/EventPage'
 import { InstructorsPage } from './pages/InstructorsPage'
 import { GalleryPage } from './pages/GalleryPage'
 import { AlbumPage } from './pages/AlbumPage'
+import { NewsPage } from './pages/NewsPage'
+import { NewsDetailPage } from './pages/NewsDetailPage'
 import { LoginPage } from './pages/LoginPage'
 import { RegisterPage } from './pages/RegisterPage'
 import { VerifyEmailPage } from './pages/VerifyEmailPage'
@@ -36,6 +38,8 @@ export default function App() {
           <Route path="instruktorzy" element={<InstructorsPage />} />
           <Route path="galeria" element={<GalleryPage />} />
           <Route path="galeria/:albumId" element={<AlbumPage />} />
+          <Route path="aktualnosci" element={<NewsPage />} />
+          <Route path="aktualnosci/:newsId" element={<NewsDetailPage />} />
           <Route path="login" element={<LoginPage />} />
           <Route path="register" element={<RegisterPage />} />
           <Route path="verify-email" element={<VerifyEmailPage />} />

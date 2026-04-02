@@ -1,6 +1,7 @@
 package pl.nextsteppro.climbing.api.admin.gallery;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import org.jspecify.annotations.Nullable;
 
@@ -30,8 +31,13 @@ public class AdminGalleryDtos {
             @Nullable String description,
             @Nullable String thumbnailUrl,
             long photoCount,
+            int displayOrder,
             Instant createdAt,
             Instant updatedAt
+    ) {}
+
+    public record ReorderAlbumsRequest(
+            @NotNull List<UUID> orderedIds
     ) {}
 
     public record AlbumDetailAdminDto(
