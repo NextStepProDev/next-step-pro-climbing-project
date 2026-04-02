@@ -5,12 +5,11 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Repository
 public interface AlbumRepository extends JpaRepository<Album, UUID> {
-
-    List<Album> findAllByOrderByCreatedAtDesc();
 
     /**
      * Fetch all albums with aggregated photo data in a single query.
@@ -25,6 +24,7 @@ public interface AlbumRepository extends JpaRepository<Album, UUID> {
             a.description AS description,
             a.created_at AS createdAt,
             a.updated_at AS updatedAt,
+            a.display_order AS displayOrder,
             (SELECT p.filename
              FROM photos p
              WHERE p.album_id = a.id
@@ -33,8 +33,11 @@ public interface AlbumRepository extends JpaRepository<Album, UUID> {
             COUNT(p.id) AS photoCount
         FROM albums a
         LEFT JOIN photos p ON p.album_id = a.id
-        GROUP BY a.id, a.name, a.description, a.created_at, a.updated_at
-        ORDER BY a.created_at DESC
+        GROUP BY a.id, a.name, a.description, a.created_at, a.updated_at, a.display_order
+        ORDER BY a.display_order ASC
         """, nativeQuery = true)
     List<AlbumSummaryProjection> findAllAlbumSummaries();
+
+    @Query("SELECT COALESCE(MAX(a.displayOrder), -1) FROM Album a")
+    Optional<Integer> findMaxDisplayOrder();
 }

@@ -84,6 +84,7 @@ class AdminGalleryServiceTest {
         // Given
         CreateAlbumRequest request = new CreateAlbumRequest("New Album", "New description");
 
+        when(albumRepository.findMaxDisplayOrder()).thenReturn(Optional.of(2));
         when(albumRepository.save(any(Album.class))).thenAnswer(inv -> {
             Album album = inv.getArgument(0);
             setEntityIdViaReflection(album, UUID.randomUUID());
@@ -112,6 +113,7 @@ class AdminGalleryServiceTest {
         // Given
         CreateAlbumRequest request = new CreateAlbumRequest("Album", null);
 
+        when(albumRepository.findMaxDisplayOrder()).thenReturn(Optional.empty());
         when(albumRepository.save(any(Album.class))).thenAnswer(inv -> {
             Album album = inv.getArgument(0);
             setEntityIdViaReflection(album, UUID.randomUUID());
@@ -213,6 +215,7 @@ class AdminGalleryServiceTest {
             @Override public String getDescription() { return description; }
             @Override public Instant getCreatedAt() { return createdAt; }
             @Override public Instant getUpdatedAt() { return updatedAt; }
+            @Override public int getDisplayOrder() { return 0; }
             @Override public String getFirstPhotoFilename() { return firstPhotoFilename; }
             @Override public Long getPhotoCount() { return photoCount; }
         };

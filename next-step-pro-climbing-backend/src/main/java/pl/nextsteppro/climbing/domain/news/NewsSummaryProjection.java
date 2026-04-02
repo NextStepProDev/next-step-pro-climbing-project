@@ -1,0 +1,28 @@
+package pl.nextsteppro.climbing.domain.news;
+
+import org.jspecify.annotations.Nullable;
+
+import java.time.Instant;
+import java.util.UUID;
+
+public interface NewsSummaryProjection {
+
+    UUID getId();
+
+    String getTitle();
+
+    @Nullable
+    String getExcerpt();
+
+    @Nullable
+    String getThumbnailFilename();
+
+    boolean isPublished();
+
+    @Nullable
+    Instant getPublishedAt();
+
+    Instant getCreatedAt();
+
+    Instant getUpdatedAt();
+}

@@ -21,6 +21,9 @@ public class Album {
     @Nullable
     private String description;
 
+    @Column(name = "display_order", nullable = false)
+    private int displayOrder = 0;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -58,6 +61,10 @@ public class Album {
         return description;
     }
 
+    public int getDisplayOrder() {
+        return displayOrder;
+    }
+
     public Instant getCreatedAt() {
         return createdAt;
     }
@@ -73,5 +80,9 @@ public class Album {
 
     public void setDescription(@Nullable String description) {
         this.description = description;
+    }
+
+    public void setDisplayOrder(int displayOrder) {
+        this.displayOrder = displayOrder;
     }
 }

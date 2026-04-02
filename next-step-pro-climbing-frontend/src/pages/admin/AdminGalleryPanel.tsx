@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Image as ImageIcon, Plus, Pencil, Trash2, Upload } from 'lucide-react'
+import { Image as ImageIcon, Plus, Pencil, Trash2, Upload, ChevronUp, ChevronDown } from 'lucide-react'
 import { adminGalleryApi } from '../../api/client'
 import type { AlbumAdmin, CreateAlbumRequest, UpdateAlbumRequest } from '../../types'
 import { Button } from '../../components/ui/Button'
@@ -12,6 +12,7 @@ import { QueryError } from '../../components/ui/QueryError'
 
 export function AdminGalleryPanel() {
   const queryClient = useQueryClient()
+  const [orderedAlbums, setOrderedAlbums] = useState<AlbumAdmin[]>([])
   const [createAlbumModalOpen, setCreateAlbumModalOpen] = useState(false)
   const [editAlbumModalOpen, setEditAlbumModalOpen] = useState(false)
   const [uploadPhotoModalOpen, setUploadPhotoModalOpen] = useState(false)
@@ -30,6 +31,12 @@ export function AdminGalleryPanel() {
     queryKey: ['admin', 'gallery', 'albums'],
     queryFn: adminGalleryApi.getAllAlbums,
   })
+
+  useEffect(() => {
+    if (albums) {
+      setOrderedAlbums([...albums].sort((a, b) => a.displayOrder - b.displayOrder))
+    }
+  }, [albums])
 
   const { data: albumDetail } = useQuery({
     queryKey: ['admin', 'gallery', 'album', expandedAlbumId],
@@ -88,6 +95,23 @@ export function AdminGalleryPanel() {
       setSelectedPhoto(null)
     },
   })
+
+  const reorderMutation = useMutation({
+    mutationFn: (orderedIds: string[]) =>
+      adminGalleryApi.reorderAlbums({ orderedIds }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'gallery', 'albums'] })
+    },
+  })
+
+  const handleMove = (index: number, direction: 'up' | 'down') => {
+    const newOrder = [...orderedAlbums]
+    const targetIndex = direction === 'up' ? index - 1 : index + 1
+    if (targetIndex < 0 || targetIndex >= newOrder.length) return
+    ;[newOrder[index], newOrder[targetIndex]] = [newOrder[targetIndex], newOrder[index]]
+    setOrderedAlbums(newOrder)
+    reorderMutation.mutate(newOrder.map(a => a.id))
+  }
 
   const handleCreateAlbum = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -195,13 +219,13 @@ export function AdminGalleryPanel() {
       </div>
 
       {/* Albums List */}
-      {!albums || albums.length === 0 ? (
+      {orderedAlbums.length === 0 && !isLoading ? (
         <div className="text-center py-12 text-dark-400">
           Brak albumów. Dodaj pierwszy używając przycisku powyżej.
         </div>
       ) : (
         <div className="space-y-4">
-          {albums.map((album) => (
+          {orderedAlbums.map((album, index) => (
             <div
               key={album.id}
               className="bg-dark-800 rounded-lg border border-dark-700 overflow-hidden"
@@ -237,6 +261,24 @@ export function AdminGalleryPanel() {
                         )}
                       </div>
                       <div className="flex gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleMove(index, 'up')}
+                          disabled={index === 0 || reorderMutation.isPending}
+                          title="Przesuń wyżej"
+                        >
+                          <ChevronUp className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleMove(index, 'down')}
+                          disabled={index === orderedAlbums.length - 1 || reorderMutation.isPending}
+                          title="Przesuń niżej"
+                        >
+                          <ChevronDown className="h-4 w-4" />
+                        </Button>
                         <Button
                           variant="ghost"
                           size="sm"

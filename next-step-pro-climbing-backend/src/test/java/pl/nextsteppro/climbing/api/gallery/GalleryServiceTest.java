@@ -69,6 +69,11 @@ class GalleryServiceTest {
             }
 
             @Override
+            public int getDisplayOrder() {
+                return 0;
+            }
+
+            @Override
             public String getFirstPhotoFilename() {
                 return photoFilename;
             }
@@ -131,6 +136,11 @@ class GalleryServiceTest {
             @Override
             public Instant getUpdatedAt() {
                 return Instant.now();
+            }
+
+            @Override
+            public int getDisplayOrder() {
+                return 0;
             }
 
             @Override
@@ -238,6 +248,11 @@ class GalleryServiceTest {
             }
 
             @Override
+            public int getDisplayOrder() {
+                return 0;
+            }
+
+            @Override
             public String getFirstPhotoFilename() {
                 return filename;
             }
@@ -291,6 +306,11 @@ class GalleryServiceTest {
                 @Override
                 public Instant getUpdatedAt() {
                     return Instant.now();
+                }
+
+                @Override
+                public int getDisplayOrder() {
+                    return photoCount;
                 }
 
                 @Override
