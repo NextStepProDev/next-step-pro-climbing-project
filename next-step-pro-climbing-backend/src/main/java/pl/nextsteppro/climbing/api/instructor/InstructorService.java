@@ -48,6 +48,8 @@ public class InstructorService {
                 instructor.getFirstName(),
                 instructor.getLastName(),
                 buildPhotoUrl(instructor.getPhotoFilename()),
+                instructor.getFocalPointX(),
+                instructor.getFocalPointY(),
                 instructor.getBio(),
                 instructor.getCertifications(),
                 instructor.getCreatedAt()

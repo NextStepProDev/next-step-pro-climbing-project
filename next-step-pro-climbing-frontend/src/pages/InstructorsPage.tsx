@@ -56,6 +56,7 @@ export function InstructorsPage() {
                     src={instructor.photoUrl}
                     alt={`${instructor.firstName} ${instructor.lastName}`}
                     className="w-32 h-32 rounded-full object-cover border-2 border-primary-500/20"
+                    style={instructor.focalPointX != null ? { objectPosition: `${instructor.focalPointX * 100}% ${(instructor.focalPointY ?? 0.5) * 100}%` } : undefined}
                   />
                 ) : (
                   <div className="w-32 h-32 rounded-full bg-dark-700 border-2 border-dark-600 flex items-center justify-center">

@@ -79,6 +79,12 @@ public class AdminInstructorService {
         if (request.displayOrder() != null) {
             instructor.setDisplayOrder(request.displayOrder());
         }
+        if (request.focalPointX() != null) {
+            instructor.setFocalPointX(request.focalPointX());
+        }
+        if (request.focalPointY() != null) {
+            instructor.setFocalPointY(request.focalPointY());
+        }
 
         instructor = instructorRepository.save(instructor);
         return toAdminDto(instructor);
@@ -141,6 +147,8 @@ public class AdminInstructorService {
                 instructor.getLastName(),
                 instructor.getPhotoFilename(),
                 buildPhotoUrl(instructor.getPhotoFilename()),
+                instructor.getFocalPointX(),
+                instructor.getFocalPointY(),
                 instructor.getBio(),
                 instructor.getCertifications(),
                 instructor.getDisplayOrder(),

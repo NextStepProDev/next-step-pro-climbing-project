@@ -9,6 +9,7 @@ import { ConfirmModal } from '../../components/ui/ConfirmModal'
 import { FileUpload } from '../../components/ui/FileUpload'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
 import { QueryError } from '../../components/ui/QueryError'
+import { FocalPointEditor } from '../../components/ui/FocalPointEditor'
 
 export function AdminInstructorsPanel() {
   const queryClient = useQueryClient()
@@ -19,6 +20,7 @@ export function AdminInstructorsPanel() {
   const [selectedInstructor, setSelectedInstructor] = useState<InstructorAdmin | null>(null)
   const [photoPreview, setPhotoPreview] = useState<string | null>(null)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [focalPoint, setFocalPoint] = useState({ x: 0.5, y: 0.5 })
 
   const { data: instructors, isLoading, error } = useQuery({
     queryKey: ['admin', 'instructors'],
@@ -94,6 +96,7 @@ export function AdminInstructorsPanel() {
       certifications: formData.get('certifications') as string || undefined,
       active: formData.get('active') === 'on',
       displayOrder: parseInt(formData.get('displayOrder') as string) || 0,
+      ...(selectedInstructor.photoUrl ? { focalPointX: focalPoint.x, focalPointY: focalPoint.y } : {}),
     }
     updateMutation.mutate({ id: selectedInstructor.id, data })
   }
@@ -113,6 +116,15 @@ export function AdminInstructorsPanel() {
     const previewUrl = URL.createObjectURL(file)
     setPhotoPreview(previewUrl)
   }
+
+  useEffect(() => {
+    if (selectedInstructor) {
+      setFocalPoint({
+        x: selectedInstructor.focalPointX ?? 0.5,
+        y: selectedInstructor.focalPointY ?? 0.5,
+      })
+    }
+  }, [selectedInstructor?.id])
 
   // Cleanup: revoke blob URL when component unmounts or preview changes
   useEffect(() => {
@@ -166,6 +178,7 @@ export function AdminInstructorsPanel() {
                       src={instructor.photoUrl}
                       alt={instructor.firstName}
                       className="w-32 h-32 rounded-full object-cover border-2 border-primary-500/20"
+                      style={instructor.focalPointX != null ? { objectPosition: `${instructor.focalPointX * 100}% ${(instructor.focalPointY ?? 0.5) * 100}%` } : undefined}
                     />
                   ) : (
                     <div className="w-32 h-32 rounded-full bg-dark-700 border-2 border-dark-600 flex items-center justify-center">
@@ -394,6 +407,29 @@ export function AdminInstructorsPanel() {
                 className="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-dark-100 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               />
             </div>
+
+            {selectedInstructor.photoUrl && (
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-sm font-medium text-dark-200">
+                    Punkt kadrowania zdjęcia
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setFocalPoint({ x: 0.5, y: 0.5 })}
+                    className="text-xs text-primary-400 hover:text-primary-300 transition-colors"
+                  >
+                    Resetuj do środka
+                  </button>
+                </div>
+                <p className="text-xs text-dark-400 mb-2">Kliknij lub przeciągnij aby ustawić centrum kadrowania</p>
+                <FocalPointEditor
+                  imageUrl={selectedInstructor.photoUrl}
+                  value={focalPoint}
+                  onChange={setFocalPoint}
+                />
+              </div>
+            )}
 
             <div className="grid grid-cols-2 gap-4">
               <div>
