@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Image as ImageIcon, Plus, Pencil, Trash2, Upload, ChevronUp, ChevronDown, Star } from 'lucide-react'
 import { adminGalleryApi } from '../../api/client'
@@ -190,15 +190,6 @@ export function AdminGalleryPanel() {
       })
     }
   }, [photoPreviews])
-
-  useEffect(() => {
-    if (selectedPhoto) {
-      setFocalPoint({
-        x: selectedPhoto.focalPointX ?? 0.5,
-        y: selectedPhoto.focalPointY ?? 0.5,
-      })
-    }
-  }, [selectedPhoto?.id])
 
   const handleUpdatePhoto = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -403,6 +394,7 @@ export function AdminGalleryPanel() {
                               size="sm"
                               onClick={() => {
                                 setSelectedPhoto({ id: photo.id, caption: photo.caption, url: photo.url, focalPointX: photo.focalPointX, focalPointY: photo.focalPointY })
+                                setFocalPoint({ x: photo.focalPointX ?? 0.5, y: photo.focalPointY ?? 0.5 })
                                 setEditPhotoModalOpen(true)
                               }}
                               className="bg-dark-800/80 hover:bg-dark-700"

@@ -117,15 +117,6 @@ export function AdminInstructorsPanel() {
     setPhotoPreview(previewUrl)
   }
 
-  useEffect(() => {
-    if (selectedInstructor) {
-      setFocalPoint({
-        x: selectedInstructor.focalPointX ?? 0.5,
-        y: selectedInstructor.focalPointY ?? 0.5,
-      })
-    }
-  }, [selectedInstructor?.id])
-
   // Cleanup: revoke blob URL when component unmounts or preview changes
   useEffect(() => {
     return () => {
@@ -218,6 +209,7 @@ export function AdminInstructorsPanel() {
                         size="sm"
                         onClick={() => {
                           setSelectedInstructor(instructor)
+                          setFocalPoint({ x: instructor.focalPointX ?? 0.5, y: instructor.focalPointY ?? 0.5 })
                           setEditModalOpen(true)
                         }}
                       >

@@ -193,7 +193,9 @@ class AdminInstructorServiceTest {
             "Updated bio",
             "Updated certs",
             false,
-            5
+            5,
+            null,
+            null
         );
 
         when(instructorRepository.findById(instructorId)).thenReturn(Optional.of(testInstructor));
@@ -219,6 +221,8 @@ class AdminInstructorServiceTest {
         // Given
         UpdateInstructorRequest request = new UpdateInstructorRequest(
             "Jane",
+            null,
+            null,
             null,
             null,
             null,
@@ -250,6 +254,8 @@ class AdminInstructorServiceTest {
             null,
             null,
             null,
+            null,
+            null,
             null
         );
 
@@ -272,7 +278,9 @@ class AdminInstructorServiceTest {
             null,
             null,
             null,
-            10
+            10,
+            null,
+            null
         );
 
         when(instructorRepository.findById(instructorId)).thenReturn(Optional.of(testInstructor));
@@ -295,6 +303,8 @@ class AdminInstructorServiceTest {
             null,
             null,
             false,
+            null,
+            null,
             null
         );
 
