@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Image as ImageIcon, Plus, Pencil, Trash2, Upload, ChevronUp, ChevronDown, Star } from 'lucide-react'
 import { adminGalleryApi } from '../../api/client'
@@ -21,7 +21,8 @@ export function AdminGalleryPanel() {
   const [deletePhotoConfirmOpen, setDeletePhotoConfirmOpen] = useState(false)
   const [selectedAlbum, setSelectedAlbum] = useState<AlbumAdmin | null>(null)
   const [selectedPhotoId, setSelectedPhotoId] = useState<string | null>(null)
-  const [selectedPhoto, setSelectedPhoto] = useState<{ id: string; caption: string | null } | null>(null)
+  const [selectedPhoto, setSelectedPhoto] = useState<{ id: string; caption: string | null; url: string; focalPointX: number | null; focalPointY: number | null } | null>(null)
+  const [focalPoint, setFocalPoint] = useState({ x: 0.5, y: 0.5 })
   const [expandedAlbumId, setExpandedAlbumId] = useState<string | null>(null)
   const [photoPreviews, setPhotoPreviews] = useState<string[]>([])
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
@@ -189,6 +190,15 @@ export function AdminGalleryPanel() {
     }
   }, [photoPreviews])
 
+  useEffect(() => {
+    if (selectedPhoto) {
+      setFocalPoint({
+        x: selectedPhoto.focalPointX ?? 0.5,
+        y: selectedPhoto.focalPointY ?? 0.5,
+      })
+    }
+  }, [selectedPhoto?.id])
+
   const handleUpdatePhoto = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     if (!selectedPhoto) return
@@ -196,7 +206,11 @@ export function AdminGalleryPanel() {
     const caption = formData.get('caption') as string
     updatePhotoMutation.mutate({
       photoId: selectedPhoto.id,
-      data: { caption: caption || undefined },
+      data: {
+        caption: caption || undefined,
+        focalPointX: focalPoint.x,
+        focalPointY: focalPoint.y,
+      },
     })
   }
 
@@ -245,6 +259,7 @@ export function AdminGalleryPanel() {
                         src={album.thumbnailUrl}
                         alt={album.name}
                         className="w-32 h-24 object-cover rounded-lg"
+                        style={album.thumbnailFocalPointX != null ? { objectPosition: `${album.thumbnailFocalPointX * 100}% ${(album.thumbnailFocalPointY ?? 0.5) * 100}%` } : undefined}
                       />
                     ) : (
                       <div className="w-32 h-24 bg-dark-700 rounded-lg flex items-center justify-center">
@@ -386,7 +401,7 @@ export function AdminGalleryPanel() {
                               variant="ghost"
                               size="sm"
                               onClick={() => {
-                                setSelectedPhoto({ id: photo.id, caption: photo.caption })
+                                setSelectedPhoto({ id: photo.id, caption: photo.caption, url: photo.url, focalPointX: photo.focalPointX, focalPointY: photo.focalPointY })
                                 setEditPhotoModalOpen(true)
                               }}
                               className="bg-dark-800/80 hover:bg-dark-700"
@@ -631,9 +646,30 @@ export function AdminGalleryPanel() {
               <textarea
                 name="caption"
                 defaultValue={selectedPhoto.caption || ''}
-                rows={3}
+                rows={2}
                 className="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-dark-100 focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
                 placeholder="Dodaj opis zdjęcia..."
+              />
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-sm font-medium text-dark-200">
+                  Punkt kadrowania miniaturki
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setFocalPoint({ x: 0.5, y: 0.5 })}
+                  className="text-xs text-primary-400 hover:text-primary-300 transition-colors"
+                >
+                  Resetuj do środka
+                </button>
+              </div>
+              <p className="text-xs text-dark-400 mb-2">Kliknij lub przeciągnij aby ustawić centrum kadrowania</p>
+              <FocalPointEditor
+                imageUrl={selectedPhoto.url}
+                value={focalPoint}
+                onChange={setFocalPoint}
               />
             </div>
 
@@ -696,6 +732,66 @@ export function AdminGalleryPanel() {
         message="Czy na pewno chcesz usunąć to zdjęcie? Tej operacji nie można cofnąć."
         confirmText="Usuń"
       />
+    </div>
+  )
+}
+
+function FocalPointEditor({
+  imageUrl,
+  value,
+  onChange,
+}: {
+  imageUrl: string
+  value: { x: number; y: number }
+  onChange: (point: { x: number; y: number }) => void
+}) {
+  const containerRef = useRef<HTMLDivElement>(null)
+  const isDragging = useRef(false)
+
+  const updateFromEvent = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!containerRef.current) return
+    const rect = containerRef.current.getBoundingClientRect()
+    const x = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width))
+    const y = Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height))
+    onChange({ x, y })
+  }
+
+  return (
+    <div className="space-y-1">
+      <div
+        ref={containerRef}
+        className="relative w-full aspect-video rounded-lg overflow-hidden cursor-crosshair select-none"
+        onMouseDown={(e) => { isDragging.current = true; updateFromEvent(e) }}
+        onMouseMove={(e) => { if (isDragging.current) updateFromEvent(e) }}
+        onMouseUp={() => { isDragging.current = false }}
+        onMouseLeave={() => { isDragging.current = false }}
+      >
+        <img
+          src={imageUrl}
+          alt=""
+          className="w-full h-full object-cover pointer-events-none"
+          draggable={false}
+        />
+        {/* Crosshair lines */}
+        <div
+          className="absolute top-0 bottom-0 w-px bg-white/70 pointer-events-none"
+          style={{ left: `${value.x * 100}%` }}
+        />
+        <div
+          className="absolute left-0 right-0 h-px bg-white/70 pointer-events-none"
+          style={{ top: `${value.y * 100}%` }}
+        />
+        {/* Focal point dot */}
+        <div
+          className="absolute w-5 h-5 -translate-x-1/2 -translate-y-1/2 pointer-events-none"
+          style={{ left: `${value.x * 100}%`, top: `${value.y * 100}%` }}
+        >
+          <div className="w-full h-full rounded-full border-2 border-white bg-primary-500/70 shadow-md" />
+        </div>
+      </div>
+      <p className="text-xs text-dark-500 text-right">
+        {Math.round(value.x * 100)}% × {Math.round(value.y * 100)}%
+      </p>
     </div>
   )
 }

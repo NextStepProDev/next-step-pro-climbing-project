@@ -28,6 +28,14 @@ public class Photo {
     @Column(name = "display_order", nullable = false)
     private int displayOrder = 0;
 
+    @Column(name = "focal_point_x")
+    @Nullable
+    private Float focalPointX;
+
+    @Column(name = "focal_point_y")
+    @Nullable
+    private Float focalPointY;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -97,5 +105,23 @@ public class Photo {
 
     public void setDisplayOrder(int displayOrder) {
         this.displayOrder = displayOrder;
+    }
+
+    @Nullable
+    public Float getFocalPointX() {
+        return focalPointX;
+    }
+
+    public void setFocalPointX(@Nullable Float focalPointX) {
+        this.focalPointX = focalPointX;
+    }
+
+    @Nullable
+    public Float getFocalPointY() {
+        return focalPointY;
+    }
+
+    public void setFocalPointY(@Nullable Float focalPointY) {
+        this.focalPointY = focalPointY;
     }
 }

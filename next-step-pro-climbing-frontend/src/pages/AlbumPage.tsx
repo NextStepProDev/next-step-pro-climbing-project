@@ -82,6 +82,7 @@ export function AlbumPage() {
                 src={photo.url}
                 alt={photo.caption || ''}
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                style={photo.focalPointX != null ? { objectPosition: `${photo.focalPointX * 100}% ${(photo.focalPointY ?? 0.5) * 100}%` } : undefined}
               />
             </button>
           ))}

@@ -35,6 +35,26 @@ public interface AlbumRepository extends JpaRepository<Album, UUID> {
                  ORDER BY p_first.display_order ASC, p_first.created_at ASC
                  LIMIT 1)
             ) AS firstPhotoFilename,
+            COALESCE(
+                (SELECT p_thumb.focal_point_x
+                 FROM photos p_thumb
+                 WHERE p_thumb.id = a.thumbnail_photo_id),
+                (SELECT p_first.focal_point_x
+                 FROM photos p_first
+                 WHERE p_first.album_id = a.id
+                 ORDER BY p_first.display_order ASC, p_first.created_at ASC
+                 LIMIT 1)
+            ) AS thumbnailFocalPointX,
+            COALESCE(
+                (SELECT p_thumb.focal_point_y
+                 FROM photos p_thumb
+                 WHERE p_thumb.id = a.thumbnail_photo_id),
+                (SELECT p_first.focal_point_y
+                 FROM photos p_first
+                 WHERE p_first.album_id = a.id
+                 ORDER BY p_first.display_order ASC, p_first.created_at ASC
+                 LIMIT 1)
+            ) AS thumbnailFocalPointY,
             COUNT(p.id) AS photoCount
         FROM albums a
         LEFT JOIN photos p ON p.album_id = a.id

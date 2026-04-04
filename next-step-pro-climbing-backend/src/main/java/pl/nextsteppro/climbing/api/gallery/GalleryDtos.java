@@ -16,6 +16,8 @@ public class GalleryDtos {
             String name,
             @Nullable String description,
             @Nullable String thumbnailUrl,
+            @Nullable Float thumbnailFocalPointX,
+            @Nullable Float thumbnailFocalPointY,
             long photoCount,
             Instant createdAt
     ) {}
@@ -33,6 +35,8 @@ public class GalleryDtos {
             UUID id,
             String url,
             @Nullable String caption,
+            @Nullable Float focalPointX,
+            @Nullable Float focalPointY,
             Instant createdAt
     ) {}
 }

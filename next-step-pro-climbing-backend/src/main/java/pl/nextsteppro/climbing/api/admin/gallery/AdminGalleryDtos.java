@@ -30,6 +30,8 @@ public class AdminGalleryDtos {
             String name,
             @Nullable String description,
             @Nullable String thumbnailUrl,
+            @Nullable Float thumbnailFocalPointX,
+            @Nullable Float thumbnailFocalPointY,
             long photoCount,
             int displayOrder,
             Instant createdAt,
@@ -57,6 +59,8 @@ public class AdminGalleryDtos {
             String url,
             @Nullable String caption,
             int displayOrder,
+            @Nullable Float focalPointX,
+            @Nullable Float focalPointY,
             Instant createdAt,
             Instant updatedAt
     ) {}
@@ -67,7 +71,9 @@ public class AdminGalleryDtos {
 
     public record UpdatePhotoRequest(
             @Nullable String caption,
-            @Nullable Integer displayOrder
+            @Nullable Integer displayOrder,
+            @Nullable Float focalPointX,
+            @Nullable Float focalPointY
     ) {}
 
     public record UploadPhotoResponse(
