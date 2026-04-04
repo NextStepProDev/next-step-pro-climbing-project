@@ -25,7 +25,9 @@ public class AdminInstructorDtos {
             @Nullable String bio,
             @Nullable String certifications,
             @Nullable Boolean active,
-            @Nullable Integer displayOrder
+            @Nullable Integer displayOrder,
+            @Nullable Float focalPointX,
+            @Nullable Float focalPointY
     ) {}
 
     public record InstructorAdminDto(
@@ -34,6 +36,8 @@ public class AdminInstructorDtos {
             String lastName,
             @Nullable String photoFilename,
             @Nullable String photoUrl,
+            @Nullable Float focalPointX,
+            @Nullable Float focalPointY,
             @Nullable String bio,
             @Nullable String certifications,
             int displayOrder,

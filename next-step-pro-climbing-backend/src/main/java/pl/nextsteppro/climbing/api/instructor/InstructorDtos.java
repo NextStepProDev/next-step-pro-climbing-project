@@ -15,6 +15,8 @@ public class InstructorDtos {
             String firstName,
             String lastName,
             @Nullable String photoUrl,
+            @Nullable Float focalPointX,
+            @Nullable Float focalPointY,
             @Nullable String bio,
             @Nullable String certifications,
             Instant createdAt

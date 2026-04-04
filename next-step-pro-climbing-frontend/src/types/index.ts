@@ -255,6 +255,8 @@ export interface InstructorPublic {
   firstName: string
   lastName: string
   photoUrl: string | null
+  focalPointX: number | null
+  focalPointY: number | null
   bio: string | null
   certifications: string | null
   createdAt: string
@@ -266,6 +268,8 @@ export interface InstructorAdmin {
   lastName: string
   photoFilename: string | null
   photoUrl: string | null
+  focalPointX: number | null
+  focalPointY: number | null
   bio: string | null
   certifications: string | null
   displayOrder: number
@@ -288,6 +292,8 @@ export interface UpdateInstructorRequest {
   certifications?: string
   active?: boolean
   displayOrder?: number
+  focalPointX?: number
+  focalPointY?: number
 }
 
 // Gallery types

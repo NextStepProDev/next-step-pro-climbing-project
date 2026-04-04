@@ -35,6 +35,14 @@ public class Instructor {
     @Column(name = "display_order", nullable = false)
     private int displayOrder = 0;
 
+    @Column(name = "focal_point_x")
+    @Nullable
+    private Float focalPointX;
+
+    @Column(name = "focal_point_y")
+    @Nullable
+    private Float focalPointY;
+
     @Column(name = "is_active", nullable = false)
     private boolean active = true;
 
@@ -137,5 +145,23 @@ public class Instructor {
 
     public void setActive(boolean active) {
         this.active = active;
+    }
+
+    @Nullable
+    public Float getFocalPointX() {
+        return focalPointX;
+    }
+
+    public void setFocalPointX(@Nullable Float focalPointX) {
+        this.focalPointX = focalPointX;
+    }
+
+    @Nullable
+    public Float getFocalPointY() {
+        return focalPointY;
+    }
+
+    public void setFocalPointY(@Nullable Float focalPointY) {
+        this.focalPointY = focalPointY;
     }
 }
