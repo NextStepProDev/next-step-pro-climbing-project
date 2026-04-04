@@ -94,6 +94,11 @@
     "submit": "Utwórz termin",
     "cancel": "Anuluj"
   },
+  "customSlot": {
+    "title": "Nie znalazłeś odpowiedniego terminu?",
+    "description": "Zadzwoń lub napisz — chętnie umówimy termin indywidualnie, dopasowany do Twoich możliwości.",
+    "email": "Napisz e-mail"
+  },
   "availability": {
     "closed": "Zapisy zamknięte",
     "noSpots": "Brak miejsc",
