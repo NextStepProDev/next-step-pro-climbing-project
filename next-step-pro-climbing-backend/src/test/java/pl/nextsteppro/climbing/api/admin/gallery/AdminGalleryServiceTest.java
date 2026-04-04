@@ -84,7 +84,7 @@ class AdminGalleryServiceTest {
         // Given
         CreateAlbumRequest request = new CreateAlbumRequest("New Album", "New description");
 
-        when(albumRepository.findMaxDisplayOrder()).thenReturn(Optional.of(2));
+        when(albumRepository.findMinDisplayOrder()).thenReturn(Optional.of(2));
         when(albumRepository.save(any(Album.class))).thenAnswer(inv -> {
             Album album = inv.getArgument(0);
             setEntityIdViaReflection(album, UUID.randomUUID());
@@ -113,7 +113,7 @@ class AdminGalleryServiceTest {
         // Given
         CreateAlbumRequest request = new CreateAlbumRequest("Album", null);
 
-        when(albumRepository.findMaxDisplayOrder()).thenReturn(Optional.empty());
+        when(albumRepository.findMinDisplayOrder()).thenReturn(Optional.empty());
         when(albumRepository.save(any(Album.class))).thenAnswer(inv -> {
             Album album = inv.getArgument(0);
             setEntityIdViaReflection(album, UUID.randomUUID());
