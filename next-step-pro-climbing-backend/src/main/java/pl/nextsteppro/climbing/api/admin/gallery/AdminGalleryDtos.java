@@ -44,6 +44,7 @@ public class AdminGalleryDtos {
             UUID id,
             String name,
             @Nullable String description,
+            @Nullable UUID thumbnailPhotoId,
             List<PhotoAdminDto> photos,
             Instant createdAt,
             Instant updatedAt
@@ -58,6 +59,10 @@ public class AdminGalleryDtos {
             int displayOrder,
             Instant createdAt,
             Instant updatedAt
+    ) {}
+
+    public record SetThumbnailRequest(
+            @NotNull UUID photoId
     ) {}
 
     public record UpdatePhotoRequest(

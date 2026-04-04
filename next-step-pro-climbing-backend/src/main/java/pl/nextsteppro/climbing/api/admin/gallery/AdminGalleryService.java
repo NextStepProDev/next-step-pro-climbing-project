@@ -60,6 +60,7 @@ public class AdminGalleryService {
                 album.getId(),
                 album.getName(),
                 album.getDescription(),
+                album.getThumbnailPhotoId(),
                 photos.stream().map(this::toPhotoAdminDto).toList(),
                 album.getCreatedAt(),
                 album.getUpdatedAt()
@@ -69,7 +70,7 @@ public class AdminGalleryService {
     public AlbumAdminDto createAlbum(CreateAlbumRequest request) {
         Album album = new Album(request.name());
         album.setDescription(request.description());
-        album.setDisplayOrder(albumRepository.findMaxDisplayOrder().orElse(-1) + 1);
+        album.setDisplayOrder(albumRepository.findMinDisplayOrder().orElse(1) - 1);
 
         album = albumRepository.save(album);
         return toAlbumAdminDto(album);
@@ -123,6 +124,21 @@ public class AdminGalleryService {
 
         // Delete album (CASCADE will delete photo records)
         albumRepository.delete(album);
+    }
+
+    public void setThumbnailPhoto(UUID albumId, UUID photoId) {
+        Album album = albumRepository.findById(albumId)
+                .orElseThrow(() -> new IllegalArgumentException("Album not found"));
+
+        Photo photo = photoRepository.findById(photoId)
+                .orElseThrow(() -> new IllegalArgumentException("Photo not found"));
+
+        if (!photo.getAlbum().getId().equals(albumId)) {
+            throw new IllegalArgumentException("Photo does not belong to this album");
+        }
+
+        album.setThumbnailPhotoId(photoId);
+        albumRepository.save(album);
     }
 
     // Photo operations
