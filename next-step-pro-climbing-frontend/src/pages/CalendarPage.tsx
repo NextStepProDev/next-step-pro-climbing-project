@@ -13,6 +13,7 @@ import { EventSignupModal } from "../components/calendar/EventSignupModal";
 import { CreateSlotModal } from "../components/calendar/CreateSlotModal";
 import { LoadingSpinner } from "../components/ui/LoadingSpinner";
 import { QueryError } from "../components/ui/QueryError";
+import { Phone, Mail } from "lucide-react";
 import { formatAvailability, getEventColor, buildEventColorMap } from "../utils/events";
 import type { EventSummary } from "../types";
 
@@ -399,6 +400,30 @@ export function CalendarPage() {
           defaultDate={selectedDate}
         />
       )}
+
+      {/* Indywidualny termin */}
+      <div className="mt-6 bg-dark-900 rounded-xl border border-dark-800 p-5 flex flex-col sm:flex-row items-start sm:items-center gap-4">
+        <div className="flex-1">
+          <p className="text-dark-100 font-semibold text-sm">{t('customSlot.title')}</p>
+          <p className="text-dark-400 text-sm mt-1">{t('customSlot.description')}</p>
+        </div>
+        <div className="flex flex-col sm:flex-row gap-3 shrink-0">
+          <a
+            href="tel:+48535246673"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary-600 hover:bg-primary-500 text-white text-sm font-medium transition-colors"
+          >
+            <Phone className="w-4 h-4" />
+            +48 535 246 673
+          </a>
+          <a
+            href="mailto:nextsteppro.team@gmail.com"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-dark-800 hover:bg-dark-700 text-dark-200 text-sm font-medium transition-colors"
+          >
+            <Mail className="w-4 h-4" />
+            {t('customSlot.email')}
+          </a>
+        </div>
+      </div>
     </div>
   );
 }
