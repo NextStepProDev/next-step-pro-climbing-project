@@ -52,6 +52,7 @@ public class AdminInstructorService {
         instructor.setBio(request.bio());
         instructor.setCertifications(request.certifications());
 
+        instructor.setDisplayOrder(instructorRepository.findMinDisplayOrder().orElse(1) - 1);
         instructor = instructorRepository.save(instructor);
         return toAdminDto(instructor);
     }
