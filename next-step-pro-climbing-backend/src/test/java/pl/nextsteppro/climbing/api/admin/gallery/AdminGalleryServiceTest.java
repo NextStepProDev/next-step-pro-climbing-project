@@ -217,6 +217,8 @@ class AdminGalleryServiceTest {
             @Override public Instant getUpdatedAt() { return updatedAt; }
             @Override public int getDisplayOrder() { return 0; }
             @Override public String getFirstPhotoFilename() { return firstPhotoFilename; }
+            @Override public Float getThumbnailFocalPointX() { return null; }
+            @Override public Float getThumbnailFocalPointY() { return null; }
             @Override public Long getPhotoCount() { return photoCount; }
         };
     }
@@ -425,7 +427,7 @@ class AdminGalleryServiceTest {
     @Test
     void shouldUpdatePhotoCaptionAndDisplayOrder() {
         // Given
-        UpdatePhotoRequest request = new UpdatePhotoRequest("New caption", 5);
+        UpdatePhotoRequest request = new UpdatePhotoRequest("New caption", 5, null, null);
 
         when(photoRepository.findById(photoId)).thenReturn(Optional.of(testPhoto));
         when(photoRepository.save(any(Photo.class))).thenAnswer(inv -> inv.getArgument(0));
@@ -444,7 +446,7 @@ class AdminGalleryServiceTest {
     void shouldUpdatePhotoPartialFields() {
         // Given
         testPhoto.setDisplayOrder(3);
-        UpdatePhotoRequest request = new UpdatePhotoRequest("New caption", null);
+        UpdatePhotoRequest request = new UpdatePhotoRequest("New caption", null, null, null);
 
         when(photoRepository.findById(photoId)).thenReturn(Optional.of(testPhoto));
         when(photoRepository.save(any(Photo.class))).thenAnswer(inv -> inv.getArgument(0));
@@ -462,7 +464,7 @@ class AdminGalleryServiceTest {
     @Test
     void shouldUpdateDisplayOrderOnly() {
         // Given
-        UpdatePhotoRequest request = new UpdatePhotoRequest(null, 10);
+        UpdatePhotoRequest request = new UpdatePhotoRequest(null, 10, null, null);
 
         when(photoRepository.findById(photoId)).thenReturn(Optional.of(testPhoto));
         when(photoRepository.save(any(Photo.class))).thenAnswer(inv -> inv.getArgument(0));
@@ -480,7 +482,7 @@ class AdminGalleryServiceTest {
     @Test
     void shouldThrowExceptionWhenUpdatingNonExistentPhoto() {
         // Given
-        UpdatePhotoRequest request = new UpdatePhotoRequest("Caption", 1);
+        UpdatePhotoRequest request = new UpdatePhotoRequest("Caption", 1, null, null);
 
         when(photoRepository.findById(photoId)).thenReturn(Optional.empty());
 

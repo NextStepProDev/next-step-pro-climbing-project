@@ -79,6 +79,16 @@ class GalleryServiceTest {
             }
 
             @Override
+            public Float getThumbnailFocalPointX() {
+                return null;
+            }
+
+            @Override
+            public Float getThumbnailFocalPointY() {
+                return null;
+            }
+
+            @Override
             public Long getPhotoCount() {
                 return 5L;
             }
@@ -146,6 +156,16 @@ class GalleryServiceTest {
             @Override
             public String getFirstPhotoFilename() {
                 return null; // No photos
+            }
+
+            @Override
+            public Float getThumbnailFocalPointX() {
+                return null;
+            }
+
+            @Override
+            public Float getThumbnailFocalPointY() {
+                return null;
             }
 
             @Override
@@ -258,6 +278,16 @@ class GalleryServiceTest {
             }
 
             @Override
+            public Float getThumbnailFocalPointX() {
+                return null;
+            }
+
+            @Override
+            public Float getThumbnailFocalPointY() {
+                return null;
+            }
+
+            @Override
             public Long getPhotoCount() {
                 return 1L;
             }
@@ -316,6 +346,16 @@ class GalleryServiceTest {
                 @Override
                 public String getFirstPhotoFilename() {
                     return photoCount > 0 ? filename : null;
+                }
+
+                @Override
+                public Float getThumbnailFocalPointX() {
+                    return null;
+                }
+
+                @Override
+                public Float getThumbnailFocalPointY() {
+                    return null;
                 }
 
                 @Override
