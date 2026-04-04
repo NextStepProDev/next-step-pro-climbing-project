@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Image as ImageIcon, Plus, Pencil, Trash2, Upload, ChevronUp, ChevronDown, Star } from 'lucide-react'
 import { adminGalleryApi } from '../../api/client'
-import type { AlbumAdmin, CreateAlbumRequest, UpdateAlbumRequest } from '../../types'
+import type { AlbumAdmin, CreateAlbumRequest, UpdateAlbumRequest, UpdatePhotoRequest } from '../../types'
 import { Button } from '../../components/ui/Button'
 import { Modal } from '../../components/ui/Modal'
 import { ConfirmModal } from '../../components/ui/ConfirmModal'
@@ -85,7 +85,7 @@ export function AdminGalleryPanel() {
   })
 
   const updatePhotoMutation = useMutation({
-    mutationFn: ({ photoId, data }: { photoId: string; data: { caption?: string } }) =>
+    mutationFn: ({ photoId, data }: { photoId: string; data: UpdatePhotoRequest }) =>
       adminGalleryApi.updatePhoto(photoId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'gallery'] })
