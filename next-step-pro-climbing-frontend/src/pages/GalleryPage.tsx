@@ -57,6 +57,7 @@ export function GalleryPage() {
                   src={album.thumbnailUrl}
                   alt={album.name}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  style={album.thumbnailFocalPointX != null ? { objectPosition: `${album.thumbnailFocalPointX * 100}% ${(album.thumbnailFocalPointY ?? 0.5) * 100}%` } : undefined}
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center">

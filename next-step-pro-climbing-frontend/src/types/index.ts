@@ -296,6 +296,8 @@ export interface AlbumSummary {
   name: string
   description: string | null
   thumbnailUrl: string | null
+  thumbnailFocalPointX: number | null
+  thumbnailFocalPointY: number | null
   photoCount: number
   createdAt: string
 }
@@ -313,6 +315,8 @@ export interface Photo {
   id: string
   url: string
   caption: string | null
+  focalPointX: number | null
+  focalPointY: number | null
   createdAt: string
 }
 
@@ -321,6 +325,8 @@ export interface AlbumAdmin {
   name: string
   description: string | null
   thumbnailUrl: string | null
+  thumbnailFocalPointX: number | null
+  thumbnailFocalPointY: number | null
   photoCount: number
   displayOrder: number
   createdAt: string
@@ -347,6 +353,8 @@ export interface PhotoAdmin {
   url: string
   caption: string | null
   displayOrder: number
+  focalPointX: number | null
+  focalPointY: number | null
   createdAt: string
   updatedAt: string
 }
@@ -368,6 +376,8 @@ export interface ReorderAlbumsRequest {
 export interface UpdatePhotoRequest {
   caption?: string
   displayOrder?: number
+  focalPointX?: number
+  focalPointY?: number
 }
 
 export interface UploadPhotoResponse {

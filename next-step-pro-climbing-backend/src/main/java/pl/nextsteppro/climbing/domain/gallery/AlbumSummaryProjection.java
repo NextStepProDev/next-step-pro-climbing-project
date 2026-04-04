@@ -17,5 +17,7 @@ public interface AlbumSummaryProjection {
     Instant getUpdatedAt();
     int getDisplayOrder();
     @Nullable String getFirstPhotoFilename();
+    @Nullable Float getThumbnailFocalPointX();
+    @Nullable Float getThumbnailFocalPointY();
     Long getPhotoCount();
 }

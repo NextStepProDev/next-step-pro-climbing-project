@@ -173,6 +173,12 @@ public class AdminGalleryService {
         if (request.displayOrder() != null) {
             photo.setDisplayOrder(request.displayOrder());
         }
+        if (request.focalPointX() != null) {
+            photo.setFocalPointX(request.focalPointX());
+        }
+        if (request.focalPointY() != null) {
+            photo.setFocalPointY(request.focalPointY());
+        }
 
         photoRepository.save(photo);
     }
@@ -195,6 +201,8 @@ public class AdminGalleryService {
                 projection.getName(),
                 projection.getDescription(),
                 projection.getFirstPhotoFilename() != null ? buildPhotoUrl(projection.getFirstPhotoFilename()) : null,
+                projection.getThumbnailFocalPointX(),
+                projection.getThumbnailFocalPointY(),
                 projection.getPhotoCount(),
                 projection.getDisplayOrder(),
                 projection.getCreatedAt(),
@@ -211,6 +219,8 @@ public class AdminGalleryService {
                 album.getName(),
                 album.getDescription(),
                 firstPhoto != null ? buildPhotoUrl(firstPhoto.getFilename()) : null,
+                null,
+                null,
                 photoCount,
                 album.getDisplayOrder(),
                 album.getCreatedAt(),
@@ -225,6 +235,8 @@ public class AdminGalleryService {
                 buildPhotoUrl(photo.getFilename()),
                 photo.getCaption(),
                 photo.getDisplayOrder(),
+                photo.getFocalPointX(),
+                photo.getFocalPointY(),
                 photo.getCreatedAt(),
                 photo.getUpdatedAt()
         );

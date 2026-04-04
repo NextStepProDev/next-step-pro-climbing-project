@@ -59,6 +59,8 @@ public class GalleryService {
                 projection.getName(),
                 projection.getDescription(),
                 projection.getFirstPhotoFilename() != null ? buildPhotoUrl(projection.getFirstPhotoFilename()) : null,
+                projection.getThumbnailFocalPointX(),
+                projection.getThumbnailFocalPointY(),
                 projection.getPhotoCount(),
                 projection.getCreatedAt()
         );
@@ -69,6 +71,8 @@ public class GalleryService {
                 photo.getId(),
                 buildPhotoUrl(photo.getFilename()),
                 photo.getCaption(),
+                photo.getFocalPointX(),
+                photo.getFocalPointY(),
                 photo.getCreatedAt()
         );
     }
