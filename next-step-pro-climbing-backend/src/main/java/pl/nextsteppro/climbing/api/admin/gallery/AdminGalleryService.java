@@ -122,7 +122,10 @@ public class AdminGalleryService {
             }
         }
 
-        // Delete album (CASCADE will delete photo records)
+        // Delete photo records explicitly before album (avoids TransientPropertyValueException)
+        photoRepository.deleteAll(photos);
+
+        // Delete album
         albumRepository.delete(album);
     }
 
