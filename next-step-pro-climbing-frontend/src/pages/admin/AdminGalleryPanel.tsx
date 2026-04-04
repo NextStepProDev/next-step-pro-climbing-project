@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Image as ImageIcon, Plus, Pencil, Trash2, Upload, ChevronUp, ChevronDown } from 'lucide-react'
+import { Image as ImageIcon, Plus, Pencil, Trash2, Upload, ChevronUp, ChevronDown, Star } from 'lucide-react'
 import { adminGalleryApi } from '../../api/client'
 import type { AlbumAdmin, CreateAlbumRequest, UpdateAlbumRequest } from '../../types'
 import { Button } from '../../components/ui/Button'
@@ -89,6 +89,14 @@ export function AdminGalleryPanel() {
       queryClient.invalidateQueries({ queryKey: ['admin', 'gallery'] })
       setEditPhotoModalOpen(false)
       setSelectedPhoto(null)
+    },
+  })
+
+  const setThumbnailMutation = useMutation({
+    mutationFn: ({ albumId, photoId }: { albumId: string; photoId: string }) =>
+      adminGalleryApi.setThumbnailPhoto(albumId, { photoId }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'gallery'] })
     },
   })
 
@@ -346,7 +354,34 @@ export function AdminGalleryPanel() {
                               {photo.caption}
                             </div>
                           )}
+                          {/* Thumbnail badge — always visible */}
+                          {albumDetail.thumbnailPhotoId === photo.id && (
+                            <div
+                              className="absolute top-2 left-2 bg-amber-400 rounded-full p-1 shadow-md"
+                              title="Miniaturka albumu"
+                            >
+                              <Star className="h-3 w-3 text-dark-900" fill="currentColor" />
+                            </div>
+                          )}
                           <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                            {/* Set as thumbnail */}
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                if (expandedAlbumId) {
+                                  setThumbnailMutation.mutate({ albumId: expandedAlbumId, photoId: photo.id })
+                                }
+                              }}
+                              disabled={setThumbnailMutation.isPending}
+                              title={albumDetail.thumbnailPhotoId === photo.id ? 'Aktualnie ustawiona miniaturka' : 'Ustaw jako miniaturkę'}
+                              className={`bg-dark-800/80 hover:bg-dark-700${albumDetail.thumbnailPhotoId === photo.id ? ' text-amber-400' : ''}`}
+                            >
+                              <Star
+                                className="h-4 w-4"
+                                fill={albumDetail.thumbnailPhotoId === photo.id ? 'currentColor' : 'none'}
+                              />
+                            </Button>
                             <Button
                               variant="ghost"
                               size="sm"

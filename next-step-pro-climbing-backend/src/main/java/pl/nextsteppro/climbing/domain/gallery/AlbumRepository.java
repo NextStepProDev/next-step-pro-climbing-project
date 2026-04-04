@@ -25,11 +25,16 @@ public interface AlbumRepository extends JpaRepository<Album, UUID> {
             a.created_at AS createdAt,
             a.updated_at AS updatedAt,
             a.display_order AS displayOrder,
-            (SELECT p.filename
-             FROM photos p
-             WHERE p.album_id = a.id
-             ORDER BY p.display_order ASC, p.created_at ASC
-             LIMIT 1) AS firstPhotoFilename,
+            COALESCE(
+                (SELECT p_thumb.filename
+                 FROM photos p_thumb
+                 WHERE p_thumb.id = a.thumbnail_photo_id),
+                (SELECT p_first.filename
+                 FROM photos p_first
+                 WHERE p_first.album_id = a.id
+                 ORDER BY p_first.display_order ASC, p_first.created_at ASC
+                 LIMIT 1)
+            ) AS firstPhotoFilename,
             COUNT(p.id) AS photoCount
         FROM albums a
         LEFT JOIN photos p ON p.album_id = a.id
@@ -40,4 +45,7 @@ public interface AlbumRepository extends JpaRepository<Album, UUID> {
 
     @Query("SELECT COALESCE(MAX(a.displayOrder), -1) FROM Album a")
     Optional<Integer> findMaxDisplayOrder();
+
+    @Query("SELECT COALESCE(MIN(a.displayOrder), 1) FROM Album a")
+    Optional<Integer> findMinDisplayOrder();
 }

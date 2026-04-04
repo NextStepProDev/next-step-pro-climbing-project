@@ -24,6 +24,10 @@ public class Album {
     @Column(name = "display_order", nullable = false)
     private int displayOrder = 0;
 
+    @Column(name = "thumbnail_photo_id")
+    @Nullable
+    private UUID thumbnailPhotoId;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -84,5 +88,14 @@ public class Album {
 
     public void setDisplayOrder(int displayOrder) {
         this.displayOrder = displayOrder;
+    }
+
+    @Nullable
+    public UUID getThumbnailPhotoId() {
+        return thumbnailPhotoId;
+    }
+
+    public void setThumbnailPhotoId(@Nullable UUID thumbnailPhotoId) {
+        this.thumbnailPhotoId = thumbnailPhotoId;
     }
 }

@@ -133,6 +133,24 @@ public class AdminGalleryController {
         return ResponseEntity.noContent().build();
     }
 
+    @Operation(
+        summary = "Ustaw miniaturkę albumu",
+        description = "Wskazuje konkretne zdjęcie jako miniaturkę albumu. Gdy zdjęcie zostanie usunięte, album automatycznie wraca do domyślnego wyboru."
+    )
+    @ApiResponses({
+        @ApiResponse(responseCode = "204", description = "Miniaturka ustawiona"),
+        @ApiResponse(responseCode = "400", description = "Zdjęcie nie należy do tego albumu"),
+        @ApiResponse(responseCode = "404", description = "Album lub zdjęcie nie znalezione"),
+        @ApiResponse(responseCode = "403", description = "Brak uprawnień administratora")
+    })
+    @PutMapping("/albums/{id}/thumbnail-photo")
+    public ResponseEntity<Void> setThumbnailPhoto(
+            @Parameter(description = "ID albumu") @PathVariable UUID id,
+            @Valid @RequestBody SetThumbnailRequest request) {
+        adminGalleryService.setThumbnailPhoto(id, request.photoId());
+        return ResponseEntity.noContent().build();
+    }
+
     // ==================== Photos Management ====================
 
     @Operation(

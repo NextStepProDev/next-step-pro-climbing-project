@@ -331,9 +331,14 @@ export interface AlbumDetailAdmin {
   id: string
   name: string
   description: string | null
+  thumbnailPhotoId: string | null
   photos: PhotoAdmin[]
   createdAt: string
   updatedAt: string
+}
+
+export interface SetThumbnailPhotoRequest {
+  photoId: string
 }
 
 export interface PhotoAdmin {

@@ -31,6 +31,7 @@ import type {
   ReorderAlbumsRequest,
   UpdatePhotoRequest,
   UploadPhotoResponse,
+  SetThumbnailPhotoRequest,
   NewsDetail,
   NewsAdmin,
   NewsDetailAdmin,
@@ -450,6 +451,11 @@ export const adminGalleryApi = {
     }),
   deletePhoto: (photoId: string) =>
     fetchApi<void>(`/admin/gallery/photos/${photoId}`, { method: 'DELETE' }),
+  setThumbnailPhoto: (albumId: string, data: SetThumbnailPhotoRequest) =>
+    fetchApi<void>(`/admin/gallery/albums/${albumId}/thumbnail-photo`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
 }
 
 // ==================== News (publiczne) ====================
