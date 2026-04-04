@@ -15,9 +15,9 @@ const adminTabs = [
   { path: '/admin', labelKey: 'tabs.slots', icon: Clock },
   { path: '/admin/reservations', labelKey: 'tabs.reservations', icon: ClipboardList },
   { path: '/admin/events', labelKey: 'tabs.events', icon: Calendar },
+  { path: '/admin/news', labelKey: 'tabs.news', icon: Newspaper },
   { path: '/admin/instructors', labelKey: 'tabs.instructors', icon: User },
   { path: '/admin/gallery', labelKey: 'tabs.gallery', icon: Image },
-  { path: '/admin/news', labelKey: 'tabs.news', icon: Newspaper },
   { path: '/admin/users', labelKey: 'tabs.users', icon: Users },
   { path: '/admin/activity', labelKey: 'tabs.activity', icon: Activity },
 ]
