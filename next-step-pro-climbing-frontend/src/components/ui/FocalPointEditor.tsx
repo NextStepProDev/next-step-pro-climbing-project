@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
 
 interface FocalPoint {
   x: number
@@ -9,54 +9,89 @@ interface FocalPointEditorProps {
   imageUrl: string
   value: FocalPoint
   onChange: (point: FocalPoint) => void
+  aspectRatio?: string
 }
 
-export function FocalPointEditor({ imageUrl, value, onChange }: FocalPointEditorProps) {
+export function FocalPointEditor({ imageUrl, value, onChange, aspectRatio = '1/1' }: FocalPointEditorProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const isDragging = useRef(false)
+  const lastPos = useRef({ x: 0, y: 0 })
+  const [naturalSize, setNaturalSize] = useState<{ w: number; h: number } | null>(null)
 
-  const updateFromEvent = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!containerRef.current) return
-    const rect = containerRef.current.getBoundingClientRect()
-    const x = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width))
-    const y = Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height))
-    onChange({ x, y })
+  const getOverflow = (): { x: number; y: number } => {
+    if (!containerRef.current || !naturalSize) return { x: 1, y: 1 }
+    const cW = containerRef.current.clientWidth
+    const cH = containerRef.current.clientHeight
+    const scale = Math.max(cW / naturalSize.w, cH / naturalSize.h)
+    return {
+      x: Math.max(1, naturalSize.w * scale - cW),
+      y: Math.max(1, naturalSize.h * scale - cH),
+    }
   }
 
+  const applyDelta = (dx: number, dy: number) => {
+    const overflow = getOverflow()
+    onChange({
+      x: Math.max(0, Math.min(1, value.x - dx / overflow.x)),
+      y: Math.max(0, Math.min(1, value.y - dy / overflow.y)),
+    })
+  }
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    isDragging.current = true
+    lastPos.current = { x: e.clientX, y: e.clientY }
+    e.preventDefault()
+  }
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging.current) return
+    applyDelta(e.clientX - lastPos.current.x, e.clientY - lastPos.current.y)
+    lastPos.current = { x: e.clientX, y: e.clientY }
+  }
+
+  const handleMouseUp = () => { isDragging.current = false }
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    isDragging.current = true
+    lastPos.current = { x: e.touches[0].clientX, y: e.touches[0].clientY }
+  }
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!isDragging.current) return
+    applyDelta(e.touches[0].clientX - lastPos.current.x, e.touches[0].clientY - lastPos.current.y)
+    lastPos.current = { x: e.touches[0].clientX, y: e.touches[0].clientY }
+    e.preventDefault()
+  }
+
+  const handleTouchEnd = () => { isDragging.current = false }
+
   return (
-    <div className="space-y-1">
-      <div
-        ref={containerRef}
-        className="relative w-full aspect-video rounded-lg overflow-hidden cursor-crosshair select-none"
-        onMouseDown={(e) => { isDragging.current = true; updateFromEvent(e) }}
-        onMouseMove={(e) => { if (isDragging.current) updateFromEvent(e) }}
-        onMouseUp={() => { isDragging.current = false }}
-        onMouseLeave={() => { isDragging.current = false }}
-      >
-        <img
-          src={imageUrl}
-          alt=""
-          className="w-full h-full object-cover pointer-events-none"
-          draggable={false}
-        />
-        <div
-          className="absolute top-0 bottom-0 w-px bg-white/70 pointer-events-none"
-          style={{ left: `${value.x * 100}%` }}
-        />
-        <div
-          className="absolute left-0 right-0 h-px bg-white/70 pointer-events-none"
-          style={{ top: `${value.y * 100}%` }}
-        />
-        <div
-          className="absolute w-5 h-5 -translate-x-1/2 -translate-y-1/2 pointer-events-none"
-          style={{ left: `${value.x * 100}%`, top: `${value.y * 100}%` }}
-        >
-          <div className="w-full h-full rounded-full border-2 border-white bg-primary-500/70 shadow-md" />
-        </div>
+    <div
+      ref={containerRef}
+      className="relative overflow-hidden rounded-lg cursor-grab active:cursor-grabbing select-none ring-2 ring-primary-500/40"
+      style={{ aspectRatio }}
+      onMouseDown={handleMouseDown}
+      onMouseMove={handleMouseMove}
+      onMouseUp={handleMouseUp}
+      onMouseLeave={handleMouseUp}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+    >
+      <img
+        src={imageUrl}
+        alt=""
+        className="w-full h-full object-cover pointer-events-none"
+        style={{ objectPosition: `${value.x * 100}% ${value.y * 100}%` }}
+        draggable={false}
+        onLoad={(e) => {
+          const img = e.currentTarget
+          setNaturalSize({ w: img.naturalWidth, h: img.naturalHeight })
+        }}
+      />
+      <div className="absolute bottom-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded pointer-events-none">
+        Przeciągnij aby ustawić kadr
       </div>
-      <p className="text-xs text-dark-500 text-right">
-        {Math.round(value.x * 100)}% × {Math.round(value.y * 100)}%
-      </p>
     </div>
   )
 }

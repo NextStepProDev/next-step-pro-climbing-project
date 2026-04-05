@@ -670,23 +670,23 @@ export function AdminGalleryPanel() {
             </div>
 
             <div>
-              <div className="flex items-center justify-between mb-1">
+              <div className="flex items-center justify-between mb-2">
                 <label className="block text-sm font-medium text-dark-200">
-                  Punkt kadrowania miniaturki
+                  Kadrowanie
                 </label>
                 <button
                   type="button"
                   onClick={() => setFocalPoint({ x: 0.5, y: 0.5 })}
                   className="text-xs text-primary-400 hover:text-primary-300 transition-colors"
                 >
-                  Resetuj do środka
+                  Resetuj
                 </button>
               </div>
-              <p className="text-xs text-dark-400 mb-2">Kliknij lub przeciągnij aby ustawić centrum kadrowania</p>
               <FocalPointEditor
                 imageUrl={selectedPhoto.url}
                 value={focalPoint}
                 onChange={setFocalPoint}
+                aspectRatio="1/1"
               />
             </div>
 
