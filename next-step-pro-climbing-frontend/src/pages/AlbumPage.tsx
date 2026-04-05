@@ -76,13 +76,19 @@ export function AlbumPage() {
             <button
               key={photo.id}
               onClick={() => setLightboxIndex(index)}
-              className="aspect-square bg-dark-700 rounded-lg overflow-hidden hover:ring-2 hover:ring-primary-500/50 transition-all group"
+              className="aspect-square bg-dark-700 rounded-lg overflow-hidden hover:ring-2 hover:ring-primary-500/50 transition-all group relative"
             >
               <img
                 src={photo.url}
-                alt={photo.caption || ''}
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                alt=""
+                aria-hidden="true"
+                className="absolute inset-0 w-full h-full object-cover blur-xl scale-110"
                 style={photo.focalPointX != null ? { objectPosition: `${photo.focalPointX * 100}% ${(photo.focalPointY ?? 0.5) * 100}%` } : undefined}
+              />
+              <img
+                src={photo.url}
+                alt={photo.caption || ''}
+                className="relative w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
               />
             </button>
           ))}
