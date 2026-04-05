@@ -107,6 +107,26 @@ public class AdminGalleryService {
         return toAlbumAdminDto(album);
     }
 
+    public void deleteAllPhotos(UUID albumId) {
+        Album album = albumRepository.findById(albumId)
+                .orElseThrow(() -> new IllegalArgumentException("Album not found"));
+
+        List<Photo> photos = photoRepository.findByAlbumId(albumId);
+        for (Photo photo : photos) {
+            try {
+                fileStorageService.delete(photo.getFilename(), "gallery");
+            } catch (IOException e) {
+                logger.warn("Failed to delete photo file: {} - {}", photo.getFilename(), e.getMessage());
+            }
+        }
+
+        photoRepository.deleteAll(photos);
+
+        // Clear thumbnail reference
+        album.setThumbnailPhotoId(null);
+        albumRepository.save(album);
+    }
+
     public void deleteAlbum(UUID id) {
         Album album = albumRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Album not found"));
