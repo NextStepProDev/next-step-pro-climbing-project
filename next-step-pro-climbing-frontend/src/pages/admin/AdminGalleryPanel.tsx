@@ -256,12 +256,20 @@ export function AdminGalleryPanel() {
                   {/* Thumbnail */}
                   <div className="flex-shrink-0">
                     {album.thumbnailUrl ? (
-                      <img
-                        src={album.thumbnailUrl}
-                        alt={album.name}
-                        className="w-32 h-24 object-cover rounded-lg"
-                        style={album.thumbnailFocalPointX != null ? { objectPosition: `${album.thumbnailFocalPointX * 100}% ${(album.thumbnailFocalPointY ?? 0.5) * 100}%` } : undefined}
-                      />
+                      <div className="w-32 h-24 rounded-lg overflow-hidden relative bg-dark-700">
+                        <img
+                          src={album.thumbnailUrl}
+                          alt=""
+                          aria-hidden="true"
+                          className="absolute inset-0 w-full h-full object-cover blur-xl scale-110"
+                          style={album.thumbnailFocalPointX != null ? { objectPosition: `${album.thumbnailFocalPointX * 100}% ${(album.thumbnailFocalPointY ?? 0.5) * 100}%` } : undefined}
+                        />
+                        <img
+                          src={album.thumbnailUrl}
+                          alt={album.name}
+                          className="relative w-full h-full object-contain"
+                        />
+                      </div>
                     ) : (
                       <div className="w-32 h-24 bg-dark-700 rounded-lg flex items-center justify-center">
                         <ImageIcon className="h-8 w-8 text-dark-500" />
@@ -374,11 +382,17 @@ export function AdminGalleryPanel() {
                   ) : (
                     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
                       {albumDetail.photos.map((photo) => (
-                        <div key={photo.id} className="group relative bg-dark-700 rounded-lg overflow-hidden">
+                        <div key={photo.id} className="group relative bg-dark-700 rounded-lg overflow-hidden aspect-square">
+                          <img
+                            src={photo.url}
+                            alt=""
+                            aria-hidden="true"
+                            className="absolute inset-0 w-full h-full object-cover blur-xl scale-110"
+                          />
                           <img
                             src={photo.url}
                             alt={photo.caption || ''}
-                            className="w-full aspect-square object-cover"
+                            className="relative w-full h-full object-contain"
                           />
                           {photo.caption && (
                             <div className="p-2 text-xs text-dark-300 line-clamp-2">

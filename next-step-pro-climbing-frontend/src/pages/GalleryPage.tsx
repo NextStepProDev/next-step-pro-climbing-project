@@ -53,12 +53,20 @@ export function GalleryPage() {
             {/* Thumbnail */}
             <div className="aspect-video bg-dark-700 relative overflow-hidden">
               {album.thumbnailUrl ? (
-                <img
-                  src={album.thumbnailUrl}
-                  alt={album.name}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                  style={album.thumbnailFocalPointX != null ? { objectPosition: `${album.thumbnailFocalPointX * 100}% ${(album.thumbnailFocalPointY ?? 0.5) * 100}%` } : undefined}
-                />
+                <>
+                  <img
+                    src={album.thumbnailUrl}
+                    alt=""
+                    aria-hidden="true"
+                    className="absolute inset-0 w-full h-full object-cover blur-xl scale-110"
+                    style={album.thumbnailFocalPointX != null ? { objectPosition: `${album.thumbnailFocalPointX * 100}% ${(album.thumbnailFocalPointY ?? 0.5) * 100}%` } : undefined}
+                  />
+                  <img
+                    src={album.thumbnailUrl}
+                    alt={album.name}
+                    className="relative w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
+                  />
+                </>
               ) : (
                 <div className="w-full h-full flex items-center justify-center">
                   <ImageIcon className="h-16 w-16 text-dark-500" />
