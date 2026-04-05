@@ -20,6 +20,7 @@ export function AdminGalleryPanel() {
   const [editPhotoModalOpen, setEditPhotoModalOpen] = useState(false)
   const [deleteAlbumConfirmOpen, setDeleteAlbumConfirmOpen] = useState(false)
   const [deletePhotoConfirmOpen, setDeletePhotoConfirmOpen] = useState(false)
+  const [deleteAllPhotosConfirmOpen, setDeleteAllPhotosConfirmOpen] = useState(false)
   const [selectedAlbum, setSelectedAlbum] = useState<AlbumAdmin | null>(null)
   const [selectedPhotoId, setSelectedPhotoId] = useState<string | null>(null)
   const [selectedPhoto, setSelectedPhoto] = useState<{ id: string; caption: string | null; url: string; focalPointX: number | null; focalPointY: number | null } | null>(null)
@@ -81,6 +82,14 @@ export function AdminGalleryPanel() {
       queryClient.invalidateQueries({ queryKey: ['admin', 'gallery'] })
       setDeletePhotoConfirmOpen(false)
       setSelectedPhotoId(null)
+    },
+  })
+
+  const deleteAllPhotosMutation = useMutation({
+    mutationFn: adminGalleryApi.deleteAllPhotos,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'gallery'] })
+      setDeleteAllPhotosConfirmOpen(false)
     },
   })
 
@@ -331,16 +340,31 @@ export function AdminGalleryPanel() {
                 <div className="border-t border-dark-700 p-6 bg-dark-900/50">
                   <div className="flex items-center justify-between mb-4">
                     <h4 className="font-semibold text-dark-100">Zdjęcia w albumie</h4>
-                    <Button
-                      size="sm"
-                      onClick={() => {
-                        setSelectedAlbum(album)
-                        setUploadPhotoModalOpen(true)
-                      }}
-                    >
-                      <Upload className="h-4 w-4 mr-2" />
-                      Dodaj zdjęcie
-                    </Button>
+                    <div className="flex gap-2">
+                      {albumDetail.photos.length > 0 && (
+                        <Button
+                          variant="danger"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedAlbum(album)
+                            setDeleteAllPhotosConfirmOpen(true)
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Usuń wszystkie
+                        </Button>
+                      )}
+                      <Button
+                        size="sm"
+                        onClick={() => {
+                          setSelectedAlbum(album)
+                          setUploadPhotoModalOpen(true)
+                        }}
+                      >
+                        <Upload className="h-4 w-4 mr-2" />
+                        Dodaj zdjęcie
+                      </Button>
+                    </div>
                   </div>
 
                   {albumDetail.photos.length === 0 ? (
@@ -724,6 +748,23 @@ export function AdminGalleryPanel() {
         title="Usuń Zdjęcie"
         message="Czy na pewno chcesz usunąć to zdjęcie? Tej operacji nie można cofnąć."
         confirmText="Usuń"
+      />
+
+      {/* Delete All Photos Confirm */}
+      <ConfirmModal
+        isOpen={deleteAllPhotosConfirmOpen}
+        onClose={() => {
+          setDeleteAllPhotosConfirmOpen(false)
+          setSelectedAlbum(null)
+        }}
+        onConfirm={() => {
+          if (selectedAlbum) {
+            deleteAllPhotosMutation.mutate(selectedAlbum.id)
+          }
+        }}
+        title="Usuń wszystkie zdjęcia"
+        message={`Czy na pewno chcesz usunąć wszystkie zdjęcia z albumu "${selectedAlbum?.name}"? Album zostanie zachowany. Tej operacji nie można cofnąć.`}
+        confirmText="Usuń wszystkie zdjęcia"
       />
     </div>
   )

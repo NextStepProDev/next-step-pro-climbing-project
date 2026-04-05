@@ -409,6 +409,8 @@ export const adminGalleryApi = {
     }),
   deleteAlbum: (id: string) =>
     fetchApi<void>(`/admin/gallery/albums/${id}`, { method: 'DELETE' }),
+  deleteAllPhotos: (id: string) =>
+    fetchApi<void>(`/admin/gallery/albums/${id}/photos`, { method: 'DELETE' }),
   reorderAlbums: (data: ReorderAlbumsRequest) =>
     fetchApi<void>('/admin/gallery/albums/reorder', {
       method: 'PUT',

@@ -118,6 +118,22 @@ public class AdminGalleryController {
     }
 
     @Operation(
+        summary = "Usuń wszystkie zdjęcia z albumu",
+        description = "Usuwa wszystkie zdjęcia z albumu, ale zachowuje sam album"
+    )
+    @ApiResponses({
+        @ApiResponse(responseCode = "204", description = "Zdjęcia usunięte"),
+        @ApiResponse(responseCode = "404", description = "Album nie znaleziony"),
+        @ApiResponse(responseCode = "403", description = "Brak uprawnień administratora")
+    })
+    @DeleteMapping("/albums/{id}/photos")
+    public ResponseEntity<Void> deleteAllPhotos(
+            @Parameter(description = "ID albumu") @PathVariable UUID id) {
+        adminGalleryService.deleteAllPhotos(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @Operation(
         summary = "Zmień kolejność albumów",
         description = "Aktualizuje kolejność wyświetlania albumów na podstawie przesłanej listy ID"
     )
