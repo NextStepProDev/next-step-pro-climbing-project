@@ -3,10 +3,14 @@ name: CI Frontend
 on:
   push:
     branches: [main]
-    paths: [next-step-pro-climbing-frontend/**]
+    paths:
+      - next-step-pro-climbing-frontend/**
+      - VERSION
   pull_request:
     branches: [main]
-    paths: [next-step-pro-climbing-frontend/**]
+    paths:
+      - next-step-pro-climbing-frontend/**
+      - VERSION
 
 permissions:
   contents: read
