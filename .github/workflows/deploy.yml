@@ -31,13 +31,21 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Deploying version: $VERSION"
 
+      - name: Encode docker-compose.prod.yml
+        id: compose
+        run: echo "content=$(base64 -w 0 next-step-pro-climbing-hub/docker-compose.prod.yml)" >> $GITHUB_OUTPUT
+
       - name: Deploy to Oracle Cloud VM
         uses: appleboy/ssh-action@v1
+        env:
+          COMPOSE_B64: ${{ steps.compose.outputs.content }}
         with:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
+          envs: COMPOSE_B64
           script: |
+            echo "$COMPOSE_B64" | base64 -d > ${{ secrets.DEPLOY_PATH }}/docker-compose.prod.yml
             cd ${{ secrets.DEPLOY_PATH }}
             export VERSION=${{ steps.version.outputs.version }}
             docker compose -f docker-compose.prod.yml pull
