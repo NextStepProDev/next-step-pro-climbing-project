@@ -27,7 +27,6 @@ export function CoursePreviewModal({
   title,
   excerpt,
   thumbnailUrl,
-  focalPoint,
   blocks,
 }: CoursePreviewModalProps) {
   const { t } = useTranslation('admin')
