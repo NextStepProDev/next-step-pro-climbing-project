@@ -9,6 +9,25 @@ interface RichTextEditorProps {
   className?: string
 }
 
+interface ToolbarButtonProps {
+  onAction: () => void
+  title: string
+  children: React.ReactNode
+}
+
+function ToolbarButton({ onAction, title, children }: ToolbarButtonProps) {
+  return (
+    <button
+      type="button"
+      onMouseDown={(e) => { e.preventDefault(); onAction() }}
+      className="p-1 rounded text-dark-300 hover:text-dark-100 hover:bg-dark-700 transition-colors"
+      title={title}
+    >
+      {children}
+    </button>
+  )
+}
+
 const LIST_PREFIX_RE = /^(• |\d+\. |[a-z]\) )/i
 
 function stripListPrefix(line: string): string {
@@ -97,29 +116,18 @@ export function RichTextEditor({
   const handleNumbered  = useCallback(() => applyList('numbered'), [applyList])
   const handleLettered  = useCallback(() => applyList('lettered'), [applyList])
 
-  const btn = useCallback((onAction: () => void, title: string, children: React.ReactNode) => (
-    <button
-      type="button"
-      onMouseDown={(e) => { e.preventDefault(); onAction() }}
-      className="p-1 rounded text-dark-300 hover:text-dark-100 hover:bg-dark-700 transition-colors"
-      title={title}
-    >
-      {children}
-    </button>
-  ), [])
-
   return (
     <div className={className}>
       <div className="flex items-center gap-0.5 border border-dark-600 border-b-0 rounded-t bg-dark-800 px-2 py-1">
-        {btn(handleBold,      'Pogrubienie',          <Bold className="h-3.5 w-3.5" />)}
-        {btn(handleItalic,    'Kursywa',              <Italic className="h-3.5 w-3.5" />)}
-        {btn(handleUnderline, 'Podkreślenie',         <Underline className="h-3.5 w-3.5" />)}
+        <ToolbarButton onAction={handleBold}      title="Pogrubienie"><Bold className="h-3.5 w-3.5" /></ToolbarButton>
+        <ToolbarButton onAction={handleItalic}    title="Kursywa"><Italic className="h-3.5 w-3.5" /></ToolbarButton>
+        <ToolbarButton onAction={handleUnderline} title="Podkreślenie"><Underline className="h-3.5 w-3.5" /></ToolbarButton>
         <span className="w-px h-4 bg-dark-600 mx-1.5" />
-        {btn(handleBullet,   'Lista punktowana (•)',  <List className="h-3.5 w-3.5" />)}
-        {btn(handleNumbered, 'Lista numerowana (1.)', <ListOrdered className="h-3.5 w-3.5" />)}
-        {btn(handleLettered, 'Lista literowa (a))',
+        <ToolbarButton onAction={handleBullet}   title="Lista punktowana (•)"><List className="h-3.5 w-3.5" /></ToolbarButton>
+        <ToolbarButton onAction={handleNumbered} title="Lista numerowana (1.)"><ListOrdered className="h-3.5 w-3.5" /></ToolbarButton>
+        <ToolbarButton onAction={handleLettered} title="Lista literowa (a))">
           <span className="text-xs font-mono leading-none px-0.5">a)</span>
-        )}
+        </ToolbarButton>
         <span className="ml-auto text-xs text-dark-500 hidden sm:block">Zaznacz tekst → kliknij styl</span>
       </div>
       <textarea
