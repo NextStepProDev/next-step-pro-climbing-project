@@ -43,6 +43,10 @@ public class Instructor {
     @Nullable
     private Float focalPointY;
 
+    @Column(name = "badge_url", length = 2048)
+    @Nullable
+    private String badgeUrl;
+
     @Column(name = "is_active", nullable = false)
     private boolean active = true;
 
@@ -163,5 +167,14 @@ public class Instructor {
 
     public void setFocalPointY(@Nullable Float focalPointY) {
         this.focalPointY = focalPointY;
+    }
+
+    @Nullable
+    public String getBadgeUrl() {
+        return badgeUrl;
+    }
+
+    public void setBadgeUrl(@Nullable String badgeUrl) {
+        this.badgeUrl = badgeUrl;
     }
 }

@@ -147,4 +147,19 @@ public class AdminInstructorController {
         adminInstructorService.deletePhoto(id);
         return ResponseEntity.noContent().build();
     }
+
+    @Operation(summary = "Ustaw naklejkę instruktora", description = "Ustawia lub usuwa naklejkę (badge) na zdjęciu instruktora")
+    @PutMapping("/{id}/badge")
+    public ResponseEntity<InstructorAdminDto> setBadge(
+            @Parameter(description = "ID instruktora") @PathVariable UUID id,
+            @RequestBody SetBadgeRequest request) {
+        return ResponseEntity.ok(adminInstructorService.setBadge(id, request.badgeUrl()));
+    }
+
+    @Operation(summary = "Usuń naklejkę instruktora")
+    @DeleteMapping("/{id}/badge")
+    public ResponseEntity<InstructorAdminDto> deleteBadge(
+            @Parameter(description = "ID instruktora") @PathVariable UUID id) {
+        return ResponseEntity.ok(adminInstructorService.setBadge(id, null));
+    }
 }

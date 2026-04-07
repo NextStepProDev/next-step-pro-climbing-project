@@ -19,6 +19,7 @@ public class InstructorDtos {
             @Nullable Float focalPointY,
             @Nullable String bio,
             @Nullable String certifications,
+            @Nullable String badgeUrl,
             Instant createdAt
     ) {}
 }

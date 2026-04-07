@@ -52,6 +52,7 @@ public class InstructorService {
                 instructor.getFocalPointY(),
                 instructor.getBio(),
                 instructor.getCertifications(),
+                instructor.getBadgeUrl(),
                 instructor.getCreatedAt()
         );
     }
