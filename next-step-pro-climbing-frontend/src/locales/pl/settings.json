@@ -20,10 +20,20 @@
     "mismatch": "Hasła nie są zgodne",
     "success": "Hasło zostało zmienione"
   },
+  "language": {
+    "title": "Język interfejsu",
+    "description": "Wybierz język wyświetlania aplikacji",
+    "success": "Język został zmieniony"
+  },
   "notifications": {
     "title": "Powiadomienia email",
     "reservations": "Powiadomienia o rezerwacjach",
     "description": "Potwierdzenia rezerwacji, anulowania i powiadomienia z listy rezerwowej"
+  },
+  "newsletter": {
+    "title": "Newsletter",
+    "label": "Subskrypcja newslettera",
+    "description": "Aktualności, nowe kursy i oferty specjalne"
   },
   "deleteAccount": {
     "title": "Usuwanie konta",

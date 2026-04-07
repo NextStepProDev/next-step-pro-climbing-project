@@ -98,4 +98,13 @@ public class UserService {
         user.setPreferredLanguage(language);
         userRepository.save(user);
     }
+
+    public void updateNewsletterSubscription(UUID userId, boolean subscribed) {
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        user.setNewsletterSubscribed(subscribed);
+        user.setNewsletterChoiceMade(true);
+        userRepository.save(user);
+    }
 }

@@ -21,6 +21,8 @@ export interface User {
   isAdmin: boolean
   emailNotificationsEnabled: boolean
   preferredLanguage: string
+  newsletterSubscribed: boolean
+  newsletterChoiceMade: boolean
   createdAt: string
 }
 

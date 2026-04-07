@@ -2,6 +2,7 @@ package pl.nextsteppro.climbing.config;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
@@ -13,11 +14,13 @@ import pl.nextsteppro.climbing.domain.user.UserRole;
 
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 @Service
 public class OAuth2UserService extends DefaultOAuth2UserService {
 
     private static final Logger log = LoggerFactory.getLogger(OAuth2UserService.class);
+    private static final Set<String> SUPPORTED_LANGUAGES = Set.of("pl", "en", "es");
 
     private final UserRepository userRepository;
     private final AdminEmailConfig adminEmailConfig;
@@ -82,6 +85,7 @@ public class OAuth2UserService extends DefaultOAuth2UserService {
         user.setOauthProvider(provider);
         user.setOauthId(oauthId);
         user.markEmailVerified();
+        user.setPreferredLanguage(detectLanguage());
         user.setRole(adminEmailConfig.isAdminEmail(email) ? UserRole.ADMIN : UserRole.USER);
         if (user.isAdmin()) {
             log.info("AUTO-ADMIN-PROMOTION: {} promoted to ADMIN during OAuth2 registration", email);
@@ -129,6 +133,11 @@ public class OAuth2UserService extends DefaultOAuth2UserService {
     private String getStringOrDefault(Map<String, Object> map, String key, String defaultValue) {
         Object value = map.get(key);
         return value instanceof String s ? s : defaultValue;
+    }
+
+    private String detectLanguage() {
+        String lang = LocaleContextHolder.getLocale().getLanguage();
+        return SUPPORTED_LANGUAGES.contains(lang) ? lang : "en";
     }
 
     private String generateNickname(String firstName, String lastName) {

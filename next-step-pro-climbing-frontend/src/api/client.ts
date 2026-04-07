@@ -212,6 +212,11 @@ export const authApi = {
       method: 'PUT',
       body: JSON.stringify({ language }),
     }),
+  updateNewsletter: (subscribed: boolean) =>
+    fetchApi<void>('/user/me/newsletter', {
+      method: 'PUT',
+      body: JSON.stringify({ subscribed }),
+    }),
   updateProfile: (phone: string, nickname: string) =>
     fetchApi<User>('/user/me', {
       method: 'PUT',
@@ -602,6 +607,9 @@ export const adminNewsApi = {
       method: 'PUT',
       body: JSON.stringify({ thumbnailUrl }),
     }),
+
+  sendNewsletter: (newsId: string) =>
+    fetchApi<{ subscriberCount: number }>(`/admin/news/${newsId}/send-newsletter`, { method: 'POST' }),
 }
 
 // ==================== Courses (publiczne) ====================

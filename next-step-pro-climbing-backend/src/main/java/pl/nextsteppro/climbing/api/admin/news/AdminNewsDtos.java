@@ -110,4 +110,6 @@ public class AdminNewsDtos {
             long totalElements,
             boolean hasNext
     ) {}
+
+    public record NewsletterSentDto(int subscriberCount) {}
 }

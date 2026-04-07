@@ -67,6 +67,8 @@ public class AuthService {
             generateNickname(request.firstName())
         );
         user.setPasswordHash(passwordEncoder.encode(request.password()));
+        user.setNewsletterSubscribed(Boolean.TRUE.equals(request.newsletterSubscribed()));
+        user.setNewsletterChoiceMade(true);
 
         if (adminEmailConfig.isAdminEmail(user.getEmail())) {
             user.setRole(UserRole.ADMIN);

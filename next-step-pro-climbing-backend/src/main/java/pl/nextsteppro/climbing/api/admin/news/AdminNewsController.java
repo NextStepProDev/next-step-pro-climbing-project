@@ -93,6 +93,18 @@ public class AdminNewsController {
         return ResponseEntity.ok(adminNewsService.setPublished(id, false));
     }
 
+    @Operation(summary = "Wyślij newsletter z treścią aktualności do subskrybentów")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Newsletter wysłany (liczba odbiorców)"),
+        @ApiResponse(responseCode = "400", description = "Aktualność nie jest opublikowana"),
+        @ApiResponse(responseCode = "403", description = "Brak uprawnień administratora")
+    })
+    @PostMapping("/{id}/send-newsletter")
+    public ResponseEntity<AdminNewsDtos.NewsletterSentDto> sendNewsletter(
+            @Parameter(description = "ID aktualności") @PathVariable UUID id) {
+        return ResponseEntity.ok(adminNewsService.sendNewsNewsletter(id));
+    }
+
     @Operation(summary = "Usuń aktualność wraz z plikami")
     @ApiResponses({
         @ApiResponse(responseCode = "204", description = "Aktualność usunięta"),

@@ -12,6 +12,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import pl.nextsteppro.climbing.api.admin.news.AdminNewsDtos.*;
 import pl.nextsteppro.climbing.domain.news.*;
+import pl.nextsteppro.climbing.domain.user.User;
+import pl.nextsteppro.climbing.domain.user.UserRepository;
+import pl.nextsteppro.climbing.infrastructure.mail.NewsletterMailService;
 import pl.nextsteppro.climbing.infrastructure.storage.FileStorageService;
 
 import java.io.IOException;
@@ -28,15 +31,21 @@ public class AdminNewsService {
     private final NewsRepository newsRepository;
     private final NewsContentBlockRepository blockRepository;
     private final FileStorageService fileStorageService;
+    private final UserRepository userRepository;
+    private final NewsletterMailService newsletterMailService;
     private final String baseUrl;
 
     public AdminNewsService(NewsRepository newsRepository,
                             NewsContentBlockRepository blockRepository,
                             FileStorageService fileStorageService,
+                            UserRepository userRepository,
+                            NewsletterMailService newsletterMailService,
                             @Value("${app.base-url}") String baseUrl) {
         this.newsRepository = newsRepository;
         this.blockRepository = blockRepository;
         this.fileStorageService = fileStorageService;
+        this.userRepository = userRepository;
+        this.newsletterMailService = newsletterMailService;
         this.baseUrl = baseUrl;
     }
 
@@ -300,6 +309,20 @@ public class AdminNewsService {
             blockRepository.save(block);
             blockRepository.save(other);
         }
+    }
+
+    // --- Newsletter ---
+
+    @Transactional(readOnly = true)
+    public NewsletterSentDto sendNewsNewsletter(UUID id) {
+        News news = findNews(id);
+        if (!news.isPublished()) {
+            throw new IllegalStateException("News must be published before sending newsletter");
+        }
+        List<NewsContentBlock> blocks = blockRepository.findByNewsIdOrderByDisplayOrderAsc(id);
+        List<User> subscribers = userRepository.findAllByNewsletterSubscribedTrue();
+        newsletterMailService.sendToAll(news, blocks, subscribers, baseUrl);
+        return new NewsletterSentDto(subscribers.size());
     }
 
     // --- Helpery ---
