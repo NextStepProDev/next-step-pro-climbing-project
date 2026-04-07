@@ -1,10 +1,11 @@
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { useParams, Link } from 'react-router-dom'
-import { ArrowLeft, Newspaper } from 'lucide-react'
+import { ArrowLeft } from 'lucide-react'
 import { newsApi } from '../api/client'
 import { LoadingSpinner } from '../components/ui/LoadingSpinner'
 import { QueryError } from '../components/ui/QueryError'
+import { renderRichText } from '../utils/renderRichText'
 
 export function NewsDetailPage() {
   const { t } = useTranslation('common')
@@ -51,25 +52,6 @@ export function NewsDetailPage() {
         {t('news.backToNews')}
       </Link>
 
-      {/* Hero thumbnail */}
-      {article.thumbnailUrl ? (
-        <div className="w-full rounded-lg overflow-hidden mb-8">
-          <img
-            src={article.thumbnailUrl}
-            alt={article.title}
-            className="w-full max-h-96 object-cover"
-            onError={(e) => {
-              const parent = (e.currentTarget as HTMLImageElement).parentElement
-              if (parent) parent.style.display = 'none'
-            }}
-          />
-        </div>
-      ) : (
-        <div className="w-full h-48 bg-dark-800 rounded-lg flex items-center justify-center mb-8">
-          <Newspaper className="h-16 w-16 text-dark-500" />
-        </div>
-      )}
-
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-dark-100 mb-3">{article.title}</h1>
@@ -89,12 +71,11 @@ export function NewsDetailPage() {
         {article.blocks.map((block) => {
           if (block.blockType === 'TEXT') {
             return (
-              <p
+              <div
                 key={block.id}
-                className="text-dark-200 leading-relaxed whitespace-pre-wrap"
-              >
-                {block.content}
-              </p>
+                className="text-dark-200 leading-relaxed"
+                dangerouslySetInnerHTML={{ __html: renderRichText(block.content ?? '') }}
+              />
             )
           }
 

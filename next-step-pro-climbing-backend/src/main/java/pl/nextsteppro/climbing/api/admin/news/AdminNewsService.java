@@ -306,6 +306,14 @@ public class AdminNewsService {
         );
     }
 
+    @CacheEvict(value = {"newsList", "newsDetail"}, allEntries = true)
+    public void updateThumbnailFocalPoint(UUID id, AdminNewsDtos.UpdateThumbnailFocalPointRequest req) {
+        News news = findNews(id);
+        news.setThumbnailFocalPointX(req.focalPointX());
+        news.setThumbnailFocalPointY(req.focalPointY());
+        newsRepository.save(news);
+    }
+
     private NewsDetailAdminDto toDetailAdminDto(News news, List<NewsContentBlock> blocks) {
         return new NewsDetailAdminDto(
                 news.getId(),
@@ -313,6 +321,8 @@ public class AdminNewsService {
                 news.getExcerpt(),
                 news.getThumbnailFilename(),
                 news.getThumbnailFilename() != null ? buildFileUrl(news.getThumbnailFilename()) : null,
+                news.getThumbnailFocalPointX(),
+                news.getThumbnailFocalPointY(),
                 news.isPublished(),
                 news.getPublishedAt(),
                 blocks.stream().map(this::toBlockAdminDto).toList(),

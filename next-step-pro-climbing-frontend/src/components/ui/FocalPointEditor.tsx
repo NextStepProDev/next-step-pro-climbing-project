@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react'
+import clsx from 'clsx'
 
 interface FocalPoint {
   x: number
@@ -10,9 +11,10 @@ interface FocalPointEditorProps {
   value: FocalPoint
   onChange: (point: FocalPoint) => void
   aspectRatio?: string
+  className?: string
 }
 
-export function FocalPointEditor({ imageUrl, value, onChange, aspectRatio = '1/1' }: FocalPointEditorProps) {
+export function FocalPointEditor({ imageUrl, value, onChange, aspectRatio = '1/1', className }: FocalPointEditorProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const isDragging = useRef(false)
   const lastPos = useRef({ x: 0, y: 0 })
@@ -68,7 +70,7 @@ export function FocalPointEditor({ imageUrl, value, onChange, aspectRatio = '1/1
   return (
     <div
       ref={containerRef}
-      className="relative overflow-hidden rounded-lg cursor-grab active:cursor-grabbing select-none ring-2 ring-primary-500/40"
+      className={clsx('relative overflow-hidden rounded-lg cursor-grab active:cursor-grabbing select-none ring-2 ring-primary-500/40', className)}
       style={{ aspectRatio }}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}

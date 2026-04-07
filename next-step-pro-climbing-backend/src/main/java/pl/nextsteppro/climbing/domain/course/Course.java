@@ -1,4 +1,4 @@
-package pl.nextsteppro.climbing.domain.news;
+package pl.nextsteppro.climbing.domain.course;
 
 import jakarta.persistence.*;
 import org.jspecify.annotations.Nullable;
@@ -7,8 +7,8 @@ import java.time.Instant;
 import java.util.UUID;
 
 @Entity
-@Table(name = "news")
-public class News {
+@Table(name = "courses")
+public class Course {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -33,6 +33,9 @@ public class News {
     @Nullable
     private Float thumbnailFocalPointY;
 
+    @Column(name = "display_order", nullable = false)
+    private int displayOrder = 0;
+
     @Column(name = "is_published", nullable = false)
     private boolean published = false;
 
@@ -46,9 +49,9 @@ public class News {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
-    protected News() {}
+    protected Course() {}
 
-    public News(String title) {
+    public Course(String title) {
         this.title = title;
     }
 
@@ -82,6 +85,10 @@ public class News {
         return thumbnailFilename;
     }
 
+    public int getDisplayOrder() {
+        return displayOrder;
+    }
+
     public boolean isPublished() {
         return published;
     }
@@ -99,6 +106,16 @@ public class News {
         return updatedAt;
     }
 
+    @Nullable
+    public Float getThumbnailFocalPointX() {
+        return thumbnailFocalPointX;
+    }
+
+    @Nullable
+    public Float getThumbnailFocalPointY() {
+        return thumbnailFocalPointY;
+    }
+
     // Setters
     public void setTitle(String title) {
         this.title = title;
@@ -112,22 +129,8 @@ public class News {
         this.thumbnailFilename = thumbnailFilename;
     }
 
-    @Nullable
-    public Float getThumbnailFocalPointX() {
-        return thumbnailFocalPointX;
-    }
-
-    @Nullable
-    public Float getThumbnailFocalPointY() {
-        return thumbnailFocalPointY;
-    }
-
-    public void setThumbnailFocalPointX(@Nullable Float thumbnailFocalPointX) {
-        this.thumbnailFocalPointX = thumbnailFocalPointX;
-    }
-
-    public void setThumbnailFocalPointY(@Nullable Float thumbnailFocalPointY) {
-        this.thumbnailFocalPointY = thumbnailFocalPointY;
+    public void setDisplayOrder(int displayOrder) {
+        this.displayOrder = displayOrder;
     }
 
     public void setPublished(boolean published) {
@@ -136,5 +139,13 @@ public class News {
 
     public void setPublishedAt(@Nullable Instant publishedAt) {
         this.publishedAt = publishedAt;
+    }
+
+    public void setThumbnailFocalPointX(@Nullable Float thumbnailFocalPointX) {
+        this.thumbnailFocalPointX = thumbnailFocalPointX;
+    }
+
+    public void setThumbnailFocalPointY(@Nullable Float thumbnailFocalPointY) {
+        this.thumbnailFocalPointY = thumbnailFocalPointY;
     }
 }

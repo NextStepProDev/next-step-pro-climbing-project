@@ -1,4 +1,4 @@
-package pl.nextsteppro.climbing.api.admin.news;
+package pl.nextsteppro.climbing.api.admin.course;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -9,22 +9,23 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Admin DTOs dla zarządzania aktualnościami
+ * Admin DTOs dla zarządzania kursami
  */
-public class AdminNewsDtos {
+public class AdminCourseDtos {
 
-    public record NewsAdminDto(
+    public record CourseAdminDto(
             UUID id,
             String title,
             @Nullable String excerpt,
             @Nullable String thumbnailUrl,
+            int displayOrder,
             boolean published,
             @Nullable Instant publishedAt,
             Instant createdAt,
             Instant updatedAt
     ) {}
 
-    public record NewsDetailAdminDto(
+    public record CourseDetailAdminDto(
             UUID id,
             String title,
             @Nullable String excerpt,
@@ -51,12 +52,12 @@ public class AdminNewsDtos {
 
     // --- Requesty ---
 
-    public record CreateNewsRequest(
+    public record CreateCourseRequest(
             @NotBlank @Size(max = 500) String title,
             @Nullable @Size(max = 1000) String excerpt
     ) {}
 
-    public record UpdateNewsMetaRequest(
+    public record UpdateCourseMetaRequest(
             @Nullable @Size(max = 500) String title,
             @Nullable @Size(max = 1000) String excerpt
     ) {}
@@ -77,6 +78,15 @@ public class AdminNewsDtos {
             String direction
     ) {}
 
+    public record UpdateThumbnailFocalPointRequest(
+            @Nullable Float focalPointX,
+            @Nullable Float focalPointY
+    ) {}
+
+    public record ReorderCoursesRequest(
+            List<UUID> orderedIds
+    ) {}
+
     public record UploadBlockImageResponse(
             UUID blockId,
             String imageFilename,
@@ -87,18 +97,5 @@ public class AdminNewsDtos {
     public record UploadThumbnailResponse(
             String filename,
             String url
-    ) {}
-
-    public record UpdateThumbnailFocalPointRequest(
-            @Nullable Float focalPointX,
-            @Nullable Float focalPointY
-    ) {}
-
-    public record AdminNewsPageDto(
-            java.util.List<NewsAdminDto> content,
-            int page,
-            int size,
-            long totalElements,
-            boolean hasNext
     ) {}
 }

@@ -62,6 +62,8 @@ public class NewsService {
                 news.getTitle(),
                 news.getExcerpt(),
                 news.getThumbnailFilename() != null ? buildFileUrl(news.getThumbnailFilename()) : null,
+                news.getThumbnailFocalPointX(),
+                news.getThumbnailFocalPointY(),
                 blocks.stream().map(this::toBlockDto).toList(),
                 news.getPublishedAt()
         );
@@ -73,6 +75,8 @@ public class NewsService {
                 projection.getTitle(),
                 projection.getExcerpt(),
                 projection.getThumbnailFilename() != null ? buildFileUrl(projection.getThumbnailFilename()) : null,
+                projection.getThumbnailFocalPointX(),
+                projection.getThumbnailFocalPointY(),
                 projection.getPublishedAt()
         );
     }

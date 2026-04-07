@@ -1,4 +1,4 @@
-package pl.nextsteppro.climbing.api.news;
+package pl.nextsteppro.climbing.api.course;
 
 import org.jspecify.annotations.Nullable;
 
@@ -7,21 +7,21 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Publiczne DTOs dla aktualności
+ * Publiczne DTOs dla kursów
  */
-public class NewsDtos {
+public class CourseDtos {
 
-    public record NewsSummaryDto(
+    public record CourseSummaryDto(
             UUID id,
             String title,
             @Nullable String excerpt,
             @Nullable String thumbnailUrl,
             @Nullable Float thumbnailFocalPointX,
             @Nullable Float thumbnailFocalPointY,
-            Instant publishedAt
+            @Nullable Instant publishedAt
     ) {}
 
-    public record NewsDetailDto(
+    public record CourseDetailDto(
             UUID id,
             String title,
             @Nullable String excerpt,
@@ -29,7 +29,7 @@ public class NewsDtos {
             @Nullable Float thumbnailFocalPointX,
             @Nullable Float thumbnailFocalPointY,
             List<ContentBlockDto> blocks,
-            Instant publishedAt
+            @Nullable Instant publishedAt
     ) {}
 
     public record ContentBlockDto(
@@ -39,13 +39,5 @@ public class NewsDtos {
             @Nullable String imageUrl,
             @Nullable String caption,
             int displayOrder
-    ) {}
-
-    public record NewsPageDto(
-            List<NewsSummaryDto> content,
-            int page,
-            int size,
-            long totalElements,
-            boolean hasNext
     ) {}
 }

@@ -410,6 +410,8 @@ export interface NewsSummary {
   title: string
   excerpt: string | null
   thumbnailUrl: string | null
+  thumbnailFocalPointX: number | null
+  thumbnailFocalPointY: number | null
   publishedAt: string
 }
 
@@ -418,6 +420,8 @@ export interface NewsDetail {
   title: string
   excerpt: string | null
   thumbnailUrl: string | null
+  thumbnailFocalPointX: number | null
+  thumbnailFocalPointY: number | null
   blocks: ContentBlock[]
   publishedAt: string
 }
@@ -449,6 +453,8 @@ export interface NewsDetailAdmin {
   excerpt: string | null
   thumbnailFilename: string | null
   thumbnailUrl: string | null
+  thumbnailFocalPointX: number | null
+  thumbnailFocalPointY: number | null
   published: boolean
   publishedAt: string | null
   blocks: ContentBlockAdmin[]
@@ -508,4 +514,64 @@ export interface AdminNewsPageDto {
   size: number
   totalElements: number
   hasNext: boolean
+}
+
+// ==================== Courses ====================
+
+export interface CourseSummary {
+  id: string
+  title: string
+  excerpt: string | null
+  thumbnailUrl: string | null
+  thumbnailFocalPointX: number | null
+  thumbnailFocalPointY: number | null
+  publishedAt: string | null
+}
+
+export interface CourseDetail {
+  id: string
+  title: string
+  excerpt: string | null
+  thumbnailUrl: string | null
+  thumbnailFocalPointX: number | null
+  thumbnailFocalPointY: number | null
+  blocks: ContentBlock[]
+  publishedAt: string | null
+}
+
+export interface CourseAdmin {
+  id: string
+  title: string
+  excerpt: string | null
+  thumbnailUrl: string | null
+  displayOrder: number
+  published: boolean
+  publishedAt: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+export interface CourseDetailAdmin {
+  id: string
+  title: string
+  excerpt: string | null
+  thumbnailFilename: string | null
+  thumbnailUrl: string | null
+  thumbnailFocalPointX: number | null
+  thumbnailFocalPointY: number | null
+  published: boolean
+  publishedAt: string | null
+  blocks: ContentBlockAdmin[]
+  createdAt: string
+  updatedAt: string
+}
+
+export interface CreateCourseRequest {
+  title: string
+  excerpt?: string
+}
+
+export interface UpdateCourseMetaRequest {
+  title?: string
+  excerpt?: string
 }

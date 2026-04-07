@@ -45,6 +45,12 @@ import type {
   UploadThumbnailResponse,
   NewsPageDto,
   AdminNewsPageDto,
+  CourseSummary,
+  CourseDetail,
+  CourseAdmin,
+  CourseDetailAdmin,
+  CreateCourseRequest,
+  UpdateCourseMetaRequest,
 } from '../types'
 import {
   getAccessToken,
@@ -513,6 +519,12 @@ export const adminNewsApi = {
   deleteThumbnail: (id: string) =>
     fetchApi<void>(`/admin/news/${id}/thumbnail`, { method: 'DELETE' }),
 
+  updateThumbnailFocalPoint: (id: string, focalPointX: number | null, focalPointY: number | null) =>
+    fetchApi<void>(`/admin/news/${id}/thumbnail-focal-point`, {
+      method: 'PUT',
+      body: JSON.stringify({ focalPointX, focalPointY }),
+    }),
+
   addTextBlock: (newsId: string, data: AddTextBlockRequest) =>
     fetchApi<ContentBlockAdmin>(`/admin/news/${newsId}/blocks/text`, {
       method: 'POST',
@@ -558,4 +570,116 @@ export const adminNewsApi = {
 
   deleteBlock: (blockId: string) =>
     fetchApi<void>(`/admin/news/blocks/${blockId}`, { method: 'DELETE' }),
+}
+
+// ==================== Courses (publiczne) ====================
+export const coursesApi = {
+  getAll: () => fetchApi<CourseSummary[]>('/courses'),
+  getById: (id: string) => fetchApi<CourseDetail>(`/courses/${id}`),
+}
+
+// ==================== Admin Courses ====================
+export const adminCoursesApi = {
+  getAll: () => fetchApi<CourseAdmin[]>('/admin/courses'),
+  getById: (id: string) => fetchApi<CourseDetailAdmin>(`/admin/courses/${id}`),
+
+  create: (data: CreateCourseRequest) =>
+    fetchApi<CourseAdmin>('/admin/courses', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  updateMeta: (id: string, data: UpdateCourseMetaRequest) =>
+    fetchApi<CourseAdmin>(`/admin/courses/${id}/meta`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+
+  publish: (id: string) =>
+    fetchApi<CourseAdmin>(`/admin/courses/${id}/publish`, { method: 'POST' }),
+
+  unpublish: (id: string) =>
+    fetchApi<CourseAdmin>(`/admin/courses/${id}/unpublish`, { method: 'POST' }),
+
+  delete: (id: string) =>
+    fetchApi<void>(`/admin/courses/${id}`, { method: 'DELETE' }),
+
+  reorder: (orderedIds: string[]) =>
+    fetchApi<void>('/admin/courses/reorder', {
+      method: 'PUT',
+      body: JSON.stringify({ orderedIds }),
+    }),
+
+  uploadThumbnail: async (id: string, file: File): Promise<UploadThumbnailResponse> => {
+    const token = await ensureValidToken()
+    const formData = new FormData()
+    formData.append('file', file)
+    const headers: Record<string, string> = { 'Accept-Language': i18n.language }
+    if (token) headers['Authorization'] = `Bearer ${token}`
+    const response = await fetch(`${API_BASE}/admin/courses/${id}/thumbnail`, {
+      method: 'POST',
+      headers,
+      body: formData,
+    })
+    if (!response.ok) {
+      const body = await response.json().catch(() => null)
+      throw new Error(body?.message || i18n.t('uploadFailed', { ns: 'errors' }))
+    }
+    return response.json()
+  },
+
+  deleteThumbnail: (id: string) =>
+    fetchApi<void>(`/admin/courses/${id}/thumbnail`, { method: 'DELETE' }),
+
+  updateThumbnailFocalPoint: (id: string, focalPointX: number | null, focalPointY: number | null) =>
+    fetchApi<void>(`/admin/courses/${id}/thumbnail-focal-point`, {
+      method: 'PUT',
+      body: JSON.stringify({ focalPointX, focalPointY }),
+    }),
+
+  addTextBlock: (courseId: string, data: AddTextBlockRequest) =>
+    fetchApi<ContentBlockAdmin>(`/admin/courses/${courseId}/blocks/text`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  addImageBlock: async (courseId: string, file: File, caption?: string): Promise<UploadBlockImageResponse> => {
+    const token = await ensureValidToken()
+    const formData = new FormData()
+    formData.append('file', file)
+    if (caption) formData.append('caption', caption)
+    const headers: Record<string, string> = { 'Accept-Language': i18n.language }
+    if (token) headers['Authorization'] = `Bearer ${token}`
+    const response = await fetch(`${API_BASE}/admin/courses/${courseId}/blocks/image`, {
+      method: 'POST',
+      headers,
+      body: formData,
+    })
+    if (!response.ok) {
+      const body = await response.json().catch(() => null)
+      throw new Error(body?.message || i18n.t('uploadFailed', { ns: 'errors' }))
+    }
+    return response.json()
+  },
+
+  updateTextBlock: (blockId: string, data: UpdateTextBlockRequest) =>
+    fetchApi<void>(`/admin/courses/blocks/${blockId}/text`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+
+  updateImageBlock: (blockId: string, data: UpdateImageBlockRequest) =>
+    fetchApi<void>(`/admin/courses/blocks/${blockId}/image`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+
+  moveBlock: (blockId: string, direction: 'UP' | 'DOWN') =>
+    fetchApi<void>(`/admin/courses/blocks/${blockId}/move`, {
+      method: 'POST',
+      body: JSON.stringify({ direction }),
+    }),
+
+  deleteBlock: (blockId: string) =>
+    fetchApi<void>(`/admin/courses/blocks/${blockId}`, { method: 'DELETE' }),
 }

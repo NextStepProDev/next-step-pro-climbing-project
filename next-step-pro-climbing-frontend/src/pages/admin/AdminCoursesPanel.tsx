@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import {
-  Newspaper,
+  BookOpen,
   Plus,
   Pencil,
   Trash2,
@@ -17,18 +17,18 @@ import {
   X,
   ArrowLeft,
 } from 'lucide-react'
-import { adminNewsApi } from '../../api/client'
+import { adminCoursesApi } from '../../api/client'
 import type {
-  NewsAdmin,
-  NewsDetailAdmin,
+  CourseAdmin,
+  CourseDetailAdmin,
   ContentBlockAdmin,
-  CreateNewsRequest,
+  CreateCourseRequest,
 } from '../../types'
 import { Button } from '../../components/ui/Button'
 import { ConfirmModal } from '../../components/ui/ConfirmModal'
+import { CoursePreviewModal, type CoursePreviewBlock } from '../../components/ui/CoursePreviewModal'
 import { FocalPointEditor } from '../../components/ui/FocalPointEditor'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
-import { NewsPreviewModal, type PreviewBlock } from '../../components/ui/NewsPreviewModal'
 import { QueryError } from '../../components/ui/QueryError'
 import { RichTextEditor } from '../../components/ui/RichTextEditor'
 import clsx from 'clsx'
@@ -55,51 +55,70 @@ type PendingBlock = PendingTextBlock | PendingImageBlock
 
 // ---------- Main panel ----------
 
-export function AdminNewsPanel() {
+export function AdminCoursesPanel() {
   const { t } = useTranslation('admin')
   const queryClient = useQueryClient()
   const [view, setView] = useState<View>('list')
-  const [selectedNewsId, setSelectedNewsId] = useState<string | null>(null)
+  const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null)
+  const [localOrder, setLocalOrder] = useState<CourseAdmin[] | null>(null)
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null)
 
-  const { data: articles, isLoading, error } = useQuery({
-    queryKey: ['admin', 'news'],
-    queryFn: () => adminNewsApi.getAll(),
+  const { data: courses, isLoading, error } = useQuery({
+    queryKey: ['admin', 'courses'],
+    queryFn: () => adminCoursesApi.getAll(),
   })
 
+  const orderedCourses = localOrder ?? (courses ? [...courses].sort((a, b) => a.displayOrder - b.displayOrder) : [])
+
   const { data: detail, isLoading: detailLoading } = useQuery({
-    queryKey: ['admin', 'news', selectedNewsId],
-    queryFn: () => adminNewsApi.getById(selectedNewsId!),
-    enabled: !!selectedNewsId && view === 'edit',
+    queryKey: ['admin', 'courses', selectedCourseId],
+    queryFn: () => adminCoursesApi.getById(selectedCourseId!),
+    enabled: !!selectedCourseId && view === 'edit',
   })
 
   const createMutation = useMutation({
-    mutationFn: (data: CreateNewsRequest) => adminNewsApi.create(data),
-    onSuccess: (news) => {
-      queryClient.invalidateQueries({ queryKey: ['admin', 'news'] })
-      setSelectedNewsId(news.id)
+    mutationFn: (data: CreateCourseRequest) => adminCoursesApi.create(data),
+    onSuccess: (course) => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'courses'] })
+      setSelectedCourseId(course.id)
       setView('edit')
     },
   })
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => adminNewsApi.delete(id),
+    mutationFn: (id: string) => adminCoursesApi.delete(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin', 'news'] })
+      queryClient.invalidateQueries({ queryKey: ['admin', 'courses'] })
       setDeleteConfirmId(null)
     },
   })
 
   const publishMutation = useMutation({
-    mutationFn: (id: string) => adminNewsApi.publish(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin', 'news'] }),
+    mutationFn: (id: string) => adminCoursesApi.publish(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin', 'courses'] }),
   })
 
   const unpublishMutation = useMutation({
-    mutationFn: (id: string) => adminNewsApi.unpublish(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin', 'news'] }),
+    mutationFn: (id: string) => adminCoursesApi.unpublish(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin', 'courses'] }),
   })
 
-  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null)
+  const reorderMutation = useMutation({
+    mutationFn: (orderedIds: string[]) => adminCoursesApi.reorder(orderedIds),
+    onSuccess: () => {
+      setLocalOrder(null)
+      queryClient.invalidateQueries({ queryKey: ['admin', 'courses'] })
+    },
+  })
+
+  const handleMove = (index: number, direction: 'up' | 'down') => {
+    const newOrder = [...orderedCourses]
+    const targetIndex = direction === 'up' ? index - 1 : index + 1
+    if (targetIndex < 0 || targetIndex >= newOrder.length) return
+    ;[newOrder[index], newOrder[targetIndex]] = [newOrder[targetIndex], newOrder[index]]
+    setLocalOrder(newOrder)
+    reorderMutation.mutate(newOrder.map(c => c.id))
+  }
 
   if (isLoading) {
     return (
@@ -113,7 +132,7 @@ export function AdminNewsPanel() {
     return <QueryError error={error} />
   }
 
-  if (view === 'edit' && selectedNewsId) {
+  if (view === 'edit' && selectedCourseId) {
     if (detailLoading || !detail) {
       return (
         <div className="flex items-center justify-center py-12">
@@ -124,11 +143,11 @@ export function AdminNewsPanel() {
     return (
       <EditView
         key={detail.id}
-        newsId={selectedNewsId}
+        courseId={selectedCourseId}
         detail={detail}
         onBack={() => {
           setView('list')
-          setSelectedNewsId(null)
+          setSelectedCourseId(null)
         }}
       />
     )
@@ -137,33 +156,38 @@ export function AdminNewsPanel() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-semibold text-dark-100">{t('news.title')}</h2>
+        <h2 className="text-xl font-semibold text-dark-100">{t('courses.title')}</h2>
         <Button
-          onClick={() => createMutation.mutate({ title: t('news.newArticleDefaultTitle') })}
+          onClick={() => createMutation.mutate({ title: t('courses.newCourseDefaultTitle') })}
           disabled={createMutation.isPending}
         >
           <Plus className="h-4 w-4 mr-2" />
-          {t('news.addArticle')}
+          {t('courses.addCourse')}
         </Button>
       </div>
 
-      {!articles || articles.content.length === 0 ? (
+      {orderedCourses.length === 0 ? (
         <div className="text-center text-dark-400 py-12">
-          {t('news.noArticles')}
+          {t('courses.noCourses')}
         </div>
       ) : (
         <div className="space-y-3">
-          {articles.content.map((article) => (
-            <ArticleRow
-              key={article.id}
-              article={article}
+          {orderedCourses.map((course, index) => (
+            <CourseRow
+              key={course.id}
+              course={course}
+              isFirst={index === 0}
+              isLast={index === orderedCourses.length - 1}
+              moveDisabled={reorderMutation.isPending}
+              onMoveUp={() => handleMove(index, 'up')}
+              onMoveDown={() => handleMove(index, 'down')}
               onEdit={() => {
-                setSelectedNewsId(article.id)
+                setSelectedCourseId(course.id)
                 setView('edit')
               }}
-              onDelete={() => setDeleteConfirmId(article.id)}
-              onPublish={() => publishMutation.mutate(article.id)}
-              onUnpublish={() => unpublishMutation.mutate(article.id)}
+              onDelete={() => setDeleteConfirmId(course.id)}
+              onPublish={() => publishMutation.mutate(course.id)}
+              onUnpublish={() => unpublishMutation.mutate(course.id)}
             />
           ))}
         </div>
@@ -171,9 +195,9 @@ export function AdminNewsPanel() {
 
       <ConfirmModal
         isOpen={!!deleteConfirmId}
-        title={t('news.deleteConfirmTitle')}
-        message={t('news.deleteConfirmMessage')}
-        confirmText={t('news.delete')}
+        title={t('courses.deleteConfirmTitle')}
+        message={t('courses.deleteConfirmMessage')}
+        confirmText={t('courses.delete')}
         onConfirm={() => deleteConfirmId && deleteMutation.mutate(deleteConfirmId)}
         onClose={() => setDeleteConfirmId(null)}
       />
@@ -181,16 +205,26 @@ export function AdminNewsPanel() {
   )
 }
 
-// ==================== Wiersz artykułu w liście ====================
+// ==================== Wiersz kursu w liście ====================
 
-function ArticleRow({
-  article,
+function CourseRow({
+  course,
+  isFirst,
+  isLast,
+  moveDisabled,
+  onMoveUp,
+  onMoveDown,
   onEdit,
   onDelete,
   onPublish,
   onUnpublish,
 }: {
-  article: NewsAdmin
+  course: CourseAdmin
+  isFirst: boolean
+  isLast: boolean
+  moveDisabled: boolean
+  onMoveUp: () => void
+  onMoveDown: () => void
   onEdit: () => void
   onDelete: () => void
   onPublish: () => void
@@ -201,11 +235,11 @@ function ArticleRow({
   return (
     <div className="flex items-center gap-4 bg-dark-800 border border-dark-700 rounded-lg p-4">
       <div className="flex-shrink-0 w-16 h-16 bg-dark-700 rounded overflow-hidden">
-        {article.thumbnailUrl ? (
-          <img src={article.thumbnailUrl} alt={article.title} className="w-full h-full object-cover" />
+        {course.thumbnailUrl ? (
+          <img src={course.thumbnailUrl} alt={course.title} className="w-full h-full object-cover" />
         ) : (
           <div className="w-full h-full flex items-center justify-center">
-            <Newspaper className="h-6 w-6 text-dark-500" />
+            <BookOpen className="h-6 w-6 text-dark-500" />
           </div>
         )}
       </div>
@@ -215,43 +249,59 @@ function ArticleRow({
           <span
             className={clsx(
               'text-xs px-2 py-0.5 rounded-full',
-              article.published
+              course.published
                 ? 'bg-green-900/40 text-green-400'
                 : 'bg-dark-600 text-dark-400'
             )}
           >
-            {article.published ? t('news.published') : t('news.draft')}
+            {course.published ? t('courses.published') : t('courses.draft')}
           </span>
-          {article.publishedAt && (
+          {course.publishedAt && (
             <span className="text-xs text-dark-400">
-              {new Date(article.publishedAt).toLocaleDateString('pl-PL')}
+              {new Date(course.publishedAt).toLocaleDateString('pl-PL')}
             </span>
           )}
         </div>
-        <p className="font-medium text-dark-100 truncate">{article.title}</p>
-        {article.excerpt && (
-          <p className="text-sm text-dark-400 truncate">{article.excerpt}</p>
+        <p className="font-medium text-dark-100 truncate">{course.title}</p>
+        {course.excerpt && (
+          <p className="text-sm text-dark-400 truncate">{course.excerpt}</p>
         )}
       </div>
 
-      <div className="flex items-center gap-2 flex-shrink-0">
+      <div className="flex items-center gap-1 flex-shrink-0">
         <button
-          onClick={article.published ? onUnpublish : onPublish}
-          title={article.published ? t('news.unpublish') : t('news.publish')}
+          onClick={onMoveUp}
+          disabled={isFirst || moveDisabled}
+          title={t('courses.moveUp')}
+          className="p-2 text-dark-400 hover:text-dark-100 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+        >
+          <ChevronUp className="h-4 w-4" />
+        </button>
+        <button
+          onClick={onMoveDown}
+          disabled={isLast || moveDisabled}
+          title={t('courses.moveDown')}
+          className="p-2 text-dark-400 hover:text-dark-100 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+        >
+          <ChevronDown className="h-4 w-4" />
+        </button>
+        <button
+          onClick={course.published ? onUnpublish : onPublish}
+          title={course.published ? t('courses.unpublish') : t('courses.publish')}
           className="p-2 text-dark-400 hover:text-dark-100 transition-colors"
         >
-          {article.published ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+          {course.published ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
         </button>
         <button
           onClick={onEdit}
-          title={t('news.edit')}
+          title={t('courses.edit')}
           className="p-2 text-dark-400 hover:text-dark-100 transition-colors"
         >
           <Pencil className="h-4 w-4" />
         </button>
         <button
           onClick={onDelete}
-          title={t('news.delete')}
+          title={t('courses.delete')}
           className="p-2 text-dark-400 hover:text-red-400 transition-colors"
         >
           <Trash2 className="h-4 w-4" />
@@ -264,21 +314,21 @@ function ArticleRow({
 // ==================== Widok edycji ====================
 
 function EditView({
-  newsId,
+  courseId,
   detail,
   onBack,
 }: {
-  newsId: string
-  detail: NewsDetailAdmin
+  courseId: string
+  detail: CourseDetailAdmin
   onBack: () => void
 }) {
   const { t } = useTranslation('admin')
   const queryClient = useQueryClient()
 
   const invalidate = useCallback(() => {
-    queryClient.invalidateQueries({ queryKey: ['admin', 'news'] })
-    queryClient.invalidateQueries({ queryKey: ['admin', 'news', newsId] })
-  }, [queryClient, newsId])
+    queryClient.invalidateQueries({ queryKey: ['admin', 'courses'] })
+    queryClient.invalidateQueries({ queryKey: ['admin', 'courses', courseId] })
+  }, [queryClient, courseId])
 
   // ---------- Meta state ----------
   const [title, setTitle] = useState(detail.title)
@@ -307,7 +357,6 @@ function EditView({
     return map
   })
 
-  // Sync new blocks added via invalidate (e.g. after immediate ops) without resetting user edits
   useEffect(() => {
     setBlockEdits((prev) => {
       const next = { ...prev }
@@ -323,7 +372,6 @@ function EditView({
   // ---------- Pending new blocks ----------
   const [pendingBlocks, setPendingBlocks] = useState<PendingBlock[]>([])
 
-  // Cleanup blob URLs on unmount
   useEffect(() => {
     return () => {
       pendingBlocks.forEach((b) => {
@@ -351,7 +399,7 @@ function EditView({
   // ---------- Preview ----------
   const [showPreview, setShowPreview] = useState(false)
 
-  const previewBlocks: PreviewBlock[] = [
+  const previewBlocks: CoursePreviewBlock[] = [
     ...detail.blocks.map((b) => ({
       tempId: b.id,
       type: b.blockType as 'TEXT' | 'IMAGE',
@@ -361,10 +409,10 @@ function EditView({
     })),
     ...pendingBlocks.map((b) => ({
       tempId: b.tempId,
-      type: b.type as 'TEXT' | 'IMAGE',
+      type: b.type,
       content: b.type === 'TEXT' ? b.content : undefined,
       imageUrl: b.type === 'IMAGE' ? b.preview : undefined,
-      caption: b.type === 'IMAGE' ? b.caption || undefined : undefined,
+      caption: b.type === 'IMAGE' ? b.caption : undefined,
     })),
   ]
 
@@ -378,24 +426,24 @@ function EditView({
     try {
       // 1. Meta
       if (metaDirty) {
-        await adminNewsApi.updateMeta(newsId, { title, excerpt: excerpt || undefined })
+        await adminCoursesApi.updateMeta(courseId, { title, excerpt: excerpt || undefined })
       }
 
       // 2. Thumbnail + focal point (zawsze razem gdy nowy plik)
       if (thumbnailFile) {
-        await adminNewsApi.uploadThumbnail(newsId, thumbnailFile)
-        await adminNewsApi.updateThumbnailFocalPoint(newsId, focalPoint.x, focalPoint.y)
+        await adminCoursesApi.uploadThumbnail(courseId, thumbnailFile)
+        await adminCoursesApi.updateThumbnailFocalPoint(courseId, focalPoint.x, focalPoint.y)
         setThumbnailFile(null)
         if (thumbnailPreview) {
           URL.revokeObjectURL(thumbnailPreview)
           setThumbnailPreview(null)
         }
       } else if (focalPointDirty) {
-        // Focal point dla istniejącej miniaturki (zmiana bez nowego pliku)
-        await adminNewsApi.updateThumbnailFocalPoint(newsId, focalPoint.x, focalPoint.y)
+        // 3. Focal point dla istniejącej miniaturki (zmiana bez nowego pliku)
+        await adminCoursesApi.updateThumbnailFocalPoint(courseId, focalPoint.x, focalPoint.y)
       }
 
-      // 3. Existing block edits
+      // 4. Existing block edits
       await Promise.all(
         detail.blocks
           .filter((b) => {
@@ -408,18 +456,18 @@ function EditView({
           .map((b) => {
             const edit = blockEdits[b.id]
             if (b.blockType === 'TEXT') {
-              return adminNewsApi.updateTextBlock(b.id, { content: edit.content ?? '' })
+              return adminCoursesApi.updateTextBlock(b.id, { content: edit.content ?? '' })
             }
-            return adminNewsApi.updateImageBlock(b.id, { caption: edit.caption || undefined })
+            return adminCoursesApi.updateImageBlock(b.id, { caption: edit.caption || undefined })
           })
       )
 
       // 4. New blocks (sequential to preserve order)
       for (const pending of pendingBlocks) {
         if (pending.type === 'TEXT') {
-          await adminNewsApi.addTextBlock(newsId, { content: pending.content })
+          await adminCoursesApi.addTextBlock(courseId, { content: pending.content })
         } else {
-          await adminNewsApi.addImageBlock(newsId, pending.file, pending.caption || undefined)
+          await adminCoursesApi.addImageBlock(courseId, pending.file, pending.caption || undefined)
           URL.revokeObjectURL(pending.preview)
         }
       }
@@ -446,10 +494,7 @@ function EditView({
     if (thumbnailPreview) URL.revokeObjectURL(thumbnailPreview)
     setThumbnailFile(null)
     setThumbnailPreview(null)
-    setFocalPoint({
-      x: detail.thumbnailFocalPointX ?? 0.5,
-      y: detail.thumbnailFocalPointY ?? 0.5,
-    })
+    setFocalPoint({ x: detail.thumbnailFocalPointX ?? 0.5, y: detail.thumbnailFocalPointY ?? 0.5 })
 
     const reset: Record<string, { content?: string; caption?: string }> = {}
     detail.blocks.forEach((b) => {
@@ -479,12 +524,12 @@ function EditView({
 
   const moveBlockMutation = useMutation({
     mutationFn: ({ blockId, direction }: { blockId: string; direction: 'UP' | 'DOWN' }) =>
-      adminNewsApi.moveBlock(blockId, direction),
+      adminCoursesApi.moveBlock(blockId, direction),
     onSuccess: () => invalidate(),
   })
 
   const deleteBlockMutation = useMutation({
-    mutationFn: (blockId: string) => adminNewsApi.deleteBlock(blockId),
+    mutationFn: (blockId: string) => adminCoursesApi.deleteBlock(blockId),
     onSuccess: () => {
       invalidate()
       setDeleteBlockConfirmId(null)
@@ -492,17 +537,17 @@ function EditView({
   })
 
   const deleteThumbnailMutation = useMutation({
-    mutationFn: () => adminNewsApi.deleteThumbnail(newsId),
+    mutationFn: () => adminCoursesApi.deleteThumbnail(courseId),
     onSuccess: () => invalidate(),
   })
 
   const publishMutation = useMutation({
-    mutationFn: () => adminNewsApi.publish(newsId),
+    mutationFn: () => adminCoursesApi.publish(courseId),
     onSuccess: () => invalidate(),
   })
 
   const unpublishMutation = useMutation({
-    mutationFn: () => adminNewsApi.unpublish(newsId),
+    mutationFn: () => adminCoursesApi.unpublish(courseId),
     onSuccess: () => invalidate(),
   })
 
@@ -517,23 +562,23 @@ function EditView({
         className="inline-flex items-center gap-2 text-dark-300 hover:text-dark-100 transition-colors text-sm"
       >
         <ArrowLeft className="h-4 w-4" />
-        {t('news.backToList')}
+        {t('courses.backToList')}
       </button>
 
       {/* Sekcja 1: Metadane */}
       <section className="bg-dark-800 border border-dark-700 rounded-lg p-6">
         <div className="flex items-center gap-3 mb-4">
-          <h3 className="text-lg font-semibold text-dark-100">{t('news.sectionMeta')}</h3>
+          <h3 className="text-lg font-semibold text-dark-100">{t('courses.sectionMeta')}</h3>
           <span className={clsx(
             'text-xs px-2.5 py-1 rounded-full',
             published ? 'bg-green-900/40 text-green-400' : 'bg-dark-600 text-dark-400'
           )}>
-            {published ? t('news.published') : t('news.draft')}
+            {published ? t('courses.published') : t('courses.draft')}
           </span>
         </div>
         <div className="space-y-4">
           <div>
-            <label className="block text-sm text-dark-300 mb-1">{t('news.titleLabel')}</label>
+            <label className="block text-sm text-dark-300 mb-1">{t('courses.titleLabel')}</label>
             <input
               type="text"
               value={title}
@@ -542,7 +587,7 @@ function EditView({
             />
           </div>
           <div>
-            <label className="block text-sm text-dark-300 mb-1">{t('news.excerptLabel')}</label>
+            <label className="block text-sm text-dark-300 mb-1">{t('courses.excerptLabel')}</label>
             <textarea
               value={excerpt}
               onChange={(e) => setExcerpt(e.target.value)}
@@ -555,7 +600,7 @@ function EditView({
 
       {/* Sekcja 2: Miniaturka */}
       <section className="bg-dark-800 border border-dark-700 rounded-lg p-6">
-        <h3 className="text-lg font-semibold text-dark-100 mb-4">{t('news.sectionThumbnail')}</h3>
+        <h3 className="text-lg font-semibold text-dark-100 mb-4">{t('courses.sectionThumbnail')}</h3>
 
         {(thumbnailPreview || detail.thumbnailUrl) && (
           <div className="mb-4 relative">
@@ -563,11 +608,12 @@ function EditView({
               imageUrl={thumbnailPreview ?? detail.thumbnailUrl ?? ''}
               value={focalPoint}
               onChange={setFocalPoint}
-              aspectRatio="5/2"
+              aspectRatio="3/2"
+              className="w-48"
             />
             {thumbnailPreview && (
               <span className="absolute top-1 left-1 text-xs px-1.5 py-0.5 bg-primary-600 text-white rounded z-10 pointer-events-none">
-                {t('news.pendingBadge')}
+                {t('courses.pendingBadge')}
               </span>
             )}
           </div>
@@ -589,7 +635,7 @@ function EditView({
             />
             <span className="inline-flex items-center gap-2 px-3 py-2 bg-dark-700 border border-dark-600 rounded text-sm text-dark-200 hover:border-primary-500 transition-colors cursor-pointer">
               <Upload className="h-4 w-4" />
-              {t('news.chooseThumbnail')}
+              {t('courses.chooseThumbnail')}
             </span>
           </label>
 
@@ -602,7 +648,7 @@ function EditView({
               }}
               className="text-sm text-dark-400 hover:text-dark-100 transition-colors"
             >
-              {t('news.cancelThumbnail')}
+              {t('courses.cancelThumbnail')}
             </button>
           )}
 
@@ -612,7 +658,7 @@ function EditView({
               disabled={deleteThumbnailMutation.isPending}
               className="text-sm text-red-400 hover:text-red-300 transition-colors"
             >
-              {t('news.deleteThumbnail')}
+              {t('courses.deleteThumbnail')}
             </button>
           )}
         </div>
@@ -620,7 +666,7 @@ function EditView({
 
       {/* Sekcja 3: Bloki treści */}
       <section className="bg-dark-800 border border-dark-700 rounded-lg p-6">
-        <h3 className="text-lg font-semibold text-dark-100 mb-4">{t('news.sectionContent')}</h3>
+        <h3 className="text-lg font-semibold text-dark-100 mb-4">{t('courses.sectionContent')}</h3>
 
         {/* Istniejące bloki */}
         {detail.blocks.length > 0 || pendingBlocks.length > 0 ? (
@@ -659,7 +705,7 @@ function EditView({
             ))}
           </div>
         ) : (
-          <p className="text-dark-400 text-sm mb-6">{t('news.noBlocks')}</p>
+          <p className="text-dark-400 text-sm mb-6">{t('courses.noBlocks')}</p>
         )}
 
         {/* Dodaj blok */}
@@ -674,7 +720,7 @@ function EditView({
             }
           >
             <Type className="h-4 w-4 mr-1.5" />
-            {t('news.addParagraph')}
+            {t('courses.addParagraph')}
           </Button>
 
           <label className="cursor-pointer">
@@ -695,7 +741,7 @@ function EditView({
             />
             <span className="inline-flex items-center gap-2 px-3 py-2 bg-dark-800 border border-dark-600 rounded text-sm text-dark-200 hover:border-dark-400 transition-colors cursor-pointer font-medium">
               <ImageIcon className="h-4 w-4" />
-              {t('news.addImage')}
+              {t('courses.addImage')}
             </span>
           </label>
         </div>
@@ -712,7 +758,7 @@ function EditView({
             )}
             {isDirty && !saveError && (
               <span className="text-xs text-amber-400 hidden sm:block">
-                {t('news.unsavedChanges')}
+                {t('courses.unsavedChanges')}
               </span>
             )}
             <Button
@@ -720,7 +766,7 @@ function EditView({
               onClick={() => setShowPreview(true)}
             >
               <Eye className="h-4 w-4 mr-1.5" />
-              {t('news.preview')}
+              {t('courses.preview')}
             </Button>
             <Button
               variant="ghost"
@@ -728,7 +774,7 @@ function EditView({
               disabled={!isDirty || isSaving}
             >
               <X className="h-4 w-4 mr-1.5" />
-              {t('news.cancel')}
+              {t('courses.cancel')}
             </Button>
             {published ? (
               <>
@@ -738,7 +784,7 @@ function EditView({
                   disabled={unpublishMutation.isPending || isSaving}
                 >
                   <EyeOff className="h-4 w-4 mr-1.5" />
-                  {t('news.unpublish')}
+                  {t('courses.unpublish')}
                 </Button>
                 <Button
                   onClick={handleSave}
@@ -746,7 +792,7 @@ function EditView({
                   loading={isSaving}
                 >
                   <Save className="h-4 w-4 mr-1.5" />
-                  {t('news.saveChanges')}
+                  {t('courses.saveChanges')}
                 </Button>
               </>
             ) : (
@@ -758,7 +804,7 @@ function EditView({
                   loading={isSaving}
                 >
                   <Save className="h-4 w-4 mr-1.5" />
-                  {t('news.saveDraft')}
+                  {t('courses.saveDraft')}
                 </Button>
                 <Button
                   onClick={handlePublish}
@@ -766,7 +812,7 @@ function EditView({
                   loading={publishMutation.isPending || isSaving}
                 >
                   <Eye className="h-4 w-4 mr-1.5" />
-                  {t('news.publish')}
+                  {t('courses.publish')}
                 </Button>
               </>
             )}
@@ -777,9 +823,9 @@ function EditView({
       {/* Confirm: usuń blok */}
       <ConfirmModal
         isOpen={!!deleteBlockConfirmId}
-        title={t('news.deleteBlockConfirmTitle')}
-        message={t('news.deleteBlockConfirmMessage')}
-        confirmText={t('news.delete')}
+        title={t('courses.deleteBlockConfirmTitle')}
+        message={t('courses.deleteBlockConfirmMessage')}
+        confirmText={t('courses.delete')}
         onConfirm={() => deleteBlockConfirmId && deleteBlockMutation.mutate(deleteBlockConfirmId)}
         onClose={() => setDeleteBlockConfirmId(null)}
       />
@@ -787,21 +833,21 @@ function EditView({
       {/* Confirm: wyjdź bez zapisu */}
       <ConfirmModal
         isOpen={showExitConfirm}
-        title={t('news.exitConfirmTitle')}
-        message={t('news.exitConfirmMessage')}
-        confirmText={t('news.exitConfirm')}
+        title={t('courses.exitConfirmTitle')}
+        message={t('courses.exitConfirmMessage')}
+        confirmText={t('courses.exitConfirm')}
         onConfirm={() => onBack()}
         onClose={() => setShowExitConfirm(false)}
       />
 
-      {/* Podgląd artykułu */}
-      <NewsPreviewModal
+      {/* Podgląd kursu */}
+      <CoursePreviewModal
         isOpen={showPreview}
         onClose={() => setShowPreview(false)}
         title={title}
         excerpt={excerpt}
         thumbnailUrl={thumbnailPreview ?? detail.thumbnailUrl ?? null}
-        focalPoint={focalPoint}
+        focalPoint={!thumbnailPreview ? focalPoint : undefined}
         blocks={previewBlocks}
       />
     </div>
@@ -849,13 +895,13 @@ function BlockEditor({
             block.blockType === 'TEXT' ? 'bg-blue-900/40 text-blue-400' : 'bg-purple-900/40 text-purple-400'
           )}>
             {block.blockType === 'TEXT' ? (
-              <><Type className="h-3 w-3 inline mr-1" />{t('news.blockTypeText')}</>
+              <><Type className="h-3 w-3 inline mr-1" />{t('courses.blockTypeText')}</>
             ) : (
-              <><ImageIcon className="h-3 w-3 inline mr-1" />{t('news.blockTypeImage')}</>
+              <><ImageIcon className="h-3 w-3 inline mr-1" />{t('courses.blockTypeImage')}</>
             )}
           </span>
           {isModified && (
-            <span className="text-xs text-amber-400">{t('news.modified')}</span>
+            <span className="text-xs text-amber-400">{t('courses.modified')}</span>
           )}
         </div>
 
@@ -864,7 +910,7 @@ function BlockEditor({
             onClick={onMoveUp}
             disabled={isFirst}
             className="p-1 text-dark-400 hover:text-dark-100 disabled:opacity-30 transition-colors"
-            title={t('news.moveUp')}
+            title={t('courses.moveUp')}
           >
             <ChevronUp className="h-4 w-4" />
           </button>
@@ -872,14 +918,14 @@ function BlockEditor({
             onClick={onMoveDown}
             disabled={isLast}
             className="p-1 text-dark-400 hover:text-dark-100 disabled:opacity-30 transition-colors"
-            title={t('news.moveDown')}
+            title={t('courses.moveDown')}
           >
             <ChevronDown className="h-4 w-4" />
           </button>
           <button
             onClick={onDelete}
             className="p-1 text-dark-400 hover:text-red-400 transition-colors"
-            title={t('news.deleteBlock')}
+            title={t('courses.deleteBlock')}
           >
             <Trash2 className="h-4 w-4" />
           </button>
@@ -905,7 +951,7 @@ function BlockEditor({
             type="text"
             value={editState.caption ?? ''}
             onChange={(e) => onChange({ ...editState, caption: e.target.value })}
-            placeholder={t('news.captionPlaceholder')}
+            placeholder={t('courses.captionPlaceholder')}
             className="w-full bg-dark-700 border border-dark-600 rounded px-3 py-2 text-dark-100 focus:outline-none focus:border-primary-500 text-sm"
           />
         </div>
@@ -938,17 +984,17 @@ function PendingBlockItem({
             block.type === 'TEXT' ? 'bg-blue-900/40 text-blue-400' : 'bg-purple-900/40 text-purple-400'
           )}>
             {block.type === 'TEXT' ? (
-              <><Type className="h-3 w-3 inline mr-1" />{t('news.blockTypeText')}</>
+              <><Type className="h-3 w-3 inline mr-1" />{t('courses.blockTypeText')}</>
             ) : (
-              <><ImageIcon className="h-3 w-3 inline mr-1" />{t('news.blockTypeImage')}</>
+              <><ImageIcon className="h-3 w-3 inline mr-1" />{t('courses.blockTypeImage')}</>
             )}
           </span>
-          <span className="text-xs text-primary-400">{t('news.pendingBadge')}</span>
+          <span className="text-xs text-primary-400">{t('courses.pendingBadge')}</span>
         </div>
         <button
           onClick={onDelete}
           className="p-1 text-dark-400 hover:text-red-400 transition-colors"
-          title={t('news.deleteBlock')}
+          title={t('courses.deleteBlock')}
         >
           <Trash2 className="h-4 w-4" />
         </button>
@@ -970,7 +1016,7 @@ function PendingBlockItem({
             type="text"
             value={block.caption}
             onChange={(e) => onChange({ caption: e.target.value })}
-            placeholder={t('news.captionPlaceholder')}
+            placeholder={t('courses.captionPlaceholder')}
             className="w-full bg-dark-700 border border-dark-600 rounded px-3 py-2 text-dark-100 focus:outline-none focus:border-primary-500 text-sm"
           />
         </div>

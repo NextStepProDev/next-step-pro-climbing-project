@@ -23,7 +23,9 @@ public class CacheConfig {
             build("calendarWeek",  200, 2),
             build("calendarDay",   200, 2),
             build("newsList",       50, 10),
-            build("newsDetail",    100, 30)
+            build("newsDetail",    100, 30),
+            build("courseList",     50, 30),
+            build("courseDetail",  100, 60)
         ));
         return manager;
     }

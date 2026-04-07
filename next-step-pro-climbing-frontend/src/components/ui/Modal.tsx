@@ -7,9 +7,10 @@ interface ModalProps {
   onClose: () => void
   title: string
   children: ReactNode
+  size?: 'md' | 'xl'
 }
 
-export function Modal({ isOpen, onClose, title, children }: ModalProps) {
+export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalProps) {
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden'
@@ -46,7 +47,7 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
         role="dialog"
         aria-modal="true"
         aria-labelledby="modal-title"
-        className="relative bg-dark-900 rounded-xl border border-dark-800 shadow-xl max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto"
+        className={`relative bg-dark-900 rounded-xl border border-dark-800 shadow-xl w-full mx-4 max-h-[90vh] overflow-y-auto ${size === 'xl' ? 'max-w-4xl' : 'max-w-lg'}`}
       >
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-dark-800">
