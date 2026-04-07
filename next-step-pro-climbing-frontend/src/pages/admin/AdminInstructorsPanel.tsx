@@ -222,7 +222,7 @@ export function AdminInstructorsPanel() {
                       <img
                         src={instructor.badgeUrl}
                         alt="badge"
-                        className="absolute bottom-0 right-0 w-9 h-9 rounded-full object-contain bg-white border border-dark-600 shadow p-0.5"
+                        className="absolute bottom-0 right-0 w-9 h-9 rounded-full object-contain bg-white border border-dark-600/40 shadow p-px"
                       />
                     )}
                     <button
