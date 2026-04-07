@@ -3,6 +3,7 @@
     "home": "Inicio",
     "calendar": "Calendario",
     "news": "Noticias",
+    "courses": "Cursos",
     "instructors": "Instructores",
     "gallery": "Galería",
     "myReservations": "Mis reservas",
@@ -57,6 +58,10 @@
     "photo_one": "foto",
     "photo_few": "fotos",
     "photo_many": "fotos"
+  },
+  "courses": {
+    "title": "Cursos",
+    "noCourses": "No hay cursos para mostrar"
   },
   "news": {
     "title": "Noticias",

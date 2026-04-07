@@ -116,6 +116,15 @@ public class AdminNewsController {
         return ResponseEntity.ok(adminNewsService.uploadThumbnail(id, file));
     }
 
+    @Operation(summary = "Ustaw focal point miniaturki aktualności")
+    @PutMapping("/{id}/thumbnail-focal-point")
+    public ResponseEntity<Void> updateThumbnailFocalPoint(
+            @Parameter(description = "ID aktualności") @PathVariable UUID id,
+            @RequestBody UpdateThumbnailFocalPointRequest request) {
+        adminNewsService.updateThumbnailFocalPoint(id, request);
+        return ResponseEntity.noContent().build();
+    }
+
     @Operation(summary = "Usuń miniaturkę aktualności")
     @DeleteMapping("/{id}/thumbnail")
     public ResponseEntity<Void> deleteThumbnail(

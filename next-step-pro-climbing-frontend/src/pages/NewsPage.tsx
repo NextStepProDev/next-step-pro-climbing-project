@@ -70,6 +70,9 @@ export function NewsPage() {
                   src={article.thumbnailUrl}
                   alt={article.title}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  style={article.thumbnailFocalPointX != null
+                    ? { objectPosition: `${article.thumbnailFocalPointX * 100}% ${(article.thumbnailFocalPointY ?? 0.5) * 100}%` }
+                    : undefined}
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center">

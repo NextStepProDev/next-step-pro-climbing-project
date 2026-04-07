@@ -47,7 +47,7 @@ export function HomePage() {
                   {t("hero.viewCalendar")}
                 </Button>
               </Link>
-              <a href="#offer">
+              <Link to="/courses">
                 <Button
                   variant="secondary"
                   size="lg"
@@ -55,7 +55,7 @@ export function HomePage() {
                 >
                   {t("hero.seeOffer")}
                 </Button>
-              </a>
+              </Link>
             </div>
           </div>
         </div>

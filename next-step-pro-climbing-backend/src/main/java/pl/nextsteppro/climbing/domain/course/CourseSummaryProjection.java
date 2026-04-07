@@ -1,11 +1,11 @@
-package pl.nextsteppro.climbing.domain.news;
+package pl.nextsteppro.climbing.domain.course;
 
 import org.jspecify.annotations.Nullable;
 
 import java.time.Instant;
 import java.util.UUID;
 
-public interface NewsSummaryProjection {
+public interface CourseSummaryProjection {
 
     UUID getId();
 
@@ -22,6 +22,8 @@ public interface NewsSummaryProjection {
 
     @Nullable
     Float getThumbnailFocalPointY();
+
+    int getDisplayOrder();
 
     boolean isPublished();
 

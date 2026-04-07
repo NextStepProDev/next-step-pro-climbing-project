@@ -3,6 +3,7 @@
     "home": "Home",
     "calendar": "Calendar",
     "news": "News",
+    "courses": "Courses",
     "instructors": "Instructors",
     "gallery": "Gallery",
     "myReservations": "My reservations",
@@ -57,6 +58,10 @@
     "photo_one": "photo",
     "photo_few": "photos",
     "photo_many": "photos"
+  },
+  "courses": {
+    "title": "Courses",
+    "noCourses": "No courses to display"
   },
   "news": {
     "title": "News",
