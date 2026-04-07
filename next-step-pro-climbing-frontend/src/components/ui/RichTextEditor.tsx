@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useCallback, useRef } from 'react'
 import { Bold, Italic, Underline, List, ListOrdered } from 'lucide-react'
 
 interface RichTextEditorProps {
@@ -24,21 +24,7 @@ export function RichTextEditor({
 }: RichTextEditorProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
-  /**
-   * Replaces [selStart, selEnd) in the textarea with `text` using
-   * document.execCommand so the browser's native undo stack is preserved.
-   * Returns true on success, false if execCommand is unavailable (fallback).
-   */
-  const nativeInsert = (selStart: number, selEnd: number, text: string): boolean => {
-    const ta = textareaRef.current
-    if (!ta) return false
-    ta.focus()
-    ta.setSelectionRange(selStart, selEnd)
-    return document.execCommand('insertText', false, text)
-  }
-
-  // Wraps selected characters with an inline marker (**bold**, *italic*, __underline__)
-  const wrapSelection = (marker: string) => {
+  const wrapSelection = useCallback((marker: string) => {
     const ta = textareaRef.current
     if (!ta) return
     const start = ta.selectionStart
@@ -46,27 +32,25 @@ export function RichTextEditor({
     const selected = ta.value.slice(start, end)
     const replacement = marker + selected + marker
 
-    if (nativeInsert(start, end, replacement)) {
-      // Restore inner selection (the text between markers)
+    ta.focus()
+    ta.setSelectionRange(start, end)
+    if (document.execCommand('insertText', false, replacement)) {
       ta.setSelectionRange(start + marker.length, start + marker.length + selected.length)
     } else {
-      // Fallback: manual state update
-      onChange(value.slice(0, start) + replacement + value.slice(end))
+      onChange(ta.value.slice(0, start) + replacement + ta.value.slice(end))
       requestAnimationFrame(() => {
-        ta?.focus()
-        ta?.setSelectionRange(start + marker.length, start + marker.length + selected.length)
+        ta.focus()
+        ta.setSelectionRange(start + marker.length, start + marker.length + selected.length)
       })
     }
-  }
+  }, [onChange])
 
-  // Applies/toggles list prefixes on all lines covered by the current selection
-  const applyList = (type: 'bullet' | 'numbered' | 'lettered') => {
+  const applyList = useCallback((type: 'bullet' | 'numbered' | 'lettered') => {
     const ta = textareaRef.current
     if (!ta) return
     const start = ta.selectionStart
     const end   = ta.selectionEnd
 
-    // Expand to full line boundaries
     const lineStart  = ta.value.lastIndexOf('\n', start - 1) + 1
     const lineEndIdx = ta.value.indexOf('\n', end)
     const lineEnd    = lineEndIdx === -1 ? ta.value.length : lineEndIdx
@@ -93,19 +77,27 @@ export function RichTextEditor({
     }
 
     const newSelected = newLines.join('\n')
-    if (nativeInsert(lineStart, lineEnd, newSelected)) {
+    ta.focus()
+    ta.setSelectionRange(lineStart, lineEnd)
+    if (document.execCommand('insertText', false, newSelected)) {
       ta.setSelectionRange(lineStart, lineStart + newSelected.length)
     } else {
-      // Fallback
       onChange(ta.value.slice(0, lineStart) + newSelected + ta.value.slice(lineEnd))
       requestAnimationFrame(() => {
-        ta?.focus()
-        ta?.setSelectionRange(lineStart, lineStart + newSelected.length)
+        ta.focus()
+        ta.setSelectionRange(lineStart, lineStart + newSelected.length)
       })
     }
-  }
+  }, [onChange])
 
-  const btn = (onAction: () => void, title: string, children: React.ReactNode) => (
+  const handleBold      = useCallback(() => wrapSelection('**'), [wrapSelection])
+  const handleItalic    = useCallback(() => wrapSelection('*'),  [wrapSelection])
+  const handleUnderline = useCallback(() => wrapSelection('__'), [wrapSelection])
+  const handleBullet    = useCallback(() => applyList('bullet'),   [applyList])
+  const handleNumbered  = useCallback(() => applyList('numbered'), [applyList])
+  const handleLettered  = useCallback(() => applyList('lettered'), [applyList])
+
+  const btn = useCallback((onAction: () => void, title: string, children: React.ReactNode) => (
     <button
       type="button"
       onMouseDown={(e) => { e.preventDefault(); onAction() }}
@@ -114,18 +106,18 @@ export function RichTextEditor({
     >
       {children}
     </button>
-  )
+  ), [])
 
   return (
     <div className={className}>
       <div className="flex items-center gap-0.5 border border-dark-600 border-b-0 rounded-t bg-dark-800 px-2 py-1">
-        {btn(() => wrapSelection('**'), 'Pogrubienie', <Bold className="h-3.5 w-3.5" />)}
-        {btn(() => wrapSelection('*'),  'Kursywa',     <Italic className="h-3.5 w-3.5" />)}
-        {btn(() => wrapSelection('__'), 'Podkreślenie', <Underline className="h-3.5 w-3.5" />)}
+        {btn(handleBold,      'Pogrubienie',          <Bold className="h-3.5 w-3.5" />)}
+        {btn(handleItalic,    'Kursywa',              <Italic className="h-3.5 w-3.5" />)}
+        {btn(handleUnderline, 'Podkreślenie',         <Underline className="h-3.5 w-3.5" />)}
         <span className="w-px h-4 bg-dark-600 mx-1.5" />
-        {btn(() => applyList('bullet'),   'Lista punktowana (•)',  <List className="h-3.5 w-3.5" />)}
-        {btn(() => applyList('numbered'), 'Lista numerowana (1.)', <ListOrdered className="h-3.5 w-3.5" />)}
-        {btn(() => applyList('lettered'), 'Lista literowa (a))',
+        {btn(handleBullet,   'Lista punktowana (•)',  <List className="h-3.5 w-3.5" />)}
+        {btn(handleNumbered, 'Lista numerowana (1.)', <ListOrdered className="h-3.5 w-3.5" />)}
+        {btn(handleLettered, 'Lista literowa (a))',
           <span className="text-xs font-mono leading-none px-0.5">a)</span>
         )}
         <span className="ml-auto text-xs text-dark-500 hidden sm:block">Zaznacz tekst → kliknij styl</span>
