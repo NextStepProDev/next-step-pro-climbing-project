@@ -76,6 +76,12 @@ public class UserController {
         }
 
         // Update fields
+        if (request.firstName() != null) {
+            user.setFirstName(request.firstName());
+        }
+        if (request.lastName() != null) {
+            user.setLastName(request.lastName());
+        }
         if (request.phone() != null) {
             user.setPhone(request.phone());
         }
@@ -217,6 +223,8 @@ record UserProfileDto(
 
 @Schema(description = "Dane do aktualizacji profilu")
 record UpdateProfileRequest(
+    @Schema(description = "Imię", example = "Jan") String firstName,
+    @Schema(description = "Nazwisko", example = "Kowalski") String lastName,
     @Schema(description = "Numer telefonu", example = "+48123456789") String phone,
     @Schema(description = "Nick/pseudonim", example = "Climber123") String nickname
 ) {}
