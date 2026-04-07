@@ -332,6 +332,7 @@ function EditView({
   const invalidate = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ['admin', 'courses'] })
     queryClient.invalidateQueries({ queryKey: ['admin', 'courses', courseId] })
+    queryClient.invalidateQueries({ queryKey: ['courses'] })
   }, [queryClient, courseId])
 
   // ---------- Meta state ----------
@@ -618,22 +619,33 @@ function EditView({
       <section className="bg-dark-800 border border-dark-700 rounded-lg p-6">
         <h3 className="text-lg font-semibold text-dark-100 mb-4">{t('courses.sectionThumbnail')}</h3>
 
-        {(thumbnailPreview || thumbnailFromLibrary || detail.thumbnailUrl) && (
-          <div className="mb-4 relative">
-            <FocalPointEditor
-              imageUrl={thumbnailPreview ?? thumbnailFromLibrary ?? detail.thumbnailUrl ?? ''}
-              value={focalPoint}
-              onChange={setFocalPoint}
-              aspectRatio="3/2"
-              className="w-48"
-            />
-            {(thumbnailPreview || thumbnailFromLibrary) && (
-              <span className="absolute top-1 left-1 text-xs px-1.5 py-0.5 bg-primary-600 text-white rounded z-10 pointer-events-none">
-                {t('courses.pendingBadge')}
-              </span>
-            )}
-          </div>
-        )}
+        {(thumbnailPreview || thumbnailFromLibrary || detail.thumbnailUrl) && (() => {
+          const isFromLibrary = thumbnailFromLibrary !== null ||
+            (!thumbnailPreview && !thumbnailFromLibrary && detail.thumbnailFilename === null)
+          const imageUrl = thumbnailPreview ?? thumbnailFromLibrary ?? detail.thumbnailUrl ?? ''
+          return (
+            <div className="mb-4 relative">
+              {isFromLibrary ? (
+                <div className="w-48 rounded-lg overflow-hidden ring-2 ring-primary-500/40" style={{ aspectRatio: '3/2' }}>
+                  <img src={imageUrl} alt="" className="w-full h-full object-contain" />
+                </div>
+              ) : (
+                <FocalPointEditor
+                  imageUrl={imageUrl}
+                  value={focalPoint}
+                  onChange={setFocalPoint}
+                  aspectRatio="3/2"
+                  className="w-48"
+                />
+              )}
+              {(thumbnailPreview || thumbnailFromLibrary) && (
+                <span className="absolute top-1 left-1 text-xs px-1.5 py-0.5 bg-primary-600 text-white rounded z-10 pointer-events-none">
+                  {t('courses.pendingBadge')}
+                </span>
+              )}
+            </div>
+          )
+        })()}
 
         <div className="flex items-center gap-3 flex-wrap">
           <label className="cursor-pointer">

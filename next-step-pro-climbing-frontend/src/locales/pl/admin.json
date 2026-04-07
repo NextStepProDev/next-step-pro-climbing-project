@@ -11,7 +11,8 @@
     "courses": "Kursy",
     "users": "Użytkownicy",
     "activity": "Aktywność",
-    "assets": "Biblioteka mediów"
+    "assets": "Biblioteka mediów",
+    "mail": "Wyślij mail"
   },
   "news": {
     "title": "Aktualności",
@@ -284,5 +285,26 @@
     "title": "Wybierz z biblioteki mediów",
     "chooseFromLibrary": "Wybierz z biblioteki",
     "chooseThumbnailFromLibrary": "Wybierz z biblioteki"
+  },
+  "mail": {
+    "title": "Wyślij wiadomość",
+    "subtitle": "Napisz wiadomość email do użytkowników systemu.",
+    "recipientType": "Odbiorcy",
+    "allUsers": "Wszyscy użytkownicy",
+    "selectedUsers": "Wybrani użytkownicy",
+    "searchUsers": "Szukaj użytkowników...",
+    "noUsersFound": "Brak wyników",
+    "selectedCount": "Wybrano: {{count}}",
+    "subject": "Temat",
+    "subjectPlaceholder": "Temat wiadomości",
+    "body": "Treść",
+    "bodyPlaceholder": "Treść wiadomości...",
+    "send": "Wyślij",
+    "sending": "Wysyłanie...",
+    "confirmTitle": "Potwierdź wysyłkę",
+    "confirmMessage": "Wiadomość zostanie wysłana do {{count}} odbiorców (zweryfikowane konta). Kontynuować?",
+    "confirmAllMessage": "Wiadomość zostanie wysłana do wszystkich użytkowników z zweryfikowanym adresem email. Kontynuować?",
+    "successMessage": "Wiadomość wysłana do {{count}} odbiorców.",
+    "errorMessage": "Błąd podczas wysyłania wiadomości."
   }
 }

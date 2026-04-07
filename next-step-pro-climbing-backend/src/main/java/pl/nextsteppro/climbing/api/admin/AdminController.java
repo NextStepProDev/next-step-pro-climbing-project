@@ -374,6 +374,22 @@ public class AdminController {
         return ResponseEntity.noContent().build();
     }
 
+    // ==================== Mail ====================
+
+    @Tag(name = "Admin - Mail", description = "Wysyłanie wiadomości email do użytkowników")
+    @Operation(summary = "Wyślij email do użytkowników")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Emaile wysłane",
+            content = @Content(schema = @Schema(implementation = MailSendResponse.class))),
+        @ApiResponse(responseCode = "400", description = "Nieprawidłowe dane"),
+        @ApiResponse(responseCode = "403", description = "Brak uprawnień administratora")
+    })
+    @PostMapping("/mail/send")
+    public ResponseEntity<MailSendResponse> sendMail(@Valid @RequestBody SendMailRequest request) {
+        int count = adminService.sendMailToUsers(request);
+        return ResponseEntity.ok(new MailSendResponse(count));
+    }
+
     // ==================== Activity Logs ====================
 
     @Tag(name = "Admin - Activity", description = "Logi aktywności użytkowników (tylko admin)")

@@ -74,10 +74,7 @@ function CourseAccordionItem({ course }: { course: CourseSummary }) {
             <img
               src={course.thumbnailUrl}
               alt={course.title}
-              className="w-full h-full object-cover"
-              style={course.thumbnailFocalPointX != null && course.thumbnailFocalPointY != null
-                ? { objectPosition: `${course.thumbnailFocalPointX * 100}% ${course.thumbnailFocalPointY * 100}%` }
-                : undefined}
+              className="w-full h-full object-contain"
               onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none' }}
             />
           ) : (

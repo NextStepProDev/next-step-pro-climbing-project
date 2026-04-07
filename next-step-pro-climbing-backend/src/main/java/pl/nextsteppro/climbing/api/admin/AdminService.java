@@ -406,6 +406,28 @@ public class AdminService {
         jwtAuthenticationFilter.evictUser(userId);
     }
 
+    public int sendMailToUsers(SendMailRequest request) {
+        List<User> users;
+        if (request.recipientType() == RecipientType.ALL) {
+            users = userRepository.findAll();
+        } else {
+            if (request.userIds() == null || request.userIds().isEmpty()) {
+                throw new IllegalArgumentException("User IDs required for SELECTED recipient type");
+            }
+            users = userRepository.findAllById(request.userIds());
+        }
+
+        List<User> recipients = users.stream()
+            .filter(User::isEmailVerified)
+            .toList();
+
+        for (User recipient : recipients) {
+            mailService.sendCustomAdminMail(recipient.getEmail(), request.subject(), request.body());
+        }
+
+        return recipients.size();
+    }
+
     public void deleteUser(UUID userId) {
         User user = userRepository.findById(userId)
             .orElseThrow(() -> new IllegalArgumentException("User not found"));

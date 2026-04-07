@@ -344,6 +344,13 @@ export const adminApi = {
   deleteUser: (userId: string) =>
     fetchApi<void>(`/admin/users/${userId}`, { method: 'DELETE' }),
 
+  // Mail
+  sendMail: (data: { recipientType: 'ALL' | 'SELECTED'; userIds?: string[]; subject: string; body: string }) =>
+    fetchApi<{ recipientCount: number }>('/admin/mail/send', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
   // Activity Logs
   getActivityLogs: (page = 0, size = 20) =>
     fetchApi<ActivityLog[]>(`/admin/activity-logs?page=${page}&size=${size}`),
