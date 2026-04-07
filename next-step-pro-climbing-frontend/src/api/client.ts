@@ -217,10 +217,10 @@ export const authApi = {
       method: 'PUT',
       body: JSON.stringify({ subscribed }),
     }),
-  updateProfile: (phone: string, nickname: string) =>
+  updateProfile: (firstName: string, lastName: string, phone: string, nickname: string) =>
     fetchApi<User>('/user/me', {
       method: 'PUT',
-      body: JSON.stringify({ phone, nickname }),
+      body: JSON.stringify({ firstName, lastName, phone, nickname }),
     }),
 }
 
