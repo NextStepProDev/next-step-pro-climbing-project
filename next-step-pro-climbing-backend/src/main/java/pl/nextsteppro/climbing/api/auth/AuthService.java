@@ -144,6 +144,8 @@ public class AuthService {
         userRepository.save(user);
         authTokenRepository.save(authToken);
 
+        authMailService.sendWelcomeEmail(user);
+
         log.info("Email verified for: {}", user.getEmail());
         return new MessageResponse(msg.get("auth.verify.success"));
     }
