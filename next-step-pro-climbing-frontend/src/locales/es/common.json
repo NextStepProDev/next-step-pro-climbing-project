@@ -25,6 +25,12 @@
     "instructor": "Mateusz Nawratek instructor PZA",
     "copyright": "Todos los derechos reservados."
   },
+  "newsletter": {
+    "modalTitle": "¿Quieres recibir nuestro boletín?",
+    "modalDescription": "Enviamos noticias, información sobre nuevos cursos y ofertas especiales. Puedes darte de baja en cualquier momento.",
+    "modalYes": "Sí, apúntame",
+    "modalNo": "No, gracias"
+  },
   "confirm": "Confirmar",
   "cancel": "Cancelar",
   "close": "Cerrar",

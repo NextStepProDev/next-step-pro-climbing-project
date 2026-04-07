@@ -17,6 +17,7 @@ import {
   X,
   ArrowLeft,
   Library,
+  Send,
 } from 'lucide-react'
 import { adminNewsApi } from '../../api/client'
 import type {
@@ -104,6 +105,17 @@ export function AdminNewsPanel() {
   })
 
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null)
+  const [newsletterConfirmId, setNewsletterConfirmId] = useState<string | null>(null)
+  const [newsletterSentCount, setNewsletterSentCount] = useState<number | null>(null)
+
+  const sendNewsletterMutation = useMutation({
+    mutationFn: (id: string) => adminNewsApi.sendNewsletter(id),
+    onSuccess: (result) => {
+      setNewsletterConfirmId(null)
+      setNewsletterSentCount(result.subscriberCount)
+      setTimeout(() => setNewsletterSentCount(null), 5000)
+    },
+  })
 
   if (isLoading) {
     return (
@@ -168,6 +180,7 @@ export function AdminNewsPanel() {
               onDelete={() => setDeleteConfirmId(article.id)}
               onPublish={() => publishMutation.mutate(article.id)}
               onUnpublish={() => unpublishMutation.mutate(article.id)}
+              onSendNewsletter={() => setNewsletterConfirmId(article.id)}
             />
           ))}
         </div>
@@ -181,6 +194,21 @@ export function AdminNewsPanel() {
         onConfirm={() => deleteConfirmId && deleteMutation.mutate(deleteConfirmId)}
         onClose={() => setDeleteConfirmId(null)}
       />
+
+      <ConfirmModal
+        isOpen={!!newsletterConfirmId}
+        title={t('news.newsletterConfirmTitle')}
+        message={t('news.newsletterConfirmMessage')}
+        confirmText={t('news.newsletterSend')}
+        onConfirm={() => newsletterConfirmId && sendNewsletterMutation.mutate(newsletterConfirmId)}
+        onClose={() => setNewsletterConfirmId(null)}
+      />
+
+      {newsletterSentCount !== null && (
+        <div className="fixed bottom-4 right-4 bg-green-900/90 border border-green-600 text-green-300 px-4 py-3 rounded-lg text-sm shadow-lg">
+          {t('news.newsletterSentSuccess', { count: newsletterSentCount })}
+        </div>
+      )}
     </div>
   )
 }
@@ -193,12 +221,14 @@ function ArticleRow({
   onDelete,
   onPublish,
   onUnpublish,
+  onSendNewsletter,
 }: {
   article: NewsAdmin
   onEdit: () => void
   onDelete: () => void
   onPublish: () => void
   onUnpublish: () => void
+  onSendNewsletter: () => void
 }) {
   const { t } = useTranslation('admin')
 
@@ -239,6 +269,15 @@ function ArticleRow({
       </div>
 
       <div className="flex items-center gap-2 flex-shrink-0">
+        {article.published && (
+          <button
+            onClick={onSendNewsletter}
+            title={t('news.newsletterSend')}
+            className="p-2 text-dark-400 hover:text-primary-400 transition-colors"
+          >
+            <Send className="h-4 w-4" />
+          </button>
+        )}
         <button
           onClick={article.published ? onUnpublish : onPublish}
           title={article.published ? t('news.unpublish') : t('news.publish')}

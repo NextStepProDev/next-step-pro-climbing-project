@@ -8,6 +8,7 @@ export interface RegisterRequest {
   firstName: string
   lastName: string
   phone: string
+  newsletterSubscribed?: boolean
 }
 
 export interface LoginRequest {

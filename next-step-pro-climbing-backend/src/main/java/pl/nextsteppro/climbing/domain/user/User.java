@@ -55,6 +55,12 @@ public class User {
     @Column(name = "email_notifications_enabled", nullable = false)
     private boolean emailNotificationsEnabled = true;
 
+    @Column(name = "newsletter_subscribed", nullable = false)
+    private boolean newsletterSubscribed = false;
+
+    @Column(name = "newsletter_choice_made", nullable = false)
+    private boolean newsletterChoiceMade = false;
+
     @Column(name = "preferred_language", nullable = false)
     private String preferredLanguage = "pl";
 
@@ -207,6 +213,22 @@ public class User {
 
     public void setEmailNotificationsEnabled(boolean emailNotificationsEnabled) {
         this.emailNotificationsEnabled = emailNotificationsEnabled;
+    }
+
+    public boolean isNewsletterSubscribed() {
+        return newsletterSubscribed;
+    }
+
+    public void setNewsletterSubscribed(boolean newsletterSubscribed) {
+        this.newsletterSubscribed = newsletterSubscribed;
+    }
+
+    public boolean isNewsletterChoiceMade() {
+        return newsletterChoiceMade;
+    }
+
+    public void setNewsletterChoiceMade(boolean newsletterChoiceMade) {
+        this.newsletterChoiceMade = newsletterChoiceMade;
     }
 
     public String getPreferredLanguage() {

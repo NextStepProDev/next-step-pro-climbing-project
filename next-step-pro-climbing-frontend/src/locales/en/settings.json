@@ -20,10 +20,20 @@
     "mismatch": "Passwords do not match",
     "success": "Password has been changed"
   },
+  "language": {
+    "title": "Interface language",
+    "description": "Choose the display language of the application",
+    "success": "Language has been changed"
+  },
   "notifications": {
     "title": "Email notifications",
     "reservations": "Reservation notifications",
     "description": "Reservation confirmations, cancellations, and waitlist notifications"
+  },
+  "newsletter": {
+    "title": "Newsletter",
+    "label": "Newsletter subscription",
+    "description": "News, new courses and special offers"
   },
   "deleteAccount": {
     "title": "Delete account",

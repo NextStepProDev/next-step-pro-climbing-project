@@ -161,6 +161,24 @@ public class UserController {
         return ResponseEntity.noContent().build();
     }
 
+    @Operation(summary = "Subskrypcja newslettera", description = "Włącza lub wyłącza newsletter")
+    @ApiResponses({
+        @ApiResponse(responseCode = "204", description = "Preferencja zaktualizowana"),
+        @ApiResponse(responseCode = "401", description = "Użytkownik niezalogowany")
+    })
+    @PutMapping("/me/newsletter")
+    public ResponseEntity<Void> updateNewsletter(
+            @Parameter(hidden = true) @CurrentUserId UUID userId,
+            @Valid @RequestBody UpdateNewsletterRequest request) {
+
+        if (userId == null) {
+            return ResponseEntity.status(401).build();
+        }
+
+        userService.updateNewsletterSubscription(userId, request.subscribed());
+        return ResponseEntity.noContent().build();
+    }
+
     private UserProfileDto toProfileDto(User user) {
         return new UserProfileDto(
             user.getId(),
@@ -173,6 +191,8 @@ public class UserController {
             user.isAdmin(),
             user.isEmailNotificationsEnabled(),
             user.getPreferredLanguage(),
+            user.isNewsletterSubscribed(),
+            user.isNewsletterChoiceMade(),
             user.getCreatedAt()
         );
     }
@@ -190,6 +210,8 @@ record UserProfileDto(
     @Schema(description = "Czy użytkownik jest adminem") boolean isAdmin,
     @Schema(description = "Czy powiadomienia email są włączone") boolean emailNotificationsEnabled,
     @Schema(description = "Preferowany język (pl, en, es)") String preferredLanguage,
+    @Schema(description = "Czy subskrybuje newsletter") boolean newsletterSubscribed,
+    @Schema(description = "Czy podjął decyzję ws. newslettera") boolean newsletterChoiceMade,
     @Schema(description = "Data utworzenia konta") java.time.Instant createdAt
 ) {}
 
@@ -224,4 +246,9 @@ record UpdateNotificationsRequest(
 @Schema(description = "Zmiana języka")
 record UpdateLanguageRequest(
     @Schema(description = "Kod języka (pl, en, es)", example = "pl") String language
+) {}
+
+@Schema(description = "Subskrypcja newslettera")
+record UpdateNewsletterRequest(
+    @Schema(description = "Czy subskrybować newsletter") boolean subscribed
 ) {}

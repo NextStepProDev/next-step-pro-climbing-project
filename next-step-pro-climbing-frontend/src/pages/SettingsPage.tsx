@@ -8,6 +8,12 @@ import { getErrorMessage } from '../utils/errors'
 import { Button } from '../components/ui/Button'
 import { Modal } from '../components/ui/Modal'
 
+const LANGUAGES = [
+  { code: 'pl', label: 'Polski' },
+  { code: 'en', label: 'English' },
+  { code: 'es', label: 'Español' },
+] as const
+
 export function SettingsPage() {
   const { t } = useTranslation('settings')
   const { user, logout, refreshUser } = useAuth()
@@ -17,9 +23,14 @@ export function SettingsPage() {
       <h1 className="text-2xl font-bold text-dark-100">{t('title')}</h1>
 
       <ProfileSection key={`${user?.phone ?? ''}-${user?.nickname ?? ''}`} user={user} onUpdated={refreshUser} />
+      <LanguageSection />
       <ChangePasswordSection />
       <NotificationsSection
         enabled={user?.emailNotificationsEnabled ?? true}
+        onUpdated={refreshUser}
+      />
+      <NewsletterSection
+        subscribed={user?.newsletterSubscribed ?? false}
         onUpdated={refreshUser}
       />
       <DeleteAccountSection onDeleted={logout} />
@@ -105,6 +116,54 @@ function ProfileSection({
           <p className="text-sm text-green-400">{t('profile.success')}</p>
         )}
       </form>
+    </section>
+  )
+}
+
+function LanguageSection() {
+  const { t, i18n } = useTranslation('settings')
+  const { isAuthenticated } = useAuth()
+  const [success, setSuccess] = useState(false)
+  const successTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (successTimerRef.current) clearTimeout(successTimerRef.current)
+    }
+  }, [])
+
+  const handleChange = (langCode: string) => {
+    i18n.changeLanguage(langCode)
+    if (isAuthenticated) {
+      authApi.updateLanguage(langCode).catch(() => {})
+    }
+    setSuccess(true)
+    if (successTimerRef.current) clearTimeout(successTimerRef.current)
+    successTimerRef.current = setTimeout(() => setSuccess(false), 3000)
+  }
+
+  return (
+    <section className="bg-dark-900 rounded-lg border border-dark-800 p-6">
+      <h2 className="text-lg font-semibold text-dark-100 mb-1">{t('language.title')}</h2>
+      <p className="text-sm text-dark-400 mb-4">{t('language.description')}</p>
+      <div className="flex gap-3">
+        {LANGUAGES.map((lang) => (
+          <button
+            key={lang.code}
+            onClick={() => handleChange(lang.code)}
+            className={`px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${
+              i18n.language === lang.code
+                ? 'bg-primary-500/15 border-primary-500/40 text-primary-400'
+                : 'border-dark-700 text-dark-300 hover:bg-dark-800 hover:text-dark-100'
+            }`}
+          >
+            {lang.label}
+          </button>
+        ))}
+      </div>
+      {success && (
+        <p className="text-sm text-green-400 mt-3">{t('language.success')}</p>
+      )}
     </section>
   )
 }
@@ -238,6 +297,47 @@ function NotificationsSection({
           <input
             type="checkbox"
             checked={enabled}
+            onChange={(e) => mutation.mutate(e.target.checked)}
+            disabled={mutation.isPending}
+            className="sr-only peer"
+          />
+          <div className="w-11 h-6 bg-dark-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-500"></div>
+        </label>
+      </div>
+      {mutation.isError && (
+        <p className="text-sm text-rose-400/80 mt-2">
+          {getErrorMessage(mutation.error)}
+        </p>
+      )}
+    </section>
+  )
+}
+
+function NewsletterSection({
+  subscribed,
+  onUpdated,
+}: {
+  subscribed: boolean
+  onUpdated: () => Promise<void>
+}) {
+  const { t } = useTranslation('settings')
+  const mutation = useMutation({
+    mutationFn: (newSubscribed: boolean) => authApi.updateNewsletter(newSubscribed),
+    onSuccess: () => onUpdated(),
+  })
+
+  return (
+    <section className="bg-dark-900 rounded-lg border border-dark-800 p-6">
+      <h2 className="text-lg font-semibold text-dark-100 mb-4">{t('newsletter.title')}</h2>
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-dark-200">{t('newsletter.label')}</p>
+          <p className="text-sm text-dark-400">{t('newsletter.description')}</p>
+        </div>
+        <label className="relative inline-flex items-center cursor-pointer">
+          <input
+            type="checkbox"
+            checked={subscribed}
             onChange={(e) => mutation.mutate(e.target.checked)}
             disabled={mutation.isPending}
             className="sr-only peer"

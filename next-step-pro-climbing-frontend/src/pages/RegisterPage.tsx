@@ -16,6 +16,7 @@ export function RegisterPage() {
     lastName: '',
     phone: '',
   })
+  const [newsletterSubscribed, setNewsletterSubscribed] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -46,6 +47,7 @@ export function RegisterPage() {
         firstName: form.firstName,
         lastName: form.lastName,
         phone: form.phone,
+        newsletterSubscribed,
       })
       setSuccess(true)
     } catch (err) {
@@ -180,6 +182,19 @@ export function RegisterPage() {
               className="w-full px-3 py-2 bg-dark-800 border border-dark-700 rounded-lg text-dark-100 placeholder-dark-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             />
           </div>
+
+          <label className="flex items-start gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={newsletterSubscribed}
+              onChange={(e) => setNewsletterSubscribed(e.target.checked)}
+              className="mt-0.5 w-4 h-4 rounded border-dark-600 bg-dark-800 text-primary-500 focus:ring-primary-500 focus:ring-offset-0 flex-shrink-0"
+            />
+            <span className="text-sm text-dark-300">
+              {t('register.newsletter')}
+              <span className="block text-xs text-dark-500 mt-0.5">{t('register.newsletterHint')}</span>
+            </span>
+          </label>
 
           {error && (
             <p className="text-sm text-rose-400/80">{error}</p>

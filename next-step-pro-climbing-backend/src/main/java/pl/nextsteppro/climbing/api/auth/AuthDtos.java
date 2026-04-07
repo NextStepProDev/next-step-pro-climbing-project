@@ -1,6 +1,7 @@
 package pl.nextsteppro.climbing.api.auth;
 
 import jakarta.validation.constraints.*;
+import org.jspecify.annotations.Nullable;
 
 public final class AuthDtos {
 
@@ -25,7 +26,9 @@ public final class AuthDtos {
 
         @NotBlank(message = "{validation.phone.required}")
         @Pattern(regexp = "^\\+?[0-9]{9,15}$", message = "{validation.phone.invalid}")
-        String phone
+        String phone,
+
+        @Nullable Boolean newsletterSubscribed
     ) {}
 
     public record LoginRequest(

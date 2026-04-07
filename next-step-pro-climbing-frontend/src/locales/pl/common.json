@@ -25,6 +25,12 @@
     "instructor": "Mateusz Nawratek instruktor PZA",
     "copyright": "Wszelkie prawa zastrzeżone."
   },
+  "newsletter": {
+    "modalTitle": "Chcesz otrzymywać newsletter?",
+    "modalDescription": "Wysyłamy aktualności, informacje o nowych kursach i ofertach specjalnych. Możesz zrezygnować w każdej chwili.",
+    "modalYes": "Tak, chcę otrzymywać newsletter",
+    "modalNo": "Nie, dziękuję"
+  },
   "confirm": "Potwierdź",
   "cancel": "Anuluj",
   "close": "Zamknij",

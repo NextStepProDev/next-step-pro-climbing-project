@@ -1,0 +1,1 @@
+ALTER TABLE users ADD COLUMN newsletter_subscribed BOOLEAN NOT NULL DEFAULT FALSE;

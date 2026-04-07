@@ -20,10 +20,20 @@
     "mismatch": "Las contraseñas no coinciden",
     "success": "La contraseña se ha cambiado"
   },
+  "language": {
+    "title": "Idioma de la interfaz",
+    "description": "Elige el idioma de visualización de la aplicación",
+    "success": "El idioma ha sido cambiado"
+  },
   "notifications": {
     "title": "Notificaciones por email",
     "reservations": "Notificaciones de reservas",
     "description": "Confirmaciones de reservas, cancelaciones y notificaciones de lista de espera"
+  },
+  "newsletter": {
+    "title": "Boletín",
+    "label": "Suscripción al boletín",
+    "description": "Noticias, nuevos cursos y ofertas especiales"
   },
   "deleteAccount": {
     "title": "Eliminar cuenta",
