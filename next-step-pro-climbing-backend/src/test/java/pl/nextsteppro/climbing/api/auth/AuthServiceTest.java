@@ -89,7 +89,8 @@ class AuthServiceTest {
             "password123",
             "Jane",
             "Smith",
-            "+48987654321"
+            "+48987654321",
+            null
         );
         when(userRepository.existsByEmail(request.email())).thenReturn(false);
         when(passwordEncoder.encode(request.password())).thenReturn("encodedPassword");
@@ -129,7 +130,8 @@ class AuthServiceTest {
             "password123",
             "Jane",
             "Smith",
-            "+48987654321"
+            "+48987654321",
+            null
         );
         when(userRepository.existsByEmail(request.email())).thenReturn(true);
         when(msg.get("auth.email.exists")).thenReturn("Email already exists");
@@ -153,7 +155,8 @@ class AuthServiceTest {
             "password123",
             "Admin",
             "User",
-            "+48123456789"
+            "+48123456789",
+            null
         );
         when(userRepository.existsByEmail(request.email())).thenReturn(false);
         when(passwordEncoder.encode(request.password())).thenReturn("encodedPassword");
@@ -181,7 +184,8 @@ class AuthServiceTest {
             "password123",
             "John-Paul",
             "Smith",
-            "+48123456789"
+            "+48123456789",
+            null
         );
         when(userRepository.existsByEmail(request.email())).thenReturn(false);
         when(passwordEncoder.encode(request.password())).thenReturn("encodedPassword");
