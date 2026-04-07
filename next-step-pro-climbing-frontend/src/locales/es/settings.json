@@ -1,5 +1,15 @@
 {
   "title": "Ajustes",
+  "profile": {
+    "title": "Datos del perfil",
+    "phone": "Número de teléfono",
+    "phonePlaceholder": "+48123456789",
+    "nickname": "Apodo",
+    "nicknamePlaceholder": "Tu apodo",
+    "submit": "Guardar cambios",
+    "success": "Datos del perfil actualizados",
+    "missingPhone": "Añade tu número de teléfono para que el instructor pueda contactarte si es necesario."
+  },
   "changePassword": {
     "title": "Cambiar contraseña",
     "currentPassword": "Contraseña actual",

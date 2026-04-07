@@ -47,7 +47,7 @@ export function HomePage() {
                   {t("hero.viewCalendar")}
                 </Button>
               </Link>
-              <Link to="/courses">
+              <Link to="/kursy">
                 <Button
                   variant="secondary"
                   size="lg"

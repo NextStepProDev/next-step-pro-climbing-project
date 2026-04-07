@@ -125,6 +125,15 @@ public class AdminNewsController {
         return ResponseEntity.noContent().build();
     }
 
+    @Operation(summary = "Ustaw miniaturkę aktualności z biblioteki mediów (URL)")
+    @PutMapping("/{id}/thumbnail-url")
+    public ResponseEntity<Void> setThumbnailUrl(
+            @Parameter(description = "ID aktualności") @PathVariable UUID id,
+            @RequestBody AdminNewsDtos.SetThumbnailUrlRequest request) {
+        adminNewsService.setThumbnailUrl(id, request);
+        return ResponseEntity.noContent().build();
+    }
+
     @Operation(summary = "Usuń miniaturkę aktualności")
     @DeleteMapping("/{id}/thumbnail")
     public ResponseEntity<Void> deleteThumbnail(
@@ -150,6 +159,14 @@ public class AdminNewsController {
             @RequestParam("file") MultipartFile file,
             @RequestParam(value = "caption", required = false) @Nullable String caption) throws IOException {
         return ResponseEntity.ok(adminNewsService.addImageBlock(id, file, caption));
+    }
+
+    @Operation(summary = "Dodaj blok obrazkowy z biblioteki mediów (URL)")
+    @PostMapping("/{id}/blocks/image-from-url")
+    public ResponseEntity<AdminNewsDtos.ContentBlockAdminDto> addImageBlockFromUrl(
+            @Parameter(description = "ID aktualności") @PathVariable UUID id,
+            @RequestBody AdminNewsDtos.AddImageBlockFromUrlRequest request) {
+        return ResponseEntity.ok(adminNewsService.addImageBlockFromUrl(id, request));
     }
 
     @Operation(summary = "Edytuj treść bloku tekstowego")

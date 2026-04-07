@@ -73,6 +73,17 @@ public class FileController {
         return serveFile(filename, "courses");
     }
 
+    @Operation(summary = "Pobierz plik z biblioteki mediów (shared assets)")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Plik znaleziony"),
+        @ApiResponse(responseCode = "404", description = "Plik nie istnieje")
+    })
+    @GetMapping("/assets/{filename}")
+    public ResponseEntity<Resource> getAssetFile(
+            @Parameter(description = "Nazwa pliku") @PathVariable String filename) throws IOException {
+        return serveFile(filename, "assets");
+    }
+
     private ResponseEntity<Resource> serveFile(String filename, String folder) throws IOException {
         if (!fileStorageService.exists(filename, folder)) {
             return ResponseEntity.notFound().build();

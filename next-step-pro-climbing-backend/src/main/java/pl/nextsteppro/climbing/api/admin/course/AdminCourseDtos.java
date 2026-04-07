@@ -74,6 +74,15 @@ public class AdminCourseDtos {
             @Nullable String caption
     ) {}
 
+    public record AddImageBlockFromUrlRequest(
+            String imageUrl,
+            @Nullable String caption
+    ) {}
+
+    public record SetThumbnailUrlRequest(
+            String thumbnailUrl
+    ) {}
+
     public record MoveBlockRequest(
             String direction
     ) {}

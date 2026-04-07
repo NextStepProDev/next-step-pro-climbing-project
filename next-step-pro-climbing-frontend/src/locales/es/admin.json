@@ -10,7 +10,8 @@
     "news": "Noticias",
     "courses": "Cursos",
     "users": "Usuarios",
-    "activity": "Actividad"
+    "activity": "Actividad",
+    "assets": "Biblioteca de medios"
   },
   "news": {
     "title": "Noticias",
@@ -265,5 +266,23 @@
       "RESERVATION_CANCELLED_BY_ADMIN": "Cancelación por el administrador"
     },
     "persons": "({{count}} pers.)"
+  },
+  "assets": {
+    "title": "Biblioteca de medios",
+    "upload": "Agregar archivo",
+    "uploadTitle": "Agregar archivo a la biblioteca",
+    "uploadBtn": "Subir",
+    "copyUrl": "Copiar URL",
+    "delete": "Eliminar",
+    "deleteTitle": "Eliminar archivo",
+    "deleteMessage": "¿Estás seguro de que deseas eliminar \"{{name}}\"? Esta acción no se puede deshacer.",
+    "empty": "No hay archivos en la biblioteca de medios",
+    "uploading": "Subiendo...",
+    "selectedCount": "Seleccionados: {{count}} archivo(s)"
+  },
+  "mediaPicker": {
+    "title": "Elegir de la biblioteca de medios",
+    "chooseFromLibrary": "Elegir de la biblioteca",
+    "chooseThumbnailFromLibrary": "Elegir de la biblioteca"
   }
 }

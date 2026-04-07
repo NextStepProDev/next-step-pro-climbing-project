@@ -30,6 +30,10 @@ public class NewsContentBlock {
     @Nullable
     private String imageFilename;
 
+    @Column(name = "image_url", length = 2048)
+    @Nullable
+    private String imageUrl;
+
     @Column(columnDefinition = "TEXT")
     @Nullable
     private String caption;
@@ -108,6 +112,15 @@ public class NewsContentBlock {
 
     public void setImageFilename(@Nullable String imageFilename) {
         this.imageFilename = imageFilename;
+    }
+
+    @Nullable
+    public String getImageUrl() {
+        return imageUrl;
+    }
+
+    public void setImageUrl(@Nullable String imageUrl) {
+        this.imageUrl = imageUrl;
     }
 
     public void setCaption(@Nullable String caption) {

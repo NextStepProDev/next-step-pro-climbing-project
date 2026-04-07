@@ -18,6 +18,9 @@ public interface CourseSummaryProjection {
     String getThumbnailFilename();
 
     @Nullable
+    String getThumbnailUrl();
+
+    @Nullable
     Float getThumbnailFocalPointX();
 
     @Nullable

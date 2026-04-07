@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next'
 import { Routes, Route, Link, useLocation } from 'react-router-dom'
-import { Calendar, Users, Clock, ClipboardList, Activity, User, Image, Newspaper, BookOpen } from 'lucide-react'
+import { Calendar, Users, Clock, ClipboardList, Activity, User, Image, Newspaper, BookOpen, Library } from 'lucide-react'
 import clsx from 'clsx'
 import { AdminSlotsPanel } from './admin/AdminSlotsPanel'
 import { AdminEventsPanel } from './admin/AdminEventsPanel'
@@ -11,6 +11,7 @@ import { AdminInstructorsPanel } from './admin/AdminInstructorsPanel'
 import { AdminGalleryPanel } from './admin/AdminGalleryPanel'
 import { AdminNewsPanel } from './admin/AdminNewsPanel'
 import { AdminCoursesPanel } from './admin/AdminCoursesPanel'
+import { AdminAssetsPanel } from './admin/AdminAssetsPanel'
 
 const adminTabs = [
   { path: '/admin', labelKey: 'tabs.slots', icon: Clock },
@@ -20,6 +21,7 @@ const adminTabs = [
   { path: '/admin/courses', labelKey: 'tabs.courses', icon: BookOpen },
   { path: '/admin/instructors', labelKey: 'tabs.instructors', icon: User },
   { path: '/admin/gallery', labelKey: 'tabs.gallery', icon: Image },
+  { path: '/admin/assets', labelKey: 'tabs.assets', icon: Library },
   { path: '/admin/users', labelKey: 'tabs.users', icon: Users },
   { path: '/admin/activity', labelKey: 'tabs.activity', icon: Activity },
 ]
@@ -71,6 +73,7 @@ export function AdminPage() {
         <Route path="gallery" element={<AdminGalleryPanel />} />
         <Route path="news" element={<AdminNewsPanel />} />
         <Route path="courses" element={<AdminCoursesPanel />} />
+        <Route path="assets" element={<AdminAssetsPanel />} />
         <Route path="users" element={<AdminUsersPanel />} />
         <Route path="activity" element={<AdminActivityPanel />} />
       </Routes>

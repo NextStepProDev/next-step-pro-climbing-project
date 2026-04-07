@@ -63,6 +63,9 @@
     "title": "Courses",
     "noCourses": "No courses to display"
   },
+  "pza": {
+    "recommended": "School recommended by PZA"
+  },
   "news": {
     "title": "News",
     "noArticles": "No articles to display",

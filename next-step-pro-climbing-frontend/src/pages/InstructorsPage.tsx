@@ -4,6 +4,7 @@ import { User } from 'lucide-react'
 import { instructorApi } from '../api/client'
 import { LoadingSpinner } from '../components/ui/LoadingSpinner'
 import { QueryError } from '../components/ui/QueryError'
+import { PzaBadge } from '../components/ui/PzaBadge'
 
 export function InstructorsPage() {
   const { t } = useTranslation('common')
@@ -50,7 +51,7 @@ export function InstructorsPage() {
           >
             <div className="flex flex-col md:flex-row gap-6">
               {/* Photo */}
-              <div className="flex-shrink-0">
+              <div className="flex-shrink-0 relative w-32 h-32">
                 {instructor.photoUrl ? (
                   <img
                     src={instructor.photoUrl}
@@ -63,6 +64,7 @@ export function InstructorsPage() {
                     <User className="h-16 w-16 text-dark-400" />
                   </div>
                 )}
+                <PzaBadge variant="sticker" size="sm" />
               </div>
 
               {/* Info */}

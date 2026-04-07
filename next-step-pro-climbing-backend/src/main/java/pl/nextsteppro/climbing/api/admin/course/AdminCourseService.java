@@ -170,12 +170,32 @@ public class AdminCourseService {
     public void deleteThumbnail(UUID id) throws IOException {
         Course course = findCourse(id);
 
-        if (course.getThumbnailFilename() == null) {
+        if (course.getThumbnailFilename() == null && course.getThumbnailUrl() == null) {
             throw new IllegalStateException("No thumbnail to delete");
         }
 
-        fileStorageService.delete(course.getThumbnailFilename(), "courses");
-        course.setThumbnailFilename(null);
+        if (course.getThumbnailFilename() != null) {
+            fileStorageService.delete(course.getThumbnailFilename(), "courses");
+            course.setThumbnailFilename(null);
+        }
+        course.setThumbnailUrl(null);
+        courseRepository.save(course);
+    }
+
+    @CacheEvict(value = {"courseList", "courseDetail"}, allEntries = true)
+    public void setThumbnailUrl(UUID id, SetThumbnailUrlRequest request) {
+        Course course = findCourse(id);
+
+        if (course.getThumbnailFilename() != null) {
+            try {
+                fileStorageService.delete(course.getThumbnailFilename(), "courses");
+            } catch (IOException e) {
+                logger.warn("Failed to delete old thumbnail when setting URL: {}", e.getMessage());
+            }
+            course.setThumbnailFilename(null);
+        }
+
+        course.setThumbnailUrl(request.thumbnailUrl());
         courseRepository.save(course);
     }
 
@@ -214,6 +234,20 @@ public class AdminCourseService {
                 buildFileUrl(filename),
                 block.getDisplayOrder()
         );
+    }
+
+    @CacheEvict(value = "courseDetail", allEntries = true)
+    public ContentBlockAdminDto addImageBlockFromUrl(UUID courseId, AddImageBlockFromUrlRequest request) {
+        Course course = findCourse(courseId);
+        int order = blockRepository.findMaxDisplayOrder(courseId) + 1;
+
+        CourseContentBlock block = new CourseContentBlock(course, CourseBlockType.IMAGE);
+        block.setImageUrl(request.imageUrl());
+        block.setCaption(request.caption());
+        block.setDisplayOrder(order);
+
+        block = blockRepository.save(block);
+        return toBlockAdminDto(block);
     }
 
     @CacheEvict(value = "courseDetail", allEntries = true)
@@ -308,7 +342,7 @@ public class AdminCourseService {
                 projection.getId(),
                 projection.getTitle(),
                 projection.getExcerpt(),
-                projection.getThumbnailFilename() != null ? buildFileUrl(projection.getThumbnailFilename()) : null,
+                buildThumbnailUrl(projection.getThumbnailUrl(), projection.getThumbnailFilename()),
                 projection.getDisplayOrder(),
                 projection.isPublished(),
                 projection.getPublishedAt(),
@@ -322,7 +356,7 @@ public class AdminCourseService {
                 course.getId(),
                 course.getTitle(),
                 course.getExcerpt(),
-                course.getThumbnailFilename() != null ? buildFileUrl(course.getThumbnailFilename()) : null,
+                buildThumbnailUrl(course.getThumbnailUrl(), course.getThumbnailFilename()),
                 course.getDisplayOrder(),
                 course.isPublished(),
                 course.getPublishedAt(),
@@ -337,7 +371,7 @@ public class AdminCourseService {
                 course.getTitle(),
                 course.getExcerpt(),
                 course.getThumbnailFilename(),
-                course.getThumbnailFilename() != null ? buildFileUrl(course.getThumbnailFilename()) : null,
+                buildThumbnailUrl(course.getThumbnailUrl(), course.getThumbnailFilename()),
                 course.getThumbnailFocalPointX(),
                 course.getThumbnailFocalPointY(),
                 course.isPublished(),
@@ -349,15 +383,25 @@ public class AdminCourseService {
     }
 
     private ContentBlockAdminDto toBlockAdminDto(CourseContentBlock block) {
+        String resolvedImageUrl = block.getImageUrl() != null
+                ? block.getImageUrl()
+                : (block.getImageFilename() != null ? buildFileUrl(block.getImageFilename()) : null);
         return new ContentBlockAdminDto(
                 block.getId(),
                 block.getBlockType().name(),
                 block.getContent(),
                 block.getImageFilename(),
-                block.getImageFilename() != null ? buildFileUrl(block.getImageFilename()) : null,
+                resolvedImageUrl,
                 block.getCaption(),
                 block.getDisplayOrder()
         );
+    }
+
+    @Nullable
+    private String buildThumbnailUrl(@Nullable String thumbnailUrl, @Nullable String thumbnailFilename) {
+        if (thumbnailUrl != null) return thumbnailUrl;
+        if (thumbnailFilename != null) return buildFileUrl(thumbnailFilename);
+        return null;
     }
 
     private String buildFileUrl(String filename) {
