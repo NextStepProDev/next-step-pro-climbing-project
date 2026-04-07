@@ -4,7 +4,6 @@ import { User } from 'lucide-react'
 import { instructorApi } from '../api/client'
 import { LoadingSpinner } from '../components/ui/LoadingSpinner'
 import { QueryError } from '../components/ui/QueryError'
-import { PzaBadge } from '../components/ui/PzaBadge'
 
 const IMAGE_MD_RE = /^!\[([^\]]*)\]\((.+)\)$/
 
@@ -83,7 +82,13 @@ export function InstructorsPage() {
                     <User className="h-16 w-16 text-dark-400" />
                   </div>
                 )}
-                <PzaBadge variant="sticker" size="sm" />
+                {instructor.badgeUrl && (
+                  <img
+                    src={instructor.badgeUrl}
+                    alt="badge"
+                    className="absolute bottom-0 right-0 w-9 h-9 rounded-full object-contain bg-white border border-dark-600 shadow p-0.5"
+                  />
+                )}
               </div>
 
               {/* Info */}

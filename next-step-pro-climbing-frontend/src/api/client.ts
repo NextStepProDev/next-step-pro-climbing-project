@@ -402,6 +402,13 @@ export const adminInstructorApi = {
   },
   deletePhoto: (id: string) =>
     fetchApi<void>(`/admin/instructors/${id}/photo`, { method: 'DELETE' }),
+  setBadge: (id: string, badgeUrl: string) =>
+    fetchApi<InstructorAdmin>(`/admin/instructors/${id}/badge`, {
+      method: 'PUT',
+      body: JSON.stringify({ badgeUrl }),
+    }),
+  deleteBadge: (id: string) =>
+    fetchApi<InstructorAdmin>(`/admin/instructors/${id}/badge`, { method: 'DELETE' }),
 }
 
 // Admin Gallery

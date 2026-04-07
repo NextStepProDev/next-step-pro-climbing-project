@@ -270,6 +270,7 @@ export interface InstructorPublic {
   focalPointY: number | null
   bio: string | null
   certifications: string | null
+  badgeUrl: string | null
   createdAt: string
 }
 
@@ -283,6 +284,7 @@ export interface InstructorAdmin {
   focalPointY: number | null
   bio: string | null
   certifications: string | null
+  badgeUrl: string | null
   displayOrder: number
   active: boolean
   createdAt: string

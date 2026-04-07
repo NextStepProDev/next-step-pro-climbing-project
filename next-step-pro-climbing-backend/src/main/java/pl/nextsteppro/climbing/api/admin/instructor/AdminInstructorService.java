@@ -140,6 +140,14 @@ public class AdminInstructorService {
         instructorRepository.save(instructor);
     }
 
+    public InstructorAdminDto setBadge(UUID id, @Nullable String badgeUrl) {
+        Instructor instructor = instructorRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Instructor not found"));
+        instructor.setBadgeUrl(badgeUrl);
+        instructor = instructorRepository.save(instructor);
+        return toAdminDto(instructor);
+    }
+
     private InstructorAdminDto toAdminDto(Instructor instructor) {
         return new InstructorAdminDto(
                 instructor.getId(),
@@ -151,6 +159,7 @@ public class AdminInstructorService {
                 instructor.getFocalPointY(),
                 instructor.getBio(),
                 instructor.getCertifications(),
+                instructor.getBadgeUrl(),
                 instructor.getDisplayOrder(),
                 instructor.isActive(),
                 instructor.getCreatedAt(),

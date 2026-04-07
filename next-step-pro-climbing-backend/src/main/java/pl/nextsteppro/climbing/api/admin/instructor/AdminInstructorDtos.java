@@ -30,6 +30,8 @@ public class AdminInstructorDtos {
             @Nullable Float focalPointY
     ) {}
 
+    public record SetBadgeRequest(@Nullable String badgeUrl) {}
+
     public record InstructorAdminDto(
             UUID id,
             String firstName,
@@ -40,6 +42,7 @@ public class AdminInstructorDtos {
             @Nullable Float focalPointY,
             @Nullable String bio,
             @Nullable String certifications,
+            @Nullable String badgeUrl,
             int displayOrder,
             boolean active,
             Instant createdAt,

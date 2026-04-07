@@ -25,7 +25,8 @@ export function AdminInstructorsPanel() {
   const [createBio, setCreateBio] = useState('')
   const [editBio, setEditBio] = useState('')
   const [showMediaPicker, setShowMediaPicker] = useState(false)
-  const [pickerTarget, setPickerTarget] = useState<'create' | 'edit'>('edit')
+  const [pickerTarget, setPickerTarget] = useState<'create' | 'edit' | 'badge'>('edit')
+  const [badgeTargetId, setBadgeTargetId] = useState<string | null>(null)
   const createBioRef = useRef<HTMLTextAreaElement>(null)
   const editBioRef = useRef<HTMLTextAreaElement>(null)
 
@@ -75,6 +76,21 @@ export function AdminInstructorsPanel() {
 
   const deletePhotoMutation = useMutation({
     mutationFn: adminInstructorApi.deletePhoto,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'instructors'] })
+    },
+  })
+
+  const setBadgeMutation = useMutation({
+    mutationFn: ({ id, badgeUrl }: { id: string; badgeUrl: string }) =>
+      adminInstructorApi.setBadge(id, badgeUrl),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'instructors'] })
+    },
+  })
+
+  const deleteBadgeMutation = useMutation({
+    mutationFn: adminInstructorApi.deleteBadge,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'instructors'] })
     },
@@ -187,29 +203,68 @@ export function AdminInstructorsPanel() {
               className="bg-dark-800 rounded-lg p-6 border border-dark-700"
             >
               <div className="flex gap-6">
-                {/* Photo */}
-                <div className="flex-shrink-0 relative group">
-                  {instructor.photoUrl ? (
-                    <img
-                      src={instructor.photoUrl}
-                      alt={instructor.firstName}
-                      className="w-32 h-32 rounded-full object-cover border-2 border-primary-500/20"
-                      style={instructor.focalPointX != null ? { objectPosition: `${instructor.focalPointX * 100}% ${(instructor.focalPointY ?? 0.5) * 100}%` } : undefined}
-                    />
-                  ) : (
-                    <div className="w-32 h-32 rounded-full bg-dark-700 border-2 border-dark-600 flex items-center justify-center">
-                      <User className="h-16 w-16 text-dark-400" />
+                {/* Photo + Badge */}
+                <div className="flex-shrink-0 flex flex-col items-center gap-2">
+                  <div className="relative group">
+                    {instructor.photoUrl ? (
+                      <img
+                        src={instructor.photoUrl}
+                        alt={instructor.firstName}
+                        className="w-32 h-32 rounded-full object-cover border-2 border-primary-500/20"
+                        style={instructor.focalPointX != null ? { objectPosition: `${instructor.focalPointX * 100}% ${(instructor.focalPointY ?? 0.5) * 100}%` } : undefined}
+                      />
+                    ) : (
+                      <div className="w-32 h-32 rounded-full bg-dark-700 border-2 border-dark-600 flex items-center justify-center">
+                        <User className="h-16 w-16 text-dark-400" />
+                      </div>
+                    )}
+                    {instructor.badgeUrl && (
+                      <img
+                        src={instructor.badgeUrl}
+                        alt="badge"
+                        className="absolute bottom-0 right-0 w-9 h-9 rounded-full object-contain bg-white border border-dark-600 shadow p-0.5"
+                      />
+                    )}
+                    <button
+                      onClick={() => {
+                        setSelectedInstructor(instructor)
+                        setUploadPhotoModalOpen(true)
+                      }}
+                      className="absolute inset-0 bg-black/60 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <Upload className="h-6 w-6 text-white" />
+                    </button>
+                  </div>
+
+                  {/* Badge controls */}
+                  <div className="flex flex-col items-center gap-1">
+                    <span className="text-xs text-dark-400">Naklejka</span>
+                    <div className="flex gap-1">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        title="Wybierz z biblioteki"
+                        onClick={() => {
+                          setBadgeTargetId(instructor.id)
+                          setPickerTarget('badge')
+                          setShowMediaPicker(true)
+                        }}
+                      >
+                        <Library className="w-3.5 h-3.5" />
+                      </Button>
+                      {instructor.badgeUrl && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          title="Usuń naklejkę"
+                          onClick={() => deleteBadgeMutation.mutate(instructor.id)}
+                          loading={deleteBadgeMutation.isPending && deleteBadgeMutation.variables === instructor.id}
+                        >
+                          <Trash2 className="w-3.5 h-3.5 text-rose-400" />
+                        </Button>
+                      )}
                     </div>
-                  )}
-                  <button
-                    onClick={() => {
-                      setSelectedInstructor(instructor)
-                      setUploadPhotoModalOpen(true)
-                    }}
-                    className="absolute inset-0 bg-black/60 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                  >
-                    <Upload className="h-6 w-6 text-white" />
-                  </button>
+                  </div>
                 </div>
 
                 {/* Info */}
@@ -578,7 +633,11 @@ export function AdminInstructorsPanel() {
         isOpen={showMediaPicker}
         onClose={() => setShowMediaPicker(false)}
         onSelect={(asset) => {
-          insertImageAtCursor(asset.url, pickerTarget)
+          if (pickerTarget === 'badge' && badgeTargetId) {
+            setBadgeMutation.mutate({ id: badgeTargetId, badgeUrl: asset.url })
+          } else {
+            insertImageAtCursor(asset.url, pickerTarget as 'create' | 'edit')
+          }
           setShowMediaPicker(false)
         }}
       />
