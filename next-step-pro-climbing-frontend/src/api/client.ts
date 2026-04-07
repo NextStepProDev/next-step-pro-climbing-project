@@ -1,5 +1,6 @@
 import i18n from '../i18n'
 import type {
+  AssetDto,
   User,
   MonthView,
   WeekView,
@@ -210,6 +211,11 @@ export const authApi = {
     fetchApi<void>('/user/me/language', {
       method: 'PUT',
       body: JSON.stringify({ language }),
+    }),
+  updateProfile: (phone: string, nickname: string) =>
+    fetchApi<User>('/user/me', {
+      method: 'PUT',
+      body: JSON.stringify({ phone, nickname }),
     }),
 }
 
@@ -570,6 +576,18 @@ export const adminNewsApi = {
 
   deleteBlock: (blockId: string) =>
     fetchApi<void>(`/admin/news/blocks/${blockId}`, { method: 'DELETE' }),
+
+  addImageBlockFromUrl: (newsId: string, imageUrl: string, caption?: string) =>
+    fetchApi<ContentBlockAdmin>(`/admin/news/${newsId}/blocks/image-from-url`, {
+      method: 'POST',
+      body: JSON.stringify({ imageUrl, caption: caption ?? null }),
+    }),
+
+  setThumbnailUrl: (newsId: string, thumbnailUrl: string) =>
+    fetchApi<void>(`/admin/news/${newsId}/thumbnail-url`, {
+      method: 'PUT',
+      body: JSON.stringify({ thumbnailUrl }),
+    }),
 }
 
 // ==================== Courses (publiczne) ====================
@@ -682,4 +700,49 @@ export const adminCoursesApi = {
 
   deleteBlock: (blockId: string) =>
     fetchApi<void>(`/admin/courses/blocks/${blockId}`, { method: 'DELETE' }),
+
+  addImageBlockFromUrl: (courseId: string, imageUrl: string, caption?: string) =>
+    fetchApi<ContentBlockAdmin>(`/admin/courses/${courseId}/blocks/image-from-url`, {
+      method: 'POST',
+      body: JSON.stringify({ imageUrl, caption: caption ?? null }),
+    }),
+
+  setThumbnailUrl: (courseId: string, thumbnailUrl: string) =>
+    fetchApi<void>(`/admin/courses/${courseId}/thumbnail-url`, {
+      method: 'PUT',
+      body: JSON.stringify({ thumbnailUrl }),
+    }),
+}
+
+export const adminAssetsApi = {
+  list: () => fetchApi<AssetDto[]>('/admin/assets'),
+
+  upload: async (file: File): Promise<AssetDto> => {
+    const token = await ensureValidToken()
+    const formData = new FormData()
+    formData.append('file', file)
+
+    const headers: Record<string, string> = {
+      'Accept-Language': i18n.language,
+    }
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`
+    }
+
+    const response = await fetch(`${API_BASE}/admin/assets`, {
+      method: 'POST',
+      headers,
+      body: formData,
+    })
+
+    if (!response.ok) {
+      const body = await response.json().catch(() => null)
+      throw new Error(body?.message || i18n.t('uploadFailed', { ns: 'errors' }))
+    }
+
+    return response.json()
+  },
+
+  delete: (id: string) =>
+    fetchApi<void>(`/admin/assets/${id}`, { method: 'DELETE' }),
 }

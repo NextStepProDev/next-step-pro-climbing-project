@@ -25,6 +25,10 @@ public class Course {
     @Nullable
     private String thumbnailFilename;
 
+    @Column(name = "thumbnail_url", length = 2048)
+    @Nullable
+    private String thumbnailUrl;
+
     @Column(name = "thumbnail_focal_point_x")
     @Nullable
     private Float thumbnailFocalPointX;
@@ -127,6 +131,15 @@ public class Course {
 
     public void setThumbnailFilename(@Nullable String thumbnailFilename) {
         this.thumbnailFilename = thumbnailFilename;
+    }
+
+    @Nullable
+    public String getThumbnailUrl() {
+        return thumbnailUrl;
+    }
+
+    public void setThumbnailUrl(@Nullable String thumbnailUrl) {
+        this.thumbnailUrl = thumbnailUrl;
     }
 
     public void setDisplayOrder(int displayOrder) {

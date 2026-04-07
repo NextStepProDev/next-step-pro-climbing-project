@@ -16,6 +16,7 @@ import {
   Save,
   X,
   ArrowLeft,
+  Library,
 } from 'lucide-react'
 import { adminCoursesApi } from '../../api/client'
 import type {
@@ -29,6 +30,7 @@ import { ConfirmModal } from '../../components/ui/ConfirmModal'
 import { CoursePreviewModal, type CoursePreviewBlock } from '../../components/ui/CoursePreviewModal'
 import { FocalPointEditor } from '../../components/ui/FocalPointEditor'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
+import { MediaPickerModal } from '../../components/ui/MediaPickerModal'
 import { QueryError } from '../../components/ui/QueryError'
 import { RichTextEditor } from '../../components/ui/RichTextEditor'
 import clsx from 'clsx'
@@ -46,9 +48,11 @@ type PendingTextBlock = {
 type PendingImageBlock = {
   type: 'IMAGE'
   tempId: string
-  file: File
-  preview: string
   caption: string
+  source: 'file' | 'library'
+  file?: File
+  preview?: string
+  imageUrl?: string
 }
 
 type PendingBlock = PendingTextBlock | PendingImageBlock
@@ -337,10 +341,15 @@ function EditView({
   // ---------- Thumbnail state ----------
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null)
   const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null)
+  const [thumbnailFromLibrary, setThumbnailFromLibrary] = useState<string | null>(null)
   const [focalPoint, setFocalPoint] = useState<{ x: number; y: number }>({
     x: detail.thumbnailFocalPointX ?? 0.5,
     y: detail.thumbnailFocalPointY ?? 0.5,
   })
+
+  // ---------- Media picker ----------
+  const [showMediaPicker, setShowMediaPicker] = useState(false)
+  const [pickerTarget, setPickerTarget] = useState<'thumbnail' | 'block'>('block')
 
   useEffect(() => {
     return () => {
@@ -375,7 +384,7 @@ function EditView({
   useEffect(() => {
     return () => {
       pendingBlocks.forEach((b) => {
-        if (b.type === 'IMAGE') URL.revokeObjectURL(b.preview)
+        if (b.type === 'IMAGE' && b.source === 'file' && b.preview) URL.revokeObjectURL(b.preview)
       })
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -383,7 +392,7 @@ function EditView({
 
   // ---------- Dirty detection ----------
   const metaDirty = title !== detail.title || excerpt !== (detail.excerpt ?? '')
-  const thumbnailDirty = thumbnailFile !== null
+  const thumbnailDirty = thumbnailFile !== null || thumbnailFromLibrary !== null
   const focalPointDirty = detail.thumbnailUrl != null &&
     (focalPoint.x !== (detail.thumbnailFocalPointX ?? 0.5) ||
      focalPoint.y !== (detail.thumbnailFocalPointY ?? 0.5))
@@ -411,7 +420,7 @@ function EditView({
       tempId: b.tempId,
       type: b.type,
       content: b.type === 'TEXT' ? b.content : undefined,
-      imageUrl: b.type === 'IMAGE' ? b.preview : undefined,
+      imageUrl: b.type === 'IMAGE' ? (b.imageUrl ?? b.preview) : undefined,
       caption: b.type === 'IMAGE' ? b.caption : undefined,
     })),
   ]
@@ -430,7 +439,11 @@ function EditView({
       }
 
       // 2. Thumbnail + focal point (zawsze razem gdy nowy plik)
-      if (thumbnailFile) {
+      if (thumbnailFromLibrary) {
+        await adminCoursesApi.setThumbnailUrl(courseId, thumbnailFromLibrary)
+        await adminCoursesApi.updateThumbnailFocalPoint(courseId, focalPoint.x, focalPoint.y)
+        setThumbnailFromLibrary(null)
+      } else if (thumbnailFile) {
         await adminCoursesApi.uploadThumbnail(courseId, thumbnailFile)
         await adminCoursesApi.updateThumbnailFocalPoint(courseId, focalPoint.x, focalPoint.y)
         setThumbnailFile(null)
@@ -466,9 +479,11 @@ function EditView({
       for (const pending of pendingBlocks) {
         if (pending.type === 'TEXT') {
           await adminCoursesApi.addTextBlock(courseId, { content: pending.content })
-        } else {
+        } else if (pending.source === 'library' && pending.imageUrl) {
+          await adminCoursesApi.addImageBlockFromUrl(courseId, pending.imageUrl, pending.caption || undefined)
+        } else if (pending.source === 'file' && pending.file) {
           await adminCoursesApi.addImageBlock(courseId, pending.file, pending.caption || undefined)
-          URL.revokeObjectURL(pending.preview)
+          if (pending.preview) URL.revokeObjectURL(pending.preview)
         }
       }
       setPendingBlocks([])
@@ -494,6 +509,7 @@ function EditView({
     if (thumbnailPreview) URL.revokeObjectURL(thumbnailPreview)
     setThumbnailFile(null)
     setThumbnailPreview(null)
+    setThumbnailFromLibrary(null)
     setFocalPoint({ x: detail.thumbnailFocalPointX ?? 0.5, y: detail.thumbnailFocalPointY ?? 0.5 })
 
     const reset: Record<string, { content?: string; caption?: string }> = {}
@@ -503,7 +519,7 @@ function EditView({
     setBlockEdits(reset)
 
     pendingBlocks.forEach((b) => {
-      if (b.type === 'IMAGE') URL.revokeObjectURL(b.preview)
+      if (b.type === 'IMAGE' && b.source === 'file' && b.preview) URL.revokeObjectURL(b.preview)
     })
     setPendingBlocks([])
   }
@@ -602,16 +618,16 @@ function EditView({
       <section className="bg-dark-800 border border-dark-700 rounded-lg p-6">
         <h3 className="text-lg font-semibold text-dark-100 mb-4">{t('courses.sectionThumbnail')}</h3>
 
-        {(thumbnailPreview || detail.thumbnailUrl) && (
+        {(thumbnailPreview || thumbnailFromLibrary || detail.thumbnailUrl) && (
           <div className="mb-4 relative">
             <FocalPointEditor
-              imageUrl={thumbnailPreview ?? detail.thumbnailUrl ?? ''}
+              imageUrl={thumbnailPreview ?? thumbnailFromLibrary ?? detail.thumbnailUrl ?? ''}
               value={focalPoint}
               onChange={setFocalPoint}
               aspectRatio="3/2"
               className="w-48"
             />
-            {thumbnailPreview && (
+            {(thumbnailPreview || thumbnailFromLibrary) && (
               <span className="absolute top-1 left-1 text-xs px-1.5 py-0.5 bg-primary-600 text-white rounded z-10 pointer-events-none">
                 {t('courses.pendingBadge')}
               </span>
@@ -619,7 +635,7 @@ function EditView({
           </div>
         )}
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
           <label className="cursor-pointer">
             <input
               type="file"
@@ -629,6 +645,7 @@ function EditView({
                 const file = e.target.files?.[0]
                 if (!file) return
                 setThumbnailFile(file)
+                setThumbnailFromLibrary(null)
                 if (thumbnailPreview) URL.revokeObjectURL(thumbnailPreview)
                 setThumbnailPreview(URL.createObjectURL(file))
               }}
@@ -639,12 +656,21 @@ function EditView({
             </span>
           </label>
 
-          {thumbnailFile && (
+          <button
+            onClick={() => { setPickerTarget('thumbnail'); setShowMediaPicker(true) }}
+            className="inline-flex items-center gap-2 px-3 py-2 bg-dark-700 border border-dark-600 rounded text-sm text-dark-200 hover:border-primary-500 transition-colors"
+          >
+            <Library className="h-4 w-4" />
+            {t('mediaPicker.chooseThumbnailFromLibrary')}
+          </button>
+
+          {(thumbnailFile || thumbnailFromLibrary) && (
             <button
               onClick={() => {
                 if (thumbnailPreview) URL.revokeObjectURL(thumbnailPreview)
                 setThumbnailFile(null)
                 setThumbnailPreview(null)
+                setThumbnailFromLibrary(null)
               }}
               className="text-sm text-dark-400 hover:text-dark-100 transition-colors"
             >
@@ -652,7 +678,7 @@ function EditView({
             </button>
           )}
 
-          {detail.thumbnailUrl && !thumbnailFile && (
+          {detail.thumbnailUrl && !thumbnailFile && !thumbnailFromLibrary && (
             <button
               onClick={() => deleteThumbnailMutation.mutate()}
               disabled={deleteThumbnailMutation.isPending}
@@ -696,7 +722,7 @@ function EditView({
                   )
                 }
                 onDelete={() => {
-                  if (pending.type === 'IMAGE') URL.revokeObjectURL(pending.preview)
+                  if (pending.type === 'IMAGE' && pending.source === 'file' && pending.preview) URL.revokeObjectURL(pending.preview)
                   setPendingBlocks((prev) => prev.filter((b) => b.tempId !== pending.tempId))
                 }}
                 isOnlyPending={pendingBlocks.length === 1}
@@ -734,7 +760,7 @@ function EditView({
                 const preview = URL.createObjectURL(file)
                 setPendingBlocks((prev) => [
                   ...prev,
-                  { type: 'IMAGE', tempId: crypto.randomUUID(), file, preview, caption: '' },
+                  { type: 'IMAGE', tempId: crypto.randomUUID(), source: 'file', file, preview, caption: '' },
                 ])
                 e.target.value = ''
               }}
@@ -744,6 +770,14 @@ function EditView({
               {t('courses.addImage')}
             </span>
           </label>
+
+          <button
+            onClick={() => { setPickerTarget('block'); setShowMediaPicker(true) }}
+            className="inline-flex items-center gap-2 px-3 py-2 bg-dark-800 border border-dark-600 rounded text-sm text-dark-200 hover:border-dark-400 transition-colors font-medium"
+          >
+            <Library className="h-4 w-4" />
+            {t('mediaPicker.chooseFromLibrary')}
+          </button>
         </div>
       </section>
 
@@ -846,9 +880,28 @@ function EditView({
         onClose={() => setShowPreview(false)}
         title={title}
         excerpt={excerpt}
-        thumbnailUrl={thumbnailPreview ?? detail.thumbnailUrl ?? null}
-        focalPoint={!thumbnailPreview ? focalPoint : undefined}
+        thumbnailUrl={thumbnailPreview ?? thumbnailFromLibrary ?? detail.thumbnailUrl ?? null}
+        focalPoint={(!thumbnailPreview && !thumbnailFromLibrary) ? focalPoint : undefined}
         blocks={previewBlocks}
+      />
+
+      {/* Media picker */}
+      <MediaPickerModal
+        isOpen={showMediaPicker}
+        onClose={() => setShowMediaPicker(false)}
+        onSelect={(asset) => {
+          if (pickerTarget === 'thumbnail') {
+            if (thumbnailPreview) URL.revokeObjectURL(thumbnailPreview)
+            setThumbnailFile(null)
+            setThumbnailPreview(null)
+            setThumbnailFromLibrary(asset.url)
+          } else {
+            setPendingBlocks((prev) => [
+              ...prev,
+              { type: 'IMAGE', tempId: crypto.randomUUID(), source: 'library', imageUrl: asset.url, caption: '' },
+            ])
+          }
+        }}
       />
     </div>
   )
@@ -1007,11 +1060,13 @@ function PendingBlockItem({
         />
       ) : (
         <div className="space-y-2">
-          <img
-            src={block.preview}
-            alt={block.caption}
-            className="w-full max-h-48 object-cover rounded border border-dark-600"
-          />
+          {(block.imageUrl ?? block.preview) && (
+            <img
+              src={block.imageUrl ?? block.preview}
+              alt={block.caption}
+              className="w-full max-h-48 object-cover rounded border border-dark-600"
+            />
+          )}
           <input
             type="text"
             value={block.caption}

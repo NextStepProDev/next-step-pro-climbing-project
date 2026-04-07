@@ -1,5 +1,15 @@
 {
   "title": "Settings",
+  "profile": {
+    "title": "Profile details",
+    "phone": "Phone number",
+    "phonePlaceholder": "+48123456789",
+    "nickname": "Nickname",
+    "nicknamePlaceholder": "Your nickname",
+    "submit": "Save changes",
+    "success": "Profile details updated",
+    "missingPhone": "Please add your phone number so the instructor can contact you if needed."
+  },
   "changePassword": {
     "title": "Change password",
     "currentPassword": "Current password",

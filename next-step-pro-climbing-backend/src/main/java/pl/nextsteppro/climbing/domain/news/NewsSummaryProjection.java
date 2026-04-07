@@ -18,6 +18,9 @@ public interface NewsSummaryProjection {
     String getThumbnailFilename();
 
     @Nullable
+    String getThumbnailUrl();
+
+    @Nullable
     Float getThumbnailFocalPointX();
 
     @Nullable

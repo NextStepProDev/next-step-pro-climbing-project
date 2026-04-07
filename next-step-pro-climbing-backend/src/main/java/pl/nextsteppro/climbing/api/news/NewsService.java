@@ -61,7 +61,7 @@ public class NewsService {
                 news.getId(),
                 news.getTitle(),
                 news.getExcerpt(),
-                news.getThumbnailFilename() != null ? buildFileUrl(news.getThumbnailFilename()) : null,
+                buildThumbnailUrl(news.getThumbnailUrl(), news.getThumbnailFilename()),
                 news.getThumbnailFocalPointX(),
                 news.getThumbnailFocalPointY(),
                 blocks.stream().map(this::toBlockDto).toList(),
@@ -74,7 +74,7 @@ public class NewsService {
                 projection.getId(),
                 projection.getTitle(),
                 projection.getExcerpt(),
-                projection.getThumbnailFilename() != null ? buildFileUrl(projection.getThumbnailFilename()) : null,
+                buildThumbnailUrl(projection.getThumbnailUrl(), projection.getThumbnailFilename()),
                 projection.getThumbnailFocalPointX(),
                 projection.getThumbnailFocalPointY(),
                 projection.getPublishedAt()
@@ -82,14 +82,23 @@ public class NewsService {
     }
 
     private ContentBlockDto toBlockDto(NewsContentBlock block) {
+        String imageUrl = block.getImageUrl() != null
+                ? block.getImageUrl()
+                : (block.getImageFilename() != null ? buildFileUrl(block.getImageFilename()) : null);
         return new ContentBlockDto(
                 block.getId(),
                 block.getBlockType().name(),
                 block.getContent(),
-                block.getImageFilename() != null ? buildFileUrl(block.getImageFilename()) : null,
+                imageUrl,
                 block.getCaption(),
                 block.getDisplayOrder()
         );
+    }
+
+    private String buildThumbnailUrl(String thumbnailUrl, String thumbnailFilename) {
+        if (thumbnailUrl != null) return thumbnailUrl;
+        if (thumbnailFilename != null) return buildFileUrl(thumbnailFilename);
+        return null;
     }
 
     private String buildFileUrl(String filename) {

@@ -63,6 +63,9 @@
     "title": "Kursy",
     "noCourses": "Brak kursów do wyświetlenia"
   },
+  "pza": {
+    "recommended": "Szkoła rekomendowana przez PZA"
+  },
   "news": {
     "title": "Aktualności",
     "noArticles": "Brak aktualności do wyświetlenia",

@@ -10,7 +10,8 @@
     "news": "Aktualności",
     "courses": "Kursy",
     "users": "Użytkownicy",
-    "activity": "Aktywność"
+    "activity": "Aktywność",
+    "assets": "Biblioteka mediów"
   },
   "news": {
     "title": "Aktualności",
@@ -265,5 +266,23 @@
       "RESERVATION_CANCELLED_BY_ADMIN": "Anulacja przez admina"
     },
     "persons": "({{count}} os.)"
+  },
+  "assets": {
+    "title": "Biblioteka mediów",
+    "upload": "Dodaj plik",
+    "uploadTitle": "Dodaj plik do biblioteki",
+    "uploadBtn": "Prześlij",
+    "copyUrl": "Kopiuj URL",
+    "delete": "Usuń",
+    "deleteTitle": "Usuń plik",
+    "deleteMessage": "Czy na pewno chcesz usunąć \"{{name}}\"? Tej operacji nie można cofnąć.",
+    "empty": "Brak plików w bibliotece mediów",
+    "uploading": "Wysyłanie...",
+    "selectedCount": "Wybrano: {{count}} plik(ów)"
+  },
+  "mediaPicker": {
+    "title": "Wybierz z biblioteki mediów",
+    "chooseFromLibrary": "Wybierz z biblioteki",
+    "chooseThumbnailFromLibrary": "Wybierz z biblioteki"
   }
 }

@@ -16,6 +16,7 @@ export function SettingsPage() {
     <div className="max-w-2xl mx-auto space-y-8">
       <h1 className="text-2xl font-bold text-dark-100">{t('title')}</h1>
 
+      <ProfileSection key={`${user?.phone ?? ''}-${user?.nickname ?? ''}`} user={user} onUpdated={refreshUser} />
       <ChangePasswordSection />
       <NotificationsSection
         enabled={user?.emailNotificationsEnabled ?? true}
@@ -23,6 +24,88 @@ export function SettingsPage() {
       />
       <DeleteAccountSection onDeleted={logout} />
     </div>
+  )
+}
+
+function ProfileSection({
+  user,
+  onUpdated,
+}: {
+  user: ReturnType<typeof useAuth>['user']
+  onUpdated: () => Promise<void>
+}) {
+  const { t } = useTranslation('settings')
+  const [phone, setPhone] = useState(user?.phone ?? '')
+  const [nickname, setNickname] = useState(user?.nickname ?? '')
+  const [success, setSuccess] = useState(false)
+  const successTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (successTimerRef.current) clearTimeout(successTimerRef.current)
+    }
+  }, [])
+
+  const mutation = useMutation({
+    mutationFn: () => authApi.updateProfile(phone, nickname),
+    onSuccess: async () => {
+      await onUpdated()
+      setSuccess(true)
+      if (successTimerRef.current) clearTimeout(successTimerRef.current)
+      successTimerRef.current = setTimeout(() => setSuccess(false), 3000)
+    },
+  })
+
+  const missingPhone = !user?.phone
+
+  return (
+    <section className="bg-dark-900 rounded-lg border border-dark-800 p-6">
+      <h2 className="text-lg font-semibold text-dark-100 mb-4">{t('profile.title')}</h2>
+
+      {missingPhone && (
+        <div className="mb-4 flex items-start gap-2 rounded-lg bg-amber-500/10 border border-amber-500/30 px-4 py-3 text-sm text-amber-400">
+          <span>⚠</span>
+          <span>{t('profile.missingPhone')}</span>
+        </div>
+      )}
+
+      <form
+        onSubmit={(e) => { e.preventDefault(); mutation.mutate() }}
+        className="space-y-4"
+      >
+        <div>
+          <label className="block text-sm text-dark-400 mb-1">{t('profile.phone')}</label>
+          <input
+            type="tel"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            placeholder={t('profile.phonePlaceholder')}
+            className="w-full bg-dark-800 border border-dark-700 rounded-lg px-4 py-2 text-dark-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
+          />
+        </div>
+        <div>
+          <label className="block text-sm text-dark-400 mb-1">{t('profile.nickname')}</label>
+          <input
+            type="text"
+            value={nickname}
+            onChange={(e) => setNickname(e.target.value)}
+            placeholder={t('profile.nicknamePlaceholder')}
+            className="w-full bg-dark-800 border border-dark-700 rounded-lg px-4 py-2 text-dark-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
+          />
+        </div>
+
+        <Button type="submit" loading={mutation.isPending}>
+          {t('profile.submit')}
+        </Button>
+
+        {mutation.isError && (
+          <p className="text-sm text-rose-400/80">{getErrorMessage(mutation.error)}</p>
+        )}
+        {success && (
+          <p className="text-sm text-green-400">{t('profile.success')}</p>
+        )}
+      </form>
+    </section>
   )
 }
 

@@ -52,7 +52,7 @@ public class CourseService {
                 course.getId(),
                 course.getTitle(),
                 course.getExcerpt(),
-                course.getThumbnailFilename() != null ? buildFileUrl(course.getThumbnailFilename()) : null,
+                buildThumbnailUrl(course.getThumbnailUrl(), course.getThumbnailFilename()),
                 course.getThumbnailFocalPointX(),
                 course.getThumbnailFocalPointY(),
                 blocks.stream().map(this::toBlockDto).toList(),
@@ -65,7 +65,7 @@ public class CourseService {
                 projection.getId(),
                 projection.getTitle(),
                 projection.getExcerpt(),
-                projection.getThumbnailFilename() != null ? buildFileUrl(projection.getThumbnailFilename()) : null,
+                buildThumbnailUrl(projection.getThumbnailUrl(), projection.getThumbnailFilename()),
                 projection.getThumbnailFocalPointX(),
                 projection.getThumbnailFocalPointY(),
                 projection.getPublishedAt()
@@ -73,14 +73,23 @@ public class CourseService {
     }
 
     private ContentBlockDto toBlockDto(CourseContentBlock block) {
+        String imageUrl = block.getImageUrl() != null
+                ? block.getImageUrl()
+                : (block.getImageFilename() != null ? buildFileUrl(block.getImageFilename()) : null);
         return new ContentBlockDto(
                 block.getId(),
                 block.getBlockType().name(),
                 block.getContent(),
-                block.getImageFilename() != null ? buildFileUrl(block.getImageFilename()) : null,
+                imageUrl,
                 block.getCaption(),
                 block.getDisplayOrder()
         );
+    }
+
+    private String buildThumbnailUrl(String thumbnailUrl, String thumbnailFilename) {
+        if (thumbnailUrl != null) return thumbnailUrl;
+        if (thumbnailFilename != null) return buildFileUrl(thumbnailFilename);
+        return null;
     }
 
     private String buildFileUrl(String filename) {

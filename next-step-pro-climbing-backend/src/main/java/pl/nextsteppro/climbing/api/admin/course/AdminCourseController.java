@@ -122,6 +122,15 @@ public class AdminCourseController {
         return ResponseEntity.ok(adminCourseService.uploadThumbnail(id, file));
     }
 
+    @Operation(summary = "Ustaw miniaturkę kursu z biblioteki mediów (URL)")
+    @PutMapping("/{id}/thumbnail-url")
+    public ResponseEntity<Void> setThumbnailUrl(
+            @Parameter(description = "ID kursu") @PathVariable UUID id,
+            @RequestBody AdminCourseDtos.SetThumbnailUrlRequest request) {
+        adminCourseService.setThumbnailUrl(id, request);
+        return ResponseEntity.noContent().build();
+    }
+
     @Operation(summary = "Usuń miniaturkę kursu")
     @DeleteMapping("/{id}/thumbnail")
     public ResponseEntity<Void> deleteThumbnail(
@@ -156,6 +165,14 @@ public class AdminCourseController {
             @RequestParam("file") MultipartFile file,
             @RequestParam(value = "caption", required = false) @Nullable String caption) throws IOException {
         return ResponseEntity.ok(adminCourseService.addImageBlock(id, file, caption));
+    }
+
+    @Operation(summary = "Dodaj blok obrazkowy z biblioteki mediów (URL)")
+    @PostMapping("/{id}/blocks/image-from-url")
+    public ResponseEntity<ContentBlockAdminDto> addImageBlockFromUrl(
+            @Parameter(description = "ID kursu") @PathVariable UUID id,
+            @RequestBody AdminCourseDtos.AddImageBlockFromUrlRequest request) {
+        return ResponseEntity.ok(adminCourseService.addImageBlockFromUrl(id, request));
     }
 
     @Operation(summary = "Edytuj treść bloku tekstowego")

@@ -1,5 +1,15 @@
 {
   "title": "Ustawienia",
+  "profile": {
+    "title": "Dane profilu",
+    "phone": "Numer telefonu",
+    "phonePlaceholder": "+48123456789",
+    "nickname": "Nick",
+    "nicknamePlaceholder": "Twój pseudonim",
+    "submit": "Zapisz zmiany",
+    "success": "Dane profilu zostały zaktualizowane",
+    "missingPhone": "Uzupełnij numer telefonu, aby instruktor mógł się z Tobą skontaktować w razie potrzeby."
+  },
   "changePassword": {
     "title": "Zmiana hasła",
     "currentPassword": "Aktualne hasło",

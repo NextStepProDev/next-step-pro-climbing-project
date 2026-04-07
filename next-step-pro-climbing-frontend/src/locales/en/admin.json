@@ -10,7 +10,8 @@
     "news": "News",
     "courses": "Courses",
     "users": "Users",
-    "activity": "Activity"
+    "activity": "Activity",
+    "assets": "Media library"
   },
   "news": {
     "title": "News",
@@ -265,5 +266,23 @@
       "RESERVATION_CANCELLED_BY_ADMIN": "Cancelled by admin"
     },
     "persons": "({{count}} pers.)"
+  },
+  "assets": {
+    "title": "Media library",
+    "upload": "Add file",
+    "uploadTitle": "Add file to library",
+    "uploadBtn": "Upload",
+    "copyUrl": "Copy URL",
+    "delete": "Delete",
+    "deleteTitle": "Delete file",
+    "deleteMessage": "Are you sure you want to delete \"{{name}}\"? This cannot be undone.",
+    "empty": "No files in media library",
+    "uploading": "Uploading...",
+    "selectedCount": "Selected: {{count}} file(s)"
+  },
+  "mediaPicker": {
+    "title": "Choose from media library",
+    "chooseFromLibrary": "Choose from library",
+    "chooseThumbnailFromLibrary": "Choose from library"
   }
 }

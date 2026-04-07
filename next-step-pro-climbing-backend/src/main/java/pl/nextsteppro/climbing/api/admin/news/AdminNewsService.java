@@ -147,12 +147,15 @@ public class AdminNewsService {
     public void deleteThumbnail(UUID id) throws IOException {
         News news = findNews(id);
 
-        if (news.getThumbnailFilename() == null) {
+        if (news.getThumbnailFilename() == null && news.getThumbnailUrl() == null) {
             throw new IllegalStateException("No thumbnail to delete");
         }
 
-        fileStorageService.delete(news.getThumbnailFilename(), "news");
-        news.setThumbnailFilename(null);
+        if (news.getThumbnailFilename() != null) {
+            fileStorageService.delete(news.getThumbnailFilename(), "news");
+            news.setThumbnailFilename(null);
+        }
+        news.setThumbnailUrl(null);
         newsRepository.save(news);
     }
 
@@ -191,6 +194,37 @@ public class AdminNewsService {
                 buildFileUrl(filename),
                 block.getDisplayOrder()
         );
+    }
+
+    @CacheEvict(value = "newsDetail", allEntries = true)
+    public ContentBlockAdminDto addImageBlockFromUrl(UUID newsId, AddImageBlockFromUrlRequest request) {
+        News news = findNews(newsId);
+        int order = blockRepository.findMaxDisplayOrder(newsId) + 1;
+
+        NewsContentBlock block = new NewsContentBlock(news, BlockType.IMAGE);
+        block.setImageUrl(request.imageUrl());
+        block.setCaption(request.caption());
+        block.setDisplayOrder(order);
+
+        block = blockRepository.save(block);
+        return toBlockAdminDto(block);
+    }
+
+    @CacheEvict(value = {"newsList", "newsDetail"}, allEntries = true)
+    public void setThumbnailUrl(UUID id, SetThumbnailUrlRequest request) {
+        News news = findNews(id);
+
+        if (news.getThumbnailFilename() != null) {
+            try {
+                fileStorageService.delete(news.getThumbnailFilename(), "news");
+            } catch (IOException e) {
+                logger.warn("Failed to delete old thumbnail when setting URL: {}", e.getMessage());
+            }
+            news.setThumbnailFilename(null);
+        }
+
+        news.setThumbnailUrl(request.thumbnailUrl());
+        newsRepository.save(news);
     }
 
     @CacheEvict(value = "newsDetail", allEntries = true)
@@ -285,7 +319,7 @@ public class AdminNewsService {
                 projection.getId(),
                 projection.getTitle(),
                 projection.getExcerpt(),
-                projection.getThumbnailFilename() != null ? buildFileUrl(projection.getThumbnailFilename()) : null,
+                buildThumbnailUrl(projection.getThumbnailUrl(), projection.getThumbnailFilename()),
                 projection.isPublished(),
                 projection.getPublishedAt(),
                 projection.getCreatedAt(),
@@ -298,7 +332,7 @@ public class AdminNewsService {
                 news.getId(),
                 news.getTitle(),
                 news.getExcerpt(),
-                news.getThumbnailFilename() != null ? buildFileUrl(news.getThumbnailFilename()) : null,
+                buildThumbnailUrl(news.getThumbnailUrl(), news.getThumbnailFilename()),
                 news.isPublished(),
                 news.getPublishedAt(),
                 news.getCreatedAt(),
@@ -320,7 +354,7 @@ public class AdminNewsService {
                 news.getTitle(),
                 news.getExcerpt(),
                 news.getThumbnailFilename(),
-                news.getThumbnailFilename() != null ? buildFileUrl(news.getThumbnailFilename()) : null,
+                buildThumbnailUrl(news.getThumbnailUrl(), news.getThumbnailFilename()),
                 news.getThumbnailFocalPointX(),
                 news.getThumbnailFocalPointY(),
                 news.isPublished(),
@@ -332,15 +366,25 @@ public class AdminNewsService {
     }
 
     private ContentBlockAdminDto toBlockAdminDto(NewsContentBlock block) {
+        String resolvedImageUrl = block.getImageUrl() != null
+                ? block.getImageUrl()
+                : (block.getImageFilename() != null ? buildFileUrl(block.getImageFilename()) : null);
         return new ContentBlockAdminDto(
                 block.getId(),
                 block.getBlockType().name(),
                 block.getContent(),
                 block.getImageFilename(),
-                block.getImageFilename() != null ? buildFileUrl(block.getImageFilename()) : null,
+                resolvedImageUrl,
                 block.getCaption(),
                 block.getDisplayOrder()
         );
+    }
+
+    @Nullable
+    private String buildThumbnailUrl(@Nullable String thumbnailUrl, @Nullable String thumbnailFilename) {
+        if (thumbnailUrl != null) return thumbnailUrl;
+        if (thumbnailFilename != null) return buildFileUrl(thumbnailFilename);
+        return null;
     }
 
     private String buildFileUrl(String filename) {

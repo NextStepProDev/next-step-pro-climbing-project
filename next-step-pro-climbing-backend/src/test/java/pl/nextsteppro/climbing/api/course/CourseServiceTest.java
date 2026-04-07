@@ -202,6 +202,7 @@ class CourseServiceTest {
             @Override public String getTitle() { return title; }
             @Override public String getExcerpt() { return excerpt; }
             @Override public String getThumbnailFilename() { return thumbnailFilename; }
+            @Override public String getThumbnailUrl() { return null; }
             @Override public Float getThumbnailFocalPointX() { return null; }
             @Override public Float getThumbnailFocalPointY() { return null; }
             @Override public int getDisplayOrder() { return 0; }

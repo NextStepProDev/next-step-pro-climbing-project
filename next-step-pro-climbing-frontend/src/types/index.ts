@@ -1,3 +1,14 @@
+// Shared Assets (Media Library)
+export interface AssetDto {
+  id: string
+  filename: string
+  originalName: string
+  mimeType: string
+  sizeBytes: number
+  url: string
+  createdAt: string
+}
+
 // User types
 export interface User {
   id: string
