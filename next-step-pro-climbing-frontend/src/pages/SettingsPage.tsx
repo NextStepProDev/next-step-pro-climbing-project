@@ -22,7 +22,7 @@ export function SettingsPage() {
     <div className="max-w-2xl mx-auto space-y-8">
       <h1 className="text-2xl font-bold text-dark-100">{t('title')}</h1>
 
-      <ProfileSection key={`${user?.phone ?? ''}-${user?.nickname ?? ''}`} user={user} onUpdated={refreshUser} />
+      <ProfileSection key={`${user?.firstName ?? ''}-${user?.lastName ?? ''}-${user?.phone ?? ''}-${user?.nickname ?? ''}`} user={user} onUpdated={refreshUser} />
       <LanguageSection />
       <ChangePasswordSection />
       <NotificationsSection
@@ -46,6 +46,8 @@ function ProfileSection({
   onUpdated: () => Promise<void>
 }) {
   const { t } = useTranslation('settings')
+  const [firstName, setFirstName] = useState(user?.firstName ?? '')
+  const [lastName, setLastName] = useState(user?.lastName ?? '')
   const [phone, setPhone] = useState(user?.phone ?? '')
   const [nickname, setNickname] = useState(user?.nickname ?? '')
   const [success, setSuccess] = useState(false)
@@ -58,7 +60,7 @@ function ProfileSection({
   }, [])
 
   const mutation = useMutation({
-    mutationFn: () => authApi.updateProfile(phone, nickname),
+    mutationFn: () => authApi.updateProfile(firstName, lastName, phone, nickname),
     onSuccess: async () => {
       await onUpdated()
       setSuccess(true)
@@ -67,16 +69,16 @@ function ProfileSection({
     },
   })
 
-  const missingPhone = !user?.phone
+  const missingData = !user?.firstName || !user?.lastName || !user?.phone
 
   return (
     <section className="bg-dark-900 rounded-lg border border-dark-800 p-6">
       <h2 className="text-lg font-semibold text-dark-100 mb-4">{t('profile.title')}</h2>
 
-      {missingPhone && (
+      {missingData && (
         <div className="mb-4 flex items-start gap-2 rounded-lg bg-amber-500/10 border border-amber-500/30 px-4 py-3 text-sm text-amber-400">
           <span>⚠</span>
-          <span>{t('profile.missingPhone')}</span>
+          <span>{t('profile.missingData')}</span>
         </div>
       )}
 
@@ -84,6 +86,28 @@ function ProfileSection({
         onSubmit={(e) => { e.preventDefault(); mutation.mutate() }}
         className="space-y-4"
       >
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm text-dark-400 mb-1">{t('profile.firstName')}</label>
+            <input
+              type="text"
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
+              placeholder={t('profile.firstNamePlaceholder')}
+              className="w-full bg-dark-800 border border-dark-700 rounded-lg px-4 py-2 text-dark-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
+            />
+          </div>
+          <div>
+            <label className="block text-sm text-dark-400 mb-1">{t('profile.lastName')}</label>
+            <input
+              type="text"
+              value={lastName}
+              onChange={(e) => setLastName(e.target.value)}
+              placeholder={t('profile.lastNamePlaceholder')}
+              className="w-full bg-dark-800 border border-dark-700 rounded-lg px-4 py-2 text-dark-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
+            />
+          </div>
+        </div>
         <div>
           <label className="block text-sm text-dark-400 mb-1">{t('profile.phone')}</label>
           <input
@@ -170,6 +194,7 @@ function LanguageSection() {
 
 function ChangePasswordSection() {
   const { t } = useTranslation('settings')
+  const [expanded, setExpanded] = useState(false)
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -191,6 +216,7 @@ function ChangePasswordSection() {
       setConfirmPassword('')
       setValidationError(null)
       setSuccess(true)
+      setExpanded(false)
       if (successTimerRef.current) clearTimeout(successTimerRef.current)
       successTimerRef.current = setTimeout(() => setSuccess(false), 3000)
     },
@@ -213,59 +239,84 @@ function ChangePasswordSection() {
     mutation.mutate()
   }
 
+  const handleToggle = () => {
+    setExpanded((prev) => {
+      if (prev) {
+        setCurrentPassword('')
+        setNewPassword('')
+        setConfirmPassword('')
+        setValidationError(null)
+      }
+      return !prev
+    })
+  }
+
   return (
     <section className="bg-dark-900 rounded-lg border border-dark-800 p-6">
-      <h2 className="text-lg font-semibold text-dark-100 mb-4">{t('changePassword.title')}</h2>
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label className="block text-sm text-dark-400 mb-1">{t('changePassword.currentPassword')}</label>
-          <input
-            type="password"
-            value={currentPassword}
-            onChange={(e) => setCurrentPassword(e.target.value)}
-            required
-            className="w-full bg-dark-800 border border-dark-700 rounded-lg px-4 py-2 text-dark-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
-          />
-        </div>
-        <div>
-          <label className="block text-sm text-dark-400 mb-1">{t('changePassword.newPassword')}</label>
-          <input
-            type="password"
-            value={newPassword}
-            onChange={(e) => setNewPassword(e.target.value)}
-            required
-            minLength={8}
-            className="w-full bg-dark-800 border border-dark-700 rounded-lg px-4 py-2 text-dark-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
-          />
-        </div>
-        <div>
-          <label className="block text-sm text-dark-400 mb-1">{t('changePassword.confirmPassword')}</label>
-          <input
-            type="password"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            required
-            minLength={8}
-            className="w-full bg-dark-800 border border-dark-700 rounded-lg px-4 py-2 text-dark-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
-          />
-        </div>
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-semibold text-dark-100">{t('changePassword.title')}</h2>
+        <button
+          type="button"
+          onClick={handleToggle}
+          className="text-sm text-primary-400 hover:text-primary-300 transition-colors"
+        >
+          {expanded ? t('changePassword.cancel') : t('changePassword.expand')}
+        </button>
+      </div>
 
-        <Button type="submit" loading={mutation.isPending}>
-          {t('changePassword.submit')}
-        </Button>
+      {success && (
+        <p className="text-sm text-green-400 mt-3">{t('changePassword.success')}</p>
+      )}
 
-        {validationError && (
-          <p className="text-sm text-rose-400/80">{validationError}</p>
-        )}
-        {mutation.isError && (
-          <p className="text-sm text-rose-400/80">
-            {getErrorMessage(mutation.error)}
-          </p>
-        )}
-        {success && (
-          <p className="text-sm text-green-400">{t('changePassword.success')}</p>
-        )}
-      </form>
+      {expanded && (
+        <form onSubmit={handleSubmit} className="space-y-4 mt-4">
+          <div>
+            <label className="block text-sm text-dark-400 mb-1">{t('changePassword.currentPassword')}</label>
+            <input
+              type="password"
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+              required
+              className="w-full bg-dark-800 border border-dark-700 rounded-lg px-4 py-2 text-dark-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
+            />
+          </div>
+          <div>
+            <label className="block text-sm text-dark-400 mb-1">{t('changePassword.newPassword')}</label>
+            <input
+              type="password"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              required
+              minLength={8}
+              className="w-full bg-dark-800 border border-dark-700 rounded-lg px-4 py-2 text-dark-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
+            />
+          </div>
+          <div>
+            <label className="block text-sm text-dark-400 mb-1">{t('changePassword.confirmPassword')}</label>
+            <input
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              required
+              minLength={8}
+              className="w-full bg-dark-800 border border-dark-700 rounded-lg px-4 py-2 text-dark-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
+            />
+          </div>
+
+          <Button type="submit" loading={mutation.isPending}>
+            {t('changePassword.submit')}
+          </Button>
+
+          {validationError && (
+            <p className="text-sm text-rose-400/80">{validationError}</p>
+          )}
+          {mutation.isError && (
+            <p className="text-sm text-rose-400/80">
+              {getErrorMessage(mutation.error)}
+            </p>
+          )}
+        </form>
+      )}
     </section>
   )
 }
