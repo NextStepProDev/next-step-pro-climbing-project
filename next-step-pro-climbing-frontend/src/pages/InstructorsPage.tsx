@@ -6,6 +6,25 @@ import { LoadingSpinner } from '../components/ui/LoadingSpinner'
 import { QueryError } from '../components/ui/QueryError'
 import { PzaBadge } from '../components/ui/PzaBadge'
 
+const IMAGE_MD_RE = /^!\[([^\]]*)\]\((.+)\)$/
+
+function renderBio(bio: string) {
+  return bio.split('\n').map((line, i) => {
+    const match = line.trim().match(IMAGE_MD_RE)
+    if (match) {
+      return (
+        <img
+          key={i}
+          src={match[2]}
+          alt={match[1]}
+          className="max-w-full rounded-lg my-2"
+        />
+      )
+    }
+    return <span key={i}>{line}{'\n'}</span>
+  })
+}
+
 export function InstructorsPage() {
   const { t } = useTranslation('common')
   const { data: instructors, isLoading, error } = useQuery({
@@ -83,7 +102,7 @@ export function InstructorsPage() {
                 {instructor.bio && (
                   <div className="space-y-1">
                     <h3 className="text-xs font-bold tracking-widest uppercase text-primary-400">{t('instructors.about')}</h3>
-                    <p className="text-dark-200 whitespace-pre-line">{instructor.bio}</p>
+                    <div className="text-dark-200 whitespace-pre-line">{renderBio(instructor.bio)}</div>
                   </div>
                 )}
               </div>

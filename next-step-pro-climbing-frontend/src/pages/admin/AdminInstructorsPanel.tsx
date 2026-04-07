@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { User, Upload, Pencil, Trash2, Plus } from 'lucide-react'
+import { User, Upload, Pencil, Trash2, Plus, Library } from 'lucide-react'
 import { adminInstructorApi } from '../../api/client'
 import type { InstructorAdmin, CreateInstructorRequest, UpdateInstructorRequest } from '../../types'
 import { Button } from '../../components/ui/Button'
@@ -10,6 +10,7 @@ import { FileUpload } from '../../components/ui/FileUpload'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
 import { QueryError } from '../../components/ui/QueryError'
 import { FocalPointEditor } from '../../components/ui/FocalPointEditor'
+import { MediaPickerModal } from '../../components/ui/MediaPickerModal'
 
 export function AdminInstructorsPanel() {
   const queryClient = useQueryClient()
@@ -21,6 +22,12 @@ export function AdminInstructorsPanel() {
   const [photoPreview, setPhotoPreview] = useState<string | null>(null)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [focalPoint, setFocalPoint] = useState({ x: 0.5, y: 0.5 })
+  const [createBio, setCreateBio] = useState('')
+  const [editBio, setEditBio] = useState('')
+  const [showMediaPicker, setShowMediaPicker] = useState(false)
+  const [pickerTarget, setPickerTarget] = useState<'create' | 'edit'>('edit')
+  const createBioRef = useRef<HTMLTextAreaElement>(null)
+  const editBioRef = useRef<HTMLTextAreaElement>(null)
 
   const { data: instructors, isLoading, error } = useQuery({
     queryKey: ['admin', 'instructors'],
@@ -73,13 +80,31 @@ export function AdminInstructorsPanel() {
     },
   })
 
+  const insertImageAtCursor = (url: string, target: 'create' | 'edit') => {
+    const ref = target === 'create' ? createBioRef : editBioRef
+    const setter = target === 'create' ? setCreateBio : setEditBio
+    const el = ref.current
+    const insert = `\n![](${url})\n`
+    if (el) {
+      const start = el.selectionStart
+      const end = el.selectionEnd
+      setter((prev) => prev.slice(0, start) + insert + prev.slice(end))
+      setTimeout(() => {
+        el.selectionStart = el.selectionEnd = start + insert.length
+        el.focus()
+      }, 0)
+    } else {
+      setter((prev) => prev + insert)
+    }
+  }
+
   const handleCreate = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     const formData = new FormData(e.currentTarget)
     const data: CreateInstructorRequest = {
       firstName: formData.get('firstName') as string,
       lastName: formData.get('lastName') as string,
-      bio: formData.get('bio') as string || undefined,
+      bio: createBio || undefined,
       certifications: formData.get('certifications') as string || undefined,
     }
     createMutation.mutate(data)
@@ -92,7 +117,7 @@ export function AdminInstructorsPanel() {
     const data: UpdateInstructorRequest = {
       firstName: formData.get('firstName') as string,
       lastName: formData.get('lastName') as string,
-      bio: formData.get('bio') as string || undefined,
+      bio: editBio || undefined,
       certifications: formData.get('certifications') as string || undefined,
       active: formData.get('active') === 'on',
       displayOrder: parseInt(formData.get('displayOrder') as string) || 0,
@@ -143,7 +168,7 @@ export function AdminInstructorsPanel() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-dark-100">Zarządzanie Instruktorami</h2>
-        <Button onClick={() => setCreateModalOpen(true)}>
+        <Button onClick={() => { setCreateBio(''); setCreateModalOpen(true) }}>
           <Plus className="h-4 w-4 mr-2" />
           Dodaj instruktora
         </Button>
@@ -210,6 +235,7 @@ export function AdminInstructorsPanel() {
                         onClick={() => {
                           setSelectedInstructor(instructor)
                           setFocalPoint({ x: instructor.focalPointX ?? 0.5, y: instructor.focalPointY ?? 0.5 })
+                          setEditBio(instructor.bio ?? '')
                           setEditModalOpen(true)
                         }}
                       >
@@ -308,12 +334,24 @@ export function AdminInstructorsPanel() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-dark-200 mb-1">
-              Bio
-            </label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-sm font-medium text-dark-200">Bio</label>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => { setPickerTarget('create'); setShowMediaPicker(true) }}
+              >
+                <Library className="w-4 h-4 mr-1.5" />
+                Wstaw obraz z biblioteki
+              </Button>
+            </div>
             <textarea
+              ref={createBioRef}
               name="bio"
               rows={4}
+              value={createBio}
+              onChange={(e) => setCreateBio(e.target.value)}
               className="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-dark-100 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             />
           </div>
@@ -389,13 +427,24 @@ export function AdminInstructorsPanel() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-dark-200 mb-1">
-                Bio
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-sm font-medium text-dark-200">Bio</label>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => { setPickerTarget('edit'); setShowMediaPicker(true) }}
+                >
+                  <Library className="w-4 h-4 mr-1.5" />
+                  Wstaw obraz z biblioteki
+                </Button>
+              </div>
               <textarea
+                ref={editBioRef}
                 name="bio"
-                defaultValue={selectedInstructor.bio || ''}
                 rows={4}
+                value={editBio}
+                onChange={(e) => setEditBio(e.target.value)}
                 className="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-dark-100 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               />
             </div>
@@ -523,6 +572,16 @@ export function AdminInstructorsPanel() {
           </div>
         </Modal>
       )}
+
+      {/* Media Picker */}
+      <MediaPickerModal
+        isOpen={showMediaPicker}
+        onClose={() => setShowMediaPicker(false)}
+        onSelect={(asset) => {
+          insertImageAtCursor(asset.url, pickerTarget)
+          setShowMediaPicker(false)
+        }}
+      />
 
       {/* Delete Confirm */}
       <ConfirmModal
