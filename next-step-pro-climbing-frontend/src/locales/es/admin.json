@@ -11,7 +11,8 @@
     "courses": "Cursos",
     "users": "Usuarios",
     "activity": "Actividad",
-    "assets": "Biblioteca de medios"
+    "assets": "Biblioteca de medios",
+    "mail": "Enviar email"
   },
   "news": {
     "title": "Noticias",
@@ -284,5 +285,26 @@
     "title": "Elegir de la biblioteca de medios",
     "chooseFromLibrary": "Elegir de la biblioteca",
     "chooseThumbnailFromLibrary": "Elegir de la biblioteca"
+  },
+  "mail": {
+    "title": "Enviar mensaje",
+    "subtitle": "Escribe un mensaje de correo a los usuarios del sistema.",
+    "recipientType": "Destinatarios",
+    "allUsers": "Todos los usuarios",
+    "selectedUsers": "Usuarios seleccionados",
+    "searchUsers": "Buscar usuarios...",
+    "noUsersFound": "Sin resultados",
+    "selectedCount": "Seleccionados: {{count}}",
+    "subject": "Asunto",
+    "subjectPlaceholder": "Asunto del mensaje",
+    "body": "Contenido",
+    "bodyPlaceholder": "Contenido del mensaje...",
+    "send": "Enviar",
+    "sending": "Enviando...",
+    "confirmTitle": "Confirmar envío",
+    "confirmMessage": "El mensaje se enviará a {{count}} destinatarios (cuentas verificadas). ¿Continuar?",
+    "confirmAllMessage": "El mensaje se enviará a todos los usuarios con correo verificado. ¿Continuar?",
+    "successMessage": "Mensaje enviado a {{count}} destinatarios.",
+    "errorMessage": "Error al enviar el mensaje."
   }
 }

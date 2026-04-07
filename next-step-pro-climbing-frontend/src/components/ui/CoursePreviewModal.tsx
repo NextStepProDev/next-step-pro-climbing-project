@@ -46,10 +46,7 @@ export function CoursePreviewModal({
             <img
               src={thumbnailUrl}
               alt={title}
-              className="w-full max-h-80 object-cover"
-              style={focalPoint
-                ? { objectPosition: `${focalPoint.x * 100}% ${focalPoint.y * 100}%` }
-                : undefined}
+              className="w-full max-h-80 object-contain"
             />
           </div>
         ) : (

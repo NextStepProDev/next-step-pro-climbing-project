@@ -11,7 +11,8 @@
     "courses": "Courses",
     "users": "Users",
     "activity": "Activity",
-    "assets": "Media library"
+    "assets": "Media library",
+    "mail": "Send email"
   },
   "news": {
     "title": "News",
@@ -284,5 +285,26 @@
     "title": "Choose from media library",
     "chooseFromLibrary": "Choose from library",
     "chooseThumbnailFromLibrary": "Choose from library"
+  },
+  "mail": {
+    "title": "Send message",
+    "subtitle": "Write an email message to system users.",
+    "recipientType": "Recipients",
+    "allUsers": "All users",
+    "selectedUsers": "Selected users",
+    "searchUsers": "Search users...",
+    "noUsersFound": "No results",
+    "selectedCount": "Selected: {{count}}",
+    "subject": "Subject",
+    "subjectPlaceholder": "Message subject",
+    "body": "Message",
+    "bodyPlaceholder": "Message content...",
+    "send": "Send",
+    "sending": "Sending...",
+    "confirmTitle": "Confirm sending",
+    "confirmMessage": "The message will be sent to {{count}} recipients (verified accounts). Continue?",
+    "confirmAllMessage": "The message will be sent to all users with a verified email address. Continue?",
+    "successMessage": "Message sent to {{count}} recipients.",
+    "errorMessage": "Error sending message."
   }
 }

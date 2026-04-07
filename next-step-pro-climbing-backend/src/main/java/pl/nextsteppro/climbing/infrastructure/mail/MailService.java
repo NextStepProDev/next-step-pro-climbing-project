@@ -196,6 +196,38 @@ public class MailService {
         return null;
     }
 
+    @Async
+    public void sendCustomAdminMail(String to, String subject, String body) {
+        String htmlBody = buildCustomAdminMailBody(subject, body);
+        sendEmail(to, subject, htmlBody, null);
+    }
+
+    private String buildCustomAdminMailBody(String subject, String body) {
+        String escaped = body
+            .replace("&", "&amp;")
+            .replace("<", "&lt;")
+            .replace(">", "&gt;")
+            .replace("\n", "<br/>");
+        return """
+            <html>
+            <body style="font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5;">
+                <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden;">
+                    <div style="background: #0f0f1a; padding: 20px; text-align: center;">
+                        <img src="cid:logo" alt="Next Step Pro Climbing" style="height: 60px;" />
+                    </div>
+                    <div style="padding: 30px;">
+                        <h2 style="color: #1a1a2e; margin-top: 0;">%s</h2>
+                        <div style="color: #333; line-height: 1.8;">%s</div>
+                    </div>
+                    <div style="background: #0f0f1a; padding: 15px; text-align: center; font-size: 12px; color: #888;">
+                        Next Step Pro Climbing
+                    </div>
+                </div>
+            </body>
+            </html>
+            """.formatted(subject, escaped);
+    }
+
     private void sendEmail(String to, String subject, String body, @Nullable byte[] icsAttachment) {
         try {
             var message = mailSender.createMimeMessage();

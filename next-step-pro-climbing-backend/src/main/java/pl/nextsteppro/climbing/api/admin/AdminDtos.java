@@ -159,3 +159,16 @@ record UserAdminDto(
     Instant createdAt
 ) {}
 
+// Mail DTOs
+
+enum RecipientType { ALL, SELECTED }
+
+record SendMailRequest(
+    @NotNull RecipientType recipientType,
+    @Nullable List<UUID> userIds,
+    @NotBlank String subject,
+    @NotBlank String body
+) {}
+
+record MailSendResponse(int recipientCount) {}
+

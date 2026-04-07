@@ -12,6 +12,7 @@ public interface CourseRepository extends JpaRepository<Course, UUID> {
 
     @Query(value = """
             SELECT id, title, excerpt, thumbnail_filename AS thumbnailFilename,
+                   thumbnail_url AS thumbnailUrl,
                    thumbnail_focal_point_x AS thumbnailFocalPointX,
                    thumbnail_focal_point_y AS thumbnailFocalPointY,
                    display_order AS displayOrder,
@@ -25,6 +26,7 @@ public interface CourseRepository extends JpaRepository<Course, UUID> {
 
     @Query(value = """
             SELECT id, title, excerpt, thumbnail_filename AS thumbnailFilename,
+                   thumbnail_url AS thumbnailUrl,
                    thumbnail_focal_point_x AS thumbnailFocalPointX,
                    thumbnail_focal_point_y AS thumbnailFocalPointY,
                    display_order AS displayOrder,
