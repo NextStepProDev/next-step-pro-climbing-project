@@ -2,13 +2,17 @@
   "title": "Ustawienia",
   "profile": {
     "title": "Dane profilu",
+    "firstName": "Imię",
+    "firstNamePlaceholder": "Jan",
+    "lastName": "Nazwisko",
+    "lastNamePlaceholder": "Kowalski",
     "phone": "Numer telefonu",
     "phonePlaceholder": "+48123456789",
     "nickname": "Nick",
     "nicknamePlaceholder": "Twój pseudonim",
     "submit": "Zapisz zmiany",
     "success": "Dane profilu zostały zaktualizowane",
-    "missingPhone": "Uzupełnij numer telefonu, aby instruktor mógł się z Tobą skontaktować w razie potrzeby."
+    "missingData": "Uzupełnij imię, nazwisko i numer telefonu, aby instruktor mógł się z Tobą skontaktować."
   },
   "changePassword": {
     "title": "Zmiana hasła",
@@ -18,6 +22,8 @@
     "submit": "Zmień hasło",
     "tooShort": "Hasło musi mieć co najmniej 8 znaków",
     "mismatch": "Hasła nie są zgodne",
+    "expand": "Zmień hasło",
+    "cancel": "Anuluj",
     "success": "Hasło zostało zmienione"
   },
   "language": {

@@ -2,13 +2,17 @@
   "title": "Settings",
   "profile": {
     "title": "Profile details",
+    "firstName": "First name",
+    "firstNamePlaceholder": "John",
+    "lastName": "Last name",
+    "lastNamePlaceholder": "Smith",
     "phone": "Phone number",
     "phonePlaceholder": "+48123456789",
     "nickname": "Nickname",
     "nicknamePlaceholder": "Your nickname",
     "submit": "Save changes",
     "success": "Profile details updated",
-    "missingPhone": "Please add your phone number so the instructor can contact you if needed."
+    "missingData": "Please complete your first name, last name and phone number so the instructor can contact you."
   },
   "changePassword": {
     "title": "Change password",
@@ -18,6 +22,8 @@
     "submit": "Change password",
     "tooShort": "Password must be at least 8 characters long",
     "mismatch": "Passwords do not match",
+    "expand": "Change password",
+    "cancel": "Cancel",
     "success": "Password has been changed"
   },
   "language": {

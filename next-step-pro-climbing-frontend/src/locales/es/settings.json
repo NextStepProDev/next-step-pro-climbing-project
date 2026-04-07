@@ -2,13 +2,17 @@
   "title": "Ajustes",
   "profile": {
     "title": "Datos del perfil",
+    "firstName": "Nombre",
+    "firstNamePlaceholder": "Juan",
+    "lastName": "Apellido",
+    "lastNamePlaceholder": "García",
     "phone": "Número de teléfono",
     "phonePlaceholder": "+48123456789",
     "nickname": "Apodo",
     "nicknamePlaceholder": "Tu apodo",
     "submit": "Guardar cambios",
     "success": "Datos del perfil actualizados",
-    "missingPhone": "Añade tu número de teléfono para que el instructor pueda contactarte si es necesario."
+    "missingData": "Completa tu nombre, apellido y número de teléfono para que el instructor pueda contactarte."
   },
   "changePassword": {
     "title": "Cambiar contraseña",
@@ -18,6 +22,8 @@
     "submit": "Cambiar contraseña",
     "tooShort": "La contraseña debe tener al menos 8 caracteres",
     "mismatch": "Las contraseñas no coinciden",
+    "expand": "Cambiar contraseña",
+    "cancel": "Cancelar",
     "success": "La contraseña se ha cambiado"
   },
   "language": {
