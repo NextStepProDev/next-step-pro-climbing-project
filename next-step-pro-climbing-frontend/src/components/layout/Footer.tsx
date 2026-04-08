@@ -1,4 +1,4 @@
-import { Phone, Mail, User, Facebook, Youtube } from 'lucide-react'
+import { Phone, Mail, User, Facebook, Youtube, Instagram } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import logoWhite from '../../assets/logo/logo-white.png'
 import { CONTACT } from '../../constants/contact'
@@ -60,6 +60,19 @@ export function Footer() {
                   YouTube
                 </a>
               </li>
+              {CONTACT.instagram && (
+                <li className="flex items-center gap-2 text-dark-400 text-sm">
+                  <Instagram className="w-4 h-4 shrink-0" />
+                  <a
+                    href={CONTACT.instagram}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:text-primary-400 transition-colors"
+                  >
+                    Instagram
+                  </a>
+                </li>
+              )}
             </ul>
           </div>
 
