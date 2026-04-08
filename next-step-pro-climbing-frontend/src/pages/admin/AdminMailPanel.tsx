@@ -7,6 +7,7 @@ import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
 import { QueryError } from '../../components/ui/QueryError'
 import { Button } from '../../components/ui/Button'
 import { ConfirmModal } from '../../components/ui/ConfirmModal'
+import { RichTextEditor } from '../../components/ui/RichTextEditor'
 
 type RecipientType = 'ALL' | 'SELECTED'
 
@@ -219,12 +220,11 @@ export function AdminMailPanel() {
 
           <div>
             <label className="block text-sm text-dark-400 mb-1">{t('mail.body')}</label>
-            <textarea
+            <RichTextEditor
               value={body}
-              onChange={(e) => setBody(e.target.value)}
+              onChange={setBody}
               placeholder={t('mail.bodyPlaceholder')}
               rows={10}
-              className="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-sm text-dark-200 placeholder-dark-500 focus:outline-none focus:border-primary-500 resize-y"
             />
           </div>
 
