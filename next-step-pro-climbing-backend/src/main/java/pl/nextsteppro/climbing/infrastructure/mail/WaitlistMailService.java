@@ -8,6 +8,7 @@ import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import pl.nextsteppro.climbing.config.AppConfig;
+import pl.nextsteppro.climbing.domain.event.Event;
 import pl.nextsteppro.climbing.domain.timeslot.TimeSlot;
 import pl.nextsteppro.climbing.domain.user.User;
 import pl.nextsteppro.climbing.infrastructure.i18n.MessageService;
@@ -121,6 +122,104 @@ public class WaitlistMailService {
             msg.get("email.waitlist.confirmed.body", lang),
             msg.get("email.reservation.date", lang), slot.getDate().format(DATE_FORMAT),
             msg.get("email.reservation.time", lang), slot.getStartTime().format(TIME_FORMAT), slot.getEndTime().format(TIME_FORMAT),
+            msg.get("email.reservation.see.you", lang),
+            msg.get("email.reservation.team", lang)
+        );
+    }
+
+    @Async
+    public void sendEventWaitlistOfferNotification(User user, Event event, Instant deadline) {
+        if (!user.isEmailNotificationsEnabled()) return;
+
+        String lang = user.getPreferredLanguage();
+        String deadlineFormatted = DEADLINE_FORMAT.format(deadline.atZone(ZoneId.systemDefault()));
+
+        String subject = msg.get("email.event.waitlist.offer.subject", lang);
+        String body = buildEventOfferBody(lang, user, event, deadlineFormatted);
+        sendEmail(user.getEmail(), subject, body);
+    }
+
+    @Async
+    public void sendEventWaitlistReservationConfirmed(User user, Event event) {
+        if (!user.isEmailNotificationsEnabled()) return;
+
+        String lang = user.getPreferredLanguage();
+        String subject = msg.get("email.event.waitlist.confirmed.subject", lang);
+        String body = buildEventConfirmedBody(lang, user, event);
+        sendEmail(user.getEmail(), subject, body);
+    }
+
+    private String buildEventOfferBody(String lang, User user, Event event, String deadline) {
+        String dates = event.getStartDate().format(DATE_FORMAT);
+        if (!event.getStartDate().equals(event.getEndDate())) {
+            dates += " - " + event.getEndDate().format(DATE_FORMAT);
+        }
+        return """
+            <html>
+            <body style="font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5;">
+                <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden;">
+                    <div style="background: #0f0f1a; padding: 20px; text-align: center;">
+                        <img src="cid:logo" alt="Next Step Pro Climbing" style="height: 60px;" />
+                    </div>
+                    <div style="padding: 30px;">
+                        <h2 style="color: #1a1a2e; margin-top: 0;">%s</h2>
+                        <p style="color: #333;">%s</p>
+                        <div style="background: #1a1a2e; color: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                            <p style="margin: 0 0 8px 0;"><strong>%s</strong></p>
+                            <p style="margin: 0;"><strong>%s</strong> %s</p>
+                        </div>
+                        <div style="background: #fef9c3; border: 1px solid #fde047; padding: 16px; border-radius: 8px; margin: 20px 0;">
+                            <p style="margin: 0; color: #713f12; font-weight: bold;">%s</p>
+                            <p style="margin: 8px 0 0 0; color: #713f12;">%s</p>
+                        </div>
+                        <p style="color: #333;">%s</p>
+                        <p style="color: #666; font-size: 14px;">%s</p>
+                    </div>
+                </div>
+            </body>
+            </html>
+            """.formatted(
+            msg.get("email.waitlist.offer.greeting", lang, user.getFirstName()),
+            msg.get("email.event.waitlist.offer.body", lang),
+            event.getTitle(),
+            msg.get("email.reservation.date", lang), dates,
+            msg.get("email.waitlist.offer.deadline.label", lang),
+            msg.get("email.waitlist.offer.deadline", lang, deadline),
+            msg.get("email.waitlist.offer.action", lang),
+            msg.get("email.reservation.team", lang)
+        );
+    }
+
+    private String buildEventConfirmedBody(String lang, User user, Event event) {
+        String dates = event.getStartDate().format(DATE_FORMAT);
+        if (!event.getStartDate().equals(event.getEndDate())) {
+            dates += " - " + event.getEndDate().format(DATE_FORMAT);
+        }
+        return """
+            <html>
+            <body style="font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5;">
+                <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden;">
+                    <div style="background: #0f0f1a; padding: 20px; text-align: center;">
+                        <img src="cid:logo" alt="Next Step Pro Climbing" style="height: 60px;" />
+                    </div>
+                    <div style="padding: 30px;">
+                        <h2 style="color: #1a1a2e; margin-top: 0;">%s</h2>
+                        <p style="color: #333;">%s</p>
+                        <div style="background: #1a1a2e; color: white; padding: 20px; border-radius: 8px;">
+                            <p style="margin: 0 0 8px 0;"><strong>%s</strong></p>
+                            <p style="margin: 0;"><strong>%s</strong> %s</p>
+                        </div>
+                        <p style="margin-top: 20px; color: #333;">%s</p>
+                        <p style="color: #666; font-size: 14px;">%s</p>
+                    </div>
+                </div>
+            </body>
+            </html>
+            """.formatted(
+            msg.get("email.waitlist.confirmed.greeting", lang, user.getFirstName()),
+            msg.get("email.event.waitlist.confirmed.body", lang),
+            event.getTitle(),
+            msg.get("email.reservation.date", lang), dates,
             msg.get("email.reservation.see.you", lang),
             msg.get("email.reservation.team", lang)
         );

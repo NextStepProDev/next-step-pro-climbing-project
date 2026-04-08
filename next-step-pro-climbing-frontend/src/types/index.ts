@@ -81,9 +81,28 @@ export interface TimeSlotDetail {
   eventTitle: string | null
   eventDescription: string | null
   reservationId: string | null
+  // Waitlist
+  userWaitlistStatus: WaitlistStatus | null
+  waitlistEntryId: string | null
+  confirmationDeadline: string | null
+  userWaitlistPosition: number
 }
 
 export type SlotStatus = 'AVAILABLE' | 'FULL' | 'BLOCKED' | 'PAST' | 'BOOKING_CLOSED'
+
+export type WaitlistStatus = 'WAITING' | 'PENDING_CONFIRMATION'
+
+export interface WaitlistEntry {
+  id: string
+  slotId: string
+  slotDate: string
+  slotStartTime: string
+  slotEndTime: string
+  slotTitle: string | null
+  status: WaitlistStatus
+  confirmationDeadline: string | null
+  position: number
+}
 
 // Event types
 export interface EventSummary {
@@ -99,6 +118,22 @@ export interface EventSummary {
   currentParticipants: number
   isUserRegistered: boolean
   enrollmentOpen: boolean
+  // Waitlist — null in list views, populated in getEventSummary (single event)
+  userWaitlistStatus: WaitlistStatus | null
+  waitlistEntryId: string | null
+  confirmationDeadline: string | null
+  userWaitlistPosition: number
+}
+
+export interface EventWaitlistEntry {
+  id: string
+  eventId: string
+  eventTitle: string
+  eventStartDate: string
+  eventEndDate: string
+  status: WaitlistStatus
+  confirmationDeadline: string | null
+  position: number
 }
 
 export interface EventDetail {
@@ -110,6 +145,7 @@ export interface EventDetail {
   startDate: string
   endDate: string
   maxParticipants: number
+  currentParticipants: number
   active: boolean
   startTime: string | null
   endTime: string | null
