@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
+import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { authApi } from '../api/client'
@@ -25,11 +25,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
+  const i18nRef = useRef(i18n)
+  i18nRef.current = i18n
+
   const syncLanguage = useCallback((preferredLanguage: string) => {
-    if (preferredLanguage && preferredLanguage !== i18n.language) {
-      i18n.changeLanguage(preferredLanguage)
+    if (preferredLanguage && preferredLanguage !== i18nRef.current.language) {
+      i18nRef.current.changeLanguage(preferredLanguage)
     }
-  }, [i18n])
+  }, [])
 
   const fetchUser = useCallback(async () => {
     if (!hasTokens()) {
