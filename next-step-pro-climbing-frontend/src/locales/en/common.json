@@ -68,7 +68,13 @@
   },
   "courses": {
     "title": "Courses",
-    "noCourses": "No courses to display"
+    "noCourses": "No courses to display",
+    "availableDates": "Available dates",
+    "noDates": "No available dates",
+    "goToCalendar": "Go to calendar",
+    "spots": "{{count}} spots",
+    "spotsOne": "{{count}} spot",
+    "spotsFull": "No spots left"
   },
   "pza": {
     "recommended": "School recommended by PZA"

@@ -5,6 +5,8 @@ import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import pl.nextsteppro.climbing.domain.course.Course;
+import pl.nextsteppro.climbing.domain.course.CourseRepository;
 import pl.nextsteppro.climbing.domain.event.Event;
 import pl.nextsteppro.climbing.domain.event.EventRepository;
 import pl.nextsteppro.climbing.domain.event.EventType;
@@ -37,6 +39,7 @@ public class AdminService {
 
     private final TimeSlotRepository timeSlotRepository;
     private final EventRepository eventRepository;
+    private final CourseRepository courseRepository;
     private final ReservationRepository reservationRepository;
     private final UserRepository userRepository;
     private final AuthTokenRepository authTokenRepository;
@@ -47,6 +50,7 @@ public class AdminService {
 
     public AdminService(TimeSlotRepository timeSlotRepository,
                        EventRepository eventRepository,
+                       CourseRepository courseRepository,
                        ReservationRepository reservationRepository,
                        UserRepository userRepository,
                        AuthTokenRepository authTokenRepository,
@@ -56,6 +60,7 @@ public class AdminService {
                        MessageService msg) {
         this.timeSlotRepository = timeSlotRepository;
         this.eventRepository = eventRepository;
+        this.courseRepository = courseRepository;
         this.reservationRepository = reservationRepository;
         this.userRepository = userRepository;
         this.authTokenRepository = authTokenRepository;
@@ -223,6 +228,13 @@ public class AdminService {
         event.setStartTime(request.startTime());
         event.setEndTime(request.endTime());
 
+        if (request.courseId() != null) {
+            Course course = courseRepository.findById(request.courseId())
+                .orElseThrow(() -> new IllegalArgumentException("Course not found"));
+            event.setCourse(course);
+            event.setTitle(course.getTitle());
+        }
+
         event = eventRepository.save(event);
 
         return toEventAdminDto(event);
@@ -247,6 +259,14 @@ public class AdminService {
         if (request.active() != null) event.setActive(request.active());
         if (request.startTime() != null) event.setStartTime(request.startTime());
         if (request.endTime() != null) event.setEndTime(request.endTime());
+        if (request.courseId() != null) {
+            Course course = courseRepository.findById(request.courseId())
+                .orElseThrow(() -> new IllegalArgumentException("Course not found"));
+            event.setCourse(course);
+            event.setTitle(course.getTitle());
+        } else if (Boolean.TRUE.equals(request.removeCourse())) {
+            event.setCourse(null);
+        }
 
         event = eventRepository.save(event);
         return toEventAdminDto(event);
@@ -316,6 +336,8 @@ public class AdminService {
             event.isActive(),
             event.getStartTime(),
             event.getEndTime(),
+            event.belongsToCourse() ? event.getCourse().getId() : null,
+            event.belongsToCourse() ? event.getCourse().getTitle() : null,
             slotDtos
         );
     }
@@ -521,7 +543,9 @@ public class AdminService {
             event.getMaxParticipants(),
             event.isActive(),
             event.getStartTime(),
-            event.getEndTime()
+            event.getEndTime(),
+            event.belongsToCourse() ? event.getCourse().getId() : null,
+            event.belongsToCourse() ? event.getCourse().getTitle() : null
         );
     }
 }

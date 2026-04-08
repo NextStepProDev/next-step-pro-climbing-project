@@ -2,6 +2,7 @@ package pl.nextsteppro.climbing.domain.event;
 
 import jakarta.persistence.*;
 import org.jspecify.annotations.Nullable;
+import pl.nextsteppro.climbing.domain.course.Course;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -46,6 +47,11 @@ public class Event {
     @Column(name = "end_time")
     @Nullable
     private LocalTime endTime;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "course_id")
+    @Nullable
+    private Course course;
 
     @Column(name = "is_active", nullable = false)
     private boolean active = true;
@@ -171,6 +177,19 @@ public class Event {
 
     public void setEndTime(@Nullable LocalTime endTime) {
         this.endTime = endTime;
+    }
+
+    @Nullable
+    public Course getCourse() {
+        return course;
+    }
+
+    public void setCourse(@Nullable Course course) {
+        this.course = course;
+    }
+
+    public boolean belongsToCourse() {
+        return course != null;
     }
 
     public boolean isAllDay() {

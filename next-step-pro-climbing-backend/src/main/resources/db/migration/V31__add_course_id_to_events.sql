@@ -1,0 +1,2 @@
+ALTER TABLE events
+    ADD COLUMN course_id UUID REFERENCES courses(id) ON DELETE SET NULL;

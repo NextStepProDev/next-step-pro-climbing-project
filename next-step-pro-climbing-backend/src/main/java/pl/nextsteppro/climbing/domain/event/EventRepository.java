@@ -18,4 +18,7 @@ public interface EventRepository extends JpaRepository<Event, UUID> {
 
     @Query("SELECT e FROM Event e WHERE e.active = true AND e.startDate <= :endDate AND e.endDate >= :startDate ORDER BY e.startDate ASC")
     List<Event> findActiveEventsBetween(LocalDate startDate, LocalDate endDate);
+
+    @Query("SELECT e FROM Event e WHERE e.course.id = :courseId AND e.active = true AND e.endDate >= :today ORDER BY e.startDate ASC")
+    List<Event> findUpcomingByCourseId(UUID courseId, LocalDate today);
 }

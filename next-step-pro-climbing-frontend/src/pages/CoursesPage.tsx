@@ -1,12 +1,15 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { ChevronDown, BookOpen, ImageIcon } from 'lucide-react'
-import { coursesApi } from '../api/client'
-import type { CourseSummary, CourseDetail } from '../types'
+import { Link } from 'react-router-dom'
+import { format } from 'date-fns'
+import { ChevronDown, BookOpen, ImageIcon, Calendar, ArrowRight, Clock } from 'lucide-react'
+import { coursesApi, calendarApi } from '../api/client'
+import type { CourseSummary, CourseDetail, CourseEvent } from '../types'
 import { LoadingSpinner } from '../components/ui/LoadingSpinner'
 import { QueryError } from '../components/ui/QueryError'
 import { renderRichText } from '../utils/renderRichText'
+import { useDateLocale } from '../utils/dateFnsLocale'
 import clsx from 'clsx'
 
 export function CoursesPage() {
@@ -61,6 +64,13 @@ function CourseAccordionItem({ course }: { course: CourseSummary }) {
     staleTime: 10 * 60 * 1000,
   })
 
+  const { data: courseEvents } = useQuery({
+    queryKey: ['courseEvents', course.id],
+    queryFn: () => calendarApi.getCourseEvents(course.id),
+    enabled: isOpen,
+    staleTime: 5 * 60 * 1000,
+  })
+
   return (
     <div className="bg-dark-800 border border-dark-700 rounded-lg overflow-hidden">
       <button
@@ -103,7 +113,7 @@ function CourseAccordionItem({ course }: { course: CourseSummary }) {
 
       {/* Rozwinięta treść */}
       {isOpen && (
-        <div className="border-t border-dark-700 px-6 py-6">
+        <div className="border-t border-dark-700 px-6 py-6 space-y-8">
           {isLoading ? (
             <div className="flex justify-center py-8">
               <LoadingSpinner />
@@ -111,8 +121,79 @@ function CourseAccordionItem({ course }: { course: CourseSummary }) {
           ) : detail ? (
             <CourseBlocks detail={detail} />
           ) : null}
+
+          <CourseEventsList events={courseEvents} />
         </div>
       )}
+    </div>
+  )
+}
+
+function CourseEventsList({ events }: { events: CourseEvent[] | undefined }) {
+  const { t } = useTranslation('common')
+
+  return (
+    <div>
+      <h3 className="text-base font-semibold text-dark-200 mb-3 flex items-center gap-2">
+        <Calendar className="h-4 w-4 text-primary-400" />
+        {t('courses.availableDates')}
+      </h3>
+
+      {!events || events.length === 0 ? (
+        <p className="text-sm text-dark-500">{t('courses.noDates')}</p>
+      ) : (
+        <div className="space-y-2">
+          {events.map((event) => (
+            <CourseEventRow key={event.eventId} event={event} />
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function CourseEventRow({ event }: { event: CourseEvent }) {
+  const { t } = useTranslation('common')
+  const locale = useDateLocale()
+
+  const startDate = format(new Date(event.startDate), 'd MMMM yyyy', { locale })
+  const endDate = event.endDate !== event.startDate
+    ? format(new Date(event.endDate), 'd MMMM yyyy', { locale })
+    : null
+
+  const statusColor = event.status === 'AVAILABLE'
+    ? 'text-green-400'
+    : event.status === 'FULL'
+    ? 'text-rose-400'
+    : 'text-amber-400'
+
+  const spotsLabel = event.status === 'FULL'
+    ? t('courses.spotsFull')
+    : t(event.availableSpots === 1 ? 'courses.spotsOne' : 'courses.spots', { count: event.availableSpots })
+
+  return (
+    <div className="flex items-center justify-between bg-dark-900 rounded-lg px-4 py-3 gap-4">
+      <div className="min-w-0">
+        <p className="text-sm text-dark-200 capitalize">
+          {endDate ? `${startDate} – ${endDate}` : startDate}
+        </p>
+        {event.startTime && event.endTime && (
+          <p className="text-xs text-dark-400 flex items-center gap-1">
+            <Clock className="h-3 w-3" />
+            {event.startTime.slice(0, 5)} – {event.endTime.slice(0, 5)}
+          </p>
+        )}
+      </div>
+      <div className="flex items-center gap-3 shrink-0">
+        <span className={clsx('text-xs font-medium', statusColor)}>{spotsLabel}</span>
+        <Link
+          to={`/calendar?date=${event.startDate}`}
+          className="flex items-center gap-1 text-xs text-primary-400 hover:text-primary-300 transition-colors"
+        >
+          {t('courses.goToCalendar')}
+          <ArrowRight className="h-3 w-3" />
+        </Link>
+      </div>
     </div>
   )
 }

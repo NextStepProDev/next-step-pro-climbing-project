@@ -68,7 +68,13 @@
   },
   "courses": {
     "title": "Kursy",
-    "noCourses": "Brak kursów do wyświetlenia"
+    "noCourses": "Brak kursów do wyświetlenia",
+    "availableDates": "Dostępne terminy",
+    "noDates": "Brak dostępnych terminów",
+    "goToCalendar": "Przejdź do kalendarza",
+    "spots": "{{count}} miejsc",
+    "spotsOne": "{{count}} miejsce",
+    "spotsFull": "Brak miejsc"
   },
   "pza": {
     "recommended": "Szkoła rekomendowana przez PZA"
