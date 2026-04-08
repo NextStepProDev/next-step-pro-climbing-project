@@ -195,15 +195,13 @@ export function DayView({
 
               /* Event WITH time slots */
               if (eventSlots && eventSlots.length > 0) {
+                const isFull = event.currentParticipants >= event.maxParticipants;
                 return (
                   <div
                     key={event.id}
                     className={clsx("rounded-lg border p-4", color.border, color.bg)}
                   >
-                    <button
-                      onClick={() => onEventClick?.(event)}
-                      className="mb-3 w-full text-left"
-                    >
+                    <div className="mb-3">
                       <div className="flex items-start justify-between gap-2">
                         <h3 className={clsx("text-base font-semibold", color.text)}>
                           {event.title}
@@ -211,7 +209,6 @@ export function DayView({
                         {event.courseId && (
                           <Link
                             to={`/courses#course-${event.courseId}`}
-                            onClick={(e) => e.stopPropagation()}
                             className="flex items-center gap-1 text-xs text-primary-400 hover:text-primary-300 transition-colors shrink-0 mt-0.5"
                           >
                             <ExternalLink className="w-3 h-3" />
@@ -236,7 +233,21 @@ export function DayView({
                           </span>
                         )}
                       </p>
-                    </button>
+
+                      {isFull && event.enrollmentOpen && !event.isUserRegistered && (
+                        <button
+                          onClick={() => onEventClick?.(event)}
+                          className="mt-2 text-sm font-medium text-amber-400 hover:text-amber-300 transition-colors"
+                        >
+                          {t('day.waitlistHint')}
+                        </button>
+                      )}
+                      {event.isUserRegistered && (
+                        <span className="mt-2 inline-block text-sm font-medium text-primary-400">
+                          {t('signedUp')}
+                        </span>
+                      )}
+                    </div>
 
                     <div className="space-y-3">
                       {eventSlots.map((slot) => (
@@ -252,56 +263,70 @@ export function DayView({
               }
 
               /* Event WITHOUT slots on this day → show availability from EventSummary */
-              return (
-                <button
-                  key={event.id}
-                  onClick={() => onEventClick?.(event)}
-                  className={clsx(
-                    "w-full rounded-lg border p-4 text-left transition-all",
-                    color.border, color.bg, color.hoverBorder
-                  )}
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <h3 className={clsx("text-base font-semibold", color.text)}>
-                        {event.title}
-                      </h3>
+              {
+                const isFull = event.currentParticipants >= event.maxParticipants;
+                return (
+                  <div
+                    key={event.id}
+                    className={clsx("rounded-lg border p-4", color.border, color.bg)}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <h3 className={clsx("text-base font-semibold", color.text)}>
+                          {event.title}
+                        </h3>
 
-                      <div className="flex items-center gap-4 mt-1 text-sm text-dark-400">
-                        <span
-                          className={`flex items-center gap-1 ${badgeClass}`}
-                        >
-                          <Users className="w-4 h-4" />
-                          {label}
-                        </span>
+                        <div className="flex items-center gap-4 mt-1 text-sm text-dark-400">
+                          <span className={`flex items-center gap-1 ${badgeClass}`}>
+                            <Users className="w-4 h-4" />
+                            {label}
+                          </span>
 
-                        {event.isMultiDay && (
-                          <span className="flex items-center gap-1">
-                            <Calendar className="w-4 h-4" />
-                            {format(new Date(event.startDate), "d", {
-                              locale,
-                            })}{" "}
-                            -{" "}
-                            {format(new Date(event.endDate), "d MMMM", {
-                              locale,
-                            })}
+                          {event.isMultiDay && (
+                            <span className="flex items-center gap-1">
+                              <Calendar className="w-4 h-4" />
+                              {format(new Date(event.startDate), "d", { locale })}{" "}
+                              -{" "}
+                              {format(new Date(event.endDate), "d MMMM", { locale })}
+                            </span>
+                          )}
+                        </div>
+
+                        {isFull && event.enrollmentOpen && !event.isUserRegistered && (
+                          <button
+                            onClick={() => onEventClick?.(event)}
+                            className="mt-2 text-sm font-medium text-amber-400 hover:text-amber-300 transition-colors"
+                          >
+                            {t('day.waitlistHint')}
+                          </button>
+                        )}
+                        {!isFull && event.enrollmentOpen && !event.isUserRegistered && (
+                          <button
+                            onClick={() => onEventClick?.(event)}
+                            className="mt-2 text-sm font-medium text-primary-400 hover:text-primary-300 transition-colors"
+                          >
+                            {t('signUp')}
+                          </button>
+                        )}
+                        {event.isUserRegistered && (
+                          <span className="mt-2 inline-block text-sm font-medium text-primary-400">
+                            {t('signedUp')}
                           </span>
                         )}
                       </div>
+                      {event.courseId && (
+                        <Link
+                          to={`/courses#course-${event.courseId}`}
+                          className="flex items-center gap-1 text-xs text-primary-400 hover:text-primary-300 transition-colors shrink-0 mt-0.5"
+                        >
+                          <ExternalLink className="w-3 h-3" />
+                          {t('event.courseDetails')}
+                        </Link>
+                      )}
                     </div>
-                    {event.courseId && (
-                      <Link
-                        to={`/courses#course-${event.courseId}`}
-                        onClick={(e) => e.stopPropagation()}
-                        className="flex items-center gap-1 text-xs text-primary-400 hover:text-primary-300 transition-colors shrink-0 mt-0.5"
-                      >
-                        <ExternalLink className="w-3 h-3" />
-                        {t('event.courseDetails')}
-                      </Link>
-                    )}
                   </div>
-                </button>
-              );
+                );
+              }
             })}
 
             {/* Standalone slots */}
