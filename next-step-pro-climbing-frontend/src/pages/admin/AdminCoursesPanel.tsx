@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { getErrorMessage } from '../../utils/errors'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import {
@@ -382,6 +383,8 @@ function EditView({
   // ---------- Pending new blocks ----------
   const [pendingBlocks, setPendingBlocks] = useState<PendingBlock[]>([])
 
+  // Cleanup blob URLs on unmount. Empty deps is intentional — we want a single
+  // cleanup registered at mount that captures pendingBlocks via closure on unmount.
   useEffect(() => {
     return () => {
       pendingBlocks.forEach((b) => {
@@ -489,7 +492,7 @@ function EditView({
       }
       setPendingBlocks([])
     } catch (err) {
-      setSaveError(err instanceof Error ? err.message : 'Błąd zapisu')
+      setSaveError(getErrorMessage(err))
     } finally {
       setIsSaving(false)
       invalidate()

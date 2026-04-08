@@ -169,7 +169,7 @@ export function AdminGalleryPanel() {
         })
         setUploadProgress(Math.round(((i + 1) / selectedFiles.length) * 100))
       } catch (error) {
-        console.error('Failed to upload photo:', error)
+        if (import.meta.env.DEV) console.error('Failed to upload photo:', error)
         break
       }
     }

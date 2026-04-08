@@ -19,9 +19,11 @@ public class CacheConfig {
     public CacheManager cacheManager() {
         SimpleCacheManager manager = new SimpleCacheManager();
         manager.setCaches(List.of(
+            // Calendar caches: short TTL (2 min) — real-time booking data
             build("calendarMonth", 200, 2),
             build("calendarWeek",  200, 2),
             build("calendarDay",   200, 2),
+            // News/courses: longer TTL — content changes rarely
             build("newsList",       50, 10),
             build("newsDetail",    100, 30),
             build("courseList",     50, 30),

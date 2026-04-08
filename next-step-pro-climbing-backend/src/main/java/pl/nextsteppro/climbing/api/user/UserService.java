@@ -38,6 +38,24 @@ public class UserService {
         this.msg = msg;
     }
 
+    @Transactional(readOnly = true)
+    public User getProfile(UUID userId) {
+        return userRepository.findById(userId)
+            .orElseThrow(() -> new IllegalArgumentException("User not found"));
+    }
+
+    public User updateProfile(UUID userId, String firstName, String lastName, String phone, String nickname) {
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        if (firstName != null) user.setFirstName(firstName);
+        if (lastName != null) user.setLastName(lastName);
+        if (phone != null) user.setPhone(phone);
+        if (nickname != null) user.setNickname(nickname);
+
+        return userRepository.save(user);
+    }
+
     public void changePassword(UUID userId, String currentPassword, String newPassword) {
         User user = userRepository.findById(userId)
             .orElseThrow(() -> new IllegalArgumentException("User not found"));

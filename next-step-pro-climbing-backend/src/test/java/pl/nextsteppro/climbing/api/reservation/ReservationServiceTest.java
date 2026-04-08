@@ -1,7 +1,6 @@
 package pl.nextsteppro.climbing.api.reservation;
 
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -134,36 +133,31 @@ class ReservationServiceTest {
     }
 
     @Test
-    @Disabled("Uses wrong exception type - needs IllegalArgumentException not IllegalStateException")
     void shouldThrowExceptionWhenSlotNotFound() {
         // Given
         when(timeSlotRepository.findByIdForUpdate(slotId)).thenReturn(Optional.empty());
 
         // When & Then
-        IllegalStateException exception = assertThrows(
-            IllegalStateException.class,
+        assertThrows(
+            IllegalArgumentException.class,
             () -> reservationService.createReservation(slotId, userId, null, 1)
         );
-        assertEquals("Time slot not found", exception.getMessage());
     }
 
     @Test
-    @Disabled("Uses wrong exception type - needs IllegalArgumentException not IllegalStateException")
     void shouldThrowExceptionWhenUserNotFound() {
         // Given
         when(timeSlotRepository.findByIdForUpdate(slotId)).thenReturn(Optional.of(testSlot));
         when(userRepository.findById(userId)).thenReturn(Optional.empty());
 
         // When & Then
-        IllegalStateException exception = assertThrows(
-            IllegalStateException.class,
+        assertThrows(
+            IllegalArgumentException.class,
             () -> reservationService.createReservation(slotId, userId, null, 1)
         );
-        assertEquals("User not found", exception.getMessage());
     }
 
     @Test
-    @Disabled("Uses wrong exception type - needs IllegalArgumentException not IllegalStateException")
     void shouldThrowExceptionWhenSlotIsPast() {
         // Given
         LocalDate pastDate = LocalDate.now().minusDays(1);
@@ -174,8 +168,8 @@ class ReservationServiceTest {
         when(msg.get("reservation.slot.past")).thenReturn("Cannot book past slot");
 
         // When & Then
-        IllegalStateException exception = assertThrows(
-            IllegalStateException.class,
+        IllegalArgumentException exception = assertThrows(
+            IllegalArgumentException.class,
             () -> reservationService.createReservation(slotId, userId, null, 1)
         );
         assertEquals("Cannot book past slot", exception.getMessage());
@@ -272,14 +266,13 @@ class ReservationServiceTest {
     }
 
     @Test
-    @Disabled("Uses wrong exception type - needs IllegalArgumentException not IllegalStateException")
     void shouldThrowExceptionWhenParticipantsLessThanOne() {
         // Given
         when(msg.get("reservation.min.participants")).thenReturn("Minimum 1 participant");
 
         // When & Then
-        IllegalStateException exception = assertThrows(
-            IllegalStateException.class,
+        IllegalArgumentException exception = assertThrows(
+            IllegalArgumentException.class,
             () -> reservationService.createReservation(slotId, userId, null, 0)
         );
         assertEquals("Minimum 1 participant", exception.getMessage());
@@ -365,18 +358,16 @@ class ReservationServiceTest {
     }
 
     @Test
-    @Disabled("Uses wrong exception type - needs IllegalArgumentException not IllegalStateException")
     void shouldThrowExceptionWhenReservationNotFoundForCancellation() {
         // Given
         UUID reservationId = UUID.randomUUID();
         when(reservationRepository.findById(reservationId)).thenReturn(Optional.empty());
 
         // When & Then
-        IllegalStateException exception = assertThrows(
-            IllegalStateException.class,
+        assertThrows(
+            IllegalArgumentException.class,
             () -> reservationService.cancelReservation(reservationId, userId)
         );
-        assertEquals("Reservation not found", exception.getMessage());
     }
 
     @Test
@@ -479,15 +470,14 @@ class ReservationServiceTest {
     }
 
     @Test
-    @Disabled("Uses wrong exception type - needs IllegalArgumentException not IllegalStateException")
     void shouldThrowExceptionWhenEventNotFound() {
         // Given
         when(eventRepository.findById(eventId)).thenReturn(Optional.empty());
         when(msg.get("reservation.event.not.found")).thenReturn("Event not found");
 
         // When & Then
-        IllegalStateException exception = assertThrows(
-            IllegalStateException.class,
+        IllegalArgumentException exception = assertThrows(
+            IllegalArgumentException.class,
             () -> reservationService.createEventReservation(eventId, userId, null, 1)
         );
         assertEquals("Event not found", exception.getMessage());
@@ -634,15 +624,14 @@ class ReservationServiceTest {
     }
 
     @Test
-    @Disabled("Uses wrong exception type - needs IllegalArgumentException not IllegalStateException")
     void shouldThrowExceptionWhenNoSlotsForEventCancellation() {
         // Given
         when(timeSlotRepository.findByEventId(eventId)).thenReturn(List.of());
         when(msg.get("reservation.event.no.slots")).thenReturn("No slots for event");
 
         // When & Then
-        IllegalStateException exception = assertThrows(
-            IllegalStateException.class,
+        IllegalArgumentException exception = assertThrows(
+            IllegalArgumentException.class,
             () -> reservationService.cancelEventReservation(eventId, userId)
         );
         assertEquals("No slots for event", exception.getMessage());

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { verifyEmail } from '../api/auth'
+import { getErrorMessage } from '../utils/errors'
 
 export function VerifyEmailPage() {
   const { t } = useTranslation('auth')
@@ -21,7 +22,7 @@ export function VerifyEmailPage() {
       })
       .catch((err) => {
         setStatus('error')
-        setMessage(err instanceof Error ? err.message : t('verify.failed'))
+        setMessage(getErrorMessage(err))
       })
   }, [token, t])
 

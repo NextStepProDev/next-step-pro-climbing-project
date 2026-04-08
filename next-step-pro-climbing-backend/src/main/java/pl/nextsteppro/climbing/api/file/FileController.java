@@ -23,6 +23,8 @@ import java.util.concurrent.TimeUnit;
 @Tag(name = "Files", description = "File serving endpoints")
 public class FileController {
 
+    private static final int FILE_CACHE_DAYS = 7;
+
     private final FileStorageService fileStorageService;
 
     public FileController(FileStorageService fileStorageService) {
@@ -95,7 +97,7 @@ public class FileController {
         return ResponseEntity.ok()
                 .contentType(getMediaType(filename))
                 .contentLength(fileSize)
-                .cacheControl(CacheControl.maxAge(7, TimeUnit.DAYS).cachePublic())
+                .cacheControl(CacheControl.maxAge(FILE_CACHE_DAYS, TimeUnit.DAYS).cachePublic())
                 .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + filename + "\"")
                 .body(new InputStreamResource(inputStream));
     }

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Mail } from 'lucide-react'
 import { resendVerification } from '../api/auth'
+import { getErrorMessage } from '../utils/errors'
 import { Button } from '../components/ui/Button'
 
 export function ResendVerificationPage() {
@@ -21,7 +22,7 @@ export function ResendVerificationPage() {
       await resendVerification(email)
       setSuccess(true)
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('resendVerification.error'))
+      setError(getErrorMessage(err))
     } finally {
       setLoading(false)
     }
