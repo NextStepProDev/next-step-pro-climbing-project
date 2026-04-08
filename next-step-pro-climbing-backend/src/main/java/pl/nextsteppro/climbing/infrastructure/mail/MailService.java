@@ -206,8 +206,8 @@ public class MailService {
         String escaped = body
             .replace("&", "&amp;")
             .replace("<", "&lt;")
-            .replace(">", "&gt;")
-            .replace("\n", "<br/>");
+            .replace(">", "&gt;");
+        String htmlBody = richTextToHtml(escaped);
         return """
             <html>
             <body style="font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5;">
@@ -225,7 +225,52 @@ public class MailService {
                 </div>
             </body>
             </html>
-            """.formatted(subject, escaped);
+            """.formatted(subject, htmlBody);
+    }
+
+    private String richTextToHtml(String text) {
+        String[] lines = text.split("\n", -1);
+        StringBuilder sb = new StringBuilder();
+        int i = 0;
+        while (i < lines.length) {
+            String line = lines[i];
+            if (line.startsWith("• ")) {
+                sb.append("<ul style=\"margin:8px 0;padding-left:20px;\">");
+                while (i < lines.length && lines[i].startsWith("• ")) {
+                    sb.append("<li>").append(inlineFormat(lines[i].substring(2))).append("</li>");
+                    i++;
+                }
+                sb.append("</ul>");
+            } else if (line.matches("^\\d+\\. .*")) {
+                sb.append("<ol style=\"margin:8px 0;padding-left:20px;\">");
+                while (i < lines.length && lines[i].matches("^\\d+\\. .*")) {
+                    sb.append("<li>").append(inlineFormat(lines[i].replaceFirst("^\\d+\\. ", ""))).append("</li>");
+                    i++;
+                }
+                sb.append("</ol>");
+            } else if (line.matches("^[a-z]\\) .*")) {
+                sb.append("<ol type=\"a\" style=\"margin:8px 0;padding-left:20px;\">");
+                while (i < lines.length && lines[i].matches("^[a-z]\\) .*")) {
+                    sb.append("<li>").append(inlineFormat(lines[i].replaceFirst("^[a-z]\\) ", ""))).append("</li>");
+                    i++;
+                }
+                sb.append("</ol>");
+            } else if (line.isBlank()) {
+                sb.append("<br/>");
+                i++;
+            } else {
+                sb.append("<p style=\"margin:4px 0;\">").append(inlineFormat(line)).append("</p>");
+                i++;
+            }
+        }
+        return sb.toString();
+    }
+
+    private String inlineFormat(String text) {
+        text = text.replaceAll("\\*\\*(.+?)\\*\\*", "<strong>$1</strong>");
+        text = text.replaceAll("__(.+?)__", "<u>$1</u>");
+        text = text.replaceAll("\\*(.+?)\\*", "<em>$1</em>");
+        return text;
     }
 
     private void sendEmail(String to, String subject, String body, @Nullable byte[] icsAttachment) {
