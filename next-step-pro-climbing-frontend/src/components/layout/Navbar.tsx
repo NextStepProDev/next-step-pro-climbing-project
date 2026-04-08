@@ -24,6 +24,7 @@ export function Navbar() {
     { to: "/kursy", label: t('nav.courses') },
     { to: "/instruktorzy", label: t('nav.instructors') },
     { to: "/galeria", label: t('nav.gallery') },
+    { to: "/kontakt", label: t('nav.contact') },
     ...(isAuthenticated
       ? [{ to: "/my-reservations", label: t('nav.myReservations') }]
       : []),

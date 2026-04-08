@@ -6,6 +6,7 @@
     "courses": "Kursy",
     "instructors": "Instruktorzy",
     "gallery": "Galeria",
+    "contact": "Kontakt",
     "myReservations": "Moje rezerwacje",
     "admin": "Admin",
     "profile": "Profil",
@@ -71,6 +72,18 @@
   },
   "pza": {
     "recommended": "Szkoła rekomendowana przez PZA"
+  },
+  "contact": {
+    "title": "Kontakt",
+    "subtitle": "Skontaktuj się z nami — chętnie odpowiemy na wszystkie pytania dotyczące szkoleń i treningów.",
+    "directContact": "Dane kontaktowe",
+    "instructor": "Instruktor",
+    "pzaInstructor": "Instruktor PZA",
+    "phone": "Telefon",
+    "email": "E-mail",
+    "followUs": "Obserwuj nas",
+    "pzaTitle": "Rekomendacja Polskiego Związku Alpinizmu",
+    "pzaDescription": "Next Step Pro Climbing to szkoła rekomendowana przez Polski Związek Alpinizmu (PZA). Nasze szkolenia prowadzone są przez certyfikowanych instruktorów, którzy gwarantują najwyższe standardy bezpieczeństwa i jakości nauczania."
   },
   "news": {
     "title": "Aktualności",

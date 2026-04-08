@@ -6,6 +6,7 @@
     "courses": "Cursos",
     "instructors": "Instructores",
     "gallery": "Galería",
+    "contact": "Contacto",
     "myReservations": "Mis reservas",
     "admin": "Admin",
     "profile": "Perfil",
@@ -71,6 +72,18 @@
   },
   "pza": {
     "recommended": "Escuela recomendada por PZA"
+  },
+  "contact": {
+    "title": "Contacto",
+    "subtitle": "Póngase en contacto con nosotros — estaremos encantados de responder cualquier pregunta sobre entrenamientos y cursos.",
+    "directContact": "Datos de contacto",
+    "instructor": "Instructor",
+    "pzaInstructor": "Instructor PZA",
+    "phone": "Teléfono",
+    "email": "Correo electrónico",
+    "followUs": "Síguenos",
+    "pzaTitle": "Recomendación del Club Alpino Polaco",
+    "pzaDescription": "Next Step Pro Climbing es una escuela recomendada por el Club Alpino Polaco (PZA). Nuestras formaciones están dirigidas por instructores certificados que garantizan los más altos estándares de seguridad y calidad de enseñanza."
   },
   "news": {
     "title": "Noticias",
