@@ -102,7 +102,20 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
   }
 
   const renderWaitlistSection = () => {
-    if (!isAuthenticated || !isFull || ev.isUserRegistered || enrollmentClosed) return null
+    if (!isFull || ev.isUserRegistered || enrollmentClosed) return null
+
+    if (!isAuthenticated) {
+      return (
+        <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-lg">
+          <p className="text-sm font-semibold text-amber-400 mb-1">
+            {t('event.waitlist.fullTitle')}
+          </p>
+          <p className="text-sm text-amber-300/80">
+            {t('event.waitlist.fullLoginHint')}
+          </p>
+        </div>
+      )
+    }
 
     if (waitlistStatus === 'PENDING_CONFIRMATION') {
       const deadline = confirmationDeadline
@@ -145,7 +158,14 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
       )
     }
 
-    return null
+    // Authenticated, full, not yet on waitlist — hint shown above the button
+    return (
+      <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg">
+        <p className="text-sm text-amber-400">
+          {t('event.waitlist.fullHint')}
+        </p>
+      </div>
+    )
   }
 
   const renderActions = () => {
@@ -162,8 +182,12 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
     if (!isAuthenticated) {
       return (
         <>
-          <Button variant="primary" className="flex-1" onClick={handleLoginRedirect}>
-            {t('event.loginToBook')}
+          <Button
+            variant={isFull ? 'secondary' : 'primary'}
+            className="flex-1"
+            onClick={handleLoginRedirect}
+          >
+            {isFull ? t('event.waitlist.loginToJoin') : t('event.loginToBook')}
           </Button>
           <Button variant="ghost" onClick={onClose}>{t('event.close')}</Button>
         </>

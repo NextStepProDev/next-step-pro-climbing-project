@@ -90,6 +90,10 @@
     "waitlist": {
       "join": "Apuntarse a lista de espera",
       "leave": "Salir de la cola",
+      "fullTitle": "Sin plazas disponibles",
+      "fullHint": "Puedes unirte a la lista de espera — te avisaremos si alguien cancela.",
+      "fullLoginHint": "Inicia sesión para unirte a la lista de espera — te avisaremos si alguien cancela.",
+      "loginToJoin": "Inicia sesión y únete a la lista de espera",
       "waitingTitle": "Estás en la lista de espera",
       "waitingBody": "Estás en la posición {{position}}. Te avisaremos cuando se libere una plaza.",
       "offerTitle": "¡Se liberó una plaza — sé el primero/a!",

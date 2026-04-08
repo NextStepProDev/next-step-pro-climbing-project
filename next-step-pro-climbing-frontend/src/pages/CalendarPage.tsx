@@ -267,19 +267,19 @@ export function CalendarPage() {
                             )}
                           </span>
                           {event.isUserRegistered ? (
-                            <span className="px-3 py-1 text-xs font-medium rounded bg-primary-500/20 text-primary-400">
+                            <span className="px-3 py-1 text-xs font-medium rounded-full bg-primary-500/20 text-primary-400">
                               {t('signedUp')}
                             </span>
                           ) : !event.enrollmentOpen ? (
-                            <span className="px-3 py-1 text-xs font-medium rounded bg-dark-700 text-dark-400">
+                            <span className="px-3 py-1 text-xs font-medium rounded-full bg-dark-700 text-dark-400">
                               {t('common:callPhone')}
                             </span>
                           ) : isFull ? (
-                            <span className="px-3 py-1 text-xs font-medium rounded bg-amber-500/20 text-amber-400">
+                            <span className="px-3 py-1 text-xs font-medium rounded-full bg-amber-500/20 text-amber-400">
                               {t('event.waitlist.join')}
                             </span>
                           ) : (
-                            <span className="px-3 py-1 text-xs font-medium rounded bg-primary-600 text-white">
+                            <span className="px-3 py-1 text-xs font-medium rounded-full bg-primary-600 text-white">
                               {t('signUp')}
                             </span>
                           )}
