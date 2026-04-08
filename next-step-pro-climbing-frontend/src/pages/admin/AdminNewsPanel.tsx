@@ -18,6 +18,7 @@ import {
   ArrowLeft,
   Library,
   Send,
+  Video,
 } from 'lucide-react'
 import { adminNewsApi } from '../../api/client'
 import type {
@@ -56,7 +57,27 @@ type PendingImageBlock = {
   imageUrl?: string
 }
 
-type PendingBlock = PendingTextBlock | PendingImageBlock
+type PendingVideoBlock = {
+  type: 'VIDEO_EMBED'
+  tempId: string
+  url: string
+}
+
+type PendingBlock = PendingTextBlock | PendingImageBlock | PendingVideoBlock
+
+// Normalizuje surowy URL (YouTube/Instagram) do embed URL — identyczna logika jak backend
+function normalizeVideoUrlForPreview(url: string): string | undefined {
+  const s = url.trim()
+  let m = s.match(/(?:youtube\.com\/watch\?(?:.*&)?v=|youtu\.be\/)([\w-]{11})/)
+  if (m) return `https://www.youtube.com/embed/${m[1]}`
+  m = s.match(/youtube\.com\/shorts\/([\w-]{11})/)
+  if (m) return `https://www.youtube.com/embed/${m[1]}`
+  m = s.match(/instagram\.com\/reel\/([\w-]+)/)
+  if (m) return `https://www.instagram.com/reel/${m[1]}/embed/`
+  m = s.match(/instagram\.com\/p\/([\w-]+)/)
+  if (m) return `https://www.instagram.com/p/${m[1]}/embed/`
+  return s || undefined
+}
 
 // ---------- Main panel ----------
 
@@ -392,6 +413,7 @@ function EditView({
     if (!edit) return false
     if (b.blockType === 'TEXT') return edit.content !== (b.content ?? undefined)
     if (b.blockType === 'IMAGE') return edit.caption !== (b.caption ?? undefined)
+    if (b.blockType === 'VIDEO_EMBED') return edit.content !== (b.content ?? undefined)
     return false
   })
   const isDirty = metaDirty || thumbnailDirty || focalPointDirty || blockEditsDirty || pendingBlocks.length > 0
@@ -402,15 +424,15 @@ function EditView({
   const previewBlocks: PreviewBlock[] = [
     ...detail.blocks.map((b) => ({
       tempId: b.id,
-      type: b.blockType as 'TEXT' | 'IMAGE',
+      type: b.blockType as 'TEXT' | 'IMAGE' | 'VIDEO_EMBED',
       content: blockEdits[b.id]?.content ?? b.content ?? undefined,
       imageUrl: b.imageUrl ?? undefined,
       caption: blockEdits[b.id]?.caption ?? b.caption ?? undefined,
     })),
     ...pendingBlocks.map((b) => ({
       tempId: b.tempId,
-      type: b.type as 'TEXT' | 'IMAGE',
-      content: b.type === 'TEXT' ? b.content : undefined,
+      type: b.type as 'TEXT' | 'IMAGE' | 'VIDEO_EMBED',
+      content: b.type === 'TEXT' ? b.content : b.type === 'VIDEO_EMBED' ? normalizeVideoUrlForPreview(b.url) : undefined,
       imageUrl: b.type === 'IMAGE' ? (b.imageUrl ?? b.preview) : undefined,
       caption: b.type === 'IMAGE' ? b.caption || undefined : undefined,
     })),
@@ -455,12 +477,16 @@ function EditView({
             if (!edit) return false
             if (b.blockType === 'TEXT') return edit.content !== (b.content ?? undefined)
             if (b.blockType === 'IMAGE') return edit.caption !== (b.caption ?? undefined)
+            if (b.blockType === 'VIDEO_EMBED') return edit.content !== (b.content ?? undefined)
             return false
           })
           .map((b) => {
             const edit = blockEdits[b.id]
             if (b.blockType === 'TEXT') {
               return adminNewsApi.updateTextBlock(b.id, { content: edit.content ?? '' })
+            }
+            if (b.blockType === 'VIDEO_EMBED') {
+              return adminNewsApi.updateVideoEmbedBlock(b.id, edit.content ?? '')
             }
             return adminNewsApi.updateImageBlock(b.id, { caption: edit.caption || undefined })
           })
@@ -470,6 +496,8 @@ function EditView({
       for (const pending of pendingBlocks) {
         if (pending.type === 'TEXT') {
           await adminNewsApi.addTextBlock(newsId, { content: pending.content })
+        } else if (pending.type === 'VIDEO_EMBED') {
+          await adminNewsApi.addVideoEmbedBlock(newsId, pending.url)
         } else if (pending.source === 'library' && pending.imageUrl) {
           await adminNewsApi.addImageBlockFromUrl(newsId, pending.imageUrl, pending.caption || undefined)
         } else if (pending.source === 'file' && pending.file) {
@@ -771,6 +799,19 @@ function EditView({
             <Library className="h-4 w-4" />
             {t('mediaPicker.chooseFromLibrary')}
           </button>
+
+          <button
+            onClick={() =>
+              setPendingBlocks((prev) => [
+                ...prev,
+                { type: 'VIDEO_EMBED', tempId: crypto.randomUUID(), url: '' },
+              ])
+            }
+            className="inline-flex items-center gap-2 px-3 py-2 bg-dark-800 border border-dark-600 rounded text-sm text-dark-200 hover:border-dark-400 transition-colors font-medium"
+          >
+            <Video className="h-4 w-4" />
+            {t('news.addVideo')}
+          </button>
         </div>
       </section>
 
@@ -924,7 +965,7 @@ function BlockEditor({
   const { t } = useTranslation('admin')
 
   const isModified =
-    block.blockType === 'TEXT'
+    block.blockType === 'TEXT' || block.blockType === 'VIDEO_EMBED'
       ? editState.content !== (block.content ?? undefined)
       : editState.caption !== (block.caption ?? undefined)
 
@@ -938,10 +979,14 @@ function BlockEditor({
         <div className="flex items-center gap-2">
           <span className={clsx(
             'text-xs px-2 py-0.5 rounded-full',
-            block.blockType === 'TEXT' ? 'bg-blue-900/40 text-blue-400' : 'bg-purple-900/40 text-purple-400'
+            block.blockType === 'TEXT' ? 'bg-blue-900/40 text-blue-400'
+            : block.blockType === 'VIDEO_EMBED' ? 'bg-orange-900/40 text-orange-400'
+            : 'bg-purple-900/40 text-purple-400'
           )}>
             {block.blockType === 'TEXT' ? (
               <><Type className="h-3 w-3 inline mr-1" />{t('news.blockTypeText')}</>
+            ) : block.blockType === 'VIDEO_EMBED' ? (
+              <><Video className="h-3 w-3 inline mr-1" />{t('news.blockTypeVideo')}</>
             ) : (
               <><ImageIcon className="h-3 w-3 inline mr-1" />{t('news.blockTypeImage')}</>
             )}
@@ -984,6 +1029,17 @@ function BlockEditor({
           value={editState.content ?? ''}
           onChange={(v) => onChange({ ...editState, content: v })}
         />
+      ) : block.blockType === 'VIDEO_EMBED' ? (
+        <div className="space-y-2">
+          <input
+            type="text"
+            value={editState.content ?? ''}
+            onChange={(e) => onChange({ ...editState, content: e.target.value })}
+            placeholder={t('news.videoUrlPlaceholder')}
+            className="w-full bg-dark-700 border border-dark-600 rounded px-3 py-2 text-dark-100 focus:outline-none focus:border-primary-500 text-sm"
+          />
+          <p className="text-xs text-dark-500">{t('news.videoUrlHint')}</p>
+        </div>
       ) : (
         <div className="space-y-2">
           {block.imageUrl && (
@@ -1027,10 +1083,14 @@ function PendingBlockItem({
         <div className="flex items-center gap-2">
           <span className={clsx(
             'text-xs px-2 py-0.5 rounded-full',
-            block.type === 'TEXT' ? 'bg-blue-900/40 text-blue-400' : 'bg-purple-900/40 text-purple-400'
+            block.type === 'TEXT' ? 'bg-blue-900/40 text-blue-400'
+            : block.type === 'VIDEO_EMBED' ? 'bg-orange-900/40 text-orange-400'
+            : 'bg-purple-900/40 text-purple-400'
           )}>
             {block.type === 'TEXT' ? (
               <><Type className="h-3 w-3 inline mr-1" />{t('news.blockTypeText')}</>
+            ) : block.type === 'VIDEO_EMBED' ? (
+              <><Video className="h-3 w-3 inline mr-1" />{t('news.blockTypeVideo')}</>
             ) : (
               <><ImageIcon className="h-3 w-3 inline mr-1" />{t('news.blockTypeImage')}</>
             )}
@@ -1051,6 +1111,17 @@ function PendingBlockItem({
           value={block.content}
           onChange={(v) => onChange({ content: v })}
         />
+      ) : block.type === 'VIDEO_EMBED' ? (
+        <div className="space-y-2">
+          <input
+            type="text"
+            value={block.url}
+            onChange={(e) => onChange({ url: e.target.value })}
+            placeholder={t('news.videoUrlPlaceholder')}
+            className="w-full bg-dark-700 border border-dark-600 rounded px-3 py-2 text-dark-100 focus:outline-none focus:border-primary-500 text-sm"
+          />
+          <p className="text-xs text-dark-500">{t('news.videoUrlHint')}</p>
+        </div>
       ) : (
         <div className="space-y-2">
           {(block.imageUrl ?? block.preview) && (

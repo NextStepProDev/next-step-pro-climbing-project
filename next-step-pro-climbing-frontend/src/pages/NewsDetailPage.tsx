@@ -96,6 +96,20 @@ export function NewsDetailPage() {
             )
           }
 
+          if (block.blockType === 'VIDEO_EMBED' && block.content) {
+            return (
+              <div key={block.id} className="my-6 w-full" style={{ aspectRatio: '16/9' }}>
+                <iframe
+                  src={block.content}
+                  className="w-full h-full rounded-lg"
+                  allowFullScreen
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  loading="lazy"
+                />
+              </div>
+            )
+          }
+
           return null
         })}
       </div>

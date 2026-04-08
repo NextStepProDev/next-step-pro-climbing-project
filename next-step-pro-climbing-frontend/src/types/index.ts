@@ -409,7 +409,7 @@ export interface UploadPhotoResponse {
 
 // ==================== News ====================
 
-export type BlockType = 'TEXT' | 'IMAGE'
+export type BlockType = 'TEXT' | 'IMAGE' | 'VIDEO_EMBED'
 
 export interface ContentBlock {
   id: string
