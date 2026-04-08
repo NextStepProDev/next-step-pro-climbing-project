@@ -1,6 +1,7 @@
 import { Phone, Mail, User, Facebook, Youtube } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import logoWhite from '../../assets/logo/logo-white.png'
+import { CONTACT } from '../../constants/contact'
 
 export function Footer() {
   const { t } = useTranslation('common')
@@ -22,21 +23,25 @@ export function Footer() {
             <h3 className="font-semibold text-dark-100 mb-4">{t('footer.contact')}</h3>
             <ul className="space-y-3">
               <li className="flex items-center gap-2 text-dark-400 text-sm">
-                <User className="w-4 h-4" />
+                <User className="w-4 h-4 shrink-0" />
                 <span>{t('footer.instructor')}</span>
               </li>
               <li className="flex items-center gap-2 text-dark-400 text-sm">
-                <Phone className="w-4 h-4" />
-                <span>+48 535 246 673</span>
+                <Phone className="w-4 h-4 shrink-0" />
+                <a href={CONTACT.phoneHref} className="hover:text-primary-400 transition-colors">
+                  {CONTACT.phone}
+                </a>
               </li>
               <li className="flex items-center gap-2 text-dark-400 text-sm">
-                <Mail className="w-4 h-4" />
-                <span>nextsteppro.team@gmail.com</span>
+                <Mail className="w-4 h-4 shrink-0" />
+                <a href={CONTACT.emailHref} className="hover:text-primary-400 transition-colors">
+                  {CONTACT.email}
+                </a>
               </li>
               <li className="flex items-center gap-2 text-dark-400 text-sm">
-                <Facebook className="w-4 h-4" />
+                <Facebook className="w-4 h-4 shrink-0" />
                 <a
-                  href="https://www.facebook.com/ClimbingTeamofPoland"
+                  href={CONTACT.facebook}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="hover:text-primary-400 transition-colors"
@@ -45,9 +50,9 @@ export function Footer() {
                 </a>
               </li>
               <li className="flex items-center gap-2 text-dark-400 text-sm">
-                <Youtube className="w-4 h-4" />
+                <Youtube className="w-4 h-4 shrink-0" />
                 <a
-                  href="https://www.youtube.com/@PureEssentialFilms-hd1kh"
+                  href={CONTACT.youtube}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="hover:text-primary-400 transition-colors"
