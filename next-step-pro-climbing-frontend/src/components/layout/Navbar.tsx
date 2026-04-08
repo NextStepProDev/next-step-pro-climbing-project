@@ -20,14 +20,14 @@ export function Navbar() {
   const navLinks = [
     { to: "/", label: t('nav.home') },
     { to: "/calendar", label: t('nav.calendar') },
+    ...(isAuthenticated
+      ? [{ to: "/my-reservations", label: t('nav.myReservations') }]
+      : []),
     { to: "/aktualnosci", label: t('nav.news') },
     { to: "/kursy", label: t('nav.courses') },
     { to: "/instruktorzy", label: t('nav.instructors') },
     { to: "/galeria", label: t('nav.gallery') },
     { to: "/kontakt", label: t('nav.contact') },
-    ...(isAuthenticated
-      ? [{ to: "/my-reservations", label: t('nav.myReservations') }]
-      : []),
     ...(isAdmin ? [{ to: "/admin", label: t('nav.admin') }] : []),
   ];
 
