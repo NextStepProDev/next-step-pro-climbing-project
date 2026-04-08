@@ -90,6 +90,10 @@
     "waitlist": {
       "join": "Zapisz się na listę rezerwową",
       "leave": "Opuść kolejkę",
+      "fullTitle": "Brak wolnych miejsc",
+      "fullHint": "Możesz zapisać się na listę rezerwową — gdy ktoś zrezygnuje, dostaniesz powiadomienie.",
+      "fullLoginHint": "Zaloguj się, aby zapisać się na listę rezerwową — gdy ktoś zrezygnuje, dostaniesz powiadomienie.",
+      "loginToJoin": "Zaloguj się i dołącz do listy rezerwowej",
       "waitingTitle": "Jesteś na liście rezerwowej",
       "waitingBody": "Jesteś na pozycji {{position}}. Powiadomimy Cię, gdy zwolni się miejsce.",
       "offerTitle": "Zwolniło się miejsce — bądź pierwszy/a!",
