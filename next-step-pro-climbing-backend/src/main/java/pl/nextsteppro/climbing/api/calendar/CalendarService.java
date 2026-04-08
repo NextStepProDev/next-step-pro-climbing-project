@@ -12,7 +12,13 @@ import pl.nextsteppro.climbing.domain.reservation.ReservationStatus;
 import pl.nextsteppro.climbing.domain.reservation.SlotParticipantCount;
 import pl.nextsteppro.climbing.domain.timeslot.TimeSlot;
 import pl.nextsteppro.climbing.domain.timeslot.TimeSlotRepository;
+import pl.nextsteppro.climbing.domain.waitlist.EventWaitlist;
+import pl.nextsteppro.climbing.domain.waitlist.EventWaitlistRepository;
+import pl.nextsteppro.climbing.domain.waitlist.Waitlist;
+import pl.nextsteppro.climbing.domain.waitlist.WaitlistRepository;
+import pl.nextsteppro.climbing.domain.waitlist.WaitlistStatus;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -27,13 +33,19 @@ public class CalendarService {
     private final TimeSlotRepository timeSlotRepository;
     private final ReservationRepository reservationRepository;
     private final EventRepository eventRepository;
+    private final WaitlistRepository waitlistRepository;
+    private final EventWaitlistRepository eventWaitlistRepository;
 
     public CalendarService(TimeSlotRepository timeSlotRepository,
                           ReservationRepository reservationRepository,
-                          EventRepository eventRepository) {
+                          EventRepository eventRepository,
+                          WaitlistRepository waitlistRepository,
+                          EventWaitlistRepository eventWaitlistRepository) {
         this.timeSlotRepository = timeSlotRepository;
         this.reservationRepository = reservationRepository;
         this.eventRepository = eventRepository;
+        this.waitlistRepository = waitlistRepository;
+        this.eventWaitlistRepository = eventWaitlistRepository;
     }
 
     @Cacheable(value = "calendarMonth", key = "#yearMonth", condition = "#userId == null")
@@ -143,7 +155,35 @@ public class CalendarService {
         int currentParticipants = eventData.participantsMap().getOrDefault(event.getId(), 0);
         boolean isUserRegistered = eventData.userRegisteredEventIds().contains(event.getId());
 
-        return toEventSummary(event, currentParticipants, isUserRegistered);
+        // Waitlist status dla zalogowanego usera
+        @Nullable WaitlistStatus userWaitlistStatus = null;
+        @Nullable UUID waitlistEntryId = null;
+        @Nullable Instant confirmationDeadline = null;
+        int userWaitlistPosition = 0;
+
+        if (userId != null) {
+            EventWaitlist waitlistEntry = eventWaitlistRepository.findByUserIdAndEventId(userId, eventId).orElse(null);
+            if (waitlistEntry != null && (waitlistEntry.isWaiting() || waitlistEntry.isPendingConfirmation())) {
+                userWaitlistStatus = waitlistEntry.getStatus();
+                waitlistEntryId = waitlistEntry.getId();
+                confirmationDeadline = waitlistEntry.getConfirmationDeadline();
+                userWaitlistPosition = eventWaitlistRepository.countWaitingAtOrBeforePosition(eventId, waitlistEntry.getPosition());
+                userWaitlistPosition = Math.max(1, userWaitlistPosition);
+            }
+        }
+
+        LocalDateTime eventStart = LocalDateTime.of(
+            event.getStartDate(),
+            event.getStartTime() != null ? event.getStartTime() : LocalTime.of(0, 0)
+        );
+        boolean enrollmentOpen = eventStart.isAfter(LocalDateTime.now().plusHours(BOOKING_CUTOFF_HOURS));
+
+        return new EventSummaryDto(
+            event.getId(), event.getTitle(), event.getDescription(), event.getLocation(),
+            event.getEventType().name(), event.getStartDate(), event.getEndDate(), event.isMultiDay(),
+            event.getMaxParticipants(), currentParticipants, isUserRegistered, enrollmentOpen,
+            userWaitlistStatus, waitlistEntryId, confirmationDeadline, userWaitlistPosition
+        );
     }
 
     public TimeSlotDetailDto getSlotDetails(UUID slotId, @Nullable UUID userId) {
@@ -151,9 +191,16 @@ public class CalendarService {
             .orElseThrow(() -> new IllegalArgumentException("Time slot not found: " + slotId));
 
         int confirmedCount = reservationRepository.countConfirmedByTimeSlotId(slotId);
+        int pendingWaitlistCount = waitlistRepository.countPendingConfirmationBySlotId(slotId);
+        // Efektywna liczba zajętych miejsc uwzględnia PENDING_CONFIRMATION z waitlisty
+        int effectiveCount = confirmedCount + pendingWaitlistCount;
 
         boolean isUserRegistered = false;
         @Nullable UUID reservationId = null;
+        @Nullable WaitlistStatus userWaitlistStatus = null;
+        @Nullable UUID waitlistEntryId = null;
+        @Nullable Instant confirmationDeadline = null;
+        int userWaitlistPosition = 0;
 
         if (userId != null) {
             Reservation reservation = reservationRepository.findByUserIdAndTimeSlotId(userId, slotId);
@@ -161,9 +208,18 @@ public class CalendarService {
                 isUserRegistered = true;
                 reservationId = reservation.getId();
             }
+
+            Waitlist waitlistEntry = waitlistRepository.findByUserIdAndSlotId(userId, slotId).orElse(null);
+            if (waitlistEntry != null && (waitlistEntry.isWaiting() || waitlistEntry.isPendingConfirmation())) {
+                userWaitlistStatus = waitlistEntry.getStatus();
+                waitlistEntryId = waitlistEntry.getId();
+                confirmationDeadline = waitlistEntry.getConfirmationDeadline();
+                userWaitlistPosition = waitlistRepository.countWaitingAtOrBeforePosition(slotId, waitlistEntry.getPosition());
+                userWaitlistPosition = Math.max(1, userWaitlistPosition);
+            }
         }
 
-        SlotStatus status = determineSlotStatus(slot, confirmedCount);
+        SlotStatus status = determineSlotStatus(slot, effectiveCount);
 
         return new TimeSlotDetailDto(
             slot.getId(),
@@ -177,7 +233,11 @@ public class CalendarService {
             slot.belongsToEvent() ? slot.getEvent().getId() : null,
             slot.getDisplayTitle(),
             slot.belongsToEvent() ? slot.getEvent().getDescription() : null,
-            reservationId
+            reservationId,
+            userWaitlistStatus,
+            waitlistEntryId,
+            confirmationDeadline,
+            userWaitlistPosition
         );
     }
 
@@ -289,18 +349,10 @@ public class CalendarService {
         );
         boolean enrollmentOpen = eventStart.isAfter(LocalDateTime.now().plusHours(BOOKING_CUTOFF_HOURS));
         return new EventSummaryDto(
-            event.getId(),
-            event.getTitle(),
-            event.getDescription(),
-            event.getLocation(),
-            event.getEventType().name(),
-            event.getStartDate(),
-            event.getEndDate(),
-            event.isMultiDay(),
-            event.getMaxParticipants(),
-            currentParticipants,
-            isUserRegistered,
-            enrollmentOpen
+            event.getId(), event.getTitle(), event.getDescription(), event.getLocation(),
+            event.getEventType().name(), event.getStartDate(), event.getEndDate(), event.isMultiDay(),
+            event.getMaxParticipants(), currentParticipants, isUserRegistered, enrollmentOpen,
+            null, null, null, 0
         );
     }
 

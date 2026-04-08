@@ -1,6 +1,7 @@
 import i18n from '../i18n'
 import type {
   AssetDto,
+  EventWaitlistEntry,
   User,
   MonthView,
   WeekView,
@@ -274,6 +275,30 @@ export const reservationApi = {
 
   cancelForEvent: (eventId: string) =>
     fetchApi<void>(`/reservations/event/${eventId}`, { method: 'DELETE' }),
+
+  joinWaitlist: (slotId: string) =>
+    fetchApi<{ success: boolean; message: string }>(`/reservations/slot/${slotId}/waitlist`, { method: 'POST' }),
+
+  leaveWaitlist: (slotId: string) =>
+    fetchApi<void>(`/reservations/slot/${slotId}/waitlist`, { method: 'DELETE' }),
+
+  confirmWaitlistOffer: (waitlistId: string) =>
+    fetchApi<{ reservationId: string; success: boolean; message: string }>(`/reservations/waitlist/${waitlistId}/confirm`, { method: 'POST' }),
+
+  getMyWaitlist: () =>
+    fetchApi<import('../types').WaitlistEntry[]>('/reservations/my/waitlist'),
+
+  joinEventWaitlist: (eventId: string) =>
+    fetchApi<{ success: boolean; message: string }>(`/reservations/event/${eventId}/waitlist`, { method: 'POST' }),
+
+  leaveEventWaitlist: (eventId: string) =>
+    fetchApi<void>(`/reservations/event/${eventId}/waitlist`, { method: 'DELETE' }),
+
+  confirmEventWaitlistOffer: (waitlistId: string) =>
+    fetchApi<{ eventId: string; success: boolean; message: string; slotsReserved: number }>(`/reservations/event-waitlist/${waitlistId}/confirm`, { method: 'POST' }),
+
+  getMyEventWaitlist: () =>
+    fetchApi<EventWaitlistEntry[]>('/reservations/my/event-waitlist'),
 }
 
 // Admin

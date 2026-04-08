@@ -1,7 +1,9 @@
 package pl.nextsteppro.climbing.api.calendar;
 
 import org.jspecify.annotations.Nullable;
+import pl.nextsteppro.climbing.domain.waitlist.WaitlistStatus;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
@@ -51,7 +53,12 @@ record TimeSlotDetailDto(
     @Nullable UUID eventId,
     @Nullable String eventTitle,
     @Nullable String eventDescription,
-    @Nullable UUID reservationId
+    @Nullable UUID reservationId,
+    // Waitlist
+    @Nullable WaitlistStatus userWaitlistStatus,
+    @Nullable UUID waitlistEntryId,
+    @Nullable Instant confirmationDeadline,
+    int userWaitlistPosition
 ) implements CalendarDtos {}
 
 record CourseEventDto(
@@ -76,7 +83,12 @@ record EventSummaryDto(
     int maxParticipants,
     int currentParticipants,
     boolean isUserRegistered,
-    boolean enrollmentOpen
+    boolean enrollmentOpen,
+    // Waitlist — null w widokach listy, wypełnione w getEventSummary (pojedyncze wydarzenie)
+    @Nullable WaitlistStatus userWaitlistStatus,
+    @Nullable UUID waitlistEntryId,
+    @Nullable Instant confirmationDeadline,
+    int userWaitlistPosition
 ) implements CalendarDtos {}
 
 record WeekViewDto(

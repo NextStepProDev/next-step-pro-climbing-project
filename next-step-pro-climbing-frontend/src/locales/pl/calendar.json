@@ -32,6 +32,8 @@
   "day": {
     "available": "Dostępne",
     "full": "Pełne",
+    "fullWaitlist": "Pełne · lista rezerwowa",
+    "waitlistHint": "Dołącz do listy rezerwowej →",
     "blocked": "Zarezerwowane",
     "bookingClosed": "Zadzwoń",
     "past": "Zakończone",
@@ -55,7 +57,17 @@
     "bookMultiple": "{{count}} osoby",
     "bookSingle": "Zapisz się",
     "participants": "{{current}} / {{max}} uczestników",
-    "spotsFree": "({{count}} wolne)"
+    "spotsFree": "({{count}} wolne)",
+    "waitlist": {
+      "join": "Dołącz do listy oczekujących",
+      "leave": "Opuść kolejkę",
+      "waiting": "Jesteś na liście oczekujących (poz. {{position}})",
+      "offerTitle": "Zwolniło się miejsce — bądź pierwszy/a!",
+      "offerBody": "Wszyscy oczekujący dostali tę informację jednocześnie. Kto pierwszy potwierdzi — ten dostaje miejsce!",
+      "deadline": "Potwierdź do:",
+      "confirm": "Potwierdź miejsce",
+      "decline": "Zrezygnuj"
+    }
   },
   "event": {
     "title": "Zapisz się na wydarzenie",
@@ -68,11 +80,23 @@
     "loginToBook": "Zaloguj się, aby zarezerwować",
     "cancelSignup": "Anuluj zapis na wydarzenie",
     "noSpots": "Brak miejsc",
+    "full": "Brak miejsc",
     "close": "Zamknij",
     "bookMultiple": "{{count}} osoby",
     "bookSingle": "Zapisz się",
     "participants": "{{current}} / {{max}} uczestników",
-    "spotsFree": "({{count}} wolnych)"
+    "spotsFree": "({{count}} wolnych)",
+    "waitlist": {
+      "join": "Zapisz się na listę rezerwową",
+      "leave": "Opuść kolejkę",
+      "waitingTitle": "Jesteś na liście rezerwowej",
+      "waitingBody": "Jesteś na pozycji {{position}}. Powiadomimy Cię, gdy zwolni się miejsce.",
+      "offerTitle": "Zwolniło się miejsce — bądź pierwszy/a!",
+      "offerBody": "Wszyscy oczekujący dostali tę informację jednocześnie. Kto pierwszy potwierdzi — ten dostaje miejsce!",
+      "deadline": "Potwierdź do: {{deadline}}",
+      "confirmOffer": "Potwierdź zapis",
+      "raceLost": "Niestety ktoś był szybszy. Zostałeś/aś zwrócony/a na listę."
+    }
   },
   "eventPage": {
     "notFound": "Nie znaleziono wydarzenia",

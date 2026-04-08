@@ -32,6 +32,8 @@
   "day": {
     "available": "Available",
     "full": "Full",
+    "fullWaitlist": "Full · waitlist",
+    "waitlistHint": "Join waitlist →",
     "blocked": "Reserved",
     "bookingClosed": "Call",
     "past": "Finished",
@@ -55,7 +57,17 @@
     "bookMultiple": "{{count}} people",
     "bookSingle": "Sign up",
     "participants": "{{current}} / {{max}} participants",
-    "spotsFree": "({{count}} available)"
+    "spotsFree": "({{count}} available)",
+    "waitlist": {
+      "join": "Join waitlist",
+      "leave": "Leave queue",
+      "waiting": "You are on the waitlist (pos. {{position}})",
+      "offerTitle": "A spot opened up — be first!",
+      "offerBody": "Everyone on the waitlist was notified at the same time. First to confirm gets the spot!",
+      "deadline": "Confirm by:",
+      "confirm": "Confirm spot",
+      "decline": "Decline"
+    }
   },
   "event": {
     "title": "Sign up for event",
@@ -68,11 +80,23 @@
     "loginToBook": "Log in to book",
     "cancelSignup": "Cancel event signup",
     "noSpots": "No spots",
+    "full": "Full",
     "close": "Close",
     "bookMultiple": "{{count}} people",
     "bookSingle": "Sign up",
     "participants": "{{current}} / {{max}} participants",
-    "spotsFree": "({{count}} available)"
+    "spotsFree": "({{count}} available)",
+    "waitlist": {
+      "join": "Join the waitlist",
+      "leave": "Leave queue",
+      "waitingTitle": "You're on the waitlist",
+      "waitingBody": "You're at position {{position}}. We'll notify you when a spot opens up.",
+      "offerTitle": "A spot opened up — be first!",
+      "offerBody": "Everyone on the waitlist was notified at the same time. First to confirm gets the spot!",
+      "deadline": "Confirm by: {{deadline}}",
+      "confirmOffer": "Confirm registration",
+      "raceLost": "Unfortunately someone was faster. You've been returned to the waitlist."
+    }
   },
   "eventPage": {
     "notFound": "Event not found",

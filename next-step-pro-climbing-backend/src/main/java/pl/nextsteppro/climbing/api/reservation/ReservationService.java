@@ -37,6 +37,8 @@ public class ReservationService {
     private final MailService mailService;
     private final ActivityLogService activityLogService;
     private final MessageService msg;
+    private final WaitlistService waitlistService;
+    private final EventWaitlistService eventWaitlistService;
 
     public ReservationService(ReservationRepository reservationRepository,
                              TimeSlotRepository timeSlotRepository,
@@ -44,7 +46,9 @@ public class ReservationService {
                              EventRepository eventRepository,
                              MailService mailService,
                              ActivityLogService activityLogService,
-                             MessageService msg) {
+                             MessageService msg,
+                             WaitlistService waitlistService,
+                             EventWaitlistService eventWaitlistService) {
         this.reservationRepository = reservationRepository;
         this.timeSlotRepository = timeSlotRepository;
         this.userRepository = userRepository;
@@ -52,6 +56,8 @@ public class ReservationService {
         this.mailService = mailService;
         this.activityLogService = activityLogService;
         this.msg = msg;
+        this.waitlistService = waitlistService;
+        this.eventWaitlistService = eventWaitlistService;
     }
 
     @Caching(evict = {
@@ -155,6 +161,9 @@ public class ReservationService {
         mailService.sendUserCancellationAdminNotification(reservation);
 
         activityLogService.logReservationCancelled(reservation.getUser(), slot, reservation.getParticipants());
+
+        // Jeśli ktoś czeka na liście oczekujących, powiadamiamy wszystkich jednocześnie
+        waitlistService.notifyAll(slot.getId());
     }
 
     @Transactional(readOnly = true)
@@ -373,6 +382,9 @@ public class ReservationService {
         mailService.sendUserEventCancellationAdminNotification(user, event);
 
         activityLogService.logEventReservationCancelled(user, event);
+
+        // Jeśli ktoś czeka na liście oczekujących, powiadamiamy wszystkich jednocześnie
+        eventWaitlistService.notifyAll(eventId);
     }
 
     private List<TimeSlot> createDefaultSlotsForEvent(Event event) {

@@ -32,6 +32,8 @@
   "day": {
     "available": "Disponible",
     "full": "Completo",
+    "fullWaitlist": "Completo · lista de espera",
+    "waitlistHint": "Unirse a la lista →",
     "blocked": "Reservado",
     "bookingClosed": "Llamar",
     "past": "Finalizado",
@@ -55,7 +57,17 @@
     "bookMultiple": "{{count}} personas",
     "bookSingle": "Inscribirse",
     "participants": "{{current}} / {{max}} participantes",
-    "spotsFree": "({{count}} libres)"
+    "spotsFree": "({{count}} libres)",
+    "waitlist": {
+      "join": "Unirse a la lista de espera",
+      "leave": "Salir de la cola",
+      "waiting": "Estás en la lista de espera (pos. {{position}})",
+      "offerTitle": "¡Se liberó una plaza — sé el primero!",
+      "offerBody": "Todos en la lista de espera han sido notificados al mismo tiempo. ¡El primero en confirmar consigue la plaza!",
+      "deadline": "Confirma antes de:",
+      "confirm": "Confirmar plaza",
+      "decline": "Rechazar"
+    }
   },
   "event": {
     "title": "Inscribirse en el evento",
@@ -68,11 +80,23 @@
     "loginToBook": "Inicia sesión para reservar",
     "cancelSignup": "Cancelar inscripción en el evento",
     "noSpots": "Sin plazas",
+    "full": "Completo",
     "close": "Cerrar",
     "bookMultiple": "{{count}} personas",
     "bookSingle": "Inscribirse",
     "participants": "{{current}} / {{max}} participantes",
-    "spotsFree": "({{count}} libres)"
+    "spotsFree": "({{count}} libres)",
+    "waitlist": {
+      "join": "Apuntarse a lista de espera",
+      "leave": "Salir de la cola",
+      "waitingTitle": "Estás en la lista de espera",
+      "waitingBody": "Estás en la posición {{position}}. Te avisaremos cuando se libere una plaza.",
+      "offerTitle": "¡Se liberó una plaza — sé el primero/a!",
+      "offerBody": "Todos los que esperaban han sido notificados al mismo tiempo. ¡El primero en confirmar consigue la plaza!",
+      "deadline": "Confirma antes de: {{deadline}}",
+      "confirmOffer": "Confirmar inscripción",
+      "raceLost": "Desafortunadamente alguien fue más rápido. Has sido devuelto/a a la lista de espera."
+    }
   },
   "eventPage": {
     "notFound": "Evento no encontrado",

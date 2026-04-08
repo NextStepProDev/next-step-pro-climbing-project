@@ -2,13 +2,13 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { format } from 'date-fns'
 import { Calendar, MapPin, Users } from 'lucide-react'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { Modal } from '../ui/Modal'
 import { Button } from '../ui/Button'
 import { useAuth } from '../../context/AuthContext'
 import { saveRedirectPath } from '../../utils/redirect'
-import { reservationApi } from '../../api/client'
+import { calendarApi, reservationApi } from '../../api/client'
 import { getErrorMessage } from '../../utils/errors'
 import type { EventSummary } from '../../types'
 
@@ -27,12 +27,23 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
   const [comment, setComment] = useState('')
   const [participants, setParticipants] = useState(1)
 
+  // Fetch fresh event data (with waitlist status) when modal is open
+  const { data: freshEvent } = useQuery({
+    queryKey: ['eventSummary', event?.id],
+    queryFn: () => calendarApi.getEventSummary(event!.id),
+    enabled: isOpen && !!event?.id && isAuthenticated,
+    staleTime: 0,
+  })
+
+  const ev = freshEvent ?? event
+
   const reservationMutation = useMutation({
     mutationFn: (data: { eventId: string; comment?: string; participants: number }) =>
       reservationApi.createForEvent(data.eventId, data.comment, data.participants),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['calendar'] })
       queryClient.invalidateQueries({ queryKey: ['reservations'] })
+      queryClient.invalidateQueries({ queryKey: ['eventSummary', event?.id] })
       setComment('')
       setParticipants(1)
       onClose()
@@ -44,19 +55,210 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['calendar'] })
       queryClient.invalidateQueries({ queryKey: ['reservations'] })
+      queryClient.invalidateQueries({ queryKey: ['eventSummary', event?.id] })
       onClose()
     },
   })
 
-  if (!event) return null
+  const joinWaitlistMutation = useMutation({
+    mutationFn: (eventId: string) => reservationApi.joinEventWaitlist(eventId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['eventSummary', event?.id] })
+      queryClient.invalidateQueries({ queryKey: ['calendar'] })
+    },
+  })
 
-  const enrollmentClosed = !event.enrollmentOpen
-  const spotsLeft = event.maxParticipants - event.currentParticipants
+  const leaveWaitlistMutation = useMutation({
+    mutationFn: (eventId: string) => reservationApi.leaveEventWaitlist(eventId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['eventSummary', event?.id] })
+      queryClient.invalidateQueries({ queryKey: ['calendar'] })
+    },
+  })
+
+  const confirmOfferMutation = useMutation({
+    mutationFn: (waitlistId: string) => reservationApi.confirmEventWaitlistOffer(waitlistId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['calendar'] })
+      queryClient.invalidateQueries({ queryKey: ['reservations'] })
+      queryClient.invalidateQueries({ queryKey: ['eventSummary', event?.id] })
+      onClose()
+    },
+  })
+
+  if (!ev) return null
+
+  const enrollmentClosed = !ev.enrollmentOpen
+  const spotsLeft = ev.maxParticipants - ev.currentParticipants
   const isFull = spotsLeft <= 0
+  const waitlistStatus = ev.userWaitlistStatus
+  const waitlistEntryId = ev.waitlistEntryId
+  const confirmationDeadline = ev.confirmationDeadline
+  const waitlistPosition = ev.userWaitlistPosition
 
   const handleLoginRedirect = () => {
     saveRedirectPath('/calendar')
     navigate('/login')
+  }
+
+  const renderWaitlistSection = () => {
+    if (!isAuthenticated || !isFull || ev.isUserRegistered || enrollmentClosed) return null
+
+    if (waitlistStatus === 'PENDING_CONFIRMATION') {
+      const deadline = confirmationDeadline
+        ? format(new Date(confirmationDeadline), 'dd.MM.yyyy HH:mm')
+        : ''
+      return (
+        <div className="space-y-3">
+          {confirmOfferMutation.isError && (
+            <div className="p-3 bg-rose-500/10 border border-rose-500/20 rounded-lg">
+              <p className="text-sm text-rose-400">{getErrorMessage(confirmOfferMutation.error)}</p>
+            </div>
+          )}
+          <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-lg">
+            <p className="text-sm font-semibold text-amber-400 mb-1">
+              {t('event.waitlist.offerTitle')}
+            </p>
+            <p className="text-sm text-amber-300/80">
+              {t('event.waitlist.offerBody')}
+            </p>
+            {deadline && (
+              <p className="text-xs text-amber-300/60 mt-2">
+                {t('event.waitlist.deadline', { deadline })}
+              </p>
+            )}
+          </div>
+        </div>
+      )
+    }
+
+    if (waitlistStatus === 'WAITING') {
+      return (
+        <div className="p-4 bg-primary-500/10 border border-primary-500/20 rounded-lg">
+          <p className="text-sm font-semibold text-primary-400 mb-1">
+            {t('event.waitlist.waitingTitle')}
+          </p>
+          <p className="text-sm text-primary-300/80">
+            {t('event.waitlist.waitingBody', { position: waitlistPosition })}
+          </p>
+        </div>
+      )
+    }
+
+    return null
+  }
+
+  const renderActions = () => {
+    if (enrollmentClosed && !ev.isUserRegistered) {
+      return (
+        <>
+          <Button variant="ghost" className="flex-1" onClick={onClose}>
+            {t('event.close')}
+          </Button>
+        </>
+      )
+    }
+
+    if (!isAuthenticated) {
+      return (
+        <>
+          <Button variant="primary" className="flex-1" onClick={handleLoginRedirect}>
+            {t('event.loginToBook')}
+          </Button>
+          <Button variant="ghost" onClick={onClose}>{t('event.close')}</Button>
+        </>
+      )
+    }
+
+    if (ev.isUserRegistered) {
+      return (
+        <>
+          <Button
+            variant="danger"
+            className="flex-1"
+            loading={cancelMutation.isPending}
+            onClick={() => cancelMutation.mutate(ev.id)}
+          >
+            {t('event.cancelSignup')}
+          </Button>
+          <Button variant="ghost" onClick={onClose}>{t('event.close')}</Button>
+        </>
+      )
+    }
+
+    if (isFull) {
+      if (waitlistStatus === 'PENDING_CONFIRMATION' && waitlistEntryId) {
+        return (
+          <>
+            <Button
+              variant="primary"
+              className="flex-1"
+              loading={confirmOfferMutation.isPending}
+              onClick={() => confirmOfferMutation.mutate(waitlistEntryId)}
+            >
+              {t('event.waitlist.confirmOffer')}
+            </Button>
+            <Button
+              variant="ghost"
+              loading={leaveWaitlistMutation.isPending}
+              onClick={() => leaveWaitlistMutation.mutate(ev.id)}
+            >
+              {t('event.waitlist.leave')}
+            </Button>
+          </>
+        )
+      }
+
+      if (waitlistStatus === 'WAITING') {
+        return (
+          <>
+            <Button
+              variant="secondary"
+              className="flex-1"
+              loading={leaveWaitlistMutation.isPending}
+              onClick={() => leaveWaitlistMutation.mutate(ev.id)}
+            >
+              {t('event.waitlist.leave')}
+            </Button>
+            <Button variant="ghost" onClick={onClose}>{t('event.close')}</Button>
+          </>
+        )
+      }
+
+      // Not on waitlist yet
+      return (
+        <>
+          <Button
+            variant="secondary"
+            className="flex-1"
+            loading={joinWaitlistMutation.isPending}
+            onClick={() => joinWaitlistMutation.mutate(ev.id)}
+          >
+            {t('event.waitlist.join')}
+          </Button>
+          <Button variant="ghost" onClick={onClose}>{t('event.close')}</Button>
+        </>
+      )
+    }
+
+    // Spots available
+    return (
+      <>
+        <Button
+          variant="primary"
+          className="flex-1"
+          loading={reservationMutation.isPending}
+          onClick={() => reservationMutation.mutate({
+            eventId: ev.id,
+            comment: comment || undefined,
+            participants,
+          })}
+        >
+          {participants > 1 ? t('event.bookMultiple', { count: participants }) : t('event.bookSingle')}
+        </Button>
+        <Button variant="ghost" onClick={onClose}>{t('event.close')}</Button>
+      </>
+    )
   }
 
   return (
@@ -65,34 +267,34 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
         {/* Event type badge */}
         <div>
           <span className="inline-block px-2 py-1 text-xs font-medium rounded bg-primary-500/20 text-primary-400">
-            {tc(`eventTypes.${event.eventType}`)}
+            {tc(`eventTypes.${ev.eventType}`)}
           </span>
         </div>
 
         {/* Title */}
-        <h3 className="text-lg font-semibold text-dark-100">{event.title}</h3>
+        <h3 className="text-lg font-semibold text-dark-100">{ev.title}</h3>
 
         {/* Description */}
-        {event.description && (
-          <p className="text-sm text-dark-300 whitespace-pre-wrap">{event.description}</p>
+        {ev.description && (
+          <p className="text-sm text-dark-300 whitespace-pre-wrap">{ev.description}</p>
         )}
 
         {/* Date */}
         <div className="flex items-center gap-2 text-dark-300">
           <Calendar className="w-5 h-5" />
           <span>
-            {format(new Date(event.startDate), 'dd.MM.yyyy')}
-            {event.isMultiDay && (
-              <> - {format(new Date(event.endDate), 'dd.MM.yyyy')}</>
+            {format(new Date(ev.startDate), 'dd.MM.yyyy')}
+            {ev.isMultiDay && (
+              <> - {format(new Date(ev.endDate), 'dd.MM.yyyy')}</>
             )}
           </span>
         </div>
 
         {/* Location */}
-        {event.location && (
+        {ev.location && (
           <div className="flex items-center gap-2 text-dark-300">
             <MapPin className="w-5 h-5" />
-            <span>{event.location}</span>
+            <span>{ev.location}</span>
           </div>
         )}
 
@@ -100,15 +302,18 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
         <div className="flex items-center gap-2 text-dark-300">
           <Users className="w-5 h-5" />
           <span>
-            {t('event.participants', { current: event.currentParticipants, max: event.maxParticipants })}
+            {t('event.participants', { current: ev.currentParticipants, max: ev.maxParticipants })}
             {spotsLeft > 0 && (
               <span className="text-primary-400 ml-2">{t('event.spotsFree', { count: spotsLeft })}</span>
+            )}
+            {isFull && (
+              <span className="text-amber-400 ml-2">{t('event.full')}</span>
             )}
           </span>
         </div>
 
         {/* User registered info */}
-        {event.isUserRegistered && (
+        {ev.isUserRegistered && (
           <div className="p-3 bg-primary-500/10 border border-primary-500/20 rounded-lg">
             <span className="text-primary-400 font-medium">
               {t('event.hasReservation')}
@@ -117,7 +322,7 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
         )}
 
         {/* Enrollment closed info */}
-        {enrollmentClosed && !event.isUserRegistered && (
+        {enrollmentClosed && !ev.isUserRegistered && (
           <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg">
             <span className="text-amber-400 text-sm">
               {t('event.bookingClosed')}
@@ -125,8 +330,11 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
           </div>
         )}
 
+        {/* Waitlist section */}
+        {renderWaitlistSection()}
+
         {/* Participants & Comment for reservation */}
-        {isAuthenticated && !event.isUserRegistered && !isFull && !enrollmentClosed && (
+        {isAuthenticated && !ev.isUserRegistered && !isFull && !enrollmentClosed && (
           <>
             {spotsLeft > 1 && (
               <div>
@@ -167,55 +375,7 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
 
         {/* Actions */}
         <div className="flex gap-3 pt-4 border-t border-dark-800">
-          {enrollmentClosed && !event.isUserRegistered ? (
-            <Button variant="ghost" className="flex-1" onClick={onClose}>
-              {t('event.close')}
-            </Button>
-          ) : !isAuthenticated ? (
-            <Button
-              variant="primary"
-              className="flex-1"
-              onClick={handleLoginRedirect}
-            >
-              {t('event.loginToBook')}
-            </Button>
-          ) : event.isUserRegistered ? (
-            <Button
-              variant="danger"
-              className="flex-1"
-              loading={cancelMutation.isPending}
-              onClick={() => cancelMutation.mutate(event.id)}
-            >
-              {t('event.cancelSignup')}
-            </Button>
-          ) : isFull ? (
-            <Button
-              variant="secondary"
-              className="flex-1"
-              disabled
-            >
-              {t('event.noSpots')}
-            </Button>
-          ) : (
-            <Button
-              variant="primary"
-              className="flex-1"
-              loading={reservationMutation.isPending}
-              onClick={() => reservationMutation.mutate({
-                eventId: event.id,
-                comment: comment || undefined,
-                participants,
-              })}
-            >
-              {participants > 1 ? t('event.bookMultiple', { count: participants }) : t('event.bookSingle')}
-            </Button>
-          )}
-
-          {!(enrollmentClosed && !event.isUserRegistered) && (
-            <Button variant="ghost" onClick={onClose}>
-              {t('event.close')}
-            </Button>
-          )}
+          {renderActions()}
         </div>
 
         {/* Error messages */}
@@ -227,6 +387,11 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
         {cancelMutation.isError && (
           <p className="text-sm text-rose-400/80">
             {getErrorMessage(cancelMutation.error)}
+          </p>
+        )}
+        {joinWaitlistMutation.isError && (
+          <p className="text-sm text-rose-400/80">
+            {getErrorMessage(joinWaitlistMutation.error)}
           </p>
         )}
       </div>

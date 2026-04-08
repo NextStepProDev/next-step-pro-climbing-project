@@ -21,9 +21,15 @@ import java.util.UUID;
 public class ReservationController {
 
     private final ReservationService reservationService;
+    private final WaitlistService waitlistService;
+    private final EventWaitlistService eventWaitlistService;
 
-    public ReservationController(ReservationService reservationService) {
+    public ReservationController(ReservationService reservationService,
+                                 WaitlistService waitlistService,
+                                 EventWaitlistService eventWaitlistService) {
         this.reservationService = reservationService;
+        this.waitlistService = waitlistService;
+        this.eventWaitlistService = eventWaitlistService;
     }
 
     @Operation(
@@ -157,5 +163,85 @@ public class ReservationController {
 
         reservationService.cancelEventReservation(eventId, userId);
         return ResponseEntity.noContent().build();
+    }
+
+    // -------------------------------------------------------------------------
+    // Waitlist endpoints
+    // -------------------------------------------------------------------------
+
+    @Operation(summary = "Dołącz do listy oczekujących", description = "Dołącza do kolejki gdy slot jest pełny. Wymaga zalogowania.")
+    @PostMapping("/slot/{slotId}/waitlist")
+    public ResponseEntity<WaitlistResultDto> joinWaitlist(
+            @PathVariable UUID slotId,
+            @Parameter(hidden = true) @CurrentUserId UUID userId) {
+
+        return ResponseEntity.ok(waitlistService.joinWaitlist(slotId, userId));
+    }
+
+    @Operation(summary = "Opuść listę oczekujących", description = "Usuwa użytkownika z kolejki.")
+    @DeleteMapping("/slot/{slotId}/waitlist")
+    public ResponseEntity<Void> leaveWaitlist(
+            @PathVariable UUID slotId,
+            @Parameter(hidden = true) @CurrentUserId UUID userId) {
+
+        waitlistService.leaveWaitlist(slotId, userId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @Operation(summary = "Potwierdź ofertę z listy oczekujących", description = "Potwierdza rezerwację po otrzymaniu oferty (jedno kliknięcie).")
+    @PostMapping("/waitlist/{waitlistId}/confirm")
+    public ResponseEntity<ReservationResultDto> confirmWaitlistOffer(
+            @PathVariable UUID waitlistId,
+            @Parameter(hidden = true) @CurrentUserId UUID userId) {
+
+        return ResponseEntity.ok(waitlistService.confirmOffer(waitlistId, userId));
+    }
+
+    @Operation(summary = "Moje wpisy na liście oczekujących", description = "Zwraca aktywne wpisy (WAITING + PENDING_CONFIRMATION) dla zalogowanego użytkownika.")
+    @GetMapping("/my/waitlist")
+    public ResponseEntity<List<WaitlistEntryDto>> getMyWaitlist(
+            @Parameter(hidden = true) @CurrentUserId UUID userId) {
+
+        return ResponseEntity.ok(waitlistService.getUserWaitlist(userId));
+    }
+
+    // -------------------------------------------------------------------------
+    // Event waitlist endpoints
+    // -------------------------------------------------------------------------
+
+    @Operation(summary = "Dołącz do listy oczekujących na wydarzenie", description = "Dołącza do kolejki gdy wydarzenie jest pełne. Wymaga zalogowania.")
+    @PostMapping("/event/{eventId}/waitlist")
+    public ResponseEntity<WaitlistResultDto> joinEventWaitlist(
+            @PathVariable UUID eventId,
+            @Parameter(hidden = true) @CurrentUserId UUID userId) {
+
+        return ResponseEntity.ok(eventWaitlistService.joinEventWaitlist(eventId, userId));
+    }
+
+    @Operation(summary = "Opuść listę oczekujących na wydarzenie", description = "Usuwa użytkownika z kolejki na wydarzenie.")
+    @DeleteMapping("/event/{eventId}/waitlist")
+    public ResponseEntity<Void> leaveEventWaitlist(
+            @PathVariable UUID eventId,
+            @Parameter(hidden = true) @CurrentUserId UUID userId) {
+
+        eventWaitlistService.leaveEventWaitlist(eventId, userId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @Operation(summary = "Potwierdź ofertę z listy oczekujących na wydarzenie", description = "Potwierdza zapis na wydarzenie po otrzymaniu oferty (kto pierwszy, ten lepszy).")
+    @PostMapping("/event-waitlist/{waitlistId}/confirm")
+    public ResponseEntity<EventReservationResultDto> confirmEventWaitlistOffer(
+            @PathVariable UUID waitlistId,
+            @Parameter(hidden = true) @CurrentUserId UUID userId) {
+
+        return ResponseEntity.ok(eventWaitlistService.confirmEventOffer(waitlistId, userId));
+    }
+
+    @Operation(summary = "Moje wpisy na listach oczekujących na wydarzenia", description = "Zwraca aktywne wpisy (WAITING + PENDING_CONFIRMATION) dla zalogowanego użytkownika.")
+    @GetMapping("/my/event-waitlist")
+    public ResponseEntity<List<EventWaitlistEntryDto>> getMyEventWaitlist(
+            @Parameter(hidden = true) @CurrentUserId UUID userId) {
+
+        return ResponseEntity.ok(eventWaitlistService.getUserEventWaitlist(userId));
     }
 }
