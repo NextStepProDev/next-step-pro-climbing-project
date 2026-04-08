@@ -1,7 +1,8 @@
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { format } from "date-fns";
-import { ArrowLeft, Clock, Calendar, Users, Plus } from "lucide-react";
+import { ArrowLeft, Clock, Calendar, Users, Plus, ExternalLink } from "lucide-react";
+import { Link } from "react-router-dom";
 import clsx from "clsx";
 import type { TimeSlot, EventSummary } from "../../types";
 import { formatAvailability, getEventColor } from "../../utils/events";
@@ -69,9 +70,14 @@ function SlotButton({
             </span>
           )}
           {slot.status === "FULL" && !slot.isUserRegistered && (
-            <span className="px-2 py-1 text-xs font-medium bg-amber-500/10 text-amber-400 rounded">
-              {t('day.full')}
-            </span>
+            <div className="flex flex-col items-end gap-0.5">
+              <span className="px-2 py-1 text-xs font-medium bg-amber-500/10 text-amber-400 rounded">
+                {t('day.full')}
+              </span>
+              <span className="text-xs text-amber-300/70 pr-1">
+                {t('day.waitlistHint')}
+              </span>
+            </div>
           )}
           {slot.status === "BLOCKED" && (
             <span className="px-2 py-1 text-xs font-medium bg-dark-700 text-dark-400 rounded">
@@ -194,10 +200,25 @@ export function DayView({
                     key={event.id}
                     className={clsx("rounded-lg border p-4", color.border, color.bg)}
                   >
-                    <div className="mb-3">
-                      <h3 className={clsx("text-base font-semibold", color.text)}>
-                        {event.title}
-                      </h3>
+                    <button
+                      onClick={() => onEventClick?.(event)}
+                      className="mb-3 w-full text-left"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <h3 className={clsx("text-base font-semibold", color.text)}>
+                          {event.title}
+                        </h3>
+                        {event.courseId && (
+                          <Link
+                            to={`/courses#course-${event.courseId}`}
+                            onClick={(e) => e.stopPropagation()}
+                            className="flex items-center gap-1 text-xs text-primary-400 hover:text-primary-300 transition-colors shrink-0 mt-0.5"
+                          >
+                            <ExternalLink className="w-3 h-3" />
+                            {t('event.courseDetails')}
+                          </Link>
+                        )}
+                      </div>
 
                       <p className="text-sm text-dark-400 mt-1">
                         <span className={badgeClass}>{label}</span>
@@ -215,7 +236,7 @@ export function DayView({
                           </span>
                         )}
                       </p>
-                    </div>
+                    </button>
 
                     <div className="space-y-3">
                       {eventSlots.map((slot) => (
@@ -240,7 +261,7 @@ export function DayView({
                     color.border, color.bg, color.hoverBorder
                   )}
                 >
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-start justify-between gap-2">
                     <div>
                       <h3 className={clsx("text-base font-semibold", color.text)}>
                         {event.title}
@@ -268,6 +289,16 @@ export function DayView({
                         )}
                       </div>
                     </div>
+                    {event.courseId && (
+                      <Link
+                        to={`/courses#course-${event.courseId}`}
+                        onClick={(e) => e.stopPropagation()}
+                        className="flex items-center gap-1 text-xs text-primary-400 hover:text-primary-300 transition-colors shrink-0 mt-0.5"
+                      >
+                        <ExternalLink className="w-3 h-3" />
+                        {t('event.courseDetails')}
+                      </Link>
+                    )}
                   </div>
                 </button>
               );
