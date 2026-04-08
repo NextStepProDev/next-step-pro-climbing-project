@@ -7,5 +7,5 @@ export const CONTACT = {
   emailHref: 'mailto:nextsteppro.team@gmail.com',
   facebook: 'https://www.facebook.com/ClimbingTeamofPoland',
   youtube: 'https://www.youtube.com/@PureEssentialFilms-hd1kh',
-  instagram: null as string | null, // dodaj URL gdy dostępny
+  instagram: 'https://www.instagram.com/next.step.pro.climbing/',
 } as const
