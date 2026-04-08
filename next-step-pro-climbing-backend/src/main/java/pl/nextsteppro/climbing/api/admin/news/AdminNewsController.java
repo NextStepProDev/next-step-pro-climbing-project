@@ -173,6 +173,23 @@ public class AdminNewsController {
         return ResponseEntity.ok(adminNewsService.addImageBlock(id, file, caption));
     }
 
+    @Operation(summary = "Dodaj blok wideo (YouTube / Instagram embed)")
+    @PostMapping("/{id}/blocks/video")
+    public ResponseEntity<ContentBlockAdminDto> addVideoEmbedBlock(
+            @Parameter(description = "ID aktualności") @PathVariable UUID id,
+            @Valid @RequestBody AdminNewsDtos.AddVideoEmbedBlockRequest request) {
+        return ResponseEntity.ok(adminNewsService.addVideoEmbedBlock(id, request));
+    }
+
+    @Operation(summary = "Edytuj URL bloku wideo")
+    @PutMapping("/blocks/{blockId}/video")
+    public ResponseEntity<Void> updateVideoEmbedBlock(
+            @Parameter(description = "ID bloku") @PathVariable UUID blockId,
+            @Valid @RequestBody AdminNewsDtos.UpdateVideoEmbedBlockRequest request) {
+        adminNewsService.updateVideoEmbedBlock(blockId, request);
+        return ResponseEntity.noContent().build();
+    }
+
     @Operation(summary = "Dodaj blok obrazkowy z biblioteki mediów (URL)")
     @PostMapping("/{id}/blocks/image-from-url")
     public ResponseEntity<AdminNewsDtos.ContentBlockAdminDto> addImageBlockFromUrl(

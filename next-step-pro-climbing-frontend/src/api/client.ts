@@ -602,6 +602,18 @@ export const adminNewsApi = {
       body: JSON.stringify({ imageUrl, caption: caption ?? null }),
     }),
 
+  addVideoEmbedBlock: (newsId: string, url: string) =>
+    fetchApi<ContentBlockAdmin>(`/admin/news/${newsId}/blocks/video`, {
+      method: 'POST',
+      body: JSON.stringify({ url }),
+    }),
+
+  updateVideoEmbedBlock: (blockId: string, url: string) =>
+    fetchApi<void>(`/admin/news/blocks/${blockId}/video`, {
+      method: 'PUT',
+      body: JSON.stringify({ url }),
+    }),
+
   setThumbnailUrl: (newsId: string, thumbnailUrl: string) =>
     fetchApi<void>(`/admin/news/${newsId}/thumbnail-url`, {
       method: 'PUT',

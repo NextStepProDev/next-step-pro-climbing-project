@@ -21,6 +21,8 @@ import java.io.IOException;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Service
 @Transactional
@@ -219,6 +221,33 @@ public class AdminNewsService {
         return toBlockAdminDto(block);
     }
 
+    @CacheEvict(value = "newsDetail", allEntries = true)
+    public ContentBlockAdminDto addVideoEmbedBlock(UUID newsId, AdminNewsDtos.AddVideoEmbedBlockRequest request) {
+        News news = findNews(newsId);
+        int order = blockRepository.findMaxDisplayOrder(newsId) + 1;
+
+        String embedUrl = normalizeVideoEmbedUrl(request.url());
+
+        NewsContentBlock block = new NewsContentBlock(news, BlockType.VIDEO_EMBED);
+        block.setContent(embedUrl);
+        block.setDisplayOrder(order);
+
+        block = blockRepository.save(block);
+        return toBlockAdminDto(block);
+    }
+
+    @CacheEvict(value = "newsDetail", allEntries = true)
+    public void updateVideoEmbedBlock(UUID blockId, AdminNewsDtos.UpdateVideoEmbedBlockRequest request) {
+        NewsContentBlock block = findBlock(blockId);
+
+        if (block.getBlockType() != BlockType.VIDEO_EMBED) {
+            throw new IllegalArgumentException("Block is not a VIDEO_EMBED block");
+        }
+
+        block.setContent(normalizeVideoEmbedUrl(request.url()));
+        blockRepository.save(block);
+    }
+
     @CacheEvict(value = {"newsList", "newsDetail"}, allEntries = true)
     public void setThumbnailUrl(UUID id, SetThumbnailUrlRequest request) {
         News news = findNews(id);
@@ -412,5 +441,52 @@ public class AdminNewsService {
 
     private String buildFileUrl(String filename) {
         return baseUrl + "/api/files/news/" + filename;
+    }
+
+    /**
+     * Normalizuje URL YouTube lub Instagram do standardowego embed URL.
+     * Obsługiwane formaty:
+     * - https://www.youtube.com/watch?v=VIDEO_ID
+     * - https://youtu.be/VIDEO_ID
+     * - https://www.youtube.com/shorts/VIDEO_ID
+     * - https://www.instagram.com/reel/CODE/
+     * - https://www.instagram.com/p/CODE/
+     */
+    private String normalizeVideoEmbedUrl(String inputUrl) {
+        String url = inputUrl.trim();
+
+        // YouTube watch URL: ?v=ID lub &v=ID
+        Matcher m = Pattern.compile("(?:youtube\\.com/watch\\?|youtube\\.com/watch\\?.*&)v=([a-zA-Z0-9_-]{11})")
+                .matcher(url);
+        if (m.find()) {
+            return "https://www.youtube.com/embed/" + m.group(1);
+        }
+
+        // YouTube short URL: youtu.be/ID
+        m = Pattern.compile("youtu\\.be/([a-zA-Z0-9_-]{11})").matcher(url);
+        if (m.find()) {
+            return "https://www.youtube.com/embed/" + m.group(1);
+        }
+
+        // YouTube Shorts: youtube.com/shorts/ID
+        m = Pattern.compile("youtube\\.com/shorts/([a-zA-Z0-9_-]{11})").matcher(url);
+        if (m.find()) {
+            return "https://www.youtube.com/embed/" + m.group(1);
+        }
+
+        // Instagram Reel
+        m = Pattern.compile("instagram\\.com/reel/([a-zA-Z0-9_-]+)").matcher(url);
+        if (m.find()) {
+            return "https://www.instagram.com/reel/" + m.group(1) + "/embed/";
+        }
+
+        // Instagram Post
+        m = Pattern.compile("instagram\\.com/p/([a-zA-Z0-9_-]+)").matcher(url);
+        if (m.find()) {
+            return "https://www.instagram.com/p/" + m.group(1) + "/embed/";
+        }
+
+        throw new IllegalArgumentException(
+                "Nieobsługiwany URL wideo. Użyj linku z YouTube lub Instagram.");
     }
 }

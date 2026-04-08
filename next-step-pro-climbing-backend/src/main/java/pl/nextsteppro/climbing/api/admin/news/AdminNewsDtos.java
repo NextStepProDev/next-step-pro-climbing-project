@@ -82,6 +82,14 @@ public class AdminNewsDtos {
             String thumbnailUrl
     ) {}
 
+    public record AddVideoEmbedBlockRequest(
+            @NotBlank String url
+    ) {}
+
+    public record UpdateVideoEmbedBlockRequest(
+            @NotBlank String url
+    ) {}
+
     public record MoveBlockRequest(
             String direction
     ) {}

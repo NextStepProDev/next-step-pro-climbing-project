@@ -5,7 +5,7 @@ import { renderRichText } from '../../utils/renderRichText'
 
 export type PreviewBlock = {
   tempId: string
-  type: 'TEXT' | 'IMAGE'
+  type: 'TEXT' | 'IMAGE' | 'VIDEO_EMBED'
   content?: string
   imageUrl?: string
   caption?: string
@@ -100,6 +100,19 @@ export function NewsPreviewModal({
                     </figcaption>
                   )}
                 </figure>
+              )
+            }
+            if (block.type === 'VIDEO_EMBED' && block.content) {
+              return (
+                <div key={block.tempId} className="my-4 w-full" style={{ aspectRatio: '16/9' }}>
+                  <iframe
+                    src={block.content}
+                    className="w-full h-full rounded-lg"
+                    allowFullScreen
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    loading="lazy"
+                  />
+                </div>
               )
             }
             return null
