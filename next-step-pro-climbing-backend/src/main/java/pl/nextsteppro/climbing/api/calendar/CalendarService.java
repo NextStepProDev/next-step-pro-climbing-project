@@ -178,10 +178,13 @@ public class CalendarService {
         );
         boolean enrollmentOpen = eventStart.isAfter(LocalDateTime.now().plusHours(BOOKING_CUTOFF_HOURS));
 
+        UUID courseId = event.getCourse() != null ? event.getCourse().getId() : null;
+
         return new EventSummaryDto(
             event.getId(), event.getTitle(), event.getDescription(), event.getLocation(),
             event.getEventType().name(), event.getStartDate(), event.getEndDate(), event.isMultiDay(),
             event.getMaxParticipants(), currentParticipants, isUserRegistered, enrollmentOpen,
+            courseId,
             userWaitlistStatus, waitlistEntryId, confirmationDeadline, userWaitlistPosition
         );
     }
@@ -348,10 +351,12 @@ public class CalendarService {
             event.getStartTime() != null ? event.getStartTime() : LocalTime.of(0, 0)
         );
         boolean enrollmentOpen = eventStart.isAfter(LocalDateTime.now().plusHours(BOOKING_CUTOFF_HOURS));
+        UUID courseId = event.getCourse() != null ? event.getCourse().getId() : null;
         return new EventSummaryDto(
             event.getId(), event.getTitle(), event.getDescription(), event.getLocation(),
             event.getEventType().name(), event.getStartDate(), event.getEndDate(), event.isMultiDay(),
             event.getMaxParticipants(), currentParticipants, isUserRegistered, enrollmentOpen,
+            courseId,
             null, null, null, 0
         );
     }

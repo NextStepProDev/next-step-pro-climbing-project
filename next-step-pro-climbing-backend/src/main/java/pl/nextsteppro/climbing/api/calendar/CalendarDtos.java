@@ -84,6 +84,7 @@ record EventSummaryDto(
     int currentParticipants,
     boolean isUserRegistered,
     boolean enrollmentOpen,
+    @Nullable UUID courseId,
     // Waitlist — null w widokach listy, wypełnione w getEventSummary (pojedyncze wydarzenie)
     @Nullable WaitlistStatus userWaitlistStatus,
     @Nullable UUID waitlistEntryId,

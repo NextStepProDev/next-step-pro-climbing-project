@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
@@ -14,12 +14,25 @@ import clsx from 'clsx'
 
 export function CoursesPage() {
   const { t } = useTranslation('common')
+  const scrolledRef = useRef(false)
 
   const { data: courses, isLoading, error } = useQuery({
     queryKey: ['courses'],
     queryFn: () => coursesApi.getAll(),
     staleTime: 5 * 60 * 1000,
   })
+
+  useEffect(() => {
+    if (!courses || scrolledRef.current) return
+    const hash = window.location.hash
+    if (!hash.startsWith('#course-')) return
+    scrolledRef.current = true
+    // Small delay to let ScrollToTop (window.scrollTo(0,0)) finish first
+    setTimeout(() => {
+      const el = document.getElementById(hash.slice(1))
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }, 100)
+  }, [courses])
 
   if (isLoading) {
     return (
@@ -46,7 +59,11 @@ export function CoursesPage() {
       ) : (
         <div className="space-y-3">
           {courses.map((course) => (
-            <CourseAccordionItem key={course.id} course={course} />
+            <CourseAccordionItem
+              key={course.id}
+              course={course}
+              defaultOpen={window.location.hash === `#course-${course.id}`}
+            />
           ))}
         </div>
       )}
@@ -54,8 +71,8 @@ export function CoursesPage() {
   )
 }
 
-function CourseAccordionItem({ course }: { course: CourseSummary }) {
-  const [isOpen, setIsOpen] = useState(false)
+function CourseAccordionItem({ course, defaultOpen = false }: { course: CourseSummary; defaultOpen?: boolean }) {
+  const [isOpen, setIsOpen] = useState(defaultOpen)
 
   const { data: detail, isLoading } = useQuery({
     queryKey: ['courses', course.id],
@@ -72,7 +89,7 @@ function CourseAccordionItem({ course }: { course: CourseSummary }) {
   })
 
   return (
-    <div className="bg-dark-800 border border-dark-700 rounded-lg overflow-hidden">
+    <div id={`course-${course.id}`} className="bg-dark-800 border border-dark-700 rounded-lg overflow-hidden scroll-mt-24">
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="w-full flex items-center gap-4 p-4 text-left hover:bg-dark-750 transition-colors"
@@ -190,7 +207,7 @@ function CourseEventRow({ event }: { event: CourseEvent }) {
           to={`/calendar?date=${event.startDate}`}
           className="flex items-center gap-1 text-xs text-primary-400 hover:text-primary-300 transition-colors"
         >
-          {t('courses.goToCalendar')}
+          {event.status === 'FULL' ? t('courses.joinWaitlist') : t('courses.goToCalendar')}
           <ArrowRight className="h-3 w-3" />
         </Link>
       </div>

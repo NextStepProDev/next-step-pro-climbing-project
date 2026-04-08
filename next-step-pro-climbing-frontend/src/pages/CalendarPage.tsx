@@ -248,6 +248,7 @@ export function CalendarPage() {
                 <div className="space-y-2">
                   {weekData.events.map((event) => {
                     const { label, badgeClass } = formatAvailability(event);
+                    const isFull = event.currentParticipants >= event.maxParticipants;
                     return (
                       <div
                         key={event.id}
@@ -269,13 +270,17 @@ export function CalendarPage() {
                             <span className="px-3 py-1 text-xs font-medium rounded bg-primary-500/20 text-primary-400">
                               {t('signedUp')}
                             </span>
-                          ) : event.enrollmentOpen ? (
-                            <span className="px-3 py-1 text-xs font-medium rounded bg-primary-600 text-white">
-                              {t('signUp')}
-                            </span>
-                          ) : (
+                          ) : !event.enrollmentOpen ? (
                             <span className="px-3 py-1 text-xs font-medium rounded bg-dark-700 text-dark-400">
                               {t('common:callPhone')}
+                            </span>
+                          ) : isFull ? (
+                            <span className="px-3 py-1 text-xs font-medium rounded bg-amber-500/20 text-amber-400">
+                              {t('event.waitlist.join')}
+                            </span>
+                          ) : (
+                            <span className="px-3 py-1 text-xs font-medium rounded bg-primary-600 text-white">
+                              {t('signUp')}
                             </span>
                           )}
                         </div>
@@ -318,6 +323,7 @@ export function CalendarPage() {
                 {monthData.events.map((event, index) => {
                   const { label, badgeClass } = formatAvailability(event);
                   const color = getEventColor(index);
+                  const isFull = event.currentParticipants >= event.maxParticipants;
 
                   return (
                     <div
@@ -349,19 +355,21 @@ export function CalendarPage() {
                         </span>
 
                         {/* status indicator */}
-                        {!event.enrollmentOpen && !event.isUserRegistered ? (
+                        {event.isUserRegistered ? (
+                          <span className="px-3 py-1 text-xs font-medium rounded bg-primary-500/20 text-primary-400">
+                            {t('signedUp')}
+                          </span>
+                        ) : !event.enrollmentOpen ? (
                           <span className="px-3 py-1 text-xs font-medium rounded bg-dark-700 text-dark-400">
                             {t('common:callPhone')}
                           </span>
+                        ) : isFull ? (
+                          <span className="px-3 py-1 text-xs font-medium rounded bg-amber-500/20 text-amber-400">
+                            {t('event.waitlist.join')}
+                          </span>
                         ) : (
-                          <span
-                            className={
-                              event.isUserRegistered
-                                ? "px-3 py-1 text-xs font-medium rounded bg-primary-500/20 text-primary-400"
-                                : "px-3 py-1 text-xs font-medium rounded bg-primary-600 text-white"
-                            }
-                          >
-                            {event.isUserRegistered ? t('signedUp') : t('signUp')}
+                          <span className="px-3 py-1 text-xs font-medium rounded bg-primary-600 text-white">
+                            {t('signUp')}
                           </span>
                         )}
                       </div>
