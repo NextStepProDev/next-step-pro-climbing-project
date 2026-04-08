@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { format } from 'date-fns'
-import { Calendar, MapPin, Users } from 'lucide-react'
+import { Calendar, ExternalLink, MapPin, Users } from 'lucide-react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { Modal } from '../ui/Modal'
 import { Button } from '../ui/Button'
 import { useAuth } from '../../context/AuthContext'
@@ -271,8 +271,20 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
           </span>
         </div>
 
-        {/* Title */}
-        <h3 className="text-lg font-semibold text-dark-100">{ev.title}</h3>
+        {/* Title + course link */}
+        <div className="flex items-start justify-between gap-3">
+          <h3 className="text-lg font-semibold text-dark-100">{ev.title}</h3>
+          {ev.courseId && (
+            <Link
+              to={`/courses#course-${ev.courseId}`}
+              onClick={onClose}
+              className="flex items-center gap-1 text-xs text-primary-400 hover:text-primary-300 transition-colors shrink-0"
+            >
+              <ExternalLink className="w-3.5 h-3.5" />
+              {t('event.courseDetails')}
+            </Link>
+          )}
+        </div>
 
         {/* Description */}
         {ev.description && (

@@ -72,6 +72,7 @@
     "availableDates": "Fechas disponibles",
     "noDates": "No hay fechas disponibles",
     "goToCalendar": "Ir al calendario",
+    "joinWaitlist": "Unirse a lista de espera",
     "spots": "{{count}} plazas",
     "spotsOne": "{{count}} plaza",
     "spotsFull": "Sin plazas"

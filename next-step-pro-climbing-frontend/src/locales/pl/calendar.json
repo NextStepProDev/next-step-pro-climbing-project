@@ -86,6 +86,7 @@
     "bookSingle": "Zapisz się",
     "participants": "{{current}} / {{max}} uczestników",
     "spotsFree": "({{count}} wolnych)",
+    "courseDetails": "Szczegóły kursu",
     "waitlist": {
       "join": "Zapisz się na listę rezerwową",
       "leave": "Opuść kolejkę",
