@@ -6,6 +6,7 @@ import type {
   WeekView,
   DayView,
   TimeSlotDetail,
+  CourseEvent,
   EventSummary,
   UserReservation,
   MyReservations,
@@ -240,6 +241,9 @@ export const calendarApi = {
 
   getEventSummary: (eventId: string) =>
     fetchApi<EventSummary>(`/calendar/event/${eventId}`),
+
+  getCourseEvents: (courseId: string) =>
+    fetchApi<CourseEvent[]>(`/calendar/course/${courseId}/events`),
 }
 
 // Reservations
@@ -308,7 +312,7 @@ export const adminApi = {
       body: JSON.stringify(data),
     }),
 
-  updateEvent: (eventId: string, data: Partial<CreateEventRequest> & { active?: boolean }) =>
+  updateEvent: (eventId: string, data: Partial<CreateEventRequest> & { active?: boolean; courseId?: string | null; removeCourse?: boolean }) =>
     fetchApi<EventDetail>(`/admin/events/${eventId}`, {
       method: 'PUT',
       body: JSON.stringify(data),

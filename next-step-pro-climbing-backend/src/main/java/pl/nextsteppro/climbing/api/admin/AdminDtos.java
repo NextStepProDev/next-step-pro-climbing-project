@@ -74,7 +74,8 @@ record CreateEventRequest(
     @NotNull LocalDate endDate,
     @Min(1) @Max(100) int maxParticipants,
     @Nullable LocalTime startTime,
-    @Nullable LocalTime endTime
+    @Nullable LocalTime endTime,
+    @Nullable UUID courseId
 ) {
     @AssertTrue(message = "{validation.event.date.range}")
     boolean isDateRangeValid() {
@@ -92,7 +93,9 @@ record UpdateEventRequest(
     @Nullable Integer maxParticipants,
     @Nullable Boolean active,
     @Nullable LocalTime startTime,
-    @Nullable LocalTime endTime
+    @Nullable LocalTime endTime,
+    @Nullable UUID courseId,
+    @Nullable Boolean removeCourse
 ) {}
 
 record EventAdminDto(
@@ -106,7 +109,9 @@ record EventAdminDto(
     int maxParticipants,
     boolean active,
     @Nullable LocalTime startTime,
-    @Nullable LocalTime endTime
+    @Nullable LocalTime endTime,
+    @Nullable UUID courseId,
+    @Nullable String courseTitle
 ) {}
 
 record EventDetailAdminDto(
@@ -121,6 +126,8 @@ record EventDetailAdminDto(
     boolean active,
     @Nullable LocalTime startTime,
     @Nullable LocalTime endTime,
+    @Nullable UUID courseId,
+    @Nullable String courseTitle,
     List<TimeSlotAdminDto> slots
 ) {}
 

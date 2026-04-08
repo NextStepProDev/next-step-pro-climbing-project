@@ -109,7 +109,7 @@ export function HomePage() {
 
           <div className="grid md:grid-cols-3 gap-8">
             {/* Course */}
-            <div className="bg-dark-900 rounded-xl border border-dark-800 p-6 hover:border-primary-500/50 hover:-translate-y-1 transition-all duration-300">
+            <Link to="/kursy" className="block bg-dark-900 rounded-xl border border-dark-800 p-6 hover:border-primary-500/50 hover:-translate-y-1 transition-all duration-300">
               <div className="w-12 h-12 bg-primary-500/10 rounded-lg flex items-center justify-center mb-4">
                 <Award className="w-6 h-6 text-primary-400" />
               </div>
@@ -133,10 +133,10 @@ export function HomePage() {
                   {t("offer.courses.item3")}
                 </li>
               </ul>
-            </div>
+            </Link>
 
             {/* Training */}
-            <div className="bg-dark-900 rounded-xl border border-dark-800 p-6 hover:border-primary-500/50 hover:-translate-y-1 transition-all duration-300">
+            <Link to="/kursy" className="block bg-dark-900 rounded-xl border border-dark-800 p-6 hover:border-primary-500/50 hover:-translate-y-1 transition-all duration-300">
               <div className="w-12 h-12 bg-green-500/10 rounded-lg flex items-center justify-center mb-4">
                 <Users className="w-6 h-6 text-green-400" />
               </div>
@@ -164,10 +164,10 @@ export function HomePage() {
                   {t("offer.trainings.item4")}
                 </li>
               </ul>
-            </div>
+            </Link>
 
             {/* Workshop */}
-            <div className="bg-dark-900 rounded-xl border border-dark-800 p-6 hover:border-primary-500/50 hover:-translate-y-1 transition-all duration-300">
+            <Link to="/kursy" className="block bg-dark-900 rounded-xl border border-dark-800 p-6 hover:border-primary-500/50 hover:-translate-y-1 transition-all duration-300">
               <div className="w-12 h-12 bg-amber-500/10 rounded-lg flex items-center justify-center mb-4">
                 <Calendar className="w-6 h-6 text-amber-400" />
               </div>
@@ -191,7 +191,7 @@ export function HomePage() {
                   {t("offer.workshops.item3")}
                 </li>
               </ul>
-            </div>
+            </Link>
           </div>
         </div>
       </section>

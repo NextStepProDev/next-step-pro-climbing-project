@@ -233,7 +233,9 @@
     "maxParticipantsLabel": "Máx. participantes",
     "createEvent": "Crear evento",
     "saveChanges": "Guardar cambios",
-    "spots": "{{count}} plazas"
+    "spots": "{{count}} plazas",
+    "selectCourse": "Curso (opcional)",
+    "noCourse": "— sin curso (título manual) —"
   },
   "users": {
     "searchPlaceholder": "Buscar por nombre, apellido o email...",

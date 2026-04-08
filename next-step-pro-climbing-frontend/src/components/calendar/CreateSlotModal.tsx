@@ -52,7 +52,10 @@ export function CreateSlotModal({
           e.preventDefault()
           if (timeError) return
           const { title, ...rest } = form
-          createMutation.mutate({ ...rest, title: title || undefined })
+          createMutation.mutate({
+            ...rest,
+            title: title || undefined,
+          })
         }}
         className="space-y-4"
       >

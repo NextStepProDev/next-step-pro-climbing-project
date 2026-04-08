@@ -10,6 +10,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 import pl.nextsteppro.climbing.config.CurrentUserId;
 
 import java.time.LocalDate;
@@ -118,5 +120,17 @@ public class CalendarController {
 
         TimeSlotDetailDto details = calendarService.getSlotDetails(slotId, userId);
         return ResponseEntity.ok(details);
+    }
+
+    @Operation(
+        summary = "Terminy kursu",
+        description = "Zwraca listę nadchodzących wydarzeń powiązanych z danym kursem"
+    )
+    @GetMapping("/course/{courseId}/events")
+    public ResponseEntity<List<CourseEventDto>> getCourseEvents(
+            @Parameter(description = "UUID kursu") @PathVariable UUID courseId) {
+
+        List<CourseEventDto> events = calendarService.getCourseEvents(courseId);
+        return ResponseEntity.ok(events);
     }
 }

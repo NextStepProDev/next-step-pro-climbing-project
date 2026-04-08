@@ -113,6 +113,8 @@ export interface EventDetail {
   active: boolean
   startTime: string | null
   endTime: string | null
+  courseId: string | null
+  courseTitle: string | null
   slots?: TimeSlotAdmin[]
 }
 
@@ -210,6 +212,16 @@ export interface CreateTimeSlotRequest {
   eventId?: string
 }
 
+export interface CourseEvent {
+  eventId: string
+  startDate: string
+  endDate: string
+  startTime: string | null
+  endTime: string | null
+  status: SlotStatus
+  availableSpots: number
+}
+
 export interface ReservationAdmin {
   id: string
   userFullName: string
@@ -235,6 +247,7 @@ export interface CreateEventRequest {
   maxParticipants: number
   startTime?: string
   endTime?: string
+  courseId?: string
 }
 
 // Activity Log types

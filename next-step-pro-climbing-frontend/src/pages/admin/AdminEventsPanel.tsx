@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { format } from 'date-fns'
 import { Plus, Trash2, Eye, EyeOff, Clock, Pencil, ChevronDown, ChevronRight, ChevronLeft, MapPin, Users, Mail, Phone, AlertTriangle } from 'lucide-react'
-import { adminApi } from '../../api/client'
+import { adminApi, coursesApi } from '../../api/client'
 import { getErrorMessage } from '../../utils/errors'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
 import { QueryError } from '../../components/ui/QueryError'
@@ -401,6 +401,7 @@ function EditEventModal({
   const { t } = useTranslation('admin')
   const { t: tc } = useTranslation('common')
   const [allDay, setAllDay] = useState(!event?.startTime)
+  const [courseId, setCourseId] = useState<string | null>(event?.courseId ?? null)
   const [form, setForm] = useState<CreateEventRequest>({
     title: event?.title ?? '',
     description: event?.description ?? '',
@@ -413,14 +414,21 @@ function EditEventModal({
     endTime: event?.endTime?.slice(0, 5),
   })
 
+  const { data: courses } = useQuery({
+    queryKey: ['courses'],
+    queryFn: () => coursesApi.getAll(),
+    staleTime: 5 * 60 * 1000,
+  })
+
   const queryClient = useQueryClient()
 
   const updateMutation = useMutation({
-    mutationFn: (data: CreateEventRequest) =>
+    mutationFn: (data: CreateEventRequest & { courseId?: string | null; removeCourse?: boolean }) =>
       adminApi.updateEvent(event!.id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'events'] })
       queryClient.invalidateQueries({ queryKey: ['calendar'] })
+      queryClient.invalidateQueries({ queryKey: ['courseEvents'] })
       onClose()
     },
   })
@@ -429,10 +437,15 @@ function EditEventModal({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    const payload: CreateEventRequest = { ...form }
+    const payload: CreateEventRequest & { courseId?: string | null; removeCourse?: boolean } = { ...form }
     if (allDay) {
       delete payload.startTime
       delete payload.endTime
+    }
+    if (courseId) {
+      payload.courseId = courseId
+    } else if (event.courseId) {
+      payload.removeCourse = true
     }
     updateMutation.mutate(payload)
   }
@@ -441,15 +454,38 @@ function EditEventModal({
     <Modal isOpen={isOpen} onClose={onClose} title={t('events.editTitle')}>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm text-dark-400 mb-1">{t('events.titleLabel')}</label>
-          <input
-            type="text"
-            value={form.title}
-            onChange={(e) => setForm({ ...form, title: e.target.value })}
+          <label className="block text-sm text-dark-400 mb-1">{t('events.selectCourse')}</label>
+          <select
+            value={courseId ?? ''}
+            onChange={(e) => {
+              const val = e.target.value || null
+              setCourseId(val)
+              if (val) {
+                const selected = courses?.find(c => c.id === val)
+                if (selected) setForm(f => ({ ...f, title: selected.title }))
+              }
+            }}
             className="w-full bg-dark-800 border border-dark-700 rounded-lg px-4 py-2 text-dark-100"
-            required
-          />
+          >
+            <option value="">{t('events.noCourse')}</option>
+            {courses?.map((course) => (
+              <option key={course.id} value={course.id}>{course.title}</option>
+            ))}
+          </select>
         </div>
+
+        {!courseId && (
+          <div>
+            <label className="block text-sm text-dark-400 mb-1">{t('events.titleLabel')}</label>
+            <input
+              type="text"
+              value={form.title}
+              onChange={(e) => setForm({ ...form, title: e.target.value })}
+              className="w-full bg-dark-800 border border-dark-700 rounded-lg px-4 py-2 text-dark-100"
+              required
+            />
+          </div>
+        )}
 
         <div>
           <label className="block text-sm text-dark-400 mb-1">{t('events.typeLabel')}</label>
@@ -587,6 +623,7 @@ function CreateEventModal({
   const { t } = useTranslation('admin')
   const { t: tc } = useTranslation('common')
   const [allDay, setAllDay] = useState(true)
+  const [courseId, setCourseId] = useState<string | undefined>(undefined)
   const [form, setForm] = useState<CreateEventRequest>({
     title: '',
     description: '',
@@ -597,6 +634,12 @@ function CreateEventModal({
     maxParticipants: 4,
   })
 
+  const { data: courses } = useQuery({
+    queryKey: ['courses'],
+    queryFn: () => coursesApi.getAll(),
+    staleTime: 5 * 60 * 1000,
+  })
+
   const queryClient = useQueryClient()
 
   const createMutation = useMutation({
@@ -604,8 +647,10 @@ function CreateEventModal({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'events'] })
       queryClient.invalidateQueries({ queryKey: ['calendar'] })
+      queryClient.invalidateQueries({ queryKey: ['courseEvents'] })
       onClose()
       setAllDay(true)
+      setCourseId(undefined)
       setForm({
         title: '',
         description: '',
@@ -625,6 +670,7 @@ function CreateEventModal({
       delete payload.startTime
       delete payload.endTime
     }
+    if (courseId) payload.courseId = courseId
     createMutation.mutate(payload)
   }
 
@@ -632,15 +678,40 @@ function CreateEventModal({
     <Modal isOpen={isOpen} onClose={onClose} title={t('events.addTitle')}>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm text-dark-400 mb-1">{t('events.titleLabel')}</label>
-          <input
-            type="text"
-            value={form.title}
-            onChange={(e) => setForm({ ...form, title: e.target.value })}
+          <label className="block text-sm text-dark-400 mb-1">{t('events.selectCourse')}</label>
+          <select
+            value={courseId ?? ''}
+            onChange={(e) => {
+              const val = e.target.value || undefined
+              setCourseId(val)
+              if (val) {
+                const selected = courses?.find(c => c.id === val)
+                if (selected) setForm(f => ({ ...f, title: selected.title }))
+              } else {
+                setForm(f => ({ ...f, title: '' }))
+              }
+            }}
             className="w-full bg-dark-800 border border-dark-700 rounded-lg px-4 py-2 text-dark-100"
-            required
-          />
+          >
+            <option value="">{t('events.noCourse')}</option>
+            {courses?.map((course) => (
+              <option key={course.id} value={course.id}>{course.title}</option>
+            ))}
+          </select>
         </div>
+
+        {!courseId && (
+          <div>
+            <label className="block text-sm text-dark-400 mb-1">{t('events.titleLabel')}</label>
+            <input
+              type="text"
+              value={form.title}
+              onChange={(e) => setForm({ ...form, title: e.target.value })}
+              className="w-full bg-dark-800 border border-dark-700 rounded-lg px-4 py-2 text-dark-100"
+              required
+            />
+          </div>
+        )}
 
         <div>
           <label className="block text-sm text-dark-400 mb-1">{t('events.typeLabel')}</label>

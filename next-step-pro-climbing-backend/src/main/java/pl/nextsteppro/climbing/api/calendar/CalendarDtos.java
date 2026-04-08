@@ -54,6 +54,16 @@ record TimeSlotDetailDto(
     @Nullable UUID reservationId
 ) implements CalendarDtos {}
 
+record CourseEventDto(
+    UUID eventId,
+    LocalDate startDate,
+    LocalDate endDate,
+    @Nullable LocalTime startTime,
+    @Nullable LocalTime endTime,
+    SlotStatus status,
+    int availableSpots
+) implements CalendarDtos {}
+
 record EventSummaryDto(
     UUID id,
     String title,
