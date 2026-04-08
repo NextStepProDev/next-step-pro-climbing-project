@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { format, startOfWeek, addWeeks, subWeeks } from "date-fns";
 import { calendarApi } from "../api/client";
@@ -13,7 +13,7 @@ import { EventSignupModal } from "../components/calendar/EventSignupModal";
 import { CreateSlotModal } from "../components/calendar/CreateSlotModal";
 import { LoadingSpinner } from "../components/ui/LoadingSpinner";
 import { QueryError } from "../components/ui/QueryError";
-import { Phone, Mail } from "lucide-react";
+import { Phone, Mail, ExternalLink } from "lucide-react";
 import { formatAvailability, getEventColor, buildEventColorMap } from "../utils/events";
 import type { EventSummary } from "../types";
 
@@ -255,7 +255,18 @@ export function CalendarPage() {
                         className="flex items-center justify-between text-sm bg-dark-800/40 rounded-lg px-3 py-2 cursor-pointer hover:bg-dark-800/70 transition-colors"
                         onClick={() => setSelectedEvent(event)}
                       >
-                        <span className="text-dark-100 font-medium">{event.title}</span>
+                        <span className="flex items-center gap-1.5 text-dark-100 font-medium min-w-0">
+                          {event.title}
+                          {event.courseId && (
+                            <Link
+                              to={`/courses#course-${event.courseId}`}
+                              onClick={(e) => e.stopPropagation()}
+                              className="flex items-center gap-0.5 text-xs text-primary-400 hover:text-primary-300 transition-colors shrink-0"
+                            >
+                              <ExternalLink className="w-3 h-3" />
+                            </Link>
+                          )}
+                        </span>
                         <div className="flex items-center gap-3">
                           <span className={`px-2 py-1 rounded-full text-xs font-medium ${badgeClass}`}>
                             {label}
@@ -331,11 +342,20 @@ export function CalendarPage() {
                       className="flex items-center justify-between text-sm bg-dark-800/40 rounded-lg px-3 py-2 cursor-pointer hover:bg-dark-800/70 transition-colors"
                       onClick={() => setSelectedEvent(event)}
                     >
-                      <span className="flex items-center gap-2 text-dark-100 font-medium">
+                      <span className="flex items-center gap-2 text-dark-100 font-medium min-w-0">
                         <span
                           className={`w-2.5 h-2.5 rounded-full shrink-0 ${color.dot}`}
                         />
                         {event.title}
+                        {event.courseId && (
+                          <Link
+                            to={`/courses#course-${event.courseId}`}
+                            onClick={(e) => e.stopPropagation()}
+                            className="flex items-center gap-0.5 text-xs text-primary-400 hover:text-primary-300 transition-colors shrink-0"
+                          >
+                            <ExternalLink className="w-3 h-3" />
+                          </Link>
+                        )}
                       </span>
 
                       <div className="flex items-center gap-3">
