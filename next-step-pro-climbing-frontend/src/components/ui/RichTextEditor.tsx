@@ -1,6 +1,52 @@
 import { useCallback, useRef } from 'react'
 import { Bold, Italic, Underline, List, ListOrdered } from 'lucide-react'
 
+function htmlToRichText(html: string): string | null {
+  const doc = new DOMParser().parseFromString(html, 'text/html')
+
+  function convert(node: Node): string {
+    if (node.nodeType === Node.TEXT_NODE) return node.textContent ?? ''
+    if (node.nodeType !== Node.ELEMENT_NODE) return ''
+
+    const el = node as Element
+    const tag = el.tagName.toLowerCase()
+
+    if (tag === 'ul') {
+      return Array.from(el.children)
+        .filter(c => c.tagName.toLowerCase() === 'li')
+        .map(li => `• ${convertChildren(li).trim()}`)
+        .join('\n') + '\n'
+    }
+
+    if (tag === 'ol') {
+      return Array.from(el.children)
+        .filter(c => c.tagName.toLowerCase() === 'li')
+        .map((li, i) => `${i + 1}. ${convertChildren(li).trim()}`)
+        .join('\n') + '\n'
+    }
+
+    const inner = convertChildren(el)
+    switch (tag) {
+      case 'strong': case 'b': return `**${inner.trim()}**`
+      case 'em':     case 'i': return `*${inner.trim()}*`
+      case 'u':                return `__${inner.trim()}__`
+      case 'br':               return '\n'
+      case 'p': case 'h1': case 'h2': case 'h3': case 'h4': case 'h5': case 'h6':
+        return inner.trim() ? inner.trim() + '\n' : ''
+      case 'div':
+        return inner.trim() ? inner.trim() + '\n' : ''
+      default: return inner
+    }
+  }
+
+  function convertChildren(el: Element): string {
+    return Array.from(el.childNodes).map(convert).join('')
+  }
+
+  const result = convertChildren(doc.body).replace(/\n{3,}/g, '\n\n').trim()
+  return result || null
+}
+
 interface RichTextEditorProps {
   value: string
   onChange: (value: string) => void
@@ -37,7 +83,7 @@ function stripListPrefix(line: string): string {
 export function RichTextEditor({
   value,
   onChange,
-  rows = 10,
+  rows = 16,
   placeholder,
   className,
 }: RichTextEditorProps) {
@@ -116,6 +162,24 @@ export function RichTextEditor({
   const handleNumbered  = useCallback(() => applyList('numbered'), [applyList])
   const handleLettered  = useCallback(() => applyList('lettered'), [applyList])
 
+  const handlePaste = useCallback((e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    const html = e.clipboardData.getData('text/html')
+    if (!html) return
+    const converted = htmlToRichText(html)
+    if (!converted) return
+    e.preventDefault()
+    const ta = textareaRef.current
+    if (!ta) return
+    const start = ta.selectionStart
+    const end = ta.selectionEnd
+    const newValue = ta.value.slice(0, start) + converted + ta.value.slice(end)
+    onChange(newValue)
+    requestAnimationFrame(() => {
+      ta.focus()
+      ta.setSelectionRange(start + converted.length, start + converted.length)
+    })
+  }, [onChange])
+
   return (
     <div className={className}>
       <div className="flex items-center gap-0.5 border border-dark-600 border-b-0 rounded-t bg-dark-800 px-2 py-1">
@@ -134,9 +198,10 @@ export function RichTextEditor({
         ref={textareaRef}
         value={value}
         onChange={(e) => onChange(e.target.value)}
+        onPaste={handlePaste}
         rows={rows}
         placeholder={placeholder}
-        className="w-full bg-dark-700 border border-dark-600 rounded-b px-3 py-2 text-dark-100 focus:outline-none focus:border-primary-500 resize-y text-sm"
+        className="w-full bg-dark-700 border border-dark-600 rounded-b px-3 py-2 text-dark-100 focus:outline-none focus:border-primary-500 resize-y min-h-0 text-sm"
       />
     </div>
   )
