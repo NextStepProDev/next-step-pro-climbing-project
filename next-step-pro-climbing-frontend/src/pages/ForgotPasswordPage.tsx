@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { KeyRound } from 'lucide-react'
 import { forgotPassword } from '../api/auth'
+import { getErrorMessage } from '../utils/errors'
 import { Button } from '../components/ui/Button'
 
 export function ForgotPasswordPage() {
@@ -21,7 +22,7 @@ export function ForgotPasswordPage() {
       await forgotPassword(email)
       setSuccess(true)
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('forgotPassword.error'))
+      setError(getErrorMessage(err))
     } finally {
       setLoading(false)
     }

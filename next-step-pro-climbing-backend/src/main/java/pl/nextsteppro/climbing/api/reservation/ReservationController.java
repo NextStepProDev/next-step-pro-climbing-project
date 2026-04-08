@@ -43,10 +43,6 @@ public class ReservationController {
             @Parameter(hidden = true) @CurrentUserId UUID userId,
             @RequestBody(required = false) CreateReservationRequest body) {
 
-        if (userId == null) {
-            return ResponseEntity.status(401).build();
-        }
-
         String comment = body != null ? body.comment() : null;
         int participants = (body != null && body.participants() != null) ? body.participants() : 1;
         ReservationResultDto result = reservationService.createReservation(slotId, userId, comment, participants);
@@ -68,10 +64,6 @@ public class ReservationController {
             @Parameter(description = "UUID rezerwacji") @PathVariable UUID reservationId,
             @Parameter(hidden = true) @CurrentUserId UUID userId) {
 
-        if (userId == null) {
-            return ResponseEntity.status(401).build();
-        }
-
         reservationService.cancelReservation(reservationId, userId);
         return ResponseEntity.noContent().build();
     }
@@ -88,10 +80,6 @@ public class ReservationController {
     @GetMapping("/my")
     public ResponseEntity<List<UserReservationDto>> getMyReservations(
             @Parameter(hidden = true) @CurrentUserId UUID userId) {
-
-        if (userId == null) {
-            return ResponseEntity.status(401).build();
-        }
 
         List<UserReservationDto> reservations = reservationService.getUserReservations(userId);
         return ResponseEntity.ok(reservations);
@@ -110,10 +98,6 @@ public class ReservationController {
     public ResponseEntity<MyReservationsDto> getMyUpcomingReservations(
             @Parameter(hidden = true) @CurrentUserId UUID userId) {
 
-        if (userId == null) {
-            return ResponseEntity.status(401).build();
-        }
-
         MyReservationsDto reservations = reservationService.getUserUpcomingReservations(userId);
         return ResponseEntity.ok(reservations);
     }
@@ -130,10 +114,6 @@ public class ReservationController {
     @GetMapping("/my/past")
     public ResponseEntity<MyReservationsDto> getMyPastReservations(
             @Parameter(hidden = true) @CurrentUserId UUID userId) {
-
-        if (userId == null) {
-            return ResponseEntity.status(401).build();
-        }
 
         MyReservationsDto reservations = reservationService.getUserPastReservations(userId);
         return ResponseEntity.ok(reservations);
@@ -156,10 +136,6 @@ public class ReservationController {
             @Parameter(hidden = true) @CurrentUserId UUID userId,
             @RequestBody(required = false) CreateReservationRequest body) {
 
-        if (userId == null) {
-            return ResponseEntity.status(401).build();
-        }
-
         String comment = body != null ? body.comment() : null;
         int participants = (body != null && body.participants() != null) ? body.participants() : 1;
         return ResponseEntity.ok(reservationService.createEventReservation(eventId, userId, comment, participants));
@@ -178,10 +154,6 @@ public class ReservationController {
     public ResponseEntity<Void> cancelEventReservation(
             @Parameter(description = "UUID wydarzenia") @PathVariable UUID eventId,
             @Parameter(hidden = true) @CurrentUserId UUID userId) {
-
-        if (userId == null) {
-            return ResponseEntity.status(401).build();
-        }
 
         reservationService.cancelEventReservation(eventId, userId);
         return ResponseEntity.noContent().build();

@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { KeyRound } from 'lucide-react'
 import { resetPassword } from '../api/auth'
 import { validatePassword } from '../utils/validation'
+import { getErrorMessage } from '../utils/errors'
 import { Button } from '../components/ui/Button'
 
 export function ResetPasswordPage() {
@@ -49,7 +50,7 @@ export function ResetPasswordPage() {
       await resetPassword(token, password)
       setSuccess(true)
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('resetPassword.error'))
+      setError(getErrorMessage(err))
     } finally {
       setLoading(false)
     }

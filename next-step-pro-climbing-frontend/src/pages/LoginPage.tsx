@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../context/AuthContext'
 import { consumeRedirectPath } from '../utils/redirect'
+import { getErrorMessage } from '../utils/errors'
 import { Button } from '../components/ui/Button'
 import logoWhite from '../assets/logo/logo-white.png'
 
@@ -25,7 +26,7 @@ export function LoginPage() {
       const redirect = consumeRedirectPath()
       navigate(redirect || '/', { replace: true })
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('login.error'))
+      setError(getErrorMessage(err))
     } finally {
       setLoading(false)
     }

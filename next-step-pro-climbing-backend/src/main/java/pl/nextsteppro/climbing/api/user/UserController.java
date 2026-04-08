@@ -12,7 +12,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import pl.nextsteppro.climbing.config.CurrentUserId;
 import pl.nextsteppro.climbing.domain.user.User;
-import pl.nextsteppro.climbing.domain.user.UserRepository;
 
 import java.util.UUID;
 
@@ -21,11 +20,9 @@ import java.util.UUID;
 @Tag(name = "User", description = "Profil użytkownika")
 public class UserController {
 
-    private final UserRepository userRepository;
     private final UserService userService;
 
-    public UserController(UserRepository userRepository, UserService userService) {
-        this.userRepository = userRepository;
+    public UserController(UserService userService) {
         this.userService = userService;
     }
 
@@ -42,14 +39,7 @@ public class UserController {
     public ResponseEntity<UserProfileDto> getCurrentUser(
             @Parameter(hidden = true) @CurrentUserId UUID userId) {
 
-        if (userId == null) {
-            return ResponseEntity.status(401).build();
-        }
-        User user = userRepository.findById(userId).orElse(null);
-        if (user == null) {
-            return ResponseEntity.status(401).build();
-        }
-        return ResponseEntity.ok(toProfileDto(user));
+        return ResponseEntity.ok(toProfileDto(userService.getProfile(userId)));
     }
 
     @Operation(
@@ -67,30 +57,9 @@ public class UserController {
             @Parameter(hidden = true) @CurrentUserId UUID userId,
             @Valid @RequestBody UpdateProfileRequest request) {
 
-        if (userId == null) {
-            return ResponseEntity.status(401).build();
-        }
-        User user = userRepository.findById(userId).orElse(null);
-        if (user == null) {
-            return ResponseEntity.status(401).build();
-        }
-
-        // Update fields
-        if (request.firstName() != null) {
-            user.setFirstName(request.firstName());
-        }
-        if (request.lastName() != null) {
-            user.setLastName(request.lastName());
-        }
-        if (request.phone() != null) {
-            user.setPhone(request.phone());
-        }
-        if (request.nickname() != null) {
-            user.setNickname(request.nickname());
-        }
-        user = userRepository.save(user);
-
-        return ResponseEntity.ok(toProfileDto(user));
+        return ResponseEntity.ok(toProfileDto(
+            userService.updateProfile(userId, request.firstName(), request.lastName(), request.phone(), request.nickname())
+        ));
     }
 
     @Operation(summary = "Zmień hasło", description = "Zmienia hasło zalogowanego użytkownika")
@@ -103,10 +72,6 @@ public class UserController {
     public ResponseEntity<Void> changePassword(
             @Parameter(hidden = true) @CurrentUserId UUID userId,
             @Valid @RequestBody ChangePasswordRequest request) {
-
-        if (userId == null) {
-            return ResponseEntity.status(401).build();
-        }
 
         userService.changePassword(userId, request.currentPassword(), request.newPassword());
         return ResponseEntity.noContent().build();
@@ -123,10 +88,6 @@ public class UserController {
             @Parameter(hidden = true) @CurrentUserId UUID userId,
             @Valid @RequestBody DeleteAccountRequest request) {
 
-        if (userId == null) {
-            return ResponseEntity.status(401).build();
-        }
-
         userService.deleteAccount(userId, request.password());
         return ResponseEntity.noContent().build();
     }
@@ -140,10 +101,6 @@ public class UserController {
     public ResponseEntity<Void> updateNotifications(
             @Parameter(hidden = true) @CurrentUserId UUID userId,
             @Valid @RequestBody UpdateNotificationsRequest request) {
-
-        if (userId == null) {
-            return ResponseEntity.status(401).build();
-        }
 
         userService.updateNotificationPreference(userId, request.enabled());
         return ResponseEntity.noContent().build();
@@ -159,10 +116,6 @@ public class UserController {
             @Parameter(hidden = true) @CurrentUserId UUID userId,
             @Valid @RequestBody UpdateLanguageRequest request) {
 
-        if (userId == null) {
-            return ResponseEntity.status(401).build();
-        }
-
         userService.updateLanguagePreference(userId, request.language());
         return ResponseEntity.noContent().build();
     }
@@ -176,10 +129,6 @@ public class UserController {
     public ResponseEntity<Void> updateNewsletter(
             @Parameter(hidden = true) @CurrentUserId UUID userId,
             @Valid @RequestBody UpdateNewsletterRequest request) {
-
-        if (userId == null) {
-            return ResponseEntity.status(401).build();
-        }
 
         userService.updateNewsletterSubscription(userId, request.subscribed());
         return ResponseEntity.noContent().build();

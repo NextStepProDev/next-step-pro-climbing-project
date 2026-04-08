@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { registerUser } from '../api/auth'
 import { validatePassword } from '../utils/validation'
+import { getErrorMessage } from '../utils/errors'
 import { Button } from '../components/ui/Button'
 import logoWhite from '../assets/logo/logo-white.png'
 
@@ -51,7 +52,7 @@ export function RegisterPage() {
       })
       setSuccess(true)
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('register.error'))
+      setError(getErrorMessage(err))
     } finally {
       setLoading(false)
     }
