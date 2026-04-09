@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { format } from 'date-fns'
 import { Calendar, ExternalLink, MapPin, Users } from 'lucide-react'
@@ -26,6 +26,7 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
   const queryClient = useQueryClient()
   const [comment, setComment] = useState('')
   const [participants, setParticipants] = useState(1)
+  const [editParticipants, setEditParticipants] = useState(1)
 
   // Fetch fresh event data (with waitlist status) when modal is open
   const { data: freshEvent } = useQuery({
@@ -36,6 +37,12 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
   })
 
   const ev = freshEvent ?? event
+
+  useEffect(() => {
+    if (freshEvent?.userParticipants && freshEvent.userParticipants > 0) {
+      setEditParticipants(freshEvent.userParticipants)
+    }
+  }, [freshEvent?.id, freshEvent?.userParticipants])
 
   const reservationMutation = useMutation({
     mutationFn: (data: { eventId: string; comment?: string; participants: number }) =>
@@ -57,6 +64,15 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
       queryClient.invalidateQueries({ queryKey: ['reservations'] })
       queryClient.invalidateQueries({ queryKey: ['eventSummary', event?.id] })
       onClose()
+    },
+  })
+
+  const updateParticipantsMutation = useMutation({
+    mutationFn: (participants: number) => reservationApi.updateEventParticipants(ev!.id, participants),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['calendar'] })
+      queryClient.invalidateQueries({ queryKey: ['reservations'] })
+      queryClient.invalidateQueries({ queryKey: ['eventSummary', event?.id] })
     },
   })
 
@@ -195,11 +211,21 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
     }
 
     if (ev.isUserRegistered) {
+      const participantsChanged = editParticipants !== ev.userParticipants && ev.userParticipants > 0
       return (
         <>
+          {ev.enrollmentOpen && participantsChanged && (
+            <Button
+              variant="primary"
+              className="flex-1"
+              loading={updateParticipantsMutation.isPending}
+              onClick={() => updateParticipantsMutation.mutate(editParticipants)}
+            >
+              {t('event.saveParticipants')}
+            </Button>
+          )}
           <Button
             variant="danger"
-            className="flex-1"
             loading={cancelMutation.isPending}
             onClick={() => cancelMutation.mutate(ev.id)}
           >
@@ -300,7 +326,7 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
           <h3 className="text-lg font-semibold text-dark-100">{ev.title}</h3>
           {ev.courseId && (
             <Link
-              to={`/courses#course-${ev.courseId}`}
+              to={`/kursy#course-${ev.courseId}`}
               onClick={onClose}
               className="flex items-center gap-1 text-xs text-primary-400 hover:text-primary-300 transition-colors shrink-0"
             >
@@ -350,10 +376,40 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
 
         {/* User registered info */}
         {ev.isUserRegistered && (
-          <div className="p-3 bg-primary-500/10 border border-primary-500/20 rounded-lg">
-            <span className="text-primary-400 font-medium">
-              {t('event.hasReservation')}
-            </span>
+          <div className="space-y-4">
+            <div className="p-3 bg-primary-500/10 border border-primary-500/20 rounded-lg">
+              <span className="text-primary-400 font-medium">
+                {t('event.hasReservation')}
+              </span>
+            </div>
+
+            {ev.enrollmentOpen && ev.userParticipants > 0 && (
+              <div>
+                <label className="block text-sm text-dark-400 mb-2">{t('event.editParticipantsLabel')}</label>
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setEditParticipants(Math.max(1, editParticipants - 1))}
+                    className="w-9 h-9 rounded-lg bg-dark-800 border border-dark-700 text-dark-200 hover:bg-dark-700 transition-colors text-lg font-bold"
+                  >
+                    -
+                  </button>
+                  <span className="text-lg font-semibold text-dark-100 w-8 text-center">{editParticipants}</span>
+                  <button
+                    type="button"
+                    onClick={() => setEditParticipants(editParticipants + 1)}
+                    disabled={editParticipants >= spotsLeft + ev.userParticipants}
+                    className="w-9 h-9 rounded-lg bg-dark-800 border border-dark-700 text-dark-200 hover:bg-dark-700 transition-colors text-lg font-bold disabled:opacity-40"
+                  >
+                    +
+                  </button>
+                  <span className="text-sm text-dark-500">{t('event.spotsOf', { count: spotsLeft + ev.userParticipants })}</span>
+                </div>
+                {updateParticipantsMutation.isError && (
+                  <p className="text-sm text-rose-400/80 mt-2">{getErrorMessage(updateParticipantsMutation.error)}</p>
+                )}
+              </div>
+            )}
           </div>
         )}
 

@@ -85,11 +85,14 @@ record EventSummaryDto(
     boolean isUserRegistered,
     boolean enrollmentOpen,
     @Nullable UUID courseId,
+    boolean coursePublished,
     // Waitlist — null w widokach listy, wypełnione w getEventSummary (pojedyncze wydarzenie)
     @Nullable WaitlistStatus userWaitlistStatus,
     @Nullable UUID waitlistEntryId,
     @Nullable Instant confirmationDeadline,
-    int userWaitlistPosition
+    int userWaitlistPosition,
+    // 0 w widokach listy, wypełnione w getEventSummary gdy użytkownik jest zapisany
+    int userParticipants
 ) implements CalendarDtos {}
 
 record WeekViewDto(

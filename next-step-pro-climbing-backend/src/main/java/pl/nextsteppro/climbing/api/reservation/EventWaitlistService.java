@@ -29,9 +29,7 @@ import java.time.LocalTime;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -243,27 +241,13 @@ public class EventWaitlistService {
         List<EventWaitlist> expired = eventWaitlistRepository.findExpiredPendingConfirmations(Instant.now());
         if (expired.isEmpty()) return;
 
-        Map<UUID, List<EventWaitlist>> byEvent = expired.stream()
-            .collect(Collectors.groupingBy(w -> w.getEvent().getId()));
-
+        // Deadline minął i nikt nie potwierdził — wracamy do WAITING bez kolejnego powiadomienia.
+        // Następny notifyAll zostanie wywołany dopiero gdy ktoś anuluje rezerwację.
         for (EventWaitlist entry : expired) {
-            entry.expire();
+            entry.returnToWaiting();
         }
         eventWaitlistRepository.saveAll(expired);
-
-        for (UUID eventId : byEvent.keySet()) {
-            int pending = eventWaitlistRepository.countPendingConfirmationByEventId(eventId);
-            if (pending > 0) continue;
-
-            Event event = eventRepository.findById(eventId).orElse(null);
-            if (event == null) continue;
-
-            List<TimeSlot> slots = timeSlotRepository.findByEventId(eventId);
-            int confirmed = computeCurrentParticipants(event, slots);
-            if (confirmed < event.getMaxParticipants()) {
-                notifyAll(eventId);
-            }
-        }
+        log.info("Returned {} expired event waitlist entries to WAITING", expired.size());
     }
 
     @Transactional(readOnly = true)

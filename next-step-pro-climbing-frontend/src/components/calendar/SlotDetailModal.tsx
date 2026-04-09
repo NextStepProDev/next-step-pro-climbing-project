@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { format } from "date-fns";
-import { Clock, Users, Calendar } from "lucide-react";
+import { Clock, Users, Calendar, Clock3 } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { Modal } from "../ui/Modal";
@@ -57,6 +57,36 @@ export function SlotDetailModal({
     },
   });
 
+  const joinWaitlistMutation = useMutation({
+    mutationFn: (slotId: string) => reservationApi.joinWaitlist(slotId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["calendar"] });
+      queryClient.invalidateQueries({ queryKey: ["slot"] });
+      queryClient.invalidateQueries({ queryKey: ["reservations", "waitlist"] });
+      onClose();
+    },
+  });
+
+  const leaveWaitlistMutation = useMutation({
+    mutationFn: (slotId: string) => reservationApi.leaveWaitlist(slotId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["calendar"] });
+      queryClient.invalidateQueries({ queryKey: ["slot"] });
+      queryClient.invalidateQueries({ queryKey: ["reservations", "waitlist"] });
+      onClose();
+    },
+  });
+
+  const confirmOfferMutation = useMutation({
+    mutationFn: (waitlistId: string) => reservationApi.confirmWaitlistOffer(waitlistId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["calendar"] });
+      queryClient.invalidateQueries({ queryKey: ["slot"] });
+      queryClient.invalidateQueries({ queryKey: ["reservations"] });
+      onClose();
+    },
+  });
+
   if (!slot) return null;
 
   const dateObj = new Date(slot.date);
@@ -66,6 +96,10 @@ export function SlotDetailModal({
   const isPast = slot.status === "PAST";
   const isBookingClosed = slot.status === "BOOKING_CLOSED";
   const isAvailable = slot.status === "AVAILABLE" && spotsLeft > 0;
+  const isFull = slot.status === "FULL" || (slot.status === "AVAILABLE" && spotsLeft <= 0);
+  const isWaiting = slot.userWaitlistStatus === "WAITING";
+  const isPendingConfirmation = slot.userWaitlistStatus === "PENDING_CONFIRMATION";
+  const canJoinWaitlist = isFull && !isWaiting && !isPendingConfirmation && !isPast && !isBookingClosed && !slot.isUserRegistered;
 
   const handleLoginRedirect = () => {
     saveRedirectPath(`/calendar?date=${slot.date}`);
@@ -139,6 +173,43 @@ export function SlotDetailModal({
           </div>
         )}
 
+        {/* Waitlist — PENDING_CONFIRMATION (wyścig o miejsce) */}
+        {isPendingConfirmation && slot.waitlistEntryId && (
+          <div className="p-4 bg-amber-500/10 border-2 border-amber-500/40 rounded-lg space-y-2">
+            <div className="flex items-center gap-2">
+              <Clock3 className="w-5 h-5 text-amber-400 shrink-0" />
+              <span className="text-amber-300 font-semibold">{t('slot.waitlist.offerTitle')}</span>
+            </div>
+            <p className="text-amber-200/80 text-sm">{t('slot.waitlist.offerBody')}</p>
+            {slot.confirmationDeadline && (
+              <p className="text-amber-200/70 text-sm">
+                {t('slot.waitlist.deadline')}{' '}
+                <span className="font-medium">
+                  {format(new Date(slot.confirmationDeadline), 'dd.MM.yyyy HH:mm')}
+                </span>
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* Waitlist — race lost (ktoś był szybszy — wróciłeś do kolejki) */}
+        {confirmOfferMutation.isError && (
+          <div className="p-3 bg-rose-500/10 border border-rose-500/20 rounded-lg">
+            <p className="text-rose-400 text-sm font-medium">
+              {getErrorMessage(confirmOfferMutation.error)}
+            </p>
+          </div>
+        )}
+
+        {/* Waitlist — WAITING (w kolejce) */}
+        {isWaiting && (
+          <div className="p-3 bg-dark-800 border border-dark-700 rounded-lg">
+            <span className="text-dark-300 text-sm">
+              {t('slot.waitlist.waiting', { position: slot.userWaitlistPosition })}
+            </span>
+          </div>
+        )}
+
         {/* Participants & Comment for reservation */}
         {isAuthenticated && isAvailable && !slot.isUserRegistered && (
           <>
@@ -201,6 +272,33 @@ export function SlotDetailModal({
             >
               {t('slot.loginToBook')}
             </Button>
+          ) : isPendingConfirmation && slot.waitlistEntryId ? (
+            <>
+              <Button
+                variant="primary"
+                className="flex-1"
+                loading={confirmOfferMutation.isPending}
+                onClick={() => confirmOfferMutation.mutate(slot.waitlistEntryId as string)}
+              >
+                {t('slot.waitlist.confirm')}
+              </Button>
+              <Button
+                variant="danger"
+                loading={leaveWaitlistMutation.isPending}
+                onClick={() => leaveWaitlistMutation.mutate(slot.id)}
+              >
+                {t('slot.waitlist.decline')}
+              </Button>
+            </>
+          ) : isWaiting ? (
+            <Button
+              variant="secondary"
+              className="flex-1"
+              loading={leaveWaitlistMutation.isPending}
+              onClick={() => leaveWaitlistMutation.mutate(slot.id)}
+            >
+              {t('slot.waitlist.leave')}
+            </Button>
           ) : slot.isUserRegistered && slot.reservationId ? (
             <Button
               variant="danger"
@@ -212,7 +310,6 @@ export function SlotDetailModal({
             >
               {t('slot.cancelReservation')}
             </Button>
-
           ) : isAvailable ? (
             <Button
               variant="primary"
@@ -227,6 +324,15 @@ export function SlotDetailModal({
               }
             >
               {participants > 1 ? t('slot.bookMultiple', { count: participants }) : t('slot.bookSingle')}
+            </Button>
+          ) : canJoinWaitlist ? (
+            <Button
+              variant="secondary"
+              className="flex-1"
+              loading={joinWaitlistMutation.isPending}
+              onClick={() => joinWaitlistMutation.mutate(slot.id)}
+            >
+              {t('slot.waitlist.join')}
             </Button>
           ) : (
             <Button
@@ -252,6 +358,11 @@ export function SlotDetailModal({
         {cancelMutation.isError && (
           <p className="text-sm text-rose-400/80">
             {getErrorMessage(cancelMutation.error)}
+          </p>
+        )}
+        {joinWaitlistMutation.isError && (
+          <p className="text-sm text-rose-400/80">
+            {getErrorMessage(joinWaitlistMutation.error)}
           </p>
         )}
       </div>

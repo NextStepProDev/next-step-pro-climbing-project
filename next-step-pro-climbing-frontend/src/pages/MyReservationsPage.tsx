@@ -1,9 +1,10 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { format } from 'date-fns'
 import { useDateLocale } from '../utils/dateFnsLocale'
-import { Calendar, Clock, MessageSquare, Users, X, Ban, ChevronDown, ChevronRight, ChevronLeft } from 'lucide-react'
+import { Calendar, Clock, MessageSquare, Users, X, Ban, ChevronDown, ChevronRight, ChevronLeft, Clock3, ListX, ExternalLink, Pencil, Check } from 'lucide-react'
 import { reservationApi, calendarApi } from '../api/client'
 import { getErrorMessage } from '../utils/errors'
 import { LoadingSpinner } from '../components/ui/LoadingSpinner'
@@ -12,7 +13,7 @@ import { Button } from '../components/ui/Button'
 import { ConfirmModal } from '../components/ui/ConfirmModal'
 import { SlotDetailModal } from '../components/calendar/SlotDetailModal'
 import { EventSignupModal } from '../components/calendar/EventSignupModal'
-import type { MyReservations } from '../types'
+import type { MyReservations, WaitlistEntry, EventWaitlistEntry } from '../types'
 
 export function MyReservationsPage() {
   const { t } = useTranslation('reservations')
@@ -60,6 +61,48 @@ export function MyReservationsPage() {
     },
   })
 
+  const { data: waitlistData } = useQuery({
+    queryKey: ['reservations', 'waitlist'],
+    queryFn: reservationApi.getMyWaitlist,
+  })
+
+  const { data: eventWaitlistData } = useQuery({
+    queryKey: ['reservations', 'event-waitlist'],
+    queryFn: reservationApi.getMyEventWaitlist,
+  })
+
+  const confirmOfferMutation = useMutation({
+    mutationFn: reservationApi.confirmWaitlistOffer,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['reservations'] })
+      queryClient.invalidateQueries({ queryKey: ['calendar'] })
+    },
+  })
+
+  const leaveWaitlistMutation = useMutation({
+    mutationFn: reservationApi.leaveWaitlist,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['reservations', 'waitlist'] })
+      queryClient.invalidateQueries({ queryKey: ['calendar'] })
+    },
+  })
+
+  const confirmEventOfferMutation = useMutation({
+    mutationFn: reservationApi.confirmEventWaitlistOffer,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['reservations'] })
+      queryClient.invalidateQueries({ queryKey: ['calendar'] })
+    },
+  })
+
+  const leaveEventWaitlistMutation = useMutation({
+    mutationFn: reservationApi.leaveEventWaitlist,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['reservations', 'event-waitlist'] })
+      queryClient.invalidateQueries({ queryKey: ['calendar'] })
+    },
+  })
+
   if (isLoading) {
     return (
       <div className="flex justify-center py-12">
@@ -78,7 +121,8 @@ export function MyReservationsPage() {
 
   const slots = data?.slots ?? []
   const events = data?.events ?? []
-  const isEmpty = slots.length === 0 && events.length === 0
+  const hasWaitlist = (waitlistData?.length ?? 0) > 0 || (eventWaitlistData?.length ?? 0) > 0
+  const isEmpty = slots.length === 0 && events.length === 0 && !hasWaitlist
 
   const pastSlots = pastData?.slots ?? []
   const pastEvents = pastData?.events ?? []
@@ -106,6 +150,40 @@ export function MyReservationsPage() {
           {t('subtitle')}
         </p>
       </div>
+
+      {/* Sekcja PENDING_CONFIRMATION — najwyższy priorytet */}
+      {waitlistData && waitlistData.some(w => w.status === 'PENDING_CONFIRMATION') && (
+        <WaitlistPendingSection
+          entries={waitlistData.filter(w => w.status === 'PENDING_CONFIRMATION')}
+          confirmMutation={confirmOfferMutation}
+          leaveMutation={leaveWaitlistMutation}
+        />
+      )}
+
+      {/* Sekcja WAITING — lista oczekujących */}
+      {waitlistData && waitlistData.some(w => w.status === 'WAITING') && (
+        <WaitlistWaitingSection
+          entries={waitlistData.filter(w => w.status === 'WAITING')}
+          leaveMutation={leaveWaitlistMutation}
+        />
+      )}
+
+      {/* Event waitlist — PENDING_CONFIRMATION */}
+      {eventWaitlistData && eventWaitlistData.some(w => w.status === 'PENDING_CONFIRMATION') && (
+        <EventWaitlistPendingSection
+          entries={eventWaitlistData.filter(w => w.status === 'PENDING_CONFIRMATION')}
+          confirmMutation={confirmEventOfferMutation}
+          leaveMutation={leaveEventWaitlistMutation}
+        />
+      )}
+
+      {/* Event waitlist — WAITING */}
+      {eventWaitlistData && eventWaitlistData.some(w => w.status === 'WAITING') && (
+        <EventWaitlistWaitingSection
+          entries={eventWaitlistData.filter(w => w.status === 'WAITING')}
+          leaveMutation={leaveEventWaitlistMutation}
+        />
+      )}
 
       {isEmpty ? (
         <div className="bg-dark-900 rounded-xl border border-dark-800 p-8 text-center">
@@ -206,8 +284,32 @@ function UpcomingReservations({
 }) {
   const { t } = useTranslation('reservations')
   const { t: tc } = useTranslation('common')
+  const { t: tcal } = useTranslation('calendar')
   const locale = useDateLocale()
+  const queryClient = useQueryClient()
   const [confirmCancel, setConfirmCancel] = useState<{ type: 'slot' | 'event'; id: string } | null>(null)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editCount, setEditCount] = useState(1)
+
+  const updateParticipantsMutation = useMutation({
+    mutationFn: ({ id, participants }: { id: string; participants: number }) =>
+      reservationApi.updateParticipants(id, participants),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['reservations'] })
+      queryClient.invalidateQueries({ queryKey: ['calendar'] })
+      setEditingId(null)
+    },
+  })
+
+  const updateEventParticipantsMutation = useMutation({
+    mutationFn: ({ id, participants }: { id: string; participants: number }) =>
+      reservationApi.updateEventParticipants(id, participants),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['reservations'] })
+      queryClient.invalidateQueries({ queryKey: ['calendar'] })
+      setEditingId(null)
+    },
+  })
 
   return (
     <div className="space-y-6">
@@ -231,6 +333,16 @@ function UpcomingReservations({
                     <span className="font-medium text-dark-100">
                       {event.eventTitle}
                     </span>
+                    {event.courseId && (
+                      <Link
+                        to={`/kursy#course-${event.courseId}`}
+                        onClick={(e) => e.stopPropagation()}
+                        className="flex items-center gap-1 text-xs text-primary-400 hover:text-primary-300 transition-colors shrink-0"
+                      >
+                        <ExternalLink className="w-3 h-3" />
+                        {tcal('event.courseDetails')}
+                      </Link>
+                    )}
                   </div>
                   <div className="flex items-center gap-3 text-dark-400">
                     <Calendar className="w-5 h-5" />
@@ -240,12 +352,56 @@ function UpcomingReservations({
                       {format(new Date(event.endDate), 'd MMMM yyyy', { locale })}
                     </span>
                   </div>
-                  {event.participants > 1 && (
-                    <div className="flex items-center gap-2 mt-2 text-sm text-dark-400">
-                      <Users className="w-4 h-4" />
-                      <span>{t('spotsReserved', { count: event.participants })}</span>
-                    </div>
-                  )}
+                  <div className="flex items-center gap-2 mt-2" onClick={(e) => e.stopPropagation()}>
+                    <Users className="w-4 h-4 text-dark-400 shrink-0" />
+                    {editingId === event.eventId ? (
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <button
+                          type="button"
+                          onClick={() => setEditCount(Math.max(1, editCount - 1))}
+                          className="w-6 h-6 rounded bg-dark-800 border border-dark-700 text-dark-200 hover:bg-dark-700 transition-colors text-sm font-bold flex items-center justify-center"
+                        >-</button>
+                        <span className="text-dark-100 font-medium w-4 text-center text-sm">{editCount}</span>
+                        <button
+                          type="button"
+                          onClick={() => setEditCount(Math.min(event.spotsAvailable, editCount + 1))}
+                          disabled={editCount >= event.spotsAvailable}
+                          className="w-6 h-6 rounded bg-dark-800 border border-dark-700 text-dark-200 hover:bg-dark-700 transition-colors text-sm font-bold flex items-center justify-center disabled:opacity-40"
+                        >+</button>
+                        <button
+                          type="button"
+                          onClick={() => updateEventParticipantsMutation.mutate({ id: event.eventId, participants: editCount })}
+                          disabled={updateEventParticipantsMutation.isPending || editCount === event.participants}
+                          className="flex items-center gap-1 text-xs px-2 py-1 rounded bg-primary-500/20 text-primary-400 hover:bg-primary-500/30 transition-colors disabled:opacity-50"
+                        >
+                          <Check className="w-3 h-3" />
+                          {t('updateParticipants.save')}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setEditingId(null)}
+                          className="text-xs px-2 py-1 rounded bg-dark-800 text-dark-400 hover:text-dark-300 transition-colors"
+                        >
+                          {t('updateParticipants.cancel')}
+                        </button>
+                        {updateEventParticipantsMutation.isError && (
+                          <span className="text-xs text-rose-400">{getErrorMessage(updateEventParticipantsMutation.error)}</span>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-dark-400">{t('spotsReserved', { count: event.participants })}</span>
+                        <button
+                          type="button"
+                          onClick={() => { setEditingId(event.eventId); setEditCount(event.participants) }}
+                          className="flex items-center gap-1 text-xs text-dark-500 hover:text-dark-300 transition-colors"
+                        >
+                          <Pencil className="w-3 h-3" />
+                          {t('updateParticipants.edit')}
+                        </button>
+                      </div>
+                    )}
+                  </div>
                   {event.comment && (
                     <div className="flex items-start gap-2 mt-2 text-sm text-dark-400">
                       <MessageSquare className="w-4 h-4 mt-0.5 shrink-0" />
@@ -316,10 +472,56 @@ function UpcomingReservations({
                         {reservation.endTime.slice(0, 5)}
                       </span>
                     </div>
-                    {reservation.participants > 1 && (
-                      <div className="flex items-center gap-2 mt-2 text-sm text-dark-400">
-                        <Users className="w-4 h-4" />
-                        <span>{t('spotsReserved', { count: reservation.participants })}</span>
+                    {!isCancelledByAdmin && (
+                      <div className="flex items-center gap-2 mt-2" onClick={(e) => e.stopPropagation()}>
+                        <Users className="w-4 h-4 text-dark-400 shrink-0" />
+                        {editingId === reservation.id ? (
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <button
+                              type="button"
+                              onClick={() => setEditCount(Math.max(1, editCount - 1))}
+                              className="w-6 h-6 rounded bg-dark-800 border border-dark-700 text-dark-200 hover:bg-dark-700 transition-colors text-sm font-bold flex items-center justify-center"
+                            >-</button>
+                            <span className="text-dark-100 font-medium w-4 text-center text-sm">{editCount}</span>
+                            <button
+                              type="button"
+                              onClick={() => setEditCount(Math.min(reservation.spotsAvailable, editCount + 1))}
+                              disabled={editCount >= reservation.spotsAvailable}
+                              className="w-6 h-6 rounded bg-dark-800 border border-dark-700 text-dark-200 hover:bg-dark-700 transition-colors text-sm font-bold flex items-center justify-center disabled:opacity-40"
+                            >+</button>
+                            <button
+                              type="button"
+                              onClick={() => updateParticipantsMutation.mutate({ id: reservation.id, participants: editCount })}
+                              disabled={updateParticipantsMutation.isPending || editCount === reservation.participants}
+                              className="flex items-center gap-1 text-xs px-2 py-1 rounded bg-primary-500/20 text-primary-400 hover:bg-primary-500/30 transition-colors disabled:opacity-50"
+                            >
+                              <Check className="w-3 h-3" />
+                              {t('updateParticipants.save')}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setEditingId(null)}
+                              className="text-xs px-2 py-1 rounded bg-dark-800 text-dark-400 hover:text-dark-300 transition-colors"
+                            >
+                              {t('updateParticipants.cancel')}
+                            </button>
+                            {updateParticipantsMutation.isError && (
+                              <span className="text-xs text-rose-400">{getErrorMessage(updateParticipantsMutation.error)}</span>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm text-dark-400">{t('spotsReserved', { count: reservation.participants })}</span>
+                            <button
+                              type="button"
+                              onClick={() => { setEditingId(reservation.id); setEditCount(reservation.participants) }}
+                              className="flex items-center gap-1 text-xs text-dark-500 hover:text-dark-300 transition-colors"
+                            >
+                              <Pencil className="w-3 h-3" />
+                              {t('updateParticipants.edit')}
+                            </button>
+                          </div>
+                        )}
                       </div>
                     )}
                     {reservation.eventTitle && (
@@ -528,6 +730,255 @@ function PastReservations({
           </div>
         </div>
       )}
+    </div>
+  )
+}
+
+function WaitlistPendingSection({
+  entries,
+  confirmMutation,
+  leaveMutation,
+}: {
+  entries: WaitlistEntry[]
+  confirmMutation: ReturnType<typeof useMutation<{ reservationId: string; success: boolean; message: string }, Error, string>>
+  leaveMutation: ReturnType<typeof useMutation<void, Error, string>>
+}) {
+  const { t } = useTranslation('reservations')
+  const locale = useDateLocale()
+
+  return (
+    <div className="mb-6 space-y-3">
+      <h2 className="text-sm font-semibold text-amber-400 uppercase tracking-wider flex items-center gap-2">
+        <Clock3 className="w-4 h-4" />
+        {t('waitlist.pending.title')}
+      </h2>
+      {entries.map((entry) => (
+        <div
+          key={entry.id}
+          className="bg-amber-500/5 rounded-xl border-2 border-amber-500/30 p-4 sm:p-5"
+        >
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-1">
+                <Clock3 className="w-4 h-4 text-amber-400" />
+                <span className="font-medium text-dark-100 capitalize">
+                  {format(new Date(entry.slotDate), 'EEEE, d MMMM yyyy', { locale })}
+                </span>
+              </div>
+              <div className="flex items-center gap-2 text-dark-400 text-sm">
+                <Clock className="w-4 h-4" />
+                <span>{entry.slotStartTime.slice(0, 5)} - {entry.slotEndTime.slice(0, 5)}</span>
+                {entry.slotTitle && <span className="text-primary-400">· {entry.slotTitle}</span>}
+              </div>
+              {entry.confirmationDeadline && (
+                <p className="mt-2 text-amber-300/80 text-sm">
+                  {t('waitlist.pending.deadline')}{' '}
+                  <span className="font-semibold">
+                    {format(new Date(entry.confirmationDeadline), 'dd.MM.yyyy HH:mm')}
+                  </span>
+                </p>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="primary"
+                size="sm"
+                loading={confirmMutation.isPending}
+                onClick={() => confirmMutation.mutate(entry.id)}
+              >
+                {t('waitlist.pending.confirm')}
+              </Button>
+              <Button
+                variant="danger"
+                size="sm"
+                loading={leaveMutation.isPending}
+                onClick={() => leaveMutation.mutate(entry.slotId)}
+              >
+                {t('waitlist.pending.decline')}
+              </Button>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function WaitlistWaitingSection({
+  entries,
+  leaveMutation,
+}: {
+  entries: WaitlistEntry[]
+  leaveMutation: ReturnType<typeof useMutation<void, Error, string>>
+}) {
+  const { t } = useTranslation('reservations')
+  const locale = useDateLocale()
+
+  return (
+    <div className="mb-6 space-y-3">
+      <h2 className="text-sm font-medium text-dark-400 uppercase tracking-wider flex items-center gap-2">
+        <ListX className="w-4 h-4" />
+        {t('waitlist.waiting.title')}
+      </h2>
+      {entries.map((entry) => (
+        <div
+          key={entry.id}
+          className="bg-dark-900 rounded-xl border border-dark-800 p-4 sm:p-5"
+        >
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-1">
+                <Calendar className="w-4 h-4 text-dark-400" />
+                <span className="font-medium text-dark-100 capitalize">
+                  {format(new Date(entry.slotDate), 'EEEE, d MMMM yyyy', { locale })}
+                </span>
+              </div>
+              <div className="flex items-center gap-2 text-dark-400 text-sm">
+                <Clock className="w-4 h-4" />
+                <span>{entry.slotStartTime.slice(0, 5)} - {entry.slotEndTime.slice(0, 5)}</span>
+                {entry.slotTitle && <span className="text-primary-400">· {entry.slotTitle}</span>}
+              </div>
+            </div>
+            <Button
+              variant="secondary"
+              size="sm"
+              loading={leaveMutation.isPending}
+              onClick={() => leaveMutation.mutate(entry.slotId)}
+            >
+              {t('waitlist.waiting.leave')}
+            </Button>
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function EventWaitlistPendingSection({
+  entries,
+  confirmMutation,
+  leaveMutation,
+}: {
+  entries: EventWaitlistEntry[]
+  confirmMutation: ReturnType<typeof useMutation<{ eventId: string; success: boolean; message: string; slotsReserved: number }, Error, string>>
+  leaveMutation: ReturnType<typeof useMutation<void, Error, string>>
+}) {
+  const { t } = useTranslation('reservations')
+  const locale = useDateLocale()
+
+  return (
+    <div className="mb-6 space-y-3">
+      <h2 className="text-sm font-semibold text-amber-400 uppercase tracking-wider flex items-center gap-2">
+        <Clock3 className="w-4 h-4" />
+        {t('waitlist.pending.title')}
+      </h2>
+      {entries.map((entry) => (
+        <div
+          key={entry.id}
+          className="bg-amber-500/5 rounded-xl border-2 border-amber-500/30 p-4 sm:p-5"
+        >
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-1">
+                <Clock3 className="w-4 h-4 text-amber-400" />
+                <span className="font-medium text-dark-100">{entry.eventTitle}</span>
+              </div>
+              <div className="flex items-center gap-2 text-dark-400 text-sm">
+                <Calendar className="w-4 h-4" />
+                <span>
+                  {format(new Date(entry.eventStartDate), 'd MMMM', { locale })}
+                  {entry.eventStartDate !== entry.eventEndDate && (
+                    <> – {format(new Date(entry.eventEndDate), 'd MMMM yyyy', { locale })}</>
+                  )}
+                  {entry.eventStartDate === entry.eventEndDate && (
+                    <> {format(new Date(entry.eventStartDate), 'yyyy', { locale })}</>
+                  )}
+                </span>
+              </div>
+              {entry.confirmationDeadline && (
+                <p className="mt-2 text-amber-300/80 text-sm">
+                  {t('waitlist.pending.deadline')}{' '}
+                  <span className="font-semibold">
+                    {format(new Date(entry.confirmationDeadline), 'dd.MM.yyyy HH:mm')}
+                  </span>
+                </p>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="primary"
+                size="sm"
+                loading={confirmMutation.isPending}
+                onClick={() => confirmMutation.mutate(entry.id)}
+              >
+                {t('waitlist.pending.confirm')}
+              </Button>
+              <Button
+                variant="danger"
+                size="sm"
+                loading={leaveMutation.isPending}
+                onClick={() => leaveMutation.mutate(entry.eventId)}
+              >
+                {t('waitlist.pending.decline')}
+              </Button>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function EventWaitlistWaitingSection({
+  entries,
+  leaveMutation,
+}: {
+  entries: EventWaitlistEntry[]
+  leaveMutation: ReturnType<typeof useMutation<void, Error, string>>
+}) {
+  const { t } = useTranslation('reservations')
+  const locale = useDateLocale()
+
+  return (
+    <div className="mb-6 space-y-3">
+      <h2 className="text-sm font-medium text-dark-400 uppercase tracking-wider flex items-center gap-2">
+        <ListX className="w-4 h-4" />
+        {t('waitlist.waiting.title')}
+      </h2>
+      {entries.map((entry) => (
+        <div
+          key={entry.id}
+          className="bg-dark-900 rounded-xl border border-dark-800 p-4 sm:p-5"
+        >
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-1">
+                <Calendar className="w-4 h-4 text-dark-400" />
+                <span className="font-medium text-dark-100">{entry.eventTitle}</span>
+              </div>
+              <div className="flex items-center gap-2 text-dark-400 text-sm">
+                <span>
+                  {format(new Date(entry.eventStartDate), 'd MMMM', { locale })}
+                  {entry.eventStartDate !== entry.eventEndDate && (
+                    <> – {format(new Date(entry.eventEndDate), 'd MMMM yyyy', { locale })}</>
+                  )}
+                  {entry.eventStartDate === entry.eventEndDate && (
+                    <> {format(new Date(entry.eventStartDate), 'yyyy', { locale })}</>
+                  )}
+                </span>
+              </div>
+            </div>
+            <Button
+              variant="secondary"
+              size="sm"
+              loading={leaveMutation.isPending}
+              onClick={() => leaveMutation.mutate(entry.eventId)}
+            >
+              {t('waitlist.waiting.leave')}
+            </Button>
+          </div>
+        </div>
+      ))}
     </div>
   )
 }

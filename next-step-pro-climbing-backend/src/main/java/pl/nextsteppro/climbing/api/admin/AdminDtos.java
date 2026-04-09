@@ -56,6 +56,26 @@ record ParticipantDto(
     Instant registeredAt
 ) {}
 
+record SlotWaitlistDto(
+    UUID slotId,
+    LocalDate date,
+    LocalTime startTime,
+    LocalTime endTime,
+    List<WaitlistAdminEntryDto> entries
+) {}
+
+record WaitlistAdminEntryDto(
+    UUID waitlistId,
+    UUID userId,
+    String fullName,
+    String email,
+    String phone,
+    int position,
+    String status,
+    @Nullable Instant confirmationDeadline,
+    Instant joinedAt
+) {}
+
 record UpdateTimeSlotRequest(
     @Nullable LocalTime startTime,
     @Nullable LocalTime endTime,
@@ -107,6 +127,7 @@ record EventAdminDto(
     LocalDate startDate,
     LocalDate endDate,
     int maxParticipants,
+    int currentParticipants,
     boolean active,
     @Nullable LocalTime startTime,
     @Nullable LocalTime endTime,
@@ -123,6 +144,7 @@ record EventDetailAdminDto(
     LocalDate startDate,
     LocalDate endDate,
     int maxParticipants,
+    int currentParticipants,
     boolean active,
     @Nullable LocalTime startTime,
     @Nullable LocalTime endTime,

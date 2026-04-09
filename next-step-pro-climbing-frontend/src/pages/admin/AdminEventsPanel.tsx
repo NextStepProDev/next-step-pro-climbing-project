@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
+import { Link } from 'react-router-dom'
 import { format } from 'date-fns'
-import { Plus, Trash2, Eye, EyeOff, Clock, Pencil, ChevronDown, ChevronRight, ChevronLeft, MapPin, Users, Mail, Phone, AlertTriangle } from 'lucide-react'
-import { adminApi, coursesApi } from '../../api/client'
+import { Plus, Trash2, Eye, EyeOff, Clock, Pencil, ChevronDown, ChevronRight, ChevronLeft, MapPin, Users, Mail, Phone, AlertTriangle, BookOpen } from 'lucide-react'
+import { adminApi, adminCoursesApi } from '../../api/client'
 import { getErrorMessage } from '../../utils/errors'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
 import { QueryError } from '../../components/ui/QueryError'
@@ -237,8 +238,29 @@ function EventCard({
               {event.description}
             </div>
           )}
-          <div className="text-sm text-dark-500 mt-0.5">
-            {t('events.maxParticipants', { count: event.maxParticipants })}
+          <div className="flex items-center gap-3 mt-0.5 flex-wrap">
+            <span className="text-sm text-dark-500">
+              {t('events.participantsCount', { current: event.currentParticipants, max: event.maxParticipants })}
+            </span>
+            {event.maxParticipants - event.currentParticipants > 0 ? (
+              <span className="text-sm text-green-400">
+                {t('events.freeSpots', { count: event.maxParticipants - event.currentParticipants })}
+              </span>
+            ) : (
+              <span className="text-sm text-rose-400">{t('events.noFreeSpots')}</span>
+            )}
+            {event.courseId && (
+              <Link
+                to={`/kursy#course-${event.courseId}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-xs text-primary-400 hover:text-primary-300 transition-colors"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <BookOpen className="w-3 h-3" />
+                {t('events.viewCourse')}
+              </Link>
+            )}
           </div>
         </div>
 
@@ -415,8 +437,8 @@ function EditEventModal({
   })
 
   const { data: courses } = useQuery({
-    queryKey: ['courses'],
-    queryFn: () => coursesApi.getAll(),
+    queryKey: ['admin', 'courses'],
+    queryFn: () => adminCoursesApi.getAll(),
     staleTime: 5 * 60 * 1000,
   })
 
@@ -635,8 +657,8 @@ function CreateEventModal({
   })
 
   const { data: courses } = useQuery({
-    queryKey: ['courses'],
-    queryFn: () => coursesApi.getAll(),
+    queryKey: ['admin', 'courses'],
+    queryFn: () => adminCoursesApi.getAll(),
     staleTime: 5 * 60 * 1000,
   })
 

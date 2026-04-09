@@ -170,7 +170,7 @@ public class ReservationService {
     public List<UserReservationDto> getUserReservations(UUID userId) {
         return reservationRepository.findByUserId(userId).stream()
             .filter(Reservation::isConfirmed)
-            .map(this::toUserReservationDto)
+            .map(r -> toUserReservationDto(r, 0))
             .toList();
     }
 
@@ -178,7 +178,7 @@ public class ReservationService {
     public MyReservationsDto getUserUpcomingReservations(UUID userId) {
         List<Reservation> allReservations = reservationRepository.findUpcomingByUserIdIncludingAdminCancelled(userId, LocalDate.now(), LocalTime.now());
 
-        List<UserReservationDto> standaloneSlots = new ArrayList<>();
+        List<Reservation> standaloneReservations = new ArrayList<>();
         Map<UUID, List<Reservation>> eventReservations = new LinkedHashMap<>();
 
         for (Reservation r : allReservations) {
@@ -186,15 +186,46 @@ public class ReservationService {
             if (slot.belongsToEvent()) {
                 eventReservations.computeIfAbsent(slot.getEvent().getId(), k -> new ArrayList<>()).add(r);
             } else {
-                standaloneSlots.add(toUserReservationDto(r));
+                standaloneReservations.add(r);
             }
         }
 
+        // Batch query confirmed counts for standalone slots
+        Map<UUID, Integer> standaloneConfirmedCounts = Map.of();
+        if (!standaloneReservations.isEmpty()) {
+            List<UUID> slotIds = standaloneReservations.stream().map(r -> r.getTimeSlot().getId()).toList();
+            standaloneConfirmedCounts = reservationRepository.countConfirmedByTimeSlotIds(slotIds).stream()
+                .collect(Collectors.toMap(SlotParticipantCount::slotId, SlotParticipantCount::countAsInt));
+        }
+
+        final Map<UUID, Integer> standaloneCountsFinal = standaloneConfirmedCounts;
+        List<UserReservationDto> standaloneSlots = standaloneReservations.stream()
+            .map(r -> {
+                int confirmed = standaloneCountsFinal.getOrDefault(r.getTimeSlot().getId(), 0);
+                int spotsAvailable = r.getTimeSlot().getMaxParticipants() - confirmed + r.getParticipants();
+                return toUserReservationDto(r, spotsAvailable);
+            })
+            .toList();
+
+        // Batch query confirmed counts for all event slots
+        Map<UUID, Integer> eventSlotConfirmedCounts = Map.of();
+        if (!eventReservations.isEmpty()) {
+            List<UUID> allEventSlotIds = eventReservations.values().stream()
+                .flatMap(List::stream).map(r -> r.getTimeSlot().getId()).toList();
+            eventSlotConfirmedCounts = reservationRepository.countConfirmedByTimeSlotIds(allEventSlotIds).stream()
+                .collect(Collectors.toMap(SlotParticipantCount::slotId, SlotParticipantCount::countAsInt));
+        }
+
+        final Map<UUID, Integer> eventSlotCountsFinal = eventSlotConfirmedCounts;
         List<UserEventReservationDto> eventDtos = eventReservations.entrySet().stream()
             .map(entry -> {
                 List<Reservation> reservations = entry.getValue();
                 Reservation first = reservations.getFirst();
                 Event event = first.getTimeSlot().getEvent();
+                int maxConfirmedCount = reservations.stream()
+                    .mapToInt(r -> eventSlotCountsFinal.getOrDefault(r.getTimeSlot().getId(), 0))
+                    .max().orElse(0);
+                int spotsAvailable = event.getMaxParticipants() - maxConfirmedCount + first.getParticipants();
                 return new UserEventReservationDto(
                     event.getId(),
                     event.getTitle(),
@@ -204,7 +235,9 @@ public class ReservationService {
                     first.getComment(),
                     first.getParticipants(),
                     reservations.size(),
-                    first.getCreatedAt()
+                    spotsAvailable,
+                    first.getCreatedAt(),
+                    event.getCourse() != null ? event.getCourse().getId() : null
                 );
             })
             .toList();
@@ -224,7 +257,7 @@ public class ReservationService {
             if (slot.belongsToEvent()) {
                 eventReservations.computeIfAbsent(slot.getEvent().getId(), k -> new ArrayList<>()).add(r);
             } else {
-                standaloneSlots.add(toUserReservationDto(r));
+                standaloneSlots.add(toUserReservationDto(r, 0));
             }
         }
 
@@ -242,7 +275,9 @@ public class ReservationService {
                     first.getComment(),
                     first.getParticipants(),
                     reservations.size(),
-                    first.getCreatedAt()
+                    0,
+                    first.getCreatedAt(),
+                    event.getCourse() != null ? event.getCourse().getId() : null
                 );
             })
             .toList();
@@ -387,6 +422,109 @@ public class ReservationService {
         eventWaitlistService.notifyAll(eventId);
     }
 
+    @Caching(evict = {
+        @CacheEvict(value = "calendarMonth", allEntries = true),
+        @CacheEvict(value = "calendarWeek", allEntries = true),
+        @CacheEvict(value = "calendarDay", allEntries = true)
+    })
+    public ReservationResultDto updateSlotParticipants(UUID reservationId, UUID userId, int participants) {
+        if (participants < 1) {
+            throw new IllegalArgumentException(msg.get("reservation.min.participants"));
+        }
+
+        Reservation reservation = reservationRepository.findById(reservationId)
+            .orElseThrow(() -> new IllegalArgumentException(msg.get("reservation.not.found")));
+
+        if (!reservation.getUser().getId().equals(userId)) {
+            throw new IllegalStateException("You can only update your own reservations");
+        }
+
+        if (!reservation.isConfirmed()) {
+            throw new IllegalStateException(msg.get("reservation.not.confirmed"));
+        }
+
+        TimeSlot slot = timeSlotRepository.findByIdForUpdate(reservation.getTimeSlot().getId())
+            .orElseThrow(() -> new IllegalArgumentException("Time slot not found"));
+
+        if (!BookingTimeValidator.isWithinBookingWindow(slot.getDate(), slot.getStartTime())) {
+            throw new IllegalStateException(msg.get("reservation.cancel.window"));
+        }
+
+        int totalParticipants = reservationRepository.countConfirmedByTimeSlotId(slot.getId());
+        int availableForThisReservation = slot.getMaxParticipants() - totalParticipants + reservation.getParticipants();
+        if (participants > availableForThisReservation) {
+            throw new IllegalStateException(msg.get("reservation.spots.available", availableForThisReservation, participants));
+        }
+
+        reservation.setParticipants(participants);
+        reservationRepository.save(reservation);
+
+        activityLogService.logReservationUpdated(reservation.getUser(), slot, participants);
+
+        return new ReservationResultDto(reservation.getId(), true, msg.get("reservation.updated"));
+    }
+
+    @Caching(evict = {
+        @CacheEvict(value = "calendarMonth", allEntries = true),
+        @CacheEvict(value = "calendarWeek", allEntries = true),
+        @CacheEvict(value = "calendarDay", allEntries = true)
+    })
+    public EventReservationResultDto updateEventParticipants(UUID eventId, UUID userId, int participants) {
+        if (participants < 1) {
+            throw new IllegalArgumentException(msg.get("reservation.min.participants"));
+        }
+
+        Event event = eventRepository.findById(eventId)
+            .orElseThrow(() -> new IllegalArgumentException(msg.get("reservation.event.not.found")));
+
+        List<TimeSlot> slots = timeSlotRepository.findByEventId(eventId);
+        if (slots.isEmpty()) {
+            throw new IllegalStateException(msg.get("reservation.event.no.slots"));
+        }
+
+        TimeSlot earliestSlot = slots.stream()
+            .min((a, b) -> LocalDateTime.of(a.getDate(), a.getStartTime())
+                .compareTo(LocalDateTime.of(b.getDate(), b.getStartTime())))
+            .orElseThrow();
+        if (!BookingTimeValidator.isWithinBookingWindow(earliestSlot.getDate(), earliestSlot.getStartTime())) {
+            throw new IllegalStateException(msg.get("reservation.cancel.window"));
+        }
+
+        List<Reservation> userReservations = slots.stream()
+            .map(slot -> reservationRepository.findByUserIdAndTimeSlotId(userId, slot.getId()))
+            .filter(r -> r != null && r.isConfirmed())
+            .toList();
+
+        if (userReservations.isEmpty()) {
+            throw new IllegalStateException(msg.get("reservation.event.not.registered"));
+        }
+
+        List<UUID> slotIds = slots.stream().map(TimeSlot::getId).toList();
+        Map<UUID, Integer> countMap = reservationRepository.countConfirmedByTimeSlotIds(slotIds).stream()
+            .collect(Collectors.toMap(
+                SlotParticipantCount::slotId,
+                SlotParticipantCount::countAsInt
+            ));
+
+        int currentUserParticipants = userReservations.getFirst().getParticipants();
+        int currentMaxTotal = countMap.values().stream().mapToInt(Integer::intValue).max().orElse(0);
+        int availableForThisGroup = event.getMaxParticipants() - currentMaxTotal + currentUserParticipants;
+        if (participants > availableForThisGroup) {
+            throw new IllegalStateException(msg.get("reservation.event.spots.available", availableForThisGroup, participants));
+        }
+
+        for (Reservation reservation : userReservations) {
+            reservation.setParticipants(participants);
+            reservationRepository.save(reservation);
+        }
+
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new IllegalArgumentException("User not found"));
+        activityLogService.logEventReservationUpdated(user, event, participants);
+
+        return new EventReservationResultDto(eventId, true, msg.get("reservation.updated"), userReservations.size());
+    }
+
     private List<TimeSlot> createDefaultSlotsForEvent(Event event) {
         List<TimeSlot> slots = new ArrayList<>();
         LocalTime slotStart = event.getStartTime() != null ? event.getStartTime() : LocalTime.of(0, 0);
@@ -400,7 +538,7 @@ public class ReservationService {
         return slots;
     }
 
-    private UserReservationDto toUserReservationDto(Reservation reservation) {
+    private UserReservationDto toUserReservationDto(Reservation reservation, int spotsAvailable) {
         TimeSlot slot = reservation.getTimeSlot();
         return new UserReservationDto(
             reservation.getId(),
@@ -412,6 +550,7 @@ public class ReservationService {
             slot.getDisplayTitle(),
             reservation.getComment(),
             reservation.getParticipants(),
+            spotsAvailable,
             reservation.getCreatedAt()
         );
     }

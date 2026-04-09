@@ -27,12 +27,17 @@ record UserReservationDto(
     @Nullable String eventTitle,
     @Nullable String comment,
     int participants,
+    int spotsAvailable,
     Instant createdAt
 ) {}
 
 record CreateReservationRequest(
     @Nullable @Size(max = 500, message = "{validation.comment.size}") String comment,
     @Nullable @Min(value = 1, message = "{validation.min.participants}") @Max(value = 50, message = "{validation.max.participants}") Integer participants
+) {}
+
+record UpdateParticipantsRequest(
+    @Min(value = 1, message = "{validation.min.participants}") @Max(value = 50, message = "{validation.max.participants}") int participants
 ) {}
 
 record EventReservationResultDto(
@@ -51,7 +56,9 @@ record UserEventReservationDto(
     @Nullable String comment,
     int participants,
     int slotsCount,
-    Instant createdAt
+    int spotsAvailable,
+    Instant createdAt,
+    @Nullable UUID courseId
 ) {}
 
 record MyReservationsDto(

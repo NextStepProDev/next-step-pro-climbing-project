@@ -73,6 +73,8 @@
     "title": "Inscribirse en el evento",
     "bookingClosed": "La reserva online es posible hasta 12 horas antes del evento. Contacta con el instructor por teléfono para consultar la disponibilidad.",
     "hasReservation": "Tienes una reserva para este evento",
+    "editParticipantsLabel": "Cambiar número de participantes",
+    "saveParticipants": "Guardar cambios",
     "spotsLabel": "Número de plazas",
     "spotsOf": "de {{count}} libres",
     "commentPlaceholder": "Comentario para el instructor (opcional)...",
