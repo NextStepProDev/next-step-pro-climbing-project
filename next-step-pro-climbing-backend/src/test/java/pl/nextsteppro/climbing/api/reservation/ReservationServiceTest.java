@@ -61,6 +61,10 @@ class ReservationServiceTest {
     private ActivityLogService activityLogService;
     @Mock
     private MessageService msg;
+    @Mock
+    private WaitlistService waitlistService;
+    @Mock
+    private EventWaitlistService eventWaitlistService;
 
     private ReservationService reservationService;
     private User testUser;
@@ -79,7 +83,9 @@ class ReservationServiceTest {
             eventRepository,
             mailService,
             activityLogService,
-            msg
+            msg,
+            waitlistService,
+            eventWaitlistService
         );
 
         userId = UUID.randomUUID();

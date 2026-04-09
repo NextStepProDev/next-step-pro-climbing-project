@@ -5,6 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -80,7 +81,10 @@ public class AdminCourseService {
         courseRepository.saveAll(courses);
     }
 
-    @CacheEvict(value = {"courseList", "courseDetail"}, allEntries = true)
+    @Caching(evict = {
+        @CacheEvict(value = {"courseList", "courseDetail"}, allEntries = true),
+        @CacheEvict(value = {"calendarMonth", "calendarWeek"}, allEntries = true)
+    })
     public CourseAdminDto updateCourseMeta(UUID id, UpdateCourseMetaRequest request) {
         Course course = findCourse(id);
 

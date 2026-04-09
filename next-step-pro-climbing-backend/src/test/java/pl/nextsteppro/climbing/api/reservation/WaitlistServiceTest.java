@@ -313,81 +313,80 @@ class WaitlistServiceTest {
         assertThrows(IllegalStateException.class, () -> waitlistService.confirmOffer(waitlistId, userId));
     }
 
-    // ========== offerToNext ==========
+    // ========== notifyAll ==========
 
     @Test
-    void offerToNext_shouldOfferSpotToFirstPersonInQueue() {
-        // Given
+    void notifyAll_shouldOfferSpotToAllWaitingPeopleSimultaneously() {
+        // Given — race model: everyone notified at once
         UUID slotId = UUID.randomUUID();
-        User user = buildUser(UUID.randomUUID());
+        User user1 = buildUser(UUID.randomUUID());
+        User user2 = buildUser(UUID.randomUUID());
         TimeSlot slot = buildFutureSlot(slotId);
-        Waitlist first = buildWaitlistEntry(user.getId(), slot, WaitlistStatus.WAITING);
-        setField(first, "user", user);
+        Waitlist entry1 = buildWaitlistEntry(user1.getId(), slot, WaitlistStatus.WAITING);
+        Waitlist entry2 = buildWaitlistEntry(user2.getId(), slot, WaitlistStatus.WAITING);
+        setField(entry1, "user", user1);
+        setField(entry2, "user", user2);
 
-        when(waitlistRepository.findWaitingBySlotIdOrdered(slotId)).thenReturn(List.of(first));
-        when(waitlistRepository.save(any(Waitlist.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(waitlistRepository.findWaitingBySlotIdOrdered(slotId)).thenReturn(List.of(entry1, entry2));
+        when(waitlistRepository.saveAll(anyList())).thenAnswer(inv -> inv.getArgument(0));
 
         // When
-        waitlistService.offerToNext(slotId);
+        waitlistService.notifyAll(slotId);
 
-        // Then
-        verify(waitlistRepository).save(first);
-        assertTrue(first.isPendingConfirmation());
-        assertNotNull(first.getConfirmationDeadline());
-        verify(waitlistMailService).sendWaitlistOfferNotification(eq(user), eq(slot), any(Instant.class));
+        // Then — both entries set to PENDING_CONFIRMATION
+        assertTrue(entry1.isPendingConfirmation());
+        assertTrue(entry2.isPendingConfirmation());
+        assertNotNull(entry1.getConfirmationDeadline());
+        verify(waitlistMailService).sendWaitlistOfferNotification(eq(user1), eq(slot), any(Instant.class));
+        verify(waitlistMailService).sendWaitlistOfferNotification(eq(user2), eq(slot), any(Instant.class));
     }
 
     @Test
-    void offerToNext_shouldDoNothingWhenQueueIsEmpty() {
+    void notifyAll_shouldDoNothingWhenQueueIsEmpty() {
         // Given
         UUID slotId = UUID.randomUUID();
         when(waitlistRepository.findWaitingBySlotIdOrdered(slotId)).thenReturn(List.of());
 
         // When
-        waitlistService.offerToNext(slotId);
+        waitlistService.notifyAll(slotId);
 
         // Then
-        verify(waitlistRepository, never()).save(any());
+        verify(waitlistRepository, never()).saveAll(anyList());
         verify(waitlistMailService, never()).sendWaitlistOfferNotification(any(), any(), any());
     }
 
-    // ========== expireAndPromoteNext ==========
+    // ========== expireAndNotify ==========
 
     @Test
-    void expireAndPromoteNext_shouldExpireEntryAndOfferToNextPerson() {
-        // Given
+    void expireAndNotify_shouldReturnExpiredEntriesToWaitingWithoutSendingMail() {
+        // Given — nobody confirmed in 24h window; entries return to WAITING, no new mail
         UUID slotId = UUID.randomUUID();
-        User expiredUser = buildUser(UUID.randomUUID());
-        User nextUser = buildUser(UUID.randomUUID());
+        User user = buildUser(UUID.randomUUID());
         TimeSlot slot = buildFutureSlot(slotId);
-
-        Waitlist expiredEntry = buildPendingConfirmationEntry(UUID.randomUUID(), expiredUser, slot, Instant.now().minusSeconds(60));
-        Waitlist nextEntry = buildWaitlistEntry(nextUser.getId(), slot, WaitlistStatus.WAITING);
-        setField(nextEntry, "user", nextUser);
+        Waitlist expiredEntry = buildPendingConfirmationEntry(UUID.randomUUID(), user, slot, Instant.now().minusSeconds(60));
 
         when(waitlistRepository.findExpiredPendingConfirmations(any(Instant.class))).thenReturn(List.of(expiredEntry));
-        when(waitlistRepository.save(any(Waitlist.class))).thenAnswer(inv -> inv.getArgument(0));
-        when(waitlistRepository.findWaitingBySlotIdOrdered(slotId)).thenReturn(List.of(nextEntry));
+        when(waitlistRepository.saveAll(anyList())).thenAnswer(inv -> inv.getArgument(0));
 
         // When
-        waitlistService.expireAndPromoteNext();
+        waitlistService.expireAndNotify();
 
-        // Then
-        assertTrue(expiredEntry.getStatus() == WaitlistStatus.EXPIRED);
-        verify(waitlistRepository, atLeast(2)).save(any(Waitlist.class));
-        verify(waitlistMailService).sendWaitlistOfferNotification(eq(nextUser), eq(slot), any(Instant.class));
+        // Then — returned to WAITING, no spam mail
+        assertEquals(WaitlistStatus.WAITING, expiredEntry.getStatus());
+        verify(waitlistRepository).saveAll(anyList());
+        verify(waitlistMailService, never()).sendWaitlistOfferNotification(any(), any(), any());
     }
 
     @Test
-    void expireAndPromoteNext_shouldDoNothingWhenNoExpiredEntries() {
+    void expireAndNotify_shouldDoNothingWhenNoExpiredEntries() {
         // Given
         when(waitlistRepository.findExpiredPendingConfirmations(any(Instant.class))).thenReturn(List.of());
 
         // When
-        waitlistService.expireAndPromoteNext();
+        waitlistService.expireAndNotify();
 
         // Then
-        verify(waitlistRepository, never()).save(any());
+        verify(waitlistRepository, never()).saveAll(anyList());
     }
 
     // ========== Helpers ==========

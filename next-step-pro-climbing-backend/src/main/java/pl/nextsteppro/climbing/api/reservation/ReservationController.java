@@ -165,6 +165,44 @@ public class ReservationController {
         return ResponseEntity.noContent().build();
     }
 
+    @Operation(
+        summary = "Aktualizuj liczbę uczestników rezerwacji slotu",
+        description = "Zmienia liczbę uczestników dla istniejącej rezerwacji. Wymaga zalogowania."
+    )
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Zaktualizowano",
+            content = @Content(schema = @Schema(implementation = ReservationResultDto.class))),
+        @ApiResponse(responseCode = "401", description = "Użytkownik niezalogowany"),
+        @ApiResponse(responseCode = "400", description = "Brak wystarczającej liczby wolnych miejsc")
+    })
+    @PutMapping("/{reservationId}/participants")
+    public ResponseEntity<ReservationResultDto> updateSlotParticipants(
+            @Parameter(description = "UUID rezerwacji") @PathVariable UUID reservationId,
+            @Parameter(hidden = true) @CurrentUserId UUID userId,
+            @RequestBody UpdateParticipantsRequest body) {
+
+        return ResponseEntity.ok(reservationService.updateSlotParticipants(reservationId, userId, body.participants()));
+    }
+
+    @Operation(
+        summary = "Aktualizuj liczbę uczestników zapisu na wydarzenie",
+        description = "Zmienia liczbę uczestników dla wszystkich rezerwacji użytkownika na wydarzenie. Wymaga zalogowania."
+    )
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Zaktualizowano",
+            content = @Content(schema = @Schema(implementation = EventReservationResultDto.class))),
+        @ApiResponse(responseCode = "401", description = "Użytkownik niezalogowany"),
+        @ApiResponse(responseCode = "400", description = "Brak wystarczającej liczby wolnych miejsc")
+    })
+    @PutMapping("/event/{eventId}/participants")
+    public ResponseEntity<EventReservationResultDto> updateEventParticipants(
+            @Parameter(description = "UUID wydarzenia") @PathVariable UUID eventId,
+            @Parameter(hidden = true) @CurrentUserId UUID userId,
+            @RequestBody UpdateParticipantsRequest body) {
+
+        return ResponseEntity.ok(reservationService.updateEventParticipants(eventId, userId, body.participants()));
+    }
+
     // -------------------------------------------------------------------------
     // Waitlist endpoints
     // -------------------------------------------------------------------------

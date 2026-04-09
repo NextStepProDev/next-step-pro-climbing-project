@@ -124,6 +124,8 @@ export interface EventSummary {
   waitlistEntryId: string | null
   confirmationDeadline: string | null
   userWaitlistPosition: number
+  // 0 in list views, populated in getEventSummary when user is registered
+  userParticipants: number
 }
 
 export interface EventWaitlistEntry {
@@ -168,6 +170,7 @@ export interface UserReservation {
   eventTitle: string | null
   comment: string | null
   participants: number
+  spotsAvailable: number
   createdAt: string
 }
 
@@ -193,7 +196,9 @@ export interface UserEventReservation {
   comment: string | null
   participants: number
   slotsCount: number
+  spotsAvailable: number
   createdAt: string
+  courseId: string | null
 }
 
 export interface MyReservations {

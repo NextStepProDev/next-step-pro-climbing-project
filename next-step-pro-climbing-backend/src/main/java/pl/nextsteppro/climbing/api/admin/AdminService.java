@@ -24,6 +24,9 @@ import pl.nextsteppro.climbing.infrastructure.i18n.MessageService;
 import pl.nextsteppro.climbing.infrastructure.mail.MailService;
 import pl.nextsteppro.climbing.infrastructure.security.JwtAuthenticationFilter;
 import pl.nextsteppro.climbing.api.activitylog.ActivityLogService;
+import pl.nextsteppro.climbing.domain.waitlist.Waitlist;
+import pl.nextsteppro.climbing.domain.waitlist.WaitlistRepository;
+import pl.nextsteppro.climbing.domain.waitlist.WaitlistStatus;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -47,6 +50,7 @@ public class AdminService {
     private final ActivityLogService activityLogService;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final MessageService msg;
+    private final WaitlistRepository waitlistRepository;
 
     public AdminService(TimeSlotRepository timeSlotRepository,
                        EventRepository eventRepository,
@@ -57,7 +61,8 @@ public class AdminService {
                        MailService mailService,
                        ActivityLogService activityLogService,
                        JwtAuthenticationFilter jwtAuthenticationFilter,
-                       MessageService msg) {
+                       MessageService msg,
+                       WaitlistRepository waitlistRepository) {
         this.timeSlotRepository = timeSlotRepository;
         this.eventRepository = eventRepository;
         this.courseRepository = courseRepository;
@@ -68,6 +73,7 @@ public class AdminService {
         this.activityLogService = activityLogService;
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
         this.msg = msg;
+        this.waitlistRepository = waitlistRepository;
     }
 
     @Caching(evict = {
@@ -210,6 +216,39 @@ public class AdminService {
         );
     }
 
+    @Transactional(readOnly = true)
+    public SlotWaitlistDto getSlotWaitlist(UUID slotId) {
+        TimeSlot slot = timeSlotRepository.findById(slotId)
+            .orElseThrow(() -> new IllegalArgumentException("Time slot not found"));
+
+        List<Waitlist> entries = waitlistRepository.findBySlotIdAndStatusWithUser(slotId, WaitlistStatus.WAITING);
+        List<Waitlist> pending = waitlistRepository.findBySlotIdAndStatusWithUser(slotId, WaitlistStatus.PENDING_CONFIRMATION);
+
+        List<WaitlistAdminEntryDto> all = new java.util.ArrayList<>();
+        for (Waitlist w : pending) {
+            all.add(toWaitlistAdminEntryDto(w));
+        }
+        for (Waitlist w : entries) {
+            all.add(toWaitlistAdminEntryDto(w));
+        }
+
+        return new SlotWaitlistDto(slotId, slot.getDate(), slot.getStartTime(), slot.getEndTime(), all);
+    }
+
+    private WaitlistAdminEntryDto toWaitlistAdminEntryDto(Waitlist w) {
+        return new WaitlistAdminEntryDto(
+            w.getId(),
+            w.getUser().getId(),
+            w.getUser().getFullName(),
+            w.getUser().getEmail(),
+            w.getUser().getPhone(),
+            w.getPosition(),
+            w.getStatus().name(),
+            w.getConfirmationDeadline(),
+            w.getCreatedAt()
+        );
+    }
+
     @Caching(evict = {
         @CacheEvict(value = "calendarMonth", allEntries = true),
         @CacheEvict(value = "calendarWeek", allEntries = true),
@@ -308,8 +347,15 @@ public class AdminService {
 
     @Transactional(readOnly = true)
     public List<EventAdminDto> getAllEvents() {
-        return eventRepository.findAllByOrderByStartDateAsc().stream()
-            .map(this::toEventAdminDto)
+        List<Event> events = eventRepository.findAllByOrderByStartDateAsc();
+        if (events.isEmpty()) return List.of();
+
+        List<UUID> eventIds = events.stream().map(Event::getId).toList();
+        List<TimeSlot> allSlots = timeSlotRepository.findByEventIdIn(eventIds);
+        Map<UUID, Integer> participantsMap = buildEventParticipantsMap(allSlots);
+
+        return events.stream()
+            .map(e -> toEventAdminDto(e, participantsMap.getOrDefault(e.getId(), 0)))
             .toList();
     }
 
@@ -324,6 +370,10 @@ public class AdminService {
             .map(slot -> toTimeSlotAdminDto(slot, countMap.getOrDefault(slot.getId(), 0)))
             .toList();
 
+        int currentParticipants = slotDtos.stream()
+            .mapToInt(TimeSlotAdminDto::currentParticipants)
+            .reduce(0, Math::max);
+
         return new EventDetailAdminDto(
             event.getId(),
             event.getTitle(),
@@ -333,6 +383,7 @@ public class AdminService {
             event.getStartDate(),
             event.getEndDate(),
             event.getMaxParticipants(),
+            currentParticipants,
             event.isActive(),
             event.getStartTime(),
             event.getEndTime(),
@@ -532,6 +583,10 @@ public class AdminService {
     }
 
     private EventAdminDto toEventAdminDto(Event event) {
+        return toEventAdminDto(event, 0);
+    }
+
+    private EventAdminDto toEventAdminDto(Event event, int currentParticipants) {
         return new EventAdminDto(
             event.getId(),
             event.getTitle(),
@@ -541,11 +596,26 @@ public class AdminService {
             event.getStartDate(),
             event.getEndDate(),
             event.getMaxParticipants(),
+            currentParticipants,
             event.isActive(),
             event.getStartTime(),
             event.getEndTime(),
             event.belongsToCourse() ? event.getCourse().getId() : null,
             event.belongsToCourse() ? event.getCourse().getTitle() : null
         );
+    }
+
+    private Map<UUID, Integer> buildEventParticipantsMap(List<TimeSlot> slots) {
+        if (slots.isEmpty()) return Map.of();
+        Map<UUID, Integer> countMap = buildCountMap(slots);
+        Map<UUID, Integer> participantsMap = new java.util.HashMap<>();
+        for (TimeSlot slot : slots) {
+            if (slot.belongsToEvent()) {
+                UUID eventId = slot.getEvent().getId();
+                int confirmed = countMap.getOrDefault(slot.getId(), 0);
+                participantsMap.merge(eventId, confirmed, Math::max);
+            }
+        }
+        return participantsMap;
     }
 }

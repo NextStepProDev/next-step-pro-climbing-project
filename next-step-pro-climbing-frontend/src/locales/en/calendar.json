@@ -73,6 +73,8 @@
     "title": "Sign up for event",
     "bookingClosed": "Online booking is available up to 12 hours before the event. Contact the instructor by phone to check availability.",
     "hasReservation": "You have a reservation for this event",
+    "editParticipantsLabel": "Change number of participants",
+    "saveParticipants": "Save changes",
     "spotsLabel": "Number of spots",
     "spotsOf": "of {{count}} available",
     "commentPlaceholder": "Comment for the instructor (optional)...",

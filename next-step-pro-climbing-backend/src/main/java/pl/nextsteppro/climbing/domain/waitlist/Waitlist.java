@@ -67,6 +67,12 @@ public class Waitlist {
         this.status = WaitlistStatus.EXPIRED;
     }
 
+    public void returnToWaiting() {
+        this.status = WaitlistStatus.WAITING;
+        this.offeredAt = null;
+        this.confirmationDeadline = null;
+    }
+
     public boolean isPendingConfirmation() {
         return status == WaitlistStatus.PENDING_CONFIRMATION;
     }

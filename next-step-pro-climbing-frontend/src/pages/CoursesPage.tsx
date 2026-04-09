@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { format } from 'date-fns'
 import { ChevronDown, BookOpen, ImageIcon, Calendar, ArrowRight, Clock } from 'lucide-react'
 import { coursesApi, calendarApi } from '../api/client'
@@ -14,7 +14,8 @@ import clsx from 'clsx'
 
 export function CoursesPage() {
   const { t } = useTranslation('common')
-  const scrolledRef = useRef(false)
+  const { hash } = useLocation()
+  const scrolledRef = useRef('')
 
   const { data: courses, isLoading, error } = useQuery({
     queryKey: ['courses'],
@@ -23,16 +24,14 @@ export function CoursesPage() {
   })
 
   useEffect(() => {
-    if (!courses || scrolledRef.current) return
-    const hash = window.location.hash
-    if (!hash.startsWith('#course-')) return
-    scrolledRef.current = true
-    // Small delay to let ScrollToTop (window.scrollTo(0,0)) finish first
+    if (!courses || !hash.startsWith('#course-') || scrolledRef.current === hash) return
+    scrolledRef.current = hash
+    // Delay to let ScrollToTop (window.scrollTo(0,0)) finish first
     setTimeout(() => {
       const el = document.getElementById(hash.slice(1))
       if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    }, 100)
-  }, [courses])
+    }, 200)
+  }, [courses, hash])
 
   if (isLoading) {
     return (
@@ -62,7 +61,7 @@ export function CoursesPage() {
             <CourseAccordionItem
               key={course.id}
               course={course}
-              defaultOpen={window.location.hash === `#course-${course.id}`}
+              defaultOpen={hash === `#course-${course.id}`}
             />
           ))}
         </div>

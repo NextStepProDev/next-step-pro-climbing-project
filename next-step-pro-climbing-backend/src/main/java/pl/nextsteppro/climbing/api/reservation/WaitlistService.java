@@ -105,10 +105,20 @@ public class WaitlistService {
 
         boolean wasPending = entry.isPendingConfirmation();
         waitlistRepository.delete(entry);
+        waitlistRepository.flush();
 
-        // Jeśli opuszcza PENDING — slot "odmraża się", oferujemy następnemu w kolejce
+        // Jeśli odchodzi osoba z PENDING — sprawdź czy slot nadal efektywnie pełny
+        // (mogła być ostatnią osobą "ścigającą się" po zwolnionym miejscu)
         if (wasPending) {
-            offerToNext(slotId);
+            TimeSlot slot = timeSlotRepository.findById(slotId).orElse(null);
+            if (slot != null) {
+                int confirmed = reservationRepository.countConfirmedByTimeSlotId(slotId);
+                int pending = waitlistRepository.countPendingConfirmationBySlotId(slotId);
+                if (confirmed + pending < slot.getMaxParticipants()) {
+                    // Miejsce jest wolne i nikt się już nie ściga — powiadamiamy oczekujących
+                    notifyAll(slotId);
+                }
+            }
         }
 
         log.info("User {} left waitlist for slot {}", userId, slotId);
@@ -133,10 +143,22 @@ public class WaitlistService {
             throw new IllegalStateException(msg.get("waitlist.offer.expired"));
         }
 
-        User user = entry.getUser();
-        TimeSlot slot = entry.getTimeSlot();
+        UUID slotId = entry.getTimeSlot().getId();
 
-        // Tworzymy rezerwację z pominięciem booking window (użytkownik był już na waitliście)
+        // Pesymistyczny lock na slot — zapobiega race condition przy równoczesnych potwierdzeniach
+        TimeSlot slot = timeSlotRepository.findByIdForUpdate(slotId)
+            .orElseThrow(() -> new IllegalArgumentException("Time slot not found"));
+
+        int confirmedCount = reservationRepository.countConfirmedByTimeSlotId(slotId);
+        if (confirmedCount >= slot.getMaxParticipants()) {
+            // Ktoś inny był szybszy — resetujemy tego użytkownika do WAITING
+            entry.returnToWaiting();
+            waitlistRepository.save(entry);
+            throw new IllegalStateException(msg.get("waitlist.race.lost"));
+        }
+
+        User user = entry.getUser();
+
         Reservation existing = reservationRepository.findByUserIdAndTimeSlotId(userId, slot.getId());
         Reservation reservation;
         if (existing != null && existing.isCancelled()) {
@@ -150,57 +172,68 @@ public class WaitlistService {
 
         waitlistRepository.delete(entry);
 
+        // Pozostałe PENDING osoby wracają do kolejki (wyścig zakończony dla tego miejsca)
+        List<Waitlist> otherPending = waitlistRepository.findBySlotIdAndStatusWithUser(slotId, WaitlistStatus.PENDING_CONFIRMATION);
+        for (Waitlist other : otherPending) {
+            other.returnToWaiting();
+        }
+        waitlistRepository.saveAll(otherPending);
+
         waitlistMailService.sendWaitlistReservationConfirmed(user, slot);
         activityLogService.logReservationCreated(user, slot, 1);
 
-        log.info("User {} confirmed waitlist offer for slot {} — reservation created", userId, slot.getId());
+        log.info("User {} confirmed waitlist offer for slot {} — reservation created, {} others returned to waiting",
+            userId, slot.getId(), otherPending.size());
         return new ReservationResultDto(reservation.getId(), true, msg.get("reservation.confirmed"));
     }
 
-    // Wywoływane po anulowaniu rezerwacji — oferuje miejsce pierwszej osobie z kolejki
-    public void offerToNext(UUID slotId) {
+    // Wywoływane po zwolnieniu miejsca — powiadamia WSZYSTKICH oczekujących jednocześnie
+    public void notifyAll(UUID slotId) {
         List<Waitlist> waiting = waitlistRepository.findWaitingBySlotIdOrdered(slotId);
         if (waiting.isEmpty()) {
             log.debug("No waitlist entries for slot {}, slot is freely available", slotId);
             return;
         }
 
-        Waitlist next = waiting.getFirst();
-        TimeSlot slot = next.getTimeSlot();
-
-        // Jeśli slot już w przeszłości lub mniej niż BOOKING_WINDOW_HOURS — skracamy deadline
+        TimeSlot slot = waiting.getFirst().getTimeSlot();
         Instant slotInstant = LocalDateTime.of(slot.getDate(), slot.getStartTime())
             .toInstant(ZoneOffset.systemDefault().getRules().getOffset(Instant.now()));
         Instant maxDeadline = Instant.now().plus(CONFIRMATION_WINDOW_HOURS, ChronoUnit.HOURS);
         Instant deadline = slotInstant.isBefore(maxDeadline) ? slotInstant : maxDeadline;
 
-        // Jeśli slot już minął — nie ma sensu oferować
         if (deadline.isBefore(Instant.now())) {
-            log.info("Slot {} is in the past, skipping waitlist offer", slotId);
-            next.expire();
-            waitlistRepository.save(next);
-            // Spróbuj następnego (rekurencja przez scheduler, nie tu — żeby nie blokować transakcji)
+            log.info("Slot {} is in the past, skipping waitlist notification", slotId);
+            for (Waitlist entry : waiting) {
+                entry.expire();
+            }
+            waitlistRepository.saveAll(waiting);
             return;
         }
 
-        next.offerSpot(deadline);
-        waitlistRepository.save(next);
+        for (Waitlist entry : waiting) {
+            entry.offerSpot(deadline);
+        }
+        waitlistRepository.saveAll(waiting);
 
-        waitlistMailService.sendWaitlistOfferNotification(next.getUser(), slot, deadline);
-        log.info("Offered slot {} to user {} (waitlist position {}), deadline: {}",
-            slotId, next.getUser().getId(), next.getPosition(), deadline);
+        for (Waitlist entry : waiting) {
+            waitlistMailService.sendWaitlistOfferNotification(entry.getUser(), slot, deadline);
+        }
+
+        log.info("Notified {} waitlist users for slot {}, deadline: {}", waiting.size(), slotId, deadline);
     }
 
-    // Wywoływane przez scheduler co 5 minut — expiruje przeterminowane oferty i promuje następnego
-    public void expireAndPromoteNext() {
+    // Wywoływane przez scheduler co 5 minut — expiruje przeterminowane oferty i re-powiadamia jeśli miejsce nadal wolne
+    public void expireAndNotify() {
         List<Waitlist> expired = waitlistRepository.findExpiredPendingConfirmations(Instant.now());
+        if (expired.isEmpty()) return;
+
+        // Deadline minął i nikt nie potwierdził — wracamy do WAITING bez kolejnego powiadomienia.
+        // Następny notifyAll zostanie wywołany dopiero gdy ktoś anuluje rezerwację.
         for (Waitlist entry : expired) {
-            UUID slotId = entry.getTimeSlot().getId();
-            entry.expire();
-            waitlistRepository.save(entry);
-            log.info("Expired waitlist offer for user {} on slot {}", entry.getUser().getId(), slotId);
-            offerToNext(slotId);
+            entry.returnToWaiting();
         }
+        waitlistRepository.saveAll(expired);
+        log.info("Returned {} expired waitlist entries to WAITING", expired.size());
     }
 
     @Transactional(readOnly = true)

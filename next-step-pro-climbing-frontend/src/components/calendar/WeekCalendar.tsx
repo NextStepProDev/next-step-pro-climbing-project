@@ -270,7 +270,9 @@ export function WeekCalendar({
                         </div>
                         {showTitle && (
                           <div className="text-[10px] leading-tight truncate opacity-80">
-                            {slot.eventTitle || getStatusLabel(slot.status, t)}
+                            {slot.status === 'FULL' && !slot.isUserRegistered
+                              ? t('day.fullWaitlist')
+                              : slot.eventTitle || getStatusLabel(slot.status, t)}
                           </div>
                         )}
                         {slot.isUserRegistered && (

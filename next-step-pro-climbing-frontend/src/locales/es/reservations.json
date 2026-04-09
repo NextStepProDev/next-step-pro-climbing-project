@@ -8,18 +8,37 @@
   },
   "events": "Eventos",
   "trainings": "Entrenamientos",
-  "cancelEvent": "Cancelar evento",
+  "cancelEvent": "Cancelar reserva",
   "cancelSlot": "Cancelar",
   "archive": "Archivo",
   "noPastReservations": "No hay reservas pasadas.",
   "confirmCancel": {
     "title": "Cancelar reserva",
-    "eventMessage": "¿Estás seguro/a de que quieres cancelar la inscripción en todo el evento?",
+    "eventMessage": "¿Estás seguro/a de que quieres darte de baja de este evento?",
     "slotMessage": "¿Estás seguro/a de que quieres cancelar esta reserva?",
     "confirm": "Sí, cancelar"
   },
   "spotsReserved": "{{count}} plazas reservadas",
   "cancelledByAdmin": "Cancelado por el instructor",
   "cancelled": "Cancelado",
-  "totalItems": "{{count}} elementos"
+  "totalItems": "{{count}} elementos",
+  "updateParticipants": {
+    "edit": "Editar",
+    "save": "Guardar",
+    "cancel": "Cancelar"
+  },
+  "waitlist": {
+    "banner": "¡Se liberó una plaza en tu lista de espera — confirma ahora! →",
+    "banner_other": "¡Se liberaron {{count}} plazas en tus listas de espera — confirma ahora! →",
+    "pending": {
+      "title": "Confirma tu plaza — ¡se liberó un sitio!",
+      "deadline": "Confirma antes de:",
+      "confirm": "Confirmar plaza",
+      "decline": "Rechazar"
+    },
+    "waiting": {
+      "title": "Lista de espera",
+      "leave": "Salir de la cola"
+    }
+  }
 }

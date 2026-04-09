@@ -43,6 +43,14 @@ public class ActivityLogService {
         save(user, ActivityActionType.EVENT_RESERVATION_CANCELLED, null, event, null);
     }
 
+    public void logReservationUpdated(User user, TimeSlot timeSlot, int participants) {
+        save(user, ActivityActionType.RESERVATION_UPDATED, timeSlot, null, participants);
+    }
+
+    public void logEventReservationUpdated(User user, Event event, int participants) {
+        save(user, ActivityActionType.EVENT_RESERVATION_UPDATED, null, event, participants);
+    }
+
     public void logCancelledByAdmin(User user, TimeSlot timeSlot, int participants) {
         save(user, ActivityActionType.RESERVATION_CANCELLED_BY_ADMIN, timeSlot, null, participants);
     }

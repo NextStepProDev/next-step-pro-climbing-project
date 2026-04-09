@@ -276,6 +276,18 @@ export const reservationApi = {
   cancelForEvent: (eventId: string) =>
     fetchApi<void>(`/reservations/event/${eventId}`, { method: 'DELETE' }),
 
+  updateParticipants: (reservationId: string, participants: number) =>
+    fetchApi<import('../types').ReservationResult>(`/reservations/${reservationId}/participants`, {
+      method: 'PUT',
+      body: JSON.stringify({ participants }),
+    }),
+
+  updateEventParticipants: (eventId: string, participants: number) =>
+    fetchApi<import('../types').EventReservationResult>(`/reservations/event/${eventId}/participants`, {
+      method: 'PUT',
+      body: JSON.stringify({ participants }),
+    }),
+
   joinWaitlist: (slotId: string) =>
     fetchApi<{ success: boolean; message: string }>(`/reservations/slot/${slotId}/waitlist`, { method: 'POST' }),
 

@@ -4,6 +4,7 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import pl.nextsteppro.climbing.domain.course.Course;
 import pl.nextsteppro.climbing.domain.event.Event;
 import pl.nextsteppro.climbing.domain.event.EventRepository;
 import pl.nextsteppro.climbing.domain.reservation.Reservation;
@@ -178,14 +179,30 @@ public class CalendarService {
         );
         boolean enrollmentOpen = eventStart.isAfter(LocalDateTime.now().plusHours(BOOKING_CUTOFF_HOURS));
 
-        UUID courseId = event.getCourse() != null ? event.getCourse().getId() : null;
+        Course course = event.getCourse();
+        String title = course != null ? course.getTitle() : event.getTitle();
+        UUID courseId = course != null ? course.getId() : null;
+        boolean coursePublished = course != null && course.isPublished();
+
+        int userParticipants = 0;
+        if (userId != null && isUserRegistered) {
+            List<TimeSlot> eventSlots = timeSlotRepository.findByEventId(eventId);
+            for (TimeSlot slot : eventSlots) {
+                Reservation r = reservationRepository.findByUserIdAndTimeSlotId(userId, slot.getId());
+                if (r != null && r.getStatus() == ReservationStatus.CONFIRMED) {
+                    userParticipants = r.getParticipants();
+                    break;
+                }
+            }
+        }
 
         return new EventSummaryDto(
-            event.getId(), event.getTitle(), event.getDescription(), event.getLocation(),
+            event.getId(), title, event.getDescription(), event.getLocation(),
             event.getEventType().name(), event.getStartDate(), event.getEndDate(), event.isMultiDay(),
             event.getMaxParticipants(), currentParticipants, isUserRegistered, enrollmentOpen,
-            courseId,
-            userWaitlistStatus, waitlistEntryId, confirmationDeadline, userWaitlistPosition
+            courseId, coursePublished,
+            userWaitlistStatus, waitlistEntryId, confirmationDeadline, userWaitlistPosition,
+            userParticipants
         );
     }
 
@@ -351,13 +368,16 @@ public class CalendarService {
             event.getStartTime() != null ? event.getStartTime() : LocalTime.of(0, 0)
         );
         boolean enrollmentOpen = eventStart.isAfter(LocalDateTime.now().plusHours(BOOKING_CUTOFF_HOURS));
-        UUID courseId = event.getCourse() != null ? event.getCourse().getId() : null;
+        Course course = event.getCourse();
+        String title = course != null ? course.getTitle() : event.getTitle();
+        UUID courseId = course != null ? course.getId() : null;
+        boolean coursePublished = course != null && course.isPublished();
         return new EventSummaryDto(
-            event.getId(), event.getTitle(), event.getDescription(), event.getLocation(),
+            event.getId(), title, event.getDescription(), event.getLocation(),
             event.getEventType().name(), event.getStartDate(), event.getEndDate(), event.isMultiDay(),
             event.getMaxParticipants(), currentParticipants, isUserRegistered, enrollmentOpen,
-            courseId,
-            null, null, null, 0
+            courseId, coursePublished,
+            null, null, null, 0, 0
         );
     }
 

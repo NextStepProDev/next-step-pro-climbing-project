@@ -143,6 +143,13 @@ public class AdminController {
         return ResponseEntity.ok(participants);
     }
 
+    @Operation(summary = "Lista oczekujących terminu", description = "Zwraca kolejkę oczekujących (WAITING + PENDING_CONFIRMATION) dla terminu.")
+    @GetMapping("/slots/{slotId}/waitlist")
+    public ResponseEntity<SlotWaitlistDto> getSlotWaitlist(
+            @Parameter(description = "UUID terminu") @PathVariable UUID slotId) {
+        return ResponseEntity.ok(adminService.getSlotWaitlist(slotId));
+    }
+
     // ==================== Events Management ====================
 
     @Tag(name = "Admin - Events", description = "Zarządzanie wydarzeniami (tylko admin)")

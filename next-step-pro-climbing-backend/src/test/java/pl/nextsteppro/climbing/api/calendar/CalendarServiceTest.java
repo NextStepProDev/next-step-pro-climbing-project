@@ -15,6 +15,8 @@ import pl.nextsteppro.climbing.domain.timeslot.TimeSlot;
 import pl.nextsteppro.climbing.domain.timeslot.TimeSlotRepository;
 import pl.nextsteppro.climbing.domain.user.User;
 import pl.nextsteppro.climbing.domain.user.UserRole;
+import pl.nextsteppro.climbing.domain.waitlist.EventWaitlistRepository;
+import pl.nextsteppro.climbing.domain.waitlist.WaitlistRepository;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -53,6 +55,12 @@ class CalendarServiceTest {
     @Mock
     private EventRepository eventRepository;
 
+    @Mock
+    private WaitlistRepository waitlistRepository;
+
+    @Mock
+    private EventWaitlistRepository eventWaitlistRepository;
+
     private CalendarService calendarService;
 
     private UUID testUserId;
@@ -62,7 +70,7 @@ class CalendarServiceTest {
 
     @BeforeEach
     void setUp() {
-        calendarService = new CalendarService(timeSlotRepository, reservationRepository, eventRepository);
+        calendarService = new CalendarService(timeSlotRepository, reservationRepository, eventRepository, waitlistRepository, eventWaitlistRepository);
         testUserId = UUID.randomUUID();
 
         // Setup test user

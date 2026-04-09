@@ -252,49 +252,50 @@ export function CalendarPage() {
                     return (
                       <div
                         key={event.id}
-                        className="flex items-center justify-between text-sm bg-dark-800/40 rounded-lg px-3 py-2 cursor-pointer hover:bg-dark-800/70 transition-colors"
+                        className="text-sm bg-dark-800/40 rounded-lg px-3 py-2 cursor-pointer hover:bg-dark-800/70 transition-colors"
                         onClick={() => setSelectedEvent(event)}
                       >
-                        <span className="flex items-center gap-1.5 text-dark-100 font-medium min-w-0">
-                          {event.title}
-                          {event.courseId && (
-                            <Link
-                              to={`/courses#course-${event.courseId}`}
-                              onClick={(e) => e.stopPropagation()}
-                              className="flex items-center gap-0.5 text-xs text-primary-400 hover:text-primary-300 transition-colors shrink-0"
-                            >
-                              <ExternalLink className="w-3 h-3" />
-                            </Link>
-                          )}
-                        </span>
-                        <div className="flex items-center gap-3">
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${badgeClass}`}>
-                            {label}
-                          </span>
-                          <span className="text-dark-400 text-xs">
-                            {format(new Date(event.startDate), "dd.MM")}
-                            {event.isMultiDay && (
-                              <> - {format(new Date(event.endDate), "dd.MM")}</>
+                        <div className="flex items-center justify-between">
+                          <span className="text-dark-100 font-medium">{event.title}</span>
+                          <div className="flex items-center gap-3">
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${badgeClass}`}>
+                              {label}
+                            </span>
+                            <span className="text-dark-400 text-xs">
+                              {format(new Date(event.startDate), "dd.MM")}
+                              {event.isMultiDay && (
+                                <> - {format(new Date(event.endDate), "dd.MM")}</>
+                              )}
+                            </span>
+                            {event.isUserRegistered ? (
+                              <span className="px-3 py-1 text-xs font-medium rounded-full bg-primary-500/20 text-primary-400">
+                                {t('signedUp')}
+                              </span>
+                            ) : !event.enrollmentOpen ? (
+                              <span className="px-3 py-1 text-xs font-medium rounded-full bg-dark-700 text-dark-400">
+                                {t('common:callPhone')}
+                              </span>
+                            ) : isFull ? (
+                              <span className="px-3 py-1 text-xs font-medium rounded-full bg-amber-500/20 text-amber-400">
+                                {t('event.waitlist.join')}
+                              </span>
+                            ) : (
+                              <span className="px-3 py-1 text-xs font-medium rounded-full bg-primary-600 text-white">
+                                {t('signUp')}
+                              </span>
                             )}
-                          </span>
-                          {event.isUserRegistered ? (
-                            <span className="px-3 py-1 text-xs font-medium rounded-full bg-primary-500/20 text-primary-400">
-                              {t('signedUp')}
-                            </span>
-                          ) : !event.enrollmentOpen ? (
-                            <span className="px-3 py-1 text-xs font-medium rounded-full bg-dark-700 text-dark-400">
-                              {t('common:callPhone')}
-                            </span>
-                          ) : isFull ? (
-                            <span className="px-3 py-1 text-xs font-medium rounded-full bg-amber-500/20 text-amber-400">
-                              {t('event.waitlist.join')}
-                            </span>
-                          ) : (
-                            <span className="px-3 py-1 text-xs font-medium rounded-full bg-primary-600 text-white">
-                              {t('signUp')}
-                            </span>
-                          )}
+                          </div>
                         </div>
+                        {event.courseId && (
+                          <Link
+                            to={`/kursy#course-${event.courseId}`}
+                            onClick={(e) => e.stopPropagation()}
+                            className="mt-1.5 flex items-center gap-1 text-xs text-primary-400 hover:text-primary-300 transition-colors"
+                          >
+                            <ExternalLink className="w-3 h-3" />
+                            {t('event.courseDetails')}
+                          </Link>
+                        )}
                       </div>
                     );
                   })}
@@ -339,23 +340,15 @@ export function CalendarPage() {
                   return (
                     <div
                       key={event.id}
-                      className="flex items-center justify-between text-sm bg-dark-800/40 rounded-lg px-3 py-2 cursor-pointer hover:bg-dark-800/70 transition-colors"
+                      className="text-sm bg-dark-800/40 rounded-lg px-3 py-2 cursor-pointer hover:bg-dark-800/70 transition-colors"
                       onClick={() => setSelectedEvent(event)}
                     >
+                      <div className="flex items-center justify-between">
                       <span className="flex items-center gap-2 text-dark-100 font-medium min-w-0">
                         <span
                           className={`w-2.5 h-2.5 rounded-full shrink-0 ${color.dot}`}
                         />
                         {event.title}
-                        {event.courseId && (
-                          <Link
-                            to={`/courses#course-${event.courseId}`}
-                            onClick={(e) => e.stopPropagation()}
-                            className="flex items-center gap-0.5 text-xs text-primary-400 hover:text-primary-300 transition-colors shrink-0"
-                          >
-                            <ExternalLink className="w-3 h-3" />
-                          </Link>
-                        )}
                       </span>
 
                       <div className="flex items-center gap-3">
@@ -393,6 +386,17 @@ export function CalendarPage() {
                           </span>
                         )}
                       </div>
+                      </div>
+                      {event.courseId && (
+                        <Link
+                          to={`/kursy#course-${event.courseId}`}
+                          onClick={(e) => e.stopPropagation()}
+                          className="mt-1.5 flex items-center gap-1 text-xs text-primary-400 hover:text-primary-300 transition-colors"
+                        >
+                          <ExternalLink className="w-3 h-3" />
+                          {t('event.courseDetails')}
+                        </Link>
+                      )}
                     </div>
                   );
                 })}
