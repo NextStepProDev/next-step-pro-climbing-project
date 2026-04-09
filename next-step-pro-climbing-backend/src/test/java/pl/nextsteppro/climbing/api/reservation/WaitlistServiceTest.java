@@ -189,6 +189,9 @@ class WaitlistServiceTest {
         Waitlist entry = buildWaitlistEntry(userId, slot, WaitlistStatus.PENDING_CONFIRMATION);
 
         when(waitlistRepository.findByUserIdAndSlotId(userId, slotId)).thenReturn(Optional.of(entry));
+        when(timeSlotRepository.findById(slotId)).thenReturn(Optional.of(slot));
+        when(reservationRepository.countConfirmedByTimeSlotId(slotId)).thenReturn(0);
+        when(waitlistRepository.countPendingConfirmationBySlotId(slotId)).thenReturn(0);
         when(waitlistRepository.findWaitingBySlotIdOrdered(slotId)).thenReturn(List.of());
 
         // When
@@ -224,8 +227,11 @@ class WaitlistServiceTest {
         Waitlist entry = buildPendingConfirmationEntry(waitlistId, user, slot, Instant.now().plusSeconds(3600));
 
         when(waitlistRepository.findById(waitlistId)).thenReturn(Optional.of(entry));
+        when(timeSlotRepository.findByIdForUpdate(slot.getId())).thenReturn(Optional.of(slot));
+        when(reservationRepository.countConfirmedByTimeSlotId(slot.getId())).thenReturn(0);
         when(reservationRepository.findByUserIdAndTimeSlotId(userId, slot.getId())).thenReturn(null);
         when(reservationRepository.save(any(Reservation.class))).thenAnswer(inv -> inv.getArgument(0));
+        lenient().when(waitlistRepository.findBySlotIdAndStatusWithUser(eq(slot.getId()), eq(WaitlistStatus.PENDING_CONFIRMATION))).thenReturn(List.of());
         lenient().when(msg.get("reservation.confirmed")).thenReturn("Confirmed");
 
         // When
@@ -248,8 +254,11 @@ class WaitlistServiceTest {
         Waitlist entry = buildPendingConfirmationEntry(waitlistId, user, slot, Instant.now().plusSeconds(3600));
 
         when(waitlistRepository.findById(waitlistId)).thenReturn(Optional.of(entry));
+        when(timeSlotRepository.findByIdForUpdate(slot.getId())).thenReturn(Optional.of(slot));
+        when(reservationRepository.countConfirmedByTimeSlotId(slot.getId())).thenReturn(0);
         when(reservationRepository.findByUserIdAndTimeSlotId(userId, slot.getId())).thenReturn(null);
         when(reservationRepository.save(any(Reservation.class))).thenAnswer(inv -> inv.getArgument(0));
+        lenient().when(waitlistRepository.findBySlotIdAndStatusWithUser(eq(slot.getId()), eq(WaitlistStatus.PENDING_CONFIRMATION))).thenReturn(List.of());
         lenient().when(msg.get("reservation.confirmed")).thenReturn("Confirmed");
 
         // When — should NOT throw despite slot being within 12h window

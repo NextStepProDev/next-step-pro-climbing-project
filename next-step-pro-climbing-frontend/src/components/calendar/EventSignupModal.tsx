@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { format } from 'date-fns'
 import { Calendar, ExternalLink, MapPin, Users } from 'lucide-react'
@@ -26,7 +26,8 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
   const queryClient = useQueryClient()
   const [comment, setComment] = useState('')
   const [participants, setParticipants] = useState(1)
-  const [editParticipants, setEditParticipants] = useState(1)
+  // null = user hasn't touched yet → falls back to freshEvent.userParticipants
+  const [userEditParticipants, setUserEditParticipants] = useState<number | null>(null)
 
   // Fetch fresh event data (with waitlist status) when modal is open
   const { data: freshEvent } = useQuery({
@@ -38,11 +39,8 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
 
   const ev = freshEvent ?? event
 
-  useEffect(() => {
-    if (freshEvent?.userParticipants && freshEvent.userParticipants > 0) {
-      setEditParticipants(freshEvent.userParticipants)
-    }
-  }, [freshEvent?.id, freshEvent?.userParticipants])
+  // Derive current edit value: user's own change takes priority, falls back to server data
+  const editParticipants = userEditParticipants ?? (freshEvent?.userParticipants ?? ev?.userParticipants ?? 1)
 
   const reservationMutation = useMutation({
     mutationFn: (data: { eventId: string; comment?: string; participants: number }) =>
@@ -70,6 +68,7 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
   const updateParticipantsMutation = useMutation({
     mutationFn: (participants: number) => reservationApi.updateEventParticipants(ev!.id, participants),
     onSuccess: () => {
+      setUserEditParticipants(null)
       queryClient.invalidateQueries({ queryKey: ['calendar'] })
       queryClient.invalidateQueries({ queryKey: ['reservations'] })
       queryClient.invalidateQueries({ queryKey: ['eventSummary', event?.id] })
@@ -389,7 +388,7 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
                 <div className="flex items-center gap-3">
                   <button
                     type="button"
-                    onClick={() => setEditParticipants(Math.max(1, editParticipants - 1))}
+                    onClick={() => setUserEditParticipants(Math.max(1, editParticipants - 1))}
                     className="w-9 h-9 rounded-lg bg-dark-800 border border-dark-700 text-dark-200 hover:bg-dark-700 transition-colors text-lg font-bold"
                   >
                     -
@@ -397,7 +396,7 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
                   <span className="text-lg font-semibold text-dark-100 w-8 text-center">{editParticipants}</span>
                   <button
                     type="button"
-                    onClick={() => setEditParticipants(editParticipants + 1)}
+                    onClick={() => setUserEditParticipants(editParticipants + 1)}
                     disabled={editParticipants >= spotsLeft + ev.userParticipants}
                     className="w-9 h-9 rounded-lg bg-dark-800 border border-dark-700 text-dark-200 hover:bg-dark-700 transition-colors text-lg font-bold disabled:opacity-40"
                   >
