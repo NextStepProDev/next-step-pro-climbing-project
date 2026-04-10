@@ -26,9 +26,9 @@
     "courses": {
       "title": "Kursy",
       "description": "Kursy wspinaczkowe przygotowujące do samodzielnego i bezpiecznego wspinania w skałach oraz na sztucznej ścianie. Szkolenia prowadzone są przez doświadczonych instruktorów PZA.",
-      "item1": "Kurs wspinaczkowy po drogach ubezpieczonych wg programu PZA - 900zł",
-      "item2": "Wspinaczka wielowyciągowa po drogach ubezpieczonych 2 dni - 800zł",
-      "item3": "Kurs autoratownictwa 1 - 2 dni - 700zł"
+      "item1": "Kurs wspinaczkowy po drogach ubezpieczonych wg programu PZA",
+      "item2": "Wspinaczka wielowyciągowa po drogach ubezpieczonych",
+      "item3": "Kurs autoratownictwa"
     },
     "trainings": {
       "title": "Treningi",
