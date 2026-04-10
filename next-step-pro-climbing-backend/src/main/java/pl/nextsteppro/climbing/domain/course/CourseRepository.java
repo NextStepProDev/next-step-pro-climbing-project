@@ -11,7 +11,7 @@ import java.util.UUID;
 public interface CourseRepository extends JpaRepository<Course, UUID> {
 
     @Query(value = """
-            SELECT id, title, excerpt, thumbnail_filename AS thumbnailFilename,
+            SELECT id, title, price, thumbnail_filename AS thumbnailFilename,
                    thumbnail_url AS thumbnailUrl,
                    thumbnail_focal_point_x AS thumbnailFocalPointX,
                    thumbnail_focal_point_y AS thumbnailFocalPointY,
@@ -25,7 +25,7 @@ public interface CourseRepository extends JpaRepository<Course, UUID> {
     List<CourseSummaryProjection> findAllPublishedSummaries();
 
     @Query(value = """
-            SELECT id, title, excerpt, thumbnail_filename AS thumbnailFilename,
+            SELECT id, title, price, thumbnail_filename AS thumbnailFilename,
                    thumbnail_url AS thumbnailUrl,
                    thumbnail_focal_point_x AS thumbnailFocalPointX,
                    thumbnail_focal_point_y AS thumbnailFocalPointY,

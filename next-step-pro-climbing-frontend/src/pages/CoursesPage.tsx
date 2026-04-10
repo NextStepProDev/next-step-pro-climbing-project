@@ -110,11 +110,11 @@ function CourseAccordionItem({ course, defaultOpen = false }: { course: CourseSu
           )}
         </div>
 
-        {/* Tytuł + zajawka */}
+        {/* Tytuł + cena */}
         <div className="flex-1 min-w-0">
           <p className="font-semibold text-dark-100 text-lg leading-snug">{course.title}</p>
-          {course.excerpt && (
-            <p className="text-sm text-dark-400 mt-1 line-clamp-2">{course.excerpt}</p>
+          {course.price && (
+            <p className="text-sm text-dark-400 mt-1 line-clamp-2">{course.price}</p>
           )}
         </div>
 

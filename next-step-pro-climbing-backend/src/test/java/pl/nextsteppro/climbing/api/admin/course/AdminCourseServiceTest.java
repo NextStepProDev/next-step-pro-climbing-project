@@ -60,7 +60,7 @@ class AdminCourseServiceTest {
     @Test
     void shouldCreateCourseSuccessfully() {
         // Given
-        CreateCourseRequest request = new CreateCourseRequest("Nowy kurs", "Zajawka kursu");
+        CreateCourseRequest request = new CreateCourseRequest("Nowy kurs", "150 zł");
 
         when(courseRepository.save(any(Course.class))).thenAnswer(inv -> {
             Course c = inv.getArgument(0);
@@ -74,13 +74,13 @@ class AdminCourseServiceTest {
         // Then
         assertNotNull(result);
         assertEquals("Nowy kurs", result.title());
-        assertEquals("Zajawka kursu", result.excerpt());
+        assertEquals("150 zł", result.price());
         assertFalse(result.published());
 
         ArgumentCaptor<Course> captor = ArgumentCaptor.forClass(Course.class);
         verify(courseRepository).save(captor.capture());
         assertEquals("Nowy kurs", captor.getValue().getTitle());
-        assertEquals("Zajawka kursu", captor.getValue().getExcerpt());
+        assertEquals("150 zł", captor.getValue().getPrice());
     }
 
     // ========== UPDATE META ==========
@@ -88,7 +88,7 @@ class AdminCourseServiceTest {
     @Test
     void shouldUpdateCourseMetaSuccessfully() {
         // Given
-        UpdateCourseMetaRequest request = new UpdateCourseMetaRequest("Zaktualizowany tytuł", "Nowa zajawka");
+        UpdateCourseMetaRequest request = new UpdateCourseMetaRequest("Zaktualizowany tytuł", "200 zł");
         when(courseRepository.findById(courseId)).thenReturn(Optional.of(testCourse));
         when(courseRepository.save(any(Course.class))).thenAnswer(inv -> inv.getArgument(0));
 
@@ -97,7 +97,7 @@ class AdminCourseServiceTest {
 
         // Then
         assertEquals("Zaktualizowany tytuł", result.title());
-        assertEquals("Nowa zajawka", result.excerpt());
+        assertEquals("200 zł", result.price());
         verify(courseRepository).save(testCourse);
     }
 

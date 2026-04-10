@@ -51,7 +51,7 @@ public class CourseService {
         return new CourseDetailDto(
                 course.getId(),
                 course.getTitle(),
-                course.getExcerpt(),
+                course.getPrice(),
                 buildThumbnailUrl(course.getThumbnailUrl(), course.getThumbnailFilename()),
                 course.getThumbnailFocalPointX(),
                 course.getThumbnailFocalPointY(),
@@ -64,7 +64,7 @@ public class CourseService {
         return new CourseSummaryDto(
                 projection.getId(),
                 projection.getTitle(),
-                projection.getExcerpt(),
+                projection.getPrice(),
                 buildThumbnailUrl(projection.getThumbnailUrl(), projection.getThumbnailFilename()),
                 projection.getThumbnailFocalPointX(),
                 projection.getThumbnailFocalPointY(),

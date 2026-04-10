@@ -58,7 +58,7 @@ public class AdminCourseService {
     @CacheEvict(value = {"courseList", "courseDetail"}, allEntries = true)
     public CourseAdminDto createCourse(CreateCourseRequest request) {
         Course course = new Course(request.title());
-        course.setExcerpt(request.excerpt());
+        course.setPrice(request.price());
         course.setDisplayOrder(courseRepository.findMaxDisplayOrder() + 1);
         course = courseRepository.save(course);
         return toAdminDto(course);
@@ -91,8 +91,8 @@ public class AdminCourseService {
         if (request.title() != null) {
             course.setTitle(request.title());
         }
-        if (request.excerpt() != null) {
-            course.setExcerpt(request.excerpt());
+        if (request.price() != null) {
+            course.setPrice(request.price());
         }
 
         course = courseRepository.save(course);
@@ -345,7 +345,7 @@ public class AdminCourseService {
         return new CourseAdminDto(
                 projection.getId(),
                 projection.getTitle(),
-                projection.getExcerpt(),
+                projection.getPrice(),
                 buildThumbnailUrl(projection.getThumbnailUrl(), projection.getThumbnailFilename()),
                 projection.getDisplayOrder(),
                 projection.isPublished(),
@@ -359,7 +359,7 @@ public class AdminCourseService {
         return new CourseAdminDto(
                 course.getId(),
                 course.getTitle(),
-                course.getExcerpt(),
+                course.getPrice(),
                 buildThumbnailUrl(course.getThumbnailUrl(), course.getThumbnailFilename()),
                 course.getDisplayOrder(),
                 course.isPublished(),
@@ -373,7 +373,7 @@ public class AdminCourseService {
         return new CourseDetailAdminDto(
                 course.getId(),
                 course.getTitle(),
-                course.getExcerpt(),
+                course.getPrice(),
                 course.getThumbnailFilename(),
                 buildThumbnailUrl(course.getThumbnailUrl(), course.getThumbnailFilename()),
                 course.getThumbnailFocalPointX(),

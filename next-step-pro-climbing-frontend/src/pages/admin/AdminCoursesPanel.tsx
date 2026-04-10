@@ -268,8 +268,8 @@ function CourseRow({
           )}
         </div>
         <p className="font-medium text-dark-100 truncate">{course.title}</p>
-        {course.excerpt && (
-          <p className="text-sm text-dark-400 truncate">{course.excerpt}</p>
+        {course.price && (
+          <p className="text-sm text-dark-400 truncate">{course.price}</p>
         )}
       </div>
 
@@ -338,7 +338,7 @@ function EditView({
 
   // ---------- Meta state ----------
   const [title, setTitle] = useState(detail.title)
-  const [excerpt, setExcerpt] = useState(detail.excerpt ?? '')
+  const [price, setPrice] = useState(detail.price ?? '')
 
   // ---------- Thumbnail state ----------
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null)
@@ -395,7 +395,7 @@ function EditView({
   }, [])
 
   // ---------- Dirty detection ----------
-  const metaDirty = title !== detail.title || excerpt !== (detail.excerpt ?? '')
+  const metaDirty = title !== detail.title || price !== (detail.price ?? '')
   const thumbnailDirty = thumbnailFile !== null || thumbnailFromLibrary !== null
   const focalPointDirty = detail.thumbnailUrl != null &&
     (focalPoint.x !== (detail.thumbnailFocalPointX ?? 0.5) ||
@@ -439,7 +439,7 @@ function EditView({
     try {
       // 1. Meta
       if (metaDirty) {
-        await adminCoursesApi.updateMeta(courseId, { title, excerpt: excerpt || undefined })
+        await adminCoursesApi.updateMeta(courseId, { title, price: price || undefined })
       }
 
       // 2. Thumbnail + focal point (zawsze razem gdy nowy plik)
@@ -508,7 +508,7 @@ function EditView({
   // ---------- Cancel (discard local changes) ----------
   const handleCancel = () => {
     setTitle(detail.title)
-    setExcerpt(detail.excerpt ?? '')
+    setPrice(detail.price ?? '')
 
     if (thumbnailPreview) URL.revokeObjectURL(thumbnailPreview)
     setThumbnailFile(null)
@@ -607,12 +607,13 @@ function EditView({
             />
           </div>
           <div>
-            <label className="block text-sm text-dark-300 mb-1">{t('courses.excerptLabel')}</label>
-            <textarea
-              value={excerpt}
-              onChange={(e) => setExcerpt(e.target.value)}
-              rows={3}
-              className="w-full bg-dark-700 border border-dark-600 rounded px-3 py-2 text-dark-100 focus:outline-none focus:border-primary-500 resize-none"
+            <label className="block text-sm text-dark-300 mb-1">{t('courses.priceLabel')}</label>
+            <input
+              type="text"
+              value={price}
+              onChange={(e) => setPrice(e.target.value)}
+              placeholder={t('courses.pricePlaceholder')}
+              className="w-full bg-dark-700 border border-dark-600 rounded px-3 py-2 text-dark-100 focus:outline-none focus:border-primary-500"
             />
           </div>
         </div>
@@ -894,7 +895,7 @@ function EditView({
         isOpen={showPreview}
         onClose={() => setShowPreview(false)}
         title={title}
-        excerpt={excerpt}
+        price={price}
         thumbnailUrl={thumbnailPreview ?? thumbnailFromLibrary ?? detail.thumbnailUrl ?? null}
         focalPoint={(!thumbnailPreview && !thumbnailFromLibrary) ? focalPoint : undefined}
         blocks={previewBlocks}

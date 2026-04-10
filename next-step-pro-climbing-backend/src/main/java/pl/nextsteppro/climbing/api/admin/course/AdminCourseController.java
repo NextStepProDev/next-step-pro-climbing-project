@@ -65,7 +65,7 @@ public class AdminCourseController {
         return ResponseEntity.ok(adminCourseService.createCourse(request));
     }
 
-    @Operation(summary = "Aktualizuj tytuł i excerpt kursu")
+    @Operation(summary = "Aktualizuj tytuł i cenę kursu")
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "Metadane zaktualizowane"),
         @ApiResponse(responseCode = "400", description = "Kurs nie znaleziony lub nieprawidłowe dane"),

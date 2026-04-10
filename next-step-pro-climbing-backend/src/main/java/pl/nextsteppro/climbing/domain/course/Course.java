@@ -17,9 +17,9 @@ public class Course {
     @Column(nullable = false, length = 500)
     private String title;
 
-    @Column(columnDefinition = "TEXT")
+    @Column(length = 255)
     @Nullable
-    private String excerpt;
+    private String price;
 
     @Column(name = "thumbnail_filename", length = 500)
     @Nullable
@@ -80,8 +80,8 @@ public class Course {
     }
 
     @Nullable
-    public String getExcerpt() {
-        return excerpt;
+    public String getPrice() {
+        return price;
     }
 
     @Nullable
@@ -125,8 +125,8 @@ public class Course {
         this.title = title;
     }
 
-    public void setExcerpt(@Nullable String excerpt) {
-        this.excerpt = excerpt;
+    public void setPrice(@Nullable String price) {
+        this.price = price;
     }
 
     public void setThumbnailFilename(@Nullable String thumbnailFilename) {
