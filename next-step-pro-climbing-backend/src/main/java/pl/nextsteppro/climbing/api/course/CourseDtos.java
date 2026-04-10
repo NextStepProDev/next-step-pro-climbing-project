@@ -14,7 +14,7 @@ public class CourseDtos {
     public record CourseSummaryDto(
             UUID id,
             String title,
-            @Nullable String excerpt,
+            @Nullable String price,
             @Nullable String thumbnailUrl,
             @Nullable Float thumbnailFocalPointX,
             @Nullable Float thumbnailFocalPointY,
@@ -24,7 +24,7 @@ public class CourseDtos {
     public record CourseDetailDto(
             UUID id,
             String title,
-            @Nullable String excerpt,
+            @Nullable String price,
             @Nullable String thumbnailUrl,
             @Nullable Float thumbnailFocalPointX,
             @Nullable Float thumbnailFocalPointY,

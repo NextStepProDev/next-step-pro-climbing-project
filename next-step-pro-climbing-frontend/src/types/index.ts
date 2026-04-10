@@ -591,7 +591,7 @@ export interface AdminNewsPageDto {
 export interface CourseSummary {
   id: string
   title: string
-  excerpt: string | null
+  price: string | null
   thumbnailUrl: string | null
   thumbnailFocalPointX: number | null
   thumbnailFocalPointY: number | null
@@ -601,7 +601,7 @@ export interface CourseSummary {
 export interface CourseDetail {
   id: string
   title: string
-  excerpt: string | null
+  price: string | null
   thumbnailUrl: string | null
   thumbnailFocalPointX: number | null
   thumbnailFocalPointY: number | null
@@ -612,7 +612,7 @@ export interface CourseDetail {
 export interface CourseAdmin {
   id: string
   title: string
-  excerpt: string | null
+  price: string | null
   thumbnailUrl: string | null
   displayOrder: number
   published: boolean
@@ -624,7 +624,7 @@ export interface CourseAdmin {
 export interface CourseDetailAdmin {
   id: string
   title: string
-  excerpt: string | null
+  price: string | null
   thumbnailFilename: string | null
   thumbnailUrl: string | null
   thumbnailFocalPointX: number | null
@@ -638,10 +638,10 @@ export interface CourseDetailAdmin {
 
 export interface CreateCourseRequest {
   title: string
-  excerpt?: string
+  price?: string
 }
 
 export interface UpdateCourseMetaRequest {
   title?: string
-  excerpt?: string
+  price?: string
 }

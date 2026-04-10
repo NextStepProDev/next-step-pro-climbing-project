@@ -15,7 +15,7 @@ interface CoursePreviewModalProps {
   isOpen: boolean
   onClose: () => void
   title: string
-  excerpt: string
+  price: string
   thumbnailUrl: string | null
   focalPoint?: { x: number; y: number }
   blocks: CoursePreviewBlock[]
@@ -25,7 +25,7 @@ export function CoursePreviewModal({
   isOpen,
   onClose,
   title,
-  excerpt,
+  price,
   thumbnailUrl,
   blocks,
 }: CoursePreviewModalProps) {
@@ -59,9 +59,9 @@ export function CoursePreviewModal({
           {title || <span className="text-dark-500 italic">{t('courses.previewNoTitle')}</span>}
         </h1>
 
-        {/* Excerpt */}
-        {excerpt && (
-          <p className="text-dark-300 text-sm mb-6 leading-relaxed">{excerpt}</p>
+        {/* Cena */}
+        {price && (
+          <p className="text-primary-400 font-medium mb-6">{price}</p>
         )}
 
         {blocks.length > 0 && <hr className="border-dark-700 mb-6" />}
@@ -104,7 +104,7 @@ export function CoursePreviewModal({
           })}
         </div>
 
-        {blocks.length === 0 && !excerpt && (
+        {blocks.length === 0 && !price && (
           <p className="text-dark-500 italic text-sm">{t('courses.previewNoContent')}</p>
         )}
       </div>

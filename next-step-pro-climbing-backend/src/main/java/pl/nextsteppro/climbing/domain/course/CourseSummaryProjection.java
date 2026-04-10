@@ -12,7 +12,7 @@ public interface CourseSummaryProjection {
     String getTitle();
 
     @Nullable
-    String getExcerpt();
+    String getPrice();
 
     @Nullable
     String getThumbnailFilename();

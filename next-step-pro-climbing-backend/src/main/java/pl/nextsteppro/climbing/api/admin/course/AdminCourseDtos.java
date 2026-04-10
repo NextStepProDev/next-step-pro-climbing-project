@@ -16,7 +16,7 @@ public class AdminCourseDtos {
     public record CourseAdminDto(
             UUID id,
             String title,
-            @Nullable String excerpt,
+            @Nullable String price,
             @Nullable String thumbnailUrl,
             int displayOrder,
             boolean published,
@@ -28,7 +28,7 @@ public class AdminCourseDtos {
     public record CourseDetailAdminDto(
             UUID id,
             String title,
-            @Nullable String excerpt,
+            @Nullable String price,
             @Nullable String thumbnailFilename,
             @Nullable String thumbnailUrl,
             @Nullable Float thumbnailFocalPointX,
@@ -54,12 +54,12 @@ public class AdminCourseDtos {
 
     public record CreateCourseRequest(
             @NotBlank @Size(max = 500) String title,
-            @Nullable @Size(max = 1000) String excerpt
+            @Nullable @Size(max = 255) String price
     ) {}
 
     public record UpdateCourseMetaRequest(
             @Nullable @Size(max = 500) String title,
-            @Nullable @Size(max = 1000) String excerpt
+            @Nullable @Size(max = 255) String price
     ) {}
 
     public record AddTextBlockRequest(

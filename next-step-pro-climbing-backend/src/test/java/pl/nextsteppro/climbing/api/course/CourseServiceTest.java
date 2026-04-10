@@ -72,10 +72,10 @@ class CourseServiceTest {
         assertEquals(2, result.size());
         assertEquals(id1, result.get(0).id());
         assertEquals("Kurs dla początkujących", result.get(0).title());
-        assertEquals("Opis kursu", result.get(0).excerpt());
+        assertEquals("Opis kursu", result.get(0).price());
         assertNull(result.get(0).thumbnailUrl());
         assertEquals(id2, result.get(1).id());
-        assertNull(result.get(1).excerpt());
+        assertNull(result.get(1).price());
         assertNotNull(result.get(1).thumbnailUrl());
     }
 
@@ -130,7 +130,7 @@ class CourseServiceTest {
         assertNotNull(result);
         assertEquals(courseId, result.id());
         assertEquals("Kurs wspinaczki", result.title());
-        assertEquals("Zajawka", result.excerpt());
+        assertEquals("Zajawka", result.price());
         assertEquals(2, result.blocks().size());
     }
 
@@ -196,11 +196,11 @@ class CourseServiceTest {
 
     // ========== Helpers ==========
 
-    private CourseSummaryProjection buildProjection(UUID id, String title, String excerpt, String thumbnailFilename, Instant publishedAt) {
+    private CourseSummaryProjection buildProjection(UUID id, String title, String price, String thumbnailFilename, Instant publishedAt) {
         return new CourseSummaryProjection() {
             @Override public UUID getId() { return id; }
             @Override public String getTitle() { return title; }
-            @Override public String getExcerpt() { return excerpt; }
+            @Override public String getPrice() { return price; }
             @Override public String getThumbnailFilename() { return thumbnailFilename; }
             @Override public String getThumbnailUrl() { return null; }
             @Override public Float getThumbnailFocalPointX() { return null; }
@@ -213,11 +213,11 @@ class CourseServiceTest {
         };
     }
 
-    private Course buildCourse(UUID id, String title, String excerpt, String thumbnailFilename, boolean published) {
+    private Course buildCourse(UUID id, String title, String price, String thumbnailFilename, boolean published) {
         Course course = new Course(title);
         try {
             setField(course, "id", id);
-            setField(course, "excerpt", excerpt);
+            setField(course, "price", price);
             setField(course, "thumbnailFilename", thumbnailFilename);
             setField(course, "published", published);
             setField(course, "publishedAt", published ? Instant.now() : null);
