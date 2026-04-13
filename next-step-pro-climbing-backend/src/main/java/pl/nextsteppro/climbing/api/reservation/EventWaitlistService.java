@@ -105,6 +105,8 @@ public class EventWaitlistService {
         EventWaitlist entry = new EventWaitlist(user, event, position);
         eventWaitlistRepository.save(entry);
 
+        waitlistMailService.sendEventWaitlistJoinedConfirmation(user, event);
+
         log.info("User {} joined event waitlist for event {} at position {}", userId, eventId, position);
         return new WaitlistResultDto(true, msg.get("waitlist.joined"));
     }

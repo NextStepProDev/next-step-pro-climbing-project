@@ -95,6 +95,8 @@ public class WaitlistService {
         Waitlist entry = new Waitlist(user, slot, position);
         waitlistRepository.save(entry);
 
+        waitlistMailService.sendWaitlistJoinedConfirmation(user, slot);
+
         log.info("User {} joined waitlist for slot {} at position {}", userId, slotId, position);
         return new WaitlistResultDto(true, msg.get("waitlist.joined"));
     }

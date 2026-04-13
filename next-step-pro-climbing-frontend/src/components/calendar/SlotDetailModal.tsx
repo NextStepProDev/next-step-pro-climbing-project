@@ -205,7 +205,7 @@ export function SlotDetailModal({
         {isWaiting && (
           <div className="p-3 bg-dark-800 border border-dark-700 rounded-lg">
             <span className="text-dark-300 text-sm">
-              {t('slot.waitlist.waiting', { position: slot.userWaitlistPosition })}
+              {t('slot.waitlist.waiting')}
             </span>
           </div>
         )}

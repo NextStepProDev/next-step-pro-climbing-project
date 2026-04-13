@@ -24,6 +24,8 @@ import pl.nextsteppro.climbing.infrastructure.i18n.MessageService;
 import pl.nextsteppro.climbing.infrastructure.mail.MailService;
 import pl.nextsteppro.climbing.infrastructure.security.JwtAuthenticationFilter;
 import pl.nextsteppro.climbing.api.activitylog.ActivityLogService;
+import pl.nextsteppro.climbing.api.reservation.EventWaitlistService;
+import pl.nextsteppro.climbing.api.reservation.WaitlistService;
 import pl.nextsteppro.climbing.domain.waitlist.Waitlist;
 import pl.nextsteppro.climbing.domain.waitlist.WaitlistRepository;
 import pl.nextsteppro.climbing.domain.waitlist.WaitlistStatus;
@@ -55,6 +57,8 @@ public class AdminService {
     private final MessageService msg;
     private final WaitlistRepository waitlistRepository;
     private final pl.nextsteppro.climbing.infrastructure.mail.AuthMailService authMailService;
+    private final WaitlistService waitlistService;
+    private final EventWaitlistService eventWaitlistService;
 
     public AdminService(TimeSlotRepository timeSlotRepository,
                        EventRepository eventRepository,
@@ -67,7 +71,9 @@ public class AdminService {
                        JwtAuthenticationFilter jwtAuthenticationFilter,
                        MessageService msg,
                        WaitlistRepository waitlistRepository,
-                       pl.nextsteppro.climbing.infrastructure.mail.AuthMailService authMailService) {
+                       pl.nextsteppro.climbing.infrastructure.mail.AuthMailService authMailService,
+                       WaitlistService waitlistService,
+                       EventWaitlistService eventWaitlistService) {
         this.timeSlotRepository = timeSlotRepository;
         this.eventRepository = eventRepository;
         this.courseRepository = courseRepository;
@@ -80,6 +86,8 @@ public class AdminService {
         this.msg = msg;
         this.waitlistRepository = waitlistRepository;
         this.authMailService = authMailService;
+        this.waitlistService = waitlistService;
+        this.eventWaitlistService = eventWaitlistService;
     }
 
     @Caching(evict = {
@@ -130,6 +138,7 @@ public class AdminService {
 
         if (request.startTime() != null) slot.setStartTime(request.startTime());
         if (request.endTime() != null) slot.setEndTime(request.endTime());
+        int oldMaxParticipants = slot.getMaxParticipants();
         if (request.maxParticipants() != null) {
             int confirmed = reservationRepository.countConfirmedByTimeSlotId(slotId);
             if (request.maxParticipants() < confirmed) {
@@ -146,6 +155,10 @@ public class AdminService {
         }
 
         slot = timeSlotRepository.save(slot);
+
+        if (request.maxParticipants() != null && request.maxParticipants() > oldMaxParticipants) {
+            waitlistService.notifyAll(slotId);
+        }
 
         var tf = DateTimeFormatter.ofPattern("HH:mm");
         List<MailService.FieldChange> changes = new ArrayList<>();
@@ -342,6 +355,7 @@ public class AdminService {
         if (request.eventType() != null) event.setEventType(EventType.valueOf(request.eventType()));
         if (request.startDate() != null) event.setStartDate(request.startDate());
         if (request.endDate() != null) event.setEndDate(request.endDate());
+        int oldEventMaxParticipants = event.getMaxParticipants();
         if (request.maxParticipants() != null) {
             List<TimeSlot> eventSlots = timeSlotRepository.findByEventId(eventId);
             if (!eventSlots.isEmpty()) {
@@ -367,6 +381,10 @@ public class AdminService {
         }
 
         event = eventRepository.save(event);
+
+        if (request.maxParticipants() != null && request.maxParticipants() > oldEventMaxParticipants) {
+            eventWaitlistService.notifyAll(eventId);
+        }
 
         var df = DateTimeFormatter.ofPattern("dd.MM.yyyy");
         var tf = DateTimeFormatter.ofPattern("HH:mm");

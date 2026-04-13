@@ -61,7 +61,7 @@
     "waitlist": {
       "join": "Unirse a la lista de espera",
       "leave": "Salir de la cola",
-      "waiting": "Estás en la lista de espera (pos. {{position}})",
+      "waiting": "Estás en la lista de espera",
       "offerTitle": "¡Se liberó una plaza — sé el primero!",
       "offerBody": "Todos en la lista de espera han sido notificados al mismo tiempo. ¡El primero en confirmar consigue la plaza!",
       "deadline": "Confirma antes de:",
@@ -97,7 +97,7 @@
       "fullLoginHint": "Inicia sesión para unirte a la lista de espera — te avisaremos si alguien cancela.",
       "loginToJoin": "Inicia sesión y únete a la lista de espera",
       "waitingTitle": "Estás en la lista de espera",
-      "waitingBody": "Estás en la posición {{position}}. Te avisaremos cuando se libere una plaza.",
+      "waitingBody": "Te avisaremos cuando se libere una plaza.",
       "offerTitle": "¡Se liberó una plaza — sé el primero/a!",
       "offerBody": "Todos los que esperaban han sido notificados al mismo tiempo. ¡El primero en confirmar consigue la plaza!",
       "deadline": "Confirma antes de: {{deadline}}",
