@@ -226,6 +226,8 @@ public class ReservationService {
                     .mapToInt(r -> eventSlotCountsFinal.getOrDefault(r.getTimeSlot().getId(), 0))
                     .max().orElse(0);
                 int spotsAvailable = event.getMaxParticipants() - maxConfirmedCount + first.getParticipants();
+                boolean cancelledByAdmin = reservations.stream()
+                    .allMatch(r -> r.getStatus() == ReservationStatus.CANCELLED_BY_ADMIN);
                 return new UserEventReservationDto(
                     event.getId(),
                     event.getTitle(),
@@ -237,7 +239,8 @@ public class ReservationService {
                     reservations.size(),
                     spotsAvailable,
                     first.getCreatedAt(),
-                    event.getCourse() != null ? event.getCourse().getId() : null
+                    event.getCourse() != null ? event.getCourse().getId() : null,
+                    cancelledByAdmin
                 );
             })
             .toList();
@@ -266,6 +269,8 @@ public class ReservationService {
                 List<Reservation> reservations = entry.getValue();
                 Reservation first = reservations.getFirst();
                 Event event = first.getTimeSlot().getEvent();
+                boolean cancelledByAdmin = reservations.stream()
+                    .allMatch(r -> r.getStatus() == ReservationStatus.CANCELLED_BY_ADMIN);
                 return new UserEventReservationDto(
                     event.getId(),
                     event.getTitle(),
@@ -277,7 +282,8 @@ public class ReservationService {
                     reservations.size(),
                     0,
                     first.getCreatedAt(),
-                    event.getCourse() != null ? event.getCourse().getId() : null
+                    event.getCourse() != null ? event.getCourse().getId() : null,
+                    cancelledByAdmin
                 );
             })
             .toList();
