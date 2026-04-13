@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import pl.nextsteppro.climbing.domain.user.User;
 import pl.nextsteppro.climbing.domain.user.UserRepository;
 import pl.nextsteppro.climbing.domain.user.UserRole;
+import pl.nextsteppro.climbing.infrastructure.mail.AuthMailService;
 
 import java.util.Map;
 import java.util.Optional;
@@ -24,10 +25,12 @@ public class OAuth2UserService extends DefaultOAuth2UserService {
 
     private final UserRepository userRepository;
     private final AdminEmailConfig adminEmailConfig;
+    private final AuthMailService authMailService;
 
-    public OAuth2UserService(UserRepository userRepository, AdminEmailConfig adminEmailConfig) {
+    public OAuth2UserService(UserRepository userRepository, AdminEmailConfig adminEmailConfig, AuthMailService authMailService) {
         this.userRepository = userRepository;
         this.adminEmailConfig = adminEmailConfig;
+        this.authMailService = authMailService;
     }
 
     @Override
@@ -90,7 +93,9 @@ public class OAuth2UserService extends DefaultOAuth2UserService {
         if (user.isAdmin()) {
             log.info("AUTO-ADMIN-PROMOTION: {} promoted to ADMIN during OAuth2 registration", email);
         }
-        return userRepository.save(user);
+        User savedUser = userRepository.save(user);
+        authMailService.sendWelcomeEmail(savedUser);
+        return savedUser;
     }
 
     private void promoteToAdminIfConfigured(User user) {
