@@ -24,6 +24,7 @@ public class WaitlistMailService {
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("dd.MM.yyyy");
     private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm");
     private static final DateTimeFormatter DEADLINE_FORMAT = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm");
+    private static final ZoneId WARSAW = ZoneId.of("Europe/Warsaw");
 
     private final JavaMailSender mailSender;
     private final AppConfig appConfig;
@@ -40,7 +41,7 @@ public class WaitlistMailService {
         if (!user.isEmailNotificationsEnabled()) return;
 
         String lang = user.getPreferredLanguage();
-        String deadlineFormatted = DEADLINE_FORMAT.format(deadline.atZone(ZoneId.systemDefault()));
+        String deadlineFormatted = DEADLINE_FORMAT.format(deadline.atZone(WARSAW));
 
         String subject = msg.getForLang("email.waitlist.offer.subject", lang);
         String body = buildOfferNotificationBody(lang, user, slot, deadlineFormatted);
@@ -132,7 +133,7 @@ public class WaitlistMailService {
         if (!user.isEmailNotificationsEnabled()) return;
 
         String lang = user.getPreferredLanguage();
-        String deadlineFormatted = DEADLINE_FORMAT.format(deadline.atZone(ZoneId.systemDefault()));
+        String deadlineFormatted = DEADLINE_FORMAT.format(deadline.atZone(WARSAW));
 
         String subject = msg.getForLang("email.event.waitlist.offer.subject", lang);
         String body = buildEventOfferBody(lang, user, event, deadlineFormatted);
