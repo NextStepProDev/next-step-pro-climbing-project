@@ -740,7 +740,9 @@ public class AdminService {
         }
         reservation.setParticipants(newParticipants);
         reservationRepository.save(reservation);
-        mailService.sendAdminParticipantReductionNotification(reservation.getUser(), slot, oldParticipants, newParticipants);
+        User user = userRepository.findById(reservation.getUser().getId())
+            .orElseThrow(() -> new IllegalStateException("User not found"));
+        mailService.sendAdminParticipantReductionNotification(user, slot, oldParticipants, newParticipants);
     }
 
     @Caching(evict = {
@@ -768,7 +770,8 @@ public class AdminService {
             throw new IllegalStateException(msg.get("admin.slot.capacity.too.low", String.valueOf(available)));
         }
 
-        User user = userReservations.getFirst().getUser();
+        User user = userRepository.findById(userReservations.getFirst().getUser().getId())
+            .orElseThrow(() -> new IllegalStateException("User not found"));
         for (Reservation reservation : userReservations) {
             reservation.setParticipants(newParticipants);
             reservationRepository.save(reservation);

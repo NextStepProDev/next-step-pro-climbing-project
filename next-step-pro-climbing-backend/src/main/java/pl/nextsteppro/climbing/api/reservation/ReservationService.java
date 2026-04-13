@@ -456,10 +456,14 @@ public class ReservationService {
             throw new IllegalStateException(msg.get("reservation.spots.available", availableForThisReservation, participants));
         }
 
+        int oldParticipants = reservation.getParticipants();
         reservation.setParticipants(participants);
         reservationRepository.save(reservation);
 
-        activityLogService.logReservationUpdated(reservation.getUser(), slot, participants);
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new IllegalArgumentException("User not found"));
+        mailService.sendReservationUpdateConfirmation(user, slot, oldParticipants, participants);
+        activityLogService.logReservationUpdated(user, slot, participants);
 
         return new ReservationResultDto(reservation.getId(), true, msg.get("reservation.updated"));
     }
@@ -520,6 +524,7 @@ public class ReservationService {
 
         User user = userRepository.findById(userId)
             .orElseThrow(() -> new IllegalArgumentException("User not found"));
+        mailService.sendEventReservationUpdateConfirmation(user, event, currentUserParticipants, participants);
         activityLogService.logEventReservationUpdated(user, event, participants);
 
         return new EventReservationResultDto(eventId, true, msg.get("reservation.updated"), userReservations.size());
