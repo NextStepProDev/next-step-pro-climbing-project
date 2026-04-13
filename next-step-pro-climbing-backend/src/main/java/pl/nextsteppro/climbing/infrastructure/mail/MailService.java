@@ -55,7 +55,7 @@ public class MailService {
         String lang = user.getPreferredLanguage();
         TimeSlot slot = reservation.getTimeSlot();
 
-        String subject = msg.get("email.reservation.subject", lang);
+        String subject = msg.getForLang("email.reservation.subject", lang);
         String body = buildReservationConfirmationBody(lang, user, slot);
 
         sendEmail(user.getEmail(), subject, body, null);
@@ -71,7 +71,7 @@ public class MailService {
         User user = reservation.getUser();
         TimeSlot slot = reservation.getTimeSlot();
 
-        String subject = msg.get("email.admin.new.reservation.subject", ADMIN_LANG, user.getFullName());
+        String subject = msg.getForLang("email.admin.new.reservation.subject", ADMIN_LANG, user.getFullName());
         String body = buildAdminNotificationBody(user, slot, reservation.getComment(), reservation.getParticipants());
 
         sendEmail(adminEmail, subject, body, null);
@@ -85,7 +85,7 @@ public class MailService {
         String lang = user.getPreferredLanguage();
         TimeSlot slot = reservation.getTimeSlot();
 
-        String subject = msg.get("email.cancellation.subject", lang);
+        String subject = msg.getForLang("email.cancellation.subject", lang);
         String body = buildCancellationBody(lang, user, slot);
 
         sendEmail(user.getEmail(), subject, body, null);
@@ -96,7 +96,7 @@ public class MailService {
         if (!user.isEmailNotificationsEnabled()) return;
 
         String lang = user.getPreferredLanguage();
-        String subject = msg.get("email.event.reservation.subject", lang);
+        String subject = msg.getForLang("email.event.reservation.subject", lang);
         String body = buildEventReservationConfirmationBody(lang, user, event);
 
         sendEmail(user.getEmail(), subject, body, null);
@@ -109,7 +109,7 @@ public class MailService {
 
         log.info("Sending event admin notification to: '{}' for event {}", adminEmail, event.getId());
 
-        String subject = msg.get("email.admin.event.subject", ADMIN_LANG, user.getFullName());
+        String subject = msg.getForLang("email.admin.event.subject", ADMIN_LANG, user.getFullName());
         String body = buildEventAdminNotificationBody(user, event, participants);
 
         sendEmail(adminEmail, subject, body, null);
@@ -123,7 +123,7 @@ public class MailService {
         String lang = user.getPreferredLanguage();
         TimeSlot slot = reservation.getTimeSlot();
 
-        String subject = msg.get("email.admin.cancel.subject", lang);
+        String subject = msg.getForLang("email.admin.cancel.subject", lang);
         String body = buildAdminCancellationBody(lang, user, slot);
 
         sendEmail(user.getEmail(), subject, body, null);
@@ -134,7 +134,7 @@ public class MailService {
         if (!user.isEmailNotificationsEnabled()) return;
 
         String lang = user.getPreferredLanguage();
-        String subject = msg.get("email.admin.event.cancel.subject", lang);
+        String subject = msg.getForLang("email.admin.event.cancel.subject", lang);
         String body = buildAdminEventCancellationBody(lang, user, event);
 
         sendEmail(user.getEmail(), subject, body, null);
@@ -150,7 +150,7 @@ public class MailService {
         User user = reservation.getUser();
         TimeSlot slot = reservation.getTimeSlot();
 
-        String subject = msg.get("email.user.cancel.admin.subject", ADMIN_LANG,
+        String subject = msg.getForLang("email.user.cancel.admin.subject", ADMIN_LANG,
             user.getFullName(),
             slot.getDate().format(DATE_FORMAT),
             slot.getStartTime().format(TIME_FORMAT));
@@ -166,7 +166,7 @@ public class MailService {
 
         log.info("Sending user event cancellation admin notification to: '{}'", adminEmail);
 
-        String subject = msg.get("email.user.event.cancel.admin.subject", ADMIN_LANG,
+        String subject = msg.getForLang("email.user.event.cancel.admin.subject", ADMIN_LANG,
             user.getFullName(), event.getTitle());
         String body = buildUserEventCancellationAdminBody(user, event);
 
@@ -178,7 +178,7 @@ public class MailService {
         if (!user.isEmailNotificationsEnabled()) return;
 
         String lang = user.getPreferredLanguage();
-        String subject = msg.get("email.event.cancellation.subject", lang);
+        String subject = msg.getForLang("email.event.cancellation.subject", lang);
         String body = buildEventCancellationBody(lang, user, event);
 
         sendEmail(user.getEmail(), subject, body, null);
@@ -208,7 +208,7 @@ public class MailService {
     public void sendAdminEventParticipantRemovedNotification(User user, Event event) {
         if (!user.isEmailNotificationsEnabled()) return;
         String lang = user.getPreferredLanguage();
-        String subject = msg.get("email.admin.event.participant.removed.subject", lang);
+        String subject = msg.getForLang("email.admin.event.participant.removed.subject", lang);
         String body = buildAdminEventParticipantRemovedBody(lang, user, event);
         sendEmail(user.getEmail(), subject, body, null);
     }
@@ -217,7 +217,7 @@ public class MailService {
     public void sendAdminParticipantReductionNotification(User user, TimeSlot slot, int oldParticipants, int newParticipants) {
         if (!user.isEmailNotificationsEnabled()) return;
         String lang = user.getPreferredLanguage();
-        String subject = msg.get("email.admin.participants.reduced.subject", lang);
+        String subject = msg.getForLang("email.admin.participants.reduced.subject", lang);
         String body = buildAdminParticipantReductionBody(lang, user, slot, oldParticipants, newParticipants);
         sendEmail(user.getEmail(), subject, body, null);
     }
@@ -226,7 +226,7 @@ public class MailService {
     public void sendAdminSlotModificationNotification(User user, pl.nextsteppro.climbing.domain.timeslot.TimeSlot slot, java.util.List<FieldChange> changes) {
         if (!user.isEmailNotificationsEnabled()) return;
         String lang = user.getPreferredLanguage();
-        String subject = msg.get("email.slot.modified.subject", lang);
+        String subject = msg.getForLang("email.slot.modified.subject", lang);
         String body = buildSlotModificationBody(lang, user, slot, changes);
         sendEmail(user.getEmail(), subject, body, null);
     }
@@ -235,7 +235,7 @@ public class MailService {
     public void sendAdminEventModificationNotification(User user, Event event, java.util.List<FieldChange> changes) {
         if (!user.isEmailNotificationsEnabled()) return;
         String lang = user.getPreferredLanguage();
-        String subject = msg.get("email.event.modified.subject", lang);
+        String subject = msg.getForLang("email.event.modified.subject", lang);
         String body = buildEventModificationBody(lang, user, event, changes);
         sendEmail(user.getEmail(), subject, body, null);
     }
@@ -321,7 +321,7 @@ public class MailService {
                     <span style="margin: 0 6px; color: #374151;">→</span>
                     <span style="color: #1d4ed8; font-weight: bold;">%s</span>
                 </div>
-                """.formatted(msg.get(change.labelKey(), lang), change.oldValue(), change.newValue()));
+                """.formatted(msg.getForLang(change.labelKey(), lang), change.oldValue(), change.newValue()));
         }
         return sb.toString();
     }
@@ -350,14 +350,14 @@ public class MailService {
             </body>
             </html>
             """.formatted(
-            msg.get("email.slot.modified.greeting", lang, user.getFirstName()),
-            msg.get("email.slot.modified.body", lang),
-            msg.get("email.reservation.date", lang), slot.getDate().format(DATE_FORMAT),
-            msg.get("email.reservation.time", lang), slot.getStartTime().format(TIME_FORMAT), slot.getEndTime().format(TIME_FORMAT),
-            msg.get("email.slot.modified.changes.label", lang),
+            msg.getForLang("email.slot.modified.greeting", lang, user.getFirstName()),
+            msg.getForLang("email.slot.modified.body", lang),
+            msg.getForLang("email.reservation.date", lang), slot.getDate().format(DATE_FORMAT),
+            msg.getForLang("email.reservation.time", lang), slot.getStartTime().format(TIME_FORMAT), slot.getEndTime().format(TIME_FORMAT),
+            msg.getForLang("email.slot.modified.changes.label", lang),
             buildChangesHtml(lang, changes),
-            msg.get("email.slot.modified.sorry", lang),
-            msg.get("email.reservation.team", lang)
+            msg.getForLang("email.slot.modified.sorry", lang),
+            msg.getForLang("email.reservation.team", lang)
         );
     }
 
@@ -384,13 +384,13 @@ public class MailService {
             </body>
             </html>
             """.formatted(
-            msg.get("email.event.modified.greeting", lang, user.getFirstName()),
-            msg.get("email.event.modified.body", lang),
-            msg.get("email.event.reservation.event", lang), event.getTitle(),
-            msg.get("email.event.modified.changes.label", lang),
+            msg.getForLang("email.event.modified.greeting", lang, user.getFirstName()),
+            msg.getForLang("email.event.modified.body", lang),
+            msg.getForLang("email.event.reservation.event", lang), event.getTitle(),
+            msg.getForLang("email.event.modified.changes.label", lang),
             buildChangesHtml(lang, changes),
-            msg.get("email.event.modified.sorry", lang),
-            msg.get("email.reservation.team", lang)
+            msg.getForLang("email.event.modified.sorry", lang),
+            msg.getForLang("email.reservation.team", lang)
         );
     }
 
@@ -440,24 +440,24 @@ public class MailService {
             </body>
             </html>
             """.formatted(
-            msg.get("email.reservation.greeting", lang, user.getFirstName()),
-            msg.get("email.reservation.body", lang),
-            msg.get("email.reservation.date", lang),
+            msg.getForLang("email.reservation.greeting", lang, user.getFirstName()),
+            msg.getForLang("email.reservation.body", lang),
+            msg.getForLang("email.reservation.date", lang),
             slot.getDate().format(DATE_FORMAT),
-            msg.get("email.reservation.time", lang),
+            msg.getForLang("email.reservation.time", lang),
             slot.getStartTime().format(TIME_FORMAT),
             slot.getEndTime().format(TIME_FORMAT),
-            msg.get("email.reservation.see.you", lang),
-            msg.get("email.reservation.team", lang)
+            msg.getForLang("email.reservation.see.you", lang),
+            msg.getForLang("email.reservation.team", lang)
         );
     }
 
     private String buildAdminNotificationBody(User user, TimeSlot slot, @Nullable String comment, int participants) {
         String commentLine = (comment != null && !comment.isBlank())
-            ? "<p><strong>%s</strong> %s</p>".formatted(msg.get("email.admin.comment", ADMIN_LANG), comment)
+            ? "<p><strong>%s</strong> %s</p>".formatted(msg.getForLang("email.admin.comment", ADMIN_LANG), comment)
             : "";
         String participantsLine = participants > 1
-            ? "<p><strong>%s</strong> %d</p>".formatted(msg.get("email.admin.participants", ADMIN_LANG), participants)
+            ? "<p><strong>%s</strong> %d</p>".formatted(msg.getForLang("email.admin.participants", ADMIN_LANG), participants)
             : "";
         return """
             <html>
@@ -482,12 +482,12 @@ public class MailService {
             </body>
             </html>
             """.formatted(
-            msg.get("email.admin.new.reservation", ADMIN_LANG),
-            msg.get("email.admin.client", ADMIN_LANG), user.getFullName(),
-            msg.get("email.admin.email", ADMIN_LANG), user.getEmail(),
-            msg.get("email.admin.phone", ADMIN_LANG), user.getPhone(),
-            msg.get("email.admin.date", ADMIN_LANG), slot.getDate().format(DATE_FORMAT),
-            msg.get("email.admin.time", ADMIN_LANG), slot.getStartTime().format(TIME_FORMAT), slot.getEndTime().format(TIME_FORMAT),
+            msg.getForLang("email.admin.new.reservation", ADMIN_LANG),
+            msg.getForLang("email.admin.client", ADMIN_LANG), user.getFullName(),
+            msg.getForLang("email.admin.email", ADMIN_LANG), user.getEmail(),
+            msg.getForLang("email.admin.phone", ADMIN_LANG), user.getPhone(),
+            msg.getForLang("email.admin.date", ADMIN_LANG), slot.getDate().format(DATE_FORMAT),
+            msg.getForLang("email.admin.time", ADMIN_LANG), slot.getStartTime().format(TIME_FORMAT), slot.getEndTime().format(TIME_FORMAT),
             participantsLine,
             commentLine
         );
@@ -508,12 +508,12 @@ public class MailService {
             </body>
             </html>
             """.formatted(
-            msg.get("email.cancellation.greeting", lang, user.getFirstName()),
-            msg.get("email.cancellation.body", lang),
-            msg.get("email.reservation.date", lang), slot.getDate().format(DATE_FORMAT),
-            msg.get("email.reservation.time", lang), slot.getStartTime().format(TIME_FORMAT), slot.getEndTime().format(TIME_FORMAT),
-            msg.get("email.cancellation.hope", lang),
-            msg.get("email.reservation.team", lang)
+            msg.getForLang("email.cancellation.greeting", lang, user.getFirstName()),
+            msg.getForLang("email.cancellation.body", lang),
+            msg.getForLang("email.reservation.date", lang), slot.getDate().format(DATE_FORMAT),
+            msg.getForLang("email.reservation.time", lang), slot.getStartTime().format(TIME_FORMAT), slot.getEndTime().format(TIME_FORMAT),
+            msg.getForLang("email.cancellation.hope", lang),
+            msg.getForLang("email.reservation.team", lang)
         );
     }
 
@@ -539,12 +539,12 @@ public class MailService {
             </body>
             </html>
             """.formatted(
-            msg.get("email.event.reservation.greeting", lang, user.getFirstName()),
-            msg.get("email.event.reservation.body", lang),
-            msg.get("email.event.reservation.event", lang), event.getTitle(),
-            msg.get("email.event.reservation.dates", lang), event.getStartDate().format(DATE_FORMAT), event.getEndDate().format(DATE_FORMAT),
-            msg.get("email.see.you", lang),
-            msg.get("email.reservation.team", lang)
+            msg.getForLang("email.event.reservation.greeting", lang, user.getFirstName()),
+            msg.getForLang("email.event.reservation.body", lang),
+            msg.getForLang("email.event.reservation.event", lang), event.getTitle(),
+            msg.getForLang("email.event.reservation.dates", lang), event.getStartDate().format(DATE_FORMAT), event.getEndDate().format(DATE_FORMAT),
+            msg.getForLang("email.see.you", lang),
+            msg.getForLang("email.reservation.team", lang)
         );
     }
 
@@ -571,20 +571,20 @@ public class MailService {
             </body>
             </html>
             """.formatted(
-            msg.get("email.admin.event.title", ADMIN_LANG),
-            msg.get("email.admin.client", ADMIN_LANG), user.getFullName(),
-            msg.get("email.admin.email", ADMIN_LANG), user.getEmail(),
-            msg.get("email.admin.phone", ADMIN_LANG), user.getPhone(),
-            msg.get("email.admin.event.event", ADMIN_LANG), event.getTitle(),
-            msg.get("email.admin.event.dates", ADMIN_LANG), event.getStartDate().format(DATE_FORMAT), event.getEndDate().format(DATE_FORMAT),
-            msg.get("email.admin.participants", ADMIN_LANG), participants
+            msg.getForLang("email.admin.event.title", ADMIN_LANG),
+            msg.getForLang("email.admin.client", ADMIN_LANG), user.getFullName(),
+            msg.getForLang("email.admin.email", ADMIN_LANG), user.getEmail(),
+            msg.getForLang("email.admin.phone", ADMIN_LANG), user.getPhone(),
+            msg.getForLang("email.admin.event.event", ADMIN_LANG), event.getTitle(),
+            msg.getForLang("email.admin.event.dates", ADMIN_LANG), event.getStartDate().format(DATE_FORMAT), event.getEndDate().format(DATE_FORMAT),
+            msg.getForLang("email.admin.participants", ADMIN_LANG), participants
         );
     }
 
     private String buildAdminCancellationBody(String lang, User user, TimeSlot slot) {
         String titleLine = slot.getDisplayTitle() != null
             ? "<p style=\"margin: 0 0 8px 0;\"><strong>%s</strong> %s</p>".formatted(
-                msg.get("email.admin.cancel.slot.label", lang), slot.getDisplayTitle())
+                msg.getForLang("email.admin.cancel.slot.label", lang), slot.getDisplayTitle())
             : "";
         return """
             <html>
@@ -608,13 +608,13 @@ public class MailService {
             </body>
             </html>
             """.formatted(
-            msg.get("email.admin.cancel.greeting", lang, user.getFirstName()),
-            msg.get("email.admin.cancel.body", lang),
+            msg.getForLang("email.admin.cancel.greeting", lang, user.getFirstName()),
+            msg.getForLang("email.admin.cancel.body", lang),
             titleLine,
-            msg.get("email.reservation.date", lang), slot.getDate().format(DATE_FORMAT),
-            msg.get("email.reservation.time", lang), slot.getStartTime().format(TIME_FORMAT), slot.getEndTime().format(TIME_FORMAT),
-            msg.get("email.admin.cancel.sorry", lang),
-            msg.get("email.reservation.team", lang)
+            msg.getForLang("email.reservation.date", lang), slot.getDate().format(DATE_FORMAT),
+            msg.getForLang("email.reservation.time", lang), slot.getStartTime().format(TIME_FORMAT), slot.getEndTime().format(TIME_FORMAT),
+            msg.getForLang("email.admin.cancel.sorry", lang),
+            msg.getForLang("email.reservation.team", lang)
         );
     }
 
@@ -640,12 +640,12 @@ public class MailService {
             </body>
             </html>
             """.formatted(
-            msg.get("email.admin.event.cancel.greeting", lang, user.getFirstName()),
-            msg.get("email.admin.event.cancel.body", lang),
-            msg.get("email.event.reservation.event", lang), event.getTitle(),
-            msg.get("email.event.reservation.dates", lang), event.getStartDate().format(DATE_FORMAT), event.getEndDate().format(DATE_FORMAT),
-            msg.get("email.admin.cancel.sorry", lang),
-            msg.get("email.reservation.team", lang)
+            msg.getForLang("email.admin.event.cancel.greeting", lang, user.getFirstName()),
+            msg.getForLang("email.admin.event.cancel.body", lang),
+            msg.getForLang("email.event.reservation.event", lang), event.getTitle(),
+            msg.getForLang("email.event.reservation.dates", lang), event.getStartDate().format(DATE_FORMAT), event.getEndDate().format(DATE_FORMAT),
+            msg.getForLang("email.admin.cancel.sorry", lang),
+            msg.getForLang("email.reservation.team", lang)
         );
     }
 
@@ -671,12 +671,12 @@ public class MailService {
             </body>
             </html>
             """.formatted(
-            msg.get("email.admin.event.participant.removed.greeting", lang, user.getFirstName()),
-            msg.get("email.admin.event.participant.removed.body", lang, event.getTitle()),
-            msg.get("email.event.reservation.event", lang), event.getTitle(),
-            msg.get("email.event.reservation.dates", lang), event.getStartDate().format(DATE_FORMAT), event.getEndDate().format(DATE_FORMAT),
-            msg.get("email.admin.event.participant.removed.sorry", lang),
-            msg.get("email.reservation.team", lang)
+            msg.getForLang("email.admin.event.participant.removed.greeting", lang, user.getFirstName()),
+            msg.getForLang("email.admin.event.participant.removed.body", lang, event.getTitle()),
+            msg.getForLang("email.event.reservation.event", lang), event.getTitle(),
+            msg.getForLang("email.event.reservation.dates", lang), event.getStartDate().format(DATE_FORMAT), event.getEndDate().format(DATE_FORMAT),
+            msg.getForLang("email.admin.event.participant.removed.sorry", lang),
+            msg.getForLang("email.reservation.team", lang)
         );
     }
 
@@ -698,9 +698,9 @@ public class MailService {
             </body>
             </html>
             """.formatted(
-            msg.get("email.admin.participants.reduced.greeting", lang, user.getFirstName()),
-            msg.get("email.admin.participants.reduced.body", lang, slotDisplay, String.valueOf(oldParticipants), String.valueOf(newParticipants)),
-            msg.get("email.admin.participants.reduced.contact", lang)
+            msg.getForLang("email.admin.participants.reduced.greeting", lang, user.getFirstName()),
+            msg.getForLang("email.admin.participants.reduced.body", lang, slotDisplay, String.valueOf(oldParticipants), String.valueOf(newParticipants)),
+            msg.getForLang("email.admin.participants.reduced.contact", lang)
         );
     }
 
@@ -726,12 +726,12 @@ public class MailService {
             </body>
             </html>
             """.formatted(
-            msg.get("email.user.cancel.admin.title", ADMIN_LANG),
-            msg.get("email.admin.client", ADMIN_LANG), user.getFullName(),
-            msg.get("email.admin.email", ADMIN_LANG), user.getEmail(),
-            msg.get("email.admin.phone", ADMIN_LANG), user.getPhone(),
-            msg.get("email.admin.date", ADMIN_LANG), slot.getDate().format(DATE_FORMAT),
-            msg.get("email.admin.time", ADMIN_LANG), slot.getStartTime().format(TIME_FORMAT), slot.getEndTime().format(TIME_FORMAT)
+            msg.getForLang("email.user.cancel.admin.title", ADMIN_LANG),
+            msg.getForLang("email.admin.client", ADMIN_LANG), user.getFullName(),
+            msg.getForLang("email.admin.email", ADMIN_LANG), user.getEmail(),
+            msg.getForLang("email.admin.phone", ADMIN_LANG), user.getPhone(),
+            msg.getForLang("email.admin.date", ADMIN_LANG), slot.getDate().format(DATE_FORMAT),
+            msg.getForLang("email.admin.time", ADMIN_LANG), slot.getStartTime().format(TIME_FORMAT), slot.getEndTime().format(TIME_FORMAT)
         );
     }
 
@@ -757,12 +757,12 @@ public class MailService {
             </body>
             </html>
             """.formatted(
-            msg.get("email.user.event.cancel.admin.title", ADMIN_LANG),
-            msg.get("email.admin.client", ADMIN_LANG), user.getFullName(),
-            msg.get("email.admin.email", ADMIN_LANG), user.getEmail(),
-            msg.get("email.admin.phone", ADMIN_LANG), user.getPhone(),
-            msg.get("email.admin.event.event", ADMIN_LANG), event.getTitle(),
-            msg.get("email.admin.event.dates", ADMIN_LANG), event.getStartDate().format(DATE_FORMAT), event.getEndDate().format(DATE_FORMAT)
+            msg.getForLang("email.user.event.cancel.admin.title", ADMIN_LANG),
+            msg.getForLang("email.admin.client", ADMIN_LANG), user.getFullName(),
+            msg.getForLang("email.admin.email", ADMIN_LANG), user.getEmail(),
+            msg.getForLang("email.admin.phone", ADMIN_LANG), user.getPhone(),
+            msg.getForLang("email.admin.event.event", ADMIN_LANG), event.getTitle(),
+            msg.getForLang("email.admin.event.dates", ADMIN_LANG), event.getStartDate().format(DATE_FORMAT), event.getEndDate().format(DATE_FORMAT)
         );
     }
 
@@ -781,12 +781,12 @@ public class MailService {
             </body>
             </html>
             """.formatted(
-            msg.get("email.event.cancellation.greeting", lang, user.getFirstName()),
-            msg.get("email.event.cancellation.body", lang),
-            msg.get("email.event.reservation.event", lang), event.getTitle(),
-            msg.get("email.event.reservation.dates", lang), event.getStartDate().format(DATE_FORMAT), event.getEndDate().format(DATE_FORMAT),
-            msg.get("email.event.cancellation.hope", lang),
-            msg.get("email.reservation.team", lang)
+            msg.getForLang("email.event.cancellation.greeting", lang, user.getFirstName()),
+            msg.getForLang("email.event.cancellation.body", lang),
+            msg.getForLang("email.event.reservation.event", lang), event.getTitle(),
+            msg.getForLang("email.event.reservation.dates", lang), event.getStartDate().format(DATE_FORMAT), event.getEndDate().format(DATE_FORMAT),
+            msg.getForLang("email.event.cancellation.hope", lang),
+            msg.getForLang("email.reservation.team", lang)
         );
     }
 }

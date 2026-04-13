@@ -30,7 +30,7 @@ public class AuthMailService {
     public void sendVerificationEmail(User user, String token) {
         String lang = user.getPreferredLanguage();
         String verificationUrl = buildVerificationUrl(token);
-        String subject = msg.get("email.verification.subject", lang);
+        String subject = msg.getForLang("email.verification.subject", lang);
         String body = buildVerificationEmailBody(lang, user.getFirstName(), verificationUrl);
 
         sendEmail(user.getEmail(), subject, body);
@@ -39,7 +39,7 @@ public class AuthMailService {
     @Async
     public void sendWelcomeEmail(User user) {
         String lang = user.getPreferredLanguage();
-        String subject = msg.get("email.welcome.subject", lang);
+        String subject = msg.getForLang("email.welcome.subject", lang);
         String body = buildWelcomeEmailBody(lang, user.getFirstName());
 
         sendEmail(user.getEmail(), subject, body);
@@ -49,7 +49,7 @@ public class AuthMailService {
     public void sendPasswordResetEmail(User user, String token) {
         String lang = user.getPreferredLanguage();
         String resetUrl = buildPasswordResetUrl(token);
-        String subject = msg.get("email.reset.subject", lang);
+        String subject = msg.getForLang("email.reset.subject", lang);
         String body = buildPasswordResetEmailBody(lang, user.getFirstName(), resetUrl);
 
         sendEmail(user.getEmail(), subject, body);
@@ -58,7 +58,7 @@ public class AuthMailService {
     @Async
     public void sendAccountDeletedByAdminNotification(User user) {
         String lang = user.getPreferredLanguage();
-        String subject = msg.get("email.account.deleted.subject", lang);
+        String subject = msg.getForLang("email.account.deleted.subject", lang);
         String body = buildAccountDeletedEmailBody(lang, user.getFirstName());
         sendEmail(user.getEmail(), subject, body);
     }
@@ -66,7 +66,7 @@ public class AuthMailService {
     @Async
     public void sendPasswordChangedNotification(User user) {
         String lang = user.getPreferredLanguage();
-        String subject = msg.get("email.password.changed.subject", lang);
+        String subject = msg.getForLang("email.password.changed.subject", lang);
         String body = buildPasswordChangedEmailBody(lang, user.getFirstName());
 
         sendEmail(user.getEmail(), subject, body);
@@ -118,11 +118,11 @@ public class AuthMailService {
             </body>
             </html>
             """.formatted(
-            msg.get("email.welcome.greeting", lang, firstName),
-            msg.get("email.welcome.body", lang),
-            msg.get("email.welcome.see.you", lang),
-            msg.get("email.footer", lang),
-            msg.get("email.footer.slogan", lang)
+            msg.getForLang("email.welcome.greeting", lang, firstName),
+            msg.getForLang("email.welcome.body", lang),
+            msg.getForLang("email.welcome.see.you", lang),
+            msg.getForLang("email.footer", lang),
+            msg.getForLang("email.footer.slogan", lang)
         );
     }
 
@@ -152,11 +152,11 @@ public class AuthMailService {
             </body>
             </html>
             """.formatted(
-            msg.get("email.account.deleted.greeting", lang, firstName),
-            msg.get("email.account.deleted.body", lang),
-            msg.get("email.account.deleted.contact", lang),
-            msg.get("email.footer", lang),
-            msg.get("email.footer.slogan", lang)
+            msg.getForLang("email.account.deleted.greeting", lang, firstName),
+            msg.getForLang("email.account.deleted.body", lang),
+            msg.getForLang("email.account.deleted.contact", lang),
+            msg.getForLang("email.footer", lang),
+            msg.getForLang("email.footer.slogan", lang)
         );
     }
 
@@ -213,15 +213,15 @@ public class AuthMailService {
             </body>
             </html>
             """.formatted(
-            msg.get("email.verification.greeting", lang, firstName),
-            msg.get("email.verification.body", lang),
-            msg.get("email.verification.action", lang),
+            msg.getForLang("email.verification.greeting", lang, firstName),
+            msg.getForLang("email.verification.body", lang),
+            msg.getForLang("email.verification.action", lang),
             verificationUrl,
-            msg.get("email.verification.button", lang),
-            msg.get("email.verification.expiry", lang),
-            msg.get("email.verification.ignore", lang),
-            msg.get("email.footer", lang),
-            msg.get("email.footer.slogan", lang)
+            msg.getForLang("email.verification.button", lang),
+            msg.getForLang("email.verification.expiry", lang),
+            msg.getForLang("email.verification.ignore", lang),
+            msg.getForLang("email.footer", lang),
+            msg.getForLang("email.footer.slogan", lang)
         );
     }
 
@@ -270,15 +270,15 @@ public class AuthMailService {
             </body>
             </html>
             """.formatted(
-            msg.get("email.reset.greeting", lang, firstName),
-            msg.get("email.reset.body", lang),
-            msg.get("email.reset.action", lang),
+            msg.getForLang("email.reset.greeting", lang, firstName),
+            msg.getForLang("email.reset.body", lang),
+            msg.getForLang("email.reset.action", lang),
             resetUrl,
-            msg.get("email.reset.button", lang),
-            msg.get("email.reset.expiry", lang),
-            msg.get("email.reset.ignore", lang),
-            msg.get("email.footer", lang),
-            msg.get("email.footer.slogan", lang)
+            msg.getForLang("email.reset.button", lang),
+            msg.getForLang("email.reset.expiry", lang),
+            msg.getForLang("email.reset.ignore", lang),
+            msg.getForLang("email.footer", lang),
+            msg.getForLang("email.footer.slogan", lang)
         );
     }
 
@@ -308,11 +308,11 @@ public class AuthMailService {
             </body>
             </html>
             """.formatted(
-            msg.get("email.password.changed.greeting", lang, firstName),
-            msg.get("email.password.changed.body", lang),
-            msg.get("email.password.changed.warning", lang),
-            msg.get("email.footer", lang),
-            msg.get("email.footer.slogan", lang)
+            msg.getForLang("email.password.changed.greeting", lang, firstName),
+            msg.getForLang("email.password.changed.body", lang),
+            msg.getForLang("email.password.changed.warning", lang),
+            msg.getForLang("email.footer", lang),
+            msg.getForLang("email.footer.slogan", lang)
         );
     }
 }
