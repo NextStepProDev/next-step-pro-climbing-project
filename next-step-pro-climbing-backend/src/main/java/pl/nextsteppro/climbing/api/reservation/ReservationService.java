@@ -367,7 +367,7 @@ public class ReservationService {
             slotsReserved++;
         }
 
-        mailService.sendEventReservationConfirmation(user, event);
+        mailService.sendEventReservationConfirmation(user, event, participants);
         mailService.sendEventAdminNotification(user, event, participants);
 
         activityLogService.logEventReservationCreated(user, event, participants);

@@ -470,7 +470,7 @@ class ReservationServiceTest {
         assertEquals(3, result.slotsReserved());
 
         verify(reservationRepository, times(3)).save(any(Reservation.class));
-        verify(mailService).sendEventReservationConfirmation(testUser, testEvent);
+        verify(mailService).sendEventReservationConfirmation(testUser, testEvent, 2);
         verify(mailService).sendEventAdminNotification(testUser, testEvent, 2);
         verify(activityLogService).logEventReservationCreated(testUser, testEvent, 2);
     }

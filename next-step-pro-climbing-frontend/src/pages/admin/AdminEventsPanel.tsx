@@ -194,6 +194,8 @@ function EventCard({
 
   const queryClient = useQueryClient()
   const [confirmCancelParticipant, setConfirmCancelParticipant] = useState<string | null>(null)
+  const [editingSpotsFor, setEditingSpotsFor] = useState<string | null>(null)
+  const [editedSpots, setEditedSpots] = useState(1)
 
   const { data: participantsData, isLoading: participantsLoading } = useQuery({
     queryKey: ['admin', 'events', event.id, 'participants'],
@@ -207,6 +209,16 @@ function EventCard({
       queryClient.invalidateQueries({ queryKey: ['admin', 'events', event.id, 'participants'] })
       queryClient.invalidateQueries({ queryKey: ['calendar'] })
       setConfirmCancelParticipant(null)
+    },
+  })
+
+  const updateEventParticipantsMutation = useMutation({
+    mutationFn: ({ userId, participants }: { userId: string; participants: number }) =>
+      adminApi.updateEventReservationParticipants(event.id, userId, participants),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'events', event.id, 'participants'] })
+      queryClient.invalidateQueries({ queryKey: ['calendar'] })
+      setEditingSpotsFor(null)
     },
   })
 
@@ -327,6 +339,33 @@ function EventCard({
                         </Button>
                       </div>
                     </div>
+                  ) : editingSpotsFor === p.userId ? (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="number"
+                          min={1}
+                          max={20}
+                          value={editedSpots}
+                          onChange={(e) => setEditedSpots(Number(e.target.value))}
+                          className="w-16 text-sm bg-dark-700 border border-dark-600 rounded px-2 py-1 text-dark-100"
+                        />
+                        <Button
+                          size="sm"
+                          variant="primary"
+                          loading={updateEventParticipantsMutation.isPending}
+                          onClick={() => updateEventParticipantsMutation.mutate({ userId: p.userId, participants: editedSpots })}
+                        >
+                          {t('events.saveSpots')}
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={() => setEditingSpotsFor(null)}>
+                          {t('events.cancelEdit')}
+                        </Button>
+                      </div>
+                      {updateEventParticipantsMutation.isError && (
+                        <p className="text-xs text-rose-400">{getErrorMessage(updateEventParticipantsMutation.error)}</p>
+                      )}
+                    </div>
                   ) : (
                     <>
                       <div className="flex items-start justify-between gap-2">
@@ -349,13 +388,22 @@ function EventCard({
                             <div className="text-dark-500 text-xs mt-1">"{p.comment}"</div>
                           )}
                         </div>
-                        <button
-                          onClick={() => setConfirmCancelParticipant(p.userId)}
-                          title={t('events.cancelParticipant')}
-                          className="p-1 text-dark-500 hover:text-rose-400 transition-colors shrink-0"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <button
+                            onClick={() => { setEditingSpotsFor(p.userId); setEditedSpots(p.participants) }}
+                            title={t('events.editSpots')}
+                            className="p-1 text-dark-500 hover:text-primary-400 transition-colors"
+                          >
+                            <Pencil className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => setConfirmCancelParticipant(p.userId)}
+                            title={t('events.cancelParticipant')}
+                            className="p-1 text-dark-500 hover:text-rose-400 transition-colors"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </div>
                     </>
                   )}
