@@ -32,7 +32,7 @@ public class MessageService {
     /**
      * Get message for a language code string (convenience for email sending).
      */
-    public String get(String key, String language, Object... args) {
+    public String getForLang(String key, String language, Object... args) {
         Locale locale = language != null ? Locale.of(language) : Locale.of("pl");
         return messageSource.getMessage(key, args, locale);
     }

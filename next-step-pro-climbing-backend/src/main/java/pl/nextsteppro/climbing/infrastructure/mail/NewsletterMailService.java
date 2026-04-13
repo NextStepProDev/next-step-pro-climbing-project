@@ -71,8 +71,8 @@ public class NewsletterMailService {
         String thumbnailHtml = buildThumbnailHtml(news);
         String blocksHtml = buildBlocksHtml(blocks, baseUrl);
 
-        String unsubscribeText = msg.get("email.newsletter.unsubscribe", lang);
-        String footerText = msg.get("email.newsletter.footer", lang, settingsUrl, unsubscribeText);
+        String unsubscribeText = msg.getForLang("email.newsletter.unsubscribe", lang);
+        String footerText = msg.getForLang("email.newsletter.footer", lang, settingsUrl, unsubscribeText);
 
         return """
             <html>
@@ -101,7 +101,7 @@ public class NewsletterMailService {
                 thumbnailHtml,
                 blocksHtml,
                 footerText,
-                msg.get("email.footer.slogan", lang)
+                msg.getForLang("email.footer.slogan", lang)
         );
     }
 

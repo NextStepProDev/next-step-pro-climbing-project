@@ -42,7 +42,7 @@ public class WaitlistMailService {
         String lang = user.getPreferredLanguage();
         String deadlineFormatted = DEADLINE_FORMAT.format(deadline.atZone(ZoneId.systemDefault()));
 
-        String subject = msg.get("email.waitlist.offer.subject", lang);
+        String subject = msg.getForLang("email.waitlist.offer.subject", lang);
         String body = buildOfferNotificationBody(lang, user, slot, deadlineFormatted);
 
         sendEmail(user.getEmail(), subject, body);
@@ -53,7 +53,7 @@ public class WaitlistMailService {
         if (!user.isEmailNotificationsEnabled()) return;
 
         String lang = user.getPreferredLanguage();
-        String subject = msg.get("email.waitlist.confirmed.subject", lang);
+        String subject = msg.getForLang("email.waitlist.confirmed.subject", lang);
         String body = buildConfirmedBody(lang, user, slot);
 
         sendEmail(user.getEmail(), subject, body);
@@ -85,14 +85,14 @@ public class WaitlistMailService {
             </body>
             </html>
             """.formatted(
-            msg.get("email.waitlist.offer.greeting", lang, user.getFirstName()),
-            msg.get("email.waitlist.offer.body", lang),
-            msg.get("email.reservation.date", lang), slot.getDate().format(DATE_FORMAT),
-            msg.get("email.reservation.time", lang), slot.getStartTime().format(TIME_FORMAT), slot.getEndTime().format(TIME_FORMAT),
-            msg.get("email.waitlist.offer.deadline.label", lang),
-            msg.get("email.waitlist.offer.deadline", lang, deadline),
-            msg.get("email.waitlist.offer.action", lang),
-            msg.get("email.reservation.team", lang)
+            msg.getForLang("email.waitlist.offer.greeting", lang, user.getFirstName()),
+            msg.getForLang("email.waitlist.offer.body", lang),
+            msg.getForLang("email.reservation.date", lang), slot.getDate().format(DATE_FORMAT),
+            msg.getForLang("email.reservation.time", lang), slot.getStartTime().format(TIME_FORMAT), slot.getEndTime().format(TIME_FORMAT),
+            msg.getForLang("email.waitlist.offer.deadline.label", lang),
+            msg.getForLang("email.waitlist.offer.deadline", lang, deadline),
+            msg.getForLang("email.waitlist.offer.action", lang),
+            msg.getForLang("email.reservation.team", lang)
         );
     }
 
@@ -118,12 +118,12 @@ public class WaitlistMailService {
             </body>
             </html>
             """.formatted(
-            msg.get("email.waitlist.confirmed.greeting", lang, user.getFirstName()),
-            msg.get("email.waitlist.confirmed.body", lang),
-            msg.get("email.reservation.date", lang), slot.getDate().format(DATE_FORMAT),
-            msg.get("email.reservation.time", lang), slot.getStartTime().format(TIME_FORMAT), slot.getEndTime().format(TIME_FORMAT),
-            msg.get("email.reservation.see.you", lang),
-            msg.get("email.reservation.team", lang)
+            msg.getForLang("email.waitlist.confirmed.greeting", lang, user.getFirstName()),
+            msg.getForLang("email.waitlist.confirmed.body", lang),
+            msg.getForLang("email.reservation.date", lang), slot.getDate().format(DATE_FORMAT),
+            msg.getForLang("email.reservation.time", lang), slot.getStartTime().format(TIME_FORMAT), slot.getEndTime().format(TIME_FORMAT),
+            msg.getForLang("email.reservation.see.you", lang),
+            msg.getForLang("email.reservation.team", lang)
         );
     }
 
@@ -134,7 +134,7 @@ public class WaitlistMailService {
         String lang = user.getPreferredLanguage();
         String deadlineFormatted = DEADLINE_FORMAT.format(deadline.atZone(ZoneId.systemDefault()));
 
-        String subject = msg.get("email.event.waitlist.offer.subject", lang);
+        String subject = msg.getForLang("email.event.waitlist.offer.subject", lang);
         String body = buildEventOfferBody(lang, user, event, deadlineFormatted);
         sendEmail(user.getEmail(), subject, body);
     }
@@ -144,7 +144,7 @@ public class WaitlistMailService {
         if (!user.isEmailNotificationsEnabled()) return;
 
         String lang = user.getPreferredLanguage();
-        String subject = msg.get("email.event.waitlist.confirmed.subject", lang);
+        String subject = msg.getForLang("email.event.waitlist.confirmed.subject", lang);
         String body = buildEventConfirmedBody(lang, user, event);
         sendEmail(user.getEmail(), subject, body);
     }
@@ -179,14 +179,14 @@ public class WaitlistMailService {
             </body>
             </html>
             """.formatted(
-            msg.get("email.waitlist.offer.greeting", lang, user.getFirstName()),
-            msg.get("email.event.waitlist.offer.body", lang),
+            msg.getForLang("email.waitlist.offer.greeting", lang, user.getFirstName()),
+            msg.getForLang("email.event.waitlist.offer.body", lang),
             event.getTitle(),
-            msg.get("email.reservation.date", lang), dates,
-            msg.get("email.waitlist.offer.deadline.label", lang),
-            msg.get("email.waitlist.offer.deadline", lang, deadline),
-            msg.get("email.waitlist.offer.action", lang),
-            msg.get("email.reservation.team", lang)
+            msg.getForLang("email.reservation.date", lang), dates,
+            msg.getForLang("email.waitlist.offer.deadline.label", lang),
+            msg.getForLang("email.waitlist.offer.deadline", lang, deadline),
+            msg.getForLang("email.waitlist.offer.action", lang),
+            msg.getForLang("email.reservation.team", lang)
         );
     }
 
@@ -216,12 +216,12 @@ public class WaitlistMailService {
             </body>
             </html>
             """.formatted(
-            msg.get("email.waitlist.confirmed.greeting", lang, user.getFirstName()),
-            msg.get("email.event.waitlist.confirmed.body", lang),
+            msg.getForLang("email.waitlist.confirmed.greeting", lang, user.getFirstName()),
+            msg.getForLang("email.event.waitlist.confirmed.body", lang),
             event.getTitle(),
-            msg.get("email.reservation.date", lang), dates,
-            msg.get("email.reservation.see.you", lang),
-            msg.get("email.reservation.team", lang)
+            msg.getForLang("email.reservation.date", lang), dates,
+            msg.getForLang("email.reservation.see.you", lang),
+            msg.getForLang("email.reservation.team", lang)
         );
     }
 
