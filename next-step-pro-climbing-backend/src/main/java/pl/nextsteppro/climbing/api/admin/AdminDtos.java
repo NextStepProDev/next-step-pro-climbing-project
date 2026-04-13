@@ -47,6 +47,7 @@ record SlotParticipantsDto(
 ) {}
 
 record ParticipantDto(
+    UUID reservationId,
     UUID userId,
     String fullName,
     String email,
@@ -81,6 +82,10 @@ record UpdateTimeSlotRequest(
     @Nullable LocalTime endTime,
     @Nullable @Min(1) @Max(100) Integer maxParticipants,
     @Nullable String title
+) {}
+
+record UpdateReservationParticipantsRequest(
+    @Min(1) @Max(20) int participants
 ) {}
 
 // Event DTOs

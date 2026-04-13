@@ -182,7 +182,13 @@
     "deleteSimple": "Usuń termin",
     "participantsTitle": "Uczestnicy terminu",
     "from": "Od",
-    "to": "Do"
+    "to": "Do",
+    "cancelReservation": "Anuluj rezerwację",
+    "confirmCancelReservation": "Na pewno anulować tę rezerwację? Użytkownik otrzyma powiadomienie email.",
+    "editSpots": "Zmień miejsca",
+    "saveSpots": "Zapisz",
+    "cancelEdit": "Anuluj",
+    "spotsLabel": "{{count}} miejsca"
   },
   "reservations": {
     "noUpcoming": "Brak nadchodzących rezerwacji",
@@ -214,6 +220,8 @@
     "participantsLabel": "Uczestnicy",
     "loading": "Ładowanie...",
     "noParticipants": "Brak zapisanych uczestników",
+    "cancelParticipant": "Usuń z wydarzenia",
+    "confirmCancelParticipant": "Na pewno usunąć użytkownika z wydarzenia? Użytkownik otrzyma powiadomienie email.",
     "warningActiveReservations": "Uwaga - aktywne rezerwacje!",
     "deleteTitle": "Usuń wydarzenie",
     "eventLabel": "Wydarzenie: ",

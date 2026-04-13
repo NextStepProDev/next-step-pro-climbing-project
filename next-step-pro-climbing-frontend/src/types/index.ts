@@ -230,6 +230,7 @@ export interface SlotParticipants {
 }
 
 export interface Participant {
+  reservationId: string
   userId: string
   fullName: string
   email: string

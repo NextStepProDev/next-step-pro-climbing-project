@@ -192,6 +192,7 @@ export function AdminSlotsPanel() {
             setSelectedSlotId(null)
           }}
           data={participants}
+          slotId={selectedSlotId!}
         />
       )}
 
@@ -411,13 +412,40 @@ function ParticipantsModal({
   isOpen,
   onClose,
   data,
+  slotId,
 }: {
   isOpen: boolean
   onClose: () => void
   data: SlotParticipants
+  slotId: string
 }) {
   const { t } = useTranslation('admin')
   const locale = useDateLocale()
+  const queryClient = useQueryClient()
+  const [confirmCancelFor, setConfirmCancelFor] = useState<string | null>(null)
+  const [editingSpotsFor, setEditingSpotsFor] = useState<string | null>(null)
+  const [editedSpots, setEditedSpots] = useState<number>(1)
+
+  const totalSpots = data.participants.reduce((s, p) => s + p.participants, 0)
+
+  const cancelReservationMutation = useMutation({
+    mutationFn: (reservationId: string) => adminApi.cancelReservationByAdmin(reservationId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'participants', slotId] })
+      queryClient.invalidateQueries({ queryKey: ['calendar'] })
+      setConfirmCancelFor(null)
+    },
+  })
+
+  const updateParticipantsMutation = useMutation({
+    mutationFn: ({ reservationId, participants }: { reservationId: string; participants: number }) =>
+      adminApi.updateReservationParticipants(reservationId, participants),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'participants', slotId] })
+      queryClient.invalidateQueries({ queryKey: ['calendar'] })
+      setEditingSpotsFor(null)
+    },
+  })
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={t('slots.participantsTitle')}>
@@ -430,7 +458,7 @@ function ParticipantsModal({
         {/* Confirmed participants */}
         <div>
           <h3 className="text-sm font-medium text-dark-300 mb-2">
-            {t('slots.registeredOf', { count: data.participants.length, max: data.maxParticipants })}
+            {t('slots.registeredOf', { count: totalSpots, max: data.maxParticipants })}
           </h3>
           {data.participants.length === 0 ? (
             <p className="text-dark-500 text-sm">{t('slots.noRegisteredShort')}</p>
@@ -438,11 +466,88 @@ function ParticipantsModal({
             <ul className="space-y-2">
               {data.participants.map((p) => (
                 <li key={p.userId} className="bg-dark-800 rounded-lg p-3">
-                  <div className="font-medium text-dark-100">{p.fullName}</div>
-                  <div className="text-sm text-dark-400">{p.email}</div>
-                  <div className="text-sm text-dark-400">{p.phone}</div>
-                  {p.comment && (
-                    <div className="text-sm text-amber-400 mt-1">"{p.comment}"</div>
+                  {confirmCancelFor === p.reservationId ? (
+                    <div className="space-y-2">
+                      <p className="text-sm text-rose-400">{t('slots.confirmCancelReservation')}</p>
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="danger"
+                          loading={cancelReservationMutation.isPending}
+                          onClick={() => cancelReservationMutation.mutate(p.reservationId)}
+                        >
+                          {t('slots.cancelReservation')}
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={() => setConfirmCancelFor(null)}>
+                          {t('slots.cancelEdit')}
+                        </Button>
+                      </div>
+                    </div>
+                  ) : editingSpotsFor === p.reservationId ? (
+                    <div className="space-y-2">
+                      <p className="text-sm text-dark-300">{p.fullName} — {t('slots.editSpots')}</p>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="number"
+                          min={1}
+                          max={data.maxParticipants}
+                          value={editedSpots}
+                          onChange={(e) => setEditedSpots(Number(e.target.value))}
+                          className="w-20 bg-dark-700 border border-dark-600 rounded px-2 py-1 text-dark-100 text-sm"
+                        />
+                        <Button
+                          size="sm"
+                          variant="primary"
+                          loading={updateParticipantsMutation.isPending}
+                          onClick={() => updateParticipantsMutation.mutate({ reservationId: p.reservationId, participants: editedSpots })}
+                        >
+                          {t('slots.saveSpots')}
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={() => setEditingSpotsFor(null)}>
+                          {t('slots.cancelEdit')}
+                        </Button>
+                      </div>
+                      {updateParticipantsMutation.isError && (
+                        <p className="text-xs text-rose-400">{getErrorMessage(updateParticipantsMutation.error)}</p>
+                      )}
+                    </div>
+                  ) : (
+                    <>
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <div className="font-medium text-dark-100">{p.fullName}</div>
+                          <div className="text-sm text-dark-400">{p.email}</div>
+                          <div className="text-sm text-dark-400">{p.phone}</div>
+                          {p.comment && (
+                            <div className="text-sm text-amber-400 mt-1">"{p.comment}"</div>
+                          )}
+                          {p.participants > 1 && (
+                            <span className="inline-block mt-1 text-xs text-primary-400 bg-primary-500/10 px-2 py-0.5 rounded-full">
+                              {t('slots.spotsLabel', { count: p.participants })}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex gap-1 shrink-0">
+                          <button
+                            onClick={() => {
+                              setEditingSpotsFor(p.reservationId)
+                              setEditedSpots(p.participants)
+                            }}
+                            title={t('slots.editSpots')}
+                            className="p-1 text-dark-400 hover:text-primary-400 transition-colors"
+                          >
+                            <Pencil className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => setConfirmCancelFor(p.reservationId)}
+                            title={t('slots.cancelReservation')}
+                            className="p-1 text-dark-400 hover:text-rose-400 transition-colors"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    </>
                   )}
                 </li>
               ))}

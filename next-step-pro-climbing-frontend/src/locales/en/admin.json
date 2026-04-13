@@ -182,7 +182,13 @@
     "deleteSimple": "Delete slot",
     "participantsTitle": "Slot participants",
     "from": "From",
-    "to": "To"
+    "to": "To",
+    "cancelReservation": "Cancel reservation",
+    "confirmCancelReservation": "Cancel this reservation? The user will receive an email notification.",
+    "editSpots": "Change spots",
+    "saveSpots": "Save",
+    "cancelEdit": "Cancel",
+    "spotsLabel": "{{count}} spots"
   },
   "reservations": {
     "noUpcoming": "No upcoming reservations",
@@ -214,6 +220,8 @@
     "participantsLabel": "Participants",
     "loading": "Loading...",
     "noParticipants": "No registered participants",
+    "cancelParticipant": "Remove from event",
+    "confirmCancelParticipant": "Remove this user from the event? They will receive an email notification.",
     "warningActiveReservations": "Warning - active reservations!",
     "deleteTitle": "Delete event",
     "eventLabel": "Event: ",

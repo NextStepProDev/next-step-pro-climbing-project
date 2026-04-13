@@ -205,6 +205,24 @@ public class MailService {
     }
 
     @Async
+    public void sendAdminEventParticipantRemovedNotification(User user, Event event) {
+        if (!user.isEmailNotificationsEnabled()) return;
+        String lang = user.getPreferredLanguage();
+        String subject = msg.get("email.admin.event.participant.removed.subject", lang);
+        String body = buildAdminEventParticipantRemovedBody(lang, user, event);
+        sendEmail(user.getEmail(), subject, body, null);
+    }
+
+    @Async
+    public void sendAdminParticipantReductionNotification(User user, TimeSlot slot, int oldParticipants, int newParticipants) {
+        if (!user.isEmailNotificationsEnabled()) return;
+        String lang = user.getPreferredLanguage();
+        String subject = msg.get("email.admin.participants.reduced.subject", lang);
+        String body = buildAdminParticipantReductionBody(lang, user, slot, oldParticipants, newParticipants);
+        sendEmail(user.getEmail(), subject, body, null);
+    }
+
+    @Async
     public void sendAdminSlotModificationNotification(User user, pl.nextsteppro.climbing.domain.timeslot.TimeSlot slot, java.util.List<FieldChange> changes) {
         if (!user.isEmailNotificationsEnabled()) return;
         String lang = user.getPreferredLanguage();
@@ -628,6 +646,61 @@ public class MailService {
             msg.get("email.event.reservation.dates", lang), event.getStartDate().format(DATE_FORMAT), event.getEndDate().format(DATE_FORMAT),
             msg.get("email.admin.cancel.sorry", lang),
             msg.get("email.reservation.team", lang)
+        );
+    }
+
+    private String buildAdminEventParticipantRemovedBody(String lang, User user, Event event) {
+        return """
+            <html>
+            <body style="font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5;">
+                <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden;">
+                    <div style="background: #0f0f1a; padding: 20px; text-align: center;">
+                        <img src="cid:logo" alt="Next Step Pro Climbing" style="height: 60px;" />
+                    </div>
+                    <div style="padding: 30px;">
+                        <h2 style="color: #1a1a2e; margin-top: 0;">%s</h2>
+                        <p style="color: #333;">%s</p>
+                        <div style="background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; padding: 20px; border-radius: 8px;">
+                            <p style="margin: 0 0 8px 0;"><strong>%s</strong> %s</p>
+                            <p style="margin: 0;"><strong>%s</strong> %s - %s</p>
+                        </div>
+                        <p style="margin-top: 20px; color: #333;">%s</p>
+                        <p style="color: #666; font-size: 14px;">%s</p>
+                    </div>
+                </div>
+            </body>
+            </html>
+            """.formatted(
+            msg.get("email.admin.event.participant.removed.greeting", lang, user.getFirstName()),
+            msg.get("email.admin.event.participant.removed.body", lang, event.getTitle()),
+            msg.get("email.event.reservation.event", lang), event.getTitle(),
+            msg.get("email.event.reservation.dates", lang), event.getStartDate().format(DATE_FORMAT), event.getEndDate().format(DATE_FORMAT),
+            msg.get("email.admin.event.participant.removed.sorry", lang),
+            msg.get("email.reservation.team", lang)
+        );
+    }
+
+    private String buildAdminParticipantReductionBody(String lang, User user, TimeSlot slot, int oldParticipants, int newParticipants) {
+        String slotDisplay = slot.getDate().format(DATE_FORMAT) + " " + slot.getStartTime().format(TIME_FORMAT) + " - " + slot.getEndTime().format(TIME_FORMAT);
+        return """
+            <html>
+            <body style="font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5;">
+                <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden;">
+                    <div style="background: #0f0f1a; padding: 20px; text-align: center;">
+                        <img src="cid:logo" alt="Next Step Pro Climbing" style="height: 60px;" />
+                    </div>
+                    <div style="padding: 30px;">
+                        <h2 style="color: #1a1a2e; margin-top: 0;">%s</h2>
+                        <p style="color: #333;">%s</p>
+                        <p style="color: #666; font-size: 14px;">%s</p>
+                    </div>
+                </div>
+            </body>
+            </html>
+            """.formatted(
+            msg.get("email.admin.participants.reduced.greeting", lang, user.getFirstName()),
+            msg.get("email.admin.participants.reduced.body", lang, slotDisplay, String.valueOf(oldParticipants), String.valueOf(newParticipants)),
+            msg.get("email.admin.participants.reduced.contact", lang)
         );
     }
 
