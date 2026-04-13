@@ -30,9 +30,12 @@ import pl.nextsteppro.climbing.domain.waitlist.WaitlistStatus;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -118,6 +121,10 @@ public class AdminService {
         TimeSlot slot = timeSlotRepository.findById(slotId)
             .orElseThrow(() -> new IllegalArgumentException("Time slot not found"));
 
+        LocalTime oldStart = slot.getStartTime();
+        LocalTime oldEnd = slot.getEndTime();
+        String oldTitle = slot.getTitle();
+
         if (request.startTime() != null) slot.setStartTime(request.startTime());
         if (request.endTime() != null) slot.setEndTime(request.endTime());
         if (request.maxParticipants() != null) slot.setMaxParticipants(request.maxParticipants());
@@ -130,6 +137,30 @@ public class AdminService {
         }
 
         slot = timeSlotRepository.save(slot);
+
+        var tf = DateTimeFormatter.ofPattern("HH:mm");
+        List<MailService.FieldChange> changes = new ArrayList<>();
+        if (!oldStart.equals(slot.getStartTime()) || !oldEnd.equals(slot.getEndTime())) {
+            changes.add(new MailService.FieldChange(
+                "email.change.time",
+                oldStart.format(tf) + " – " + oldEnd.format(tf),
+                slot.getStartTime().format(tf) + " – " + slot.getEndTime().format(tf)
+            ));
+        }
+        if (!Objects.equals(oldTitle, slot.getTitle())) {
+            changes.add(new MailService.FieldChange(
+                "email.change.title",
+                oldTitle != null ? oldTitle : "–",
+                slot.getTitle() != null ? slot.getTitle() : "–"
+            ));
+        }
+        if (!changes.isEmpty()) {
+            List<Reservation> confirmed = reservationRepository.findConfirmedByTimeSlotId(slot.getId());
+            for (Reservation reservation : confirmed) {
+                mailService.sendAdminSlotModificationNotification(reservation.getUser(), slot, changes);
+            }
+        }
+
         return toTimeSlotAdminDto(slot);
     }
 
@@ -288,6 +319,13 @@ public class AdminService {
         Event event = eventRepository.findById(eventId)
             .orElseThrow(() -> new IllegalArgumentException("Event not found"));
 
+        String oldTitle = event.getTitle();
+        String oldLocation = event.getLocation();
+        LocalDate oldStartDate = event.getStartDate();
+        LocalDate oldEndDate = event.getEndDate();
+        LocalTime oldStartTime = event.getStartTime();
+        LocalTime oldEndTime = event.getEndTime();
+
         if (request.title() != null) event.setTitle(request.title());
         if (request.description() != null) event.setDescription(request.description());
         if (request.location() != null) event.setLocation(request.location());
@@ -308,6 +346,45 @@ public class AdminService {
         }
 
         event = eventRepository.save(event);
+
+        var df = DateTimeFormatter.ofPattern("dd.MM.yyyy");
+        var tf = DateTimeFormatter.ofPattern("HH:mm");
+        List<MailService.FieldChange> changes = new ArrayList<>();
+        if (!event.getTitle().equals(oldTitle)) {
+            changes.add(new MailService.FieldChange("email.change.title", oldTitle, event.getTitle()));
+        }
+        if (!Objects.equals(oldLocation, event.getLocation())) {
+            changes.add(new MailService.FieldChange("email.change.location",
+                oldLocation != null ? oldLocation : "–",
+                event.getLocation() != null ? event.getLocation() : "–"));
+        }
+        if (!oldStartDate.equals(event.getStartDate()) || !oldEndDate.equals(event.getEndDate())) {
+            changes.add(new MailService.FieldChange("email.change.dates",
+                oldStartDate.format(df) + " – " + oldEndDate.format(df),
+                event.getStartDate().format(df) + " – " + event.getEndDate().format(df)));
+        }
+        if (!Objects.equals(oldStartTime, event.getStartTime()) || !Objects.equals(oldEndTime, event.getEndTime())) {
+            String oldTime = (oldStartTime != null && oldEndTime != null)
+                ? oldStartTime.format(tf) + " – " + oldEndTime.format(tf) : "–";
+            String newTime = (event.getStartTime() != null && event.getEndTime() != null)
+                ? event.getStartTime().format(tf) + " – " + event.getEndTime().format(tf) : "–";
+            changes.add(new MailService.FieldChange("email.change.time", oldTime, newTime));
+        }
+        if (!changes.isEmpty()) {
+            List<TimeSlot> slots = timeSlotRepository.findByEventId(eventId);
+            if (!slots.isEmpty()) {
+                List<UUID> slotIds = slots.stream().map(TimeSlot::getId).toList();
+                List<Reservation> confirmed = reservationRepository.findConfirmedByTimeSlotIds(slotIds);
+                Map<UUID, User> notifiedUsers = new LinkedHashMap<>();
+                for (Reservation reservation : confirmed) {
+                    notifiedUsers.putIfAbsent(reservation.getUser().getId(), reservation.getUser());
+                }
+                for (User user : notifiedUsers.values()) {
+                    mailService.sendAdminEventModificationNotification(user, event, changes);
+                }
+            }
+        }
+
         return toEventAdminDto(event);
     }
 

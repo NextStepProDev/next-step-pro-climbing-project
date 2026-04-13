@@ -17,4 +17,7 @@ public interface InstructorRepository extends JpaRepository<Instructor, UUID> {
 
     @Query("SELECT COALESCE(MIN(i.displayOrder), 1) FROM Instructor i")
     Optional<Integer> findMinDisplayOrder();
+
+    @Query("SELECT i.photoFilename FROM Instructor i WHERE i.photoFilename IS NOT NULL")
+    List<String> findAllPhotoFilenames();
 }

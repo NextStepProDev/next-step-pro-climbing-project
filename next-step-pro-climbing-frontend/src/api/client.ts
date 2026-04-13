@@ -54,6 +54,8 @@ import type {
   CourseDetailAdmin,
   CreateCourseRequest,
   UpdateCourseMetaRequest,
+  StorageAuditResult,
+  DeleteOrphanedResult,
 } from '../types'
 import {
   getAccessToken,
@@ -820,4 +822,9 @@ export const adminAssetsApi = {
 
   delete: (id: string) =>
     fetchApi<void>(`/admin/assets/${id}`, { method: 'DELETE' }),
+}
+
+export const adminStorageApi = {
+  audit: () => fetchApi<StorageAuditResult>('/admin/storage/audit'),
+  deleteOrphaned: () => fetchApi<DeleteOrphanedResult>('/admin/storage/orphaned', { method: 'DELETE' }),
 }

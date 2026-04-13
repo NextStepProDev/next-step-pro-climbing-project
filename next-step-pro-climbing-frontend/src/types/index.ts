@@ -645,3 +645,26 @@ export interface UpdateCourseMetaRequest {
   title?: string
   price?: string
 }
+
+export interface OrphanedFileDto {
+  folder: string
+  filename: string
+  sizeBytes: number
+}
+
+export interface MissingFileDto {
+  folder: string
+  filename: string
+}
+
+export interface StorageAuditResult {
+  orphanedFiles: OrphanedFileDto[]
+  missingFiles: MissingFileDto[]
+  totalFilesOnDisk: number
+  totalFilesInDb: number
+  totalSizeBytesOnDisk: number
+}
+
+export interface DeleteOrphanedResult {
+  deletedCount: number
+}

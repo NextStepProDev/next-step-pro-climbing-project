@@ -12,7 +12,8 @@
     "users": "Users",
     "activity": "Activity",
     "assets": "Media library",
-    "mail": "Send email"
+    "mail": "Send email",
+    "storage": "Storage"
   },
   "news": {
     "title": "News",
@@ -301,6 +302,14 @@
     "chooseFromLibrary": "Choose from library",
     "chooseThumbnailFromLibrary": "Choose from library"
   },
+  "galleryPicker": {
+    "title": "Choose from gallery",
+    "chooseFromGallery": "Choose from gallery",
+    "backToAlbums": "Back to albums",
+    "noAlbums": "No albums in the gallery.",
+    "noPhotos": "No photos in this album.",
+    "noThumbnail": "No thumbnail"
+  },
   "mail": {
     "title": "Send message",
     "subtitle": "Write an email message to system users.",
@@ -321,5 +330,28 @@
     "confirmAllMessage": "The message will be sent to all users with a verified email address. Continue?",
     "successMessage": "Message sent to {{count}} recipients.",
     "errorMessage": "Error sending message."
+  },
+  "storage": {
+    "title": "Storage audit",
+    "description": "Compare files on disk with records in the database.",
+    "runAudit": "Run audit",
+    "error": "Error reading disk.",
+    "allClear": "No issues — all files are consistent.",
+    "prompt": "Click \"Run audit\" to compare files on disk with the database.",
+    "totalOnDisk": "Files on disk",
+    "totalInDb": "Records in DB",
+    "orphaned": "Orphaned",
+    "totalSize": "Total size",
+    "orphanedTitle": "Orphaned files",
+    "orphanedDesc": "Files exist on disk but have no database record. They can be safely deleted.",
+    "missingTitle": "Missing files",
+    "missingDesc": "Records exist in the database but the physical file is gone from disk.",
+    "colFolder": "Folder",
+    "colFilename": "Filename",
+    "colSize": "Size",
+    "deleteOrphaned": "Delete orphaned",
+    "confirmTitle": "Delete orphaned files",
+    "confirmMessage": "{{count}} files ({{size}}) will be permanently deleted. This cannot be undone.",
+    "deleteSuccess": "{{count}} files deleted."
   }
 }

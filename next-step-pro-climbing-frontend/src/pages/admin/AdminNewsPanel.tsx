@@ -18,6 +18,7 @@ import {
   X,
   ArrowLeft,
   Library,
+  Images,
   Send,
   Video,
 } from 'lucide-react'
@@ -32,6 +33,7 @@ import { Button } from '../../components/ui/Button'
 import { ConfirmModal } from '../../components/ui/ConfirmModal'
 import { FocalPointEditor } from '../../components/ui/FocalPointEditor'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
+import { GalleryPickerModal } from '../../components/ui/GalleryPickerModal'
 import { MediaPickerModal } from '../../components/ui/MediaPickerModal'
 import { NewsPreviewModal, type PreviewBlock } from '../../components/ui/NewsPreviewModal'
 import { QueryError } from '../../components/ui/QueryError'
@@ -361,6 +363,7 @@ function EditView({
   // ---------- Media picker ----------
   const [showMediaPicker, setShowMediaPicker] = useState(false)
   const [pickerTarget, setPickerTarget] = useState<'thumbnail' | 'block'>('block')
+  const [showGalleryPicker, setShowGalleryPicker] = useState(false)
 
   useEffect(() => {
     return () => {
@@ -687,6 +690,14 @@ function EditView({
             {t('mediaPicker.chooseThumbnailFromLibrary')}
           </button>
 
+          <button
+            onClick={() => setShowGalleryPicker(true)}
+            className="inline-flex items-center gap-2 px-3 py-2 bg-dark-700 border border-dark-600 rounded text-sm text-dark-200 hover:border-primary-500 transition-colors"
+          >
+            <Images className="h-4 w-4" />
+            {t('galleryPicker.chooseFromGallery')}
+          </button>
+
           {(thumbnailFile || thumbnailFromLibrary) && (
             <button
               onClick={() => {
@@ -937,6 +948,18 @@ function EditView({
               { type: 'IMAGE', tempId: crypto.randomUUID(), source: 'library', imageUrl: asset.url, caption: '' },
             ])
           }
+        }}
+      />
+
+      {/* Gallery picker */}
+      <GalleryPickerModal
+        isOpen={showGalleryPicker}
+        onClose={() => setShowGalleryPicker(false)}
+        onSelect={(photoUrl) => {
+          if (thumbnailPreview) URL.revokeObjectURL(thumbnailPreview)
+          setThumbnailFile(null)
+          setThumbnailPreview(null)
+          setThumbnailFromLibrary(photoUrl)
         }}
       />
     </div>

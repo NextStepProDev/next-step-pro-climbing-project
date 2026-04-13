@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.UUID;
 
 @Repository
@@ -33,4 +34,7 @@ public interface NewsRepository extends JpaRepository<News, UUID> {
             countQuery = "SELECT COUNT(*) FROM news",
             nativeQuery = true)
     Page<NewsSummaryProjection> findAllSummaries(Pageable pageable);
+
+    @Query("SELECT n.thumbnailFilename FROM News n WHERE n.thumbnailFilename IS NOT NULL")
+    List<String> findAllThumbnailFilenames();
 }

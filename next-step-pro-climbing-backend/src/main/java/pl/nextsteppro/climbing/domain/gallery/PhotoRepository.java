@@ -19,4 +19,7 @@ public interface PhotoRepository extends JpaRepository<Photo, UUID> {
     long countByAlbumId(UUID albumId);
 
     List<Photo> findByAlbumId(UUID albumId);
+
+    @Query("SELECT p.filename FROM Photo p")
+    List<String> findAllFilenames();
 }

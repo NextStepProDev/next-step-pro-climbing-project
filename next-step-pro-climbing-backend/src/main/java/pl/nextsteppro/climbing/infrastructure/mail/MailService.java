@@ -20,6 +20,8 @@ import java.time.format.DateTimeFormatter;
 @Service
 public class MailService {
 
+    public record FieldChange(String labelKey, String oldValue, String newValue) {}
+
     private static final Logger log = LoggerFactory.getLogger(MailService.class);
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("dd.MM.yyyy");
     private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm");
@@ -202,6 +204,24 @@ public class MailService {
         sendEmail(to, subject, htmlBody, null);
     }
 
+    @Async
+    public void sendAdminSlotModificationNotification(User user, pl.nextsteppro.climbing.domain.timeslot.TimeSlot slot, java.util.List<FieldChange> changes) {
+        if (!user.isEmailNotificationsEnabled()) return;
+        String lang = user.getPreferredLanguage();
+        String subject = msg.get("email.slot.modified.subject", lang);
+        String body = buildSlotModificationBody(lang, user, slot, changes);
+        sendEmail(user.getEmail(), subject, body, null);
+    }
+
+    @Async
+    public void sendAdminEventModificationNotification(User user, Event event, java.util.List<FieldChange> changes) {
+        if (!user.isEmailNotificationsEnabled()) return;
+        String lang = user.getPreferredLanguage();
+        String subject = msg.get("email.event.modified.subject", lang);
+        String body = buildEventModificationBody(lang, user, event, changes);
+        sendEmail(user.getEmail(), subject, body, null);
+    }
+
     private String buildCustomAdminMailBody(String subject, String body) {
         String escaped = body
             .replace("&", "&amp;")
@@ -271,6 +291,89 @@ public class MailService {
         text = text.replaceAll("__(.+?)__", "<u>$1</u>");
         text = text.replaceAll("\\*(.+?)\\*", "<em>$1</em>");
         return text;
+    }
+
+    private String buildChangesHtml(String lang, java.util.List<FieldChange> changes) {
+        StringBuilder sb = new StringBuilder();
+        for (FieldChange change : changes) {
+            sb.append("""
+                <div style="margin: 0 0 8px 0; font-size: 14px;">
+                    <strong>%s:</strong>
+                    <span style="color: #6b7280; text-decoration: line-through; margin-left: 6px;">%s</span>
+                    <span style="margin: 0 6px; color: #374151;">→</span>
+                    <span style="color: #1d4ed8; font-weight: bold;">%s</span>
+                </div>
+                """.formatted(msg.get(change.labelKey(), lang), change.oldValue(), change.newValue()));
+        }
+        return sb.toString();
+    }
+
+    private String buildSlotModificationBody(String lang, User user, pl.nextsteppro.climbing.domain.timeslot.TimeSlot slot, java.util.List<FieldChange> changes) {
+        return """
+            <html>
+            <body style="font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5;">
+                <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden;">
+                    <div style="background: #0f0f1a; padding: 20px; text-align: center;">
+                        <img src="cid:logo" alt="Next Step Pro Climbing" style="height: 60px;" />
+                    </div>
+                    <div style="padding: 30px;">
+                        <h2 style="color: #1a1a2e; margin-top: 0;">%s</h2>
+                        <p style="color: #333;">%s</p>
+                        <div style="background: #eff6ff; border: 1px solid #bfdbfe; padding: 20px; border-radius: 8px;">
+                            <p style="margin: 0 0 6px 0;"><strong>%s</strong> %s</p>
+                            <p style="margin: 0 0 16px 0;"><strong>%s</strong> %s – %s</p>
+                            <p style="margin: 0 0 12px 0; font-weight: bold; color: #1e40af;">%s</p>
+                            %s
+                        </div>
+                        <p style="margin-top: 20px; color: #333;">%s</p>
+                        <p style="color: #666; font-size: 14px;">%s</p>
+                    </div>
+                </div>
+            </body>
+            </html>
+            """.formatted(
+            msg.get("email.slot.modified.greeting", lang, user.getFirstName()),
+            msg.get("email.slot.modified.body", lang),
+            msg.get("email.reservation.date", lang), slot.getDate().format(DATE_FORMAT),
+            msg.get("email.reservation.time", lang), slot.getStartTime().format(TIME_FORMAT), slot.getEndTime().format(TIME_FORMAT),
+            msg.get("email.slot.modified.changes.label", lang),
+            buildChangesHtml(lang, changes),
+            msg.get("email.slot.modified.sorry", lang),
+            msg.get("email.reservation.team", lang)
+        );
+    }
+
+    private String buildEventModificationBody(String lang, User user, Event event, java.util.List<FieldChange> changes) {
+        return """
+            <html>
+            <body style="font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5;">
+                <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden;">
+                    <div style="background: #0f0f1a; padding: 20px; text-align: center;">
+                        <img src="cid:logo" alt="Next Step Pro Climbing" style="height: 60px;" />
+                    </div>
+                    <div style="padding: 30px;">
+                        <h2 style="color: #1a1a2e; margin-top: 0;">%s</h2>
+                        <p style="color: #333;">%s</p>
+                        <div style="background: #eff6ff; border: 1px solid #bfdbfe; padding: 20px; border-radius: 8px;">
+                            <p style="margin: 0 0 16px 0;"><strong>%s</strong> %s</p>
+                            <p style="margin: 0 0 12px 0; font-weight: bold; color: #1e40af;">%s</p>
+                            %s
+                        </div>
+                        <p style="margin-top: 20px; color: #333;">%s</p>
+                        <p style="color: #666; font-size: 14px;">%s</p>
+                    </div>
+                </div>
+            </body>
+            </html>
+            """.formatted(
+            msg.get("email.event.modified.greeting", lang, user.getFirstName()),
+            msg.get("email.event.modified.body", lang),
+            msg.get("email.event.reservation.event", lang), event.getTitle(),
+            msg.get("email.event.modified.changes.label", lang),
+            buildChangesHtml(lang, changes),
+            msg.get("email.event.modified.sorry", lang),
+            msg.get("email.reservation.team", lang)
+        );
     }
 
     private void sendEmail(String to, String subject, String body, @Nullable byte[] icsAttachment) {

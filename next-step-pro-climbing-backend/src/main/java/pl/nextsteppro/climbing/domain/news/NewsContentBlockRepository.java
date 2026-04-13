@@ -15,4 +15,7 @@ public interface NewsContentBlockRepository extends JpaRepository<NewsContentBlo
 
     @Query("SELECT COALESCE(MAX(b.displayOrder), -1) FROM NewsContentBlock b WHERE b.news.id = :newsId")
     int findMaxDisplayOrder(@Param("newsId") UUID newsId);
+
+    @Query("SELECT b.imageFilename FROM NewsContentBlock b WHERE b.imageFilename IS NOT NULL")
+    List<String> findAllImageFilenames();
 }

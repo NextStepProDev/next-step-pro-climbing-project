@@ -162,6 +162,14 @@ export function RichTextEditor({
   const handleNumbered  = useCallback(() => applyList('numbered'), [applyList])
   const handleLettered  = useCallback(() => applyList('lettered'), [applyList])
 
+  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    const meta = e.metaKey || e.ctrlKey
+    if (!meta) return
+    if (e.key === 'b') { e.preventDefault(); handleBold() }
+    if (e.key === 'i') { e.preventDefault(); handleItalic() }
+    if (e.key === 'u') { e.preventDefault(); handleUnderline() }
+  }, [handleBold, handleItalic, handleUnderline])
+
   const handlePaste = useCallback((e: React.ClipboardEvent<HTMLTextAreaElement>) => {
     const html = e.clipboardData.getData('text/html')
     if (!html) return
@@ -183,9 +191,9 @@ export function RichTextEditor({
   return (
     <div className={className}>
       <div className="flex items-center gap-0.5 border border-dark-600 border-b-0 rounded-t bg-dark-800 px-2 py-1">
-        <ToolbarButton onAction={handleBold}      title="Pogrubienie"><Bold className="h-3.5 w-3.5" /></ToolbarButton>
-        <ToolbarButton onAction={handleItalic}    title="Kursywa"><Italic className="h-3.5 w-3.5" /></ToolbarButton>
-        <ToolbarButton onAction={handleUnderline} title="Podkreślenie"><Underline className="h-3.5 w-3.5" /></ToolbarButton>
+        <ToolbarButton onAction={handleBold}      title="Pogrubienie (⌘B)"><Bold className="h-3.5 w-3.5" /></ToolbarButton>
+        <ToolbarButton onAction={handleItalic}    title="Kursywa (⌘I)"><Italic className="h-3.5 w-3.5" /></ToolbarButton>
+        <ToolbarButton onAction={handleUnderline} title="Podkreślenie (⌘U)"><Underline className="h-3.5 w-3.5" /></ToolbarButton>
         <span className="w-px h-4 bg-dark-600 mx-1.5" />
         <ToolbarButton onAction={handleBullet}   title="Lista punktowana (•)"><List className="h-3.5 w-3.5" /></ToolbarButton>
         <ToolbarButton onAction={handleNumbered} title="Lista numerowana (1.)"><ListOrdered className="h-3.5 w-3.5" /></ToolbarButton>
@@ -198,6 +206,7 @@ export function RichTextEditor({
         ref={textareaRef}
         value={value}
         onChange={(e) => onChange(e.target.value)}
+        onKeyDown={handleKeyDown}
         onPaste={handlePaste}
         rows={rows}
         placeholder={placeholder}
