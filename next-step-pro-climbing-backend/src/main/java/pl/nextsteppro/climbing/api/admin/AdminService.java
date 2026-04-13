@@ -54,6 +54,7 @@ public class AdminService {
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final MessageService msg;
     private final WaitlistRepository waitlistRepository;
+    private final pl.nextsteppro.climbing.infrastructure.mail.AuthMailService authMailService;
 
     public AdminService(TimeSlotRepository timeSlotRepository,
                        EventRepository eventRepository,
@@ -65,7 +66,8 @@ public class AdminService {
                        ActivityLogService activityLogService,
                        JwtAuthenticationFilter jwtAuthenticationFilter,
                        MessageService msg,
-                       WaitlistRepository waitlistRepository) {
+                       WaitlistRepository waitlistRepository,
+                       pl.nextsteppro.climbing.infrastructure.mail.AuthMailService authMailService) {
         this.timeSlotRepository = timeSlotRepository;
         this.eventRepository = eventRepository;
         this.courseRepository = courseRepository;
@@ -77,6 +79,7 @@ public class AdminService {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
         this.msg = msg;
         this.waitlistRepository = waitlistRepository;
+        this.authMailService = authMailService;
     }
 
     @Caching(evict = {
@@ -586,6 +589,7 @@ public class AdminService {
             throw new IllegalStateException(msg.get("admin.user.cannot.delete.admin"));
         }
 
+        authMailService.sendAccountDeletedByAdminNotification(user);
         reservationRepository.cancelConfirmedByUserId(userId);
         authTokenRepository.deleteAllByUserId(userId);
         userRepository.delete(user);

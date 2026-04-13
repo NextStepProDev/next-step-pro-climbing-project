@@ -56,6 +56,14 @@ public class AuthMailService {
     }
 
     @Async
+    public void sendAccountDeletedByAdminNotification(User user) {
+        String lang = user.getPreferredLanguage();
+        String subject = msg.get("email.account.deleted.subject", lang);
+        String body = buildAccountDeletedEmailBody(lang, user.getFirstName());
+        sendEmail(user.getEmail(), subject, body);
+    }
+
+    @Async
     public void sendPasswordChangedNotification(User user) {
         String lang = user.getPreferredLanguage();
         String subject = msg.get("email.password.changed.subject", lang);
@@ -113,6 +121,40 @@ public class AuthMailService {
             msg.get("email.welcome.greeting", lang, firstName),
             msg.get("email.welcome.body", lang),
             msg.get("email.welcome.see.you", lang),
+            msg.get("email.footer", lang),
+            msg.get("email.footer.slogan", lang)
+        );
+    }
+
+    private String buildAccountDeletedEmailBody(String lang, String firstName) {
+        return """
+            <html>
+            <body style="font-family: Arial, sans-serif; background-color: #0f0f1a; color: #e0e0e0; padding: 20px;">
+                <div style="max-width: 600px; margin: 0 auto; background-color: #1a1a2e; border-radius: 12px; overflow: hidden;">
+                    <div style="text-align: center; padding: 24px 30px 0;">
+                        <img src="cid:logo" alt="Next Step Pro Climbing" style="height: 60px;" />
+                    </div>
+                    <div style="padding: 20px 30px 30px;">
+                    <h1 style="color: #3b82f6; margin-bottom: 20px;">%s</h1>
+                    <p style="font-size: 16px; line-height: 1.6;">
+                        %s
+                    </p>
+                    <p style="font-size: 16px; line-height: 1.6; color: #f87171;">
+                        %s
+                    </p>
+                    <hr style="border: none; border-top: 1px solid #2d2d44; margin: 30px 0;">
+                    <p style="font-size: 12px; color: #6b7280; text-align: center;">
+                        %s<br>
+                        %s
+                    </p>
+                    </div>
+                </div>
+            </body>
+            </html>
+            """.formatted(
+            msg.get("email.account.deleted.greeting", lang, firstName),
+            msg.get("email.account.deleted.body", lang),
+            msg.get("email.account.deleted.contact", lang, appConfig.getAdmin().getEmail()),
             msg.get("email.footer", lang),
             msg.get("email.footer.slogan", lang)
         );
