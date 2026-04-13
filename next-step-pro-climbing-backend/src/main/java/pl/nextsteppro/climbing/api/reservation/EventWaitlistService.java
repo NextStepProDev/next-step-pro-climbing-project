@@ -26,7 +26,7 @@ import pl.nextsteppro.climbing.infrastructure.mail.WaitlistMailService;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.time.ZoneOffset;
+import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
@@ -37,6 +37,7 @@ public class EventWaitlistService {
 
     private static final Logger log = LoggerFactory.getLogger(EventWaitlistService.class);
     private static final long CONFIRMATION_WINDOW_HOURS = 24;
+    private static final ZoneId WARSAW = ZoneId.of("Europe/Warsaw");
 
     private final EventWaitlistRepository eventWaitlistRepository;
     private final EventRepository eventRepository;
@@ -214,7 +215,7 @@ public class EventWaitlistService {
         Event event = waiting.getFirst().getEvent();
         LocalTime startTime = event.getStartTime() != null ? event.getStartTime() : LocalTime.of(0, 0);
         Instant eventInstant = LocalDateTime.of(event.getStartDate(), startTime)
-            .toInstant(ZoneOffset.systemDefault().getRules().getOffset(Instant.now()));
+            .atZone(WARSAW).toInstant();
         Instant maxDeadline = Instant.now().plus(CONFIRMATION_WINDOW_HOURS, ChronoUnit.HOURS);
         Instant deadline = eventInstant.isBefore(maxDeadline) ? eventInstant : maxDeadline;
 

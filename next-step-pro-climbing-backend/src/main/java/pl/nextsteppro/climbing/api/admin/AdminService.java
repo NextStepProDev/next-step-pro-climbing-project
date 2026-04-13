@@ -712,6 +712,7 @@ public class AdminService {
         reservationRepository.save(reservation);
         mailService.sendAdminCancellationNotification(reservation);
         activityLogService.logCancelledByAdmin(user, slot, participants);
+        waitlistService.notifyAll(slot.getId());
     }
 
     @Caching(evict = {
@@ -736,6 +737,7 @@ public class AdminService {
             activityLogService.logCancelledByAdmin(user, reservation.getTimeSlot(), participants);
         }
         mailService.sendAdminEventParticipantRemovedNotification(user, event);
+        eventWaitlistService.notifyAll(eventId);
     }
 
     @Caching(evict = {
