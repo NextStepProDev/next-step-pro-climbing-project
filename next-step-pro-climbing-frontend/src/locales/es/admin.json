@@ -12,7 +12,8 @@
     "users": "Usuarios",
     "activity": "Actividad",
     "assets": "Biblioteca de medios",
-    "mail": "Enviar email"
+    "mail": "Enviar email",
+    "storage": "Almacenamiento"
   },
   "news": {
     "title": "Noticias",
@@ -301,6 +302,14 @@
     "chooseFromLibrary": "Elegir de la biblioteca",
     "chooseThumbnailFromLibrary": "Elegir de la biblioteca"
   },
+  "galleryPicker": {
+    "title": "Elegir de la galería",
+    "chooseFromGallery": "Elegir de la galería",
+    "backToAlbums": "Volver a los álbumes",
+    "noAlbums": "No hay álbumes en la galería.",
+    "noPhotos": "No hay fotos en este álbum.",
+    "noThumbnail": "Sin miniatura"
+  },
   "mail": {
     "title": "Enviar mensaje",
     "subtitle": "Escribe un mensaje de correo a los usuarios del sistema.",
@@ -321,5 +330,28 @@
     "confirmAllMessage": "El mensaje se enviará a todos los usuarios con correo verificado. ¿Continuar?",
     "successMessage": "Mensaje enviado a {{count}} destinatarios.",
     "errorMessage": "Error al enviar el mensaje."
+  },
+  "storage": {
+    "title": "Auditoría de almacenamiento",
+    "description": "Compara los archivos en disco con los registros de la base de datos.",
+    "runAudit": "Ejecutar auditoría",
+    "error": "Error al leer el disco.",
+    "allClear": "Sin problemas — todos los archivos son consistentes.",
+    "prompt": "Haz clic en \"Ejecutar auditoría\" para comparar los archivos en disco con la base de datos.",
+    "totalOnDisk": "Archivos en disco",
+    "totalInDb": "Registros en BD",
+    "orphaned": "Huérfanos",
+    "totalSize": "Tamaño total",
+    "orphanedTitle": "Archivos huérfanos",
+    "orphanedDesc": "Los archivos existen en disco pero no tienen registro en la base de datos. Se pueden eliminar de forma segura.",
+    "missingTitle": "Archivos faltantes",
+    "missingDesc": "Los registros existen en la base de datos pero el archivo físico ha desaparecido del disco.",
+    "colFolder": "Carpeta",
+    "colFilename": "Nombre de archivo",
+    "colSize": "Tamaño",
+    "deleteOrphaned": "Eliminar huérfanos",
+    "confirmTitle": "Eliminar archivos huérfanos",
+    "confirmMessage": "Se eliminarán permanentemente {{count}} archivos ({{size}}). Esta operación no se puede deshacer.",
+    "deleteSuccess": "{{count}} archivos eliminados."
   }
 }

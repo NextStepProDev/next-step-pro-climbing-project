@@ -39,4 +39,7 @@ public interface CourseRepository extends JpaRepository<Course, UUID> {
 
     @Query("SELECT COALESCE(MAX(c.displayOrder), -1) FROM Course c")
     int findMaxDisplayOrder();
+
+    @Query("SELECT c.thumbnailFilename FROM Course c WHERE c.thumbnailFilename IS NOT NULL")
+    List<String> findAllThumbnailFilenames();
 }

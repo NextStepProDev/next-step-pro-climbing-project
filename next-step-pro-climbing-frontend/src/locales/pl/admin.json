@@ -12,7 +12,8 @@
     "users": "Użytkownicy",
     "activity": "Aktywność",
     "assets": "Biblioteka mediów",
-    "mail": "Wyślij mail"
+    "mail": "Wyślij mail",
+    "storage": "Storage"
   },
   "news": {
     "title": "Aktualności",
@@ -301,6 +302,14 @@
     "chooseFromLibrary": "Wybierz z biblioteki",
     "chooseThumbnailFromLibrary": "Wybierz z biblioteki"
   },
+  "galleryPicker": {
+    "title": "Wybierz z galerii",
+    "chooseFromGallery": "Wybierz z galerii",
+    "backToAlbums": "Powrót do albumów",
+    "noAlbums": "Brak albumów w galerii.",
+    "noPhotos": "Brak zdjęć w tym albumie.",
+    "noThumbnail": "Brak miniaturki"
+  },
   "mail": {
     "title": "Wyślij wiadomość",
     "subtitle": "Napisz wiadomość email do użytkowników systemu.",
@@ -321,5 +330,28 @@
     "confirmAllMessage": "Wiadomość zostanie wysłana do wszystkich użytkowników z zweryfikowanym adresem email. Kontynuować?",
     "successMessage": "Wiadomość wysłana do {{count}} odbiorców.",
     "errorMessage": "Błąd podczas wysyłania wiadomości."
+  },
+  "storage": {
+    "title": "Audyt storage",
+    "description": "Porównaj pliki na dysku z rekordami w bazie danych.",
+    "runAudit": "Uruchom audyt",
+    "error": "Błąd podczas odczytu dysku.",
+    "allClear": "Brak problemów — wszystkie pliki są spójne.",
+    "prompt": "Kliknij \"Uruchom audyt\", aby porównać pliki na dysku z bazą danych.",
+    "totalOnDisk": "Pliki na dysku",
+    "totalInDb": "Rekordy w bazie",
+    "orphaned": "Osierocone",
+    "totalSize": "Łączny rozmiar",
+    "orphanedTitle": "Osierocone pliki",
+    "orphanedDesc": "Pliki istnieją na dysku, ale nie mają rekordu w bazie. Można je bezpiecznie usunąć.",
+    "missingTitle": "Brakujące pliki",
+    "missingDesc": "Rekordy istnieją w bazie, ale plik fizyczny zniknął z dysku.",
+    "colFolder": "Folder",
+    "colFilename": "Nazwa pliku",
+    "colSize": "Rozmiar",
+    "deleteOrphaned": "Usuń osierocone",
+    "confirmTitle": "Usuń osierocone pliki",
+    "confirmMessage": "Zostanie trwale usuniętych {{count}} plików ({{size}}). Tej operacji nie można cofnąć.",
+    "deleteSuccess": "Usunięto {{count}} plików."
   }
 }

@@ -1,5 +1,6 @@
 import { Phone, Mail, User, Facebook, Youtube, Instagram } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { Link } from 'react-router-dom'
 import logoWhite from '../../assets/logo/logo-white.png'
 import { CONTACT } from '../../constants/contact'
 
@@ -20,7 +21,11 @@ export function Footer() {
 
           {/* Contact */}
           <div>
-            <h3 className="font-semibold text-dark-100 mb-4">{t('footer.contact')}</h3>
+            <h3 className="font-semibold mb-4">
+              <Link to="/kontakt" className="text-dark-100 hover:text-primary-400 transition-colors">
+                {t('footer.contact')}
+              </Link>
+            </h3>
             <ul className="space-y-3">
               <li className="flex items-center gap-2 text-dark-400 text-sm">
                 <User className="w-4 h-4 shrink-0" />

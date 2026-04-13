@@ -15,4 +15,7 @@ public interface CourseContentBlockRepository extends JpaRepository<CourseConten
 
     @Query("SELECT COALESCE(MAX(b.displayOrder), -1) FROM CourseContentBlock b WHERE b.course.id = :courseId")
     int findMaxDisplayOrder(@Param("courseId") UUID courseId);
+
+    @Query("SELECT b.imageFilename FROM CourseContentBlock b WHERE b.imageFilename IS NOT NULL")
+    List<String> findAllImageFilenames();
 }
