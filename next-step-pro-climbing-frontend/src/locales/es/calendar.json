@@ -46,6 +46,7 @@
     "past": "Esta franja horaria ya ha finalizado",
     "bookingClosed": "La reserva online es posible hasta 12 horas antes de la sesión. Contacta con el instructor por teléfono para consultar la disponibilidad.",
     "hasReservation": "Tienes una reserva para esta franja horaria",
+    "addMoreParticipants": "Quiero reservar para más de 1 persona",
     "spotsLabel": "Número de plazas",
     "spotsOf": "de {{count}} libres",
     "commentPlaceholder": "Comentario para el instructor (opcional)...",
@@ -73,6 +74,7 @@
     "title": "Inscribirse en el evento",
     "bookingClosed": "La reserva online es posible hasta 12 horas antes del evento. Contacta con el instructor por teléfono para consultar la disponibilidad.",
     "hasReservation": "Tienes una reserva para este evento",
+    "addMoreParticipants": "Quiero reservar para más de 1 persona",
     "editParticipantsLabel": "Cambiar número de participantes",
     "saveParticipants": "Guardar cambios",
     "spotsLabel": "Número de plazas",
@@ -129,6 +131,10 @@
     "title": "¿No encuentras un horario adecuado?",
     "description": "Llámanos o escríbenos — estaremos encantados de acordar una sesión individual adaptada a tus posibilidades.",
     "email": "Enviar e-mail"
+  },
+  "contactDay": {
+    "message": "Contáctenos para concertar una sesión en el rocódromo o en las rocas.",
+    "cta": "Ir a contacto"
   },
   "availability": {
     "closed": "Inscripciones cerradas",

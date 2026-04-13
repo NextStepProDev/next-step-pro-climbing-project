@@ -5,14 +5,13 @@ import { ArrowLeft, Clock, Calendar, Users, Plus, ExternalLink } from "lucide-re
 import { Link } from "react-router-dom";
 import clsx from "clsx";
 import type { TimeSlot, EventSummary } from "../../types";
-import { formatAvailability, getEventColor } from "../../utils/events";
+import { formatAvailability, getEventColorForDisplay } from "../../utils/events";
 import { useDateLocale } from "../../utils/dateFnsLocale";
 
 interface DayViewProps {
   date: string;
   slots: TimeSlot[];
   events: EventSummary[];
-  eventColorMap: Map<string, number>;
   onBack: () => void;
   onSlotClick: (slotId: string) => void;
   onEventClick?: (event: EventSummary) => void;
@@ -107,7 +106,6 @@ export function DayView({
   date,
   slots,
   events,
-  eventColorMap,
   onBack,
   onSlotClick,
   onEventClick,
@@ -191,7 +189,33 @@ export function DayView({
             {events.map((event) => {
               const eventSlots = eventSlotGroups.get(event.title);
               const { label, badgeClass } = formatAvailability(event);
-              const color = getEventColor(eventColorMap.get(event.id) ?? 0);
+              const color = getEventColorForDisplay(event.eventType, event.currentParticipants >= event.maxParticipants);
+
+              /* CONTACT_DAY — no enrollment, just info + contact prompt */
+              if (event.eventType === 'CONTACT_DAY') {
+                return (
+                  <div
+                    key={event.id}
+                    className={clsx("rounded-lg border p-4", color.border, color.bg)}
+                  >
+                    <h3 className={clsx("text-base font-semibold mb-2", color.text)}>
+                      {event.title}
+                    </h3>
+                    {event.description && (
+                      <p className="text-sm text-dark-300 mb-3">{event.description}</p>
+                    )}
+                    <div className="p-3 rounded-lg bg-rose-500/10 border border-rose-500/20">
+                      <p className="text-sm text-rose-300">{t('contactDay.message')}</p>
+                      <Link
+                        to="/kontakt"
+                        className="inline-flex items-center gap-1 mt-2 text-sm font-medium text-rose-400 hover:text-rose-300 transition-colors"
+                      >
+                        {t('contactDay.cta')}
+                      </Link>
+                    </div>
+                  </div>
+                );
+              }
 
               /* Event WITH time slots */
               if (eventSlots && eventSlots.length > 0) {

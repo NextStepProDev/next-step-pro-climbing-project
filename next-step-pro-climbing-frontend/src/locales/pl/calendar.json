@@ -48,6 +48,7 @@
     "hasReservation": "Masz rezerwację na ten termin",
     "spotsLabel": "Liczba miejsc",
     "spotsOf": "z {{count}} wolnych",
+    "addMoreParticipants": "Chcę zarezerwować więcej niż 1 miejsce",
     "commentPlaceholder": "Komentarz dla instruktora (opcjonalny)...",
     "commentCount": "{{count}}/500",
     "loginToBook": "Zaloguj się, aby zarezerwować",
@@ -77,6 +78,7 @@
     "saveParticipants": "Zapisz zmiany",
     "spotsLabel": "Liczba miejsc",
     "spotsOf": "z {{count}} wolnych",
+    "addMoreParticipants": "Chcę zarezerwować więcej niż 1 miejsce",
     "commentPlaceholder": "Komentarz dla instruktora (opcjonalny)...",
     "commentCount": "{{count}}/500",
     "loginToBook": "Zaloguj się, aby zarezerwować",
@@ -129,6 +131,10 @@
     "title": "Nie znalazłeś odpowiedniego terminu?",
     "description": "Zadzwoń lub napisz — chętnie umówimy termin indywidualnie, dopasowany do Twoich możliwości.",
     "email": "Napisz e-mail"
+  },
+  "contactDay": {
+    "message": "Skontaktuj się z nami, aby ustalić termin zajęć na ściance lub skałach.",
+    "cta": "Przejdź do kontaktu"
   },
   "availability": {
     "closed": "Zapisy zamknięte",

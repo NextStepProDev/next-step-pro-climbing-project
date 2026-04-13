@@ -1,23 +1,47 @@
 import i18n from "../i18n";
 import type { EventSummary } from "../types";
 
-export const EVENT_ACCENT_COLORS = [
-  { text: 'text-primary-400', border: 'border-primary-500/30', bg: 'bg-primary-500/5', hoverBorder: 'hover:border-primary-500', dot: 'bg-primary-400' },
-  { text: 'text-emerald-400', border: 'border-emerald-500/30', bg: 'bg-emerald-500/5', hoverBorder: 'hover:border-emerald-500', dot: 'bg-emerald-400' },
-  { text: 'text-violet-400', border: 'border-violet-500/30', bg: 'bg-violet-500/5', hoverBorder: 'hover:border-violet-500', dot: 'bg-violet-400' },
-  { text: 'text-teal-400', border: 'border-teal-500/30', bg: 'bg-teal-500/5', hoverBorder: 'hover:border-teal-500', dot: 'bg-teal-400' },
-  { text: 'text-cyan-400', border: 'border-cyan-500/30', bg: 'bg-cyan-500/5', hoverBorder: 'hover:border-cyan-500', dot: 'bg-cyan-400' },
-  { text: 'text-orange-400', border: 'border-orange-500/30', bg: 'bg-orange-500/5', hoverBorder: 'hover:border-orange-500', dot: 'bg-orange-400' },
-] as const;
-
-export function getEventColor(index: number) {
-  return EVENT_ACCENT_COLORS[index % EVENT_ACCENT_COLORS.length];
+type EventAccentColor = {
+  text: string; border: string; bg: string; hoverBorder: string; dot: string;
+  barBg: string; barBorder: string; barText: string; barHover: string;
 }
 
-export function buildEventColorMap(events: { id: string }[]) {
-  const map = new Map<string, number>();
-  events.forEach((e, i) => map.set(e.id, i));
-  return map;
+const EVENT_TYPE_COLORS: Record<string, EventAccentColor> = {
+  COURSE: {
+    text: 'text-primary-400', border: 'border-primary-500/30', bg: 'bg-primary-500/5',
+    hoverBorder: 'hover:border-primary-500', dot: 'bg-primary-400',
+    barBg: 'bg-primary-600/40', barBorder: 'border-primary-500/40',
+    barText: 'text-primary-300', barHover: 'hover:bg-primary-600/50',
+  },
+  TRAINING: {
+    text: 'text-amber-400', border: 'border-amber-500/30', bg: 'bg-amber-500/5',
+    hoverBorder: 'hover:border-amber-500', dot: 'bg-amber-400',
+    barBg: 'bg-amber-600/40', barBorder: 'border-amber-500/40',
+    barText: 'text-amber-300', barHover: 'hover:bg-amber-600/50',
+  },
+  WORKSHOP: {
+    text: 'text-emerald-400', border: 'border-emerald-500/30', bg: 'bg-emerald-500/5',
+    hoverBorder: 'hover:border-emerald-500', dot: 'bg-emerald-400',
+    barBg: 'bg-emerald-600/40', barBorder: 'border-emerald-500/40',
+    barText: 'text-emerald-300', barHover: 'hover:bg-emerald-600/50',
+  },
+  CONTACT_DAY: {
+    text: 'text-rose-400', border: 'border-rose-500/30', bg: 'bg-rose-500/5',
+    hoverBorder: 'hover:border-rose-500', dot: 'bg-rose-400',
+    barBg: 'bg-rose-600/40', barBorder: 'border-rose-500/40',
+    barText: 'text-rose-300', barHover: 'hover:bg-rose-600/50',
+  },
+};
+
+export function getEventColorByType(eventType: string): EventAccentColor {
+  return EVENT_TYPE_COLORS[eventType] ?? EVENT_TYPE_COLORS.COURSE;
+}
+
+export function getEventColorForDisplay(eventType: string, isFull: boolean): EventAccentColor {
+  if (isFull && eventType !== 'CONTACT_DAY') {
+    return EVENT_TYPE_COLORS.TRAINING; // amber — same as "full" slots
+  }
+  return getEventColorByType(eventType);
 }
 
 export function pluralizeTraining(n: number): string {

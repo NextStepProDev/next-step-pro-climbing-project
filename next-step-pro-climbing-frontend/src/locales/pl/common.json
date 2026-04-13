@@ -43,7 +43,8 @@
   "eventTypes": {
     "COURSE": "Kurs",
     "TRAINING": "Trening",
-    "WORKSHOP": "Warsztat"
+    "WORKSHOP": "Warsztat",
+    "CONTACT_DAY": "Zajęcia na zlecenie"
   },
   "allDay": "Cały dzień",
   "participants_one": "{{count}} uczestnik",

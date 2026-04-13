@@ -4,6 +4,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { format, isToday, isBefore, startOfDay } from 'date-fns'
 import clsx from 'clsx'
 import type { WeekDay, TimeSlot, EventSummary } from '../../types'
+import { getEventColorForDisplay } from '../../utils/events'
 import { useDateLocale } from '../../utils/dateFnsLocale'
 
 const HOUR_HEIGHT = 60
@@ -185,7 +186,12 @@ export function WeekCalendar({
                     {format(date, 'd')}
                   </div>
                   {dayEvents.length > 0 && !past && (
-                    <div className="w-1.5 h-1.5 bg-primary-500 rounded-full mx-auto mt-0.5" />
+                    <div className={clsx(
+                      "w-1.5 h-1.5 rounded-full mx-auto mt-0.5",
+                      dayEvents.every(e => e.eventType === 'CONTACT_DAY') ? 'bg-rose-500'
+                        : dayEvents.every(e => e.currentParticipants >= e.maxParticipants) ? 'bg-amber-500'
+                        : 'bg-primary-500'
+                    )} />
                   )}
                 </button>
               )
@@ -234,16 +240,22 @@ export function WeekCalendar({
                   ))}
 
                   {/* Event bars at top area */}
-                  {dayEvents.map((event, eventIndex) => (
-                    <button
-                      key={event.id}
-                      onClick={() => onEventClick(event)}
-                      className="absolute left-0.5 right-0.5 z-20 px-1 py-0.5 text-[10px] leading-tight font-medium rounded bg-primary-600/40 border border-primary-500/40 text-primary-300 truncate hover:bg-primary-600/50 transition-colors cursor-pointer"
-                      style={{ top: eventIndex * 20 }}
-                    >
-                      {event.title}
-                    </button>
-                  ))}
+                  {dayEvents.map((event, eventIndex) => {
+                    const color = getEventColorForDisplay(event.eventType, event.currentParticipants >= event.maxParticipants)
+                    return (
+                      <button
+                        key={event.id}
+                        onClick={() => onEventClick(event)}
+                        className={clsx(
+                          "absolute left-0.5 right-0.5 z-20 px-1 py-0.5 text-[10px] leading-tight font-medium rounded border truncate transition-colors cursor-pointer",
+                          color.barBg, color.barBorder, color.barText, color.barHover
+                        )}
+                        style={{ top: eventIndex * 20 }}
+                      >
+                        {event.title}
+                      </button>
+                    )
+                  })}
 
                   {/* Slots */}
                   {day.slots.map((slot: TimeSlot) => {
