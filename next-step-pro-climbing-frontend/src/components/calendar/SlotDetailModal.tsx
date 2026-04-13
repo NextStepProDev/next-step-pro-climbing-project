@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { format } from "date-fns";
 import { Clock, Users, Calendar, Clock3 } from "lucide-react";
@@ -33,11 +33,6 @@ export function SlotDetailModal({
   const [participants, setParticipants] = useState(1);
   const [showParticipants, setShowParticipants] = useState(false);
 
-  useEffect(() => {
-    setParticipants(1);
-    setShowParticipants(false);
-    setComment("");
-  }, [slot?.id]);
 
   const reservationMutation = useMutation({
     mutationFn: (data: {

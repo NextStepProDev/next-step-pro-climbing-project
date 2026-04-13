@@ -204,11 +204,11 @@ export function DayView({
                     {event.description && (
                       <p className="text-sm text-dark-300 mb-3">{event.description}</p>
                     )}
-                    <div className="p-3 rounded-lg bg-rose-500/10 border border-rose-500/20">
-                      <p className="text-sm text-rose-300">{t('contactDay.message')}</p>
+                    <div className="p-3 rounded-lg bg-violet-500/10 border border-violet-500/20">
+                      <p className="text-sm text-violet-300">{t('contactDay.message')}</p>
                       <Link
                         to="/kontakt"
-                        className="inline-flex items-center gap-1 mt-2 text-sm font-medium text-rose-400 hover:text-rose-300 transition-colors"
+                        className="inline-flex items-center gap-1 mt-2 text-sm font-medium text-violet-400 hover:text-violet-300 transition-colors"
                       >
                         {t('contactDay.cta')}
                       </Link>

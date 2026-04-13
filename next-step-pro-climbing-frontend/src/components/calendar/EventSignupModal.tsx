@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { format } from 'date-fns'
 import { Calendar, ExternalLink, MapPin, Users } from 'lucide-react'
@@ -30,11 +30,6 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
   // null = user hasn't touched yet → falls back to freshEvent.userParticipants
   const [userEditParticipants, setUserEditParticipants] = useState<number | null>(null)
 
-  useEffect(() => {
-    setParticipants(1)
-    setShowParticipants(false)
-    setComment('')
-  }, [event?.id])
 
   // Fetch fresh event data (with waitlist status) when modal is open
   const { data: freshEvent } = useQuery({

@@ -188,7 +188,7 @@ export function WeekCalendar({
                   {dayEvents.length > 0 && !past && (
                     <div className={clsx(
                       "w-1.5 h-1.5 rounded-full mx-auto mt-0.5",
-                      dayEvents.every(e => e.eventType === 'CONTACT_DAY') ? 'bg-rose-500'
+                      dayEvents.every(e => e.eventType === 'CONTACT_DAY') ? 'bg-violet-500'
                         : dayEvents.every(e => e.currentParticipants >= e.maxParticipants) ? 'bg-amber-500'
                         : 'bg-primary-500'
                     )} />
