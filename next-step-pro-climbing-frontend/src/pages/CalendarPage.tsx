@@ -369,7 +369,7 @@ export function CalendarPage() {
                             {t('signedUp')}
                           </span>
                         ) : event.eventType === 'CONTACT_DAY' ? (
-                          <span className="px-3 py-1 text-xs font-medium rounded bg-rose-500/20 text-rose-400">
+                          <span className="px-3 py-1 text-xs font-medium rounded bg-violet-500/20 text-violet-400">
                             {t('common:callPhone')}
                           </span>
                         ) : !event.enrollmentOpen ? (
@@ -413,12 +413,14 @@ export function CalendarPage() {
       )}
 
       <SlotDetailModal
+        key={selectedSlotId ?? 'closed'}
         slot={slotDetail ?? null}
         isOpen={!!selectedSlotId}
         onClose={handleModalClose}
       />
 
       <EventSignupModal
+        key={selectedEvent?.id ?? 'closed'}
         event={selectedEvent}
         isOpen={!!selectedEvent}
         onClose={() => setSelectedEvent(null)}

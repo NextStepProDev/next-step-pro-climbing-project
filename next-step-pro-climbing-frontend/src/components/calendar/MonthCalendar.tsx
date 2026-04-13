@@ -133,7 +133,7 @@ export function MonthCalendar({ currentMonth, onMonthChange, days, events, onDay
                 isPast && 'opacity-40 cursor-not-allowed',
                 isClickable && 'hover:bg-dark-800 cursor-pointer',
                 !isClickable && 'cursor-default',
-                hasEvents && !isPast && (dayEvents.every(e => e.eventType === 'CONTACT_DAY') ? 'bg-rose-500/10' : 'bg-primary-500/10')
+                hasEvents && !isPast && (dayEvents.every(e => e.eventType === 'CONTACT_DAY') ? 'bg-violet-500/10' : 'bg-primary-500/10')
               )}
             >
               <div

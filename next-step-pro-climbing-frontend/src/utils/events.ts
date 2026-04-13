@@ -26,10 +26,10 @@ const EVENT_TYPE_COLORS: Record<string, EventAccentColor> = {
     barText: 'text-emerald-300', barHover: 'hover:bg-emerald-600/50',
   },
   CONTACT_DAY: {
-    text: 'text-rose-400', border: 'border-rose-500/30', bg: 'bg-rose-500/5',
-    hoverBorder: 'hover:border-rose-500', dot: 'bg-rose-400',
-    barBg: 'bg-rose-600/40', barBorder: 'border-rose-500/40',
-    barText: 'text-rose-300', barHover: 'hover:bg-rose-600/50',
+    text: 'text-violet-400', border: 'border-violet-500/30', bg: 'bg-violet-500/5',
+    hoverBorder: 'hover:border-violet-500', dot: 'bg-violet-400',
+    barBg: 'bg-violet-600/40', barBorder: 'border-violet-500/40',
+    barText: 'text-violet-300', barHover: 'hover:bg-violet-600/50',
   },
 };
 
