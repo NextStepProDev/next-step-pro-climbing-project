@@ -154,7 +154,7 @@ public class AuthMailService {
             """.formatted(
             msg.get("email.account.deleted.greeting", lang, firstName),
             msg.get("email.account.deleted.body", lang),
-            msg.get("email.account.deleted.contact", lang, appConfig.getAdmin().getEmail()),
+            msg.get("email.account.deleted.contact", lang),
             msg.get("email.footer", lang),
             msg.get("email.footer.slogan", lang)
         );
