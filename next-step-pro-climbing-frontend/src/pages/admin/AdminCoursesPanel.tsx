@@ -52,7 +52,7 @@ type PendingImageBlock = {
   type: 'IMAGE'
   tempId: string
   caption: string
-  source: 'file' | 'library'
+  source: 'file' | 'library' | 'gallery'
   file?: File
   preview?: string
   imageUrl?: string
@@ -486,7 +486,7 @@ function EditView({
       for (const pending of pendingBlocks) {
         if (pending.type === 'TEXT') {
           await adminCoursesApi.addTextBlock(courseId, { content: pending.content })
-        } else if (pending.source === 'library' && pending.imageUrl) {
+        } else if ((pending.source === 'library' || pending.source === 'gallery') && pending.imageUrl) {
           await adminCoursesApi.addImageBlockFromUrl(courseId, pending.imageUrl, pending.caption || undefined)
         } else if (pending.source === 'file' && pending.file) {
           await adminCoursesApi.addImageBlock(courseId, pending.file, pending.caption || undefined)
@@ -684,7 +684,7 @@ function EditView({
           </button>
 
           <button
-            onClick={() => setShowGalleryPicker(true)}
+            onClick={() => { setPickerTarget('thumbnail'); setShowGalleryPicker(true) }}
             className="inline-flex items-center gap-2 px-3 py-2 bg-dark-700 border border-dark-600 rounded text-sm text-dark-200 hover:border-primary-500 transition-colors"
           >
             <Images className="h-4 w-4" />
@@ -804,6 +804,14 @@ function EditView({
           >
             <Library className="h-4 w-4" />
             {t('mediaPicker.chooseFromLibrary')}
+          </button>
+
+          <button
+            onClick={() => { setPickerTarget('block'); setShowGalleryPicker(true) }}
+            className="inline-flex items-center gap-2 px-3 py-2 bg-dark-800 border border-dark-600 rounded text-sm text-dark-200 hover:border-dark-400 transition-colors font-medium"
+          >
+            <Images className="h-4 w-4" />
+            {t('galleryPicker.chooseFromGallery')}
           </button>
         </div>
       </section>
@@ -936,10 +944,17 @@ function EditView({
         isOpen={showGalleryPicker}
         onClose={() => setShowGalleryPicker(false)}
         onSelect={(photoUrl) => {
-          if (thumbnailPreview) URL.revokeObjectURL(thumbnailPreview)
-          setThumbnailFile(null)
-          setThumbnailPreview(null)
-          setThumbnailFromLibrary(photoUrl)
+          if (pickerTarget === 'thumbnail') {
+            if (thumbnailPreview) URL.revokeObjectURL(thumbnailPreview)
+            setThumbnailFile(null)
+            setThumbnailPreview(null)
+            setThumbnailFromLibrary(photoUrl)
+          } else {
+            setPendingBlocks((prev) => [
+              ...prev,
+              { type: 'IMAGE', tempId: crypto.randomUUID(), source: 'gallery', imageUrl: photoUrl, caption: '' },
+            ])
+          }
         }}
       />
     </div>
