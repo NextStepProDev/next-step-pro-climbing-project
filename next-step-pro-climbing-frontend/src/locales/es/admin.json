@@ -182,7 +182,13 @@
     "deleteSimple": "Eliminar franja horaria",
     "participantsTitle": "Participantes de la franja horaria",
     "from": "Desde",
-    "to": "Hasta"
+    "to": "Hasta",
+    "cancelReservation": "Cancelar reserva",
+    "confirmCancelReservation": "¿Cancelar esta reserva? El usuario recibirá una notificación por email.",
+    "editSpots": "Cambiar plazas",
+    "saveSpots": "Guardar",
+    "cancelEdit": "Cancelar",
+    "spotsLabel": "{{count}} plazas"
   },
   "reservations": {
     "noUpcoming": "No hay reservas próximas",
@@ -214,6 +220,8 @@
     "participantsLabel": "Participantes",
     "loading": "Cargando...",
     "noParticipants": "No hay participantes inscritos",
+    "cancelParticipant": "Dar de baja del evento",
+    "confirmCancelParticipant": "¿Dar de baja a este usuario del evento? Recibirá una notificación por email.",
     "warningActiveReservations": "Atención - ¡reservas activas!",
     "deleteTitle": "Eliminar evento",
     "eventLabel": "Evento: ",

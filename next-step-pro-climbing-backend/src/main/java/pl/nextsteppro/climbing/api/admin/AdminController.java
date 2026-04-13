@@ -310,6 +310,37 @@ public class AdminController {
         return ResponseEntity.ok(reservations);
     }
 
+    // ==================== Reservation Management ====================
+
+    @Tag(name = "Admin - Reservations")
+    @Operation(summary = "Anuluj pojedynczą rezerwację", description = "Anuluje jedną rezerwację i wysyła email do użytkownika")
+    @DeleteMapping("/reservations/{reservationId}")
+    public ResponseEntity<Void> cancelReservationByAdmin(
+            @Parameter(description = "UUID rezerwacji") @PathVariable UUID reservationId) {
+        adminService.cancelReservationByAdmin(reservationId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @Tag(name = "Admin - Events")
+    @Operation(summary = "Anuluj zapisy użytkownika na wydarzenie", description = "Anuluje wszystkie rezerwacje użytkownika w wydarzeniu")
+    @DeleteMapping("/events/{eventId}/participants/{userId}")
+    public ResponseEntity<Void> cancelEventParticipantByAdmin(
+            @Parameter(description = "UUID wydarzenia") @PathVariable UUID eventId,
+            @Parameter(description = "UUID użytkownika") @PathVariable UUID userId) {
+        adminService.cancelEventParticipantByAdmin(eventId, userId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @Tag(name = "Admin - Reservations")
+    @Operation(summary = "Zmień liczbę uczestników rezerwacji", description = "Zmienia liczbę zarezerwowanych miejsc i wysyła email do użytkownika")
+    @PatchMapping("/reservations/{reservationId}/participants")
+    public ResponseEntity<Void> updateReservationParticipants(
+            @Parameter(description = "UUID rezerwacji") @PathVariable UUID reservationId,
+            @Valid @RequestBody UpdateReservationParticipantsRequest request) {
+        adminService.updateReservationParticipants(reservationId, request.participants());
+        return ResponseEntity.noContent().build();
+    }
+
     // ==================== Users Management ====================
 
     @Tag(name = "Admin - Users", description = "Zarządzanie użytkownikami (tylko admin)")

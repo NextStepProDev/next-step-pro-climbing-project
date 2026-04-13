@@ -192,10 +192,22 @@ function EventCard({
   const [showParticipants, setShowParticipants] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
+  const queryClient = useQueryClient()
+  const [confirmCancelParticipant, setConfirmCancelParticipant] = useState<string | null>(null)
+
   const { data: participantsData, isLoading: participantsLoading } = useQuery({
     queryKey: ['admin', 'events', event.id, 'participants'],
     queryFn: () => adminApi.getEventParticipants(event.id),
     enabled: showParticipants || showDeleteConfirm,
+  })
+
+  const cancelEventParticipantMutation = useMutation({
+    mutationFn: (userId: string) => adminApi.cancelEventParticipant(event.id, userId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'events', event.id, 'participants'] })
+      queryClient.invalidateQueries({ queryKey: ['calendar'] })
+      setConfirmCancelParticipant(null)
+    },
   })
 
   return (
@@ -286,7 +298,7 @@ function EventCard({
         <Users className="w-3.5 h-3.5" />
         {t('events.participantsLabel')}
         {participantsData && (
-          <span className="text-dark-500">({participantsData.participants.length})</span>
+          <span className="text-dark-500">({participantsData.participants.reduce((s, p) => s + p.participants, 0)})</span>
         )}
       </button>
 
@@ -298,22 +310,54 @@ function EventCard({
             <div className="space-y-2">
               {participantsData.participants.map((p) => (
                 <div key={p.userId} className="bg-dark-800/50 rounded-lg px-3 py-2 text-sm">
-                  <div className="font-medium text-dark-200">{p.fullName}</div>
-                  <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-dark-400 text-xs mt-0.5">
-                    <span className="inline-flex items-center gap-1">
-                      <Mail className="w-3 h-3" />
-                      {p.email}
-                    </span>
-                    <span className="inline-flex items-center gap-1">
-                      <Phone className="w-3 h-3" />
-                      {p.phone}
-                    </span>
-                    {p.participants > 1 && (
-                      <span>{t('events.spots', { count: p.participants })}</span>
-                    )}
-                  </div>
-                  {p.comment && (
-                    <div className="text-dark-500 text-xs mt-1">"{p.comment}"</div>
+                  {confirmCancelParticipant === p.userId ? (
+                    <div className="space-y-2">
+                      <p className="text-xs text-rose-400">{t('events.confirmCancelParticipant')}</p>
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="danger"
+                          loading={cancelEventParticipantMutation.isPending}
+                          onClick={() => cancelEventParticipantMutation.mutate(p.userId)}
+                        >
+                          {t('events.cancelParticipant')}
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={() => setConfirmCancelParticipant(null)}>
+                          {t('events.cancel')}
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <div className="font-medium text-dark-200">{p.fullName}</div>
+                          <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-dark-400 text-xs mt-0.5">
+                            <span className="inline-flex items-center gap-1">
+                              <Mail className="w-3 h-3" />
+                              {p.email}
+                            </span>
+                            <span className="inline-flex items-center gap-1">
+                              <Phone className="w-3 h-3" />
+                              {p.phone}
+                            </span>
+                            {p.participants > 1 && (
+                              <span>{t('events.spots', { count: p.participants })}</span>
+                            )}
+                          </div>
+                          {p.comment && (
+                            <div className="text-dark-500 text-xs mt-1">"{p.comment}"</div>
+                          )}
+                        </div>
+                        <button
+                          onClick={() => setConfirmCancelParticipant(p.userId)}
+                          title={t('events.cancelParticipant')}
+                          className="p-1 text-dark-500 hover:text-rose-400 transition-colors shrink-0"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </>
                   )}
                 </div>
               ))}

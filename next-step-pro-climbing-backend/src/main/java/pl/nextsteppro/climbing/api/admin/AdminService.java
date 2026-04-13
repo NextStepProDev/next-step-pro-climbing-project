@@ -130,7 +130,13 @@ public class AdminService {
 
         if (request.startTime() != null) slot.setStartTime(request.startTime());
         if (request.endTime() != null) slot.setEndTime(request.endTime());
-        if (request.maxParticipants() != null) slot.setMaxParticipants(request.maxParticipants());
+        if (request.maxParticipants() != null) {
+            int confirmed = reservationRepository.countConfirmedByTimeSlotId(slotId);
+            if (request.maxParticipants() < confirmed) {
+                throw new IllegalStateException(msg.get("admin.slot.capacity.too.low", String.valueOf(confirmed)));
+            }
+            slot.setMaxParticipants(request.maxParticipants());
+        }
         if (request.title() != null) slot.setTitle(request.title().isBlank() ? null : request.title());
 
         LocalTime start = slot.getStartTime();
@@ -230,6 +236,7 @@ public class AdminService {
 
         List<ParticipantDto> participants = reservations.stream()
             .map(r -> new ParticipantDto(
+                r.getId(),
                 r.getUser().getId(),
                 r.getUser().getFullName(),
                 r.getUser().getEmail(),
@@ -335,7 +342,18 @@ public class AdminService {
         if (request.eventType() != null) event.setEventType(EventType.valueOf(request.eventType()));
         if (request.startDate() != null) event.setStartDate(request.startDate());
         if (request.endDate() != null) event.setEndDate(request.endDate());
-        if (request.maxParticipants() != null) event.setMaxParticipants(request.maxParticipants());
+        if (request.maxParticipants() != null) {
+            List<TimeSlot> eventSlots = timeSlotRepository.findByEventId(eventId);
+            if (!eventSlots.isEmpty()) {
+                List<UUID> slotIds = eventSlots.stream().map(TimeSlot::getId).toList();
+                int maxConfirmed = reservationRepository.countConfirmedByTimeSlotIds(slotIds)
+                    .stream().mapToInt(SlotParticipantCount::countAsInt).max().orElse(0);
+                if (request.maxParticipants() < maxConfirmed) {
+                    throw new IllegalStateException(msg.get("admin.slot.capacity.too.low", String.valueOf(maxConfirmed)));
+                }
+            }
+            event.setMaxParticipants(request.maxParticipants());
+        }
         if (request.active() != null) event.setActive(request.active());
         if (request.startTime() != null) event.setStartTime(request.startTime());
         if (request.endTime() != null) event.setEndTime(request.endTime());
@@ -644,6 +662,7 @@ public class AdminService {
 
         List<ParticipantDto> participants = uniqueByUser.values().stream()
             .map(r -> new ParticipantDto(
+                r.getId(),
                 r.getUser().getId(),
                 r.getUser().getFullName(),
                 r.getUser().getEmail(),
@@ -655,6 +674,73 @@ public class AdminService {
             .toList();
 
         return new EventParticipantsDto(eventId, event.getMaxParticipants(), participants);
+    }
+
+    @Caching(evict = {
+        @CacheEvict(value = "calendarMonth", allEntries = true),
+        @CacheEvict(value = "calendarWeek", allEntries = true),
+        @CacheEvict(value = "calendarDay", allEntries = true)
+    })
+    public void cancelReservationByAdmin(UUID reservationId) {
+        Reservation reservation = reservationRepository.findById(reservationId)
+            .orElseThrow(() -> new IllegalArgumentException("Reservation not found"));
+        if (!reservation.isConfirmed()) {
+            throw new IllegalStateException("Reservation is not confirmed");
+        }
+        User user = reservation.getUser();
+        TimeSlot slot = reservation.getTimeSlot();
+        int participants = reservation.getParticipants();
+        reservation.cancelByAdmin();
+        reservationRepository.save(reservation);
+        mailService.sendAdminCancellationNotification(reservation);
+        activityLogService.logCancelledByAdmin(user, slot, participants);
+    }
+
+    @Caching(evict = {
+        @CacheEvict(value = "calendarMonth", allEntries = true),
+        @CacheEvict(value = "calendarWeek", allEntries = true),
+        @CacheEvict(value = "calendarDay", allEntries = true)
+    })
+    public void cancelEventParticipantByAdmin(UUID eventId, UUID userId) {
+        Event event = eventRepository.findById(eventId)
+            .orElseThrow(() -> new IllegalArgumentException("Event not found"));
+        List<TimeSlot> slots = timeSlotRepository.findByEventId(eventId);
+        if (slots.isEmpty()) return;
+        List<UUID> slotIds = slots.stream().map(TimeSlot::getId).toList();
+        List<Reservation> userReservations = reservationRepository.findConfirmedByTimeSlotIds(slotIds)
+            .stream().filter(r -> r.getUser().getId().equals(userId)).toList();
+        if (userReservations.isEmpty()) return;
+        User user = userReservations.getFirst().getUser();
+        for (Reservation reservation : userReservations) {
+            int participants = reservation.getParticipants();
+            reservation.cancelByAdmin();
+            reservationRepository.save(reservation);
+            activityLogService.logCancelledByAdmin(user, reservation.getTimeSlot(), participants);
+        }
+        mailService.sendAdminEventParticipantRemovedNotification(user, event);
+    }
+
+    @Caching(evict = {
+        @CacheEvict(value = "calendarMonth", allEntries = true),
+        @CacheEvict(value = "calendarWeek", allEntries = true),
+        @CacheEvict(value = "calendarDay", allEntries = true)
+    })
+    public void updateReservationParticipants(UUID reservationId, int newParticipants) {
+        Reservation reservation = reservationRepository.findById(reservationId)
+            .orElseThrow(() -> new IllegalArgumentException("Reservation not found"));
+        if (!reservation.isConfirmed()) {
+            throw new IllegalStateException("Reservation is not confirmed");
+        }
+        TimeSlot slot = reservation.getTimeSlot();
+        int oldParticipants = reservation.getParticipants();
+        int currentTotal = reservationRepository.countConfirmedByTimeSlotId(slot.getId());
+        int available = slot.getMaxParticipants() - currentTotal + oldParticipants;
+        if (newParticipants > available) {
+            throw new IllegalStateException(msg.get("admin.slot.capacity.too.low", String.valueOf(available)));
+        }
+        reservation.setParticipants(newParticipants);
+        reservationRepository.save(reservation);
+        mailService.sendAdminParticipantReductionNotification(reservation.getUser(), slot, oldParticipants, newParticipants);
     }
 
     private EventAdminDto toEventAdminDto(Event event) {
