@@ -743,6 +743,40 @@ public class AdminService {
         mailService.sendAdminParticipantReductionNotification(reservation.getUser(), slot, oldParticipants, newParticipants);
     }
 
+    @Caching(evict = {
+        @CacheEvict(value = "calendarMonth", allEntries = true),
+        @CacheEvict(value = "calendarWeek", allEntries = true),
+        @CacheEvict(value = "calendarDay", allEntries = true)
+    })
+    public void updateEventReservationParticipants(UUID eventId, UUID userId, int newParticipants) {
+        Event event = eventRepository.findById(eventId)
+            .orElseThrow(() -> new IllegalArgumentException("Event not found"));
+        List<TimeSlot> slots = timeSlotRepository.findByEventId(eventId);
+        if (slots.isEmpty()) throw new IllegalStateException("Event has no slots");
+
+        List<UUID> slotIds = slots.stream().map(TimeSlot::getId).toList();
+        List<Reservation> userReservations = reservationRepository.findConfirmedByTimeSlotIds(slotIds)
+            .stream().filter(r -> r.getUser().getId().equals(userId)).toList();
+        if (userReservations.isEmpty()) throw new IllegalStateException("No confirmed reservation found for this user");
+
+        int oldParticipants = userReservations.getFirst().getParticipants();
+        Map<UUID, Integer> countMap = reservationRepository.countConfirmedByTimeSlotIds(slotIds).stream()
+            .collect(java.util.stream.Collectors.toMap(SlotParticipantCount::slotId, SlotParticipantCount::countAsInt));
+        int currentMaxTotal = countMap.values().stream().mapToInt(Integer::intValue).max().orElse(0);
+        int available = event.getMaxParticipants() - currentMaxTotal + oldParticipants;
+        if (newParticipants > available) {
+            throw new IllegalStateException(msg.get("admin.slot.capacity.too.low", String.valueOf(available)));
+        }
+
+        User user = userReservations.getFirst().getUser();
+        for (Reservation reservation : userReservations) {
+            reservation.setParticipants(newParticipants);
+            reservationRepository.save(reservation);
+        }
+        mailService.sendAdminEventParticipantReductionNotification(user, event, oldParticipants, newParticipants);
+        activityLogService.logEventReservationUpdated(user, event, newParticipants);
+    }
+
     private EventAdminDto toEventAdminDto(Event event) {
         return toEventAdminDto(event, 0);
     }

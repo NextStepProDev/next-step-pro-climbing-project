@@ -322,6 +322,17 @@ public class AdminController {
     }
 
     @Tag(name = "Admin - Events")
+    @Operation(summary = "Zmień liczbę uczestników rezerwacji na wydarzeniu", description = "Zmienia liczbę zarezerwowanych miejsc użytkownika na wydarzeniu i wysyła email powiadamiający")
+    @PatchMapping("/events/{eventId}/participants/{userId}")
+    public ResponseEntity<Void> updateEventReservationParticipants(
+            @Parameter(description = "UUID wydarzenia") @PathVariable UUID eventId,
+            @Parameter(description = "UUID użytkownika") @PathVariable UUID userId,
+            @Valid @RequestBody UpdateReservationParticipantsRequest request) {
+        adminService.updateEventReservationParticipants(eventId, userId, request.participants());
+        return ResponseEntity.noContent().build();
+    }
+
+    @Tag(name = "Admin - Events")
     @Operation(summary = "Anuluj zapisy użytkownika na wydarzenie", description = "Anuluje wszystkie rezerwacje użytkownika w wydarzeniu")
     @DeleteMapping("/events/{eventId}/participants/{userId}")
     public ResponseEntity<Void> cancelEventParticipantByAdmin(

@@ -372,6 +372,12 @@ export const adminApi = {
   cancelEventParticipant: (eventId: string, userId: string) =>
     fetchApi<void>(`/admin/events/${eventId}/participants/${userId}`, { method: 'DELETE' }),
 
+  updateEventReservationParticipants: (eventId: string, userId: string, participants: number) =>
+    fetchApi<void>(`/admin/events/${eventId}/participants/${userId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ participants }),
+    }),
+
   cancelReservationByAdmin: (reservationId: string) =>
     fetchApi<void>(`/admin/reservations/${reservationId}`, { method: 'DELETE' }),
 

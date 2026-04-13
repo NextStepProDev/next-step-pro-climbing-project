@@ -56,7 +56,7 @@ public class MailService {
         TimeSlot slot = reservation.getTimeSlot();
 
         String subject = msg.getForLang("email.reservation.subject", lang);
-        String body = buildReservationConfirmationBody(lang, user, slot);
+        String body = buildReservationConfirmationBody(lang, user, slot, reservation.getParticipants());
 
         sendEmail(user.getEmail(), subject, body, null);
     }
@@ -92,12 +92,12 @@ public class MailService {
     }
 
     @Async
-    public void sendEventReservationConfirmation(User user, Event event) {
+    public void sendEventReservationConfirmation(User user, Event event, int participants) {
         if (!user.isEmailNotificationsEnabled()) return;
 
         String lang = user.getPreferredLanguage();
         String subject = msg.getForLang("email.event.reservation.subject", lang);
-        String body = buildEventReservationConfirmationBody(lang, user, event);
+        String body = buildEventReservationConfirmationBody(lang, user, event, participants);
 
         sendEmail(user.getEmail(), subject, body, null);
     }
@@ -218,7 +218,18 @@ public class MailService {
         if (!user.isEmailNotificationsEnabled()) return;
         String lang = user.getPreferredLanguage();
         String subject = msg.getForLang("email.admin.participants.reduced.subject", lang);
-        String body = buildAdminParticipantReductionBody(lang, user, slot, oldParticipants, newParticipants);
+        String displayLabel = slot.getDate().format(DATE_FORMAT) + " " + slot.getStartTime().format(TIME_FORMAT) + " - " + slot.getEndTime().format(TIME_FORMAT);
+        String body = buildAdminParticipantReductionBody(lang, user, displayLabel, oldParticipants, newParticipants);
+        sendEmail(user.getEmail(), subject, body, null);
+    }
+
+    @Async
+    public void sendAdminEventParticipantReductionNotification(User user, pl.nextsteppro.climbing.domain.event.Event event, int oldParticipants, int newParticipants) {
+        if (!user.isEmailNotificationsEnabled()) return;
+        String lang = user.getPreferredLanguage();
+        String subject = msg.getForLang("email.admin.participants.reduced.subject", lang);
+        String displayLabel = event.getTitle() + " (" + event.getStartDate().format(DATE_FORMAT) + " - " + event.getEndDate().format(DATE_FORMAT) + ")";
+        String body = buildAdminParticipantReductionBody(lang, user, displayLabel, oldParticipants, newParticipants);
         sendEmail(user.getEmail(), subject, body, null);
     }
 
@@ -418,7 +429,9 @@ public class MailService {
         }
     }
 
-    private String buildReservationConfirmationBody(String lang, User user, TimeSlot slot) {
+    private String buildReservationConfirmationBody(String lang, User user, TimeSlot slot, int participants) {
+        String participantsLine = "<p><strong>%s</strong> %d</p>".formatted(
+            msg.getForLang("email.reservation.participants", lang), participants);
         return """
             <html>
             <body style="font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5;">
@@ -432,6 +445,7 @@ public class MailService {
                         <div style="background: #1a1a2e; color: white; padding: 20px; border-radius: 8px;">
                             <p><strong>%s</strong> %s</p>
                             <p><strong>%s</strong> %s - %s</p>
+                            %s
                         </div>
                         <p style="margin-top: 20px; color: #333;">%s</p>
                         <p style="color: #666; font-size: 14px;">%s</p>
@@ -447,6 +461,7 @@ public class MailService {
             msg.getForLang("email.reservation.time", lang),
             slot.getStartTime().format(TIME_FORMAT),
             slot.getEndTime().format(TIME_FORMAT),
+            participantsLine,
             msg.getForLang("email.reservation.see.you", lang),
             msg.getForLang("email.reservation.team", lang)
         );
@@ -517,7 +532,9 @@ public class MailService {
         );
     }
 
-    private String buildEventReservationConfirmationBody(String lang, User user, Event event) {
+    private String buildEventReservationConfirmationBody(String lang, User user, Event event, int participants) {
+        String participantsLine = "<p><strong>%s</strong> %d</p>".formatted(
+            msg.getForLang("email.reservation.participants", lang), participants);
         return """
             <html>
             <body style="font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5;">
@@ -531,6 +548,7 @@ public class MailService {
                         <div style="background: #1a1a2e; color: white; padding: 20px; border-radius: 8px;">
                             <p><strong>%s</strong> %s</p>
                             <p><strong>%s</strong> %s - %s</p>
+                            %s
                         </div>
                         <p style="margin-top: 20px; color: #333;">%s</p>
                         <p style="color: #666; font-size: 14px;">%s</p>
@@ -543,6 +561,7 @@ public class MailService {
             msg.getForLang("email.event.reservation.body", lang),
             msg.getForLang("email.event.reservation.event", lang), event.getTitle(),
             msg.getForLang("email.event.reservation.dates", lang), event.getStartDate().format(DATE_FORMAT), event.getEndDate().format(DATE_FORMAT),
+            participantsLine,
             msg.getForLang("email.see.you", lang),
             msg.getForLang("email.reservation.team", lang)
         );
@@ -680,8 +699,7 @@ public class MailService {
         );
     }
 
-    private String buildAdminParticipantReductionBody(String lang, User user, TimeSlot slot, int oldParticipants, int newParticipants) {
-        String slotDisplay = slot.getDate().format(DATE_FORMAT) + " " + slot.getStartTime().format(TIME_FORMAT) + " - " + slot.getEndTime().format(TIME_FORMAT);
+    private String buildAdminParticipantReductionBody(String lang, User user, String displayLabel, int oldParticipants, int newParticipants) {
         return """
             <html>
             <body style="font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5;">
@@ -699,7 +717,7 @@ public class MailService {
             </html>
             """.formatted(
             msg.getForLang("email.admin.participants.reduced.greeting", lang, user.getFirstName()),
-            msg.getForLang("email.admin.participants.reduced.body", lang, slotDisplay, String.valueOf(oldParticipants), String.valueOf(newParticipants)),
+            msg.getForLang("email.admin.participants.reduced.body", lang, displayLabel, String.valueOf(oldParticipants), String.valueOf(newParticipants)),
             msg.getForLang("email.admin.participants.reduced.contact", lang)
         );
     }
