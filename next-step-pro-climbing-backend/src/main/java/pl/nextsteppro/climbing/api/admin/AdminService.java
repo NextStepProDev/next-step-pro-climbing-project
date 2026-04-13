@@ -586,14 +586,8 @@ public class AdminService {
             throw new IllegalStateException(msg.get("admin.user.cannot.delete.admin"));
         }
 
-        for (Reservation reservation : reservationRepository.findByUserId(userId)) {
-            if (reservation.isConfirmed()) {
-                reservation.cancel();
-                reservationRepository.save(reservation);
-            }
-        }
-
-        authTokenRepository.deleteByUserId(userId);
+        reservationRepository.cancelConfirmedByUserId(userId);
+        authTokenRepository.deleteAllByUserId(userId);
         userRepository.delete(user);
         jwtAuthenticationFilter.evictUser(userId);
     }

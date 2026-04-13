@@ -28,5 +28,7 @@ public interface AuthTokenRepository extends JpaRepository<AuthToken, UUID> {
            "AND t.createdAt > :since AND t.usedAt IS NULL")
     boolean hasRecentUnusedToken(UUID userId, TokenType tokenType, Instant since);
 
-    void deleteByUserId(UUID userId);
+    @Modifying
+    @Query("DELETE FROM AuthToken t WHERE t.user.id = :userId")
+    void deleteAllByUserId(UUID userId);
 }

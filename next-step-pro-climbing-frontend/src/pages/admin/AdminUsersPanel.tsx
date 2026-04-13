@@ -8,6 +8,7 @@ import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
 import { QueryError } from '../../components/ui/QueryError'
 import { Button } from '../../components/ui/Button'
 import { ConfirmModal } from '../../components/ui/ConfirmModal'
+import { getErrorMessage } from '../../utils/errors'
 
 const PAGE_SIZE = 20
 
@@ -21,6 +22,7 @@ export function AdminUsersPanel() {
     userName: string
   } | null>(null)
   const queryClient = useQueryClient()
+  const [actionError, setActionError] = useState<string | null>(null)
 
   const { data: users, isLoading, isError, error, refetch } = useQuery({
     queryKey: ['admin', 'users'],
@@ -29,17 +31,20 @@ export function AdminUsersPanel() {
 
   const makeAdminMutation = useMutation({
     mutationFn: adminApi.makeAdmin,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin', 'users'] }),
+    onSuccess: () => { setActionError(null); queryClient.invalidateQueries({ queryKey: ['admin', 'users'] }) },
+    onError: (err) => setActionError(getErrorMessage(err)),
   })
 
   const removeAdminMutation = useMutation({
     mutationFn: adminApi.removeAdmin,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin', 'users'] }),
+    onSuccess: () => { setActionError(null); queryClient.invalidateQueries({ queryKey: ['admin', 'users'] }) },
+    onError: (err) => setActionError(getErrorMessage(err)),
   })
 
   const deleteUserMutation = useMutation({
     mutationFn: adminApi.deleteUser,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin', 'users'] }),
+    onSuccess: () => { setActionError(null); queryClient.invalidateQueries({ queryKey: ['admin', 'users'] }) },
+    onError: (err) => setActionError(getErrorMessage(err)),
   })
 
   const filtered = useMemo(() => {
@@ -67,6 +72,12 @@ export function AdminUsersPanel() {
 
   return (
     <div>
+      {actionError && (
+        <div className="mb-4 p-3 bg-rose-500/10 border border-rose-500/20 rounded-lg text-sm text-rose-400">
+          {actionError}
+        </div>
+      )}
+
       {/* Search */}
       <div className="relative mb-4">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-dark-500" />
