@@ -61,7 +61,7 @@
     "waitlist": {
       "join": "Join waitlist",
       "leave": "Leave queue",
-      "waiting": "You are on the waitlist (pos. {{position}})",
+      "waiting": "You are on the waitlist",
       "offerTitle": "A spot opened up — be first!",
       "offerBody": "Everyone on the waitlist was notified at the same time. First to confirm gets the spot!",
       "deadline": "Confirm by:",
@@ -97,7 +97,7 @@
       "fullLoginHint": "Log in to join the waitlist — you'll be notified if someone cancels.",
       "loginToJoin": "Log in and join the waitlist",
       "waitingTitle": "You're on the waitlist",
-      "waitingBody": "You're at position {{position}}. We'll notify you when a spot opens up.",
+      "waitingBody": "We'll notify you when a spot opens up.",
       "offerTitle": "A spot opened up — be first!",
       "offerBody": "Everyone on the waitlist was notified at the same time. First to confirm gets the spot!",
       "deadline": "Confirm by: {{deadline}}",

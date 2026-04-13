@@ -109,7 +109,6 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
   const waitlistStatus = ev.userWaitlistStatus
   const waitlistEntryId = ev.waitlistEntryId
   const confirmationDeadline = ev.confirmationDeadline
-  const waitlistPosition = ev.userWaitlistPosition
 
   const handleLoginRedirect = () => {
     saveRedirectPath('/calendar')
@@ -167,7 +166,7 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
             {t('event.waitlist.waitingTitle')}
           </p>
           <p className="text-sm text-primary-300/80">
-            {t('event.waitlist.waitingBody', { position: waitlistPosition })}
+            {t('event.waitlist.waitingBody')}
           </p>
         </div>
       )

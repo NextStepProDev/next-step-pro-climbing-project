@@ -225,6 +225,90 @@ public class WaitlistMailService {
         );
     }
 
+    @Async
+    public void sendWaitlistJoinedConfirmation(User user, TimeSlot slot) {
+        if (!user.isEmailNotificationsEnabled()) return;
+
+        String lang = user.getPreferredLanguage();
+        String subject = msg.getForLang("email.waitlist.joined.subject", lang);
+        String body = buildJoinedBody(lang, user, slot);
+
+        sendEmail(user.getEmail(), subject, body);
+    }
+
+    @Async
+    public void sendEventWaitlistJoinedConfirmation(User user, Event event) {
+        if (!user.isEmailNotificationsEnabled()) return;
+
+        String lang = user.getPreferredLanguage();
+        String subject = msg.getForLang("email.event.waitlist.joined.subject", lang);
+        String body = buildEventJoinedBody(lang, user, event);
+
+        sendEmail(user.getEmail(), subject, body);
+    }
+
+    private String buildJoinedBody(String lang, User user, TimeSlot slot) {
+        return """
+            <html>
+            <body style="font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5;">
+                <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden;">
+                    <div style="background: #0f0f1a; padding: 20px; text-align: center;">
+                        <img src="cid:logo" alt="Next Step Pro Climbing" style="height: 60px;" />
+                    </div>
+                    <div style="padding: 30px;">
+                        <h2 style="color: #1a1a2e; margin-top: 0;">%s</h2>
+                        <p style="color: #333;">%s</p>
+                        <div style="background: #1a1a2e; color: white; padding: 20px; border-radius: 8px;">
+                            <p style="margin: 0 0 8px 0;"><strong>%s</strong> %s</p>
+                            <p style="margin: 0;"><strong>%s</strong> %s - %s</p>
+                        </div>
+                        <p style="margin-top: 20px; color: #666; font-size: 14px;">%s</p>
+                    </div>
+                </div>
+            </body>
+            </html>
+            """.formatted(
+            msg.getForLang("email.waitlist.joined.greeting", lang, user.getFirstName()),
+            msg.getForLang("email.waitlist.joined.body", lang),
+            msg.getForLang("email.reservation.date", lang), slot.getDate().format(DATE_FORMAT),
+            msg.getForLang("email.reservation.time", lang), slot.getStartTime().format(TIME_FORMAT), slot.getEndTime().format(TIME_FORMAT),
+            msg.getForLang("email.reservation.team", lang)
+        );
+    }
+
+    private String buildEventJoinedBody(String lang, User user, Event event) {
+        String dates = event.getStartDate().format(DATE_FORMAT);
+        if (!event.getStartDate().equals(event.getEndDate())) {
+            dates += " - " + event.getEndDate().format(DATE_FORMAT);
+        }
+        return """
+            <html>
+            <body style="font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5;">
+                <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden;">
+                    <div style="background: #0f0f1a; padding: 20px; text-align: center;">
+                        <img src="cid:logo" alt="Next Step Pro Climbing" style="height: 60px;" />
+                    </div>
+                    <div style="padding: 30px;">
+                        <h2 style="color: #1a1a2e; margin-top: 0;">%s</h2>
+                        <p style="color: #333;">%s</p>
+                        <div style="background: #1a1a2e; color: white; padding: 20px; border-radius: 8px;">
+                            <p style="margin: 0 0 8px 0;"><strong>%s</strong></p>
+                            <p style="margin: 0;"><strong>%s</strong> %s</p>
+                        </div>
+                        <p style="margin-top: 20px; color: #666; font-size: 14px;">%s</p>
+                    </div>
+                </div>
+            </body>
+            </html>
+            """.formatted(
+            msg.getForLang("email.event.waitlist.joined.greeting", lang, user.getFirstName()),
+            msg.getForLang("email.event.waitlist.joined.body", lang),
+            event.getTitle(),
+            msg.getForLang("email.reservation.date", lang), dates,
+            msg.getForLang("email.reservation.team", lang)
+        );
+    }
+
     private void sendEmail(String to, String subject, String body) {
         try {
             var message = mailSender.createMimeMessage();
