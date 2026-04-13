@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { format } from "date-fns";
 import { Clock, Users, Calendar, Clock3 } from "lucide-react";
@@ -31,6 +31,13 @@ export function SlotDetailModal({
   const queryClient = useQueryClient();
   const [comment, setComment] = useState("");
   const [participants, setParticipants] = useState(1);
+  const [showParticipants, setShowParticipants] = useState(false);
+
+  useEffect(() => {
+    setParticipants(1);
+    setShowParticipants(false);
+    setComment("");
+  }, [slot?.id]);
 
   const reservationMutation = useMutation({
     mutationFn: (data: {
@@ -213,7 +220,16 @@ export function SlotDetailModal({
         {/* Participants & Comment for reservation */}
         {isAuthenticated && isAvailable && !slot.isUserRegistered && (
           <>
-            {spotsLeft > 1 && (
+            {spotsLeft > 1 && !showParticipants && (
+              <button
+                type="button"
+                onClick={() => setShowParticipants(true)}
+                className="text-sm text-primary-400 hover:text-primary-300 transition-colors text-left"
+              >
+                {t('slot.addMoreParticipants')} →
+              </button>
+            )}
+            {spotsLeft > 1 && showParticipants && (
               <div>
                 <label className="block text-sm text-dark-400 mb-1">
                   {t('slot.spotsLabel')}

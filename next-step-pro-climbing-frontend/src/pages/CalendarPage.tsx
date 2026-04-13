@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useMemo } from "react";
+import { useState, useCallback, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useSearchParams, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -14,7 +14,7 @@ import { CreateSlotModal } from "../components/calendar/CreateSlotModal";
 import { LoadingSpinner } from "../components/ui/LoadingSpinner";
 import { QueryError } from "../components/ui/QueryError";
 import { Phone, Mail, ExternalLink } from "lucide-react";
-import { formatAvailability, getEventColor, buildEventColorMap } from "../utils/events";
+import { formatAvailability, getEventColorForDisplay } from "../utils/events";
 import type { EventSummary } from "../types";
 
 export function CalendarPage() {
@@ -85,10 +85,6 @@ export function CalendarPage() {
     enabled: !!selectedSlotId,
   });
 
-  const monthEventColorMap = useMemo(
-    () => buildEventColorMap(monthData?.events ?? []),
-    [monthData?.events],
-  );
 
   const handleDayClick = useCallback(
     (date: string) => {
@@ -212,7 +208,7 @@ export function CalendarPage() {
           date={selectedDate}
           slots={dayData.slots}
           events={dayData.events}
-          eventColorMap={monthEventColorMap}
+
           onBack={handleBackFromDay}
           onSlotClick={handleSlotClick}
           onEventClick={setSelectedEvent}
@@ -332,9 +328,9 @@ export function CalendarPage() {
               </h3>
 
               <div className="space-y-2">
-                {monthData.events.map((event, index) => {
+                {monthData.events.map((event) => {
                   const { label, badgeClass } = formatAvailability(event);
-                  const color = getEventColor(index);
+                  const color = getEventColorForDisplay(event.eventType, event.currentParticipants >= event.maxParticipants);
                   const isFull = event.currentParticipants >= event.maxParticipants;
 
                   return (
@@ -371,6 +367,10 @@ export function CalendarPage() {
                         {event.isUserRegistered ? (
                           <span className="px-3 py-1 text-xs font-medium rounded bg-primary-500/20 text-primary-400">
                             {t('signedUp')}
+                          </span>
+                        ) : event.eventType === 'CONTACT_DAY' ? (
+                          <span className="px-3 py-1 text-xs font-medium rounded bg-rose-500/20 text-rose-400">
+                            {t('common:callPhone')}
                           </span>
                         ) : !event.enrollmentOpen ? (
                           <span className="px-3 py-1 text-xs font-medium rounded bg-dark-700 text-dark-400">

@@ -7,6 +7,7 @@ import org.springframework.transaction.annotation.Transactional;
 import pl.nextsteppro.climbing.domain.course.Course;
 import pl.nextsteppro.climbing.domain.event.Event;
 import pl.nextsteppro.climbing.domain.event.EventRepository;
+import pl.nextsteppro.climbing.domain.event.EventType;
 import pl.nextsteppro.climbing.domain.reservation.Reservation;
 import pl.nextsteppro.climbing.domain.reservation.ReservationRepository;
 import pl.nextsteppro.climbing.domain.reservation.ReservationStatus;
@@ -177,7 +178,8 @@ public class CalendarService {
             event.getStartDate(),
             event.getStartTime() != null ? event.getStartTime() : LocalTime.of(0, 0)
         );
-        boolean enrollmentOpen = eventStart.isAfter(LocalDateTime.now().plusHours(BOOKING_CUTOFF_HOURS));
+        boolean enrollmentOpen = event.getEventType() != EventType.CONTACT_DAY
+            && eventStart.isAfter(LocalDateTime.now().plusHours(BOOKING_CUTOFF_HOURS));
 
         Course course = event.getCourse();
         String title = course != null ? course.getTitle() : event.getTitle();
@@ -367,7 +369,8 @@ public class CalendarService {
             event.getStartDate(),
             event.getStartTime() != null ? event.getStartTime() : LocalTime.of(0, 0)
         );
-        boolean enrollmentOpen = eventStart.isAfter(LocalDateTime.now().plusHours(BOOKING_CUTOFF_HOURS));
+        boolean enrollmentOpen = event.getEventType() != EventType.CONTACT_DAY
+            && eventStart.isAfter(LocalDateTime.now().plusHours(BOOKING_CUTOFF_HOURS));
         Course course = event.getCourse();
         String title = course != null ? course.getTitle() : event.getTitle();
         UUID courseId = course != null ? course.getId() : null;

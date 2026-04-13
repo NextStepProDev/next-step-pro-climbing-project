@@ -43,7 +43,8 @@
   "eventTypes": {
     "COURSE": "Course",
     "TRAINING": "Training",
-    "WORKSHOP": "Workshop"
+    "WORKSHOP": "Workshop",
+    "CONTACT_DAY": "Private session"
   },
   "allDay": "All day",
   "participants_one": "{{count}} participant",

@@ -43,7 +43,8 @@
   "eventTypes": {
     "COURSE": "Curso",
     "TRAINING": "Entrenamiento",
-    "WORKSHOP": "Taller"
+    "WORKSHOP": "Taller",
+    "CONTACT_DAY": "Sesión privada"
   },
   "allDay": "Todo el día",
   "participants_one": "{{count}} participante",

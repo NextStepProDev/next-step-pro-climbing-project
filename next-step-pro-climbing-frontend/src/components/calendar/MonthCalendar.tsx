@@ -4,7 +4,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isToday, isBefore, startOfDay } from 'date-fns'
 import clsx from 'clsx'
 import type { DaySummary, EventSummary } from '../../types'
-import { buildEventColorMap, getEventColor, pluralizeTraining } from '../../utils/events'
+import { getEventColorForDisplay, pluralizeTraining } from '../../utils/events'
 import { useDateLocale } from '../../utils/dateFnsLocale'
 
 interface MonthCalendarProps {
@@ -45,8 +45,6 @@ export function MonthCalendar({ currentMonth, onMonthChange, days, events, onDay
     days.forEach((day) => map.set(day.date, day))
     return map
   }, [days])
-
-  const eventColorMap = useMemo(() => buildEventColorMap(events), [events])
 
   const dayEventsMap = useMemo(() => {
     const map = new Map<string, EventSummary[]>()
@@ -135,7 +133,7 @@ export function MonthCalendar({ currentMonth, onMonthChange, days, events, onDay
                 isPast && 'opacity-40 cursor-not-allowed',
                 isClickable && 'hover:bg-dark-800 cursor-pointer',
                 !isClickable && 'cursor-default',
-                hasEvents && !isPast && 'bg-primary-500/10'
+                hasEvents && !isPast && (dayEvents.every(e => e.eventType === 'CONTACT_DAY') ? 'bg-rose-500/10' : 'bg-primary-500/10')
               )}
             >
               <div
@@ -149,15 +147,17 @@ export function MonthCalendar({ currentMonth, onMonthChange, days, events, onDay
               </div>
 
               {dayEvents.length > 0 && !isPast && dayEvents.map((event) => {
-                const color = getEventColor(eventColorMap.get(event.id) ?? 0)
+                const color = getEventColorForDisplay(event.eventType, event.currentParticipants >= event.maxParticipants)
                 return (
                   <div key={event.id} className={clsx("text-[10px] leading-tight font-medium truncate", color.text)}>
                     {event.title}{' '}
-                    <span className={clsx(
-                      event.currentParticipants >= event.maxParticipants ? 'text-amber-400' : 'opacity-75'
-                    )}>
-                      {event.currentParticipants}/{event.maxParticipants}
-                    </span>
+                    {event.eventType !== 'CONTACT_DAY' && (
+                      <span className={clsx(
+                        event.currentParticipants >= event.maxParticipants ? 'text-amber-400' : 'opacity-75'
+                      )}>
+                        {event.currentParticipants}/{event.maxParticipants}
+                      </span>
+                    )}
                   </div>
                 )
               })}

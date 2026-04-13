@@ -46,6 +46,7 @@
     "past": "This time slot has already ended",
     "bookingClosed": "Online booking is available up to 12 hours before the slot. Contact the instructor by phone to check availability.",
     "hasReservation": "You have a reservation for this slot",
+    "addMoreParticipants": "I want to book for more than 1 person",
     "spotsLabel": "Number of spots",
     "spotsOf": "of {{count}} available",
     "commentPlaceholder": "Comment for the instructor (optional)...",
@@ -73,6 +74,7 @@
     "title": "Sign up for event",
     "bookingClosed": "Online booking is available up to 12 hours before the event. Contact the instructor by phone to check availability.",
     "hasReservation": "You have a reservation for this event",
+    "addMoreParticipants": "I want to book for more than 1 person",
     "editParticipantsLabel": "Change number of participants",
     "saveParticipants": "Save changes",
     "spotsLabel": "Number of spots",
@@ -129,6 +131,10 @@
     "title": "Can't find a suitable time?",
     "description": "Call or write to us — we'll be happy to arrange an individual session that fits your schedule.",
     "email": "Send e-mail"
+  },
+  "contactDay": {
+    "message": "Contact us to arrange a session at the climbing wall or outdoors.",
+    "cta": "Go to contact"
   },
   "availability": {
     "closed": "Bookings closed",

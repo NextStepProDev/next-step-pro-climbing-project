@@ -12,6 +12,7 @@ import { Button } from '../../components/ui/Button'
 import { Modal } from '../../components/ui/Modal'
 import { TimeScrollPicker } from '../../components/ui/TimeScrollPicker'
 import type { CreateEventRequest, EventDetail, EventType } from '../../types'
+import { getEventColorByType } from '../../utils/events'
 
 export function AdminEventsPanel() {
   const { t } = useTranslation('admin')
@@ -228,7 +229,7 @@ function EventCard({
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1 flex-wrap">
             <span className="font-medium text-dark-100">{event.title}</span>
-            <span className="px-2 py-0.5 text-xs rounded bg-primary-500/20 text-primary-400">
+            <span className={`px-2 py-0.5 text-xs rounded ${getEventColorByType(event.eventType).bg} ${getEventColorByType(event.eventType).text}`}>
               {tc(`eventTypes.${event.eventType}`)}
             </span>
             {!event.active && (
@@ -611,6 +612,7 @@ function EditEventModal({
             <option value="COURSE">{tc('eventTypes.COURSE')}</option>
             <option value="TRAINING">{tc('eventTypes.TRAINING')}</option>
             <option value="WORKSHOP">{tc('eventTypes.WORKSHOP')}</option>
+            <option value="CONTACT_DAY">{tc('eventTypes.CONTACT_DAY')}</option>
           </select>
         </div>
 
@@ -837,6 +839,7 @@ function CreateEventModal({
             <option value="COURSE">{tc('eventTypes.COURSE')}</option>
             <option value="TRAINING">{tc('eventTypes.TRAINING')}</option>
             <option value="WORKSHOP">{tc('eventTypes.WORKSHOP')}</option>
+            <option value="CONTACT_DAY">{tc('eventTypes.CONTACT_DAY')}</option>
           </select>
         </div>
 

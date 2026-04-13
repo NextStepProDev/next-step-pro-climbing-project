@@ -7,6 +7,7 @@ import { adminApi } from '../api/client'
 import { LoadingSpinner } from '../components/ui/LoadingSpinner'
 import { Button } from '../components/ui/Button'
 import { useDateLocale } from '../utils/dateFnsLocale'
+import { getEventColorByType } from '../utils/events'
 
 export function EventPage() {
   const { t } = useTranslation('calendar')
@@ -60,9 +61,14 @@ export function EventPage() {
         {/* Header */}
         <div className="p-6 border-b border-dark-800">
           <div className="flex items-center gap-2 mb-2">
-            <span className="px-2 py-1 text-xs font-medium bg-primary-500/20 text-primary-400 rounded">
-              {tc(`eventTypes.${event.eventType}`)}
-            </span>
+            {(() => {
+              const color = getEventColorByType(event.eventType)
+              return (
+                <span className={`px-2 py-1 text-xs font-medium rounded ${color.bg} ${color.text}`}>
+                  {tc(`eventTypes.${event.eventType}`)}
+                </span>
+              )
+            })()}
           </div>
           <h1 className="text-2xl font-bold text-dark-100">{event.title}</h1>
         </div>

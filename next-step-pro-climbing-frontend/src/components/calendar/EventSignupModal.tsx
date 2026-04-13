@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { format } from 'date-fns'
 import { Calendar, ExternalLink, MapPin, Users } from 'lucide-react'
@@ -26,8 +26,15 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
   const queryClient = useQueryClient()
   const [comment, setComment] = useState('')
   const [participants, setParticipants] = useState(1)
+  const [showParticipants, setShowParticipants] = useState(false)
   // null = user hasn't touched yet → falls back to freshEvent.userParticipants
   const [userEditParticipants, setUserEditParticipants] = useState<number | null>(null)
+
+  useEffect(() => {
+    setParticipants(1)
+    setShowParticipants(false)
+    setComment('')
+  }, [event?.id])
 
   // Fetch fresh event data (with waitlist status) when modal is open
   const { data: freshEvent } = useQuery({
@@ -426,7 +433,16 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
         {/* Participants & Comment for reservation */}
         {isAuthenticated && !ev.isUserRegistered && !isFull && !enrollmentClosed && (
           <>
-            {spotsLeft > 1 && (
+            {spotsLeft > 1 && !showParticipants && (
+              <button
+                type="button"
+                onClick={() => setShowParticipants(true)}
+                className="text-sm text-primary-400 hover:text-primary-300 transition-colors text-left"
+              >
+                {t('event.addMoreParticipants')} →
+              </button>
+            )}
+            {spotsLeft > 1 && showParticipants && (
               <div>
                 <label className="block text-sm text-dark-400 mb-1">{t('event.spotsLabel')}</label>
                 <div className="flex items-center gap-3">
