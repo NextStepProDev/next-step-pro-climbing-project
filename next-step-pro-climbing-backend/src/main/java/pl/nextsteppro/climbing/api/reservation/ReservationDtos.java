@@ -58,7 +58,8 @@ record UserEventReservationDto(
     int slotsCount,
     int spotsAvailable,
     Instant createdAt,
-    @Nullable UUID courseId
+    @Nullable UUID courseId,
+    boolean cancelledByAdmin
 ) {}
 
 record MyReservationsDto(

@@ -199,6 +199,7 @@ export interface UserEventReservation {
   spotsAvailable: number
   createdAt: string
   courseId: string | null
+  cancelledByAdmin: boolean
 }
 
 export interface MyReservations {

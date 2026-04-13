@@ -318,21 +318,35 @@ function UpcomingReservations({
           <h2 className="text-sm font-medium text-dark-400 uppercase tracking-wider">
             {t('events')}
           </h2>
-          {events.map((event) => (
+          {events.map((event) => {
+            const isCancelledByAdmin = event.cancelledByAdmin
+            return (
             <div
               key={event.eventId}
-              className="bg-dark-900 rounded-xl border border-dark-800 p-4 sm:p-6 cursor-pointer hover:border-dark-700 transition-colors"
+              className={
+                isCancelledByAdmin
+                  ? 'bg-rose-500/5 rounded-xl border border-rose-500/30 p-4 sm:p-6 cursor-pointer hover:border-rose-500/50 transition-colors'
+                  : 'bg-dark-900 rounded-xl border border-dark-800 p-4 sm:p-6 cursor-pointer hover:border-dark-700 transition-colors'
+              }
               onClick={() => onEventClick(event.eventId)}
             >
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-2">
-                    <span className="inline-block px-2 py-0.5 text-xs font-medium rounded bg-primary-500/20 text-primary-400">
+                    {isCancelledByAdmin ? (
+                      <Ban className="w-5 h-5 text-rose-400" />
+                    ) : null}
+                    <span className={`inline-block px-2 py-0.5 text-xs font-medium rounded ${isCancelledByAdmin ? 'bg-rose-500/20 text-rose-400' : 'bg-primary-500/20 text-primary-400'}`}>
                       {tc(`eventTypes.${event.eventType}`)}
                     </span>
                     <span className="font-medium text-dark-100">
                       {event.eventTitle}
                     </span>
+                    {isCancelledByAdmin && (
+                      <span className="inline-block px-2 py-0.5 text-xs font-medium rounded bg-rose-500/20 text-rose-400">
+                        {t('cancelledByAdmin')}
+                      </span>
+                    )}
                     {event.courseId && (
                       <Link
                         to={`/kursy#course-${event.courseId}`}
@@ -354,7 +368,7 @@ function UpcomingReservations({
                   </div>
                   <div className="flex items-center gap-2 mt-2" onClick={(e) => e.stopPropagation()}>
                     <Users className="w-4 h-4 text-dark-400 shrink-0" />
-                    {editingId === event.eventId ? (
+                    {!isCancelledByAdmin && editingId === event.eventId ? (
                       <div className="flex items-center gap-2 flex-wrap">
                         <button
                           type="button"
@@ -391,14 +405,16 @@ function UpcomingReservations({
                     ) : (
                       <div className="flex items-center gap-2">
                         <span className="text-sm text-dark-400">{t('spotsReserved', { count: event.participants })}</span>
-                        <button
-                          type="button"
-                          onClick={() => { setEditingId(event.eventId); setEditCount(event.participants) }}
-                          className="flex items-center gap-1 text-xs text-dark-500 hover:text-dark-300 transition-colors"
-                        >
-                          <Pencil className="w-3 h-3" />
-                          {t('updateParticipants.edit')}
-                        </button>
+                        {!isCancelledByAdmin && (
+                          <button
+                            type="button"
+                            onClick={() => { setEditingId(event.eventId); setEditCount(event.participants) }}
+                            className="flex items-center gap-1 text-xs text-dark-500 hover:text-dark-300 transition-colors"
+                          >
+                            <Pencil className="w-3 h-3" />
+                            {t('updateParticipants.edit')}
+                          </button>
+                        )}
                       </div>
                     )}
                   </div>
@@ -410,23 +426,26 @@ function UpcomingReservations({
                   )}
                 </div>
 
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="danger"
-                    size="sm"
-                    loading={cancelEventMutation.isPending}
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      setConfirmCancel({ type: 'event', id: event.eventId })
-                    }}
-                  >
-                    <X className="w-4 h-4 mr-1" />
-                    {t('cancelEvent')}
-                  </Button>
-                </div>
+                {!isCancelledByAdmin && (
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="danger"
+                      size="sm"
+                      loading={cancelEventMutation.isPending}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setConfirmCancel({ type: 'event', id: event.eventId })
+                      }}
+                    >
+                      <X className="w-4 h-4 mr-1" />
+                      {t('cancelEvent')}
+                    </Button>
+                  </div>
+                )}
               </div>
             </div>
-          ))}
+            )
+          })}
         </div>
       )}
 
