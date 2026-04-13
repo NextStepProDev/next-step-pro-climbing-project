@@ -4,7 +4,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pl.nextsteppro.climbing.domain.auth.AuthTokenRepository;
-import pl.nextsteppro.climbing.domain.reservation.Reservation;
 import pl.nextsteppro.climbing.domain.reservation.ReservationRepository;
 import pl.nextsteppro.climbing.domain.user.User;
 import pl.nextsteppro.climbing.domain.user.UserRepository;
@@ -86,16 +85,11 @@ public class UserService {
             throw new IllegalStateException(msg.get("user.wrong.password"));
         }
 
-        // Cancel all confirmed reservations
-        for (Reservation reservation : reservationRepository.findByUserId(userId)) {
-            if (reservation.isConfirmed()) {
-                reservation.cancel();
-                reservationRepository.save(reservation);
-            }
-        }
+        // Cancel all confirmed reservations (bulk UPDATE — avoids Hibernate session conflict with deleted parent)
+        reservationRepository.cancelConfirmedByUserId(userId);
 
-        // Remove tokens
-        authTokenRepository.deleteByUserId(userId);
+        // Remove tokens (bulk DELETE)
+        authTokenRepository.deleteAllByUserId(userId);
 
         // Delete user
         userRepository.delete(user);

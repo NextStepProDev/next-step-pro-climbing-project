@@ -49,4 +49,8 @@ public interface ReservationRepository extends JpaRepository<Reservation, UUID> 
     @Modifying
     @Query("DELETE FROM Reservation r WHERE r.timeSlot.id IN :slotIds")
     void deleteByTimeSlotIds(Collection<UUID> slotIds);
+
+    @Modifying
+    @Query("UPDATE Reservation r SET r.status = 'CANCELLED' WHERE r.user.id = :userId AND r.status = 'CONFIRMED'")
+    void cancelConfirmedByUserId(UUID userId);
 }
