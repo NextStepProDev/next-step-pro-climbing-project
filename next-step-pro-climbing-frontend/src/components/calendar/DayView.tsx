@@ -5,7 +5,7 @@ import { ArrowLeft, Clock, Calendar, Users, Plus, ExternalLink } from "lucide-re
 import { Link } from "react-router-dom";
 import clsx from "clsx";
 import type { TimeSlot, EventSummary } from "../../types";
-import { formatAvailability, getEventColorForDisplay } from "../../utils/events";
+import { formatAvailability, getEventColorByIndex } from "../../utils/events";
 import { useDateLocale } from "../../utils/dateFnsLocale";
 
 interface DayViewProps {
@@ -189,7 +189,7 @@ export function DayView({
             {events.map((event) => {
               const eventSlots = eventSlotGroups.get(event.title);
               const { label, badgeClass } = formatAvailability(event);
-              const color = getEventColorForDisplay(event.eventType, event.currentParticipants >= event.maxParticipants);
+              const color = getEventColorByIndex(event.id, event.eventType, event.currentParticipants >= event.maxParticipants);
 
               /* CONTACT_DAY — no enrollment, just info + contact prompt */
               if (event.eventType === 'CONTACT_DAY') {

@@ -4,7 +4,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { format, isToday, isBefore, startOfDay } from 'date-fns'
 import clsx from 'clsx'
 import type { WeekDay, TimeSlot, EventSummary } from '../../types'
-import { getEventColorForDisplay } from '../../utils/events'
+import { getEventColorByIndex } from '../../utils/events'
 import { useDateLocale } from '../../utils/dateFnsLocale'
 
 const HOUR_HEIGHT = 60
@@ -241,7 +241,7 @@ export function WeekCalendar({
 
                   {/* Event bars at top area */}
                   {dayEvents.map((event, eventIndex) => {
-                    const color = getEventColorForDisplay(event.eventType, event.currentParticipants >= event.maxParticipants)
+                    const color = getEventColorByIndex(event.id, event.eventType, event.currentParticipants >= event.maxParticipants)
                     return (
                       <button
                         key={event.id}
