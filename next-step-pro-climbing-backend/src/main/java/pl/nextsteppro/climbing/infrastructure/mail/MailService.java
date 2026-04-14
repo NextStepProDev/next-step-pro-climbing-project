@@ -293,15 +293,15 @@ public class MailService {
             <html>
             <body style="font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5;">
                 <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden;">
-                    <div style="background: #0f0f1a; padding: 20px; text-align: center;">
-                        <a href="%s" style="display: inline-block; text-decoration: none;"><img src="cid:logo" alt="Next Step Pro Climbing" style="height: 80px; display: block;" /></a>
+                    <div style="background: #1a1816; padding: 20px; text-align: center;">
+                        <a href="%s" style="display: inline-block; text-decoration: none; cursor: pointer; line-height: 0; font-size: 0;"><img src="cid:logo" alt="Next Step Pro Climbing" style="height: 100px; display: block; border: 0;" /></a>
                     </div>
                     <div style="padding: 30px;">
-                        <h2 style="color: #1a1a2e; margin-top: 0;">%s</h2>
+                        <h2 style="color: #312e2b; margin-top: 0;">%s</h2>
                         <div style="color: #333; line-height: 1.8;">%s</div>
                         %s
                     </div>
-                    <div style="background: #0f0f1a; padding: 15px; text-align: center; font-size: 12px; color: #888;">
+                    <div style="background: #1a1816; padding: 15px; text-align: center; font-size: 12px; color: #888;">
                         Next Step Pro Climbing
                     </div>
                 </div>
@@ -375,11 +375,11 @@ public class MailService {
             <html>
             <body style="font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5;">
                 <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden;">
-                    <div style="background: #0f0f1a; padding: 20px; text-align: center;">
-                        <a href="%s" style="display: inline-block; text-decoration: none;"><img src="cid:logo" alt="Next Step Pro Climbing" style="height: 80px; display: block;" /></a>
+                    <div style="background: #1a1816; padding: 20px; text-align: center;">
+                        <a href="%s" style="display: inline-block; text-decoration: none; cursor: pointer; line-height: 0; font-size: 0;"><img src="cid:logo" alt="Next Step Pro Climbing" style="height: 100px; display: block; border: 0;" /></a>
                     </div>
                     <div style="padding: 30px;">
-                        <h2 style="color: #1a1a2e; margin-top: 0;">%s</h2>
+                        <h2 style="color: #312e2b; margin-top: 0;">%s</h2>
                         <p style="color: #333;">%s</p>
                         <div style="background: #eff6ff; border: 1px solid #bfdbfe; padding: 20px; border-radius: 8px;">
                             <p style="margin: 0 0 6px 0;"><strong>%s</strong> %s</p>
@@ -411,11 +411,11 @@ public class MailService {
             <html>
             <body style="font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5;">
                 <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden;">
-                    <div style="background: #0f0f1a; padding: 20px; text-align: center;">
-                        <a href="%s" style="display: inline-block; text-decoration: none;"><img src="cid:logo" alt="Next Step Pro Climbing" style="height: 80px; display: block;" /></a>
+                    <div style="background: #1a1816; padding: 20px; text-align: center;">
+                        <a href="%s" style="display: inline-block; text-decoration: none; cursor: pointer; line-height: 0; font-size: 0;"><img src="cid:logo" alt="Next Step Pro Climbing" style="height: 100px; display: block; border: 0;" /></a>
                     </div>
                     <div style="padding: 30px;">
-                        <h2 style="color: #1a1a2e; margin-top: 0;">%s</h2>
+                        <h2 style="color: #312e2b; margin-top: 0;">%s</h2>
                         <p style="color: #333;">%s</p>
                         <div style="background: #eff6ff; border: 1px solid #bfdbfe; padding: 20px; border-radius: 8px;">
                             <p style="margin: 0 0 16px 0;"><strong>%s</strong> %s</p>
@@ -471,13 +471,13 @@ public class MailService {
             <html>
             <body style="font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5;">
                 <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden;">
-                    <div style="background: #0f0f1a; padding: 20px; text-align: center;">
-                        <a href="%s" style="display: inline-block; text-decoration: none;"><img src="cid:logo" alt="Next Step Pro Climbing" style="height: 80px; display: block;" /></a>
+                    <div style="background: #1a1816; padding: 20px; text-align: center;">
+                        <a href="%s" style="display: inline-block; text-decoration: none; cursor: pointer; line-height: 0; font-size: 0;"><img src="cid:logo" alt="Next Step Pro Climbing" style="height: 100px; display: block; border: 0;" /></a>
                     </div>
                     <div style="padding: 30px;">
-                        <h2 style="color: #1a1a2e; margin-top: 0;">%s</h2>
+                        <h2 style="color: #312e2b; margin-top: 0;">%s</h2>
                         <p style="color: #333;">%s</p>
-                        <div style="background: #1a1a2e; color: white; padding: 20px; border-radius: 8px;">
+                        <div style="background: #252220; color: white; padding: 20px; border-radius: 8px;">
                             <p><strong>%s</strong> %s</p>
                             <p><strong>%s</strong> %s - %s</p>
                             %s
@@ -514,11 +514,11 @@ public class MailService {
             <html>
             <body style="font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5;">
                 <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden;">
-                    <div style="background: #0f0f1a; padding: 20px; text-align: center;">
-                        <a href="%s" style="display: inline-block; text-decoration: none;"><img src="cid:logo" alt="Next Step Pro Climbing" style="height: 80px; display: block;" /></a>
+                    <div style="background: #1a1816; padding: 20px; text-align: center;">
+                        <a href="%s" style="display: inline-block; text-decoration: none; cursor: pointer; line-height: 0; font-size: 0;"><img src="cid:logo" alt="Next Step Pro Climbing" style="height: 100px; display: block; border: 0;" /></a>
                     </div>
                     <div style="padding: 30px;">
-                        <h2 style="color: #1a1a2e; margin-top: 0;">%s</h2>
+                        <h2 style="color: #312e2b; margin-top: 0;">%s</h2>
                         <div style="background: #f5f5f5; padding: 20px; border-radius: 8px;">
                             <p><strong>%s</strong> %s</p>
                             <p><strong>%s</strong> %s</p>
@@ -546,22 +546,36 @@ public class MailService {
     }
 
     private String buildCancellationBody(String lang, User user, TimeSlot slot) {
+        String titleLine = slot.getDisplayTitle() != null
+            ? "<p style=\"margin: 0 0 8px 0;\"><strong>%s</strong> %s</p>".formatted(
+                msg.getForLang("email.admin.cancel.slot.label", lang), slot.getDisplayTitle())
+            : "";
         return """
             <html>
-            <body style="font-family: Arial, sans-serif;">
-                <h2>%s</h2>
-                <p>%s</p>
-                <div style="background: #1a1a2e; color: white; padding: 20px; border-radius: 8px;">
-                    <p><strong>%s</strong> %s</p>
-                    <p><strong>%s</strong> %s - %s</p>
+            <body style="font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5;">
+                <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden;">
+                    <div style="background: #1a1816; padding: 20px; text-align: center;">
+                        <a href="%s" style="display: inline-block; text-decoration: none; cursor: pointer; line-height: 0; font-size: 0;"><img src="cid:logo" alt="Next Step Pro Climbing" style="height: 100px; display: block; border: 0;" /></a>
+                    </div>
+                    <div style="padding: 30px;">
+                        <h2 style="color: #312e2b; margin-top: 0;">%s</h2>
+                        <p style="color: #333;">%s</p>
+                        <div style="background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; padding: 20px; border-radius: 8px;">
+                            %s
+                            <p style="margin: 0 0 8px 0;"><strong>%s</strong> %s</p>
+                            <p style="margin: 0;"><strong>%s</strong> %s - %s</p>
+                        </div>
+                        <p style="margin-top: 20px; color: #333;">%s</p>
+                        <p style="color: #666; font-size: 14px;">%s</p>
+                    </div>
                 </div>
-                <p style="margin-top: 20px;">%s</p>
-                <p>%s</p>
             </body>
             </html>
             """.formatted(
+            siteUrl,
             msg.getForLang("email.cancellation.greeting", lang, user.getFirstName()),
             msg.getForLang("email.cancellation.body", lang),
+            titleLine,
             msg.getForLang("email.reservation.date", lang), slot.getDate().format(DATE_FORMAT),
             msg.getForLang("email.reservation.time", lang), slot.getStartTime().format(TIME_FORMAT), slot.getEndTime().format(TIME_FORMAT),
             msg.getForLang("email.cancellation.hope", lang),
@@ -576,13 +590,13 @@ public class MailService {
             <html>
             <body style="font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5;">
                 <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden;">
-                    <div style="background: #0f0f1a; padding: 20px; text-align: center;">
-                        <a href="%s" style="display: inline-block; text-decoration: none;"><img src="cid:logo" alt="Next Step Pro Climbing" style="height: 80px; display: block;" /></a>
+                    <div style="background: #1a1816; padding: 20px; text-align: center;">
+                        <a href="%s" style="display: inline-block; text-decoration: none; cursor: pointer; line-height: 0; font-size: 0;"><img src="cid:logo" alt="Next Step Pro Climbing" style="height: 100px; display: block; border: 0;" /></a>
                     </div>
                     <div style="padding: 30px;">
-                        <h2 style="color: #1a1a2e; margin-top: 0;">%s</h2>
+                        <h2 style="color: #312e2b; margin-top: 0;">%s</h2>
                         <p style="color: #333;">%s</p>
-                        <div style="background: #1a1a2e; color: white; padding: 20px; border-radius: 8px;">
+                        <div style="background: #252220; color: white; padding: 20px; border-radius: 8px;">
                             <p><strong>%s</strong> %s</p>
                             <p><strong>%s</strong> %s - %s</p>
                             %s
@@ -610,11 +624,11 @@ public class MailService {
             <html>
             <body style="font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5;">
                 <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden;">
-                    <div style="background: #0f0f1a; padding: 20px; text-align: center;">
-                        <a href="%s" style="display: inline-block; text-decoration: none;"><img src="cid:logo" alt="Next Step Pro Climbing" style="height: 80px; display: block;" /></a>
+                    <div style="background: #1a1816; padding: 20px; text-align: center;">
+                        <a href="%s" style="display: inline-block; text-decoration: none; cursor: pointer; line-height: 0; font-size: 0;"><img src="cid:logo" alt="Next Step Pro Climbing" style="height: 100px; display: block; border: 0;" /></a>
                     </div>
                     <div style="padding: 30px;">
-                        <h2 style="color: #1a1a2e; margin-top: 0;">%s</h2>
+                        <h2 style="color: #312e2b; margin-top: 0;">%s</h2>
                         <div style="background: #f5f5f5; padding: 20px; border-radius: 8px;">
                             <p><strong>%s</strong> %s</p>
                             <p><strong>%s</strong> %s</p>
@@ -648,11 +662,11 @@ public class MailService {
             <html>
             <body style="font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5;">
                 <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden;">
-                    <div style="background: #0f0f1a; padding: 20px; text-align: center;">
-                        <a href="%s" style="display: inline-block; text-decoration: none;"><img src="cid:logo" alt="Next Step Pro Climbing" style="height: 80px; display: block;" /></a>
+                    <div style="background: #1a1816; padding: 20px; text-align: center;">
+                        <a href="%s" style="display: inline-block; text-decoration: none; cursor: pointer; line-height: 0; font-size: 0;"><img src="cid:logo" alt="Next Step Pro Climbing" style="height: 100px; display: block; border: 0;" /></a>
                     </div>
                     <div style="padding: 30px;">
-                        <h2 style="color: #1a1a2e; margin-top: 0;">%s</h2>
+                        <h2 style="color: #312e2b; margin-top: 0;">%s</h2>
                         <p style="color: #333;">%s</p>
                         <div style="background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; padding: 20px; border-radius: 8px;">
                             %s
@@ -682,11 +696,11 @@ public class MailService {
             <html>
             <body style="font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5;">
                 <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden;">
-                    <div style="background: #0f0f1a; padding: 20px; text-align: center;">
-                        <a href="%s" style="display: inline-block; text-decoration: none;"><img src="cid:logo" alt="Next Step Pro Climbing" style="height: 80px; display: block;" /></a>
+                    <div style="background: #1a1816; padding: 20px; text-align: center;">
+                        <a href="%s" style="display: inline-block; text-decoration: none; cursor: pointer; line-height: 0; font-size: 0;"><img src="cid:logo" alt="Next Step Pro Climbing" style="height: 100px; display: block; border: 0;" /></a>
                     </div>
                     <div style="padding: 30px;">
-                        <h2 style="color: #1a1a2e; margin-top: 0;">%s</h2>
+                        <h2 style="color: #312e2b; margin-top: 0;">%s</h2>
                         <p style="color: #333;">%s</p>
                         <div style="background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; padding: 20px; border-radius: 8px;">
                             <p style="margin: 0 0 8px 0;"><strong>%s</strong> %s</p>
@@ -714,11 +728,11 @@ public class MailService {
             <html>
             <body style="font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5;">
                 <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden;">
-                    <div style="background: #0f0f1a; padding: 20px; text-align: center;">
-                        <a href="%s" style="display: inline-block; text-decoration: none;"><img src="cid:logo" alt="Next Step Pro Climbing" style="height: 80px; display: block;" /></a>
+                    <div style="background: #1a1816; padding: 20px; text-align: center;">
+                        <a href="%s" style="display: inline-block; text-decoration: none; cursor: pointer; line-height: 0; font-size: 0;"><img src="cid:logo" alt="Next Step Pro Climbing" style="height: 100px; display: block; border: 0;" /></a>
                     </div>
                     <div style="padding: 30px;">
-                        <h2 style="color: #1a1a2e; margin-top: 0;">%s</h2>
+                        <h2 style="color: #312e2b; margin-top: 0;">%s</h2>
                         <p style="color: #333;">%s</p>
                         <div style="background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; padding: 20px; border-radius: 8px;">
                             <p style="margin: 0 0 8px 0;"><strong>%s</strong> %s</p>
@@ -746,11 +760,11 @@ public class MailService {
             <html>
             <body style="font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5;">
                 <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden;">
-                    <div style="background: #0f0f1a; padding: 20px; text-align: center;">
-                        <a href="%s" style="display: inline-block; text-decoration: none;"><img src="cid:logo" alt="Next Step Pro Climbing" style="height: 80px; display: block;" /></a>
+                    <div style="background: #1a1816; padding: 20px; text-align: center;">
+                        <a href="%s" style="display: inline-block; text-decoration: none; cursor: pointer; line-height: 0; font-size: 0;"><img src="cid:logo" alt="Next Step Pro Climbing" style="height: 100px; display: block; border: 0;" /></a>
                     </div>
                     <div style="padding: 30px;">
-                        <h2 style="color: #1a1a2e; margin-top: 0;">%s</h2>
+                        <h2 style="color: #312e2b; margin-top: 0;">%s</h2>
                         <p style="color: #333;">%s</p>
                         <p style="color: #666; font-size: 14px;">%s</p>
                     </div>
@@ -770,11 +784,11 @@ public class MailService {
             <html>
             <body style="font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5;">
                 <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden;">
-                    <div style="background: #0f0f1a; padding: 20px; text-align: center;">
-                        <a href="%s" style="display: inline-block; text-decoration: none;"><img src="cid:logo" alt="Next Step Pro Climbing" style="height: 80px; display: block;" /></a>
+                    <div style="background: #1a1816; padding: 20px; text-align: center;">
+                        <a href="%s" style="display: inline-block; text-decoration: none; cursor: pointer; line-height: 0; font-size: 0;"><img src="cid:logo" alt="Next Step Pro Climbing" style="height: 100px; display: block; border: 0;" /></a>
                     </div>
                     <div style="padding: 30px;">
-                        <h2 style="color: #1a1a2e; margin-top: 0;">%s</h2>
+                        <h2 style="color: #312e2b; margin-top: 0;">%s</h2>
                         <p style="color: #333;">%s</p>
                         <p style="color: #666; font-size: 14px;">%s</p>
                     </div>
@@ -794,8 +808,8 @@ public class MailService {
             <html>
             <body style="font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5;">
                 <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden;">
-                    <div style="background: #0f0f1a; padding: 20px; text-align: center;">
-                        <a href="%s" style="display: inline-block; text-decoration: none;"><img src="cid:logo" alt="Next Step Pro Climbing" style="height: 80px; display: block;" /></a>
+                    <div style="background: #1a1816; padding: 20px; text-align: center;">
+                        <a href="%s" style="display: inline-block; text-decoration: none; cursor: pointer; line-height: 0; font-size: 0;"><img src="cid:logo" alt="Next Step Pro Climbing" style="height: 100px; display: block; border: 0;" /></a>
                     </div>
                     <div style="padding: 30px;">
                         <h2 style="color: #e11d48; margin-top: 0;">%s</h2>
@@ -826,8 +840,8 @@ public class MailService {
             <html>
             <body style="font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5;">
                 <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden;">
-                    <div style="background: #0f0f1a; padding: 20px; text-align: center;">
-                        <a href="%s" style="display: inline-block; text-decoration: none;"><img src="cid:logo" alt="Next Step Pro Climbing" style="height: 80px; display: block;" /></a>
+                    <div style="background: #1a1816; padding: 20px; text-align: center;">
+                        <a href="%s" style="display: inline-block; text-decoration: none; cursor: pointer; line-height: 0; font-size: 0;"><img src="cid:logo" alt="Next Step Pro Climbing" style="height: 100px; display: block; border: 0;" /></a>
                     </div>
                     <div style="padding: 30px;">
                         <h2 style="color: #e11d48; margin-top: 0;">%s</h2>
@@ -856,18 +870,26 @@ public class MailService {
     private String buildEventCancellationBody(String lang, User user, Event event) {
         return """
             <html>
-            <body style="font-family: Arial, sans-serif;">
-                <h2>%s</h2>
-                <p>%s</p>
-                <div style="background: #1a1a2e; color: white; padding: 20px; border-radius: 8px;">
-                    <p><strong>%s</strong> %s</p>
-                    <p><strong>%s</strong> %s - %s</p>
+            <body style="font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5;">
+                <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden;">
+                    <div style="background: #1a1816; padding: 20px; text-align: center;">
+                        <a href="%s" style="display: inline-block; text-decoration: none; cursor: pointer; line-height: 0; font-size: 0;"><img src="cid:logo" alt="Next Step Pro Climbing" style="height: 100px; display: block; border: 0;" /></a>
+                    </div>
+                    <div style="padding: 30px;">
+                        <h2 style="color: #312e2b; margin-top: 0;">%s</h2>
+                        <p style="color: #333;">%s</p>
+                        <div style="background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; padding: 20px; border-radius: 8px;">
+                            <p style="margin: 0 0 8px 0;"><strong>%s</strong> %s</p>
+                            <p style="margin: 0;"><strong>%s</strong> %s - %s</p>
+                        </div>
+                        <p style="margin-top: 20px; color: #333;">%s</p>
+                        <p style="color: #666; font-size: 14px;">%s</p>
+                    </div>
                 </div>
-                <p style="margin-top: 20px;">%s</p>
-                <p>%s</p>
             </body>
             </html>
             """.formatted(
+            siteUrl,
             msg.getForLang("email.event.cancellation.greeting", lang, user.getFirstName()),
             msg.getForLang("email.event.cancellation.body", lang),
             msg.getForLang("email.event.reservation.event", lang), event.getTitle(),

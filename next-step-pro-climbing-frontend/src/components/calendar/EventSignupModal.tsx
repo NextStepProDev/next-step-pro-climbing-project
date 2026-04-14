@@ -223,10 +223,27 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
     }
 
     if (ev.isUserRegistered) {
-      const participantsChanged = editParticipants !== ev.userParticipants && ev.userParticipants > 0
-      return (
-        <>
-          {ev.enrollmentOpen && participantsChanged && (
+      const participantsChanged = userEditParticipants !== null && editParticipants !== ev.userParticipants
+      if (ev.enrollmentOpen && participantsChanged) {
+        if (editParticipants === 0) {
+          return (
+            <>
+              <Button
+                variant="danger"
+                className="flex-1"
+                loading={cancelMutation.isPending}
+                onClick={() => cancelMutation.mutate(ev.id)}
+              >
+                {t('event.confirmCancelParticipants')}
+              </Button>
+              <Button variant="ghost" onClick={() => setUserEditParticipants(null)}>
+                {t('event.discardChanges')}
+              </Button>
+            </>
+          )
+        }
+        return (
+          <>
             <Button
               variant="primary"
               className="flex-1"
@@ -235,7 +252,14 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
             >
               {t('event.saveParticipants')}
             </Button>
-          )}
+            <Button variant="ghost" onClick={() => setUserEditParticipants(null)}>
+              {t('event.discardChanges')}
+            </Button>
+          </>
+        )
+      }
+      return (
+        <>
           <Button
             variant="danger"
             loading={cancelMutation.isPending}
@@ -402,12 +426,14 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
                 <div className="flex items-center gap-3">
                   <button
                     type="button"
-                    onClick={() => setUserEditParticipants(Math.max(1, editParticipants - 1))}
+                    onClick={() => setUserEditParticipants(Math.max(0, editParticipants - 1))}
                     className="w-9 h-9 rounded-lg bg-dark-800 border border-dark-700 text-dark-200 hover:bg-dark-700 transition-colors text-lg font-bold"
                   >
                     -
                   </button>
-                  <span className="text-lg font-semibold text-dark-100 w-8 text-center">{editParticipants}</span>
+                  <span className={`text-lg font-semibold w-8 text-center ${editParticipants === 0 ? 'text-rose-400' : 'text-dark-100'}`}>
+                    {editParticipants}
+                  </span>
                   <button
                     type="button"
                     onClick={() => setUserEditParticipants(editParticipants + 1)}
@@ -418,6 +444,9 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
                   </button>
                   <span className="text-sm text-dark-500">{t('event.spotsOf', { count: spotsLeft + ev.userParticipants })}</span>
                 </div>
+                {editParticipants === 0 && (
+                  <p className="text-sm text-rose-400/80 mt-2">{t('event.zeroParticipantsHint')}</p>
+                )}
                 {updateParticipantsMutation.isError && (
                   <p className="text-sm text-rose-400/80 mt-2">{getErrorMessage(updateParticipantsMutation.error)}</p>
                 )}

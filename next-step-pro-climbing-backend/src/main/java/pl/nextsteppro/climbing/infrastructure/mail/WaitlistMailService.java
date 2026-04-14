@@ -67,13 +67,13 @@ public class WaitlistMailService {
             <html>
             <body style="font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5;">
                 <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden;">
-                    <div style="background: #0f0f1a; padding: 20px; text-align: center;">
+                    <div style="background: #1a1816; padding: 20px; text-align: center;">
                         <a href="%s" style="display: inline-block; text-decoration: none;"><img src="cid:logo" alt="Next Step Pro Climbing" style="height: 80px; display: block;" /></a>
                     </div>
                     <div style="padding: 30px;">
-                        <h2 style="color: #1a1a2e; margin-top: 0;">%s</h2>
+                        <h2 style="color: #312e2b; margin-top: 0;">%s</h2>
                         <p style="color: #333;">%s</p>
-                        <div style="background: #1a1a2e; color: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                        <div style="background: #252220; color: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
                             <p style="margin: 0 0 8px 0;"><strong>%s</strong> %s</p>
                             <p style="margin: 0;"><strong>%s</strong> %s - %s</p>
                         </div>
@@ -105,13 +105,13 @@ public class WaitlistMailService {
             <html>
             <body style="font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5;">
                 <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden;">
-                    <div style="background: #0f0f1a; padding: 20px; text-align: center;">
+                    <div style="background: #1a1816; padding: 20px; text-align: center;">
                         <a href="%s" style="display: inline-block; text-decoration: none;"><img src="cid:logo" alt="Next Step Pro Climbing" style="height: 80px; display: block;" /></a>
                     </div>
                     <div style="padding: 30px;">
-                        <h2 style="color: #1a1a2e; margin-top: 0;">%s</h2>
+                        <h2 style="color: #312e2b; margin-top: 0;">%s</h2>
                         <p style="color: #333;">%s</p>
-                        <div style="background: #1a1a2e; color: white; padding: 20px; border-radius: 8px;">
+                        <div style="background: #252220; color: white; padding: 20px; border-radius: 8px;">
                             <p style="margin: 0 0 8px 0;"><strong>%s</strong> %s</p>
                             <p style="margin: 0;"><strong>%s</strong> %s - %s</p>
                         </div>
@@ -163,13 +163,13 @@ public class WaitlistMailService {
             <html>
             <body style="font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5;">
                 <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden;">
-                    <div style="background: #0f0f1a; padding: 20px; text-align: center;">
+                    <div style="background: #1a1816; padding: 20px; text-align: center;">
                         <a href="%s" style="display: inline-block; text-decoration: none;"><img src="cid:logo" alt="Next Step Pro Climbing" style="height: 80px; display: block;" /></a>
                     </div>
                     <div style="padding: 30px;">
-                        <h2 style="color: #1a1a2e; margin-top: 0;">%s</h2>
+                        <h2 style="color: #312e2b; margin-top: 0;">%s</h2>
                         <p style="color: #333;">%s</p>
-                        <div style="background: #1a1a2e; color: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                        <div style="background: #252220; color: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
                             <p style="margin: 0 0 8px 0;"><strong>%s</strong></p>
                             <p style="margin: 0;"><strong>%s</strong> %s</p>
                         </div>
@@ -205,13 +205,13 @@ public class WaitlistMailService {
             <html>
             <body style="font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5;">
                 <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden;">
-                    <div style="background: #0f0f1a; padding: 20px; text-align: center;">
+                    <div style="background: #1a1816; padding: 20px; text-align: center;">
                         <a href="%s" style="display: inline-block; text-decoration: none;"><img src="cid:logo" alt="Next Step Pro Climbing" style="height: 80px; display: block;" /></a>
                     </div>
                     <div style="padding: 30px;">
-                        <h2 style="color: #1a1a2e; margin-top: 0;">%s</h2>
+                        <h2 style="color: #312e2b; margin-top: 0;">%s</h2>
                         <p style="color: #333;">%s</p>
-                        <div style="background: #1a1a2e; color: white; padding: 20px; border-radius: 8px;">
+                        <div style="background: #252220; color: white; padding: 20px; border-radius: 8px;">
                             <p style="margin: 0 0 8px 0;"><strong>%s</strong></p>
                             <p style="margin: 0;"><strong>%s</strong> %s</p>
                         </div>
@@ -259,13 +259,13 @@ public class WaitlistMailService {
             <html>
             <body style="font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5;">
                 <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden;">
-                    <div style="background: #0f0f1a; padding: 20px; text-align: center;">
+                    <div style="background: #1a1816; padding: 20px; text-align: center;">
                         <a href="%s" style="display: inline-block; text-decoration: none;"><img src="cid:logo" alt="Next Step Pro Climbing" style="height: 80px; display: block;" /></a>
                     </div>
                     <div style="padding: 30px;">
-                        <h2 style="color: #1a1a2e; margin-top: 0;">%s</h2>
+                        <h2 style="color: #312e2b; margin-top: 0;">%s</h2>
                         <p style="color: #333;">%s</p>
-                        <div style="background: #1a1a2e; color: white; padding: 20px; border-radius: 8px;">
+                        <div style="background: #252220; color: white; padding: 20px; border-radius: 8px;">
                             <p style="margin: 0 0 8px 0;"><strong>%s</strong> %s</p>
                             <p style="margin: 0;"><strong>%s</strong> %s - %s</p>
                         </div>
@@ -293,13 +293,13 @@ public class WaitlistMailService {
             <html>
             <body style="font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5;">
                 <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden;">
-                    <div style="background: #0f0f1a; padding: 20px; text-align: center;">
+                    <div style="background: #1a1816; padding: 20px; text-align: center;">
                         <a href="%s" style="display: inline-block; text-decoration: none;"><img src="cid:logo" alt="Next Step Pro Climbing" style="height: 80px; display: block;" /></a>
                     </div>
                     <div style="padding: 30px;">
-                        <h2 style="color: #1a1a2e; margin-top: 0;">%s</h2>
+                        <h2 style="color: #312e2b; margin-top: 0;">%s</h2>
                         <p style="color: #333;">%s</p>
-                        <div style="background: #1a1a2e; color: white; padding: 20px; border-radius: 8px;">
+                        <div style="background: #252220; color: white; padding: 20px; border-radius: 8px;">
                             <p style="margin: 0 0 8px 0;"><strong>%s</strong></p>
                             <p style="margin: 0;"><strong>%s</strong> %s</p>
                         </div>

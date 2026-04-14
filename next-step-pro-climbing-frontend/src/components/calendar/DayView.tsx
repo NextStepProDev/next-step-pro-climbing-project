@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { format } from "date-fns";
-import { ArrowLeft, Clock, Calendar, Users, Plus, ExternalLink } from "lucide-react";
+import { ArrowLeft, Clock, Calendar, Users, Plus, ExternalLink, X } from "lucide-react";
 import { Link } from "react-router-dom";
 import clsx from "clsx";
 import type { TimeSlot, EventSummary } from "../../types";
@@ -15,6 +15,7 @@ interface DayViewProps {
   onBack: () => void;
   onSlotClick: (slotId: string) => void;
   onEventClick?: (event: EventSummary) => void;
+  onCancelEvent?: (eventId: string) => void;
   onAddSlot?: () => void;
 }
 
@@ -116,6 +117,7 @@ export function DayView({
   onBack,
   onSlotClick,
   onEventClick,
+  onCancelEvent,
   onAddSlot,
 }: DayViewProps) {
   const { t } = useTranslation('calendar');
@@ -234,9 +236,12 @@ export function DayView({
                   >
                     <div className="mb-3">
                       <div className="flex items-start justify-between gap-2">
-                        <h3 className={clsx("text-base font-semibold", color.text)}>
+                        <button
+                          onClick={() => onEventClick?.(event)}
+                          className={clsx("text-base font-semibold text-left hover:underline", color.text)}
+                        >
                           {event.title}
-                        </h3>
+                        </button>
                         {event.courseId && (
                           <Link
                             to={`/kursy#course-${event.courseId}`}
@@ -274,9 +279,18 @@ export function DayView({
                         </button>
                       )}
                       {event.isUserRegistered && (
-                        <span className="mt-2 inline-block text-sm font-medium text-primary-400">
-                          {t('signedUp')}
-                        </span>
+                        <div className="mt-2 flex items-center gap-3">
+                          <span className="text-sm font-medium text-primary-400">
+                            {t('signedUp')}
+                          </span>
+                          <button
+                            onClick={() => onCancelEvent?.(event.id)}
+                            className="flex items-center gap-1 text-xs text-rose-400 hover:text-rose-300 transition-colors"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                            {t('event.cancel')}
+                          </button>
+                        </div>
                       )}
                     </div>
 
@@ -303,9 +317,12 @@ export function DayView({
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div>
-                        <h3 className={clsx("text-base font-semibold", color.text)}>
+                        <button
+                          onClick={() => onEventClick?.(event)}
+                          className={clsx("text-base font-semibold text-left hover:underline", color.text)}
+                        >
                           {event.title}
-                        </h3>
+                        </button>
 
                         <div className="flex items-center gap-4 mt-1 text-sm text-dark-400">
                           <span className={`flex items-center gap-1 ${badgeClass}`}>
@@ -340,9 +357,18 @@ export function DayView({
                           </button>
                         )}
                         {event.isUserRegistered && (
-                          <span className="mt-2 inline-block text-sm font-medium text-primary-400">
-                            {t('signedUp')}
-                          </span>
+                          <div className="mt-2 flex items-center gap-3">
+                            <span className="text-sm font-medium text-primary-400">
+                              {t('signedUp')}
+                            </span>
+                            <button
+                              onClick={() => onCancelEvent?.(event.id)}
+                              className="flex items-center gap-1 text-xs text-rose-400 hover:text-rose-300 transition-colors"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                              {t('event.cancel')}
+                            </button>
+                          </div>
                         )}
                       </div>
                       {event.courseId && (

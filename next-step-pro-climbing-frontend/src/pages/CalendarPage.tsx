@@ -1,9 +1,9 @@
 import { useState, useCallback, useRef } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { format, startOfWeek, addWeeks, subWeeks } from "date-fns";
-import { calendarApi } from "../api/client";
+import { calendarApi, reservationApi } from "../api/client";
 import { useAuth } from "../context/AuthContext";
 import { MonthCalendar } from "../components/calendar/MonthCalendar";
 import { WeekCalendar } from "../components/calendar/WeekCalendar";
@@ -20,6 +20,7 @@ import type { EventSummary } from "../types";
 export function CalendarPage() {
   const { t } = useTranslation('calendar');
   const { isAdmin } = useAuth();
+  const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
   const [viewMode, setViewMode] = useState<'month' | 'week'>(() => {
     return searchParams.get("view") === 'week' ? 'week' : 'month';
@@ -155,6 +156,14 @@ export function CalendarPage() {
     setSelectedSlotId(null);
   }, []);
 
+  const cancelEventMutation = useMutation({
+    mutationFn: (eventId: string) => reservationApi.cancelForEvent(eventId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['calendar', 'day', selectedDate] });
+      void queryClient.invalidateQueries({ queryKey: ['reservations'] });
+    },
+  });
+
   return (
     <div className={`mx-auto px-4 sm:px-6 lg:px-8 py-8 ${viewMode === 'week' && !selectedDate ? 'max-w-6xl' : 'max-w-4xl'}`}>
       <div className="mb-8">
@@ -212,6 +221,7 @@ export function CalendarPage() {
           onBack={handleBackFromDay}
           onSlotClick={handleSlotClick}
           onEventClick={setSelectedEvent}
+          onCancelEvent={(id) => cancelEventMutation.mutate(id)}
           onAddSlot={isAdmin ? () => setShowCreateSlotModal(true) : undefined}
         />
       ) : viewMode === 'week' ? (
