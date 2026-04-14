@@ -200,7 +200,14 @@ public class MailService {
 
     @Async
     public void sendCustomAdminMail(String to, String subject, String body) {
-        String htmlBody = buildCustomAdminMailBody(subject, body);
+        String htmlBody = buildCustomAdminMailBody(subject, body, null);
+        sendEmail(to, subject, htmlBody, null);
+    }
+
+    @Async
+    public void sendNewsletterMail(String to, String subject, String body, String lang) {
+        String unsubscribeText = msg.getForLang("email.newsletter.unsubscribe", lang);
+        String htmlBody = buildCustomAdminMailBody(subject, body, unsubscribeText);
         sendEmail(to, subject, htmlBody, null);
     }
 
@@ -271,12 +278,15 @@ public class MailService {
         sendEmail(user.getEmail(), subject, body, null);
     }
 
-    private String buildCustomAdminMailBody(String subject, String body) {
+    private String buildCustomAdminMailBody(String subject, String body, @Nullable String unsubscribeText) {
         String escaped = body
             .replace("&", "&amp;")
             .replace("<", "&lt;")
             .replace(">", "&gt;");
         String htmlBody = richTextToHtml(escaped);
+        String unsubscribeSection = unsubscribeText != null
+            ? "<div style=\"margin-top: 24px; padding-top: 16px; border-top: 1px solid #e0e0e0; font-size: 12px; color: #888;\">%s</div>".formatted(unsubscribeText)
+            : "";
         return """
             <html>
             <body style="font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5;">
@@ -287,6 +297,7 @@ public class MailService {
                     <div style="padding: 30px;">
                         <h2 style="color: #1a1a2e; margin-top: 0;">%s</h2>
                         <div style="color: #333; line-height: 1.8;">%s</div>
+                        %s
                     </div>
                     <div style="background: #0f0f1a; padding: 15px; text-align: center; font-size: 12px; color: #888;">
                         Next Step Pro Climbing
@@ -294,7 +305,7 @@ public class MailService {
                 </div>
             </body>
             </html>
-            """.formatted(subject, htmlBody);
+            """.formatted(subject, htmlBody, unsubscribeSection);
     }
 
     private String richTextToHtml(String text) {

@@ -615,8 +615,13 @@ public class AdminService {
             .filter(User::isEmailVerified)
             .toList();
 
+        boolean isNewsletter = request.recipientType() == RecipientType.NEWSLETTER;
         for (User recipient : recipients) {
-            mailService.sendCustomAdminMail(recipient.getEmail(), request.subject(), request.body());
+            if (isNewsletter) {
+                mailService.sendNewsletterMail(recipient.getEmail(), request.subject(), request.body(), recipient.getPreferredLanguage());
+            } else {
+                mailService.sendCustomAdminMail(recipient.getEmail(), request.subject(), request.body());
+            }
         }
 
         return recipients.size();

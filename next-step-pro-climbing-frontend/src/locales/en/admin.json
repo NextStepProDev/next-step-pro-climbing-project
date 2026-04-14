@@ -288,6 +288,7 @@
     "actions": {
       "RESERVATION_CREATED": "New reservation",
       "RESERVATION_REACTIVATED": "Reservation reactivated",
+      "RESERVATION_UPDATED": "Participants updated",
       "RESERVATION_CANCELLED": "Reservation cancelled",
       "EVENT_RESERVATION_CREATED": "Event signup",
       "EVENT_RESERVATION_UPDATED": "Event signup updated",
