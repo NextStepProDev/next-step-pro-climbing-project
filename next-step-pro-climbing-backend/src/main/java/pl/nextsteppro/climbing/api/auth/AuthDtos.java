@@ -17,15 +17,15 @@ public final class AuthDtos {
         String password,
 
         @NotBlank(message = "{validation.firstname.required}")
-        @Size(min = 2, max = 100, message = "{validation.firstname.size}")
+        @Size(min = 3, max = 100, message = "{validation.firstname.size}")
         String firstName,
 
         @NotBlank(message = "{validation.lastname.required}")
-        @Size(min = 2, max = 100, message = "{validation.lastname.size}")
+        @Size(min = 3, max = 100, message = "{validation.lastname.size}")
         String lastName,
 
         @NotBlank(message = "{validation.phone.required}")
-        @Pattern(regexp = "^\\+?[0-9]{9,15}$", message = "{validation.phone.invalid}")
+        @Pattern(regexp = "^\\+[0-9]{1,4}[0-9]{9}$", message = "{validation.phone.invalid}")
         String phone,
 
         @Nullable Boolean newsletterSubscribed

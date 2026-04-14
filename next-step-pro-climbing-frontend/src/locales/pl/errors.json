@@ -18,7 +18,9 @@
   },
   "validation": {
     "passwordsMismatch": "Hasła nie są identyczne",
-    "passwordTooShort": "Hasło musi mieć co najmniej 8 znaków"
+    "passwordTooShort": "Hasło musi mieć co najmniej 8 znaków",
+    "phoneInvalid": "Nieprawidłowy format. Wymagany: +[kierunkowy][9 cyfr], np. +48123456789",
+    "nameTooShort": "Imię/nazwisko musi mieć co najmniej 3 znaki"
   },
   "authServer": "Błąd serwera. Spróbuj ponownie później.",
   "authGeneric": "Wystąpił błąd ({{status}}). Spróbuj ponownie."

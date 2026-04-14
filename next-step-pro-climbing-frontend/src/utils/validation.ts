@@ -1,5 +1,19 @@
 import i18n from '../i18n'
 
+export function validateName(name: string): string | null {
+  if (name.trim().length < 3) {
+    return i18n.t('validation.nameTooShort', { ns: 'errors' })
+  }
+  return null
+}
+
+export function validatePhone(phone: string): string | null {
+  if (!/^\+[0-9]{1,4}[0-9]{9}$/.test(phone)) {
+    return i18n.t('validation.phoneInvalid', { ns: 'errors' })
+  }
+  return null
+}
+
 export function validatePassword(password: string, confirmPassword: string): string | null {
   if (password !== confirmPassword) {
     return i18n.t('validation.passwordsMismatch', { ns: 'errors' })

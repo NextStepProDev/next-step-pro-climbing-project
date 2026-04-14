@@ -18,7 +18,9 @@
   },
   "validation": {
     "passwordsMismatch": "Las contraseñas no coinciden",
-    "passwordTooShort": "La contraseña debe tener al menos 8 caracteres"
+    "passwordTooShort": "La contraseña debe tener al menos 8 caracteres",
+    "phoneInvalid": "Formato inválido. Requerido: +[código de país][9 dígitos], p. ej. +48123456789",
+    "nameTooShort": "El nombre debe tener al menos 3 caracteres"
   },
   "authServer": "Error del servidor. Inténtalo de nuevo más tarde.",
   "authGeneric": "Se ha producido un error ({{status}}). Inténtalo de nuevo."

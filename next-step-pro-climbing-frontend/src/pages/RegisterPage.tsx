@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { registerUser } from '../api/auth'
-import { validatePassword } from '../utils/validation'
+import { validatePassword, validatePhone, validateName } from '../utils/validation'
 import { getErrorMessage } from '../utils/errors'
 import { Button } from '../components/ui/Button'
 import logoWhite from '../assets/logo/logo-white.png'
@@ -19,6 +19,9 @@ export function RegisterPage() {
   })
   const [newsletterSubscribed, setNewsletterSubscribed] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [firstNameError, setFirstNameError] = useState<string | null>(null)
+  const [lastNameError, setLastNameError] = useState<string | null>(null)
+  const [phoneError, setPhoneError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
   const [loading, setLoading] = useState(false)
 
@@ -27,6 +30,15 @@ export function RegisterPage() {
   }
 
   const validate = (): string | null => {
+    const fnErr = validateName(form.firstName)
+    if (fnErr) { setFirstNameError(fnErr); return fnErr }
+    setFirstNameError(null)
+    const lnErr = validateName(form.lastName)
+    if (lnErr) { setLastNameError(lnErr); return lnErr }
+    setLastNameError(null)
+    const phoneErr = validatePhone(form.phone)
+    if (phoneErr) { setPhoneError(phoneErr); return phoneErr }
+    setPhoneError(null)
     return validatePassword(form.password, form.confirmPassword)
   }
 
@@ -100,11 +112,12 @@ export function RegisterPage() {
                 id="firstName"
                 type="text"
                 required
-                minLength={2}
+                minLength={3}
                 value={form.firstName}
-                onChange={(e) => updateField('firstName', e.target.value)}
+                onChange={(e) => { updateField('firstName', e.target.value); setFirstNameError(null) }}
                 className="w-full px-3 py-2 bg-dark-800 border border-dark-700 rounded-lg text-dark-100 placeholder-dark-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               />
+              {firstNameError && <p className="text-xs text-rose-400/80 mt-1">{firstNameError}</p>}
             </div>
             <div>
               <label htmlFor="lastName" className="block text-sm font-medium text-dark-300 mb-1">
@@ -114,11 +127,12 @@ export function RegisterPage() {
                 id="lastName"
                 type="text"
                 required
-                minLength={2}
+                minLength={3}
                 value={form.lastName}
-                onChange={(e) => updateField('lastName', e.target.value)}
+                onChange={(e) => { updateField('lastName', e.target.value); setLastNameError(null) }}
                 className="w-full px-3 py-2 bg-dark-800 border border-dark-700 rounded-lg text-dark-100 placeholder-dark-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               />
+              {lastNameError && <p className="text-xs text-rose-400/80 mt-1">{lastNameError}</p>}
             </div>
           </div>
 
@@ -146,10 +160,11 @@ export function RegisterPage() {
               type="tel"
               required
               value={form.phone}
-              onChange={(e) => updateField('phone', e.target.value)}
+              onChange={(e) => { updateField('phone', e.target.value); setPhoneError(null) }}
               className="w-full px-3 py-2 bg-dark-800 border border-dark-700 rounded-lg text-dark-100 placeholder-dark-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               placeholder={t('register.phonePlaceholder')}
             />
+            {phoneError && <p className="text-xs text-rose-400/80 mt-1">{phoneError}</p>}
           </div>
 
           <div>

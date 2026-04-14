@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next'
 import { useAuth } from '../context/AuthContext'
 import { authApi } from '../api/client'
 import { getErrorMessage } from '../utils/errors'
+import { validatePhone, validateName } from '../utils/validation'
 import { Button } from '../components/ui/Button'
 import { Modal } from '../components/ui/Modal'
 
@@ -22,7 +23,7 @@ export function SettingsPage() {
     <div className="max-w-2xl mx-auto space-y-8">
       <h1 className="text-2xl font-bold text-dark-100">{t('title')}</h1>
 
-      <ProfileSection key={`${user?.firstName ?? ''}-${user?.lastName ?? ''}-${user?.phone ?? ''}-${user?.nickname ?? ''}`} user={user} onUpdated={refreshUser} />
+      <ProfileSection user={user} onUpdated={refreshUser} />
       <LanguageSection />
       <ChangePasswordSection />
       <NotificationsSection
@@ -50,8 +51,18 @@ function ProfileSection({
   const [lastName, setLastName] = useState(user?.lastName ?? '')
   const [phone, setPhone] = useState(user?.phone ?? '')
   const [nickname, setNickname] = useState(user?.nickname ?? '')
+  const [firstNameError, setFirstNameError] = useState<string | null>(null)
+  const [lastNameError, setLastNameError] = useState<string | null>(null)
+  const [phoneError, setPhoneError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
   const successTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    setFirstName(user?.firstName ?? '')
+    setLastName(user?.lastName ?? '')
+    setPhone(user?.phone ?? '')
+    setNickname(user?.nickname ?? '')
+  }, [user?.firstName, user?.lastName, user?.phone, user?.nickname])
 
   useEffect(() => {
     return () => {
@@ -83,7 +94,19 @@ function ProfileSection({
       )}
 
       <form
-        onSubmit={(e) => { e.preventDefault(); mutation.mutate() }}
+        onSubmit={(e) => {
+          e.preventDefault()
+          const fnErr = validateName(firstName)
+          if (fnErr) { setFirstNameError(fnErr); return }
+          setFirstNameError(null)
+          const lnErr = validateName(lastName)
+          if (lnErr) { setLastNameError(lnErr); return }
+          setLastNameError(null)
+          const phoneErr = validatePhone(phone)
+          if (phoneErr) { setPhoneError(phoneErr); return }
+          setPhoneError(null)
+          mutation.mutate()
+        }}
         className="space-y-4"
       >
         <div className="grid grid-cols-2 gap-4">
@@ -92,20 +115,22 @@ function ProfileSection({
             <input
               type="text"
               value={firstName}
-              onChange={(e) => setFirstName(e.target.value)}
+              onChange={(e) => { setFirstName(e.target.value); setFirstNameError(null) }}
               placeholder={t('profile.firstNamePlaceholder')}
               className="w-full bg-dark-800 border border-dark-700 rounded-lg px-4 py-2 text-dark-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
             />
+            {firstNameError && <p className="text-xs text-rose-400/80 mt-1">{firstNameError}</p>}
           </div>
           <div>
             <label className="block text-sm text-dark-400 mb-1">{t('profile.lastName')}</label>
             <input
               type="text"
               value={lastName}
-              onChange={(e) => setLastName(e.target.value)}
+              onChange={(e) => { setLastName(e.target.value); setLastNameError(null) }}
               placeholder={t('profile.lastNamePlaceholder')}
               className="w-full bg-dark-800 border border-dark-700 rounded-lg px-4 py-2 text-dark-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
             />
+            {lastNameError && <p className="text-xs text-rose-400/80 mt-1">{lastNameError}</p>}
           </div>
         </div>
         <div>
@@ -113,10 +138,11 @@ function ProfileSection({
           <input
             type="tel"
             value={phone}
-            onChange={(e) => setPhone(e.target.value)}
+            onChange={(e) => { setPhone(e.target.value); setPhoneError(null) }}
             placeholder={t('profile.phonePlaceholder')}
             className="w-full bg-dark-800 border border-dark-700 rounded-lg px-4 py-2 text-dark-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
           />
+          {phoneError && <p className="text-xs text-rose-400/80 mt-1">{phoneError}</p>}
         </div>
         <div>
           <label className="block text-sm text-dark-400 mb-1">{t('profile.nickname')}</label>

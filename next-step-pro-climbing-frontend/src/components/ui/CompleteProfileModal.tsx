@@ -6,6 +6,7 @@ import { useMutation } from '@tanstack/react-query'
 import { authApi } from '../../api/client'
 import { useAuth } from '../../context/AuthContext'
 import { getErrorMessage } from '../../utils/errors'
+import { validatePhone, validateName } from '../../utils/validation'
 import { Button } from './Button'
 
 interface Props {
@@ -20,8 +21,14 @@ export function CompleteProfileModal({ onCompleted, onClose }: Props) {
   const [firstName, setFirstName] = useState(user?.firstName ?? '')
   const [lastName, setLastName] = useState(user?.lastName ?? '')
   const [phone, setPhone] = useState(user?.phone ?? '')
+  const [firstNameError, setFirstNameError] = useState<string | null>(null)
+  const [lastNameError, setLastNameError] = useState<string | null>(null)
+  const [phoneError, setPhoneError] = useState<string | null>(null)
 
-  const canSubmit = firstName.trim() !== '' && lastName.trim() !== '' && phone.trim() !== ''
+  const canSubmit =
+    validateName(firstName) === null &&
+    validateName(lastName) === null &&
+    validatePhone(phone) === null
 
   const mutation = useMutation({
     mutationFn: () =>
@@ -53,30 +60,33 @@ export function CompleteProfileModal({ onCompleted, onClose }: Props) {
             <input
               type="text"
               value={firstName}
-              onChange={(e) => setFirstName(e.target.value)}
+              onChange={(e) => { setFirstName(e.target.value); setFirstNameError(null) }}
               placeholder={t('profile.firstNamePlaceholder')}
               className="w-full bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-dark-100 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 placeholder:text-dark-500"
             />
+            {firstNameError && <p className="text-xs text-rose-400/80 mt-1">{firstNameError}</p>}
           </div>
           <div>
             <label className="block text-sm text-dark-400 mb-1">{t('profile.lastName')}</label>
             <input
               type="text"
               value={lastName}
-              onChange={(e) => setLastName(e.target.value)}
+              onChange={(e) => { setLastName(e.target.value); setLastNameError(null) }}
               placeholder={t('profile.lastNamePlaceholder')}
               className="w-full bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-dark-100 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 placeholder:text-dark-500"
             />
+            {lastNameError && <p className="text-xs text-rose-400/80 mt-1">{lastNameError}</p>}
           </div>
           <div>
             <label className="block text-sm text-dark-400 mb-1">{t('profile.phone')}</label>
             <input
               type="tel"
               value={phone}
-              onChange={(e) => setPhone(e.target.value)}
+              onChange={(e) => { setPhone(e.target.value); setPhoneError(null) }}
               placeholder={t('profile.phonePlaceholder')}
               className="w-full bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-dark-100 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 placeholder:text-dark-500"
             />
+            {phoneError && <p className="text-xs text-rose-400/80 mt-1">{phoneError}</p>}
           </div>
         </div>
 
@@ -90,7 +100,15 @@ export function CompleteProfileModal({ onCompleted, onClose }: Props) {
             className="w-full"
             loading={mutation.isPending}
             disabled={!canSubmit}
-            onClick={() => mutation.mutate()}
+            onClick={() => {
+              const fnErr = validateName(firstName)
+              if (fnErr) { setFirstNameError(fnErr); return }
+              const lnErr = validateName(lastName)
+              if (lnErr) { setLastNameError(lnErr); return }
+              const phoneErr = validatePhone(phone)
+              if (phoneErr) { setPhoneError(phoneErr); return }
+              mutation.mutate()
+            }}
           >
             {t('completeProfile.submit')}
           </Button>
