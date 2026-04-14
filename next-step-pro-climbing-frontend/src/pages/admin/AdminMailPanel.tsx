@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { Search, X, CheckSquare, Square, Send, Users, User } from 'lucide-react'
+import { Search, X, CheckSquare, Square, Send, Users, User, Mail } from 'lucide-react'
 import { adminApi } from '../../api/client'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
 import { QueryError } from '../../components/ui/QueryError'
@@ -9,7 +9,7 @@ import { Button } from '../../components/ui/Button'
 import { ConfirmModal } from '../../components/ui/ConfirmModal'
 import { RichTextEditor } from '../../components/ui/RichTextEditor'
 
-type RecipientType = 'ALL' | 'SELECTED'
+type RecipientType = 'ALL' | 'NEWSLETTER' | 'SELECTED'
 
 export function AdminMailPanel() {
   const { t } = useTranslation('admin')
@@ -69,7 +69,7 @@ export function AdminMailPanel() {
   const canSend =
     subject.trim().length > 0 &&
     body.trim().length > 0 &&
-    (recipientType === 'ALL' || selectedIds.size > 0)
+    (recipientType === 'ALL' || recipientType === 'NEWSLETTER' || selectedIds.size > 0)
 
   const handleSend = () => {
     if (!canSend) return
@@ -117,7 +117,7 @@ export function AdminMailPanel() {
           <h3 className="font-semibold text-dark-200">{t('mail.recipientType')}</h3>
 
           {/* Type selector */}
-          <div className="flex gap-3">
+          <div className="flex flex-wrap gap-3">
             <button
               onClick={() => setRecipientType('ALL')}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
@@ -128,6 +128,17 @@ export function AdminMailPanel() {
             >
               <Users className="w-4 h-4" />
               {t('mail.allUsers')}
+            </button>
+            <button
+              onClick={() => setRecipientType('NEWSLETTER')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                recipientType === 'NEWSLETTER'
+                  ? 'bg-primary-500/20 text-primary-400 border border-primary-500/40'
+                  : 'bg-dark-700 text-dark-300 border border-dark-600 hover:border-dark-500'
+              }`}
+            >
+              <Mail className="w-4 h-4" />
+              {t('mail.newsletterUsers')}
             </button>
             <button
               onClick={() => setRecipientType('SELECTED')}
@@ -247,7 +258,9 @@ export function AdminMailPanel() {
         message={
           recipientType === 'ALL'
             ? t('mail.confirmAllMessage')
-            : t('mail.confirmMessage', { count: selectedIds.size })
+            : recipientType === 'NEWSLETTER'
+              ? t('mail.confirmNewsletterMessage')
+              : t('mail.confirmMessage', { count: selectedIds.size })
         }
       />
     </div>

@@ -327,6 +327,7 @@
     "subtitle": "Napisz wiadomość email do użytkowników systemu.",
     "recipientType": "Odbiorcy",
     "allUsers": "Wszyscy użytkownicy",
+    "newsletterUsers": "Newsletter",
     "selectedUsers": "Wybrani użytkownicy",
     "searchUsers": "Szukaj użytkowników...",
     "noUsersFound": "Brak wyników",
@@ -340,6 +341,7 @@
     "confirmTitle": "Potwierdź wysyłkę",
     "confirmMessage": "Wiadomość zostanie wysłana do {{count}} odbiorców (zweryfikowane konta). Kontynuować?",
     "confirmAllMessage": "Wiadomość zostanie wysłana do wszystkich użytkowników z zweryfikowanym adresem email. Kontynuować?",
+    "confirmNewsletterMessage": "Wiadomość zostanie wysłana do wszystkich użytkowników zapisanych na newsletter. Kontynuować?",
     "successMessage": "Wiadomość wysłana do {{count}} odbiorców.",
     "errorMessage": "Błąd podczas wysyłania wiadomości."
   },

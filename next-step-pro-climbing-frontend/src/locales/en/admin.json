@@ -327,6 +327,7 @@
     "subtitle": "Write an email message to system users.",
     "recipientType": "Recipients",
     "allUsers": "All users",
+    "newsletterUsers": "Newsletter",
     "selectedUsers": "Selected users",
     "searchUsers": "Search users...",
     "noUsersFound": "No results",
@@ -340,6 +341,7 @@
     "confirmTitle": "Confirm sending",
     "confirmMessage": "The message will be sent to {{count}} recipients (verified accounts). Continue?",
     "confirmAllMessage": "The message will be sent to all users with a verified email address. Continue?",
+    "confirmNewsletterMessage": "The message will be sent to all users subscribed to the newsletter. Continue?",
     "successMessage": "Message sent to {{count}} recipients.",
     "errorMessage": "Error sending message."
   },

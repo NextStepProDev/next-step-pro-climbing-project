@@ -411,7 +411,7 @@ export const adminApi = {
     fetchApi<void>(`/admin/users/${userId}`, { method: 'DELETE' }),
 
   // Mail
-  sendMail: (data: { recipientType: 'ALL' | 'SELECTED'; userIds?: string[]; subject: string; body: string }) =>
+  sendMail: (data: { recipientType: 'ALL' | 'NEWSLETTER' | 'SELECTED'; userIds?: string[]; subject: string; body: string }) =>
     fetchApi<{ recipientCount: number }>('/admin/mail/send', {
       method: 'POST',
       body: JSON.stringify(data),

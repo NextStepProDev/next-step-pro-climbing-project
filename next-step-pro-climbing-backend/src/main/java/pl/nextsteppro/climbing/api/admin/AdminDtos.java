@@ -195,7 +195,7 @@ record UserAdminDto(
 
 // Mail DTOs
 
-enum RecipientType { ALL, SELECTED }
+enum RecipientType { ALL, NEWSLETTER, SELECTED }
 
 record SendMailRequest(
     @NotNull RecipientType recipientType,

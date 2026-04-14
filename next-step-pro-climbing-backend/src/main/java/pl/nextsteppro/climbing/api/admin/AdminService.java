@@ -602,6 +602,8 @@ public class AdminService {
         List<User> users;
         if (request.recipientType() == RecipientType.ALL) {
             users = userRepository.findAll();
+        } else if (request.recipientType() == RecipientType.NEWSLETTER) {
+            users = userRepository.findAllByNewsletterSubscribedTrue();
         } else {
             if (request.userIds() == null || request.userIds().isEmpty()) {
                 throw new IllegalArgumentException("User IDs required for SELECTED recipient type");
