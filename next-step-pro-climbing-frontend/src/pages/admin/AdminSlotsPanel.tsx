@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { format } from 'date-fns'
-import { Plus, Lock, LockOpen, Trash2, Users, Pencil, AlertTriangle } from 'lucide-react'
-import { calendarApi, adminApi } from '../../api/client'
+import { format, parseISO } from 'date-fns'
+import { Plus, Lock, LockOpen, Trash2, Users, Pencil, AlertTriangle, X } from 'lucide-react'
+import { adminApi } from '../../api/client'
 import { getErrorMessage } from '../../utils/errors'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
 import { QueryError } from '../../components/ui/QueryError'
@@ -12,22 +12,28 @@ import { Modal } from '../../components/ui/Modal'
 import { TimeScrollPicker } from '../../components/ui/TimeScrollPicker'
 import { CreateSlotModal } from '../../components/calendar/CreateSlotModal'
 import { useDateLocale } from '../../utils/dateFnsLocale'
-import type { SlotParticipants, TimeSlot } from '../../types'
+import type { SlotParticipants, TimeSlotAdmin } from '../../types'
 
 export function AdminSlotsPanel() {
   const { t } = useTranslation('admin')
-  const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'))
+  const locale = useDateLocale()
+  const [filterDate, setFilterDate] = useState<string | null>(null)
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [showParticipantsModal, setShowParticipantsModal] = useState(false)
-  const [editingSlot, setEditingSlot] = useState<TimeSlot | null>(null)
+  const [editingSlot, setEditingSlot] = useState<TimeSlotAdmin | null>(null)
   const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null)
   const [confirmAction, setConfirmAction] = useState<{ slotId: string; action: 'block' | 'delete' } | null>(null)
 
   const queryClient = useQueryClient()
 
-  const { data: dayData, isLoading, isError, error, refetch } = useQuery({
-    queryKey: ['calendar', 'day', selectedDate],
-    queryFn: () => calendarApi.getDayView(selectedDate),
+  const invalidateSlots = () => {
+    queryClient.invalidateQueries({ queryKey: ['admin', 'slots', 'upcoming'] })
+    queryClient.invalidateQueries({ queryKey: ['calendar'] })
+  }
+
+  const { data: upcomingSlots, isLoading, isError, error, refetch } = useQuery({
+    queryKey: ['admin', 'slots', 'upcoming'],
+    queryFn: () => adminApi.getUpcomingSlots(),
   })
 
   const { data: participants } = useQuery({
@@ -45,32 +51,55 @@ export function AdminSlotsPanel() {
   const blockMutation = useMutation({
     mutationFn: ({ slotId, reason }: { slotId: string; reason?: string }) =>
       adminApi.blockTimeSlot(slotId, reason),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['calendar'] }),
+    onSuccess: invalidateSlots,
   })
 
   const unblockMutation = useMutation({
     mutationFn: adminApi.unblockTimeSlot,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['calendar'] }),
+    onSuccess: invalidateSlots,
   })
 
   const deleteMutation = useMutation({
     mutationFn: adminApi.deleteTimeSlot,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['calendar'] }),
+    onSuccess: invalidateSlots,
   })
+
+  // Filter and group slots
+  const filteredSlots = filterDate
+    ? (upcomingSlots ?? []).filter((s) => s.date === filterDate)
+    : (upcomingSlots ?? [])
+
+  const groupedByDate = filteredSlots.reduce<Record<string, TimeSlotAdmin[]>>((acc, slot) => {
+    acc[slot.date] = [...(acc[slot.date] ?? []), slot]
+    return acc
+  }, {})
+  const sortedDays = Object.keys(groupedByDate).sort()
 
   return (
     <div>
-      {/* Date selector */}
-      <div className="flex items-center gap-4 mb-6">
-        <input
-          type="date"
-          value={selectedDate}
-          onChange={(e) => {
-            setSelectedDate(e.target.value)
-            e.target.blur()
-          }}
-          className="bg-dark-800 border border-dark-700 rounded-lg px-4 py-2 text-dark-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
-        />
+      {/* Controls */}
+      <div className="flex items-center gap-3 mb-6 flex-wrap">
+        <div className="flex items-center gap-2">
+          <input
+            type="date"
+            value={filterDate ?? ''}
+            onChange={(e) => {
+              setFilterDate(e.target.value || null)
+              e.target.blur()
+            }}
+            className="bg-dark-800 border border-dark-700 rounded-lg px-4 py-2 text-dark-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
+          />
+          {filterDate && (
+            <button
+              onClick={() => setFilterDate(null)}
+              className="p-2 text-dark-400 hover:text-dark-100 transition-colors"
+              aria-label={t('slots.clearFilter')}
+              title={t('slots.clearFilter')}
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
+        </div>
         <Button onClick={() => setShowCreateModal(true)}>
           <Plus className="w-4 h-4 mr-2" />
           {t('slots.addSlot')}
@@ -82,97 +111,45 @@ export function AdminSlotsPanel() {
         <LoadingSpinner />
       ) : isError ? (
         <QueryError error={error} onRetry={() => refetch()} />
+      ) : sortedDays.length === 0 ? (
+        <div className="bg-dark-900 rounded-lg border border-dark-800 p-8 text-center text-dark-400">
+          {filterDate ? t('slots.noSlotsOnDay') : t('slots.noUpcoming')}
+        </div>
       ) : (
-        <div className="space-y-3">
-          {dayData?.slots.length === 0 ? (
-            <div className="bg-dark-900 rounded-lg border border-dark-800 p-8 text-center text-dark-400">
-              {t('slots.noSlots')}
-            </div>
-          ) : (
-            dayData?.slots.map((slot) => (
-              <div
-                key={slot.id}
-                className="bg-dark-900 rounded-lg border border-dark-800 p-4 flex items-center justify-between"
-              >
-                <div>
-                  <div className="font-medium text-dark-100">
-                    {slot.startTime.slice(0, 5)} - {slot.endTime.slice(0, 5)}
-                  </div>
-                  {slot.eventTitle && (
-                    <div className="text-sm text-primary-400">{slot.eventTitle}</div>
-                  )}
-                  <div className="text-sm text-dark-400">
-                    Status: {slot.status}
-                    {slot.isUserRegistered && ` ${t('slots.yourReservation')}`}
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    aria-label={t('slots.showParticipants')}
-                    onClick={() => {
+        <div className="space-y-6">
+          {sortedDays.map((date) => (
+            <div key={date}>
+              <h3 className="text-sm font-semibold text-dark-300 uppercase tracking-wider mb-2 px-1">
+                {format(parseISO(date), 'EEEE, d MMMM', { locale })}
+              </h3>
+              <div className="space-y-2">
+                {groupedByDate[date].map((slot) => (
+                  <SlotRow
+                    key={slot.id}
+                    slot={slot}
+                    t={t}
+                    onShowParticipants={() => {
                       setSelectedSlotId(slot.id)
                       setShowParticipantsModal(true)
                     }}
-                  >
-                    <Users className="w-4 h-4" />
-                  </Button>
-
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    aria-label={t('slots.editSlot')}
-                    onClick={() => setEditingSlot(slot)}
-                  >
-                    <Pencil className="w-4 h-4" />
-                  </Button>
-
-                  {slot.status === 'BLOCKED' ? (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      aria-label={t('slots.unblockSlot')}
-                      title={t('slots.blockedClickToUnblock')}
-                      onClick={() => unblockMutation.mutate(slot.id)}
-                      className="text-rose-400 hover:text-rose-300 hover:bg-rose-500/10"
-                    >
-                      <Lock className="w-4 h-4" />
-                    </Button>
-                  ) : (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      aria-label={t('slots.blockSlot')}
-                      title={t('slots.availableClickToBlock')}
-                      onClick={() => setConfirmAction({ slotId: slot.id, action: 'block' })}
-                    >
-                      <LockOpen className="w-4 h-4" />
-                    </Button>
-                  )}
-
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    aria-label={t('slots.deleteSlot')}
-                    onClick={() => setConfirmAction({ slotId: slot.id, action: 'delete' })}
-                  >
-                    <Trash2 className="w-4 h-4 text-rose-400/80" />
-                  </Button>
-                </div>
+                    onEdit={() => setEditingSlot(slot)}
+                    onBlock={() => setConfirmAction({ slotId: slot.id, action: 'block' })}
+                    onUnblock={() => unblockMutation.mutate(slot.id)}
+                    onDelete={() => setConfirmAction({ slotId: slot.id, action: 'delete' })}
+                  />
+                ))}
               </div>
-            ))
-          )}
+            </div>
+          ))}
         </div>
       )}
 
       {/* Create Slot Modal */}
       <CreateSlotModal
-        key={selectedDate}
+        key={filterDate ?? 'no-date'}
         isOpen={showCreateModal}
         onClose={() => setShowCreateModal(false)}
-        defaultDate={selectedDate}
+        defaultDate={filterDate ?? format(new Date(), 'yyyy-MM-dd')}
       />
 
       {/* Edit Slot Modal */}
@@ -181,6 +158,7 @@ export function AdminSlotsPanel() {
         isOpen={!!editingSlot}
         onClose={() => setEditingSlot(null)}
         slot={editingSlot}
+        onSuccess={invalidateSlots}
       />
 
       {/* Participants Modal */}
@@ -217,30 +195,123 @@ export function AdminSlotsPanel() {
   )
 }
 
+function SlotRow({
+  slot,
+  t,
+  onShowParticipants,
+  onEdit,
+  onBlock,
+  onUnblock,
+  onDelete,
+}: {
+  slot: TimeSlotAdmin
+  t: (key: string) => string
+  onShowParticipants: () => void
+  onEdit: () => void
+  onBlock: () => void
+  onUnblock: () => void
+  onDelete: () => void
+}) {
+  return (
+    <div className="bg-dark-900 rounded-lg border border-dark-800 p-4 flex items-center justify-between">
+      <div>
+        <div className="font-medium text-dark-100">
+          {slot.startTime.slice(0, 5)} – {slot.endTime.slice(0, 5)}
+        </div>
+        {slot.title && (
+          <div className="text-sm text-primary-400">{slot.title}</div>
+        )}
+        <div className="flex items-center gap-2 mt-1">
+          <span className="text-sm text-dark-400">
+            {slot.currentParticipants}/{slot.maxParticipants}
+          </span>
+          {slot.blocked && (
+            <span className="text-xs text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded-full">
+              {t('slots.statusBlocked')}
+            </span>
+          )}
+        </div>
+      </div>
+
+      <div className="flex items-center gap-2">
+        <Button
+          variant="ghost"
+          size="sm"
+          aria-label={t('slots.showParticipants')}
+          onClick={onShowParticipants}
+        >
+          <Users className="w-4 h-4" />
+        </Button>
+
+        <Button
+          variant="ghost"
+          size="sm"
+          aria-label={t('slots.editSlot')}
+          onClick={onEdit}
+        >
+          <Pencil className="w-4 h-4" />
+        </Button>
+
+        {slot.blocked ? (
+          <Button
+            variant="ghost"
+            size="sm"
+            aria-label={t('slots.unblockSlot')}
+            title={t('slots.blockedClickToUnblock')}
+            onClick={onUnblock}
+            className="text-rose-400 hover:text-rose-300 hover:bg-rose-500/10"
+          >
+            <Lock className="w-4 h-4" />
+          </Button>
+        ) : (
+          <Button
+            variant="ghost"
+            size="sm"
+            aria-label={t('slots.blockSlot')}
+            title={t('slots.availableClickToBlock')}
+            onClick={onBlock}
+          >
+            <LockOpen className="w-4 h-4" />
+          </Button>
+        )}
+
+        <Button
+          variant="ghost"
+          size="sm"
+          aria-label={t('slots.deleteSlot')}
+          onClick={onDelete}
+        >
+          <Trash2 className="w-4 h-4 text-rose-400/80" />
+        </Button>
+      </div>
+    </div>
+  )
+}
+
 function EditSlotModal({
   isOpen,
   onClose,
   slot,
+  onSuccess,
 }: {
   isOpen: boolean
   onClose: () => void
-  slot: TimeSlot | null
+  slot: TimeSlotAdmin | null
+  onSuccess: () => void
 }) {
   const { t } = useTranslation('admin')
   const [form, setForm] = useState({
     startTime: slot?.startTime.slice(0, 5) ?? '',
     endTime: slot?.endTime.slice(0, 5) ?? '',
     maxParticipants: slot?.maxParticipants ?? 4,
-    title: slot?.eventTitle ?? '',
+    title: slot?.title ?? '',
   })
-
-  const queryClient = useQueryClient()
 
   const updateMutation = useMutation({
     mutationFn: (data: { startTime?: string; endTime?: string; maxParticipants?: number; title?: string }) =>
       adminApi.updateTimeSlot(slot!.id, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['calendar'] })
+      onSuccess()
       onClose()
     },
   })
@@ -353,7 +424,7 @@ function ConfirmBlockModal({
     >
       <div className="space-y-4">
         <div className="text-sm text-dark-400">
-          {format(new Date(data.date), 'EEEE, d MMMM', { locale })} |{' '}
+          {format(parseISO(data.date), 'EEEE, d MMMM', { locale })} |{' '}
           {data.startTime.slice(0, 5)} - {data.endTime.slice(0, 5)}
         </div>
 
@@ -432,6 +503,7 @@ function ParticipantsModal({
     mutationFn: (reservationId: string) => adminApi.cancelReservationByAdmin(reservationId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'participants', slotId] })
+      queryClient.invalidateQueries({ queryKey: ['admin', 'slots', 'upcoming'] })
       queryClient.invalidateQueries({ queryKey: ['calendar'] })
       setConfirmCancelFor(null)
     },
@@ -442,6 +514,7 @@ function ParticipantsModal({
       adminApi.updateReservationParticipants(reservationId, participants),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'participants', slotId] })
+      queryClient.invalidateQueries({ queryKey: ['admin', 'slots', 'upcoming'] })
       queryClient.invalidateQueries({ queryKey: ['calendar'] })
       setEditingSpotsFor(null)
     },
@@ -451,7 +524,7 @@ function ParticipantsModal({
     <Modal isOpen={isOpen} onClose={onClose} title={t('slots.participantsTitle')}>
       <div className="space-y-4">
         <div className="text-sm text-dark-400">
-          {format(new Date(data.date), 'EEEE, d MMMM', { locale })} |{' '}
+          {format(parseISO(data.date), 'EEEE, d MMMM', { locale })} |{' '}
           {data.startTime.slice(0, 5)} - {data.endTime.slice(0, 5)}
         </div>
 

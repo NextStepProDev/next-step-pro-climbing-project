@@ -153,6 +153,10 @@
   "slots": {
     "addSlot": "Añadir franja horaria",
     "noSlots": "No hay franjas horarias para este día",
+    "noSlotsOnDay": "No hay franjas horarias para este día",
+    "noUpcoming": "No hay franjas horarias próximas",
+    "clearFilter": "Quitar filtro",
+    "statusBlocked": "Bloqueado",
     "yourReservation": "(Tu reserva)",
     "showParticipants": "Ver participantes",
     "editSlot": "Editar franja horaria",

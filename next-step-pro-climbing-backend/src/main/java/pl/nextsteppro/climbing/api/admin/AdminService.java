@@ -244,6 +244,18 @@ public class AdminService {
     }
 
     @Transactional(readOnly = true)
+    public List<TimeSlotAdminDto> getUpcomingSlots(LocalDate from) {
+        LocalDate to = from.plusDays(90);
+        List<TimeSlot> slots = timeSlotRepository.findByDateRangeOrdered(from, to).stream()
+            .filter(slot -> !slot.belongsToEvent())
+            .toList();
+        Map<UUID, Integer> countMap = buildCountMap(slots);
+        return slots.stream()
+            .map(slot -> toTimeSlotAdminDto(slot, countMap.getOrDefault(slot.getId(), 0)))
+            .toList();
+    }
+
+    @Transactional(readOnly = true)
     public SlotParticipantsDto getSlotParticipants(UUID slotId) {
         TimeSlot slot = timeSlotRepository.findById(slotId)
             .orElseThrow(() -> new IllegalArgumentException("Time slot not found"));

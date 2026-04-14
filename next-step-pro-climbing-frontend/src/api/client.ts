@@ -344,6 +344,9 @@ export const adminApi = {
   getSlotParticipants: (slotId: string) =>
     fetchApi<SlotParticipants>(`/admin/slots/${slotId}/participants`),
 
+  getUpcomingSlots: (from?: string) =>
+    fetchApi<TimeSlotAdmin[]>(`/admin/slots/upcoming${from ? `?from=${from}` : ''}`),
+
   // Events
   createEvent: (data: CreateEventRequest) =>
     fetchApi<EventDetail>('/admin/events', {
