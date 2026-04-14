@@ -190,7 +190,8 @@ record UserAdminDto(
     String email,
     String phone,
     String role,
-    Instant createdAt
+    Instant createdAt,
+    boolean newsletterSubscribed
 ) {}
 
 // Mail DTOs

@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { format } from 'date-fns'
-import { Shield, ShieldOff, Trash2, Search, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Shield, ShieldOff, Trash2, Search, ChevronLeft, ChevronRight, Mail } from 'lucide-react'
 import { adminApi } from '../../api/client'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
 import { QueryError } from '../../components/ui/QueryError'
@@ -124,7 +124,14 @@ export function AdminUsersPanel() {
                     <td className="px-4 py-3 text-dark-100">
                       {user.firstName} {user.lastName}
                     </td>
-                    <td className="px-4 py-3 text-dark-300">{user.email}</td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-dark-300">{user.email}</span>
+                        <span title={user.newsletterSubscribed ? 'Subskrybent newslettera' : 'Bez newslettera'}>
+                          <Mail className={`w-3 h-3 shrink-0 ${user.newsletterSubscribed ? 'text-emerald-400/60' : 'text-dark-600/50'}`} />
+                        </span>
+                      </div>
+                    </td>
                     <td className="px-4 py-3 text-dark-300">{user.phone || '-'}</td>
                     <td className="px-4 py-3">
                       <span
