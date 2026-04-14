@@ -14,7 +14,7 @@ import { CreateSlotModal } from "../components/calendar/CreateSlotModal";
 import { LoadingSpinner } from "../components/ui/LoadingSpinner";
 import { QueryError } from "../components/ui/QueryError";
 import { Phone, Mail, ExternalLink } from "lucide-react";
-import { formatAvailability, getEventColorForDisplay } from "../utils/events";
+import { formatAvailability, getEventColorByIndex } from "../utils/events";
 import type { EventSummary } from "../types";
 
 export function CalendarPage() {
@@ -330,8 +330,8 @@ export function CalendarPage() {
               <div className="space-y-2">
                 {monthData.events.map((event) => {
                   const { label, badgeClass } = formatAvailability(event);
-                  const color = getEventColorForDisplay(event.eventType, event.currentParticipants >= event.maxParticipants);
                   const isFull = event.currentParticipants >= event.maxParticipants;
+                  const color = getEventColorByIndex(event.id, event.eventType, isFull);
 
                   return (
                     <div
