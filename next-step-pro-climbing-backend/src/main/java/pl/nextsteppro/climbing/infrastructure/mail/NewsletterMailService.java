@@ -25,11 +25,13 @@ public class NewsletterMailService {
     private final JavaMailSender mailSender;
     private final AppConfig appConfig;
     private final MessageService msg;
+    private final String siteUrl;
 
     public NewsletterMailService(JavaMailSender mailSender, AppConfig appConfig, MessageService msg) {
         this.mailSender = mailSender;
         this.appConfig = appConfig;
         this.msg = msg;
+        this.siteUrl = appConfig.getSiteUrl();
     }
 
     @Async
@@ -79,7 +81,7 @@ public class NewsletterMailService {
             <body style="font-family: Arial, sans-serif; background-color: #0f0f1a; color: #e0e0e0; padding: 20px; margin: 0;">
                 <div style="max-width: 600px; margin: 0 auto; background-color: #1a1a2e; border-radius: 12px; overflow: hidden;">
                     <div style="text-align: center; padding: 24px 30px 0;">
-                        <img src="cid:logo" alt="Next Step Pro Climbing" style="height: 60px;" />
+                        <a href="%s" style="display: inline-block; text-decoration: none;"><img src="cid:logo" alt="Next Step Pro Climbing" style="height: 80px; display: block;" /></a>
                     </div>
                     <div style="padding: 20px 30px 30px;">
                         <h1 style="color: #3b82f6; margin-top: 16px; margin-bottom: 20px; font-size: 24px; line-height: 1.3;">
@@ -96,6 +98,7 @@ public class NewsletterMailService {
             </body>
             </html>
             """.formatted(
+                siteUrl,
                 newsUrl,
                 escapeHtml(news.getTitle()),
                 thumbnailHtml,

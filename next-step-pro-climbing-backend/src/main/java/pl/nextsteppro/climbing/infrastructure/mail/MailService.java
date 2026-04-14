@@ -30,11 +30,13 @@ public class MailService {
     private final JavaMailSender mailSender;
     private final AppConfig appConfig;
     private final MessageService msg;
+    private final String siteUrl;
 
     public MailService(JavaMailSender mailSender, AppConfig appConfig, MessageService msg) {
         this.mailSender = mailSender;
         this.appConfig = appConfig;
         this.msg = msg;
+        this.siteUrl = appConfig.getSiteUrl();
     }
 
     @PostConstruct
@@ -292,7 +294,7 @@ public class MailService {
             <body style="font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5;">
                 <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden;">
                     <div style="background: #0f0f1a; padding: 20px; text-align: center;">
-                        <img src="cid:logo" alt="Next Step Pro Climbing" style="height: 60px;" />
+                        <a href="%s" style="display: inline-block; text-decoration: none;"><img src="cid:logo" alt="Next Step Pro Climbing" style="height: 80px; display: block;" /></a>
                     </div>
                     <div style="padding: 30px;">
                         <h2 style="color: #1a1a2e; margin-top: 0;">%s</h2>
@@ -305,7 +307,7 @@ public class MailService {
                 </div>
             </body>
             </html>
-            """.formatted(subject, htmlBody, unsubscribeSection);
+            """.formatted(siteUrl, subject, htmlBody, unsubscribeSection);
     }
 
     private String richTextToHtml(String text) {
@@ -374,7 +376,7 @@ public class MailService {
             <body style="font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5;">
                 <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden;">
                     <div style="background: #0f0f1a; padding: 20px; text-align: center;">
-                        <img src="cid:logo" alt="Next Step Pro Climbing" style="height: 60px;" />
+                        <a href="%s" style="display: inline-block; text-decoration: none;"><img src="cid:logo" alt="Next Step Pro Climbing" style="height: 80px; display: block;" /></a>
                     </div>
                     <div style="padding: 30px;">
                         <h2 style="color: #1a1a2e; margin-top: 0;">%s</h2>
@@ -392,6 +394,7 @@ public class MailService {
             </body>
             </html>
             """.formatted(
+            siteUrl,
             msg.getForLang("email.slot.modified.greeting", lang, user.getFirstName()),
             msg.getForLang("email.slot.modified.body", lang),
             msg.getForLang("email.reservation.date", lang), slot.getDate().format(DATE_FORMAT),
@@ -409,7 +412,7 @@ public class MailService {
             <body style="font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5;">
                 <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden;">
                     <div style="background: #0f0f1a; padding: 20px; text-align: center;">
-                        <img src="cid:logo" alt="Next Step Pro Climbing" style="height: 60px;" />
+                        <a href="%s" style="display: inline-block; text-decoration: none;"><img src="cid:logo" alt="Next Step Pro Climbing" style="height: 80px; display: block;" /></a>
                     </div>
                     <div style="padding: 30px;">
                         <h2 style="color: #1a1a2e; margin-top: 0;">%s</h2>
@@ -426,6 +429,7 @@ public class MailService {
             </body>
             </html>
             """.formatted(
+            siteUrl,
             msg.getForLang("email.event.modified.greeting", lang, user.getFirstName()),
             msg.getForLang("email.event.modified.body", lang),
             msg.getForLang("email.event.reservation.event", lang), event.getTitle(),
@@ -446,7 +450,7 @@ public class MailService {
             helper.setText(body, true);
             helper.setFrom(appConfig.getMail().getFrom());
 
-            var logoResource = new org.springframework.core.io.ClassPathResource("static/logo/logo-black.png");
+            var logoResource = new org.springframework.core.io.ClassPathResource("static/logo/logo-white.png");
             helper.addInline("logo", logoResource, "image/png");
 
             if (icsAttachment != null) {
@@ -468,7 +472,7 @@ public class MailService {
             <body style="font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5;">
                 <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden;">
                     <div style="background: #0f0f1a; padding: 20px; text-align: center;">
-                        <img src="cid:logo" alt="Next Step Pro Climbing" style="height: 60px;" />
+                        <a href="%s" style="display: inline-block; text-decoration: none;"><img src="cid:logo" alt="Next Step Pro Climbing" style="height: 80px; display: block;" /></a>
                     </div>
                     <div style="padding: 30px;">
                         <h2 style="color: #1a1a2e; margin-top: 0;">%s</h2>
@@ -485,6 +489,7 @@ public class MailService {
             </body>
             </html>
             """.formatted(
+            siteUrl,
             msg.getForLang("email.reservation.greeting", lang, user.getFirstName()),
             msg.getForLang("email.reservation.body", lang),
             msg.getForLang("email.reservation.date", lang),
@@ -510,7 +515,7 @@ public class MailService {
             <body style="font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5;">
                 <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden;">
                     <div style="background: #0f0f1a; padding: 20px; text-align: center;">
-                        <img src="cid:logo" alt="Next Step Pro Climbing" style="height: 60px;" />
+                        <a href="%s" style="display: inline-block; text-decoration: none;"><img src="cid:logo" alt="Next Step Pro Climbing" style="height: 80px; display: block;" /></a>
                     </div>
                     <div style="padding: 30px;">
                         <h2 style="color: #1a1a2e; margin-top: 0;">%s</h2>
@@ -528,6 +533,7 @@ public class MailService {
             </body>
             </html>
             """.formatted(
+            siteUrl,
             msg.getForLang("email.admin.new.reservation", ADMIN_LANG),
             msg.getForLang("email.admin.client", ADMIN_LANG), user.getFullName(),
             msg.getForLang("email.admin.email", ADMIN_LANG), user.getEmail(),
@@ -571,7 +577,7 @@ public class MailService {
             <body style="font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5;">
                 <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden;">
                     <div style="background: #0f0f1a; padding: 20px; text-align: center;">
-                        <img src="cid:logo" alt="Next Step Pro Climbing" style="height: 60px;" />
+                        <a href="%s" style="display: inline-block; text-decoration: none;"><img src="cid:logo" alt="Next Step Pro Climbing" style="height: 80px; display: block;" /></a>
                     </div>
                     <div style="padding: 30px;">
                         <h2 style="color: #1a1a2e; margin-top: 0;">%s</h2>
@@ -588,6 +594,7 @@ public class MailService {
             </body>
             </html>
             """.formatted(
+            siteUrl,
             msg.getForLang("email.event.reservation.greeting", lang, user.getFirstName()),
             msg.getForLang("email.event.reservation.body", lang),
             msg.getForLang("email.event.reservation.event", lang), event.getTitle(),
@@ -604,7 +611,7 @@ public class MailService {
             <body style="font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5;">
                 <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden;">
                     <div style="background: #0f0f1a; padding: 20px; text-align: center;">
-                        <img src="cid:logo" alt="Next Step Pro Climbing" style="height: 60px;" />
+                        <a href="%s" style="display: inline-block; text-decoration: none;"><img src="cid:logo" alt="Next Step Pro Climbing" style="height: 80px; display: block;" /></a>
                     </div>
                     <div style="padding: 30px;">
                         <h2 style="color: #1a1a2e; margin-top: 0;">%s</h2>
@@ -621,6 +628,7 @@ public class MailService {
             </body>
             </html>
             """.formatted(
+            siteUrl,
             msg.getForLang("email.admin.event.title", ADMIN_LANG),
             msg.getForLang("email.admin.client", ADMIN_LANG), user.getFullName(),
             msg.getForLang("email.admin.email", ADMIN_LANG), user.getEmail(),
@@ -641,7 +649,7 @@ public class MailService {
             <body style="font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5;">
                 <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden;">
                     <div style="background: #0f0f1a; padding: 20px; text-align: center;">
-                        <img src="cid:logo" alt="Next Step Pro Climbing" style="height: 60px;" />
+                        <a href="%s" style="display: inline-block; text-decoration: none;"><img src="cid:logo" alt="Next Step Pro Climbing" style="height: 80px; display: block;" /></a>
                     </div>
                     <div style="padding: 30px;">
                         <h2 style="color: #1a1a2e; margin-top: 0;">%s</h2>
@@ -658,6 +666,7 @@ public class MailService {
             </body>
             </html>
             """.formatted(
+            siteUrl,
             msg.getForLang("email.admin.cancel.greeting", lang, user.getFirstName()),
             msg.getForLang("email.admin.cancel.body", lang),
             titleLine,
@@ -674,7 +683,7 @@ public class MailService {
             <body style="font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5;">
                 <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden;">
                     <div style="background: #0f0f1a; padding: 20px; text-align: center;">
-                        <img src="cid:logo" alt="Next Step Pro Climbing" style="height: 60px;" />
+                        <a href="%s" style="display: inline-block; text-decoration: none;"><img src="cid:logo" alt="Next Step Pro Climbing" style="height: 80px; display: block;" /></a>
                     </div>
                     <div style="padding: 30px;">
                         <h2 style="color: #1a1a2e; margin-top: 0;">%s</h2>
@@ -690,6 +699,7 @@ public class MailService {
             </body>
             </html>
             """.formatted(
+            siteUrl,
             msg.getForLang("email.admin.event.cancel.greeting", lang, user.getFirstName()),
             msg.getForLang("email.admin.event.cancel.body", lang),
             msg.getForLang("email.event.reservation.event", lang), event.getTitle(),
@@ -705,7 +715,7 @@ public class MailService {
             <body style="font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5;">
                 <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden;">
                     <div style="background: #0f0f1a; padding: 20px; text-align: center;">
-                        <img src="cid:logo" alt="Next Step Pro Climbing" style="height: 60px;" />
+                        <a href="%s" style="display: inline-block; text-decoration: none;"><img src="cid:logo" alt="Next Step Pro Climbing" style="height: 80px; display: block;" /></a>
                     </div>
                     <div style="padding: 30px;">
                         <h2 style="color: #1a1a2e; margin-top: 0;">%s</h2>
@@ -721,6 +731,7 @@ public class MailService {
             </body>
             </html>
             """.formatted(
+            siteUrl,
             msg.getForLang("email.admin.event.participant.removed.greeting", lang, user.getFirstName()),
             msg.getForLang("email.admin.event.participant.removed.body", lang, event.getTitle()),
             msg.getForLang("email.event.reservation.event", lang), event.getTitle(),
@@ -736,7 +747,7 @@ public class MailService {
             <body style="font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5;">
                 <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden;">
                     <div style="background: #0f0f1a; padding: 20px; text-align: center;">
-                        <img src="cid:logo" alt="Next Step Pro Climbing" style="height: 60px;" />
+                        <a href="%s" style="display: inline-block; text-decoration: none;"><img src="cid:logo" alt="Next Step Pro Climbing" style="height: 80px; display: block;" /></a>
                     </div>
                     <div style="padding: 30px;">
                         <h2 style="color: #1a1a2e; margin-top: 0;">%s</h2>
@@ -747,6 +758,7 @@ public class MailService {
             </body>
             </html>
             """.formatted(
+            siteUrl,
             msg.getForLang("email.admin.participants.reduced.greeting", lang, user.getFirstName()),
             msg.getForLang("email.admin.participants.reduced.body", lang, displayLabel, String.valueOf(oldParticipants), String.valueOf(newParticipants)),
             msg.getForLang("email.admin.participants.reduced.contact", lang)
@@ -759,7 +771,7 @@ public class MailService {
             <body style="font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5;">
                 <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden;">
                     <div style="background: #0f0f1a; padding: 20px; text-align: center;">
-                        <img src="cid:logo" alt="Next Step Pro Climbing" style="height: 60px;" />
+                        <a href="%s" style="display: inline-block; text-decoration: none;"><img src="cid:logo" alt="Next Step Pro Climbing" style="height: 80px; display: block;" /></a>
                     </div>
                     <div style="padding: 30px;">
                         <h2 style="color: #1a1a2e; margin-top: 0;">%s</h2>
@@ -770,6 +782,7 @@ public class MailService {
             </body>
             </html>
             """.formatted(
+            siteUrl,
             msg.getForLang("email.reservation.updated.greeting", lang, user.getFirstName()),
             msg.getForLang("email.reservation.updated.body", lang, displayLabel, String.valueOf(oldParticipants), String.valueOf(newParticipants)),
             msg.getForLang("email.reservation.updated.contact", lang)
@@ -782,7 +795,7 @@ public class MailService {
             <body style="font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5;">
                 <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden;">
                     <div style="background: #0f0f1a; padding: 20px; text-align: center;">
-                        <img src="cid:logo" alt="Next Step Pro Climbing" style="height: 60px;" />
+                        <a href="%s" style="display: inline-block; text-decoration: none;"><img src="cid:logo" alt="Next Step Pro Climbing" style="height: 80px; display: block;" /></a>
                     </div>
                     <div style="padding: 30px;">
                         <h2 style="color: #e11d48; margin-top: 0;">%s</h2>
@@ -798,6 +811,7 @@ public class MailService {
             </body>
             </html>
             """.formatted(
+            siteUrl,
             msg.getForLang("email.user.cancel.admin.title", ADMIN_LANG),
             msg.getForLang("email.admin.client", ADMIN_LANG), user.getFullName(),
             msg.getForLang("email.admin.email", ADMIN_LANG), user.getEmail(),
@@ -813,7 +827,7 @@ public class MailService {
             <body style="font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5;">
                 <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden;">
                     <div style="background: #0f0f1a; padding: 20px; text-align: center;">
-                        <img src="cid:logo" alt="Next Step Pro Climbing" style="height: 60px;" />
+                        <a href="%s" style="display: inline-block; text-decoration: none;"><img src="cid:logo" alt="Next Step Pro Climbing" style="height: 80px; display: block;" /></a>
                     </div>
                     <div style="padding: 30px;">
                         <h2 style="color: #e11d48; margin-top: 0;">%s</h2>
@@ -829,6 +843,7 @@ public class MailService {
             </body>
             </html>
             """.formatted(
+            siteUrl,
             msg.getForLang("email.user.event.cancel.admin.title", ADMIN_LANG),
             msg.getForLang("email.admin.client", ADMIN_LANG), user.getFullName(),
             msg.getForLang("email.admin.email", ADMIN_LANG), user.getEmail(),

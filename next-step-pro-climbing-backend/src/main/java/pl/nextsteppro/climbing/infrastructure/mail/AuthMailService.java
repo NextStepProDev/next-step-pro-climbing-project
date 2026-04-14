@@ -19,11 +19,13 @@ public class AuthMailService {
     private final JavaMailSender mailSender;
     private final AppConfig appConfig;
     private final MessageService msg;
+    private final String siteUrl;
 
     public AuthMailService(JavaMailSender mailSender, AppConfig appConfig, MessageService msg) {
         this.mailSender = mailSender;
         this.appConfig = appConfig;
         this.msg = msg;
+        this.siteUrl = appConfig.getSiteUrl();
     }
 
     @Async
@@ -98,7 +100,7 @@ public class AuthMailService {
             <body style="font-family: Arial, sans-serif; background-color: #0f0f1a; color: #e0e0e0; padding: 20px;">
                 <div style="max-width: 600px; margin: 0 auto; background-color: #1a1a2e; border-radius: 12px; overflow: hidden;">
                     <div style="text-align: center; padding: 24px 30px 0;">
-                        <img src="cid:logo" alt="Next Step Pro Climbing" style="height: 60px;" />
+                        <a href="%s" style="display: inline-block; text-decoration: none;"><img src="cid:logo" alt="Next Step Pro Climbing" style="height: 80px; display: block;" /></a>
                     </div>
                     <div style="padding: 20px 30px 30px;">
                     <h1 style="color: #3b82f6; margin-bottom: 20px;">%s</h1>
@@ -118,6 +120,7 @@ public class AuthMailService {
             </body>
             </html>
             """.formatted(
+            siteUrl,
             msg.getForLang("email.welcome.greeting", lang, firstName),
             msg.getForLang("email.welcome.body", lang),
             msg.getForLang("email.welcome.see.you", lang),
@@ -132,7 +135,7 @@ public class AuthMailService {
             <body style="font-family: Arial, sans-serif; background-color: #0f0f1a; color: #e0e0e0; padding: 20px;">
                 <div style="max-width: 600px; margin: 0 auto; background-color: #1a1a2e; border-radius: 12px; overflow: hidden;">
                     <div style="text-align: center; padding: 24px 30px 0;">
-                        <img src="cid:logo" alt="Next Step Pro Climbing" style="height: 60px;" />
+                        <a href="%s" style="display: inline-block; text-decoration: none;"><img src="cid:logo" alt="Next Step Pro Climbing" style="height: 80px; display: block;" /></a>
                     </div>
                     <div style="padding: 20px 30px 30px;">
                     <h1 style="color: #3b82f6; margin-bottom: 20px;">%s</h1>
@@ -152,6 +155,7 @@ public class AuthMailService {
             </body>
             </html>
             """.formatted(
+            siteUrl,
             msg.getForLang("email.account.deleted.greeting", lang, firstName),
             msg.getForLang("email.account.deleted.body", lang),
             msg.getForLang("email.account.deleted.contact", lang),
@@ -174,7 +178,7 @@ public class AuthMailService {
             <body style="font-family: Arial, sans-serif; background-color: #0f0f1a; color: #e0e0e0; padding: 20px;">
                 <div style="max-width: 600px; margin: 0 auto; background-color: #1a1a2e; border-radius: 12px; overflow: hidden;">
                     <div style="text-align: center; padding: 24px 30px 0;">
-                        <img src="cid:logo" alt="Next Step Pro Climbing" style="height: 60px;" />
+                        <a href="%s" style="display: inline-block; text-decoration: none;"><img src="cid:logo" alt="Next Step Pro Climbing" style="height: 80px; display: block;" /></a>
                     </div>
                     <div style="padding: 20px 30px 30px;">
                     <h1 style="color: #3b82f6; margin-bottom: 20px;">%s</h1>
@@ -213,6 +217,7 @@ public class AuthMailService {
             </body>
             </html>
             """.formatted(
+            siteUrl,
             msg.getForLang("email.verification.greeting", lang, firstName),
             msg.getForLang("email.verification.body", lang),
             msg.getForLang("email.verification.action", lang),
@@ -231,7 +236,7 @@ public class AuthMailService {
             <body style="font-family: Arial, sans-serif; background-color: #0f0f1a; color: #e0e0e0; padding: 20px;">
                 <div style="max-width: 600px; margin: 0 auto; background-color: #1a1a2e; border-radius: 12px; overflow: hidden;">
                     <div style="text-align: center; padding: 24px 30px 0;">
-                        <img src="cid:logo" alt="Next Step Pro Climbing" style="height: 60px;" />
+                        <a href="%s" style="display: inline-block; text-decoration: none;"><img src="cid:logo" alt="Next Step Pro Climbing" style="height: 80px; display: block;" /></a>
                     </div>
                     <div style="padding: 20px 30px 30px;">
                     <h1 style="color: #3b82f6; margin-bottom: 20px;">%s</h1>
@@ -270,6 +275,7 @@ public class AuthMailService {
             </body>
             </html>
             """.formatted(
+            siteUrl,
             msg.getForLang("email.reset.greeting", lang, firstName),
             msg.getForLang("email.reset.body", lang),
             msg.getForLang("email.reset.action", lang),
@@ -288,7 +294,7 @@ public class AuthMailService {
             <body style="font-family: Arial, sans-serif; background-color: #0f0f1a; color: #e0e0e0; padding: 20px;">
                 <div style="max-width: 600px; margin: 0 auto; background-color: #1a1a2e; border-radius: 12px; overflow: hidden;">
                     <div style="text-align: center; padding: 24px 30px 0;">
-                        <img src="cid:logo" alt="Next Step Pro Climbing" style="height: 60px;" />
+                        <a href="%s" style="display: inline-block; text-decoration: none;"><img src="cid:logo" alt="Next Step Pro Climbing" style="height: 80px; display: block;" /></a>
                     </div>
                     <div style="padding: 20px 30px 30px;">
                     <h1 style="color: #3b82f6; margin-bottom: 20px;">%s</h1>
@@ -308,6 +314,7 @@ public class AuthMailService {
             </body>
             </html>
             """.formatted(
+            siteUrl,
             msg.getForLang("email.password.changed.greeting", lang, firstName),
             msg.getForLang("email.password.changed.body", lang),
             msg.getForLang("email.password.changed.warning", lang),
