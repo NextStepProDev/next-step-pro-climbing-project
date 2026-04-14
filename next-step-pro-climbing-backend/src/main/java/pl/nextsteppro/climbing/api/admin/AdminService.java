@@ -571,7 +571,8 @@ public class AdminService {
                 u.getEmail(),
                 u.getPhone(),
                 u.getRole().name(),
-                u.getCreatedAt()
+                u.getCreatedAt(),
+                u.isNewsletterSubscribed()
             ))
             .toList();
     }
