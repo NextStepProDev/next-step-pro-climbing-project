@@ -13,7 +13,7 @@ public interface EventWaitlistRepository extends JpaRepository<EventWaitlist, UU
     @Query("SELECT w FROM EventWaitlist w WHERE w.user.id = :userId AND w.event.id = :eventId")
     Optional<EventWaitlist> findByUserIdAndEventId(UUID userId, UUID eventId);
 
-    @Query("SELECT w FROM EventWaitlist w WHERE w.event.id = :eventId AND w.status = 'WAITING' ORDER BY w.position ASC")
+    @Query("SELECT w FROM EventWaitlist w JOIN FETCH w.user WHERE w.event.id = :eventId AND w.status = 'WAITING' ORDER BY w.position ASC")
     List<EventWaitlist> findWaitingByEventIdOrdered(UUID eventId);
 
     @Query("SELECT w FROM EventWaitlist w JOIN FETCH w.user JOIN FETCH w.event WHERE w.event.id = :eventId AND w.status = :status ORDER BY w.position ASC")
