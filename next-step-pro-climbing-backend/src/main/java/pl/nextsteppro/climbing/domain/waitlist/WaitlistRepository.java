@@ -13,7 +13,7 @@ public interface WaitlistRepository extends JpaRepository<Waitlist, UUID> {
     @Query("SELECT w FROM Waitlist w WHERE w.user.id = :userId AND w.timeSlot.id = :slotId")
     Optional<Waitlist> findByUserIdAndSlotId(UUID userId, UUID slotId);
 
-    @Query("SELECT w FROM Waitlist w WHERE w.timeSlot.id = :slotId AND w.status = 'WAITING' ORDER BY w.position ASC")
+    @Query("SELECT w FROM Waitlist w JOIN FETCH w.user WHERE w.timeSlot.id = :slotId AND w.status = 'WAITING' ORDER BY w.position ASC")
     List<Waitlist> findWaitingBySlotIdOrdered(UUID slotId);
 
     @Query("SELECT w FROM Waitlist w JOIN FETCH w.user JOIN FETCH w.timeSlot WHERE w.timeSlot.id = :slotId AND w.status = :status ORDER BY w.position ASC")
