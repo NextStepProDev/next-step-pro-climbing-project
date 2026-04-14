@@ -24,9 +24,11 @@ interface DayViewProps {
 function SlotButton({
   slot,
   onSlotClick,
+  showTitle = false,
 }: {
   slot: TimeSlot;
   onSlotClick: (slotId: string) => void;
+  showTitle?: boolean;
 }) {
   const { t } = useTranslation('calendar');
 
@@ -52,9 +54,14 @@ function SlotButton({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Clock className="w-5 h-5 text-dark-400" />
-          <span className="font-medium text-dark-100">
-            {slot.startTime.slice(0, 5)} - {slot.endTime.slice(0, 5)}
-          </span>
+          <div>
+            <span className="font-medium text-dark-100">
+              {slot.startTime.slice(0, 5)} - {slot.endTime.slice(0, 5)}
+            </span>
+            {showTitle && slot.eventTitle && (
+              <p className="text-sm text-dark-300 mt-0.5">{slot.eventTitle}</p>
+            )}
+          </div>
         </div>
 
         <div className="flex items-center gap-2">
@@ -366,6 +373,7 @@ export function DayView({
                       key={slot.id}
                       slot={slot}
                       onSlotClick={onSlotClick}
+                      showTitle={true}
                     />
                   ))}
                 </div>

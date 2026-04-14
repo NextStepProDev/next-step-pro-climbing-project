@@ -172,9 +172,15 @@ record UserProfileDto(
 
 @Schema(description = "Dane do aktualizacji profilu")
 record UpdateProfileRequest(
-    @Schema(description = "Imię", example = "Jan") String firstName,
-    @Schema(description = "Nazwisko", example = "Kowalski") String lastName,
-    @Schema(description = "Numer telefonu", example = "+48123456789") String phone,
+    @Schema(description = "Imię", example = "Jan")
+    @jakarta.validation.constraints.Size(min = 3, max = 100, message = "{validation.firstname.size}")
+    String firstName,
+    @Schema(description = "Nazwisko", example = "Kowalski")
+    @jakarta.validation.constraints.Size(min = 3, max = 100, message = "{validation.lastname.size}")
+    String lastName,
+    @Schema(description = "Numer telefonu", example = "+48123456789")
+    @jakarta.validation.constraints.Pattern(regexp = "^\\+[0-9]{1,4}[0-9]{9}$", message = "{validation.phone.invalid}")
+    String phone,
     @Schema(description = "Nick/pseudonim", example = "Climber123") String nickname
 ) {}
 

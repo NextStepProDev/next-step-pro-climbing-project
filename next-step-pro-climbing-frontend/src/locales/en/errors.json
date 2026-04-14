@@ -18,7 +18,9 @@
   },
   "validation": {
     "passwordsMismatch": "Passwords do not match",
-    "passwordTooShort": "Password must be at least 8 characters long"
+    "passwordTooShort": "Password must be at least 8 characters long",
+    "phoneInvalid": "Invalid format. Required: +[country code][9 digits], e.g. +48123456789",
+    "nameTooShort": "Name must be at least 3 characters long"
   },
   "authServer": "Server error. Please try again later.",
   "authGeneric": "An error occurred ({{status}}). Please try again."
