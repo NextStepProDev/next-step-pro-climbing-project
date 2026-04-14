@@ -233,6 +233,7 @@ export function AdminNewsPanel() {
           {t('news.newsletterSentSuccess', { count: newsletterSentCount })}
         </div>
       )}
+
     </div>
   )
 }
@@ -446,6 +447,7 @@ function EditView({
   // ---------- Save all ----------
   const [isSaving, setIsSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
+  const [saveSuccess, setSaveSuccess] = useState(false)
 
   const handleSave = async () => {
     setIsSaving(true)
@@ -511,6 +513,8 @@ function EditView({
         }
       }
       setPendingBlocks([])
+      setSaveSuccess(true)
+      setTimeout(() => setSaveSuccess(false), 4000)
     } catch (err) {
       setSaveError(getErrorMessage(err))
     } finally {
@@ -977,6 +981,12 @@ function EditView({
           }
         }}
       />
+
+      {saveSuccess && (
+        <div className="fixed bottom-24 right-4 z-50 bg-green-900/90 border border-green-600 text-green-300 px-4 py-3 rounded-lg text-sm shadow-lg">
+          {t('news.saveSuccess')}
+        </div>
+      )}
     </div>
   )
 }
