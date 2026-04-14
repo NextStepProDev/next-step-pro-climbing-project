@@ -23,7 +23,7 @@ export function SettingsPage() {
     <div className="max-w-2xl mx-auto space-y-8">
       <h1 className="text-2xl font-bold text-dark-100">{t('title')}</h1>
 
-      <ProfileSection user={user} onUpdated={refreshUser} />
+      <ProfileSection key={user?.id ?? ''} user={user} onUpdated={refreshUser} />
       <LanguageSection />
       <ChangePasswordSection />
       <NotificationsSection
@@ -56,13 +56,6 @@ function ProfileSection({
   const [phoneError, setPhoneError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
   const successTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-
-  useEffect(() => {
-    setFirstName(user?.firstName ?? '')
-    setLastName(user?.lastName ?? '')
-    setPhone(user?.phone ?? '')
-    setNickname(user?.nickname ?? '')
-  }, [user?.firstName, user?.lastName, user?.phone, user?.nickname])
 
   useEffect(() => {
     return () => {
