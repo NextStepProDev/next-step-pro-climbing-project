@@ -164,6 +164,9 @@ public class ReservationService {
 
         // Jeśli ktoś czeka na liście oczekujących, powiadamiamy wszystkich jednocześnie
         waitlistService.notifyAll(slot.getId());
+        if (slot.belongsToEvent()) {
+            eventWaitlistService.notifyAll(slot.getEvent().getId());
+        }
     }
 
     @Transactional(readOnly = true)
@@ -426,6 +429,9 @@ public class ReservationService {
 
         // Jeśli ktoś czeka na liście oczekujących, powiadamiamy wszystkich jednocześnie
         eventWaitlistService.notifyAll(eventId);
+        for (UUID slotId : cancelledSlotIds) {
+            waitlistService.notifyAll(slotId);
+        }
     }
 
     @Caching(evict = {
