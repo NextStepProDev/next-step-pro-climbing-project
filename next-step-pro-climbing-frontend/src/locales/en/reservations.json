@@ -8,7 +8,7 @@
   },
   "events": "Events",
   "trainings": "Training sessions",
-  "cancelEvent": "Cancel reservation",
+  "cancelEvent": "Cancel",
   "cancelSlot": "Cancel",
   "archive": "Archive",
   "noPastReservations": "No past reservations.",
