@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { format } from "date-fns";
 import { Clock, Users, Calendar, Clock3 } from "lucide-react";
@@ -6,6 +6,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { Modal } from "../ui/Modal";
 import { Button } from "../ui/Button";
+import { CompleteProfileModal } from "../ui/CompleteProfileModal";
 import { useAuth } from "../../context/AuthContext";
 import { saveRedirectPath } from "../../utils/redirect";
 import { reservationApi } from "../../api/client";
@@ -26,12 +27,23 @@ export function SlotDetailModal({
 }: SlotDetailModalProps) {
   const { t } = useTranslation('calendar');
   const locale = useDateLocale();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [comment, setComment] = useState("");
   const [participants, setParticipants] = useState(1);
   const [showParticipants, setShowParticipants] = useState(false);
+  const [showCompleteProfile, setShowCompleteProfile] = useState(false);
+  const pendingAction = useRef<(() => void) | null>(null);
+
+  const requireProfile = (action: () => void) => {
+    if (user?.firstName && user?.lastName && user?.phone) {
+      action();
+    } else {
+      pendingAction.current = action;
+      setShowCompleteProfile(true);
+    }
+  };
 
 
   const reservationMutation = useMutation({
@@ -109,6 +121,7 @@ export function SlotDetailModal({
   };
 
   return (
+    <>
     <Modal isOpen={isOpen} onClose={onClose} title={t('slot.title')}>
       <div className="space-y-6">
         {/* Date and time */}
@@ -289,7 +302,7 @@ export function SlotDetailModal({
                 variant="primary"
                 className="flex-1"
                 loading={confirmOfferMutation.isPending}
-                onClick={() => confirmOfferMutation.mutate(slot.waitlistEntryId as string)}
+                onClick={() => requireProfile(() => confirmOfferMutation.mutate(slot.waitlistEntryId as string))}
               >
                 {t('slot.waitlist.confirm')}
               </Button>
@@ -327,11 +340,13 @@ export function SlotDetailModal({
               className="flex-1"
               loading={reservationMutation.isPending}
               onClick={() =>
-                reservationMutation.mutate({
-                  slotId: slot.id,
-                  comment: comment || undefined,
-                  participants,
-                })
+                requireProfile(() =>
+                  reservationMutation.mutate({
+                    slotId: slot.id,
+                    comment: comment || undefined,
+                    participants,
+                  })
+                )
               }
             >
               {participants > 1 ? t('slot.bookMultiple', { count: participants }) : t('slot.bookSingle')}
@@ -341,7 +356,7 @@ export function SlotDetailModal({
               variant="secondary"
               className="flex-1"
               loading={joinWaitlistMutation.isPending}
-              onClick={() => joinWaitlistMutation.mutate(slot.id)}
+              onClick={() => requireProfile(() => joinWaitlistMutation.mutate(slot.id))}
             >
               {t('slot.waitlist.join')}
             </Button>
@@ -378,5 +393,20 @@ export function SlotDetailModal({
         )}
       </div>
     </Modal>
+
+    {showCompleteProfile && (
+      <CompleteProfileModal
+        onCompleted={() => {
+          setShowCompleteProfile(false);
+          pendingAction.current?.();
+          pendingAction.current = null;
+        }}
+        onClose={() => {
+          setShowCompleteProfile(false);
+          pendingAction.current = null;
+        }}
+      />
+    )}
+    </>
   );
 }

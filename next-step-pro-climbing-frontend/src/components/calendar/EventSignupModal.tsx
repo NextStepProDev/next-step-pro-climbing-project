@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { format } from 'date-fns'
 import { Calendar, ExternalLink, MapPin, Users } from 'lucide-react'
@@ -6,6 +6,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, useNavigate } from 'react-router-dom'
 import { Modal } from '../ui/Modal'
 import { Button } from '../ui/Button'
+import { CompleteProfileModal } from '../ui/CompleteProfileModal'
 import { useAuth } from '../../context/AuthContext'
 import { saveRedirectPath } from '../../utils/redirect'
 import { calendarApi, reservationApi } from '../../api/client'
@@ -21,7 +22,7 @@ interface EventSignupModalProps {
 export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalProps) {
   const { t } = useTranslation('calendar')
   const { t: tc } = useTranslation('common')
-  const { isAuthenticated } = useAuth()
+  const { isAuthenticated, user } = useAuth()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [comment, setComment] = useState('')
@@ -29,6 +30,17 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
   const [showParticipants, setShowParticipants] = useState(false)
   // null = user hasn't touched yet → falls back to freshEvent.userParticipants
   const [userEditParticipants, setUserEditParticipants] = useState<number | null>(null)
+  const [showCompleteProfile, setShowCompleteProfile] = useState(false)
+  const pendingAction = useRef<(() => void) | null>(null)
+
+  const requireProfile = (action: () => void) => {
+    if (user?.firstName && user?.lastName && user?.phone) {
+      action()
+    } else {
+      pendingAction.current = action
+      setShowCompleteProfile(true)
+    }
+  }
 
 
   // Fetch fresh event data (with waitlist status) when modal is open
@@ -244,7 +256,7 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
               variant="primary"
               className="flex-1"
               loading={confirmOfferMutation.isPending}
-              onClick={() => confirmOfferMutation.mutate(waitlistEntryId)}
+              onClick={() => requireProfile(() => confirmOfferMutation.mutate(waitlistEntryId))}
             >
               {t('event.waitlist.confirmOffer')}
             </Button>
@@ -282,7 +294,7 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
             variant="secondary"
             className="flex-1"
             loading={joinWaitlistMutation.isPending}
-            onClick={() => joinWaitlistMutation.mutate(ev.id)}
+            onClick={() => requireProfile(() => joinWaitlistMutation.mutate(ev.id))}
           >
             {t('event.waitlist.join')}
           </Button>
@@ -298,11 +310,11 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
           variant="primary"
           className="flex-1"
           loading={reservationMutation.isPending}
-          onClick={() => reservationMutation.mutate({
+          onClick={() => requireProfile(() => reservationMutation.mutate({
             eventId: ev.id,
             comment: comment || undefined,
             participants,
-          })}
+          }))}
         >
           {participants > 1 ? t('event.bookMultiple', { count: participants }) : t('event.bookSingle')}
         </Button>
@@ -312,6 +324,7 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
   }
 
   return (
+    <>
     <Modal isOpen={isOpen} onClose={onClose} title={t('event.title')}>
       <div className="space-y-6">
         {/* Event type badge */}
@@ -497,5 +510,20 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
         )}
       </div>
     </Modal>
+
+    {showCompleteProfile && (
+      <CompleteProfileModal
+        onCompleted={() => {
+          setShowCompleteProfile(false)
+          pendingAction.current?.()
+          pendingAction.current = null
+        }}
+        onClose={() => {
+          setShowCompleteProfile(false)
+          pendingAction.current = null
+        }}
+      />
+    )}
+    </>
   )
 }
