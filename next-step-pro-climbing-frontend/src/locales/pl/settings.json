@@ -41,6 +41,12 @@
     "label": "Subskrypcja newslettera",
     "description": "Aktualności, nowe kursy i oferty specjalne"
   },
+  "completeProfile": {
+    "title": "Uzupełnij dane profilu",
+    "description": "Aby zarezerwować miejsce, uzupełnij swoje dane kontaktowe. Instruktor będzie mógł się z Tobą skontaktować.",
+    "submit": "Zapisz i kontynuuj",
+    "cancel": "Anuluj"
+  },
   "deleteAccount": {
     "title": "Usuwanie konta",
     "description": "Ta operacja jest nieodwracalna. Wszystkie Twoje rezerwacje zostaną anulowane, a dane konta trwale usunięte.",

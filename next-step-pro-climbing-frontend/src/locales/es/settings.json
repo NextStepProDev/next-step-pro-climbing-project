@@ -41,6 +41,12 @@
     "label": "Suscripción al boletín",
     "description": "Noticias, nuevos cursos y ofertas especiales"
   },
+  "completeProfile": {
+    "title": "Completa tu perfil",
+    "description": "Para hacer una reserva, completa tus datos de contacto. El instructor podrá ponerse en contacto contigo.",
+    "submit": "Guardar y continuar",
+    "cancel": "Cancelar"
+  },
   "deleteAccount": {
     "title": "Eliminar cuenta",
     "description": "Esta operación es irreversible. Todas tus reservas serán canceladas y los datos de tu cuenta eliminados permanentemente.",

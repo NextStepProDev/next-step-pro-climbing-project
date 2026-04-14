@@ -41,6 +41,12 @@
     "label": "Newsletter subscription",
     "description": "News, new courses and special offers"
   },
+  "completeProfile": {
+    "title": "Complete your profile",
+    "description": "To make a reservation, please fill in your contact details. The instructor will be able to contact you.",
+    "submit": "Save and continue",
+    "cancel": "Cancel"
+  },
   "deleteAccount": {
     "title": "Delete account",
     "description": "This action is irreversible. All your reservations will be cancelled and your account data will be permanently deleted.",
