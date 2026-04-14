@@ -206,9 +206,10 @@ public class EventWaitlistService {
     }
 
     public void notifyAll(UUID eventId) {
+        log.info("EventWaitlistService.notifyAll called for event {}", eventId);
         List<EventWaitlist> waiting = eventWaitlistRepository.findWaitingByEventIdOrdered(eventId);
         if (waiting.isEmpty()) {
-            log.debug("No event waitlist entries for event {}", eventId);
+            log.info("No event waitlist entries for event {}", eventId);
             return;
         }
 

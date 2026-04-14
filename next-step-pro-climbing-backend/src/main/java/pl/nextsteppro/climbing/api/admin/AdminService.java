@@ -713,6 +713,9 @@ public class AdminService {
         mailService.sendAdminCancellationNotification(reservation);
         activityLogService.logCancelledByAdmin(user, slot, participants);
         waitlistService.notifyAll(slot.getId());
+        if (slot.belongsToEvent()) {
+            eventWaitlistService.notifyAll(slot.getEvent().getId());
+        }
     }
 
     @Caching(evict = {

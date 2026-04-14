@@ -192,9 +192,10 @@ public class WaitlistService {
 
     // Wywoływane po zwolnieniu miejsca — powiadamia WSZYSTKICH oczekujących jednocześnie
     public void notifyAll(UUID slotId) {
+        log.info("WaitlistService.notifyAll called for slot {}", slotId);
         List<Waitlist> waiting = waitlistRepository.findWaitingBySlotIdOrdered(slotId);
         if (waiting.isEmpty()) {
-            log.debug("No waitlist entries for slot {}, slot is freely available", slotId);
+            log.info("No waitlist entries for slot {}, slot is freely available", slotId);
             return;
         }
 
