@@ -29,11 +29,13 @@ public class WaitlistMailService {
     private final JavaMailSender mailSender;
     private final AppConfig appConfig;
     private final MessageService msg;
+    private final String siteUrl;
 
     public WaitlistMailService(JavaMailSender mailSender, AppConfig appConfig, MessageService msg) {
         this.mailSender = mailSender;
         this.appConfig = appConfig;
         this.msg = msg;
+        this.siteUrl = appConfig.getSiteUrl();
     }
 
     @Async
@@ -66,7 +68,7 @@ public class WaitlistMailService {
             <body style="font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5;">
                 <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden;">
                     <div style="background: #0f0f1a; padding: 20px; text-align: center;">
-                        <img src="cid:logo" alt="Next Step Pro Climbing" style="height: 60px;" />
+                        <a href="%s" style="display: inline-block; text-decoration: none;"><img src="cid:logo" alt="Next Step Pro Climbing" style="height: 80px; display: block;" /></a>
                     </div>
                     <div style="padding: 30px;">
                         <h2 style="color: #1a1a2e; margin-top: 0;">%s</h2>
@@ -86,6 +88,7 @@ public class WaitlistMailService {
             </body>
             </html>
             """.formatted(
+            siteUrl,
             msg.getForLang("email.waitlist.offer.greeting", lang, user.getFirstName()),
             msg.getForLang("email.waitlist.offer.body", lang),
             msg.getForLang("email.reservation.date", lang), slot.getDate().format(DATE_FORMAT),
@@ -103,7 +106,7 @@ public class WaitlistMailService {
             <body style="font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5;">
                 <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden;">
                     <div style="background: #0f0f1a; padding: 20px; text-align: center;">
-                        <img src="cid:logo" alt="Next Step Pro Climbing" style="height: 60px;" />
+                        <a href="%s" style="display: inline-block; text-decoration: none;"><img src="cid:logo" alt="Next Step Pro Climbing" style="height: 80px; display: block;" /></a>
                     </div>
                     <div style="padding: 30px;">
                         <h2 style="color: #1a1a2e; margin-top: 0;">%s</h2>
@@ -119,6 +122,7 @@ public class WaitlistMailService {
             </body>
             </html>
             """.formatted(
+            siteUrl,
             msg.getForLang("email.waitlist.confirmed.greeting", lang, user.getFirstName()),
             msg.getForLang("email.waitlist.confirmed.body", lang),
             msg.getForLang("email.reservation.date", lang), slot.getDate().format(DATE_FORMAT),
@@ -160,7 +164,7 @@ public class WaitlistMailService {
             <body style="font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5;">
                 <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden;">
                     <div style="background: #0f0f1a; padding: 20px; text-align: center;">
-                        <img src="cid:logo" alt="Next Step Pro Climbing" style="height: 60px;" />
+                        <a href="%s" style="display: inline-block; text-decoration: none;"><img src="cid:logo" alt="Next Step Pro Climbing" style="height: 80px; display: block;" /></a>
                     </div>
                     <div style="padding: 30px;">
                         <h2 style="color: #1a1a2e; margin-top: 0;">%s</h2>
@@ -180,6 +184,7 @@ public class WaitlistMailService {
             </body>
             </html>
             """.formatted(
+            siteUrl,
             msg.getForLang("email.waitlist.offer.greeting", lang, user.getFirstName()),
             msg.getForLang("email.event.waitlist.offer.body", lang),
             event.getTitle(),
@@ -201,7 +206,7 @@ public class WaitlistMailService {
             <body style="font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5;">
                 <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden;">
                     <div style="background: #0f0f1a; padding: 20px; text-align: center;">
-                        <img src="cid:logo" alt="Next Step Pro Climbing" style="height: 60px;" />
+                        <a href="%s" style="display: inline-block; text-decoration: none;"><img src="cid:logo" alt="Next Step Pro Climbing" style="height: 80px; display: block;" /></a>
                     </div>
                     <div style="padding: 30px;">
                         <h2 style="color: #1a1a2e; margin-top: 0;">%s</h2>
@@ -217,6 +222,7 @@ public class WaitlistMailService {
             </body>
             </html>
             """.formatted(
+            siteUrl,
             msg.getForLang("email.waitlist.confirmed.greeting", lang, user.getFirstName()),
             msg.getForLang("email.event.waitlist.confirmed.body", lang),
             event.getTitle(),
@@ -254,7 +260,7 @@ public class WaitlistMailService {
             <body style="font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5;">
                 <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden;">
                     <div style="background: #0f0f1a; padding: 20px; text-align: center;">
-                        <img src="cid:logo" alt="Next Step Pro Climbing" style="height: 60px;" />
+                        <a href="%s" style="display: inline-block; text-decoration: none;"><img src="cid:logo" alt="Next Step Pro Climbing" style="height: 80px; display: block;" /></a>
                     </div>
                     <div style="padding: 30px;">
                         <h2 style="color: #1a1a2e; margin-top: 0;">%s</h2>
@@ -269,6 +275,7 @@ public class WaitlistMailService {
             </body>
             </html>
             """.formatted(
+            siteUrl,
             msg.getForLang("email.waitlist.joined.greeting", lang, user.getFirstName()),
             msg.getForLang("email.waitlist.joined.body", lang),
             msg.getForLang("email.reservation.date", lang), slot.getDate().format(DATE_FORMAT),
@@ -287,7 +294,7 @@ public class WaitlistMailService {
             <body style="font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5;">
                 <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden;">
                     <div style="background: #0f0f1a; padding: 20px; text-align: center;">
-                        <img src="cid:logo" alt="Next Step Pro Climbing" style="height: 60px;" />
+                        <a href="%s" style="display: inline-block; text-decoration: none;"><img src="cid:logo" alt="Next Step Pro Climbing" style="height: 80px; display: block;" /></a>
                     </div>
                     <div style="padding: 30px;">
                         <h2 style="color: #1a1a2e; margin-top: 0;">%s</h2>
@@ -302,6 +309,7 @@ public class WaitlistMailService {
             </body>
             </html>
             """.formatted(
+            siteUrl,
             msg.getForLang("email.event.waitlist.joined.greeting", lang, user.getFirstName()),
             msg.getForLang("email.event.waitlist.joined.body", lang),
             event.getTitle(),
@@ -319,7 +327,7 @@ public class WaitlistMailService {
             helper.setText(body, true);
             helper.setFrom(appConfig.getMail().getFrom());
 
-            var logoResource = new org.springframework.core.io.ClassPathResource("static/logo/logo-black.png");
+            var logoResource = new org.springframework.core.io.ClassPathResource("static/logo/logo-white.png");
             helper.addInline("logo", logoResource, "image/png");
 
             mailSender.send(message);

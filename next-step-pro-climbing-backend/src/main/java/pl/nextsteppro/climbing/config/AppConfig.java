@@ -11,6 +11,7 @@ public class AppConfig {
     private Cors cors = new Cors();
     private Mail mail = new Mail();
     private String baseUrl = "http://localhost:8080";
+    private String siteUrl = "https://nextsteppro.pl";
 
     public Admin getAdmin() {
         return admin;
@@ -42,6 +43,14 @@ public class AppConfig {
 
     public void setBaseUrl(String baseUrl) {
         this.baseUrl = baseUrl;
+    }
+
+    public String getSiteUrl() {
+        return siteUrl;
+    }
+
+    public void setSiteUrl(String siteUrl) {
+        this.siteUrl = siteUrl;
     }
 
     public static class Admin {
