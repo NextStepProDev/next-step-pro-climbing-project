@@ -42,6 +42,11 @@ const ACTION_CONFIG: Record<
     color: 'text-blue-400',
     bgColor: 'bg-blue-500/10',
   },
+  EVENT_RESERVATION_UPDATED: {
+    icon: CalendarCheck,
+    color: 'text-blue-400',
+    bgColor: 'bg-blue-500/10',
+  },
   EVENT_RESERVATION_CANCELLED: {
     icon: CalendarX,
     color: 'text-rose-400',

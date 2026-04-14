@@ -290,6 +290,7 @@
       "RESERVATION_REACTIVATED": "Reserva reactivada",
       "RESERVATION_CANCELLED": "Cancelación de reserva",
       "EVENT_RESERVATION_CREATED": "Inscripción en evento",
+      "EVENT_RESERVATION_UPDATED": "Inscripción en evento actualizada",
       "EVENT_RESERVATION_CANCELLED": "Cancelación de evento",
       "RESERVATION_CANCELLED_BY_ADMIN": "Cancelación por el administrador"
     },
