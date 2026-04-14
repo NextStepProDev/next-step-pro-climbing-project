@@ -741,6 +741,9 @@ public class AdminService {
         }
         mailService.sendAdminEventParticipantRemovedNotification(user, event);
         eventWaitlistService.notifyAll(eventId);
+        for (Reservation reservation : userReservations) {
+            waitlistService.notifyAll(reservation.getTimeSlot().getId());
+        }
     }
 
     @Caching(evict = {
