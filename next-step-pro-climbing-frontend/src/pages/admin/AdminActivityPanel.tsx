@@ -52,6 +52,11 @@ const ACTION_CONFIG: Record<
     color: 'text-rose-400',
     bgColor: 'bg-rose-500/10',
   },
+  RESERVATION_UPDATED: {
+    icon: CalendarCheck,
+    color: 'text-emerald-400',
+    bgColor: 'bg-emerald-500/10',
+  },
   RESERVATION_CANCELLED_BY_ADMIN: {
     icon: ShieldAlert,
     color: 'text-amber-400',
