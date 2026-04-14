@@ -127,6 +127,24 @@ public class AdminController {
 
     @Tag(name = "Admin - Slots")
     @Operation(
+        summary = "Nadchodzące terminy",
+        description = "Zwraca wszystkie terminy od podanej daty (domyślnie dziś) przez 90 dni, posortowane rosnąco"
+    )
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Lista terminów",
+            content = @Content(array = @ArraySchema(schema = @Schema(implementation = TimeSlotAdminDto.class)))),
+        @ApiResponse(responseCode = "403", description = "Brak uprawnień administratora")
+    })
+    @GetMapping("/slots/upcoming")
+    public ResponseEntity<List<TimeSlotAdminDto>> getUpcomingSlots(
+            @Parameter(description = "Data startowa (yyyy-MM-dd), domyślnie dziś")
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from) {
+        LocalDate startDate = from != null ? from : LocalDate.now();
+        return ResponseEntity.ok(adminService.getUpcomingSlots(startDate));
+    }
+
+    @Tag(name = "Admin - Slots")
+    @Operation(
         summary = "Lista uczestników terminu",
         description = "Zwraca pełne dane wszystkich osób zapisanych na termin oraz listę rezerwową"
     )

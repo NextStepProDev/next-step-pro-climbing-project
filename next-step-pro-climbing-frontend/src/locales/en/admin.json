@@ -153,6 +153,10 @@
   "slots": {
     "addSlot": "Add slot",
     "noSlots": "No slots on this day",
+    "noSlotsOnDay": "No slots on this day",
+    "noUpcoming": "No upcoming slots",
+    "clearFilter": "Clear filter",
+    "statusBlocked": "Blocked",
     "yourReservation": "(Your reservation)",
     "showParticipants": "Show participants",
     "editSlot": "Edit slot",

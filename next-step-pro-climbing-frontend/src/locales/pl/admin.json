@@ -153,6 +153,10 @@
   "slots": {
     "addSlot": "Dodaj termin",
     "noSlots": "Brak terminów w tym dniu",
+    "noSlotsOnDay": "Brak terminów w tym dniu",
+    "noUpcoming": "Brak nadchodzących terminów",
+    "clearFilter": "Wyczyść filtr",
+    "statusBlocked": "Zablokowany",
     "yourReservation": "(Twoja rezerwacja)",
     "showParticipants": "Pokaż uczestników",
     "editSlot": "Edytuj termin",
