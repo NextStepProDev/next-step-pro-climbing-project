@@ -158,6 +158,9 @@ public class AdminService {
 
         if (request.maxParticipants() != null && request.maxParticipants() > oldMaxParticipants) {
             waitlistService.notifyAll(slotId);
+            if (slot.belongsToEvent()) {
+                eventWaitlistService.notifyAll(slot.getEvent().getId());
+            }
         }
 
         var tf = DateTimeFormatter.ofPattern("HH:mm");
@@ -769,6 +772,12 @@ public class AdminService {
         User user = userRepository.findById(reservation.getUser().getId())
             .orElseThrow(() -> new IllegalStateException("User not found"));
         mailService.sendAdminParticipantReductionNotification(user, slot, oldParticipants, newParticipants);
+        if (newParticipants < oldParticipants) {
+            waitlistService.notifyAll(slot.getId());
+            if (slot.belongsToEvent()) {
+                eventWaitlistService.notifyAll(slot.getEvent().getId());
+            }
+        }
     }
 
     @Caching(evict = {
@@ -804,6 +813,12 @@ public class AdminService {
         }
         mailService.sendAdminEventParticipantReductionNotification(user, event, oldParticipants, newParticipants);
         activityLogService.logEventReservationUpdated(user, event, newParticipants);
+        if (newParticipants < oldParticipants) {
+            eventWaitlistService.notifyAll(eventId);
+            for (TimeSlot slot : slots) {
+                waitlistService.notifyAll(slot.getId());
+            }
+        }
     }
 
     private EventAdminDto toEventAdminDto(Event event) {
