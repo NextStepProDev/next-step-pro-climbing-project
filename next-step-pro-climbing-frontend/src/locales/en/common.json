@@ -6,6 +6,7 @@
     "courses": "Courses",
     "instructors": "Instructors",
     "gallery": "Gallery",
+    "videos": "Videos",
     "contact": "Contact",
     "myReservations": "My reservations",
     "admin": "Admin",
@@ -92,6 +93,11 @@
     "followUs": "Follow us",
     "pzaTitle": "Polish Alpine Club Recommendation",
     "pzaDescription": "Next Step Pro Climbing is a school recommended by the Polish Alpine Club (PZA). Our training is led by certified instructors who guarantee the highest standards of safety and quality of teaching."
+  },
+  "videos": {
+    "title": "Videos",
+    "noVideos": "No videos to display",
+    "watchOnYoutube": "Watch on YouTube"
   },
   "news": {
     "title": "News",

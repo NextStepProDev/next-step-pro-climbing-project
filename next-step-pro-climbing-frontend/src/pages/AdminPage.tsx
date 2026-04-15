@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next'
 import { Routes, Route, Link, useLocation } from 'react-router-dom'
-import { Calendar, Users, Clock, ClipboardList, Activity, User, Image, Newspaper, BookOpen, Library, Mail, HardDrive } from 'lucide-react'
+import { Calendar, Users, Clock, ClipboardList, Activity, User, Image, Newspaper, BookOpen, Library, Mail, HardDrive, Video } from 'lucide-react'
 import clsx from 'clsx'
 import { AdminSlotsPanel } from './admin/AdminSlotsPanel'
 import { AdminEventsPanel } from './admin/AdminEventsPanel'
@@ -9,6 +9,7 @@ import { AdminReservationsPanel } from './admin/AdminReservationsPanel'
 import { AdminActivityPanel } from './admin/AdminActivityPanel'
 import { AdminInstructorsPanel } from './admin/AdminInstructorsPanel'
 import { AdminGalleryPanel } from './admin/AdminGalleryPanel'
+import { AdminVideosPanel } from './admin/AdminVideosPanel'
 import { AdminNewsPanel } from './admin/AdminNewsPanel'
 import { AdminCoursesPanel } from './admin/AdminCoursesPanel'
 import { AdminAssetsPanel } from './admin/AdminAssetsPanel'
@@ -23,6 +24,7 @@ const adminTabs = [
   { path: '/admin/courses', labelKey: 'tabs.courses', icon: BookOpen },
   { path: '/admin/instructors', labelKey: 'tabs.instructors', icon: User },
   { path: '/admin/gallery', labelKey: 'tabs.gallery', icon: Image },
+  { path: '/admin/videos', labelKey: 'tabs.videos', icon: Video },
   { path: '/admin/assets', labelKey: 'tabs.assets', icon: Library },
   { path: '/admin/users', labelKey: 'tabs.users', icon: Users },
   { path: '/admin/mail', labelKey: 'tabs.mail', icon: Mail },
@@ -75,6 +77,7 @@ export function AdminPage() {
         <Route path="events" element={<AdminEventsPanel />} />
         <Route path="instructors" element={<AdminInstructorsPanel />} />
         <Route path="gallery" element={<AdminGalleryPanel />} />
+        <Route path="videos" element={<AdminVideosPanel />} />
         <Route path="news" element={<AdminNewsPanel />} />
         <Route path="courses" element={<AdminCoursesPanel />} />
         <Route path="assets" element={<AdminAssetsPanel />} />

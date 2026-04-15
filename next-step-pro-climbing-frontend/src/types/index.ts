@@ -678,3 +678,42 @@ export interface StorageAuditResult {
 export interface DeleteOrphanedResult {
   deletedCount: number
 }
+
+// Videos
+
+export interface VideoDto {
+  id: string
+  title: string
+  excerpt: string | null
+  content: string | null
+  youtubeUrl: string
+  displayOrder: number
+  publishedAt: string
+}
+
+export interface VideoAdmin {
+  id: string
+  title: string
+  excerpt: string | null
+  content: string | null
+  youtubeUrl: string
+  displayOrder: number
+  published: boolean
+  publishedAt: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+export interface CreateVideoRequest {
+  title: string
+  excerpt?: string
+  content?: string
+  youtubeUrl: string
+}
+
+export interface UpdateVideoRequest {
+  title?: string
+  excerpt?: string
+  content?: string
+  youtubeUrl?: string
+}

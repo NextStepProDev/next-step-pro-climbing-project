@@ -1,9 +1,10 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { format, startOfWeek, addWeeks, subWeeks } from "date-fns";
 import { calendarApi, reservationApi, adminApi } from "../api/client";
+import { getAccessToken } from "../utils/tokenStorage";
 import { useAuth } from "../context/AuthContext";
 import { MonthCalendar } from "../components/calendar/MonthCalendar";
 import { WeekCalendar } from "../components/calendar/WeekCalendar";
@@ -41,6 +42,14 @@ export function CalendarPage() {
   const [cutSlot, setCutSlot] = useState<{ id: string; date: string; startTime: string; endTime: string } | null>(null);
   const [notifyToast, setNotifyToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const lastSlotMoveRef = useRef<Map<string, { previousDate: string; previousStartTime: string; previousEndTime: string }>>(new Map());
+  const [pendingSlotMove, setPendingSlotMove] = useState<{
+    slotId: string
+    originalDate: string
+    originalStartTime: string
+    originalEndTime: string
+  } | null>(null);
+  const pendingSlotMoveRef = useRef(pendingSlotMove);
+  useEffect(() => { pendingSlotMoveRef.current = pendingSlotMove; }, [pendingSlotMove]);
   const eventsRef = useRef<HTMLDivElement>(null);
 
   const yearMonth = format(currentMonth, "yyyy-MM");
@@ -191,9 +200,89 @@ export function CalendarPage() {
   });
 
   const handleSlotDrop = useCallback((slotId: string, newDate: string, newStartTime: string, newEndTime: string, oldDate: string, oldStartTime: string, oldEndTime: string) => {
-    lastSlotMoveRef.current.set(slotId, { previousDate: oldDate, previousStartTime: oldStartTime, previousEndTime: oldEndTime });
+    setPendingSlotMove(prev => {
+      if (prev && prev.slotId !== slotId) {
+        // Auto-zatwierdź poprzedni pending slot przy dragowaniu innego
+        lastSlotMoveRef.current.set(prev.slotId, {
+          previousDate: prev.originalDate,
+          previousStartTime: prev.originalStartTime,
+          previousEndTime: prev.originalEndTime,
+        });
+      }
+      if (prev?.slotId === slotId) return prev; // re-drag tego samego — zachowaj oryginał
+      return { slotId, originalDate: oldDate, originalStartTime: oldStartTime, originalEndTime: oldEndTime };
+    });
     moveSlotMutation.mutate({ slotId, date: newDate, startTime: newStartTime, endTime: newEndTime });
   }, [moveSlotMutation]);
+
+  const handleConfirmSlotMove = useCallback((slotId: string) => {
+    setPendingSlotMove(prev => {
+      if (!prev || prev.slotId !== slotId) return prev;
+      lastSlotMoveRef.current.set(slotId, {
+        previousDate: prev.originalDate,
+        previousStartTime: prev.originalStartTime,
+        previousEndTime: prev.originalEndTime,
+      });
+      return null;
+    });
+  }, []);
+
+  const handleCancelSlotMove = useCallback((slotId: string) => {
+    setPendingSlotMove(prev => {
+      if (!prev || prev.slotId !== slotId) return prev;
+      moveSlotMutation.mutate({
+        slotId,
+        date: prev.originalDate,
+        startTime: prev.originalStartTime,
+        endTime: prev.originalEndTime,
+      });
+      return null;
+    });
+  }, [moveSlotMutation]);
+
+  const handleNotifyParticipants = useCallback((slotId: string) => {
+    if (!lastSlotMoveRef.current.has(slotId)) return;
+    notifyParticipantsMutation.mutate(slotId);
+  }, [notifyParticipantsMutation]);
+
+  // Helper: fire raw fetch revert with keepalive (works during page unload)
+  const fireRevertFetch = useCallback((pending: NonNullable<typeof pendingSlotMove>) => {
+    const token = getAccessToken();
+    void fetch(`/api/admin/slots/${pending.slotId}`, {
+      method: 'PUT',
+      keepalive: true,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify({
+        date: pending.originalDate,
+        startTime: pending.originalStartTime,
+        endTime: pending.originalEndTime,
+        sendNotifications: false,
+      }),
+    });
+  }, []);
+
+  // Auto-revert on SPA navigation away (component unmount)
+  useEffect(() => {
+    return () => {
+      const pending = pendingSlotMoveRef.current;
+      if (pending) fireRevertFetch(pending);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Auto-revert on page refresh / tab close
+  useEffect(() => {
+    if (!pendingSlotMove) return;
+    const handleBeforeUnload = () => {
+      const pending = pendingSlotMoveRef.current;
+      if (pending) fireRevertFetch(pending);
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => { window.removeEventListener('beforeunload', handleBeforeUnload); };
+  }, [pendingSlotMove, fireRevertFetch]);
 
   const handleSlotCut = useCallback((slot: TimeSlot, date: string) => {
     setCutSlot({ id: slot.id, date, startTime: slot.startTime, endTime: slot.endTime });
@@ -209,7 +298,16 @@ export function CalendarPage() {
     const endH = Math.floor(endAbsMin / 60);
     const endM = endAbsMin % 60;
     const endTime = `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`;
-    lastSlotMoveRef.current.set(cutSlot.id, { previousDate: cutSlot.date, previousStartTime: cutSlot.startTime, previousEndTime: cutSlot.endTime });
+    setPendingSlotMove(prev => {
+      if (prev && prev.slotId !== cutSlot.id) {
+        lastSlotMoveRef.current.set(prev.slotId, {
+          previousDate: prev.originalDate,
+          previousStartTime: prev.originalStartTime,
+          previousEndTime: prev.originalEndTime,
+        });
+      }
+      return { slotId: cutSlot.id, originalDate: cutSlot.date, originalStartTime: cutSlot.startTime, originalEndTime: cutSlot.endTime };
+    });
     moveSlotMutation.mutate({ slotId: cutSlot.id, date, startTime, endTime });
     setCutSlot(null);
   }, [cutSlot, moveSlotMutation]);
@@ -306,6 +404,15 @@ export function CalendarPage() {
               </div>
             )}
 
+            {/* Pending slot move banner */}
+            {isAdmin && pendingSlotMove && (
+              <div className="mb-3 flex items-center gap-3 px-4 py-2.5 bg-red-500/10 border border-red-500/30 rounded-lg">
+                <span className="text-sm text-red-300 flex-1">
+                  Slot <strong>{pendingSlotMove.originalStartTime.slice(0, 5)}–{pendingSlotMove.originalEndTime.slice(0, 5)}</strong> przeniesiony — zatwierdź lub anuluj zmiany
+                </span>
+              </div>
+            )}
+
             {/* Cut-mode banner */}
             {isAdmin && cutSlot && (
               <div className="mb-3 flex items-center gap-3 px-4 py-2.5 bg-amber-500/10 border border-amber-500/30 rounded-lg">
@@ -338,7 +445,10 @@ export function CalendarPage() {
               onSlotCut={isAdmin ? handleSlotCut : undefined}
               cutSlotId={cutSlot?.id}
               onColumnClick={isAdmin && cutSlot ? handleColumnClick : undefined}
-              onNotifyParticipants={isAdmin ? (slotId) => notifyParticipantsMutation.mutate(slotId) : undefined}
+              onNotifyParticipants={isAdmin ? handleNotifyParticipants : undefined}
+              pendingSlotId={pendingSlotMove?.slotId}
+              onConfirmSlotMove={isAdmin ? handleConfirmSlotMove : undefined}
+              onCancelSlotMove={isAdmin ? handleCancelSlotMove : undefined}
             />
 
             {/* Events legend for week view */}

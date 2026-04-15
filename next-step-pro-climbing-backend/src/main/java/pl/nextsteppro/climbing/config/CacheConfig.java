@@ -27,7 +27,8 @@ public class CacheConfig {
             build("newsList",       50, 10),
             build("newsDetail",    100, 30),
             build("courseList",     50, 30),
-            build("courseDetail",  100, 60)
+            build("courseDetail",  100, 60),
+            build("videoList",      50, 30)
         ));
         return manager;
     }
