@@ -162,7 +162,10 @@ export function CalendarPage() {
   const moveSlotMutation = useMutation({
     mutationFn: ({ slotId, date, startTime, endTime }: { slotId: string; date: string; startTime: string; endTime: string }) =>
       adminApi.updateTimeSlot(slotId, { date, startTime, endTime, sendNotifications: false }),
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
+      if (data.currentParticipants === 0) {
+        lastSlotMoveRef.current.delete(variables.slotId);
+      }
       void queryClient.invalidateQueries({ queryKey: ['calendar'] });
       void queryClient.invalidateQueries({ queryKey: ['admin', 'slots'] });
     },
