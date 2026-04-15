@@ -191,9 +191,7 @@ export function CalendarPage() {
   });
 
   const handleSlotDrop = useCallback((slotId: string, newDate: string, newStartTime: string, newEndTime: string, oldDate: string, oldStartTime: string, oldEndTime: string) => {
-    if (!lastSlotMoveRef.current.has(slotId)) {
-      lastSlotMoveRef.current.set(slotId, { previousDate: oldDate, previousStartTime: oldStartTime, previousEndTime: oldEndTime });
-    }
+    lastSlotMoveRef.current.set(slotId, { previousDate: oldDate, previousStartTime: oldStartTime, previousEndTime: oldEndTime });
     moveSlotMutation.mutate({ slotId, date: newDate, startTime: newStartTime, endTime: newEndTime });
   }, [moveSlotMutation]);
 
@@ -211,9 +209,7 @@ export function CalendarPage() {
     const endH = Math.floor(endAbsMin / 60);
     const endM = endAbsMin % 60;
     const endTime = `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`;
-    if (!lastSlotMoveRef.current.has(cutSlot.id)) {
-      lastSlotMoveRef.current.set(cutSlot.id, { previousDate: cutSlot.date, previousStartTime: cutSlot.startTime, previousEndTime: cutSlot.endTime });
-    }
+    lastSlotMoveRef.current.set(cutSlot.id, { previousDate: cutSlot.date, previousStartTime: cutSlot.startTime, previousEndTime: cutSlot.endTime });
     moveSlotMutation.mutate({ slotId: cutSlot.id, date, startTime, endTime });
     setCutSlot(null);
   }, [cutSlot, moveSlotMutation]);
