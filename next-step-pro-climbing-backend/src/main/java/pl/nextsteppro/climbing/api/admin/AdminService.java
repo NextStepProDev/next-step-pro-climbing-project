@@ -133,10 +133,12 @@ public class AdminService {
         TimeSlot slot = timeSlotRepository.findById(slotId)
             .orElseThrow(() -> new IllegalArgumentException("Time slot not found"));
 
+        LocalDate oldDate = slot.getDate();
         LocalTime oldStart = slot.getStartTime();
         LocalTime oldEnd = slot.getEndTime();
         String oldTitle = slot.getTitle();
 
+        if (request.date() != null) slot.setDate(request.date());
         if (request.startTime() != null) slot.setStartTime(request.startTime());
         if (request.endTime() != null) slot.setEndTime(request.endTime());
         int oldMaxParticipants = slot.getMaxParticipants();
@@ -165,26 +167,37 @@ public class AdminService {
             }
         }
 
-        var tf = DateTimeFormatter.ofPattern("HH:mm");
-        List<MailService.FieldChange> changes = new ArrayList<>();
-        if (!oldStart.equals(slot.getStartTime()) || !oldEnd.equals(slot.getEndTime())) {
-            changes.add(new MailService.FieldChange(
-                "email.change.time",
-                oldStart.format(tf) + " – " + oldEnd.format(tf),
-                slot.getStartTime().format(tf) + " – " + slot.getEndTime().format(tf)
-            ));
-        }
-        if (!Objects.equals(oldTitle, slot.getTitle())) {
-            changes.add(new MailService.FieldChange(
-                "email.change.title",
-                oldTitle != null ? oldTitle : "–",
-                slot.getTitle() != null ? slot.getTitle() : "–"
-            ));
-        }
-        if (!changes.isEmpty()) {
-            List<Reservation> confirmed = reservationRepository.findConfirmedByTimeSlotId(slot.getId());
-            for (Reservation reservation : confirmed) {
-                mailService.sendAdminSlotModificationNotification(reservation.getUser(), slot, changes);
+        boolean shouldNotify = !Boolean.FALSE.equals(request.sendNotifications());
+        if (shouldNotify) {
+            var tf = DateTimeFormatter.ofPattern("HH:mm");
+            var df = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+            List<MailService.FieldChange> changes = new ArrayList<>();
+            if (!oldDate.equals(slot.getDate())) {
+                changes.add(new MailService.FieldChange(
+                    "email.change.date",
+                    oldDate.format(df),
+                    slot.getDate().format(df)
+                ));
+            }
+            if (!oldStart.equals(slot.getStartTime()) || !oldEnd.equals(slot.getEndTime())) {
+                changes.add(new MailService.FieldChange(
+                    "email.change.time",
+                    oldStart.format(tf) + " – " + oldEnd.format(tf),
+                    slot.getStartTime().format(tf) + " – " + slot.getEndTime().format(tf)
+                ));
+            }
+            if (!Objects.equals(oldTitle, slot.getTitle())) {
+                changes.add(new MailService.FieldChange(
+                    "email.change.title",
+                    oldTitle != null ? oldTitle : "–",
+                    slot.getTitle() != null ? slot.getTitle() : "–"
+                ));
+            }
+            if (!changes.isEmpty()) {
+                List<Reservation> confirmed = reservationRepository.findConfirmedByTimeSlotId(slot.getId());
+                for (Reservation reservation : confirmed) {
+                    mailService.sendAdminSlotModificationNotification(reservation.getUser(), slot, changes);
+                }
             }
         }
 
@@ -243,6 +256,47 @@ public class AdminService {
         }
 
         timeSlotRepository.deleteById(slotId);
+    }
+
+    public int notifySlotParticipants(UUID slotId, @Nullable NotifySlotParticipantsRequest request) {
+        TimeSlot slot = timeSlotRepository.findById(slotId)
+            .orElseThrow(() -> new IllegalArgumentException("Time slot not found"));
+
+        if (slot.isAvailabilityWindow()) return 0;
+
+        List<MailService.FieldChange> changes = new ArrayList<>();
+        if (request != null) {
+            var tf = DateTimeFormatter.ofPattern("HH:mm");
+            var df = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+            if (request.previousDate() != null && !request.previousDate().equals(slot.getDate())) {
+                changes.add(new MailService.FieldChange(
+                    "email.change.date",
+                    request.previousDate().format(df),
+                    slot.getDate().format(df)
+                ));
+            }
+            boolean timeChanged = (request.previousStartTime() != null && !request.previousStartTime().equals(slot.getStartTime()))
+                || (request.previousEndTime() != null && !request.previousEndTime().equals(slot.getEndTime()));
+            if (timeChanged) {
+                String oldTime = (request.previousStartTime() != null ? request.previousStartTime().format(tf) : "?")
+                    + " – " + (request.previousEndTime() != null ? request.previousEndTime().format(tf) : "?");
+                String newTime = slot.getStartTime().format(tf) + " – " + slot.getEndTime().format(tf);
+                changes.add(new MailService.FieldChange("email.change.time", oldTime, newTime));
+            }
+        }
+        if (changes.isEmpty()) {
+            changes.add(new MailService.FieldChange("email.change.general", "–", "–"));
+        }
+
+        List<Reservation> confirmed = reservationRepository.findConfirmedByTimeSlotId(slotId);
+        int notified = 0;
+        for (Reservation reservation : confirmed) {
+            if (reservation.getUser().isEmailNotificationsEnabled()) {
+                mailService.sendAdminSlotModificationNotification(reservation.getUser(), slot, changes);
+                notified++;
+            }
+        }
+        return notified;
     }
 
     @Transactional(readOnly = true)

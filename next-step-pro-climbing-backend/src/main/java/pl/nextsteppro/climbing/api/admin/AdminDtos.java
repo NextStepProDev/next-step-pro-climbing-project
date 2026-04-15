@@ -80,11 +80,13 @@ record WaitlistAdminEntryDto(
 ) {}
 
 record UpdateTimeSlotRequest(
+    @Nullable LocalDate date,
     @Nullable LocalTime startTime,
     @Nullable LocalTime endTime,
     @Nullable @Min(1) @Max(100) Integer maxParticipants,
     @Nullable String title,
-    @Nullable Boolean isAvailabilityWindow
+    @Nullable Boolean isAvailabilityWindow,
+    @Nullable Boolean sendNotifications
 ) {}
 
 record UpdateReservationParticipantsRequest(
@@ -209,4 +211,12 @@ record SendMailRequest(
 ) {}
 
 record MailSendResponse(int recipientCount) {}
+
+record NotifyParticipantsResult(int notifiedCount) {}
+
+record NotifySlotParticipantsRequest(
+    @Nullable LocalDate previousDate,
+    @Nullable LocalTime previousStartTime,
+    @Nullable LocalTime previousEndTime
+) {}
 

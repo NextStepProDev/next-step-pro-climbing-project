@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { format, startOfWeek, addWeeks, subWeeks } from "date-fns";
-import { calendarApi, reservationApi } from "../api/client";
+import { calendarApi, reservationApi, adminApi } from "../api/client";
 import { useAuth } from "../context/AuthContext";
 import { MonthCalendar } from "../components/calendar/MonthCalendar";
 import { WeekCalendar } from "../components/calendar/WeekCalendar";
@@ -13,9 +13,9 @@ import { EventSignupModal } from "../components/calendar/EventSignupModal";
 import { CreateSlotModal } from "../components/calendar/CreateSlotModal";
 import { LoadingSpinner } from "../components/ui/LoadingSpinner";
 import { QueryError } from "../components/ui/QueryError";
-import { Phone, Mail, ExternalLink } from "lucide-react";
+import { Phone, Mail, ExternalLink, Scissors, X, Bell } from "lucide-react";
 import { formatAvailability, getEventColorByIndex } from "../utils/events";
-import type { EventSummary } from "../types";
+import type { EventSummary, TimeSlot } from "../types";
 
 export function CalendarPage() {
   const { t } = useTranslation('calendar');
@@ -38,6 +38,9 @@ export function CalendarPage() {
   const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<EventSummary | null>(null);
   const [showCreateSlotModal, setShowCreateSlotModal] = useState(false);
+  const [cutSlot, setCutSlot] = useState<{ id: string; date: string; startTime: string; endTime: string } | null>(null);
+  const [notifyToast, setNotifyToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const lastSlotMoveRef = useRef<Map<string, { previousDate: string; previousStartTime: string; previousEndTime: string }>>(new Map());
   const eventsRef = useRef<HTMLDivElement>(null);
 
   const yearMonth = format(currentMonth, "yyyy-MM");
@@ -156,6 +159,62 @@ export function CalendarPage() {
     setSelectedSlotId(null);
   }, []);
 
+  const moveSlotMutation = useMutation({
+    mutationFn: ({ slotId, date, startTime, endTime }: { slotId: string; date: string; startTime: string; endTime: string }) =>
+      adminApi.updateTimeSlot(slotId, { date, startTime, endTime, sendNotifications: false }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['calendar'] });
+      void queryClient.invalidateQueries({ queryKey: ['admin', 'slots'] });
+    },
+    onError: (_err, variables) => {
+      lastSlotMoveRef.current.delete(variables.slotId);
+    },
+  });
+
+  const notifyParticipantsMutation = useMutation({
+    mutationFn: (slotId: string) => adminApi.notifySlotParticipants(slotId, lastSlotMoveRef.current.get(slotId)),
+    onSuccess: (data, slotId) => {
+      lastSlotMoveRef.current.delete(slotId);
+      const msg = data.notifiedCount === 0
+        ? 'Brak uczestników z włączonymi powiadomieniami'
+        : `Wysłano ${data.notifiedCount} ${data.notifiedCount === 1 ? 'powiadomienie' : data.notifiedCount < 5 ? 'powiadomienia' : 'powiadomień'}`;
+      setNotifyToast({ type: 'success', message: msg });
+      setTimeout(() => setNotifyToast(null), 4000);
+    },
+    onError: () => {
+      setNotifyToast({ type: 'error', message: 'Nie udało się wysłać powiadomień' });
+      setTimeout(() => setNotifyToast(null), 4000);
+    },
+  });
+
+  const handleSlotDrop = useCallback((slotId: string, newDate: string, newStartTime: string, newEndTime: string, oldDate: string, oldStartTime: string, oldEndTime: string) => {
+    if (!lastSlotMoveRef.current.has(slotId)) {
+      lastSlotMoveRef.current.set(slotId, { previousDate: oldDate, previousStartTime: oldStartTime, previousEndTime: oldEndTime });
+    }
+    moveSlotMutation.mutate({ slotId, date: newDate, startTime: newStartTime, endTime: newEndTime });
+  }, [moveSlotMutation]);
+
+  const handleSlotCut = useCallback((slot: TimeSlot, date: string) => {
+    setCutSlot({ id: slot.id, date, startTime: slot.startTime, endTime: slot.endTime });
+  }, []);
+
+  const handleColumnClick = useCallback((date: string, startTime: string) => {
+    if (!cutSlot) return;
+    const [sh, sm] = cutSlot.startTime.split(':').map(Number);
+    const [eh, em] = cutSlot.endTime.split(':').map(Number);
+    const durationMin = (eh * 60 + em) - (sh * 60 + sm);
+    const [clickH, clickM] = startTime.split(':').map(Number);
+    const endAbsMin = clickH * 60 + clickM + durationMin;
+    const endH = Math.floor(endAbsMin / 60);
+    const endM = endAbsMin % 60;
+    const endTime = `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`;
+    if (!lastSlotMoveRef.current.has(cutSlot.id)) {
+      lastSlotMoveRef.current.set(cutSlot.id, { previousDate: cutSlot.date, previousStartTime: cutSlot.startTime, previousEndTime: cutSlot.endTime });
+    }
+    moveSlotMutation.mutate({ slotId: cutSlot.id, date, startTime, endTime });
+    setCutSlot(null);
+  }, [cutSlot, moveSlotMutation]);
+
   const cancelEventMutation = useMutation({
     mutationFn: (eventId: string) => reservationApi.cancelForEvent(eventId),
     onSuccess: () => {
@@ -233,6 +292,38 @@ export function CalendarPage() {
           <QueryError error={weekErrorObj} onRetry={() => refetchWeek()} />
         ) : weekData ? (
           <>
+            {/* Notify toast */}
+            {notifyToast && (
+              <div className={`mb-3 flex items-center gap-3 px-4 py-2.5 rounded-lg border ${
+                notifyToast.type === 'success'
+                  ? 'bg-primary-500/10 border-primary-500/30 text-primary-300'
+                  : 'bg-red-500/10 border-red-500/30 text-red-300'
+              }`}>
+                <Bell className="w-4 h-4 shrink-0" />
+                <span className="text-sm flex-1">{notifyToast.message}</span>
+                <button onClick={() => setNotifyToast(null)} className="p-1 opacity-60 hover:opacity-100 transition-opacity">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+
+            {/* Cut-mode banner */}
+            {isAdmin && cutSlot && (
+              <div className="mb-3 flex items-center gap-3 px-4 py-2.5 bg-amber-500/10 border border-amber-500/30 rounded-lg">
+                <Scissors className="w-4 h-4 text-amber-400 shrink-0" />
+                <span className="text-sm text-amber-300 flex-1">
+                  Slot <strong>{cutSlot.startTime.slice(0, 5)}–{cutSlot.endTime.slice(0, 5)}</strong> wytnięty — kliknij w wolne miejsce w kalendarzu, aby wkleić
+                </span>
+                <button
+                  onClick={() => setCutSlot(null)}
+                  className="p-1 text-amber-400 hover:text-amber-200 transition-colors"
+                  title="Anuluj"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+
             <WeekCalendar
               startDate={weekData.startDate}
               days={weekData.days}
@@ -243,6 +334,12 @@ export function CalendarPage() {
               onSlotClick={handleSlotClick}
               onEventClick={setSelectedEvent}
               onDayClick={handleWeekDayClick}
+              isAdmin={isAdmin}
+              onSlotDrop={isAdmin ? handleSlotDrop : undefined}
+              onSlotCut={isAdmin ? handleSlotCut : undefined}
+              cutSlotId={cutSlot?.id}
+              onColumnClick={isAdmin && cutSlot ? handleColumnClick : undefined}
+              onNotifyParticipants={isAdmin ? (slotId) => notifyParticipantsMutation.mutate(slotId) : undefined}
             />
 
             {/* Events legend for week view */}

@@ -49,7 +49,7 @@ public class MailService {
         }
     }
 
-    @Async
+    @Async("mailExecutor")
     public void sendReservationConfirmation(Reservation reservation) {
         User user = reservation.getUser();
         if (!user.isEmailNotificationsEnabled()) return;
@@ -63,7 +63,7 @@ public class MailService {
         sendEmail(user.getEmail(), subject, body, null);
     }
 
-    @Async
+    @Async("mailExecutor")
     public void sendAdminNotification(Reservation reservation) {
         String adminEmail = resolveAdminEmail();
         if (adminEmail == null) return;
@@ -79,7 +79,7 @@ public class MailService {
         sendEmail(adminEmail, subject, body, null);
     }
 
-    @Async
+    @Async("mailExecutor")
     public void sendCancellationConfirmation(Reservation reservation) {
         User user = reservation.getUser();
         if (!user.isEmailNotificationsEnabled()) return;
@@ -87,13 +87,13 @@ public class MailService {
         String lang = user.getPreferredLanguage();
         TimeSlot slot = reservation.getTimeSlot();
 
-        String subject = msg.getForLang("email.cancellation.subject", lang);
+        String subject = msg.getForLang("email.cancellation.subject", lang, slot.getDate().format(DATE_FORMAT));
         String body = buildCancellationBody(lang, user, slot);
 
         sendEmail(user.getEmail(), subject, body, null);
     }
 
-    @Async
+    @Async("mailExecutor")
     public void sendEventReservationConfirmation(User user, Event event, int participants) {
         if (!user.isEmailNotificationsEnabled()) return;
 
@@ -104,7 +104,7 @@ public class MailService {
         sendEmail(user.getEmail(), subject, body, null);
     }
 
-    @Async
+    @Async("mailExecutor")
     public void sendEventAdminNotification(User user, Event event, int participants) {
         String adminEmail = resolveAdminEmail();
         if (adminEmail == null) return;
@@ -117,7 +117,7 @@ public class MailService {
         sendEmail(adminEmail, subject, body, null);
     }
 
-    @Async
+    @Async("mailExecutor")
     public void sendAdminCancellationNotification(Reservation reservation) {
         User user = reservation.getUser();
         if (!user.isEmailNotificationsEnabled()) return;
@@ -131,7 +131,7 @@ public class MailService {
         sendEmail(user.getEmail(), subject, body, null);
     }
 
-    @Async
+    @Async("mailExecutor")
     public void sendAdminEventCancellationNotification(User user, Event event) {
         if (!user.isEmailNotificationsEnabled()) return;
 
@@ -142,7 +142,7 @@ public class MailService {
         sendEmail(user.getEmail(), subject, body, null);
     }
 
-    @Async
+    @Async("mailExecutor")
     public void sendUserCancellationAdminNotification(Reservation reservation) {
         String adminEmail = resolveAdminEmail();
         if (adminEmail == null) return;
@@ -161,7 +161,7 @@ public class MailService {
         sendEmail(adminEmail, subject, body, null);
     }
 
-    @Async
+    @Async("mailExecutor")
     public void sendUserEventCancellationAdminNotification(User user, Event event) {
         String adminEmail = resolveAdminEmail();
         if (adminEmail == null) return;
@@ -175,7 +175,7 @@ public class MailService {
         sendEmail(adminEmail, subject, body, null);
     }
 
-    @Async
+    @Async("mailExecutor")
     public void sendEventCancellationConfirmation(User user, Event event) {
         if (!user.isEmailNotificationsEnabled()) return;
 
@@ -200,20 +200,20 @@ public class MailService {
         return null;
     }
 
-    @Async
+    @Async("mailExecutor")
     public void sendCustomAdminMail(String to, String subject, String body) {
         String htmlBody = buildCustomAdminMailBody(subject, body, null);
         sendEmail(to, subject, htmlBody, null);
     }
 
-    @Async
+    @Async("mailExecutor")
     public void sendNewsletterMail(String to, String subject, String body, String lang) {
         String unsubscribeText = msg.getForLang("email.newsletter.unsubscribe", lang);
         String htmlBody = buildCustomAdminMailBody(subject, body, unsubscribeText);
         sendEmail(to, subject, htmlBody, null);
     }
 
-    @Async
+    @Async("mailExecutor")
     public void sendAdminEventParticipantRemovedNotification(User user, Event event) {
         if (!user.isEmailNotificationsEnabled()) return;
         String lang = user.getPreferredLanguage();
@@ -222,7 +222,7 @@ public class MailService {
         sendEmail(user.getEmail(), subject, body, null);
     }
 
-    @Async
+    @Async("mailExecutor")
     public void sendAdminParticipantReductionNotification(User user, TimeSlot slot, int oldParticipants, int newParticipants) {
         if (!user.isEmailNotificationsEnabled()) return;
         String lang = user.getPreferredLanguage();
@@ -232,7 +232,7 @@ public class MailService {
         sendEmail(user.getEmail(), subject, body, null);
     }
 
-    @Async
+    @Async("mailExecutor")
     public void sendAdminEventParticipantReductionNotification(User user, pl.nextsteppro.climbing.domain.event.Event event, int oldParticipants, int newParticipants) {
         if (!user.isEmailNotificationsEnabled()) return;
         String lang = user.getPreferredLanguage();
@@ -242,7 +242,7 @@ public class MailService {
         sendEmail(user.getEmail(), subject, body, null);
     }
 
-    @Async
+    @Async("mailExecutor")
     public void sendReservationUpdateConfirmation(User user, pl.nextsteppro.climbing.domain.timeslot.TimeSlot slot, int oldParticipants, int newParticipants) {
         if (!user.isEmailNotificationsEnabled()) return;
         String lang = user.getPreferredLanguage();
@@ -252,7 +252,7 @@ public class MailService {
         sendEmail(user.getEmail(), subject, body, null);
     }
 
-    @Async
+    @Async("mailExecutor")
     public void sendEventReservationUpdateConfirmation(User user, pl.nextsteppro.climbing.domain.event.Event event, int oldParticipants, int newParticipants) {
         if (!user.isEmailNotificationsEnabled()) return;
         String lang = user.getPreferredLanguage();
@@ -262,7 +262,7 @@ public class MailService {
         sendEmail(user.getEmail(), subject, body, null);
     }
 
-    @Async
+    @Async("mailExecutor")
     public void sendAdminSlotModificationNotification(User user, pl.nextsteppro.climbing.domain.timeslot.TimeSlot slot, java.util.List<FieldChange> changes) {
         if (!user.isEmailNotificationsEnabled()) return;
         String lang = user.getPreferredLanguage();
@@ -271,7 +271,7 @@ public class MailService {
         sendEmail(user.getEmail(), subject, body, null);
     }
 
-    @Async
+    @Async("mailExecutor")
     public void sendAdminEventModificationNotification(User user, Event event, java.util.List<FieldChange> changes) {
         if (!user.isEmailNotificationsEnabled()) return;
         String lang = user.getPreferredLanguage();

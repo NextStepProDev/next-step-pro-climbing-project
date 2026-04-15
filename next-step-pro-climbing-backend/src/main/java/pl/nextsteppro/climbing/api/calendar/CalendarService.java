@@ -346,6 +346,7 @@ public class CalendarService {
             slot.getStartTime(),
             slot.getEndTime(),
             slot.getMaxParticipants(),
+            confirmedCount,
             status,
             isUserRegistered,
             slot.getDisplayTitle(),

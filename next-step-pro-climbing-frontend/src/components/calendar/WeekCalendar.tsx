@@ -1,11 +1,12 @@
 import { useMemo, useRef, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Scissors, Bell } from 'lucide-react'
 import { format, isToday, isBefore, startOfDay } from 'date-fns'
 import clsx from 'clsx'
 import type { WeekDay, TimeSlot, EventSummary } from '../../types'
 import { getEventColorByIndex } from '../../utils/events'
 import { useDateLocale } from '../../utils/dateFnsLocale'
+import { useSlotDrag } from '../../hooks/useSlotDrag'
 
 const HOUR_HEIGHT = 60
 const START_HOUR = 7
@@ -22,6 +23,13 @@ interface WeekCalendarProps {
   onSlotClick: (slotId: string) => void
   onEventClick: (event: EventSummary) => void
   onDayClick: (date: string) => void
+  // Admin drag-and-drop
+  isAdmin?: boolean
+  onSlotDrop?: (slotId: string, newDate: string, newStartTime: string, newEndTime: string, oldDate: string, oldStartTime: string, oldEndTime: string) => void
+  onSlotCut?: (slot: TimeSlot, date: string) => void
+  cutSlotId?: string
+  onColumnClick?: (date: string, time: string) => void
+  onNotifyParticipants?: (slotId: string) => void
 }
 
 function getSlotPosition(startTime: string, endTime: string) {
@@ -71,6 +79,13 @@ function getStatusLabel(status: string, t: (key: string) => string): string {
   }
 }
 
+function snapMinutesToTime(relativeMinutes: number): string {
+  const absMinutes = START_HOUR * 60 + Math.max(0, Math.min(relativeMinutes, TOTAL_HOURS * 60))
+  const h = Math.floor(absMinutes / 60)
+  const m = absMinutes % 60
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
+}
+
 export function WeekCalendar({
   startDate,
   days,
@@ -81,10 +96,24 @@ export function WeekCalendar({
   onSlotClick,
   onEventClick,
   onDayClick,
+  isAdmin = false,
+  onSlotDrop,
+  onSlotCut,
+  cutSlotId,
+  onColumnClick,
+  onNotifyParticipants,
 }: WeekCalendarProps) {
   const { t } = useTranslation('calendar')
   const locale = useDateLocale()
   const scrollRef = useRef<HTMLDivElement>(null)
+  const dayColumnRefs = useRef<(HTMLDivElement | null)[]>([])
+
+  const { dragState, isBeingDragged, wasJustDragged, onSlotPointerDown, onResizePointerDown } = useSlotDrag({
+    days,
+    dayColumnRefs,
+    onDrop: onSlotDrop ?? (() => {}),
+    enabled: isAdmin && !!onSlotDrop,
+  })
 
   const start = useMemo(() => new Date(startDate), [startDate])
   const end = useMemo(() => {
@@ -128,6 +157,8 @@ export function WeekCalendar({
       }
     }
   }, [days])
+
+  const inCutMode = isAdmin && !!cutSlotId
 
   return (
     <div className="bg-dark-900 rounded-xl border border-dark-800 overflow-hidden">
@@ -218,7 +249,7 @@ export function WeekCalendar({
             </div>
 
             {/* Day columns */}
-            {days.map((day) => {
+            {days.map((day, dayIndex) => {
               const date = new Date(day.date)
               const today = isToday(date)
               const past = isBefore(date, startOfDay(new Date()))
@@ -227,12 +258,22 @@ export function WeekCalendar({
               return (
                 <div
                   key={day.date}
+                  ref={(el) => { dayColumnRefs.current[dayIndex] = el }}
                   className={clsx(
                     'relative border-l border-dark-800',
                     today && 'bg-primary-500/5',
                     past && 'opacity-40',
+                    inCutMode && !past && 'cursor-crosshair',
                   )}
                   style={{ height: TOTAL_HOURS * HOUR_HEIGHT }}
+                  onClick={(e) => {
+                    if (!inCutMode || !onColumnClick) return
+                    if ((e.target as HTMLElement).closest('button')) return
+                    const rect = e.currentTarget.getBoundingClientRect()
+                    const relY = e.clientY - rect.top
+                    const rawMin = Math.round(relY / HOUR_HEIGHT * 60 / 15) * 15
+                    onColumnClick(day.date, snapMinutesToTime(rawMin))
+                  }}
                 >
                   {/* Hour grid lines */}
                   {hours.map((hour) => (
@@ -266,35 +307,95 @@ export function WeekCalendar({
                     const { top, height } = getSlotPosition(slot.startTime, slot.endTime)
                     const isClickable = slot.status === 'AVAILABLE' || slot.status === 'FULL' || slot.status === 'AVAILABILITY_WINDOW' || slot.isUserRegistered
                     const showTitle = height >= 45
+                    const dragging = isBeingDragged(slot.id)
+                    const isCut = cutSlotId === slot.id
+                    const isPast = slot.status === 'PAST'
+                    const isDraggable = isAdmin && !isPast
 
                     return (
-                      <button
+                      <div
                         key={slot.id}
-                        onClick={() => isClickable ? onSlotClick(slot.id) : undefined}
-                        disabled={!isClickable}
                         className={clsx(
-                          'absolute left-1 right-1 rounded border px-1.5 py-0.5 text-left overflow-hidden transition-colors z-10',
+                          'group absolute left-1 right-1 rounded border overflow-hidden transition-colors z-10',
                           getSlotColors(slot.status),
-                          isClickable && 'cursor-pointer',
-                          !isClickable && 'cursor-default',
+                          isDraggable && !dragging && 'cursor-grab',
+                          dragging && 'opacity-30 cursor-grabbing',
+                          isCut && 'ring-2 ring-dashed ring-amber-400 opacity-60',
                           slot.isUserRegistered && 'ring-1 ring-primary-400',
                         )}
                         style={{ top, height }}
+                        onPointerDown={isDraggable
+                          ? (e) => onSlotPointerDown(slot.id, day.date, slot.startTime, slot.endTime, e)
+                          : undefined
+                        }
                       >
-                        <div className="text-[11px] font-semibold leading-tight truncate">
-                          {slot.startTime.slice(0, 5)} - {slot.endTime.slice(0, 5)}
-                        </div>
-                        {showTitle && (
-                          <div className="text-[10px] leading-tight truncate opacity-80">
-                            {slot.status === 'FULL' && !slot.isUserRegistered
-                              ? t('day.fullWaitlist')
-                              : slot.eventTitle || getStatusLabel(slot.status, t)}
+                        {/* Slot content — clickable area */}
+                        <button
+                          onClick={() => {
+                            if (wasJustDragged(slot.id)) return
+                            if (isClickable) onSlotClick(slot.id)
+                          }}
+                          disabled={!isClickable}
+                          className={clsx(
+                            'w-full h-full px-1.5 py-0.5 text-left',
+                            isClickable && 'cursor-pointer',
+                            !isClickable && 'cursor-default',
+                            isDraggable && 'select-none',
+                          )}
+                        >
+                          <div className="text-[11px] font-semibold leading-tight truncate">
+                            {slot.startTime.slice(0, 5)} - {slot.endTime.slice(0, 5)}
+                          </div>
+                          {showTitle && (
+                            <div className="text-[10px] leading-tight truncate opacity-80">
+                              {slot.status === 'FULL' && !slot.isUserRegistered
+                                ? t('day.fullWaitlist')
+                                : slot.eventTitle || getStatusLabel(slot.status, t)}
+                            </div>
+                          )}
+                          {slot.isUserRegistered && (
+                            <div className="absolute top-0.5 right-0.5 w-1.5 h-1.5 bg-primary-400 rounded-full" />
+                          )}
+                        </button>
+
+                        {/* Admin action buttons */}
+                        {isAdmin && !isPast && (
+                          <div
+                            data-admin-action
+                            className="absolute top-0.5 right-0.5 flex gap-0.5 opacity-0 group-hover:opacity-100 z-20"
+                          >
+                            {!slot.isAvailabilityWindow && slot.currentParticipants > 0 && onNotifyParticipants && (
+                              <button
+                                data-admin-action
+                                onClick={(e) => { e.stopPropagation(); onNotifyParticipants(slot.id) }}
+                                className="p-0.5 rounded bg-dark-900/70 text-dark-300 hover:text-amber-300 transition-colors"
+                                title="Powiadom uczestników"
+                              >
+                                <Bell className="w-2.5 h-2.5" />
+                              </button>
+                            )}
+                            {onSlotCut && (
+                              <button
+                                data-admin-action
+                                onClick={(e) => { e.stopPropagation(); onSlotCut(slot, day.date) }}
+                                className="p-0.5 rounded bg-dark-900/70 text-dark-300 hover:text-amber-300 transition-colors"
+                                title="Wytnij slot"
+                              >
+                                <Scissors className="w-2.5 h-2.5" />
+                              </button>
+                            )}
                           </div>
                         )}
-                        {slot.isUserRegistered && (
-                          <div className="absolute top-0.5 right-0.5 w-1.5 h-1.5 bg-primary-400 rounded-full" />
+
+                        {/* Resize handle */}
+                        {isDraggable && (
+                          <div
+                            data-admin-action
+                            className="absolute bottom-0 left-0 right-0 h-2 cursor-ns-resize z-20"
+                            onPointerDown={(e) => onResizePointerDown(slot.id, day.date, slot.startTime, slot.endTime, e)}
+                          />
                         )}
-                      </button>
+                      </div>
                     )
                   })}
                 </div>
@@ -303,6 +404,19 @@ export function WeekCalendar({
           </div>
         </div>
       </div>
+
+      {/* Drag ghost */}
+      {dragState?.ghost && (
+        <div
+          className="fixed z-50 pointer-events-none rounded border-2 border-primary-400 bg-primary-500/25"
+          style={{
+            left: dragState.ghost.left,
+            top: dragState.ghost.top,
+            width: dragState.ghost.width,
+            height: dragState.ghost.height,
+          }}
+        />
+      )}
     </div>
   )
 }
