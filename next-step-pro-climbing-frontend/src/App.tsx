@@ -8,6 +8,7 @@ import { EventPage } from './pages/EventPage'
 import { InstructorsPage } from './pages/InstructorsPage'
 import { GalleryPage } from './pages/GalleryPage'
 import { AlbumPage } from './pages/AlbumPage'
+import { VideosPage } from './pages/VideosPage'
 import { NewsPage } from './pages/NewsPage'
 import { NewsDetailPage } from './pages/NewsDetailPage'
 import { CoursesPage } from './pages/CoursesPage'
@@ -40,6 +41,7 @@ export default function App() {
           <Route path="instruktorzy" element={<InstructorsPage />} />
           <Route path="galeria" element={<GalleryPage />} />
           <Route path="galeria/:albumId" element={<AlbumPage />} />
+          <Route path="filmy" element={<VideosPage />} />
           <Route path="aktualnosci" element={<NewsPage />} />
           <Route path="aktualnosci/:newsId" element={<NewsDetailPage />} />
           <Route path="kursy" element={<CoursesPage />} />

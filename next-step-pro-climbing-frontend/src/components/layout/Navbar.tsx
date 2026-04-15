@@ -27,6 +27,7 @@ export function Navbar() {
     { to: "/kursy", label: t('nav.courses') },
     { to: "/instruktorzy", label: t('nav.instructors') },
     { to: "/galeria", label: t('nav.gallery') },
+    { to: "/filmy", label: t('nav.videos') },
     { to: "/kontakt", label: t('nav.contact') },
     ...(isAdmin ? [{ to: "/admin", label: t('nav.admin') }] : []),
   ];

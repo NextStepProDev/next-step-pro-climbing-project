@@ -1,6 +1,6 @@
 import { useMemo, useRef, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ChevronLeft, ChevronRight, Scissors, Bell } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Scissors, Bell, Check, X } from 'lucide-react'
 import { format, isToday, isBefore, startOfDay } from 'date-fns'
 import clsx from 'clsx'
 import type { WeekDay, TimeSlot, EventSummary } from '../../types'
@@ -30,6 +30,9 @@ interface WeekCalendarProps {
   cutSlotId?: string
   onColumnClick?: (date: string, time: string) => void
   onNotifyParticipants?: (slotId: string) => void
+  pendingSlotId?: string
+  onConfirmSlotMove?: (slotId: string) => void
+  onCancelSlotMove?: (slotId: string) => void
 }
 
 function getSlotPosition(startTime: string, endTime: string) {
@@ -102,6 +105,9 @@ export function WeekCalendar({
   cutSlotId,
   onColumnClick,
   onNotifyParticipants,
+  pendingSlotId,
+  onConfirmSlotMove,
+  onCancelSlotMove,
 }: WeekCalendarProps) {
   const { t } = useTranslation('calendar')
   const locale = useDateLocale()
@@ -311,17 +317,20 @@ export function WeekCalendar({
                     const isCut = cutSlotId === slot.id
                     const isPast = slot.status === 'PAST'
                     const isDraggable = isAdmin && !isPast
+                    const isPending = pendingSlotId === slot.id
 
                     return (
                       <div
                         key={slot.id}
                         className={clsx(
                           'group absolute left-1 right-1 rounded border overflow-hidden transition-colors z-10',
-                          getSlotColors(slot.status),
+                          isPending
+                            ? 'bg-red-600/40 border-red-400/70 text-red-200'
+                            : getSlotColors(slot.status),
                           isDraggable && !dragging && 'cursor-grab',
                           dragging && 'opacity-30 cursor-grabbing',
                           isCut && 'ring-2 ring-dashed ring-amber-400 opacity-60',
-                          slot.isUserRegistered && 'ring-1 ring-primary-400',
+                          slot.isUserRegistered && !isPending && 'ring-1 ring-primary-400',
                         )}
                         style={{ top, height }}
                         onPointerDown={isDraggable
@@ -362,27 +371,53 @@ export function WeekCalendar({
                         {isAdmin && !isPast && (
                           <div
                             data-admin-action
-                            className="absolute top-0.5 right-0.5 flex gap-0.5 opacity-0 group-hover:opacity-100 z-20"
-                          >
-                            {!slot.isAvailabilityWindow && slot.currentParticipants > 0 && onNotifyParticipants && (
-                              <button
-                                data-admin-action
-                                onClick={(e) => { e.stopPropagation(); onNotifyParticipants(slot.id) }}
-                                className="p-0.5 rounded bg-dark-900/70 text-dark-300 hover:text-amber-300 transition-colors"
-                                title="Powiadom uczestników"
-                              >
-                                <Bell className="w-2.5 h-2.5" />
-                              </button>
+                            className={clsx(
+                              'absolute top-0.5 right-0.5 flex gap-0.5 z-20',
+                              !isPending && 'opacity-0 group-hover:opacity-100'
                             )}
-                            {onSlotCut && (
-                              <button
-                                data-admin-action
-                                onClick={(e) => { e.stopPropagation(); onSlotCut(slot, day.date) }}
-                                className="p-0.5 rounded bg-dark-900/70 text-dark-300 hover:text-amber-300 transition-colors"
-                                title="Wytnij slot"
-                              >
-                                <Scissors className="w-2.5 h-2.5" />
-                              </button>
+                          >
+                            {isPending ? (
+                              <>
+                                <button
+                                  data-admin-action
+                                  onClick={(e) => { e.stopPropagation(); onConfirmSlotMove?.(slot.id) }}
+                                  className="p-0.5 rounded bg-green-900/80 text-green-300 hover:text-green-100 transition-colors"
+                                  title="Zatwierdź"
+                                >
+                                  <Check className="w-3 h-3" />
+                                </button>
+                                <button
+                                  data-admin-action
+                                  onClick={(e) => { e.stopPropagation(); onCancelSlotMove?.(slot.id) }}
+                                  className="p-0.5 rounded bg-red-900/80 text-red-300 hover:text-red-100 transition-colors"
+                                  title="Anuluj"
+                                >
+                                  <X className="w-3 h-3" />
+                                </button>
+                              </>
+                            ) : (
+                              <>
+                                {!slot.isAvailabilityWindow && slot.currentParticipants > 0 && onNotifyParticipants && (
+                                  <button
+                                    data-admin-action
+                                    onClick={(e) => { e.stopPropagation(); onNotifyParticipants(slot.id) }}
+                                    className="p-0.5 rounded bg-dark-900/70 text-dark-300 hover:text-amber-300 transition-colors"
+                                    title="Powiadom uczestników"
+                                  >
+                                    <Bell className="w-2.5 h-2.5" />
+                                  </button>
+                                )}
+                                {onSlotCut && (
+                                  <button
+                                    data-admin-action
+                                    onClick={(e) => { e.stopPropagation(); onSlotCut(slot, day.date) }}
+                                    className="p-0.5 rounded bg-dark-900/70 text-dark-300 hover:text-amber-300 transition-colors"
+                                    title="Wytnij slot"
+                                  >
+                                    <Scissors className="w-2.5 h-2.5" />
+                                  </button>
+                                )}
+                              </>
                             )}
                           </div>
                         )}

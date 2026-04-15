@@ -56,6 +56,10 @@ import type {
   UpdateCourseMetaRequest,
   StorageAuditResult,
   DeleteOrphanedResult,
+  VideoDto,
+  VideoAdmin,
+  CreateVideoRequest,
+  UpdateVideoRequest,
 } from '../types'
 import {
   getAccessToken,
@@ -854,4 +858,33 @@ export const adminAssetsApi = {
 export const adminStorageApi = {
   audit: () => fetchApi<StorageAuditResult>('/admin/storage/audit'),
   deleteOrphaned: () => fetchApi<DeleteOrphanedResult>('/admin/storage/orphaned', { method: 'DELETE' }),
+}
+
+export const videoApi = {
+  getAll: () => fetchApi<VideoDto[]>('/videos'),
+}
+
+export const adminVideoApi = {
+  getAll: () => fetchApi<VideoAdmin[]>('/admin/videos'),
+  getById: (id: string) => fetchApi<VideoAdmin>(`/admin/videos/${id}`),
+  create: (data: CreateVideoRequest) =>
+    fetchApi<VideoAdmin>('/admin/videos', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  update: (id: string, data: UpdateVideoRequest) =>
+    fetchApi<VideoAdmin>(`/admin/videos/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+  delete: (id: string) =>
+    fetchApi<void>(`/admin/videos/${id}`, { method: 'DELETE' }),
+  publish: (id: string) =>
+    fetchApi<VideoAdmin>(`/admin/videos/${id}/publish`, { method: 'POST' }),
+  unpublish: (id: string) =>
+    fetchApi<VideoAdmin>(`/admin/videos/${id}/unpublish`, { method: 'POST' }),
+  moveUp: (id: string) =>
+    fetchApi<VideoAdmin[]>(`/admin/videos/${id}/move-up`, { method: 'POST' }),
+  moveDown: (id: string) =>
+    fetchApi<VideoAdmin[]>(`/admin/videos/${id}/move-down`, { method: 'POST' }),
 }

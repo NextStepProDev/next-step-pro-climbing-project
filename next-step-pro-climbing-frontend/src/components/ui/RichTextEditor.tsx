@@ -97,17 +97,11 @@ export function RichTextEditor({
     const selected = ta.value.slice(start, end)
     const replacement = marker + selected + marker
 
-    ta.focus()
-    ta.setSelectionRange(start, end)
-    if (document.execCommand('insertText', false, replacement)) {
+    onChange(ta.value.slice(0, start) + replacement + ta.value.slice(end))
+    requestAnimationFrame(() => {
+      ta.focus()
       ta.setSelectionRange(start + marker.length, start + marker.length + selected.length)
-    } else {
-      onChange(ta.value.slice(0, start) + replacement + ta.value.slice(end))
-      requestAnimationFrame(() => {
-        ta.focus()
-        ta.setSelectionRange(start + marker.length, start + marker.length + selected.length)
-      })
-    }
+    })
   }, [onChange])
 
   const applyList = useCallback((type: 'bullet' | 'numbered' | 'lettered') => {
@@ -142,17 +136,11 @@ export function RichTextEditor({
     }
 
     const newSelected = newLines.join('\n')
-    ta.focus()
-    ta.setSelectionRange(lineStart, lineEnd)
-    if (document.execCommand('insertText', false, newSelected)) {
+    onChange(ta.value.slice(0, lineStart) + newSelected + ta.value.slice(lineEnd))
+    requestAnimationFrame(() => {
+      ta.focus()
       ta.setSelectionRange(lineStart, lineStart + newSelected.length)
-    } else {
-      onChange(ta.value.slice(0, lineStart) + newSelected + ta.value.slice(lineEnd))
-      requestAnimationFrame(() => {
-        ta.focus()
-        ta.setSelectionRange(lineStart, lineStart + newSelected.length)
-      })
-    }
+    })
   }, [onChange])
 
   const handleBold      = useCallback(() => wrapSelection('**'), [wrapSelection])
