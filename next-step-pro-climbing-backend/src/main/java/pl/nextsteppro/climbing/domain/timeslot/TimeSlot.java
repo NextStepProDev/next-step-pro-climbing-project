@@ -96,6 +96,10 @@ public class TimeSlot {
         return date;
     }
 
+    public void setDate(LocalDate date) {
+        this.date = date;
+    }
+
     public LocalTime getStartTime() {
         return startTime;
     }
@@ -166,11 +170,16 @@ public class TimeSlot {
 
     /**
      * Returns display title: slot's own title, or linked event's title, or null.
+     * Safe for detached entities — catches LazyInitializationException if event proxy is not loaded.
      */
     @Nullable
     public String getDisplayTitle() {
         if (title != null) return title;
-        if (event != null) return event.getTitle();
+        try {
+            if (event != null) return event.getTitle();
+        } catch (Exception ignored) {
+            // event proxy not initialized in this context (e.g. async thread) — fall through
+        }
         return null;
     }
 

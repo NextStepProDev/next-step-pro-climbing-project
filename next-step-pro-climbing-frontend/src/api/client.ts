@@ -324,10 +324,16 @@ export const adminApi = {
       body: JSON.stringify(data),
     }),
 
-  updateTimeSlot: (slotId: string, data: { startTime?: string; endTime?: string; maxParticipants?: number; title?: string }) =>
+  updateTimeSlot: (slotId: string, data: { date?: string; startTime?: string; endTime?: string; maxParticipants?: number; title?: string; isAvailabilityWindow?: boolean; sendNotifications?: boolean }) =>
     fetchApi<TimeSlotAdmin>(`/admin/slots/${slotId}`, {
       method: 'PUT',
       body: JSON.stringify(data),
+    }),
+
+  notifySlotParticipants: (slotId: string, previousSlot?: { previousDate?: string; previousStartTime?: string; previousEndTime?: string }) =>
+    fetchApi<{ notifiedCount: number }>(`/admin/slots/${slotId}/notify-participants`, {
+      method: 'POST',
+      body: previousSlot ? JSON.stringify(previousSlot) : undefined,
     }),
 
   blockTimeSlot: (slotId: string, reason?: string) =>

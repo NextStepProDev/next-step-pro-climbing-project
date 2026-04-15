@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import org.jspecify.annotations.Nullable;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -123,6 +124,24 @@ public class AdminController {
             @Parameter(description = "UUID terminu") @PathVariable UUID slotId) {
         adminService.deleteTimeSlot(slotId);
         return ResponseEntity.noContent().build();
+    }
+
+    @Tag(name = "Admin - Slots")
+    @Operation(
+        summary = "Powiadom uczestników terminu",
+        description = "Wysyła email z powiadomieniem o zmianie terminu do wszystkich zapisanych uczestników"
+    )
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Powiadomienia wysłane"),
+        @ApiResponse(responseCode = "404", description = "Termin nie istnieje"),
+        @ApiResponse(responseCode = "403", description = "Brak uprawnień administratora")
+    })
+    @PostMapping("/slots/{slotId}/notify-participants")
+    public ResponseEntity<NotifyParticipantsResult> notifySlotParticipants(
+            @Parameter(description = "UUID terminu") @PathVariable UUID slotId,
+            @RequestBody(required = false) @Nullable NotifySlotParticipantsRequest request) {
+        int count = adminService.notifySlotParticipants(slotId, request);
+        return ResponseEntity.ok(new NotifyParticipantsResult(count));
     }
 
     @Tag(name = "Admin - Slots")
