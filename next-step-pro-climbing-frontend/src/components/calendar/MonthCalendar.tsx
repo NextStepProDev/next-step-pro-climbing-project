@@ -118,9 +118,10 @@ export function MonthCalendar({ currentMonth, onMonthChange, days, events, onDay
           const dayEvents = dayEventsMap.get(dateString) || []
           const isPast = isBefore(day, startOfDay(new Date()))
           const hasSlots = dayData && dayData.totalSlots > 0
+          const hasAvailabilityWindow = dayData?.hasAvailabilityWindow ?? false
           const hasUserReservation = dayData?.hasUserReservation
           const hasEvents = dayEvents.length > 0
-          const isClickable = !isPast && (hasSlots || hasEvents || allDaysClickable)
+          const isClickable = !isPast && (hasSlots || hasEvents || hasAvailabilityWindow || allDaysClickable)
 
           return (
             <button
@@ -171,6 +172,12 @@ export function MonthCalendar({ currentMonth, onMonthChange, days, events, onDay
                   {t('noSpots')}
                 </div>
               ) : null}
+
+              {hasAvailabilityWindow && !isPast && (
+                <div className="text-[10px] text-violet-400 font-medium leading-tight">
+                  {t('day.callToBook')}
+                </div>
+              )}
 
               {hasUserReservation && (
                 <div className="absolute top-1 right-1 w-2 h-2 bg-primary-500 rounded-full" />

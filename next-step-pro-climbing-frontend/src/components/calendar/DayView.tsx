@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { format } from "date-fns";
-import { ArrowLeft, Clock, Calendar, Users, Plus, ExternalLink, X } from "lucide-react";
+import { ArrowLeft, Clock, Calendar, Users, Plus, ExternalLink, X, Phone } from "lucide-react";
 import { Link } from "react-router-dom";
 import clsx from "clsx";
 import type { TimeSlot, EventSummary } from "../../types";
@@ -33,6 +33,8 @@ function SlotButton({
 }) {
   const { t } = useTranslation('calendar');
 
+  const isAvailabilityWindow = slot.status === "AVAILABILITY_WINDOW";
+
   return (
     <button
       onClick={() => onSlotClick(slot.id)}
@@ -49,14 +51,19 @@ function SlotButton({
           "border-dark-800 bg-dark-900/50 cursor-not-allowed opacity-40",
         slot.status === "BOOKING_CLOSED" &&
           "border-dark-700 hover:border-amber-500 hover:bg-dark-800",
+        isAvailabilityWindow &&
+          "border-violet-500/50 bg-violet-500/5 hover:bg-violet-500/10",
         slot.isUserRegistered && "border-primary-500 bg-primary-500/10",
       )}
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Clock className="w-5 h-5 text-dark-400" />
+          {isAvailabilityWindow
+            ? <Phone className="w-5 h-5 text-violet-400" />
+            : <Clock className="w-5 h-5 text-dark-400" />
+          }
           <div>
-            <span className="font-medium text-dark-100">
+            <span className={clsx("font-medium", isAvailabilityWindow ? "text-violet-300" : "text-dark-100")}>
               {slot.startTime.slice(0, 5)} - {slot.endTime.slice(0, 5)}
             </span>
             {showTitle && slot.eventTitle && (
@@ -66,7 +73,12 @@ function SlotButton({
         </div>
 
         <div className="flex items-center gap-2">
-          {slot.isUserRegistered && (
+          {isAvailabilityWindow && (
+            <span className="px-2 py-1 text-xs font-medium bg-violet-500/20 text-violet-400 rounded">
+              {t('day.callToBook')}
+            </span>
+          )}
+          {!isAvailabilityWindow && slot.isUserRegistered && (
             <span className="px-2 py-1 text-xs font-medium bg-primary-500/20 text-primary-400 rounded">
               {t('day.yourReservation')}
             </span>
@@ -386,15 +398,34 @@ export function DayView({
               }
             })}
 
-            {/* Standalone slots */}
-            {standaloneSlots.length > 0 && (
+            {/* Availability windows */}
+            {standaloneSlots.some(s => s.isAvailabilityWindow) && (
+              <div>
+                <h3 className="text-base font-semibold text-violet-400 mb-3">
+                  {t('day.availabilityWindows')}
+                </h3>
+                <div className="space-y-3">
+                  {standaloneSlots.filter(s => s.isAvailabilityWindow).map((slot) => (
+                    <SlotButton
+                      key={slot.id}
+                      slot={slot}
+                      onSlotClick={onSlotClick}
+                      showTitle={true}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Standalone bookable slots */}
+            {standaloneSlots.some(s => !s.isAvailabilityWindow) && (
               <div>
                 <h3 className="text-base font-semibold text-primary-400 mb-3">
                   {t('day.training')}
                 </h3>
 
                 <div className="space-y-3">
-                  {standaloneSlots.map((slot) => (
+                  {standaloneSlots.filter(s => !s.isAvailabilityWindow).map((slot) => (
                     <SlotButton
                       key={slot.id}
                       slot={slot}

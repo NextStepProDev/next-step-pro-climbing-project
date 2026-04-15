@@ -39,7 +39,9 @@
     "past": "Finalizado",
     "yourReservation": "Tu reserva",
     "noSlots": "No hay horarios disponibles para este día",
-    "training": "Entrenamiento"
+    "training": "Entrenamiento",
+    "callToBook": "Llama para concertar",
+    "availabilityWindows": "Disponible para concertar"
   },
   "slot": {
     "title": "Detalles de la franja horaria",
@@ -59,6 +61,10 @@
     "bookSingle": "Inscribirse",
     "participants": "{{current}} / {{max}} participantes",
     "spotsFree": "({{count}} libres)",
+    "availabilityWindow": {
+      "title": "Este bloque de tiempo está disponible",
+      "body": "Llámanos o escríbenos para concertar una hora específica de entrenamiento en esta franja."
+    },
     "waitlist": {
       "join": "Unirse a la lista de espera",
       "leave": "Salir de la cola",
@@ -128,6 +134,8 @@
     "to": "Hasta",
     "maxParticipants": "Máx. participantes",
     "endAfterStart": "La hora de fin debe ser posterior a la de inicio",
+    "availabilityWindow": "Ventana de disponibilidad (llamar para concertar)",
+    "availabilityWindowHint": "Los clientes verán este bloque como disponible y sabrán que pueden llamar, sin posibilidad de reservar por su cuenta.",
     "submit": "Crear franja horaria",
     "cancel": "Cancelar"
   },

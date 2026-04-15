@@ -170,6 +170,8 @@
     "titlePlaceholder": "Tytuł terminu (opcjonalny)",
     "maxParticipants": "Maks. uczestników",
     "endAfterStart": "Godzina zakończenia musi być późniejsza niż rozpoczęcia",
+    "availabilityWindow": "Okno dostępności (zadzwoń i ustal termin)",
+    "availabilityWindowHint": "Klienci zobaczą ten blok jako dostępny i będą wiedzieć, że mogą zadzwonić — bez możliwości samodzielnej rezerwacji.",
     "saveChanges": "Zapisz zmiany",
     "cancel": "Anuluj",
     "warningActiveReservations": "Uwaga - aktywne rezerwacje!",

@@ -22,7 +22,8 @@ record DaySummaryDto(
     LocalDate date,
     int totalSlots,
     int availableSlots,
-    boolean hasUserReservation
+    boolean hasUserReservation,
+    boolean hasAvailabilityWindow
 ) implements CalendarDtos {}
 
 record DayViewDto(
@@ -38,7 +39,8 @@ record TimeSlotDto(
     int maxParticipants,
     SlotStatus status,
     boolean isUserRegistered,
-    @Nullable String eventTitle
+    @Nullable String eventTitle,
+    boolean isAvailabilityWindow
 ) implements CalendarDtos {}
 
 record TimeSlotDetailDto(
@@ -58,7 +60,8 @@ record TimeSlotDetailDto(
     @Nullable WaitlistStatus userWaitlistStatus,
     @Nullable UUID waitlistEntryId,
     @Nullable Instant confirmationDeadline,
-    int userWaitlistPosition
+    int userWaitlistPosition,
+    boolean isAvailabilityWindow
 ) implements CalendarDtos {}
 
 record CourseEventDto(
@@ -112,5 +115,6 @@ enum SlotStatus {
     FULL,
     BLOCKED,
     PAST,
-    BOOKING_CLOSED
+    BOOKING_CLOSED,
+    AVAILABILITY_WINDOW
 }

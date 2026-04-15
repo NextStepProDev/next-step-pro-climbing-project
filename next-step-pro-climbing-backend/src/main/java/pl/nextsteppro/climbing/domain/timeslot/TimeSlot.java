@@ -38,6 +38,9 @@ public class TimeSlot {
     @Nullable
     private String title;
 
+    @Column(name = "is_availability_window", nullable = false)
+    private boolean availabilityWindow = false;
+
     @Column(name = "is_blocked", nullable = false)
     private boolean blocked = false;
 
@@ -115,6 +118,14 @@ public class TimeSlot {
 
     public void setMaxParticipants(int maxParticipants) {
         this.maxParticipants = maxParticipants;
+    }
+
+    public boolean isAvailabilityWindow() {
+        return availabilityWindow;
+    }
+
+    public void setAvailabilityWindow(boolean availabilityWindow) {
+        this.availabilityWindow = availabilityWindow;
     }
 
     public boolean isBlocked() {

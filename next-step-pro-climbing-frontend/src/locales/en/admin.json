@@ -170,6 +170,8 @@
     "titlePlaceholder": "Slot title (optional)",
     "maxParticipants": "Max. participants",
     "endAfterStart": "End time must be later than start time",
+    "availabilityWindow": "Availability window (call to arrange)",
+    "availabilityWindowHint": "Clients will see this block as available and know they can call — no self-service booking.",
     "saveChanges": "Save changes",
     "cancel": "Cancel",
     "warningActiveReservations": "Warning - active reservations!",

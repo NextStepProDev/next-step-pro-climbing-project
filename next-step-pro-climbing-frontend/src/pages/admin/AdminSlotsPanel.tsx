@@ -222,9 +222,15 @@ function SlotRow({
           <div className="text-sm text-primary-400">{slot.title}</div>
         )}
         <div className="flex items-center gap-2 mt-1">
-          <span className="text-sm text-dark-400">
-            {slot.currentParticipants}/{slot.maxParticipants}
-          </span>
+          {slot.isAvailabilityWindow ? (
+            <span className="text-xs text-violet-400 bg-violet-500/10 px-2 py-0.5 rounded-full">
+              {t('slots.availabilityWindow')}
+            </span>
+          ) : (
+            <span className="text-sm text-dark-400">
+              {slot.currentParticipants}/{slot.maxParticipants}
+            </span>
+          )}
           {slot.blocked && (
             <span className="text-xs text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded-full">
               {t('slots.statusBlocked')}
@@ -305,10 +311,11 @@ function EditSlotModal({
     endTime: slot?.endTime.slice(0, 5) ?? '',
     maxParticipants: slot?.maxParticipants ?? 4,
     title: slot?.title ?? '',
+    isAvailabilityWindow: slot?.isAvailabilityWindow ?? false,
   })
 
   const updateMutation = useMutation({
-    mutationFn: (data: { startTime?: string; endTime?: string; maxParticipants?: number; title?: string }) =>
+    mutationFn: (data: { startTime?: string; endTime?: string; maxParticipants?: number; title?: string; isAvailabilityWindow?: boolean }) =>
       adminApi.updateTimeSlot(slot!.id, data),
     onSuccess: () => {
       onSuccess()
@@ -331,8 +338,9 @@ function EditSlotModal({
           updateMutation.mutate({
             startTime: form.startTime,
             endTime: form.endTime,
-            maxParticipants: form.maxParticipants,
+            maxParticipants: form.isAvailabilityWindow ? 1 : form.maxParticipants,
             title: form.title || '',
+            isAvailabilityWindow: form.isAvailabilityWindow,
           })
         }}
         className="space-y-4"
@@ -367,16 +375,32 @@ function EditSlotModal({
           )}
         </div>
 
-        <div>
-          <label className="block text-sm text-dark-400 mb-1">{t('slots.maxParticipants')}</label>
+        {/* Availability window toggle */}
+        <label className="flex items-start gap-3 cursor-pointer">
           <input
-            type="number"
-            min={1}
-            value={form.maxParticipants}
-            onChange={(e) => setForm({ ...form, maxParticipants: parseInt(e.target.value) })}
-            className="w-full bg-dark-800 border border-dark-700 rounded-lg px-4 py-2 text-dark-100"
+            type="checkbox"
+            checked={form.isAvailabilityWindow}
+            onChange={(e) => setForm({ ...form, isAvailabilityWindow: e.target.checked })}
+            className="mt-0.5 accent-violet-500"
           />
-        </div>
+          <div>
+            <span className="text-sm font-medium text-violet-300">{t('slots.availabilityWindow')}</span>
+            <p className="text-xs text-dark-400 mt-0.5">{t('slots.availabilityWindowHint')}</p>
+          </div>
+        </label>
+
+        {!form.isAvailabilityWindow && (
+          <div>
+            <label className="block text-sm text-dark-400 mb-1">{t('slots.maxParticipants')}</label>
+            <input
+              type="number"
+              min={1}
+              value={form.maxParticipants}
+              onChange={(e) => setForm({ ...form, maxParticipants: parseInt(e.target.value) })}
+              className="w-full bg-dark-800 border border-dark-700 rounded-lg px-4 py-2 text-dark-100"
+            />
+          </div>
+        )}
 
         <div className="flex gap-3 pt-4">
           <Button type="submit" loading={updateMutation.isPending} className="flex-1">

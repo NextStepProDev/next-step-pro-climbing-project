@@ -170,6 +170,8 @@
     "titlePlaceholder": "Título de la franja horaria (opcional)",
     "maxParticipants": "Máx. participantes",
     "endAfterStart": "La hora de fin debe ser posterior a la de inicio",
+    "availabilityWindow": "Ventana de disponibilidad (llamar para concertar)",
+    "availabilityWindowHint": "Los clientes verán este bloque como disponible y sabrán que pueden llamar, sin posibilidad de reservar por su cuenta.",
     "saveChanges": "Guardar cambios",
     "cancel": "Cancelar",
     "warningActiveReservations": "Atención - ¡reservas activas!",

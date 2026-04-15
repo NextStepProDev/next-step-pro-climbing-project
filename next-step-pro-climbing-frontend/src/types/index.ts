@@ -38,6 +38,7 @@ export interface DaySummary {
   totalSlots: number
   availableSlots: number
   hasUserReservation: boolean
+  hasAvailabilityWindow: boolean
 }
 
 export interface DayView {
@@ -66,6 +67,7 @@ export interface TimeSlot {
   status: SlotStatus
   isUserRegistered: boolean
   eventTitle: string | null
+  isAvailabilityWindow: boolean
 }
 
 export interface TimeSlotDetail {
@@ -86,9 +88,10 @@ export interface TimeSlotDetail {
   waitlistEntryId: string | null
   confirmationDeadline: string | null
   userWaitlistPosition: number
+  isAvailabilityWindow: boolean
 }
 
-export type SlotStatus = 'AVAILABLE' | 'FULL' | 'BLOCKED' | 'PAST' | 'BOOKING_CLOSED'
+export type SlotStatus = 'AVAILABLE' | 'FULL' | 'BLOCKED' | 'PAST' | 'BOOKING_CLOSED' | 'AVAILABILITY_WINDOW'
 
 export type WaitlistStatus = 'WAITING' | 'PENDING_CONFIRMATION'
 
@@ -219,6 +222,7 @@ export interface TimeSlotAdmin {
   blockReason: string | null
   title: string | null
   eventId: string | null
+  isAvailabilityWindow: boolean
 }
 
 export interface SlotParticipants {
@@ -254,6 +258,7 @@ export interface CreateTimeSlotRequest {
   maxParticipants: number
   title?: string
   eventId?: string
+  isAvailabilityWindow?: boolean
 }
 
 export interface CourseEvent {
