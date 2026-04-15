@@ -118,6 +118,7 @@ public class AdminService {
         if (event != null) {
             slot.setEvent(event);
         }
+        slot.setAvailabilityWindow(request.isAvailabilityWindow());
 
         slot = timeSlotRepository.save(slot);
         return toTimeSlotAdminDto(slot);
@@ -147,6 +148,7 @@ public class AdminService {
             slot.setMaxParticipants(request.maxParticipants());
         }
         if (request.title() != null) slot.setTitle(request.title().isBlank() ? null : request.title());
+        if (request.isAvailabilityWindow() != null) slot.setAvailabilityWindow(request.isAvailabilityWindow());
 
         LocalTime start = slot.getStartTime();
         LocalTime end = slot.getEndTime();
@@ -671,7 +673,8 @@ public class AdminService {
             slot.isBlocked(),
             slot.getBlockReason(),
             slot.getDisplayTitle(),
-            slot.belongsToEvent() ? slot.getEvent().getId() : null
+            slot.belongsToEvent() ? slot.getEvent().getId() : null,
+            slot.isAvailabilityWindow()
         );
     }
 

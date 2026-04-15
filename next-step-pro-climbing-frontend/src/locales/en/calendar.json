@@ -39,7 +39,9 @@
     "past": "Finished",
     "yourReservation": "Your reservation",
     "noSlots": "No available time slots on this day",
-    "training": "Training"
+    "training": "Training",
+    "callToBook": "Call to arrange",
+    "availabilityWindows": "Available to arrange"
   },
   "slot": {
     "title": "Slot details",
@@ -59,6 +61,10 @@
     "bookSingle": "Sign up",
     "participants": "{{current}} / {{max}} participants",
     "spotsFree": "({{count}} available)",
+    "availabilityWindow": {
+      "title": "This time block is available",
+      "body": "Call or write to us to arrange a specific training time within this window."
+    },
     "waitlist": {
       "join": "Join waitlist",
       "leave": "Leave queue",
@@ -128,6 +134,8 @@
     "to": "To",
     "maxParticipants": "Max. participants",
     "endAfterStart": "End time must be later than start time",
+    "availabilityWindow": "Availability window (call to arrange)",
+    "availabilityWindowHint": "Clients will see this block as available and know they can call — no self-service booking.",
     "submit": "Create slot",
     "cancel": "Cancel"
   },

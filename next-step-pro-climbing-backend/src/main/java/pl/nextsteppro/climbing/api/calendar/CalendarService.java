@@ -259,7 +259,8 @@ public class CalendarService {
             userWaitlistStatus,
             waitlistEntryId,
             confirmationDeadline,
-            userWaitlistPosition
+            userWaitlistPosition,
+            slot.isAvailabilityWindow()
         );
     }
 
@@ -309,12 +310,19 @@ public class CalendarService {
             .filter(slot -> !slot.belongsToEvent())
             .toList();
 
-        int totalSlots = standaloneSlots.size();
+        boolean hasAvailabilityWindow = standaloneSlots.stream()
+            .anyMatch(TimeSlot::isAvailabilityWindow);
+
+        List<TimeSlot> bookableSlots = standaloneSlots.stream()
+            .filter(slot -> !slot.isAvailabilityWindow())
+            .toList();
+
+        int totalSlots = bookableSlots.size();
         int availableSlots = 0;
         boolean hasUserReservation = false;
 
         LocalDateTime cutoff = LocalDateTime.now().plusHours(BOOKING_CUTOFF_HOURS);
-        for (TimeSlot slot : standaloneSlots) {
+        for (TimeSlot slot : bookableSlots) {
             LocalDateTime slotDateTime = LocalDateTime.of(slot.getDate(), slot.getStartTime());
             if (!slot.isBlocked() && slotDateTime.isAfter(cutoff)) {
                 int confirmed = countMap.getOrDefault(slot.getId(), 0);
@@ -327,7 +335,7 @@ public class CalendarService {
             }
         }
 
-        return new DaySummaryDto(date, totalSlots, availableSlots, hasUserReservation);
+        return new DaySummaryDto(date, totalSlots, availableSlots, hasUserReservation, hasAvailabilityWindow);
     }
 
     private TimeSlotDto toTimeSlotDto(TimeSlot slot, int confirmedCount, boolean isUserRegistered) {
@@ -340,7 +348,8 @@ public class CalendarService {
             slot.getMaxParticipants(),
             status,
             isUserRegistered,
-            slot.getDisplayTitle()
+            slot.getDisplayTitle(),
+            slot.isAvailabilityWindow()
         );
     }
 
@@ -349,6 +358,9 @@ public class CalendarService {
     private SlotStatus determineSlotStatus(TimeSlot slot, int confirmedCount) {
         LocalDateTime slotDateTime = LocalDateTime.of(slot.getDate(), slot.getStartTime());
         LocalDateTime now = LocalDateTime.now();
+        if (slot.isAvailabilityWindow()) {
+            return slotDateTime.isBefore(now) ? SlotStatus.PAST : SlotStatus.AVAILABILITY_WINDOW;
+        }
         if (slotDateTime.isBefore(now)) {
             return SlotStatus.PAST;
         }

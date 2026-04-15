@@ -1,0 +1,1 @@
+ALTER TABLE time_slots ADD COLUMN is_availability_window BOOLEAN NOT NULL DEFAULT FALSE;

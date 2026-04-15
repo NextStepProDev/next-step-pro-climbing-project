@@ -28,6 +28,7 @@ export function CreateSlotModal({
     endTime: '11:00',
     maxParticipants: 4,
     title: '',
+    isAvailabilityWindow: false,
   })
 
   const queryClient = useQueryClient()
@@ -54,6 +55,7 @@ export function CreateSlotModal({
           const { title, ...rest } = form
           createMutation.mutate({
             ...rest,
+            maxParticipants: form.isAvailabilityWindow ? 1 : form.maxParticipants,
             title: title || undefined,
           })
         }}
@@ -102,16 +104,32 @@ export function CreateSlotModal({
           )}
         </div>
 
-        <div>
-          <label className="block text-sm text-dark-400 mb-1">{t('createSlot.maxParticipants')}</label>
+        {/* Availability window toggle */}
+        <label className="flex items-start gap-3 cursor-pointer">
           <input
-            type="number"
-            min={1}
-            value={form.maxParticipants}
-            onChange={(e) => setForm({ ...form, maxParticipants: parseInt(e.target.value) })}
-            className="w-full bg-dark-800 border border-dark-700 rounded-lg px-4 py-2 text-dark-100"
+            type="checkbox"
+            checked={!!form.isAvailabilityWindow}
+            onChange={(e) => setForm({ ...form, isAvailabilityWindow: e.target.checked })}
+            className="mt-0.5 accent-violet-500"
           />
-        </div>
+          <div>
+            <span className="text-sm font-medium text-violet-300">{t('createSlot.availabilityWindow')}</span>
+            <p className="text-xs text-dark-400 mt-0.5">{t('createSlot.availabilityWindowHint')}</p>
+          </div>
+        </label>
+
+        {!form.isAvailabilityWindow && (
+          <div>
+            <label className="block text-sm text-dark-400 mb-1">{t('createSlot.maxParticipants')}</label>
+            <input
+              type="number"
+              min={1}
+              value={form.maxParticipants}
+              onChange={(e) => setForm({ ...form, maxParticipants: parseInt(e.target.value) })}
+              className="w-full bg-dark-800 border border-dark-700 rounded-lg px-4 py-2 text-dark-100"
+            />
+          </div>
+        )}
 
         <div className="flex gap-3 pt-4">
           <Button type="submit" loading={createMutation.isPending} className="flex-1">

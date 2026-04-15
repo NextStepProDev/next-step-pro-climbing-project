@@ -45,6 +45,8 @@ function getSlotColors(status: string): string {
       return 'bg-dark-700/40 border-dark-600/40 text-dark-400'
     case 'PAST':
       return 'bg-dark-800/30 border-dark-700/30 text-dark-500'
+    case 'AVAILABILITY_WINDOW':
+      return 'bg-violet-600/30 border-violet-500/50 text-violet-300 hover:bg-violet-600/40'
     default:
       return 'bg-dark-700/50 border-dark-600/50 text-dark-400'
   }
@@ -62,6 +64,8 @@ function getStatusLabel(status: string, t: (key: string) => string): string {
       return t('day.bookingClosed')
     case 'PAST':
       return t('day.past')
+    case 'AVAILABILITY_WINDOW':
+      return t('day.callToBook')
     default:
       return ''
   }
@@ -260,7 +264,7 @@ export function WeekCalendar({
                   {/* Slots */}
                   {day.slots.map((slot: TimeSlot) => {
                     const { top, height } = getSlotPosition(slot.startTime, slot.endTime)
-                    const isClickable = slot.status === 'AVAILABLE' || slot.status === 'FULL' || slot.isUserRegistered
+                    const isClickable = slot.status === 'AVAILABLE' || slot.status === 'FULL' || slot.status === 'AVAILABILITY_WINDOW' || slot.isUserRegistered
                     const showTitle = height >= 45
 
                     return (

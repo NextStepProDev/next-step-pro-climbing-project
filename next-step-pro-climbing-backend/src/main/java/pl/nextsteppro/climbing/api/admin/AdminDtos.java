@@ -21,7 +21,8 @@ record CreateTimeSlotRequest(
     @NotNull LocalTime endTime,
     @Min(1) @Max(100) int maxParticipants,
     @Nullable String title,
-    @Nullable UUID eventId
+    @Nullable UUID eventId,
+    boolean isAvailabilityWindow
 ) {}
 
 record TimeSlotAdminDto(
@@ -34,7 +35,8 @@ record TimeSlotAdminDto(
     boolean blocked,
     @Nullable String blockReason,
     @Nullable String title,
-    @Nullable UUID eventId
+    @Nullable UUID eventId,
+    boolean isAvailabilityWindow
 ) {}
 
 record SlotParticipantsDto(
@@ -81,7 +83,8 @@ record UpdateTimeSlotRequest(
     @Nullable LocalTime startTime,
     @Nullable LocalTime endTime,
     @Nullable @Min(1) @Max(100) Integer maxParticipants,
-    @Nullable String title
+    @Nullable String title,
+    @Nullable Boolean isAvailabilityWindow
 ) {}
 
 record UpdateReservationParticipantsRequest(

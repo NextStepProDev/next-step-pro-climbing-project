@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { format } from "date-fns";
-import { Clock, Users, Calendar, Clock3 } from "lucide-react";
+import { Clock, Users, Calendar, Clock3, Phone } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { Modal } from "../ui/Modal";
@@ -103,6 +103,7 @@ export function SlotDetailModal({
 
   if (!slot) return null;
 
+  const isAvailabilityWindow = slot.isAvailabilityWindow;
   const dateObj = new Date(slot.date);
   const spotsLeft =
     (slot.maxParticipants ?? 0) - (slot.currentParticipants ?? 0);
@@ -150,8 +151,26 @@ export function SlotDetailModal({
           </div>
         )}
 
+        {/* Availability window — special info, no booking */}
+        {isAvailabilityWindow && (
+          <>
+            <div className="p-4 bg-violet-500/10 border border-violet-500/20 rounded-lg space-y-2">
+              <div className="flex items-center gap-2">
+                <Phone className="w-5 h-5 text-violet-400 shrink-0" />
+                <span className="text-violet-300 font-semibold">{t('slot.availabilityWindow.title')}</span>
+              </div>
+              <p className="text-violet-200/80 text-sm">{t('slot.availabilityWindow.body')}</p>
+            </div>
+            <div className="flex gap-3 pt-4 border-t border-dark-800">
+              <Button variant="ghost" className="flex-1" onClick={onClose}>
+                {t('slot.close')}
+              </Button>
+            </div>
+          </>
+        )}
+
         {/* Capacity */}
-        <div className="flex items-center gap-2 text-dark-300">
+        {!isAvailabilityWindow && <div className="flex items-center gap-2 text-dark-300">
           <Users className="w-5 h-5" />
           <span>
             {t('slot.participants', { current: slot.currentParticipants, max: slot.maxParticipants })}
@@ -159,10 +178,10 @@ export function SlotDetailModal({
               <span className="text-primary-400 ml-2">{t('slot.spotsFree', { count: spotsLeft })}</span>
             )}
           </span>
-        </div>
+        </div>}
 
         {/* Past slot info */}
-        {isPast && (
+        {!isAvailabilityWindow && isPast && (
           <div className="p-3 bg-dark-800 border border-dark-700 rounded-lg">
             <span className="text-dark-400 text-sm">
               {t('slot.past')}
@@ -171,7 +190,7 @@ export function SlotDetailModal({
         )}
 
         {/* Booking closed info */}
-        {isBookingClosed && !slot.isUserRegistered && (
+        {!isAvailabilityWindow && isBookingClosed && !slot.isUserRegistered && (
           <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg">
             <span className="text-amber-400 text-sm">
               {t('slot.bookingClosed')}
@@ -180,7 +199,7 @@ export function SlotDetailModal({
         )}
 
         {/* User status */}
-        {slot.isUserRegistered && (
+        {!isAvailabilityWindow && slot.isUserRegistered && (
           <div className="p-3 bg-primary-500/10 border border-primary-500/20 rounded-lg">
             <span className="text-primary-400 font-medium">
               {t('slot.hasReservation')}
@@ -189,7 +208,7 @@ export function SlotDetailModal({
         )}
 
         {/* Waitlist — PENDING_CONFIRMATION (wyścig o miejsce) */}
-        {isPendingConfirmation && slot.waitlistEntryId && (
+        {!isAvailabilityWindow && isPendingConfirmation && slot.waitlistEntryId && (
           <div className="p-4 bg-amber-500/10 border-2 border-amber-500/40 rounded-lg space-y-2">
             <div className="flex items-center gap-2">
               <Clock3 className="w-5 h-5 text-amber-400 shrink-0" />
@@ -208,7 +227,7 @@ export function SlotDetailModal({
         )}
 
         {/* Waitlist — race lost (ktoś był szybszy — wróciłeś do kolejki) */}
-        {confirmOfferMutation.isError && (
+        {!isAvailabilityWindow && confirmOfferMutation.isError && (
           <div className="p-3 bg-rose-500/10 border border-rose-500/20 rounded-lg">
             <p className="text-rose-400 text-sm font-medium">
               {getErrorMessage(confirmOfferMutation.error)}
@@ -217,7 +236,7 @@ export function SlotDetailModal({
         )}
 
         {/* Waitlist — WAITING (w kolejce) */}
-        {isWaiting && (
+        {!isAvailabilityWindow && isWaiting && (
           <div className="p-3 bg-dark-800 border border-dark-700 rounded-lg">
             <span className="text-dark-300 text-sm">
               {t('slot.waitlist.waiting')}
@@ -226,7 +245,7 @@ export function SlotDetailModal({
         )}
 
         {/* Participants & Comment for reservation */}
-        {isAuthenticated && isAvailable && !slot.isUserRegistered && (
+        {!isAvailabilityWindow && isAuthenticated && isAvailable && !slot.isUserRegistered && (
           <>
             {spotsLeft > 1 && !showParticipants && (
               <button
@@ -287,7 +306,7 @@ export function SlotDetailModal({
         )}
 
         {/* Actions */}
-        <div className="flex gap-3 pt-4 border-t border-dark-800">
+        {!isAvailabilityWindow && <div className="flex gap-3 pt-4 border-t border-dark-800">
           {!isAuthenticated ? (
             <Button
               variant="primary"
@@ -373,20 +392,20 @@ export function SlotDetailModal({
           <Button variant="ghost" onClick={onClose}>
             {t('slot.close')}
           </Button>
-        </div>
+        </div>}
 
         {/* Error messages */}
-        {reservationMutation.isError && (
+        {!isAvailabilityWindow && reservationMutation.isError && (
           <p className="text-sm text-rose-400/80">
             {getErrorMessage(reservationMutation.error)}
           </p>
         )}
-        {cancelMutation.isError && (
+        {!isAvailabilityWindow && cancelMutation.isError && (
           <p className="text-sm text-rose-400/80">
             {getErrorMessage(cancelMutation.error)}
           </p>
         )}
-        {joinWaitlistMutation.isError && (
+        {!isAvailabilityWindow && joinWaitlistMutation.isError && (
           <p className="text-sm text-rose-400/80">
             {getErrorMessage(joinWaitlistMutation.error)}
           </p>
