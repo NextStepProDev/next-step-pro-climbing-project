@@ -23,7 +23,7 @@ export function CalendarPage() {
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
   const [viewMode, setViewMode] = useState<'month' | 'week'>(() => {
-    return searchParams.get("view") === 'week' ? 'week' : 'month';
+    return searchParams.get("view") === 'month' ? 'month' : 'week';
   });
   const [currentMonth, setCurrentMonth] = useState(() => {
     const dateParam = searchParams.get("date");
@@ -33,7 +33,7 @@ export function CalendarPage() {
     return startOfWeek(new Date(), { weekStartsOn: 1 });
   });
   const [selectedDate, setSelectedDate] = useState<string | null>(
-    searchParams.get("view") === 'week' ? null : searchParams.get("date"),
+    searchParams.get("view") === 'month' ? searchParams.get("date") : null,
   );
   const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<EventSummary | null>(null);
@@ -122,8 +122,8 @@ export function CalendarPage() {
   const handleViewModeChange = useCallback((mode: 'month' | 'week') => {
     setViewMode(mode);
     setSelectedDate(null);
-    if (mode === 'week') {
-      setSearchParams({ view: 'week' });
+    if (mode === 'month') {
+      setSearchParams({ view: 'month' });
     } else {
       setSearchParams({});
     }
