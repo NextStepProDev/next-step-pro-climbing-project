@@ -96,8 +96,8 @@ export function AdminUsersPanel() {
         <QueryError error={error} onRetry={() => refetch()} />
       ) : (
         <>
-          <div className="bg-dark-900 rounded-lg border border-dark-800 overflow-hidden">
-            <table className="w-full">
+          <div className="bg-dark-900 rounded-lg border border-dark-800 overflow-x-auto">
+            <table className="w-full min-w-[700px]">
               <thead className="bg-dark-800">
                 <tr>
                   <th className="text-left px-4 py-3 text-sm font-medium text-dark-300">
