@@ -26,6 +26,7 @@ import pl.nextsteppro.climbing.infrastructure.security.JwtAuthenticationFilter;
 import pl.nextsteppro.climbing.api.activitylog.ActivityLogService;
 import pl.nextsteppro.climbing.api.reservation.EventWaitlistService;
 import pl.nextsteppro.climbing.api.reservation.WaitlistService;
+import pl.nextsteppro.climbing.domain.waitlist.EventWaitlistRepository;
 import pl.nextsteppro.climbing.domain.waitlist.Waitlist;
 import pl.nextsteppro.climbing.domain.waitlist.WaitlistRepository;
 import pl.nextsteppro.climbing.domain.waitlist.WaitlistStatus;
@@ -56,6 +57,7 @@ public class AdminService {
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final MessageService msg;
     private final WaitlistRepository waitlistRepository;
+    private final EventWaitlistRepository eventWaitlistRepository;
     private final pl.nextsteppro.climbing.infrastructure.mail.AuthMailService authMailService;
     private final WaitlistService waitlistService;
     private final EventWaitlistService eventWaitlistService;
@@ -71,6 +73,7 @@ public class AdminService {
                        JwtAuthenticationFilter jwtAuthenticationFilter,
                        MessageService msg,
                        WaitlistRepository waitlistRepository,
+                       EventWaitlistRepository eventWaitlistRepository,
                        pl.nextsteppro.climbing.infrastructure.mail.AuthMailService authMailService,
                        WaitlistService waitlistService,
                        EventWaitlistService eventWaitlistService) {
@@ -85,6 +88,7 @@ public class AdminService {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
         this.msg = msg;
         this.waitlistRepository = waitlistRepository;
+        this.eventWaitlistRepository = eventWaitlistRepository;
         this.authMailService = authMailService;
         this.waitlistService = waitlistService;
         this.eventWaitlistService = eventWaitlistService;
@@ -247,14 +251,19 @@ public class AdminService {
         TimeSlot slot = timeSlotRepository.findById(slotId)
             .orElseThrow(() -> new IllegalArgumentException("Time slot not found"));
 
+        boolean isPast = slot.getDate().isBefore(LocalDate.now());
+
         List<Reservation> confirmed = reservationRepository.findConfirmedByTimeSlotId(slotId);
         for (Reservation reservation : confirmed) {
             reservation.cancelByAdmin();
             reservationRepository.save(reservation);
-            mailService.sendAdminCancellationNotification(reservation);
+            if (!isPast) {
+                mailService.sendAdminCancellationNotification(reservation);
+            }
             activityLogService.logCancelledByAdmin(reservation.getUser(), slot, reservation.getParticipants());
         }
 
+        waitlistRepository.deleteByTimeSlotId(slotId);
         timeSlotRepository.deleteById(slotId);
     }
 
@@ -507,6 +516,8 @@ public class AdminService {
         Event event = eventRepository.findById(eventId)
             .orElseThrow(() -> new IllegalArgumentException("Event not found"));
 
+        boolean isPast = !event.getEndDate().isAfter(LocalDate.now());
+
         List<TimeSlot> slots = timeSlotRepository.findByEventId(eventId);
         if (!slots.isEmpty()) {
             List<UUID> slotIds = slots.stream().map(TimeSlot::getId).toList();
@@ -516,19 +527,25 @@ public class AdminService {
             for (Reservation reservation : confirmed) {
                 reservation.cancelByAdmin();
                 reservationRepository.save(reservation);
-                notifiedUsers.putIfAbsent(reservation.getUser().getId(), reservation.getUser());
+                if (!isPast) {
+                    notifiedUsers.putIfAbsent(reservation.getUser().getId(), reservation.getUser());
+                }
                 activityLogService.logCancelledByAdmin(reservation.getUser(), reservation.getTimeSlot(), reservation.getParticipants());
             }
 
-            for (User user : notifiedUsers.values()) {
-                mailService.sendAdminEventCancellationNotification(user, event);
+            if (!isPast) {
+                for (User user : notifiedUsers.values()) {
+                    mailService.sendAdminEventCancellationNotification(user, event);
+                }
             }
 
-            // Delete all reservations and time slots before deleting the event
+            // Delete waitlist entries before deleting slots and event (FK constraints)
+            waitlistRepository.deleteByTimeSlotIdIn(slotIds);
             reservationRepository.deleteByTimeSlotIds(slotIds);
             timeSlotRepository.deleteAll(slots);
         }
 
+        eventWaitlistRepository.deleteByEventId(eventId);
         eventRepository.deleteById(eventId);
     }
 
