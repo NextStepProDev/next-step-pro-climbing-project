@@ -10,6 +10,7 @@ import {
   UserPlus,
 } from "lucide-react";
 import { Button } from "../components/ui/Button";
+import { CurrentLocationSection } from "../components/ui/CurrentLocationSection";
 import logoWhite from "../assets/logo/logo-white.png";
 import logoBlack from "../assets/logo/logo-black.png";
 
@@ -29,6 +30,12 @@ export function HomePage() {
         />
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 sm:py-32">
           <div className="text-center max-w-3xl mx-auto">
+            {/* === ANDALUSIA BADGE — zakomentuj ten blok aby usunąć === */}
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-amber-500/10 border border-amber-500/30 rounded-full text-amber-400 text-sm font-medium mb-6">
+              <span>📍</span>
+              <span>{t("location.badge")}</span>
+            </div>
+            {/* === END BADGE === */}
             <img
               src={logoWhite}
               alt="Next Step Pro Climbing"
@@ -60,6 +67,10 @@ export function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* === WHERE I AM NOW — zakomentuj <CurrentLocationSection /> aby usunąć całą sekcję === */}
+      <CurrentLocationSection />
+      {/* === END WHERE I AM NOW === */}
 
       {/* Steps Section */}
       <section className="py-16 sm:py-24">

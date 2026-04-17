@@ -50,5 +50,12 @@
     "title": "¿Listo para dar el primer paso?",
     "subtitle": "Consulta los horarios disponibles e inscríbete en las sesiones que prefieras. ¡Te esperamos!",
     "button": "Ir al calendario"
+  },
+  "location": {
+    "badge": "Ahora en Andalucía — reservas abiertas",
+    "title": "Dónde estoy ahora",
+    "subtitle": "Con base en Andalucía – actualmente escalando y entrenando en:",
+    "ctaCalendar": "Ver fechas disponibles",
+    "ctaCourses": "Ver cursos disponibles"
   }
 }

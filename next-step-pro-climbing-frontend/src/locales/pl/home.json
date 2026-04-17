@@ -50,5 +50,12 @@
     "title": "Gotowy na pierwszy krok?",
     "subtitle": "Sprawdź dostępne terminy i zapisz się na wybrane zajęcia. Czekamy na Ciebie!",
     "button": "Przejdź do kalendarza"
+  },
+  "location": {
+    "badge": "Obecnie w Andaluzji — rezerwacje otwarte",
+    "title": "Gdzie teraz jestem",
+    "subtitle": "Obecnie w Andaluzji, prowadzę kursy wspinaczkowe oraz pozostałe zajęcia w:",
+    "ctaCalendar": "Sprawdź dostępne terminy",
+    "ctaCourses": "Sprawdź dostępne kursy"
   }
 }
