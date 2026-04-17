@@ -1,6 +1,7 @@
 package pl.nextsteppro.climbing.domain.waitlist;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 
 import java.time.Instant;
@@ -36,4 +37,8 @@ public interface EventWaitlistRepository extends JpaRepository<EventWaitlist, UU
 
     @Query("SELECT COUNT(w) > 0 FROM EventWaitlist w WHERE w.user.id = :userId AND w.event.id = :eventId AND w.status IN :statuses")
     boolean existsByUserAndEventAndStatuses(UUID userId, UUID eventId, List<WaitlistStatus> statuses);
+
+    @Modifying
+    @Query("DELETE FROM EventWaitlist w WHERE w.event.id = :eventId")
+    void deleteByEventId(UUID eventId);
 }

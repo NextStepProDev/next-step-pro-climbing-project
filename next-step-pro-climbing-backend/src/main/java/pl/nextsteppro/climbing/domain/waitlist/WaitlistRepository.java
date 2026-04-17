@@ -1,9 +1,11 @@
 package pl.nextsteppro.climbing.domain.waitlist;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -36,4 +38,12 @@ public interface WaitlistRepository extends JpaRepository<Waitlist, UUID> {
 
     @Query("SELECT COUNT(w) > 0 FROM Waitlist w WHERE w.user.id = :userId AND w.timeSlot.id = :slotId AND w.status IN :statuses")
     boolean existsByUserAndSlotAndStatuses(UUID userId, UUID slotId, List<WaitlistStatus> statuses);
+
+    @Modifying
+    @Query("DELETE FROM Waitlist w WHERE w.timeSlot.id = :slotId")
+    void deleteByTimeSlotId(UUID slotId);
+
+    @Modifying
+    @Query("DELETE FROM Waitlist w WHERE w.timeSlot.id IN :slotIds")
+    void deleteByTimeSlotIdIn(Collection<UUID> slotIds);
 }
