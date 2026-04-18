@@ -8,6 +8,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import pl.nextsteppro.climbing.domain.event.Event;
 import pl.nextsteppro.climbing.domain.event.EventRepository;
 import pl.nextsteppro.climbing.domain.event.EventType;
+import pl.nextsteppro.climbing.domain.reservation.GuestReservationRepository;
 import pl.nextsteppro.climbing.domain.reservation.Reservation;
 import pl.nextsteppro.climbing.domain.reservation.ReservationRepository;
 import pl.nextsteppro.climbing.domain.reservation.SlotParticipantCount;
@@ -53,6 +54,9 @@ class CalendarServiceTest {
     private ReservationRepository reservationRepository;
 
     @Mock
+    private GuestReservationRepository guestReservationRepository;
+
+    @Mock
     private EventRepository eventRepository;
 
     @Mock
@@ -70,7 +74,7 @@ class CalendarServiceTest {
 
     @BeforeEach
     void setUp() {
-        calendarService = new CalendarService(timeSlotRepository, reservationRepository, eventRepository, waitlistRepository, eventWaitlistRepository);
+        calendarService = new CalendarService(timeSlotRepository, reservationRepository, guestReservationRepository, eventRepository, waitlistRepository, eventWaitlistRepository);
         testUserId = UUID.randomUUID();
 
         // Setup test user

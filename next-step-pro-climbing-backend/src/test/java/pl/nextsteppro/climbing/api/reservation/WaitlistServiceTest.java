@@ -7,6 +7,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import pl.nextsteppro.climbing.api.activitylog.ActivityLogService;
+import pl.nextsteppro.climbing.domain.reservation.GuestReservationRepository;
 import pl.nextsteppro.climbing.domain.reservation.Reservation;
 import pl.nextsteppro.climbing.domain.reservation.ReservationRepository;
 import pl.nextsteppro.climbing.domain.reservation.ReservationStatus;
@@ -42,6 +43,7 @@ class WaitlistServiceTest {
     @Mock private WaitlistRepository waitlistRepository;
     @Mock private TimeSlotRepository timeSlotRepository;
     @Mock private ReservationRepository reservationRepository;
+    @Mock private GuestReservationRepository guestReservationRepository;
     @Mock private UserRepository userRepository;
     @Mock private WaitlistMailService waitlistMailService;
     @Mock private ActivityLogService activityLogService;
@@ -53,7 +55,7 @@ class WaitlistServiceTest {
     void setUp() {
         waitlistService = new WaitlistService(
             waitlistRepository, timeSlotRepository, reservationRepository,
-            userRepository, waitlistMailService, activityLogService, msg);
+            guestReservationRepository, userRepository, waitlistMailService, activityLogService, msg);
 
         // Default message returns
         lenient().when(msg.get(anyString())).thenAnswer(inv -> inv.getArgument(0));
