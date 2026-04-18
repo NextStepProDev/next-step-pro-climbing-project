@@ -233,6 +233,7 @@ export interface SlotParticipants {
   endTime: string
   maxParticipants: number
   participants: Participant[]
+  guestParticipants: GuestParticipant[]
 }
 
 export interface Participant {
@@ -246,10 +247,18 @@ export interface Participant {
   registeredAt: string
 }
 
+export interface GuestParticipant {
+  id: string
+  note: string
+  participants: number
+  createdAt: string
+}
+
 export interface EventParticipants {
   eventId: string
   maxParticipants: number
   participants: Participant[]
+  guestParticipants: GuestParticipant[]
 }
 
 export interface CreateTimeSlotRequest {

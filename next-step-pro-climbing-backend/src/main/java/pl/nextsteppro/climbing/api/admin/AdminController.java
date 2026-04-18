@@ -187,6 +187,66 @@ public class AdminController {
         return ResponseEntity.ok(adminService.getSlotWaitlist(slotId));
     }
 
+    @Tag(name = "Admin - Slots")
+    @Operation(summary = "Zapisz zarejestrowanego użytkownika na termin", description = "Admin zapisuje wybranego użytkownika na termin — z potwierdzeniem mailowym i wpisem w 'Moje rezerwacje'")
+    @PostMapping("/slots/{slotId}/participants/registered")
+    public ResponseEntity<Void> addRegisteredParticipantToSlot(
+            @Parameter(description = "UUID terminu") @PathVariable UUID slotId,
+            @Valid @RequestBody AddRegisteredParticipantRequest request) {
+        adminService.addRegisteredParticipantToSlot(slotId, request);
+        return ResponseEntity.noContent().build();
+    }
+
+    @Tag(name = "Admin - Slots")
+    @Operation(summary = "Zapisz gościa na termin", description = "Admin rezerwuje miejsce dla osoby niezarejestrowanej — bez powiadomień, z notatką")
+    @PostMapping("/slots/{slotId}/participants/guest")
+    public ResponseEntity<GuestParticipantDto> addGuestParticipantToSlot(
+            @Parameter(description = "UUID terminu") @PathVariable UUID slotId,
+            @Valid @RequestBody AddGuestParticipantRequest request) {
+        GuestParticipantDto guest = adminService.addGuestParticipantToSlot(slotId, request);
+        return ResponseEntity.ok(guest);
+    }
+
+    @Tag(name = "Admin - Slots")
+    @Operation(summary = "Usuń gościa z terminu")
+    @DeleteMapping("/slots/{slotId}/participants/guest/{guestId}")
+    public ResponseEntity<Void> deleteGuestParticipantFromSlot(
+            @PathVariable UUID slotId,
+            @PathVariable UUID guestId) {
+        adminService.deleteGuestParticipantFromSlot(slotId, guestId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @Tag(name = "Admin - Events")
+    @Operation(summary = "Zapisz zarejestrowanego użytkownika na wydarzenie", description = "Admin zapisuje wybranego użytkownika na wydarzenie — z potwierdzeniem mailowym i wpisem w 'Moje rezerwacje'")
+    @PostMapping("/events/{eventId}/participants/registered")
+    public ResponseEntity<Void> addRegisteredParticipantToEvent(
+            @Parameter(description = "UUID wydarzenia") @PathVariable UUID eventId,
+            @Valid @RequestBody AddRegisteredParticipantRequest request) {
+        adminService.addRegisteredParticipantToEvent(eventId, request);
+        return ResponseEntity.noContent().build();
+    }
+
+    @Tag(name = "Admin - Events")
+    @Operation(summary = "Zapisz gościa na wydarzenie", description = "Admin rezerwuje miejsce dla osoby niezarejestrowanej — bez powiadomień, z notatką")
+    @PostMapping("/events/{eventId}/participants/guest")
+    public ResponseEntity<GuestParticipantDto> addGuestParticipantToEvent(
+            @Parameter(description = "UUID wydarzenia") @PathVariable UUID eventId,
+            @Valid @RequestBody AddGuestParticipantRequest request) {
+        GuestParticipantDto guest = adminService.addGuestParticipantToEvent(eventId, request);
+        return ResponseEntity.ok(guest);
+    }
+
+    @Tag(name = "Admin - Events")
+    @Operation(summary = "Usuń gościa z wydarzenia")
+    @DeleteMapping("/events/{eventId}/participants/guest/{guestId}")
+    public ResponseEntity<Void> deleteGuestParticipantFromEvent(
+            @PathVariable UUID eventId,
+            @PathVariable UUID guestId) {
+        adminService.deleteGuestParticipantFromEvent(eventId, guestId);
+        return ResponseEntity.noContent().build();
+    }
+
     // ==================== Events Management ====================
 
     @Tag(name = "Admin - Events", description = "Zarządzanie wydarzeniami (tylko admin)")

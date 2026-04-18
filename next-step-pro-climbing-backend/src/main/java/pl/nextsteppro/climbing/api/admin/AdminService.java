@@ -10,8 +10,11 @@ import pl.nextsteppro.climbing.domain.course.CourseRepository;
 import pl.nextsteppro.climbing.domain.event.Event;
 import pl.nextsteppro.climbing.domain.event.EventRepository;
 import pl.nextsteppro.climbing.domain.event.EventType;
+import pl.nextsteppro.climbing.domain.reservation.GuestReservation;
+import pl.nextsteppro.climbing.domain.reservation.GuestReservationRepository;
 import pl.nextsteppro.climbing.domain.reservation.Reservation;
 import pl.nextsteppro.climbing.domain.reservation.ReservationRepository;
+import pl.nextsteppro.climbing.domain.reservation.ReservationStatus;
 import pl.nextsteppro.climbing.domain.reservation.SlotParticipantCount;
 import pl.nextsteppro.climbing.domain.timeslot.TimeSlot;
 import pl.nextsteppro.climbing.domain.timeslot.TimeSlotRepository;
@@ -50,6 +53,7 @@ public class AdminService {
     private final EventRepository eventRepository;
     private final CourseRepository courseRepository;
     private final ReservationRepository reservationRepository;
+    private final GuestReservationRepository guestReservationRepository;
     private final UserRepository userRepository;
     private final AuthTokenRepository authTokenRepository;
     private final MailService mailService;
@@ -66,6 +70,7 @@ public class AdminService {
                        EventRepository eventRepository,
                        CourseRepository courseRepository,
                        ReservationRepository reservationRepository,
+                       GuestReservationRepository guestReservationRepository,
                        UserRepository userRepository,
                        AuthTokenRepository authTokenRepository,
                        MailService mailService,
@@ -81,6 +86,7 @@ public class AdminService {
         this.eventRepository = eventRepository;
         this.courseRepository = courseRepository;
         this.reservationRepository = reservationRepository;
+        this.guestReservationRepository = guestReservationRepository;
         this.userRepository = userRepository;
         this.authTokenRepository = authTokenRepository;
         this.mailService = mailService;
@@ -347,13 +353,18 @@ public class AdminService {
             ))
             .toList();
 
+        List<GuestParticipantDto> guestParticipants = guestReservationRepository.findByTimeSlotId(slotId).stream()
+            .map(g -> new GuestParticipantDto(g.getId(), g.getNote(), g.getParticipants(), g.getCreatedAt()))
+            .toList();
+
         return new SlotParticipantsDto(
             slotId,
             slot.getDate(),
             slot.getStartTime(),
             slot.getEndTime(),
             slot.getMaxParticipants(),
-            participants
+            participants,
+            guestParticipants
         );
     }
 
@@ -772,33 +783,39 @@ public class AdminService {
             .orElseThrow(() -> new IllegalArgumentException("Event not found"));
 
         List<TimeSlot> slots = timeSlotRepository.findByEventId(eventId);
+
+        List<ParticipantDto> participants;
         if (slots.isEmpty()) {
-            return new EventParticipantsDto(eventId, event.getMaxParticipants(), List.of());
+            participants = List.of();
+        } else {
+            List<UUID> slotIds = slots.stream().map(TimeSlot::getId).toList();
+            List<Reservation> allReservations = reservationRepository.findConfirmedByTimeSlotIds(slotIds);
+
+            // Deduplicate by user - keep the earliest reservation per user
+            Map<UUID, Reservation> uniqueByUser = new LinkedHashMap<>();
+            for (Reservation r : allReservations) {
+                uniqueByUser.putIfAbsent(r.getUser().getId(), r);
+            }
+
+            participants = uniqueByUser.values().stream()
+                .map(r -> new ParticipantDto(
+                    r.getId(),
+                    r.getUser().getId(),
+                    r.getUser().getFullName(),
+                    r.getUser().getEmail(),
+                    r.getUser().getPhone(),
+                    r.getComment(),
+                    r.getParticipants(),
+                    r.getCreatedAt()
+                ))
+                .toList();
         }
 
-        List<UUID> slotIds = slots.stream().map(TimeSlot::getId).toList();
-        List<Reservation> allReservations = reservationRepository.findConfirmedByTimeSlotIds(slotIds);
-
-        // Deduplicate by user - keep the earliest reservation per user
-        Map<UUID, Reservation> uniqueByUser = new LinkedHashMap<>();
-        for (Reservation r : allReservations) {
-            uniqueByUser.putIfAbsent(r.getUser().getId(), r);
-        }
-
-        List<ParticipantDto> participants = uniqueByUser.values().stream()
-            .map(r -> new ParticipantDto(
-                r.getId(),
-                r.getUser().getId(),
-                r.getUser().getFullName(),
-                r.getUser().getEmail(),
-                r.getUser().getPhone(),
-                r.getComment(),
-                r.getParticipants(),
-                r.getCreatedAt()
-            ))
+        List<GuestParticipantDto> guestParticipants = guestReservationRepository.findByEventId(eventId).stream()
+            .map(g -> new GuestParticipantDto(g.getId(), g.getNote(), g.getParticipants(), g.getCreatedAt()))
             .toList();
 
-        return new EventParticipantsDto(eventId, event.getMaxParticipants(), participants);
+        return new EventParticipantsDto(eventId, event.getMaxParticipants(), participants, guestParticipants);
     }
 
     @Caching(evict = {
@@ -960,5 +977,198 @@ public class AdminService {
             }
         }
         return participantsMap;
+    }
+
+    // ==================== Admin Add/Remove Participants ====================
+
+    @Caching(evict = {
+        @CacheEvict(value = "calendarMonth", allEntries = true),
+        @CacheEvict(value = "calendarWeek", allEntries = true),
+        @CacheEvict(value = "calendarDay", allEntries = true)
+    })
+    public void addRegisteredParticipantToSlot(UUID slotId, AddRegisteredParticipantRequest request) {
+        TimeSlot slot = timeSlotRepository.findById(slotId)
+            .orElseThrow(() -> new IllegalArgumentException("Time slot not found"));
+
+        if (slot.isBlocked()) {
+            throw new IllegalStateException(msg.get("admin.slot.blocked"));
+        }
+
+        User user = userRepository.findById(request.userId())
+            .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        if (reservationRepository.existsByUserIdAndTimeSlotIdAndStatus(user.getId(), slotId, ReservationStatus.CONFIRMED)) {
+            throw new IllegalStateException(msg.get("reservation.already.exists"));
+        }
+
+        int regularCount = reservationRepository.countConfirmedByTimeSlotId(slotId);
+        int guestCount = guestReservationRepository.sumParticipantsByTimeSlotId(slotId);
+        int available = slot.getMaxParticipants() - regularCount - guestCount;
+        if (request.participants() > available) {
+            throw new IllegalStateException(msg.get("reservation.spots.available", available, request.participants()));
+        }
+
+        Reservation existing = reservationRepository.findByUserIdAndTimeSlotId(user.getId(), slotId);
+        String sanitizedComment = Reservation.sanitizeComment(request.comment());
+        Reservation reservation;
+        if (existing != null && existing.isCancelled()) {
+            existing.confirm();
+            existing.setParticipants(request.participants());
+            existing.setComment(sanitizedComment);
+            reservation = reservationRepository.save(existing);
+        } else {
+            reservation = new Reservation(user, slot);
+            reservation.setParticipants(request.participants());
+            reservation.setComment(sanitizedComment);
+            reservation = reservationRepository.save(reservation);
+        }
+
+        mailService.sendReservationConfirmation(reservation);
+        mailService.sendAdminNotification(reservation);
+        activityLogService.logReservationCreated(user, slot, request.participants());
+    }
+
+    @Caching(evict = {
+        @CacheEvict(value = "calendarMonth", allEntries = true),
+        @CacheEvict(value = "calendarWeek", allEntries = true),
+        @CacheEvict(value = "calendarDay", allEntries = true)
+    })
+    public GuestParticipantDto addGuestParticipantToSlot(UUID slotId, AddGuestParticipantRequest request) {
+        TimeSlot slot = timeSlotRepository.findById(slotId)
+            .orElseThrow(() -> new IllegalArgumentException("Time slot not found"));
+
+        if (slot.isBlocked()) {
+            throw new IllegalStateException(msg.get("admin.slot.blocked"));
+        }
+
+        int regularCount = reservationRepository.countConfirmedByTimeSlotId(slotId);
+        int guestCount = guestReservationRepository.sumParticipantsByTimeSlotId(slotId);
+        int available = slot.getMaxParticipants() - regularCount - guestCount;
+        if (request.participants() > available) {
+            throw new IllegalStateException(msg.get("reservation.spots.available", available, request.participants()));
+        }
+
+        GuestReservation guest = new GuestReservation(slot, request.note().strip(), request.participants());
+        guest = guestReservationRepository.save(guest);
+        return new GuestParticipantDto(guest.getId(), guest.getNote(), guest.getParticipants(), guest.getCreatedAt());
+    }
+
+    @Caching(evict = {
+        @CacheEvict(value = "calendarMonth", allEntries = true),
+        @CacheEvict(value = "calendarWeek", allEntries = true),
+        @CacheEvict(value = "calendarDay", allEntries = true)
+    })
+    public void deleteGuestParticipantFromSlot(UUID slotId, UUID guestId) {
+        GuestReservation guest = guestReservationRepository.findById(guestId)
+            .orElseThrow(() -> new IllegalArgumentException("Guest reservation not found"));
+        if (guest.getTimeSlot() == null || !guest.getTimeSlot().getId().equals(slotId)) {
+            throw new IllegalArgumentException("Guest reservation does not belong to this slot");
+        }
+        guestReservationRepository.delete(guest);
+        waitlistService.notifyAll(slotId);
+        timeSlotRepository.findById(slotId).ifPresent(slot -> {
+            if (slot.belongsToEvent()) {
+                eventWaitlistService.notifyAll(slot.getEvent().getId());
+            }
+        });
+    }
+
+    @Caching(evict = {
+        @CacheEvict(value = "calendarMonth", allEntries = true),
+        @CacheEvict(value = "calendarWeek", allEntries = true),
+        @CacheEvict(value = "calendarDay", allEntries = true)
+    })
+    public void addRegisteredParticipantToEvent(UUID eventId, AddRegisteredParticipantRequest request) {
+        Event event = eventRepository.findById(eventId)
+            .orElseThrow(() -> new IllegalArgumentException("Event not found"));
+
+        User user = userRepository.findById(request.userId())
+            .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        List<TimeSlot> slots = timeSlotRepository.findByEventId(eventId);
+        if (slots.isEmpty()) {
+            throw new IllegalStateException("Event has no slots");
+        }
+
+        // Check user is not already registered on any slot of this event
+        List<UUID> slotIds = slots.stream().map(TimeSlot::getId).toList();
+        boolean alreadyRegistered = reservationRepository.findConfirmedByTimeSlotIds(slotIds).stream()
+            .anyMatch(r -> r.getUser().getId().equals(user.getId()));
+        if (alreadyRegistered) {
+            throw new IllegalStateException(msg.get("reservation.already.exists"));
+        }
+
+        // Check capacity — use max across slots (event-level logic)
+        int guestCount = guestReservationRepository.sumParticipantsByEventId(eventId);
+        Map<UUID, Integer> countMap = reservationRepository.countConfirmedByTimeSlotIds(slotIds).stream()
+            .collect(Collectors.toMap(SlotParticipantCount::slotId, SlotParticipantCount::countAsInt));
+        int maxConfirmed = countMap.values().stream().mapToInt(Integer::intValue).max().orElse(0);
+        int available = event.getMaxParticipants() - maxConfirmed - guestCount;
+        if (request.participants() > available) {
+            throw new IllegalStateException(msg.get("reservation.spots.available", available, request.participants()));
+        }
+
+        String sanitizedComment = Reservation.sanitizeComment(request.comment());
+        for (TimeSlot slot : slots) {
+            Reservation existing = reservationRepository.findByUserIdAndTimeSlotId(user.getId(), slot.getId());
+            if (existing != null && existing.isCancelled()) {
+                existing.confirm();
+                existing.setParticipants(request.participants());
+                existing.setComment(sanitizedComment);
+                reservationRepository.save(existing);
+            } else if (existing == null) {
+                Reservation reservation = new Reservation(user, slot);
+                reservation.setParticipants(request.participants());
+                reservation.setComment(sanitizedComment);
+                reservationRepository.save(reservation);
+            }
+        }
+
+        mailService.sendEventReservationConfirmation(user, event, request.participants());
+        mailService.sendEventAdminNotification(user, event, request.participants());
+        activityLogService.logEventReservationCreated(user, event, request.participants());
+    }
+
+    @Caching(evict = {
+        @CacheEvict(value = "calendarMonth", allEntries = true),
+        @CacheEvict(value = "calendarWeek", allEntries = true),
+        @CacheEvict(value = "calendarDay", allEntries = true)
+    })
+    public GuestParticipantDto addGuestParticipantToEvent(UUID eventId, AddGuestParticipantRequest request) {
+        Event event = eventRepository.findById(eventId)
+            .orElseThrow(() -> new IllegalArgumentException("Event not found"));
+
+        int guestCount = guestReservationRepository.sumParticipantsByEventId(eventId);
+        List<TimeSlot> slots = timeSlotRepository.findByEventId(eventId);
+        int maxConfirmed = 0;
+        if (!slots.isEmpty()) {
+            List<UUID> slotIds = slots.stream().map(TimeSlot::getId).toList();
+            maxConfirmed = reservationRepository.countConfirmedByTimeSlotIds(slotIds).stream()
+                .mapToInt(SlotParticipantCount::countAsInt).max().orElse(0);
+        }
+        int available = event.getMaxParticipants() - maxConfirmed - guestCount;
+        if (request.participants() > available) {
+            throw new IllegalStateException(msg.get("reservation.spots.available", available, request.participants()));
+        }
+
+        GuestReservation guest = new GuestReservation(event, request.note().strip(), request.participants());
+        guest = guestReservationRepository.save(guest);
+        return new GuestParticipantDto(guest.getId(), guest.getNote(), guest.getParticipants(), guest.getCreatedAt());
+    }
+
+    @Caching(evict = {
+        @CacheEvict(value = "calendarMonth", allEntries = true),
+        @CacheEvict(value = "calendarWeek", allEntries = true),
+        @CacheEvict(value = "calendarDay", allEntries = true)
+    })
+    public void deleteGuestParticipantFromEvent(UUID eventId, UUID guestId) {
+        GuestReservation guest = guestReservationRepository.findById(guestId)
+            .orElseThrow(() -> new IllegalArgumentException("Guest reservation not found"));
+        if (guest.getEvent() == null || !guest.getEvent().getId().equals(eventId)) {
+            throw new IllegalArgumentException("Guest reservation does not belong to this event");
+        }
+        guestReservationRepository.delete(guest);
+        eventWaitlistService.notifyAll(eventId);
+        timeSlotRepository.findByEventId(eventId).forEach(slot -> waitlistService.notifyAll(slot.getId()));
     }
 }

@@ -197,7 +197,16 @@
     "editSpots": "Zmień miejsca",
     "saveSpots": "Zapisz",
     "cancelEdit": "Anuluj",
-    "spotsLabel": "{{count}} miejsca"
+    "spotsLabel": "{{count}} miejsca",
+    "guest": "Gość",
+    "addParticipant": "Dodaj uczestnika",
+    "addRegistered": "Zarejestrowany",
+    "addGuest": "Gość (niezarejestrowany)",
+    "selectUser": "Wybierz użytkownika...",
+    "spots": "Miejsca",
+    "commentOptional": "Komentarz (opcjonalny)",
+    "guestNotePlaceholder": "Imię i nazwisko / notatka (np. Jan Kowalski — tel. 123456789)",
+    "addParticipantConfirm": "Zapisz"
   },
   "reservations": {
     "noUpcoming": "Brak nadchodzących rezerwacji",

@@ -110,7 +110,7 @@ public class SecurityConfig {
                 .map(String::trim)
                 .toList();
         configuration.setAllowedOriginPatterns(origins);
-        configuration.setAllowedMethods(java.util.List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedMethods(java.util.List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(java.util.List.of("*"));
         configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L);

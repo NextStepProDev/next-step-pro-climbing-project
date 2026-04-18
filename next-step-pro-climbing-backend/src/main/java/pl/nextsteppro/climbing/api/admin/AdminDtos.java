@@ -45,7 +45,8 @@ record SlotParticipantsDto(
     LocalTime startTime,
     LocalTime endTime,
     int maxParticipants,
-    List<ParticipantDto> participants
+    List<ParticipantDto> participants,
+    List<GuestParticipantDto> guestParticipants
 ) {}
 
 record ParticipantDto(
@@ -57,6 +58,24 @@ record ParticipantDto(
     @Nullable String comment,
     int participants,
     Instant registeredAt
+) {}
+
+record GuestParticipantDto(
+    UUID id,
+    String note,
+    int participants,
+    Instant createdAt
+) {}
+
+record AddRegisteredParticipantRequest(
+    @NotNull UUID userId,
+    @Min(1) @Max(20) int participants,
+    @Nullable String comment
+) {}
+
+record AddGuestParticipantRequest(
+    @NotBlank String note,
+    @Min(1) @Max(20) int participants
 ) {}
 
 record SlotWaitlistDto(
@@ -166,7 +185,8 @@ record EventDetailAdminDto(
 record EventParticipantsDto(
     UUID eventId,
     int maxParticipants,
-    List<ParticipantDto> participants
+    List<ParticipantDto> participants,
+    List<GuestParticipantDto> guestParticipants
 ) {}
 
 // Reservation DTOs

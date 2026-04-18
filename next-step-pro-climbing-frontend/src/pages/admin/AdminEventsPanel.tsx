@@ -3,15 +3,16 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { format } from 'date-fns'
-import { Plus, Trash2, Eye, EyeOff, Clock, Pencil, ChevronDown, ChevronRight, ChevronLeft, MapPin, Users, Mail, Phone, AlertTriangle, BookOpen } from 'lucide-react'
+import { Plus, Trash2, Eye, EyeOff, Clock, Pencil, ChevronDown, ChevronRight, ChevronLeft, MapPin, Users, Mail, Phone, AlertTriangle, BookOpen, UserPlus } from 'lucide-react'
 import { adminApi, adminCoursesApi } from '../../api/client'
+import { UserSearchSelect } from '../../components/ui/UserSearchSelect'
 import { getErrorMessage } from '../../utils/errors'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
 import { QueryError } from '../../components/ui/QueryError'
 import { Button } from '../../components/ui/Button'
 import { Modal } from '../../components/ui/Modal'
 import { TimeScrollPicker } from '../../components/ui/TimeScrollPicker'
-import type { CreateEventRequest, EventDetail, EventType } from '../../types'
+import type { CreateEventRequest, EventDetail, EventType, User } from '../../types'
 import { getEventColorByType } from '../../utils/events'
 
 export function AdminEventsPanel() {
@@ -197,6 +198,13 @@ function EventCard({
   const [confirmCancelParticipant, setConfirmCancelParticipant] = useState<string | null>(null)
   const [editingSpotsFor, setEditingSpotsFor] = useState<string | null>(null)
   const [editedSpots, setEditedSpots] = useState(1)
+  const [showAddForm, setShowAddForm] = useState(false)
+  const [addMode, setAddMode] = useState<'registered' | 'guest'>('registered')
+  const [selectedUserId, setSelectedUserId] = useState('')
+  const [addParticipants, setAddParticipants] = useState(1)
+  const [addComment, setAddComment] = useState('')
+  const [guestNote, setGuestNote] = useState('')
+  const [confirmDeleteGuestId, setConfirmDeleteGuestId] = useState<string | null>(null)
 
   const { data: participantsData, isLoading: participantsLoading } = useQuery({
     queryKey: ['admin', 'events', event.id, 'participants'],
@@ -204,23 +212,53 @@ function EventCard({
     enabled: showParticipants || showDeleteConfirm,
   })
 
+  const { data: allUsers } = useQuery({
+    queryKey: ['admin', 'users'],
+    queryFn: () => adminApi.getAllUsers(),
+    enabled: showParticipants && showAddForm && addMode === 'registered',
+  })
+
+  const invalidateParticipants = () => {
+    queryClient.invalidateQueries({ queryKey: ['admin', 'events', event.id, 'participants'] })
+    queryClient.invalidateQueries({ queryKey: ['admin', 'events'] })
+    queryClient.invalidateQueries({ queryKey: ['calendar'] })
+  }
+
   const cancelEventParticipantMutation = useMutation({
     mutationFn: (userId: string) => adminApi.cancelEventParticipant(event.id, userId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin', 'events', event.id, 'participants'] })
-      queryClient.invalidateQueries({ queryKey: ['calendar'] })
-      setConfirmCancelParticipant(null)
-    },
+    onSuccess: () => { invalidateParticipants(); setConfirmCancelParticipant(null) },
   })
 
   const updateEventParticipantsMutation = useMutation({
     mutationFn: ({ userId, participants }: { userId: string; participants: number }) =>
       adminApi.updateEventReservationParticipants(event.id, userId, participants),
+    onSuccess: () => { invalidateParticipants(); setEditingSpotsFor(null) },
+  })
+
+  const addRegisteredMutation = useMutation({
+    mutationFn: () => adminApi.addRegisteredParticipantToEvent(event.id, selectedUserId, addParticipants, addComment || undefined),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin', 'events', event.id, 'participants'] })
-      queryClient.invalidateQueries({ queryKey: ['calendar'] })
-      setEditingSpotsFor(null)
+      invalidateParticipants()
+      setShowAddForm(false)
+      setSelectedUserId('')
+      setAddParticipants(1)
+      setAddComment('')
     },
+  })
+
+  const addGuestMutation = useMutation({
+    mutationFn: () => adminApi.addGuestParticipantToEvent(event.id, guestNote, addParticipants),
+    onSuccess: () => {
+      invalidateParticipants()
+      setShowAddForm(false)
+      setGuestNote('')
+      setAddParticipants(1)
+    },
+  })
+
+  const deleteGuestMutation = useMutation({
+    mutationFn: (guestId: string) => adminApi.deleteGuestParticipantFromEvent(event.id, guestId),
+    onSuccess: () => { invalidateParticipants(); setConfirmDeleteGuestId(null) },
   })
 
   return (
@@ -311,15 +349,18 @@ function EventCard({
         <Users className="w-3.5 h-3.5" />
         {t('events.participantsLabel')}
         {participantsData && (
-          <span className="text-dark-500">({participantsData.participants.reduce((s, p) => s + p.participants, 0)})</span>
+          <span className="text-dark-500">
+            ({participantsData.participants.reduce((s, p) => s + p.participants, 0)
+              + participantsData.guestParticipants.reduce((s, g) => s + g.participants, 0)})
+          </span>
         )}
       </button>
 
       {showParticipants && (
-        <div className="mt-2 ml-1">
+        <div className="mt-2 ml-1 space-y-2">
           {participantsLoading ? (
             <div className="text-sm text-dark-500 py-2">{t('events.loading')}</div>
-          ) : participantsData && participantsData.participants.length > 0 ? (
+          ) : participantsData && (participantsData.participants.length > 0 || participantsData.guestParticipants.length > 0) ? (
             <div className="space-y-2">
               {participantsData.participants.map((p) => (
                 <div key={p.userId} className="bg-dark-800/50 rounded-lg px-3 py-2 text-sm">
@@ -368,51 +409,203 @@ function EventCard({
                       )}
                     </div>
                   ) : (
-                    <>
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="min-w-0">
-                          <div className="font-medium text-dark-200">{p.fullName}</div>
-                          <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-dark-400 text-xs mt-0.5">
-                            <span className="inline-flex items-center gap-1">
-                              <Mail className="w-3 h-3" />
-                              {p.email}
-                            </span>
-                            <span className="inline-flex items-center gap-1">
-                              <Phone className="w-3 h-3" />
-                              {p.phone}
-                            </span>
-                            {p.participants > 1 && (
-                              <span>{t('events.spots', { count: p.participants })}</span>
-                            )}
-                          </div>
-                          {p.comment && (
-                            <div className="text-dark-500 text-xs mt-1">"{p.comment}"</div>
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <div className="font-medium text-dark-200">{p.fullName}</div>
+                        <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-dark-400 text-xs mt-0.5">
+                          <span className="inline-flex items-center gap-1">
+                            <Mail className="w-3 h-3" />
+                            {p.email}
+                          </span>
+                          <span className="inline-flex items-center gap-1">
+                            <Phone className="w-3 h-3" />
+                            {p.phone}
+                          </span>
+                          {p.participants > 1 && (
+                            <span>{t('events.spots', { count: p.participants })}</span>
                           )}
                         </div>
-                        <div className="flex items-center gap-1 shrink-0">
-                          <button
-                            onClick={() => { setEditingSpotsFor(p.userId); setEditedSpots(p.participants) }}
-                            title={t('events.editSpots')}
-                            className="p-1 text-dark-500 hover:text-primary-400 transition-colors"
-                          >
-                            <Pencil className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            onClick={() => setConfirmCancelParticipant(p.userId)}
-                            title={t('events.cancelParticipant')}
-                            className="p-1 text-dark-500 hover:text-rose-400 transition-colors"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
+                        {p.comment && (
+                          <div className="text-dark-500 text-xs mt-1">"{p.comment}"</div>
+                        )}
                       </div>
-                    </>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button
+                          onClick={() => { setEditingSpotsFor(p.userId); setEditedSpots(p.participants) }}
+                          title={t('events.editSpots')}
+                          className="p-1 text-dark-500 hover:text-primary-400 transition-colors"
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => setConfirmCancelParticipant(p.userId)}
+                          title={t('events.cancelParticipant')}
+                          className="p-1 text-dark-500 hover:text-rose-400 transition-colors"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+
+              {/* Guest reservations */}
+              {participantsData.guestParticipants.map((g) => (
+                <div key={g.id} className="bg-amber-500/5 border border-amber-500/20 rounded-lg px-3 py-2 text-sm">
+                  {confirmDeleteGuestId === g.id ? (
+                    <div className="space-y-2">
+                      <p className="text-xs text-rose-400">{t('events.confirmCancelParticipant')}</p>
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="danger"
+                          loading={deleteGuestMutation.isPending}
+                          onClick={() => deleteGuestMutation.mutate(g.id)}
+                        >
+                          {t('events.cancelParticipant')}
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={() => setConfirmDeleteGuestId(null)}>
+                          {t('events.cancel')}
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded">{t('slots.guest')}</span>
+                          <span className="font-medium text-dark-200">{g.note}</span>
+                        </div>
+                        {g.participants > 1 && (
+                          <span className="text-xs text-amber-400/80">{t('events.spots', { count: g.participants })}</span>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => setConfirmDeleteGuestId(g.id)}
+                        title={t('events.cancelParticipant')}
+                        className="p-1 text-dark-500 hover:text-rose-400 transition-colors shrink-0"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   )}
                 </div>
               ))}
             </div>
           ) : (
             <div className="text-sm text-dark-500 py-2">{t('events.noParticipants')}</div>
+          )}
+
+          {/* Add participant */}
+          {!showAddForm ? (
+            <button
+              onClick={() => setShowAddForm(true)}
+              className="flex items-center gap-2 text-sm text-primary-400 hover:text-primary-300 transition-colors py-1"
+            >
+              <UserPlus className="w-4 h-4" />
+              {t('slots.addParticipant')}
+            </button>
+          ) : (
+            <div className="border border-dark-700 rounded-lg p-3 space-y-3">
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setAddMode('registered')}
+                  className={`text-xs px-3 py-1 rounded-full transition-colors ${addMode === 'registered' ? 'bg-primary-500/20 text-primary-300' : 'text-dark-400 hover:text-dark-200'}`}
+                >
+                  {t('slots.addRegistered')}
+                </button>
+                <button
+                  onClick={() => setAddMode('guest')}
+                  className={`text-xs px-3 py-1 rounded-full transition-colors ${addMode === 'guest' ? 'bg-amber-500/20 text-amber-300' : 'text-dark-400 hover:text-dark-200'}`}
+                >
+                  {t('slots.addGuest')}
+                </button>
+              </div>
+
+              {addMode === 'registered' ? (
+                <div className="space-y-2">
+                  <UserSearchSelect
+                    users={(allUsers as User[] | undefined) ?? []}
+                    value={selectedUserId}
+                    onChange={setSelectedUserId}
+                  />
+                  <div className="flex items-center gap-2">
+                    <label className="text-xs text-dark-400 shrink-0">{t('slots.spots')}:</label>
+                    <input
+                      type="number"
+                      min={1}
+                      max={20}
+                      value={addParticipants}
+                      onChange={(e) => setAddParticipants(Number(e.target.value))}
+                      className="w-16 bg-dark-800 border border-dark-700 rounded px-2 py-1 text-dark-100 text-sm"
+                    />
+                  </div>
+                  <input
+                    type="text"
+                    value={addComment}
+                    onChange={(e) => setAddComment(e.target.value)}
+                    placeholder={t('slots.commentOptional')}
+                    maxLength={500}
+                    className="w-full bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-dark-100 text-sm"
+                  />
+                  {addRegisteredMutation.isError && (
+                    <p className="text-xs text-rose-400">{getErrorMessage(addRegisteredMutation.error)}</p>
+                  )}
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      loading={addRegisteredMutation.isPending}
+                      disabled={!selectedUserId}
+                      onClick={() => addRegisteredMutation.mutate()}
+                    >
+                      {t('slots.addParticipantConfirm')}
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={() => setShowAddForm(false)}>
+                      {t('slots.cancelEdit')}
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <input
+                    type="text"
+                    value={guestNote}
+                    onChange={(e) => setGuestNote(e.target.value)}
+                    placeholder={t('slots.guestNotePlaceholder')}
+                    maxLength={500}
+                    className="w-full bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-dark-100 text-sm"
+                  />
+                  <div className="flex items-center gap-2">
+                    <label className="text-xs text-dark-400 shrink-0">{t('slots.spots')}:</label>
+                    <input
+                      type="number"
+                      min={1}
+                      max={20}
+                      value={addParticipants}
+                      onChange={(e) => setAddParticipants(Number(e.target.value))}
+                      className="w-16 bg-dark-800 border border-dark-700 rounded px-2 py-1 text-dark-100 text-sm"
+                    />
+                  </div>
+                  {addGuestMutation.isError && (
+                    <p className="text-xs text-rose-400">{getErrorMessage(addGuestMutation.error)}</p>
+                  )}
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      loading={addGuestMutation.isPending}
+                      disabled={!guestNote.trim()}
+                      onClick={() => addGuestMutation.mutate()}
+                    >
+                      {t('slots.addParticipantConfirm')}
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={() => setShowAddForm(false)}>
+                      {t('slots.cancelEdit')}
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
           )}
         </div>
       )}
