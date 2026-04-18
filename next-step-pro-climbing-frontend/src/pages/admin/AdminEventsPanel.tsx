@@ -528,8 +528,16 @@ function EventCard({
                   <UserSearchSelect
                     users={(allUsers as User[] | undefined) ?? []}
                     value={selectedUserId}
-                    onChange={setSelectedUserId}
+                    onChange={(id) => { setSelectedUserId(id); addRegisteredMutation.reset() }}
                   />
+                  {selectedUserId && participantsData?.participants.find(p => p.userId === selectedUserId) && (() => {
+                    const existing = participantsData.participants.find(p => p.userId === selectedUserId)!
+                    return (
+                      <p className="text-xs text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded px-2 py-1.5">
+                        {t('events.alreadyRegistered', { count: existing.participants })}
+                      </p>
+                    )
+                  })()}
                   <div className="flex items-center gap-2">
                     <label className="text-xs text-dark-400 shrink-0">{t('slots.spots')}:</label>
                     <input

@@ -1097,13 +1097,11 @@ public class AdminService {
             slots = createDefaultSlotsForEvent(event);
         }
 
-        // Check user is not already registered on any slot of this event
         List<UUID> slotIds = slots.stream().map(TimeSlot::getId).toList();
-        boolean alreadyRegistered = reservationRepository.findConfirmedByTimeSlotIds(slotIds).stream()
-            .anyMatch(r -> r.getUser().getId().equals(user.getId()));
-        if (alreadyRegistered) {
-            throw new IllegalStateException(msg.get("reservation.already.exists"));
-        }
+
+        // Find existing confirmed reservations for this user on this event
+        List<Reservation> existingUserReservations = reservationRepository.findConfirmedByTimeSlotIds(slotIds)
+            .stream().filter(r -> r.getUser().getId().equals(user.getId())).toList();
 
         // Check capacity — use max across slots (event-level logic)
         int guestCount = guestReservationRepository.sumParticipantsByEventId(eventId);
@@ -1115,28 +1113,48 @@ public class AdminService {
             throw new IllegalStateException(msg.get("reservation.spots.available", available, request.participants()));
         }
 
-        String sanitizedComment = Reservation.sanitizeComment(request.comment());
-        for (TimeSlot slot : slots) {
-            Reservation existing = reservationRepository.findByUserIdAndTimeSlotId(user.getId(), slot.getId());
-            if (existing != null && existing.isCancelled()) {
-                existing.confirm();
-                existing.setParticipants(request.participants());
-                existing.setComment(sanitizedComment);
-                reservationRepository.save(existing);
-            } else if (existing == null) {
-                Reservation reservation = new Reservation(user, slot);
-                reservation.setParticipants(request.participants());
-                reservation.setComment(sanitizedComment);
+        if (!existingUserReservations.isEmpty()) {
+            // User already has a reservation — add participants to the existing one
+            int currentUserParticipants = existingUserReservations.getFirst().getParticipants();
+            int newTotal = currentUserParticipants + request.participants();
+            String sanitizedComment = request.comment() != null
+                ? Reservation.sanitizeComment(request.comment())
+                : existingUserReservations.getFirst().getComment();
+            for (Reservation reservation : existingUserReservations) {
+                reservation.setParticipants(newTotal);
+                if (request.comment() != null) reservation.setComment(sanitizedComment);
                 reservationRepository.save(reservation);
             }
+            boolean eventInPast = LocalDate.now().isAfter(event.getEndDate());
+            if (!eventInPast) {
+                mailService.sendEventReservationUpdateConfirmation(user, event, currentUserParticipants, newTotal);
+            }
+            mailService.sendEventAdminNotification(user, event, newTotal);
+            activityLogService.logEventReservationUpdated(user, event, newTotal);
+        } else {
+            // No existing reservation — create new reservations on all slots
+            String sanitizedComment = Reservation.sanitizeComment(request.comment());
+            for (TimeSlot slot : slots) {
+                Reservation existing = reservationRepository.findByUserIdAndTimeSlotId(user.getId(), slot.getId());
+                if (existing != null && existing.isCancelled()) {
+                    existing.confirm();
+                    existing.setParticipants(request.participants());
+                    existing.setComment(sanitizedComment);
+                    reservationRepository.save(existing);
+                } else if (existing == null) {
+                    Reservation reservation = new Reservation(user, slot);
+                    reservation.setParticipants(request.participants());
+                    reservation.setComment(sanitizedComment);
+                    reservationRepository.save(reservation);
+                }
+            }
+            boolean eventInPast = LocalDate.now().isAfter(event.getEndDate());
+            if (!eventInPast) {
+                mailService.sendEventReservationConfirmation(user, event, request.participants());
+            }
+            mailService.sendEventAdminNotification(user, event, request.participants());
+            activityLogService.logEventReservationCreated(user, event, request.participants());
         }
-
-        boolean eventInPast = LocalDate.now().isAfter(event.getEndDate());
-        if (!eventInPast) {
-            mailService.sendEventReservationConfirmation(user, event, request.participants());
-        }
-        mailService.sendEventAdminNotification(user, event, request.participants());
-        activityLogService.logEventReservationCreated(user, event, request.participants());
     }
 
     @Caching(evict = {

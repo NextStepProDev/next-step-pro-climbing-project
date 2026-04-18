@@ -238,6 +238,7 @@
     "participantsLabel": "Participantes",
     "loading": "Cargando...",
     "noParticipants": "No hay participantes inscritos",
+    "alreadyRegistered": "Este usuario ya está inscrito ({{count}} plazas). El número indicado se añadirá a su reserva existente.",
     "cancelParticipant": "Dar de baja del evento",
     "confirmCancelParticipant": "¿Dar de baja a este usuario del evento? Recibirá una notificación por email.",
     "editSpots": "Cambiar plazas",

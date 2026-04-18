@@ -238,6 +238,7 @@
     "participantsLabel": "Uczestnicy",
     "loading": "Ładowanie...",
     "noParticipants": "Brak zapisanych uczestników",
+    "alreadyRegistered": "Ten użytkownik jest już zapisany ({{count}} miejsc). Podana liczba zostanie dodana do istniejącej rezerwacji.",
     "cancelParticipant": "Usuń z wydarzenia",
     "confirmCancelParticipant": "Na pewno usunąć użytkownika z wydarzenia? Użytkownik otrzyma powiadomienie email.",
     "editSpots": "Zmień liczbę miejsc",
