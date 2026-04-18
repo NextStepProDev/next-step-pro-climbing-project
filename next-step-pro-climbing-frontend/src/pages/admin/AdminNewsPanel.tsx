@@ -21,7 +21,9 @@ import {
   Images,
   Send,
   Video,
+  Crop,
 } from 'lucide-react'
+import { FocalPointEditor } from '../../components/ui/FocalPointEditor'
 import { adminNewsApi } from '../../api/client'
 import type {
   NewsAdmin,
@@ -31,7 +33,6 @@ import type {
 } from '../../types'
 import { Button } from '../../components/ui/Button'
 import { ConfirmModal } from '../../components/ui/ConfirmModal'
-import { FocalPointEditor } from '../../components/ui/FocalPointEditor'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
 import { GalleryPickerModal } from '../../components/ui/GalleryPickerModal'
 import { MediaPickerModal } from '../../components/ui/MediaPickerModal'
@@ -346,6 +347,7 @@ function EditView({
   const invalidate = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ['admin', 'news'] })
     queryClient.invalidateQueries({ queryKey: ['admin', 'news', newsId] })
+    queryClient.invalidateQueries({ queryKey: ['news'] })
   }, [queryClient, newsId])
 
   // ---------- Meta state ----------
@@ -356,10 +358,13 @@ function EditView({
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null)
   const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null)
   const [thumbnailFromLibrary, setThumbnailFromLibrary] = useState<string | null>(null)
-  const [focalPoint, setFocalPoint] = useState<{ x: number; y: number }>({
-    x: detail.thumbnailFocalPointX ?? 0.5,
-    y: detail.thumbnailFocalPointY ?? 0.5,
-  })
+  // null = tryb "pełne zdjęcie z rozmytym tłem", {x,y} = tryb kadrowania (object-cover)
+  const [focalPoint, setFocalPoint] = useState<{ x: number; y: number } | null>(
+    detail.thumbnailFocalPointX != null
+      ? { x: detail.thumbnailFocalPointX, y: detail.thumbnailFocalPointY ?? 0.5 }
+      : null
+  )
+  const cropEnabled = focalPoint !== null
 
   // ---------- Media picker ----------
   const [showMediaPicker, setShowMediaPicker] = useState(false)
@@ -411,9 +416,14 @@ function EditView({
   // ---------- Dirty detection ----------
   const metaDirty = title !== detail.title || excerpt !== (detail.excerpt ?? '')
   const thumbnailDirty = thumbnailFile !== null || thumbnailFromLibrary !== null
-  const focalPointDirty = detail.thumbnailUrl != null &&
-    (focalPoint.x !== (detail.thumbnailFocalPointX ?? 0.5) ||
-     focalPoint.y !== (detail.thumbnailFocalPointY ?? 0.5))
+  const focalPointDirty = (() => {
+    if (!detail.thumbnailUrl && !thumbnailDirty) return false
+    const savedX = detail.thumbnailFocalPointX
+    if (focalPoint === null && savedX == null) return false
+    if (focalPoint === null && savedX != null) return true
+    if (focalPoint !== null && savedX == null) return true
+    return focalPoint!.x !== savedX || focalPoint!.y !== (detail.thumbnailFocalPointY ?? 0.5)
+  })()
   const blockEditsDirty = detail.blocks.some((b) => {
     const edit = blockEdits[b.id]
     if (!edit) return false
@@ -458,22 +468,23 @@ function EditView({
         await adminNewsApi.updateMeta(newsId, { title, excerpt: excerpt || undefined })
       }
 
-      // 2. Thumbnail + focal point (zawsze razem gdy nowy plik)
+      // 2. Thumbnail + focal point
+      const fpX = focalPoint?.x ?? null
+      const fpY = focalPoint?.y ?? null
       if (thumbnailFromLibrary) {
         await adminNewsApi.setThumbnailUrl(newsId, thumbnailFromLibrary)
-        await adminNewsApi.updateThumbnailFocalPoint(newsId, focalPoint.x, focalPoint.y)
+        await adminNewsApi.updateThumbnailFocalPoint(newsId, fpX, fpY)
         setThumbnailFromLibrary(null)
       } else if (thumbnailFile) {
         await adminNewsApi.uploadThumbnail(newsId, thumbnailFile)
-        await adminNewsApi.updateThumbnailFocalPoint(newsId, focalPoint.x, focalPoint.y)
+        await adminNewsApi.updateThumbnailFocalPoint(newsId, fpX, fpY)
         setThumbnailFile(null)
         if (thumbnailPreview) {
           URL.revokeObjectURL(thumbnailPreview)
           setThumbnailPreview(null)
         }
       } else if (focalPointDirty) {
-        // Focal point dla istniejącej miniaturki (zmiana bez nowego pliku)
-        await adminNewsApi.updateThumbnailFocalPoint(newsId, focalPoint.x, focalPoint.y)
+        await adminNewsApi.updateThumbnailFocalPoint(newsId, fpX, fpY)
       }
 
       // 3. Existing block edits
@@ -538,10 +549,11 @@ function EditView({
     setThumbnailFile(null)
     setThumbnailPreview(null)
     setThumbnailFromLibrary(null)
-    setFocalPoint({
-      x: detail.thumbnailFocalPointX ?? 0.5,
-      y: detail.thumbnailFocalPointY ?? 0.5,
-    })
+    setFocalPoint(
+      detail.thumbnailFocalPointX != null
+        ? { x: detail.thumbnailFocalPointX, y: detail.thumbnailFocalPointY ?? 0.5 }
+        : null
+    )
 
     const reset: Record<string, { content?: string; caption?: string }> = {}
     detail.blocks.forEach((b) => {
@@ -564,6 +576,17 @@ function EditView({
     } else {
       onBack()
     }
+  }
+
+  // ---------- Pending block reorder ----------
+  const movePendingBlock = (index: number, direction: 'UP' | 'DOWN') => {
+    setPendingBlocks((prev) => {
+      const next = [...prev]
+      const swapIdx = direction === 'UP' ? index - 1 : index + 1
+      if (swapIdx < 0 || swapIdx >= next.length) return prev
+      ;[next[index], next[swapIdx]] = [next[swapIdx], next[index]]
+      return next
+    })
   }
 
   // ---------- Immediate structural mutations (move/delete) ----------
@@ -650,13 +673,29 @@ function EditView({
         <h3 className="text-lg font-semibold text-dark-100 mb-4">{t('news.sectionThumbnail')}</h3>
 
         {(thumbnailPreview || thumbnailFromLibrary || detail.thumbnailUrl) && (
-          <div className="mb-4 relative">
-            <FocalPointEditor
-              imageUrl={thumbnailPreview ?? thumbnailFromLibrary ?? detail.thumbnailUrl ?? ''}
-              value={focalPoint}
-              onChange={setFocalPoint}
-              aspectRatio="5/2"
-            />
+          <div className="mb-4 relative max-w-sm">
+            {cropEnabled ? (
+              <FocalPointEditor
+                imageUrl={thumbnailPreview ?? thumbnailFromLibrary ?? detail.thumbnailUrl ?? ''}
+                value={focalPoint!}
+                onChange={setFocalPoint}
+                aspectRatio="16/9"
+              />
+            ) : (
+              <div className="relative rounded-lg overflow-hidden bg-dark-700 aspect-video">
+                <img
+                  src={thumbnailPreview ?? thumbnailFromLibrary ?? detail.thumbnailUrl ?? ''}
+                  alt=""
+                  aria-hidden="true"
+                  className="absolute inset-0 w-full h-full object-cover blur-xl scale-110"
+                />
+                <img
+                  src={thumbnailPreview ?? thumbnailFromLibrary ?? detail.thumbnailUrl ?? ''}
+                  alt=""
+                  className="relative w-full h-full object-contain"
+                />
+              </div>
+            )}
             {(thumbnailPreview || thumbnailFromLibrary) && (
               <span className="absolute top-1 left-1 text-xs px-1.5 py-0.5 bg-primary-600 text-white rounded z-10 pointer-events-none">
                 {t('news.pendingBadge')}
@@ -701,6 +740,22 @@ function EditView({
             <Images className="h-4 w-4" />
             {t('galleryPicker.chooseFromGallery')}
           </button>
+
+          {(thumbnailPreview || thumbnailFromLibrary || detail.thumbnailUrl) && (
+            <button
+              onClick={() =>
+                setFocalPoint(cropEnabled ? null : { x: 0.5, y: 0.5 })
+              }
+              className={`inline-flex items-center gap-2 px-3 py-2 border rounded text-sm transition-colors ${
+                cropEnabled
+                  ? 'bg-primary-600/20 border-primary-500 text-primary-300 hover:bg-primary-600/30'
+                  : 'bg-dark-700 border-dark-600 text-dark-200 hover:border-primary-500'
+              }`}
+            >
+              <Crop className="h-4 w-4" />
+              {cropEnabled ? t('news.cropDisable') : t('news.cropEnable')}
+            </button>
+          )}
 
           {(thumbnailFile || thumbnailFromLibrary) && (
             <button
@@ -763,8 +818,10 @@ function EditView({
                   if (pending.type === 'IMAGE' && pending.source === 'file' && pending.preview) URL.revokeObjectURL(pending.preview)
                   setPendingBlocks((prev) => prev.filter((b) => b.tempId !== pending.tempId))
                 }}
-                isOnlyPending={pendingBlocks.length === 1}
-                pendingIndex={index}
+                isFirst={index === 0}
+                isLast={index === pendingBlocks.length - 1}
+                onMoveUp={() => movePendingBlock(index, 'UP')}
+                onMoveDown={() => movePendingBlock(index, 'DOWN')}
               />
             ))}
           </div>
@@ -1093,11 +1150,13 @@ function BlockEditor({
       ) : (
         <div className="space-y-2">
           {block.imageUrl && (
-            <img
-              src={block.imageUrl}
-              alt={editState.caption ?? ''}
-              className="w-full max-h-48 object-cover rounded"
-            />
+            <div className="flex justify-center">
+              <img
+                src={block.imageUrl}
+                alt={editState.caption ?? ''}
+                className="max-h-72 max-w-full w-auto h-auto rounded border border-dark-600"
+              />
+            </div>
           )}
           <input
             type="text"
@@ -1118,12 +1177,18 @@ function PendingBlockItem({
   block,
   onChange,
   onDelete,
+  isFirst,
+  isLast,
+  onMoveUp,
+  onMoveDown,
 }: {
   block: PendingBlock
   onChange: (updated: Partial<PendingBlock>) => void
   onDelete: () => void
-  isOnlyPending: boolean
-  pendingIndex: number
+  isFirst: boolean
+  isLast: boolean
+  onMoveUp: () => void
+  onMoveDown: () => void
 }) {
   const { t } = useTranslation('admin')
 
@@ -1147,13 +1212,31 @@ function PendingBlockItem({
           </span>
           <span className="text-xs text-primary-400">{t('news.pendingBadge')}</span>
         </div>
-        <button
-          onClick={onDelete}
-          className="p-1 text-dark-400 hover:text-red-400 transition-colors"
-          title={t('news.deleteBlock')}
-        >
-          <Trash2 className="h-4 w-4" />
-        </button>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={onMoveUp}
+            disabled={isFirst}
+            className="p-1 text-dark-400 hover:text-dark-100 disabled:opacity-30 transition-colors"
+            title={t('news.moveUp')}
+          >
+            <ChevronUp className="h-4 w-4" />
+          </button>
+          <button
+            onClick={onMoveDown}
+            disabled={isLast}
+            className="p-1 text-dark-400 hover:text-dark-100 disabled:opacity-30 transition-colors"
+            title={t('news.moveDown')}
+          >
+            <ChevronDown className="h-4 w-4" />
+          </button>
+          <button
+            onClick={onDelete}
+            className="p-1 text-dark-400 hover:text-red-400 transition-colors"
+            title={t('news.deleteBlock')}
+          >
+            <Trash2 className="h-4 w-4" />
+          </button>
+        </div>
       </div>
 
       {block.type === 'TEXT' ? (
@@ -1175,11 +1258,13 @@ function PendingBlockItem({
       ) : (
         <div className="space-y-2">
           {(block.imageUrl ?? block.preview) && (
-            <img
-              src={block.imageUrl ?? block.preview}
-              alt={block.caption}
-              className="w-full max-h-48 object-cover rounded border border-dark-600"
-            />
+            <div className="flex justify-center">
+              <img
+                src={block.imageUrl ?? block.preview}
+                alt={block.caption}
+                className="max-h-72 max-w-full w-auto h-auto rounded border border-dark-600"
+              />
+            </div>
           )}
           <input
             type="text"

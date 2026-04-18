@@ -80,6 +80,8 @@
     "modified": "Zmieniony",
     "pendingBadge": "Nowy — niezapisany",
     "cancelThumbnail": "Anuluj wybór",
+    "cropEnable": "Kadruj miniaturkę",
+    "cropDisable": "Wyłącz kadrowanie",
     "preview": "Podgląd",
     "previewTitle": "Podgląd artykułu",
     "previewDraftBadge": "PODGLĄD — niezapisane zmiany",

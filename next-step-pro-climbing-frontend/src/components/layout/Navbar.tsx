@@ -66,7 +66,7 @@ export function Navbar() {
             <img
               src={logoWhite}
               alt="Next Step Pro Climbing"
-              className="h-10"
+              className="h-10 cursor-pointer"
             />
           </Link>
 

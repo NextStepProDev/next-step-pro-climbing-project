@@ -17,7 +17,7 @@ interface NewsPreviewModalProps {
   title: string
   excerpt: string
   thumbnailUrl: string | null
-  focalPoint: { x: number; y: number }
+  focalPoint: { x: number; y: number } | null
   blocks: PreviewBlock[]
 }
 
@@ -42,13 +42,29 @@ export function NewsPreviewModal({
 
         {/* Thumbnail */}
         {thumbnailUrl ? (
-          <div className="w-full rounded-lg overflow-hidden mb-6" style={{ aspectRatio: '5/2' }}>
-            <img
-              src={thumbnailUrl}
-              alt={title}
-              className="w-full h-full object-cover"
-              style={{ objectPosition: `${focalPoint.x * 100}% ${focalPoint.y * 100}%` }}
-            />
+          <div className="w-full rounded-lg overflow-hidden mb-6 bg-dark-700 relative aspect-video">
+            {focalPoint ? (
+              <img
+                src={thumbnailUrl}
+                alt={title}
+                className="w-full h-full object-cover"
+                style={{ objectPosition: `${focalPoint.x * 100}% ${focalPoint.y * 100}%` }}
+              />
+            ) : (
+              <>
+                <img
+                  src={thumbnailUrl}
+                  alt=""
+                  aria-hidden="true"
+                  className="absolute inset-0 w-full h-full object-cover blur-xl scale-110"
+                />
+                <img
+                  src={thumbnailUrl}
+                  alt={title}
+                  className="relative w-full h-full object-contain"
+                />
+              </>
+            )}
           </div>
         ) : (
           <div className="w-full h-40 bg-dark-800 rounded-lg flex items-center justify-center mb-6">
