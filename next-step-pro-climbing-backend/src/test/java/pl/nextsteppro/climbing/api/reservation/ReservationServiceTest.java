@@ -10,6 +10,7 @@ import pl.nextsteppro.climbing.api.activitylog.ActivityLogService;
 import pl.nextsteppro.climbing.domain.event.Event;
 import pl.nextsteppro.climbing.domain.event.EventRepository;
 import pl.nextsteppro.climbing.domain.event.EventType;
+import pl.nextsteppro.climbing.domain.reservation.GuestReservationRepository;
 import pl.nextsteppro.climbing.domain.reservation.Reservation;
 import pl.nextsteppro.climbing.domain.reservation.ReservationRepository;
 import pl.nextsteppro.climbing.domain.reservation.ReservationStatus;
@@ -50,6 +51,8 @@ class ReservationServiceTest {
     @Mock
     private ReservationRepository reservationRepository;
     @Mock
+    private GuestReservationRepository guestReservationRepository;
+    @Mock
     private TimeSlotRepository timeSlotRepository;
     @Mock
     private UserRepository userRepository;
@@ -78,6 +81,7 @@ class ReservationServiceTest {
     void setUp() {
         reservationService = new ReservationService(
             reservationRepository,
+            guestReservationRepository,
             timeSlotRepository,
             userRepository,
             eventRepository,
