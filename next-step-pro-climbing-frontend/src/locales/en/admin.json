@@ -238,6 +238,7 @@
     "participantsLabel": "Participants",
     "loading": "Loading...",
     "noParticipants": "No registered participants",
+    "alreadyRegistered": "This user is already registered ({{count}} spots). The entered number will be added to their existing reservation.",
     "cancelParticipant": "Remove from event",
     "confirmCancelParticipant": "Remove this user from the event? They will receive an email notification.",
     "editSpots": "Change spots",
