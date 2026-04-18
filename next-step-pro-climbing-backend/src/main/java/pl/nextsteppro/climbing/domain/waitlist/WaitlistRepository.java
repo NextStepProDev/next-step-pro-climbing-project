@@ -39,11 +39,11 @@ public interface WaitlistRepository extends JpaRepository<Waitlist, UUID> {
     @Query("SELECT COUNT(w) > 0 FROM Waitlist w WHERE w.user.id = :userId AND w.timeSlot.id = :slotId AND w.status IN :statuses")
     boolean existsByUserAndSlotAndStatuses(UUID userId, UUID slotId, List<WaitlistStatus> statuses);
 
-    @Modifying
+    @Modifying(clearAutomatically = true)
     @Query("DELETE FROM Waitlist w WHERE w.timeSlot.id = :slotId")
     void deleteByTimeSlotId(UUID slotId);
 
-    @Modifying
+    @Modifying(clearAutomatically = true)
     @Query("DELETE FROM Waitlist w WHERE w.timeSlot.id IN :slotIds")
     void deleteByTimeSlotIdIn(Collection<UUID> slotIds);
 }
