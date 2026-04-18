@@ -35,6 +35,7 @@ import pl.nextsteppro.climbing.domain.waitlist.WaitlistRepository;
 import pl.nextsteppro.climbing.domain.waitlist.WaitlistStatus;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -1023,7 +1024,10 @@ public class AdminService {
             reservation = reservationRepository.save(reservation);
         }
 
-        mailService.sendReservationConfirmation(reservation);
+        boolean slotInPast = LocalDateTime.now().isAfter(slot.getDate().atTime(slot.getStartTime()));
+        if (!slotInPast) {
+            mailService.sendReservationConfirmation(reservation);
+        }
         mailService.sendAdminNotification(reservation);
         activityLogService.logReservationCreated(user, slot, request.participants());
     }
@@ -1124,7 +1128,10 @@ public class AdminService {
             }
         }
 
-        mailService.sendEventReservationConfirmation(user, event, request.participants());
+        boolean eventInPast = LocalDate.now().isAfter(event.getEndDate());
+        if (!eventInPast) {
+            mailService.sendEventReservationConfirmation(user, event, request.participants());
+        }
         mailService.sendEventAdminNotification(user, event, request.participants());
         activityLogService.logEventReservationCreated(user, event, request.participants());
     }
