@@ -197,7 +197,16 @@
     "editSpots": "Change spots",
     "saveSpots": "Save",
     "cancelEdit": "Cancel",
-    "spotsLabel": "{{count}} spots"
+    "spotsLabel": "{{count}} spots",
+    "guest": "Guest",
+    "addParticipant": "Add participant",
+    "addRegistered": "Registered user",
+    "addGuest": "Guest (unregistered)",
+    "selectUser": "Select user...",
+    "spots": "Spots",
+    "commentOptional": "Comment (optional)",
+    "guestNotePlaceholder": "Name / note (e.g. John Smith — phone 123456789)",
+    "addParticipantConfirm": "Add"
   },
   "reservations": {
     "noUpcoming": "No upcoming reservations",

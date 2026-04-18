@@ -15,6 +15,7 @@ import type {
   EventReservationResult,
   TimeSlotAdmin,
   SlotParticipants,
+  GuestParticipant,
   CreateTimeSlotRequest,
   CreateEventRequest,
   EventDetail,
@@ -399,6 +400,36 @@ export const adminApi = {
       method: 'PATCH',
       body: JSON.stringify({ participants }),
     }),
+
+  addRegisteredParticipantToSlot: (slotId: string, userId: string, participants: number, comment?: string) =>
+    fetchApi<void>(`/admin/slots/${slotId}/participants/registered`, {
+      method: 'POST',
+      body: JSON.stringify({ userId, participants, comment: comment || null }),
+    }),
+
+  addGuestParticipantToSlot: (slotId: string, note: string, participants: number) =>
+    fetchApi<GuestParticipant>(`/admin/slots/${slotId}/participants/guest`, {
+      method: 'POST',
+      body: JSON.stringify({ note, participants }),
+    }),
+
+  deleteGuestParticipantFromSlot: (slotId: string, guestId: string) =>
+    fetchApi<void>(`/admin/slots/${slotId}/participants/guest/${guestId}`, { method: 'DELETE' }),
+
+  addRegisteredParticipantToEvent: (eventId: string, userId: string, participants: number, comment?: string) =>
+    fetchApi<void>(`/admin/events/${eventId}/participants/registered`, {
+      method: 'POST',
+      body: JSON.stringify({ userId, participants, comment: comment || null }),
+    }),
+
+  addGuestParticipantToEvent: (eventId: string, note: string, participants: number) =>
+    fetchApi<GuestParticipant>(`/admin/events/${eventId}/participants/guest`, {
+      method: 'POST',
+      body: JSON.stringify({ note, participants }),
+    }),
+
+  deleteGuestParticipantFromEvent: (eventId: string, guestId: string) =>
+    fetchApi<void>(`/admin/events/${eventId}/participants/guest/${guestId}`, { method: 'DELETE' }),
 
   // Reservations
   getUpcomingReservations: () =>

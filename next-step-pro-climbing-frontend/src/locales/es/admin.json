@@ -197,7 +197,16 @@
     "editSpots": "Cambiar plazas",
     "saveSpots": "Guardar",
     "cancelEdit": "Cancelar",
-    "spotsLabel": "{{count}} plazas"
+    "spotsLabel": "{{count}} plazas",
+    "guest": "Invitado",
+    "addParticipant": "Añadir participante",
+    "addRegistered": "Usuario registrado",
+    "addGuest": "Invitado (no registrado)",
+    "selectUser": "Seleccionar usuario...",
+    "spots": "Plazas",
+    "commentOptional": "Comentario (opcional)",
+    "guestNotePlaceholder": "Nombre / nota (p.ej. Juan García — tel. 123456789)",
+    "addParticipantConfirm": "Añadir"
   },
   "reservations": {
     "noUpcoming": "No hay reservas próximas",
