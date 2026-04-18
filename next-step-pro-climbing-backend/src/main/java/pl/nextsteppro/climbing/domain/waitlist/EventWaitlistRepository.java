@@ -38,7 +38,7 @@ public interface EventWaitlistRepository extends JpaRepository<EventWaitlist, UU
     @Query("SELECT COUNT(w) > 0 FROM EventWaitlist w WHERE w.user.id = :userId AND w.event.id = :eventId AND w.status IN :statuses")
     boolean existsByUserAndEventAndStatuses(UUID userId, UUID eventId, List<WaitlistStatus> statuses);
 
-    @Modifying
+    @Modifying(clearAutomatically = true)
     @Query("DELETE FROM EventWaitlist w WHERE w.event.id = :eventId")
     void deleteByEventId(UUID eventId);
 }

@@ -253,18 +253,25 @@ public class AdminService {
 
         boolean isPast = slot.getDate().isBefore(LocalDate.now());
 
-        List<Reservation> confirmed = reservationRepository.findConfirmedByTimeSlotId(slotId);
+        // Use multi-slot variant (has JOIN FETCH user) to avoid LazyInitializationException after cache clear
+        List<Reservation> confirmed = reservationRepository.findConfirmedByTimeSlotIds(List.of(slotId));
         for (Reservation reservation : confirmed) {
-            reservation.cancelByAdmin();
-            reservationRepository.save(reservation);
-            if (!isPast) {
-                mailService.sendAdminCancellationNotification(reservation);
-            }
+            reservation.getUser();     // force-load user proxy while still managed
+            reservation.getTimeSlot(); // force-load timeSlot proxy while still managed
             activityLogService.logCancelledByAdmin(reservation.getUser(), slot, reservation.getParticipants());
         }
 
-        waitlistRepository.deleteByTimeSlotId(slotId);
+        // Delete in FK-safe order; clearAutomatically clears L1 cache after each JPQL delete
+        waitlistRepository.deleteByTimeSlotId(slotId);           // clears cache
+        reservationRepository.deleteByTimeSlotIds(List.of(slotId)); // clears cache
         timeSlotRepository.deleteById(slotId);
+
+        // Send emails only after successful DB deletion
+        if (!isPast) {
+            for (Reservation reservation : confirmed) {
+                mailService.sendAdminCancellationNotification(reservation);
+            }
+        }
     }
 
     public int notifySlotParticipants(UUID slotId, @Nullable NotifySlotParticipantsRequest request) {
@@ -519,34 +526,37 @@ public class AdminService {
         boolean isPast = !event.getEndDate().isAfter(LocalDate.now());
 
         List<TimeSlot> slots = timeSlotRepository.findByEventId(eventId);
-        if (!slots.isEmpty()) {
-            List<UUID> slotIds = slots.stream().map(TimeSlot::getId).toList();
+        List<UUID> slotIds = slots.stream().map(TimeSlot::getId).toList();
+
+        // Collect notification targets and log activity BEFORE any deletes
+        Map<UUID, User> notifiedUsers = new LinkedHashMap<>();
+        if (!slotIds.isEmpty()) {
             List<Reservation> confirmed = reservationRepository.findConfirmedByTimeSlotIds(slotIds);
-
-            Map<UUID, User> notifiedUsers = new LinkedHashMap<>();
             for (Reservation reservation : confirmed) {
-                reservation.cancelByAdmin();
-                reservationRepository.save(reservation);
+                User user = reservation.getUser(); // force-load lazy proxy while still managed
                 if (!isPast) {
-                    notifiedUsers.putIfAbsent(reservation.getUser().getId(), reservation.getUser());
+                    notifiedUsers.putIfAbsent(user.getId(), user);
                 }
-                activityLogService.logCancelledByAdmin(reservation.getUser(), reservation.getTimeSlot(), reservation.getParticipants());
+                activityLogService.logCancelledByAdmin(user, reservation.getTimeSlot(), reservation.getParticipants());
             }
-
-            if (!isPast) {
-                for (User user : notifiedUsers.values()) {
-                    mailService.sendAdminEventCancellationNotification(user, event);
-                }
-            }
-
-            // Delete waitlist entries before deleting slots and event (FK constraints)
-            waitlistRepository.deleteByTimeSlotIdIn(slotIds);
-            reservationRepository.deleteByTimeSlotIds(slotIds);
-            timeSlotRepository.deleteAll(slots);
         }
 
-        eventWaitlistRepository.deleteByEventId(eventId);
+        // Delete in FK-safe order; clearAutomatically = true clears L1 cache after each JPQL delete,
+        // preventing stale managed-entity conflicts when Hibernate removes the TimeSlot/Event entities.
+        if (!slotIds.isEmpty()) {
+            waitlistRepository.deleteByTimeSlotIdIn(slotIds);   // clears cache
+            reservationRepository.deleteByTimeSlotIds(slotIds); // clears cache
+            timeSlotRepository.deleteAllByIdInBatch(slotIds);
+        }
+        eventWaitlistRepository.deleteByEventId(eventId);       // clears cache
         eventRepository.deleteById(eventId);
+
+        // Send emails only after all DB operations succeed
+        if (!isPast) {
+            for (User user : notifiedUsers.values()) {
+                mailService.sendAdminEventCancellationNotification(user, event);
+            }
+        }
     }
 
     @Transactional(readOnly = true)
