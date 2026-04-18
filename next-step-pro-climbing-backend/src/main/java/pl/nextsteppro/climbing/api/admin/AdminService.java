@@ -837,7 +837,10 @@ public class AdminService {
         int participants = reservation.getParticipants();
         reservation.cancelByAdmin();
         reservationRepository.save(reservation);
-        mailService.sendAdminCancellationNotification(reservation);
+        boolean slotInPast = LocalDateTime.now().isAfter(slot.getDate().atTime(slot.getStartTime()));
+        if (!slotInPast) {
+            mailService.sendAdminCancellationNotification(reservation);
+        }
         activityLogService.logCancelledByAdmin(user, slot, participants);
         waitlistService.notifyAll(slot.getId());
         if (slot.belongsToEvent()) {
@@ -866,7 +869,10 @@ public class AdminService {
             reservationRepository.save(reservation);
             activityLogService.logCancelledByAdmin(user, reservation.getTimeSlot(), participants);
         }
-        mailService.sendAdminEventParticipantRemovedNotification(user, event);
+        boolean eventInPast = LocalDate.now().isAfter(event.getEndDate());
+        if (!eventInPast) {
+            mailService.sendAdminEventParticipantRemovedNotification(user, event);
+        }
         eventWaitlistService.notifyAll(eventId);
         for (Reservation reservation : userReservations) {
             waitlistService.notifyAll(reservation.getTimeSlot().getId());
