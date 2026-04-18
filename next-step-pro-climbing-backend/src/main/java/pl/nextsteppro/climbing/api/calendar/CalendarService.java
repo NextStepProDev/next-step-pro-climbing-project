@@ -8,6 +8,7 @@ import pl.nextsteppro.climbing.domain.course.Course;
 import pl.nextsteppro.climbing.domain.event.Event;
 import pl.nextsteppro.climbing.domain.event.EventRepository;
 import pl.nextsteppro.climbing.domain.event.EventType;
+import pl.nextsteppro.climbing.domain.reservation.GuestReservationRepository;
 import pl.nextsteppro.climbing.domain.reservation.Reservation;
 import pl.nextsteppro.climbing.domain.reservation.ReservationRepository;
 import pl.nextsteppro.climbing.domain.reservation.ReservationStatus;
@@ -34,17 +35,20 @@ public class CalendarService {
 
     private final TimeSlotRepository timeSlotRepository;
     private final ReservationRepository reservationRepository;
+    private final GuestReservationRepository guestReservationRepository;
     private final EventRepository eventRepository;
     private final WaitlistRepository waitlistRepository;
     private final EventWaitlistRepository eventWaitlistRepository;
 
     public CalendarService(TimeSlotRepository timeSlotRepository,
                           ReservationRepository reservationRepository,
+                          GuestReservationRepository guestReservationRepository,
                           EventRepository eventRepository,
                           WaitlistRepository waitlistRepository,
                           EventWaitlistRepository eventWaitlistRepository) {
         this.timeSlotRepository = timeSlotRepository;
         this.reservationRepository = reservationRepository;
+        this.guestReservationRepository = guestReservationRepository;
         this.eventRepository = eventRepository;
         this.waitlistRepository = waitlistRepository;
         this.eventWaitlistRepository = eventWaitlistRepository;
@@ -212,7 +216,8 @@ public class CalendarService {
         TimeSlot slot = timeSlotRepository.findById(slotId)
             .orElseThrow(() -> new IllegalArgumentException("Time slot not found: " + slotId));
 
-        int confirmedCount = reservationRepository.countConfirmedByTimeSlotId(slotId);
+        int confirmedCount = reservationRepository.countConfirmedByTimeSlotId(slotId)
+            + guestReservationRepository.sumParticipantsByTimeSlotId(slotId);
         int pendingWaitlistCount = waitlistRepository.countPendingConfirmationBySlotId(slotId);
         // Efektywna liczba zajętych miejsc uwzględnia PENDING_CONFIRMATION z waitlisty
         int effectiveCount = confirmedCount + pendingWaitlistCount;
@@ -417,6 +422,9 @@ public class CalendarService {
                 participantsMap.merge(eventId, confirmed, Math::max);
             }
         }
+        // Dodaj gości zapisanych bezpośrednio na event (nie na slot)
+        guestReservationRepository.sumParticipantsByEventIds(eventIds)
+            .forEach(g -> participantsMap.merge(g.slotId(), g.countAsInt(), Integer::sum));
 
         Set<UUID> userRegisteredEventIds = new HashSet<>();
         if (userId != null && !allEventSlotIds.isEmpty()) {
@@ -434,7 +442,12 @@ public class CalendarService {
 
     private Map<UUID, Integer> buildCountMap(List<UUID> slotIds) {
         if (slotIds.isEmpty()) return Map.of();
-        return reservationRepository.countConfirmedByTimeSlotIds(slotIds).stream()
-            .collect(Collectors.toMap(SlotParticipantCount::slotId, SlotParticipantCount::countAsInt));
+        Map<UUID, Integer> countMap = new HashMap<>(
+            reservationRepository.countConfirmedByTimeSlotIds(slotIds).stream()
+                .collect(Collectors.toMap(SlotParticipantCount::slotId, SlotParticipantCount::countAsInt))
+        );
+        guestReservationRepository.sumParticipantsByTimeSlotIds(slotIds)
+            .forEach(g -> countMap.merge(g.slotId(), g.countAsInt(), Integer::sum));
+        return countMap;
     }
 }

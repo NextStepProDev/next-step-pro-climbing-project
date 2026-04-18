@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 import pl.nextsteppro.climbing.domain.BookingTimeValidator;
 import pl.nextsteppro.climbing.domain.event.Event;
 import pl.nextsteppro.climbing.domain.event.EventRepository;
+import pl.nextsteppro.climbing.domain.reservation.GuestReservationRepository;
 import pl.nextsteppro.climbing.domain.reservation.Reservation;
 import pl.nextsteppro.climbing.domain.reservation.ReservationRepository;
 import pl.nextsteppro.climbing.domain.reservation.ReservationStatus;
@@ -31,6 +32,7 @@ import java.util.stream.Collectors;
 public class ReservationService {
 
     private final ReservationRepository reservationRepository;
+    private final GuestReservationRepository guestReservationRepository;
     private final TimeSlotRepository timeSlotRepository;
     private final UserRepository userRepository;
     private final EventRepository eventRepository;
@@ -41,6 +43,7 @@ public class ReservationService {
     private final EventWaitlistService eventWaitlistService;
 
     public ReservationService(ReservationRepository reservationRepository,
+                             GuestReservationRepository guestReservationRepository,
                              TimeSlotRepository timeSlotRepository,
                              UserRepository userRepository,
                              EventRepository eventRepository,
@@ -50,6 +53,7 @@ public class ReservationService {
                              WaitlistService waitlistService,
                              EventWaitlistService eventWaitlistService) {
         this.reservationRepository = reservationRepository;
+        this.guestReservationRepository = guestReservationRepository;
         this.timeSlotRepository = timeSlotRepository;
         this.userRepository = userRepository;
         this.eventRepository = eventRepository;
@@ -91,7 +95,8 @@ public class ReservationService {
             throw new IllegalStateException(msg.get("reservation.already.exists"));
         }
 
-        int currentCount = reservationRepository.countConfirmedByTimeSlotId(slotId);
+        int currentCount = reservationRepository.countConfirmedByTimeSlotId(slotId)
+            + guestReservationRepository.sumParticipantsByTimeSlotId(slotId);
         int spotsLeft = slot.getMaxParticipants() - currentCount;
         if (spotsLeft <= 0) {
             throw new IllegalStateException(msg.get("reservation.no.spots"));
@@ -462,7 +467,8 @@ public class ReservationService {
             throw new IllegalStateException(msg.get("reservation.cancel.window"));
         }
 
-        int totalParticipants = reservationRepository.countConfirmedByTimeSlotId(slot.getId());
+        int totalParticipants = reservationRepository.countConfirmedByTimeSlotId(slot.getId())
+            + guestReservationRepository.sumParticipantsByTimeSlotId(slot.getId());
         int availableForThisReservation = slot.getMaxParticipants() - totalParticipants + reservation.getParticipants();
         if (participants > availableForThisReservation) {
             throw new IllegalStateException(msg.get("reservation.spots.available", availableForThisReservation, participants));
