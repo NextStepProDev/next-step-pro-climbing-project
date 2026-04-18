@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pl.nextsteppro.climbing.api.activitylog.ActivityLogService;
 import pl.nextsteppro.climbing.domain.BookingTimeValidator;
+import pl.nextsteppro.climbing.domain.reservation.GuestReservationRepository;
 import pl.nextsteppro.climbing.domain.reservation.Reservation;
 import pl.nextsteppro.climbing.domain.reservation.ReservationRepository;
 import pl.nextsteppro.climbing.domain.reservation.ReservationStatus;
@@ -39,6 +40,7 @@ public class WaitlistService {
     private final WaitlistRepository waitlistRepository;
     private final TimeSlotRepository timeSlotRepository;
     private final ReservationRepository reservationRepository;
+    private final GuestReservationRepository guestReservationRepository;
     private final UserRepository userRepository;
     private final WaitlistMailService waitlistMailService;
     private final ActivityLogService activityLogService;
@@ -47,6 +49,7 @@ public class WaitlistService {
     public WaitlistService(WaitlistRepository waitlistRepository,
                            TimeSlotRepository timeSlotRepository,
                            ReservationRepository reservationRepository,
+                           GuestReservationRepository guestReservationRepository,
                            UserRepository userRepository,
                            WaitlistMailService waitlistMailService,
                            ActivityLogService activityLogService,
@@ -54,6 +57,7 @@ public class WaitlistService {
         this.waitlistRepository = waitlistRepository;
         this.timeSlotRepository = timeSlotRepository;
         this.reservationRepository = reservationRepository;
+        this.guestReservationRepository = guestReservationRepository;
         this.userRepository = userRepository;
         this.waitlistMailService = waitlistMailService;
         this.activityLogService = activityLogService;
@@ -85,7 +89,8 @@ public class WaitlistService {
         }
 
         // Slot musi być efektywnie pełny (uwzględniamy PENDING_CONFIRMATION jako zajęte)
-        int confirmedCount = reservationRepository.countConfirmedByTimeSlotId(slotId);
+        int confirmedCount = reservationRepository.countConfirmedByTimeSlotId(slotId)
+            + guestReservationRepository.sumParticipantsByTimeSlotId(slotId);
         int pendingCount = waitlistRepository.countPendingConfirmationBySlotId(slotId);
         int effectiveSpotsLeft = slot.getMaxParticipants() - confirmedCount - pendingCount;
         if (effectiveSpotsLeft > 0) {
@@ -115,7 +120,8 @@ public class WaitlistService {
         if (wasPending) {
             TimeSlot slot = timeSlotRepository.findById(slotId).orElse(null);
             if (slot != null) {
-                int confirmed = reservationRepository.countConfirmedByTimeSlotId(slotId);
+                int confirmed = reservationRepository.countConfirmedByTimeSlotId(slotId)
+                    + guestReservationRepository.sumParticipantsByTimeSlotId(slotId);
                 int pending = waitlistRepository.countPendingConfirmationBySlotId(slotId);
                 if (confirmed + pending < slot.getMaxParticipants()) {
                     // Miejsce jest wolne i nikt się już nie ściga — powiadamiamy oczekujących
@@ -152,7 +158,8 @@ public class WaitlistService {
         TimeSlot slot = timeSlotRepository.findByIdForUpdate(slotId)
             .orElseThrow(() -> new IllegalArgumentException("Time slot not found"));
 
-        int confirmedCount = reservationRepository.countConfirmedByTimeSlotId(slotId);
+        int confirmedCount = reservationRepository.countConfirmedByTimeSlotId(slotId)
+            + guestReservationRepository.sumParticipantsByTimeSlotId(slotId);
         if (confirmedCount >= slot.getMaxParticipants()) {
             // Ktoś inny był szybszy — resetujemy tego użytkownika do WAITING
             entry.returnToWaiting();

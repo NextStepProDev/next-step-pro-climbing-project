@@ -154,7 +154,8 @@ public class AdminService {
         if (request.endTime() != null) slot.setEndTime(request.endTime());
         int oldMaxParticipants = slot.getMaxParticipants();
         if (request.maxParticipants() != null) {
-            int confirmed = reservationRepository.countConfirmedByTimeSlotId(slotId);
+            int confirmed = reservationRepository.countConfirmedByTimeSlotId(slotId)
+                + guestReservationRepository.sumParticipantsByTimeSlotId(slotId);
             if (request.maxParticipants() < confirmed) {
                 throw new IllegalStateException(msg.get("admin.slot.capacity.too.low", String.valueOf(confirmed)));
             }
@@ -751,7 +752,8 @@ public class AdminService {
     }
 
     private TimeSlotAdminDto toTimeSlotAdminDto(TimeSlot slot) {
-        int confirmedCount = reservationRepository.countConfirmedByTimeSlotId(slot.getId());
+        int confirmedCount = reservationRepository.countConfirmedByTimeSlotId(slot.getId())
+            + guestReservationRepository.sumParticipantsByTimeSlotId(slot.getId());
         return toTimeSlotAdminDto(slot, confirmedCount);
     }
 
@@ -884,7 +886,8 @@ public class AdminService {
         }
         TimeSlot slot = reservation.getTimeSlot();
         int oldParticipants = reservation.getParticipants();
-        int currentTotal = reservationRepository.countConfirmedByTimeSlotId(slot.getId());
+        int currentTotal = reservationRepository.countConfirmedByTimeSlotId(slot.getId())
+            + guestReservationRepository.sumParticipantsByTimeSlotId(slot.getId());
         int available = slot.getMaxParticipants() - currentTotal + oldParticipants;
         if (newParticipants > available) {
             throw new IllegalStateException(msg.get("admin.slot.capacity.too.low", String.valueOf(available)));
@@ -1091,7 +1094,7 @@ public class AdminService {
 
         List<TimeSlot> slots = timeSlotRepository.findByEventId(eventId);
         if (slots.isEmpty()) {
-            throw new IllegalStateException("Event has no slots");
+            slots = createDefaultSlotsForEvent(event);
         }
 
         // Check user is not already registered on any slot of this event
@@ -1141,6 +1144,19 @@ public class AdminService {
         @CacheEvict(value = "calendarWeek", allEntries = true),
         @CacheEvict(value = "calendarDay", allEntries = true)
     })
+    private List<TimeSlot> createDefaultSlotsForEvent(Event event) {
+        List<TimeSlot> slots = new ArrayList<>();
+        LocalTime slotStart = event.getStartTime() != null ? event.getStartTime() : LocalTime.of(0, 0);
+        LocalTime slotEnd = event.getEndTime() != null ? event.getEndTime() : LocalTime.of(23, 59);
+        LocalDate date = event.getStartDate();
+        while (!date.isAfter(event.getEndDate())) {
+            TimeSlot slot = new TimeSlot(event, date, slotStart, slotEnd, event.getMaxParticipants());
+            slots.add(timeSlotRepository.save(slot));
+            date = date.plusDays(1);
+        }
+        return slots;
+    }
+
     public GuestParticipantDto addGuestParticipantToEvent(UUID eventId, AddGuestParticipantRequest request) {
         Event event = eventRepository.findById(eventId)
             .orElseThrow(() -> new IllegalArgumentException("Event not found"));
