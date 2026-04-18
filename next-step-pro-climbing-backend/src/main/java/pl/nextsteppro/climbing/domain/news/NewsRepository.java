@@ -13,7 +13,11 @@ import java.util.UUID;
 public interface NewsRepository extends JpaRepository<News, UUID> {
 
     @Query(value = """
-            SELECT id, title, excerpt, thumbnail_filename AS thumbnailFilename,
+            SELECT id, title, excerpt,
+                   thumbnail_filename AS thumbnailFilename,
+                   thumbnail_url AS thumbnailUrl,
+                   thumbnail_focal_point_x AS thumbnailFocalPointX,
+                   thumbnail_focal_point_y AS thumbnailFocalPointY,
                    is_published AS published, published_at AS publishedAt,
                    created_at AS createdAt, updated_at AS updatedAt
             FROM news
@@ -25,7 +29,11 @@ public interface NewsRepository extends JpaRepository<News, UUID> {
     Page<NewsSummaryProjection> findAllPublishedSummaries(Pageable pageable);
 
     @Query(value = """
-            SELECT id, title, excerpt, thumbnail_filename AS thumbnailFilename,
+            SELECT id, title, excerpt,
+                   thumbnail_filename AS thumbnailFilename,
+                   thumbnail_url AS thumbnailUrl,
+                   thumbnail_focal_point_x AS thumbnailFocalPointX,
+                   thumbnail_focal_point_y AS thumbnailFocalPointY,
                    is_published AS published, published_at AS publishedAt,
                    created_at AS createdAt, updated_at AS updatedAt
             FROM news

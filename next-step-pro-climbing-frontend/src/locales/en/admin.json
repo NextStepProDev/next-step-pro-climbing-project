@@ -80,6 +80,8 @@
     "modified": "Modified",
     "pendingBadge": "New — unsaved",
     "cancelThumbnail": "Cancel selection",
+    "cropEnable": "Crop thumbnail",
+    "cropDisable": "Disable crop",
     "preview": "Preview",
     "previewTitle": "Article preview",
     "previewDraftBadge": "PREVIEW — unsaved changes",

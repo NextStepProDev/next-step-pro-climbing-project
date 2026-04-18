@@ -21,7 +21,7 @@ export function NewsPage() {
     queryFn: ({ pageParam }) => newsApi.getAll(pageParam as number),
     initialPageParam: 0,
     getNextPageParam: (lastPage) => lastPage.hasNext ? lastPage.page + 1 : undefined,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 0,
   })
 
   const articles = data?.pages.flatMap(p => p.content) ?? []
@@ -66,14 +66,28 @@ export function NewsPage() {
           >
             <div className="aspect-video bg-dark-700 relative overflow-hidden">
               {article.thumbnailUrl ? (
-                <img
-                  src={article.thumbnailUrl}
-                  alt={article.title}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                  style={article.thumbnailFocalPointX != null
-                    ? { objectPosition: `${article.thumbnailFocalPointX * 100}% ${(article.thumbnailFocalPointY ?? 0.5) * 100}%` }
-                    : undefined}
-                />
+                article.thumbnailFocalPointX != null ? (
+                  <img
+                    src={article.thumbnailUrl}
+                    alt={article.title}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    style={{ objectPosition: `${article.thumbnailFocalPointX * 100}% ${(article.thumbnailFocalPointY ?? 0.5) * 100}%` }}
+                  />
+                ) : (
+                  <>
+                    <img
+                      src={article.thumbnailUrl}
+                      alt=""
+                      aria-hidden="true"
+                      className="absolute inset-0 w-full h-full object-cover blur-xl scale-110"
+                    />
+                    <img
+                      src={article.thumbnailUrl}
+                      alt={article.title}
+                      className="relative w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
+                    />
+                  </>
+                )
               ) : (
                 <div className="w-full h-full flex items-center justify-center">
                   <Newspaper className="h-16 w-16 text-dark-500" />
