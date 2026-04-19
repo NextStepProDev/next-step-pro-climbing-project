@@ -61,6 +61,10 @@ public class User {
     @Column(name = "newsletter_choice_made", nullable = false)
     private boolean newsletterChoiceMade = false;
 
+    @Column(name = "newsletter_subscribed_at")
+    @Nullable
+    private Instant newsletterSubscribedAt;
+
     @Column(name = "preferred_language", nullable = false)
     private String preferredLanguage = "pl";
 
@@ -237,6 +241,15 @@ public class User {
 
     public void setNewsletterChoiceMade(boolean newsletterChoiceMade) {
         this.newsletterChoiceMade = newsletterChoiceMade;
+    }
+
+    @Nullable
+    public Instant getNewsletterSubscribedAt() {
+        return newsletterSubscribedAt;
+    }
+
+    public void setNewsletterSubscribedAt(@Nullable Instant newsletterSubscribedAt) {
+        this.newsletterSubscribedAt = newsletterSubscribedAt;
     }
 
     public String getPreferredLanguage() {

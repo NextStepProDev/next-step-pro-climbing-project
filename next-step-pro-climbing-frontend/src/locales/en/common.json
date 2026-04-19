@@ -30,7 +30,7 @@
   },
   "newsletter": {
     "modalTitle": "Would you like to receive our newsletter?",
-    "modalDescription": "We send news, information about new courses and special offers. You can unsubscribe at any time.",
+    "modalDescription": "We send news, information about new courses and special offers. By clicking \"Yes\", you consent to receiving newsletters from Next Step Pro Climbing. You can unsubscribe at any time via the link in any email.",
     "modalYes": "Yes, sign me up",
     "modalNo": "No, thanks"
   },

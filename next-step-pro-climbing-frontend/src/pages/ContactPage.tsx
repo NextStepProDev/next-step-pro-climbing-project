@@ -90,7 +90,7 @@ export function ContactPage() {
                 href={CONTACT.youtube}
                 icon={<Youtube className="w-5 h-5" />}
                 label="YouTube"
-                handle="PureEssentialFilms"
+                handle="ZeroGravityLab"
                 color="hover:border-red-500/50 hover:bg-red-500/5"
                 iconColor="text-red-400"
               />
