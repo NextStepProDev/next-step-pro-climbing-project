@@ -3,12 +3,18 @@ package pl.nextsteppro.climbing.api.user;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import pl.nextsteppro.climbing.domain.auth.AuthToken;
 import pl.nextsteppro.climbing.domain.auth.AuthTokenRepository;
+import pl.nextsteppro.climbing.domain.auth.TokenType;
 import pl.nextsteppro.climbing.domain.reservation.ReservationRepository;
 import pl.nextsteppro.climbing.domain.user.User;
 import pl.nextsteppro.climbing.domain.user.UserRepository;
 import pl.nextsteppro.climbing.infrastructure.i18n.MessageService;
 import pl.nextsteppro.climbing.infrastructure.mail.AuthMailService;
+import pl.nextsteppro.climbing.infrastructure.security.JwtService;
+
+import java.time.Duration;
+import java.time.Instant;
 
 import java.util.UUID;
 
@@ -21,6 +27,7 @@ public class UserService {
     private final AuthMailService authMailService;
     private final ReservationRepository reservationRepository;
     private final AuthTokenRepository authTokenRepository;
+    private final JwtService jwtService;
     private final MessageService msg;
 
     public UserService(UserRepository userRepository,
@@ -28,12 +35,14 @@ public class UserService {
                        AuthMailService authMailService,
                        ReservationRepository reservationRepository,
                        AuthTokenRepository authTokenRepository,
+                       JwtService jwtService,
                        MessageService msg) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.authMailService = authMailService;
         this.reservationRepository = reservationRepository;
         this.authTokenRepository = authTokenRepository;
+        this.jwtService = jwtService;
         this.msg = msg;
     }
 
@@ -117,6 +126,28 @@ public class UserService {
 
         user.setNewsletterSubscribed(subscribed);
         user.setNewsletterChoiceMade(true);
+        if (subscribed) {
+            user.setNewsletterSubscribedAt(Instant.now());
+        }
         userRepository.save(user);
+    }
+
+    public void unsubscribeByToken(String token) {
+        String tokenHash = jwtService.hashToken(token);
+        AuthToken authToken = authTokenRepository.findValidToken(tokenHash, TokenType.NEWSLETTER_UNSUBSCRIBE, Instant.now())
+            .orElseThrow(() -> new IllegalArgumentException("Invalid unsubscribe token"));
+        User user = authToken.getUser();
+        user.setNewsletterSubscribed(false);
+        user.setNewsletterChoiceMade(true);
+        userRepository.save(user);
+    }
+
+    public String generateNewsletterUnsubscribeToken(User user) {
+        authTokenRepository.deleteByUserIdAndTokenType(user.getId(), TokenType.NEWSLETTER_UNSUBSCRIBE);
+        String token = jwtService.generateSecureToken();
+        String tokenHash = jwtService.hashToken(token);
+        Instant expiry = Instant.now().plus(Duration.ofDays(3650));
+        authTokenRepository.save(new AuthToken(user, tokenHash, TokenType.NEWSLETTER_UNSUBSCRIBE, expiry));
+        return token;
     }
 }

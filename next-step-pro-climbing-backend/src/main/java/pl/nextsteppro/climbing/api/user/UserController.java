@@ -8,8 +8,10 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import pl.nextsteppro.climbing.config.AppConfig;
 import pl.nextsteppro.climbing.config.CurrentUserId;
 import pl.nextsteppro.climbing.domain.user.User;
 
@@ -21,9 +23,11 @@ import java.util.UUID;
 public class UserController {
 
     private final UserService userService;
+    private final String siteUrl;
 
-    public UserController(UserService userService) {
+    public UserController(UserService userService, AppConfig appConfig) {
         this.userService = userService;
+        this.siteUrl = appConfig.getSiteUrl();
     }
 
     @Operation(
@@ -118,6 +122,35 @@ public class UserController {
 
         userService.updateLanguagePreference(userId, request.language());
         return ResponseEntity.noContent().build();
+    }
+
+    @Operation(summary = "Wypisz z newslettera", description = "Wypisuje użytkownika z newslettera bez logowania (link z maila)")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Wypisano pomyślnie"),
+        @ApiResponse(responseCode = "400", description = "Nieprawidłowy token")
+    })
+    @GetMapping("/unsubscribe")
+    public ResponseEntity<String> unsubscribe(@RequestParam String token) {
+        try {
+            userService.unsubscribeByToken(token);
+            String html = """
+                <html><body style="font-family:Arial,sans-serif;text-align:center;padding:60px;background:#1a1816;color:#e0e0e0;">
+                <h2 style="color:#3b82f6;">Wypisano z newslettera</h2>
+                <p>Zostałeś pomyślnie wypisany z newslettera Next Step Pro Climbing.</p>
+                <p><a href="%s" style="color:#3b82f6;">Wróć na stronę główną</a></p>
+                </body></html>
+                """.formatted(siteUrl);
+            return ResponseEntity.ok().contentType(MediaType.TEXT_HTML).body(html);
+        } catch (IllegalArgumentException e) {
+            String html = """
+                <html><body style="font-family:Arial,sans-serif;text-align:center;padding:60px;background:#1a1816;color:#e0e0e0;">
+                <h2 style="color:#ef4444;">Nieprawidłowy link</h2>
+                <p>Link do wypisania jest nieprawidłowy lub wygasł.</p>
+                <p><a href="%s" style="color:#3b82f6;">Wróć na stronę główną</a></p>
+                </body></html>
+                """.formatted(siteUrl);
+            return ResponseEntity.badRequest().contentType(MediaType.TEXT_HTML).body(html);
+        }
     }
 
     @Operation(summary = "Subskrypcja newslettera", description = "Włącza lub wyłącza newsletter")

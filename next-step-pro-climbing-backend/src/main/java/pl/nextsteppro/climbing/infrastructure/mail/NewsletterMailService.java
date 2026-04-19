@@ -8,6 +8,7 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import pl.nextsteppro.climbing.api.user.UserService;
 import pl.nextsteppro.climbing.config.AppConfig;
 import pl.nextsteppro.climbing.domain.news.BlockType;
 import pl.nextsteppro.climbing.domain.news.News;
@@ -25,12 +26,14 @@ public class NewsletterMailService {
     private final JavaMailSender mailSender;
     private final AppConfig appConfig;
     private final MessageService msg;
+    private final UserService userService;
     private final String siteUrl;
 
-    public NewsletterMailService(JavaMailSender mailSender, AppConfig appConfig, MessageService msg) {
+    public NewsletterMailService(JavaMailSender mailSender, AppConfig appConfig, MessageService msg, UserService userService) {
         this.mailSender = mailSender;
         this.appConfig = appConfig;
         this.msg = msg;
+        this.userService = userService;
         this.siteUrl = appConfig.getSiteUrl();
     }
 
@@ -38,15 +41,17 @@ public class NewsletterMailService {
     public void sendToAll(News news, List<NewsContentBlock> blocks, List<User> subscribers, String baseUrl) {
         log.info("Sending newsletter '{}' to {} subscribers", news.getTitle(), subscribers.size());
         for (User subscriber : subscribers) {
-            sendToUser(news, blocks, subscriber, baseUrl);
+            String unsubscribeToken = userService.generateNewsletterUnsubscribeToken(subscriber);
+            String unsubscribeUrl = baseUrl + "/api/user/unsubscribe?token=" + unsubscribeToken;
+            sendToUser(news, blocks, subscriber, baseUrl, unsubscribeUrl);
         }
         log.info("Newsletter '{}' sent", news.getTitle());
     }
 
-    private void sendToUser(News news, List<NewsContentBlock> blocks, User subscriber, String baseUrl) {
+    private void sendToUser(News news, List<NewsContentBlock> blocks, User subscriber, String baseUrl, String unsubscribeUrl) {
         String lang = subscriber.getPreferredLanguage();
         String subject = news.getTitle();
-        String body = buildBody(news, blocks, subscriber, baseUrl, lang);
+        String body = buildBody(news, blocks, subscriber, baseUrl, lang, unsubscribeUrl);
 
         try {
             var message = mailSender.createMimeMessage();
@@ -67,13 +72,13 @@ public class NewsletterMailService {
         }
     }
 
-    private String buildBody(News news, List<NewsContentBlock> blocks, User subscriber, String baseUrl, String lang) {
+    private String buildBody(News news, List<NewsContentBlock> blocks, User subscriber, String baseUrl, String lang, String unsubscribeUrl) {
         String settingsUrl = baseUrl + "/settings";
         String newsUrl = baseUrl + "/news/" + news.getId();
         String thumbnailHtml = buildThumbnailHtml(news);
         String blocksHtml = buildBlocksHtml(blocks, baseUrl);
 
-        String footerText = msg.getForLang("email.newsletter.footer", lang, settingsUrl);
+        String footerText = msg.getForLang("email.newsletter.footer", lang, unsubscribeUrl, settingsUrl);
 
         return """
             <html>

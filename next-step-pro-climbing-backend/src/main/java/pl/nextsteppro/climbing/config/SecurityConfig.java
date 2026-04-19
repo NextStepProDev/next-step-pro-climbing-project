@@ -75,7 +75,9 @@ public class SecurityConfig {
                     .requestMatchers(HttpMethod.GET, "/api/news/**").permitAll()
                     .requestMatchers(HttpMethod.GET, "/api/courses/**").permitAll()
                     .requestMatchers(HttpMethod.GET, "/api/videos/**").permitAll()
-                    .requestMatchers(HttpMethod.GET, "/api/files/**").permitAll();
+                    .requestMatchers(HttpMethod.GET, "/api/files/**").permitAll()
+                    // Public unsubscribe endpoint (no login required - GDPR compliance)
+                    .requestMatchers(HttpMethod.GET, "/api/user/unsubscribe").permitAll();
                 // Dev endpoints only in dev profile
                 if (java.util.Arrays.asList(environment.getActiveProfiles()).contains("dev")) {
                     auth.requestMatchers("/api/dev/**").permitAll();

@@ -65,7 +65,7 @@ i18n
         errors: errorsEs,
       },
     },
-    fallbackLng: 'pl',
+    fallbackLng: 'en',
     defaultNS: 'common',
     ns: ['common', 'auth', 'calendar', 'reservations', 'admin', 'settings', 'home', 'errors'],
     interpolation: {
