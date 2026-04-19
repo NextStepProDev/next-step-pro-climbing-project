@@ -246,10 +246,12 @@ export function WeekCalendar({
               {hours.map((hour) => (
                 <div
                   key={hour}
-                  className="border-b border-dark-800/50 text-right pr-2 text-xs text-dark-500"
+                  className="relative border-b border-dark-600/50 text-right pr-2 text-xs text-dark-500"
                   style={{ height: HOUR_HEIGHT }}
                 >
                   <span className="relative -top-2">{`${hour}:00`}</span>
+                  {/* Half-hour tick */}
+                  <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] text-dark-600">·</span>
                 </div>
               ))}
             </div>
@@ -285,9 +287,12 @@ export function WeekCalendar({
                   {hours.map((hour) => (
                     <div
                       key={hour}
-                      className="absolute w-full border-b border-dark-800/50"
+                      className="absolute w-full border-b border-dark-600/50"
                       style={{ top: (hour - START_HOUR) * HOUR_HEIGHT, height: HOUR_HEIGHT }}
-                    />
+                    >
+                      {/* Half-hour line */}
+                      <div className="absolute w-full border-b border-dark-700/40" style={{ top: '50%' }} />
+                    </div>
                   ))}
 
                   {/* Event bars at top area */}
