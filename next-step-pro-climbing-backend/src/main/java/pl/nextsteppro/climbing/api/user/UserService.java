@@ -6,6 +6,8 @@ import org.springframework.transaction.annotation.Transactional;
 import pl.nextsteppro.climbing.domain.auth.AuthToken;
 import pl.nextsteppro.climbing.domain.auth.AuthTokenRepository;
 import pl.nextsteppro.climbing.domain.auth.TokenType;
+import pl.nextsteppro.climbing.domain.newsletter.NewsletterConsentLog;
+import pl.nextsteppro.climbing.domain.newsletter.NewsletterConsentLogRepository;
 import pl.nextsteppro.climbing.domain.reservation.ReservationRepository;
 import pl.nextsteppro.climbing.domain.user.User;
 import pl.nextsteppro.climbing.domain.user.UserRepository;
@@ -30,6 +32,7 @@ public class UserService {
     private final AuthTokenRepository authTokenRepository;
     private final JwtService jwtService;
     private final MessageService msg;
+    private final NewsletterConsentLogRepository consentLogRepository;
 
     public UserService(UserRepository userRepository,
                        PasswordEncoder passwordEncoder,
@@ -37,7 +40,8 @@ public class UserService {
                        ReservationRepository reservationRepository,
                        AuthTokenRepository authTokenRepository,
                        JwtService jwtService,
-                       MessageService msg) {
+                       MessageService msg,
+                       NewsletterConsentLogRepository consentLogRepository) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.authMailService = authMailService;
@@ -45,6 +49,7 @@ public class UserService {
         this.authTokenRepository = authTokenRepository;
         this.jwtService = jwtService;
         this.msg = msg;
+        this.consentLogRepository = consentLogRepository;
     }
 
     @Transactional(readOnly = true)
@@ -129,6 +134,7 @@ public class UserService {
             user.setNewsletterSubscribedAt(Instant.now());
         }
         userRepository.save(user);
+        consentLogRepository.save(new NewsletterConsentLog(user, subscribed ? "SUBSCRIBED" : "UNSUBSCRIBED", "SETTINGS"));
     }
 
     public void unsubscribeByToken(String token) {
@@ -139,6 +145,7 @@ public class UserService {
         user.setNewsletterSubscribed(false);
         user.setNewsletterChoiceMade(true);
         userRepository.save(user);
+        consentLogRepository.save(new NewsletterConsentLog(user, "UNSUBSCRIBED", "EMAIL_LINK"));
     }
 
     public String generateNewsletterUnsubscribeToken(User user) {
