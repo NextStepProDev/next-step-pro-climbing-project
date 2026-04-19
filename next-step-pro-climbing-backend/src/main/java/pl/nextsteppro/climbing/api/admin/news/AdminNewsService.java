@@ -114,7 +114,7 @@ public class AdminNewsService {
             if (block.getBlockType() == BlockType.IMAGE && block.getImageFilename() != null) {
                 try {
                     fileStorageService.delete(block.getImageFilename(), "news");
-                } catch (IOException e) {
+                } catch (Exception e) {
                     logger.warn("Failed to delete block image file: {} - {}", block.getImageFilename(), e.getMessage());
                 }
             }
@@ -124,11 +124,12 @@ public class AdminNewsService {
         if (news.getThumbnailFilename() != null) {
             try {
                 fileStorageService.delete(news.getThumbnailFilename(), "news");
-            } catch (IOException e) {
+            } catch (Exception e) {
                 logger.warn("Failed to delete thumbnail file: {} - {}", news.getThumbnailFilename(), e.getMessage());
             }
         }
 
+        blockRepository.deleteAll(blocks);
         newsRepository.delete(news);
     }
 
@@ -141,7 +142,7 @@ public class AdminNewsService {
         if (news.getThumbnailFilename() != null) {
             try {
                 fileStorageService.delete(news.getThumbnailFilename(), "news");
-            } catch (IOException e) {
+            } catch (Exception e) {
                 logger.warn("Failed to delete old thumbnail: {} - {}", news.getThumbnailFilename(), e.getMessage());
             }
         }
@@ -255,7 +256,7 @@ public class AdminNewsService {
         if (news.getThumbnailFilename() != null) {
             try {
                 fileStorageService.delete(news.getThumbnailFilename(), "news");
-            } catch (IOException e) {
+            } catch (Exception e) {
                 logger.warn("Failed to delete old thumbnail when setting URL: {}", e.getMessage());
             }
             news.setThumbnailFilename(null);
@@ -296,7 +297,7 @@ public class AdminNewsService {
         if (block.getBlockType() == BlockType.IMAGE && block.getImageFilename() != null) {
             try {
                 fileStorageService.delete(block.getImageFilename(), "news");
-            } catch (IOException e) {
+            } catch (Exception e) {
                 logger.warn("Failed to delete block image file: {} - {}", block.getImageFilename(), e.getMessage());
             }
         }
