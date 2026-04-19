@@ -220,6 +220,8 @@ class AdminGalleryServiceTest {
             @Override public Float getThumbnailFocalPointX() { return null; }
             @Override public Float getThumbnailFocalPointY() { return null; }
             @Override public Long getPhotoCount() { return photoCount; }
+            @Override public boolean isPublished() { return true; }
+            @Override public java.time.Instant getPublishedAt() { return null; }
         };
     }
 

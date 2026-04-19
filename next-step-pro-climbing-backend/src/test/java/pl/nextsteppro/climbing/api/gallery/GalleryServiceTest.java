@@ -92,6 +92,16 @@ class GalleryServiceTest {
             public Long getPhotoCount() {
                 return 5L;
             }
+
+            @Override
+            public boolean isPublished() {
+                return true;
+            }
+
+            @Override
+            public java.time.Instant getPublishedAt() {
+                return null;
+            }
         };
 
         when(albumRepository.findAllAlbumSummaries()).thenReturn(List.of(projection));
@@ -171,6 +181,16 @@ class GalleryServiceTest {
             @Override
             public Long getPhotoCount() {
                 return 0L;
+            }
+
+            @Override
+            public boolean isPublished() {
+                return true;
+            }
+
+            @Override
+            public java.time.Instant getPublishedAt() {
+                return null;
             }
         };
 
@@ -291,6 +311,16 @@ class GalleryServiceTest {
             public Long getPhotoCount() {
                 return 1L;
             }
+
+            @Override
+            public boolean isPublished() {
+                return true;
+            }
+
+            @Override
+            public java.time.Instant getPublishedAt() {
+                return null;
+            }
         };
 
         when(albumRepository.findAllAlbumSummaries()).thenReturn(List.of(projection));
@@ -361,6 +391,16 @@ class GalleryServiceTest {
                 @Override
                 public Long getPhotoCount() {
                     return (long) photoCount;
+                }
+
+                @Override
+                public boolean isPublished() {
+                    return true;
+                }
+
+                @Override
+                public java.time.Instant getPublishedAt() {
+                    return null;
                 }
             });
         }

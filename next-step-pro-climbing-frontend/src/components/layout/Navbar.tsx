@@ -15,7 +15,9 @@ export function Navbar() {
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [mediaMenuOpen, setMediaMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
+  const mediaMenuRef = useRef<HTMLDivElement>(null);
 
   const navLinks = [
     { to: "/", label: t('nav.home') },
@@ -26,11 +28,16 @@ export function Navbar() {
     { to: "/aktualnosci", label: t('nav.news') },
     { to: "/kursy", label: t('nav.courses') },
     { to: "/instruktorzy", label: t('nav.instructors') },
-    { to: "/galeria", label: t('nav.gallery') },
-    { to: "/filmy", label: t('nav.videos') },
     { to: "/kontakt", label: t('nav.contact') },
     ...(isAdmin ? [{ to: "/admin", label: t('nav.admin') }] : []),
   ];
+
+  const mediaLinks = [
+    { to: "/galeria", label: t('nav.gallery') },
+    { to: "/filmy", label: t('nav.videos') },
+  ];
+
+  const isMediaActive = mediaLinks.some((l) => location.pathname === l.to);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -40,16 +47,23 @@ export function Navbar() {
       ) {
         setUserMenuOpen(false);
       }
+      if (
+        mediaMenuRef.current &&
+        !mediaMenuRef.current.contains(e.target as Node)
+      ) {
+        setMediaMenuOpen(false);
+      }
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Close dropdown on route change
+  // Close dropdowns on route change
   const [prevPathname, setPrevPathname] = useState(location.pathname);
   if (prevPathname !== location.pathname) {
     setPrevPathname(location.pathname);
     setUserMenuOpen(false);
+    setMediaMenuOpen(false);
   }
 
   const userInitial = user?.firstName?.charAt(0).toUpperCase() ?? "?";
@@ -71,21 +85,64 @@ export function Navbar() {
           </Link>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center gap-8">
+          <div className="hidden md:flex items-center gap-1">
             {navLinks.map((link) => (
               <Link
                 key={link.to}
                 to={link.to}
                 className={clsx(
-                  "text-base font-semibold tracking-wide transition-colors",
+                  "px-3 py-1.5 rounded-lg text-base font-semibold tracking-wide transition-colors",
                   location.pathname === link.to
-                    ? "text-primary-400"
-                    : "text-dark-300 hover:text-dark-100",
+                    ? "bg-dark-800 text-dark-100"
+                    : "text-dark-400 hover:bg-dark-800/60 hover:text-dark-200",
                 )}
               >
                 {link.label}
               </Link>
             ))}
+
+            {/* Media dropdown */}
+            <div className="relative" ref={mediaMenuRef}>
+              <button
+                onClick={() => setMediaMenuOpen(!mediaMenuOpen)}
+                className={clsx(
+                  "flex items-center gap-1 px-3 py-1.5 rounded-lg text-base font-semibold tracking-wide transition-colors",
+                  isMediaActive
+                    ? "bg-dark-800 text-dark-100"
+                    : "text-dark-400 hover:bg-dark-800/60 hover:text-dark-200",
+                )}
+              >
+                {t('nav.media')}
+                <ChevronDown
+                  className={clsx(
+                    "w-3.5 h-3.5 transition-transform",
+                    mediaMenuOpen && "rotate-180",
+                  )}
+                />
+              </button>
+
+              {mediaMenuOpen && (
+                <div className="absolute left-0 mt-2 w-40 bg-dark-900 border border-dark-700 rounded-xl shadow-lg shadow-black/30 overflow-hidden">
+                  <div className="py-1">
+                    {mediaLinks.map((link) => (
+                      <Link
+                        key={link.to}
+                        to={link.to}
+                        onClick={() => setMediaMenuOpen(false)}
+                        className={clsx(
+                          "block px-4 py-2.5 text-sm transition-colors",
+                          location.pathname === link.to
+                            ? "text-dark-100 bg-dark-800"
+                            : "text-dark-300 hover:bg-dark-800 hover:text-dark-100",
+                        )}
+                      >
+                        {link.label}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* User Actions */}
