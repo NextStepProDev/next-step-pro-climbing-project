@@ -34,6 +34,8 @@ public class AdminGalleryDtos {
             @Nullable Float thumbnailFocalPointY,
             long photoCount,
             int displayOrder,
+            boolean published,
+            @Nullable Instant publishedAt,
             Instant createdAt,
             Instant updatedAt
     ) {}

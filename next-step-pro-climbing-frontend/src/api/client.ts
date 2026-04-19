@@ -552,6 +552,10 @@ export const adminGalleryApi = {
       method: 'PUT',
       body: JSON.stringify(data),
     }),
+  publishAlbum: (id: string) =>
+    fetchApi<AlbumAdmin>(`/admin/gallery/albums/${id}/publish`, { method: 'POST' }),
+  unpublishAlbum: (id: string) =>
+    fetchApi<AlbumAdmin>(`/admin/gallery/albums/${id}/unpublish`, { method: 'POST' }),
 
   // Photos
   uploadPhoto: async (albumId: string, file: File, caption?: string) => {
