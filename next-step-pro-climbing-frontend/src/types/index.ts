@@ -23,6 +23,7 @@ export interface User {
   preferredLanguage: string
   newsletterSubscribed: boolean
   newsletterChoiceMade: boolean
+  hasPassword: boolean
   createdAt: string
 }
 

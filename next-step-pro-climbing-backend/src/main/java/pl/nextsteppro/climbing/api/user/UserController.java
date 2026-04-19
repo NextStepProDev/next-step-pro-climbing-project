@@ -181,6 +181,7 @@ public class UserController {
             user.getPreferredLanguage(),
             user.isNewsletterSubscribed(),
             user.isNewsletterChoiceMade(),
+            user.hasPassword(),
             user.getCreatedAt()
         );
     }
@@ -200,6 +201,7 @@ record UserProfileDto(
     @Schema(description = "Preferowany język (pl, en, es)") String preferredLanguage,
     @Schema(description = "Czy subskrybuje newsletter") boolean newsletterSubscribed,
     @Schema(description = "Czy podjął decyzję ws. newslettera") boolean newsletterChoiceMade,
+    @Schema(description = "Czy konto ma hasło (false = tylko OAuth)") boolean hasPassword,
     @Schema(description = "Data utworzenia konta") java.time.Instant createdAt
 ) {}
 
