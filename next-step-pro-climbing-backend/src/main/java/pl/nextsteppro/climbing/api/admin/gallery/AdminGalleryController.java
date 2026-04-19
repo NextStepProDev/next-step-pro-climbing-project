@@ -102,6 +102,36 @@ public class AdminGalleryController {
     }
 
     @Operation(
+        summary = "Opublikuj album",
+        description = "Ustawia album jako opublikowany — staje się widoczny publicznie"
+    )
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Album opublikowany"),
+        @ApiResponse(responseCode = "404", description = "Album nie znaleziony"),
+        @ApiResponse(responseCode = "403", description = "Brak uprawnień administratora")
+    })
+    @PostMapping("/albums/{id}/publish")
+    public ResponseEntity<AlbumAdminDto> publishAlbum(
+            @Parameter(description = "ID albumu") @PathVariable UUID id) {
+        return ResponseEntity.ok(adminGalleryService.setAlbumPublished(id, true));
+    }
+
+    @Operation(
+        summary = "Cofnij publikację albumu",
+        description = "Ustawia album jako szkic — ukrywa go przed publicznym widokiem"
+    )
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Album ukryty"),
+        @ApiResponse(responseCode = "404", description = "Album nie znaleziony"),
+        @ApiResponse(responseCode = "403", description = "Brak uprawnień administratora")
+    })
+    @PostMapping("/albums/{id}/unpublish")
+    public ResponseEntity<AlbumAdminDto> unpublishAlbum(
+            @Parameter(description = "ID albumu") @PathVariable UUID id) {
+        return ResponseEntity.ok(adminGalleryService.setAlbumPublished(id, false));
+    }
+
+    @Operation(
         summary = "Usuń album",
         description = "Usuwa album wraz ze wszystkimi zdjęciami (pliki i rekordy)"
     )

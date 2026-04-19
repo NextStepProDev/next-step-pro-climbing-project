@@ -16,6 +16,7 @@ import pl.nextsteppro.climbing.domain.gallery.PhotoRepository;
 import pl.nextsteppro.climbing.infrastructure.storage.FileStorageService;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -90,6 +91,19 @@ public class AdminGalleryService {
         }
 
         albumRepository.saveAll(albums);
+    }
+
+    public AlbumAdminDto setAlbumPublished(UUID id, boolean publish) {
+        Album album = albumRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Album not found"));
+
+        if (publish && album.getPublishedAt() == null) {
+            album.setPublishedAt(Instant.now());
+        }
+        album.setPublished(publish);
+
+        album = albumRepository.save(album);
+        return toAlbumAdminDto(album);
     }
 
     public AlbumAdminDto updateAlbum(UUID id, UpdateAlbumRequest request) {
@@ -225,6 +239,8 @@ public class AdminGalleryService {
                 projection.getThumbnailFocalPointY(),
                 projection.getPhotoCount(),
                 projection.getDisplayOrder(),
+                projection.isPublished(),
+                projection.getPublishedAt(),
                 projection.getCreatedAt(),
                 projection.getUpdatedAt()
         );
@@ -243,6 +259,8 @@ public class AdminGalleryService {
                 null,
                 photoCount,
                 album.getDisplayOrder(),
+                album.isPublished(),
+                album.getPublishedAt(),
                 album.getCreatedAt(),
                 album.getUpdatedAt()
         );

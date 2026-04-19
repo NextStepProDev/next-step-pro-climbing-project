@@ -25,6 +25,8 @@ public interface AlbumRepository extends JpaRepository<Album, UUID> {
             a.created_at AS createdAt,
             a.updated_at AS updatedAt,
             a.display_order AS displayOrder,
+            a.is_published AS published,
+            a.published_at AS publishedAt,
             COALESCE(
                 (SELECT p_thumb.filename
                  FROM photos p_thumb
@@ -58,10 +60,59 @@ public interface AlbumRepository extends JpaRepository<Album, UUID> {
             COUNT(p.id) AS photoCount
         FROM albums a
         LEFT JOIN photos p ON p.album_id = a.id
-        GROUP BY a.id, a.name, a.description, a.created_at, a.updated_at, a.display_order
+        GROUP BY a.id, a.name, a.description, a.created_at, a.updated_at, a.display_order, a.is_published, a.published_at
         ORDER BY a.display_order ASC
         """, nativeQuery = true)
     List<AlbumSummaryProjection> findAllAlbumSummaries();
+
+    @Query(value = """
+        SELECT
+            a.id AS id,
+            a.name AS name,
+            a.description AS description,
+            a.created_at AS createdAt,
+            a.updated_at AS updatedAt,
+            a.display_order AS displayOrder,
+            a.is_published AS published,
+            a.published_at AS publishedAt,
+            COALESCE(
+                (SELECT p_thumb.filename
+                 FROM photos p_thumb
+                 WHERE p_thumb.id = a.thumbnail_photo_id),
+                (SELECT p_first.filename
+                 FROM photos p_first
+                 WHERE p_first.album_id = a.id
+                 ORDER BY p_first.display_order ASC, p_first.created_at ASC
+                 LIMIT 1)
+            ) AS firstPhotoFilename,
+            COALESCE(
+                (SELECT p_thumb.focal_point_x
+                 FROM photos p_thumb
+                 WHERE p_thumb.id = a.thumbnail_photo_id),
+                (SELECT p_first.focal_point_x
+                 FROM photos p_first
+                 WHERE p_first.album_id = a.id
+                 ORDER BY p_first.display_order ASC, p_first.created_at ASC
+                 LIMIT 1)
+            ) AS thumbnailFocalPointX,
+            COALESCE(
+                (SELECT p_thumb.focal_point_y
+                 FROM photos p_thumb
+                 WHERE p_thumb.id = a.thumbnail_photo_id),
+                (SELECT p_first.focal_point_y
+                 FROM photos p_first
+                 WHERE p_first.album_id = a.id
+                 ORDER BY p_first.display_order ASC, p_first.created_at ASC
+                 LIMIT 1)
+            ) AS thumbnailFocalPointY,
+            COUNT(p.id) AS photoCount
+        FROM albums a
+        LEFT JOIN photos p ON p.album_id = a.id
+        WHERE a.is_published = true
+        GROUP BY a.id, a.name, a.description, a.created_at, a.updated_at, a.display_order, a.is_published, a.published_at
+        ORDER BY a.display_order ASC
+        """, nativeQuery = true)
+    List<AlbumSummaryProjection> findAllPublishedAlbumSummaries();
 
     @Query("SELECT COALESCE(MAX(a.displayOrder), -1) FROM Album a")
     Optional<Integer> findMaxDisplayOrder();

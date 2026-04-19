@@ -424,6 +424,8 @@ export interface AlbumAdmin {
   thumbnailFocalPointY: number | null
   photoCount: number
   displayOrder: number
+  published: boolean
+  publishedAt: string | null
   createdAt: string
   updatedAt: string
 }

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Image as ImageIcon, Plus, Pencil, Trash2, Upload, ChevronUp, ChevronDown, Star } from 'lucide-react'
+import { Image as ImageIcon, Plus, Pencil, Trash2, Upload, ChevronUp, ChevronDown, Star, Eye, EyeOff } from 'lucide-react'
 import { adminGalleryApi } from '../../api/client'
 import type { AlbumAdmin, CreateAlbumRequest, UpdateAlbumRequest, UpdatePhotoRequest } from '../../types'
 import { Button } from '../../components/ui/Button'
@@ -116,6 +116,20 @@ export function AdminGalleryPanel() {
       adminGalleryApi.reorderAlbums({ orderedIds }),
     onSuccess: () => {
       setLocalOrder(null)
+      queryClient.invalidateQueries({ queryKey: ['admin', 'gallery', 'albums'] })
+    },
+  })
+
+  const publishAlbumMutation = useMutation({
+    mutationFn: adminGalleryApi.publishAlbum,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'gallery', 'albums'] })
+    },
+  })
+
+  const unpublishAlbumMutation = useMutation({
+    mutationFn: adminGalleryApi.unpublishAlbum,
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'gallery', 'albums'] })
     },
   })
@@ -281,7 +295,20 @@ export function AdminGalleryPanel() {
                   <div className="flex-1">
                     <div className="flex items-start justify-between">
                       <div>
-                        <h3 className="text-xl font-bold text-dark-100">{album.name}</h3>
+                        <div className="flex items-center gap-2">
+                          <h3 className="text-xl font-bold text-dark-100">{album.name}</h3>
+                          {album.published ? (
+                            <span className="flex items-center gap-1 text-xs text-emerald-400 font-medium">
+                              <Eye className="h-3 w-3" />
+                              Opublikowany
+                            </span>
+                          ) : (
+                            <span className="flex items-center gap-1 text-xs text-dark-400 font-medium bg-dark-700 px-2 py-0.5 rounded-full">
+                              <EyeOff className="h-3 w-3" />
+                              Szkic
+                            </span>
+                          )}
+                        </div>
                         <p className="text-sm text-dark-400 mt-1">
                           {album.photoCount} {album.photoCount === 1 ? 'zdjęcie' : 'zdjęć'}
                         </p>
@@ -317,6 +344,28 @@ export function AdminGalleryPanel() {
                         >
                           {expandedAlbumId === album.id ? 'Zwiń' : 'Rozwiń'}
                         </Button>
+                        {album.published ? (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => unpublishAlbumMutation.mutate(album.id)}
+                            disabled={unpublishAlbumMutation.isPending}
+                            title="Cofnij publikację (schowaj publicznie)"
+                          >
+                            <EyeOff className="h-4 w-4" />
+                          </Button>
+                        ) : (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => publishAlbumMutation.mutate(album.id)}
+                            disabled={publishAlbumMutation.isPending}
+                            title="Opublikuj (pokaż publicznie)"
+                            className="text-emerald-400 hover:text-emerald-300"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        )}
                         <Button
                           variant="ghost"
                           size="sm"

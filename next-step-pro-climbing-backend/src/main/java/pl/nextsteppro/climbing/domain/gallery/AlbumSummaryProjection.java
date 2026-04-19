@@ -20,4 +20,6 @@ public interface AlbumSummaryProjection {
     @Nullable Float getThumbnailFocalPointX();
     @Nullable Float getThumbnailFocalPointY();
     Long getPhotoCount();
+    boolean isPublished();
+    @Nullable Instant getPublishedAt();
 }

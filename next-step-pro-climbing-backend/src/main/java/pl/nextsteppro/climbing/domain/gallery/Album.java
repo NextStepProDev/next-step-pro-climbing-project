@@ -28,6 +28,13 @@ public class Album {
     @Nullable
     private UUID thumbnailPhotoId;
 
+    @Column(name = "is_published", nullable = false)
+    private boolean published = false;
+
+    @Column(name = "published_at")
+    @Nullable
+    private Instant publishedAt;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -97,5 +104,22 @@ public class Album {
 
     public void setThumbnailPhotoId(@Nullable UUID thumbnailPhotoId) {
         this.thumbnailPhotoId = thumbnailPhotoId;
+    }
+
+    public boolean isPublished() {
+        return published;
+    }
+
+    public void setPublished(boolean published) {
+        this.published = published;
+    }
+
+    @Nullable
+    public Instant getPublishedAt() {
+        return publishedAt;
+    }
+
+    public void setPublishedAt(@Nullable Instant publishedAt) {
+        this.publishedAt = publishedAt;
     }
 }

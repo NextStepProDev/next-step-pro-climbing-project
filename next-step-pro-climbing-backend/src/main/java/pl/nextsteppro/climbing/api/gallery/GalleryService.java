@@ -31,7 +31,10 @@ public class GalleryService {
     public List<AlbumSummaryDto> getAllAlbums() {
         // Use optimized query with projection to avoid N+1 problem
         // (1 query instead of 1+2N queries)
-        return albumRepository.findAllAlbumSummaries()
+        // Use optimized query with projection to avoid N+1 problem
+        // (1 query instead of 1+2N queries)
+        // Only published albums are visible publicly
+        return albumRepository.findAllPublishedAlbumSummaries()
                 .stream()
                 .map(this::toSummaryDto)
                 .toList();
@@ -40,6 +43,10 @@ public class GalleryService {
     public AlbumDetailDto getAlbum(UUID id) {
         Album album = albumRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Album not found"));
+
+        if (!album.isPublished()) {
+            throw new IllegalArgumentException("Album not found");
+        }
 
         List<Photo> photos = photoRepository.findByAlbumIdOrderByDisplayOrderAscCreatedAtAsc(id);
 
