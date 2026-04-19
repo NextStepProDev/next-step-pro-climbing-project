@@ -15,6 +15,7 @@ import pl.nextsteppro.climbing.domain.auth.TokenType;
 import pl.nextsteppro.climbing.domain.user.User;
 import pl.nextsteppro.climbing.domain.user.UserRepository;
 import pl.nextsteppro.climbing.domain.user.UserRole;
+import pl.nextsteppro.climbing.domain.newsletter.NewsletterConsentLogRepository;
 import pl.nextsteppro.climbing.infrastructure.i18n.MessageService;
 import pl.nextsteppro.climbing.infrastructure.mail.AuthMailService;
 import pl.nextsteppro.climbing.infrastructure.security.JwtService;
@@ -56,6 +57,8 @@ class AuthServiceTest {
     private AdminEmailConfig adminEmailConfig;
     @Mock
     private MessageService msg;
+    @Mock
+    private NewsletterConsentLogRepository consentLogRepository;
 
     private AuthService authService;
     private User testUser;
@@ -69,7 +72,8 @@ class AuthServiceTest {
             jwtService,
             authMailService,
             adminEmailConfig,
-            msg
+            msg,
+            consentLogRepository
         );
 
         testUser = new User("test@example.com", "John", "Doe", "+48123456789", "johndoe");
