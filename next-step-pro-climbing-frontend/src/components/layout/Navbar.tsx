@@ -19,7 +19,12 @@ export function Navbar() {
   const userMenuRef = useRef<HTMLDivElement>(null);
   const mediaMenuRef = useRef<HTMLDivElement>(null);
 
-  const navLinks = [
+  const mediaLinks = [
+    { to: "/galeria", label: t('nav.gallery') },
+    { to: "/filmy", label: t('nav.videos') },
+  ];
+
+  const navLinksBefore = [
     { to: "/", label: t('nav.home') },
     { to: "/calendar", label: t('nav.calendar') },
     ...(isAuthenticated
@@ -28,14 +33,14 @@ export function Navbar() {
     { to: "/aktualnosci", label: t('nav.news') },
     { to: "/kursy", label: t('nav.courses') },
     { to: "/instruktorzy", label: t('nav.instructors') },
+  ];
+
+  const navLinksAfter = [
     { to: "/kontakt", label: t('nav.contact') },
     ...(isAdmin ? [{ to: "/admin", label: t('nav.admin') }] : []),
   ];
 
-  const mediaLinks = [
-    { to: "/galeria", label: t('nav.gallery') },
-    { to: "/filmy", label: t('nav.videos') },
-  ];
+  const mobileNavLinks = [...navLinksBefore, ...mediaLinks, ...navLinksAfter];
 
   const isMediaActive = mediaLinks.some((l) => location.pathname === l.to);
 
@@ -86,7 +91,7 @@ export function Navbar() {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-1">
-            {navLinks.map((link) => (
+            {navLinksBefore.map((link) => (
               <Link
                 key={link.to}
                 to={link.to}
@@ -143,6 +148,21 @@ export function Navbar() {
                 </div>
               )}
             </div>
+
+            {navLinksAfter.map((link) => (
+              <Link
+                key={link.to}
+                to={link.to}
+                className={clsx(
+                  "px-3 py-1.5 rounded-lg text-base font-semibold tracking-wide transition-colors",
+                  location.pathname === link.to
+                    ? "bg-dark-800 text-dark-100"
+                    : "text-dark-400 hover:bg-dark-800/60 hover:text-dark-200",
+                )}
+              >
+                {link.label}
+              </Link>
+            ))}
           </div>
 
           {/* User Actions */}
@@ -232,7 +252,7 @@ export function Navbar() {
       {mobileMenuOpen && (
         <div className="md:hidden bg-dark-900 border-t border-dark-800 max-h-[calc(100dvh-4.5rem)] overflow-y-auto">
           <div className="px-4 py-4 space-y-3">
-            {navLinks.map((link) => (
+            {mobileNavLinks.map((link) => (
               <Link
                 key={link.to}
                 to={link.to}
