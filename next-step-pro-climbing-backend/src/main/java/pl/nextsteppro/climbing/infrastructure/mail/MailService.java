@@ -120,8 +120,6 @@ public class MailService {
     @Async("mailExecutor")
     public void sendAdminCancellationNotification(Reservation reservation) {
         User user = reservation.getUser();
-        if (!user.isEmailNotificationsEnabled()) return;
-
         String lang = user.getPreferredLanguage();
         TimeSlot slot = reservation.getTimeSlot();
 
@@ -133,8 +131,6 @@ public class MailService {
 
     @Async("mailExecutor")
     public void sendAdminEventCancellationNotification(User user, Event event) {
-        if (!user.isEmailNotificationsEnabled()) return;
-
         String lang = user.getPreferredLanguage();
         String subject = msg.getForLang("email.admin.event.cancel.subject", lang);
         String body = buildAdminEventCancellationBody(lang, user, event);
@@ -216,7 +212,6 @@ public class MailService {
 
     @Async("mailExecutor")
     public void sendAdminEventParticipantRemovedNotification(User user, Event event) {
-        if (!user.isEmailNotificationsEnabled()) return;
         String lang = user.getPreferredLanguage();
         String subject = msg.getForLang("email.admin.event.participant.removed.subject", lang);
         String body = buildAdminEventParticipantRemovedBody(lang, user, event);

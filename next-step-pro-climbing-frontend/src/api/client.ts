@@ -206,7 +206,7 @@ export const authApi = {
       method: 'PUT',
       body: JSON.stringify({ currentPassword, newPassword }),
     }),
-  deleteAccount: (password: string) =>
+  deleteAccount: (password: string | null) =>
     fetchApi<void>('/user/me', {
       method: 'DELETE',
       body: JSON.stringify({ password }),

@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
-import { useTranslation } from 'react-i18next'
+import { useTranslation, Trans } from 'react-i18next'
 import { registerUser } from '../api/auth'
 import { validatePassword, validatePhone, validateName } from '../utils/validation'
 import { getErrorMessage } from '../utils/errors'
@@ -219,6 +219,16 @@ export function RegisterPage() {
           <Button type="submit" variant="primary" className="w-full" loading={loading}>
             {t('register.submit')}
           </Button>
+
+          <p className="text-center text-xs text-dark-500">
+            <Trans i18nKey="register.privacyNotice" ns="auth">
+              Rejestrując się, akceptujesz naszą{' '}
+              <Link to="/polityka-prywatnosci" className="text-dark-400 hover:text-primary-400 underline transition-colors">
+                Politykę prywatności
+              </Link>
+              .
+            </Trans>
+          </p>
         </form>
 
         <div className="relative my-6">

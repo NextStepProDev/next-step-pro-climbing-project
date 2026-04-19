@@ -34,7 +34,7 @@ export function SettingsPage() {
         subscribed={user?.newsletterSubscribed ?? false}
         onUpdated={refreshUser}
       />
-      <DeleteAccountSection onDeleted={logout} />
+      <DeleteAccountSection onDeleted={logout} hasPassword={user?.hasPassword ?? true} />
     </div>
   )
 }
@@ -424,14 +424,14 @@ function NewsletterSection({
   )
 }
 
-function DeleteAccountSection({ onDeleted }: { onDeleted: () => void }) {
+function DeleteAccountSection({ onDeleted, hasPassword }: { onDeleted: () => void; hasPassword: boolean }) {
   const { t } = useTranslation('settings')
   const navigate = useNavigate()
   const [showModal, setShowModal] = useState(false)
   const [password, setPassword] = useState('')
 
   const mutation = useMutation({
-    mutationFn: () => authApi.deleteAccount(password),
+    mutationFn: () => authApi.deleteAccount(hasPassword ? password : null),
     onSuccess: () => {
       setShowModal(false)
       onDeleted()
@@ -458,20 +458,22 @@ function DeleteAccountSection({ onDeleted }: { onDeleted: () => void }) {
           <p className="text-dark-300">
             {t('deleteAccount.modalMessage')}
           </p>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder={t('deleteAccount.passwordPlaceholder')}
-            className="w-full bg-dark-800 border border-dark-700 rounded-lg px-4 py-2 text-dark-100 focus:outline-none focus:ring-2 focus:ring-rose-500/40"
-          />
+          {hasPassword && (
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder={t('deleteAccount.passwordPlaceholder')}
+              className="w-full bg-dark-800 border border-dark-700 rounded-lg px-4 py-2 text-dark-100 focus:outline-none focus:ring-2 focus:ring-rose-500/40"
+            />
+          )}
           <div className="flex gap-3">
             <Button
               variant="danger"
               className="flex-1"
               loading={mutation.isPending}
               onClick={() => mutation.mutate()}
-              disabled={!password}
+              disabled={hasPassword && !password}
             >
               {t('deleteAccount.confirmDelete')}
             </Button>

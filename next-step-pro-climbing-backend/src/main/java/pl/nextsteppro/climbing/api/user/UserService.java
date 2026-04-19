@@ -13,9 +13,10 @@ import pl.nextsteppro.climbing.infrastructure.i18n.MessageService;
 import pl.nextsteppro.climbing.infrastructure.mail.AuthMailService;
 import pl.nextsteppro.climbing.infrastructure.security.JwtService;
 
+import org.jspecify.annotations.Nullable;
+
 import java.time.Duration;
 import java.time.Instant;
-
 import java.util.UUID;
 
 @Service
@@ -82,16 +83,14 @@ public class UserService {
         authMailService.sendPasswordChangedNotification(user);
     }
 
-    public void deleteAccount(UUID userId, String password) {
+    public void deleteAccount(UUID userId, @Nullable String password) {
         User user = userRepository.findById(userId)
             .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
-        if (!user.hasPassword()) {
-            throw new IllegalStateException(msg.get("user.no.password"));
-        }
-
-        if (!passwordEncoder.matches(password, user.getPasswordHash())) {
-            throw new IllegalStateException(msg.get("user.wrong.password"));
+        if (user.hasPassword()) {
+            if (!passwordEncoder.matches(password, user.getPasswordHash())) {
+                throw new IllegalStateException(msg.get("user.wrong.password"));
+            }
         }
 
         // Cancel all confirmed reservations (bulk UPDATE — avoids Hibernate session conflict with deleted parent)
