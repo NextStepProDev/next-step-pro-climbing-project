@@ -209,8 +209,7 @@ public class MailService {
     @Async("mailExecutor")
     public void sendNewsletterMail(String to, String subject, String body, String lang) {
         String settingsUrl = siteUrl + "/settings";
-        String unsubscribeText = msg.getForLang("email.newsletter.unsubscribe", lang);
-        String footerText = msg.getForLang("email.newsletter.footer", lang, settingsUrl, unsubscribeText);
+        String footerText = msg.getForLang("email.newsletter.footer", lang, settingsUrl);
         String htmlBody = buildCustomAdminMailBody(subject, body, footerText);
         sendEmail(to, subject, htmlBody, null);
     }

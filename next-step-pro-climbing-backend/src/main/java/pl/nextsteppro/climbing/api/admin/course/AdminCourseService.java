@@ -122,7 +122,7 @@ public class AdminCourseService {
             if (block.getBlockType() == CourseBlockType.IMAGE && block.getImageFilename() != null) {
                 try {
                     fileStorageService.delete(block.getImageFilename(), "courses");
-                } catch (IOException e) {
+                } catch (Exception e) {
                     logger.warn("Failed to delete block image file: {} - {}", block.getImageFilename(), e.getMessage());
                 }
             }
@@ -132,7 +132,7 @@ public class AdminCourseService {
         if (course.getThumbnailFilename() != null) {
             try {
                 fileStorageService.delete(course.getThumbnailFilename(), "courses");
-            } catch (IOException e) {
+            } catch (Exception e) {
                 logger.warn("Failed to delete thumbnail file: {} - {}", course.getThumbnailFilename(), e.getMessage());
             }
         }
@@ -149,7 +149,7 @@ public class AdminCourseService {
         if (course.getThumbnailFilename() != null) {
             try {
                 fileStorageService.delete(course.getThumbnailFilename(), "courses");
-            } catch (IOException e) {
+            } catch (Exception e) {
                 logger.warn("Failed to delete old thumbnail: {} - {}", course.getThumbnailFilename(), e.getMessage());
             }
         }
@@ -193,7 +193,7 @@ public class AdminCourseService {
         if (course.getThumbnailFilename() != null) {
             try {
                 fileStorageService.delete(course.getThumbnailFilename(), "courses");
-            } catch (IOException e) {
+            } catch (Exception e) {
                 logger.warn("Failed to delete old thumbnail when setting URL: {}", e.getMessage());
             }
             course.setThumbnailFilename(null);
@@ -285,7 +285,7 @@ public class AdminCourseService {
         if (block.getBlockType() == CourseBlockType.IMAGE && block.getImageFilename() != null) {
             try {
                 fileStorageService.delete(block.getImageFilename(), "courses");
-            } catch (IOException e) {
+            } catch (Exception e) {
                 logger.warn("Failed to delete block image file: {} - {}", block.getImageFilename(), e.getMessage());
             }
         }
