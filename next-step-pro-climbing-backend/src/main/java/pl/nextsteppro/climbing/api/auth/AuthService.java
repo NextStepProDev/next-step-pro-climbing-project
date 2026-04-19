@@ -10,6 +10,8 @@ import pl.nextsteppro.climbing.domain.auth.AuthToken;
 import pl.nextsteppro.climbing.domain.auth.AuthTokenRepository;
 import pl.nextsteppro.climbing.domain.auth.TokenType;
 import pl.nextsteppro.climbing.config.AdminEmailConfig;
+import pl.nextsteppro.climbing.domain.newsletter.NewsletterConsentLog;
+import pl.nextsteppro.climbing.domain.newsletter.NewsletterConsentLogRepository;
 import pl.nextsteppro.climbing.domain.user.User;
 import pl.nextsteppro.climbing.domain.user.UserRepository;
 import pl.nextsteppro.climbing.domain.user.UserRole;
@@ -35,6 +37,7 @@ public class AuthService {
     private final AuthMailService authMailService;
     private final AdminEmailConfig adminEmailConfig;
     private final MessageService msg;
+    private final NewsletterConsentLogRepository consentLogRepository;
 
     public AuthService(
             UserRepository userRepository,
@@ -43,7 +46,8 @@ public class AuthService {
             JwtService jwtService,
             AuthMailService authMailService,
             AdminEmailConfig adminEmailConfig,
-            MessageService msg) {
+            MessageService msg,
+            NewsletterConsentLogRepository consentLogRepository) {
         this.userRepository = userRepository;
         this.authTokenRepository = authTokenRepository;
         this.passwordEncoder = passwordEncoder;
@@ -51,6 +55,7 @@ public class AuthService {
         this.authMailService = authMailService;
         this.adminEmailConfig = adminEmailConfig;
         this.msg = msg;
+        this.consentLogRepository = consentLogRepository;
     }
 
     @Transactional
@@ -80,6 +85,10 @@ public class AuthService {
 
         userRepository.save(user);
         log.info("User registered: {}", user.getEmail());
+
+        if (Boolean.TRUE.equals(request.newsletterSubscribed())) {
+            consentLogRepository.save(new NewsletterConsentLog(user, "SUBSCRIBED", "REGISTRATION"));
+        }
 
         sendVerificationEmail(user);
 
