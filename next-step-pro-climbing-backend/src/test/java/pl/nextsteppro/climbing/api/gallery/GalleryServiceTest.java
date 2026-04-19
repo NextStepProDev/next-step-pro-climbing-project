@@ -104,7 +104,7 @@ class GalleryServiceTest {
             }
         };
 
-        when(albumRepository.findAllAlbumSummaries()).thenReturn(List.of(projection));
+        when(albumRepository.findAllPublishedAlbumSummaries()).thenReturn(List.of(projection));
 
         // When
         List<AlbumSummaryDto> result = service.getAllAlbums();
@@ -122,7 +122,7 @@ class GalleryServiceTest {
         assertTrue(dto.thumbnailUrl().startsWith(BASE_URL + "/api/files/gallery/"));
 
         // Verify optimized query was used (not the old N+1 approach)
-        verify(albumRepository, times(1)).findAllAlbumSummaries();
+        verify(albumRepository, times(1)).findAllPublishedAlbumSummaries();
         verify(photoRepository, never()).findFirstByAlbumId(any());
         verify(photoRepository, never()).countByAlbumId(any());
     }
@@ -194,7 +194,7 @@ class GalleryServiceTest {
             }
         };
 
-        when(albumRepository.findAllAlbumSummaries()).thenReturn(List.of(projection));
+        when(albumRepository.findAllPublishedAlbumSummaries()).thenReturn(List.of(projection));
 
         // When
         List<AlbumSummaryDto> result = service.getAllAlbums();
@@ -209,7 +209,7 @@ class GalleryServiceTest {
     @Test
     void shouldReturnEmptyListWhenNoAlbums() {
         // Given
-        when(albumRepository.findAllAlbumSummaries()).thenReturn(List.of());
+        when(albumRepository.findAllPublishedAlbumSummaries()).thenReturn(List.of());
 
         // When
         List<AlbumSummaryDto> result = service.getAllAlbums();
@@ -230,6 +230,7 @@ class GalleryServiceTest {
         when(album.getCreatedAt()).thenReturn(Instant.now());
         when(album.getUpdatedAt()).thenReturn(Instant.now());
 
+        when(album.isPublished()).thenReturn(true);
         when(albumRepository.findById(albumId)).thenReturn(java.util.Optional.of(album));
         when(photoRepository.findByAlbumIdOrderByDisplayOrderAscCreatedAtAsc(albumId))
                 .thenReturn(List.of());
@@ -323,7 +324,7 @@ class GalleryServiceTest {
             }
         };
 
-        when(albumRepository.findAllAlbumSummaries()).thenReturn(List.of(projection));
+        when(albumRepository.findAllPublishedAlbumSummaries()).thenReturn(List.of(projection));
 
         // When
         List<AlbumSummaryDto> result = service.getAllAlbums();
@@ -405,7 +406,7 @@ class GalleryServiceTest {
             });
         }
 
-        when(albumRepository.findAllAlbumSummaries()).thenReturn(projections);
+        when(albumRepository.findAllPublishedAlbumSummaries()).thenReturn(projections);
 
         // When
         List<AlbumSummaryDto> result = service.getAllAlbums();
@@ -414,7 +415,7 @@ class GalleryServiceTest {
         assertEquals(100, result.size());
 
         // CRITICAL: Verify only 1 query was executed (not 1+200 queries)
-        verify(albumRepository, times(1)).findAllAlbumSummaries();
+        verify(albumRepository, times(1)).findAllPublishedAlbumSummaries();
         verify(photoRepository, never()).findFirstByAlbumId(any());
         verify(photoRepository, never()).countByAlbumId(any());
 
