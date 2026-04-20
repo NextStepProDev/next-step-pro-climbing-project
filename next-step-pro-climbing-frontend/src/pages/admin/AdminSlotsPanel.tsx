@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { format, parseISO } from 'date-fns'
-import { Plus, Lock, LockOpen, Trash2, Users, Pencil, AlertTriangle, X, UserPlus } from 'lucide-react'
+import { Plus, Lock, LockOpen, Trash2, Users, Pencil, AlertTriangle, X, UserPlus, ChevronDown, ChevronRight, ChevronLeft } from 'lucide-react'
 import { adminApi } from '../../api/client'
 import { getErrorMessage } from '../../utils/errors'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
@@ -15,6 +15,8 @@ import { CreateSlotModal } from '../../components/calendar/CreateSlotModal'
 import { useDateLocale } from '../../utils/dateFnsLocale'
 import type { SlotParticipants, TimeSlotAdmin, User } from '../../types'
 
+const ARCHIVE_PAGE_SIZE = 15
+
 export function AdminSlotsPanel() {
   const { t } = useTranslation('admin')
   const locale = useDateLocale()
@@ -24,17 +26,26 @@ export function AdminSlotsPanel() {
   const [editingSlot, setEditingSlot] = useState<TimeSlotAdmin | null>(null)
   const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null)
   const [confirmAction, setConfirmAction] = useState<{ slotId: string; action: 'block' | 'delete' } | null>(null)
+  const [showArchive, setShowArchive] = useState(false)
+  const [archivePage, setArchivePage] = useState(1)
 
   const queryClient = useQueryClient()
 
   const invalidateSlots = () => {
     queryClient.invalidateQueries({ queryKey: ['admin', 'slots', 'upcoming'] })
+    queryClient.invalidateQueries({ queryKey: ['admin', 'slots', 'past'] })
     queryClient.invalidateQueries({ queryKey: ['calendar'] })
   }
 
   const { data: upcomingSlots, isLoading, isError, error, refetch } = useQuery({
     queryKey: ['admin', 'slots', 'upcoming'],
     queryFn: () => adminApi.getUpcomingSlots(),
+  })
+
+  const { data: pastSlots, isLoading: pastLoading, isError: pastError, error: pastErrorObj } = useQuery({
+    queryKey: ['admin', 'slots', 'past'],
+    queryFn: () => adminApi.getPastSlots(),
+    enabled: showArchive,
   })
 
   const { data: participants } = useQuery({
@@ -65,7 +76,7 @@ export function AdminSlotsPanel() {
     onSuccess: invalidateSlots,
   })
 
-  // Filter and group slots
+  // Filter and group upcoming slots
   const filteredSlots = filterDate
     ? (upcomingSlots ?? []).filter((s) => s.date === filterDate)
     : (upcomingSlots ?? [])
@@ -75,6 +86,27 @@ export function AdminSlotsPanel() {
     return acc
   }, {})
   const sortedDays = Object.keys(groupedByDate).sort()
+
+  // Group and paginate past slots
+  const pastGroupedByDate = (pastSlots ?? []).reduce<Record<string, TimeSlotAdmin[]>>((acc, slot) => {
+    acc[slot.date] = [...(acc[slot.date] ?? []), slot]
+    return acc
+  }, {})
+  const pastSortedDays = Object.keys(pastGroupedByDate).sort().reverse()
+  const pastTotalPages = Math.max(1, Math.ceil(pastSortedDays.length / ARCHIVE_PAGE_SIZE))
+  const pastSafePage = Math.min(archivePage, pastTotalPages)
+  const pastPagedDays = pastSortedDays.slice((pastSafePage - 1) * ARCHIVE_PAGE_SIZE, pastSafePage * ARCHIVE_PAGE_SIZE)
+
+  const slotHandlers = {
+    onShowParticipants: (slotId: string) => {
+      setSelectedSlotId(slotId)
+      setShowParticipantsModal(true)
+    },
+    onEdit: (slot: TimeSlotAdmin) => setEditingSlot(slot),
+    onBlock: (slotId: string) => setConfirmAction({ slotId, action: 'block' }),
+    onUnblock: (slotId: string) => unblockMutation.mutate(slotId),
+    onDelete: (slotId: string) => setConfirmAction({ slotId, action: 'delete' }),
+  }
 
   return (
     <div>
@@ -107,7 +139,7 @@ export function AdminSlotsPanel() {
         </Button>
       </div>
 
-      {/* Slots list */}
+      {/* Upcoming slots list */}
       {isLoading ? (
         <LoadingSpinner />
       ) : isError ? (
@@ -129,14 +161,11 @@ export function AdminSlotsPanel() {
                     key={slot.id}
                     slot={slot}
                     t={t}
-                    onShowParticipants={() => {
-                      setSelectedSlotId(slot.id)
-                      setShowParticipantsModal(true)
-                    }}
-                    onEdit={() => setEditingSlot(slot)}
-                    onBlock={() => setConfirmAction({ slotId: slot.id, action: 'block' })}
-                    onUnblock={() => unblockMutation.mutate(slot.id)}
-                    onDelete={() => setConfirmAction({ slotId: slot.id, action: 'delete' })}
+                    onShowParticipants={() => slotHandlers.onShowParticipants(slot.id)}
+                    onEdit={() => slotHandlers.onEdit(slot)}
+                    onBlock={() => slotHandlers.onBlock(slot.id)}
+                    onUnblock={() => slotHandlers.onUnblock(slot.id)}
+                    onDelete={() => slotHandlers.onDelete(slot.id)}
                   />
                 ))}
               </div>
@@ -144,6 +173,84 @@ export function AdminSlotsPanel() {
           ))}
         </div>
       )}
+
+      {/* Archive */}
+      <div className="mt-6">
+        <button
+          onClick={() => setShowArchive(!showArchive)}
+          className="flex items-center gap-2 text-sm text-dark-500 hover:text-dark-300 transition-colors mb-3"
+        >
+          {showArchive ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+          {t('slots.archive')}
+        </button>
+
+        {showArchive && (
+          <div>
+            {pastLoading && (
+              <div className="flex justify-center py-6">
+                <LoadingSpinner />
+              </div>
+            )}
+            {pastError && (
+              <div className="p-4 bg-rose-500/5 border border-rose-500/15 rounded-lg text-rose-400/80">
+                {getErrorMessage(pastErrorObj)}
+              </div>
+            )}
+            {pastSlots && pastSlots.length === 0 && (
+              <p className="text-dark-500 text-sm">{t('slots.noPast')}</p>
+            )}
+            {pastSlots && pastSlots.length > 0 && (
+              <div className="space-y-6">
+                {pastPagedDays.map((date) => (
+                  <div key={date}>
+                    <h3 className="text-sm font-semibold text-dark-300 uppercase tracking-wider mb-2 px-1">
+                      {format(parseISO(date), 'EEEE, d MMMM', { locale })}
+                    </h3>
+                    <div className="space-y-2">
+                      {pastGroupedByDate[date].map((slot) => (
+                        <SlotRow
+                          key={slot.id}
+                          slot={slot}
+                          t={t}
+                          archived
+                          onShowParticipants={() => slotHandlers.onShowParticipants(slot.id)}
+                          onEdit={() => slotHandlers.onEdit(slot)}
+                          onBlock={() => slotHandlers.onBlock(slot.id)}
+                          onUnblock={() => slotHandlers.onUnblock(slot.id)}
+                          onDelete={() => slotHandlers.onDelete(slot.id)}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                ))}
+
+                {/* Pagination */}
+                {pastTotalPages > 1 && (
+                  <div className="flex items-center gap-3 pt-2">
+                    <button
+                      onClick={() => setArchivePage((p) => Math.max(1, p - 1))}
+                      disabled={pastSafePage === 1}
+                      className="p-1 text-dark-400 hover:text-dark-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </button>
+                    <span className="text-xs text-dark-500">
+                      {t('slots.pageInfo', { page: pastSafePage, total: pastTotalPages })}
+                    </span>
+                    <button
+                      onClick={() => setArchivePage((p) => Math.min(pastTotalPages, p + 1))}
+                      disabled={pastSafePage === pastTotalPages}
+                      className="p-1 text-dark-400 hover:text-dark-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
 
       {/* Create Slot Modal */}
       <CreateSlotModal
@@ -199,6 +306,7 @@ export function AdminSlotsPanel() {
 function SlotRow({
   slot,
   t,
+  archived,
   onShowParticipants,
   onEdit,
   onBlock,
@@ -207,6 +315,7 @@ function SlotRow({
 }: {
   slot: TimeSlotAdmin
   t: (key: string) => string
+  archived?: boolean
   onShowParticipants: () => void
   onEdit: () => void
   onBlock: () => void
@@ -214,7 +323,7 @@ function SlotRow({
   onDelete: () => void
 }) {
   return (
-    <div className="bg-dark-900 rounded-lg border border-dark-800 p-4 flex items-center justify-between">
+    <div className={`bg-dark-900 rounded-lg border border-dark-800 p-4 flex items-center justify-between${archived ? ' opacity-60' : ''}`}>
       <div>
         <div className="font-medium text-dark-100">
           {slot.startTime.slice(0, 5)} – {slot.endTime.slice(0, 5)}
@@ -535,6 +644,7 @@ function ParticipantsModal({
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: ['admin', 'participants', slotId] })
     queryClient.invalidateQueries({ queryKey: ['admin', 'slots', 'upcoming'] })
+    queryClient.invalidateQueries({ queryKey: ['admin', 'slots', 'past'] })
     queryClient.invalidateQueries({ queryKey: ['calendar'] })
   }
 

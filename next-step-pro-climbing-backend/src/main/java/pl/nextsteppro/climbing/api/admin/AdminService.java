@@ -336,6 +336,19 @@ public class AdminService {
     }
 
     @Transactional(readOnly = true)
+    public List<TimeSlotAdminDto> getPastSlots() {
+        LocalDate today = LocalDate.now();
+        LocalTime now = LocalTime.now();
+        List<TimeSlot> slots = timeSlotRepository.findPastOrdered(today, now).stream()
+            .filter(slot -> !slot.belongsToEvent())
+            .toList();
+        Map<UUID, Integer> countMap = buildCountMap(slots);
+        return slots.stream()
+            .map(slot -> toTimeSlotAdminDto(slot, countMap.getOrDefault(slot.getId(), 0)))
+            .toList();
+    }
+
+    @Transactional(readOnly = true)
     public SlotParticipantsDto getSlotParticipants(UUID slotId) {
         TimeSlot slot = timeSlotRepository.findById(slotId)
             .orElseThrow(() -> new IllegalArgumentException("Time slot not found"));
