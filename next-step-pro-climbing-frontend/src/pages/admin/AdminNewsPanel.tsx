@@ -307,9 +307,9 @@ function ArticleRow({
         <button
           onClick={article.published ? onUnpublish : onPublish}
           title={article.published ? t('news.unpublish') : t('news.publish')}
-          className="p-2 text-dark-400 hover:text-dark-100 transition-colors"
+          className={`p-2 transition-colors ${article.published ? 'text-emerald-400 hover:text-orange-400' : 'text-dark-400 hover:text-dark-100'}`}
         >
-          {article.published ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+          {article.published ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
         </button>
         <button
           onClick={onEdit}

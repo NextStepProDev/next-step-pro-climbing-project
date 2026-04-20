@@ -103,9 +103,17 @@
   "news": {
     "title": "News",
     "noArticles": "No articles to display",
+    "noSearchResults": "No search results",
+    "noStarredArticles": "No saved articles",
     "articleNotFound": "Article not found",
     "backToNews": "Back to news",
     "published": "Published",
-    "loadMore": "Load more"
+    "loadMore": "Load more",
+    "searchPlaceholder": "Search by title...",
+    "searchButton": "Search",
+    "myStars": "My stars",
+    "starAdd": "Add to favourites",
+    "starRemove": "Remove from favourites",
+    "loginToStar": "Log in to save articles"
   }
 }

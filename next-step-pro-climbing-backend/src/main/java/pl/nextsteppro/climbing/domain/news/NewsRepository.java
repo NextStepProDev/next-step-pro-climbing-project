@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @Repository
@@ -45,4 +46,62 @@ public interface NewsRepository extends JpaRepository<News, UUID> {
 
     @Query("SELECT n.thumbnailFilename FROM News n WHERE n.thumbnailFilename IS NOT NULL")
     List<String> findAllThumbnailFilenames();
+
+    @Query(value = """
+            SELECT id, title, excerpt,
+                   thumbnail_filename AS thumbnailFilename,
+                   thumbnail_url AS thumbnailUrl,
+                   thumbnail_focal_point_x AS thumbnailFocalPointX,
+                   thumbnail_focal_point_y AS thumbnailFocalPointY,
+                   is_published AS published, published_at AS publishedAt,
+                   created_at AS createdAt, updated_at AS updatedAt
+            FROM news
+            WHERE is_published = true
+              AND unaccent(lower(title)) LIKE unaccent(lower(concat('%', :q, '%')))
+            ORDER BY published_at DESC
+            """,
+            countQuery = """
+            SELECT COUNT(*) FROM news
+            WHERE is_published = true
+              AND unaccent(lower(title)) LIKE unaccent(lower(concat('%', :q, '%')))
+            """,
+            nativeQuery = true)
+    Page<NewsSummaryProjection> findAllPublishedSummariesByTitle(String q, Pageable pageable);
+
+    @Query(value = """
+            SELECT id, title, excerpt,
+                   thumbnail_filename AS thumbnailFilename,
+                   thumbnail_url AS thumbnailUrl,
+                   thumbnail_focal_point_x AS thumbnailFocalPointX,
+                   thumbnail_focal_point_y AS thumbnailFocalPointY,
+                   is_published AS published, published_at AS publishedAt,
+                   created_at AS createdAt, updated_at AS updatedAt
+            FROM news
+            WHERE is_published = true AND id IN (:ids)
+            ORDER BY published_at DESC
+            """,
+            countQuery = "SELECT COUNT(*) FROM news WHERE is_published = true AND id IN (:ids)",
+            nativeQuery = true)
+    Page<NewsSummaryProjection> findAllPublishedSummariesByIds(Set<UUID> ids, Pageable pageable);
+
+    @Query(value = """
+            SELECT id, title, excerpt,
+                   thumbnail_filename AS thumbnailFilename,
+                   thumbnail_url AS thumbnailUrl,
+                   thumbnail_focal_point_x AS thumbnailFocalPointX,
+                   thumbnail_focal_point_y AS thumbnailFocalPointY,
+                   is_published AS published, published_at AS publishedAt,
+                   created_at AS createdAt, updated_at AS updatedAt
+            FROM news
+            WHERE is_published = true AND id IN (:ids)
+              AND unaccent(lower(title)) LIKE unaccent(lower(concat('%', :q, '%')))
+            ORDER BY published_at DESC
+            """,
+            countQuery = """
+            SELECT COUNT(*) FROM news
+            WHERE is_published = true AND id IN (:ids)
+              AND unaccent(lower(title)) LIKE unaccent(lower(concat('%', :q, '%')))
+            """,
+            nativeQuery = true)
+    Page<NewsSummaryProjection> findAllPublishedSummariesByTitleAndIds(String q, Set<UUID> ids, Pageable pageable);
 }

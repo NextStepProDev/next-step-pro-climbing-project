@@ -103,9 +103,17 @@
   "news": {
     "title": "Aktualności",
     "noArticles": "Brak aktualności do wyświetlenia",
+    "noSearchResults": "Brak wyników wyszukiwania",
+    "noStarredArticles": "Brak zapisanych artykułów",
     "articleNotFound": "Artykuł nie znaleziony",
     "backToNews": "Powrót do aktualności",
     "published": "Opublikowano",
-    "loadMore": "Załaduj więcej"
+    "loadMore": "Załaduj więcej",
+    "searchPlaceholder": "Szukaj po tytule...",
+    "searchButton": "Szukaj",
+    "myStars": "Moje gwiazdki",
+    "starAdd": "Dodaj do ulubionych",
+    "starRemove": "Usuń z ulubionych",
+    "loginToStar": "Zaloguj się, aby zapisywać artykuły"
   }
 }

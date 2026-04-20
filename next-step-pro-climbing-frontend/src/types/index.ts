@@ -505,6 +505,7 @@ export interface NewsSummary {
   thumbnailFocalPointX: number | null
   thumbnailFocalPointY: number | null
   publishedAt: string
+  starred: boolean | null
 }
 
 export interface NewsDetail {
@@ -516,6 +517,7 @@ export interface NewsDetail {
   thumbnailFocalPointY: number | null
   blocks: ContentBlock[]
   publishedAt: string
+  starred: boolean | null
 }
 
 export interface ContentBlockAdmin {
