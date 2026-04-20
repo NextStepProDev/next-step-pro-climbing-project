@@ -7,8 +7,6 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.transaction.annotation.Transactional;
 import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 import pl.nextsteppro.climbing.domain.auth.AuthTokenRepository;
 import pl.nextsteppro.climbing.domain.event.EventRepository;
 import pl.nextsteppro.climbing.domain.reservation.ReservationRepository;
@@ -24,16 +22,22 @@ import pl.nextsteppro.climbing.domain.user.UserRepository;
  * - Transactional test isolation
  */
 @SpringBootTest
-@Testcontainers
 @ActiveProfiles("test")
 @Transactional
 public abstract class BaseIntegrationTest {
 
-    @Container
-    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:17-alpine")
+    // Singleton pattern: one container for the entire JVM, shared across all subclasses.
+    // @Testcontainers + @Container would stop the container after each test class finishes,
+    // causing connection errors when subsequent test classes try to reuse the Spring context.
+    @SuppressWarnings("resource")
+    static final PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:17-alpine")
             .withDatabaseName("testdb")
             .withUsername("test")
             .withPassword("test");
+
+    static {
+        postgres.start();
+    }
 
     @DynamicPropertySource
     static void configureProperties(DynamicPropertyRegistry registry) {

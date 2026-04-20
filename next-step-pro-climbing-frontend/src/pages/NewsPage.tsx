@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useMemo } from 'react'
 import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
@@ -28,12 +28,9 @@ export function NewsPage() {
     }
   }, [searchInput])
 
-  // Reset starred filter when user logs out
-  useEffect(() => {
-    if (!isAuthenticated) setStarredOnly(false)
-  }, [isAuthenticated])
+  const effectiveStarredOnly = useMemo(() => isAuthenticated ? starredOnly : false, [isAuthenticated, starredOnly])
 
-  const queryKey = ['news', q, starredOnly]
+  const queryKey = ['news', q, effectiveStarredOnly]
 
   const {
     data,
@@ -46,7 +43,7 @@ export function NewsPage() {
   } = useInfiniteQuery({
     queryKey,
     queryFn: ({ pageParam }) =>
-      newsApi.getAll(pageParam as number, 12, q || undefined, starredOnly || undefined),
+      newsApi.getAll(pageParam as number, 12, q || undefined, effectiveStarredOnly || undefined),
     initialPageParam: 0,
     getNextPageParam: (lastPage) => lastPage.hasNext ? lastPage.page + 1 : undefined,
     staleTime: 0,
@@ -99,7 +96,7 @@ export function NewsPage() {
 
   const articles = data?.pages.flatMap(p => p.content) ?? []
 
-  const emptyMessage = starredOnly
+  const emptyMessage = effectiveStarredOnly
     ? t('news.noStarredArticles')
     : q.trim()
       ? t('news.noSearchResults')
