@@ -13,15 +13,20 @@ import pl.nextsteppro.climbing.domain.news.News;
 import pl.nextsteppro.climbing.domain.news.NewsContentBlock;
 import pl.nextsteppro.climbing.domain.news.NewsContentBlockRepository;
 import pl.nextsteppro.climbing.domain.news.NewsRepository;
+import pl.nextsteppro.climbing.domain.news.NewsStar;
+import pl.nextsteppro.climbing.domain.news.NewsStarId;
+import pl.nextsteppro.climbing.domain.news.NewsStarRepository;
 import pl.nextsteppro.climbing.domain.news.NewsSummaryProjection;
 
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 /**
@@ -33,6 +38,10 @@ import static org.mockito.Mockito.*;
  * - Draft (unpublished) news is hidden from public
  * - Thumbnail URL resolution (direct URL vs file-based)
  * - Block image URL resolution (direct URL vs file-based)
+ * - Search by title (unaccent normalization)
+ * - Starred filter per user
+ * - star/unstar operations (idempotent)
+ * - starred field in DTOs based on authentication state
  */
 @ExtendWith(MockitoExtension.class)
 class NewsServiceTest {
@@ -43,16 +52,19 @@ class NewsServiceTest {
     @Mock
     private NewsContentBlockRepository blockRepository;
 
+    @Mock
+    private NewsStarRepository newsStarRepository;
+
     private NewsService newsService;
 
     private static final String BASE_URL = "https://nextsteppro.pl";
 
     @BeforeEach
     void setUp() {
-        newsService = new NewsService(newsRepository, blockRepository, BASE_URL);
+        newsService = new NewsService(newsRepository, blockRepository, newsStarRepository, BASE_URL);
     }
 
-    // ========== getAllPublished TESTS ==========
+    // ========== getAllPublished — base (unauthenticated, no filters) ==========
 
     @Test
     void shouldReturnPaginatedPublishedNews() {
@@ -62,7 +74,7 @@ class NewsServiceTest {
         when(newsRepository.findAllPublishedSummaries(any())).thenReturn(page);
 
         // When
-        NewsPageDto result = newsService.getAllPublished(0, 12);
+        NewsPageDto result = newsService.getAllPublished(0, 12, null, false, null);
 
         // Then
         assertNotNull(result);
@@ -73,6 +85,7 @@ class NewsServiceTest {
         assertFalse(result.hasNext());
 
         verify(newsRepository).findAllPublishedSummaries(PageRequest.of(0, 12));
+        verify(newsStarRepository, never()).findNewsIdsByIdUserId(any());
     }
 
     @Test
@@ -82,7 +95,7 @@ class NewsServiceTest {
         when(newsRepository.findAllPublishedSummaries(any())).thenReturn(emptyPage);
 
         // When
-        NewsPageDto result = newsService.getAllPublished(0, 12);
+        NewsPageDto result = newsService.getAllPublished(0, 12, null, false, null);
 
         // Then
         assertNotNull(result);
@@ -99,7 +112,7 @@ class NewsServiceTest {
         when(newsRepository.findAllPublishedSummaries(any())).thenReturn(page);
 
         // When
-        NewsPageDto result = newsService.getAllPublished(0, 12);
+        NewsPageDto result = newsService.getAllPublished(0, 12, null, false, null);
 
         // Then
         assertTrue(result.hasNext());
@@ -115,7 +128,7 @@ class NewsServiceTest {
         when(newsRepository.findAllPublishedSummaries(any())).thenReturn(page);
 
         // When
-        NewsPageDto result = newsService.getAllPublished(0, 12);
+        NewsPageDto result = newsService.getAllPublished(0, 12, null, false, null);
 
         // Then
         NewsSummaryDto dto = result.content().get(0);
@@ -131,7 +144,7 @@ class NewsServiceTest {
         when(newsRepository.findAllPublishedSummaries(any())).thenReturn(page);
 
         // When
-        NewsPageDto result = newsService.getAllPublished(0, 12);
+        NewsPageDto result = newsService.getAllPublished(0, 12, null, false, null);
 
         // Then
         NewsSummaryDto dto = result.content().get(0);
@@ -146,13 +159,175 @@ class NewsServiceTest {
         when(newsRepository.findAllPublishedSummaries(any())).thenReturn(page);
 
         // When
-        NewsPageDto result = newsService.getAllPublished(0, 12);
+        NewsPageDto result = newsService.getAllPublished(0, 12, null, false, null);
 
         // Then
         assertNull(result.content().get(0).thumbnailUrl());
     }
 
-    // ========== getPublishedById TESTS ==========
+    @Test
+    void shouldReturnNullStarredFieldWhenUnauthenticated() {
+        // Given
+        NewsSummaryProjection projection = mockSummaryProjection(UUID.randomUUID(), "Article", null, null, null, Instant.now());
+        var page = new PageImpl<>(List.of(projection), PageRequest.of(0, 12), 1);
+        when(newsRepository.findAllPublishedSummaries(any())).thenReturn(page);
+
+        // When
+        NewsPageDto result = newsService.getAllPublished(0, 12, null, false, null);
+
+        // Then
+        assertNull(result.content().get(0).starred());
+    }
+
+    // ========== getAllPublished — search ==========
+
+    @Test
+    void shouldUseTitleSearchQueryWhenQProvided() {
+        // Given
+        String q = "wspinaczka";
+        UUID newsId = UUID.randomUUID();
+        NewsSummaryProjection projection = mockSummaryProjection(newsId, "Wspinaczka górska", null, null, null, Instant.now());
+        var page = new PageImpl<>(List.of(projection), PageRequest.of(0, 12), 1);
+        when(newsRepository.findAllPublishedSummariesByTitle(eq(q), any())).thenReturn(page);
+
+        // When
+        NewsPageDto result = newsService.getAllPublished(0, 12, q, false, null);
+
+        // Then
+        assertEquals(1, result.content().size());
+        verify(newsRepository).findAllPublishedSummariesByTitle(eq(q), any());
+        verify(newsRepository, never()).findAllPublishedSummaries(any());
+    }
+
+    @Test
+    void shouldReturnEmptyPageWhenSearchMatchesNothing() {
+        // Given
+        String q = "nieistniejący tytuł";
+        var emptyPage = new PageImpl<NewsSummaryProjection>(List.of(), PageRequest.of(0, 12), 0);
+        when(newsRepository.findAllPublishedSummariesByTitle(eq(q), any())).thenReturn(emptyPage);
+
+        // When
+        NewsPageDto result = newsService.getAllPublished(0, 12, q, false, null);
+
+        // Then
+        assertTrue(result.content().isEmpty());
+        assertEquals(0L, result.totalElements());
+    }
+
+    @Test
+    void shouldFallBackToBaseQueryWhenQIsBlank() {
+        // Given — blank query should behave like no filter
+        var page = new PageImpl<NewsSummaryProjection>(List.of(), PageRequest.of(0, 12), 0);
+        when(newsRepository.findAllPublishedSummaries(any())).thenReturn(page);
+
+        // When
+        newsService.getAllPublished(0, 12, "   ", false, null);
+
+        // Then
+        verify(newsRepository).findAllPublishedSummaries(any());
+        verify(newsRepository, never()).findAllPublishedSummariesByTitle(any(), any());
+    }
+
+    // ========== getAllPublished — starred filter ==========
+
+    @Test
+    void shouldReturnEmptyPageWhenStarredFilterButNoUserId() {
+        // When
+        NewsPageDto result = newsService.getAllPublished(0, 12, null, true, null);
+
+        // Then
+        assertTrue(result.content().isEmpty());
+        assertEquals(0L, result.totalElements());
+        verify(newsRepository, never()).findAllPublishedSummaries(any());
+        verify(newsRepository, never()).findAllPublishedSummariesByIds(any(), any());
+    }
+
+    @Test
+    void shouldReturnEmptyPageWhenUserHasNoStarredNews() {
+        // Given
+        UUID userId = UUID.randomUUID();
+        when(newsStarRepository.findNewsIdsByIdUserId(userId)).thenReturn(Set.of());
+
+        // When
+        NewsPageDto result = newsService.getAllPublished(0, 12, null, true, userId);
+
+        // Then
+        assertTrue(result.content().isEmpty());
+        verify(newsRepository, never()).findAllPublishedSummariesByIds(any(), any());
+    }
+
+    @Test
+    void shouldReturnOnlyStarredNewsForUser() {
+        // Given
+        UUID userId = UUID.randomUUID();
+        UUID starredId = UUID.randomUUID();
+        Set<UUID> starredIds = Set.of(starredId);
+
+        NewsSummaryProjection projection = mockSummaryProjection(starredId, "Starred Article", null, null, null, Instant.now());
+        var page = new PageImpl<>(List.of(projection), PageRequest.of(0, 12), 1);
+
+        when(newsStarRepository.findNewsIdsByIdUserId(userId)).thenReturn(starredIds);
+        when(newsRepository.findAllPublishedSummariesByIds(eq(starredIds), any())).thenReturn(page);
+
+        // When
+        NewsPageDto result = newsService.getAllPublished(0, 12, null, true, userId);
+
+        // Then
+        assertEquals(1, result.content().size());
+        assertTrue(result.content().get(0).starred());
+        verify(newsRepository).findAllPublishedSummariesByIds(eq(starredIds), any());
+    }
+
+    @Test
+    void shouldUseCombinedQueryWhenStarredAndSearchBothActive() {
+        // Given
+        UUID userId = UUID.randomUUID();
+        UUID starredId = UUID.randomUUID();
+        Set<UUID> starredIds = Set.of(starredId);
+        String q = "wspinaczka";
+
+        NewsSummaryProjection projection = mockSummaryProjection(starredId, "Wspinaczka", null, null, null, Instant.now());
+        var page = new PageImpl<>(List.of(projection), PageRequest.of(0, 12), 1);
+
+        when(newsStarRepository.findNewsIdsByIdUserId(userId)).thenReturn(starredIds);
+        when(newsRepository.findAllPublishedSummariesByTitleAndIds(eq(q), eq(starredIds), any())).thenReturn(page);
+
+        // When
+        NewsPageDto result = newsService.getAllPublished(0, 12, q, true, userId);
+
+        // Then
+        assertEquals(1, result.content().size());
+        verify(newsRepository).findAllPublishedSummariesByTitleAndIds(eq(q), eq(starredIds), any());
+    }
+
+    @Test
+    void shouldOverlayStarredStatusWhenAuthenticatedWithoutStarFilter() {
+        // Given
+        UUID userId = UUID.randomUUID();
+        UUID starredNewsId = UUID.randomUUID();
+        UUID unstarredNewsId = UUID.randomUUID();
+
+        NewsSummaryProjection starred = mockSummaryProjection(starredNewsId, "Starred", null, null, null, Instant.now());
+        NewsSummaryProjection notStarred = mockSummaryProjection(unstarredNewsId, "Not starred", null, null, null, Instant.now());
+        var page = new PageImpl<>(List.of(starred, notStarred), PageRequest.of(0, 12), 2);
+
+        when(newsRepository.findAllPublishedSummaries(any())).thenReturn(page);
+        when(newsStarRepository.findNewsIdsByIdUserId(userId)).thenReturn(Set.of(starredNewsId));
+
+        // When
+        NewsPageDto result = newsService.getAllPublished(0, 12, null, false, userId);
+
+        // Then
+        NewsSummaryDto starredDto = result.content().stream()
+                .filter(d -> d.id().equals(starredNewsId)).findFirst().orElseThrow();
+        NewsSummaryDto notStarredDto = result.content().stream()
+                .filter(d -> d.id().equals(unstarredNewsId)).findFirst().orElseThrow();
+
+        assertTrue(starredDto.starred());
+        assertFalse(notStarredDto.starred());
+    }
+
+    // ========== getPublishedById ==========
 
     @Test
     void shouldReturnNewsDetailSuccessfully() {
@@ -164,7 +339,7 @@ class NewsServiceTest {
         when(blockRepository.findByNewsIdOrderByDisplayOrderAsc(id)).thenReturn(List.of());
 
         // When
-        NewsDetailDto result = newsService.getPublishedById(id);
+        NewsDetailDto result = newsService.getPublishedById(id, null);
 
         // Then
         assertNotNull(result);
@@ -172,6 +347,7 @@ class NewsServiceTest {
         assertEquals("Published Article", result.title());
         assertEquals("Short excerpt", result.excerpt());
         assertTrue(result.blocks().isEmpty());
+        assertNull(result.starred());
     }
 
     @Test
@@ -189,7 +365,7 @@ class NewsServiceTest {
         when(blockRepository.findByNewsIdOrderByDisplayOrderAsc(id)).thenReturn(List.of(textBlock));
 
         // When
-        NewsDetailDto result = newsService.getPublishedById(id);
+        NewsDetailDto result = newsService.getPublishedById(id, null);
 
         // Then
         assertNotNull(result);
@@ -217,7 +393,7 @@ class NewsServiceTest {
         when(blockRepository.findByNewsIdOrderByDisplayOrderAsc(id)).thenReturn(List.of(imageBlock));
 
         // When
-        NewsDetailDto result = newsService.getPublishedById(id);
+        NewsDetailDto result = newsService.getPublishedById(id, null);
 
         // Then
         assertEquals(directUrl, result.blocks().get(0).imageUrl());
@@ -239,7 +415,7 @@ class NewsServiceTest {
         when(blockRepository.findByNewsIdOrderByDisplayOrderAsc(id)).thenReturn(List.of(imageBlock));
 
         // When
-        NewsDetailDto result = newsService.getPublishedById(id);
+        NewsDetailDto result = newsService.getPublishedById(id, null);
 
         // Then
         assertEquals(BASE_URL + "/api/files/news/" + filename, result.blocks().get(0).imageUrl());
@@ -254,7 +430,7 @@ class NewsServiceTest {
         // When & Then
         IllegalArgumentException exception = assertThrows(
             IllegalArgumentException.class,
-            () -> newsService.getPublishedById(id)
+            () -> newsService.getPublishedById(id, null)
         );
         assertEquals("News not found", exception.getMessage());
     }
@@ -272,12 +448,156 @@ class NewsServiceTest {
         // When & Then
         IllegalArgumentException exception = assertThrows(
             IllegalArgumentException.class,
-            () -> newsService.getPublishedById(id)
+            () -> newsService.getPublishedById(id, null)
         );
         assertEquals("News not found", exception.getMessage());
 
-        // Blocks should NOT be loaded for unpublished news
         verify(blockRepository, never()).findByNewsIdOrderByDisplayOrderAsc(any());
+    }
+
+    @Test
+    void shouldReturnStarredTrueInDetailWhenUserStarredArticle() {
+        // Given
+        UUID id = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+        News news = buildPublishedNews(id, "Published Article", null);
+
+        when(newsRepository.findById(id)).thenReturn(Optional.of(news));
+        when(blockRepository.findByNewsIdOrderByDisplayOrderAsc(id)).thenReturn(List.of());
+        when(newsStarRepository.existsByIdUserIdAndIdNewsId(userId, id)).thenReturn(true);
+
+        // When
+        NewsDetailDto result = newsService.getPublishedById(id, userId);
+
+        // Then
+        assertTrue(result.starred());
+    }
+
+    @Test
+    void shouldReturnStarredFalseInDetailWhenUserHasNotStarredArticle() {
+        // Given
+        UUID id = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+        News news = buildPublishedNews(id, "Published Article", null);
+
+        when(newsRepository.findById(id)).thenReturn(Optional.of(news));
+        when(blockRepository.findByNewsIdOrderByDisplayOrderAsc(id)).thenReturn(List.of());
+        when(newsStarRepository.existsByIdUserIdAndIdNewsId(userId, id)).thenReturn(false);
+
+        // When
+        NewsDetailDto result = newsService.getPublishedById(id, userId);
+
+        // Then
+        assertFalse(result.starred());
+    }
+
+    @Test
+    void shouldReturnNullStarredInDetailWhenUnauthenticated() {
+        // Given
+        UUID id = UUID.randomUUID();
+        News news = buildPublishedNews(id, "Published Article", null);
+
+        when(newsRepository.findById(id)).thenReturn(Optional.of(news));
+        when(blockRepository.findByNewsIdOrderByDisplayOrderAsc(id)).thenReturn(List.of());
+
+        // When
+        NewsDetailDto result = newsService.getPublishedById(id, null);
+
+        // Then
+        assertNull(result.starred());
+        verify(newsStarRepository, never()).existsByIdUserIdAndIdNewsId(any(), any());
+    }
+
+    // ========== starNews / unstarNews ==========
+
+    @Test
+    void shouldStarNewsWhenNotAlreadyStarred() {
+        // Given
+        UUID newsId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+        News news = buildPublishedNews(newsId, "Article", null);
+        NewsStarId starId = new NewsStarId(userId, newsId);
+
+        when(newsRepository.findById(newsId)).thenReturn(Optional.of(news));
+        when(newsStarRepository.existsById(starId)).thenReturn(false);
+
+        // When
+        newsService.starNews(newsId, userId);
+
+        // Then
+        verify(newsStarRepository).save(any(NewsStar.class));
+    }
+
+    @Test
+    void shouldBeIdempotentWhenStarringAlreadyStarredNews() {
+        // Given
+        UUID newsId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+        News news = buildPublishedNews(newsId, "Article", null);
+        NewsStarId starId = new NewsStarId(userId, newsId);
+
+        when(newsRepository.findById(newsId)).thenReturn(Optional.of(news));
+        when(newsStarRepository.existsById(starId)).thenReturn(true);
+
+        // When — no exception
+        assertDoesNotThrow(() -> newsService.starNews(newsId, userId));
+
+        // Then — save NOT called again
+        verify(newsStarRepository, never()).save(any());
+    }
+
+    @Test
+    void shouldThrowWhenStarringUnpublishedNews() {
+        // Given
+        UUID newsId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+        News draft = new News("Draft");
+        setFieldViaReflection(draft, "id", newsId);
+
+        when(newsRepository.findById(newsId)).thenReturn(Optional.of(draft));
+
+        // When & Then
+        assertThrows(IllegalArgumentException.class, () -> newsService.starNews(newsId, userId));
+        verify(newsStarRepository, never()).save(any());
+    }
+
+    @Test
+    void shouldThrowWhenStarringNonExistentNews() {
+        // Given
+        UUID newsId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+
+        when(newsRepository.findById(newsId)).thenReturn(Optional.empty());
+
+        // When & Then
+        assertThrows(IllegalArgumentException.class, () -> newsService.starNews(newsId, userId));
+        verify(newsStarRepository, never()).save(any());
+    }
+
+    @Test
+    void shouldUnstarNews() {
+        // Given
+        UUID newsId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+
+        // When
+        newsService.unstarNews(newsId, userId);
+
+        // Then
+        verify(newsStarRepository).deleteByIdUserIdAndIdNewsId(userId, newsId);
+    }
+
+    @Test
+    void shouldBeNoOpWhenUnstarringNotStarredNews() {
+        // Given — deleteByIdUserIdAndIdNewsId is called regardless; it's a no-op if not present
+        UUID newsId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+
+        // When — no exception
+        assertDoesNotThrow(() -> newsService.unstarNews(newsId, userId));
+
+        // Then
+        verify(newsStarRepository).deleteByIdUserIdAndIdNewsId(userId, newsId);
     }
 
     // ========== HELPER METHODS ==========

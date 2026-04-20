@@ -295,9 +295,9 @@ function CourseRow({
         <button
           onClick={course.published ? onUnpublish : onPublish}
           title={course.published ? t('courses.unpublish') : t('courses.publish')}
-          className="p-2 text-dark-400 hover:text-dark-100 transition-colors"
+          className={`p-2 transition-colors ${course.published ? 'text-emerald-400 hover:text-orange-400' : 'text-dark-400 hover:text-dark-100'}`}
         >
-          {course.published ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+          {course.published ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
         </button>
         <button
           onClick={onEdit}

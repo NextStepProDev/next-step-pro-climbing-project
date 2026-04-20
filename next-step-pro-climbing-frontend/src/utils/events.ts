@@ -69,6 +69,56 @@ export function getEventColorByIndex(eventId: string, eventType: string, isFull:
   return INDEX_PALETTE[hash % INDEX_PALETTE.length];
 }
 
+/** Conflict-aware color map for month view.
+ *  Ensures adjacent/overlapping events (gap ≤ 1 day) get different colors. */
+export function buildEventColorMap(events: EventSummary[]): Map<string, EventAccentColor> {
+  const map = new Map<string, EventAccentColor>()
+
+  const paletteEvents = events.filter(
+    e => e.eventType !== 'CONTACT_DAY' && e.currentParticipants < e.maxParticipants
+  )
+
+  const sorted = [...paletteEvents].sort(
+    (a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime()
+  )
+
+  sorted.forEach(event => {
+    const eStart = new Date(event.startDate).getTime()
+    const eEnd = new Date(event.endDate).getTime()
+    const DAY = 86_400_000
+
+    const usedIndices = new Set<number>()
+    sorted.forEach(other => {
+      if (other.id === event.id) return
+      const oStart = new Date(other.startDate).getTime()
+      const oEnd = new Date(other.endDate).getTime()
+      if (eEnd + DAY >= oStart && oEnd + DAY >= eStart) {
+        const assigned = map.get(other.id)
+        if (assigned) {
+          const idx = INDEX_PALETTE.indexOf(assigned)
+          if (idx !== -1) usedIndices.add(idx)
+        }
+      }
+    })
+
+    let idx = INDEX_PALETTE.findIndex((_, i) => !usedIndices.has(i))
+    if (idx === -1) {
+      const hash = event.id.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0)
+      idx = hash % INDEX_PALETTE.length
+    }
+    map.set(event.id, INDEX_PALETTE[idx])
+  })
+
+  events.forEach(e => {
+    if (!map.has(e.id)) {
+      if (e.eventType === 'CONTACT_DAY') map.set(e.id, EVENT_TYPE_COLORS.CONTACT_DAY)
+      else map.set(e.id, EVENT_TYPE_COLORS.FULL)
+    }
+  })
+
+  return map
+}
+
 export function pluralizeTraining(n: number): string {
   return i18n.t('training', { count: n, ns: 'calendar' });
 }

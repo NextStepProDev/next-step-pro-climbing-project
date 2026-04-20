@@ -154,9 +154,10 @@ export function AdminUsersPanel() {
                           size="sm"
                           onClick={() => setConfirmAction({ type: 'removeAdmin', userId: user.id, userName: `${user.firstName} ${user.lastName}` })}
                           title={t('users.revokeAdmin')}
-                          className="text-orange-400 hover:text-orange-300 hover:bg-orange-500/10"
+                          className="group !text-amber-400 hover:bg-orange-500/10"
                         >
-                          <ShieldOff className="w-4 h-4" />
+                          <Shield className="w-4 h-4 group-hover:hidden" />
+                          <ShieldOff className="w-4 h-4 hidden group-hover:block text-dark-400" />
                         </Button>
                       ) : (
                         <>
@@ -165,8 +166,10 @@ export function AdminUsersPanel() {
                             size="sm"
                             onClick={() => setConfirmAction({ type: 'makeAdmin', userId: user.id, userName: `${user.firstName} ${user.lastName}` })}
                             title={t('users.grantAdmin')}
+                            className="group text-dark-500"
                           >
-                            <Shield className="w-4 h-4" />
+                            <ShieldOff className="w-4 h-4 group-hover:hidden" />
+                            <Shield className="w-4 h-4 hidden group-hover:block !text-amber-400" />
                           </Button>
                           <Button
                             variant="ghost"

@@ -351,8 +351,9 @@ export function AdminGalleryPanel() {
                             onClick={() => unpublishAlbumMutation.mutate(album.id)}
                             disabled={unpublishAlbumMutation.isPending}
                             title="Cofnij publikację (schowaj publicznie)"
+                            className="text-emerald-400 hover:text-orange-400"
                           >
-                            <EyeOff className="h-4 w-4" />
+                            <Eye className="h-4 w-4" />
                           </Button>
                         ) : (
                           <Button
@@ -361,9 +362,8 @@ export function AdminGalleryPanel() {
                             onClick={() => publishAlbumMutation.mutate(album.id)}
                             disabled={publishAlbumMutation.isPending}
                             title="Opublikuj (pokaż publicznie)"
-                            className="text-emerald-400 hover:text-emerald-300"
                           >
-                            <Eye className="h-4 w-4" />
+                            <EyeOff className="h-4 w-4" />
                           </Button>
                         )}
                         <Button

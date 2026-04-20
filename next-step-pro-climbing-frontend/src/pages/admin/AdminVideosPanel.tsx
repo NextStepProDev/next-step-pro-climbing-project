@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { ChevronUp, ChevronDown, Pencil, Trash2, Plus, ArrowLeft, ExternalLink } from 'lucide-react'
+import { ChevronUp, ChevronDown, Pencil, Trash2, Plus, ArrowLeft, ExternalLink, Eye, EyeOff } from 'lucide-react'
 import { adminVideoApi } from '../../api/client'
 import type { VideoAdmin, UpdateVideoRequest } from '../../types'
 import { Button } from '../../components/ui/Button'
@@ -378,12 +378,13 @@ export function AdminVideosPanel() {
               {/* Status badge */}
               <span
                 className={clsx(
-                  'px-2 py-1 rounded-full text-xs font-medium shrink-0',
+                  'flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium shrink-0',
                   video.published
                     ? 'bg-green-500/10 text-green-400'
                     : 'bg-dark-700 text-dark-400'
                 )}
               >
+                {video.published ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
                 {video.published ? t('videos.published') : t('videos.draft')}
               </span>
 
@@ -396,9 +397,10 @@ export function AdminVideosPanel() {
                     publishMutation.mutate({ id: video.id, publish: !video.published })
                   }
                   disabled={publishMutation.isPending}
-                  className="text-xs"
+                  title={video.published ? t('videos.unpublish') : t('videos.publish')}
+                  className={video.published ? 'text-emerald-400 hover:text-orange-400' : 'text-dark-400 hover:text-dark-100'}
                 >
-                  {video.published ? t('videos.unpublish') : t('videos.publish')}
+                  {video.published ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
                 </Button>
                 <button
                   onClick={() => openEditView(video)}

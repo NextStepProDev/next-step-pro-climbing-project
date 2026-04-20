@@ -602,8 +602,15 @@ export const adminGalleryApi = {
 
 // ==================== News (publiczne) ====================
 export const newsApi = {
-  getAll: (page = 0, size = 12) => fetchApi<NewsPageDto>(`/news?page=${page}&size=${size}`),
+  getAll: (page = 0, size = 12, q?: string, starred?: boolean) => {
+    const params = new URLSearchParams({ page: String(page), size: String(size) })
+    if (q && q.trim()) params.set('q', q.trim())
+    if (starred) params.set('starred', 'true')
+    return fetchApi<NewsPageDto>(`/news?${params}`)
+  },
   getById: (id: string) => fetchApi<NewsDetail>(`/news/${id}`),
+  star: (id: string) => fetchApi<void>(`/news/${id}/star`, { method: 'POST' }),
+  unstar: (id: string) => fetchApi<void>(`/news/${id}/star`, { method: 'DELETE' }),
 }
 
 // ==================== Admin News ====================

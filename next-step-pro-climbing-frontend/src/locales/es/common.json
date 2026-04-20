@@ -103,9 +103,17 @@
   "news": {
     "title": "Noticias",
     "noArticles": "No hay artículos para mostrar",
+    "noSearchResults": "Sin resultados de búsqueda",
+    "noStarredArticles": "No hay artículos guardados",
     "articleNotFound": "Artículo no encontrado",
     "backToNews": "Volver a noticias",
     "published": "Publicado",
-    "loadMore": "Cargar más"
+    "loadMore": "Cargar más",
+    "searchPlaceholder": "Buscar por título...",
+    "searchButton": "Buscar",
+    "myStars": "Mis favoritos",
+    "starAdd": "Añadir a favoritos",
+    "starRemove": "Quitar de favoritos",
+    "loginToStar": "Inicia sesión para guardar artículos"
   }
 }

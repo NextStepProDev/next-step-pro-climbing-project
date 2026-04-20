@@ -18,7 +18,8 @@ public class NewsDtos {
             @Nullable String thumbnailUrl,
             @Nullable Float thumbnailFocalPointX,
             @Nullable Float thumbnailFocalPointY,
-            Instant publishedAt
+            Instant publishedAt,
+            @Nullable Boolean starred
     ) {}
 
     public record NewsDetailDto(
@@ -29,7 +30,8 @@ public class NewsDtos {
             @Nullable Float thumbnailFocalPointX,
             @Nullable Float thumbnailFocalPointY,
             List<ContentBlockDto> blocks,
-            Instant publishedAt
+            Instant publishedAt,
+            @Nullable Boolean starred
     ) {}
 
     public record ContentBlockDto(
