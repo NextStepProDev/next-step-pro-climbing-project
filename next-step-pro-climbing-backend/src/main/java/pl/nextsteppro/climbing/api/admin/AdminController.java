@@ -163,6 +163,12 @@ public class AdminController {
     }
 
     @Tag(name = "Admin - Slots")
+    @GetMapping("/slots/past")
+    public ResponseEntity<List<TimeSlotAdminDto>> getPastSlots() {
+        return ResponseEntity.ok(adminService.getPastSlots());
+    }
+
+    @Tag(name = "Admin - Slots")
     @Operation(
         summary = "Lista uczestników terminu",
         description = "Zwraca pełne dane wszystkich osób zapisanych na termin oraz listę rezerwową"
