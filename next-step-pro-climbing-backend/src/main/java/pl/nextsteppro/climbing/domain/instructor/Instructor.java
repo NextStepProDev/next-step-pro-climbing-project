@@ -3,6 +3,7 @@ package pl.nextsteppro.climbing.domain.instructor;
 import jakarta.persistence.*;
 import org.jspecify.annotations.Nullable;
 
+
 import java.time.Instant;
 import java.util.UUID;
 
@@ -46,6 +47,18 @@ public class Instructor {
     @Column(name = "badge_url", length = 2048)
     @Nullable
     private String badgeUrl;
+
+    @Column(name = "photo_external_url", columnDefinition = "TEXT")
+    @Nullable
+    private String photoExternalUrl;
+
+    @Column(name = "profile_8a_url", columnDefinition = "TEXT")
+    @Nullable
+    private String profile8aUrl;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "member_type", nullable = false, length = 20)
+    private InstructorType memberType = InstructorType.INSTRUCTOR;
 
     @Column(name = "is_active", nullable = false)
     private boolean active = true;
@@ -108,6 +121,14 @@ public class Instructor {
 
     public int getDisplayOrder() {
         return displayOrder;
+    }
+
+    public InstructorType getMemberType() {
+        return memberType;
+    }
+
+    public void setMemberType(InstructorType memberType) {
+        this.memberType = memberType;
     }
 
     public boolean isActive() {
@@ -176,5 +197,23 @@ public class Instructor {
 
     public void setBadgeUrl(@Nullable String badgeUrl) {
         this.badgeUrl = badgeUrl;
+    }
+
+    @Nullable
+    public String getPhotoExternalUrl() {
+        return photoExternalUrl;
+    }
+
+    public void setPhotoExternalUrl(@Nullable String photoExternalUrl) {
+        this.photoExternalUrl = photoExternalUrl;
+    }
+
+    @Nullable
+    public String getProfile8aUrl() {
+        return profile8aUrl;
+    }
+
+    public void setProfile8aUrl(@Nullable String profile8aUrl) {
+        this.profile8aUrl = profile8aUrl;
     }
 }

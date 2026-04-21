@@ -72,7 +72,8 @@ class AdminInstructorServiceTest {
             "Jane",
             "Smith",
             "Expert in bouldering",
-            "IFMGA, UIAGM"
+            "IFMGA, UIAGM",
+            null
         );
 
         when(instructorRepository.save(any(Instructor.class))).thenAnswer(inv -> {
@@ -107,6 +108,7 @@ class AdminInstructorServiceTest {
         CreateInstructorRequest request = new CreateInstructorRequest(
             "Jane",
             "Smith",
+            null,
             null,
             null
         );
@@ -195,6 +197,7 @@ class AdminInstructorServiceTest {
             false,
             5,
             null,
+            null,
             null
         );
 
@@ -221,6 +224,7 @@ class AdminInstructorServiceTest {
         // Given
         UpdateInstructorRequest request = new UpdateInstructorRequest(
             "Jane",
+            null,
             null,
             null,
             null,
@@ -256,6 +260,7 @@ class AdminInstructorServiceTest {
             null,
             null,
             null,
+            null,
             null
         );
 
@@ -280,6 +285,7 @@ class AdminInstructorServiceTest {
             null,
             10,
             null,
+            null,
             null
         );
 
@@ -303,6 +309,7 @@ class AdminInstructorServiceTest {
             null,
             null,
             false,
+            null,
             null,
             null,
             null

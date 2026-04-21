@@ -10,6 +10,7 @@ import org.springframework.web.multipart.MultipartFile;
 import pl.nextsteppro.climbing.api.admin.instructor.AdminInstructorDtos.*;
 import pl.nextsteppro.climbing.domain.instructor.Instructor;
 import pl.nextsteppro.climbing.domain.instructor.InstructorRepository;
+import pl.nextsteppro.climbing.domain.instructor.InstructorType;
 import pl.nextsteppro.climbing.infrastructure.storage.FileStorageService;
 
 import java.io.IOException;
@@ -51,6 +52,8 @@ public class AdminInstructorService {
         Instructor instructor = new Instructor(request.firstName(), request.lastName());
         instructor.setBio(request.bio());
         instructor.setCertifications(request.certifications());
+        instructor.setMemberType(request.memberType() != null ? request.memberType() : InstructorType.INSTRUCTOR);
+        instructor.setProfile8aUrl(request.profile8aUrl());
 
         instructor.setDisplayOrder(instructorRepository.findMinDisplayOrder().orElse(1) - 1);
         instructor = instructorRepository.save(instructor);
@@ -84,6 +87,13 @@ public class AdminInstructorService {
         }
         if (request.focalPointY() != null) {
             instructor.setFocalPointY(request.focalPointY());
+        }
+        if (request.memberType() != null) {
+            instructor.setMemberType(request.memberType());
+        }
+        // profile8aUrl: empty string clears it, non-empty sets it, null means no change
+        if (request.profile8aUrl() != null) {
+            instructor.setProfile8aUrl(request.profile8aUrl().isBlank() ? null : request.profile8aUrl());
         }
 
         instructor = instructorRepository.save(instructor);
@@ -140,6 +150,47 @@ public class AdminInstructorService {
         instructorRepository.save(instructor);
     }
 
+    public List<InstructorAdminDto> moveUp(UUID id) {
+        Instructor target = instructorRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Instructor not found"));
+        List<Instructor> group = instructorRepository.findAllByOrderByDisplayOrderAscCreatedAtAsc()
+                .stream().filter(i -> i.getMemberType() == target.getMemberType()).toList();
+        int idx = indexOfId(group, id);
+        if (idx > 0) {
+            swap(group.get(idx), group.get(idx - 1));
+            instructorRepository.saveAll(List.of(group.get(idx), group.get(idx - 1)));
+        }
+        return instructorRepository.findAllByOrderByDisplayOrderAscCreatedAtAsc()
+                .stream().map(this::toAdminDto).toList();
+    }
+
+    public List<InstructorAdminDto> moveDown(UUID id) {
+        Instructor target = instructorRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Instructor not found"));
+        List<Instructor> group = instructorRepository.findAllByOrderByDisplayOrderAscCreatedAtAsc()
+                .stream().filter(i -> i.getMemberType() == target.getMemberType()).toList();
+        int idx = indexOfId(group, id);
+        if (idx >= 0 && idx < group.size() - 1) {
+            swap(group.get(idx), group.get(idx + 1));
+            instructorRepository.saveAll(List.of(group.get(idx), group.get(idx + 1)));
+        }
+        return instructorRepository.findAllByOrderByDisplayOrderAscCreatedAtAsc()
+                .stream().map(this::toAdminDto).toList();
+    }
+
+    private int indexOfId(List<Instructor> list, UUID id) {
+        for (int i = 0; i < list.size(); i++) {
+            if (list.get(i).getId().equals(id)) return i;
+        }
+        return -1;
+    }
+
+    private void swap(Instructor a, Instructor b) {
+        int tmp = a.getDisplayOrder();
+        a.setDisplayOrder(b.getDisplayOrder());
+        b.setDisplayOrder(tmp);
+    }
+
     public InstructorAdminDto setBadge(UUID id, @Nullable String badgeUrl) {
         Instructor instructor = instructorRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Instructor not found"));
@@ -154,12 +205,14 @@ public class AdminInstructorService {
                 instructor.getFirstName(),
                 instructor.getLastName(),
                 instructor.getPhotoFilename(),
-                buildPhotoUrl(instructor.getPhotoFilename()),
+                buildPhotoUrl(instructor),
                 instructor.getFocalPointX(),
                 instructor.getFocalPointY(),
                 instructor.getBio(),
                 instructor.getCertifications(),
                 instructor.getBadgeUrl(),
+                instructor.getMemberType(),
+                instructor.getProfile8aUrl(),
                 instructor.getDisplayOrder(),
                 instructor.isActive(),
                 instructor.getCreatedAt(),
@@ -167,11 +220,22 @@ public class AdminInstructorService {
         );
     }
 
+    public InstructorAdminDto setPhotoUrl(UUID id, @Nullable String url) {
+        Instructor instructor = instructorRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Instructor not found"));
+        instructor.setPhotoExternalUrl(url);
+        instructor = instructorRepository.save(instructor);
+        return toAdminDto(instructor);
+    }
+
     @Nullable
-    private String buildPhotoUrl(@Nullable String filename) {
-        if (filename == null) {
+    private String buildPhotoUrl(Instructor instructor) {
+        if (instructor.getPhotoExternalUrl() != null) {
+            return instructor.getPhotoExternalUrl();
+        }
+        if (instructor.getPhotoFilename() == null) {
             return null;
         }
-        return baseUrl + "/api/files/instructors/" + filename;
+        return baseUrl + "/api/files/instructors/" + instructor.getPhotoFilename();
     }
 }

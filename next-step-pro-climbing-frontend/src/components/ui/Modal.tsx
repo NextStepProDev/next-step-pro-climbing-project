@@ -7,7 +7,7 @@ interface ModalProps {
   onClose: () => void
   title: string
   children: ReactNode
-  size?: 'md' | 'xl'
+  size?: 'md' | 'lg' | 'xl'
 }
 
 export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalProps) {
@@ -47,7 +47,7 @@ export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalPr
         role="dialog"
         aria-modal="true"
         aria-labelledby="modal-title"
-        className={`relative bg-dark-900 rounded-xl border border-dark-800 shadow-xl w-full mx-4 max-h-[90vh] overflow-y-auto ${size === 'xl' ? 'max-w-4xl' : 'max-w-lg'}`}
+        className={`relative bg-dark-900 rounded-xl border border-dark-800 shadow-xl w-full mx-4 max-h-[90vh] overflow-y-auto ${size === 'xl' ? 'max-w-4xl' : size === 'lg' ? 'max-w-3xl' : 'max-w-lg'}`}
       >
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-dark-800">

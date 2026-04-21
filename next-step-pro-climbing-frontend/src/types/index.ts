@@ -338,6 +338,8 @@ export interface ActivityLog {
 }
 
 // Instructor types
+export type InstructorType = 'INSTRUCTOR' | 'COMPETITOR'
+
 export interface InstructorPublic {
   id: string
   firstName: string
@@ -348,6 +350,8 @@ export interface InstructorPublic {
   bio: string | null
   certifications: string | null
   badgeUrl: string | null
+  memberType: InstructorType
+  profile8aUrl: string | null
   createdAt: string
 }
 
@@ -362,6 +366,8 @@ export interface InstructorAdmin {
   bio: string | null
   certifications: string | null
   badgeUrl: string | null
+  memberType: InstructorType
+  profile8aUrl: string | null
   displayOrder: number
   active: boolean
   createdAt: string
@@ -373,6 +379,8 @@ export interface CreateInstructorRequest {
   lastName: string
   bio?: string
   certifications?: string
+  memberType?: InstructorType
+  profile8aUrl?: string
 }
 
 export interface UpdateInstructorRequest {
@@ -384,6 +392,8 @@ export interface UpdateInstructorRequest {
   displayOrder?: number
   focalPointX?: number
   focalPointY?: number
+  memberType?: InstructorType
+  profile8aUrl?: string
 }
 
 // Gallery types

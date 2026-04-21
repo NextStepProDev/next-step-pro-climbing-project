@@ -16,12 +16,19 @@ export function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [mediaMenuOpen, setMediaMenuOpen] = useState(false);
+  const [teamMenuOpen, setTeamMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const mediaMenuRef = useRef<HTMLDivElement>(null);
+  const teamMenuRef = useRef<HTMLDivElement>(null);
 
   const mediaLinks = [
     { to: "/galeria", label: t('nav.gallery') },
     { to: "/filmy", label: t('nav.videos') },
+  ];
+
+  const teamLinks = [
+    { to: "/team/instruktorzy", label: t('team.instructors') },
+    { to: "/team/zawodnicy", label: t('team.competitors') },
   ];
 
   const navLinksBefore = [
@@ -32,7 +39,6 @@ export function Navbar() {
       : []),
     { to: "/aktualnosci", label: t('nav.news') },
     { to: "/kursy", label: t('nav.courses') },
-    { to: "/instruktorzy", label: t('nav.instructors') },
   ];
 
   const navLinksAfter = [
@@ -40,9 +46,10 @@ export function Navbar() {
     ...(isAdmin ? [{ to: "/admin", label: t('nav.admin') }] : []),
   ];
 
-  const mobileNavLinks = [...navLinksBefore, ...mediaLinks, ...navLinksAfter];
+  const mobileNavLinks = [...navLinksBefore, ...teamLinks, ...mediaLinks, ...navLinksAfter];
 
   const isMediaActive = mediaLinks.some((l) => location.pathname === l.to);
+  const isTeamActive = teamLinks.some((l) => location.pathname === l.to);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -58,6 +65,12 @@ export function Navbar() {
       ) {
         setMediaMenuOpen(false);
       }
+      if (
+        teamMenuRef.current &&
+        !teamMenuRef.current.contains(e.target as Node)
+      ) {
+        setTeamMenuOpen(false);
+      }
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
@@ -69,6 +82,7 @@ export function Navbar() {
     setPrevPathname(location.pathname);
     setUserMenuOpen(false);
     setMediaMenuOpen(false);
+    setTeamMenuOpen(false);
   }
 
   const userInitial = user?.firstName?.charAt(0).toUpperCase() ?? "?";
@@ -105,6 +119,49 @@ export function Navbar() {
                 {link.label}
               </Link>
             ))}
+
+            {/* Team dropdown */}
+            <div className="relative" ref={teamMenuRef}>
+              <button
+                onClick={() => setTeamMenuOpen(!teamMenuOpen)}
+                className={clsx(
+                  "flex items-center gap-1 px-3 py-1.5 rounded-lg text-base font-semibold tracking-wide transition-colors",
+                  isTeamActive
+                    ? "bg-dark-800 text-dark-100"
+                    : "text-dark-400 hover:bg-dark-800/60 hover:text-dark-200",
+                )}
+              >
+                {t('nav.team')}
+                <ChevronDown
+                  className={clsx(
+                    "w-3.5 h-3.5 transition-transform",
+                    teamMenuOpen && "rotate-180",
+                  )}
+                />
+              </button>
+
+              {teamMenuOpen && (
+                <div className="absolute left-0 mt-2 w-40 bg-dark-900 border border-dark-700 rounded-xl shadow-lg shadow-black/30 overflow-hidden">
+                  <div className="py-1">
+                    {teamLinks.map((link) => (
+                      <Link
+                        key={link.to}
+                        to={link.to}
+                        onClick={() => setTeamMenuOpen(false)}
+                        className={clsx(
+                          "block px-4 py-2.5 text-sm transition-colors",
+                          location.pathname === link.to
+                            ? "text-dark-100 bg-dark-800"
+                            : "text-dark-300 hover:bg-dark-800 hover:text-dark-100",
+                        )}
+                      >
+                        {link.label}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
 
             {/* Media dropdown */}
             <div className="relative" ref={mediaMenuRef}>

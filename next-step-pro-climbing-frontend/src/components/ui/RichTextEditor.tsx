@@ -1,4 +1,4 @@
-import { useCallback, useRef } from 'react'
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef } from 'react'
 import { Bold, Italic, Underline, List, ListOrdered } from 'lucide-react'
 
 function htmlToRichText(html: string): string | null {
@@ -80,14 +80,62 @@ function stripListPrefix(line: string): string {
   return line.replace(LIST_PREFIX_RE, '')
 }
 
-export function RichTextEditor({
+export const RichTextEditor = forwardRef<HTMLTextAreaElement, RichTextEditorProps>(function RichTextEditor({
   value,
   onChange,
   rows = 16,
   placeholder,
   className,
-}: RichTextEditorProps) {
-  const textareaRef = useRef<HTMLTextAreaElement>(null)
+}, forwardedRef) {
+  const internalRef = useRef<HTMLTextAreaElement>(null)
+  useImperativeHandle(forwardedRef, () => internalRef.current!, [])
+  const textareaRef = internalRef
+
+  // ─── Undo / Redo history ────────────────────────────────────────────────────
+  const history          = useRef<string[]>([value])
+  const histIdx          = useRef(0)
+  const isUndoRedo       = useRef(false)
+  const isInternalChange = useRef(false)   // set before every internal onChange call
+
+  // Reset history only when value changes externally (parent resets the form, etc.)
+  useEffect(() => {
+    if (isUndoRedo.current || isInternalChange.current) {
+      isUndoRedo.current       = false
+      isInternalChange.current = false
+      return
+    }
+    // Genuine external change — start fresh
+    history.current = [value]
+    histIdx.current = 0
+  }, [value])
+
+  const recordHistory = useCallback((newVal: string) => {
+    const slice = history.current.slice(0, histIdx.current + 1)
+    if (slice[slice.length - 1] === newVal) return
+    history.current = [...slice, newVal]
+    histIdx.current = history.current.length - 1
+  }, [])
+
+  const callOnChange = useCallback((newVal: string) => {
+    isInternalChange.current = true
+    recordHistory(newVal)
+    onChange(newVal)
+  }, [onChange, recordHistory])
+
+  const undo = useCallback(() => {
+    if (histIdx.current === 0) return
+    histIdx.current -= 1
+    isUndoRedo.current = true
+    onChange(history.current[histIdx.current])
+  }, [onChange])
+
+  const redo = useCallback(() => {
+    if (histIdx.current >= history.current.length - 1) return
+    histIdx.current += 1
+    isUndoRedo.current = true
+    onChange(history.current[histIdx.current])
+  }, [onChange])
+  // ───────────────────────────────────────────────────────────────────────────
 
   const wrapSelection = useCallback((marker: string) => {
     const ta = textareaRef.current
@@ -96,13 +144,13 @@ export function RichTextEditor({
     const end   = ta.selectionEnd
     const selected = ta.value.slice(start, end)
     const replacement = marker + selected + marker
-
-    onChange(ta.value.slice(0, start) + replacement + ta.value.slice(end))
+    const newVal = ta.value.slice(0, start) + replacement + ta.value.slice(end)
+    callOnChange(newVal)
     requestAnimationFrame(() => {
       ta.focus()
       ta.setSelectionRange(start + marker.length, start + marker.length + selected.length)
     })
-  }, [onChange])
+  }, [callOnChange])
 
   const applyList = useCallback((type: 'bullet' | 'numbered' | 'lettered') => {
     const ta = textareaRef.current
@@ -136,12 +184,13 @@ export function RichTextEditor({
     }
 
     const newSelected = newLines.join('\n')
-    onChange(ta.value.slice(0, lineStart) + newSelected + ta.value.slice(lineEnd))
+    const newVal = ta.value.slice(0, lineStart) + newSelected + ta.value.slice(lineEnd)
+    callOnChange(newVal)
     requestAnimationFrame(() => {
       ta.focus()
       ta.setSelectionRange(lineStart, lineStart + newSelected.length)
     })
-  }, [onChange])
+  }, [callOnChange])
 
   const handleBold      = useCallback(() => wrapSelection('**'), [wrapSelection])
   const handleItalic    = useCallback(() => wrapSelection('*'),  [wrapSelection])
@@ -153,10 +202,12 @@ export function RichTextEditor({
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     const meta = e.metaKey || e.ctrlKey
     if (!meta) return
+    if (e.key === 'z' && !e.shiftKey) { e.preventDefault(); undo(); return }
+    if ((e.key === 'z' && e.shiftKey) || e.key === 'y') { e.preventDefault(); redo(); return }
     if (e.key === 'b') { e.preventDefault(); handleBold() }
     if (e.key === 'i') { e.preventDefault(); handleItalic() }
     if (e.key === 'u') { e.preventDefault(); handleUnderline() }
-  }, [handleBold, handleItalic, handleUnderline])
+  }, [handleBold, handleItalic, handleUnderline, undo, redo])
 
   const handlePaste = useCallback((e: React.ClipboardEvent<HTMLTextAreaElement>) => {
     const html = e.clipboardData.getData('text/html')
@@ -169,12 +220,12 @@ export function RichTextEditor({
     const start = ta.selectionStart
     const end = ta.selectionEnd
     const newValue = ta.value.slice(0, start) + converted + ta.value.slice(end)
-    onChange(newValue)
+    callOnChange(newValue)
     requestAnimationFrame(() => {
       ta.focus()
       ta.setSelectionRange(start + converted.length, start + converted.length)
     })
-  }, [onChange])
+  }, [callOnChange])
 
   return (
     <div className={className}>
@@ -191,9 +242,9 @@ export function RichTextEditor({
         <span className="ml-auto text-xs text-dark-500 hidden sm:block">Zaznacz tekst → kliknij styl</span>
       </div>
       <textarea
-        ref={textareaRef}
+        ref={internalRef}
         value={value}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={(e) => callOnChange(e.target.value)}
         onKeyDown={handleKeyDown}
         onPaste={handlePaste}
         rows={rows}
@@ -202,4 +253,4 @@ export function RichTextEditor({
       />
     </div>
   )
-}
+})

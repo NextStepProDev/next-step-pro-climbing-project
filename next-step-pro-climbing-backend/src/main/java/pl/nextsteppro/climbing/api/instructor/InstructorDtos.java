@@ -1,6 +1,7 @@
 package pl.nextsteppro.climbing.api.instructor;
 
 import org.jspecify.annotations.Nullable;
+import pl.nextsteppro.climbing.domain.instructor.InstructorType;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -20,6 +21,8 @@ public class InstructorDtos {
             @Nullable String bio,
             @Nullable String certifications,
             @Nullable String badgeUrl,
+            InstructorType memberType,
+            @Nullable String profile8aUrl,
             Instant createdAt
     ) {}
 }
