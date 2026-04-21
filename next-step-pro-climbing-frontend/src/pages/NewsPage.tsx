@@ -6,6 +6,7 @@ import { Newspaper, Search, Star } from 'lucide-react'
 import { newsApi } from '../api/client'
 import { LoadingSpinner } from '../components/ui/LoadingSpinner'
 import { QueryError } from '../components/ui/QueryError'
+import { renderRichText } from '../utils/renderRichText'
 import { useAuth } from '../context/AuthContext'
 import clsx from 'clsx'
 
@@ -211,9 +212,8 @@ export function NewsPage() {
                       {article.title}
                     </h2>
                     {article.excerpt && (
-                      <p className="mt-2 text-sm text-dark-300 line-clamp-3">
-                        {article.excerpt}
-                      </p>
+                      <p className="mt-2 text-sm text-dark-300 line-clamp-3"
+                        dangerouslySetInnerHTML={{ __html: renderRichText(article.excerpt) }} />
                     )}
                   </div>
                 </Link>

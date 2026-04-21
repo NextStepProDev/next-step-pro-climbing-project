@@ -148,6 +148,28 @@ public class AdminInstructorController {
         return ResponseEntity.noContent().build();
     }
 
+    @Operation(summary = "Przesuń instruktora w górę")
+    @PostMapping("/{id}/move-up")
+    public ResponseEntity<List<InstructorAdminDto>> moveUp(
+            @Parameter(description = "ID instruktora") @PathVariable UUID id) {
+        return ResponseEntity.ok(adminInstructorService.moveUp(id));
+    }
+
+    @Operation(summary = "Przesuń instruktora w dół")
+    @PostMapping("/{id}/move-down")
+    public ResponseEntity<List<InstructorAdminDto>> moveDown(
+            @Parameter(description = "ID instruktora") @PathVariable UUID id) {
+        return ResponseEntity.ok(adminInstructorService.moveDown(id));
+    }
+
+    @Operation(summary = "Ustaw zdjęcie z zewnętrznego URL")
+    @PutMapping("/{id}/photo-url")
+    public ResponseEntity<InstructorAdminDto> setPhotoUrl(
+            @Parameter(description = "ID instruktora") @PathVariable UUID id,
+            @RequestBody SetPhotoUrlRequest request) {
+        return ResponseEntity.ok(adminInstructorService.setPhotoUrl(id, request.photoUrl()));
+    }
+
     @Operation(summary = "Ustaw naklejkę instruktora", description = "Ustawia lub usuwa naklejkę (badge) na zdjęciu instruktora")
     @PutMapping("/{id}/badge")
     public ResponseEntity<InstructorAdminDto> setBadge(

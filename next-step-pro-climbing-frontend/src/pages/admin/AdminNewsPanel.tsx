@@ -658,11 +658,10 @@ function EditView({
           </div>
           <div>
             <label className="block text-sm text-dark-300 mb-1">{t('news.excerptLabel')}</label>
-            <textarea
+            <RichTextEditor
               value={excerpt}
-              onChange={(e) => setExcerpt(e.target.value)}
+              onChange={setExcerpt}
               rows={3}
-              className="w-full bg-dark-700 border border-dark-600 rounded px-3 py-2 text-dark-100 focus:outline-none focus:border-primary-500 resize-none"
             />
           </div>
         </div>

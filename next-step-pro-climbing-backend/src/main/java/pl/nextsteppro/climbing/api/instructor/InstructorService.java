@@ -47,21 +47,26 @@ public class InstructorService {
                 instructor.getId(),
                 instructor.getFirstName(),
                 instructor.getLastName(),
-                buildPhotoUrl(instructor.getPhotoFilename()),
+                buildPhotoUrl(instructor),
                 instructor.getFocalPointX(),
                 instructor.getFocalPointY(),
                 instructor.getBio(),
                 instructor.getCertifications(),
                 instructor.getBadgeUrl(),
+                instructor.getMemberType(),
+                instructor.getProfile8aUrl(),
                 instructor.getCreatedAt()
         );
     }
 
     @Nullable
-    private String buildPhotoUrl(@Nullable String filename) {
-        if (filename == null) {
+    private String buildPhotoUrl(Instructor instructor) {
+        if (instructor.getPhotoExternalUrl() != null) {
+            return instructor.getPhotoExternalUrl();
+        }
+        if (instructor.getPhotoFilename() == null) {
             return null;
         }
-        return baseUrl + "/api/files/instructors/" + filename;
+        return baseUrl + "/api/files/instructors/" + instructor.getPhotoFilename();
     }
 }

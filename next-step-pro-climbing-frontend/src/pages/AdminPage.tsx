@@ -8,6 +8,7 @@ import { AdminUsersPanel } from './admin/AdminUsersPanel'
 import { AdminReservationsPanel } from './admin/AdminReservationsPanel'
 import { AdminActivityPanel } from './admin/AdminActivityPanel'
 import { AdminInstructorsPanel } from './admin/AdminInstructorsPanel'
+import { AdminCompetitorsPanel } from './admin/AdminCompetitorsPanel'
 import { AdminGalleryPanel } from './admin/AdminGalleryPanel'
 import { AdminVideosPanel } from './admin/AdminVideosPanel'
 import { AdminNewsPanel } from './admin/AdminNewsPanel'
@@ -23,6 +24,7 @@ const adminTabs = [
   { path: '/admin/news', labelKey: 'tabs.news', icon: Newspaper },
   { path: '/admin/courses', labelKey: 'tabs.courses', icon: BookOpen },
   { path: '/admin/instructors', labelKey: 'tabs.instructors', icon: User },
+  { path: '/admin/competitors', labelKey: 'tabs.competitors', icon: Users },
   { path: '/admin/gallery', labelKey: 'tabs.gallery', icon: Image },
   { path: '/admin/videos', labelKey: 'tabs.videos', icon: Video },
   { path: '/admin/assets', labelKey: 'tabs.assets', icon: Library },
@@ -76,6 +78,7 @@ export function AdminPage() {
         <Route path="reservations" element={<AdminReservationsPanel />} />
         <Route path="events" element={<AdminEventsPanel />} />
         <Route path="instructors" element={<AdminInstructorsPanel />} />
+        <Route path="competitors" element={<AdminCompetitorsPanel />} />
         <Route path="gallery" element={<AdminGalleryPanel />} />
         <Route path="videos" element={<AdminVideosPanel />} />
         <Route path="news" element={<AdminNewsPanel />} />

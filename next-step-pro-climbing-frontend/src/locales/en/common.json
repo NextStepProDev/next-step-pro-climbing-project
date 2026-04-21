@@ -4,7 +4,7 @@
     "calendar": "Calendar",
     "news": "News",
     "courses": "Courses",
-    "instructors": "Instructors",
+    "team": "Team",
     "gallery": "Gallery",
     "videos": "Videos",
     "media": "Media",
@@ -53,10 +53,13 @@
   "participants_few": "{{count}} participants",
   "participants_many": "{{count}} participants",
   "maxParticipants": "Max. {{count}} participants",
-  "instructors": {
-    "title": "Our Instructors",
-    "noInstructors": "No instructors to display",
+  "team": {
+    "title": "Team",
+    "instructors": "Instructors",
+    "competitors": "Competitors",
+    "noMembers": "No members to display",
     "certifications": "Certifications:",
+    "achievements": "Achievements:",
     "about": "About me:"
   },
   "gallery": {

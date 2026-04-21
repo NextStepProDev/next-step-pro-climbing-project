@@ -5,7 +5,7 @@ import { HomePage } from './pages/HomePage'
 import { CalendarPage } from './pages/CalendarPage'
 import { MyReservationsPage } from './pages/MyReservationsPage'
 import { EventPage } from './pages/EventPage'
-import { InstructorsPage } from './pages/InstructorsPage'
+import { TeamPage } from './pages/TeamPage'
 import { GalleryPage } from './pages/GalleryPage'
 import { AlbumPage } from './pages/AlbumPage'
 import { VideosPage } from './pages/VideosPage'
@@ -39,7 +39,8 @@ export default function App() {
           <Route index element={<HomePage />} />
           <Route path="calendar" element={<CalendarPage />} />
           <Route path="events/:eventId" element={<EventPage />} />
-          <Route path="instruktorzy" element={<InstructorsPage />} />
+          <Route path="team/instruktorzy" element={<TeamPage memberType="INSTRUCTOR" />} />
+          <Route path="team/zawodnicy" element={<TeamPage memberType="COMPETITOR" />} />
           <Route path="galeria" element={<GalleryPage />} />
           <Route path="galeria/:albumId" element={<AlbumPage />} />
           <Route path="filmy" element={<VideosPage />} />

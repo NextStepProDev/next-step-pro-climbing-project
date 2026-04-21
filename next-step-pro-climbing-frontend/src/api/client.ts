@@ -529,6 +529,15 @@ export const adminInstructorApi = {
     }),
   deleteBadge: (id: string) =>
     fetchApi<InstructorAdmin>(`/admin/instructors/${id}/badge`, { method: 'DELETE' }),
+  moveUp: (id: string) =>
+    fetchApi<InstructorAdmin[]>(`/admin/instructors/${id}/move-up`, { method: 'POST' }),
+  moveDown: (id: string) =>
+    fetchApi<InstructorAdmin[]>(`/admin/instructors/${id}/move-down`, { method: 'POST' }),
+  setPhotoUrl: (id: string, photoUrl: string | null) =>
+    fetchApi<InstructorAdmin>(`/admin/instructors/${id}/photo-url`, {
+      method: 'PUT',
+      body: JSON.stringify({ photoUrl }),
+    }),
 }
 
 // Admin Gallery
