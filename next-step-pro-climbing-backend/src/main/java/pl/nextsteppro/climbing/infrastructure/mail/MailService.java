@@ -783,6 +783,10 @@ public class MailService {
     }
 
     private String buildUserCancellationAdminBody(User user, TimeSlot slot) {
+        String titleLine = slot.getDisplayTitle() != null
+            ? "<p><strong>%s</strong> %s</p>".formatted(
+                msg.getForLang("email.admin.cancel.slot.label", ADMIN_LANG), slot.getDisplayTitle())
+            : "";
         return """
             <html>
             <body style="font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5;">
@@ -796,6 +800,7 @@ public class MailService {
                             <p><strong>%s</strong> %s</p>
                             <p><strong>%s</strong> %s</p>
                             <p><strong>%s</strong> %s</p>
+                            %s
                             <p><strong>%s</strong> %s</p>
                             <p><strong>%s</strong> %s - %s</p>
                         </div>
@@ -809,6 +814,7 @@ public class MailService {
             msg.getForLang("email.admin.client", ADMIN_LANG), user.getFullName(),
             msg.getForLang("email.admin.email", ADMIN_LANG), user.getEmail(),
             msg.getForLang("email.admin.phone", ADMIN_LANG), user.getPhone(),
+            titleLine,
             msg.getForLang("email.admin.date", ADMIN_LANG), slot.getDate().format(DATE_FORMAT),
             msg.getForLang("email.admin.time", ADMIN_LANG), slot.getStartTime().format(TIME_FORMAT), slot.getEndTime().format(TIME_FORMAT)
         );
