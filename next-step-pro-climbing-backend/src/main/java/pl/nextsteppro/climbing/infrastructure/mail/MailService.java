@@ -8,6 +8,7 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import pl.nextsteppro.climbing.config.AdminEmailConfig;
 import pl.nextsteppro.climbing.config.AppConfig;
 import pl.nextsteppro.climbing.domain.event.Event;
 import pl.nextsteppro.climbing.domain.reservation.Reservation;
@@ -16,6 +17,7 @@ import pl.nextsteppro.climbing.domain.user.User;
 import pl.nextsteppro.climbing.infrastructure.i18n.MessageService;
 import jakarta.annotation.PostConstruct;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 
 @Service
 public class MailService {
@@ -29,22 +31,23 @@ public class MailService {
 
     private final JavaMailSender mailSender;
     private final AppConfig appConfig;
+    private final AdminEmailConfig adminEmailConfig;
     private final MessageService msg;
     private final String siteUrl;
 
-    public MailService(JavaMailSender mailSender, AppConfig appConfig, MessageService msg) {
+    public MailService(JavaMailSender mailSender, AppConfig appConfig, AdminEmailConfig adminEmailConfig, MessageService msg) {
         this.mailSender = mailSender;
         this.appConfig = appConfig;
+        this.adminEmailConfig = adminEmailConfig;
         this.msg = msg;
         this.siteUrl = appConfig.getSiteUrl();
     }
 
     @PostConstruct
     void logMailConfiguration() {
-        String adminEmail = appConfig.getAdmin().getEmail();
         String fromEmail = appConfig.getMail().getFrom();
-        log.info("Mail configuration — admin notifications to: '{}', from: '{}'", adminEmail, fromEmail);
-        if (adminEmail == null || adminEmail.isBlank()) {
+        log.info("Mail configuration — admin notifications to: {}, from: '{}'", adminEmailConfig.getAdminEmails(), fromEmail);
+        if (adminEmailConfig.getAdminEmails().isEmpty()) {
             log.error("ADMIN_EMAIL is not configured! Admin notifications will NOT be sent.");
         }
     }
@@ -65,18 +68,11 @@ public class MailService {
 
     @Async("mailExecutor")
     public void sendAdminNotification(Reservation reservation) {
-        String adminEmail = resolveAdminEmail();
-        if (adminEmail == null) return;
-
-        log.info("Sending admin notification to: '{}' for reservation {}", adminEmail, reservation.getId());
-
         User user = reservation.getUser();
         TimeSlot slot = reservation.getTimeSlot();
-
         String subject = msg.getForLang("email.admin.new.reservation.subject", ADMIN_LANG, user.getFullName());
         String body = buildAdminNotificationBody(user, slot, reservation.getComment(), reservation.getParticipants());
-
-        sendEmail(adminEmail, subject, body, null);
+        sendToAdmins(subject, body);
     }
 
     @Async("mailExecutor")
@@ -106,15 +102,9 @@ public class MailService {
 
     @Async("mailExecutor")
     public void sendEventAdminNotification(User user, Event event, int participants) {
-        String adminEmail = resolveAdminEmail();
-        if (adminEmail == null) return;
-
-        log.info("Sending event admin notification to: '{}' for event {}", adminEmail, event.getId());
-
         String subject = msg.getForLang("email.admin.event.subject", ADMIN_LANG, user.getFullName());
         String body = buildEventAdminNotificationBody(user, event, participants);
-
-        sendEmail(adminEmail, subject, body, null);
+        sendToAdmins(subject, body);
     }
 
     @Async("mailExecutor")
@@ -140,35 +130,22 @@ public class MailService {
 
     @Async("mailExecutor")
     public void sendUserCancellationAdminNotification(Reservation reservation) {
-        String adminEmail = resolveAdminEmail();
-        if (adminEmail == null) return;
-
-        log.info("Sending user cancellation admin notification to: '{}'", adminEmail);
-
         User user = reservation.getUser();
         TimeSlot slot = reservation.getTimeSlot();
-
         String subject = msg.getForLang("email.user.cancel.admin.subject", ADMIN_LANG,
             user.getFullName(),
             slot.getDate().format(DATE_FORMAT),
             slot.getStartTime().format(TIME_FORMAT));
         String body = buildUserCancellationAdminBody(user, slot);
-
-        sendEmail(adminEmail, subject, body, null);
+        sendToAdmins(subject, body);
     }
 
     @Async("mailExecutor")
     public void sendUserEventCancellationAdminNotification(User user, Event event) {
-        String adminEmail = resolveAdminEmail();
-        if (adminEmail == null) return;
-
-        log.info("Sending user event cancellation admin notification to: '{}'", adminEmail);
-
         String subject = msg.getForLang("email.user.event.cancel.admin.subject", ADMIN_LANG,
             user.getFullName(), event.getTitle());
         String body = buildUserEventCancellationAdminBody(user, event);
-
-        sendEmail(adminEmail, subject, body, null);
+        sendToAdmins(subject, body);
     }
 
     @Async("mailExecutor")
@@ -182,18 +159,24 @@ public class MailService {
         sendEmail(user.getEmail(), subject, body, null);
     }
 
-    private @Nullable String resolveAdminEmail() {
-        String email = appConfig.getAdmin().getEmail();
-        if (email != null && !email.isBlank()) {
-            return email.trim();
+    private List<String> resolveAdminEmails() {
+        var emails = adminEmailConfig.getAdminEmails();
+        if (!emails.isEmpty()) {
+            return List.copyOf(emails);
         }
         String fallback = appConfig.getMail().getFrom();
         if (fallback != null && !fallback.isBlank()) {
             log.warn("ADMIN_EMAIL is empty, falling back to MAIL_FROM: '{}'", fallback);
-            return fallback.trim();
+            return List.of(fallback.trim());
         }
         log.error("Cannot send admin notification: no admin email configured (ADMIN_EMAIL and MAIL_FROM are both empty)");
-        return null;
+        return List.of();
+    }
+
+    private void sendToAdmins(String subject, String body) {
+        for (String adminEmail : resolveAdminEmails()) {
+            sendEmail(adminEmail, subject, body, null);
+        }
     }
 
     @Async("mailExecutor")

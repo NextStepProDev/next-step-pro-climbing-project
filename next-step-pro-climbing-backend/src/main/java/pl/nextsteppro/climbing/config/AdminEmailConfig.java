@@ -36,6 +36,10 @@ public class AdminEmailConfig {
         }
     }
 
+    public Set<String> getAdminEmails() {
+        return adminEmails;
+    }
+
     public boolean isAdminEmail(String email) {
         return email != null && adminEmails.contains(email.toLowerCase().trim());
     }
