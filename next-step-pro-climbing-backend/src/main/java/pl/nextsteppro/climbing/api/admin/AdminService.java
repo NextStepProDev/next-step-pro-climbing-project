@@ -207,8 +207,9 @@ public class AdminService {
             }
             if (!changes.isEmpty()) {
                 List<Reservation> confirmed = reservationRepository.findConfirmedByTimeSlotId(slot.getId());
+                String displayTitle = slot.getDisplayTitle();
                 for (Reservation reservation : confirmed) {
-                    mailService.sendAdminSlotModificationNotification(reservation.getUser(), slot, changes);
+                    mailService.sendAdminSlotModificationNotification(reservation.getUser(), slot, changes, displayTitle);
                 }
             }
         }
@@ -313,10 +314,11 @@ public class AdminService {
         }
 
         List<Reservation> confirmed = reservationRepository.findConfirmedByTimeSlotId(slotId);
+        String displayTitle = slot.getDisplayTitle();
         int notified = 0;
         for (Reservation reservation : confirmed) {
             if (reservation.getUser().isEmailNotificationsEnabled()) {
-                mailService.sendAdminSlotModificationNotification(reservation.getUser(), slot, changes);
+                mailService.sendAdminSlotModificationNotification(reservation.getUser(), slot, changes, displayTitle);
                 notified++;
             }
         }
@@ -1046,11 +1048,12 @@ public class AdminService {
             reservation = reservationRepository.save(reservation);
         }
 
+        String displayTitle = slot.getDisplayTitle();
         boolean slotInPast = LocalDateTime.now().isAfter(slot.getDate().atTime(slot.getStartTime()));
         if (!slotInPast) {
-            mailService.sendReservationConfirmation(reservation);
+            mailService.sendReservationConfirmation(reservation, displayTitle);
         }
-        mailService.sendAdminNotification(reservation);
+        mailService.sendAdminNotification(reservation, displayTitle);
         activityLogService.logReservationCreated(user, slot, request.participants());
     }
 

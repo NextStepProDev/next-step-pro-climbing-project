@@ -137,8 +137,8 @@ class ReservationServiceTest {
         assertEquals("Reservation confirmed", result.message());
 
         verify(reservationRepository).save(any(Reservation.class));
-        verify(mailService).sendReservationConfirmation(any(Reservation.class));
-        verify(mailService).sendAdminNotification(any(Reservation.class));
+        verify(mailService).sendReservationConfirmation(any(Reservation.class), any());
+        verify(mailService).sendAdminNotification(any(Reservation.class), any());
         verify(activityLogService).logReservationCreated(testUser, testSlot, 2);
     }
 

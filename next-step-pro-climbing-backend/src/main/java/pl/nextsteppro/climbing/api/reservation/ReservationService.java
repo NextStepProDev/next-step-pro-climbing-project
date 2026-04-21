@@ -121,8 +121,9 @@ public class ReservationService {
         }
         reservation = reservationRepository.save(reservation);
 
-        mailService.sendReservationConfirmation(reservation);
-        mailService.sendAdminNotification(reservation);
+        String displayTitle = slot.getDisplayTitle();
+        mailService.sendReservationConfirmation(reservation, displayTitle);
+        mailService.sendAdminNotification(reservation, displayTitle);
 
         if (isReactivation) {
             activityLogService.logReservationReactivated(user, slot, participants);
