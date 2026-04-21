@@ -53,7 +53,7 @@ public class MailService {
     }
 
     @Async("mailExecutor")
-    public void sendReservationConfirmation(Reservation reservation) {
+    public void sendReservationConfirmation(Reservation reservation, @Nullable String displayTitle) {
         User user = reservation.getUser();
         if (!user.isEmailNotificationsEnabled()) return;
 
@@ -61,17 +61,17 @@ public class MailService {
         TimeSlot slot = reservation.getTimeSlot();
 
         String subject = msg.getForLang("email.reservation.subject", lang);
-        String body = buildReservationConfirmationBody(lang, user, slot, reservation.getParticipants());
+        String body = buildReservationConfirmationBody(lang, user, slot, reservation.getParticipants(), displayTitle);
 
         sendEmail(user.getEmail(), subject, body, null);
     }
 
     @Async("mailExecutor")
-    public void sendAdminNotification(Reservation reservation) {
+    public void sendAdminNotification(Reservation reservation, @Nullable String displayTitle) {
         User user = reservation.getUser();
         TimeSlot slot = reservation.getTimeSlot();
         String subject = msg.getForLang("email.admin.new.reservation.subject", ADMIN_LANG, user.getFullName());
-        String body = buildAdminNotificationBody(user, slot, reservation.getComment(), reservation.getParticipants());
+        String body = buildAdminNotificationBody(user, slot, reservation.getComment(), reservation.getParticipants(), displayTitle);
         sendToAdmins(subject, body);
     }
 
@@ -242,11 +242,11 @@ public class MailService {
     }
 
     @Async("mailExecutor")
-    public void sendAdminSlotModificationNotification(User user, pl.nextsteppro.climbing.domain.timeslot.TimeSlot slot, java.util.List<FieldChange> changes) {
+    public void sendAdminSlotModificationNotification(User user, pl.nextsteppro.climbing.domain.timeslot.TimeSlot slot, java.util.List<FieldChange> changes, @Nullable String displayTitle) {
         if (!user.isEmailNotificationsEnabled()) return;
         String lang = user.getPreferredLanguage();
         String subject = msg.getForLang("email.slot.modified.subject", lang);
-        String body = buildSlotModificationBody(lang, user, slot, changes);
+        String body = buildSlotModificationBody(lang, user, slot, changes, displayTitle);
         sendEmail(user.getEmail(), subject, body, null);
     }
 
@@ -349,7 +349,11 @@ public class MailService {
         return sb.toString();
     }
 
-    private String buildSlotModificationBody(String lang, User user, pl.nextsteppro.climbing.domain.timeslot.TimeSlot slot, java.util.List<FieldChange> changes) {
+    private String buildSlotModificationBody(String lang, User user, pl.nextsteppro.climbing.domain.timeslot.TimeSlot slot, java.util.List<FieldChange> changes, @Nullable String displayTitle) {
+        String titleLine = displayTitle != null
+            ? "<p style=\"margin: 0 0 6px 0;\"><strong>%s</strong> %s</p>".formatted(
+                msg.getForLang("email.slot.title.label", lang), displayTitle)
+            : "";
         return """
             <html>
             <body style="font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5;">
@@ -361,6 +365,7 @@ public class MailService {
                         <h2 style="color: #312e2b; margin-top: 0;">%s</h2>
                         <p style="color: #333;">%s</p>
                         <div style="background: #eff6ff; border: 1px solid #bfdbfe; padding: 20px; border-radius: 8px;">
+                            %s
                             <p style="margin: 0 0 6px 0;"><strong>%s</strong> %s</p>
                             <p style="margin: 0 0 16px 0;"><strong>%s</strong> %s – %s</p>
                             <p style="margin: 0 0 12px 0; font-weight: bold; color: #1e40af;">%s</p>
@@ -376,6 +381,7 @@ public class MailService {
             siteUrl,
             msg.getForLang("email.slot.modified.greeting", lang, user.getFirstName()),
             msg.getForLang("email.slot.modified.body", lang),
+            titleLine,
             msg.getForLang("email.reservation.date", lang), slot.getDate().format(DATE_FORMAT),
             msg.getForLang("email.reservation.time", lang), slot.getStartTime().format(TIME_FORMAT), slot.getEndTime().format(TIME_FORMAT),
             msg.getForLang("email.slot.modified.changes.label", lang),
@@ -443,9 +449,13 @@ public class MailService {
         }
     }
 
-    private String buildReservationConfirmationBody(String lang, User user, TimeSlot slot, int participants) {
+    private String buildReservationConfirmationBody(String lang, User user, TimeSlot slot, int participants, @Nullable String displayTitle) {
         String participantsLine = "<p><strong>%s</strong> %d</p>".formatted(
             msg.getForLang("email.reservation.participants", lang), participants);
+        String titleLine = displayTitle != null
+            ? "<p><strong>%s</strong> %s</p>".formatted(
+                msg.getForLang("email.slot.title.label", lang), displayTitle)
+            : "";
         return """
             <html>
             <body style="font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5;">
@@ -457,6 +467,7 @@ public class MailService {
                         <h2 style="color: #312e2b; margin-top: 0;">%s</h2>
                         <p style="color: #333;">%s</p>
                         <div style="background: #252220; color: white; padding: 20px; border-radius: 8px;">
+                            %s
                             <p><strong>%s</strong> %s</p>
                             <p><strong>%s</strong> %s - %s</p>
                             %s
@@ -471,6 +482,7 @@ public class MailService {
             siteUrl,
             msg.getForLang("email.reservation.greeting", lang, user.getFirstName()),
             msg.getForLang("email.reservation.body", lang),
+            titleLine,
             msg.getForLang("email.reservation.date", lang),
             slot.getDate().format(DATE_FORMAT),
             msg.getForLang("email.reservation.time", lang),
@@ -482,12 +494,15 @@ public class MailService {
         );
     }
 
-    private String buildAdminNotificationBody(User user, TimeSlot slot, @Nullable String comment, int participants) {
+    private String buildAdminNotificationBody(User user, TimeSlot slot, @Nullable String comment, int participants, @Nullable String displayTitle) {
         String commentLine = (comment != null && !comment.isBlank())
             ? "<p><strong>%s</strong> %s</p>".formatted(msg.getForLang("email.admin.comment", ADMIN_LANG), comment)
             : "";
         String participantsLine = participants > 1
             ? "<p><strong>%s</strong> %d</p>".formatted(msg.getForLang("email.admin.participants", ADMIN_LANG), participants)
+            : "";
+        String titleLine = displayTitle != null
+            ? "<p><strong>%s</strong> %s</p>".formatted(msg.getForLang("email.slot.title.label", ADMIN_LANG), displayTitle)
             : "";
         return """
             <html>
@@ -502,6 +517,7 @@ public class MailService {
                             <p><strong>%s</strong> %s</p>
                             <p><strong>%s</strong> %s</p>
                             <p><strong>%s</strong> %s</p>
+                            %s
                             <p><strong>%s</strong> %s</p>
                             <p><strong>%s</strong> %s - %s</p>
                             %s
@@ -517,6 +533,7 @@ public class MailService {
             msg.getForLang("email.admin.client", ADMIN_LANG), user.getFullName(),
             msg.getForLang("email.admin.email", ADMIN_LANG), user.getEmail(),
             msg.getForLang("email.admin.phone", ADMIN_LANG), user.getPhone(),
+            titleLine,
             msg.getForLang("email.admin.date", ADMIN_LANG), slot.getDate().format(DATE_FORMAT),
             msg.getForLang("email.admin.time", ADMIN_LANG), slot.getStartTime().format(TIME_FORMAT), slot.getEndTime().format(TIME_FORMAT),
             participantsLine,
