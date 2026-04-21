@@ -123,7 +123,7 @@ function MemberModal({
         </button>
 
         {/* photo header */}
-        <div className="relative h-72 w-full overflow-hidden rounded-t-2xl bg-dark-800">
+        <div className="relative h-[36rem] w-full overflow-hidden rounded-t-2xl bg-dark-800">
           {member.photoUrl ? (
             <img
               src={member.photoUrl}
@@ -140,7 +140,7 @@ function MemberModal({
               <User className="h-24 w-24 text-dark-500" />
             </div>
           )}
-          <div className="absolute inset-0 bg-gradient-to-t from-dark-900/90 via-dark-900/20 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-dark-900 via-dark-900/60 to-transparent" />
 
           {/* badge */}
           {member.badgeUrl && (
