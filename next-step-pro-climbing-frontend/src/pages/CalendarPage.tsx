@@ -241,7 +241,6 @@ export function CalendarPage() {
   }, [moveSlotMutation]);
 
   const handleNotifyParticipants = useCallback((slotId: string) => {
-    if (!lastSlotMoveRef.current.has(slotId)) return;
     notifyParticipantsMutation.mutate(slotId);
   }, [notifyParticipantsMutation]);
 
