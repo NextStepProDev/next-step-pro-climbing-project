@@ -6,7 +6,7 @@ import { instructorApi } from '../api/client'
 import { LoadingSpinner } from '../components/ui/LoadingSpinner'
 import { QueryError } from '../components/ui/QueryError'
 import { renderRichText } from '../utils/renderRichText'
-import { deserializeBio } from '../components/ui/BioBlockEditor'
+import { deserializeBio } from '../components/ui/bioBlocks'
 import type { InstructorPublic, InstructorType } from '../types'
 
 function renderBio(bio: string) {

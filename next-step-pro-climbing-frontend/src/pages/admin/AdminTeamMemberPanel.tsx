@@ -12,8 +12,9 @@ import { QueryError } from '../../components/ui/QueryError'
 import { FocalPointEditor } from '../../components/ui/FocalPointEditor'
 import { MediaPickerModal } from '../../components/ui/MediaPickerModal'
 import { GalleryPickerModal } from '../../components/ui/GalleryPickerModal'
-import { BioBlockEditor, deserializeBio, serializeBio } from '../../components/ui/BioBlockEditor'
-import type { BioBlock } from '../../components/ui/BioBlockEditor'
+import { BioBlockEditor } from '../../components/ui/BioBlockEditor'
+import { deserializeBio, serializeBio } from '../../components/ui/bioBlocks'
+import type { BioBlock } from '../../components/ui/bioBlocks'
 
 // ─── Certifications list editor ───────────────────────────────────────────────
 
