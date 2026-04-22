@@ -9,26 +9,61 @@ import {
   CalendarCheck,
   UserPlus,
 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import clsx from "clsx";
 import { Button } from "../components/ui/Button";
 import { CurrentLocationSection } from "../components/ui/CurrentLocationSection";
+import { siteSettingsApi } from "../api/client";
 import logoWhite from "../assets/logo/logo-white.png";
 import logoBlack from "../assets/logo/logo-black.png";
 
 export function HomePage() {
   const { t } = useTranslation("home");
 
+  const { data: heroData } = useQuery({
+    queryKey: ["heroImage"],
+    queryFn: siteSettingsApi.getHero,
+    staleTime: 30 * 60 * 1000,
+  });
+  const heroImageUrl = heroData?.imageUrl ?? null;
+
   return (
     <div>
       {/* Hero Section */}
-      <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary-900/20 via-dark-950 to-dark-950" />
-        <img
-          src={logoBlack}
-          alt=""
-          aria-hidden="true"
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] sm:w-[800px] lg:w-[1000px] opacity-[0.04] pointer-events-none select-none"
+      <section className="relative overflow-hidden min-h-[70vh] flex flex-col justify-center">
+        {/* Background image (when set) */}
+        {heroImageUrl && (
+          <img
+            src={heroImageUrl}
+            alt=""
+            aria-hidden="true"
+            className="absolute inset-0 w-full h-full object-cover"
+            style={{
+              objectPosition: heroData?.focalPointX != null
+                ? `${(heroData.focalPointX * 100).toFixed(1)}% ${((heroData.focalPointY ?? 0.5) * 100).toFixed(1)}%`
+                : 'center center',
+            }}
+          />
+        )}
+        {/* Gradient overlay — subtle at top, stronger at bottom to blend into page */}
+        <div
+          className={clsx(
+            "absolute inset-0",
+            heroImageUrl
+              ? "bg-gradient-to-b from-dark-950/40 via-dark-950/55 to-dark-950"
+              : "bg-gradient-to-br from-primary-900/20 via-dark-950 to-dark-950"
+          )}
         />
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 sm:py-32">
+        {/* Watermark logo — only shown without hero image */}
+        {!heroImageUrl && (
+          <img
+            src={logoBlack}
+            alt=""
+            aria-hidden="true"
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] sm:w-[800px] lg:w-[1000px] opacity-[0.04] pointer-events-none select-none"
+          />
+        )}
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 sm:py-32">
           <div className="text-center max-w-3xl mx-auto">
             {/* === ANDALUSIA BADGE — zakomentuj ten blok aby usunąć === */}
             <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-amber-500/10 border border-amber-500/30 rounded-full text-amber-400 text-sm font-medium mb-6">

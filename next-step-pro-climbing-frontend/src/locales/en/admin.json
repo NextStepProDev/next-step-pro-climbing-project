@@ -15,7 +15,29 @@
     "activity": "Activity",
     "assets": "Media library",
     "mail": "Send email",
-    "storage": "Storage"
+    "storage": "Storage",
+    "site": "Homepage"
+  },
+  "site": {
+    "title": "Homepage settings",
+    "subtitle": "Manage the appearance of the homepage.",
+    "heroTitle": "Hero section background image",
+    "heroDescription": "Image displayed as the background of the homepage hero section. The bottom of the image fades into the dark page color. Landscape format recommended. Max 10 MB, JPEG/PNG/WebP.",
+    "noHeroImage": "No image set — default gradient is used",
+    "heroImageAlt": "Homepage hero background image",
+    "loading": "Loading...",
+    "uploadFromDisk": "Upload from disk",
+    "uploading": "Uploading...",
+    "pickFromLibrary": "Pick from library",
+    "pickFromGallery": "Pick from gallery",
+    "deleteHeroImage": "Remove image",
+    "focalPointHint": "Drag the image to set the focal point visible in the homepage hero section.",
+    "unsavedChanges": "Unsaved changes",
+    "save": "Save",
+    "saving": "Saving...",
+    "cancel": "Cancel",
+    "deleteConfirmTitle": "Remove background image",
+    "deleteConfirmMessage": "The image will be removed and the homepage will return to the default gradient. This cannot be undone."
   },
   "news": {
     "title": "News",

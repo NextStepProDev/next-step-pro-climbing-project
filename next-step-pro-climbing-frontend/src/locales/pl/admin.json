@@ -15,7 +15,29 @@
     "activity": "Aktywność",
     "assets": "Biblioteka mediów",
     "mail": "Wyślij mail",
-    "storage": "Storage"
+    "storage": "Storage",
+    "site": "Strona główna"
+  },
+  "site": {
+    "title": "Ustawienia strony głównej",
+    "subtitle": "Zarządzaj wyglądem strony głównej.",
+    "heroTitle": "Zdjęcie tła sekcji hero",
+    "heroDescription": "Zdjęcie wyświetlane jako tło górnej sekcji strony głównej. Dół zdjęcia płynnie przechodzi w ciemny kolor strony. Zalecany format poziomy (panoramiczny). Maks. 10 MB, JPEG/PNG/WebP.",
+    "noHeroImage": "Brak zdjęcia — używany jest domyślny gradient",
+    "heroImageAlt": "Zdjęcie tła strony głównej",
+    "loading": "Ładowanie...",
+    "uploadFromDisk": "Wgraj z dysku",
+    "uploading": "Wgrywanie...",
+    "pickFromLibrary": "Wybierz z biblioteki",
+    "pickFromGallery": "Wybierz z galerii",
+    "deleteHeroImage": "Usuń zdjęcie",
+    "focalPointHint": "Przeciągnij zdjęcie aby ustawić punkt centrum kadru widoczny na stronie głównej.",
+    "unsavedChanges": "Niezapisane zmiany",
+    "save": "Zapisz",
+    "saving": "Zapisywanie...",
+    "cancel": "Anuluj",
+    "deleteConfirmTitle": "Usuń zdjęcie tła",
+    "deleteConfirmMessage": "Zdjęcie zostanie usunięte, a strona główna wróci do domyślnego gradientu. Tej operacji nie można cofnąć."
   },
   "news": {
     "title": "Aktualności",
