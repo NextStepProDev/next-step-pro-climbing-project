@@ -22,13 +22,14 @@ export function AdminSitePanel() {
   const [showGalleryPicker, setShowGalleryPicker] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
-  // Staged state — not saved to backend yet
+  // Staged URL/file — not saved to backend yet
   const [pendingFile, setPendingFile] = useState<File | null>(null)
   const [pendingUrl, setPendingUrl] = useState<string | null>(null)
   const [localPreviewUrl, setLocalPreviewUrl] = useState<string | null>(null)
 
-  // Focal point — always editable; initialized from saved data
-  const [focalPoint, setFocalPoint] = useState<FocalPoint>(DEFAULT_FOCAL)
+  // Focal point override: null = use server value, non-null = user is editing
+  // This avoids setState-in-effect by deriving the displayed value directly.
+  const [focalOverride, setFocalOverride] = useState<FocalPoint | null>(null)
 
   const [saveError, setSaveError] = useState<string | null>(null)
 
@@ -37,17 +38,7 @@ export function AdminSitePanel() {
     queryFn: adminSiteApi.getHero,
   })
 
-  // Sync focal point with saved data when query loads (and when pending is cleared)
-  useEffect(() => {
-    if (pendingFile === null && pendingUrl === null && hero) {
-      setFocalPoint({
-        x: hero.focalPointX ?? 0.5,
-        y: hero.focalPointY ?? 0.5,
-      })
-    }
-  }, [hero, pendingFile, pendingUrl])
-
-  // Cleanup object URL on unmount or when pendingFile changes
+  // Cleanup object URL when localPreviewUrl changes or on unmount
   useEffect(() => {
     return () => {
       if (localPreviewUrl) URL.revokeObjectURL(localPreviewUrl)
@@ -66,6 +57,21 @@ export function AdminSitePanel() {
     setLocalPreviewUrl(null)
   }
 
+  // Derived focal point: override wins; falls back to server value
+  const focalPoint: FocalPoint = focalOverride ?? {
+    x: hero?.focalPointX ?? 0.5,
+    y: hero?.focalPointY ?? 0.5,
+  }
+
+  const hasPending = pendingFile !== null || pendingUrl !== null
+
+  const isFocalPointDirty = !hasPending
+    && focalOverride !== null
+    && (focalOverride.x !== (hero?.focalPointX ?? 0.5)
+      || focalOverride.y !== (hero?.focalPointY ?? 0.5))
+
+  const canSave = hasPending || isFocalPointDirty
+
   const saveMutation = useMutation({
     mutationFn: async () => {
       if (pendingFile) {
@@ -79,6 +85,7 @@ export function AdminSitePanel() {
     onSuccess: () => {
       setSaveError(null)
       clearPending()
+      setFocalOverride(null)
       invalidate()
     },
     onError: (e: Error) => setSaveError(e.message),
@@ -89,7 +96,7 @@ export function AdminSitePanel() {
     onSuccess: () => {
       setShowDeleteConfirm(false)
       clearPending()
-      setFocalPoint(DEFAULT_FOCAL)
+      setFocalOverride(null)
       invalidate()
     },
   })
@@ -102,7 +109,7 @@ export function AdminSitePanel() {
     setPendingFile(file)
     setPendingUrl(null)
     setLocalPreviewUrl(objectUrl)
-    setFocalPoint(DEFAULT_FOCAL)
+    setFocalOverride(DEFAULT_FOCAL)
     e.target.value = ''
   }
 
@@ -112,7 +119,7 @@ export function AdminSitePanel() {
     setPendingFile(null)
     setPendingUrl(asset.url)
     setLocalPreviewUrl(null)
-    setFocalPoint(DEFAULT_FOCAL)
+    setFocalOverride(DEFAULT_FOCAL)
   }
 
   const handleGallerySelect = (photoUrl: string) => {
@@ -120,27 +127,17 @@ export function AdminSitePanel() {
     setPendingFile(null)
     setPendingUrl(photoUrl)
     setLocalPreviewUrl(null)
-    setFocalPoint(DEFAULT_FOCAL)
+    setFocalOverride(DEFAULT_FOCAL)
   }
 
   const handleCancel = () => {
     clearPending()
     setSaveError(null)
-    setFocalPoint({
-      x: hero?.focalPointX ?? 0.5,
-      y: hero?.focalPointY ?? 0.5,
-    })
+    setFocalOverride(null)
   }
 
-  const hasPending = pendingFile !== null || pendingUrl !== null
   const savedImageUrl = hero?.imageUrl ?? null
   const displayUrl = localPreviewUrl ?? pendingUrl ?? savedImageUrl
-
-  const isFocalPointDirty = !hasPending && (
-    focalPoint.x !== (hero?.focalPointX ?? 0.5) ||
-    focalPoint.y !== (hero?.focalPointY ?? 0.5)
-  )
-  const canSave = hasPending || isFocalPointDirty
   const isBusy = saveMutation.isPending || deleteMutation.isPending
 
   return (
@@ -181,7 +178,7 @@ export function AdminSitePanel() {
             <FocalPointEditor
               imageUrl={displayUrl}
               value={focalPoint}
-              onChange={setFocalPoint}
+              onChange={setFocalOverride}
               aspectRatio="21/9"
               className="w-full"
             />
@@ -199,7 +196,7 @@ export function AdminSitePanel() {
           <p className="text-red-400 text-sm">{saveError}</p>
         )}
 
-        {/* Save / Cancel row (visible when there are changes) */}
+        {/* Save / Cancel row */}
         {canSave && (
           <div className="flex gap-3">
             <Button onClick={() => saveMutation.mutate()} disabled={isBusy}>
