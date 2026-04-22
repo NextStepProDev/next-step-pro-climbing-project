@@ -237,10 +237,10 @@ export function AdminTeamMemberPanel({ memberType }: Props) {
       ) : (
         <div className="space-y-4">
           {members.map((member, idx) => (
-            <div key={member.id} className="bg-dark-800 rounded-lg p-6 border border-dark-700">
-              <div className="flex gap-6">
+            <div key={member.id} className="bg-dark-800 rounded-lg p-4 sm:p-6 border border-dark-700 overflow-hidden">
+              <div className="flex items-start gap-3 sm:gap-6">
                 {/* Arrows */}
-                <div className="flex flex-col items-center justify-center gap-1 shrink-0">
+                <div className="hidden sm:flex flex-col items-center justify-center gap-1 shrink-0">
                   <button onClick={() => moveUpMutation.mutate(member.id)}
                     disabled={idx === 0 || moveUpMutation.isPending || moveDownMutation.isPending}
                     className="p-1 rounded text-dark-400 hover:text-dark-100 hover:bg-dark-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
@@ -258,19 +258,19 @@ export function AdminTeamMemberPanel({ memberType }: Props) {
                   <div className="relative group">
                     {member.photoUrl ? (
                       <img src={member.photoUrl} alt={member.firstName}
-                        className="w-32 h-32 rounded-full object-cover border-2 border-primary-500/20"
+                        className="w-14 h-14 sm:w-32 sm:h-32 rounded-full object-cover border-2 border-primary-500/20"
                         style={member.focalPointX != null ? { objectPosition: `${member.focalPointX * 100}% ${(member.focalPointY ?? 0.5) * 100}%` } : undefined} />
                     ) : (
-                      <div className="w-32 h-32 rounded-full bg-dark-700 border-2 border-dark-600 flex items-center justify-center">
-                        <User className="h-16 w-16 text-dark-400" />
+                      <div className="w-14 h-14 sm:w-32 sm:h-32 rounded-full bg-dark-700 border-2 border-dark-600 flex items-center justify-center">
+                        <User className="h-7 w-7 sm:h-16 sm:w-16 text-dark-400" />
                       </div>
                     )}
                     {isInstructor && member.badgeUrl && (
-                      <img src={member.badgeUrl} alt="badge" className="absolute bottom-0 right-0 w-7 h-7 rounded-full object-contain drop-shadow" />
+                      <img src={member.badgeUrl} alt="badge" className="absolute bottom-0 right-0 w-4 h-4 sm:w-7 sm:h-7 rounded-full object-contain drop-shadow" />
                     )}
                     <button onClick={() => { setSelectedMember(member); setUploadPhotoModalOpen(true) }}
                       className="absolute inset-0 bg-black/60 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Upload className="h-6 w-6 text-white" />
+                      <Upload className="h-4 w-4 sm:h-6 sm:w-6 text-white" />
                     </button>
                   </div>
 
@@ -295,15 +295,25 @@ export function AdminTeamMemberPanel({ memberType }: Props) {
                 </div>
 
                 {/* Info */}
-                <div className="flex-1 space-y-3">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <h3 className="text-xl font-bold text-dark-100">{member.firstName} {member.lastName}</h3>
+                <div className="flex-1 min-w-0 space-y-3">
+                  <div className="flex items-start justify-between gap-2 flex-wrap">
+                    <div className="min-w-0">
+                      <h3 className="text-base sm:text-xl font-bold text-dark-100">{member.firstName} {member.lastName}</h3>
                       <span className={`text-sm ${member.active ? 'text-green-400' : 'text-rose-400'}`}>
                         {member.active ? '✓ Aktywny' : '✕ Nieaktywny'}
                       </span>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex items-center gap-1 shrink-0">
+                      <button onClick={() => moveUpMutation.mutate(member.id)}
+                        disabled={idx === 0 || moveUpMutation.isPending || moveDownMutation.isPending}
+                        className="sm:hidden p-1 rounded text-dark-400 hover:text-dark-100 hover:bg-dark-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
+                        <ChevronUp className="w-4 h-4" />
+                      </button>
+                      <button onClick={() => moveDownMutation.mutate(member.id)}
+                        disabled={idx === members.length - 1 || moveUpMutation.isPending || moveDownMutation.isPending}
+                        className="sm:hidden p-1 rounded text-dark-400 hover:text-dark-100 hover:bg-dark-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
+                        <ChevronDown className="w-4 h-4" />
+                      </button>
                       <Button variant="ghost" size="sm" onClick={() => {
                         setSelectedMember(member)
                         setFocalPoint({ x: member.focalPointX ?? 0.5, y: member.focalPointY ?? 0.5 })
