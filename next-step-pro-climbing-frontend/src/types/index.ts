@@ -741,3 +741,10 @@ export interface UpdateVideoRequest {
   content?: string
   youtubeUrl?: string
 }
+
+// Site Settings
+export interface HeroImageDto {
+  imageUrl: string | null
+  focalPointX: number | null
+  focalPointY: number | null
+}

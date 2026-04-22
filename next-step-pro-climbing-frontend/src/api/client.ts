@@ -61,6 +61,7 @@ import type {
   VideoAdmin,
   CreateVideoRequest,
   UpdateVideoRequest,
+  HeroImageDto,
 } from '../types'
 import {
   getAccessToken,
@@ -941,4 +942,52 @@ export const adminVideoApi = {
     fetchApi<VideoAdmin[]>(`/admin/videos/${id}/move-up`, { method: 'POST' }),
   moveDown: (id: string) =>
     fetchApi<VideoAdmin[]>(`/admin/videos/${id}/move-down`, { method: 'POST' }),
+}
+
+// Site Settings (public)
+export const siteSettingsApi = {
+  getHero: () => fetchApi<HeroImageDto>('/settings/hero'),
+}
+
+// Admin Site Settings
+export const adminSiteApi = {
+  getHero: () => fetchApi<HeroImageDto>('/admin/settings/hero'),
+
+  uploadHeroImage: async (file: File, focalPointX?: number, focalPointY?: number): Promise<HeroImageDto> => {
+    const token = await ensureValidToken()
+    const formData = new FormData()
+    formData.append('file', file)
+    if (focalPointX != null) formData.append('focalPointX', String(focalPointX))
+    if (focalPointY != null) formData.append('focalPointY', String(focalPointY))
+    const headers: Record<string, string> = { 'Accept-Language': i18n.language }
+    if (token) headers['Authorization'] = `Bearer ${token}`
+
+    const response = await fetch(`${API_BASE}/admin/settings/hero`, {
+      method: 'POST',
+      headers,
+      body: formData,
+    })
+
+    if (!response.ok) {
+      const body = await response.json().catch(() => null)
+      throw new Error(body?.message || i18n.t('uploadFailed', { ns: 'errors' }))
+    }
+
+    return response.json()
+  },
+
+  setHeroImageUrl: (url: string, focalPointX?: number, focalPointY?: number) =>
+    fetchApi<HeroImageDto>('/admin/settings/hero/url', {
+      method: 'PUT',
+      body: JSON.stringify({ url, focalPointX: focalPointX ?? null, focalPointY: focalPointY ?? null }),
+    }),
+
+  setFocalPoint: (x: number, y: number) =>
+    fetchApi<HeroImageDto>('/admin/settings/hero/focal-point', {
+      method: 'PUT',
+      body: JSON.stringify({ x, y }),
+    }),
+
+  deleteHeroImage: () =>
+    fetchApi<void>('/admin/settings/hero', { method: 'DELETE' }),
 }

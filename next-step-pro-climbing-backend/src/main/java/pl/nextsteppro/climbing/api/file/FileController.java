@@ -86,6 +86,17 @@ public class FileController {
         return serveFile(filename, "assets");
     }
 
+    @Operation(summary = "Pobierz plik ustawień witryny (np. zdjęcie hero strony głównej)")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Plik znaleziony"),
+        @ApiResponse(responseCode = "404", description = "Plik nie istnieje")
+    })
+    @GetMapping("/site/{filename}")
+    public ResponseEntity<Resource> getSiteFile(
+            @Parameter(description = "Nazwa pliku") @PathVariable String filename) throws IOException {
+        return serveFile(filename, "site");
+    }
+
     private ResponseEntity<Resource> serveFile(String filename, String folder) throws IOException {
         if (!fileStorageService.exists(filename, folder)) {
             return ResponseEntity.notFound().build();

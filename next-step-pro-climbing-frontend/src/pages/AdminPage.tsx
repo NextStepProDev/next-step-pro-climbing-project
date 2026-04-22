@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next'
 import { Routes, Route, Link, useLocation } from 'react-router-dom'
-import { Calendar, Users, Clock, ClipboardList, Activity, User, Image, Newspaper, BookOpen, Library, Mail, HardDrive, Video } from 'lucide-react'
+import { Calendar, Users, Clock, ClipboardList, Activity, User, Image, Newspaper, BookOpen, Library, Mail, HardDrive, Video, Home } from 'lucide-react'
 import clsx from 'clsx'
 import { AdminSlotsPanel } from './admin/AdminSlotsPanel'
 import { AdminEventsPanel } from './admin/AdminEventsPanel'
@@ -16,6 +16,7 @@ import { AdminCoursesPanel } from './admin/AdminCoursesPanel'
 import { AdminAssetsPanel } from './admin/AdminAssetsPanel'
 import { AdminMailPanel } from './admin/AdminMailPanel'
 import { AdminStoragePanel } from './admin/AdminStoragePanel'
+import { AdminSitePanel } from './admin/AdminSitePanel'
 
 const adminTabs = [
   { path: '/admin', labelKey: 'tabs.slots', icon: Clock },
@@ -32,6 +33,7 @@ const adminTabs = [
   { path: '/admin/mail', labelKey: 'tabs.mail', icon: Mail },
   { path: '/admin/activity', labelKey: 'tabs.activity', icon: Activity },
   { path: '/admin/storage', labelKey: 'tabs.storage', icon: HardDrive },
+  { path: '/admin/site', labelKey: 'tabs.site', icon: Home },
 ]
 
 export function AdminPage() {
@@ -88,6 +90,7 @@ export function AdminPage() {
         <Route path="mail" element={<AdminMailPanel />} />
         <Route path="activity" element={<AdminActivityPanel />} />
         <Route path="storage" element={<AdminStoragePanel />} />
+        <Route path="site" element={<AdminSitePanel />} />
       </Routes>
     </div>
   )

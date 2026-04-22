@@ -28,7 +28,9 @@ public class CacheConfig {
             build("newsDetail",    100, 30),
             build("courseList",     50, 30),
             build("courseDetail",  100, 60),
-            build("videoList",      50, 30)
+            build("videoList",      50, 30),
+            // Site settings: long TTL — hero image changes rarely
+            build("siteSettings",   10, 30)
         ));
         return manager;
     }
