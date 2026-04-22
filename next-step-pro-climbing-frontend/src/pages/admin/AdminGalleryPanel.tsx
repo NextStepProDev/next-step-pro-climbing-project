@@ -265,12 +265,12 @@ export function AdminGalleryPanel() {
               className="bg-dark-800 rounded-lg border border-dark-700 overflow-hidden"
             >
               {/* Album Header */}
-              <div className="p-6">
-                <div className="flex items-start gap-6">
+              <div className="p-4 sm:p-6">
+                <div className="flex flex-col sm:flex-row gap-4 sm:gap-6">
                   {/* Thumbnail */}
-                  <div className="flex-shrink-0">
+                  <div className="flex-shrink-0 w-full sm:w-auto">
                     {album.thumbnailUrl ? (
-                      <div className="w-32 h-24 rounded-lg overflow-hidden relative bg-dark-700">
+                      <div className="w-full h-40 sm:w-32 sm:h-24 rounded-lg overflow-hidden relative bg-dark-700">
                         <img
                           src={album.thumbnailUrl}
                           alt=""
@@ -285,17 +285,17 @@ export function AdminGalleryPanel() {
                         />
                       </div>
                     ) : (
-                      <div className="w-32 h-24 bg-dark-700 rounded-lg flex items-center justify-center">
+                      <div className="w-full h-40 sm:w-32 sm:h-24 bg-dark-700 rounded-lg flex items-center justify-center">
                         <ImageIcon className="h-8 w-8 text-dark-500" />
                       </div>
                     )}
                   </div>
 
                   {/* Info */}
-                  <div className="flex-1">
-                    <div className="flex items-start justify-between">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-col gap-3">
                       <div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <h3 className="text-xl font-bold text-dark-100">{album.name}</h3>
                           {album.published ? (
                             <span className="flex items-center gap-1 text-xs text-emerald-400 font-medium">
@@ -316,7 +316,7 @@ export function AdminGalleryPanel() {
                           <p className="text-dark-300 mt-2 text-sm">{album.description}</p>
                         )}
                       </div>
-                      <div className="flex gap-2">
+                      <div className="flex flex-wrap gap-1.5">
                         <Button
                           variant="ghost"
                           size="sm"
@@ -395,7 +395,7 @@ export function AdminGalleryPanel() {
               {/* Expanded Photos */}
               {expandedAlbumId === album.id && albumDetail && (
                 <div className="border-t border-dark-700 p-6 bg-dark-900/50">
-                  <div className="flex items-center justify-between mb-4">
+                  <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
                     <h4 className="font-semibold text-dark-100">Zdjęcia w albumie</h4>
                     <div className="flex gap-2">
                       {albumDetail.photos.length > 0 && (
