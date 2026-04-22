@@ -225,7 +225,8 @@ export function CalendarPage() {
       });
       return null;
     });
-  }, []);
+    notifyParticipantsMutation.mutate(slotId);
+  }, [notifyParticipantsMutation]);
 
   const handleCancelSlotMove = useCallback((slotId: string) => {
     setPendingSlotMove(prev => {
