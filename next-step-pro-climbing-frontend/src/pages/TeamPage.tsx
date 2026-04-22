@@ -124,7 +124,7 @@ function MemberModal({
         </button>
 
         {/* photo header */}
-        <div className="relative h-[36rem] w-full overflow-hidden rounded-t-2xl bg-dark-800">
+        <div className="relative h-[28rem] md:h-[32rem] w-full overflow-hidden rounded-t-2xl bg-dark-800">
           {member.photoUrl ? (
             <img
               src={member.photoUrl}
