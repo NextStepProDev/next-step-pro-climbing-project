@@ -431,7 +431,15 @@ export function AdminGalleryPanel() {
                   ) : (
                     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
                       {albumDetail.photos.map((photo) => (
-                        <div key={photo.id} className="group relative bg-dark-700 rounded-lg overflow-hidden aspect-square">
+                        <div
+                          key={photo.id}
+                          className="group relative bg-dark-700 rounded-lg overflow-hidden aspect-square cursor-pointer"
+                          onClick={() => {
+                            setSelectedPhoto({ id: photo.id, caption: photo.caption, url: photo.url, focalPointX: photo.focalPointX, focalPointY: photo.focalPointY })
+                            setFocalPoint({ x: photo.focalPointX ?? 0.5, y: photo.focalPointY ?? 0.5 })
+                            setEditPhotoModalOpen(true)
+                          }}
+                        >
                           <img
                             src={photo.url}
                             alt=""
@@ -457,7 +465,7 @@ export function AdminGalleryPanel() {
                               <Star className="h-3 w-3 text-dark-900" fill="currentColor" />
                             </div>
                           )}
-                          <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                          <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2" onClick={(e) => e.stopPropagation()}>
                             {/* Set as thumbnail */}
                             <Button
                               variant="ghost"
@@ -752,6 +760,19 @@ export function AdminGalleryPanel() {
                 aspectRatio="1/1"
               />
             </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                setEditPhotoModalOpen(false)
+                if (selectedPhoto) setSelectedPhotoId(selectedPhoto.id)
+                setDeletePhotoConfirmOpen(true)
+              }}
+              className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-red-600/20 hover:bg-red-600/40 text-red-400 rounded-lg transition-colors text-sm"
+            >
+              <Trash2 className="w-4 h-4" />
+              Usuń zdjęcie
+            </button>
 
             <div className="flex gap-2 justify-end">
               <Button
