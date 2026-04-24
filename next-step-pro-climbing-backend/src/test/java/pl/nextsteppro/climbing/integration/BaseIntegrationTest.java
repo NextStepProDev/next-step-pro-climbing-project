@@ -2,6 +2,8 @@ package pl.nextsteppro.climbing.integration;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -25,6 +27,9 @@ import pl.nextsteppro.climbing.domain.user.UserRepository;
 @ActiveProfiles("test")
 @Transactional
 public abstract class BaseIntegrationTest {
+
+    @MockitoBean
+    JavaMailSender javaMailSender;
 
     // Singleton pattern: one container for the entire JVM, shared across all subclasses.
     // @Testcontainers + @Container would stop the container after each test class finishes,
