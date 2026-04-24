@@ -327,9 +327,12 @@ public class AdminService {
 
     @Transactional(readOnly = true)
     public List<TimeSlotAdminDto> getUpcomingSlots(LocalDate from) {
+        LocalDate today = LocalDate.now();
+        LocalTime now = LocalTime.now();
         LocalDate to = from.plusDays(90);
         List<TimeSlot> slots = timeSlotRepository.findByDateRangeOrdered(from, to).stream()
             .filter(slot -> !slot.belongsToEvent())
+            .filter(slot -> slot.getDate().isAfter(today) || slot.getEndTime().isAfter(now))
             .toList();
         Map<UUID, Integer> countMap = buildCountMap(slots);
         return slots.stream()
