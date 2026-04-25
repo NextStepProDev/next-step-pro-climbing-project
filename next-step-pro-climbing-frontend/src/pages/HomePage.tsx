@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
@@ -18,19 +19,39 @@ import logoBlack from "../assets/logo/logo-black.png";
 
 export function HomePage() {
   const { t } = useTranslation("home");
+  const [heroImgLoaded, setHeroImgLoaded] = useState(false);
 
-  const { data: heroData } = useQuery({
+  const { data: heroData, isPending } = useQuery({
     queryKey: ["heroImage"],
     queryFn: siteSettingsApi.getHero,
     staleTime: 30 * 60 * 1000,
   });
   const heroImageUrl = heroData?.imageUrl ?? null;
+  const objectPosition = heroData?.focalPointX != null
+    ? `${(heroData.focalPointX * 100).toFixed(1)}% ${((heroData.focalPointY ?? 0.5) * 100).toFixed(1)}%`
+    : 'center center';
+
+  // No image configured (API responded with no image) — show watermark
+  const showWatermark = !isPending && !heroImageUrl;
 
   return (
     <div>
       {/* Hero Section */}
       <section className="relative overflow-hidden sm:min-h-[70vh] sm:flex sm:flex-col sm:justify-center">
-        {heroImageUrl ? (
+        {/* Base gradient — always rendered as placeholder/fallback */}
+        <div className="absolute inset-0 bg-gradient-to-br from-primary-900/20 via-dark-950 to-dark-950" />
+
+        {/* Watermark logo — only when API confirmed no hero image is set */}
+        {showWatermark && (
+          <img
+            src={logoBlack}
+            alt=""
+            aria-hidden="true"
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] sm:w-[800px] lg:w-[1000px] opacity-[0.04] pointer-events-none select-none"
+          />
+        )}
+
+        {heroImageUrl && (
           <>
             {/* Mobile: image above content with fixed aspect ratio — no cropping */}
             <div className="sm:hidden relative w-full overflow-hidden" style={{ aspectRatio: '3/2' }}>
@@ -38,12 +59,9 @@ export function HomePage() {
                 src={heroImageUrl}
                 alt=""
                 aria-hidden="true"
-                className="absolute inset-0 w-full h-full object-cover"
-                style={{
-                  objectPosition: heroData?.focalPointX != null
-                    ? `${(heroData.focalPointX * 100).toFixed(1)}% ${((heroData.focalPointY ?? 0.5) * 100).toFixed(1)}%`
-                    : 'center center',
-                }}
+                onLoad={() => setHeroImgLoaded(true)}
+                className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ${heroImgLoaded ? 'opacity-100' : 'opacity-0'}`}
+                style={{ objectPosition }}
               />
               <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-dark-950" />
             </div>
@@ -52,26 +70,11 @@ export function HomePage() {
               src={heroImageUrl}
               alt=""
               aria-hidden="true"
-              className="hidden sm:block absolute inset-0 w-full h-full object-cover"
-              style={{
-                objectPosition: heroData?.focalPointX != null
-                  ? `${(heroData.focalPointX * 100).toFixed(1)}% ${((heroData.focalPointY ?? 0.5) * 100).toFixed(1)}%`
-                  : 'center center',
-              }}
+              onLoad={() => setHeroImgLoaded(true)}
+              className={`hidden sm:block absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ${heroImgLoaded ? 'opacity-100' : 'opacity-0'}`}
+              style={{ objectPosition }}
             />
-            <div className="hidden sm:block absolute inset-0 bg-gradient-to-b from-dark-950/40 via-dark-950/55 to-dark-950" />
-          </>
-        ) : (
-          <>
-            {/* Gradient overlay — no image fallback */}
-            <div className="absolute inset-0 bg-gradient-to-br from-primary-900/20 via-dark-950 to-dark-950" />
-            {/* Watermark logo — only shown without hero image */}
-            <img
-              src={logoBlack}
-              alt=""
-              aria-hidden="true"
-              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] sm:w-[800px] lg:w-[1000px] opacity-[0.04] pointer-events-none select-none"
-            />
+            <div className={`hidden sm:block absolute inset-0 bg-gradient-to-b from-dark-950/40 via-dark-950/55 to-dark-950 transition-opacity duration-700 ${heroImgLoaded ? 'opacity-100' : 'opacity-0'}`} />
           </>
         )}
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-32">
