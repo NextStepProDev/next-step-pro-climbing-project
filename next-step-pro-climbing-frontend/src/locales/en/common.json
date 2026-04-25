@@ -118,6 +118,11 @@
     "myStars": "My stars",
     "starAdd": "Add to favourites",
     "starRemove": "Remove from favourites",
-    "loginToStar": "Log in to save articles"
+    "loginToStar": "Log in to save articles",
+    "share": {
+      "shareOn": "Share:",
+      "copy": "Copy link",
+      "copied": "Copied!"
+    }
   }
 }
