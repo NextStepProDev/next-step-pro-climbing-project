@@ -49,7 +49,7 @@ class FileControllerTest {
         // Then
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertNotNull(response.getBody());
-        assertTrue(response.getBody() instanceof InputStreamResource);
+        assertInstanceOf(InputStreamResource.class, response.getBody());
         assertEquals(imageContent.length, response.getHeaders().getContentLength());
         assertEquals("image/jpeg", response.getHeaders().getContentType().toString());
         assertTrue(response.getHeaders().getCacheControl().contains("max-age=604800"));
