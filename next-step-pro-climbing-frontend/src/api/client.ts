@@ -63,6 +63,7 @@ import type {
   CreateVideoRequest,
   UpdateVideoRequest,
   HeroImageDto,
+  SlotTemplate,
 } from '../types'
 import {
   getAccessToken,
@@ -991,4 +992,13 @@ export const adminSiteApi = {
 
   deleteHeroImage: () =>
     fetchApi<void>('/admin/settings/hero', { method: 'DELETE' }),
+
+  getSlotTemplates: () =>
+    fetchApi<SlotTemplate[]>('/admin/settings/slot-templates'),
+
+  saveSlotTemplates: (templates: SlotTemplate[]) =>
+    fetchApi<SlotTemplate[]>('/admin/settings/slot-templates', {
+      method: 'PUT',
+      body: JSON.stringify(templates),
+    }),
 }

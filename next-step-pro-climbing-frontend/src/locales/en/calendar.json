@@ -136,6 +136,8 @@
     "endAfterStart": "End time must be later than start time",
     "availabilityWindow": "Availability window (call to arrange)",
     "availabilityWindowHint": "Clients will see this block as available and know they can call — no self-service booking.",
+    "templateLabel": "Template",
+    "templatePlaceholder": "— custom name —",
     "submit": "Create slot",
     "cancel": "Cancel"
   },

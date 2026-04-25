@@ -234,7 +234,17 @@
     "spots": "Miejsca",
     "commentOptional": "Komentarz (opcjonalny)",
     "guestNotePlaceholder": "Imię i nazwisko / notatka (np. Jan Kowalski — tel. 123456789)",
-    "addParticipantConfirm": "Zapisz"
+    "addParticipantConfirm": "Zapisz",
+    "templatesTitle": "Szablony terminów",
+    "templatesDescription": "Predefiniowane szablony do szybkiego tworzenia terminów. Przy dodawaniu nowego terminu możesz wybrać szablon z listy lub wpisać dane ręcznie.",
+    "templatesEmpty": "Brak szablonów — dodaj pierwszy poniżej.",
+    "templateNameLabel": "Nazwa terminu",
+    "templateNamePlaceholder": "np. Trening bouldering",
+    "templateParticipantsLabel": "Maks. uczestników",
+    "templateAdd": "Dodaj szablon",
+    "templateSave": "Zapisz szablon",
+    "templateSaving": "Zapisywanie...",
+    "templateRemove": "Usuń szablon"
   },
   "reservations": {
     "noUpcoming": "Brak nadchodzących rezerwacji",

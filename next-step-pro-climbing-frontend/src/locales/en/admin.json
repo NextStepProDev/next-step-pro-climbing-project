@@ -234,7 +234,17 @@
     "spots": "Spots",
     "commentOptional": "Comment (optional)",
     "guestNotePlaceholder": "Name / note (e.g. John Smith — phone 123456789)",
-    "addParticipantConfirm": "Add"
+    "addParticipantConfirm": "Add",
+    "templatesTitle": "Slot templates",
+    "templatesDescription": "Predefined templates for quickly creating time slots. When adding a new slot you can pick a template from the list or enter data manually.",
+    "templatesEmpty": "No templates — add the first one below.",
+    "templateNameLabel": "Slot name",
+    "templateNamePlaceholder": "e.g. Bouldering training",
+    "templateParticipantsLabel": "Max. participants",
+    "templateAdd": "Add template",
+    "templateSave": "Save template",
+    "templateSaving": "Saving...",
+    "templateRemove": "Remove template"
   },
   "reservations": {
     "noUpcoming": "No upcoming reservations",

@@ -9,13 +9,13 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant = 'primary', size = 'md', loading, disabled, children, ...props }, ref) => {
-    const baseStyles = 'inline-flex items-center justify-center font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-dark-950 disabled:opacity-50 disabled:cursor-not-allowed'
+    const baseStyles = 'inline-flex items-center justify-center font-medium rounded-lg transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-50 disabled:cursor-not-allowed'
 
     const variants = {
-      primary: 'bg-primary-600 text-white hover:bg-primary-700 focus:ring-primary-500',
-      secondary: 'bg-dark-700 text-dark-100 hover:bg-dark-600 focus:ring-dark-500',
-      ghost: 'bg-transparent text-dark-300 hover:bg-dark-800 hover:text-dark-100 focus:ring-dark-500',
-      danger: 'bg-rose-500/15 text-rose-300 hover:bg-rose-500/25 border border-rose-500/20 focus:ring-rose-500/40',
+      primary: 'bg-primary-600 text-white hover:bg-primary-700 focus-visible:outline-white',
+      secondary: 'bg-dark-700 text-dark-100 hover:bg-dark-600 focus-visible:outline-dark-300',
+      ghost: 'bg-transparent text-dark-300 hover:bg-dark-800 hover:text-dark-100 focus-visible:outline-dark-400',
+      danger: 'bg-rose-500/15 text-rose-300 hover:bg-rose-500/25 border border-rose-500/20 focus-visible:outline-rose-400',
     }
 
     const sizes = {

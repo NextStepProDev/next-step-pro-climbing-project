@@ -136,6 +136,8 @@
     "endAfterStart": "La hora de fin debe ser posterior a la de inicio",
     "availabilityWindow": "Ventana de disponibilidad (llamar para concertar)",
     "availabilityWindowHint": "Los clientes verán este bloque como disponible y sabrán que pueden llamar, sin posibilidad de reservar por su cuenta.",
+    "templateLabel": "Plantilla",
+    "templatePlaceholder": "— nombre personalizado —",
     "submit": "Crear franja horaria",
     "cancel": "Cancelar"
   },

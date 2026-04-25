@@ -2,8 +2,8 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { format, parseISO } from 'date-fns'
-import { Plus, Lock, LockOpen, Trash2, Users, Pencil, AlertTriangle, X, UserPlus, ChevronDown, ChevronRight, ChevronLeft } from 'lucide-react'
-import { adminApi } from '../../api/client'
+import { Plus, Lock, LockOpen, Trash2, Users, Pencil, AlertTriangle, X, UserPlus, ChevronDown, ChevronRight, ChevronLeft, Save } from 'lucide-react'
+import { adminApi, adminSiteApi } from '../../api/client'
 import { getErrorMessage } from '../../utils/errors'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
 import { QueryError } from '../../components/ui/QueryError'
@@ -13,7 +13,7 @@ import { TimeScrollPicker } from '../../components/ui/TimeScrollPicker'
 import { UserSearchSelect } from '../../components/ui/UserSearchSelect'
 import { CreateSlotModal } from '../../components/calendar/CreateSlotModal'
 import { useDateLocale } from '../../utils/dateFnsLocale'
-import type { SlotParticipants, TimeSlotAdmin, User } from '../../types'
+import type { SlotParticipants, SlotTemplate, TimeSlotAdmin, User } from '../../types'
 
 const ARCHIVE_PAGE_SIZE = 15
 
@@ -299,6 +299,9 @@ export function AdminSlotsPanel() {
           }}
         />
       )}
+
+      {/* Slot Templates */}
+      <SlotTemplatesSection />
     </div>
   )
 }
@@ -869,7 +872,7 @@ function ParticipantsModal({
             </div>
 
             {addMode === 'registered' ? (
-              <div className="space-y-2">
+              <form className="space-y-2" onSubmit={(e) => { e.preventDefault(); addRegisteredMutation.mutate() }}>
                 <UserSearchSelect
                   users={(allUsers as User[] | undefined) ?? []}
                   value={selectedUserId}
@@ -899,20 +902,20 @@ function ParticipantsModal({
                 )}
                 <div className="flex gap-2">
                   <Button
+                    type="submit"
                     size="sm"
                     loading={addRegisteredMutation.isPending}
                     disabled={!selectedUserId}
-                    onClick={() => addRegisteredMutation.mutate()}
                   >
                     {t('slots.addParticipantConfirm')}
                   </Button>
-                  <Button size="sm" variant="ghost" onClick={() => setShowAddForm(false)}>
+                  <Button size="sm" variant="ghost" type="button" onClick={() => setShowAddForm(false)}>
                     {t('slots.cancelEdit')}
                   </Button>
                 </div>
-              </div>
+              </form>
             ) : (
-              <div className="space-y-2">
+              <form className="space-y-2" onSubmit={(e) => { e.preventDefault(); addGuestMutation.mutate() }}>
                 <input
                   type="text"
                   value={guestNote}
@@ -937,23 +940,118 @@ function ParticipantsModal({
                 )}
                 <div className="flex gap-2">
                   <Button
+                    type="submit"
                     size="sm"
                     loading={addGuestMutation.isPending}
                     disabled={!guestNote.trim()}
-                    onClick={() => addGuestMutation.mutate()}
                   >
                     {t('slots.addParticipantConfirm')}
                   </Button>
-                  <Button size="sm" variant="ghost" onClick={() => setShowAddForm(false)}>
+                  <Button size="sm" variant="ghost" type="button" onClick={() => setShowAddForm(false)}>
                     {t('slots.cancelEdit')}
                   </Button>
                 </div>
-              </div>
+              </form>
             )}
           </div>
         )}
 
       </div>
     </Modal>
+  )
+}
+
+function SlotTemplatesSection() {
+  const { t } = useTranslation('admin')
+  const queryClient = useQueryClient()
+
+  const { data: templates = [] } = useQuery({
+    queryKey: ['admin', 'slotTemplates'],
+    queryFn: adminSiteApi.getSlotTemplates,
+  })
+
+  const [newName, setNewName] = useState('')
+  const [newMax, setNewMax] = useState(1)
+
+  const saveMutation = useMutation({
+    mutationFn: (next: SlotTemplate[]) => adminSiteApi.saveSlotTemplates(next),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin', 'slotTemplates'] }),
+  })
+
+  const addTemplate = () => {
+    const name = newName.trim()
+    if (!name) return
+    saveMutation.mutate([...templates, { name, maxParticipants: newMax }])
+    setNewName('')
+    setNewMax(1)
+  }
+
+  const removeTemplate = (i: number) => {
+    saveMutation.mutate(templates.filter((_, idx) => idx !== i))
+  }
+
+  return (
+    <div className="mt-10 pt-8 border-t border-dark-800">
+      <div className="mb-4">
+        <h3 className="text-base font-semibold text-dark-100">{t('slots.templatesTitle')}</h3>
+        <p className="text-dark-400 text-sm mt-1">{t('slots.templatesDescription')}</p>
+      </div>
+
+      {templates.length === 0 ? (
+        <p className="text-dark-500 text-sm mb-4">{t('slots.templatesEmpty')}</p>
+      ) : (
+        <ul className="space-y-2 mb-4">
+          {templates.map((tpl, i) => (
+            <li key={i} className="flex items-center gap-3 bg-dark-900 border border-dark-800 rounded-lg px-4 py-2">
+              <span className="flex-1 text-dark-100 font-medium">{tpl.name}</span>
+              <span className="text-sm text-dark-400">{tpl.maxParticipants} os.</span>
+              <button
+                onClick={() => removeTemplate(i)}
+                disabled={saveMutation.isPending}
+                aria-label={t('slots.templateRemove')}
+                className="p-1 text-dark-500 hover:text-rose-400 transition-colors disabled:opacity-40"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <form
+        onSubmit={(e) => { e.preventDefault(); addTemplate() }}
+        className="flex items-end gap-3"
+      >
+        <div className="flex-1">
+          <label className="block text-xs text-dark-400 mb-1">{t('slots.templateNameLabel')}</label>
+          <input
+            type="text"
+            value={newName}
+            onChange={(e) => setNewName(e.target.value)}
+            placeholder={t('slots.templateNamePlaceholder')}
+            maxLength={200}
+            className="w-full bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-dark-100 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+          />
+        </div>
+        <div className="w-24">
+          <label className="block text-xs text-dark-400 mb-1">{t('slots.templateParticipantsLabel')}</label>
+          <input
+            type="number"
+            min={1}
+            value={newMax}
+            onChange={(e) => setNewMax(Math.max(1, parseInt(e.target.value) || 1))}
+            className="w-full bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-dark-100 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+          />
+        </div>
+        <Button
+          type="submit"
+          loading={saveMutation.isPending}
+          disabled={!newName.trim()}
+        >
+          <Save className="w-4 h-4 mr-1" />
+          {t('slots.templateSave')}
+        </Button>
+      </form>
+    </div>
   )
 }
