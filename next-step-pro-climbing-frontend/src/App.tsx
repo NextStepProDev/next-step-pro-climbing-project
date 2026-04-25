@@ -20,6 +20,7 @@ import { ResetPasswordPage } from './pages/ResetPasswordPage'
 import { ResendVerificationPage } from './pages/ResendVerificationPage'
 import { OAuthCallbackPage } from './pages/OAuthCallbackPage'
 import { ContactPage } from './pages/ContactPage'
+import { FAQPage } from './pages/FAQPage'
 import { PrivacyPolicyPage } from './pages/PrivacyPolicyPage'
 import { SettingsPage } from './pages/SettingsPage'
 import { ProtectedRoute } from './components/layout/ProtectedRoute'
@@ -48,6 +49,7 @@ export default function App() {
           <Route path="aktualnosci/:newsId" element={<NewsDetailPage />} />
           <Route path="kursy" element={<CoursesPage />} />
           <Route path="kontakt" element={<ContactPage />} />
+          <Route path="faq" element={<FAQPage />} />
           <Route path="polityka-prywatnosci" element={<PrivacyPolicyPage />} />
           <Route path="login" element={<LoginPage />} />
           <Route path="register" element={<RegisterPage />} />
