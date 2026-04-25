@@ -38,6 +38,10 @@ public class ActivityLog {
     @Nullable
     private Integer participants;
 
+    @Nullable
+    @Column(length = 500)
+    private String description;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -86,6 +90,15 @@ public class ActivityLog {
 
     public void setParticipants(@Nullable Integer participants) {
         this.participants = participants;
+    }
+
+    @Nullable
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(@Nullable String description) {
+        this.description = description;
     }
 
     public Instant getCreatedAt() {

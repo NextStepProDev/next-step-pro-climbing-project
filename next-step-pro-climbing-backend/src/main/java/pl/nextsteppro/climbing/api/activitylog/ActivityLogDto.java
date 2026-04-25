@@ -20,5 +20,6 @@ public record ActivityLogDto(
     @Nullable LocalDate eventStartDate,
     @Nullable LocalDate eventEndDate,
     @Nullable Integer participants,
+    @Nullable String description,
     Instant createdAt
 ) {}

@@ -16,6 +16,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import pl.nextsteppro.climbing.api.activitylog.ActivityLogDto;
 import pl.nextsteppro.climbing.api.activitylog.ActivityLogService;
+import pl.nextsteppro.climbing.config.CurrentUserId;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -49,8 +50,9 @@ public class AdminController {
     })
     @PostMapping("/slots")
     public ResponseEntity<TimeSlotAdminDto> createTimeSlot(
+            @CurrentUserId UUID adminId,
             @Valid @RequestBody CreateTimeSlotRequest request) {
-        TimeSlotAdminDto slot = adminService.createTimeSlot(request);
+        TimeSlotAdminDto slot = adminService.createTimeSlot(adminId, request);
         return ResponseEntity.ok(slot);
     }
 
@@ -68,9 +70,10 @@ public class AdminController {
     })
     @PutMapping("/slots/{slotId}")
     public ResponseEntity<TimeSlotAdminDto> updateTimeSlot(
+            @CurrentUserId UUID adminId,
             @Parameter(description = "UUID terminu") @PathVariable UUID slotId,
             @Valid @RequestBody UpdateTimeSlotRequest request) {
-        TimeSlotAdminDto slot = adminService.updateTimeSlot(slotId, request);
+        TimeSlotAdminDto slot = adminService.updateTimeSlot(adminId, slotId, request);
         return ResponseEntity.ok(slot);
     }
 
@@ -86,9 +89,10 @@ public class AdminController {
     })
     @PostMapping("/slots/{slotId}/block")
     public ResponseEntity<Void> blockTimeSlot(
+            @CurrentUserId UUID adminId,
             @Parameter(description = "UUID terminu") @PathVariable UUID slotId,
             @Parameter(description = "Opcjonalny powód blokady") @RequestParam(required = false) String reason) {
-        adminService.blockTimeSlot(slotId, reason);
+        adminService.blockTimeSlot(adminId, slotId, reason);
         return ResponseEntity.noContent().build();
     }
 
@@ -104,8 +108,9 @@ public class AdminController {
     })
     @PostMapping("/slots/{slotId}/unblock")
     public ResponseEntity<Void> unblockTimeSlot(
+            @CurrentUserId UUID adminId,
             @Parameter(description = "UUID terminu") @PathVariable UUID slotId) {
-        adminService.unblockTimeSlot(slotId);
+        adminService.unblockTimeSlot(adminId, slotId);
         return ResponseEntity.noContent().build();
     }
 
@@ -121,8 +126,9 @@ public class AdminController {
     })
     @DeleteMapping("/slots/{slotId}")
     public ResponseEntity<Void> deleteTimeSlot(
+            @CurrentUserId UUID adminId,
             @Parameter(description = "UUID terminu") @PathVariable UUID slotId) {
-        adminService.deleteTimeSlot(slotId);
+        adminService.deleteTimeSlot(adminId, slotId);
         return ResponseEntity.noContent().build();
     }
 
@@ -268,8 +274,9 @@ public class AdminController {
     })
     @PostMapping("/events")
     public ResponseEntity<EventAdminDto> createEvent(
+            @CurrentUserId UUID adminId,
             @Valid @RequestBody CreateEventRequest request) {
-        EventAdminDto event = adminService.createEvent(request);
+        EventAdminDto event = adminService.createEvent(adminId, request);
         return ResponseEntity.ok(event);
     }
 
@@ -286,9 +293,10 @@ public class AdminController {
     })
     @PutMapping("/events/{eventId}")
     public ResponseEntity<EventAdminDto> updateEvent(
+            @CurrentUserId UUID adminId,
             @Parameter(description = "UUID wydarzenia") @PathVariable UUID eventId,
             @Valid @RequestBody UpdateEventRequest request) {
-        EventAdminDto event = adminService.updateEvent(eventId, request);
+        EventAdminDto event = adminService.updateEvent(adminId, eventId, request);
         return ResponseEntity.ok(event);
     }
 
@@ -304,8 +312,9 @@ public class AdminController {
     })
     @DeleteMapping("/events/{eventId}")
     public ResponseEntity<Void> deleteEvent(
+            @CurrentUserId UUID adminId,
             @Parameter(description = "UUID wydarzenia") @PathVariable UUID eventId) {
-        adminService.deleteEvent(eventId);
+        adminService.deleteEvent(adminId, eventId);
         return ResponseEntity.noContent().build();
     }
 
@@ -485,8 +494,9 @@ public class AdminController {
     })
     @PostMapping("/users/{userId}/make-admin")
     public ResponseEntity<Void> makeAdmin(
+            @CurrentUserId UUID adminId,
             @Parameter(description = "UUID użytkownika") @PathVariable UUID userId) {
-        adminService.makeAdmin(userId);
+        adminService.makeAdmin(adminId, userId);
         return ResponseEntity.noContent().build();
     }
 
@@ -503,8 +513,9 @@ public class AdminController {
     })
     @PostMapping("/users/{userId}/remove-admin")
     public ResponseEntity<Void> removeAdmin(
+            @CurrentUserId UUID adminId,
             @Parameter(description = "UUID użytkownika") @PathVariable UUID userId) {
-        adminService.removeAdmin(userId);
+        adminService.removeAdmin(adminId, userId);
         return ResponseEntity.noContent().build();
     }
 
@@ -521,8 +532,9 @@ public class AdminController {
     })
     @DeleteMapping("/users/{userId}")
     public ResponseEntity<Void> deleteUser(
+            @CurrentUserId UUID adminId,
             @Parameter(description = "UUID użytkownika") @PathVariable UUID userId) {
-        adminService.deleteUser(userId);
+        adminService.deleteUser(adminId, userId);
         return ResponseEntity.noContent().build();
     }
 

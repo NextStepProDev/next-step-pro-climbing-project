@@ -328,7 +328,7 @@
     "confirmDelete": "Tak, usuń"
   },
   "activity": {
-    "title": "Aktywność klientów (auto-odświeżanie co 30s)",
+    "title": "Aktywność (auto-odświeżanie co 30s)",
     "refresh": "Odśwież",
     "noActivity": "Brak aktywności do wyświetlenia",
     "loadMore": "Załaduj więcej",
@@ -340,7 +340,18 @@
       "EVENT_RESERVATION_CREATED": "Zapis na wydarzenie",
       "EVENT_RESERVATION_UPDATED": "Aktualizacja zapisu na wydarzenie",
       "EVENT_RESERVATION_CANCELLED": "Anulacja wydarzenia",
-      "RESERVATION_CANCELLED_BY_ADMIN": "Anulacja przez admina"
+      "RESERVATION_CANCELLED_BY_ADMIN": "Anulacja przez admina",
+      "ADMIN_SLOT_CREATED": "Termin utworzony",
+      "ADMIN_SLOT_UPDATED": "Termin edytowany",
+      "ADMIN_SLOT_DELETED": "Termin usunięty",
+      "ADMIN_SLOT_BLOCKED": "Termin zablokowany",
+      "ADMIN_SLOT_UNBLOCKED": "Termin odblokowany",
+      "ADMIN_EVENT_CREATED": "Wydarzenie utworzone",
+      "ADMIN_EVENT_UPDATED": "Wydarzenie edytowane",
+      "ADMIN_EVENT_DELETED": "Wydarzenie usunięte",
+      "ADMIN_USER_MAKE_ADMIN": "Nadano uprawnienia admina",
+      "ADMIN_USER_ADMIN_REMOVED": "Odebrano uprawnienia admina",
+      "ADMIN_USER_DELETED": "Użytkownik usunięty"
     },
     "persons": "({{count}} os.)"
   },

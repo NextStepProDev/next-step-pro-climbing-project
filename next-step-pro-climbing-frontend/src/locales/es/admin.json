@@ -304,7 +304,7 @@
     "confirmDelete": "Sí, eliminar"
   },
   "activity": {
-    "title": "Actividad de clientes (actualización automática cada 30s)",
+    "title": "Registro de actividad (actualización automática cada 30s)",
     "refresh": "Actualizar",
     "noActivity": "No hay actividad para mostrar",
     "loadMore": "Cargar más",
@@ -316,7 +316,18 @@
       "EVENT_RESERVATION_CREATED": "Inscripción en evento",
       "EVENT_RESERVATION_UPDATED": "Inscripción en evento actualizada",
       "EVENT_RESERVATION_CANCELLED": "Cancelación de evento",
-      "RESERVATION_CANCELLED_BY_ADMIN": "Cancelación por el administrador"
+      "RESERVATION_CANCELLED_BY_ADMIN": "Cancelación por el administrador",
+      "ADMIN_SLOT_CREATED": "Término creado",
+      "ADMIN_SLOT_UPDATED": "Término actualizado",
+      "ADMIN_SLOT_DELETED": "Término eliminado",
+      "ADMIN_SLOT_BLOCKED": "Término bloqueado",
+      "ADMIN_SLOT_UNBLOCKED": "Término desbloqueado",
+      "ADMIN_EVENT_CREATED": "Evento creado",
+      "ADMIN_EVENT_UPDATED": "Evento actualizado",
+      "ADMIN_EVENT_DELETED": "Evento eliminado",
+      "ADMIN_USER_MAKE_ADMIN": "Rol de admin concedido",
+      "ADMIN_USER_ADMIN_REMOVED": "Rol de admin revocado",
+      "ADMIN_USER_DELETED": "Usuario eliminado"
     },
     "persons": "({{count}} pers.)"
   },
