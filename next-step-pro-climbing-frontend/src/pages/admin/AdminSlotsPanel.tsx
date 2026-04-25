@@ -419,7 +419,7 @@ function EditSlotModal({
   const [form, setForm] = useState({
     startTime: slot?.startTime.slice(0, 5) ?? '',
     endTime: slot?.endTime.slice(0, 5) ?? '',
-    maxParticipants: slot?.maxParticipants ?? 4,
+    maxParticipants: slot?.maxParticipants ?? 1,
     title: slot?.title ?? '',
     isAvailabilityWindow: slot?.isAvailabilityWindow ?? false,
   })
