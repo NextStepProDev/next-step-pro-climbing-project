@@ -14,6 +14,11 @@ services:
       timeout: 5s
       retries: 5
     restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "3"
 
   backend:
     image: ghcr.io/${GHCR_OWNER}/nextsteppro-backend:${VERSION:-latest}
@@ -47,6 +52,11 @@ services:
       postgres:
         condition: service_healthy
     restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
 
   frontend:
     image: ghcr.io/${GHCR_OWNER}/nextsteppro-frontend:${VERSION:-latest}
@@ -57,6 +67,11 @@ services:
       - default
       - npm_network
     restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "3"
 
 volumes:
   postgres_data_prod:

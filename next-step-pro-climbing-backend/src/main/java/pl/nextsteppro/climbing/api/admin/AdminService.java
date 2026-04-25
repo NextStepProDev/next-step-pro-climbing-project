@@ -106,7 +106,7 @@ public class AdminService {
         @CacheEvict(value = "calendarWeek", allEntries = true),
         @CacheEvict(value = "calendarDay", allEntries = true)
     })
-    public TimeSlotAdminDto createTimeSlot(CreateTimeSlotRequest request) {
+    public TimeSlotAdminDto createTimeSlot(UUID adminId, CreateTimeSlotRequest request) {
         if (!request.endTime().isAfter(request.startTime())) {
             throw new IllegalArgumentException(msg.get("admin.slot.end.after.start"));
         }
@@ -132,6 +132,10 @@ public class AdminService {
         slot.setAvailabilityWindow(request.isAvailabilityWindow());
 
         slot = timeSlotRepository.save(slot);
+
+        User admin = userRepository.findById(adminId).orElseThrow();
+        activityLogService.logAdminSlotCreated(admin, slot);
+
         return toTimeSlotAdminDto(slot);
     }
 
@@ -140,7 +144,7 @@ public class AdminService {
         @CacheEvict(value = "calendarWeek", allEntries = true),
         @CacheEvict(value = "calendarDay", allEntries = true)
     })
-    public TimeSlotAdminDto updateTimeSlot(UUID slotId, UpdateTimeSlotRequest request) {
+    public TimeSlotAdminDto updateTimeSlot(UUID adminId, UUID slotId, UpdateTimeSlotRequest request) {
         TimeSlot slot = timeSlotRepository.findById(slotId)
             .orElseThrow(() -> new IllegalArgumentException("Time slot not found"));
 
@@ -171,6 +175,9 @@ public class AdminService {
         }
 
         slot = timeSlotRepository.save(slot);
+
+        User admin = userRepository.findById(adminId).orElseThrow();
+        activityLogService.logAdminSlotUpdated(admin, slot);
 
         if (request.maxParticipants() != null && request.maxParticipants() > oldMaxParticipants) {
             waitlistService.notifyAll(slotId);
@@ -222,7 +229,7 @@ public class AdminService {
         @CacheEvict(value = "calendarWeek", allEntries = true),
         @CacheEvict(value = "calendarDay", allEntries = true)
     })
-    public void blockTimeSlot(UUID slotId, @Nullable String reason) {
+    public void blockTimeSlot(UUID adminId, UUID slotId, @Nullable String reason) {
         TimeSlot slot = timeSlotRepository.findById(slotId)
             .orElseThrow(() -> new IllegalArgumentException("Time slot not found"));
 
@@ -236,6 +243,9 @@ public class AdminService {
 
         slot.block(reason);
         timeSlotRepository.save(slot);
+
+        User admin = userRepository.findById(adminId).orElseThrow();
+        activityLogService.logAdminSlotBlocked(admin, slot, reason);
     }
 
     @Caching(evict = {
@@ -243,12 +253,15 @@ public class AdminService {
         @CacheEvict(value = "calendarWeek", allEntries = true),
         @CacheEvict(value = "calendarDay", allEntries = true)
     })
-    public void unblockTimeSlot(UUID slotId) {
+    public void unblockTimeSlot(UUID adminId, UUID slotId) {
         TimeSlot slot = timeSlotRepository.findById(slotId)
             .orElseThrow(() -> new IllegalArgumentException("Time slot not found"));
 
         slot.unblock();
         timeSlotRepository.save(slot);
+
+        User admin = userRepository.findById(adminId).orElseThrow();
+        activityLogService.logAdminSlotUnblocked(admin, slot);
     }
 
     @Caching(evict = {
@@ -256,11 +269,17 @@ public class AdminService {
         @CacheEvict(value = "calendarWeek", allEntries = true),
         @CacheEvict(value = "calendarDay", allEntries = true)
     })
-    public void deleteTimeSlot(UUID slotId) {
+    public void deleteTimeSlot(UUID adminId, UUID slotId) {
         TimeSlot slot = timeSlotRepository.findById(slotId)
             .orElseThrow(() -> new IllegalArgumentException("Time slot not found"));
 
         boolean isPast = slot.getDate().isBefore(LocalDate.now());
+
+        // Capture slot description before deletion (FK will be SET NULL after delete)
+        var tf = DateTimeFormatter.ofPattern("HH:mm");
+        var df = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        String slotDesc = slot.getDate().format(df) + " " + slot.getStartTime().format(tf) + "-" + slot.getEndTime().format(tf)
+            + (slot.getDisplayTitle() != null ? " (" + slot.getDisplayTitle() + ")" : "");
 
         // Use multi-slot variant (has JOIN FETCH user) to avoid LazyInitializationException after cache clear
         List<Reservation> confirmed = reservationRepository.findConfirmedByTimeSlotIds(List.of(slotId));
@@ -274,6 +293,9 @@ public class AdminService {
         waitlistRepository.deleteByTimeSlotId(slotId);           // clears cache
         reservationRepository.deleteByTimeSlotIds(List.of(slotId)); // clears cache
         timeSlotRepository.deleteById(slotId);
+
+        User admin = userRepository.findById(adminId).orElseThrow();
+        activityLogService.logAdminSlotDeleted(admin, slotDesc);
 
         // Send emails only after successful DB deletion
         if (!isPast) {
@@ -426,7 +448,7 @@ public class AdminService {
         @CacheEvict(value = "calendarWeek", allEntries = true),
         @CacheEvict(value = "calendarDay", allEntries = true)
     })
-    public EventAdminDto createEvent(CreateEventRequest request) {
+    public EventAdminDto createEvent(UUID adminId, CreateEventRequest request) {
         Event event = new Event(
             request.title(),
             EventType.valueOf(request.eventType()),
@@ -448,6 +470,9 @@ public class AdminService {
 
         event = eventRepository.save(event);
 
+        User admin = userRepository.findById(adminId).orElseThrow();
+        activityLogService.logAdminEventCreated(admin, event);
+
         return toEventAdminDto(event);
     }
 
@@ -456,7 +481,7 @@ public class AdminService {
         @CacheEvict(value = "calendarWeek", allEntries = true),
         @CacheEvict(value = "calendarDay", allEntries = true)
     })
-    public EventAdminDto updateEvent(UUID eventId, UpdateEventRequest request) {
+    public EventAdminDto updateEvent(UUID adminId, UUID eventId, UpdateEventRequest request) {
         Event event = eventRepository.findById(eventId)
             .orElseThrow(() -> new IllegalArgumentException("Event not found"));
 
@@ -499,6 +524,9 @@ public class AdminService {
         }
 
         event = eventRepository.save(event);
+
+        User admin = userRepository.findById(adminId).orElseThrow();
+        activityLogService.logAdminEventUpdated(admin, event);
 
         if (request.maxParticipants() != null && request.maxParticipants() > oldEventMaxParticipants) {
             eventWaitlistService.notifyAll(eventId);
@@ -550,11 +578,15 @@ public class AdminService {
         @CacheEvict(value = "calendarWeek", allEntries = true),
         @CacheEvict(value = "calendarDay", allEntries = true)
     })
-    public void deleteEvent(UUID eventId) {
+    public void deleteEvent(UUID adminId, UUID eventId) {
         Event event = eventRepository.findById(eventId)
             .orElseThrow(() -> new IllegalArgumentException("Event not found"));
 
         boolean isPast = !event.getEndDate().isAfter(LocalDate.now());
+
+        // Capture event description before deletion (FK will be SET NULL after delete)
+        var df2 = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        String eventDesc = event.getTitle() + " (" + event.getStartDate().format(df2) + " – " + event.getEndDate().format(df2) + ")";
 
         List<TimeSlot> slots = timeSlotRepository.findByEventId(eventId);
         List<UUID> slotIds = slots.stream().map(TimeSlot::getId).toList();
@@ -581,6 +613,9 @@ public class AdminService {
         }
         eventWaitlistRepository.deleteByEventId(eventId);       // clears cache
         eventRepository.deleteById(eventId);
+
+        User admin = userRepository.findById(adminId).orElseThrow();
+        activityLogService.logAdminEventDeleted(admin, eventDesc);
 
         // Send emails only after all DB operations succeed
         if (!isPast) {
@@ -703,16 +738,19 @@ public class AdminService {
             .toList();
     }
 
-    public void makeAdmin(UUID userId) {
+    public void makeAdmin(UUID adminId, UUID userId) {
         User user = userRepository.findById(userId)
             .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
         user.setRole(UserRole.ADMIN);
         userRepository.save(user);
         jwtAuthenticationFilter.evictUser(userId);
+
+        User admin = userRepository.findById(adminId).orElseThrow();
+        activityLogService.logAdminUserMakeAdmin(admin, user.getFullName() + " (" + user.getEmail() + ")");
     }
 
-    public void removeAdmin(UUID userId) {
+    public void removeAdmin(UUID adminId, UUID userId) {
         User user = userRepository.findById(userId)
             .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
@@ -723,6 +761,9 @@ public class AdminService {
         user.setRole(UserRole.USER);
         userRepository.save(user);
         jwtAuthenticationFilter.evictUser(userId);
+
+        User admin = userRepository.findById(adminId).orElseThrow();
+        activityLogService.logAdminUserAdminRemoved(admin, user.getFullName() + " (" + user.getEmail() + ")");
     }
 
     public int sendMailToUsers(SendMailRequest request) {
@@ -754,7 +795,7 @@ public class AdminService {
         return recipients.size();
     }
 
-    public void deleteUser(UUID userId) {
+    public void deleteUser(UUID adminId, UUID userId) {
         User user = userRepository.findById(userId)
             .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
@@ -762,11 +803,16 @@ public class AdminService {
             throw new IllegalStateException(msg.get("admin.user.cannot.delete.admin"));
         }
 
+        String userDesc = user.getFullName() + " (" + user.getEmail() + ")";
+
         authMailService.sendAccountDeletedByAdminNotification(user);
         reservationRepository.cancelConfirmedByUserId(userId);
         authTokenRepository.deleteAllByUserId(userId);
         userRepository.delete(user);
         jwtAuthenticationFilter.evictUser(userId);
+
+        User admin = userRepository.findById(adminId).orElseThrow();
+        activityLogService.logAdminUserDeleted(admin, userDesc);
     }
 
     private TimeSlotAdminDto toTimeSlotAdminDto(TimeSlot slot) {

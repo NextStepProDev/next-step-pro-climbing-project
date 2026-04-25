@@ -9,6 +9,13 @@ import {
   ShieldAlert,
   RefreshCw,
   ChevronDown,
+  Settings,
+  Trash2,
+  Lock,
+  Unlock,
+  UserCheck,
+  UserX,
+  UserMinus,
 } from 'lucide-react'
 import { adminApi } from '../../api/client'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
@@ -61,6 +68,61 @@ const ACTION_CONFIG: Record<
     icon: ShieldAlert,
     color: 'text-amber-400',
     bgColor: 'bg-amber-500/10',
+  },
+  ADMIN_SLOT_CREATED: {
+    icon: CalendarPlus,
+    color: 'text-violet-400',
+    bgColor: 'bg-violet-500/10',
+  },
+  ADMIN_SLOT_UPDATED: {
+    icon: Settings,
+    color: 'text-violet-400',
+    bgColor: 'bg-violet-500/10',
+  },
+  ADMIN_SLOT_DELETED: {
+    icon: Trash2,
+    color: 'text-violet-400',
+    bgColor: 'bg-violet-500/10',
+  },
+  ADMIN_SLOT_BLOCKED: {
+    icon: Lock,
+    color: 'text-violet-400',
+    bgColor: 'bg-violet-500/10',
+  },
+  ADMIN_SLOT_UNBLOCKED: {
+    icon: Unlock,
+    color: 'text-violet-400',
+    bgColor: 'bg-violet-500/10',
+  },
+  ADMIN_EVENT_CREATED: {
+    icon: CalendarPlus,
+    color: 'text-indigo-400',
+    bgColor: 'bg-indigo-500/10',
+  },
+  ADMIN_EVENT_UPDATED: {
+    icon: Settings,
+    color: 'text-indigo-400',
+    bgColor: 'bg-indigo-500/10',
+  },
+  ADMIN_EVENT_DELETED: {
+    icon: Trash2,
+    color: 'text-indigo-400',
+    bgColor: 'bg-indigo-500/10',
+  },
+  ADMIN_USER_MAKE_ADMIN: {
+    icon: UserCheck,
+    color: 'text-orange-400',
+    bgColor: 'bg-orange-500/10',
+  },
+  ADMIN_USER_ADMIN_REMOVED: {
+    icon: UserMinus,
+    color: 'text-orange-400',
+    bgColor: 'bg-orange-500/10',
+  },
+  ADMIN_USER_DELETED: {
+    icon: UserX,
+    color: 'text-red-400',
+    bgColor: 'bg-red-500/10',
   },
 }
 
@@ -195,6 +257,13 @@ export function AdminActivityPanel() {
                       {log.participants != null && log.participants > 1 && (
                         <span className="text-dark-500 text-xs">
                           {t('activity.persons', { count: log.participants })}
+                        </span>
+                      )}
+
+                      {/* Description (admin actions context) */}
+                      {log.description && (
+                        <span className="text-dark-400 text-xs">
+                          {log.description}
                         </span>
                       )}
                     </div>

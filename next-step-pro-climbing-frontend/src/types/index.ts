@@ -320,6 +320,17 @@ export type ActivityActionType =
   | 'EVENT_RESERVATION_UPDATED'
   | 'EVENT_RESERVATION_CANCELLED'
   | 'RESERVATION_CANCELLED_BY_ADMIN'
+  | 'ADMIN_SLOT_CREATED'
+  | 'ADMIN_SLOT_UPDATED'
+  | 'ADMIN_SLOT_DELETED'
+  | 'ADMIN_SLOT_BLOCKED'
+  | 'ADMIN_SLOT_UNBLOCKED'
+  | 'ADMIN_EVENT_CREATED'
+  | 'ADMIN_EVENT_UPDATED'
+  | 'ADMIN_EVENT_DELETED'
+  | 'ADMIN_USER_MAKE_ADMIN'
+  | 'ADMIN_USER_ADMIN_REMOVED'
+  | 'ADMIN_USER_DELETED'
 
 export interface ActivityLog {
   id: string
@@ -334,6 +345,7 @@ export interface ActivityLog {
   eventStartDate: string | null
   eventEndDate: string | null
   participants: number | null
+  description: string | null
   createdAt: string
 }
 

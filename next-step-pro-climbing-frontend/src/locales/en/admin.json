@@ -328,7 +328,7 @@
     "confirmDelete": "Yes, delete"
   },
   "activity": {
-    "title": "Client activity (auto-refresh every 30s)",
+    "title": "Activity log (auto-refresh every 30s)",
     "refresh": "Refresh",
     "noActivity": "No activity to display",
     "loadMore": "Load more",
@@ -340,7 +340,18 @@
       "EVENT_RESERVATION_CREATED": "Event signup",
       "EVENT_RESERVATION_UPDATED": "Event signup updated",
       "EVENT_RESERVATION_CANCELLED": "Event cancellation",
-      "RESERVATION_CANCELLED_BY_ADMIN": "Cancelled by admin"
+      "RESERVATION_CANCELLED_BY_ADMIN": "Cancelled by admin",
+      "ADMIN_SLOT_CREATED": "Slot created",
+      "ADMIN_SLOT_UPDATED": "Slot updated",
+      "ADMIN_SLOT_DELETED": "Slot deleted",
+      "ADMIN_SLOT_BLOCKED": "Slot blocked",
+      "ADMIN_SLOT_UNBLOCKED": "Slot unblocked",
+      "ADMIN_EVENT_CREATED": "Event created",
+      "ADMIN_EVENT_UPDATED": "Event updated",
+      "ADMIN_EVENT_DELETED": "Event deleted",
+      "ADMIN_USER_MAKE_ADMIN": "Admin role granted",
+      "ADMIN_USER_ADMIN_REMOVED": "Admin role revoked",
+      "ADMIN_USER_DELETED": "User deleted"
     },
     "persons": "({{count}} pers.)"
   },
