@@ -13,6 +13,7 @@ import java.util.UUID;
 
 public interface ReservationRepository extends JpaRepository<Reservation, UUID> {
 
+    @Query("SELECT r FROM Reservation r JOIN FETCH r.timeSlot WHERE r.user.id = :userId")
     List<Reservation> findByUserId(UUID userId);
 
     List<Reservation> findByTimeSlotId(UUID timeSlotId);

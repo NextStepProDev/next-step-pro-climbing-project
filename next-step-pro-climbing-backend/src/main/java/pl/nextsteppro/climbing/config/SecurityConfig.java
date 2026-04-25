@@ -62,6 +62,8 @@ public class SecurityConfig {
                     auth.requestMatchers("/swagger-ui/**", "/swagger-ui.html").permitAll()
                         .requestMatchers("/v3/api-docs/**", "/v3/api-docs.yaml").permitAll();
                 }
+                // Health check endpoint (used by Docker healthcheck and deploy verification)
+                auth.requestMatchers("/actuator/health").permitAll();
                 // Authentication endpoints
                 auth.requestMatchers("/api/auth/**").permitAll()
                     // OAuth2 endpoints

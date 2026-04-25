@@ -600,10 +600,6 @@ export interface UpdateImageBlockRequest {
   caption?: string
 }
 
-export interface MoveBlockRequest {
-  direction: 'UP' | 'DOWN'
-}
-
 export interface UploadBlockImageResponse {
   blockId: string
   imageFilename: string

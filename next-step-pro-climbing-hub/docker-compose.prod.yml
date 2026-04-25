@@ -24,6 +24,12 @@ services:
     image: ghcr.io/${GHCR_OWNER}/nextsteppro-backend:${VERSION:-latest}
     container_name: nsp-backend-prod
     mem_limit: 350m
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/actuator/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 8
+      start_period: 60s
     volumes:
       - uploads_data_prod:/app/uploads
     environment:

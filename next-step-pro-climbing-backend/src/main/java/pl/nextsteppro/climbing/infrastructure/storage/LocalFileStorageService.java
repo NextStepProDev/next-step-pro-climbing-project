@@ -112,20 +112,6 @@ public class LocalFileStorageService implements FileStorageService {
         return Files.exists(filePath);
     }
 
-    @Override
-    public byte[] load(String filename, @Nullable String folder) throws IOException {
-        validateFilename(filename);
-
-        Path filePath = folder != null
-                ? rootPath.resolve(folder).resolve(filename)
-                : rootPath.resolve(filename);
-
-        if (!Files.exists(filePath)) {
-            throw new IOException("File not found: " + filename);
-        }
-
-        return Files.readAllBytes(filePath);
-    }
 
     @Override
     public InputStream getInputStream(String filename, @Nullable String folder) throws IOException {
