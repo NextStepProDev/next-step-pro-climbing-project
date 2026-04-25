@@ -50,3 +50,24 @@ jobs:
             export VERSION=${{ steps.version.outputs.version }}
             docker compose -f docker-compose.prod.yml pull
             docker compose -f docker-compose.prod.yml up -d
+
+      - name: Verify deployment health
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          script: |
+            echo "Waiting for backend to become healthy..."
+            for i in $(seq 1 16); do
+              STATUS=$(docker inspect --format='{{.State.Health.Status}}' nsp-backend-prod 2>/dev/null || echo "missing")
+              echo "Attempt $i/16: backend health = $STATUS"
+              if [ "$STATUS" = "healthy" ]; then
+                echo "Deployment verified successfully."
+                exit 0
+              fi
+              sleep 15
+            done
+            echo "ERROR: Backend did not become healthy within 4 minutes."
+            docker logs --tail 80 nsp-backend-prod
+            exit 1

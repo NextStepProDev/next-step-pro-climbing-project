@@ -206,7 +206,7 @@ public class MailService {
         if (!user.isEmailNotificationsEnabled()) return;
         String lang = user.getPreferredLanguage();
         String subject = msg.getForLang("email.admin.participants.reduced.subject", lang);
-        String displayLabel = slot.getDate().format(DATE_FORMAT) + " " + slot.getStartTime().format(TIME_FORMAT) + " - " + slot.getEndTime().format(TIME_FORMAT);
+        String displayLabel = formatTimeSlotDisplay(slot);
         String body = buildAdminParticipantReductionBody(lang, user, displayLabel, oldParticipants, newParticipants);
         sendEmail(user.getEmail(), subject, body, null);
     }
@@ -226,7 +226,7 @@ public class MailService {
         if (!user.isEmailNotificationsEnabled()) return;
         String lang = user.getPreferredLanguage();
         String subject = msg.getForLang("email.reservation.updated.subject", lang);
-        String displayLabel = slot.getDate().format(DATE_FORMAT) + " " + slot.getStartTime().format(TIME_FORMAT) + " - " + slot.getEndTime().format(TIME_FORMAT);
+        String displayLabel = formatTimeSlotDisplay(slot);
         String body = buildReservationUpdateBody(lang, user, displayLabel, oldParticipants, newParticipants);
         sendEmail(user.getEmail(), subject, body, null);
     }
@@ -899,5 +899,9 @@ public class MailService {
             msg.getForLang("email.event.cancellation.hope", lang),
             msg.getForLang("email.reservation.team", lang)
         );
+    }
+
+    private String formatTimeSlotDisplay(TimeSlot slot) {
+        return slot.getDate().format(DATE_FORMAT) + " " + slot.getStartTime().format(TIME_FORMAT) + " - " + slot.getEndTime().format(TIME_FORMAT);
     }
 }

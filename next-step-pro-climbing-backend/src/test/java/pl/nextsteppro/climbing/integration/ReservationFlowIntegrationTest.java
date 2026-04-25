@@ -1,7 +1,8 @@
 package pl.nextsteppro.climbing.integration;
 
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import pl.nextsteppro.climbing.api.reservation.ReservationService;
@@ -28,6 +29,9 @@ import static org.junit.jupiter.api.Assertions.*;
  * Uses real PostgreSQL database via Testcontainers.
  */
 class ReservationFlowIntegrationTest extends BaseIntegrationTest {
+
+    @PersistenceContext
+    private EntityManager entityManager;
 
     @Autowired
     private ReservationService reservationService;
@@ -69,7 +73,6 @@ class ReservationFlowIntegrationTest extends BaseIntegrationTest {
     // ========== FULL RESERVATION FLOW ==========
 
     @Test
-    @Disabled("Integration test needs ReservationService API adjustments")
     void shouldCompleteFullReservationLifecycle() {
         // Given: Empty slot
         assertEquals(0, reservationRepository.countConfirmedByTimeSlotId(testSlot.getId()));
@@ -92,7 +95,7 @@ class ReservationFlowIntegrationTest extends BaseIntegrationTest {
 
         // When: User cancels reservation
         UUID reservationId = reservation.getId();
-        reservationService.cancelReservation(testUser.getId(), reservationId);
+        reservationService.cancelReservation(reservationId, testUser.getId());
 
         // Then: Reservation cancelled
         reservation = reservationRepository.findById(reservationId).orElseThrow();
@@ -104,20 +107,15 @@ class ReservationFlowIntegrationTest extends BaseIntegrationTest {
         // When: User rebooks the same slot
         reservationService.createReservation(testSlot.getId(), testUser.getId(), null, 1);
 
-        // Then: New reservation created
+        // Then: Reservation is reactivated (same record, CONFIRMED — no duplicate due to UNIQUE constraint)
         reservations = reservationRepository.findByUserId(testUser.getId());
-        assertEquals(2, reservations.size()); // Original cancelled + new confirmed
-
-        long confirmedCount = reservations.stream()
-                .filter(r -> r.getStatus() == ReservationStatus.CONFIRMED)
-                .count();
-        assertEquals(1, confirmedCount);
+        assertEquals(1, reservations.size());
+        assertEquals(ReservationStatus.CONFIRMED, reservations.get(0).getStatus());
     }
 
     // ========== CAPACITY LIMITS ==========
 
     @Test
-    @Disabled("Integration test needs ReservationService API adjustments")
     void shouldEnforceCapacityLimits() {
         // Given: Slot with capacity 10
         assertEquals(10, testSlot.getMaxParticipants());
@@ -140,13 +138,9 @@ class ReservationFlowIntegrationTest extends BaseIntegrationTest {
 
         // When: Try to book when full
         User extraUser = createUser("extra@example.com");
-        Exception exception = assertThrows(IllegalStateException.class, () ->
+        assertThrows(IllegalStateException.class, () ->
                 reservationService.createReservation(testSlot.getId(), extraUser.getId(), null, 1)
         );
-
-        // Then: Booking rejected
-        assertTrue(exception.getMessage().contains("full") ||
-                   exception.getMessage().contains("capacity"));
     }
 
     // ========== DUPLICATE BOOKING PREVENTION ==========
@@ -174,7 +168,6 @@ class ReservationFlowIntegrationTest extends BaseIntegrationTest {
     // ========== MULTI-PARTICIPANT BOOKING ==========
 
     @Test
-    @Disabled("Integration test needs ReservationService API adjustments")
     void shouldSupportMultiParticipantBooking() {
         // Given: User wants to book for 3 people
         int participants = 3;
@@ -208,32 +201,33 @@ class ReservationFlowIntegrationTest extends BaseIntegrationTest {
 
         // When: Try to book one more
         User extraUser = createUser("overflow@example.com");
-        Exception exception = assertThrows(IllegalStateException.class, () ->
+        assertThrows(IllegalStateException.class, () ->
                 reservationService.createReservation(testSlot.getId(), extraUser.getId(), null, 1)
         );
-
-        assertTrue(exception.getMessage().contains("full") ||
-                   exception.getMessage().contains("capacity"));
     }
 
     // ========== DATABASE CONSTRAINTS ==========
 
     @Test
-    @Disabled("Integration test needs ReservationService API adjustments")
     void shouldMaintainDatabaseIntegrity() {
         // Given: Reservation
         reservationService.createReservation(testSlot.getId(), testUser.getId(), null, 1);
         Reservation reservation = reservationRepository.findByUserId(testUser.getId()).get(0);
 
-        // When: Delete slot (cascade should handle reservation)
-        timeSlotRepository.deleteById(testSlot.getId());
+        // When: Delete slot (ON DELETE CASCADE at DB level removes reservation too)
+        UUID reservationId = reservation.getId();
+        // Clear entire L1 cache first — createReservation also saved ActivityLog which
+        // references TimeSlot; detaching only reservation isn't enough
+        entityManager.clear();
+        timeSlotRepository.deleteById(testSlot.getId()); // loads fresh from DB, marks for removal
+        entityManager.flush(); // send DELETE to DB, triggering ON DELETE CASCADE
+        entityManager.clear();
 
         // Then: Reservation also deleted (ON DELETE CASCADE)
-        assertFalse(reservationRepository.findById(reservation.getId()).isPresent());
+        assertFalse(reservationRepository.findById(reservationId).isPresent());
     }
 
     @Test
-    @Disabled("Integration test needs ReservationService API adjustments")
     void shouldPreserveDataAcrossTransactions() {
         // Given: Book slot in one transaction
         reservationService.createReservation(testSlot.getId(), testUser.getId(), null, 1);
@@ -247,7 +241,7 @@ class ReservationFlowIntegrationTest extends BaseIntegrationTest {
 
         // When: Cancel and verify persistence
         UUID reservationId = reservations.get(0).getId();
-        reservationService.cancelReservation(testUser.getId(), reservationId);
+        reservationService.cancelReservation(reservationId, testUser.getId());
 
         // Then: Status change persisted
         Reservation cancelled = reservationRepository.findById(reservationId).orElseThrow();

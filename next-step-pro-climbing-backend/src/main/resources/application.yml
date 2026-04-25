@@ -99,6 +99,15 @@ springdoc:
   show-actuator: false
   default-produces-media-type: application/json
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
+
 logging:
   level:
     pl.nextsteppro: ${LOG_LEVEL:INFO}

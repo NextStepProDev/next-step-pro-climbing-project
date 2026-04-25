@@ -13,6 +13,7 @@ import type {
   MyReservations,
   ReservationResult,
   EventReservationResult,
+  WaitlistEntry,
   TimeSlotAdmin,
   SlotParticipants,
   GuestParticipant,
@@ -285,13 +286,13 @@ export const reservationApi = {
     fetchApi<void>(`/reservations/event/${eventId}`, { method: 'DELETE' }),
 
   updateParticipants: (reservationId: string, participants: number) =>
-    fetchApi<import('../types').ReservationResult>(`/reservations/${reservationId}/participants`, {
+    fetchApi<ReservationResult>(`/reservations/${reservationId}/participants`, {
       method: 'PUT',
       body: JSON.stringify({ participants }),
     }),
 
   updateEventParticipants: (eventId: string, participants: number) =>
-    fetchApi<import('../types').EventReservationResult>(`/reservations/event/${eventId}/participants`, {
+    fetchApi<EventReservationResult>(`/reservations/event/${eventId}/participants`, {
       method: 'PUT',
       body: JSON.stringify({ participants }),
     }),
@@ -306,7 +307,7 @@ export const reservationApi = {
     fetchApi<{ reservationId: string; success: boolean; message: string }>(`/reservations/waitlist/${waitlistId}/confirm`, { method: 'POST' }),
 
   getMyWaitlist: () =>
-    fetchApi<import('../types').WaitlistEntry[]>('/reservations/my/waitlist'),
+    fetchApi<WaitlistEntry[]>('/reservations/my/waitlist'),
 
   joinEventWaitlist: (eventId: string) =>
     fetchApi<{ success: boolean; message: string }>(`/reservations/event/${eventId}/waitlist`, { method: 'POST' }),

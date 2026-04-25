@@ -17,6 +17,7 @@ RUN APP_VERSION=$APP_VERSION ./gradlew bootJar -x test
 
 # Etap 2: Uruchamianie (Runtime Stage)
 FROM eclipse-temurin:25-jre-alpine
+RUN apk add --no-cache curl
 WORKDIR /app
 
 # Kopiujemy gotowy JAR (z obsługą wersji 2.1.0-SNAPSHOT)

@@ -34,17 +34,6 @@ public interface FileStorageService {
     boolean exists(String filename, @Nullable String folder);
 
     /**
-     * Load a file as byte array
-     * @deprecated Use {@link #getInputStream(String, String)} for better memory efficiency
-     * @param filename the filename to load
-     * @param folder optional subfolder
-     * @return file content as bytes
-     * @throws IOException if file cannot be read
-     */
-    @Deprecated
-    byte[] load(String filename, @Nullable String folder) throws IOException;
-
-    /**
      * Get an InputStream for a file (memory-efficient for large files)
      * @param filename the filename to load
      * @param folder optional subfolder
