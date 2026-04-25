@@ -118,6 +118,11 @@
     "myStars": "Mis favoritos",
     "starAdd": "Añadir a favoritos",
     "starRemove": "Quitar de favoritos",
-    "loginToStar": "Inicia sesión para guardar artículos"
+    "loginToStar": "Inicia sesión para guardar artículos",
+    "share": {
+      "shareOn": "Compartir:",
+      "copy": "Copiar enlace",
+      "copied": "¡Copiado!"
+    }
   }
 }
