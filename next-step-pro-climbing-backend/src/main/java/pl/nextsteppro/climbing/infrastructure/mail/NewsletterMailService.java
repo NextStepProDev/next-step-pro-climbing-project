@@ -85,7 +85,7 @@ public class NewsletterMailService {
             <body style="font-family: Arial, sans-serif; background-color: #1a1816; color: #e0e0e0; padding: 20px; margin: 0;">
                 <div style="max-width: 600px; margin: 0 auto; background-color: #312e2b; border-radius: 12px; overflow: hidden;">
                     <div style="text-align: center; padding: 24px 30px 0;">
-                        <a href="%s" style="display: inline-block; text-decoration: none;"><img src="cid:logo" alt="Next Step Pro Climbing" style="height: 80px; display: block;" /></a>
+                        <a href="%s" style="display: inline-block; text-decoration: none; cursor: pointer; line-height: 0; font-size: 0;"><img src="cid:logo" alt="Next Step Pro Climbing" style="height: 80px; display: block;" /></a>
                     </div>
                     <div style="padding: 20px 30px 30px;">
                         <h1 style="color: #3b82f6; margin-top: 16px; margin-bottom: 20px; font-size: 24px; line-height: 1.3;">
