@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { adminApi } from '../../api/client'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { adminApi, adminSiteApi } from '../../api/client'
 import { getErrorMessage } from '../../utils/errors'
 import { Button } from '../ui/Button'
 import { Modal } from '../ui/Modal'
@@ -22,11 +22,17 @@ export function CreateSlotModal({
   onSuccess,
 }: CreateSlotModalProps) {
   const { t } = useTranslation('calendar')
+
+  const { data: templates = [] } = useQuery({
+    queryKey: ['admin', 'slotTemplates'],
+    queryFn: adminSiteApi.getSlotTemplates,
+  })
+
   const [form, setForm] = useState<CreateTimeSlotRequest & { title: string }>({
     date: defaultDate,
     startTime: '10:00',
     endTime: '11:00',
-    maxParticipants: 4,
+    maxParticipants: 1,
     title: '',
     isAvailabilityWindow: false,
   })
@@ -46,21 +52,45 @@ export function CreateSlotModal({
     ? t('createSlot.endAfterStart')
     : null
 
+  const submitForm = () => {
+    if (timeError) return
+    const { title, ...rest } = form
+    createMutation.mutate({
+      ...rest,
+      maxParticipants: form.isAvailabilityWindow ? 1 : form.maxParticipants,
+      title: title || undefined,
+    })
+  }
+
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={t('createSlot.title')}>
       <form
-        onSubmit={(e) => {
-          e.preventDefault()
-          if (timeError) return
-          const { title, ...rest } = form
-          createMutation.mutate({
-            ...rest,
-            maxParticipants: form.isAvailabilityWindow ? 1 : form.maxParticipants,
-            title: title || undefined,
-          })
-        }}
+        onSubmit={(e) => { e.preventDefault(); submitForm() }}
         className="space-y-4"
       >
+        {templates.length > 0 && (
+          <div>
+            <label className="block text-sm text-dark-400 mb-1">{t('createSlot.templateLabel')}</label>
+            <select
+              value=""
+              onChange={(e) => {
+                const tpl = templates[Number(e.target.value)]
+                if (tpl) {
+                  setForm((f) => ({ ...f, title: tpl.name, maxParticipants: tpl.maxParticipants }))
+                }
+              }}
+              className="w-full bg-dark-800 border border-dark-700 rounded-lg px-4 py-2 text-dark-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
+            >
+              <option value="">{t('createSlot.templatePlaceholder')}</option>
+              {templates.map((tpl, i) => (
+                <option key={i} value={i}>
+                  {tpl.name} ({tpl.maxParticipants})
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
         <div>
           <label className="block text-sm text-dark-400 mb-1">{t('createSlot.slotTitle')}</label>
           <input
@@ -78,10 +108,8 @@ export function CreateSlotModal({
           <input
             type="date"
             value={form.date}
-            onChange={(e) => {
-              setForm({ ...form, date: e.target.value })
-              e.target.blur()
-            }}
+            onChange={(e) => setForm({ ...form, date: e.target.value })}
+            onKeyUp={(e) => { if (e.key === 'Enter') submitForm() }}
             className="w-full bg-dark-800 border border-dark-700 rounded-lg px-4 py-2 text-dark-100"
           />
         </div>

@@ -15,7 +15,29 @@
     "activity": "Actividad",
     "assets": "Biblioteca de medios",
     "mail": "Enviar email",
-    "storage": "Almacenamiento"
+    "storage": "Almacenamiento",
+    "site": "Página principal"
+  },
+  "site": {
+    "title": "Configuración de la página principal",
+    "subtitle": "Gestiona el aspecto de la página principal.",
+    "heroTitle": "Imagen de fondo de la sección hero",
+    "heroDescription": "Imagen mostrada como fondo de la sección hero. La parte inferior se funde con el color oscuro. Formato horizontal recomendado. Máx. 10 MB, JPEG/PNG/WebP.",
+    "noHeroImage": "Sin imagen — se usa el gradiente por defecto",
+    "heroImageAlt": "Imagen de fondo de la página principal",
+    "loading": "Cargando...",
+    "uploadFromDisk": "Subir desde disco",
+    "uploading": "Subiendo...",
+    "pickFromLibrary": "Elegir de la biblioteca",
+    "pickFromGallery": "Elegir de la galería",
+    "deleteHeroImage": "Eliminar imagen",
+    "focalPointHint": "Arrastra la imagen para establecer el punto focal visible en la sección hero.",
+    "unsavedChanges": "Cambios sin guardar",
+    "save": "Guardar",
+    "saving": "Guardando...",
+    "cancel": "Cancelar",
+    "deleteConfirmTitle": "Eliminar imagen de fondo",
+    "deleteConfirmMessage": "La imagen se eliminará y la página principal volverá al gradiente por defecto. Esta acción no se puede deshacer."
   },
   "news": {
     "title": "Noticias",
@@ -210,7 +232,17 @@
     "spots": "Plazas",
     "commentOptional": "Comentario (opcional)",
     "guestNotePlaceholder": "Nombre / nota (p.ej. Juan García — tel. 123456789)",
-    "addParticipantConfirm": "Añadir"
+    "addParticipantConfirm": "Añadir",
+    "templatesTitle": "Plantillas de franjas horarias",
+    "templatesDescription": "Plantillas predefinidas para crear franjas horarias rápidamente. Al añadir una nueva franja puedes elegir una plantilla o introducir los datos manualmente.",
+    "templatesEmpty": "Sin plantillas — añade la primera a continuación.",
+    "templateNameLabel": "Nombre de la franja",
+    "templateNamePlaceholder": "p.ej. Entrenamiento de boulder",
+    "templateParticipantsLabel": "Máx. participantes",
+    "templateAdd": "Añadir plantilla",
+    "templateSave": "Guardar plantilla",
+    "templateSaving": "Guardando...",
+    "templateRemove": "Eliminar plantilla"
   },
   "reservations": {
     "noUpcoming": "No hay reservas próximas",

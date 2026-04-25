@@ -1,5 +1,7 @@
 package pl.nextsteppro.climbing.api.admin.settings;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -10,11 +12,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import pl.nextsteppro.climbing.api.settings.SiteSettingsDtos.HeroImageDto;
+import pl.nextsteppro.climbing.api.settings.SiteSettingsDtos.SlotTemplateDto;
 import pl.nextsteppro.climbing.domain.settings.SiteSetting;
 import pl.nextsteppro.climbing.domain.settings.SiteSettingsRepository;
 import pl.nextsteppro.climbing.infrastructure.storage.FileStorageService;
 
 import java.io.IOException;
+import java.util.List;
 
 @Service
 @Transactional
@@ -26,6 +30,8 @@ public class AdminSiteSettingsService {
     private static final String KEY_IMAGE_FILENAME = "hero_image_filename";
     private static final String KEY_FOCAL_POINT_X = "hero_focal_point_x";
     private static final String KEY_FOCAL_POINT_Y = "hero_focal_point_y";
+    private static final String KEY_SLOT_TEMPLATES = "slot_templates";
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     private final SiteSettingsRepository siteSettingsRepository;
     private final FileStorageService fileStorageService;
@@ -98,6 +104,29 @@ public class AdminSiteSettingsService {
         siteSettingsRepository.deleteById(KEY_IMAGE_FILENAME);
         siteSettingsRepository.deleteById(KEY_FOCAL_POINT_X);
         siteSettingsRepository.deleteById(KEY_FOCAL_POINT_Y);
+    }
+
+    @Transactional(readOnly = true)
+    public List<SlotTemplateDto> getSlotTemplates() {
+        String json = siteSettingsRepository.findById(KEY_SLOT_TEMPLATES)
+                .map(SiteSetting::getValue)
+                .orElse(null);
+        if (json == null) return List.of();
+        try {
+            return OBJECT_MAPPER.readValue(json, new TypeReference<List<SlotTemplateDto>>() {});
+        } catch (Exception e) {
+            logger.warn("Failed to parse slot templates: {}", e.getMessage());
+            return List.of();
+        }
+    }
+
+    public List<SlotTemplateDto> saveSlotTemplates(List<SlotTemplateDto> templates) {
+        try {
+            save(KEY_SLOT_TEMPLATES, OBJECT_MAPPER.writeValueAsString(templates));
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to serialize slot templates", e);
+        }
+        return templates;
     }
 
     private void saveFocalPoint(@Nullable Float x, @Nullable Float y) {

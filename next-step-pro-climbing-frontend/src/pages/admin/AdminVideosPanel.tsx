@@ -198,6 +198,7 @@ export function AdminVideosPanel() {
               type="text"
               value={formTitle}
               onChange={(e) => setFormTitle(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleSaveDraft() } }}
               className="w-full bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-dark-100 placeholder-dark-500 focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500/30"
             />
           </div>
@@ -211,6 +212,7 @@ export function AdminVideosPanel() {
               type="url"
               value={formYoutubeUrl}
               onChange={(e) => setFormYoutubeUrl(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleSaveDraft() } }}
               placeholder={t('videos.youtubeUrlPlaceholder')}
               className="w-full bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-dark-100 placeholder-dark-500 focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500/30"
             />

@@ -9,4 +9,6 @@ public class SiteSettingsDtos {
             @Nullable Float focalPointX,
             @Nullable Float focalPointY
     ) {}
+
+    public record SlotTemplateDto(String name, int maxParticipants) {}
 }

@@ -756,3 +756,8 @@ export interface HeroImageDto {
   focalPointX: number | null
   focalPointY: number | null
 }
+
+export interface SlotTemplate {
+  name: string
+  maxParticipants: number
+}

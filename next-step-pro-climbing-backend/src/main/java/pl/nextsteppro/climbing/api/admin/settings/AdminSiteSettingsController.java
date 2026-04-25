@@ -11,8 +11,10 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import pl.nextsteppro.climbing.api.settings.SiteSettingsDtos.HeroImageDto;
+import pl.nextsteppro.climbing.api.settings.SiteSettingsDtos.SlotTemplateDto;
 
 import java.io.IOException;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/admin/settings")
@@ -79,6 +81,18 @@ public class AdminSiteSettingsController {
     public ResponseEntity<Void> deleteHeroImage() throws IOException {
         adminSiteSettingsService.deleteHeroImage();
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/slot-templates")
+    @Operation(summary = "Pobierz predefiniowane szablony slotów")
+    public ResponseEntity<List<SlotTemplateDto>> getSlotTemplates() {
+        return ResponseEntity.ok(adminSiteSettingsService.getSlotTemplates());
+    }
+
+    @PutMapping("/slot-templates")
+    @Operation(summary = "Zapisz predefiniowane szablony slotów")
+    public ResponseEntity<List<SlotTemplateDto>> saveSlotTemplates(@RequestBody List<SlotTemplateDto> templates) {
+        return ResponseEntity.ok(adminSiteSettingsService.saveSlotTemplates(templates));
     }
 
     public record SetHeroUrlRequest(String url, @Nullable Float focalPointX, @Nullable Float focalPointY) {}

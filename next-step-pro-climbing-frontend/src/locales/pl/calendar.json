@@ -136,6 +136,8 @@
     "endAfterStart": "Godzina zakończenia musi być późniejsza niż rozpoczęcia",
     "availabilityWindow": "Okno dostępności (zadzwoń i ustal termin)",
     "availabilityWindowHint": "Klienci zobaczą ten blok jako dostępny i będą wiedzieć, że mogą zadzwonić — bez możliwości samodzielnej rezerwacji.",
+    "templateLabel": "Szablon",
+    "templatePlaceholder": "— własna nazwa —",
     "submit": "Utwórz termin",
     "cancel": "Anuluj"
   },
