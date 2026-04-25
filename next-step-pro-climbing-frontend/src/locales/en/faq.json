@@ -1,0 +1,153 @@
+{
+  "hero": {
+    "title": "Frequently Asked Questions",
+    "subtitle": "Everything you need to know about bookings, your account, and how the app works."
+  },
+  "cta": {
+    "title": "Didn't find your answer?",
+    "subtitle": "Contact us directly — we'll be happy to help.",
+    "button": "Go to contact"
+  },
+  "sections": [
+    {
+      "title": "Account & login",
+      "items": [
+        {
+          "question": "Do I need an account to browse the offer?",
+          "answer": "No — the calendar, courses, gallery, news and videos are all available without logging in. An account is only required to make bookings."
+        },
+        {
+          "question": "Do I need to be logged in to book a training session or course?",
+          "answer": "Yes — booking requires a logged-in account with a completed profile (first name, last name, phone number). If you don't have an account yet, registration takes less than a minute."
+        },
+        {
+          "question": "How do I create an account?",
+          "answer": "Click \"Register\" in the top right corner, enter your first name, last name, phone number, email address and password. An activation link will be sent to your email — once you click it, your account is active and you can start booking right away. You can also sign in with one click via Google."
+        },
+        {
+          "question": "I didn't receive the activation email — what should I do?",
+          "answer": "Check your SPAM or Promotions folder. If the email still hasn't arrived, on the login page you'll find the option \"Resend activation link\" — enter your email and we'll send a new message."
+        },
+        {
+          "question": "I forgot my password — what should I do?",
+          "answer": "On the login page, click \"Forgot my password\" and enter your email address. You'll receive a link to set a new password (valid for 1 hour). If you log in via Google, password changes within the app are not available — your account is managed by Google."
+        }
+      ]
+    },
+    {
+      "title": "User profile",
+      "items": [
+        {
+          "question": "What information do I need to fill in to make a booking?",
+          "answer": "First name, last name and phone number are required. If this data is missing, the app will automatically redirect you to the Settings page where you can fill it in — after saving, return to the calendar and book normally."
+        },
+        {
+          "question": "Can I update my personal details?",
+          "answer": "Yes — in the Settings tab (profile icon in the top right corner) you can update your first name, last name, phone number, password and email notification preferences at any time."
+        }
+      ]
+    },
+    {
+      "title": "Bookings — training & courses",
+      "items": [
+        {
+          "question": "Does a booking mean I'm obligated to pay?",
+          "answer": "No — a booking is simply an expression of interest in attending. After signing up, the instructor will contact you to arrange all the details, including payment. Feel free to book without worry."
+        },
+        {
+          "question": "How do I book a training slot?",
+          "answer": "Go to the Calendar, select the day you're interested in, then click the desired time slot. In the details window you'll see available spots, time and description. Click \"Book\", confirm, and you're done — the booking is immediately active."
+        },
+        {
+          "question": "Can I book for multiple people at once?",
+          "answer": "Yes! When booking you can specify the number of participants (minimum 1). The system will check if that many spots are available and reserve them all at once. If you need more spots than currently shown in the calendar — contact us directly and we'll be happy to increase the limit for that session."
+        },
+        {
+          "question": "How do I sign up for a course?",
+          "answer": "Go to the Courses page, click the course you're interested in to expand it, then go to the \"Available dates\" section. From there you can navigate to the calendar with the selected day or sign up for the entire course cycle with one click."
+        },
+        {
+          "question": "How far in advance do I need to book?",
+          "answer": "Bookings must be made at least 12 hours before the session starts. Booking in advance gives the instructor time to prepare and helps us manage the group efficiently."
+        },
+        {
+          "question": "Can I add a comment to my booking?",
+          "answer": "Yes — when booking there's an optional field for a short message to the trainer (e.g. about an injury, training preferences or special needs). The comment is visible only to the session leader."
+        }
+      ]
+    },
+    {
+      "title": "Cancelling a booking",
+      "items": [
+        {
+          "question": "How do I cancel a booking?",
+          "answer": "Go to the \"My bookings\" tab (available after logging in from the top menu), find the session and click \"Cancel\". The cancellation confirmation appears immediately and the spot is released for other users."
+        },
+        {
+          "question": "How late can I cancel?",
+          "answer": "Cancellations are possible up to 12 hours before the scheduled session. After that time the cancel button will not be available. In urgent, justified cases please contact the instructor directly — we'll do our best to find a solution."
+        }
+      ]
+    },
+    {
+      "title": "Waitlist",
+      "items": [
+        {
+          "question": "What happens when all spots are taken?",
+          "answer": "When all spots are taken, instead of the \"Book\" button you'll see the option \"Join waitlist\". One click is all it takes — the app will automatically notify you by email if a spot becomes available."
+        },
+        {
+          "question": "How does the waitlist work?",
+          "answer": "When someone cancels a booking, all people on the waitlist simultaneously receive an email offering them the available spot. They have 24 hours (or until the session starts, whichever is sooner) to confirm the booking in the app. The first confirmation wins — others are automatically returned to the list and wait for the next cancellation."
+        },
+        {
+          "question": "Can I check my waitlist status?",
+          "answer": "Yes — in the \"My bookings\" tab there is a dedicated section showing the waitlists you're on. When a spot becomes available and you need to confirm it, you'll see a clear notification with a countdown timer. We'll also send you an email with details about the available spot — you have 24 hours to confirm."
+        },
+        {
+          "question": "Can I leave the waitlist?",
+          "answer": "Yes — you can leave a waitlist at any time in the \"My bookings\" tab. After leaving, the spot offer passes to the next person in the queue."
+        }
+      ]
+    },
+    {
+      "title": "My bookings",
+      "items": [
+        {
+          "question": "Where can I see my bookings?",
+          "answer": "In the \"My bookings\" tab (available after logging in) you'll find all upcoming training sessions and active waitlists. Past bookings move to an archive visible below the current ones — the archive list can be expanded at any time to review your full training history."
+        }
+      ]
+    },
+    {
+      "title": "Newsletter & notifications",
+      "items": [
+        {
+          "question": "How do I subscribe to the newsletter?",
+          "answer": "At your first login a window will appear asking about the newsletter subscription — you can agree or decline then. You can also enable or disable the newsletter at any time in the Settings tab."
+        },
+        {
+          "question": "How do I unsubscribe from the newsletter?",
+          "answer": "Every email from us contains an \"Unsubscribe\" link in the footer — one click and you're done, no login required. You can also change this setting in the Settings tab in the app."
+        },
+        {
+          "question": "Can I disable booking email notifications?",
+          "answer": "Yes — in Account Settings you'll find an email notifications toggle. You can turn off booking emails independently from the newsletter subscription."
+        }
+      ]
+    },
+    {
+      "title": "Security & account",
+      "items": [
+        {
+          "question": "What happens after too many failed login attempts?",
+          "answer": "After several failed attempts the account is temporarily locked — this is an automatic protection against unauthorized access. Wait a moment and try again, or use the password reset option to regain access."
+        },
+        {
+          "question": "How do I delete my account?",
+          "answer": "In Account Settings you'll find the \"Delete account\" option. The app will ask for additional confirmation before proceeding. Please note that this action is irreversible — all your data and booking history will be permanently deleted."
+        }
+      ]
+    }
+  ]
+}

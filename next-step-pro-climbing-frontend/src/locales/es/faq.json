@@ -1,0 +1,153 @@
+{
+  "hero": {
+    "title": "Preguntas frecuentes",
+    "subtitle": "Todo lo que necesitas saber sobre reservas, tu cuenta y el funcionamiento de la aplicación."
+  },
+  "cta": {
+    "title": "¿No encontraste tu respuesta?",
+    "subtitle": "Contáctanos directamente — estaremos encantados de ayudarte.",
+    "button": "Ir a contacto"
+  },
+  "sections": [
+    {
+      "title": "Cuenta e inicio de sesión",
+      "items": [
+        {
+          "question": "¿Necesito una cuenta para ver la oferta?",
+          "answer": "No — el calendario, los cursos, la galería, las noticias y los vídeos están disponibles sin iniciar sesión. La cuenta solo es necesaria para hacer reservas."
+        },
+        {
+          "question": "¿Necesito estar conectado para reservar un entrenamiento o curso?",
+          "answer": "Sí — la reserva requiere una cuenta conectada con el perfil completo (nombre, apellido, número de teléfono). Si aún no tienes cuenta, el registro lleva menos de un minuto."
+        },
+        {
+          "question": "¿Cómo creo una cuenta?",
+          "answer": "Haz clic en \"Registrarse\" en la esquina superior derecha, introduce tu nombre, apellido, número de teléfono, dirección de email y contraseña. Se enviará un enlace de activación a tu email — al hacer clic en él, tu cuenta estará activa y podrás reservar de inmediato. También puedes iniciar sesión con un clic mediante Google."
+        },
+        {
+          "question": "No recibí el email de activación — ¿qué hago?",
+          "answer": "Revisa la carpeta de SPAM o Promociones. Si el email aún no ha llegado, en la página de inicio de sesión encontrarás la opción \"Reenviar enlace de activación\" — introduce tu email y te enviaremos un nuevo mensaje."
+        },
+        {
+          "question": "Olvidé mi contraseña — ¿qué hago?",
+          "answer": "En la página de inicio de sesión, haz clic en \"Olvidé mi contraseña\" e introduce tu dirección de email. Recibirás un enlace para establecer una nueva contraseña (válido durante 1 hora). Si inicias sesión a través de Google, el cambio de contraseña en la aplicación no está disponible — tu cuenta está gestionada por Google."
+        }
+      ]
+    },
+    {
+      "title": "Perfil de usuario",
+      "items": [
+        {
+          "question": "¿Qué datos debo completar para hacer una reserva?",
+          "answer": "Se requieren: nombre, apellido y número de teléfono. Si estos datos faltan, la aplicación te redirigirá automáticamente a la página de Configuración donde podrás introducirlos — después de guardar, vuelve al calendario y reserva normalmente."
+        },
+        {
+          "question": "¿Puedo cambiar mis datos personales?",
+          "answer": "Sí — en la pestaña Configuración (icono de perfil en la esquina superior derecha) puedes actualizar tu nombre, apellido, número de teléfono, contraseña y preferencias de notificaciones por email en cualquier momento."
+        }
+      ]
+    },
+    {
+      "title": "Reservas — entrenamientos y cursos",
+      "items": [
+        {
+          "question": "¿Una reserva implica la obligación de pagar?",
+          "answer": "No — una reserva es simplemente una expresión de interés en participar. Después de inscribirte, el instructor se pondrá en contacto contigo para acordar todos los detalles, incluido el pago. Puedes reservar sin preocupación."
+        },
+        {
+          "question": "¿Cómo reservo un turno de entrenamiento?",
+          "answer": "Ve al Calendario, selecciona el día que te interesa y haz clic en el turno deseado. En la ventana de detalles verás los lugares disponibles, el horario y la descripción. Haz clic en \"Reservar\", confirma y listo — la reserva está activa de inmediato."
+        },
+        {
+          "question": "¿Puedo reservar para varias personas a la vez?",
+          "answer": "¡Sí! Al reservar puedes indicar el número de participantes (mínimo 1). El sistema verificará si hay suficientes lugares disponibles y los reservará todos a la vez. Si necesitas más plazas de las que aparecen actualmente en el calendario — contáctanos directamente y estaremos encantados de aumentar el límite para ese turno."
+        },
+        {
+          "question": "¿Cómo me inscribo en un curso?",
+          "answer": "Ve a la página de Cursos, haz clic en el curso que te interesa para expandirlo y luego ve a la sección \"Fechas disponibles\". Desde allí puedes ir al calendario con el día seleccionado o inscribirte en todo el ciclo del curso con un solo clic."
+        },
+        {
+          "question": "¿Con cuánta antelación debo reservar?",
+          "answer": "Las reservas deben realizarse al menos 12 horas antes del inicio de la sesión. Reservar con antelación le da tiempo al instructor para prepararse y nos ayuda a gestionar el grupo eficientemente."
+        },
+        {
+          "question": "¿Puedo añadir un comentario a mi reserva?",
+          "answer": "Sí — al reservar hay un campo opcional para un breve mensaje al entrenador (por ejemplo, sobre una lesión, preferencias de entrenamiento o necesidades especiales). El comentario solo es visible para el responsable de la sesión."
+        }
+      ]
+    },
+    {
+      "title": "Cancelación de reservas",
+      "items": [
+        {
+          "question": "¿Cómo cancelo una reserva?",
+          "answer": "Ve a la pestaña \"Mis reservas\" (disponible tras iniciar sesión desde el menú superior), encuentra la sesión y haz clic en \"Cancelar\". La confirmación de cancelación aparece de inmediato y el lugar queda libre para otros usuarios."
+        },
+        {
+          "question": "¿Hasta cuándo puedo cancelar?",
+          "answer": "Las cancelaciones son posibles hasta 12 horas antes de la sesión programada. Pasado ese tiempo, el botón de cancelación no estará disponible. En casos urgentes y justificados, por favor contacta directamente al instructor — haremos lo posible por encontrar una solución."
+        }
+      ]
+    },
+    {
+      "title": "Lista de espera",
+      "items": [
+        {
+          "question": "¿Qué ocurre cuando todos los lugares están ocupados?",
+          "answer": "Cuando todos los lugares están ocupados, en lugar del botón \"Reservar\" aparecerá la opción \"Unirse a la lista de espera\". Un solo clic es suficiente — la aplicación te notificará automáticamente por email si se libera un lugar."
+        },
+        {
+          "question": "¿Cómo funciona la lista de espera?",
+          "answer": "Cuando alguien cancela una reserva, todas las personas en la lista de espera reciben simultáneamente un email con la oferta del lugar disponible. Tienen 24 horas (o hasta el inicio de la sesión, lo que sea antes) para confirmar la reserva en la aplicación. La primera confirmación gana — los demás vuelven automáticamente a la lista y esperan la próxima cancelación."
+        },
+        {
+          "question": "¿Puedo comprobar mi estado en la lista de espera?",
+          "answer": "Sí — en la pestaña \"Mis reservas\" hay una sección dedicada que muestra las listas de espera en las que te encuentras. Cuando haya un lugar disponible y debas confirmarlo, verás una notificación clara con cuenta atrás. Además te enviaremos un email con información sobre el lugar disponible — tienes 24 horas para confirmar."
+        },
+        {
+          "question": "¿Puedo abandonar la lista de espera?",
+          "answer": "Sí — puedes abandonar una lista de espera en cualquier momento desde la pestaña \"Mis reservas\". Al salir, la oferta del lugar pasa a la siguiente persona en la cola."
+        }
+      ]
+    },
+    {
+      "title": "Mis reservas",
+      "items": [
+        {
+          "question": "¿Dónde puedo ver mis reservas?",
+          "answer": "En la pestaña \"Mis reservas\" (disponible tras iniciar sesión) encontrarás todos los entrenamientos próximos y las listas de espera activas. Las reservas pasadas van a un archivo visible debajo de las actuales — la lista del archivo se puede expandir en cualquier momento para revisar todo el historial de tus entrenamientos."
+        }
+      ]
+    },
+    {
+      "title": "Newsletter y notificaciones",
+      "items": [
+        {
+          "question": "¿Cómo me suscribo al newsletter?",
+          "answer": "En tu primer inicio de sesión aparecerá una ventana preguntando sobre la suscripción al newsletter — puedes aceptar o rechazar en ese momento. También puedes activar o desactivar el newsletter en cualquier momento en la pestaña Configuración."
+        },
+        {
+          "question": "¿Cómo me doy de baja del newsletter?",
+          "answer": "Cada email nuestro contiene un enlace \"Darme de baja\" en el pie de página — un clic y listo, sin necesidad de iniciar sesión. También puedes cambiar esta configuración en la pestaña Configuración de la aplicación."
+        },
+        {
+          "question": "¿Puedo desactivar las notificaciones por email sobre reservas?",
+          "answer": "Sí — en la Configuración de la cuenta encontrarás un interruptor de notificaciones por email. Puedes desactivar los emails sobre reservas de forma independiente a la suscripción al newsletter."
+        }
+      ]
+    },
+    {
+      "title": "Seguridad y cuenta",
+      "items": [
+        {
+          "question": "¿Qué ocurre tras demasiados intentos de inicio de sesión fallidos?",
+          "answer": "Después de varios intentos fallidos, la cuenta queda bloqueada temporalmente — es una protección automática contra el acceso no autorizado. Espera un momento e inténtalo de nuevo, o usa la opción de restablecer contraseña para recuperar el acceso."
+        },
+        {
+          "question": "¿Cómo elimino mi cuenta?",
+          "answer": "En la Configuración de la cuenta encontrarás la opción \"Eliminar cuenta\". La aplicación pedirá confirmación adicional antes de proceder. Ten en cuenta que esta acción es irreversible — todos tus datos e historial de reservas se eliminarán permanentemente."
+        }
+      ]
+    }
+  ]
+}

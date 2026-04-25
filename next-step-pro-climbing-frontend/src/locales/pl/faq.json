@@ -1,0 +1,153 @@
+{
+  "hero": {
+    "title": "Często zadawane pytania",
+    "subtitle": "Wszystko, co warto wiedzieć o rezerwacjach, koncie i działaniu aplikacji."
+  },
+  "cta": {
+    "title": "Nie znalazłeś/aś odpowiedzi?",
+    "subtitle": "Skontaktuj się z nami bezpośrednio — chętnie pomożemy.",
+    "button": "Przejdź do kontaktu"
+  },
+  "sections": [
+    {
+      "title": "Konto i logowanie",
+      "items": [
+        {
+          "question": "Czy muszę mieć konto, żeby przeglądać ofertę?",
+          "answer": "Nie — kalendarz, kursy, galeria, aktualności i filmy są dostępne bez logowania. Konto jest potrzebne wyłącznie do dokonywania rezerwacji."
+        },
+        {
+          "question": "Czy muszę być zalogowany, żeby zarezerwować trening lub kurs?",
+          "answer": "Tak — rezerwacja wymaga zalogowanego konta z uzupełnionym profilem (imię, nazwisko, numer telefonu). Jeśli nie masz jeszcze konta, rejestracja zajmuje mniej niż minutę."
+        },
+        {
+          "question": "Jak założyć konto?",
+          "answer": "Kliknij 'Zarejestruj się' w prawym górnym rogu strony, podaj imię, nazwisko, numer telefonu, adres email i hasło. Na podany adres przyjdzie link aktywacyjny — po kliknięciu konto jest aktywne i możesz od razu rezerwować. Alternatywnie możesz zalogować się jednym kliknięciem przez Google."
+        },
+        {
+          "question": "Nie otrzymałem/am maila aktywacyjnego — co robić?",
+          "answer": "Sprawdź folder SPAM lub Oferty. Jeśli mail nadal nie dotarł, na stronie logowania znajdziesz opcję 'Wyślij ponownie link aktywacyjny' — wpisz swój email i wyślemy nową wiadomość."
+        },
+        {
+          "question": "Zapomniałem/am hasła — co robić?",
+          "answer": "Na stronie logowania kliknij 'Nie pamiętam hasła' i podaj swój adres email. Otrzymasz link do ustawienia nowego hasła (ważny 1 godzinę). Jeśli logujesz się przez Google, możliwość zmiany hasła w aplikacji nie jest dostępna — konto zarządzane jest przez Google."
+        }
+      ]
+    },
+    {
+      "title": "Profil użytkownika",
+      "items": [
+        {
+          "question": "Jakie dane muszę uzupełnić, żeby zarezerwować trening?",
+          "answer": "Wymagane są: imię, nazwisko i numer telefonu. Jeśli te dane nie są uzupełnione, aplikacja automatycznie przeniesie Cię do strony Ustawienia, gdzie możesz je wpisać — po zapisaniu wróć do kalendarza i rezerwuj normalnie."
+        },
+        {
+          "question": "Czy mogę zmienić swoje dane osobowe?",
+          "answer": "Tak — w zakładce Ustawienia (ikona profilu w prawym górnym rogu) możesz w każdej chwili zmienić imię, nazwisko, numer telefonu, hasło oraz preferencje powiadomień emailowych."
+        }
+      ]
+    },
+    {
+      "title": "Rezerwacje — treningi i kursy",
+      "items": [
+        {
+          "question": "Czy rezerwacja oznacza obowiązek zapłaty?",
+          "answer": "Nie — rezerwacja to zgłoszenie chęci uczestnictwa. Po zapisaniu się instruktor skontaktuje się z Tobą w celu ustalenia wszystkich szczegółów, w tym płatności. Możesz rezerwować bez obaw."
+        },
+        {
+          "question": "Jak zarezerwować miejsce na trening?",
+          "answer": "Wejdź do Kalendarza, wybierz interesujący Cię dzień, a następnie kliknij wybrany termin (slot). W oknie szczegółów zobaczysz dostępne miejsca, godzinę i opis. Kliknij 'Zarezerwuj', potwierdź i gotowe — rezerwacja jest natychmiast aktywna."
+        },
+        {
+          "question": "Czy mogę zarezerwować miejsce dla kilku osób naraz?",
+          "answer": "Tak! Przy rezerwacji możesz wskazać liczbę uczestników (minimum 1). System sprawdzi, czy tyle miejsc jest dostępnych i zarezerwuje je wszystkie za jednym razem. Jeśli potrzebujesz więcej miejsc niż aktualnie widnieje w kalendarzu — skontaktuj się z nami bezpośrednio, a chętnie zwiększymy limit miejsc dla danego terminu."
+        },
+        {
+          "question": "Jak zarezerwować udział w kursie?",
+          "answer": "Wejdź na stronę Kursy, kliknij wybrany kurs, aby go rozwinąć, a następnie przejdź do sekcji 'Dostępne terminy'. Stamtąd możesz przejść do kalendarza z wybranym dniem lub zapisać się na cały cykl kursu jednym kliknięciem."
+        },
+        {
+          "question": "Do kiedy mogę zarezerwować miejsce?",
+          "answer": "Rezerwacji możesz dokonać najpóźniej 12 godzin przed rozpoczęciem zajęć. Wcześniejsza rezerwacja daje instruktorowi czas na przygotowanie i umożliwia nam sprawne zarządzanie grupą."
+        },
+        {
+          "question": "Czy mogę dodać komentarz do rezerwacji?",
+          "answer": "Tak — przy rezerwacji dostępne jest opcjonalne pole na krótką wiadomość dla trenera (np. informacja o kontuzji, preferencjach treningowych czy szczególnych potrzebach). Komentarz widoczny jest wyłącznie dla prowadzącego."
+        }
+      ]
+    },
+    {
+      "title": "Anulowanie rezerwacji",
+      "items": [
+        {
+          "question": "Jak anulować rezerwację?",
+          "answer": "Wejdź do zakładki 'Moje rezerwacje' (dostępnej po zalogowaniu w górnym menu), znajdź wybrany termin i kliknij 'Anuluj'. Potwierdzenie anulowania pojawi się od razu, a miejsce zostanie zwolnione dla innych użytkowników."
+        },
+        {
+          "question": "Do kiedy mogę anulować?",
+          "answer": "Anulowanie jest możliwe najpóźniej 12 godzin przed zaplanowanymi zajęciami. Po upływie tego czasu przycisk anulowania nie będzie dostępny. W nagłych, uzasadnionych przypadkach prosimy o bezpośredni kontakt z instruktorem — postaramy się znaleźć rozwiązanie."
+        }
+      ]
+    },
+    {
+      "title": "Lista oczekujących",
+      "items": [
+        {
+          "question": "Co się dzieje, gdy wszystkie miejsca są zajęte?",
+          "answer": "Gdy wszystkie miejsca są zajęte, zamiast przycisku 'Zarezerwuj' pojawi się opcja 'Dołącz do listy oczekujących'. Wystarczy jedno kliknięcie — aplikacja automatycznie powiadomi Cię emailem, jeśli miejsce się zwolni."
+        },
+        {
+          "question": "Jak działa lista oczekujących?",
+          "answer": "Gdy ktoś anuluje rezerwację, wszystkie osoby z listy oczekujących otrzymują jednocześnie email z ofertą zajęcia wolnego miejsca. Mają 24 godziny (lub czas do początku zajęć, jeśli jest krótszy), aby potwierdzić rezerwację w aplikacji. Pierwsze potwierdzenie wygrywa — pozostałe osoby automatycznie wracają na listę i czekają na kolejne zwolnienie."
+        },
+        {
+          "question": "Czy mogę sprawdzić swój status na liście?",
+          "answer": "Tak — w zakładce 'Moje rezerwacje' widoczna jest dedykowana sekcja z listami oczekujących, na których się znajdujesz. Gdy pojawi się wolne miejsce i będziesz musiał/a je potwierdzić, zobaczysz wyraźne powiadomienie z odliczaniem czasu. Dodatkowo wyślemy Ci emaila z informacją o dostępnym miejscu — masz 24 godziny na potwierdzenie."
+        },
+        {
+          "question": "Czy mogę opuścić listę oczekujących?",
+          "answer": "Tak — w każdej chwili możesz się wypisać z listy w zakładce 'Moje rezerwacje'. Po opuszczeniu listy zwolnione miejsce przechodzi do kolejnej osoby w kolejce."
+        }
+      ]
+    },
+    {
+      "title": "Moje rezerwacje",
+      "items": [
+        {
+          "question": "Gdzie widzę swoje rezerwacje?",
+          "answer": "W zakładce 'Moje rezerwacje' (dostępnej po zalogowaniu) znajdziesz wszystkie nadchodzące treningi oraz aktywne listy oczekujących. Minione rezerwacje trafiają do archiwum widocznego poniżej aktualnych — listę archiwalną można w każdej chwili rozwinąć i przejrzeć całą historię swoich treningów."
+        }
+      ]
+    },
+    {
+      "title": "Newsletter i powiadomienia",
+      "items": [
+        {
+          "question": "Jak zapisać się na newsletter?",
+          "answer": "Przy pierwszym logowaniu pojawi się okno z pytaniem o subskrypcję newslettera — możesz wtedy wyrazić zgodę lub odmówić. Możesz też włączyć lub wyłączyć newsletter w dowolnym momencie w zakładce Ustawienia."
+        },
+        {
+          "question": "Jak wypisać się z newslettera?",
+          "answer": "Każdy email od nas zawiera link 'Wypisz mnie' w stopce — jedno kliknięcie i gotowe, bez konieczności logowania. Możesz też zmienić to ustawienie w zakładce Ustawienia w aplikacji."
+        },
+        {
+          "question": "Czy mogę wyłączyć powiadomienia emailowe o rezerwacjach?",
+          "answer": "Tak — w Ustawieniach konta znajdziesz przełącznik powiadomień emailowych. Możesz wyłączyć emaile o rezerwacjach niezależnie od subskrypcji newslettera."
+        }
+      ]
+    },
+    {
+      "title": "Bezpieczeństwo i konto",
+      "items": [
+        {
+          "question": "Co się dzieje po wielu błędnych próbach logowania?",
+          "answer": "Po kilku nieudanych próbach konto zostaje tymczasowo zablokowane — to automatyczna ochrona przed nieautoryzowanym dostępem. Poczekaj chwilę i spróbuj ponownie, lub skorzystaj z opcji resetowania hasła, aby odblokować dostęp."
+        },
+        {
+          "question": "Jak usunąć konto?",
+          "answer": "W Ustawieniach konta znajdziesz opcję 'Usuń konto'. Przed potwierdzeniem aplikacja poprosi o dodatkowe potwierdzenie. Pamiętaj, że operacja jest nieodwracalna — wszystkie dane i historia rezerwacji zostaną trwale usunięte."
+        }
+      ]
+    }
+  ]
+}

@@ -43,6 +43,7 @@ export function Navbar() {
 
   const navLinksAfter = [
     { to: "/kontakt", label: t('nav.contact') },
+    { to: "/faq", label: "FAQ" },
     ...(isAdmin ? [{ to: "/admin", label: t('nav.admin') }] : []),
   ];
 
