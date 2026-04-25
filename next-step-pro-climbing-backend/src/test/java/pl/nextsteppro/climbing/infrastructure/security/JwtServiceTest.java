@@ -71,7 +71,7 @@ class JwtServiceTest {
         // Then
         assertNotNull(token);
         assertFalse(token.isEmpty());
-        assertTrue(token.split("\\.").length == 3, "JWT should have 3 parts (header.payload.signature)");
+        assertEquals(3, token.split("\\.").length, "JWT should have 3 parts (header.payload.signature)");
 
         // Verify it's a valid token
         assertTrue(jwtService.validateToken(token));
