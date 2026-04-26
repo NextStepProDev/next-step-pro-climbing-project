@@ -108,7 +108,7 @@ export function Footer() {
               Polityka prywatności
             </Link>
             <Link to="/faq" className="text-dark-600 hover:text-dark-400 transition-colors text-xs">
-              FAQ
+              {t('nav.help')}
             </Link>
           </p>
           <p className="mt-1 text-dark-600 text-xs">v{__APP_VERSION__}</p>
