@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
@@ -27,6 +27,15 @@ export function HomePage() {
     staleTime: 30 * 60 * 1000,
   });
   const heroImageUrl = heroData?.imageUrl ?? null;
+
+  useEffect(() => {
+    if (!heroImageUrl) return;
+    const img = new Image();
+    img.onload = () => setHeroImgLoaded(true);
+    img.src = heroImageUrl;
+    if (img.complete) setHeroImgLoaded(true);
+    return () => { img.onload = null; };
+  }, [heroImageUrl]);
   const objectPosition = heroData?.focalPointX != null
     ? `${(heroData.focalPointX * 100).toFixed(1)}% ${((heroData.focalPointY ?? 0.5) * 100).toFixed(1)}%`
     : 'center center';
@@ -59,7 +68,6 @@ export function HomePage() {
                 src={heroImageUrl}
                 alt=""
                 aria-hidden="true"
-                onLoad={() => setHeroImgLoaded(true)}
                 className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ${heroImgLoaded ? 'opacity-100' : 'opacity-0'}`}
                 style={{ objectPosition }}
               />
@@ -70,7 +78,6 @@ export function HomePage() {
               src={heroImageUrl}
               alt=""
               aria-hidden="true"
-              onLoad={() => setHeroImgLoaded(true)}
               className={`hidden sm:block absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ${heroImgLoaded ? 'opacity-100' : 'opacity-0'}`}
               style={{ objectPosition }}
             />
