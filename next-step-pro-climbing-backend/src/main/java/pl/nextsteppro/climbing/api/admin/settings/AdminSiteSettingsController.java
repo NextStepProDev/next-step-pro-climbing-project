@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import pl.nextsteppro.climbing.api.settings.SiteSettingsDtos.BadgeImageDto;
 import pl.nextsteppro.climbing.api.settings.SiteSettingsDtos.HeroImageDto;
 import pl.nextsteppro.climbing.api.settings.SiteSettingsDtos.SlotTemplateDto;
 
@@ -83,6 +84,44 @@ public class AdminSiteSettingsController {
         return ResponseEntity.noContent().build();
     }
 
+    @GetMapping("/badge")
+    @Operation(summary = "Pobierz aktualne logo/badge strony głównej")
+    public ResponseEntity<BadgeImageDto> getBadgeImage() {
+        return ResponseEntity.ok(adminSiteSettingsService.getBadgeImage());
+    }
+
+    @PutMapping("/badge/url")
+    @Operation(summary = "Ustaw badge z biblioteki mediów")
+    public ResponseEntity<BadgeImageDto> setBadgeImageUrl(@RequestBody SetBadgeUrlRequest request) {
+        return ResponseEntity.ok(adminSiteSettingsService.setBadgeImageUrl(request.url(), request.linkUrl()));
+    }
+
+    @DeleteMapping("/badge")
+    @Operation(summary = "Usuń badge ze strony głównej")
+    public ResponseEntity<Void> deleteBadgeImage() {
+        adminSiteSettingsService.deleteBadgeImage();
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/badge-left")
+    @Operation(summary = "Pobierz lewe logo/badge strony głównej")
+    public ResponseEntity<BadgeImageDto> getBadgeLeftImage() {
+        return ResponseEntity.ok(adminSiteSettingsService.getBadgeLeftImage());
+    }
+
+    @PutMapping("/badge-left/url")
+    @Operation(summary = "Ustaw lewy badge z biblioteki mediów")
+    public ResponseEntity<BadgeImageDto> setBadgeLeftImageUrl(@RequestBody SetBadgeUrlRequest request) {
+        return ResponseEntity.ok(adminSiteSettingsService.setBadgeLeftImageUrl(request.url(), request.linkUrl()));
+    }
+
+    @DeleteMapping("/badge-left")
+    @Operation(summary = "Usuń lewy badge ze strony głównej")
+    public ResponseEntity<Void> deleteBadgeLeftImage() {
+        adminSiteSettingsService.deleteBadgeLeftImage();
+        return ResponseEntity.noContent().build();
+    }
+
     @GetMapping("/slot-templates")
     @Operation(summary = "Pobierz predefiniowane szablony slotów")
     public ResponseEntity<List<SlotTemplateDto>> getSlotTemplates() {
@@ -98,4 +137,6 @@ public class AdminSiteSettingsController {
     public record SetHeroUrlRequest(String url, @Nullable Float focalPointX, @Nullable Float focalPointY) {}
 
     public record SetFocalPointRequest(float x, float y) {}
+
+    public record SetBadgeUrlRequest(String url, @Nullable String linkUrl) {}
 }

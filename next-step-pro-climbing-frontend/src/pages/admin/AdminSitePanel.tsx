@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Upload, Trash2, Library, ImageIcon, Save, X } from 'lucide-react'
+import { Upload, Trash2, Library, ImageIcon, Save, X, Shield } from 'lucide-react'
 import { adminSiteApi } from '../../api/client'
 import { Button } from '../../components/ui/Button'
 import { ConfirmModal } from '../../components/ui/ConfirmModal'
@@ -261,6 +261,10 @@ export function AdminSitePanel() {
         </div>
       </section>
 
+      {/* Badge section */}
+      <BadgeSection />
+      <BadgeLeftSection />
+
       {/* Modals */}
       <MediaPickerModal
         isOpen={showMediaPicker}
@@ -283,5 +287,297 @@ export function AdminSitePanel() {
         onClose={() => setShowDeleteConfirm(false)}
       />
     </div>
+  )
+}
+
+function BadgeSection() {
+  const { t } = useTranslation('admin')
+  const queryClient = useQueryClient()
+
+  const [showMediaPicker, setShowMediaPicker] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [linkInput, setLinkInput] = useState('')
+  const [linkDirty, setLinkDirty] = useState(false)
+
+  const { data: badge, isLoading } = useQuery({
+    queryKey: ['admin', 'badge'],
+    queryFn: adminSiteApi.getBadge,
+  })
+
+  useEffect(() => {
+    if (badge?.linkUrl != null) setLinkInput(badge.linkUrl)
+  }, [badge?.linkUrl])
+
+  const invalidate = () => {
+    queryClient.invalidateQueries({ queryKey: ['admin', 'badge'] })
+    queryClient.invalidateQueries({ queryKey: ['badgeImage'] })
+  }
+
+  const setUrlMutation = useMutation({
+    mutationFn: ({ url, linkUrl }: { url: string; linkUrl?: string }) =>
+      adminSiteApi.setBadgeUrl(url, linkUrl),
+    onSuccess: () => { setLinkDirty(false); invalidate() },
+  })
+
+  const deleteMutation = useMutation({
+    mutationFn: adminSiteApi.deleteBadge,
+    onSuccess: () => {
+      setShowDeleteConfirm(false)
+      setLinkInput('')
+      setLinkDirty(false)
+      invalidate()
+    },
+  })
+
+  const handleAssetSelect = (asset: AssetDto) => {
+    setShowMediaPicker(false)
+    setUrlMutation.mutate({ url: asset.url, linkUrl: linkInput || undefined })
+  }
+
+  const handleLinkSave = () => {
+    if (!badge?.imageUrl) return
+    setUrlMutation.mutate({ url: badge.imageUrl, linkUrl: linkInput || undefined })
+  }
+
+  const savedUrl = badge?.imageUrl ?? null
+  const isBusy = setUrlMutation.isPending || deleteMutation.isPending
+
+  return (
+    <>
+      <section className="bg-dark-800 border border-dark-700 rounded-lg p-6 space-y-4">
+        <h3 className="text-base font-semibold text-dark-100">
+          {t('site.badgeTitle')}
+        </h3>
+        <p className="text-dark-400 text-sm">
+          {t('site.badgeDescription')}
+        </p>
+
+        {isLoading ? (
+          <div className="w-24 h-24 rounded-lg bg-dark-900 border border-dark-700 flex items-center justify-center">
+            <span className="text-dark-500 text-xs">{t('site.loading')}</span>
+          </div>
+        ) : savedUrl ? (
+          <div className="inline-flex items-center gap-4 bg-dark-900 border border-dark-700 rounded-lg p-4">
+            <img
+              src={savedUrl}
+              alt="Badge"
+              className="w-20 h-20 object-contain rounded"
+            />
+          </div>
+        ) : (
+          <div className="w-24 h-24 rounded-lg bg-dark-900 border border-dark-700 flex flex-col items-center justify-center gap-1 text-dark-500">
+            <Shield className="w-8 h-8" />
+            <span className="text-xs">{t('site.noBadge')}</span>
+          </div>
+        )}
+
+        {savedUrl && (
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-dark-300">
+              {t('site.badgeLinkLabel')}
+            </label>
+            <div className="flex gap-2">
+              <input
+                type="url"
+                value={linkInput}
+                onChange={e => { setLinkInput(e.target.value); setLinkDirty(true) }}
+                placeholder="https://..."
+                className="flex-1 rounded-lg bg-dark-900 border border-dark-700 px-3 py-2 text-sm text-dark-100 placeholder-dark-500 focus:border-primary-500 focus:outline-none"
+              />
+              {linkDirty && (
+                <Button onClick={handleLinkSave} disabled={isBusy}>
+                  <Save className="w-4 h-4 mr-2" />
+                  {t('site.save')}
+                </Button>
+              )}
+            </div>
+            <p className="text-xs text-dark-500">{t('site.badgeLinkHint')}</p>
+          </div>
+        )}
+
+        <div className="flex flex-wrap gap-3">
+          <Button
+            variant="secondary"
+            onClick={() => setShowMediaPicker(true)}
+            disabled={isBusy}
+          >
+            <Library className="w-4 h-4 mr-2" />
+            {t('site.pickBadgeFromLibrary')}
+          </Button>
+
+          {savedUrl && (
+            <Button
+              variant="danger"
+              onClick={() => setShowDeleteConfirm(true)}
+              disabled={isBusy}
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              {t('site.deleteBadge')}
+            </Button>
+          )}
+        </div>
+      </section>
+
+      <MediaPickerModal
+        isOpen={showMediaPicker}
+        onClose={() => setShowMediaPicker(false)}
+        onSelect={handleAssetSelect}
+      />
+
+      <ConfirmModal
+        isOpen={showDeleteConfirm}
+        title={t('site.deleteBadgeConfirmTitle')}
+        message={t('site.deleteBadgeConfirmMessage')}
+        confirmText={t('site.deleteBadge')}
+        onConfirm={() => deleteMutation.mutate()}
+        onClose={() => setShowDeleteConfirm(false)}
+      />
+    </>
+  )
+}
+
+function BadgeLeftSection() {
+  const { t } = useTranslation('admin')
+  const queryClient = useQueryClient()
+
+  const [showMediaPicker, setShowMediaPicker] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [linkInput, setLinkInput] = useState('')
+  const [linkDirty, setLinkDirty] = useState(false)
+
+  const { data: badge, isLoading } = useQuery({
+    queryKey: ['admin', 'badgeLeft'],
+    queryFn: adminSiteApi.getBadgeLeft,
+  })
+
+  useEffect(() => {
+    if (badge?.linkUrl != null) setLinkInput(badge.linkUrl)
+  }, [badge?.linkUrl])
+
+  const invalidate = () => {
+    queryClient.invalidateQueries({ queryKey: ['admin', 'badgeLeft'] })
+    queryClient.invalidateQueries({ queryKey: ['badgeLeftImage'] })
+  }
+
+  const setUrlMutation = useMutation({
+    mutationFn: ({ url, linkUrl }: { url: string; linkUrl?: string }) =>
+      adminSiteApi.setBadgeLeftUrl(url, linkUrl),
+    onSuccess: () => { setLinkDirty(false); invalidate() },
+  })
+
+  const deleteMutation = useMutation({
+    mutationFn: adminSiteApi.deleteBadgeLeft,
+    onSuccess: () => {
+      setShowDeleteConfirm(false)
+      setLinkInput('')
+      setLinkDirty(false)
+      invalidate()
+    },
+  })
+
+  const handleAssetSelect = (asset: AssetDto) => {
+    setShowMediaPicker(false)
+    setUrlMutation.mutate({ url: asset.url, linkUrl: linkInput || undefined })
+  }
+
+  const handleLinkSave = () => {
+    if (!badge?.imageUrl) return
+    setUrlMutation.mutate({ url: badge.imageUrl, linkUrl: linkInput || undefined })
+  }
+
+  const savedUrl = badge?.imageUrl ?? null
+  const isBusy = setUrlMutation.isPending || deleteMutation.isPending
+
+  return (
+    <>
+      <section className="bg-dark-800 border border-dark-700 rounded-lg p-6 space-y-4">
+        <h3 className="text-base font-semibold text-dark-100">
+          {t('site.badgeLeftTitle')}
+        </h3>
+        <p className="text-dark-400 text-sm">
+          {t('site.badgeLeftDescription')}
+        </p>
+
+        {isLoading ? (
+          <div className="w-24 h-24 rounded-lg bg-dark-900 border border-dark-700 flex items-center justify-center">
+            <span className="text-dark-500 text-xs">{t('site.loading')}</span>
+          </div>
+        ) : savedUrl ? (
+          <div className="inline-flex items-center gap-4 bg-dark-900 border border-dark-700 rounded-lg p-4">
+            <img
+              src={savedUrl}
+              alt="Badge"
+              className="w-20 h-20 object-contain rounded"
+            />
+          </div>
+        ) : (
+          <div className="w-24 h-24 rounded-lg bg-dark-900 border border-dark-700 flex flex-col items-center justify-center gap-1 text-dark-500">
+            <Shield className="w-8 h-8" />
+            <span className="text-xs">{t('site.noBadgeLeft')}</span>
+          </div>
+        )}
+
+        {savedUrl && (
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-dark-300">
+              {t('site.badgeLinkLabel')}
+            </label>
+            <div className="flex gap-2">
+              <input
+                type="url"
+                value={linkInput}
+                onChange={e => { setLinkInput(e.target.value); setLinkDirty(true) }}
+                placeholder="https://..."
+                className="flex-1 rounded-lg bg-dark-900 border border-dark-700 px-3 py-2 text-sm text-dark-100 placeholder-dark-500 focus:border-primary-500 focus:outline-none"
+              />
+              {linkDirty && (
+                <Button onClick={handleLinkSave} disabled={isBusy}>
+                  <Save className="w-4 h-4 mr-2" />
+                  {t('site.save')}
+                </Button>
+              )}
+            </div>
+            <p className="text-xs text-dark-500">{t('site.badgeLinkHint')}</p>
+          </div>
+        )}
+
+        <div className="flex flex-wrap gap-3">
+          <Button
+            variant="secondary"
+            onClick={() => setShowMediaPicker(true)}
+            disabled={isBusy}
+          >
+            <Library className="w-4 h-4 mr-2" />
+            {t('site.pickBadgeLeftFromLibrary')}
+          </Button>
+
+          {savedUrl && (
+            <Button
+              variant="danger"
+              onClick={() => setShowDeleteConfirm(true)}
+              disabled={isBusy}
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              {t('site.deleteBadgeLeft')}
+            </Button>
+          )}
+        </div>
+      </section>
+
+      <MediaPickerModal
+        isOpen={showMediaPicker}
+        onClose={() => setShowMediaPicker(false)}
+        onSelect={handleAssetSelect}
+      />
+
+      <ConfirmModal
+        isOpen={showDeleteConfirm}
+        title={t('site.deleteBadgeLeftConfirmTitle')}
+        message={t('site.deleteBadgeLeftConfirmMessage')}
+        confirmText={t('site.deleteBadgeLeft')}
+        onConfirm={() => deleteMutation.mutate()}
+        onClose={() => setShowDeleteConfirm(false)}
+      />
+    </>
   )
 }

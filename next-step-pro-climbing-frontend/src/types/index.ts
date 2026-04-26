@@ -757,6 +757,11 @@ export interface HeroImageDto {
   focalPointY: number | null
 }
 
+export interface BadgeImageDto {
+  imageUrl: string | null
+  linkUrl: string | null
+}
+
 export interface SlotTemplate {
   name: string
   maxParticipants: number

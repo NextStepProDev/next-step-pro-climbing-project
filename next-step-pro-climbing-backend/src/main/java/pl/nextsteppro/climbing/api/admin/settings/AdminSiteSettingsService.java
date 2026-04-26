@@ -11,6 +11,7 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+import pl.nextsteppro.climbing.api.settings.SiteSettingsDtos.BadgeImageDto;
 import pl.nextsteppro.climbing.api.settings.SiteSettingsDtos.HeroImageDto;
 import pl.nextsteppro.climbing.api.settings.SiteSettingsDtos.SlotTemplateDto;
 import pl.nextsteppro.climbing.domain.settings.SiteSetting;
@@ -30,6 +31,10 @@ public class AdminSiteSettingsService {
     private static final String KEY_IMAGE_FILENAME = "hero_image_filename";
     private static final String KEY_FOCAL_POINT_X = "hero_focal_point_x";
     private static final String KEY_FOCAL_POINT_Y = "hero_focal_point_y";
+    private static final String KEY_BADGE_IMAGE_URL = "badge_image_url";
+    private static final String KEY_BADGE_LINK_URL = "badge_link_url";
+    private static final String KEY_BADGE_LEFT_IMAGE_URL = "badge_left_image_url";
+    private static final String KEY_BADGE_LEFT_LINK_URL = "badge_left_link_url";
     private static final String KEY_SLOT_TEMPLATES = "slot_templates";
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
@@ -45,7 +50,7 @@ public class AdminSiteSettingsService {
         this.baseUrl = baseUrl;
     }
 
-    @Cacheable("siteSettings")
+    @Cacheable(value = "siteSettings", key = "'hero'")
     @Transactional(readOnly = true)
     public HeroImageDto getHeroImage() {
         String imageUrl = siteSettingsRepository.findById(KEY_IMAGE_URL)
@@ -104,6 +109,60 @@ public class AdminSiteSettingsService {
         siteSettingsRepository.deleteById(KEY_IMAGE_FILENAME);
         siteSettingsRepository.deleteById(KEY_FOCAL_POINT_X);
         siteSettingsRepository.deleteById(KEY_FOCAL_POINT_Y);
+    }
+
+    @Cacheable(value = "siteSettings", key = "'badge'")
+    @Transactional(readOnly = true)
+    public BadgeImageDto getBadgeImage() {
+        String imageUrl = siteSettingsRepository.findById(KEY_BADGE_IMAGE_URL)
+                .map(SiteSetting::getValue).orElse(null);
+        String linkUrl = siteSettingsRepository.findById(KEY_BADGE_LINK_URL)
+                .map(SiteSetting::getValue).orElse(null);
+        return new BadgeImageDto(imageUrl, linkUrl);
+    }
+
+    @CacheEvict(value = "siteSettings", allEntries = true)
+    public BadgeImageDto setBadgeImageUrl(String url, @Nullable String linkUrl) {
+        save(KEY_BADGE_IMAGE_URL, url);
+        if (linkUrl != null && !linkUrl.isBlank()) {
+            save(KEY_BADGE_LINK_URL, linkUrl);
+        } else {
+            siteSettingsRepository.deleteById(KEY_BADGE_LINK_URL);
+        }
+        return new BadgeImageDto(url, linkUrl);
+    }
+
+    @CacheEvict(value = "siteSettings", allEntries = true)
+    public void deleteBadgeImage() {
+        siteSettingsRepository.deleteById(KEY_BADGE_IMAGE_URL);
+        siteSettingsRepository.deleteById(KEY_BADGE_LINK_URL);
+    }
+
+    @Cacheable(value = "siteSettings", key = "'badgeLeft'")
+    @Transactional(readOnly = true)
+    public BadgeImageDto getBadgeLeftImage() {
+        String imageUrl = siteSettingsRepository.findById(KEY_BADGE_LEFT_IMAGE_URL)
+                .map(SiteSetting::getValue).orElse(null);
+        String linkUrl = siteSettingsRepository.findById(KEY_BADGE_LEFT_LINK_URL)
+                .map(SiteSetting::getValue).orElse(null);
+        return new BadgeImageDto(imageUrl, linkUrl);
+    }
+
+    @CacheEvict(value = "siteSettings", allEntries = true)
+    public BadgeImageDto setBadgeLeftImageUrl(String url, @Nullable String linkUrl) {
+        save(KEY_BADGE_LEFT_IMAGE_URL, url);
+        if (linkUrl != null && !linkUrl.isBlank()) {
+            save(KEY_BADGE_LEFT_LINK_URL, linkUrl);
+        } else {
+            siteSettingsRepository.deleteById(KEY_BADGE_LEFT_LINK_URL);
+        }
+        return new BadgeImageDto(url, linkUrl);
+    }
+
+    @CacheEvict(value = "siteSettings", allEntries = true)
+    public void deleteBadgeLeftImage() {
+        siteSettingsRepository.deleteById(KEY_BADGE_LEFT_IMAGE_URL);
+        siteSettingsRepository.deleteById(KEY_BADGE_LEFT_LINK_URL);
     }
 
     @Transactional(readOnly = true)

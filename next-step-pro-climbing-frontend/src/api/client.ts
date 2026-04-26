@@ -63,6 +63,7 @@ import type {
   CreateVideoRequest,
   UpdateVideoRequest,
   HeroImageDto,
+  BadgeImageDto,
   SlotTemplate,
 } from '../types'
 import {
@@ -949,6 +950,8 @@ export const adminVideoApi = {
 // Site Settings (public)
 export const siteSettingsApi = {
   getHero: () => fetchApi<HeroImageDto>('/settings/hero'),
+  getBadge: () => fetchApi<BadgeImageDto>('/settings/badge'),
+  getBadgeLeft: () => fetchApi<BadgeImageDto>('/settings/badge-left'),
 }
 
 // Admin Site Settings
@@ -992,6 +995,28 @@ export const adminSiteApi = {
 
   deleteHeroImage: () =>
     fetchApi<void>('/admin/settings/hero', { method: 'DELETE' }),
+
+  getBadge: () => fetchApi<BadgeImageDto>('/admin/settings/badge'),
+
+  setBadgeUrl: (url: string, linkUrl?: string) =>
+    fetchApi<BadgeImageDto>('/admin/settings/badge/url', {
+      method: 'PUT',
+      body: JSON.stringify({ url, linkUrl: linkUrl || null }),
+    }),
+
+  deleteBadge: () =>
+    fetchApi<void>('/admin/settings/badge', { method: 'DELETE' }),
+
+  getBadgeLeft: () => fetchApi<BadgeImageDto>('/admin/settings/badge-left'),
+
+  setBadgeLeftUrl: (url: string, linkUrl?: string) =>
+    fetchApi<BadgeImageDto>('/admin/settings/badge-left/url', {
+      method: 'PUT',
+      body: JSON.stringify({ url, linkUrl: linkUrl || null }),
+    }),
+
+  deleteBadgeLeft: () =>
+    fetchApi<void>('/admin/settings/badge-left', { method: 'DELETE' }),
 
   getSlotTemplates: () =>
     fetchApi<SlotTemplate[]>('/admin/settings/slot-templates'),
