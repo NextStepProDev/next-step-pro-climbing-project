@@ -123,7 +123,16 @@ public class SecurityConfig {
         configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L);
 
+        // OG endpoints are called by social media bots (FB, WhatsApp) which send their own Origin.
+        // These endpoints are public and read-only, so allow all origins without credentials.
+        var ogConfiguration = new org.springframework.web.cors.CorsConfiguration();
+        ogConfiguration.setAllowedOriginPatterns(java.util.List.of("*"));
+        ogConfiguration.setAllowedMethods(java.util.List.of("GET"));
+        ogConfiguration.setAllowedHeaders(java.util.List.of("*"));
+        ogConfiguration.setAllowCredentials(false);
+
         var source = new org.springframework.web.cors.UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/api/og/**", ogConfiguration);
         source.registerCorsConfiguration("/**", configuration);
         return source;
     }
