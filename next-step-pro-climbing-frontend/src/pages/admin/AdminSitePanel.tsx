@@ -296,7 +296,7 @@ function BadgeSection() {
 
   const [showMediaPicker, setShowMediaPicker] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
-  const [linkInput, setLinkInput] = useState('')
+  const [linkInput, setLinkInput] = useState<string | null>(null)
   const [linkDirty, setLinkDirty] = useState(false)
 
   const { data: badge, isLoading } = useQuery({
@@ -304,9 +304,7 @@ function BadgeSection() {
     queryFn: adminSiteApi.getBadge,
   })
 
-  useEffect(() => {
-    if (badge?.linkUrl != null) setLinkInput(badge.linkUrl)
-  }, [badge?.linkUrl])
+  const displayLink = linkInput ?? badge?.linkUrl ?? ''
 
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: ['admin', 'badge'] })
@@ -316,14 +314,14 @@ function BadgeSection() {
   const setUrlMutation = useMutation({
     mutationFn: ({ url, linkUrl }: { url: string; linkUrl?: string }) =>
       adminSiteApi.setBadgeUrl(url, linkUrl),
-    onSuccess: () => { setLinkDirty(false); invalidate() },
+    onSuccess: () => { setLinkInput(null); setLinkDirty(false); invalidate() },
   })
 
   const deleteMutation = useMutation({
     mutationFn: adminSiteApi.deleteBadge,
     onSuccess: () => {
       setShowDeleteConfirm(false)
-      setLinkInput('')
+      setLinkInput(null)
       setLinkDirty(false)
       invalidate()
     },
@@ -331,12 +329,12 @@ function BadgeSection() {
 
   const handleAssetSelect = (asset: AssetDto) => {
     setShowMediaPicker(false)
-    setUrlMutation.mutate({ url: asset.url, linkUrl: linkInput || undefined })
+    setUrlMutation.mutate({ url: asset.url, linkUrl: displayLink || undefined })
   }
 
   const handleLinkSave = () => {
     if (!badge?.imageUrl) return
-    setUrlMutation.mutate({ url: badge.imageUrl, linkUrl: linkInput || undefined })
+    setUrlMutation.mutate({ url: badge.imageUrl, linkUrl: displayLink || undefined })
   }
 
   const savedUrl = badge?.imageUrl ?? null
@@ -379,7 +377,7 @@ function BadgeSection() {
             <div className="flex gap-2">
               <input
                 type="url"
-                value={linkInput}
+                value={displayLink}
                 onChange={e => { setLinkInput(e.target.value); setLinkDirty(true) }}
                 placeholder="https://..."
                 className="flex-1 rounded-lg bg-dark-900 border border-dark-700 px-3 py-2 text-sm text-dark-100 placeholder-dark-500 focus:border-primary-500 focus:outline-none"
@@ -442,7 +440,7 @@ function BadgeLeftSection() {
 
   const [showMediaPicker, setShowMediaPicker] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
-  const [linkInput, setLinkInput] = useState('')
+  const [linkInput, setLinkInput] = useState<string | null>(null)
   const [linkDirty, setLinkDirty] = useState(false)
 
   const { data: badge, isLoading } = useQuery({
@@ -450,9 +448,7 @@ function BadgeLeftSection() {
     queryFn: adminSiteApi.getBadgeLeft,
   })
 
-  useEffect(() => {
-    if (badge?.linkUrl != null) setLinkInput(badge.linkUrl)
-  }, [badge?.linkUrl])
+  const displayLink = linkInput ?? badge?.linkUrl ?? ''
 
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: ['admin', 'badgeLeft'] })
@@ -462,14 +458,14 @@ function BadgeLeftSection() {
   const setUrlMutation = useMutation({
     mutationFn: ({ url, linkUrl }: { url: string; linkUrl?: string }) =>
       adminSiteApi.setBadgeLeftUrl(url, linkUrl),
-    onSuccess: () => { setLinkDirty(false); invalidate() },
+    onSuccess: () => { setLinkInput(null); setLinkDirty(false); invalidate() },
   })
 
   const deleteMutation = useMutation({
     mutationFn: adminSiteApi.deleteBadgeLeft,
     onSuccess: () => {
       setShowDeleteConfirm(false)
-      setLinkInput('')
+      setLinkInput(null)
       setLinkDirty(false)
       invalidate()
     },
@@ -477,12 +473,12 @@ function BadgeLeftSection() {
 
   const handleAssetSelect = (asset: AssetDto) => {
     setShowMediaPicker(false)
-    setUrlMutation.mutate({ url: asset.url, linkUrl: linkInput || undefined })
+    setUrlMutation.mutate({ url: asset.url, linkUrl: displayLink || undefined })
   }
 
   const handleLinkSave = () => {
     if (!badge?.imageUrl) return
-    setUrlMutation.mutate({ url: badge.imageUrl, linkUrl: linkInput || undefined })
+    setUrlMutation.mutate({ url: badge.imageUrl, linkUrl: displayLink || undefined })
   }
 
   const savedUrl = badge?.imageUrl ?? null
@@ -525,7 +521,7 @@ function BadgeLeftSection() {
             <div className="flex gap-2">
               <input
                 type="url"
-                value={linkInput}
+                value={displayLink}
                 onChange={e => { setLinkInput(e.target.value); setLinkDirty(true) }}
                 placeholder="https://..."
                 className="flex-1 rounded-lg bg-dark-900 border border-dark-700 px-3 py-2 text-sm text-dark-100 placeholder-dark-500 focus:border-primary-500 focus:outline-none"
