@@ -33,7 +33,8 @@ export function HomePage() {
     const img = new Image();
     img.onload = () => setHeroImgLoaded(true);
     img.src = heroImageUrl;
-    if (img.complete) setHeroImgLoaded(true);
+    // Check if image was cached and already complete - defer to avoid sync setState in effect
+    if (img.complete) queueMicrotask(() => setHeroImgLoaded(true));
     return () => { img.onload = null; };
   }, [heroImageUrl]);
   const objectPosition = heroData?.focalPointX != null
