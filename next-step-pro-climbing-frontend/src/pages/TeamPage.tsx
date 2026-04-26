@@ -1,4 +1,3 @@
-import { useState, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { useParams, useNavigate } from 'react-router-dom'
@@ -205,32 +204,25 @@ export function TeamPage({ memberType }: { memberType: InstructorType }) {
   const { t } = useTranslation('common')
   const { memberId } = useParams<{ memberId?: string }>()
   const navigate = useNavigate()
-  const [selected, setSelected] = useState<InstructorPublic | null>(null)
 
   const { data: allMembers, isLoading, error } = useQuery({
     queryKey: ['instructors'],
     queryFn: instructorApi.getAll,
   })
 
-  // Auto-open modal when URL contains memberId (deep link)
-  useEffect(() => {
-    if (memberId && allMembers) {
-      const found = allMembers.find(m => m.id === memberId)
-      if (found) setSelected(found)
-    }
-  }, [memberId, allMembers])
+  const selected = memberId && allMembers
+    ? (allMembers.find(m => m.id === memberId) ?? null)
+    : null
 
   const title = memberType === 'INSTRUCTOR' ? t('team.instructors') : t('team.competitors')
   const certificationsLabel = memberType === 'INSTRUCTOR' ? t('team.certifications') : t('team.achievements')
   const aboutLabel = t('team.about')
 
   const openModal = (m: InstructorPublic) => {
-    setSelected(m)
     navigate(m.id)
   }
 
   const closeModal = () => {
-    setSelected(null)
     navigate('..', { relative: 'path' })
   }
 
