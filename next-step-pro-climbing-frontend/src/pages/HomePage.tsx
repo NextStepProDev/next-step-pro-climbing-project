@@ -17,6 +17,28 @@ import { siteSettingsApi } from "../api/client";
 import logoWhite from "../assets/logo/logo-white.png";
 import logoBlack from "../assets/logo/logo-black.png";
 
+function BadgeImg({ src, href, className }: { src: string; href?: string | null; className?: string }) {
+  const img = (
+    <img
+      src={src}
+      alt="Badge"
+      className={`${className} object-contain opacity-75 drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)] transition-opacity duration-500`}
+    />
+  );
+  if (href) {
+    return (
+      <a href={href} target="_blank" rel="noopener noreferrer" className={`${className} block cursor-pointer`}>
+        <img
+          src={src}
+          alt="Badge"
+          className="w-full h-full object-contain opacity-75 hover:opacity-100 drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)] transition-opacity duration-300"
+        />
+      </a>
+    );
+  }
+  return img;
+}
+
 export function HomePage() {
   const { t } = useTranslation("home");
   const [heroImgLoaded, setHeroImgLoaded] = useState(false);
@@ -27,6 +49,22 @@ export function HomePage() {
     staleTime: 30 * 60 * 1000,
   });
   const heroImageUrl = heroData?.imageUrl ?? null;
+
+  const { data: badgeData } = useQuery({
+    queryKey: ["badgeImage"],
+    queryFn: siteSettingsApi.getBadge,
+    staleTime: 30 * 60 * 1000,
+    retry: false,
+  });
+  const badgeImageUrl = badgeData?.imageUrl ?? null;
+
+  const { data: badgeLeftData } = useQuery({
+    queryKey: ["badgeLeftImage"],
+    queryFn: siteSettingsApi.getBadgeLeft,
+    staleTime: 30 * 60 * 1000,
+    retry: false,
+  });
+  const badgeLeftImageUrl = badgeLeftData?.imageUrl ?? null;
 
   useEffect(() => {
     if (!heroImageUrl) return;
@@ -84,6 +122,20 @@ export function HomePage() {
             />
             <div className={`hidden sm:block absolute inset-0 bg-gradient-to-b from-dark-950/40 via-dark-950/55 to-dark-950 transition-opacity duration-700 ${heroImgLoaded ? 'opacity-100' : 'opacity-0'}`} />
           </>
+        )}
+        {badgeLeftImageUrl && (
+          <BadgeImg
+            src={badgeLeftImageUrl}
+            href={badgeLeftData?.linkUrl}
+            className="absolute top-3 left-3 sm:top-12 sm:left-36 z-20 w-[72px] h-[72px] sm:w-36 sm:h-36"
+          />
+        )}
+        {badgeImageUrl && (
+          <BadgeImg
+            src={badgeImageUrl}
+            href={badgeData?.linkUrl}
+            className="absolute top-3 right-3 sm:top-12 sm:right-36 z-20 w-[72px] h-[72px] sm:w-36 sm:h-36"
+          />
         )}
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-32">
           <div className="text-center max-w-3xl mx-auto">
