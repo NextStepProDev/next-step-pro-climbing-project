@@ -80,6 +80,8 @@ public class SecurityConfig {
                     .requestMatchers(HttpMethod.GET, "/api/files/**").permitAll()
                     // Public site settings (hero image etc.)
                     .requestMatchers(HttpMethod.GET, "/api/settings/**").permitAll()
+                    // OG meta tags for social sharing bots
+                    .requestMatchers(HttpMethod.GET, "/api/og/**").permitAll()
                     // Public unsubscribe endpoint (no login required - GDPR compliance)
                     .requestMatchers(HttpMethod.GET, "/api/user/unsubscribe").permitAll();
                 // Dev endpoints only in dev profile
