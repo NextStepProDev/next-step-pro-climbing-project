@@ -150,7 +150,7 @@ export const RichTextEditor = forwardRef<HTMLTextAreaElement, RichTextEditorProp
       ta.focus()
       ta.setSelectionRange(start + marker.length, start + marker.length + selected.length)
     })
-  }, [callOnChange])
+  }, [callOnChange, textareaRef])
 
   const applyList = useCallback((type: 'bullet' | 'numbered' | 'lettered') => {
     const ta = textareaRef.current
@@ -190,7 +190,7 @@ export const RichTextEditor = forwardRef<HTMLTextAreaElement, RichTextEditorProp
       ta.focus()
       ta.setSelectionRange(lineStart, lineStart + newSelected.length)
     })
-  }, [callOnChange])
+  }, [callOnChange, textareaRef])
 
   const handleBold      = useCallback(() => wrapSelection('**'), [wrapSelection])
   const handleItalic    = useCallback(() => wrapSelection('*'),  [wrapSelection])
@@ -225,7 +225,7 @@ export const RichTextEditor = forwardRef<HTMLTextAreaElement, RichTextEditorProp
       ta.focus()
       ta.setSelectionRange(start + converted.length, start + converted.length)
     })
-  }, [callOnChange])
+  }, [callOnChange, textareaRef])
 
   return (
     <div className={className}>
