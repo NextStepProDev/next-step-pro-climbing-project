@@ -41,7 +41,9 @@ export default function App() {
           <Route path="calendar" element={<CalendarPage />} />
           <Route path="events/:eventId" element={<EventPage />} />
           <Route path="team/instruktorzy" element={<TeamPage memberType="INSTRUCTOR" />} />
+          <Route path="team/instruktorzy/:memberId" element={<TeamPage memberType="INSTRUCTOR" />} />
           <Route path="team/zawodnicy" element={<TeamPage memberType="COMPETITOR" />} />
+          <Route path="team/zawodnicy/:memberId" element={<TeamPage memberType="COMPETITOR" />} />
           <Route path="galeria" element={<GalleryPage />} />
           <Route path="galeria/:albumId" element={<AlbumPage />} />
           <Route path="filmy" element={<VideosPage />} />

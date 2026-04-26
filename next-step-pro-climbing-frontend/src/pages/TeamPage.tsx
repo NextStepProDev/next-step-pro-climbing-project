@@ -1,10 +1,12 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
+import { useParams, useNavigate } from 'react-router-dom'
 import { User, X, ExternalLink } from 'lucide-react'
 import { instructorApi } from '../api/client'
 import { LoadingSpinner } from '../components/ui/LoadingSpinner'
 import { QueryError } from '../components/ui/QueryError'
+import { ShareButtons } from '../components/ui/ShareButtons'
 import { renderRichText } from '../utils/renderRichText'
 import { deserializeBio } from '../components/ui/bioBlocks'
 import type { InstructorPublic, InstructorType } from '../types'
@@ -156,17 +158,20 @@ function MemberModal({
             <h2 className="text-3xl font-bold text-white">
               {member.firstName} {member.lastName}
             </h2>
-            {member.profile8aUrl && (
-              <a
-                href={member.profile8aUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-orange-500/20 border border-orange-500/40 text-orange-300 hover:bg-orange-500/30 transition-colors text-sm font-medium"
-              >
-                <ExternalLink className="w-3.5 h-3.5" />
-                {t('team.profile8aLink')}
-              </a>
-            )}
+            <div className="flex items-center gap-3 flex-wrap">
+              {member.profile8aUrl && (
+                <a
+                  href={member.profile8aUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-orange-500/20 border border-orange-500/40 text-orange-300 hover:bg-orange-500/30 transition-colors text-sm font-medium"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                  {t('team.profile8aLink')}
+                </a>
+              )}
+              <ShareButtons title={`${member.firstName} ${member.lastName}`} />
+            </div>
           </div>
         </div>
 
@@ -198,6 +203,8 @@ function MemberModal({
 
 export function TeamPage({ memberType }: { memberType: InstructorType }) {
   const { t } = useTranslation('common')
+  const { memberId } = useParams<{ memberId?: string }>()
+  const navigate = useNavigate()
   const [selected, setSelected] = useState<InstructorPublic | null>(null)
 
   const { data: allMembers, isLoading, error } = useQuery({
@@ -205,9 +212,27 @@ export function TeamPage({ memberType }: { memberType: InstructorType }) {
     queryFn: instructorApi.getAll,
   })
 
+  // Auto-open modal when URL contains memberId (deep link)
+  useEffect(() => {
+    if (memberId && allMembers) {
+      const found = allMembers.find(m => m.id === memberId)
+      if (found) setSelected(found)
+    }
+  }, [memberId, allMembers])
+
   const title = memberType === 'INSTRUCTOR' ? t('team.instructors') : t('team.competitors')
   const certificationsLabel = memberType === 'INSTRUCTOR' ? t('team.certifications') : t('team.achievements')
   const aboutLabel = t('team.about')
+
+  const openModal = (m: InstructorPublic) => {
+    setSelected(m)
+    navigate(m.id)
+  }
+
+  const closeModal = () => {
+    setSelected(null)
+    navigate('..', { relative: 'path' })
+  }
 
   if (isLoading) {
     return (
@@ -237,7 +262,7 @@ export function TeamPage({ memberType }: { memberType: InstructorType }) {
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
             {members.map((m) => (
-              <MemberTile key={m.id} member={m} onClick={() => setSelected(m)} />
+              <MemberTile key={m.id} member={m} onClick={() => openModal(m)} />
             ))}
           </div>
         )}
@@ -248,7 +273,7 @@ export function TeamPage({ memberType }: { memberType: InstructorType }) {
           member={selected}
           certificationsLabel={certificationsLabel}
           aboutLabel={aboutLabel}
-          onClose={() => setSelected(null)}
+          onClose={closeModal}
         />
       )}
     </>
