@@ -36,7 +36,7 @@ public class OgController {
         NewsDetailDto article;
         try {
             article = newsService.getPublishedById(id, null);
-        } catch (IllegalArgumentException e) {
+        } catch (Exception e) {
             return ResponseEntity.notFound().build();
         }
 
@@ -59,7 +59,7 @@ public class OgController {
         InstructorPublicDto instructor;
         try {
             instructor = instructorService.getInstructor(id);
-        } catch (IllegalArgumentException e) {
+        } catch (Exception e) {
             return ResponseEntity.notFound().build();
         }
 
