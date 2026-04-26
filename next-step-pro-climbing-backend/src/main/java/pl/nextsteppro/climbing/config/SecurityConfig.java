@@ -127,7 +127,7 @@ public class SecurityConfig {
         // These endpoints are public and read-only, so allow all origins without credentials.
         var ogConfiguration = new org.springframework.web.cors.CorsConfiguration();
         ogConfiguration.setAllowedOriginPatterns(java.util.List.of("*"));
-        ogConfiguration.setAllowedMethods(java.util.List.of("GET"));
+        ogConfiguration.setAllowedMethods(java.util.List.of("GET", "HEAD"));
         ogConfiguration.setAllowedHeaders(java.util.List.of("*"));
         ogConfiguration.setAllowCredentials(false);
 
