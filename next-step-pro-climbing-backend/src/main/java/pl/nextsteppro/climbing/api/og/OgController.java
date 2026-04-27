@@ -1,12 +1,16 @@
 package pl.nextsteppro.climbing.api.og;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.CacheControl;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.nio.charset.StandardCharsets;
+import java.util.concurrent.TimeUnit;
 import pl.nextsteppro.climbing.api.instructor.InstructorDtos.InstructorPublicDto;
 import pl.nextsteppro.climbing.api.instructor.InstructorService;
 import pl.nextsteppro.climbing.api.news.NewsDtos.NewsDetailDto;
@@ -49,9 +53,7 @@ public class OgController {
                 ? article.thumbnailUrl()
                 : baseUrl + "/og-default.jpg";
 
-        return ResponseEntity.ok()
-                .contentType(MediaType.TEXT_HTML)
-                .body(buildHtml("article", title, description, image, pageUrl));
+        return ogResponse(buildHtml("article", title, description, image, pageUrl));
     }
 
     @GetMapping(value = "/instructor/{id}", produces = MediaType.TEXT_HTML_VALUE)
@@ -73,9 +75,14 @@ public class OgController {
                 ? instructor.photoUrl()
                 : baseUrl + "/og-default.jpg";
 
+        return ogResponse(buildHtml("profile", title, description, image, pageUrl));
+    }
+
+    private ResponseEntity<String> ogResponse(String body) {
         return ResponseEntity.ok()
-                .contentType(MediaType.TEXT_HTML)
-                .body(buildHtml("profile", title, description, image, pageUrl));
+                .contentType(new MediaType("text", "html", StandardCharsets.UTF_8))
+                .cacheControl(CacheControl.maxAge(1, TimeUnit.HOURS).cachePublic())
+                .body(body);
     }
 
     private String buildInstructorDescription(InstructorPublicDto instructor) {
