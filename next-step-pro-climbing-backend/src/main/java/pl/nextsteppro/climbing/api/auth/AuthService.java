@@ -19,13 +19,17 @@ import pl.nextsteppro.climbing.infrastructure.i18n.MessageService;
 import pl.nextsteppro.climbing.infrastructure.mail.AuthMailService;
 import pl.nextsteppro.climbing.infrastructure.security.JwtService;
 
+import org.springframework.context.i18n.LocaleContextHolder;
+
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Set;
 
 @Service
 public class AuthService {
 
     private static final Logger log = LoggerFactory.getLogger(AuthService.class);
+    private static final Set<String> SUPPORTED_LANGUAGES = Set.of("pl", "en", "es");
     private static final Duration EMAIL_VERIFICATION_EXPIRATION = Duration.ofMinutes(15);
     private static final Duration PASSWORD_RESET_EXPIRATION = Duration.ofHours(1);
     private static final Duration RESEND_COOLDOWN = Duration.ofMinutes(1);
@@ -72,6 +76,7 @@ public class AuthService {
             generateNickname(request.firstName())
         );
         user.setPasswordHash(passwordEncoder.encode(request.password()));
+        user.setPreferredLanguage(resolveLanguage(request.preferredLanguage()));
         user.setNewsletterSubscribed(Boolean.TRUE.equals(request.newsletterSubscribed()));
         user.setNewsletterChoiceMade(true);
         if (Boolean.TRUE.equals(request.newsletterSubscribed())) {
@@ -295,6 +300,17 @@ public class AuthService {
         authTokenRepository.save(authToken);
 
         authMailService.sendPasswordResetEmail(user, token);
+    }
+
+    private String resolveLanguage(String requested) {
+        if (requested != null && SUPPORTED_LANGUAGES.contains(requested)) {
+            return requested;
+        }
+        String headerLang = LocaleContextHolder.getLocale().getLanguage();
+        if (SUPPORTED_LANGUAGES.contains(headerLang)) {
+            return headerLang;
+        }
+        return "en";
     }
 
     private String generateNickname(String firstName) {

@@ -94,6 +94,7 @@ class AuthServiceTest {
             "Jane",
             "Smith",
             "+48987654321",
+            null,
             null
         );
         when(userRepository.existsByEmail(request.email())).thenReturn(false);
@@ -135,6 +136,7 @@ class AuthServiceTest {
             "Jane",
             "Smith",
             "+48987654321",
+            null,
             null
         );
         when(userRepository.existsByEmail(request.email())).thenReturn(true);
@@ -160,6 +162,7 @@ class AuthServiceTest {
             "Admin",
             "User",
             "+48123456789",
+            null,
             null
         );
         when(userRepository.existsByEmail(request.email())).thenReturn(false);
@@ -189,6 +192,7 @@ class AuthServiceTest {
             "John-Paul",
             "Smith",
             "+48123456789",
+            null,
             null
         );
         when(userRepository.existsByEmail(request.email())).thenReturn(false);
