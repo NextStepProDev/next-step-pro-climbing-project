@@ -6,6 +6,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { Modal } from "../ui/Modal";
 import { Button } from "../ui/Button";
+import { ShareButtons } from "../ui/ShareButtons";
 import { CompleteProfileModal } from "../ui/CompleteProfileModal";
 import { useAuth } from "../../context/AuthContext";
 import { saveRedirectPath } from "../../utils/redirect";
@@ -161,6 +162,11 @@ export function SlotDetailModal({
               </div>
               <p className="text-violet-200/80 text-sm">{t('slot.availabilityWindow.body')}</p>
             </div>
+            <ShareButtons
+              title={slot.eventTitle || t('slot.title')}
+              url={`${window.location.origin}/calendar?date=${slot.date}&slot=${slot.id}`}
+              description={`${format(dateObj, "EEEE, d MMMM", { locale })} ${slot.startTime.slice(0, 5)} - ${slot.endTime.slice(0, 5)}`}
+            />
             <div className="flex gap-3 pt-4 border-t border-dark-800">
               <Button variant="ghost" className="flex-1" onClick={onClose}>
                 {t('slot.close')}
@@ -303,6 +309,15 @@ export function SlotDetailModal({
               </div>
             </div>
           </>
+        )}
+
+        {/* Share */}
+        {!isAvailabilityWindow && (
+          <ShareButtons
+            title={slot.eventTitle || t('slot.title')}
+            url={`${window.location.origin}/calendar?date=${slot.date}&slot=${slot.id}`}
+            description={`${format(dateObj, "EEEE, d MMMM", { locale })} ${slot.startTime.slice(0, 5)} - ${slot.endTime.slice(0, 5)}`}
+          />
         )}
 
         {/* Actions */}
