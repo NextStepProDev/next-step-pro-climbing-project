@@ -18,6 +18,12 @@
     "storage": "Almacenamiento",
     "site": "Página principal"
   },
+  "tabGroups": {
+    "calendar": "Calendario",
+    "content": "Contenido",
+    "team": "Equipo",
+    "system": "Sistema"
+  },
   "site": {
     "title": "Configuración de la página principal",
     "subtitle": "Gestiona el aspecto de la página principal.",
