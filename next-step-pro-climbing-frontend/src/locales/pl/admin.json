@@ -18,6 +18,12 @@
     "storage": "Storage",
     "site": "Strona główna"
   },
+  "tabGroups": {
+    "calendar": "Kalendarz",
+    "content": "Treści",
+    "team": "Zespół",
+    "system": "System"
+  },
   "site": {
     "title": "Ustawienia strony głównej",
     "subtitle": "Zarządzaj wyglądem strony głównej.",

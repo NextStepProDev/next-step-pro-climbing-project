@@ -18,6 +18,12 @@
     "storage": "Storage",
     "site": "Homepage"
   },
+  "tabGroups": {
+    "calendar": "Calendar",
+    "content": "Content",
+    "team": "Team",
+    "system": "System"
+  },
   "site": {
     "title": "Homepage settings",
     "subtitle": "Manage the appearance of the homepage.",
