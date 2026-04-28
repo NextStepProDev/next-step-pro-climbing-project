@@ -31,12 +31,16 @@ export function CalendarPage() {
     return dateParam ? new Date(dateParam) : new Date();
   });
   const [currentWeekStart, setCurrentWeekStart] = useState(() => {
-    return startOfWeek(new Date(), { weekStartsOn: 1 });
+    const dateParam = searchParams.get("date");
+    const base = dateParam ? new Date(dateParam) : new Date();
+    return startOfWeek(base, { weekStartsOn: 1 });
   });
   const [selectedDate, setSelectedDate] = useState<string | null>(
     searchParams.get("view") === 'month' ? searchParams.get("date") : null,
   );
-  const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
+  const [selectedSlotId, setSelectedSlotId] = useState<string | null>(
+    searchParams.get("slot")
+  );
   const [selectedEvent, setSelectedEvent] = useState<EventSummary | null>(null);
   const [showCreateSlotModal, setShowCreateSlotModal] = useState(false);
   const [cutSlot, setCutSlot] = useState<{ id: string; date: string; startTime: string; endTime: string } | null>(null);
@@ -166,7 +170,13 @@ export function CalendarPage() {
 
   const handleModalClose = useCallback(() => {
     setSelectedSlotId(null);
-  }, []);
+    setSearchParams(prev => {
+      if (!prev.has('slot')) return prev;
+      const next = new URLSearchParams(prev);
+      next.delete('slot');
+      return next;
+    });
+  }, [setSearchParams]);
 
   const moveSlotMutation = useMutation({
     mutationFn: ({ slotId, date, startTime, endTime }: { slotId: string; date: string; startTime: string; endTime: string }) =>

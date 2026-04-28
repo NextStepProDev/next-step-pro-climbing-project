@@ -6,6 +6,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, useNavigate } from 'react-router-dom'
 import { Modal } from '../ui/Modal'
 import { Button } from '../ui/Button'
+import { ShareButtons } from '../ui/ShareButtons'
 import { CompleteProfileModal } from '../ui/CompleteProfileModal'
 import { useAuth } from '../../context/AuthContext'
 import { saveRedirectPath } from '../../utils/redirect'
@@ -515,6 +516,13 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
             </div>
           </>
         )}
+
+        {/* Share */}
+        <ShareButtons
+          title={ev.title}
+          url={`${window.location.origin}/events/${ev.id}`}
+          description={`${format(new Date(ev.startDate), 'dd.MM.yyyy')}${ev.isMultiDay ? ' - ' + format(new Date(ev.endDate), 'dd.MM.yyyy') : ''}${ev.location ? ' | ' + ev.location : ''}`}
+        />
 
         {/* Actions */}
         <div className="flex gap-3 pt-4 border-t border-dark-800">

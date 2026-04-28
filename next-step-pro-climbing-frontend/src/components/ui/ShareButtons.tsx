@@ -2,13 +2,16 @@ import { useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Copy, Check } from 'lucide-react'
 
-export function ShareButtons({ title }: { title: string }) {
+export function ShareButtons({ title, url: urlProp, description }: { title: string; url?: string; description?: string }) {
   const { t } = useTranslation('common')
   const [copied, setCopied] = useState(false)
 
-  const url = window.location.href
+  const url = urlProp ?? window.location.href
   const encodedUrl = encodeURIComponent(url)
   const encodedTitle = encodeURIComponent(title)
+  const whatsappText = description
+    ? encodeURIComponent(`${title}\n${description}\n${url}`)
+    : `${encodedTitle}%0A${encodedUrl}`
 
   const handleCopy = useCallback(async () => {
     try {
@@ -36,7 +39,7 @@ export function ShareButtons({ title }: { title: string }) {
         </svg>
       </a>
       <a
-        href={`https://wa.me/?text=${encodedTitle}%0A${encodedUrl}`}
+        href={`https://wa.me/?text=${whatsappText}`}
         target="_blank"
         rel="noopener noreferrer"
         title="WhatsApp"

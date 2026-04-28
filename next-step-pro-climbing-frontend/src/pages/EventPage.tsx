@@ -3,9 +3,10 @@ import { useQuery } from '@tanstack/react-query'
 import { format } from 'date-fns'
 import { useTranslation } from 'react-i18next'
 import { ArrowLeft, Calendar, MapPin, Users } from 'lucide-react'
-import { adminApi } from '../api/client'
+import { calendarApi } from '../api/client'
 import { LoadingSpinner } from '../components/ui/LoadingSpinner'
 import { Button } from '../components/ui/Button'
+import { ShareButtons } from '../components/ui/ShareButtons'
 import { useDateLocale } from '../utils/dateFnsLocale'
 import { getEventColorByType } from '../utils/events'
 
@@ -17,7 +18,7 @@ export function EventPage() {
 
   const { data: event, isLoading, error } = useQuery({
     queryKey: ['event', eventId],
-    queryFn: () => adminApi.getEventDetails(eventId!),
+    queryFn: () => calendarApi.getEventSummary(eventId!),
     enabled: !!eventId,
   })
 
@@ -114,12 +115,13 @@ export function EventPage() {
           )}
 
           {/* CTA */}
-          <div className="pt-4 border-t border-dark-800">
+          <div className="pt-4 border-t border-dark-800 flex items-center justify-between">
             <Link to={`/calendar?date=${event.startDate}`}>
               <Button variant="primary">
                 {t('eventPage.viewSlots')}
               </Button>
             </Link>
+            <ShareButtons title={event.title} />
           </div>
         </div>
       </div>
