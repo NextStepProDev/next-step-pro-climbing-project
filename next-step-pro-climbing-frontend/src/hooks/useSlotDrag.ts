@@ -1,6 +1,6 @@
 import { useRef, useState, useCallback, useEffect } from 'react'
 
-const HOUR_HEIGHT = 60
+const HOUR_HEIGHT = 40
 const START_HOUR = 7
 const END_HOUR = 23
 const SNAP_MINUTES = 15
