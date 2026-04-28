@@ -127,14 +127,14 @@ export function HomePage() {
           <BadgeImg
             src={badgeLeftImageUrl}
             href={badgeLeftData?.linkUrl}
-            className="absolute top-3 left-3 sm:top-12 sm:left-36 z-20 w-[72px] h-[72px] sm:w-36 sm:h-36"
+            className="absolute top-3 left-3 sm:top-12 sm:left-36 z-20 w-[52px] h-[52px] sm:w-24 sm:h-24"
           />
         )}
         {badgeImageUrl && (
           <BadgeImg
             src={badgeImageUrl}
             href={badgeData?.linkUrl}
-            className="absolute top-3 right-3 sm:top-12 sm:right-36 z-20 w-[72px] h-[72px] sm:w-36 sm:h-36"
+            className="absolute top-3 right-3 sm:top-12 sm:right-36 z-20 w-[52px] h-[52px] sm:w-24 sm:h-24"
           />
         )}
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-32">
