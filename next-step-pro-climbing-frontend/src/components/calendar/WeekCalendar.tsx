@@ -8,7 +8,7 @@ import { getEventColorByIndex } from '../../utils/events'
 import { useDateLocale } from '../../utils/dateFnsLocale'
 import { useSlotDrag } from '../../hooks/useSlotDrag'
 
-const HOUR_HEIGHT = 60
+const HOUR_HEIGHT = 40
 const START_HOUR = 7
 const END_HOUR = 23
 const TOTAL_HOURS = END_HOUR - START_HOUR
@@ -317,7 +317,7 @@ export function WeekCalendar({
                   {day.slots.map((slot: TimeSlot) => {
                     const { top, height } = getSlotPosition(slot.startTime, slot.endTime)
                     const isClickable = slot.status === 'AVAILABLE' || slot.status === 'FULL' || slot.status === 'AVAILABILITY_WINDOW' || slot.isUserRegistered
-                    const showTitle = height >= 45
+                    const showTitle = height >= 30
                     const dragging = isBeingDragged(slot.id)
                     const isCut = cutSlotId === slot.id
                     const isPast = slot.status === 'PAST'
