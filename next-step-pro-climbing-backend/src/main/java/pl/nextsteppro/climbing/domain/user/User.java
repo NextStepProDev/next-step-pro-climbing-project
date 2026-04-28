@@ -66,7 +66,7 @@ public class User {
     private Instant newsletterSubscribedAt;
 
     @Column(name = "preferred_language", nullable = false)
-    private String preferredLanguage = "pl";
+    private String preferredLanguage = "en";
 
     @Column(name = "failed_login_attempts", nullable = false)
     private int failedLoginAttempts = 0;

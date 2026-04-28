@@ -86,12 +86,14 @@ Frontend starts at `http://localhost:5173`.
 
 ## Internationalization (i18n)
 
-The application supports **3 languages**: Polish (default), English, and Spanish.
+The application supports **3 languages**: Polish, English, and Spanish.
 
-- **Frontend:** react-i18next with 8 namespaces and bundled JSON locale files (`src/locales/{pl,en,es}/`)
+- **Detection:** browser language is detected automatically via `i18next-browser-languagedetector` (fallback: English)
+- **Frontend:** react-i18next with 9 namespaces and bundled JSON locale files (`src/locales/{pl,en,es}/`)
 - **Backend:** Spring `MessageSource` with `AcceptHeaderLocaleResolver` — API errors and validation messages are returned in the language from the `Accept-Language` header
+- **Registration:** the detected browser language is sent to the backend and stored as the user's initial preference
 - **Emails:** sent in the user's preferred language (stored in DB as `preferred_language`)
-- **Sync:** language preference is saved to the database and restored on login across devices
+- **Sync:** language preference is saved to the database and restored on login across devices — manual changes in settings take priority over browser detection
 
 ## API Documentation
 

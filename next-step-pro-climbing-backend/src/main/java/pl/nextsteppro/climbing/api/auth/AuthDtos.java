@@ -28,7 +28,9 @@ public final class AuthDtos {
         @Pattern(regexp = "^\\+[0-9]{1,4}[0-9]{9}$", message = "{validation.phone.invalid}")
         String phone,
 
-        @Nullable Boolean newsletterSubscribed
+        @Nullable Boolean newsletterSubscribed,
+
+        @Nullable String preferredLanguage
     ) {}
 
     public record LoginRequest(

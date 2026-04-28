@@ -8,7 +8,7 @@ import { Button } from '../components/ui/Button'
 import logoWhite from '../assets/logo/logo-white.png'
 
 export function RegisterPage() {
-  const { t } = useTranslation('auth')
+  const { t, i18n } = useTranslation('auth')
   const [form, setForm] = useState({
     email: '',
     password: '',
@@ -61,6 +61,7 @@ export function RegisterPage() {
         lastName: form.lastName,
         phone: form.phone,
         newsletterSubscribed,
+        preferredLanguage: i18n.language,
       })
       setSuccess(true)
     } catch (err) {

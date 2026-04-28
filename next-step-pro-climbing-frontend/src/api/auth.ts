@@ -9,6 +9,7 @@ export interface RegisterRequest {
   lastName: string
   phone: string
   newsletterSubscribed?: boolean
+  preferredLanguage?: string
 }
 
 export interface LoginRequest {
