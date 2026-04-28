@@ -12,7 +12,6 @@ import org.springframework.http.ResponseEntity;
 import pl.nextsteppro.climbing.infrastructure.storage.FileStorageService;
 
 import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.util.UUID;
 
