@@ -1,8 +1,8 @@
 import { useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Copy, Check } from 'lucide-react'
+import { Copy, Check, Share2 } from 'lucide-react'
 
-export function ShareButtons({ title, url: urlProp, description }: { title: string; url?: string; description?: string }) {
+export function ShareButtons({ title, url: urlProp, description, compact }: { title: string; url?: string; description?: string; compact?: boolean }) {
   const { t } = useTranslation('common')
   const [copied, setCopied] = useState(false)
 
@@ -25,7 +25,10 @@ export function ShareButtons({ title, url: urlProp, description }: { title: stri
 
   return (
     <div className="flex items-center gap-2">
-      <span className="text-xs text-dark-500">{t('news.share.shareOn')}</span>
+      {compact
+        ? <Share2 className="w-3.5 h-3.5 text-dark-500" />
+        : <span className="text-xs text-dark-500">{t('news.share.shareOn')}</span>
+      }
       <a
         href={`https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`}
         target="_blank"

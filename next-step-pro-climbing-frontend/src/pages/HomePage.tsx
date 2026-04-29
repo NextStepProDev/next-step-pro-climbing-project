@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "../components/ui/Button";
+import { ShareButtons } from "../components/ui/ShareButtons";
 import { CurrentLocationSection } from "../components/ui/CurrentLocationSection";
 import { siteSettingsApi } from "../api/client";
 import logoWhite from "../assets/logo/logo-white.png";
@@ -111,6 +112,9 @@ export function HomePage() {
                 style={{ objectPosition }}
               />
               <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-dark-950" />
+              <div className="absolute bottom-3 right-3 z-20 bg-dark-900/60 backdrop-blur-sm rounded-full px-2.5 py-1 border border-dark-700/40">
+                <ShareButtons title="Next Step Pro Climbing" url={window.location.origin} compact />
+              </div>
             </div>
             {/* Desktop: full-section background */}
             <img
@@ -174,6 +178,9 @@ export function HomePage() {
               </Link>
             </div>
           </div>
+        </div>
+        <div className="hidden sm:block absolute bottom-6 right-6 z-20 bg-dark-900/60 backdrop-blur-sm rounded-full px-3 py-1.5 border border-dark-700/40">
+          <ShareButtons title="Next Step Pro Climbing" url={window.location.origin} compact />
         </div>
       </section>
 
