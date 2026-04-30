@@ -70,7 +70,7 @@ app:
   mail:
     from: ${MAIL_FROM:${MAIL_USERNAME:nextsteppro.team@gmail.com}}
   cors:
-    allowed-origins: ${CORS_ORIGINS:http://localhost:5173}
+    allowed-origins: ${CORS_ORIGINS:http://localhost:*}
   base-url: ${APP_BASE_URL:http://localhost:8080}
   site-url: ${SITE_URL:https://nextsteppro.pl}
   jwt:
