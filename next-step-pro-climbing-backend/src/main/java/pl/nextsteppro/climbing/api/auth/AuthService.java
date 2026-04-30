@@ -100,7 +100,7 @@ public class AuthService {
         return new MessageResponse(msg.get("auth.register.success"));
     }
 
-    @Transactional
+    @Transactional(noRollbackFor = {IllegalArgumentException.class, IllegalStateException.class})
     public AuthTokensResponse login(LoginRequest request) {
         User user = userRepository.findByEmail(request.email())
             .orElseThrow(() -> new IllegalArgumentException(msg.get("auth.login.invalid")));
@@ -112,7 +112,7 @@ public class AuthService {
         // Check if account is locked due to too many failed attempts
         if (user.isAccountLocked()) {
             log.warn("Login attempt for locked account: {}", request.email());
-            throw new IllegalStateException(msg.get("auth.login.locked"));
+            throw new IllegalStateException(msg.get("auth.login.locked", user.getRemainingLockoutMinutes()));
         }
 
         if (!passwordEncoder.matches(request.password(), user.getPasswordHash())) {
@@ -122,7 +122,7 @@ public class AuthService {
             userRepository.save(user);
             if (user.isAccountLocked()) {
                 log.warn("Account locked due to failed attempts: {}", request.email());
-                throw new IllegalStateException(msg.get("auth.login.locked"));
+                throw new IllegalStateException(msg.get("auth.login.locked", user.getRemainingLockoutMinutes()));
             }
             throw new IllegalArgumentException(msg.get("auth.login.invalid"));
         }

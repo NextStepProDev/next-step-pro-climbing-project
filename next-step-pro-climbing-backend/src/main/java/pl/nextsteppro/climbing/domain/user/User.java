@@ -3,6 +3,7 @@ package pl.nextsteppro.climbing.domain.user;
 import jakarta.persistence.*;
 import org.jspecify.annotations.Nullable;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -280,6 +281,13 @@ public class User {
         if (this.failedLoginAttempts >= 5) {
             this.lockedUntil = Instant.now().plusSeconds(15 * 60);
         }
+    }
+
+    public long getRemainingLockoutMinutes() {
+        if (lockedUntil == null) return 0;
+        long seconds = Duration.between(Instant.now(), lockedUntil).getSeconds();
+        if (seconds <= 0) return 0;
+        return (seconds + 59) / 60;
     }
 
     public void resetFailedLoginAttempts() {

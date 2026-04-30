@@ -1,9 +1,11 @@
 package pl.nextsteppro.climbing.config;
 
+import org.springframework.context.MessageSource;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -13,6 +15,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import pl.nextsteppro.climbing.infrastructure.security.JwtAuthenticationFilter;
+
+import java.time.Instant;
+import java.util.Locale;
 
 @Configuration
 @EnableWebSecurity
@@ -24,14 +29,17 @@ public class SecurityConfig {
     private final Environment environment;
     private final OAuth2UserService oAuth2UserService;
     private final OAuth2SuccessHandler oAuth2SuccessHandler;
+    private final MessageSource messageSource;
 
     public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter, AppConfig appConfig, Environment environment,
-                          OAuth2UserService oAuth2UserService, OAuth2SuccessHandler oAuth2SuccessHandler) {
+                          OAuth2UserService oAuth2UserService, OAuth2SuccessHandler oAuth2SuccessHandler,
+                          MessageSource messageSource) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
         this.appConfig = appConfig;
         this.environment = environment;
         this.oAuth2UserService = oAuth2UserService;
         this.oAuth2SuccessHandler = oAuth2SuccessHandler;
+        this.messageSource = messageSource;
     }
 
     @Bean
@@ -100,6 +108,18 @@ public class SecurityConfig {
                 .userInfoEndpoint(userInfo -> userInfo.userService(oAuth2UserService))
                 .successHandler(oAuth2SuccessHandler)
             )
+            .exceptionHandling(ex -> ex
+                .authenticationEntryPoint((request, response, authException) -> {
+                    Locale locale = resolveLocaleFromRequest(request);
+                    String message = messageSource.getMessage("error.unauthorized", null, locale);
+                    writeJsonError(response, 401, "UNAUTHORIZED", message);
+                })
+                .accessDeniedHandler((request, response, accessDeniedException) -> {
+                    Locale locale = resolveLocaleFromRequest(request);
+                    String message = messageSource.getMessage("error.forbidden", null, locale);
+                    writeJsonError(response, 403, "FORBIDDEN", message);
+                })
+            )
             .headers(headers -> headers
                 .contentTypeOptions(contentType -> {})
                 .frameOptions(frame -> frame.deny())
@@ -135,5 +155,26 @@ public class SecurityConfig {
         source.registerCorsConfiguration("/api/og/**", ogConfiguration);
         source.registerCorsConfiguration("/**", configuration);
         return source;
+    }
+
+    private static void writeJsonError(jakarta.servlet.http.HttpServletResponse response, int status, String code, String message)
+            throws java.io.IOException {
+        response.setStatus(status);
+        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+        response.setCharacterEncoding("UTF-8");
+        String escaped = message.replace("\\", "\\\\").replace("\"", "\\\"");
+        response.getWriter().write(
+            "{\"code\":\"" + code + "\",\"message\":\"" + escaped + "\",\"timestamp\":\"" + Instant.now() + "\"}"
+        );
+    }
+
+    private static Locale resolveLocaleFromRequest(jakarta.servlet.http.HttpServletRequest request) {
+        String header = request.getHeader("Accept-Language");
+        if (header != null && !header.isEmpty()) {
+            String lang = header.split("[,;_-]")[0].trim().toLowerCase();
+            if ("en".equals(lang)) return Locale.of("en");
+            if ("es".equals(lang)) return Locale.of("es");
+        }
+        return Locale.of("pl");
     }
 }

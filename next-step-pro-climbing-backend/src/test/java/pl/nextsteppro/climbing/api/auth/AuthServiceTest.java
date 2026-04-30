@@ -286,18 +286,19 @@ class AuthServiceTest {
         LoginRequest request = new LoginRequest("test@example.com", "wrongPassword");
         when(userRepository.findByEmail(request.email())).thenReturn(Optional.of(testUser));
         when(passwordEncoder.matches(request.password(), testUser.getPasswordHash())).thenReturn(false);
-        when(msg.get("auth.login.locked")).thenReturn("Account locked");
+        when(msg.get(eq("auth.login.locked"), anyLong())).thenReturn("Account locked for 15 min");
 
         // When & Then
         IllegalStateException exception = assertThrows(
             IllegalStateException.class,
             () -> authService.login(request)
         );
-        assertEquals("Account locked", exception.getMessage());
+        assertEquals("Account locked for 15 min", exception.getMessage());
 
         verify(userRepository).save(testUser);
         assertTrue(testUser.isAccountLocked());
         assertEquals(5, testUser.getFailedLoginAttempts());
+        assertTrue(testUser.getRemainingLockoutMinutes() > 0);
     }
 
     @Test
@@ -311,14 +312,14 @@ class AuthServiceTest {
 
         LoginRequest request = new LoginRequest("test@example.com", "password123");
         when(userRepository.findByEmail(request.email())).thenReturn(Optional.of(testUser));
-        when(msg.get("auth.login.locked")).thenReturn("Account locked");
+        when(msg.get(eq("auth.login.locked"), anyLong())).thenReturn("Account locked for 15 min");
 
         // When & Then
         IllegalStateException exception = assertThrows(
             IllegalStateException.class,
             () -> authService.login(request)
         );
-        assertEquals("Account locked", exception.getMessage());
+        assertEquals("Account locked for 15 min", exception.getMessage());
     }
 
     @Test
