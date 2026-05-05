@@ -21,6 +21,9 @@ export function Navbar() {
   const mediaMenuRef = useRef<HTMLDivElement>(null);
   const teamMenuRef = useRef<HTMLDivElement>(null);
 
+  const isLinkActive = (path: string) =>
+    path === "/" ? location.pathname === "/" : location.pathname.startsWith(path);
+
   const mediaLinks = [
     { to: "/galeria", label: t('nav.gallery') },
     { to: "/filmy", label: t('nav.videos') },
@@ -49,8 +52,8 @@ export function Navbar() {
 
   const mobileNavLinks = [...navLinksBefore, ...teamLinks, ...mediaLinks, ...navLinksAfter];
 
-  const isMediaActive = mediaLinks.some((l) => location.pathname === l.to);
-  const isTeamActive = teamLinks.some((l) => location.pathname === l.to);
+  const isMediaActive = mediaLinks.some((l) => isLinkActive(l.to));
+  const isTeamActive = teamLinks.some((l) => isLinkActive(l.to));
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -112,7 +115,7 @@ export function Navbar() {
                 to={link.to}
                 className={clsx(
                   "px-3 py-1.5 rounded-lg text-base font-semibold tracking-wide transition-colors",
-                  location.pathname === link.to
+                  isLinkActive(link.to)
                     ? "bg-dark-800 text-dark-100"
                     : "text-dark-400 hover:bg-dark-800/60 hover:text-dark-200",
                 )}
@@ -151,7 +154,7 @@ export function Navbar() {
                         onClick={() => setTeamMenuOpen(false)}
                         className={clsx(
                           "block px-4 py-2.5 text-sm transition-colors",
-                          location.pathname === link.to
+                          isLinkActive(link.to)
                             ? "text-dark-100 bg-dark-800"
                             : "text-dark-300 hover:bg-dark-800 hover:text-dark-100",
                         )}
@@ -194,7 +197,7 @@ export function Navbar() {
                         onClick={() => setMediaMenuOpen(false)}
                         className={clsx(
                           "block px-4 py-2.5 text-sm transition-colors",
-                          location.pathname === link.to
+                          isLinkActive(link.to)
                             ? "text-dark-100 bg-dark-800"
                             : "text-dark-300 hover:bg-dark-800 hover:text-dark-100",
                         )}
@@ -213,7 +216,7 @@ export function Navbar() {
                 to={link.to}
                 className={clsx(
                   "px-3 py-1.5 rounded-lg text-base font-semibold tracking-wide transition-colors",
-                  location.pathname === link.to
+                  isLinkActive(link.to)
                     ? "bg-dark-800 text-dark-100"
                     : "text-dark-400 hover:bg-dark-800/60 hover:text-dark-200",
                 )}
@@ -317,7 +320,7 @@ export function Navbar() {
                 onClick={() => setMobileMenuOpen(false)}
                 className={clsx(
                   "block py-2 text-base font-semibold tracking-wide",
-                  location.pathname === link.to
+                  isLinkActive(link.to)
                     ? "text-primary-400"
                     : "text-dark-300",
                 )}

@@ -92,7 +92,9 @@ export function AdminPage() {
             <div className="flex flex-wrap gap-1">
               {group.tabs.map((tab) => {
                 const Icon = tab.icon
-                const isActive = location.pathname === tab.path
+                const isActive = tab.path === '/admin'
+                  ? location.pathname === '/admin'
+                  : location.pathname.startsWith(tab.path)
                 return (
                   <Link
                     key={tab.path}
