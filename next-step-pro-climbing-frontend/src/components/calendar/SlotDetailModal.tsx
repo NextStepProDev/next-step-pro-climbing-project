@@ -1,8 +1,8 @@
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { format } from "date-fns";
-import { Clock, Users, Calendar, Clock3, Phone } from "lucide-react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { Clock, Users, Calendar, Clock3, Phone, Trash2, AlertTriangle } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { Modal } from "../ui/Modal";
 import { Button } from "../ui/Button";
@@ -10,7 +10,7 @@ import { ShareButtons } from "../ui/ShareButtons";
 import { CompleteProfileModal } from "../ui/CompleteProfileModal";
 import { useAuth } from "../../context/AuthContext";
 import { saveRedirectPath } from "../../utils/redirect";
-import { reservationApi } from "../../api/client";
+import { adminApi, reservationApi } from "../../api/client";
 import { getErrorMessage } from "../../utils/errors";
 import { useDateLocale } from "../../utils/dateFnsLocale";
 import type { TimeSlotDetail } from "../../types";
@@ -27,14 +27,16 @@ export function SlotDetailModal({
   onClose,
 }: SlotDetailModalProps) {
   const { t } = useTranslation('calendar');
+  const { t: ta } = useTranslation('admin');
   const locale = useDateLocale();
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, isAdmin, user } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [comment, setComment] = useState("");
   const [participants, setParticipants] = useState(1);
   const [showParticipants, setShowParticipants] = useState(false);
   const [showCompleteProfile, setShowCompleteProfile] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const pendingAction = useRef<(() => void) | null>(null);
 
   const requireProfile = (action: () => void) => {
@@ -98,6 +100,24 @@ export function SlotDetailModal({
       queryClient.invalidateQueries({ queryKey: ["calendar"] });
       queryClient.invalidateQueries({ queryKey: ["slot"] });
       queryClient.invalidateQueries({ queryKey: ["reservations"] });
+      onClose();
+    },
+  });
+
+  const { data: deleteConfirmParticipants } = useQuery({
+    queryKey: ['admin', 'participants', slot?.id],
+    queryFn: () => adminApi.getSlotParticipants(slot!.id),
+    enabled: isAdmin && showDeleteConfirm && !!slot,
+  });
+
+  const deleteSlotMutation = useMutation({
+    mutationFn: adminApi.deleteTimeSlot,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["calendar"] });
+      queryClient.invalidateQueries({ queryKey: ["slot"] });
+      queryClient.invalidateQueries({ queryKey: ["reservations"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "slots"] });
+      setShowDeleteConfirm(false);
       onClose();
     },
   });
@@ -320,6 +340,18 @@ export function SlotDetailModal({
           />
         )}
 
+        {/* Admin delete */}
+        {isAdmin && (
+          <button
+            type="button"
+            onClick={() => setShowDeleteConfirm(true)}
+            className="flex items-center gap-2 text-sm text-rose-400/70 hover:text-rose-400 transition-colors"
+          >
+            <Trash2 className="w-4 h-4" />
+            {ta('slots.deleteSlot')}
+          </button>
+        )}
+
         {/* Actions */}
         {!isAvailabilityWindow && <div className="flex gap-3 pt-4 border-t border-dark-800">
           {!isAuthenticated ? (
@@ -440,6 +472,72 @@ export function SlotDetailModal({
           pendingAction.current = null;
         }}
       />
+    )}
+
+    {showDeleteConfirm && deleteConfirmParticipants && (
+      <Modal
+        isOpen={showDeleteConfirm}
+        onClose={() => setShowDeleteConfirm(false)}
+        title={deleteConfirmParticipants.participants.length > 0
+          ? ta('slots.warningActiveReservations')
+          : ta('slots.deleteTitle')}
+      >
+        <div className="space-y-4">
+          <div className="text-sm text-dark-400">
+            {format(dateObj, 'EEEE, d MMMM', { locale })} |{' '}
+            {slot.startTime.slice(0, 5)} - {slot.endTime.slice(0, 5)}
+          </div>
+
+          {deleteConfirmParticipants.participants.length > 0 ? (
+            <>
+              <div className="flex items-start gap-3 p-3 bg-rose-500/10 border border-rose-500/20 rounded-lg">
+                <AlertTriangle className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
+                <div className="text-sm text-rose-300">
+                  <p className="font-medium mb-1">{ta('slots.hasActiveReservations')}</p>
+                  <p className="text-rose-400/80">{ta('slots.deleteWarning')}</p>
+                </div>
+              </div>
+              <div>
+                <h3 className="text-sm font-medium text-dark-300 mb-2">
+                  {ta('slots.registered', { count: deleteConfirmParticipants.participants.length })}
+                </h3>
+                <ul className="space-y-2 max-h-48 overflow-y-auto">
+                  {deleteConfirmParticipants.participants.map((p) => (
+                    <li key={p.userId} className="bg-dark-800 rounded-lg p-3">
+                      <div className="font-medium text-dark-100">{p.fullName}</div>
+                      <div className="text-sm text-dark-400">{p.email}</div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </>
+          ) : (
+            <p className="text-dark-400 text-sm">{ta('slots.noRegistered')}</p>
+          )}
+
+          <div className="flex gap-3 pt-2">
+            <Button
+              variant="danger"
+              className="flex-1"
+              loading={deleteSlotMutation.isPending}
+              onClick={() => deleteSlotMutation.mutate(slot.id)}
+            >
+              {deleteConfirmParticipants.participants.length > 0
+                ? ta('slots.deleteAndCancel')
+                : ta('slots.deleteSimple')}
+            </Button>
+            <Button variant="ghost" onClick={() => setShowDeleteConfirm(false)}>
+              {ta('slots.cancel')}
+            </Button>
+          </div>
+
+          {deleteSlotMutation.isError && (
+            <p className="text-sm text-rose-400/80">
+              {getErrorMessage(deleteSlotMutation.error)}
+            </p>
+          )}
+        </div>
+      </Modal>
     )}
     </>
   );

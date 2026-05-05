@@ -7,6 +7,7 @@ import clsx from "clsx";
 import type { TimeSlot, EventSummary } from "../../types";
 import { formatAvailability, getEventColorByIndex } from "../../utils/events";
 import { useDateLocale } from "../../utils/dateFnsLocale";
+import { useAuth } from "../../context/AuthContext";
 
 interface DayViewProps {
   date: string;
@@ -32,23 +33,29 @@ function SlotButton({
   showTitle?: boolean;
 }) {
   const { t } = useTranslation('calendar');
+  const { isAdmin } = useAuth();
 
   const isAvailabilityWindow = slot.status === "AVAILABILITY_WINDOW";
+  const isDisabled = !isAdmin && (slot.status === "BLOCKED" || slot.status === "PAST");
 
   return (
     <button
       onClick={() => onSlotClick(slot.id)}
-      disabled={slot.status === "BLOCKED" || slot.status === "PAST"}
+      disabled={isDisabled}
       className={clsx(
         "w-full p-4 rounded-lg border transition-all text-left",
         slot.status === "AVAILABLE" &&
           "border-dark-700 hover:border-primary-500 hover:bg-dark-800",
         slot.status === "FULL" &&
           "border-dark-700 hover:border-amber-500 hover:bg-dark-800",
-        slot.status === "BLOCKED" &&
+        slot.status === "BLOCKED" && !isAdmin &&
           "border-dark-800 bg-dark-900/50 cursor-not-allowed opacity-50",
-        slot.status === "PAST" &&
+        slot.status === "BLOCKED" && isAdmin &&
+          "border-dark-800 bg-dark-900/50 opacity-50 hover:opacity-70 hover:border-rose-500/50",
+        slot.status === "PAST" && !isAdmin &&
           "border-dark-800 bg-dark-900/50 cursor-not-allowed opacity-40",
+        slot.status === "PAST" && isAdmin &&
+          "border-dark-800 bg-dark-900/50 opacity-40 hover:opacity-60 hover:border-rose-500/50",
         slot.status === "BOOKING_CLOSED" &&
           "border-dark-700 hover:border-amber-500 hover:bg-dark-800",
         isAvailabilityWindow &&

@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { format } from 'date-fns'
-import { Calendar, ExternalLink, MapPin, Users } from 'lucide-react'
+import { Calendar, ExternalLink, MapPin, Users, Trash2, AlertTriangle } from 'lucide-react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, useNavigate } from 'react-router-dom'
 import { Modal } from '../ui/Modal'
@@ -10,7 +10,7 @@ import { ShareButtons } from '../ui/ShareButtons'
 import { CompleteProfileModal } from '../ui/CompleteProfileModal'
 import { useAuth } from '../../context/AuthContext'
 import { saveRedirectPath } from '../../utils/redirect'
-import { calendarApi, reservationApi } from '../../api/client'
+import { adminApi, calendarApi, reservationApi } from '../../api/client'
 import { getErrorMessage } from '../../utils/errors'
 import type { EventSummary } from '../../types'
 
@@ -23,7 +23,8 @@ interface EventSignupModalProps {
 export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalProps) {
   const { t } = useTranslation('calendar')
   const { t: tc } = useTranslation('common')
-  const { isAuthenticated, user } = useAuth()
+  const { t: ta } = useTranslation('admin')
+  const { isAuthenticated, isAdmin, user } = useAuth()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [comment, setComment] = useState('')
@@ -32,6 +33,7 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
   // null = user hasn't touched yet → falls back to freshEvent.userParticipants
   const [userEditParticipants, setUserEditParticipants] = useState<number | null>(null)
   const [showCompleteProfile, setShowCompleteProfile] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const pendingAction = useRef<(() => void) | null>(null)
 
   const requireProfile = (action: () => void) => {
@@ -112,6 +114,24 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
       queryClient.invalidateQueries({ queryKey: ['calendar'] })
       queryClient.invalidateQueries({ queryKey: ['reservations'] })
       queryClient.invalidateQueries({ queryKey: ['eventSummary', event?.id] })
+      onClose()
+    },
+  })
+
+  const { data: deleteConfirmParticipants } = useQuery({
+    queryKey: ['admin', 'events', event?.id, 'participants'],
+    queryFn: () => adminApi.getEventParticipants(event!.id),
+    enabled: isAdmin && showDeleteConfirm && !!event,
+  })
+
+  const deleteEventMutation = useMutation({
+    mutationFn: adminApi.deleteEvent,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['calendar'] })
+      queryClient.invalidateQueries({ queryKey: ['reservations'] })
+      queryClient.invalidateQueries({ queryKey: ['eventSummary', event?.id] })
+      queryClient.invalidateQueries({ queryKey: ['admin', 'events'] })
+      setShowDeleteConfirm(false)
       onClose()
     },
   })
@@ -517,6 +537,18 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
           </>
         )}
 
+        {/* Admin delete */}
+        {isAdmin && (
+          <button
+            type="button"
+            onClick={() => setShowDeleteConfirm(true)}
+            className="flex items-center gap-2 text-sm text-rose-400/70 hover:text-rose-400 transition-colors"
+          >
+            <Trash2 className="w-4 h-4" />
+            {ta('events.deleteTitle')}
+          </button>
+        )}
+
         {/* Share */}
         <ShareButtons
           title={ev.title}
@@ -560,6 +592,71 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
           pendingAction.current = null
         }}
       />
+    )}
+
+    {showDeleteConfirm && deleteConfirmParticipants && (
+      <Modal
+        isOpen={showDeleteConfirm}
+        onClose={() => setShowDeleteConfirm(false)}
+        title={deleteConfirmParticipants.participants.length > 0
+          ? ta('events.warningActiveReservations')
+          : ta('events.deleteTitle')}
+      >
+        <div className="space-y-4">
+          <div className="text-sm text-dark-400">
+            {ta('events.eventLabel')}<span className="text-dark-200">{ev.title}</span>
+          </div>
+
+          {deleteConfirmParticipants.participants.length > 0 ? (
+            <>
+              <div className="flex items-start gap-3 p-3 bg-rose-500/10 border border-rose-500/20 rounded-lg">
+                <AlertTriangle className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
+                <div className="text-sm text-rose-300">
+                  <p className="font-medium mb-1">{ta('events.hasParticipants')}</p>
+                  <p className="text-rose-400/80">{ta('events.deleteWarning')}</p>
+                </div>
+              </div>
+              <div>
+                <h3 className="text-sm font-medium text-dark-300 mb-2">
+                  {ta('events.registered', { count: deleteConfirmParticipants.participants.length })}
+                </h3>
+                <ul className="space-y-2 max-h-48 overflow-y-auto">
+                  {deleteConfirmParticipants.participants.map((p) => (
+                    <li key={p.userId} className="bg-dark-800 rounded-lg p-3">
+                      <div className="font-medium text-dark-100">{p.fullName}</div>
+                      <div className="text-sm text-dark-400">{p.email}</div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </>
+          ) : (
+            <p className="text-dark-400 text-sm">{ta('events.noRegistered')}</p>
+          )}
+
+          <div className="flex gap-3 pt-2">
+            <Button
+              variant="danger"
+              className="flex-1"
+              loading={deleteEventMutation.isPending}
+              onClick={() => deleteEventMutation.mutate(ev.id)}
+            >
+              {deleteConfirmParticipants.participants.length > 0
+                ? ta('events.deleteAndCancel')
+                : ta('events.deleteSimple')}
+            </Button>
+            <Button variant="ghost" onClick={() => setShowDeleteConfirm(false)}>
+              {ta('events.cancel')}
+            </Button>
+          </div>
+
+          {deleteEventMutation.isError && (
+            <p className="text-sm text-rose-400/80">
+              {getErrorMessage(deleteEventMutation.error)}
+            </p>
+          )}
+        </div>
+      </Modal>
     )}
     </>
   )

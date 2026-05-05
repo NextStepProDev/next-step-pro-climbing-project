@@ -124,7 +124,7 @@ export function MonthCalendar({ currentMonth, onMonthChange, days, events, onDay
           const hasAvailabilityWindow = dayData?.hasAvailabilityWindow ?? false
           const hasUserReservation = dayData?.hasUserReservation
           const hasEvents = dayEvents.length > 0
-          const isClickable = !isPast && (hasSlots || hasEvents || hasAvailabilityWindow || allDaysClickable)
+          const isClickable = allDaysClickable || (!isPast && (hasSlots || hasEvents || hasAvailabilityWindow))
 
           return (
             <button
