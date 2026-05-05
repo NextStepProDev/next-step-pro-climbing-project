@@ -153,15 +153,11 @@ export function MonthCalendar({ currentMonth, onMonthChange, days, events, onDay
               {dayEvents.length > 0 && dayEvents.map((event) => {
                 const color = eventColorMap.get(event.id) ?? getEventColorByIndex(event.id, event.eventType, event.currentParticipants >= event.maxParticipants)
                 return (
-                  <div key={event.id} className={clsx("text-[10px] leading-tight font-medium truncate", color.text)}>
-                    {event.title}{' '}
-                    {event.eventType !== 'CONTACT_DAY' && (
-                      <span className={clsx(
-                        event.currentParticipants >= event.maxParticipants ? 'text-amber-400' : 'opacity-75'
-                      )}>
-                        {event.currentParticipants}/{event.maxParticipants}
-                      </span>
-                    )}
+                  <div key={event.id} className={clsx(
+                    "text-[10px] leading-tight font-medium truncate rounded border px-0.5",
+                    color.barBg, color.barBorder, color.barText
+                  )}>
+                    {event.title}
                   </div>
                 )
               })}
