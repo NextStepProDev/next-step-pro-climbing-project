@@ -1162,7 +1162,7 @@ function BlockEditor({
             <img
               src={block.imageUrl}
               alt={editState.caption ?? ''}
-              className="w-full max-h-48 object-cover rounded"
+              className="max-w-full max-h-80 rounded"
             />
           )}
           <input
@@ -1229,7 +1229,7 @@ function PendingBlockItem({
             <img
               src={block.imageUrl ?? block.preview}
               alt={block.caption}
-              className="w-full max-h-48 object-cover rounded border border-dark-600"
+              className="max-w-full max-h-80 rounded border border-dark-600"
             />
           )}
           <input
