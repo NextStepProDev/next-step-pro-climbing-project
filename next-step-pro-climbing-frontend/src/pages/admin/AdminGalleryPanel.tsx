@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Image as ImageIcon, Plus, Pencil, Trash2, Upload, ChevronUp, ChevronDown, Star, Eye, EyeOff } from 'lucide-react'
+import { Image as ImageIcon, Plus, Pencil, Trash2, Upload, ChevronUp, ChevronDown, Star, Eye, EyeOff, ChevronLeft, ChevronRight, X } from 'lucide-react'
 import { adminGalleryApi } from '../../api/client'
 import type { AlbumAdmin, CreateAlbumRequest, UpdateAlbumRequest, UpdatePhotoRequest } from '../../types'
 import { Button } from '../../components/ui/Button'
@@ -29,6 +29,7 @@ export function AdminGalleryPanel() {
   const [photoPreviews, setPhotoPreviews] = useState<string[]>([])
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
   const [uploadProgress, setUploadProgress] = useState<number>(0)
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
 
   const { data: albums, isLoading, error } = useQuery({
     queryKey: ['admin', 'gallery', 'albums'],
@@ -213,6 +214,46 @@ export function AdminGalleryPanel() {
       })
     }
   }, [photoPreviews])
+
+  const lightboxPhotos = albumDetail?.photos ?? []
+
+  const handleLightboxPrev = useCallback(() => {
+    setLightboxIndex(prev => prev !== null && prev > 0 ? prev - 1 : prev)
+  }, [])
+
+  const handleLightboxNext = useCallback(() => {
+    setLightboxIndex(prev => prev !== null && prev < lightboxPhotos.length - 1 ? prev + 1 : prev)
+  }, [lightboxPhotos.length])
+
+  const touchStartX = useRef<number | null>(null)
+
+  useEffect(() => {
+    if (lightboxIndex === null) return
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setLightboxIndex(null)
+      else if (e.key === 'ArrowLeft') handleLightboxPrev()
+      else if (e.key === 'ArrowRight') handleLightboxNext()
+    }
+    const handleTouchStart = (e: TouchEvent) => {
+      touchStartX.current = e.touches[0].clientX
+    }
+    const handleTouchEnd = (e: TouchEvent) => {
+      if (touchStartX.current === null) return
+      const diff = touchStartX.current - e.changedTouches[0].clientX
+      touchStartX.current = null
+      if (Math.abs(diff) < 50) return
+      if (diff > 0) handleLightboxNext()
+      else handleLightboxPrev()
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    document.addEventListener('touchstart', handleTouchStart)
+    document.addEventListener('touchend', handleTouchEnd)
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown)
+      document.removeEventListener('touchstart', handleTouchStart)
+      document.removeEventListener('touchend', handleTouchEnd)
+    }
+  }, [lightboxIndex, handleLightboxPrev, handleLightboxNext])
 
   const handleUpdatePhoto = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -435,9 +476,8 @@ export function AdminGalleryPanel() {
                           key={photo.id}
                           className="group relative bg-dark-700 rounded-lg overflow-hidden aspect-square cursor-pointer"
                           onClick={() => {
-                            setSelectedPhoto({ id: photo.id, caption: photo.caption, url: photo.url, focalPointX: photo.focalPointX, focalPointY: photo.focalPointY })
-                            setFocalPoint({ x: photo.focalPointX ?? 0.5, y: photo.focalPointY ?? 0.5 })
-                            setEditPhotoModalOpen(true)
+                            const idx = albumDetail!.photos.findIndex(p => p.id === photo.id)
+                            setLightboxIndex(idx >= 0 ? idx : 0)
                           }}
                         >
                           <img
@@ -465,12 +505,13 @@ export function AdminGalleryPanel() {
                               <Star className="h-3 w-3 text-dark-900" fill="currentColor" />
                             </div>
                           )}
-                          <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2" onClick={(e) => e.stopPropagation()}>
+                          <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                             {/* Set as thumbnail */}
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => {
+                              onClick={(e) => {
+                                e.stopPropagation()
                                 if (expandedAlbumId) {
                                   setThumbnailMutation.mutate({ albumId: expandedAlbumId, photoId: photo.id })
                                 }
@@ -487,7 +528,8 @@ export function AdminGalleryPanel() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => {
+                              onClick={(e) => {
+                                e.stopPropagation()
                                 setSelectedPhoto({ id: photo.id, caption: photo.caption, url: photo.url, focalPointX: photo.focalPointX, focalPointY: photo.focalPointY })
                                 setFocalPoint({ x: photo.focalPointX ?? 0.5, y: photo.focalPointY ?? 0.5 })
                                 setEditPhotoModalOpen(true)
@@ -499,7 +541,8 @@ export function AdminGalleryPanel() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => {
+                              onClick={(e) => {
+                                e.stopPropagation()
                                 setSelectedPhotoId(photo.id)
                                 setDeletePhotoConfirmOpen(true)
                               }}
@@ -850,6 +893,103 @@ export function AdminGalleryPanel() {
         message={`Czy na pewno chcesz usunąć wszystkie zdjęcia z albumu "${selectedAlbum?.name}"? Album zostanie zachowany. Tej operacji nie można cofnąć.`}
         confirmText="Usuń wszystkie zdjęcia"
       />
+
+      {/* Photo Lightbox */}
+      {lightboxIndex !== null && lightboxPhotos[lightboxIndex] && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/90"
+          onClick={() => setLightboxIndex(null)}
+        >
+          <button
+            onClick={(e) => { e.stopPropagation(); setLightboxIndex(null) }}
+            className="absolute top-4 right-4 text-white/70 hover:text-white transition-colors z-10"
+          >
+            <X className="h-8 w-8" />
+          </button>
+
+          <div className="absolute top-4 left-1/2 -translate-x-1/2 text-white/50 text-sm">
+            {lightboxIndex + 1} / {lightboxPhotos.length}
+          </div>
+
+          {lightboxIndex > 0 && (
+            <button
+              onClick={(e) => { e.stopPropagation(); handleLightboxPrev() }}
+              className="absolute left-4 top-1/2 -translate-y-1/2 text-white/50 hover:text-white transition-colors z-10"
+            >
+              <ChevronLeft className="h-10 w-10" />
+            </button>
+          )}
+
+          {lightboxIndex < lightboxPhotos.length - 1 && (
+            <button
+              onClick={(e) => { e.stopPropagation(); handleLightboxNext() }}
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-white/50 hover:text-white transition-colors z-10"
+            >
+              <ChevronRight className="h-10 w-10" />
+            </button>
+          )}
+
+          <img
+            src={lightboxPhotos[lightboxIndex].url}
+            alt={lightboxPhotos[lightboxIndex].caption || ''}
+            className="max-h-[90vh] max-w-[90vw] object-contain"
+            onClick={(e) => e.stopPropagation()}
+          />
+
+          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex flex-col items-center gap-3" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  if (expandedAlbumId) {
+                    setThumbnailMutation.mutate({ albumId: expandedAlbumId, photoId: lightboxPhotos[lightboxIndex].id })
+                  }
+                }}
+                disabled={setThumbnailMutation.isPending}
+                title={albumDetail?.thumbnailPhotoId === lightboxPhotos[lightboxIndex].id ? 'Aktualnie ustawiona miniaturka' : 'Ustaw jako miniaturkę'}
+                className={`bg-dark-800/80 hover:bg-dark-700 text-white${albumDetail?.thumbnailPhotoId === lightboxPhotos[lightboxIndex].id ? ' !text-amber-400' : ''}`}
+              >
+                <Star
+                  className="h-4 w-4"
+                  fill={albumDetail?.thumbnailPhotoId === lightboxPhotos[lightboxIndex].id ? 'currentColor' : 'none'}
+                />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  const photo = lightboxPhotos[lightboxIndex]
+                  setSelectedPhoto({ id: photo.id, caption: photo.caption, url: photo.url, focalPointX: photo.focalPointX, focalPointY: photo.focalPointY })
+                  setFocalPoint({ x: photo.focalPointX ?? 0.5, y: photo.focalPointY ?? 0.5 })
+                  setLightboxIndex(null)
+                  setEditPhotoModalOpen(true)
+                }}
+                className="bg-dark-800/80 hover:bg-dark-700 text-white"
+              >
+                <Pencil className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setSelectedPhotoId(lightboxPhotos[lightboxIndex].id)
+                  setLightboxIndex(null)
+                  setDeletePhotoConfirmOpen(true)
+                }}
+                className="bg-dark-800/80 hover:bg-dark-700 text-white"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
+            {lightboxPhotos[lightboxIndex].caption && (
+              <div className="text-white/80 text-sm bg-black/60 px-4 py-2 rounded-lg max-w-lg text-center">
+                {lightboxPhotos[lightboxIndex].caption}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
