@@ -4,7 +4,8 @@ import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isToday, isBefore, startOfDay } from 'date-fns'
 import clsx from 'clsx'
 import type { DaySummary, EventSummary } from '../../types'
-import { getEventColorByIndex, buildEventColorMap, pluralizeTraining } from '../../utils/events'
+import type { EventColorMap } from '../../utils/events'
+import { getEventColorByIndex, pluralizeTraining } from '../../utils/events'
 import { useDateLocale } from '../../utils/dateFnsLocale'
 
 interface MonthCalendarProps {
@@ -14,9 +15,10 @@ interface MonthCalendarProps {
   events: EventSummary[]
   onDayClick: (date: string) => void
   allDaysClickable?: boolean
+  eventColorMap: EventColorMap
 }
 
-export function MonthCalendar({ currentMonth, onMonthChange, days, events, onDayClick, allDaysClickable }: MonthCalendarProps) {
+export function MonthCalendar({ currentMonth, onMonthChange, days, events, onDayClick, allDaysClickable, eventColorMap }: MonthCalendarProps) {
   const { t } = useTranslation('calendar')
   const locale = useDateLocale()
 
@@ -61,7 +63,6 @@ export function MonthCalendar({ currentMonth, onMonthChange, days, events, onDay
     return map
   }, [events])
 
-  const eventColorMap = useMemo(() => buildEventColorMap(events), [events])
 
   const goToPreviousMonth = () => {
     const newDate = new Date(currentMonth)

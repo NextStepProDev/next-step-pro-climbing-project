@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -15,7 +15,7 @@ import { CreateSlotModal } from "../components/calendar/CreateSlotModal";
 import { LoadingSpinner } from "../components/ui/LoadingSpinner";
 import { QueryError } from "../components/ui/QueryError";
 import { Phone, Mail, ExternalLink, Scissors, X, Bell } from "lucide-react";
-import { formatAvailability, getEventColorByIndex } from "../utils/events";
+import { formatAvailability, buildEventColorMap } from "../utils/events";
 import type { EventSummary, TimeSlot } from "../types";
 
 export function CalendarPage() {
@@ -102,6 +102,15 @@ export function CalendarPage() {
     enabled: !!selectedSlotId,
   });
 
+  const monthColorMap = useMemo(
+    () => monthData ? buildEventColorMap(monthData.events) : new Map(),
+    [monthData],
+  );
+
+  const weekColorMap = useMemo(
+    () => weekData ? buildEventColorMap(weekData.events) : new Map(),
+    [weekData],
+  );
 
   const handleDayClick = useCallback(
     (date: string) => {
@@ -444,6 +453,7 @@ export function CalendarPage() {
               startDate={weekData.startDate}
               days={weekData.days}
               events={weekData.events}
+              eventColorMap={weekColorMap}
               onPrevWeek={handlePrevWeek}
               onNextWeek={handleNextWeek}
               onToday={handleTodayWeek}
@@ -471,6 +481,7 @@ export function CalendarPage() {
                   {weekData.events.map((event) => {
                     const { label, badgeClass } = formatAvailability(event);
                     const isFull = event.currentParticipants >= event.maxParticipants;
+                    const color = weekColorMap.get(event.id)!;
                     return (
                       <div
                         key={event.id}
@@ -478,7 +489,10 @@ export function CalendarPage() {
                         onClick={() => setSelectedEvent(event)}
                       >
                         <div className="flex items-center justify-between">
-                          <span className="text-dark-100 font-medium">{event.title}</span>
+                          <span className="flex items-center gap-2 text-dark-100 font-medium min-w-0">
+                            <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${color.dot}`} />
+                            {event.title}
+                          </span>
                           <div className="flex items-center gap-3">
                             <span className={`px-2 py-1 rounded-full text-xs font-medium ${badgeClass}`}>
                               {label}
@@ -541,6 +555,7 @@ export function CalendarPage() {
             events={monthData.events}
             onDayClick={handleDayClick}
             allDaysClickable={isAdmin}
+            eventColorMap={monthColorMap}
           />
 
           {/* Events legend */}
@@ -557,7 +572,7 @@ export function CalendarPage() {
                 {monthData.events.map((event) => {
                   const { label, badgeClass } = formatAvailability(event);
                   const isFull = event.currentParticipants >= event.maxParticipants;
-                  const color = getEventColorByIndex(event.id, event.eventType, isFull);
+                  const color = monthColorMap.get(event.id)!;
 
                   return (
                     <div

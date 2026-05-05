@@ -6,6 +6,8 @@ type EventAccentColor = {
   barBg: string; barBorder: string; barText: string; barHover: string;
 }
 
+export type EventColorMap = Map<string, EventAccentColor>
+
 const EVENT_TYPE_COLORS: Record<string, EventAccentColor> = {
   COURSE: {
     text: 'text-primary-400', border: 'border-primary-500/30', bg: 'bg-primary-500/5',
@@ -53,15 +55,7 @@ export function getEventColorByType(eventType: string): EventAccentColor {
   return EVENT_TYPE_COLORS[eventType] ?? EVENT_TYPE_COLORS.COURSE;
 }
 
-export function getEventColorForDisplay(eventType: string, isFull: boolean): EventAccentColor {
-  if (isFull && eventType !== 'CONTACT_DAY') {
-    return EVENT_TYPE_COLORS.FULL; // amber — same as "full" slots
-  }
-  return getEventColorByType(eventType);
-}
-
-/** Use this when multiple events are shown together (day/week/month view).
- *  CONTACT_DAY keeps its violet. Full events get amber. Others get a stable color derived from event ID. */
+/** Stable color for an event — CONTACT_DAY → violet, full → amber, others → hash-based from ID. */
 export function getEventColorByIndex(eventId: string, eventType: string, isFull: boolean): EventAccentColor {
   if (eventType === 'CONTACT_DAY') return EVENT_TYPE_COLORS.CONTACT_DAY;
   if (isFull) return EVENT_TYPE_COLORS.FULL;
@@ -69,8 +63,8 @@ export function getEventColorByIndex(eventId: string, eventType: string, isFull:
   return INDEX_PALETTE[hash % INDEX_PALETTE.length];
 }
 
-/** Conflict-aware color map for month view.
- *  Ensures adjacent/overlapping events (gap ≤ 1 day) get different colors. */
+/** Graph-coloring map — overlapping events (gap ≤ 1 day) get different colors.
+ *  Use the returned map as single source of truth for a given event set. */
 export function buildEventColorMap(events: EventSummary[]): Map<string, EventAccentColor> {
   const map = new Map<string, EventAccentColor>()
 

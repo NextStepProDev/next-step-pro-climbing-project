@@ -4,6 +4,7 @@ import { ChevronLeft, ChevronRight, Scissors, Bell, Check, X } from 'lucide-reac
 import { format, isToday, isBefore, startOfDay } from 'date-fns'
 import clsx from 'clsx'
 import type { WeekDay, TimeSlot, EventSummary } from '../../types'
+import type { EventColorMap } from '../../utils/events'
 import { getEventColorByIndex } from '../../utils/events'
 import { useDateLocale } from '../../utils/dateFnsLocale'
 import { useSlotDrag } from '../../hooks/useSlotDrag'
@@ -17,6 +18,7 @@ interface WeekCalendarProps {
   startDate: string
   days: WeekDay[]
   events: EventSummary[]
+  eventColorMap: EventColorMap
   onPrevWeek: () => void
   onNextWeek: () => void
   onToday: () => void
@@ -93,6 +95,7 @@ export function WeekCalendar({
   startDate,
   days,
   events,
+  eventColorMap,
   onPrevWeek,
   onNextWeek,
   onToday,
@@ -297,7 +300,7 @@ export function WeekCalendar({
 
                   {/* Event bars at top area */}
                   {dayEvents.map((event, eventIndex) => {
-                    const color = getEventColorByIndex(event.id, event.eventType, event.currentParticipants >= event.maxParticipants)
+                    const color = eventColorMap.get(event.id) ?? getEventColorByIndex(event.id, event.eventType, event.currentParticipants >= event.maxParticipants)
                     return (
                       <button
                         key={event.id}
