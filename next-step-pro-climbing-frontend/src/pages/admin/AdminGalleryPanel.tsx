@@ -550,7 +550,7 @@ export function AdminGalleryPanel() {
             </label>
             <textarea
               name="description"
-              rows={6}
+              rows={8}
               className="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-dark-100 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             />
           </div>
@@ -606,7 +606,7 @@ export function AdminGalleryPanel() {
               <textarea
                 name="description"
                 defaultValue={selectedAlbum.description || ''}
-                rows={6}
+                rows={8}
                 className="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-dark-100 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               />
             </div>

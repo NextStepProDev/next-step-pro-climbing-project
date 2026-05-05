@@ -822,7 +822,7 @@ function EditEventModal({
           <textarea
             value={form.description}
             onChange={(e) => setForm({ ...form, description: e.target.value })}
-            className="w-full bg-dark-800 border border-dark-700 rounded-lg px-4 py-2 text-dark-100 h-48"
+            className="w-full bg-dark-800 border border-dark-700 rounded-lg px-4 py-2 text-dark-100 h-64"
           />
         </div>
 
@@ -1051,7 +1051,7 @@ function CreateEventModal({
           <textarea
             value={form.description}
             onChange={(e) => setForm({ ...form, description: e.target.value })}
-            className="w-full bg-dark-800 border border-dark-700 rounded-lg px-4 py-2 text-dark-100 h-48"
+            className="w-full bg-dark-800 border border-dark-700 rounded-lg px-4 py-2 text-dark-100 h-64"
           />
         </div>
 

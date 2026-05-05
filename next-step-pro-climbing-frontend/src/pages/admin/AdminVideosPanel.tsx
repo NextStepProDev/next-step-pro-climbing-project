@@ -250,7 +250,7 @@ export function AdminVideosPanel() {
             <RichTextEditor
               value={formContent}
               onChange={setFormContent}
-              rows={16}
+              rows={21}
               placeholder={t('videos.contentLabel') + '...'}
             />
           </div>
