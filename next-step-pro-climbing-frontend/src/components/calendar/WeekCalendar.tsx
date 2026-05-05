@@ -306,10 +306,10 @@ export function WeekCalendar({
                         key={event.id}
                         onClick={() => onEventClick(event)}
                         className={clsx(
-                          "absolute left-0.5 right-0.5 z-20 px-1 py-0.5 text-[10px] leading-tight font-medium rounded border truncate transition-colors cursor-pointer",
+                          "absolute left-0.5 right-0.5 z-20 px-1 py-0.5 text-[11px] leading-snug font-medium rounded border truncate transition-colors cursor-pointer",
                           color.barBg, color.barBorder, color.barText, color.barHover
                         )}
-                        style={{ top: eventIndex * 20 }}
+                        style={{ top: eventIndex * 22 }}
                       >
                         {event.title}
                       </button>

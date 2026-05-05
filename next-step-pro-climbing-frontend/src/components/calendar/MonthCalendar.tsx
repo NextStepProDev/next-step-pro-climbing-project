@@ -154,7 +154,7 @@ export function MonthCalendar({ currentMonth, onMonthChange, days, events, onDay
                 const color = eventColorMap.get(event.id) ?? getEventColorByIndex(event.id, event.eventType, event.currentParticipants >= event.maxParticipants)
                 return (
                   <div key={event.id} className={clsx(
-                    "text-[10px] leading-tight font-medium truncate rounded border px-0.5",
+                    "text-[11px] leading-snug font-medium truncate rounded border px-1 py-0.5 mb-0.5",
                     color.barBg, color.barBorder, color.barText
                   )}>
                     {event.title}
