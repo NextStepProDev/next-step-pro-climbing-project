@@ -42,15 +42,15 @@ class CourseServiceTest {
     @Test
     void shouldReturnEmptyListWhenNoPublishedCourses() {
         // Given
-        when(courseRepository.findAllPublishedSummaries()).thenReturn(List.of());
+        when(courseRepository.findAllPublishedSummariesByLanguage("pl")).thenReturn(List.of());
 
         // When
-        List<CourseSummaryDto> result = courseService.getAllPublished();
+        List<CourseSummaryDto> result = courseService.getAllPublished("pl");
 
         // Then
         assertNotNull(result);
         assertTrue(result.isEmpty());
-        verify(courseRepository).findAllPublishedSummaries();
+        verify(courseRepository).findAllPublishedSummariesByLanguage("pl");
     }
 
     @Test
@@ -60,13 +60,13 @@ class CourseServiceTest {
         UUID id2 = UUID.randomUUID();
         Instant now = Instant.now();
 
-        when(courseRepository.findAllPublishedSummaries()).thenReturn(List.of(
-                buildProjection(id1, "Kurs dla początkujących", "Opis kursu", null, now),
-                buildProjection(id2, "Kurs zaawansowany", null, "thumb.jpg", now)
+        when(courseRepository.findAllPublishedSummariesByLanguage("pl")).thenReturn(List.of(
+                buildProjection(id1, "Kurs dla początkujących", "Opis kursu", null, now, "pl"),
+                buildProjection(id2, "Kurs zaawansowany", null, "thumb.jpg", now, "pl")
         ));
 
         // When
-        List<CourseSummaryDto> result = courseService.getAllPublished();
+        List<CourseSummaryDto> result = courseService.getAllPublished("pl");
 
         // Then
         assertEquals(2, result.size());
@@ -83,12 +83,12 @@ class CourseServiceTest {
     void shouldBuildCorrectThumbnailUrlWhenThumbnailFilenamePresent() {
         // Given
         String filename = "abc123.jpg";
-        when(courseRepository.findAllPublishedSummaries()).thenReturn(List.of(
-                buildProjection(UUID.randomUUID(), "Kurs", null, filename, Instant.now())
+        when(courseRepository.findAllPublishedSummariesByLanguage("pl")).thenReturn(List.of(
+                buildProjection(UUID.randomUUID(), "Kurs", null, filename, Instant.now(), "pl")
         ));
 
         // When
-        List<CourseSummaryDto> result = courseService.getAllPublished();
+        List<CourseSummaryDto> result = courseService.getAllPublished("pl");
 
         // Then
         assertEquals(BASE_URL + "/api/files/courses/" + filename, result.get(0).thumbnailUrl());
@@ -97,15 +97,32 @@ class CourseServiceTest {
     @Test
     void shouldReturnNullThumbnailUrlWhenNoThumbnail() {
         // Given
-        when(courseRepository.findAllPublishedSummaries()).thenReturn(List.of(
-                buildProjection(UUID.randomUUID(), "Kurs", null, null, Instant.now())
+        when(courseRepository.findAllPublishedSummariesByLanguage("pl")).thenReturn(List.of(
+                buildProjection(UUID.randomUUID(), "Kurs", null, null, Instant.now(), "pl")
         ));
 
         // When
-        List<CourseSummaryDto> result = courseService.getAllPublished();
+        List<CourseSummaryDto> result = courseService.getAllPublished("pl");
 
         // Then
         assertNull(result.get(0).thumbnailUrl());
+    }
+
+    @Test
+    void shouldFilterCoursesByLanguage() {
+        // Given
+        UUID id1 = UUID.randomUUID();
+        when(courseRepository.findAllPublishedSummariesByLanguage("en")).thenReturn(List.of(
+                buildProjection(id1, "Beginner Course", null, null, Instant.now(), "en")
+        ));
+
+        // When
+        List<CourseSummaryDto> result = courseService.getAllPublished("en");
+
+        // Then
+        assertEquals(1, result.size());
+        assertEquals("en", result.get(0).language());
+        verify(courseRepository).findAllPublishedSummariesByLanguage("en");
     }
 
     // ========== getPublishedById ==========
@@ -196,7 +213,8 @@ class CourseServiceTest {
 
     // ========== Helpers ==========
 
-    private CourseSummaryProjection buildProjection(UUID id, String title, String price, String thumbnailFilename, Instant publishedAt) {
+    private CourseSummaryProjection buildProjection(UUID id, String title, String price, String thumbnailFilename, Instant publishedAt, String language) {
+        UUID translationGroupId = UUID.randomUUID();
         return new CourseSummaryProjection() {
             @Override public UUID getId() { return id; }
             @Override public String getTitle() { return title; }
@@ -208,6 +226,8 @@ class CourseServiceTest {
             @Override public int getDisplayOrder() { return 0; }
             @Override public boolean isPublished() { return true; }
             @Override public Instant getPublishedAt() { return publishedAt; }
+            @Override public String getLanguage() { return language; }
+            @Override public UUID getTranslationGroupId() { return translationGroupId; }
             @Override public Instant getCreatedAt() { return Instant.now(); }
             @Override public Instant getUpdatedAt() { return Instant.now(); }
         };

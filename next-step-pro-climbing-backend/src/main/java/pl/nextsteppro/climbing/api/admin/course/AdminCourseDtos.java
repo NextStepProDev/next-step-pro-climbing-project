@@ -20,6 +20,8 @@ public class AdminCourseDtos {
             @Nullable String thumbnailUrl,
             int displayOrder,
             boolean published,
+            String language,
+            UUID translationGroupId,
             @Nullable Instant publishedAt,
             Instant createdAt,
             Instant updatedAt
@@ -34,6 +36,8 @@ public class AdminCourseDtos {
             @Nullable Float thumbnailFocalPointX,
             @Nullable Float thumbnailFocalPointY,
             boolean published,
+            String language,
+            UUID translationGroupId,
             @Nullable Instant publishedAt,
             List<ContentBlockAdminDto> blocks,
             Instant createdAt,
@@ -54,7 +58,12 @@ public class AdminCourseDtos {
 
     public record CreateCourseRequest(
             @NotBlank @Size(max = 500) String title,
-            @Nullable @Size(max = 255) String price
+            @Nullable @Size(max = 255) String price,
+            @Nullable @Size(max = 5) String language
+    ) {}
+
+    public record DuplicateAsTranslationRequest(
+            @NotBlank @Size(max = 5) String targetLanguage
     ) {}
 
     public record UpdateCourseMetaRequest(

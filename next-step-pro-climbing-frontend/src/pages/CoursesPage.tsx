@@ -10,16 +10,20 @@ import { LoadingSpinner } from '../components/ui/LoadingSpinner'
 import { QueryError } from '../components/ui/QueryError'
 import { renderRichText } from '../utils/renderRichText'
 import { useDateLocale } from '../utils/dateFnsLocale'
+import { COURSE_CONTENT_LANGUAGES, getDefaultCourseContentLanguage } from '../constants/courseLanguages'
 import clsx from 'clsx'
 
 export function CoursesPage() {
-  const { t } = useTranslation('common')
+  const { t, i18n } = useTranslation('common')
   const { hash } = useLocation()
   const scrolledRef = useRef('')
+  const [contentLanguage, setContentLanguage] = useState(() =>
+    getDefaultCourseContentLanguage(i18n.language)
+  )
 
   const { data: courses, isLoading, error } = useQuery({
-    queryKey: ['courses'],
-    queryFn: () => coursesApi.getAll(),
+    queryKey: ['courses', contentLanguage],
+    queryFn: () => coursesApi.getAll(contentLanguage),
     staleTime: 5 * 60 * 1000,
   })
 
@@ -51,7 +55,25 @@ export function CoursesPage() {
 
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-      <h1 className="text-3xl font-bold text-dark-100 mb-8">{t('courses.title')}</h1>
+      <div className="flex items-center justify-between mb-8">
+        <h1 className="text-3xl font-bold text-dark-100">{t('courses.title')}</h1>
+        <div className="flex items-center gap-1 bg-dark-800 border border-dark-700 rounded-lg p-1">
+          {COURSE_CONTENT_LANGUAGES.map((lang) => (
+            <button
+              key={lang.code}
+              onClick={() => setContentLanguage(lang.code)}
+              className={clsx(
+                'px-3 py-1.5 rounded-md text-sm font-medium transition-colors',
+                contentLanguage === lang.code
+                  ? 'bg-primary-500 text-white'
+                  : 'text-dark-400 hover:text-dark-100 hover:bg-dark-700'
+              )}
+            >
+              {lang.label}
+            </button>
+          ))}
+        </div>
+      </div>
 
       {!courses || courses.length === 0 ? (
         <p className="text-dark-400 text-center py-12">{t('courses.noCourses')}</p>
@@ -81,8 +103,8 @@ function CourseAccordionItem({ course, defaultOpen = false }: { course: CourseSu
   })
 
   const { data: courseEvents } = useQuery({
-    queryKey: ['courseEvents', course.id],
-    queryFn: () => calendarApi.getCourseEvents(course.id),
+    queryKey: ['courseEvents', course.translationGroupId],
+    queryFn: () => calendarApi.getCourseEventsByTranslationGroup(course.translationGroupId),
     enabled: isOpen,
     staleTime: 5 * 60 * 1000,
   })

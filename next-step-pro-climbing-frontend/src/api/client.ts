@@ -256,6 +256,9 @@ export const calendarApi = {
 
   getCourseEvents: (courseId: string) =>
     fetchApi<CourseEvent[]>(`/calendar/course/${courseId}/events`),
+
+  getCourseEventsByTranslationGroup: (translationGroupId: string) =>
+    fetchApi<CourseEvent[]>(`/calendar/course-group/${translationGroupId}/events`),
 }
 
 // Reservations
@@ -758,7 +761,8 @@ export const adminNewsApi = {
 
 // ==================== Courses (publiczne) ====================
 export const coursesApi = {
-  getAll: () => fetchApi<CourseSummary[]>('/courses'),
+  getAll: (language?: string) =>
+    fetchApi<CourseSummary[]>(`/courses${language ? `?language=${language}` : ''}`),
   getById: (id: string) => fetchApi<CourseDetail>(`/courses/${id}`),
 }
 
@@ -877,6 +881,12 @@ export const adminCoursesApi = {
     fetchApi<void>(`/admin/courses/${courseId}/thumbnail-url`, {
       method: 'PUT',
       body: JSON.stringify({ thumbnailUrl }),
+    }),
+
+  duplicateAsTranslation: (id: string, targetLanguage: string) =>
+    fetchApi<CourseDetailAdmin>(`/admin/courses/${id}/duplicate-translation`, {
+      method: 'POST',
+      body: JSON.stringify({ targetLanguage }),
     }),
 }
 

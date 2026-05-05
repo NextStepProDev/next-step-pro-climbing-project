@@ -9,6 +9,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.web.multipart.MultipartFile;
 import pl.nextsteppro.climbing.api.admin.course.AdminCourseDtos.*;
 import pl.nextsteppro.climbing.domain.course.*;
+import pl.nextsteppro.climbing.domain.event.EventRepository;
 import pl.nextsteppro.climbing.infrastructure.storage.FileStorageService;
 
 import java.io.IOException;
@@ -32,6 +33,8 @@ class AdminCourseServiceTest {
     @Mock
     private CourseContentBlockRepository blockRepository;
     @Mock
+    private EventRepository eventRepository;
+    @Mock
     private FileStorageService fileStorageService;
     @Mock
     private MultipartFile mockFile;
@@ -46,6 +49,7 @@ class AdminCourseServiceTest {
         adminCourseService = new AdminCourseService(
                 courseRepository,
                 blockRepository,
+                eventRepository,
                 fileStorageService,
                 BASE_URL
         );
@@ -60,7 +64,7 @@ class AdminCourseServiceTest {
     @Test
     void shouldCreateCourseSuccessfully() {
         // Given
-        CreateCourseRequest request = new CreateCourseRequest("Nowy kurs", "150 zł");
+        CreateCourseRequest request = new CreateCourseRequest("Nowy kurs", "150 zł", null);
 
         when(courseRepository.save(any(Course.class))).thenAnswer(inv -> {
             Course c = inv.getArgument(0);
@@ -178,10 +182,11 @@ class AdminCourseServiceTest {
 
         CourseContentBlock imageBlock = buildBlock(CourseBlockType.IMAGE, "img.jpg", null, 0);
         CourseContentBlock textBlock = buildBlock(CourseBlockType.TEXT, null, "Tekst", 1);
+        List<CourseContentBlock> blocks = List.of(imageBlock, textBlock);
 
         when(courseRepository.findById(courseId)).thenReturn(Optional.of(testCourse));
-        when(blockRepository.findByCourseIdOrderByDisplayOrderAsc(courseId))
-                .thenReturn(List.of(imageBlock, textBlock));
+        when(blockRepository.findByCourseIdOrderByDisplayOrderAsc(courseId)).thenReturn(blocks);
+        when(eventRepository.findByCourseId(courseId)).thenReturn(List.of());
 
         // When
         adminCourseService.deleteCourse(courseId);
@@ -189,6 +194,7 @@ class AdminCourseServiceTest {
         // Then
         verify(fileStorageService).delete("img.jpg", "courses");
         verify(fileStorageService).delete("thumb.jpg", "courses");
+        verify(blockRepository).deleteAll(blocks);
         verify(courseRepository).delete(testCourse);
     }
 
@@ -196,8 +202,10 @@ class AdminCourseServiceTest {
     void shouldDeleteCourseEvenWhenFileDeletionFails() throws IOException {
         // Given
         testCourse.setThumbnailFilename("thumb.jpg");
+        List<CourseContentBlock> blocks = List.of();
         when(courseRepository.findById(courseId)).thenReturn(Optional.of(testCourse));
-        when(blockRepository.findByCourseIdOrderByDisplayOrderAsc(courseId)).thenReturn(List.of());
+        when(blockRepository.findByCourseIdOrderByDisplayOrderAsc(courseId)).thenReturn(blocks);
+        when(eventRepository.findByCourseId(courseId)).thenReturn(List.of());
         doThrow(new IOException("File not found")).when(fileStorageService).delete("thumb.jpg", "courses");
 
         // When
@@ -205,7 +213,7 @@ class AdminCourseServiceTest {
 
         // Then
         verify(fileStorageService).delete("thumb.jpg", "courses");
-        verify(courseRepository).delete(testCourse); // Still deletes course
+        verify(courseRepository).delete(testCourse);
     }
 
     @Test

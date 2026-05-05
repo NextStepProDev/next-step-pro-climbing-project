@@ -196,7 +196,12 @@
     "previewDraftBadge": "PREVIEW — unsaved changes",
     "previewNoTitle": "No title",
     "previewEmptyBlock": "Empty block",
-    "previewNoContent": "No content"
+    "previewNoContent": "No content",
+    "language": "Language",
+    "allLanguages": "All languages",
+    "duplicateAsTranslation": "Duplicate as translation",
+    "translationExists": "All translations already exist",
+    "duplicateSuccess": "Course duplicated as translation"
   },
   "slots": {
     "addSlot": "Add slot",

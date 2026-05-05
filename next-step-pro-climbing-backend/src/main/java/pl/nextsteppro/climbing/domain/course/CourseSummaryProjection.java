@@ -33,6 +33,10 @@ public interface CourseSummaryProjection {
     @Nullable
     Instant getPublishedAt();
 
+    String getLanguage();
+
+    UUID getTranslationGroupId();
+
     Instant getCreatedAt();
 
     Instant getUpdatedAt();

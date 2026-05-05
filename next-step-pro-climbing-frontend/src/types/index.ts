@@ -637,6 +637,8 @@ export interface CourseSummary {
   thumbnailUrl: string | null
   thumbnailFocalPointX: number | null
   thumbnailFocalPointY: number | null
+  language: string
+  translationGroupId: string
   publishedAt: string | null
 }
 
@@ -647,6 +649,8 @@ export interface CourseDetail {
   thumbnailUrl: string | null
   thumbnailFocalPointX: number | null
   thumbnailFocalPointY: number | null
+  language: string
+  translationGroupId: string
   blocks: ContentBlock[]
   publishedAt: string | null
 }
@@ -658,6 +662,8 @@ export interface CourseAdmin {
   thumbnailUrl: string | null
   displayOrder: number
   published: boolean
+  language: string
+  translationGroupId: string
   publishedAt: string | null
   createdAt: string
   updatedAt: string
@@ -672,6 +678,8 @@ export interface CourseDetailAdmin {
   thumbnailFocalPointX: number | null
   thumbnailFocalPointY: number | null
   published: boolean
+  language: string
+  translationGroupId: string
   publishedAt: string | null
   blocks: ContentBlockAdmin[]
   createdAt: string
@@ -681,6 +689,7 @@ export interface CourseDetailAdmin {
 export interface CreateCourseRequest {
   title: string
   price?: string
+  language?: string
 }
 
 export interface UpdateCourseMetaRequest {

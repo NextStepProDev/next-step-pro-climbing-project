@@ -29,9 +29,9 @@ public class CourseService {
         this.baseUrl = baseUrl;
     }
 
-    @Cacheable("courseList")
-    public List<CourseSummaryDto> getAllPublished() {
-        return courseRepository.findAllPublishedSummaries()
+    @Cacheable(value = "courseList", key = "#language")
+    public List<CourseSummaryDto> getAllPublished(String language) {
+        return courseRepository.findAllPublishedSummariesByLanguage(language)
                 .stream()
                 .map(this::toSummaryDto)
                 .toList();
@@ -55,6 +55,8 @@ public class CourseService {
                 buildThumbnailUrl(course.getThumbnailUrl(), course.getThumbnailFilename()),
                 course.getThumbnailFocalPointX(),
                 course.getThumbnailFocalPointY(),
+                course.getLanguage(),
+                course.getTranslationGroupId(),
                 blocks.stream().map(this::toBlockDto).toList(),
                 course.getPublishedAt()
         );
@@ -68,6 +70,8 @@ public class CourseService {
                 buildThumbnailUrl(projection.getThumbnailUrl(), projection.getThumbnailFilename()),
                 projection.getThumbnailFocalPointX(),
                 projection.getThumbnailFocalPointY(),
+                projection.getLanguage(),
+                projection.getTranslationGroupId(),
                 projection.getPublishedAt()
         );
     }

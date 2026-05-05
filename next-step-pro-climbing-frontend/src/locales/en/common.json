@@ -83,7 +83,8 @@
     "joinWaitlist": "Join waitlist",
     "spots": "{{count}} spots",
     "spotsOne": "{{count}} spot",
-    "spotsFull": "No spots left"
+    "spotsFull": "No spots left",
+    "contentLanguage": "Course language"
   },
   "pza": {
     "recommended": "School recommended by PZA"

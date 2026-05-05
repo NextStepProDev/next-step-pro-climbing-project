@@ -83,7 +83,8 @@
     "joinWaitlist": "Unirse a lista de espera",
     "spots": "{{count}} plazas",
     "spotsOne": "{{count}} plaza",
-    "spotsFull": "Sin plazas"
+    "spotsFull": "Sin plazas",
+    "contentLanguage": "Idioma del curso"
   },
   "pza": {
     "recommended": "Escuela recomendada por PZA"

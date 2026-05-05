@@ -235,7 +235,7 @@ export function AdminMailPanel() {
               value={body}
               onChange={setBody}
               placeholder={t('mail.bodyPlaceholder')}
-              rows={10}
+              rows={16}
             />
           </div>
 

@@ -99,6 +99,19 @@ public class AdminCourseController {
         return ResponseEntity.noContent().build();
     }
 
+    @Operation(summary = "Duplikuj kurs jako tłumaczenie")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Kurs zduplikowany jako tłumaczenie"),
+        @ApiResponse(responseCode = "400", description = "Kurs nie znaleziony lub tłumaczenie już istnieje"),
+        @ApiResponse(responseCode = "403", description = "Brak uprawnień administratora")
+    })
+    @PostMapping("/{id}/duplicate-translation")
+    public ResponseEntity<CourseDetailAdminDto> duplicateAsTranslation(
+            @Parameter(description = "ID kursu źródłowego") @PathVariable UUID id,
+            @Valid @RequestBody AdminCourseDtos.DuplicateAsTranslationRequest request) {
+        return ResponseEntity.ok(adminCourseService.duplicateAsTranslation(id, request.targetLanguage()));
+    }
+
     @Operation(summary = "Usuń kurs wraz z plikami")
     @ApiResponses({
         @ApiResponse(responseCode = "204", description = "Kurs usunięty"),

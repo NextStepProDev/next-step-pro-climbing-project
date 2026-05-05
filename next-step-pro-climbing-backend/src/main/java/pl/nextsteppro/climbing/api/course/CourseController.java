@@ -28,8 +28,10 @@ public class CourseController {
         @ApiResponse(responseCode = "200", description = "Lista kursów")
     })
     @GetMapping
-    public ResponseEntity<List<CourseSummaryDto>> getAll() {
-        return ResponseEntity.ok(courseService.getAllPublished());
+    public ResponseEntity<List<CourseSummaryDto>> getAll(
+            @Parameter(description = "Język treści kursu (pl, en, de)")
+            @RequestParam(defaultValue = "pl") String language) {
+        return ResponseEntity.ok(courseService.getAllPublished(language));
     }
 
     @Operation(summary = "Pobierz szczegóły kursu z blokami treści")

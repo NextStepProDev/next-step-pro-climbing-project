@@ -18,6 +18,8 @@ public class CourseDtos {
             @Nullable String thumbnailUrl,
             @Nullable Float thumbnailFocalPointX,
             @Nullable Float thumbnailFocalPointY,
+            String language,
+            UUID translationGroupId,
             @Nullable Instant publishedAt
     ) {}
 
@@ -28,6 +30,8 @@ public class CourseDtos {
             @Nullable String thumbnailUrl,
             @Nullable Float thumbnailFocalPointX,
             @Nullable Float thumbnailFocalPointY,
+            String language,
+            UUID translationGroupId,
             List<ContentBlockDto> blocks,
             @Nullable Instant publishedAt
     ) {}

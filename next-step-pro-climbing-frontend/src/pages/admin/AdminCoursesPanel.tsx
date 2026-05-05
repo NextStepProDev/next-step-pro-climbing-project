@@ -19,6 +19,7 @@ import {
   ArrowLeft,
   Library,
   Images,
+  Globe,
 } from 'lucide-react'
 import { adminCoursesApi } from '../../api/client'
 import type {
@@ -36,6 +37,7 @@ import { GalleryPickerModal } from '../../components/ui/GalleryPickerModal'
 import { MediaPickerModal } from '../../components/ui/MediaPickerModal'
 import { QueryError } from '../../components/ui/QueryError'
 import { RichTextEditor } from '../../components/ui/RichTextEditor'
+import { COURSE_CONTENT_LANGUAGES } from '../../constants/courseLanguages'
 import clsx from 'clsx'
 
 type View = 'list' | 'edit'
@@ -69,6 +71,7 @@ export function AdminCoursesPanel() {
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null)
   const [localOrder, setLocalOrder] = useState<CourseAdmin[] | null>(null)
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null)
+  const [languageFilter, setLanguageFilter] = useState<string>('all')
 
   const { data: courses, isLoading, error } = useQuery({
     queryKey: ['admin', 'courses'],
@@ -76,6 +79,9 @@ export function AdminCoursesPanel() {
   })
 
   const orderedCourses = localOrder ?? (courses ? [...courses].sort((a, b) => a.displayOrder - b.displayOrder) : [])
+  const filteredCourses = languageFilter === 'all'
+    ? orderedCourses
+    : orderedCourses.filter(c => c.language === languageFilter)
 
   const { data: detail, isLoading: detailLoading } = useQuery({
     queryKey: ['admin', 'courses', selectedCourseId],
@@ -156,35 +162,51 @@ export function AdminCoursesPanel() {
           setView('list')
           setSelectedCourseId(null)
         }}
+        onNavigateToCourse={(id) => {
+          setSelectedCourseId(id)
+          setView('edit')
+        }}
       />
     )
   }
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <h2 className="text-xl font-semibold text-dark-100">{t('courses.title')}</h2>
-        <Button
-          onClick={() => createMutation.mutate({ title: t('courses.newCourseDefaultTitle') })}
-          disabled={createMutation.isPending}
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          {t('courses.addCourse')}
-        </Button>
+        <div className="flex items-center gap-3">
+          <select
+            value={languageFilter}
+            onChange={(e) => setLanguageFilter(e.target.value)}
+            className="bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-sm text-dark-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
+          >
+            <option value="all">{t('courses.allLanguages')}</option>
+            {COURSE_CONTENT_LANGUAGES.map((lang) => (
+              <option key={lang.code} value={lang.code}>{lang.label}</option>
+            ))}
+          </select>
+          <Button
+            onClick={() => createMutation.mutate({ title: t('courses.newCourseDefaultTitle'), language: languageFilter === 'all' ? 'pl' : languageFilter })}
+            disabled={createMutation.isPending}
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            {t('courses.addCourse')}
+          </Button>
+        </div>
       </div>
 
-      {orderedCourses.length === 0 ? (
+      {filteredCourses.length === 0 ? (
         <div className="text-center text-dark-400 py-12">
           {t('courses.noCourses')}
         </div>
       ) : (
         <div className="space-y-3">
-          {orderedCourses.map((course, index) => (
+          {filteredCourses.map((course, index) => (
             <CourseRow
               key={course.id}
               course={course}
               isFirst={index === 0}
-              isLast={index === orderedCourses.length - 1}
+              isLast={index === filteredCourses.length - 1}
               moveDisabled={reorderMutation.isPending}
               onMoveUp={() => handleMove(index, 'up')}
               onMoveDown={() => handleMove(index, 'down')}
@@ -263,6 +285,16 @@ function CourseRow({
           >
             {course.published ? t('courses.published') : t('courses.draft')}
           </span>
+          <span
+            className={clsx(
+              'text-xs px-2 py-0.5 rounded-full font-medium',
+              course.language === 'pl' && 'bg-blue-900/40 text-blue-400',
+              course.language === 'en' && 'bg-emerald-900/40 text-emerald-400',
+              course.language === 'es' && 'bg-purple-900/40 text-purple-400',
+            )}
+          >
+            {course.language.toUpperCase()}
+          </span>
           {course.publishedAt && (
             <span className="text-xs text-dark-400">
               {new Date(course.publishedAt).toLocaleDateString('pl-PL')}
@@ -324,10 +356,12 @@ function EditView({
   courseId,
   detail,
   onBack,
+  onNavigateToCourse,
 }: {
   courseId: string
   detail: CourseDetailAdmin
   onBack: () => void
+  onNavigateToCourse: (courseId: string) => void
 }) {
   const { t } = useTranslation('admin')
   const queryClient = useQueryClient()
@@ -579,6 +613,29 @@ function EditView({
 
   const published = detail.published
 
+  // ---------- Duplicate as translation ----------
+  const { data: allCourses } = useQuery({
+    queryKey: ['admin', 'courses'],
+    queryFn: () => adminCoursesApi.getAll(),
+  })
+
+  const existingLanguages = (allCourses ?? [])
+    .filter(c => c.translationGroupId === detail.translationGroupId)
+    .map(c => c.language)
+
+  const availableTargetLanguages = COURSE_CONTENT_LANGUAGES.filter(
+    lang => !existingLanguages.includes(lang.code)
+  )
+
+  const duplicateMutation = useMutation({
+    mutationFn: ({ targetLanguage }: { targetLanguage: string }) =>
+      adminCoursesApi.duplicateAsTranslation(courseId, targetLanguage),
+    onSuccess: (newCourse) => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'courses'] })
+      onNavigateToCourse(newCourse.id)
+    },
+  })
+
   // ---------- Render ----------
   return (
     <div className="pb-24 space-y-8">
@@ -600,6 +657,16 @@ function EditView({
             published ? 'bg-green-900/40 text-green-400' : 'bg-dark-600 text-dark-400'
           )}>
             {published ? t('courses.published') : t('courses.draft')}
+          </span>
+          <span
+            className={clsx(
+              'text-xs px-2.5 py-1 rounded-full font-medium',
+              detail.language === 'pl' && 'bg-blue-900/40 text-blue-400',
+              detail.language === 'en' && 'bg-emerald-900/40 text-emerald-400',
+              detail.language === 'es' && 'bg-purple-900/40 text-purple-400',
+            )}
+          >
+            {detail.language.toUpperCase()}
           </span>
         </div>
         <div className="space-y-4">
@@ -623,6 +690,41 @@ function EditView({
             />
           </div>
         </div>
+      </section>
+
+      {/* Sekcja: Duplikuj jako tłumaczenie */}
+      <section className="bg-dark-800 border border-dark-700 rounded-lg p-6">
+        <div className="flex items-center gap-3 mb-3">
+          <Globe className="h-5 w-5 text-dark-300" />
+          <h3 className="text-lg font-semibold text-dark-100">{t('courses.duplicateAsTranslation')}</h3>
+        </div>
+        {availableTargetLanguages.length === 0 ? (
+          <p className="text-sm text-dark-500">{t('courses.translationExists')}</p>
+        ) : (
+          <div className="flex items-center gap-2">
+            {availableTargetLanguages.map((lang) => (
+              <Button
+                key={lang.code}
+                variant="secondary"
+                size="sm"
+                onClick={() => duplicateMutation.mutate({ targetLanguage: lang.code })}
+                disabled={duplicateMutation.isPending || isDirty}
+                loading={duplicateMutation.isPending}
+              >
+                <Globe className="h-4 w-4 mr-1.5" />
+                {lang.label}
+              </Button>
+            ))}
+          </div>
+        )}
+        {isDirty && availableTargetLanguages.length > 0 && (
+          <p className="text-xs text-dark-500 mt-2">{t('courses.unsavedChanges')}</p>
+        )}
+        {duplicateMutation.isError && (
+          <p className="text-sm text-red-400 mt-2">
+            {getErrorMessage(duplicateMutation.error)}
+          </p>
+        )}
       </section>
 
       {/* Sekcja 2: Miniaturka */}

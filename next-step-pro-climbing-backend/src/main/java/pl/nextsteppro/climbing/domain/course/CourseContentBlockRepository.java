@@ -18,4 +18,6 @@ public interface CourseContentBlockRepository extends JpaRepository<CourseConten
 
     @Query("SELECT b.imageFilename FROM CourseContentBlock b WHERE b.imageFilename IS NOT NULL")
     List<String> findAllImageFilenames();
+
+    boolean existsByImageFilenameAndCourseIdNot(String imageFilename, UUID courseId);
 }

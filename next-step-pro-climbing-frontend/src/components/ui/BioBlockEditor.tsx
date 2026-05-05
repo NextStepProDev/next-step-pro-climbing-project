@@ -105,7 +105,7 @@ export function BioBlockEditor({
               <RichTextEditor
                 value={block.content}
                 onChange={(v) => updateText(idx, v)}
-                rows={4}
+                rows={12}
               />
             ) : (
               <div className="relative rounded-lg overflow-hidden border border-dark-600 bg-dark-800">

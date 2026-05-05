@@ -47,6 +47,12 @@ public class Course {
     @Nullable
     private Instant publishedAt;
 
+    @Column(nullable = false, length = 5)
+    private String language = "pl";
+
+    @Column(name = "translation_group_id", nullable = false)
+    private UUID translationGroupId = UUID.randomUUID();
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -77,6 +83,14 @@ public class Course {
 
     public String getTitle() {
         return title;
+    }
+
+    public String getLanguage() {
+        return language;
+    }
+
+    public UUID getTranslationGroupId() {
+        return translationGroupId;
     }
 
     @Nullable
@@ -123,6 +137,14 @@ public class Course {
     // Setters
     public void setTitle(String title) {
         this.title = title;
+    }
+
+    public void setLanguage(String language) {
+        this.language = language;
+    }
+
+    public void setTranslationGroupId(UUID translationGroupId) {
+        this.translationGroupId = translationGroupId;
     }
 
     public void setPrice(@Nullable String price) {

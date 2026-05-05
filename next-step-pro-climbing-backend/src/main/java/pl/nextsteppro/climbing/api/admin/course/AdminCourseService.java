@@ -11,6 +11,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import pl.nextsteppro.climbing.api.admin.course.AdminCourseDtos.*;
 import pl.nextsteppro.climbing.domain.course.*;
+import pl.nextsteppro.climbing.domain.event.Event;
+import pl.nextsteppro.climbing.domain.event.EventRepository;
 import pl.nextsteppro.climbing.infrastructure.storage.FileStorageService;
 
 import java.io.IOException;
@@ -28,15 +30,18 @@ public class AdminCourseService {
 
     private final CourseRepository courseRepository;
     private final CourseContentBlockRepository blockRepository;
+    private final EventRepository eventRepository;
     private final FileStorageService fileStorageService;
     private final String baseUrl;
 
     public AdminCourseService(CourseRepository courseRepository,
                                CourseContentBlockRepository blockRepository,
+                               EventRepository eventRepository,
                                FileStorageService fileStorageService,
                                @Value("${app.base-url}") String baseUrl) {
         this.courseRepository = courseRepository;
         this.blockRepository = blockRepository;
+        this.eventRepository = eventRepository;
         this.fileStorageService = fileStorageService;
         this.baseUrl = baseUrl;
     }
@@ -59,9 +64,50 @@ public class AdminCourseService {
     public CourseAdminDto createCourse(CreateCourseRequest request) {
         Course course = new Course(request.title());
         course.setPrice(request.price());
+        if (request.language() != null) {
+            course.setLanguage(request.language());
+        }
         course.setDisplayOrder(courseRepository.findMaxDisplayOrder() + 1);
         course = courseRepository.save(course);
         return toAdminDto(course);
+    }
+
+    @CacheEvict(value = {"courseList", "courseDetail"}, allEntries = true)
+    public CourseDetailAdminDto duplicateAsTranslation(UUID courseId, String targetLanguage) {
+        Course source = findCourse(courseId);
+
+        if (source.getLanguage().equals(targetLanguage)) {
+            throw new IllegalArgumentException("Target language is the same as source language");
+        }
+
+        if (courseRepository.existsByTranslationGroupIdAndLanguage(source.getTranslationGroupId(), targetLanguage)) {
+            throw new IllegalArgumentException("Translation in this language already exists");
+        }
+
+        Course copy = new Course(source.getTitle());
+        copy.setLanguage(targetLanguage);
+        copy.setTranslationGroupId(source.getTranslationGroupId());
+        copy.setPrice(source.getPrice());
+        copy.setThumbnailFilename(source.getThumbnailFilename());
+        copy.setThumbnailUrl(source.getThumbnailUrl());
+        copy.setThumbnailFocalPointX(source.getThumbnailFocalPointX());
+        copy.setThumbnailFocalPointY(source.getThumbnailFocalPointY());
+        copy.setDisplayOrder(courseRepository.findMaxDisplayOrder() + 1);
+        copy = courseRepository.save(copy);
+
+        List<CourseContentBlock> sourceBlocks = blockRepository.findByCourseIdOrderByDisplayOrderAsc(courseId);
+        for (CourseContentBlock sourceBlock : sourceBlocks) {
+            CourseContentBlock copyBlock = new CourseContentBlock(copy, sourceBlock.getBlockType());
+            copyBlock.setContent(sourceBlock.getContent());
+            copyBlock.setImageFilename(sourceBlock.getImageFilename());
+            copyBlock.setImageUrl(sourceBlock.getImageUrl());
+            copyBlock.setCaption(sourceBlock.getCaption());
+            copyBlock.setDisplayOrder(sourceBlock.getDisplayOrder());
+            blockRepository.save(copyBlock);
+        }
+
+        List<CourseContentBlock> copyBlocks = blockRepository.findByCourseIdOrderByDisplayOrderAsc(copy.getId());
+        return toDetailAdminDto(copy, copyBlocks);
     }
 
     @CacheEvict(value = {"courseList", "courseDetail"}, allEntries = true)
@@ -116,27 +162,36 @@ public class AdminCourseService {
     public void deleteCourse(UUID id) {
         Course course = findCourse(id);
 
-        // Usuń pliki bloków IMAGE
         List<CourseContentBlock> blocks = blockRepository.findByCourseIdOrderByDisplayOrderAsc(id);
         for (CourseContentBlock block : blocks) {
             if (block.getBlockType() == CourseBlockType.IMAGE && block.getImageFilename() != null) {
-                try {
-                    fileStorageService.delete(block.getImageFilename(), "courses");
-                } catch (Exception e) {
-                    logger.warn("Failed to delete block image file: {} - {}", block.getImageFilename(), e.getMessage());
+                if (!blockRepository.existsByImageFilenameAndCourseIdNot(block.getImageFilename(), id)) {
+                    try {
+                        fileStorageService.delete(block.getImageFilename(), "courses");
+                    } catch (Exception e) {
+                        logger.warn("Failed to delete block image file: {} - {}", block.getImageFilename(), e.getMessage());
+                    }
                 }
             }
         }
 
-        // Usuń miniaturkę
         if (course.getThumbnailFilename() != null) {
-            try {
-                fileStorageService.delete(course.getThumbnailFilename(), "courses");
-            } catch (Exception e) {
-                logger.warn("Failed to delete thumbnail file: {} - {}", course.getThumbnailFilename(), e.getMessage());
+            if (!courseRepository.existsByThumbnailFilenameAndIdNot(course.getThumbnailFilename(), id)) {
+                try {
+                    fileStorageService.delete(course.getThumbnailFilename(), "courses");
+                } catch (Exception e) {
+                    logger.warn("Failed to delete thumbnail file: {} - {}", course.getThumbnailFilename(), e.getMessage());
+                }
             }
         }
 
+        List<Event> linkedEvents = eventRepository.findByCourseId(id);
+        for (Event event : linkedEvents) {
+            event.setCourse(null);
+        }
+        eventRepository.saveAll(linkedEvents);
+
+        blockRepository.deleteAll(blocks);
         courseRepository.delete(course);
     }
 
@@ -147,10 +202,12 @@ public class AdminCourseService {
         Course course = findCourse(id);
 
         if (course.getThumbnailFilename() != null) {
-            try {
-                fileStorageService.delete(course.getThumbnailFilename(), "courses");
-            } catch (Exception e) {
-                logger.warn("Failed to delete old thumbnail: {} - {}", course.getThumbnailFilename(), e.getMessage());
+            if (!courseRepository.existsByThumbnailFilenameAndIdNot(course.getThumbnailFilename(), id)) {
+                try {
+                    fileStorageService.delete(course.getThumbnailFilename(), "courses");
+                } catch (Exception e) {
+                    logger.warn("Failed to delete old thumbnail: {} - {}", course.getThumbnailFilename(), e.getMessage());
+                }
             }
         }
 
@@ -179,7 +236,9 @@ public class AdminCourseService {
         }
 
         if (course.getThumbnailFilename() != null) {
-            fileStorageService.delete(course.getThumbnailFilename(), "courses");
+            if (!courseRepository.existsByThumbnailFilenameAndIdNot(course.getThumbnailFilename(), id)) {
+                fileStorageService.delete(course.getThumbnailFilename(), "courses");
+            }
             course.setThumbnailFilename(null);
         }
         course.setThumbnailUrl(null);
@@ -191,10 +250,12 @@ public class AdminCourseService {
         Course course = findCourse(id);
 
         if (course.getThumbnailFilename() != null) {
-            try {
-                fileStorageService.delete(course.getThumbnailFilename(), "courses");
-            } catch (Exception e) {
-                logger.warn("Failed to delete old thumbnail when setting URL: {}", e.getMessage());
+            if (!courseRepository.existsByThumbnailFilenameAndIdNot(course.getThumbnailFilename(), id)) {
+                try {
+                    fileStorageService.delete(course.getThumbnailFilename(), "courses");
+                } catch (Exception e) {
+                    logger.warn("Failed to delete old thumbnail when setting URL: {}", e.getMessage());
+                }
             }
             course.setThumbnailFilename(null);
         }
@@ -283,10 +344,12 @@ public class AdminCourseService {
         CourseContentBlock block = findBlock(blockId);
 
         if (block.getBlockType() == CourseBlockType.IMAGE && block.getImageFilename() != null) {
-            try {
-                fileStorageService.delete(block.getImageFilename(), "courses");
-            } catch (Exception e) {
-                logger.warn("Failed to delete block image file: {} - {}", block.getImageFilename(), e.getMessage());
+            if (!blockRepository.existsByImageFilenameAndCourseIdNot(block.getImageFilename(), block.getCourse().getId())) {
+                try {
+                    fileStorageService.delete(block.getImageFilename(), "courses");
+                } catch (Exception e) {
+                    logger.warn("Failed to delete block image file: {} - {}", block.getImageFilename(), e.getMessage());
+                }
             }
         }
 
@@ -349,6 +412,8 @@ public class AdminCourseService {
                 buildThumbnailUrl(projection.getThumbnailUrl(), projection.getThumbnailFilename()),
                 projection.getDisplayOrder(),
                 projection.isPublished(),
+                projection.getLanguage(),
+                projection.getTranslationGroupId(),
                 projection.getPublishedAt(),
                 projection.getCreatedAt(),
                 projection.getUpdatedAt()
@@ -363,6 +428,8 @@ public class AdminCourseService {
                 buildThumbnailUrl(course.getThumbnailUrl(), course.getThumbnailFilename()),
                 course.getDisplayOrder(),
                 course.isPublished(),
+                course.getLanguage(),
+                course.getTranslationGroupId(),
                 course.getPublishedAt(),
                 course.getCreatedAt(),
                 course.getUpdatedAt()
@@ -379,6 +446,8 @@ public class AdminCourseService {
                 course.getThumbnailFocalPointX(),
                 course.getThumbnailFocalPointY(),
                 course.isPublished(),
+                course.getLanguage(),
+                course.getTranslationGroupId(),
                 course.getPublishedAt(),
                 blocks.stream().map(this::toBlockAdminDto).toList(),
                 course.getCreatedAt(),

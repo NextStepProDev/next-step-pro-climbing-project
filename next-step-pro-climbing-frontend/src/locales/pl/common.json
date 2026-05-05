@@ -83,7 +83,8 @@
     "joinWaitlist": "Dołącz do listy rezerwowej",
     "spots": "{{count}} miejsc",
     "spotsOne": "{{count}} miejsce",
-    "spotsFull": "Brak miejsc"
+    "spotsFull": "Brak miejsc",
+    "contentLanguage": "Język kursu"
   },
   "pza": {
     "recommended": "Szkoła rekomendowana przez PZA"

@@ -133,4 +133,16 @@ public class CalendarController {
         List<CourseEventDto> events = calendarService.getCourseEvents(courseId);
         return ResponseEntity.ok(events);
     }
+
+    @Operation(
+        summary = "Terminy grupy tłumaczeń kursu",
+        description = "Zwraca nadchodzące wydarzenia dla wszystkich wersji językowych kursu"
+    )
+    @GetMapping("/course-group/{translationGroupId}/events")
+    public ResponseEntity<List<CourseEventDto>> getCourseEventsByTranslationGroup(
+            @Parameter(description = "UUID grupy tłumaczeń") @PathVariable UUID translationGroupId) {
+
+        List<CourseEventDto> events = calendarService.getCourseEventsByTranslationGroup(translationGroupId);
+        return ResponseEntity.ok(events);
+    }
 }
