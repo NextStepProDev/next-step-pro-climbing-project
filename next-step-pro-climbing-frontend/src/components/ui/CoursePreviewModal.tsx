@@ -89,7 +89,7 @@ export function CoursePreviewModal({
                     <img
                       src={block.imageUrl}
                       alt={block.caption ?? ''}
-                      className="w-full rounded-lg"
+                      className="block max-w-full max-h-[70vh] rounded-lg mx-auto"
                     />
                   )}
                   {block.caption && (

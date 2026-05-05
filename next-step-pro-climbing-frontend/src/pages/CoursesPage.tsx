@@ -261,7 +261,7 @@ function CourseBlocks({ detail }: { detail: CourseDetail }) {
                 <img
                   src={block.imageUrl}
                   alt={block.caption ?? ''}
-                  className="w-full rounded-lg object-cover"
+                  className="block max-w-full max-h-[70vh] rounded-lg mx-auto"
                   onError={(e) => {
                     const el = e.currentTarget
                     el.style.display = 'none'

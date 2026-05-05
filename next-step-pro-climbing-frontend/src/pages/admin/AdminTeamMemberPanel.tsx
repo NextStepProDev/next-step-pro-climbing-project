@@ -435,7 +435,7 @@ export function AdminTeamMemberPanel({ memberType }: Props) {
                     <button type="button" onClick={() => setFocalPoint({ x: 0.5, y: 0.5 })}
                       className="text-xs text-primary-400 hover:text-primary-300 transition-colors">Resetuj</button>
                   </div>
-                  <FocalPointEditor imageUrl={selectedMember.photoUrl} value={focalPoint} onChange={setFocalPoint} aspectRatio="1/1" />
+                  <FocalPointEditor imageUrl={selectedMember.photoUrl} value={focalPoint} onChange={setFocalPoint} aspectRatio="1/1" className="max-h-[50vh]" />
                 </div>
               ) : (
                 <div className="flex items-center gap-3 py-2">
