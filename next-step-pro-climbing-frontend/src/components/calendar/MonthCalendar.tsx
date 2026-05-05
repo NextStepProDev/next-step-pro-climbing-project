@@ -132,7 +132,7 @@ export function MonthCalendar({ currentMonth, onMonthChange, days, events, onDay
               onClick={() => isClickable && onDayClick(dateString)}
               disabled={!isClickable}
               className={clsx(
-                'aspect-square p-1 sm:p-2 border-b border-r border-dark-800 transition-colors relative',
+                'aspect-square p-0.5 sm:p-2 border-b border-r border-dark-800 transition-colors relative',
                 !isSameMonth(day, currentMonth) && 'opacity-30',
                 isPast && 'opacity-40 cursor-not-allowed',
                 isClickable && 'hover:bg-dark-800 cursor-pointer',
@@ -154,7 +154,7 @@ export function MonthCalendar({ currentMonth, onMonthChange, days, events, onDay
                 const color = eventColorMap.get(event.id) ?? getEventColorByIndex(event.id, event.eventType, event.currentParticipants >= event.maxParticipants)
                 return (
                   <div key={event.id} className={clsx(
-                    "text-[11px] leading-snug font-medium truncate rounded border px-1 py-0.5 mb-0.5",
+                    "text-[10px] sm:text-[11px] leading-snug font-medium truncate rounded border px-0.5 sm:px-1 py-0 sm:py-0.5 mb-0.5",
                     color.barBg, color.barBorder, color.barText
                   )}>
                     {event.title}
