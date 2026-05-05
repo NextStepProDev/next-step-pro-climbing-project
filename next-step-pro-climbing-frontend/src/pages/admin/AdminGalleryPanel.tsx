@@ -115,9 +115,9 @@ export function AdminGalleryPanel() {
   const reorderMutation = useMutation({
     mutationFn: (orderedIds: string[]) =>
       adminGalleryApi.reorderAlbums({ orderedIds }),
-    onSuccess: () => {
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['admin', 'gallery', 'albums'] })
       setLocalOrder(null)
-      queryClient.invalidateQueries({ queryKey: ['admin', 'gallery', 'albums'] })
     },
   })
 
