@@ -25,6 +25,7 @@ import {
 } from 'lucide-react'
 import { FocalPointEditor } from '../../components/ui/FocalPointEditor'
 import { adminNewsApi } from '../../api/client'
+import { COURSE_CONTENT_LANGUAGES } from '../../constants/courseLanguages'
 import type {
   NewsAdmin,
   NewsDetailAdmin,
@@ -83,6 +84,19 @@ function normalizeVideoUrlForPreview(url: string): string | undefined {
   return s || undefined
 }
 
+function LanguageBadge({ lang }: { lang: string }) {
+  const colors: Record<string, string> = {
+    pl: 'bg-blue-900/40 text-blue-400 border-blue-700',
+    en: 'bg-emerald-900/40 text-emerald-400 border-emerald-700',
+    es: 'bg-purple-900/40 text-purple-400 border-purple-700',
+  }
+  return (
+    <span className={clsx('text-[10px] font-bold uppercase px-1.5 py-0.5 rounded border', colors[lang] ?? 'bg-dark-600 text-dark-400 border-dark-500')}>
+      {lang}
+    </span>
+  )
+}
+
 // ---------- Main panel ----------
 
 export function AdminNewsPanel() {
@@ -90,11 +104,14 @@ export function AdminNewsPanel() {
   const queryClient = useQueryClient()
   const [view, setView] = useState<View>('list')
   const [selectedNewsId, setSelectedNewsId] = useState<string | null>(null)
+  const [languageFilter, setLanguageFilter] = useState<string>('all')
 
   const { data: articles, isLoading, error } = useQuery({
     queryKey: ['admin', 'news'],
     queryFn: () => adminNewsApi.getAll(),
   })
+
+  const filteredArticles = (articles?.content ?? []).filter(a => languageFilter === 'all' || a.language === languageFilter)
 
   const { data: detail, isLoading: detailLoading } = useQuery({
     queryKey: ['admin', 'news', selectedNewsId],
@@ -179,22 +196,34 @@ export function AdminNewsPanel() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-semibold text-dark-100">{t('news.title')}</h2>
-        <Button
-          onClick={() => createMutation.mutate({ title: t('news.newArticleDefaultTitle') })}
-          disabled={createMutation.isPending}
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          {t('news.addArticle')}
-        </Button>
+        <div className="flex items-center gap-3">
+          <select
+            value={languageFilter}
+            onChange={(e) => setLanguageFilter(e.target.value)}
+            className="bg-dark-800 border border-dark-600 rounded-lg px-3 py-2 text-sm text-dark-100"
+          >
+            <option value="all">{t('news.allLanguages')}</option>
+            {COURSE_CONTENT_LANGUAGES.map((lang) => (
+              <option key={lang.code} value={lang.code}>{lang.label}</option>
+            ))}
+          </select>
+          <Button
+            onClick={() => createMutation.mutate({ title: t('news.newArticleDefaultTitle'), language: languageFilter === 'all' ? 'pl' : languageFilter })}
+            disabled={createMutation.isPending}
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            {t('news.addArticle')}
+          </Button>
+        </div>
       </div>
 
-      {!articles || articles.content.length === 0 ? (
+      {filteredArticles.length === 0 ? (
         <div className="text-center text-dark-400 py-12">
           {t('news.noArticles')}
         </div>
       ) : (
         <div className="space-y-3">
-          {articles.content.map((article) => (
+          {filteredArticles.map((article) => (
             <ArticleRow
               key={article.id}
               article={article}
@@ -288,7 +317,10 @@ function ArticleRow({
             </span>
           )}
         </div>
-        <p className="font-medium text-dark-100 truncate">{article.title}</p>
+        <p className="font-medium text-dark-100 truncate">
+          <LanguageBadge lang={article.language} />{' '}
+          {article.title}
+        </p>
         {article.excerpt && (
           <p className="text-sm text-dark-400 truncate">{article.excerpt}</p>
         )}
@@ -349,6 +381,27 @@ function EditView({
     queryClient.invalidateQueries({ queryKey: ['admin', 'news', newsId] })
     queryClient.invalidateQueries({ queryKey: ['news'] })
   }, [queryClient, newsId])
+
+  // ---------- Translation duplication ----------
+  const { data: allArticles } = useQuery({
+    queryKey: ['admin', 'news'],
+    queryFn: () => adminNewsApi.getAll(),
+  })
+
+  const existingLanguages = (allArticles?.content ?? [])
+    .filter(a => a.translationGroupId === detail.translationGroupId)
+    .map(a => a.language)
+
+  const availableTargetLanguages = COURSE_CONTENT_LANGUAGES
+    .filter(lang => !existingLanguages.includes(lang.code))
+
+  const duplicateMutation = useMutation({
+    mutationFn: (targetLanguage: string) => adminNewsApi.duplicateAsTranslation(newsId, targetLanguage),
+    onSuccess: () => {
+      invalidate()
+      onBack()
+    },
+  })
 
   // ---------- Meta state ----------
   const [title, setTitle] = useState(detail.title)
@@ -639,6 +692,7 @@ function EditView({
       <section className="bg-dark-800 border border-dark-700 rounded-lg p-6">
         <div className="flex items-center gap-3 mb-4">
           <h3 className="text-lg font-semibold text-dark-100">{t('news.sectionMeta')}</h3>
+          <LanguageBadge lang={detail.language} />
           <span className={clsx(
             'text-xs px-2.5 py-1 rounded-full',
             published ? 'bg-green-900/40 text-green-400' : 'bg-dark-600 text-dark-400'
@@ -665,6 +719,34 @@ function EditView({
             />
           </div>
         </div>
+      </section>
+
+      {/* Sekcja: Tłumaczenia */}
+      <section className="bg-dark-800 border border-dark-700 rounded-lg p-6">
+        <h3 className="text-lg font-semibold text-dark-100 mb-3">{t('news.duplicateAsTranslation')}</h3>
+        {availableTargetLanguages.length === 0 ? (
+          <p className="text-sm text-dark-400">{t('news.translationExists')}</p>
+        ) : (
+          <div className="flex gap-2">
+            {availableTargetLanguages.map((lang) => (
+              <Button
+                key={lang.code}
+                variant="secondary"
+                size="sm"
+                onClick={() => duplicateMutation.mutate(lang.code)}
+                disabled={duplicateMutation.isPending}
+              >
+                {lang.label}
+              </Button>
+            ))}
+          </div>
+        )}
+        {duplicateMutation.isError && (
+          <p className="text-sm text-red-400 mt-2">{getErrorMessage(duplicateMutation.error)}</p>
+        )}
+        {duplicateMutation.isSuccess && (
+          <p className="text-sm text-green-400 mt-2">{t('news.duplicateSuccess')}</p>
+        )}
       </section>
 
       {/* Sekcja 2: Miniaturka */}

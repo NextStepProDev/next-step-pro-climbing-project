@@ -179,7 +179,7 @@ class NewsStarIntegrationTest extends BaseIntegrationTest {
         newsService.starNews(starred2.getId(), testUser.getId());
 
         // When
-        NewsPageDto result = newsService.getAllPublished(0, 12, null, true, testUser.getId());
+        NewsPageDto result = newsService.getAllPublished(0, 12, "pl", null, true, testUser.getId());
 
         // Then
         assertEquals(2, result.content().size());
@@ -195,7 +195,7 @@ class NewsStarIntegrationTest extends BaseIntegrationTest {
         savePublishedNews("Some Article");
 
         // When
-        NewsPageDto result = newsService.getAllPublished(0, 12, null, true, testUser.getId());
+        NewsPageDto result = newsService.getAllPublished(0, 12, "pl", null, true, testUser.getId());
 
         // Then
         assertTrue(result.content().isEmpty());
@@ -208,7 +208,7 @@ class NewsStarIntegrationTest extends BaseIntegrationTest {
         savePublishedNews("Some Article");
 
         // When
-        NewsPageDto result = newsService.getAllPublished(0, 12, null, true, null);
+        NewsPageDto result = newsService.getAllPublished(0, 12, "pl", null, true, null);
 
         // Then
         assertTrue(result.content().isEmpty());
@@ -223,7 +223,7 @@ class NewsStarIntegrationTest extends BaseIntegrationTest {
         newsService.starNews(starredNews.getId(), testUser.getId());
 
         // When
-        NewsPageDto result = newsService.getAllPublished(0, 12, null, false, testUser.getId());
+        NewsPageDto result = newsService.getAllPublished(0, 12, "pl", null, false, testUser.getId());
 
         // Then
         NewsSummaryDto starredDto = result.content().stream()
@@ -246,7 +246,7 @@ class NewsStarIntegrationTest extends BaseIntegrationTest {
         newsService.starNews(news.getId(), testUser.getId());
 
         // When: other user views
-        NewsPageDto result = newsService.getAllPublished(0, 12, null, true, otherUser.getId());
+        NewsPageDto result = newsService.getAllPublished(0, 12, "pl", null, true, otherUser.getId());
 
         // Then: other user sees no starred
         assertTrue(result.content().isEmpty());
@@ -261,7 +261,7 @@ class NewsStarIntegrationTest extends BaseIntegrationTest {
         savePublishedNews("Kurs nurkowania");
 
         // When: lowercase query
-        NewsPageDto result = newsService.getAllPublished(0, 12, "wspinaczka", false, null);
+        NewsPageDto result = newsService.getAllPublished(0, 12, "pl", "wspinaczka", false, null);
 
         // Then
         assertEquals(1, result.content().size());
@@ -274,7 +274,7 @@ class NewsStarIntegrationTest extends BaseIntegrationTest {
         savePublishedNews("Wspinaczka na ścianie");
 
         // When: query without Polish diacritic (a instead of ą, s instead of ś)
-        NewsPageDto result = newsService.getAllPublished(0, 12, "scianie", false, null);
+        NewsPageDto result = newsService.getAllPublished(0, 12, "pl", "scianie", false, null);
 
         // Then: unaccent matches
         assertEquals(1, result.content().size());
@@ -286,7 +286,7 @@ class NewsStarIntegrationTest extends BaseIntegrationTest {
         savePublishedNews("Wspinanczka na scianie");
 
         // When: query with proper Polish diacritic
-        NewsPageDto result = newsService.getAllPublished(0, 12, "ścianie", false, null);
+        NewsPageDto result = newsService.getAllPublished(0, 12, "pl", "ścianie", false, null);
 
         // Then: both sides normalized → match
         assertEquals(1, result.content().size());
@@ -298,7 +298,7 @@ class NewsStarIntegrationTest extends BaseIntegrationTest {
         savePublishedNews("Artykuł o wspinaczce");
 
         // When
-        NewsPageDto result = newsService.getAllPublished(0, 12, "nurkowanie", false, null);
+        NewsPageDto result = newsService.getAllPublished(0, 12, "pl", "nurkowanie", false, null);
 
         // Then
         assertTrue(result.content().isEmpty());
@@ -312,7 +312,7 @@ class NewsStarIntegrationTest extends BaseIntegrationTest {
         savePublishedNews("Article B");
 
         // When: blank query = no filter
-        NewsPageDto result = newsService.getAllPublished(0, 12, "  ", false, null);
+        NewsPageDto result = newsService.getAllPublished(0, 12, "pl", "  ", false, null);
 
         // Then
         assertEquals(2, result.content().size());
@@ -326,7 +326,7 @@ class NewsStarIntegrationTest extends BaseIntegrationTest {
         newsRepository.save(draft);
 
         // When
-        NewsPageDto result = newsService.getAllPublished(0, 12, "Wspinaczka", false, null);
+        NewsPageDto result = newsService.getAllPublished(0, 12, "pl", "Wspinaczka", false, null);
 
         // Then: draft not included
         assertEquals(1, result.content().size());
@@ -338,7 +338,7 @@ class NewsStarIntegrationTest extends BaseIntegrationTest {
         savePublishedNews("Zaawansowana wspinaczka skalna");
 
         // When: partial word from middle of title
-        NewsPageDto result = newsService.getAllPublished(0, 12, "skalna", false, null);
+        NewsPageDto result = newsService.getAllPublished(0, 12, "pl", "skalna", false, null);
 
         // Then
         assertEquals(1, result.content().size());
@@ -357,7 +357,7 @@ class NewsStarIntegrationTest extends BaseIntegrationTest {
         newsService.starNews(starredNoMatch.getId(), testUser.getId());
 
         // When: search "wspinaczka" among starred only
-        NewsPageDto result = newsService.getAllPublished(0, 12, "wspinaczka", true, testUser.getId());
+        NewsPageDto result = newsService.getAllPublished(0, 12, "pl", "wspinaczka", true, testUser.getId());
 
         // Then: only starredMatch qualifies (starred AND title matches)
         assertEquals(1, result.content().size());

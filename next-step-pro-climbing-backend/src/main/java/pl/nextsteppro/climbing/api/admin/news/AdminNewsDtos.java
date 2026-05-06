@@ -20,6 +20,8 @@ public class AdminNewsDtos {
             @Nullable String thumbnailUrl,
             boolean published,
             @Nullable Instant publishedAt,
+            String language,
+            UUID translationGroupId,
             Instant createdAt,
             Instant updatedAt
     ) {}
@@ -34,6 +36,8 @@ public class AdminNewsDtos {
             @Nullable Float thumbnailFocalPointY,
             boolean published,
             @Nullable Instant publishedAt,
+            String language,
+            UUID translationGroupId,
             List<ContentBlockAdminDto> blocks,
             Instant createdAt,
             Instant updatedAt
@@ -53,12 +57,17 @@ public class AdminNewsDtos {
 
     public record CreateNewsRequest(
             @NotBlank @Size(max = 500) String title,
-            @Nullable @Size(max = 1000) String excerpt
+            @Nullable @Size(max = 1000) String excerpt,
+            @Nullable String language
     ) {}
 
     public record UpdateNewsMetaRequest(
             @Nullable @Size(max = 500) String title,
             @Nullable @Size(max = 1000) String excerpt
+    ) {}
+
+    public record DuplicateAsTranslationRequest(
+            @NotBlank @Size(max = 5) String targetLanguage
     ) {}
 
     public record AddTextBlockRequest(

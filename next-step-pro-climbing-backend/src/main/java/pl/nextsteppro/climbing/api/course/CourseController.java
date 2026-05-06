@@ -29,7 +29,7 @@ public class CourseController {
     })
     @GetMapping
     public ResponseEntity<List<CourseSummaryDto>> getAll(
-            @Parameter(description = "Język treści kursu (pl, en, de)")
+            @Parameter(description = "Język treści kursu (pl, en, es)")
             @RequestParam(defaultValue = "pl") String language) {
         return ResponseEntity.ok(courseService.getAllPublished(language));
     }

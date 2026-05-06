@@ -19,7 +19,9 @@ public class NewsDtos {
             @Nullable Float thumbnailFocalPointX,
             @Nullable Float thumbnailFocalPointY,
             Instant publishedAt,
-            @Nullable Boolean starred
+            @Nullable Boolean starred,
+            String language,
+            UUID translationGroupId
     ) {}
 
     public record NewsDetailDto(
@@ -31,7 +33,9 @@ public class NewsDtos {
             @Nullable Float thumbnailFocalPointY,
             List<ContentBlockDto> blocks,
             Instant publishedAt,
-            @Nullable Boolean starred
+            @Nullable Boolean starred,
+            String language,
+            UUID translationGroupId
     ) {}
 
     public record ContentBlockDto(

@@ -533,6 +533,8 @@ export interface NewsSummary {
   thumbnailFocalPointY: number | null
   publishedAt: string
   starred: boolean | null
+  language: string
+  translationGroupId: string
 }
 
 export interface NewsDetail {
@@ -545,6 +547,8 @@ export interface NewsDetail {
   blocks: ContentBlock[]
   publishedAt: string
   starred: boolean | null
+  language: string
+  translationGroupId: string
 }
 
 export interface ContentBlockAdmin {
@@ -564,6 +568,8 @@ export interface NewsAdmin {
   thumbnailUrl: string | null
   published: boolean
   publishedAt: string | null
+  language: string
+  translationGroupId: string
   createdAt: string
   updatedAt: string
 }
@@ -578,6 +584,8 @@ export interface NewsDetailAdmin {
   thumbnailFocalPointY: number | null
   published: boolean
   publishedAt: string | null
+  language: string
+  translationGroupId: string
   blocks: ContentBlockAdmin[]
   createdAt: string
   updatedAt: string
@@ -586,6 +594,7 @@ export interface NewsDetailAdmin {
 export interface CreateNewsRequest {
   title: string
   excerpt?: string
+  language?: string
 }
 
 export interface UpdateNewsMetaRequest {

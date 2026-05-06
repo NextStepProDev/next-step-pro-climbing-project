@@ -626,8 +626,9 @@ export const adminGalleryApi = {
 
 // ==================== News (publiczne) ====================
 export const newsApi = {
-  getAll: (page = 0, size = 12, q?: string, starred?: boolean) => {
+  getAll: (page = 0, size = 12, language?: string, q?: string, starred?: boolean) => {
     const params = new URLSearchParams({ page: String(page), size: String(size) })
+    if (language) params.set('language', language)
     if (q && q.trim()) params.set('q', q.trim())
     if (starred) params.set('starred', 'true')
     return fetchApi<NewsPageDto>(`/news?${params}`)
@@ -762,6 +763,12 @@ export const adminNewsApi = {
 
   sendNewsletter: (newsId: string) =>
     fetchApi<{ subscriberCount: number }>(`/admin/news/${newsId}/send-newsletter`, { method: 'POST' }),
+
+  duplicateAsTranslation: (id: string, targetLanguage: string) =>
+    fetchApi<NewsDetailAdmin>(`/admin/news/${id}/duplicate-translation`, {
+      method: 'POST',
+      body: JSON.stringify({ targetLanguage }),
+    }),
 }
 
 // ==================== Courses (publiczne) ====================

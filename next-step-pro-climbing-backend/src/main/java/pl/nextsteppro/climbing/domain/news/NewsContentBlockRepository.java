@@ -18,4 +18,6 @@ public interface NewsContentBlockRepository extends JpaRepository<NewsContentBlo
 
     @Query("SELECT b.imageFilename FROM NewsContentBlock b WHERE b.imageFilename IS NOT NULL")
     List<String> findAllImageFilenames();
+
+    boolean existsByImageFilenameAndIdNot(String imageFilename, UUID id);
 }

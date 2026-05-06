@@ -72,7 +72,7 @@ class AdminNewsServiceTest {
     @Test
     void shouldCreateNewsSuccessfully() {
         // Given
-        CreateNewsRequest request = new CreateNewsRequest("Nowy artykuł", "Zajawka");
+        CreateNewsRequest request = new CreateNewsRequest("Nowy artykuł", "Zajawka", null);
         when(newsRepository.save(any(News.class))).thenAnswer(inv -> {
             News n = inv.getArgument(0);
             setField(n, "id", UUID.randomUUID());
@@ -608,6 +608,187 @@ class AdminNewsServiceTest {
 
         // When / Then
         assertThrows(IllegalArgumentException.class, () -> adminNewsService.getNews(newsId));
+    }
+
+    // ========== DUPLICATE AS TRANSLATION ==========
+
+    @Test
+    void shouldDuplicateAsTranslationSuccessfully() {
+        // Given
+        setField(testNews, "language", "pl");
+        UUID translationGroupId = UUID.randomUUID();
+        setField(testNews, "translationGroupId", translationGroupId);
+        testNews.setExcerpt("Zajawka");
+        setField(testNews, "thumbnailFilename", "thumb.jpg");
+
+        when(newsRepository.findById(newsId)).thenReturn(Optional.of(testNews));
+        when(newsRepository.existsByTranslationGroupIdAndLanguage(translationGroupId, "en")).thenReturn(false);
+        when(newsRepository.save(any(News.class))).thenAnswer(inv -> {
+            News n = inv.getArgument(0);
+            if (n.getId() == null) {
+                setField(n, "id", UUID.randomUUID());
+                setField(n, "createdAt", Instant.now());
+                setField(n, "updatedAt", Instant.now());
+            }
+            return n;
+        });
+        lenient().when(blockRepository.findByNewsIdOrderByDisplayOrderAsc(any())).thenReturn(List.of());
+
+        // When
+        NewsDetailAdminDto result = adminNewsService.duplicateAsTranslation(newsId, "en");
+
+        // Then
+        assertNotNull(result);
+        assertEquals("en", result.language());
+        assertEquals(translationGroupId, result.translationGroupId());
+        assertFalse(result.published());
+        assertEquals("Test Article", result.title());
+    }
+
+    @Test
+    void shouldDuplicateBlocksCorrectly() {
+        // Given
+        setField(testNews, "language", "pl");
+        UUID translationGroupId = UUID.randomUUID();
+        setField(testNews, "translationGroupId", translationGroupId);
+
+        NewsContentBlock textBlock = new NewsContentBlock(testNews, BlockType.TEXT);
+        setField(textBlock, "id", UUID.randomUUID());
+        setField(textBlock, "content", "Treść");
+        setField(textBlock, "displayOrder", 0);
+
+        NewsContentBlock imageBlock = new NewsContentBlock(testNews, BlockType.IMAGE);
+        setField(imageBlock, "id", UUID.randomUUID());
+        setField(imageBlock, "imageFilename", "img.jpg");
+        setField(imageBlock, "caption", "Podpis");
+        setField(imageBlock, "displayOrder", 1);
+
+        when(newsRepository.findById(newsId)).thenReturn(Optional.of(testNews));
+        when(newsRepository.existsByTranslationGroupIdAndLanguage(translationGroupId, "es")).thenReturn(false);
+        when(newsRepository.save(any(News.class))).thenAnswer(inv -> {
+            News n = inv.getArgument(0);
+            if (n.getId() == null) {
+                setField(n, "id", UUID.randomUUID());
+                setField(n, "createdAt", Instant.now());
+                setField(n, "updatedAt", Instant.now());
+            }
+            return n;
+        });
+        lenient().when(blockRepository.findByNewsIdOrderByDisplayOrderAsc(any())).thenReturn(List.of());
+        when(blockRepository.findByNewsIdOrderByDisplayOrderAsc(newsId)).thenReturn(List.of(textBlock, imageBlock));
+        when(blockRepository.save(any(NewsContentBlock.class))).thenAnswer(inv -> {
+            NewsContentBlock b = inv.getArgument(0);
+            setField(b, "id", UUID.randomUUID());
+            return b;
+        });
+
+        // When
+        adminNewsService.duplicateAsTranslation(newsId, "es");
+
+        // Then
+        verify(blockRepository, times(2)).save(any(NewsContentBlock.class));
+    }
+
+    @Test
+    void shouldThrowWhenDuplicatingToSameLanguage() {
+        // Given
+        setField(testNews, "language", "pl");
+        when(newsRepository.findById(newsId)).thenReturn(Optional.of(testNews));
+
+        // When / Then
+        assertThrows(IllegalArgumentException.class,
+                () -> adminNewsService.duplicateAsTranslation(newsId, "pl"));
+    }
+
+    @Test
+    void shouldThrowWhenTranslationAlreadyExists() {
+        // Given
+        setField(testNews, "language", "pl");
+        UUID translationGroupId = UUID.randomUUID();
+        setField(testNews, "translationGroupId", translationGroupId);
+
+        when(newsRepository.findById(newsId)).thenReturn(Optional.of(testNews));
+        when(newsRepository.existsByTranslationGroupIdAndLanguage(translationGroupId, "en")).thenReturn(true);
+
+        // When / Then
+        assertThrows(IllegalArgumentException.class,
+                () -> adminNewsService.duplicateAsTranslation(newsId, "en"));
+    }
+
+    @Test
+    void shouldNotDeleteThumbnailFileWhenOtherTranslationUsesIt() throws Exception {
+        // Given
+        String thumbnailFilename = "shared-thumb.jpg";
+        setField(testNews, "thumbnailFilename", thumbnailFilename);
+
+        when(newsRepository.findById(newsId)).thenReturn(Optional.of(testNews));
+        when(blockRepository.findByNewsIdOrderByDisplayOrderAsc(newsId)).thenReturn(List.of());
+        when(newsRepository.existsByThumbnailFilenameAndIdNot(thumbnailFilename, newsId)).thenReturn(true);
+
+        // When
+        adminNewsService.deleteNews(newsId);
+
+        // Then — file NOT deleted because another translation uses it
+        verify(fileStorageService, never()).delete(thumbnailFilename, "news");
+        verify(newsRepository).delete(testNews);
+    }
+
+    @Test
+    void shouldDeleteThumbnailFileWhenNoOtherTranslationUsesIt() throws Exception {
+        // Given
+        String thumbnailFilename = "unique-thumb.jpg";
+        setField(testNews, "thumbnailFilename", thumbnailFilename);
+
+        when(newsRepository.findById(newsId)).thenReturn(Optional.of(testNews));
+        when(blockRepository.findByNewsIdOrderByDisplayOrderAsc(newsId)).thenReturn(List.of());
+        when(newsRepository.existsByThumbnailFilenameAndIdNot(thumbnailFilename, newsId)).thenReturn(false);
+
+        // When
+        adminNewsService.deleteNews(newsId);
+
+        // Then
+        verify(fileStorageService).delete(thumbnailFilename, "news");
+        verify(newsRepository).delete(testNews);
+    }
+
+    @Test
+    void shouldNotDeleteBlockImageFileWhenOtherBlockUsesIt() throws Exception {
+        // Given
+        String imageFilename = "shared-img.jpg";
+        NewsContentBlock imageBlock = new NewsContentBlock(testNews, BlockType.IMAGE);
+        UUID blockId = UUID.randomUUID();
+        setField(imageBlock, "id", blockId);
+        setField(imageBlock, "imageFilename", imageFilename);
+
+        when(newsRepository.findById(newsId)).thenReturn(Optional.of(testNews));
+        when(blockRepository.findByNewsIdOrderByDisplayOrderAsc(newsId)).thenReturn(List.of(imageBlock));
+        when(blockRepository.existsByImageFilenameAndIdNot(imageFilename, blockId)).thenReturn(true);
+
+        // When
+        adminNewsService.deleteNews(newsId);
+
+        // Then — file NOT deleted because another block uses it
+        verify(fileStorageService, never()).delete(imageFilename, "news");
+    }
+
+    @Test
+    void shouldDeleteBlockImageFileWhenNoOtherBlockUsesIt() throws Exception {
+        // Given
+        String imageFilename = "unique-img.jpg";
+        NewsContentBlock imageBlock = new NewsContentBlock(testNews, BlockType.IMAGE);
+        UUID blockId = UUID.randomUUID();
+        setField(imageBlock, "id", blockId);
+        setField(imageBlock, "imageFilename", imageFilename);
+
+        when(newsRepository.findById(newsId)).thenReturn(Optional.of(testNews));
+        when(blockRepository.findByNewsIdOrderByDisplayOrderAsc(newsId)).thenReturn(List.of(imageBlock));
+        when(blockRepository.existsByImageFilenameAndIdNot(imageFilename, blockId)).thenReturn(false);
+
+        // When
+        adminNewsService.deleteNews(newsId);
+
+        // Then
+        verify(fileStorageService).delete(imageFilename, "news");
     }
 
     // ========== HELPERS ==========

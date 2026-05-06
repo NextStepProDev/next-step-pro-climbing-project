@@ -139,7 +139,12 @@
     "previewDraftBadge": "PODGLĄD — niezapisane zmiany",
     "previewNoTitle": "Brak tytułu",
     "previewEmptyBlock": "Pusty blok",
-    "previewNoContent": "Brak treści"
+    "previewNoContent": "Brak treści",
+    "language": "Język",
+    "allLanguages": "Wszystkie języki",
+    "duplicateAsTranslation": "Duplikuj jako tłumaczenie",
+    "translationExists": "Wszystkie tłumaczenia już istnieją",
+    "duplicateSuccess": "Zduplikowano jako tłumaczenie"
   },
   "courses": {
     "title": "Kursy",

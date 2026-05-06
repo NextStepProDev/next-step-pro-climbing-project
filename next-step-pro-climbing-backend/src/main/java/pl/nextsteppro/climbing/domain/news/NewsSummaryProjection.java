@@ -31,6 +31,10 @@ public interface NewsSummaryProjection {
     @Nullable
     Instant getPublishedAt();
 
+    String getLanguage();
+
+    UUID getTranslationGroupId();
+
     Instant getCreatedAt();
 
     Instant getUpdatedAt();

@@ -137,7 +137,12 @@
     "previewDraftBadge": "VISTA PREVIA — cambios sin guardar",
     "previewNoTitle": "Sin título",
     "previewEmptyBlock": "Bloque vacío",
-    "previewNoContent": "Sin contenido"
+    "previewNoContent": "Sin contenido",
+    "language": "Idioma",
+    "allLanguages": "Todos los idiomas",
+    "duplicateAsTranslation": "Duplicar como traducción",
+    "translationExists": "Todas las traducciones ya existen",
+    "duplicateSuccess": "Duplicado como traducción"
   },
   "courses": {
     "title": "Cursos",

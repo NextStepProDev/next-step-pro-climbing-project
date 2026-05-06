@@ -8,19 +8,22 @@ import { LoadingSpinner } from '../components/ui/LoadingSpinner'
 import { QueryError } from '../components/ui/QueryError'
 import { renderRichText } from '../utils/renderRichText'
 import { useAuth } from '../context/AuthContext'
+import { COURSE_CONTENT_LANGUAGES, getDefaultCourseContentLanguage } from '../constants/courseLanguages'
 import clsx from 'clsx'
 
 export function NewsPage() {
-  const { t } = useTranslation('common')
+  const { t, i18n } = useTranslation('common')
   const { isAuthenticated } = useAuth()
   const queryClient = useQueryClient()
 
   const [searchInput, setSearchInput] = useState('')
   const [q, setQ] = useState('')
   const [starredOnly, setStarredOnly] = useState(false)
+  const [contentLanguage, setContentLanguage] = useState(() =>
+    getDefaultCourseContentLanguage(i18n.language)
+  )
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  // Debounce: update q 400ms after typing stops
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current)
     debounceRef.current = setTimeout(() => setQ(searchInput), 400)
@@ -31,7 +34,7 @@ export function NewsPage() {
 
   const effectiveStarredOnly = useMemo(() => isAuthenticated ? starredOnly : false, [isAuthenticated, starredOnly])
 
-  const queryKey = ['news', q, effectiveStarredOnly]
+  const queryKey = ['news', contentLanguage, q, effectiveStarredOnly]
 
   const {
     data,
@@ -44,11 +47,10 @@ export function NewsPage() {
   } = useInfiniteQuery({
     queryKey,
     queryFn: ({ pageParam }) =>
-      newsApi.getAll(pageParam as number, 12, q || undefined, effectiveStarredOnly || undefined),
+      newsApi.getAll(pageParam as number, 12, contentLanguage, q || undefined, effectiveStarredOnly || undefined),
     initialPageParam: 0,
     getNextPageParam: (lastPage) => lastPage.hasNext ? lastPage.page + 1 : undefined,
     staleTime: 0,
-    // Zachowaj poprzednie wyniki podczas zmiany zapytania — input nigdy nie traci fokusu
     placeholderData: (previousData) => previousData,
   })
 
@@ -103,11 +105,27 @@ export function NewsPage() {
       ? t('news.noSearchResults')
       : t('news.noArticles')
 
-  // Zawsze renderujemy pełną strukturę — nigdy wczesny return,
-  // żeby input nie był odmontowywany i nie tracił fokusu.
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold text-dark-100 mb-6">{t('news.title')}</h1>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+        <h1 className="text-3xl font-bold text-dark-100">{t('news.title')}</h1>
+        <div className="flex items-center gap-1 bg-dark-800 border border-dark-700 rounded-lg p-1">
+          {COURSE_CONTENT_LANGUAGES.map((lang) => (
+            <button
+              key={lang.code}
+              onClick={() => setContentLanguage(lang.code)}
+              className={clsx(
+                'px-3 py-1.5 rounded-md text-sm font-medium transition-colors',
+                contentLanguage === lang.code
+                  ? 'bg-primary-500 text-white'
+                  : 'text-dark-400 hover:text-dark-100 hover:bg-dark-700'
+              )}
+            >
+              {lang.label}
+            </button>
+          ))}
+        </div>
+      </div>
 
       {error && (
         <div className="mb-6">
@@ -115,7 +133,6 @@ export function NewsPage() {
         </div>
       )}
 
-      {/* Search + filter bar — zawsze widoczny */}
       <div className="flex flex-col sm:flex-row gap-3 mb-8">
         <form onSubmit={handleSearchSubmit} className="flex flex-1 gap-2">
           <input
@@ -150,9 +167,7 @@ export function NewsPage() {
         )}
       </div>
 
-      {/* Obszar wyników */}
       {isLoading ? (
-        // Tylko przy PIERWSZYM załadowaniu strony (brak danych w cache)
         <div className="flex justify-center py-12">
           <LoadingSpinner />
         </div>
@@ -218,7 +233,6 @@ export function NewsPage() {
                   </div>
                 </Link>
 
-                {/* Star button — overlays top-right corner */}
                 {isAuthenticated && (
                   <button
                     onClick={(e) => handleStarClick(e, article.id, article.starred)}

@@ -1,4 +1,4 @@
--- Add language support for courses (PL, EN, DE)
+-- Add language support for courses (PL, EN, ES)
 ALTER TABLE courses ADD COLUMN language VARCHAR(5) NOT NULL DEFAULT 'pl';
 ALTER TABLE courses ADD COLUMN translation_group_id UUID;
 

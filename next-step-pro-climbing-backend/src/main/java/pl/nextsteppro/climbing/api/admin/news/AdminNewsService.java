@@ -72,6 +72,7 @@ public class AdminNewsService {
     public NewsAdminDto createNews(CreateNewsRequest request) {
         News news = new News(request.title());
         news.setExcerpt(request.excerpt());
+        news.setLanguage(request.language() != null ? request.language() : "pl");
         news = newsRepository.save(news);
         return toAdminDto(news);
     }
@@ -108,29 +109,69 @@ public class AdminNewsService {
     public void deleteNews(UUID id) {
         News news = findNews(id);
 
-        // Usuń pliki bloków IMAGE
         List<NewsContentBlock> blocks = blockRepository.findByNewsIdOrderByDisplayOrderAsc(id);
         for (NewsContentBlock block : blocks) {
             if (block.getBlockType() == BlockType.IMAGE && block.getImageFilename() != null) {
-                try {
-                    fileStorageService.delete(block.getImageFilename(), "news");
-                } catch (Exception e) {
-                    logger.warn("Failed to delete block image file: {} - {}", block.getImageFilename(), e.getMessage());
+                if (!blockRepository.existsByImageFilenameAndIdNot(block.getImageFilename(), block.getId())) {
+                    try {
+                        fileStorageService.delete(block.getImageFilename(), "news");
+                    } catch (Exception e) {
+                        logger.warn("Failed to delete block image file: {} - {}", block.getImageFilename(), e.getMessage());
+                    }
                 }
             }
         }
 
-        // Usuń miniaturkę
         if (news.getThumbnailFilename() != null) {
-            try {
-                fileStorageService.delete(news.getThumbnailFilename(), "news");
-            } catch (Exception e) {
-                logger.warn("Failed to delete thumbnail file: {} - {}", news.getThumbnailFilename(), e.getMessage());
+            if (!newsRepository.existsByThumbnailFilenameAndIdNot(news.getThumbnailFilename(), id)) {
+                try {
+                    fileStorageService.delete(news.getThumbnailFilename(), "news");
+                } catch (Exception e) {
+                    logger.warn("Failed to delete thumbnail file: {} - {}", news.getThumbnailFilename(), e.getMessage());
+                }
             }
         }
 
         blockRepository.deleteAll(blocks);
         newsRepository.delete(news);
+    }
+
+    @CacheEvict(value = {"newsList", "newsDetail"}, allEntries = true)
+    public NewsDetailAdminDto duplicateAsTranslation(UUID id, String targetLanguage) {
+        News source = findNews(id);
+
+        if (source.getLanguage().equals(targetLanguage)) {
+            throw new IllegalArgumentException("Target language must be different from source language");
+        }
+
+        if (newsRepository.existsByTranslationGroupIdAndLanguage(source.getTranslationGroupId(), targetLanguage)) {
+            throw new IllegalArgumentException("Translation already exists for language: " + targetLanguage);
+        }
+
+        News copy = new News(source.getTitle());
+        copy.setExcerpt(source.getExcerpt());
+        copy.setThumbnailFilename(source.getThumbnailFilename());
+        copy.setThumbnailUrl(source.getThumbnailUrl());
+        copy.setThumbnailFocalPointX(source.getThumbnailFocalPointX());
+        copy.setThumbnailFocalPointY(source.getThumbnailFocalPointY());
+        copy.setLanguage(targetLanguage);
+        copy.setTranslationGroupId(source.getTranslationGroupId());
+        copy.setPublished(false);
+        copy = newsRepository.save(copy);
+
+        List<NewsContentBlock> sourceBlocks = blockRepository.findByNewsIdOrderByDisplayOrderAsc(id);
+        for (NewsContentBlock srcBlock : sourceBlocks) {
+            NewsContentBlock copyBlock = new NewsContentBlock(copy, srcBlock.getBlockType());
+            copyBlock.setContent(srcBlock.getContent());
+            copyBlock.setImageFilename(srcBlock.getImageFilename());
+            copyBlock.setImageUrl(srcBlock.getImageUrl());
+            copyBlock.setCaption(srcBlock.getCaption());
+            copyBlock.setDisplayOrder(srcBlock.getDisplayOrder());
+            blockRepository.save(copyBlock);
+        }
+
+        List<NewsContentBlock> copyBlocks = blockRepository.findByNewsIdOrderByDisplayOrderAsc(copy.getId());
+        return toDetailAdminDto(copy, copyBlocks);
     }
 
     // --- Miniaturka ---
@@ -140,10 +181,12 @@ public class AdminNewsService {
         News news = findNews(id);
 
         if (news.getThumbnailFilename() != null) {
-            try {
-                fileStorageService.delete(news.getThumbnailFilename(), "news");
-            } catch (Exception e) {
-                logger.warn("Failed to delete old thumbnail: {} - {}", news.getThumbnailFilename(), e.getMessage());
+            if (!newsRepository.existsByThumbnailFilenameAndIdNot(news.getThumbnailFilename(), id)) {
+                try {
+                    fileStorageService.delete(news.getThumbnailFilename(), "news");
+                } catch (Exception e) {
+                    logger.warn("Failed to delete old thumbnail: {} - {}", news.getThumbnailFilename(), e.getMessage());
+                }
             }
         }
 
@@ -164,7 +207,9 @@ public class AdminNewsService {
         }
 
         if (news.getThumbnailFilename() != null) {
-            fileStorageService.delete(news.getThumbnailFilename(), "news");
+            if (!newsRepository.existsByThumbnailFilenameAndIdNot(news.getThumbnailFilename(), news.getId())) {
+                fileStorageService.delete(news.getThumbnailFilename(), "news");
+            }
             news.setThumbnailFilename(null);
         }
         news.setThumbnailUrl(null);
@@ -254,10 +299,12 @@ public class AdminNewsService {
         News news = findNews(id);
 
         if (news.getThumbnailFilename() != null) {
-            try {
-                fileStorageService.delete(news.getThumbnailFilename(), "news");
-            } catch (Exception e) {
-                logger.warn("Failed to delete old thumbnail when setting URL: {}", e.getMessage());
+            if (!newsRepository.existsByThumbnailFilenameAndIdNot(news.getThumbnailFilename(), id)) {
+                try {
+                    fileStorageService.delete(news.getThumbnailFilename(), "news");
+                } catch (Exception e) {
+                    logger.warn("Failed to delete old thumbnail when setting URL: {}", e.getMessage());
+                }
             }
             news.setThumbnailFilename(null);
         }
@@ -295,10 +342,12 @@ public class AdminNewsService {
         NewsContentBlock block = findBlock(blockId);
 
         if (block.getBlockType() == BlockType.IMAGE && block.getImageFilename() != null) {
-            try {
-                fileStorageService.delete(block.getImageFilename(), "news");
-            } catch (Exception e) {
-                logger.warn("Failed to delete block image file: {} - {}", block.getImageFilename(), e.getMessage());
+            if (!blockRepository.existsByImageFilenameAndIdNot(block.getImageFilename(), block.getId())) {
+                try {
+                    fileStorageService.delete(block.getImageFilename(), "news");
+                } catch (Exception e) {
+                    logger.warn("Failed to delete block image file: {} - {}", block.getImageFilename(), e.getMessage());
+                }
             }
         }
 
@@ -375,6 +424,8 @@ public class AdminNewsService {
                 buildThumbnailUrl(projection.getThumbnailUrl(), projection.getThumbnailFilename()),
                 projection.isPublished(),
                 projection.getPublishedAt(),
+                projection.getLanguage(),
+                projection.getTranslationGroupId(),
                 projection.getCreatedAt(),
                 projection.getUpdatedAt()
         );
@@ -388,6 +439,8 @@ public class AdminNewsService {
                 buildThumbnailUrl(news.getThumbnailUrl(), news.getThumbnailFilename()),
                 news.isPublished(),
                 news.getPublishedAt(),
+                news.getLanguage(),
+                news.getTranslationGroupId(),
                 news.getCreatedAt(),
                 news.getUpdatedAt()
         );
@@ -412,6 +465,8 @@ public class AdminNewsService {
                 news.getThumbnailFocalPointY(),
                 news.isPublished(),
                 news.getPublishedAt(),
+                news.getLanguage(),
+                news.getTranslationGroupId(),
                 blocks.stream().map(this::toBlockAdminDto).toList(),
                 news.getCreatedAt(),
                 news.getUpdatedAt()
@@ -444,44 +499,30 @@ public class AdminNewsService {
         return baseUrl + "/api/files/news/" + filename;
     }
 
-    /**
-     * Normalizuje URL YouTube lub Instagram do standardowego embed URL.
-     * Obsługiwane formaty:
-     * - https://www.youtube.com/watch?v=VIDEO_ID
-     * - https://youtu.be/VIDEO_ID
-     * - https://www.youtube.com/shorts/VIDEO_ID
-     * - https://www.instagram.com/reel/CODE/
-     * - https://www.instagram.com/p/CODE/
-     */
     private String normalizeVideoEmbedUrl(String inputUrl) {
         String url = inputUrl.trim();
 
-        // YouTube watch URL: ?v=ID lub &v=ID
         Matcher m = Pattern.compile("(?:youtube\\.com/watch\\?|youtube\\.com/watch\\?.*&)v=([a-zA-Z0-9_-]{11})")
                 .matcher(url);
         if (m.find()) {
             return "https://www.youtube.com/embed/" + m.group(1);
         }
 
-        // YouTube short URL: youtu.be/ID
         m = Pattern.compile("youtu\\.be/([a-zA-Z0-9_-]{11})").matcher(url);
         if (m.find()) {
             return "https://www.youtube.com/embed/" + m.group(1);
         }
 
-        // YouTube Shorts: youtube.com/shorts/ID
         m = Pattern.compile("youtube\\.com/shorts/([a-zA-Z0-9_-]{11})").matcher(url);
         if (m.find()) {
             return "https://www.youtube.com/embed/" + m.group(1);
         }
 
-        // Instagram Reel
         m = Pattern.compile("instagram\\.com/reel/([a-zA-Z0-9_-]+)").matcher(url);
         if (m.find()) {
             return "https://www.instagram.com/reel/" + m.group(1) + "/embed/";
         }
 
-        // Instagram Post
         m = Pattern.compile("instagram\\.com/p/([a-zA-Z0-9_-]+)").matcher(url);
         if (m.find()) {
             return "https://www.instagram.com/p/" + m.group(1) + "/embed/";

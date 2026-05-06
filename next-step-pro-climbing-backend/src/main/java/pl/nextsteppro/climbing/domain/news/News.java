@@ -37,6 +37,12 @@ public class News {
     @Nullable
     private Float thumbnailFocalPointY;
 
+    @Column(nullable = false, length = 5)
+    private String language = "pl";
+
+    @Column(name = "translation_group_id", nullable = false)
+    private UUID translationGroupId = UUID.randomUUID();
+
     @Column(name = "is_published", nullable = false)
     private boolean published = false;
 
@@ -84,6 +90,22 @@ public class News {
     @Nullable
     public String getThumbnailFilename() {
         return thumbnailFilename;
+    }
+
+    public String getLanguage() {
+        return language;
+    }
+
+    public void setLanguage(String language) {
+        this.language = language;
+    }
+
+    public UUID getTranslationGroupId() {
+        return translationGroupId;
+    }
+
+    public void setTranslationGroupId(UUID translationGroupId) {
+        this.translationGroupId = translationGroupId;
     }
 
     public boolean isPublished() {

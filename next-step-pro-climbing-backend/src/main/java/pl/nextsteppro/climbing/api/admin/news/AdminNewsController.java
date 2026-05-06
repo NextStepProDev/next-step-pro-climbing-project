@@ -105,6 +105,19 @@ public class AdminNewsController {
         return ResponseEntity.ok(adminNewsService.sendNewsNewsletter(id));
     }
 
+    @Operation(summary = "Duplikuj aktualność jako tłumaczenie")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Aktualność zduplikowana jako tłumaczenie"),
+        @ApiResponse(responseCode = "400", description = "Nieprawidłowe dane lub tłumaczenie już istnieje"),
+        @ApiResponse(responseCode = "403", description = "Brak uprawnień administratora")
+    })
+    @PostMapping("/{id}/duplicate-translation")
+    public ResponseEntity<NewsDetailAdminDto> duplicateAsTranslation(
+            @Parameter(description = "ID aktualności") @PathVariable UUID id,
+            @Valid @RequestBody AdminNewsDtos.DuplicateAsTranslationRequest request) {
+        return ResponseEntity.ok(adminNewsService.duplicateAsTranslation(id, request.targetLanguage()));
+    }
+
     @Operation(summary = "Usuń aktualność wraz z plikami")
     @ApiResponses({
         @ApiResponse(responseCode = "204", description = "Aktualność usunięta"),

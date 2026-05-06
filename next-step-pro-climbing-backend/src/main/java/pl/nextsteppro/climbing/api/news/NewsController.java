@@ -32,10 +32,11 @@ public class NewsController {
     public ResponseEntity<NewsPageDto> getAll(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "12") int size,
+            @RequestParam(defaultValue = "pl") String language,
             @RequestParam(required = false) @Nullable String q,
             @RequestParam(defaultValue = "false") boolean starred,
             @Nullable @CurrentUserId UUID userId) {
-        return ResponseEntity.ok(newsService.getAllPublished(page, size, q, starred, userId));
+        return ResponseEntity.ok(newsService.getAllPublished(page, size, language, q, starred, userId));
     }
 
     @Operation(summary = "Pobierz szczegóły aktualności")

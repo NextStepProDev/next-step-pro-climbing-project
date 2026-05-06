@@ -35,9 +35,9 @@ public class NewsService {
         this.baseUrl = baseUrl;
     }
 
-    @Cacheable(value = "newsList", key = "#page + '-' + #size",
+    @Cacheable(value = "newsList", key = "#page + '-' + #size + '-' + #language",
                condition = "#q == null && !#starred && #userId == null")
-    public NewsPageDto getAllPublished(int page, int size,
+    public NewsPageDto getAllPublished(int page, int size, String language,
                                       @Nullable String q,
                                       boolean starred,
                                       @Nullable UUID userId) {
@@ -55,13 +55,13 @@ public class NewsService {
 
         Page<NewsSummaryProjection> result;
         if (starred && q != null && !q.isBlank()) {
-            result = newsRepository.findAllPublishedSummariesByTitleAndIds(q, starredIds, pageable);
+            result = newsRepository.findAllPublishedSummariesByTitleAndIds(q, starredIds, language, pageable);
         } else if (starred) {
-            result = newsRepository.findAllPublishedSummariesByIds(starredIds, pageable);
+            result = newsRepository.findAllPublishedSummariesByIds(starredIds, language, pageable);
         } else if (q != null && !q.isBlank()) {
-            result = newsRepository.findAllPublishedSummariesByTitle(q, pageable);
+            result = newsRepository.findAllPublishedSummariesByTitle(q, language, pageable);
         } else {
-            result = newsRepository.findAllPublishedSummaries(pageable);
+            result = newsRepository.findAllPublishedSummaries(language, pageable);
         }
 
         Set<UUID> userStarred = userId != null
@@ -100,7 +100,9 @@ public class NewsService {
                 news.getThumbnailFocalPointY(),
                 blocks.stream().map(this::toBlockDto).toList(),
                 news.getPublishedAt(),
-                starred
+                starred,
+                news.getLanguage(),
+                news.getTranslationGroupId()
         );
     }
 
@@ -130,7 +132,9 @@ public class NewsService {
                 projection.getThumbnailFocalPointX(),
                 projection.getThumbnailFocalPointY(),
                 projection.getPublishedAt(),
-                starred
+                starred,
+                projection.getLanguage(),
+                projection.getTranslationGroupId()
         );
     }
 
