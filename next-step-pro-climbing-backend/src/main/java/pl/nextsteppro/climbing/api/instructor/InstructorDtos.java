@@ -6,9 +6,6 @@ import pl.nextsteppro.climbing.domain.instructor.InstructorType;
 import java.time.Instant;
 import java.util.UUID;
 
-/**
- * Public instructor DTOs for client consumption
- */
 public class InstructorDtos {
 
     public record InstructorPublicDto(
@@ -23,6 +20,8 @@ public class InstructorDtos {
             @Nullable String badgeUrl,
             InstructorType memberType,
             @Nullable String profile8aUrl,
-            Instant createdAt
+            Instant createdAt,
+            String language,
+            UUID translationGroupId
     ) {}
 }

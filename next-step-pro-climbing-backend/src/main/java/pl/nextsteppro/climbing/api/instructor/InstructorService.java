@@ -2,6 +2,7 @@ package pl.nextsteppro.climbing.api.instructor;
 
 import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pl.nextsteppro.climbing.api.instructor.InstructorDtos.InstructorPublicDto;
@@ -24,8 +25,9 @@ public class InstructorService {
         this.baseUrl = baseUrl;
     }
 
-    public List<InstructorPublicDto> getAllActiveInstructors() {
-        return instructorRepository.findByActiveTrueOrderByDisplayOrderAscCreatedAtAsc()
+    @Cacheable(value = "instructorList", key = "#language")
+    public List<InstructorPublicDto> getAllActiveInstructors(String language) {
+        return instructorRepository.findByActiveTrueAndLanguageOrderByDisplayOrderAscCreatedAtAsc(language)
                 .stream()
                 .map(this::toPublicDto)
                 .toList();
@@ -55,7 +57,9 @@ public class InstructorService {
                 instructor.getBadgeUrl(),
                 instructor.getMemberType(),
                 instructor.getProfile8aUrl(),
-                instructor.getCreatedAt()
+                instructor.getCreatedAt(),
+                instructor.getLanguage(),
+                instructor.getTranslationGroupId()
         );
     }
 

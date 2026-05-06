@@ -24,6 +24,13 @@
     "team": "Team",
     "system": "System"
   },
+  "team": {
+    "language": "Language",
+    "allLanguages": "All languages",
+    "duplicateAsTranslation": "Duplicate as translation",
+    "translationExists": "All translations already exist",
+    "duplicateSuccess": "Duplicated as translation"
+  },
   "site": {
     "title": "Homepage settings",
     "subtitle": "Manage the appearance of the homepage.",

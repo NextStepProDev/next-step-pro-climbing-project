@@ -24,6 +24,13 @@
     "team": "Equipo",
     "system": "Sistema"
   },
+  "team": {
+    "language": "Idioma",
+    "allLanguages": "Todos los idiomas",
+    "duplicateAsTranslation": "Duplicar como traducción",
+    "translationExists": "Todas las traducciones ya existen",
+    "duplicateSuccess": "Duplicado como traducción"
+  },
   "site": {
     "title": "Configuración de la página principal",
     "subtitle": "Gestiona el aspecto de la página principal.",

@@ -8,9 +8,6 @@ import pl.nextsteppro.climbing.domain.instructor.InstructorType;
 import java.time.Instant;
 import java.util.UUID;
 
-/**
- * Admin instructor DTOs with full details
- */
 public class AdminInstructorDtos {
 
     public record CreateInstructorRequest(
@@ -19,7 +16,8 @@ public class AdminInstructorDtos {
             @Nullable String bio,
             @Nullable String certifications,
             @Nullable InstructorType memberType,
-            @Nullable String profile8aUrl
+            @Nullable String profile8aUrl,
+            @Nullable String language
     ) {}
 
     public record UpdateInstructorRequest(
@@ -33,6 +31,10 @@ public class AdminInstructorDtos {
             @Nullable Float focalPointY,
             @Nullable InstructorType memberType,
             @Nullable String profile8aUrl
+    ) {}
+
+    public record DuplicateAsTranslationRequest(
+            @NotBlank @Size(max = 5) String targetLanguage
     ) {}
 
     public record SetBadgeRequest(@Nullable String badgeUrl) {}
@@ -55,6 +57,8 @@ public class AdminInstructorDtos {
             int displayOrder,
             boolean active,
             Instant createdAt,
-            Instant updatedAt
+            Instant updatedAt,
+            String language,
+            UUID translationGroupId
     ) {}
 }

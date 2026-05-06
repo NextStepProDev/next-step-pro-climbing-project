@@ -4,6 +4,7 @@ import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -48,18 +49,21 @@ public class AdminInstructorService {
         return toAdminDto(instructor);
     }
 
+    @CacheEvict(value = "instructorList", allEntries = true)
     public InstructorAdminDto createInstructor(CreateInstructorRequest request) {
         Instructor instructor = new Instructor(request.firstName(), request.lastName());
         instructor.setBio(request.bio());
         instructor.setCertifications(request.certifications());
         instructor.setMemberType(request.memberType() != null ? request.memberType() : InstructorType.INSTRUCTOR);
         instructor.setProfile8aUrl(request.profile8aUrl());
+        instructor.setLanguage(request.language() != null ? request.language() : "pl");
 
         instructor.setDisplayOrder(instructorRepository.findMinDisplayOrder().orElse(1) - 1);
         instructor = instructorRepository.save(instructor);
         return toAdminDto(instructor);
     }
 
+    @CacheEvict(value = "instructorList", allEntries = true)
     public InstructorAdminDto updateInstructor(UUID id, UpdateInstructorRequest request) {
         Instructor instructor = instructorRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Instructor not found"));
@@ -91,7 +95,6 @@ public class AdminInstructorService {
         if (request.memberType() != null) {
             instructor.setMemberType(request.memberType());
         }
-        // profile8aUrl: empty string clears it, non-empty sets it, null means no change
         if (request.profile8aUrl() != null) {
             instructor.setProfile8aUrl(request.profile8aUrl().isBlank() ? null : request.profile8aUrl());
         }
@@ -100,43 +103,45 @@ public class AdminInstructorService {
         return toAdminDto(instructor);
     }
 
+    @CacheEvict(value = "instructorList", allEntries = true)
     public void deleteInstructor(UUID id) {
         Instructor instructor = instructorRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Instructor not found"));
 
-        // Delete photo file if exists
         if (instructor.getPhotoFilename() != null) {
-            try {
-                fileStorageService.delete(instructor.getPhotoFilename(), "instructors");
-            } catch (IOException e) {
-                // Log but don't fail the delete operation
-                logger.warn("Failed to delete instructor photo file: {}", e.getMessage());
+            if (!instructorRepository.existsByPhotoFilenameAndIdNot(instructor.getPhotoFilename(), id)) {
+                try {
+                    fileStorageService.delete(instructor.getPhotoFilename(), "instructors");
+                } catch (IOException e) {
+                    logger.warn("Failed to delete instructor photo file: {}", e.getMessage());
+                }
             }
         }
 
         instructorRepository.delete(instructor);
     }
 
+    @CacheEvict(value = "instructorList", allEntries = true)
     public void uploadPhoto(UUID id, MultipartFile file) throws IOException {
         Instructor instructor = instructorRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Instructor not found"));
 
-        // Delete old photo if exists
         if (instructor.getPhotoFilename() != null) {
-            try {
-                fileStorageService.delete(instructor.getPhotoFilename(), "instructors");
-            } catch (IOException e) {
-                // Log but continue
-                logger.warn("Failed to delete old photo: {}", e.getMessage());
+            if (!instructorRepository.existsByPhotoFilenameAndIdNot(instructor.getPhotoFilename(), id)) {
+                try {
+                    fileStorageService.delete(instructor.getPhotoFilename(), "instructors");
+                } catch (IOException e) {
+                    logger.warn("Failed to delete old photo: {}", e.getMessage());
+                }
             }
         }
 
-        // Store new photo
         String filename = fileStorageService.store(file, "instructors");
         instructor.setPhotoFilename(filename);
         instructorRepository.save(instructor);
     }
 
+    @CacheEvict(value = "instructorList", allEntries = true)
     public void deletePhoto(UUID id) throws IOException {
         Instructor instructor = instructorRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Instructor not found"));
@@ -145,16 +150,53 @@ public class AdminInstructorService {
             throw new IllegalStateException("Instructor has no photo");
         }
 
-        fileStorageService.delete(instructor.getPhotoFilename(), "instructors");
+        if (!instructorRepository.existsByPhotoFilenameAndIdNot(instructor.getPhotoFilename(), id)) {
+            fileStorageService.delete(instructor.getPhotoFilename(), "instructors");
+        }
         instructor.setPhotoFilename(null);
         instructorRepository.save(instructor);
     }
 
+    @CacheEvict(value = "instructorList", allEntries = true)
+    public InstructorAdminDto duplicateAsTranslation(UUID id, String targetLanguage) {
+        Instructor source = instructorRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Instructor not found"));
+
+        if (source.getLanguage().equals(targetLanguage)) {
+            throw new IllegalArgumentException("Target language is the same as source language");
+        }
+
+        if (instructorRepository.existsByTranslationGroupIdAndLanguage(source.getTranslationGroupId(), targetLanguage)) {
+            throw new IllegalArgumentException("Translation in this language already exists");
+        }
+
+        Instructor copy = new Instructor(source.getFirstName(), source.getLastName());
+        copy.setLanguage(targetLanguage);
+        copy.setTranslationGroupId(source.getTranslationGroupId());
+        copy.setBio(source.getBio());
+        copy.setCertifications(source.getCertifications());
+        copy.setPhotoFilename(source.getPhotoFilename());
+        copy.setPhotoExternalUrl(source.getPhotoExternalUrl());
+        copy.setFocalPointX(source.getFocalPointX());
+        copy.setFocalPointY(source.getFocalPointY());
+        copy.setBadgeUrl(source.getBadgeUrl());
+        copy.setProfile8aUrl(source.getProfile8aUrl());
+        copy.setMemberType(source.getMemberType());
+        copy.setActive(false);
+        copy.setDisplayOrder(instructorRepository.findMinDisplayOrder().orElse(1) - 1);
+
+        copy = instructorRepository.save(copy);
+        return toAdminDto(copy);
+    }
+
+    @CacheEvict(value = "instructorList", allEntries = true)
     public List<InstructorAdminDto> moveUp(UUID id) {
         Instructor target = instructorRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Instructor not found"));
         List<Instructor> group = instructorRepository.findAllByOrderByDisplayOrderAscCreatedAtAsc()
-                .stream().filter(i -> i.getMemberType() == target.getMemberType()).toList();
+                .stream()
+                .filter(i -> i.getMemberType() == target.getMemberType() && i.getLanguage().equals(target.getLanguage()))
+                .toList();
         int idx = indexOfId(group, id);
         if (idx > 0) {
             swap(group.get(idx), group.get(idx - 1));
@@ -164,11 +206,14 @@ public class AdminInstructorService {
                 .stream().map(this::toAdminDto).toList();
     }
 
+    @CacheEvict(value = "instructorList", allEntries = true)
     public List<InstructorAdminDto> moveDown(UUID id) {
         Instructor target = instructorRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Instructor not found"));
         List<Instructor> group = instructorRepository.findAllByOrderByDisplayOrderAscCreatedAtAsc()
-                .stream().filter(i -> i.getMemberType() == target.getMemberType()).toList();
+                .stream()
+                .filter(i -> i.getMemberType() == target.getMemberType() && i.getLanguage().equals(target.getLanguage()))
+                .toList();
         int idx = indexOfId(group, id);
         if (idx >= 0 && idx < group.size() - 1) {
             swap(group.get(idx), group.get(idx + 1));
@@ -191,10 +236,20 @@ public class AdminInstructorService {
         b.setDisplayOrder(tmp);
     }
 
+    @CacheEvict(value = "instructorList", allEntries = true)
     public InstructorAdminDto setBadge(UUID id, @Nullable String badgeUrl) {
         Instructor instructor = instructorRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Instructor not found"));
         instructor.setBadgeUrl(badgeUrl);
+        instructor = instructorRepository.save(instructor);
+        return toAdminDto(instructor);
+    }
+
+    @CacheEvict(value = "instructorList", allEntries = true)
+    public InstructorAdminDto setPhotoUrl(UUID id, @Nullable String url) {
+        Instructor instructor = instructorRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Instructor not found"));
+        instructor.setPhotoExternalUrl(url);
         instructor = instructorRepository.save(instructor);
         return toAdminDto(instructor);
     }
@@ -216,16 +271,10 @@ public class AdminInstructorService {
                 instructor.getDisplayOrder(),
                 instructor.isActive(),
                 instructor.getCreatedAt(),
-                instructor.getUpdatedAt()
+                instructor.getUpdatedAt(),
+                instructor.getLanguage(),
+                instructor.getTranslationGroupId()
         );
-    }
-
-    public InstructorAdminDto setPhotoUrl(UUID id, @Nullable String url) {
-        Instructor instructor = instructorRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Instructor not found"));
-        instructor.setPhotoExternalUrl(url);
-        instructor = instructorRepository.save(instructor);
-        return toAdminDto(instructor);
     }
 
     @Nullable

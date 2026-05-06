@@ -478,7 +478,7 @@ export const adminApi = {
 
 // Instructors (public)
 export const instructorApi = {
-  getAll: () => fetchApi<InstructorPublic[]>('/instructors'),
+  getAll: (language?: string) => fetchApi<InstructorPublic[]>(`/instructors${language ? `?language=${language}` : ''}`),
   getById: (id: string) => fetchApi<InstructorPublic>(`/instructors/${id}`),
 }
 
@@ -544,6 +544,11 @@ export const adminInstructorApi = {
     fetchApi<InstructorAdmin>(`/admin/instructors/${id}/photo-url`, {
       method: 'PUT',
       body: JSON.stringify({ photoUrl }),
+    }),
+  duplicateAsTranslation: (id: string, targetLanguage: string) =>
+    fetchApi<InstructorAdmin>(`/admin/instructors/${id}/duplicate-translation`, {
+      method: 'POST',
+      body: JSON.stringify({ targetLanguage }),
     }),
 }
 

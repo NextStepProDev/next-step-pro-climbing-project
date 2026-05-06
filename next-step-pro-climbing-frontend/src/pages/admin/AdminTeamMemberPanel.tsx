@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { User, Upload, Pencil, Trash2, Plus, Library, Images, X, ChevronUp, ChevronDown } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
+import { User, Upload, Pencil, Trash2, Plus, Library, Images, X, ChevronUp, ChevronDown, Copy } from 'lucide-react'
+import clsx from 'clsx'
 import { adminInstructorApi } from '../../api/client'
 import type { InstructorAdmin, InstructorType, CreateInstructorRequest, UpdateInstructorRequest } from '../../types'
 import { Button } from '../../components/ui/Button'
@@ -15,8 +17,7 @@ import { GalleryPickerModal } from '../../components/ui/GalleryPickerModal'
 import { BioBlockEditor } from '../../components/ui/BioBlockEditor'
 import { deserializeBio, serializeBio } from '../../components/ui/bioBlocks'
 import type { BioBlock } from '../../components/ui/bioBlocks'
-
-// ─── Certifications list editor ───────────────────────────────────────────────
+import { COURSE_CONTENT_LANGUAGES } from '../../constants/courseLanguages'
 
 function CertificationsEditor({
   items,
@@ -57,11 +58,25 @@ function CertificationsEditor({
   )
 }
 
-// ─── Main panel ───────────────────────────────────────────────────────────────
+function LanguageBadge({ language }: { language: string }) {
+  return (
+    <span
+      className={clsx(
+        'text-xs px-2 py-0.5 rounded-full font-medium',
+        language === 'pl' && 'bg-blue-900/40 text-blue-400',
+        language === 'en' && 'bg-emerald-900/40 text-emerald-400',
+        language === 'es' && 'bg-purple-900/40 text-purple-400',
+      )}
+    >
+      {language.toUpperCase()}
+    </span>
+  )
+}
 
 interface Props { memberType: InstructorType }
 
 export function AdminTeamMemberPanel({ memberType }: Props) {
+  const { t } = useTranslation('admin')
   const isInstructor = memberType === 'INSTRUCTOR'
   const entityLabel = isInstructor ? 'Instruktora' : 'Zawodnika'
   const certLabel = isInstructor ? 'Certyfikaty' : 'Osiągnięcia'
@@ -77,8 +92,8 @@ export function AdminTeamMemberPanel({ memberType }: Props) {
   const [photoPreview, setPhotoPreview] = useState<string | null>(null)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [focalPoint, setFocalPoint] = useState({ x: 0.5, y: 0.5 })
+  const [languageFilter, setLanguageFilter] = useState<string>('all')
 
-  // Form state
   const [createBioBlocks, setCreateBioBlocks] = useState<BioBlock[]>([])
   const [editBioBlocks, setEditBioBlocks] = useState<BioBlock[]>([])
   const [createCerts, setCreateCerts] = useState<string[]>([])
@@ -86,7 +101,6 @@ export function AdminTeamMemberPanel({ memberType }: Props) {
   const [create8aUrl, setCreate8aUrl] = useState('')
   const [edit8aUrl, setEdit8aUrl] = useState('')
 
-  // Pickers (badge + photo only — bio pickers live inside BioBlockEditor)
   const [badgePickerOpen, setBadgePickerOpen] = useState(false)
   const [badgeTargetId, setBadgeTargetId] = useState<string | null>(null)
   const [photoGalleryOpen, setPhotoGalleryOpen] = useState(false)
@@ -95,12 +109,21 @@ export function AdminTeamMemberPanel({ memberType }: Props) {
     queryKey: ['admin', 'instructors'],
     queryFn: adminInstructorApi.getAll,
   })
-  const members = (allMembers ?? []).filter((m) => m.memberType === memberType)
+
+  const membersOfType = (allMembers ?? []).filter((m) => m.memberType === memberType)
+  const members = languageFilter === 'all'
+    ? membersOfType
+    : membersOfType.filter(m => m.language === languageFilter)
+
+  const invalidateAll = () => {
+    queryClient.invalidateQueries({ queryKey: ['admin', 'instructors'] })
+    queryClient.invalidateQueries({ queryKey: ['instructors'] })
+  }
 
   const createMutation = useMutation({
     mutationFn: adminInstructorApi.create,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin', 'instructors'] })
+      invalidateAll()
       setCreateModalOpen(false)
       setCreateBioBlocks([])
       setCreateCerts([])
@@ -111,7 +134,7 @@ export function AdminTeamMemberPanel({ memberType }: Props) {
     mutationFn: ({ id, data }: { id: string; data: UpdateInstructorRequest }) =>
       adminInstructorApi.update(id, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin', 'instructors'] })
+      invalidateAll()
       setEditModalOpen(false)
       setSelectedMember(null)
     },
@@ -120,7 +143,7 @@ export function AdminTeamMemberPanel({ memberType }: Props) {
   const deleteMutation = useMutation({
     mutationFn: adminInstructorApi.delete,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin', 'instructors'] })
+      invalidateAll()
       setDeleteConfirmOpen(false)
       setSelectedMember(null)
     },
@@ -129,7 +152,7 @@ export function AdminTeamMemberPanel({ memberType }: Props) {
   const uploadPhotoMutation = useMutation({
     mutationFn: ({ id, file }: { id: string; file: File }) => adminInstructorApi.uploadPhoto(id, file),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin', 'instructors'] })
+      invalidateAll()
       setUploadPhotoModalOpen(false)
       setSelectedMember(null)
       setPhotoPreview(null)
@@ -139,17 +162,17 @@ export function AdminTeamMemberPanel({ memberType }: Props) {
 
   const deletePhotoMutation = useMutation({
     mutationFn: adminInstructorApi.deletePhoto,
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['admin', 'instructors'] }) },
+    onSuccess: () => { invalidateAll() },
   })
 
   const setBadgeMutation = useMutation({
     mutationFn: ({ id, badgeUrl }: { id: string; badgeUrl: string }) => adminInstructorApi.setBadge(id, badgeUrl),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['admin', 'instructors'] }) },
+    onSuccess: () => { invalidateAll() },
   })
 
   const deleteBadgeMutation = useMutation({
     mutationFn: adminInstructorApi.deleteBadge,
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['admin', 'instructors'] }) },
+    onSuccess: () => { invalidateAll() },
   })
 
   const moveUpMutation = useMutation({
@@ -166,9 +189,27 @@ export function AdminTeamMemberPanel({ memberType }: Props) {
     mutationFn: ({ id, photoUrl }: { id: string; photoUrl: string | null }) =>
       adminInstructorApi.setPhotoUrl(id, photoUrl),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin', 'instructors'] })
+      invalidateAll()
       setUploadPhotoModalOpen(false)
       setSelectedMember(null)
+    },
+  })
+
+  const duplicateMutation = useMutation({
+    mutationFn: ({ id, targetLanguage }: { id: string; targetLanguage: string }) =>
+      adminInstructorApi.duplicateAsTranslation(id, targetLanguage),
+    onSuccess: (newMember) => {
+      invalidateAll()
+      setEditModalOpen(false)
+      setSelectedMember(null)
+      setTimeout(() => {
+        setSelectedMember(newMember)
+        setFocalPoint({ x: newMember.focalPointX ?? 0.5, y: newMember.focalPointY ?? 0.5 })
+        setEditBioBlocks(deserializeBio(newMember.bio ?? ''))
+        setEditCerts(newMember.certifications ? newMember.certifications.split('\n').filter(Boolean) : [])
+        setEdit8aUrl(newMember.profile8aUrl ?? '')
+        setEditModalOpen(true)
+      }, 100)
     },
   })
 
@@ -182,6 +223,7 @@ export function AdminTeamMemberPanel({ memberType }: Props) {
       certifications: createCerts.filter(Boolean).join('\n') || undefined,
       memberType,
       profile8aUrl: create8aUrl.trim() || undefined,
+      language: languageFilter === 'all' ? 'pl' : languageFilter,
     }
     createMutation.mutate(data)
   }
@@ -213,6 +255,15 @@ export function AdminTeamMemberPanel({ memberType }: Props) {
     return () => { if (photoPreview) URL.revokeObjectURL(photoPreview) }
   }, [photoPreview])
 
+  const existingLanguages = selectedMember
+    ? (allMembers ?? [])
+        .filter(m => m.translationGroupId === selectedMember.translationGroupId)
+        .map(m => m.language)
+    : []
+  const availableTargetLanguages = COURSE_CONTENT_LANGUAGES.filter(
+    lang => !existingLanguages.includes(lang.code)
+  )
+
   const inputCls = 'w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-dark-100 focus:ring-2 focus:ring-primary-500 focus:border-transparent'
 
   if (isLoading) return <div className="flex items-center justify-center py-12"><LoadingSpinner /></div>
@@ -221,12 +272,24 @@ export function AdminTeamMemberPanel({ memberType }: Props) {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <h2 className="text-2xl font-bold text-dark-100">{headerTitle}</h2>
-        <Button onClick={() => { setCreateBioBlocks([]); setCreateCerts([]); setCreate8aUrl(''); setCreateModalOpen(true) }}>
-          <Plus className="h-4 w-4 mr-2" />
-          Dodaj {isInstructor ? 'Instruktora' : 'Zawodnika'}
-        </Button>
+        <div className="flex items-center gap-3">
+          <select
+            value={languageFilter}
+            onChange={(e) => setLanguageFilter(e.target.value)}
+            className="bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-sm text-dark-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
+          >
+            <option value="all">{t('team.allLanguages')}</option>
+            {COURSE_CONTENT_LANGUAGES.map((lang) => (
+              <option key={lang.code} value={lang.code}>{lang.label}</option>
+            ))}
+          </select>
+          <Button onClick={() => { setCreateBioBlocks([]); setCreateCerts([]); setCreate8aUrl(''); setCreateModalOpen(true) }}>
+            <Plus className="h-4 w-4 mr-2" />
+            Dodaj {isInstructor ? 'Instruktora' : 'Zawodnika'}
+          </Button>
+        </div>
       </div>
 
       {/* List */}
@@ -266,7 +329,7 @@ export function AdminTeamMemberPanel({ memberType }: Props) {
                       </div>
                     )}
                     {isInstructor && member.badgeUrl && (
-                      <img src={member.badgeUrl} alt="badge" className="absolute bottom-0 right-0 w-4 h-4 sm:w-7 sm:h-7 rounded-full object-contain drop-shadow" />
+                      <img src={member.badgeUrl} alt="badge" className="absolute bottom-0 right-0 w-6 h-6 sm:w-11 sm:h-11 rounded-full object-contain drop-shadow" />
                     )}
                     <button onClick={() => { setSelectedMember(member); setUploadPhotoModalOpen(true) }}
                       className="absolute inset-0 bg-black/60 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
@@ -298,7 +361,10 @@ export function AdminTeamMemberPanel({ memberType }: Props) {
                 <div className="flex-1 min-w-0 space-y-3">
                   <div className="flex items-start justify-between gap-2 flex-wrap">
                     <div className="min-w-0">
-                      <h3 className="text-base sm:text-xl font-bold text-dark-100">{member.firstName} {member.lastName}</h3>
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-base sm:text-xl font-bold text-dark-100">{member.firstName} {member.lastName}</h3>
+                        <LanguageBadge language={member.language} />
+                      </div>
                       <span className={`text-sm ${member.active ? 'text-green-400' : 'text-rose-400'}`}>
                         {member.active ? '✓ Aktywny' : '✕ Nieaktywny'}
                       </span>
@@ -395,6 +461,10 @@ export function AdminTeamMemberPanel({ memberType }: Props) {
             <label className="block text-sm font-medium text-dark-200 mb-2">Bio</label>
             <BioBlockEditor blocks={createBioBlocks} onChange={setCreateBioBlocks} />
           </div>
+          <div className="flex items-center gap-2 text-sm text-dark-400">
+            <span>{t('team.language')}:</span>
+            <LanguageBadge language={languageFilter === 'all' ? 'pl' : languageFilter} />
+          </div>
           <div className="flex gap-2 justify-end">
             <Button type="button" variant="ghost" onClick={() => setCreateModalOpen(false)}>Anuluj</Button>
             <Button type="submit" loading={createMutation.isPending}>Dodaj</Button>
@@ -407,7 +477,37 @@ export function AdminTeamMemberPanel({ memberType }: Props) {
       {selectedMember && (
         <Modal isOpen={editModalOpen} onClose={() => { setEditModalOpen(false); setSelectedMember(null) }} title={`Edytuj ${entityLabel}`} size="lg">
           <form onSubmit={handleUpdate} className="space-y-4">
-            {/* Zdjęcie profilowe — na górze */}
+            {/* Language badge + duplication */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-dark-400">{t('team.language')}:</span>
+                <LanguageBadge language={selectedMember.language} />
+              </div>
+            </div>
+
+            {/* Duplicate as translation */}
+            <div className="bg-dark-700/50 rounded-lg p-3 space-y-2">
+              <h4 className="text-sm font-medium text-dark-300 flex items-center gap-1.5">
+                <Copy className="w-3.5 h-3.5" />
+                {t('team.duplicateAsTranslation')}
+              </h4>
+              {availableTargetLanguages.length === 0 ? (
+                <p className="text-xs text-dark-500">{t('team.translationExists')}</p>
+              ) : (
+                <div className="flex gap-2">
+                  {availableTargetLanguages.map((lang) => (
+                    <Button key={lang.code} variant="secondary" size="sm"
+                      loading={duplicateMutation.isPending}
+                      onClick={() => duplicateMutation.mutate({ id: selectedMember.id, targetLanguage: lang.code })}>
+                      {lang.label}
+                    </Button>
+                  ))}
+                </div>
+              )}
+              {duplicateMutation.error && <div className="text-rose-400 text-xs">{String(duplicateMutation.error)}</div>}
+            </div>
+
+            {/* Photo */}
             <div>
               <div className="flex items-center justify-between mb-2">
                 <label className="block text-sm font-medium text-dark-200">Zdjęcie profilowe</label>

@@ -24,6 +24,13 @@
     "team": "Zespół",
     "system": "System"
   },
+  "team": {
+    "language": "Język",
+    "allLanguages": "Wszystkie języki",
+    "duplicateAsTranslation": "Duplikuj jako tłumaczenie",
+    "translationExists": "Wszystkie tłumaczenia już istnieją",
+    "duplicateSuccess": "Zduplikowano jako tłumaczenie"
+  },
   "site": {
     "title": "Ustawienia strony głównej",
     "subtitle": "Zarządzaj wyglądem strony głównej.",

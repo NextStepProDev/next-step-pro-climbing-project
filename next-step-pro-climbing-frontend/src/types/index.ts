@@ -365,6 +365,8 @@ export interface InstructorPublic {
   memberType: InstructorType
   profile8aUrl: string | null
   createdAt: string
+  language: string
+  translationGroupId: string
 }
 
 export interface InstructorAdmin {
@@ -384,6 +386,8 @@ export interface InstructorAdmin {
   active: boolean
   createdAt: string
   updatedAt: string
+  language: string
+  translationGroupId: string
 }
 
 export interface CreateInstructorRequest {
@@ -393,6 +397,7 @@ export interface CreateInstructorRequest {
   certifications?: string
   memberType?: InstructorType
   profile8aUrl?: string
+  language?: string
 }
 
 export interface UpdateInstructorRequest {

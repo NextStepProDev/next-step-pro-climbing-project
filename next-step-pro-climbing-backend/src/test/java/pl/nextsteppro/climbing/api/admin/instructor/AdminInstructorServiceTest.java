@@ -74,6 +74,7 @@ class AdminInstructorServiceTest {
             "Expert in bouldering",
             "IFMGA, UIAGM",
             null,
+            null,
             null
         );
 
@@ -109,6 +110,7 @@ class AdminInstructorServiceTest {
         CreateInstructorRequest request = new CreateInstructorRequest(
             "Jane",
             "Smith",
+            null,
             null,
             null,
             null,
@@ -531,6 +533,105 @@ class AdminInstructorServiceTest {
         assertThrows(IOException.class, () -> adminInstructorService.deletePhoto(instructorId));
 
         verify(instructorRepository, never()).save(any(Instructor.class));
+    }
+
+    // ========== DUPLICATE AS TRANSLATION TESTS ==========
+
+    @Test
+    void shouldDuplicateAsTranslationSuccessfully() {
+        // Given
+        testInstructor.setLanguage("pl");
+        testInstructor.setBio("Bio po polsku");
+        testInstructor.setCertifications("UIAA");
+        testInstructor.setPhotoFilename("photo.jpg");
+        testInstructor.setBadgeUrl("https://example.com/badge.png");
+
+        when(instructorRepository.findById(instructorId)).thenReturn(Optional.of(testInstructor));
+        when(instructorRepository.existsByTranslationGroupIdAndLanguage(testInstructor.getTranslationGroupId(), "en"))
+                .thenReturn(false);
+        when(instructorRepository.findMinDisplayOrder()).thenReturn(Optional.of(0));
+        when(instructorRepository.save(any(Instructor.class))).thenAnswer(inv -> {
+            Instructor i = inv.getArgument(0);
+            setInstructorIdViaReflection(i, UUID.randomUUID());
+            return i;
+        });
+
+        // When
+        InstructorAdminDto result = adminInstructorService.duplicateAsTranslation(instructorId, "en");
+
+        // Then
+        assertNotNull(result);
+        assertEquals("en", result.language());
+        assertEquals(testInstructor.getTranslationGroupId(), result.translationGroupId());
+        assertEquals("John", result.firstName());
+        assertEquals("Bio po polsku", result.bio());
+        assertEquals("UIAA", result.certifications());
+        assertEquals("photo.jpg", result.photoFilename());
+        assertEquals("https://example.com/badge.png", result.badgeUrl());
+        assertFalse(result.active());
+    }
+
+    @Test
+    void shouldThrowWhenDuplicatingToSameLanguage() {
+        // Given
+        testInstructor.setLanguage("pl");
+        when(instructorRepository.findById(instructorId)).thenReturn(Optional.of(testInstructor));
+
+        // When & Then
+        IllegalArgumentException ex = assertThrows(
+                IllegalArgumentException.class,
+                () -> adminInstructorService.duplicateAsTranslation(instructorId, "pl")
+        );
+        assertEquals("Target language is the same as source language", ex.getMessage());
+    }
+
+    @Test
+    void shouldThrowWhenTranslationAlreadyExists() {
+        // Given
+        testInstructor.setLanguage("pl");
+        when(instructorRepository.findById(instructorId)).thenReturn(Optional.of(testInstructor));
+        when(instructorRepository.existsByTranslationGroupIdAndLanguage(testInstructor.getTranslationGroupId(), "en"))
+                .thenReturn(true);
+
+        // When & Then
+        IllegalArgumentException ex = assertThrows(
+                IllegalArgumentException.class,
+                () -> adminInstructorService.duplicateAsTranslation(instructorId, "en")
+        );
+        assertEquals("Translation in this language already exists", ex.getMessage());
+    }
+
+    // ========== REFERENCE COUNTING TESTS ==========
+
+    @Test
+    void shouldNotDeletePhotoFileWhenOtherTranslationUsesIt() throws IOException {
+        // Given
+        testInstructor.setPhotoFilename("shared-photo.jpg");
+        when(instructorRepository.findById(instructorId)).thenReturn(Optional.of(testInstructor));
+        when(instructorRepository.existsByPhotoFilenameAndIdNot("shared-photo.jpg", instructorId)).thenReturn(true);
+
+        // When
+        adminInstructorService.deleteInstructor(instructorId);
+
+        // Then
+        verify(fileStorageService, never()).delete(anyString(), anyString());
+        verify(instructorRepository).delete(testInstructor);
+    }
+
+    @Test
+    void shouldDeletePhotoFileWhenNoOtherTranslationUsesIt() throws IOException {
+        // Given
+        testInstructor.setPhotoFilename("unique-photo.jpg");
+        when(instructorRepository.findById(instructorId)).thenReturn(Optional.of(testInstructor));
+        when(instructorRepository.existsByPhotoFilenameAndIdNot("unique-photo.jpg", instructorId)).thenReturn(false);
+        doNothing().when(fileStorageService).delete("unique-photo.jpg", "instructors");
+
+        // When
+        adminInstructorService.deleteInstructor(instructorId);
+
+        // Then
+        verify(fileStorageService).delete("unique-photo.jpg", "instructors");
+        verify(instructorRepository).delete(testInstructor);
     }
 
     // ========== DTO CONVERSION TESTS ==========

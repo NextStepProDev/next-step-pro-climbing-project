@@ -16,7 +16,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/instructors")
-@Tag(name = "Instructors", description = "Publiczny dostęp do informacji o instruktorach")
+@Tag(name = "Instructors", description = "Publiczny dostep do informacji o instruktorach")
 public class InstructorController {
 
     private final InstructorService instructorService;
@@ -26,25 +26,27 @@ public class InstructorController {
     }
 
     @Operation(
-        summary = "Pobierz listę aktywnych instruktorów",
-        description = "Zwraca listę wszystkich aktywnych instruktorów, posortowaną według kolejności wyświetlania"
+        summary = "Pobierz liste aktywnych instruktorow",
+        description = "Zwraca liste wszystkich aktywnych instruktorow w danym jezyku, posortowana wedlug kolejnosci wyswietlania"
     )
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Lista instruktorów",
+        @ApiResponse(responseCode = "200", description = "Lista instruktorow",
             content = @Content(schema = @Schema(implementation = InstructorPublicDto.class)))
     })
     @GetMapping
-    public ResponseEntity<List<InstructorPublicDto>> getAllInstructors() {
-        List<InstructorPublicDto> instructors = instructorService.getAllActiveInstructors();
+    public ResponseEntity<List<InstructorPublicDto>> getAllInstructors(
+            @Parameter(description = "Jezyk tresci (pl, en, es)")
+            @RequestParam(defaultValue = "pl") String language) {
+        List<InstructorPublicDto> instructors = instructorService.getAllActiveInstructors(language);
         return ResponseEntity.ok(instructors);
     }
 
     @Operation(
-        summary = "Pobierz szczegóły instruktora",
-        description = "Zwraca szczegółowe informacje o konkretnym instruktorze"
+        summary = "Pobierz szczegoly instruktora",
+        description = "Zwraca szczegolowe informacje o konkretnym instruktorze"
     )
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Szczegóły instruktora",
+        @ApiResponse(responseCode = "200", description = "Szczegoly instruktora",
             content = @Content(schema = @Schema(implementation = InstructorPublicDto.class))),
         @ApiResponse(responseCode = "404", description = "Instruktor nie znaleziony")
     })

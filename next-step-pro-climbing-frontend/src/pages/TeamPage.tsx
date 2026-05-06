@@ -1,13 +1,16 @@
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { useParams, useNavigate } from 'react-router-dom'
 import { User, X, ExternalLink } from 'lucide-react'
+import clsx from 'clsx'
 import { instructorApi } from '../api/client'
 import { LoadingSpinner } from '../components/ui/LoadingSpinner'
 import { QueryError } from '../components/ui/QueryError'
 import { ShareButtons } from '../components/ui/ShareButtons'
 import { renderRichText } from '../utils/renderRichText'
 import { deserializeBio } from '../components/ui/bioBlocks'
+import { COURSE_CONTENT_LANGUAGES, getDefaultCourseContentLanguage } from '../constants/courseLanguages'
 import type { InstructorPublic, InstructorType } from '../types'
 
 function renderBio(bio: string) {
@@ -36,8 +39,6 @@ function renderCertifications(text: string) {
     </ul>
   )
 }
-
-// ─── Kafelek ──────────────────────────────────────────────────────────────────
 
 function MemberTile({
   member,
@@ -68,19 +69,16 @@ function MemberTile({
         </div>
       )}
 
-      {/* gradient overlay */}
       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
 
-      {/* badge */}
       {member.badgeUrl && (
         <img
           src={member.badgeUrl}
           alt="badge"
-          className="absolute top-3 right-3 w-8 h-8 rounded-full object-contain drop-shadow-lg"
+          className="absolute top-3 right-3 w-14 h-14 rounded-full object-contain drop-shadow-lg"
         />
       )}
 
-      {/* name */}
       <div className="absolute bottom-0 left-0 right-0 p-4">
         <p className="text-base font-bold text-white leading-tight">
           {member.firstName} {member.lastName}
@@ -89,8 +87,6 @@ function MemberTile({
     </button>
   )
 }
-
-// ─── Modal ze szczegółami ─────────────────────────────────────────────────────
 
 function MemberModal({
   member,
@@ -109,14 +105,12 @@ function MemberModal({
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
       onClick={onClose}
     >
-      {/* backdrop */}
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
 
       <div
         className="relative z-10 w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl bg-dark-900 border border-dark-700 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* close button */}
         <button
           onClick={onClose}
           className="absolute top-4 right-4 z-20 p-2 rounded-full bg-dark-800 hover:bg-dark-700 text-dark-300 hover:text-dark-100 transition-colors"
@@ -124,7 +118,6 @@ function MemberModal({
           <X className="w-5 h-5" />
         </button>
 
-        {/* photo header */}
         <div className="relative h-[28rem] md:h-[32rem] w-full overflow-hidden rounded-t-2xl bg-dark-800">
           {member.photoUrl ? (
             <img
@@ -144,12 +137,11 @@ function MemberModal({
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-dark-900 via-dark-900/60 to-transparent" />
 
-          {/* badge */}
           {member.badgeUrl && (
             <img
               src={member.badgeUrl}
               alt="badge"
-              className="absolute top-4 right-14 w-10 h-10 rounded-full object-contain drop-shadow-lg"
+              className="absolute top-4 right-14 w-16 h-16 rounded-full object-contain drop-shadow-lg"
             />
           )}
 
@@ -174,7 +166,6 @@ function MemberModal({
           </div>
         </div>
 
-        {/* details */}
         <div className="p-6 space-y-5">
           {member.certifications && (
             <div className="space-y-2">
@@ -198,16 +189,18 @@ function MemberModal({
   )
 }
 
-// ─── Główna strona ────────────────────────────────────────────────────────────
-
 export function TeamPage({ memberType }: { memberType: InstructorType }) {
-  const { t } = useTranslation('common')
+  const { t, i18n } = useTranslation('common')
   const { memberId } = useParams<{ memberId?: string }>()
   const navigate = useNavigate()
 
+  const [contentLanguage, setContentLanguage] = useState(() =>
+    getDefaultCourseContentLanguage(i18n.language)
+  )
+
   const { data: allMembers, isLoading, error } = useQuery({
-    queryKey: ['instructors'],
-    queryFn: instructorApi.getAll,
+    queryKey: ['instructors', contentLanguage],
+    queryFn: () => instructorApi.getAll(contentLanguage),
   })
 
   const selected = memberId && allMembers
@@ -247,7 +240,25 @@ export function TeamPage({ memberType }: { memberType: InstructorType }) {
   return (
     <>
       <div className="container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold text-dark-100 mb-8">{title}</h1>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+          <h1 className="text-3xl font-bold text-dark-100">{title}</h1>
+          <div className="flex items-center gap-1 bg-dark-800 border border-dark-700 rounded-lg p-1">
+            {COURSE_CONTENT_LANGUAGES.map((lang) => (
+              <button
+                key={lang.code}
+                onClick={() => setContentLanguage(lang.code)}
+                className={clsx(
+                  'px-3 py-1.5 rounded-md text-sm font-medium transition-colors',
+                  contentLanguage === lang.code
+                    ? 'bg-primary-500 text-white'
+                    : 'text-dark-400 hover:text-dark-100 hover:bg-dark-700'
+                )}
+              >
+                {lang.label}
+              </button>
+            ))}
+          </div>
+        </div>
 
         {members.length === 0 ? (
           <div className="text-center text-dark-400">{t('team.noMembers')}</div>

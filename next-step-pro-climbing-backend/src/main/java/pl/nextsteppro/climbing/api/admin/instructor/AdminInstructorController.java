@@ -162,6 +162,19 @@ public class AdminInstructorController {
         return ResponseEntity.ok(adminInstructorService.moveDown(id));
     }
 
+    @Operation(summary = "Duplikuj instruktora jako tlumaczenie")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Instruktor zduplikowany jako tlumaczenie"),
+        @ApiResponse(responseCode = "400", description = "Instruktor nie znaleziony lub tlumaczenie juz istnieje"),
+        @ApiResponse(responseCode = "403", description = "Brak uprawnien administratora")
+    })
+    @PostMapping("/{id}/duplicate-translation")
+    public ResponseEntity<InstructorAdminDto> duplicateAsTranslation(
+            @Parameter(description = "ID instruktora zrodlowego") @PathVariable UUID id,
+            @Valid @RequestBody AdminInstructorDtos.DuplicateAsTranslationRequest request) {
+        return ResponseEntity.ok(adminInstructorService.duplicateAsTranslation(id, request.targetLanguage()));
+    }
+
     @Operation(summary = "Ustaw zdjęcie z zewnętrznego URL")
     @PutMapping("/{id}/photo-url")
     public ResponseEntity<InstructorAdminDto> setPhotoUrl(

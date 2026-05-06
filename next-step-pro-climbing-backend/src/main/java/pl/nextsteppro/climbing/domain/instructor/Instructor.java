@@ -56,6 +56,12 @@ public class Instructor {
     @Nullable
     private String profile8aUrl;
 
+    @Column(nullable = false, length = 5)
+    private String language = "pl";
+
+    @Column(name = "translation_group_id", nullable = false)
+    private UUID translationGroupId = UUID.randomUUID();
+
     @Enumerated(EnumType.STRING)
     @Column(name = "member_type", nullable = false, length = 20)
     private InstructorType memberType = InstructorType.INSTRUCTOR;
@@ -121,6 +127,22 @@ public class Instructor {
 
     public int getDisplayOrder() {
         return displayOrder;
+    }
+
+    public String getLanguage() {
+        return language;
+    }
+
+    public void setLanguage(String language) {
+        this.language = language;
+    }
+
+    public UUID getTranslationGroupId() {
+        return translationGroupId;
+    }
+
+    public void setTranslationGroupId(UUID translationGroupId) {
+        this.translationGroupId = translationGroupId;
     }
 
     public InstructorType getMemberType() {

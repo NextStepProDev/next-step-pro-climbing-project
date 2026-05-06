@@ -13,7 +13,15 @@ public interface InstructorRepository extends JpaRepository<Instructor, UUID> {
 
     List<Instructor> findByActiveTrueOrderByDisplayOrderAscCreatedAtAsc();
 
+    List<Instructor> findByActiveTrueAndLanguageOrderByDisplayOrderAscCreatedAtAsc(String language);
+
     List<Instructor> findAllByOrderByDisplayOrderAscCreatedAtAsc();
+
+    List<Instructor> findByTranslationGroupId(UUID translationGroupId);
+
+    boolean existsByTranslationGroupIdAndLanguage(UUID translationGroupId, String language);
+
+    boolean existsByPhotoFilenameAndIdNot(String photoFilename, UUID id);
 
     @Query("SELECT COALESCE(MIN(i.displayOrder), 1) FROM Instructor i")
     Optional<Integer> findMinDisplayOrder();
