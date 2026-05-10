@@ -19,7 +19,7 @@ import java.time.Instant;
 @Component
 public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
 
-    @Value("${app.cors.allowed-origins:http://localhost:5173}")
+    @Value("${app.site-url:http://localhost:5173}")
     private String frontendUrl;
 
     private final JwtService jwtService;

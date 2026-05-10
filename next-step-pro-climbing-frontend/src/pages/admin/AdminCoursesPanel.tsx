@@ -469,9 +469,8 @@ function EditView({
   // ---------- Save all ----------
   const [isSaving, setIsSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
-  const [saveSuccess, setSaveSuccess] = useState(false)
 
-  const handleSave = async () => {
+  const handleSave = async ({ goBack = false } = {}) => {
     setIsSaving(true)
     setSaveError(null)
     try {
@@ -529,8 +528,11 @@ function EditView({
         }
       }
       setPendingBlocks([])
-      setSaveSuccess(true)
-      setTimeout(() => setSaveSuccess(false), 4000)
+      if (goBack) {
+        invalidate()
+        onBack()
+        return
+      }
     } catch (err) {
       setSaveError(getErrorMessage(err))
     } finally {
@@ -542,7 +544,8 @@ function EditView({
   // ---------- Publish (save if dirty, then publish) ----------
   const handlePublish = async () => {
     if (isDirty) await handleSave()
-    publishMutation.mutate()
+    await publishMutation.mutateAsync()
+    onBack()
   }
 
   // ---------- Cancel (discard local changes) ----------
@@ -961,7 +964,7 @@ function EditView({
                   {t('courses.unpublish')}
                 </Button>
                 <Button
-                  onClick={handleSave}
+                  onClick={() => handleSave({ goBack: true })}
                   disabled={!isDirty || isSaving}
                   loading={isSaving}
                 >
@@ -973,7 +976,7 @@ function EditView({
               <>
                 <Button
                   variant="secondary"
-                  onClick={handleSave}
+                  onClick={() => handleSave()}
                   disabled={!isDirty || isSaving}
                   loading={isSaving}
                 >
@@ -1063,11 +1066,6 @@ function EditView({
         }}
       />
 
-      {saveSuccess && (
-        <div className="fixed bottom-24 right-4 z-50 bg-green-900/90 border border-green-600 text-green-300 px-4 py-3 rounded-lg text-sm shadow-lg">
-          {t('courses.saveSuccess')}
-        </div>
-      )}
     </div>
   )
 }
