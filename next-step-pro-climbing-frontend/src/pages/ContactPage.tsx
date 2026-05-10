@@ -101,11 +101,31 @@ export function ContactPage() {
                   href={CONTACT.instagram}
                   icon={<Instagram className="w-5 h-5" />}
                   label="Instagram"
-                  handle="nextsteppro"
+                  handle="next.step.pro.climbing"
                   color="hover:border-pink-500/50 hover:bg-pink-500/5"
                   iconColor="text-pink-400"
                 />
               )}
+
+              {/* 8a.nu */}
+              <SocialLink
+                href={CONTACT.eightA}
+                icon={<span className="w-5 h-5 flex items-center justify-center font-bold text-sm leading-none">8a</span>}
+                label="8a.nu"
+                handle="mateusz-nawratek"
+                color="hover:border-amber-500/50 hover:bg-amber-500/5"
+                iconColor="text-amber-400"
+              />
+
+              {/* Strava */}
+              <SocialLink
+                href={CONTACT.strava}
+                icon={<StravaIcon className="w-5 h-5" />}
+                label="Strava"
+                handle="Mateusz Nawratek"
+                color="hover:border-orange-500/50 hover:bg-orange-500/5"
+                iconColor="text-orange-400"
+              />
             </div>
           </div>
 
@@ -183,6 +203,14 @@ function SocialLink({
       </div>
       <ExternalLink className="w-4 h-4 text-dark-600 group-hover:text-dark-400 transition-colors shrink-0" />
     </a>
+  )
+}
+
+function StravaIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+      <path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169" />
+    </svg>
   )
 }
 

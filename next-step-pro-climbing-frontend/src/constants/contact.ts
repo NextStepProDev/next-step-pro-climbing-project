@@ -8,4 +8,6 @@ export const CONTACT = {
   facebook: 'https://www.facebook.com/ClimbingTeamofPoland',
   youtube: 'https://www.youtube.com/@PureEssentialFilms-hd1kh',
   instagram: 'https://www.instagram.com/next.step.pro.climbing/',
+  eightA: 'https://www.8a.nu/user/mateusz-nawratek/sportclimbing',
+  strava: 'https://www.strava.com/athletes/39878876',
 } as const
