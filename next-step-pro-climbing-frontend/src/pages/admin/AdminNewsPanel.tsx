@@ -104,14 +104,14 @@ export function AdminNewsPanel() {
   const queryClient = useQueryClient()
   const [view, setView] = useState<View>('list')
   const [selectedNewsId, setSelectedNewsId] = useState<string | null>(null)
-  const [languageFilter, setLanguageFilter] = useState<string>('all')
+  const [languageFilter, setLanguageFilter] = useState<string>('pl')
 
   const { data: articles, isLoading, error } = useQuery({
     queryKey: ['admin', 'news'],
     queryFn: () => adminNewsApi.getAll(),
   })
 
-  const filteredArticles = (articles?.content ?? []).filter(a => languageFilter === 'all' || a.language === languageFilter)
+  const filteredArticles = (articles?.content ?? []).filter(a => a.language === languageFilter)
 
   const { data: detail, isLoading: detailLoading } = useQuery({
     queryKey: ['admin', 'news', selectedNewsId],
@@ -202,13 +202,12 @@ export function AdminNewsPanel() {
             onChange={(e) => setLanguageFilter(e.target.value)}
             className="bg-dark-800 border border-dark-600 rounded-lg px-3 py-2 text-sm text-dark-100"
           >
-            <option value="all">{t('news.allLanguages')}</option>
             {COURSE_CONTENT_LANGUAGES.map((lang) => (
               <option key={lang.code} value={lang.code}>{lang.label}</option>
             ))}
           </select>
           <Button
-            onClick={() => createMutation.mutate({ title: t('news.newArticleDefaultTitle'), language: languageFilter === 'all' ? 'pl' : languageFilter })}
+            onClick={() => createMutation.mutate({ title: t('news.newArticleDefaultTitle'), language: languageFilter })}
             disabled={createMutation.isPending}
           >
             <Plus className="h-4 w-4 mr-2" />

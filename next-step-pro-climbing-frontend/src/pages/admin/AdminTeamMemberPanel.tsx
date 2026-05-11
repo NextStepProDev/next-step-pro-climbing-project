@@ -92,7 +92,7 @@ export function AdminTeamMemberPanel({ memberType }: Props) {
   const [photoPreview, setPhotoPreview] = useState<string | null>(null)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [focalPoint, setFocalPoint] = useState({ x: 0.5, y: 0.5 })
-  const [languageFilter, setLanguageFilter] = useState<string>('all')
+  const [languageFilter, setLanguageFilter] = useState<string>('pl')
 
   const [createBioBlocks, setCreateBioBlocks] = useState<BioBlock[]>([])
   const [editBioBlocks, setEditBioBlocks] = useState<BioBlock[]>([])
@@ -111,9 +111,7 @@ export function AdminTeamMemberPanel({ memberType }: Props) {
   })
 
   const membersOfType = (allMembers ?? []).filter((m) => m.memberType === memberType)
-  const members = languageFilter === 'all'
-    ? membersOfType
-    : membersOfType.filter(m => m.language === languageFilter)
+  const members = membersOfType.filter(m => m.language === languageFilter)
 
   const invalidateAll = () => {
     queryClient.invalidateQueries({ queryKey: ['admin', 'instructors'] })
@@ -223,7 +221,7 @@ export function AdminTeamMemberPanel({ memberType }: Props) {
       certifications: createCerts.filter(Boolean).join('\n') || undefined,
       memberType,
       profile8aUrl: create8aUrl.trim() || undefined,
-      language: languageFilter === 'all' ? 'pl' : languageFilter,
+      language: languageFilter,
     }
     createMutation.mutate(data)
   }
@@ -280,7 +278,6 @@ export function AdminTeamMemberPanel({ memberType }: Props) {
             onChange={(e) => setLanguageFilter(e.target.value)}
             className="bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-sm text-dark-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
           >
-            <option value="all">{t('team.allLanguages')}</option>
             {COURSE_CONTENT_LANGUAGES.map((lang) => (
               <option key={lang.code} value={lang.code}>{lang.label}</option>
             ))}

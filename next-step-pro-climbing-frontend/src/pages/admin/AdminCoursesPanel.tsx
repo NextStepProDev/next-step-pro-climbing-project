@@ -71,7 +71,7 @@ export function AdminCoursesPanel() {
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null)
   const [localOrder, setLocalOrder] = useState<CourseAdmin[] | null>(null)
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null)
-  const [languageFilter, setLanguageFilter] = useState<string>('all')
+  const [languageFilter, setLanguageFilter] = useState<string>('pl')
 
   const { data: courses, isLoading, error } = useQuery({
     queryKey: ['admin', 'courses'],
@@ -79,9 +79,7 @@ export function AdminCoursesPanel() {
   })
 
   const orderedCourses = localOrder ?? (courses ? [...courses].sort((a, b) => a.displayOrder - b.displayOrder) : [])
-  const filteredCourses = languageFilter === 'all'
-    ? orderedCourses
-    : orderedCourses.filter(c => c.language === languageFilter)
+  const filteredCourses = orderedCourses.filter(c => c.language === languageFilter)
 
   const { data: detail, isLoading: detailLoading } = useQuery({
     queryKey: ['admin', 'courses', selectedCourseId],
@@ -180,13 +178,12 @@ export function AdminCoursesPanel() {
             onChange={(e) => setLanguageFilter(e.target.value)}
             className="bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-sm text-dark-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
           >
-            <option value="all">{t('courses.allLanguages')}</option>
             {COURSE_CONTENT_LANGUAGES.map((lang) => (
               <option key={lang.code} value={lang.code}>{lang.label}</option>
             ))}
           </select>
           <Button
-            onClick={() => createMutation.mutate({ title: t('courses.newCourseDefaultTitle'), language: languageFilter === 'all' ? 'pl' : languageFilter })}
+            onClick={() => createMutation.mutate({ title: t('courses.newCourseDefaultTitle'), language: languageFilter })}
             disabled={createMutation.isPending}
           >
             <Plus className="h-4 w-4 mr-2" />
