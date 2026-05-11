@@ -661,6 +661,12 @@ export const adminNewsApi = {
   unpublish: (id: string) =>
     fetchApi<NewsAdmin>(`/admin/news/${id}/unpublish`, { method: 'POST' }),
 
+  updatePublishedAt: (id: string, publishedAt: string) =>
+    fetchApi<NewsAdmin>(`/admin/news/${id}/published-at`, {
+      method: 'PUT',
+      body: JSON.stringify({ publishedAt }),
+    }),
+
   delete: (id: string) =>
     fetchApi<void>(`/admin/news/${id}`, { method: 'DELETE' }),
 

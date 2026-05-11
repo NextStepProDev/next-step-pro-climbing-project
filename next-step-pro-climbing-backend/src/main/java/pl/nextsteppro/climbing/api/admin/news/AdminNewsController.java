@@ -93,6 +93,14 @@ public class AdminNewsController {
         return ResponseEntity.ok(adminNewsService.setPublished(id, false));
     }
 
+    @Operation(summary = "Zmień datę publikacji aktualności")
+    @PutMapping("/{id}/published-at")
+    public ResponseEntity<NewsAdminDto> updatePublishedAt(
+            @Parameter(description = "ID aktualności") @PathVariable UUID id,
+            @Valid @RequestBody AdminNewsDtos.UpdatePublishedAtRequest request) {
+        return ResponseEntity.ok(adminNewsService.updatePublishedAt(id, request.publishedAt()));
+    }
+
     @Operation(summary = "Wyślij newsletter z treścią aktualności do subskrybentów")
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "Newsletter wysłany (liczba odbiorców)"),

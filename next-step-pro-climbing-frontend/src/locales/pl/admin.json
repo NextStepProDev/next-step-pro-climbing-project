@@ -83,6 +83,8 @@
     "sectionMeta": "Podstawowe informacje",
     "titleLabel": "Tytuł",
     "excerptLabel": "Zajawka",
+    "publishedAtLabel": "Data publikacji",
+    "publishedAtNow": "Teraz",
     "saveMeta": "Zapisz",
     "sectionThumbnail": "Miniaturka",
     "chooseThumbnail": "Wybierz plik",

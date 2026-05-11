@@ -110,7 +110,7 @@ public class AdminNewsService {
     public NewsAdminDto setPublished(UUID id, boolean publish) {
         News news = findNews(id);
 
-        if (publish && news.getPublishedAt() == null) {
+        if (publish) {
             news.setPublishedAt(Instant.now());
         }
         news.setPublished(publish);
@@ -118,10 +118,26 @@ public class AdminNewsService {
 
         for (News sibling : newsRepository.findByTranslationGroupId(news.getTranslationGroupId())) {
             if (!sibling.getId().equals(news.getId()) && sibling.isPublished() != publish) {
-                if (publish && sibling.getPublishedAt() == null) {
+                if (publish) {
                     sibling.setPublishedAt(Instant.now());
                 }
                 sibling.setPublished(publish);
+                newsRepository.save(sibling);
+            }
+        }
+
+        return toAdminDto(news);
+    }
+
+    @CacheEvict(value = {"newsList", "newsDetail"}, allEntries = true)
+    public NewsAdminDto updatePublishedAt(UUID id, Instant publishedAt) {
+        News news = findNews(id);
+        news.setPublishedAt(publishedAt);
+        news = newsRepository.save(news);
+
+        for (News sibling : newsRepository.findByTranslationGroupId(news.getTranslationGroupId())) {
+            if (!sibling.getId().equals(news.getId())) {
+                sibling.setPublishedAt(publishedAt);
                 newsRepository.save(sibling);
             }
         }

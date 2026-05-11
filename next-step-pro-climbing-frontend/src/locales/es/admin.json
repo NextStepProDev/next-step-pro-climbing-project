@@ -83,6 +83,8 @@
     "sectionMeta": "Información básica",
     "titleLabel": "Título",
     "excerptLabel": "Resumen",
+    "publishedAtLabel": "Fecha de publicación",
+    "publishedAtNow": "Ahora",
     "saveMeta": "Guardar",
     "sectionThumbnail": "Miniatura",
     "chooseThumbnail": "Elegir archivo",

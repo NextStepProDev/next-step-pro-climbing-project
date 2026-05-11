@@ -22,6 +22,7 @@ import {
   Send,
   Video,
   Crop,
+  CalendarClock,
 } from 'lucide-react'
 import { FocalPointEditor } from '../../components/ui/FocalPointEditor'
 import { adminNewsApi } from '../../api/client'
@@ -673,6 +674,11 @@ function EditView({
     onSuccess: () => invalidate(),
   })
 
+  const updatePublishedAtMutation = useMutation({
+    mutationFn: (publishedAt: string) => adminNewsApi.updatePublishedAt(newsId, publishedAt),
+    onSuccess: () => invalidate(),
+  })
+
   const published = detail.published
 
   // ---------- Render ----------
@@ -717,6 +723,37 @@ function EditView({
               rows={3}
             />
           </div>
+          {detail.publishedAt && (
+            <div>
+              <label className="block text-sm text-dark-300 mb-1">{t('news.publishedAtLabel')}</label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="datetime-local"
+                  defaultValue={new Date(new Date(detail.publishedAt).getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16)}
+                  onBlur={(e) => {
+                    if (!e.target.value) return
+                    const newDate = new Date(e.target.value).toISOString()
+                    if (newDate !== detail.publishedAt) {
+                      updatePublishedAtMutation.mutate(newDate)
+                    }
+                  }}
+                  className="bg-dark-700 border border-dark-600 rounded px-3 py-2 text-dark-100 text-sm focus:outline-none focus:border-primary-500"
+                />
+                <button
+                  type="button"
+                  onClick={() => updatePublishedAtMutation.mutate(new Date().toISOString())}
+                  title={t('news.publishedAtNow')}
+                  className="inline-flex items-center gap-1.5 px-3 py-2 text-sm rounded border border-dark-600 bg-dark-700 text-dark-300 hover:text-dark-100 hover:border-dark-500 transition-colors"
+                >
+                  <CalendarClock className="h-4 w-4" />
+                  {t('news.publishedAtNow')}
+                </button>
+                {updatePublishedAtMutation.isPending && (
+                  <LoadingSpinner size="sm" />
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </section>
 

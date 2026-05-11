@@ -83,6 +83,8 @@
     "sectionMeta": "Basic information",
     "titleLabel": "Title",
     "excerptLabel": "Excerpt",
+    "publishedAtLabel": "Publication date",
+    "publishedAtNow": "Now",
     "saveMeta": "Save",
     "sectionThumbnail": "Thumbnail",
     "chooseThumbnail": "Choose file",

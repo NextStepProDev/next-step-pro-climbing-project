@@ -99,6 +99,10 @@ public class AdminNewsDtos {
             @NotBlank String url
     ) {}
 
+    public record UpdatePublishedAtRequest(
+            @jakarta.validation.constraints.NotNull Instant publishedAt
+    ) {}
+
     public record MoveBlockRequest(
             String direction
     ) {}
