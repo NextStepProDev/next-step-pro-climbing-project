@@ -116,9 +116,9 @@ export function AdminCoursesPanel() {
 
   const reorderMutation = useMutation({
     mutationFn: (orderedIds: string[]) => adminCoursesApi.reorder(orderedIds),
-    onSuccess: () => {
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['admin', 'courses'] })
       setLocalOrder(null)
-      queryClient.invalidateQueries({ queryKey: ['admin', 'courses'] })
     },
   })
 
