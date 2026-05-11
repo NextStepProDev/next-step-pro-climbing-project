@@ -17,6 +17,8 @@ import pl.nextsteppro.climbing.domain.user.UserRepository;
 import pl.nextsteppro.climbing.infrastructure.mail.NewsletterMailService;
 import pl.nextsteppro.climbing.infrastructure.storage.FileStorageService;
 
+import pl.nextsteppro.climbing.config.ContentLanguages;
+
 import java.io.IOException;
 import java.time.Instant;
 import java.util.List;
@@ -74,6 +76,18 @@ public class AdminNewsService {
         news.setExcerpt(request.excerpt());
         news.setLanguage(request.language() != null ? request.language() : "pl");
         news = newsRepository.save(news);
+
+        for (String lang : ContentLanguages.ALL) {
+            if (!lang.equals(news.getLanguage())) {
+                News copy = new News(news.getTitle());
+                copy.setExcerpt(news.getExcerpt());
+                copy.setLanguage(lang);
+                copy.setTranslationGroupId(news.getTranslationGroupId());
+                copy.setPublished(false);
+                newsRepository.save(copy);
+            }
+        }
+
         return toAdminDto(news);
     }
 
@@ -100,8 +114,18 @@ public class AdminNewsService {
             news.setPublishedAt(Instant.now());
         }
         news.setPublished(publish);
-
         news = newsRepository.save(news);
+
+        for (News sibling : newsRepository.findByTranslationGroupId(news.getTranslationGroupId())) {
+            if (!sibling.getId().equals(news.getId()) && sibling.isPublished() != publish) {
+                if (publish && sibling.getPublishedAt() == null) {
+                    sibling.setPublishedAt(Instant.now());
+                }
+                sibling.setPublished(publish);
+                newsRepository.save(sibling);
+            }
+        }
+
         return toAdminDto(news);
     }
 

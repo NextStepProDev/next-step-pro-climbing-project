@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import pl.nextsteppro.climbing.api.admin.course.AdminCourseDtos.*;
+import pl.nextsteppro.climbing.config.ContentLanguages;
 import pl.nextsteppro.climbing.domain.course.*;
 import pl.nextsteppro.climbing.domain.event.Event;
 import pl.nextsteppro.climbing.domain.event.EventRepository;
@@ -17,9 +18,7 @@ import pl.nextsteppro.climbing.infrastructure.storage.FileStorageService;
 
 import java.io.IOException;
 import java.time.Instant;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -69,6 +68,18 @@ public class AdminCourseService {
         }
         course.setDisplayOrder(courseRepository.findMaxDisplayOrder() + 1);
         course = courseRepository.save(course);
+
+        for (String lang : ContentLanguages.ALL) {
+            if (!lang.equals(course.getLanguage())) {
+                Course copy = new Course(course.getTitle());
+                copy.setLanguage(lang);
+                copy.setTranslationGroupId(course.getTranslationGroupId());
+                copy.setPrice(course.getPrice());
+                copy.setDisplayOrder(course.getDisplayOrder());
+                courseRepository.save(copy);
+            }
+        }
+
         return toAdminDto(course);
     }
 
@@ -119,12 +130,22 @@ public class AdminCourseService {
 
         Map<UUID, Course> courseMap = courses.stream()
                 .collect(Collectors.toMap(Course::getId, c -> c));
+        Set<UUID> orderedIdSet = new HashSet<>(orderedIds);
+        List<Course> toSave = new ArrayList<>(courses);
 
         for (int i = 0; i < orderedIds.size(); i++) {
             courseMap.get(orderedIds.get(i)).setDisplayOrder(i);
+
+            for (Course sibling : courseRepository.findByTranslationGroupId(
+                    courseMap.get(orderedIds.get(i)).getTranslationGroupId())) {
+                if (!orderedIdSet.contains(sibling.getId())) {
+                    sibling.setDisplayOrder(i);
+                    toSave.add(sibling);
+                }
+            }
         }
 
-        courseRepository.saveAll(courses);
+        courseRepository.saveAll(toSave);
     }
 
     @Caching(evict = {
@@ -153,8 +174,18 @@ public class AdminCourseService {
             course.setPublishedAt(Instant.now());
         }
         course.setPublished(publish);
-
         course = courseRepository.save(course);
+
+        for (Course sibling : courseRepository.findByTranslationGroupId(course.getTranslationGroupId())) {
+            if (!sibling.getId().equals(course.getId()) && sibling.isPublished() != publish) {
+                if (publish && sibling.getPublishedAt() == null) {
+                    sibling.setPublishedAt(Instant.now());
+                }
+                sibling.setPublished(publish);
+                courseRepository.save(sibling);
+            }
+        }
+
         return toAdminDto(course);
     }
 

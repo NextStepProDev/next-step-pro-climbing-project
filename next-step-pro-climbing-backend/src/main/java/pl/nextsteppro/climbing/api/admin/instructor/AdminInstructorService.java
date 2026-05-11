@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import pl.nextsteppro.climbing.api.admin.instructor.AdminInstructorDtos.*;
+import pl.nextsteppro.climbing.config.ContentLanguages;
 import pl.nextsteppro.climbing.domain.instructor.Instructor;
 import pl.nextsteppro.climbing.domain.instructor.InstructorRepository;
 import pl.nextsteppro.climbing.domain.instructor.InstructorType;
@@ -60,6 +61,22 @@ public class AdminInstructorService {
 
         instructor.setDisplayOrder(instructorRepository.findMinDisplayOrder().orElse(1) - 1);
         instructor = instructorRepository.save(instructor);
+
+        for (String lang : ContentLanguages.ALL) {
+            if (!lang.equals(instructor.getLanguage())) {
+                Instructor copy = new Instructor(instructor.getFirstName(), instructor.getLastName());
+                copy.setLanguage(lang);
+                copy.setTranslationGroupId(instructor.getTranslationGroupId());
+                copy.setBio(instructor.getBio());
+                copy.setCertifications(instructor.getCertifications());
+                copy.setMemberType(instructor.getMemberType());
+                copy.setProfile8aUrl(instructor.getProfile8aUrl());
+                copy.setActive(false);
+                copy.setDisplayOrder(instructor.getDisplayOrder());
+                instructorRepository.save(copy);
+            }
+        }
+
         return toAdminDto(instructor);
     }
 
@@ -82,6 +99,12 @@ public class AdminInstructorService {
         }
         if (request.active() != null) {
             instructor.setActive(request.active());
+            for (Instructor sibling : instructorRepository.findByTranslationGroupId(instructor.getTranslationGroupId())) {
+                if (!sibling.getId().equals(instructor.getId()) && sibling.isActive() != request.active()) {
+                    sibling.setActive(request.active());
+                    instructorRepository.save(sibling);
+                }
+            }
         }
         if (request.displayOrder() != null) {
             instructor.setDisplayOrder(request.displayOrder());
@@ -201,6 +224,8 @@ public class AdminInstructorService {
         if (idx > 0) {
             swap(group.get(idx), group.get(idx - 1));
             instructorRepository.saveAll(List.of(group.get(idx), group.get(idx - 1)));
+            syncDisplayOrder(group.get(idx));
+            syncDisplayOrder(group.get(idx - 1));
         }
         return instructorRepository.findAllByOrderByDisplayOrderAscCreatedAtAsc()
                 .stream().map(this::toAdminDto).toList();
@@ -218,9 +243,20 @@ public class AdminInstructorService {
         if (idx >= 0 && idx < group.size() - 1) {
             swap(group.get(idx), group.get(idx + 1));
             instructorRepository.saveAll(List.of(group.get(idx), group.get(idx + 1)));
+            syncDisplayOrder(group.get(idx));
+            syncDisplayOrder(group.get(idx + 1));
         }
         return instructorRepository.findAllByOrderByDisplayOrderAscCreatedAtAsc()
                 .stream().map(this::toAdminDto).toList();
+    }
+
+    private void syncDisplayOrder(Instructor instructor) {
+        for (Instructor sibling : instructorRepository.findByTranslationGroupId(instructor.getTranslationGroupId())) {
+            if (!sibling.getId().equals(instructor.getId()) && sibling.getDisplayOrder() != instructor.getDisplayOrder()) {
+                sibling.setDisplayOrder(instructor.getDisplayOrder());
+                instructorRepository.save(sibling);
+            }
+        }
     }
 
     private int indexOfId(List<Instructor> list, UUID id) {

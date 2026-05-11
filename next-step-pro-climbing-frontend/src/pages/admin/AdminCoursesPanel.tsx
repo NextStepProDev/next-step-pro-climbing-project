@@ -125,12 +125,12 @@ export function AdminCoursesPanel() {
   })
 
   const handleMove = (index: number, direction: 'up' | 'down') => {
-    const newOrder = [...orderedCourses]
+    const source = [...filteredCourses]
     const targetIndex = direction === 'up' ? index - 1 : index + 1
-    if (targetIndex < 0 || targetIndex >= newOrder.length) return
-    ;[newOrder[index], newOrder[targetIndex]] = [newOrder[targetIndex], newOrder[index]]
-    setLocalOrder(newOrder)
-    reorderMutation.mutate(newOrder.map(c => c.id))
+    if (targetIndex < 0 || targetIndex >= source.length) return
+    ;[source[index], source[targetIndex]] = [source[targetIndex], source[index]]
+    setLocalOrder(source)
+    reorderMutation.mutate(source.map(c => c.id))
   }
 
   if (isLoading) {

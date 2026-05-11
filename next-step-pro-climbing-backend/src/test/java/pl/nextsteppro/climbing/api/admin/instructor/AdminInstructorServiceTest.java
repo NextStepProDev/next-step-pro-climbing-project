@@ -95,9 +95,9 @@ class AdminInstructorServiceTest {
         assertEquals("IFMGA, UIAGM", result.certifications());
 
         ArgumentCaptor<Instructor> captor = ArgumentCaptor.forClass(Instructor.class);
-        verify(instructorRepository).save(captor.capture());
+        verify(instructorRepository, times(3)).save(captor.capture());
 
-        Instructor saved = captor.getValue();
+        Instructor saved = captor.getAllValues().getFirst();
         assertEquals("Jane", saved.getFirstName());
         assertEquals("Smith", saved.getLastName());
         assertEquals("Expert in bouldering", saved.getBio());
