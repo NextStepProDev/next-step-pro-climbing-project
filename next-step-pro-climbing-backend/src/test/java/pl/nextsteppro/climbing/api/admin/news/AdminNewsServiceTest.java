@@ -144,10 +144,10 @@ class AdminNewsServiceTest {
     }
 
     @Test
-    void shouldNotOverwritePublishedAtOnRepublish() {
+    void shouldUpdatePublishedAtOnRepublish() {
         // Given
         Instant originalPublishedAt = Instant.parse("2025-01-01T10:00:00Z");
-        setField(testNews, "published", true);
+        setField(testNews, "published", false);
         setField(testNews, "publishedAt", originalPublishedAt);
 
         when(newsRepository.findById(newsId)).thenReturn(Optional.of(testNews));
@@ -157,7 +157,8 @@ class AdminNewsServiceTest {
         adminNewsService.setPublished(newsId, true);
 
         // Then
-        assertEquals(originalPublishedAt, testNews.getPublishedAt());
+        assertNotEquals(originalPublishedAt, testNews.getPublishedAt());
+        assertTrue(testNews.getPublishedAt().isAfter(originalPublishedAt));
     }
 
     @Test
