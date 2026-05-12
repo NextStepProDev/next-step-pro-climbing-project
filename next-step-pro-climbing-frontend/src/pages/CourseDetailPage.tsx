@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useRef } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { useParams, useNavigate, Link } from 'react-router-dom'
@@ -15,7 +15,7 @@ export function CourseDetailPage() {
   const { t } = useTranslation('common')
   const { courseId } = useParams<{ courseId: string }>()
   const navigate = useNavigate()
-  const [pendingLanguage, setPendingLanguage] = useState<string | null>(null)
+  const switchLangRef = useRef<{ translationGroupId: string } | null>(null)
 
   const { data: course, isLoading, error } = useQuery({
     queryKey: ['courses', courseId],
@@ -30,25 +30,15 @@ export function CourseDetailPage() {
     staleTime: 5 * 60 * 1000,
   })
 
-  const { data: langCourses } = useQuery({
-    queryKey: ['courses', pendingLanguage],
-    queryFn: () => coursesApi.getAll(pendingLanguage!),
-    enabled: !!pendingLanguage,
-    staleTime: 5 * 60 * 1000,
-  })
-
-  useEffect(() => {
-    if (!langCourses || !pendingLanguage || !course) return
-    const match = langCourses.find(c => c.translationGroupId === course.translationGroupId)
+  async function handleLanguageSwitch(lang: string) {
+    if (lang === course?.language || !course) return
+    switchLangRef.current = { translationGroupId: course.translationGroupId }
+    const courses = await coursesApi.getAll(lang)
+    const match = courses.find(c => c.translationGroupId === switchLangRef.current?.translationGroupId)
+    switchLangRef.current = null
     if (match) {
       navigate(`/kursy/${match.id}`, { replace: true })
     }
-    setPendingLanguage(null)
-  }, [langCourses, pendingLanguage, course, navigate])
-
-  function handleLanguageSwitch(lang: string) {
-    if (lang === course?.language) return
-    setPendingLanguage(lang)
   }
 
   if (isLoading) {
@@ -91,7 +81,6 @@ export function CourseDetailPage() {
             <button
               key={lang.code}
               onClick={() => handleLanguageSwitch(lang.code)}
-              disabled={pendingLanguage !== null}
               className={clsx(
                 'px-3 py-1.5 rounded-md text-sm font-medium transition-colors',
                 course.language === lang.code
