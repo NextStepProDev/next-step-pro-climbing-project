@@ -395,11 +395,13 @@ function EditView({
   const { t } = useTranslation('admin')
   const queryClient = useQueryClient()
 
-  const invalidate = useCallback(() => {
-    queryClient.invalidateQueries({ queryKey: ['admin', 'news'] })
-    queryClient.invalidateQueries({ queryKey: ['admin', 'news', newsId] })
-    queryClient.invalidateQueries({ queryKey: ['news'] })
-  }, [queryClient, newsId])
+  const invalidate = useCallback(() =>
+    Promise.all([
+      queryClient.invalidateQueries({ queryKey: ['admin', 'news'] }),
+      queryClient.invalidateQueries({ queryKey: ['admin', 'news', newsId] }),
+      queryClient.invalidateQueries({ queryKey: ['news'] }),
+    ])
+  , [queryClient, newsId])
 
   // ---------- Translation duplication ----------
   const { data: allArticles } = useQuery({
@@ -529,7 +531,6 @@ function EditView({
   // ---------- Save all ----------
   const [isSaving, setIsSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
-  const [saveSuccess, setSaveSuccess] = useState(false)
 
   const handleSave = async () => {
     setIsSaving(true)
@@ -596,11 +597,10 @@ function EditView({
         }
       }
       setPendingBlocks([])
-      setSaveSuccess(true)
-      setTimeout(() => setSaveSuccess(false), 4000)
+      await invalidate()
+      onBack()
     } catch (err) {
       setSaveError(getErrorMessage(err))
-    } finally {
       setIsSaving(false)
       invalidate()
     }
@@ -1176,11 +1176,6 @@ function EditView({
         }}
       />
 
-      {saveSuccess && (
-        <div className="fixed bottom-24 right-4 z-50 bg-green-900/90 border border-green-600 text-green-300 px-4 py-3 rounded-lg text-sm shadow-lg">
-          {t('news.saveSuccess')}
-        </div>
-      )}
     </div>
   )
 }

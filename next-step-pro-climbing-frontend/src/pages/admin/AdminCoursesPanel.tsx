@@ -382,11 +382,13 @@ function EditView({
   const { t } = useTranslation('admin')
   const queryClient = useQueryClient()
 
-  const invalidate = useCallback(() => {
-    queryClient.invalidateQueries({ queryKey: ['admin', 'courses'] })
-    queryClient.invalidateQueries({ queryKey: ['admin', 'courses', courseId] })
-    queryClient.invalidateQueries({ queryKey: ['courses'] })
-  }, [queryClient, courseId])
+  const invalidate = useCallback(() =>
+    Promise.all([
+      queryClient.invalidateQueries({ queryKey: ['admin', 'courses'] }),
+      queryClient.invalidateQueries({ queryKey: ['admin', 'courses', courseId] }),
+      queryClient.invalidateQueries({ queryKey: ['courses'] }),
+    ])
+  , [queryClient, courseId])
 
   // ---------- Meta state ----------
   const [title, setTitle] = useState(detail.title)
@@ -545,7 +547,7 @@ function EditView({
       }
       setPendingBlocks([])
       if (goBack) {
-        invalidate()
+        await invalidate()
         onBack()
         return
       }
