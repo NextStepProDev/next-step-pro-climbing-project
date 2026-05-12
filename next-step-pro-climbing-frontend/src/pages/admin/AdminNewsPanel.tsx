@@ -538,7 +538,7 @@ function EditView({
     try {
       // 1. Meta
       if (metaDirty) {
-        await adminNewsApi.updateMeta(newsId, { title, excerpt: excerpt || undefined })
+        await adminNewsApi.updateMeta(newsId, { title, excerpt })
       }
 
       // 2. Thumbnail + focal point

@@ -494,7 +494,7 @@ function EditView({
     try {
       // 1. Meta
       if (metaDirty) {
-        await adminCoursesApi.updateMeta(courseId, { title, price: price || undefined })
+        await adminCoursesApi.updateMeta(courseId, { title, price })
       }
 
       // 2. Thumbnail + focal point (zawsze razem gdy nowy plik)
