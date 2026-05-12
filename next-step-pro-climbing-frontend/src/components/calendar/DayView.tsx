@@ -263,7 +263,7 @@ export function DayView({
                         </button>
                         {event.courseId && (
                           <Link
-                            to={`/kursy#course-${event.courseId}`}
+                            to={`/kursy/${event.courseId}`}
                             className="flex items-center gap-1 text-xs text-primary-400 hover:text-primary-300 transition-colors shrink-0 mt-0.5"
                           >
                             <ExternalLink className="w-3 h-3" />
@@ -392,7 +392,7 @@ export function DayView({
                       </div>
                       {event.courseId && (
                         <Link
-                          to={`/kursy#course-${event.courseId}`}
+                          to={`/kursy/${event.courseId}`}
                           className="flex items-center gap-1 text-xs text-primary-400 hover:text-primary-300 transition-colors shrink-0 mt-0.5"
                         >
                           <ExternalLink className="w-3 h-3" />

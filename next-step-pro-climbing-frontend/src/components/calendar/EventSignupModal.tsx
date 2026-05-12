@@ -384,7 +384,7 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
           <h3 className="text-lg font-semibold text-dark-100">{ev.title}</h3>
           {ev.courseId && (
             <Link
-              to={`/kursy#course-${ev.courseId}`}
+              to={`/kursy/${ev.courseId}`}
               onClick={onClose}
               className="flex items-center gap-1 text-xs text-primary-400 hover:text-primary-300 transition-colors shrink-0"
             >

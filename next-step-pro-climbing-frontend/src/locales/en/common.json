@@ -84,7 +84,11 @@
     "spots": "{{count}} spots",
     "spotsOne": "{{count}} spot",
     "spotsFull": "No spots left",
-    "contentLanguage": "Course language"
+    "contentLanguage": "Course language",
+    "backToCourses": "Back to courses",
+    "viewDetails": "View details",
+    "courseNotFound": "Course not found",
+    "noTranslation": "No translation available in this language"
   },
   "pza": {
     "recommended": "School recommended by PZA"

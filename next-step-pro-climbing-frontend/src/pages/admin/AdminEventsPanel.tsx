@@ -314,7 +314,7 @@ function EventCard({
             )}
             {event.courseId && (
               <Link
-                to={`/kursy#course-${event.courseId}`}
+                to={`/kursy/${event.courseId}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1 text-xs text-primary-400 hover:text-primary-300 transition-colors"

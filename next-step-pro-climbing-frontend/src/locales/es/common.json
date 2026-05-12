@@ -84,7 +84,11 @@
     "spots": "{{count}} plazas",
     "spotsOne": "{{count}} plaza",
     "spotsFull": "Sin plazas",
-    "contentLanguage": "Idioma del curso"
+    "contentLanguage": "Idioma del curso",
+    "backToCourses": "Volver a cursos",
+    "viewDetails": "Ver detalles",
+    "courseNotFound": "Curso no encontrado",
+    "noTranslation": "No hay traducción disponible en este idioma"
   },
   "pza": {
     "recommended": "Escuela recomendada por PZA"

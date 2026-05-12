@@ -12,6 +12,7 @@ import { VideosPage } from './pages/VideosPage'
 import { NewsPage } from './pages/NewsPage'
 import { NewsDetailPage } from './pages/NewsDetailPage'
 import { CoursesPage } from './pages/CoursesPage'
+import { CourseDetailPage } from './pages/CourseDetailPage'
 import { LoginPage } from './pages/LoginPage'
 import { RegisterPage } from './pages/RegisterPage'
 import { VerifyEmailPage } from './pages/VerifyEmailPage'
@@ -50,6 +51,7 @@ export default function App() {
           <Route path="aktualnosci" element={<NewsPage />} />
           <Route path="aktualnosci/:newsId" element={<NewsDetailPage />} />
           <Route path="kursy" element={<CoursesPage />} />
+          <Route path="kursy/:courseId" element={<CourseDetailPage />} />
           <Route path="kontakt" element={<ContactPage />} />
           <Route path="faq" element={<FAQPage />} />
           <Route path="polityka-prywatnosci" element={<PrivacyPolicyPage />} />
