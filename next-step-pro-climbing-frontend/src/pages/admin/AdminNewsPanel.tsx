@@ -227,6 +227,7 @@ export function AdminNewsPanel() {
             <ArticleRow
               key={article.id}
               article={article}
+              allArticles={articles?.content ?? []}
               onEdit={() => {
                 setSelectedNewsId(article.id)
                 setView('edit')
@@ -272,6 +273,7 @@ export function AdminNewsPanel() {
 
 function ArticleRow({
   article,
+  allArticles,
   onEdit,
   onDelete,
   onPublish,
@@ -279,6 +281,7 @@ function ArticleRow({
   onSendNewsletter,
 }: {
   article: NewsAdmin
+  allArticles: NewsAdmin[]
   onEdit: () => void
   onDelete: () => void
   onPublish: () => void
@@ -317,9 +320,25 @@ function ArticleRow({
             </span>
           )}
         </div>
-        <p className="font-medium text-dark-100 truncate">
-          <LanguageBadge lang={article.language} />{' '}
-          {article.title}
+        <p className="font-medium text-dark-100 truncate flex items-center gap-1">
+          <LanguageBadge lang={article.language} />
+          {allArticles
+            .filter(a => a.translationGroupId === article.translationGroupId && a.id !== article.id)
+            .map(sibling => (
+              <span
+                key={sibling.id}
+                className={clsx(
+                  'text-[9px] px-1 py-0.5 rounded font-medium opacity-40',
+                  sibling.language === 'pl' && 'bg-blue-900/30 text-blue-400',
+                  sibling.language === 'en' && 'bg-emerald-900/30 text-emerald-400',
+                  sibling.language === 'es' && 'bg-purple-900/30 text-purple-400',
+                )}
+              >
+                {sibling.language.toUpperCase()}
+              </span>
+            ))
+          }
+          <span className="truncate">{article.title}</span>
         </p>
         {article.excerpt && (
           <p className="text-sm text-dark-400 truncate">{article.excerpt}</p>
@@ -338,7 +357,7 @@ function ArticleRow({
         )}
         <button
           onClick={article.published ? onUnpublish : onPublish}
-          title={article.published ? t('news.unpublish') : t('news.publish')}
+          title={(article.published ? t('news.unpublish') : t('news.publish')) + ' (wszystkie języki)'}
           className={`p-2 transition-colors ${article.published ? 'text-emerald-400 hover:text-orange-400' : 'text-dark-400 hover:text-dark-100'}`}
         >
           {article.published ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
@@ -1043,6 +1062,7 @@ function EditView({
               <X className="h-4 w-4 mr-1.5" />
               {t('news.cancel')}
             </Button>
+            <span className="text-[10px] text-dark-500 hidden sm:block">Publikacja dotyczy wszystkich języków</span>
             {published ? (
               <>
                 <Button

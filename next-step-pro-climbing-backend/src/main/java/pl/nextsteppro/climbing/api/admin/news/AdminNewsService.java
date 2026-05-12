@@ -196,7 +196,10 @@ public class AdminNewsService {
         copy.setThumbnailFocalPointY(source.getThumbnailFocalPointY());
         copy.setLanguage(targetLanguage);
         copy.setTranslationGroupId(source.getTranslationGroupId());
-        copy.setPublished(false);
+        copy.setPublished(source.isPublished());
+        if (source.getPublishedAt() != null) {
+            copy.setPublishedAt(source.getPublishedAt());
+        }
         copy = newsRepository.save(copy);
 
         List<NewsContentBlock> sourceBlocks = blockRepository.findByNewsIdOrderByDisplayOrderAsc(id);

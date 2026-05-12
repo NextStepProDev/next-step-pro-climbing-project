@@ -361,6 +361,22 @@ export function AdminTeamMemberPanel({ memberType }: Props) {
                       <div className="flex items-center gap-2">
                         <h3 className="text-base sm:text-xl font-bold text-dark-100">{member.firstName} {member.lastName}</h3>
                         <LanguageBadge language={member.language} />
+                        {(allMembers ?? [])
+                          .filter(m => m.translationGroupId === member.translationGroupId && m.id !== member.id)
+                          .map(sibling => (
+                            <span
+                              key={sibling.id}
+                              className={clsx(
+                                'text-[9px] px-1 py-0.5 rounded font-medium opacity-40',
+                                sibling.language === 'pl' && 'bg-blue-900/30 text-blue-400',
+                                sibling.language === 'en' && 'bg-emerald-900/30 text-emerald-400',
+                                sibling.language === 'es' && 'bg-purple-900/30 text-purple-400',
+                              )}
+                            >
+                              {sibling.language.toUpperCase()}
+                            </span>
+                          ))
+                        }
                       </div>
                       <span className={`text-sm ${member.active ? 'text-green-400' : 'text-rose-400'}`}>
                         {member.active ? '✓ Aktywny' : '✕ Nieaktywny'}
@@ -575,6 +591,7 @@ export function AdminTeamMemberPanel({ memberType }: Props) {
               <input type="checkbox" name="active" defaultChecked={selectedMember.active}
                 className="w-4 h-4 rounded border-dark-600 bg-dark-700 text-primary-500 focus:ring-2 focus:ring-primary-500" />
               <span className="text-sm text-dark-200">Aktywny</span>
+              <span className="text-xs text-dark-500">(wszystkie języki)</span>
             </label>
 
             <div className="flex gap-2 justify-end">

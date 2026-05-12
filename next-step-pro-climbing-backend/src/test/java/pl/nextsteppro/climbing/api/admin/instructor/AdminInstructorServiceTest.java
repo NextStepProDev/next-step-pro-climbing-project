@@ -93,6 +93,7 @@ class AdminInstructorServiceTest {
         assertEquals("Smith", result.lastName());
         assertEquals("Expert in bouldering", result.bio());
         assertEquals("IFMGA, UIAGM", result.certifications());
+        assertFalse(result.active());
 
         ArgumentCaptor<Instructor> captor = ArgumentCaptor.forClass(Instructor.class);
         verify(instructorRepository, times(3)).save(captor.capture());
@@ -569,6 +570,29 @@ class AdminInstructorServiceTest {
         assertEquals("photo.jpg", result.photoFilename());
         assertEquals("https://example.com/badge.png", result.badgeUrl());
         assertFalse(result.active());
+    }
+
+    @Test
+    void shouldDuplicateAsTranslationInheritingActiveState() {
+        // Given
+        testInstructor.setLanguage("pl");
+        testInstructor.setActive(true);
+
+        when(instructorRepository.findById(instructorId)).thenReturn(Optional.of(testInstructor));
+        when(instructorRepository.existsByTranslationGroupIdAndLanguage(testInstructor.getTranslationGroupId(), "en"))
+                .thenReturn(false);
+        when(instructorRepository.findMinDisplayOrder()).thenReturn(Optional.of(0));
+        when(instructorRepository.save(any(Instructor.class))).thenAnswer(inv -> {
+            Instructor i = inv.getArgument(0);
+            setInstructorIdViaReflection(i, UUID.randomUUID());
+            return i;
+        });
+
+        // When
+        InstructorAdminDto result = adminInstructorService.duplicateAsTranslation(instructorId, "en");
+
+        // Then
+        assertTrue(result.active());
     }
 
     @Test

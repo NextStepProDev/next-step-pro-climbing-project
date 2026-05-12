@@ -71,7 +71,6 @@ public class AdminInstructorService {
                 copy.setCertifications(instructor.getCertifications());
                 copy.setMemberType(instructor.getMemberType());
                 copy.setProfile8aUrl(instructor.getProfile8aUrl());
-                copy.setActive(false);
                 copy.setDisplayOrder(instructor.getDisplayOrder());
                 instructorRepository.save(copy);
             }
@@ -205,7 +204,7 @@ public class AdminInstructorService {
         copy.setBadgeUrl(source.getBadgeUrl());
         copy.setProfile8aUrl(source.getProfile8aUrl());
         copy.setMemberType(source.getMemberType());
-        copy.setActive(false);
+        copy.setActive(source.isActive());
         copy.setDisplayOrder(instructorRepository.findMinDisplayOrder().orElse(1) - 1);
 
         copy = instructorRepository.save(copy);

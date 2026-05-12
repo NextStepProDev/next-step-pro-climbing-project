@@ -647,6 +647,36 @@ class AdminNewsServiceTest {
     }
 
     @Test
+    void shouldDuplicateAsTranslationInheritingPublishedState() {
+        // Given
+        setField(testNews, "language", "pl");
+        UUID translationGroupId = UUID.randomUUID();
+        setField(testNews, "translationGroupId", translationGroupId);
+        testNews.setPublished(true);
+        testNews.setPublishedAt(Instant.now());
+
+        when(newsRepository.findById(newsId)).thenReturn(Optional.of(testNews));
+        when(newsRepository.existsByTranslationGroupIdAndLanguage(translationGroupId, "en")).thenReturn(false);
+        when(newsRepository.save(any(News.class))).thenAnswer(inv -> {
+            News n = inv.getArgument(0);
+            if (n.getId() == null) {
+                setField(n, "id", UUID.randomUUID());
+                setField(n, "createdAt", Instant.now());
+                setField(n, "updatedAt", Instant.now());
+            }
+            return n;
+        });
+        lenient().when(blockRepository.findByNewsIdOrderByDisplayOrderAsc(any())).thenReturn(List.of());
+
+        // When
+        NewsDetailAdminDto result = adminNewsService.duplicateAsTranslation(newsId, "en");
+
+        // Then
+        assertTrue(result.published());
+        assertNotNull(result.publishedAt());
+    }
+
+    @Test
     void shouldDuplicateBlocksCorrectly() {
         // Given
         setField(testNews, "language", "pl");

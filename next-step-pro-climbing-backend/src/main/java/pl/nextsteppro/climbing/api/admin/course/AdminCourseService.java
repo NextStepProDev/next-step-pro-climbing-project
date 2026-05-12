@@ -104,6 +104,10 @@ public class AdminCourseService {
         copy.setThumbnailFocalPointX(source.getThumbnailFocalPointX());
         copy.setThumbnailFocalPointY(source.getThumbnailFocalPointY());
         copy.setDisplayOrder(courseRepository.findMaxDisplayOrder() + 1);
+        copy.setPublished(source.isPublished());
+        if (source.getPublishedAt() != null) {
+            copy.setPublishedAt(source.getPublishedAt());
+        }
         copy = courseRepository.save(copy);
 
         List<CourseContentBlock> sourceBlocks = blockRepository.findByCourseIdOrderByDisplayOrderAsc(courseId);

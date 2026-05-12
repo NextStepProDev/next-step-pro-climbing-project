@@ -67,7 +67,7 @@ public class Instructor {
     private InstructorType memberType = InstructorType.INSTRUCTOR;
 
     @Column(name = "is_active", nullable = false)
-    private boolean active = true;
+    private boolean active = false;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;

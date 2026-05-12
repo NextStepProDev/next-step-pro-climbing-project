@@ -497,6 +497,36 @@ class AdminCourseServiceTest {
         verify(blockRepository, never()).save(any());
     }
 
+    // ========== DUPLICATE AS TRANSLATION ==========
+
+    @Test
+    void shouldDuplicateAsTranslationInheritingPublishedState() throws Exception {
+        // Given
+        setField(testCourse, "language", "pl");
+        setField(testCourse, "published", true);
+        setField(testCourse, "publishedAt", Instant.now());
+
+        when(courseRepository.findById(courseId)).thenReturn(Optional.of(testCourse));
+        when(courseRepository.existsByTranslationGroupIdAndLanguage(testCourse.getTranslationGroupId(), "en"))
+                .thenReturn(false);
+        when(courseRepository.findMaxDisplayOrder()).thenReturn(0);
+        when(courseRepository.save(any(Course.class))).thenAnswer(inv -> {
+            Course c = inv.getArgument(0);
+            setCourseIdViaReflection(c, UUID.randomUUID());
+            return c;
+        });
+        when(blockRepository.findByCourseIdOrderByDisplayOrderAsc(any())).thenReturn(List.of());
+
+        // When
+        CourseDetailAdminDto result = adminCourseService.duplicateAsTranslation(courseId, "en");
+
+        // Then
+        assertTrue(result.published());
+        assertNotNull(result.publishedAt());
+        assertEquals("en", result.language());
+        assertEquals(testCourse.getTranslationGroupId(), result.translationGroupId());
+    }
+
     // ========== Helpers ==========
 
     private CourseContentBlock buildBlock(CourseBlockType blockType, String imageFilename, String content, int displayOrder) {

@@ -202,6 +202,7 @@ export function AdminCoursesPanel() {
             <CourseRow
               key={course.id}
               course={course}
+              allCourses={courses ?? []}
               isFirst={index === 0}
               isLast={index === filteredCourses.length - 1}
               moveDisabled={reorderMutation.isPending}
@@ -235,6 +236,7 @@ export function AdminCoursesPanel() {
 
 function CourseRow({
   course,
+  allCourses,
   isFirst,
   isLast,
   moveDisabled,
@@ -246,6 +248,7 @@ function CourseRow({
   onUnpublish,
 }: {
   course: CourseAdmin
+  allCourses: CourseAdmin[]
   isFirst: boolean
   isLast: boolean
   moveDisabled: boolean
@@ -292,6 +295,22 @@ function CourseRow({
           >
             {course.language.toUpperCase()}
           </span>
+          {allCourses
+            .filter(c => c.translationGroupId === course.translationGroupId && c.id !== course.id)
+            .map(sibling => (
+              <span
+                key={sibling.id}
+                className={clsx(
+                  'text-[9px] px-1 py-0.5 rounded font-medium opacity-40',
+                  sibling.language === 'pl' && 'bg-blue-900/30 text-blue-400',
+                  sibling.language === 'en' && 'bg-emerald-900/30 text-emerald-400',
+                  sibling.language === 'es' && 'bg-purple-900/30 text-purple-400',
+                )}
+              >
+                {sibling.language.toUpperCase()}
+              </span>
+            ))
+          }
           {course.publishedAt && (
             <span className="text-xs text-dark-400">
               {new Date(course.publishedAt).toLocaleDateString('pl-PL')}
@@ -323,7 +342,7 @@ function CourseRow({
         </button>
         <button
           onClick={course.published ? onUnpublish : onPublish}
-          title={course.published ? t('courses.unpublish') : t('courses.publish')}
+          title={(course.published ? t('courses.unpublish') : t('courses.publish')) + ' (wszystkie języki)'}
           className={`p-2 transition-colors ${course.published ? 'text-emerald-400 hover:text-orange-400' : 'text-dark-400 hover:text-dark-100'}`}
         >
           {course.published ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
@@ -950,6 +969,7 @@ function EditView({
               <X className="h-4 w-4 mr-1.5" />
               {t('courses.cancel')}
             </Button>
+            <span className="text-[10px] text-dark-500 hidden sm:block">Publikacja dotyczy wszystkich języków</span>
             {published ? (
               <>
                 <Button
