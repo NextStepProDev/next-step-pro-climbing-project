@@ -146,7 +146,9 @@
     "allLanguages": "All languages",
     "duplicateAsTranslation": "Duplicate as translation",
     "translationExists": "All translations already exist",
-    "duplicateSuccess": "Duplicated as translation"
+    "duplicateSuccess": "Duplicated as translation",
+    "deleteGroupConfirmMessage": "Are you sure you want to delete this article and all its translations? This action cannot be undone.",
+    "createTranslation": "Create translation ({{lang}})"
   },
   "courses": {
     "title": "Courses",

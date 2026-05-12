@@ -17,8 +17,6 @@ import pl.nextsteppro.climbing.domain.user.UserRepository;
 import pl.nextsteppro.climbing.infrastructure.mail.NewsletterMailService;
 import pl.nextsteppro.climbing.infrastructure.storage.FileStorageService;
 
-import pl.nextsteppro.climbing.config.ContentLanguages;
-
 import java.io.IOException;
 import java.time.Instant;
 import java.util.List;
@@ -76,17 +74,6 @@ public class AdminNewsService {
         news.setExcerpt(request.excerpt());
         news.setLanguage(request.language() != null ? request.language() : "pl");
         news = newsRepository.save(news);
-
-        for (String lang : ContentLanguages.ALL) {
-            if (!lang.equals(news.getLanguage())) {
-                News copy = new News(news.getTitle());
-                copy.setExcerpt(news.getExcerpt());
-                copy.setLanguage(lang);
-                copy.setTranslationGroupId(news.getTranslationGroupId());
-                copy.setPublished(false);
-                newsRepository.save(copy);
-            }
-        }
 
         return toAdminDto(news);
     }
@@ -217,25 +204,27 @@ public class AdminNewsService {
         return toDetailAdminDto(copy, copyBlocks);
     }
 
-    // --- Miniaturka ---
+    // --- Miniaturka (z synchronizacją na rodzeństwo w grupie tłumaczeń) ---
 
     @CacheEvict(value = {"newsList", "newsDetail"}, allEntries = true)
     public NewsDetailAdminDto uploadThumbnail(UUID id, MultipartFile file) throws IOException {
         News news = findNews(id);
-
-        if (news.getThumbnailFilename() != null) {
-            if (!newsRepository.existsByThumbnailFilenameAndIdNot(news.getThumbnailFilename(), id)) {
-                try {
-                    fileStorageService.delete(news.getThumbnailFilename(), "news");
-                } catch (Exception e) {
-                    logger.warn("Failed to delete old thumbnail: {} - {}", news.getThumbnailFilename(), e.getMessage());
-                }
-            }
-        }
+        String oldFilename = news.getThumbnailFilename();
 
         String filename = fileStorageService.store(file, "news");
         news.setThumbnailFilename(filename);
+        news.setThumbnailUrl(null);
         newsRepository.save(news);
+
+        syncThumbnailToSiblings(news);
+
+        if (oldFilename != null && !newsRepository.existsByThumbnailFilenameAndIdNot(oldFilename, id)) {
+            try {
+                fileStorageService.delete(oldFilename, "news");
+            } catch (Exception e) {
+                logger.warn("Failed to delete old thumbnail: {} - {}", oldFilename, e.getMessage());
+            }
+        }
 
         List<NewsContentBlock> blocks = blockRepository.findByNewsIdOrderByDisplayOrderAsc(id);
         return toDetailAdminDto(news, blocks);
@@ -249,14 +238,23 @@ public class AdminNewsService {
             throw new IllegalStateException("No thumbnail to delete");
         }
 
-        if (news.getThumbnailFilename() != null) {
-            if (!newsRepository.existsByThumbnailFilenameAndIdNot(news.getThumbnailFilename(), news.getId())) {
-                fileStorageService.delete(news.getThumbnailFilename(), "news");
-            }
-            news.setThumbnailFilename(null);
-        }
+        String oldFilename = news.getThumbnailFilename();
+
+        news.setThumbnailFilename(null);
         news.setThumbnailUrl(null);
+        news.setThumbnailFocalPointX(null);
+        news.setThumbnailFocalPointY(null);
         newsRepository.save(news);
+
+        syncThumbnailToSiblings(news);
+
+        if (oldFilename != null && !newsRepository.existsByThumbnailFilenameAndIdNot(oldFilename, id)) {
+            try {
+                fileStorageService.delete(oldFilename, "news");
+            } catch (Exception e) {
+                logger.warn("Failed to delete thumbnail: {} - {}", oldFilename, e.getMessage());
+            }
+        }
     }
 
     // --- Bloki treści ---
@@ -340,20 +338,21 @@ public class AdminNewsService {
     @CacheEvict(value = {"newsList", "newsDetail"}, allEntries = true)
     public void setThumbnailUrl(UUID id, SetThumbnailUrlRequest request) {
         News news = findNews(id);
+        String oldFilename = news.getThumbnailFilename();
 
-        if (news.getThumbnailFilename() != null) {
-            if (!newsRepository.existsByThumbnailFilenameAndIdNot(news.getThumbnailFilename(), id)) {
-                try {
-                    fileStorageService.delete(news.getThumbnailFilename(), "news");
-                } catch (Exception e) {
-                    logger.warn("Failed to delete old thumbnail when setting URL: {}", e.getMessage());
-                }
-            }
-            news.setThumbnailFilename(null);
-        }
-
+        news.setThumbnailFilename(null);
         news.setThumbnailUrl(request.thumbnailUrl());
         newsRepository.save(news);
+
+        syncThumbnailToSiblings(news);
+
+        if (oldFilename != null && !newsRepository.existsByThumbnailFilenameAndIdNot(oldFilename, id)) {
+            try {
+                fileStorageService.delete(oldFilename, "news");
+            } catch (Exception e) {
+                logger.warn("Failed to delete old thumbnail when setting URL: {}", e.getMessage());
+            }
+        }
     }
 
     @CacheEvict(value = "newsDetail", allEntries = true)
@@ -449,6 +448,30 @@ public class AdminNewsService {
 
     // --- Helpery ---
 
+    private void syncThumbnailToSiblings(News source) {
+        for (News sibling : newsRepository.findByTranslationGroupId(source.getTranslationGroupId())) {
+            if (!sibling.getId().equals(source.getId())) {
+                String oldFilename = sibling.getThumbnailFilename();
+
+                sibling.setThumbnailFilename(source.getThumbnailFilename());
+                sibling.setThumbnailUrl(source.getThumbnailUrl());
+                sibling.setThumbnailFocalPointX(source.getThumbnailFocalPointX());
+                sibling.setThumbnailFocalPointY(source.getThumbnailFocalPointY());
+                newsRepository.save(sibling);
+
+                if (oldFilename != null
+                        && !oldFilename.equals(source.getThumbnailFilename())
+                        && !newsRepository.existsByThumbnailFilenameAndIdNot(oldFilename, sibling.getId())) {
+                    try {
+                        fileStorageService.delete(oldFilename, "news");
+                    } catch (Exception e) {
+                        logger.warn("Failed to delete old sibling thumbnail: {} - {}", oldFilename, e.getMessage());
+                    }
+                }
+            }
+        }
+    }
+
     private News findNews(UUID id) {
         return newsRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("News not found"));
@@ -495,6 +518,8 @@ public class AdminNewsService {
         news.setThumbnailFocalPointX(req.focalPointX());
         news.setThumbnailFocalPointY(req.focalPointY());
         newsRepository.save(news);
+
+        syncThumbnailToSiblings(news);
     }
 
     private NewsDetailAdminDto toDetailAdminDto(News news, List<NewsContentBlock> blocks) {

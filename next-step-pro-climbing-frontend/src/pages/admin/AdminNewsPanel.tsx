@@ -5,7 +5,6 @@ import { useTranslation } from 'react-i18next'
 import {
   Newspaper,
   Plus,
-  Pencil,
   Trash2,
   ChevronUp,
   ChevronDown,
@@ -105,14 +104,30 @@ export function AdminNewsPanel() {
   const queryClient = useQueryClient()
   const [view, setView] = useState<View>('list')
   const [selectedNewsId, setSelectedNewsId] = useState<string | null>(null)
-  const [languageFilter, setLanguageFilter] = useState<string>('pl')
+  const [newArticleLang, setNewArticleLang] = useState<string>('pl')
 
   const { data: articles, isLoading, error } = useQuery({
     queryKey: ['admin', 'news'],
-    queryFn: () => adminNewsApi.getAll(),
+    queryFn: () => adminNewsApi.getAll(0, 500),
   })
 
-  const filteredArticles = (articles?.content ?? []).filter(a => a.language === languageFilter)
+  // Group articles by translationGroupId
+  const groups = (() => {
+    const allArticles = articles?.content ?? []
+    const map = new Map<string, NewsAdmin[]>()
+    for (const article of allArticles) {
+      const group = map.get(article.translationGroupId) ?? []
+      group.push(article)
+      map.set(article.translationGroupId, group)
+    }
+    return [...map.entries()]
+      .sort((a, b) => {
+        const dateA = a[1].reduce((max, art) => art.createdAt > max ? art.createdAt : max, '')
+        const dateB = b[1].reduce((max, art) => art.createdAt > max ? art.createdAt : max, '')
+        return dateB.localeCompare(dateA)
+      })
+      .map(([groupId, groupArticles]) => ({ groupId, articles: groupArticles }))
+  })()
 
   const { data: detail, isLoading: detailLoading } = useQuery({
     queryKey: ['admin', 'news', selectedNewsId],
@@ -129,11 +144,15 @@ export function AdminNewsPanel() {
     },
   })
 
-  const deleteMutation = useMutation({
-    mutationFn: (id: string) => adminNewsApi.delete(id),
+  const deleteGroupMutation = useMutation({
+    mutationFn: async (articleIds: string[]) => {
+      for (const id of articleIds) {
+        await adminNewsApi.delete(id)
+      }
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'news'] })
-      setDeleteConfirmId(null)
+      setDeleteGroupArticles(null)
     },
   })
 
@@ -147,7 +166,17 @@ export function AdminNewsPanel() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin', 'news'] }),
   })
 
-  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null)
+  const duplicateFromListMutation = useMutation({
+    mutationFn: ({ sourceId, targetLanguage }: { sourceId: string; targetLanguage: string }) =>
+      adminNewsApi.duplicateAsTranslation(sourceId, targetLanguage),
+    onSuccess: (newDetail) => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'news'] })
+      setSelectedNewsId(newDetail.id)
+      setView('edit')
+    },
+  })
+
+  const [deleteGroupArticles, setDeleteGroupArticles] = useState<string[] | null>(null)
   const [newsletterConfirmId, setNewsletterConfirmId] = useState<string | null>(null)
   const [newsletterSentCount, setNewsletterSentCount] = useState<number | null>(null)
 
@@ -199,8 +228,8 @@ export function AdminNewsPanel() {
         <h2 className="text-xl font-semibold text-dark-100">{t('news.title')}</h2>
         <div className="flex items-center gap-3">
           <select
-            value={languageFilter}
-            onChange={(e) => setLanguageFilter(e.target.value)}
+            value={newArticleLang}
+            onChange={(e) => setNewArticleLang(e.target.value)}
             className="bg-dark-800 border border-dark-600 rounded-lg px-3 py-2 text-sm text-dark-100"
           >
             {COURSE_CONTENT_LANGUAGES.map((lang) => (
@@ -208,7 +237,7 @@ export function AdminNewsPanel() {
             ))}
           </select>
           <Button
-            onClick={() => createMutation.mutate({ title: t('news.newArticleDefaultTitle'), language: languageFilter })}
+            onClick={() => createMutation.mutate({ title: t('news.newArticleDefaultTitle'), language: newArticleLang })}
             disabled={createMutation.isPending}
           >
             <Plus className="h-4 w-4 mr-2" />
@@ -217,37 +246,40 @@ export function AdminNewsPanel() {
         </div>
       </div>
 
-      {filteredArticles.length === 0 ? (
+      {groups.length === 0 ? (
         <div className="text-center text-dark-400 py-12">
           {t('news.noArticles')}
         </div>
       ) : (
         <div className="space-y-3">
-          {filteredArticles.map((article) => (
-            <ArticleRow
-              key={article.id}
-              article={article}
-              allArticles={articles?.content ?? []}
-              onEdit={() => {
-                setSelectedNewsId(article.id)
+          {groups.map(({ groupId, articles: groupArticles }) => (
+            <TranslationGroupRow
+              key={groupId}
+              groupArticles={groupArticles}
+              onEdit={(articleId) => {
+                setSelectedNewsId(articleId)
                 setView('edit')
               }}
-              onDelete={() => setDeleteConfirmId(article.id)}
-              onPublish={() => publishMutation.mutate(article.id)}
-              onUnpublish={() => unpublishMutation.mutate(article.id)}
-              onSendNewsletter={() => setNewsletterConfirmId(article.id)}
+              onDelete={(articleIds) => setDeleteGroupArticles(articleIds)}
+              onPublish={(id) => publishMutation.mutate(id)}
+              onUnpublish={(id) => unpublishMutation.mutate(id)}
+              onSendNewsletter={(id) => setNewsletterConfirmId(id)}
+              onCreateTranslation={(sourceId, targetLang) =>
+                duplicateFromListMutation.mutate({ sourceId, targetLanguage: targetLang })
+              }
+              isCreatingTranslation={duplicateFromListMutation.isPending}
             />
           ))}
         </div>
       )}
 
       <ConfirmModal
-        isOpen={!!deleteConfirmId}
+        isOpen={!!deleteGroupArticles}
         title={t('news.deleteConfirmTitle')}
-        message={t('news.deleteConfirmMessage')}
+        message={t('news.deleteGroupConfirmMessage')}
         confirmText={t('news.delete')}
-        onConfirm={() => deleteConfirmId && deleteMutation.mutate(deleteConfirmId)}
-        onClose={() => setDeleteConfirmId(null)}
+        onConfirm={() => deleteGroupArticles && deleteGroupMutation.mutate(deleteGroupArticles)}
+        onClose={() => setDeleteGroupArticles(null)}
       />
 
       <ConfirmModal
@@ -269,32 +301,42 @@ export function AdminNewsPanel() {
   )
 }
 
-// ==================== Wiersz artykułu w liście ====================
+// ==================== Wiersz grupy tłumaczeń w liście ====================
 
-function ArticleRow({
-  article,
-  allArticles,
+const LANG_ORDER = ['pl', 'en', 'es'] as const
+
+function TranslationGroupRow({
+  groupArticles,
   onEdit,
   onDelete,
   onPublish,
   onUnpublish,
   onSendNewsletter,
+  onCreateTranslation,
+  isCreatingTranslation,
 }: {
-  article: NewsAdmin
-  allArticles: NewsAdmin[]
-  onEdit: () => void
-  onDelete: () => void
-  onPublish: () => void
-  onUnpublish: () => void
-  onSendNewsletter: () => void
+  groupArticles: NewsAdmin[]
+  onEdit: (articleId: string) => void
+  onDelete: (articleIds: string[]) => void
+  onPublish: (articleId: string) => void
+  onUnpublish: (articleId: string) => void
+  onSendNewsletter: (articleId: string) => void
+  onCreateTranslation: (sourceId: string, targetLang: string) => void
+  isCreatingTranslation: boolean
 }) {
   const { t } = useTranslation('admin')
+
+  const langMap = new Map(groupArticles.map(a => [a.language, a]))
+
+  const displayArticle = langMap.get('pl') ?? langMap.get('en') ?? langMap.get('es') ?? groupArticles[0]
+
+  const firstExistingArticle = groupArticles[0]
 
   return (
     <div className="flex items-center gap-4 bg-dark-800 border border-dark-700 rounded-lg p-4">
       <div className="flex-shrink-0 w-16 h-16 bg-dark-700 rounded overflow-hidden">
-        {article.thumbnailUrl ? (
-          <img src={article.thumbnailUrl} alt={article.title} className="w-full h-full object-cover" />
+        {displayArticle.thumbnailUrl ? (
+          <img src={displayArticle.thumbnailUrl} alt={displayArticle.title} className="w-full h-full object-cover" />
         ) : (
           <div className="w-full h-full flex items-center justify-center">
             <Newspaper className="h-6 w-6 text-dark-500" />
@@ -307,48 +349,63 @@ function ArticleRow({
           <span
             className={clsx(
               'text-xs px-2 py-0.5 rounded-full',
-              article.published
+              displayArticle.published
                 ? 'bg-green-900/40 text-green-400'
                 : 'bg-dark-600 text-dark-400'
             )}
           >
-            {article.published ? t('news.published') : t('news.draft')}
+            {displayArticle.published ? t('news.published') : t('news.draft')}
           </span>
-          {article.publishedAt && (
+          {displayArticle.publishedAt && (
             <span className="text-xs text-dark-400">
-              {new Date(article.publishedAt).toLocaleDateString('pl-PL')}
+              {new Date(displayArticle.publishedAt).toLocaleDateString('pl-PL')}
             </span>
           )}
         </div>
-        <p className="font-medium text-dark-100 truncate flex items-center gap-1">
-          <LanguageBadge lang={article.language} />
-          {allArticles
-            .filter(a => a.translationGroupId === article.translationGroupId && a.id !== article.id)
-            .map(sibling => (
-              <span
-                key={sibling.id}
+        <p className="font-medium text-dark-100 truncate">{displayArticle.title}</p>
+        <div className="flex items-center gap-1.5 mt-1">
+          {LANG_ORDER.map((lang) => {
+            const article = langMap.get(lang)
+            if (article) {
+              return (
+                <button
+                  key={lang}
+                  onClick={() => onEdit(article.id)}
+                  title={`${t('news.edit')} (${lang.toUpperCase()})`}
+                  className={clsx(
+                    'text-[10px] font-bold uppercase px-2 py-0.5 rounded border cursor-pointer transition-colors',
+                    lang === 'pl' && 'bg-blue-900/40 text-blue-400 border-blue-700 hover:bg-blue-900/60',
+                    lang === 'en' && 'bg-emerald-900/40 text-emerald-400 border-emerald-700 hover:bg-emerald-900/60',
+                    lang === 'es' && 'bg-purple-900/40 text-purple-400 border-purple-700 hover:bg-purple-900/60',
+                  )}
+                >
+                  {lang}
+                </button>
+              )
+            }
+            return (
+              <button
+                key={lang}
+                onClick={() => onCreateTranslation(firstExistingArticle.id, lang)}
+                disabled={isCreatingTranslation}
+                title={t('news.createTranslation', { lang: lang.toUpperCase() })}
                 className={clsx(
-                  'text-[9px] px-1 py-0.5 rounded font-medium opacity-40',
-                  sibling.language === 'pl' && 'bg-blue-900/30 text-blue-400',
-                  sibling.language === 'en' && 'bg-emerald-900/30 text-emerald-400',
-                  sibling.language === 'es' && 'bg-purple-900/30 text-purple-400',
+                  'text-[10px] font-bold uppercase px-2 py-0.5 rounded border border-dashed cursor-pointer transition-colors',
+                  'border-dark-500 text-dark-500 hover:border-dark-300 hover:text-dark-300',
+                  isCreatingTranslation && 'opacity-50 cursor-wait',
                 )}
               >
-                {sibling.language.toUpperCase()}
-              </span>
-            ))
-          }
-          <span className="truncate">{article.title}</span>
-        </p>
-        {article.excerpt && (
-          <p className="text-sm text-dark-400 truncate">{article.excerpt}</p>
-        )}
+                +{lang}
+              </button>
+            )
+          })}
+        </div>
       </div>
 
       <div className="flex items-center gap-2 flex-shrink-0">
-        {article.published && (
+        {displayArticle.published && (
           <button
-            onClick={onSendNewsletter}
+            onClick={() => onSendNewsletter(displayArticle.id)}
             title={t('news.newsletterSend')}
             className="p-2 text-dark-400 hover:text-primary-400 transition-colors"
           >
@@ -356,21 +413,14 @@ function ArticleRow({
           </button>
         )}
         <button
-          onClick={article.published ? onUnpublish : onPublish}
-          title={(article.published ? t('news.unpublish') : t('news.publish')) + ' (wszystkie języki)'}
-          className={`p-2 transition-colors ${article.published ? 'text-emerald-400 hover:text-orange-400' : 'text-dark-400 hover:text-dark-100'}`}
+          onClick={() => displayArticle.published ? onUnpublish(displayArticle.id) : onPublish(displayArticle.id)}
+          title={(displayArticle.published ? t('news.unpublish') : t('news.publish')) + ' (wszystkie języki)'}
+          className={`p-2 transition-colors ${displayArticle.published ? 'text-emerald-400 hover:text-orange-400' : 'text-dark-400 hover:text-dark-100'}`}
         >
-          {article.published ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+          {displayArticle.published ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
         </button>
         <button
-          onClick={onEdit}
-          title={t('news.edit')}
-          className="p-2 text-dark-400 hover:text-dark-100 transition-colors"
-        >
-          <Pencil className="h-4 w-4" />
-        </button>
-        <button
-          onClick={onDelete}
+          onClick={() => onDelete(groupArticles.map(a => a.id))}
           title={t('news.delete')}
           className="p-2 text-dark-400 hover:text-red-400 transition-colors"
         >

@@ -146,7 +146,9 @@
     "allLanguages": "Wszystkie języki",
     "duplicateAsTranslation": "Duplikuj jako tłumaczenie",
     "translationExists": "Wszystkie tłumaczenia już istnieją",
-    "duplicateSuccess": "Zduplikowano jako tłumaczenie"
+    "duplicateSuccess": "Zduplikowano jako tłumaczenie",
+    "deleteGroupConfirmMessage": "Czy na pewno chcesz usunąć ten artykuł i wszystkie jego tłumaczenia? Tej operacji nie można cofnąć.",
+    "createTranslation": "Utwórz tłumaczenie ({{lang}})"
   },
   "courses": {
     "title": "Kursy",

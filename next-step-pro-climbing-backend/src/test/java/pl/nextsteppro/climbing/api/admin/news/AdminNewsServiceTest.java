@@ -91,7 +91,7 @@ class AdminNewsServiceTest {
         assertFalse(result.published());
 
         ArgumentCaptor<News> captor = ArgumentCaptor.forClass(News.class);
-        verify(newsRepository, times(3)).save(captor.capture());
+        verify(newsRepository, times(1)).save(captor.capture());
         assertEquals("Nowy artykuł", captor.getAllValues().getFirst().getTitle());
     }
 

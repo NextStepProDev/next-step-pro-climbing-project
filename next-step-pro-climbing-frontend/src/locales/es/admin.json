@@ -144,7 +144,9 @@
     "allLanguages": "Todos los idiomas",
     "duplicateAsTranslation": "Duplicar como traducción",
     "translationExists": "Todas las traducciones ya existen",
-    "duplicateSuccess": "Duplicado como traducción"
+    "duplicateSuccess": "Duplicado como traducción",
+    "deleteGroupConfirmMessage": "¿Estás seguro de que deseas eliminar este artículo y todas sus traducciones? Esta acción no se puede deshacer.",
+    "createTranslation": "Crear traducción ({{lang}})"
   },
   "courses": {
     "title": "Cursos",
