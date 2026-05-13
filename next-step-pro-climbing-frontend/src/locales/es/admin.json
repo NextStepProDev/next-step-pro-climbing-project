@@ -30,10 +30,10 @@
     "duplicateAsTranslation": "Duplicar como traducción",
     "translationExists": "Todas las traducciones ya existen",
     "duplicateSuccess": "Duplicado como traducción",
-    "syncMediaButton": "Sincronizar medios con traducciones",
-    "syncMediaPending": "Sincronizando...",
-    "syncMediaDescription": "Añadir imágenes y vídeos faltantes a las otras versiones de idioma.",
-    "syncMediaSuccess": "Sincronizado — {{count}} bloques de medios añadidos"
+    "syncMediaModalTitle": "Sincronizar medios",
+    "syncMediaModalMessage": "Has añadido nuevas imágenes o vídeos. ¿Quieres añadirlos a las otras versiones de idioma de este artículo?",
+    "syncMediaConfirm": "Sí, sincronizar con todos los idiomas",
+    "syncMediaSkip": "No, solo este idioma"
   },
   "site": {
     "title": "Configuración de la página principal",

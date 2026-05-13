@@ -30,10 +30,10 @@
     "duplicateAsTranslation": "Duplicate as translation",
     "translationExists": "All translations already exist",
     "duplicateSuccess": "Duplicated as translation",
-    "syncMediaButton": "Sync media to translations",
-    "syncMediaPending": "Syncing...",
-    "syncMediaDescription": "Append missing images and videos to other language versions.",
-    "syncMediaSuccess": "Synced — {{count}} media blocks added"
+    "syncMediaModalTitle": "Sync media",
+    "syncMediaModalMessage": "You added new images or videos. Do you want to append them to other language versions of this article?",
+    "syncMediaConfirm": "Yes, sync to all languages",
+    "syncMediaSkip": "No, this language only"
   },
   "site": {
     "title": "Homepage settings",

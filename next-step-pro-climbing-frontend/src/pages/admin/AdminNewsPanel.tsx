@@ -34,6 +34,7 @@ import type {
 } from '../../types'
 import { Button } from '../../components/ui/Button'
 import { ConfirmModal } from '../../components/ui/ConfirmModal'
+import { Modal } from '../../components/ui/Modal'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
 import { GalleryPickerModal } from '../../components/ui/GalleryPickerModal'
 import { MediaPickerModal } from '../../components/ui/MediaPickerModal'
@@ -475,7 +476,6 @@ function EditView({
   })
 
   const hasTranslationSiblings = existingLanguages.length > 1
-  const hasMediaBlocks = detail.blocks.some(b => b.blockType === 'IMAGE' || b.blockType === 'VIDEO_EMBED')
 
   const syncMediaMutation = useMutation({
     mutationFn: () => adminNewsApi.syncMediaToTranslations(newsId),
@@ -483,6 +483,8 @@ function EditView({
       invalidate()
     },
   })
+
+  const [showSyncMediaModal, setShowSyncMediaModal] = useState(false)
 
   // ---------- Meta state ----------
   const [title, setTitle] = useState(detail.title)
@@ -659,12 +661,18 @@ function EditView({
           if (pending.preview) URL.revokeObjectURL(pending.preview)
         }
       }
+      const hadNewMedia = blocksToSave.some(b => b.type === 'IMAGE' || b.type === 'VIDEO_EMBED')
       const emptyTextBlocks = pendingBlocks.filter(
         (b) => b.type === 'TEXT' && b.content.trim().length === 0
       )
       setPendingBlocks(emptyTextBlocks)
       await invalidate()
-      onBack()
+      if (hadNewMedia && hasTranslationSiblings) {
+        setIsSaving(false)
+        setShowSyncMediaModal(true)
+      } else {
+        onBack()
+      }
     } catch (err) {
       setSaveError(getErrorMessage(err))
       setIsSaving(false)
@@ -869,27 +877,6 @@ function EditView({
           <p className="text-sm text-green-400 mt-2">{t('news.duplicateSuccess')}</p>
         )}
 
-        {hasTranslationSiblings && hasMediaBlocks && (
-          <div className="mt-4 pt-4 border-t border-dark-700">
-            <p className="text-sm text-dark-400 mb-2">{t('news.syncMediaDescription')}</p>
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => syncMediaMutation.mutate()}
-              disabled={syncMediaMutation.isPending}
-            >
-              {syncMediaMutation.isPending ? t('news.syncMediaPending') : t('news.syncMediaButton')}
-            </Button>
-            {syncMediaMutation.isError && (
-              <p className="text-sm text-red-400 mt-2">{getErrorMessage(syncMediaMutation.error)}</p>
-            )}
-            {syncMediaMutation.isSuccess && (
-              <p className="text-sm text-green-400 mt-2">
-                {t('news.syncMediaSuccess', { count: syncMediaMutation.data?.blocksAdded ?? 0 })}
-              </p>
-            )}
-          </div>
-        )}
       </section>
 
       {/* Sekcja 2: Miniaturka */}
@@ -1214,6 +1201,41 @@ function EditView({
         onConfirm={() => onBack()}
         onClose={() => setShowExitConfirm(false)}
       />
+
+      {/* Modal: synchronizacja mediów do tłumaczeń */}
+      <Modal
+        isOpen={showSyncMediaModal}
+        onClose={() => { setShowSyncMediaModal(false); onBack() }}
+        title={t('news.syncMediaModalTitle')}
+      >
+        <p className="text-sm text-dark-300 mb-4">{t('news.syncMediaModalMessage')}</p>
+        {syncMediaMutation.isError && (
+          <p className="text-sm text-red-400 mb-4">{getErrorMessage(syncMediaMutation.error)}</p>
+        )}
+        <div className="flex gap-3 justify-end">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => { setShowSyncMediaModal(false); onBack() }}
+            disabled={syncMediaMutation.isPending}
+          >
+            {t('news.syncMediaSkip')}
+          </Button>
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={async () => {
+              await syncMediaMutation.mutateAsync()
+              setShowSyncMediaModal(false)
+              onBack()
+            }}
+            disabled={syncMediaMutation.isPending}
+            loading={syncMediaMutation.isPending}
+          >
+            {t('news.syncMediaConfirm')}
+          </Button>
+        </div>
+      </Modal>
 
       {/* Podgląd artykułu */}
       <NewsPreviewModal
