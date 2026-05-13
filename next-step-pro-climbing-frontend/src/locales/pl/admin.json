@@ -29,11 +29,7 @@
     "allLanguages": "Wszystkie języki",
     "duplicateAsTranslation": "Duplikuj jako tłumaczenie",
     "translationExists": "Wszystkie tłumaczenia już istnieją",
-    "duplicateSuccess": "Zduplikowano jako tłumaczenie",
-    "syncMediaModalTitle": "Synchronizacja mediów",
-    "syncMediaModalMessage": "Dodałeś nowe zdjęcia lub filmy. Chcesz dopisać je do pozostałych wersji językowych tego artykułu?",
-    "syncMediaConfirm": "Tak, dopisz do wszystkich języków",
-    "syncMediaSkip": "Nie, tylko ten język"
+    "duplicateSuccess": "Zduplikowano jako tłumaczenie"
   },
   "site": {
     "title": "Ustawienia strony głównej",
@@ -152,7 +148,11 @@
     "translationExists": "Wszystkie tłumaczenia już istnieją",
     "duplicateSuccess": "Zduplikowano jako tłumaczenie",
     "deleteGroupConfirmMessage": "Czy na pewno chcesz usunąć ten artykuł i wszystkie jego tłumaczenia? Tej operacji nie można cofnąć.",
-    "createTranslation": "Utwórz tłumaczenie ({{lang}})"
+    "createTranslation": "Utwórz tłumaczenie ({{lang}})",
+    "syncMediaModalTitle": "Synchronizacja mediów",
+    "syncMediaModalMessage": "Dodałeś nowe zdjęcia lub filmy. Chcesz dopisać je do pozostałych wersji językowych tego artykułu?",
+    "syncMediaConfirm": "Tak, dopisz do wszystkich języków",
+    "syncMediaSkip": "Nie, tylko ten język"
   },
   "courses": {
     "title": "Kursy",
