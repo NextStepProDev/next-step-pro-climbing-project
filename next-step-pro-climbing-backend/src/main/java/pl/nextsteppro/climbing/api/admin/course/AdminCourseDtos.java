@@ -116,4 +116,6 @@ public class AdminCourseDtos {
             String filename,
             String url
     ) {}
+
+    public record SyncMediaResultDto(int blocksAdded) {}
 }

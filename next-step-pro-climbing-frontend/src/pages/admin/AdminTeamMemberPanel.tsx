@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { User, Upload, Pencil, Trash2, Plus, Library, Images, X, ChevronUp, ChevronDown, Copy } from 'lucide-react'
+import { User, Upload, Trash2, Plus, Library, Images, X, ChevronUp, ChevronDown, Copy } from 'lucide-react'
 import clsx from 'clsx'
 import { adminInstructorApi } from '../../api/client'
 import type { InstructorAdmin, InstructorType, CreateInstructorRequest, UpdateInstructorRequest } from '../../types'
@@ -73,6 +73,8 @@ function LanguageBadge({ language }: { language: string }) {
   )
 }
 
+const LANG_ORDER = ['pl', 'en', 'es'] as const
+
 interface Props { memberType: InstructorType }
 
 export function AdminTeamMemberPanel({ memberType }: Props) {
@@ -87,12 +89,11 @@ export function AdminTeamMemberPanel({ memberType }: Props) {
   const [createModalOpen, setCreateModalOpen] = useState(false)
   const [editModalOpen, setEditModalOpen] = useState(false)
   const [uploadPhotoModalOpen, setUploadPhotoModalOpen] = useState(false)
-  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
+  const [deleteGroupMembers, setDeleteGroupMembers] = useState<string[] | null>(null)
   const [selectedMember, setSelectedMember] = useState<InstructorAdmin | null>(null)
   const [photoPreview, setPhotoPreview] = useState<string | null>(null)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [focalPoint, setFocalPoint] = useState({ x: 0.5, y: 0.5 })
-  const [languageFilter, setLanguageFilter] = useState<string>('pl')
 
   const [createBioBlocks, setCreateBioBlocks] = useState<BioBlock[]>([])
   const [editBioBlocks, setEditBioBlocks] = useState<BioBlock[]>([])
@@ -104,6 +105,7 @@ export function AdminTeamMemberPanel({ memberType }: Props) {
   const [badgePickerOpen, setBadgePickerOpen] = useState(false)
   const [badgeTargetId, setBadgeTargetId] = useState<string | null>(null)
   const [photoGalleryOpen, setPhotoGalleryOpen] = useState(false)
+  const [deleteSingleConfirm, setDeleteSingleConfirm] = useState(false)
 
   const { data: allMembers, isLoading, error } = useQuery({
     queryKey: ['admin', 'instructors'],
@@ -111,7 +113,22 @@ export function AdminTeamMemberPanel({ memberType }: Props) {
   })
 
   const membersOfType = (allMembers ?? []).filter((m) => m.memberType === memberType)
-  const members = membersOfType.filter(m => m.language === languageFilter)
+
+  const groups = (() => {
+    const map = new Map<string, InstructorAdmin[]>()
+    for (const member of membersOfType) {
+      const group = map.get(member.translationGroupId) ?? []
+      group.push(member)
+      map.set(member.translationGroupId, group)
+    }
+    return [...map.entries()]
+      .sort((a, b) => {
+        const orderA = Math.min(...a[1].map(m => m.displayOrder))
+        const orderB = Math.min(...b[1].map(m => m.displayOrder))
+        return orderA - orderB
+      })
+      .map(([groupId, groupMembers]) => ({ groupId, members: groupMembers }))
+  })()
 
   const invalidateAll = () => {
     queryClient.invalidateQueries({ queryKey: ['admin', 'instructors'] })
@@ -138,11 +155,24 @@ export function AdminTeamMemberPanel({ memberType }: Props) {
     },
   })
 
-  const deleteMutation = useMutation({
+  const deleteGroupMutation = useMutation({
+    mutationFn: async (memberIds: string[]) => {
+      for (const id of memberIds) {
+        await adminInstructorApi.delete(id)
+      }
+    },
+    onSuccess: () => {
+      invalidateAll()
+      setDeleteGroupMembers(null)
+    },
+  })
+
+  const deleteSingleMutation = useMutation({
     mutationFn: adminInstructorApi.delete,
     onSuccess: () => {
       invalidateAll()
-      setDeleteConfirmOpen(false)
+      setDeleteSingleConfirm(false)
+      setEditModalOpen(false)
       setSelectedMember(null)
     },
   })
@@ -211,6 +241,20 @@ export function AdminTeamMemberPanel({ memberType }: Props) {
     },
   })
 
+  const duplicateFromListMutation = useMutation({
+    mutationFn: ({ id, targetLanguage }: { id: string; targetLanguage: string }) =>
+      adminInstructorApi.duplicateAsTranslation(id, targetLanguage),
+    onSuccess: (newMember) => {
+      invalidateAll()
+      setSelectedMember(newMember)
+      setFocalPoint({ x: newMember.focalPointX ?? 0.5, y: newMember.focalPointY ?? 0.5 })
+      setEditBioBlocks(deserializeBio(newMember.bio ?? ''))
+      setEditCerts(newMember.certifications ? newMember.certifications.split('\n').filter(Boolean) : [])
+      setEdit8aUrl(newMember.profile8aUrl ?? '')
+      setEditModalOpen(true)
+    },
+  })
+
   const handleCreate = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     const formData = new FormData(e.currentTarget)
@@ -221,7 +265,7 @@ export function AdminTeamMemberPanel({ memberType }: Props) {
       certifications: createCerts.filter(Boolean).join('\n') || undefined,
       memberType,
       profile8aUrl: create8aUrl.trim() || undefined,
-      language: languageFilter,
+      language: 'pl',
     }
     createMutation.mutate(data)
   }
@@ -272,176 +316,119 @@ export function AdminTeamMemberPanel({ memberType }: Props) {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <h2 className="text-2xl font-bold text-dark-100">{headerTitle}</h2>
-        <div className="flex items-center gap-3">
-          <select
-            value={languageFilter}
-            onChange={(e) => setLanguageFilter(e.target.value)}
-            className="bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-sm text-dark-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
-          >
-            {COURSE_CONTENT_LANGUAGES.map((lang) => (
-              <option key={lang.code} value={lang.code}>{lang.label}</option>
-            ))}
-          </select>
-          <Button onClick={() => { setCreateBioBlocks([]); setCreateCerts([]); setCreate8aUrl(''); setCreateModalOpen(true) }}>
-            <Plus className="h-4 w-4 mr-2" />
-            Dodaj {isInstructor ? 'Instruktora' : 'Zawodnika'}
-          </Button>
-        </div>
+        <Button onClick={() => { setCreateBioBlocks([]); setCreateCerts([]); setCreate8aUrl(''); setCreateModalOpen(true) }}>
+          <Plus className="h-4 w-4 mr-2" />
+          Dodaj {isInstructor ? 'Instruktora' : 'Zawodnika'}
+        </Button>
       </div>
 
       {/* List */}
-      {members.length === 0 ? (
+      {groups.length === 0 ? (
         <div className="text-center py-12 text-dark-400">
           Brak {isInstructor ? 'instruktorów' : 'zawodników'}. Dodaj pierwszego używając przycisku powyżej.
         </div>
       ) : (
-        <div className="space-y-4">
-          {members.map((member, idx) => (
-            <div key={member.id} className="bg-dark-800 rounded-lg p-4 sm:p-6 border border-dark-700 overflow-hidden">
-              <div className="flex items-start gap-3 sm:gap-6">
-                {/* Arrows */}
-                <div className="hidden sm:flex flex-col items-center justify-center gap-1 shrink-0">
-                  <button onClick={() => moveUpMutation.mutate(member.id)}
-                    disabled={idx === 0 || moveUpMutation.isPending || moveDownMutation.isPending}
-                    className="p-1 rounded text-dark-400 hover:text-dark-100 hover:bg-dark-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
-                    <ChevronUp className="w-5 h-5" />
-                  </button>
-                  <button onClick={() => moveDownMutation.mutate(member.id)}
-                    disabled={idx === members.length - 1 || moveUpMutation.isPending || moveDownMutation.isPending}
-                    className="p-1 rounded text-dark-400 hover:text-dark-100 hover:bg-dark-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
-                    <ChevronDown className="w-5 h-5" />
-                  </button>
-                </div>
+        <div className="space-y-3">
+          {groups.map(({ groupId, members: groupMembers }, groupIndex) => {
+            const langMap = new Map(groupMembers.map(m => [m.language, m]))
+            const displayMember = langMap.get('pl') ?? langMap.get('en') ?? langMap.get('es') ?? groupMembers[0]
+            const firstExisting = groupMembers[0]
+            const moveMemberId = displayMember.id
 
+            return (
+              <div key={groupId} className="flex items-center gap-4 bg-dark-800 border border-dark-700 rounded-lg p-4">
                 {/* Photo */}
-                <div className="flex-shrink-0 flex flex-col items-center gap-2">
-                  <div className="relative group">
-                    {member.photoUrl ? (
-                      <img src={member.photoUrl} alt={member.firstName}
-                        className="w-14 h-14 sm:w-32 sm:h-32 rounded-full object-cover border-2 border-primary-500/20"
-                        style={member.focalPointX != null ? { objectPosition: `${member.focalPointX * 100}% ${(member.focalPointY ?? 0.5) * 100}%` } : undefined} />
-                    ) : (
-                      <div className="w-14 h-14 sm:w-32 sm:h-32 rounded-full bg-dark-700 border-2 border-dark-600 flex items-center justify-center">
-                        <User className="h-7 w-7 sm:h-16 sm:w-16 text-dark-400" />
-                      </div>
-                    )}
-                    {isInstructor && member.badgeUrl && (
-                      <img src={member.badgeUrl} alt="badge" className="absolute bottom-0 right-0 w-6 h-6 sm:w-11 sm:h-11 rounded-full object-contain drop-shadow" />
-                    )}
-                    <button onClick={() => { setSelectedMember(member); setUploadPhotoModalOpen(true) }}
-                      className="absolute inset-0 bg-black/60 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Upload className="h-4 w-4 sm:h-6 sm:w-6 text-white" />
-                    </button>
-                  </div>
-
-                  {isInstructor && (
-                    <div className="flex flex-col items-center gap-1">
-                      <span className="text-xs text-dark-400">Naklejka</span>
-                      <div className="flex gap-1">
-                        <Button size="sm" variant="ghost" title="Wybierz z biblioteki"
-                          onClick={() => { setBadgeTargetId(member.id); setBadgePickerOpen(true) }}>
-                          <Library className="w-3.5 h-3.5" />
-                        </Button>
-                        {member.badgeUrl && (
-                          <Button size="sm" variant="ghost" title="Usuń naklejkę"
-                            onClick={() => deleteBadgeMutation.mutate(member.id)}
-                            loading={deleteBadgeMutation.isPending && deleteBadgeMutation.variables === member.id}>
-                            <Trash2 className="w-3.5 h-3.5 text-rose-400" />
-                          </Button>
-                        )}
-                      </div>
+                <div className="flex-shrink-0 relative">
+                  {displayMember.photoUrl ? (
+                    <img src={displayMember.photoUrl} alt={displayMember.firstName}
+                      className="w-14 h-14 rounded-full object-cover border-2 border-primary-500/20"
+                      style={displayMember.focalPointX != null ? { objectPosition: `${displayMember.focalPointX * 100}% ${(displayMember.focalPointY ?? 0.5) * 100}%` } : undefined} />
+                  ) : (
+                    <div className="w-14 h-14 rounded-full bg-dark-700 border-2 border-dark-600 flex items-center justify-center">
+                      <User className="h-7 w-7 text-dark-400" />
                     </div>
+                  )}
+                  {isInstructor && displayMember.badgeUrl && (
+                    <img src={displayMember.badgeUrl} alt="badge" className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full object-contain drop-shadow" />
                   )}
                 </div>
 
                 {/* Info */}
-                <div className="flex-1 min-w-0 space-y-3">
-                  <div className="flex items-start justify-between gap-2 flex-wrap">
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2">
-                        <h3 className="text-base sm:text-xl font-bold text-dark-100">{member.firstName} {member.lastName}</h3>
-                        <LanguageBadge language={member.language} />
-                        {(allMembers ?? [])
-                          .filter(m => m.translationGroupId === member.translationGroupId && m.id !== member.id)
-                          .map(sibling => (
-                            <span
-                              key={sibling.id}
-                              className={clsx(
-                                'text-[9px] px-1 py-0.5 rounded font-medium opacity-40',
-                                sibling.language === 'pl' && 'bg-blue-900/30 text-blue-400',
-                                sibling.language === 'en' && 'bg-emerald-900/30 text-emerald-400',
-                                sibling.language === 'es' && 'bg-purple-900/30 text-purple-400',
-                              )}
-                            >
-                              {sibling.language.toUpperCase()}
-                            </span>
-                          ))
-                        }
-                      </div>
-                      <span className={`text-sm ${member.active ? 'text-green-400' : 'text-rose-400'}`}>
-                        {member.active ? '✓ Aktywny' : '✕ Nieaktywny'}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-1 shrink-0">
-                      <button onClick={() => moveUpMutation.mutate(member.id)}
-                        disabled={idx === 0 || moveUpMutation.isPending || moveDownMutation.isPending}
-                        className="sm:hidden p-1 rounded text-dark-400 hover:text-dark-100 hover:bg-dark-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
-                        <ChevronUp className="w-4 h-4" />
-                      </button>
-                      <button onClick={() => moveDownMutation.mutate(member.id)}
-                        disabled={idx === members.length - 1 || moveUpMutation.isPending || moveDownMutation.isPending}
-                        className="sm:hidden p-1 rounded text-dark-400 hover:text-dark-100 hover:bg-dark-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
-                        <ChevronDown className="w-4 h-4" />
-                      </button>
-                      <Button variant="ghost" size="sm" onClick={() => {
-                        setSelectedMember(member)
-                        setFocalPoint({ x: member.focalPointX ?? 0.5, y: member.focalPointY ?? 0.5 })
-                        setEditBioBlocks(deserializeBio(member.bio ?? ''))
-                        setEditCerts(member.certifications ? member.certifications.split('\n').filter(Boolean) : [])
-                        setEdit8aUrl(member.profile8aUrl ?? '')
-                        setEditModalOpen(true)
-                      }}>
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button variant="danger" size="sm" onClick={() => { setSelectedMember(member); setDeleteConfirmOpen(true) }}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className={clsx('text-xs px-2 py-0.5 rounded-full', displayMember.active ? 'bg-green-900/40 text-green-400' : 'bg-rose-900/40 text-rose-400')}>
+                      {displayMember.active ? 'Aktywny' : 'Nieaktywny'}
+                    </span>
                   </div>
+                  <p className="font-medium text-dark-100 truncate">{displayMember.firstName} {displayMember.lastName}</p>
+                  <div className="flex items-center gap-1.5 mt-1">
+                    {LANG_ORDER.map((lang) => {
+                      const member = langMap.get(lang)
+                      if (member) {
+                        return (
+                          <button
+                            key={lang}
+                            onClick={() => {
+                              setSelectedMember(member)
+                              setFocalPoint({ x: member.focalPointX ?? 0.5, y: member.focalPointY ?? 0.5 })
+                              setEditBioBlocks(deserializeBio(member.bio ?? ''))
+                              setEditCerts(member.certifications ? member.certifications.split('\n').filter(Boolean) : [])
+                              setEdit8aUrl(member.profile8aUrl ?? '')
+                              setEditModalOpen(true)
+                            }}
+                            title={`Edytuj (${lang.toUpperCase()})`}
+                            className={clsx(
+                              'text-[10px] font-bold uppercase px-2 py-0.5 rounded border cursor-pointer transition-colors',
+                              lang === 'pl' && 'bg-blue-900/40 text-blue-400 border-blue-700 hover:bg-blue-900/60',
+                              lang === 'en' && 'bg-emerald-900/40 text-emerald-400 border-emerald-700 hover:bg-emerald-900/60',
+                              lang === 'es' && 'bg-purple-900/40 text-purple-400 border-purple-700 hover:bg-purple-900/60',
+                            )}
+                          >
+                            {lang}
+                          </button>
+                        )
+                      }
+                      return (
+                        <button
+                          key={lang}
+                          onClick={() => duplicateFromListMutation.mutate({ id: firstExisting.id, targetLanguage: lang })}
+                          disabled={duplicateFromListMutation.isPending}
+                          title={t('team.createTranslation', { lang: lang.toUpperCase() })}
+                          className={clsx(
+                            'text-[10px] font-bold uppercase px-2 py-0.5 rounded border border-dashed cursor-pointer transition-colors',
+                            'border-dark-500 text-dark-500 hover:border-dark-300 hover:text-dark-300',
+                            duplicateFromListMutation.isPending && 'opacity-50 cursor-wait',
+                          )}
+                        >
+                          +{lang}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
 
-                  {member.certifications && (
-                    <div>
-                      <h4 className="text-sm font-medium text-dark-300 mb-1.5">{certLabel}:</h4>
-                      <ul className="space-y-1">
-                        {member.certifications.split('\n').filter(Boolean).map((line, i) => (
-                          <li key={i} className="flex items-start gap-2 text-dark-200 text-sm">
-                            <span className="text-primary-400 shrink-0 mt-0.5">•</span>
-                            <span>{line}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  {member.bio && (
-                    <div>
-                      <h4 className="text-sm font-medium text-dark-300 mb-1">Bio:</h4>
-                      <p className="text-dark-200 text-sm line-clamp-2 text-dark-500 italic">
-                        {deserializeBio(member.bio).filter(b => b.type === 'text').map(b => b.type === 'text' ? b.content : '').join(' ').slice(0, 120) || '(tylko zdjęcia)'}…
-                      </p>
-                    </div>
-                  )}
-                  {member.profile8aUrl && (
-                    <a href={member.profile8aUrl} target="_blank" rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 text-xs text-orange-400 hover:text-orange-300 transition-colors">
-                      <span className="font-bold">8a.nu</span>
-                      <span className="text-dark-500">↗</span>
-                    </a>
-                  )}
+                {/* Actions */}
+                <div className="flex items-center gap-1 flex-shrink-0">
+                  <button onClick={() => moveUpMutation.mutate(moveMemberId)}
+                    disabled={groupIndex === 0 || moveUpMutation.isPending || moveDownMutation.isPending}
+                    className="p-2 text-dark-400 hover:text-dark-100 transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
+                    <ChevronUp className="h-4 w-4" />
+                  </button>
+                  <button onClick={() => moveDownMutation.mutate(moveMemberId)}
+                    disabled={groupIndex === groups.length - 1 || moveUpMutation.isPending || moveDownMutation.isPending}
+                    className="p-2 text-dark-400 hover:text-dark-100 transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
+                    <ChevronDown className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={() => setDeleteGroupMembers(groupMembers.map(m => m.id))}
+                    title="Usuń"
+                    className="p-2 text-dark-400 hover:text-red-400 transition-colors">
+                    <Trash2 className="h-4 w-4" />
+                  </button>
                 </div>
               </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       )}
 
@@ -476,7 +463,7 @@ export function AdminTeamMemberPanel({ memberType }: Props) {
           </div>
           <div className="flex items-center gap-2 text-sm text-dark-400">
             <span>{t('team.language')}:</span>
-            <LanguageBadge language={languageFilter === 'all' ? 'pl' : languageFilter} />
+            <LanguageBadge language="pl" />
           </div>
           <div className="flex gap-2 justify-end">
             <Button type="button" variant="ghost" onClick={() => setCreateModalOpen(false)}>Anuluj</Button>
@@ -560,6 +547,30 @@ export function AdminTeamMemberPanel({ memberType }: Props) {
               )}
             </div>
 
+            {isInstructor && (
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-sm font-medium text-dark-200">Naklejka / badge</label>
+                </div>
+                <div className="flex items-center gap-3">
+                  {selectedMember.badgeUrl && (
+                    <img src={selectedMember.badgeUrl} alt="badge" className="w-10 h-10 rounded-full object-contain" />
+                  )}
+                  <Button type="button" variant="ghost" size="sm"
+                    onClick={() => { setBadgeTargetId(selectedMember.id); setBadgePickerOpen(true) }}>
+                    <Library className="w-3.5 h-3.5 mr-1" /> Wybierz z biblioteki
+                  </Button>
+                  {selectedMember.badgeUrl && (
+                    <Button type="button" variant="ghost" size="sm"
+                      onClick={() => deleteBadgeMutation.mutate(selectedMember.id)}
+                      loading={deleteBadgeMutation.isPending}>
+                      <Trash2 className="w-3.5 h-3.5 text-rose-400 mr-1" /> Usuń
+                    </Button>
+                  )}
+                </div>
+              </div>
+            )}
+
             <div>
               <label className="block text-sm font-medium text-dark-200 mb-1">Imię *</label>
               <input type="text" name="firstName" defaultValue={selectedMember.firstName} required maxLength={100} className={inputCls} />
@@ -593,6 +604,18 @@ export function AdminTeamMemberPanel({ memberType }: Props) {
               <span className="text-sm text-dark-200">Aktywny</span>
               <span className="text-xs text-dark-500">(wszystkie języki)</span>
             </label>
+
+            {existingLanguages.length > 1 && (
+              <div className="pt-4 border-t border-dark-600">
+                <button
+                  type="button"
+                  onClick={() => setDeleteSingleConfirm(true)}
+                  className="text-sm text-red-400 hover:text-red-300 transition-colors"
+                >
+                  {t('team.deleteSingleVersion', { lang: selectedMember.language.toUpperCase() })}
+                </button>
+              </div>
+            )}
 
             <div className="flex gap-2 justify-end">
               <Button type="button" variant="ghost" onClick={() => { setEditModalOpen(false); setSelectedMember(null) }}>Anuluj</Button>
@@ -645,13 +668,21 @@ export function AdminTeamMemberPanel({ memberType }: Props) {
           setPhotoGalleryOpen(false)
         }} />
 
-      {/* Delete Confirm */}
-      <ConfirmModal isOpen={deleteConfirmOpen}
-        onClose={() => { setDeleteConfirmOpen(false); setSelectedMember(null) }}
-        onConfirm={() => { if (selectedMember) deleteMutation.mutate(selectedMember.id) }}
+      {/* Delete group confirm */}
+      <ConfirmModal isOpen={!!deleteGroupMembers}
+        onClose={() => setDeleteGroupMembers(null)}
+        onConfirm={() => deleteGroupMembers && deleteGroupMutation.mutate(deleteGroupMembers)}
         title={`Usuń ${entityLabel}`}
-        message={`Czy na pewno chcesz usunąć ${isInstructor ? 'instruktora' : 'zawodnika'} ${selectedMember?.firstName} ${selectedMember?.lastName}? Tej operacji nie można cofnąć.`}
+        message={t('team.deleteGroupConfirmMessage')}
         confirmText="Usuń" />
+
+      {/* Delete single language version confirm */}
+      <ConfirmModal isOpen={deleteSingleConfirm}
+        onClose={() => setDeleteSingleConfirm(false)}
+        onConfirm={() => { if (selectedMember) deleteSingleMutation.mutate(selectedMember.id) }}
+        title={t('team.deleteSingleConfirmTitle')}
+        message={t('team.deleteSingleConfirmMessage', { lang: selectedMember?.language.toUpperCase(), name: `${selectedMember?.firstName} ${selectedMember?.lastName}` })}
+        confirmText={t('team.deleteSingleConfirm')} />
     </div>
   )
 }

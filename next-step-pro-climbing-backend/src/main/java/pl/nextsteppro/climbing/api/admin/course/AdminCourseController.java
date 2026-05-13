@@ -112,6 +112,18 @@ public class AdminCourseController {
         return ResponseEntity.ok(adminCourseService.duplicateAsTranslation(id, request.targetLanguage()));
     }
 
+    @Operation(summary = "Synchronizuj bloki medialne (IMAGE) do wszystkich tłumaczeń kursu")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Media zsynchronizowane"),
+        @ApiResponse(responseCode = "400", description = "Kurs nie znaleziony"),
+        @ApiResponse(responseCode = "403", description = "Brak uprawnień administratora")
+    })
+    @PostMapping("/{id}/sync-media-to-translations")
+    public ResponseEntity<AdminCourseDtos.SyncMediaResultDto> syncMediaToTranslations(
+            @Parameter(description = "ID kursu źródłowego") @PathVariable UUID id) {
+        return ResponseEntity.ok(adminCourseService.syncMediaToTranslations(id));
+    }
+
     @Operation(summary = "Usuń kurs wraz z plikami")
     @ApiResponses({
         @ApiResponse(responseCode = "204", description = "Kurs usunięty"),

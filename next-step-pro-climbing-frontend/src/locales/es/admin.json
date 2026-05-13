@@ -29,7 +29,13 @@
     "allLanguages": "Todos los idiomas",
     "duplicateAsTranslation": "Duplicar como traducción",
     "translationExists": "Todas las traducciones ya existen",
-    "duplicateSuccess": "Duplicado como traducción"
+    "duplicateSuccess": "Duplicado como traducción",
+    "deleteSingleVersion": "Eliminar solo versión {{lang}}",
+    "deleteSingleConfirmTitle": "Eliminar versión de idioma",
+    "deleteSingleConfirmMessage": "¿Estás seguro de que deseas eliminar la versión {{lang}} ({{name}})? Las otras versiones de idioma no se verán afectadas.",
+    "deleteSingleConfirm": "Eliminar",
+    "deleteGroupConfirmMessage": "¿Estás seguro de que deseas eliminar a esta persona y todas sus versiones de idioma? Esta acción no se puede deshacer.",
+    "createTranslation": "Crear traducción ({{lang}})"
   },
   "site": {
     "title": "Configuración de la página principal",
@@ -150,7 +156,10 @@
     "syncMediaModalTitle": "Sincronizar medios",
     "syncMediaModalMessage": "Has añadido nuevas imágenes o vídeos. ¿Quieres añadirlos a las otras versiones de idioma de este artículo?",
     "syncMediaConfirm": "Sí, sincronizar con todos los idiomas",
-    "syncMediaSkip": "No, solo este idioma"
+    "syncMediaSkip": "No, solo este idioma",
+    "deleteSingleVersion": "Eliminar solo versión {{lang}}",
+    "deleteSingleConfirmTitle": "Eliminar versión de idioma",
+    "deleteSingleConfirmMessage": "¿Estás seguro de que deseas eliminar la versión {{lang}} de este artículo? Las otras versiones de idioma no se verán afectadas."
   },
   "courses": {
     "title": "Cursos",
@@ -219,7 +228,16 @@
     "allLanguages": "Todos los idiomas",
     "duplicateAsTranslation": "Duplicar como traducción",
     "translationExists": "Todas las traducciones ya existen",
-    "duplicateSuccess": "Curso duplicado como traducción"
+    "duplicateSuccess": "Curso duplicado como traducción",
+    "deleteGroupConfirmMessage": "¿Estás seguro de que deseas eliminar este curso y todas sus traducciones? Esta acción no se puede deshacer.",
+    "createTranslation": "Crear traducción ({{lang}})",
+    "syncMediaModalTitle": "Sincronizar medios",
+    "syncMediaModalMessage": "Has añadido nuevas imágenes. ¿Quieres añadirlas a las otras versiones de idioma de este curso?",
+    "syncMediaConfirm": "Sí, añadir a todos los idiomas",
+    "syncMediaSkip": "No, solo este idioma",
+    "deleteSingleVersion": "Eliminar solo versión {{lang}}",
+    "deleteSingleConfirmTitle": "Eliminar versión de idioma",
+    "deleteSingleConfirmMessage": "¿Estás seguro de que deseas eliminar la versión {{lang}} de este curso? Las otras versiones de idioma no se verán afectadas."
   },
   "slots": {
     "addSlot": "Añadir franja horaria",

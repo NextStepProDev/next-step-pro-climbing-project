@@ -10,7 +10,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import pl.nextsteppro.climbing.api.admin.course.AdminCourseDtos.*;
-import pl.nextsteppro.climbing.config.ContentLanguages;
 import pl.nextsteppro.climbing.domain.course.*;
 import pl.nextsteppro.climbing.domain.event.Event;
 import pl.nextsteppro.climbing.domain.event.EventRepository;
@@ -68,17 +67,6 @@ public class AdminCourseService {
         }
         course.setDisplayOrder(courseRepository.findMaxDisplayOrder() + 1);
         course = courseRepository.save(course);
-
-        for (String lang : ContentLanguages.ALL) {
-            if (!lang.equals(course.getLanguage())) {
-                Course copy = new Course(course.getTitle());
-                copy.setLanguage(lang);
-                copy.setTranslationGroupId(course.getTranslationGroupId());
-                copy.setPrice(course.getPrice());
-                copy.setDisplayOrder(course.getDisplayOrder());
-                courseRepository.save(copy);
-            }
-        }
 
         return toAdminDto(course);
     }
@@ -248,7 +236,10 @@ public class AdminCourseService {
 
         String filename = fileStorageService.store(file, "courses");
         course.setThumbnailFilename(filename);
+        course.setThumbnailUrl(null);
         courseRepository.save(course);
+
+        syncThumbnailToSiblings(course);
 
         List<CourseContentBlock> blocks = blockRepository.findByCourseIdOrderByDisplayOrderAsc(id);
         return toDetailAdminDto(course, blocks);
@@ -260,6 +251,8 @@ public class AdminCourseService {
         course.setThumbnailFocalPointX(req.focalPointX());
         course.setThumbnailFocalPointY(req.focalPointY());
         courseRepository.save(course);
+
+        syncThumbnailToSiblings(course);
     }
 
     @CacheEvict(value = {"courseList", "courseDetail"}, allEntries = true)
@@ -270,33 +263,43 @@ public class AdminCourseService {
             throw new IllegalStateException("No thumbnail to delete");
         }
 
-        if (course.getThumbnailFilename() != null) {
-            if (!courseRepository.existsByThumbnailFilenameAndIdNot(course.getThumbnailFilename(), id)) {
-                fileStorageService.delete(course.getThumbnailFilename(), "courses");
-            }
-            course.setThumbnailFilename(null);
-        }
+        String oldFilename = course.getThumbnailFilename();
+
+        course.setThumbnailFilename(null);
         course.setThumbnailUrl(null);
+        course.setThumbnailFocalPointX(null);
+        course.setThumbnailFocalPointY(null);
         courseRepository.save(course);
+
+        syncThumbnailToSiblings(course);
+
+        if (oldFilename != null && !courseRepository.existsByThumbnailFilenameAndIdNot(oldFilename, id)) {
+            try {
+                fileStorageService.delete(oldFilename, "courses");
+            } catch (Exception e) {
+                logger.warn("Failed to delete thumbnail: {} - {}", oldFilename, e.getMessage());
+            }
+        }
     }
 
     @CacheEvict(value = {"courseList", "courseDetail"}, allEntries = true)
     public void setThumbnailUrl(UUID id, SetThumbnailUrlRequest request) {
         Course course = findCourse(id);
+        String oldFilename = course.getThumbnailFilename();
 
-        if (course.getThumbnailFilename() != null) {
-            if (!courseRepository.existsByThumbnailFilenameAndIdNot(course.getThumbnailFilename(), id)) {
-                try {
-                    fileStorageService.delete(course.getThumbnailFilename(), "courses");
-                } catch (Exception e) {
-                    logger.warn("Failed to delete old thumbnail when setting URL: {}", e.getMessage());
-                }
-            }
-            course.setThumbnailFilename(null);
-        }
-
+        course.setThumbnailFilename(null);
         course.setThumbnailUrl(request.thumbnailUrl());
         courseRepository.save(course);
+
+        syncThumbnailToSiblings(course);
+
+        if (oldFilename != null && !courseRepository.existsByThumbnailFilenameAndIdNot(oldFilename, id)) {
+            try {
+                fileStorageService.delete(oldFilename, "courses");
+            } catch (Exception e) {
+                logger.warn("Failed to delete old thumbnail when setting URL: {}", e.getMessage());
+            }
+        }
     }
 
     // --- Bloki treści ---
@@ -425,6 +428,93 @@ public class AdminCourseService {
             blockRepository.save(block);
             blockRepository.save(other);
         }
+    }
+
+    // --- Synchronizacja miniaturki do rodzeństwa ---
+
+    private void syncThumbnailToSiblings(Course source) {
+        for (Course sibling : courseRepository.findByTranslationGroupId(source.getTranslationGroupId())) {
+            if (!sibling.getId().equals(source.getId())) {
+                String oldFilename = sibling.getThumbnailFilename();
+
+                sibling.setThumbnailFilename(source.getThumbnailFilename());
+                sibling.setThumbnailUrl(source.getThumbnailUrl());
+                sibling.setThumbnailFocalPointX(source.getThumbnailFocalPointX());
+                sibling.setThumbnailFocalPointY(source.getThumbnailFocalPointY());
+                courseRepository.save(sibling);
+
+                if (oldFilename != null
+                        && !oldFilename.equals(source.getThumbnailFilename())
+                        && !courseRepository.existsByThumbnailFilenameAndIdNot(oldFilename, sibling.getId())) {
+                    try {
+                        fileStorageService.delete(oldFilename, "courses");
+                    } catch (Exception e) {
+                        logger.warn("Failed to delete old sibling thumbnail: {} - {}", oldFilename, e.getMessage());
+                    }
+                }
+            }
+        }
+    }
+
+    // --- Synchronizacja mediów do tłumaczeń ---
+
+    @CacheEvict(value = {"courseList", "courseDetail"}, allEntries = true)
+    public SyncMediaResultDto syncMediaToTranslations(UUID sourceCourseId) {
+        Course source = findCourse(sourceCourseId);
+        List<CourseContentBlock> sourceBlocks = blockRepository.findByCourseIdOrderByDisplayOrderAsc(sourceCourseId);
+
+        List<CourseContentBlock> sourceMediaBlocks = sourceBlocks.stream()
+                .filter(b -> b.getBlockType() == CourseBlockType.IMAGE)
+                .toList();
+
+        if (sourceMediaBlocks.isEmpty()) {
+            return new SyncMediaResultDto(0);
+        }
+
+        List<Course> siblings = courseRepository.findByTranslationGroupId(source.getTranslationGroupId())
+                .stream()
+                .filter(s -> !s.getId().equals(sourceCourseId))
+                .toList();
+
+        int totalAdded = 0;
+
+        for (Course sibling : siblings) {
+            List<CourseContentBlock> siblingBlocks = blockRepository.findByCourseIdOrderByDisplayOrderAsc(sibling.getId());
+            int maxOrder = siblingBlocks.stream()
+                    .mapToInt(CourseContentBlock::getDisplayOrder)
+                    .max()
+                    .orElse(-1);
+
+            for (CourseContentBlock srcBlock : sourceMediaBlocks) {
+                boolean alreadyExists = siblingBlocks.stream().anyMatch(sb -> mediaBlockMatches(sb, srcBlock));
+                if (!alreadyExists) {
+                    maxOrder++;
+                    CourseContentBlock copy = new CourseContentBlock(sibling, srcBlock.getBlockType());
+                    copy.setContent(srcBlock.getContent());
+                    copy.setImageFilename(srcBlock.getImageFilename());
+                    copy.setImageUrl(srcBlock.getImageUrl());
+                    copy.setCaption(srcBlock.getCaption());
+                    copy.setDisplayOrder(maxOrder);
+                    blockRepository.save(copy);
+                    totalAdded++;
+                }
+            }
+        }
+
+        return new SyncMediaResultDto(totalAdded);
+    }
+
+    private boolean mediaBlockMatches(CourseContentBlock existing, CourseContentBlock source) {
+        if (existing.getBlockType() != source.getBlockType()) {
+            return false;
+        }
+        if (source.getImageFilename() != null) {
+            return source.getImageFilename().equals(existing.getImageFilename());
+        }
+        if (source.getImageUrl() != null) {
+            return source.getImageUrl().equals(existing.getImageUrl());
+        }
+        return false;
     }
 
     // --- Helpery ---

@@ -911,6 +911,11 @@ export const adminCoursesApi = {
       method: 'POST',
       body: JSON.stringify({ targetLanguage }),
     }),
+
+  syncMediaToTranslations: (id: string) =>
+    fetchApi<{ blocksAdded: number }>(`/admin/courses/${id}/sync-media-to-translations`, {
+      method: 'POST',
+    }),
 }
 
 export const adminAssetsApi = {

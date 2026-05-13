@@ -105,7 +105,6 @@ export function AdminNewsPanel() {
   const queryClient = useQueryClient()
   const [view, setView] = useState<View>('list')
   const [selectedNewsId, setSelectedNewsId] = useState<string | null>(null)
-  const [newArticleLang, setNewArticleLang] = useState<string>('pl')
 
   const { data: articles, isLoading, error } = useQuery({
     queryKey: ['admin', 'news'],
@@ -227,24 +226,13 @@ export function AdminNewsPanel() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-semibold text-dark-100">{t('news.title')}</h2>
-        <div className="flex items-center gap-3">
-          <select
-            value={newArticleLang}
-            onChange={(e) => setNewArticleLang(e.target.value)}
-            className="bg-dark-800 border border-dark-600 rounded-lg px-3 py-2 text-sm text-dark-100"
-          >
-            {COURSE_CONTENT_LANGUAGES.map((lang) => (
-              <option key={lang.code} value={lang.code}>{lang.label}</option>
-            ))}
-          </select>
-          <Button
-            onClick={() => createMutation.mutate({ title: t('news.newArticleDefaultTitle'), language: newArticleLang })}
-            disabled={createMutation.isPending}
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            {t('news.addArticle')}
-          </Button>
-        </div>
+        <Button
+          onClick={() => createMutation.mutate({ title: t('news.newArticleDefaultTitle'), language: 'pl' })}
+          disabled={createMutation.isPending}
+        >
+          <Plus className="h-4 w-4 mr-2" />
+          {t('news.addArticle')}
+        </Button>
       </div>
 
       {groups.length === 0 ? (
@@ -485,6 +473,16 @@ function EditView({
   })
 
   const [showSyncMediaModal, setShowSyncMediaModal] = useState(false)
+
+  const [deleteSingleConfirm, setDeleteSingleConfirm] = useState(false)
+
+  const deleteSingleMutation = useMutation({
+    mutationFn: () => adminNewsApi.delete(newsId),
+    onSuccess: () => {
+      invalidate()
+      onBack()
+    },
+  })
 
   // ---------- Meta state ----------
   const [title, setTitle] = useState(detail.title)
@@ -876,7 +874,16 @@ function EditView({
         {duplicateMutation.isSuccess && (
           <p className="text-sm text-green-400 mt-2">{t('news.duplicateSuccess')}</p>
         )}
-
+        {hasTranslationSiblings && (
+          <div className="mt-4 pt-4 border-t border-dark-600">
+            <button
+              onClick={() => setDeleteSingleConfirm(true)}
+              className="text-sm text-red-400 hover:text-red-300 transition-colors"
+            >
+              {t('news.deleteSingleVersion', { lang: detail.language.toUpperCase() })}
+            </button>
+          </div>
+        )}
       </section>
 
       {/* Sekcja 2: Miniaturka */}
@@ -1200,6 +1207,16 @@ function EditView({
         confirmText={t('news.exitConfirm')}
         onConfirm={() => onBack()}
         onClose={() => setShowExitConfirm(false)}
+      />
+
+      {/* Confirm: usuń pojedynczą wersję językową */}
+      <ConfirmModal
+        isOpen={deleteSingleConfirm}
+        title={t('news.deleteSingleConfirmTitle')}
+        message={t('news.deleteSingleConfirmMessage', { lang: detail.language.toUpperCase() })}
+        confirmText={t('news.delete')}
+        onConfirm={() => deleteSingleMutation.mutate()}
+        onClose={() => setDeleteSingleConfirm(false)}
       />
 
       {/* Modal: synchronizacja mediów do tłumaczeń */}

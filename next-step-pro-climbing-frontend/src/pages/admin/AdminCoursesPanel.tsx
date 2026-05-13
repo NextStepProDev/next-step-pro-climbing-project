@@ -5,7 +5,6 @@ import { useTranslation } from 'react-i18next'
 import {
   BookOpen,
   Plus,
-  Pencil,
   Trash2,
   ChevronUp,
   ChevronDown,
@@ -30,6 +29,7 @@ import type {
 } from '../../types'
 import { Button } from '../../components/ui/Button'
 import { ConfirmModal } from '../../components/ui/ConfirmModal'
+import { Modal } from '../../components/ui/Modal'
 import { CoursePreviewModal, type CoursePreviewBlock } from '../../components/ui/CoursePreviewModal'
 import { FocalPointEditor } from '../../components/ui/FocalPointEditor'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
@@ -64,22 +64,35 @@ type PendingBlock = PendingTextBlock | PendingImageBlock
 
 // ---------- Main panel ----------
 
+const LANG_ORDER = ['pl', 'en', 'es'] as const
+
 export function AdminCoursesPanel() {
   const { t } = useTranslation('admin')
   const queryClient = useQueryClient()
   const [view, setView] = useState<View>('list')
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null)
-  const [localOrder, setLocalOrder] = useState<CourseAdmin[] | null>(null)
-  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null)
-  const [languageFilter, setLanguageFilter] = useState<string>('pl')
 
   const { data: courses, isLoading, error } = useQuery({
     queryKey: ['admin', 'courses'],
     queryFn: () => adminCoursesApi.getAll(),
   })
 
-  const orderedCourses = localOrder ?? (courses ? [...courses].sort((a, b) => a.displayOrder - b.displayOrder) : [])
-  const filteredCourses = orderedCourses.filter(c => c.language === languageFilter)
+  const groups = (() => {
+    const allCourses = courses ?? []
+    const map = new Map<string, CourseAdmin[]>()
+    for (const course of allCourses) {
+      const group = map.get(course.translationGroupId) ?? []
+      group.push(course)
+      map.set(course.translationGroupId, group)
+    }
+    return [...map.entries()]
+      .sort((a, b) => {
+        const orderA = Math.min(...a[1].map(c => c.displayOrder))
+        const orderB = Math.min(...b[1].map(c => c.displayOrder))
+        return orderA - orderB
+      })
+      .map(([groupId, groupCourses]) => ({ groupId, courses: groupCourses }))
+  })()
 
   const { data: detail, isLoading: detailLoading } = useQuery({
     queryKey: ['admin', 'courses', selectedCourseId],
@@ -96,11 +109,15 @@ export function AdminCoursesPanel() {
     },
   })
 
-  const deleteMutation = useMutation({
-    mutationFn: (id: string) => adminCoursesApi.delete(id),
+  const deleteGroupMutation = useMutation({
+    mutationFn: async (courseIds: string[]) => {
+      for (const id of courseIds) {
+        await adminCoursesApi.delete(id)
+      }
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'courses'] })
-      setDeleteConfirmId(null)
+      setDeleteGroupCourses(null)
     },
   })
 
@@ -116,19 +133,30 @@ export function AdminCoursesPanel() {
 
   const reorderMutation = useMutation({
     mutationFn: (orderedIds: string[]) => adminCoursesApi.reorder(orderedIds),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['admin', 'courses'] })
-      setLocalOrder(null)
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin', 'courses'] }),
+  })
+
+  const duplicateFromListMutation = useMutation({
+    mutationFn: ({ sourceId, targetLanguage }: { sourceId: string; targetLanguage: string }) =>
+      adminCoursesApi.duplicateAsTranslation(sourceId, targetLanguage),
+    onSuccess: (newDetail) => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'courses'] })
+      setSelectedCourseId(newDetail.id)
+      setView('edit')
     },
   })
 
-  const handleMove = (index: number, direction: 'up' | 'down') => {
-    const source = [...filteredCourses]
-    const targetIndex = direction === 'up' ? index - 1 : index + 1
-    if (targetIndex < 0 || targetIndex >= source.length) return
-    ;[source[index], source[targetIndex]] = [source[targetIndex], source[index]]
-    setLocalOrder(source)
-    reorderMutation.mutate(source.map(c => c.id))
+  const [deleteGroupCourses, setDeleteGroupCourses] = useState<string[] | null>(null)
+
+  const handleGroupMove = (groupIndex: number, direction: 'up' | 'down') => {
+    const targetIndex = direction === 'up' ? groupIndex - 1 : groupIndex + 1
+    if (targetIndex < 0 || targetIndex >= groups.length) return
+    const reordered = [...groups]
+    ;[reordered[groupIndex], reordered[targetIndex]] = [reordered[targetIndex], reordered[groupIndex]]
+    const plCourseIds = reordered
+      .map(g => g.courses.find(c => c.language === 'pl') ?? g.courses[0])
+      .map(c => c.id)
+    reorderMutation.mutate(plCourseIds)
   }
 
   if (isLoading) {
@@ -170,73 +198,64 @@ export function AdminCoursesPanel() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+      <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-semibold text-dark-100">{t('courses.title')}</h2>
-        <div className="flex items-center gap-3">
-          <select
-            value={languageFilter}
-            onChange={(e) => setLanguageFilter(e.target.value)}
-            className="bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-sm text-dark-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
-          >
-            {COURSE_CONTENT_LANGUAGES.map((lang) => (
-              <option key={lang.code} value={lang.code}>{lang.label}</option>
-            ))}
-          </select>
-          <Button
-            onClick={() => createMutation.mutate({ title: t('courses.newCourseDefaultTitle'), language: languageFilter })}
-            disabled={createMutation.isPending}
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            {t('courses.addCourse')}
-          </Button>
-        </div>
+        <Button
+          onClick={() => createMutation.mutate({ title: t('courses.newCourseDefaultTitle'), language: 'pl' })}
+          disabled={createMutation.isPending}
+        >
+          <Plus className="h-4 w-4 mr-2" />
+          {t('courses.addCourse')}
+        </Button>
       </div>
 
-      {filteredCourses.length === 0 ? (
+      {groups.length === 0 ? (
         <div className="text-center text-dark-400 py-12">
           {t('courses.noCourses')}
         </div>
       ) : (
         <div className="space-y-3">
-          {filteredCourses.map((course, index) => (
-            <CourseRow
-              key={course.id}
-              course={course}
-              allCourses={courses ?? []}
-              isFirst={index === 0}
-              isLast={index === filteredCourses.length - 1}
+          {groups.map(({ groupId, courses: groupCourses }, groupIndex) => (
+            <TranslationGroupRow
+              key={groupId}
+              groupCourses={groupCourses}
+              isFirst={groupIndex === 0}
+              isLast={groupIndex === groups.length - 1}
               moveDisabled={reorderMutation.isPending}
-              onMoveUp={() => handleMove(index, 'up')}
-              onMoveDown={() => handleMove(index, 'down')}
-              onEdit={() => {
-                setSelectedCourseId(course.id)
+              onMoveUp={() => handleGroupMove(groupIndex, 'up')}
+              onMoveDown={() => handleGroupMove(groupIndex, 'down')}
+              onEdit={(courseId) => {
+                setSelectedCourseId(courseId)
                 setView('edit')
               }}
-              onDelete={() => setDeleteConfirmId(course.id)}
-              onPublish={() => publishMutation.mutate(course.id)}
-              onUnpublish={() => unpublishMutation.mutate(course.id)}
+              onDelete={(courseIds) => setDeleteGroupCourses(courseIds)}
+              onPublish={(id) => publishMutation.mutate(id)}
+              onUnpublish={(id) => unpublishMutation.mutate(id)}
+              onCreateTranslation={(sourceId, targetLang) =>
+                duplicateFromListMutation.mutate({ sourceId, targetLanguage: targetLang })
+              }
+              isCreatingTranslation={duplicateFromListMutation.isPending}
             />
           ))}
         </div>
       )}
 
       <ConfirmModal
-        isOpen={!!deleteConfirmId}
+        isOpen={!!deleteGroupCourses}
         title={t('courses.deleteConfirmTitle')}
-        message={t('courses.deleteConfirmMessage')}
+        message={t('courses.deleteGroupConfirmMessage')}
         confirmText={t('courses.delete')}
-        onConfirm={() => deleteConfirmId && deleteMutation.mutate(deleteConfirmId)}
-        onClose={() => setDeleteConfirmId(null)}
+        onConfirm={() => deleteGroupCourses && deleteGroupMutation.mutate(deleteGroupCourses)}
+        onClose={() => setDeleteGroupCourses(null)}
       />
     </div>
   )
 }
 
-// ==================== Wiersz kursu w liście ====================
+// ==================== Wiersz grupy tłumaczeń w liście ====================
 
-function CourseRow({
-  course,
-  allCourses,
+function TranslationGroupRow({
+  groupCourses,
   isFirst,
   isLast,
   moveDisabled,
@@ -246,26 +265,33 @@ function CourseRow({
   onDelete,
   onPublish,
   onUnpublish,
+  onCreateTranslation,
+  isCreatingTranslation,
 }: {
-  course: CourseAdmin
-  allCourses: CourseAdmin[]
+  groupCourses: CourseAdmin[]
   isFirst: boolean
   isLast: boolean
   moveDisabled: boolean
   onMoveUp: () => void
   onMoveDown: () => void
-  onEdit: () => void
-  onDelete: () => void
-  onPublish: () => void
-  onUnpublish: () => void
+  onEdit: (courseId: string) => void
+  onDelete: (courseIds: string[]) => void
+  onPublish: (courseId: string) => void
+  onUnpublish: (courseId: string) => void
+  onCreateTranslation: (sourceId: string, targetLang: string) => void
+  isCreatingTranslation: boolean
 }) {
   const { t } = useTranslation('admin')
+
+  const langMap = new Map(groupCourses.map(c => [c.language, c]))
+  const displayCourse = langMap.get('pl') ?? langMap.get('en') ?? langMap.get('es') ?? groupCourses[0]
+  const firstExistingCourse = groupCourses[0]
 
   return (
     <div className="flex items-center gap-4 bg-dark-800 border border-dark-700 rounded-lg p-4">
       <div className="flex-shrink-0 w-16 h-16 bg-dark-700 rounded overflow-hidden">
-        {course.thumbnailUrl ? (
-          <img src={course.thumbnailUrl} alt={course.title} className="w-full h-full object-cover" />
+        {displayCourse.thumbnailUrl ? (
+          <img src={displayCourse.thumbnailUrl} alt={displayCourse.title} className="w-full h-full object-cover" />
         ) : (
           <div className="w-full h-full flex items-center justify-center">
             <BookOpen className="h-6 w-6 text-dark-500" />
@@ -278,49 +304,60 @@ function CourseRow({
           <span
             className={clsx(
               'text-xs px-2 py-0.5 rounded-full',
-              course.published
+              displayCourse.published
                 ? 'bg-green-900/40 text-green-400'
                 : 'bg-dark-600 text-dark-400'
             )}
           >
-            {course.published ? t('courses.published') : t('courses.draft')}
+            {displayCourse.published ? t('courses.published') : t('courses.draft')}
           </span>
-          <span
-            className={clsx(
-              'text-xs px-2 py-0.5 rounded-full font-medium',
-              course.language === 'pl' && 'bg-blue-900/40 text-blue-400',
-              course.language === 'en' && 'bg-emerald-900/40 text-emerald-400',
-              course.language === 'es' && 'bg-purple-900/40 text-purple-400',
-            )}
-          >
-            {course.language.toUpperCase()}
-          </span>
-          {allCourses
-            .filter(c => c.translationGroupId === course.translationGroupId && c.id !== course.id)
-            .map(sibling => (
-              <span
-                key={sibling.id}
-                className={clsx(
-                  'text-[9px] px-1 py-0.5 rounded font-medium opacity-40',
-                  sibling.language === 'pl' && 'bg-blue-900/30 text-blue-400',
-                  sibling.language === 'en' && 'bg-emerald-900/30 text-emerald-400',
-                  sibling.language === 'es' && 'bg-purple-900/30 text-purple-400',
-                )}
-              >
-                {sibling.language.toUpperCase()}
-              </span>
-            ))
-          }
-          {course.publishedAt && (
+          {displayCourse.publishedAt && (
             <span className="text-xs text-dark-400">
-              {new Date(course.publishedAt).toLocaleDateString('pl-PL')}
+              {new Date(displayCourse.publishedAt).toLocaleDateString('pl-PL')}
             </span>
           )}
         </div>
-        <p className="font-medium text-dark-100 truncate">{course.title}</p>
-        {course.price && (
-          <p className="text-sm text-dark-400 truncate">{course.price}</p>
+        <p className="font-medium text-dark-100 truncate">{displayCourse.title}</p>
+        {displayCourse.price && (
+          <p className="text-sm text-dark-400 truncate">{displayCourse.price}</p>
         )}
+        <div className="flex items-center gap-1.5 mt-1">
+          {LANG_ORDER.map((lang) => {
+            const course = langMap.get(lang)
+            if (course) {
+              return (
+                <button
+                  key={lang}
+                  onClick={() => onEdit(course.id)}
+                  title={`${t('courses.edit')} (${lang.toUpperCase()})`}
+                  className={clsx(
+                    'text-[10px] font-bold uppercase px-2 py-0.5 rounded border cursor-pointer transition-colors',
+                    lang === 'pl' && 'bg-blue-900/40 text-blue-400 border-blue-700 hover:bg-blue-900/60',
+                    lang === 'en' && 'bg-emerald-900/40 text-emerald-400 border-emerald-700 hover:bg-emerald-900/60',
+                    lang === 'es' && 'bg-purple-900/40 text-purple-400 border-purple-700 hover:bg-purple-900/60',
+                  )}
+                >
+                  {lang}
+                </button>
+              )
+            }
+            return (
+              <button
+                key={lang}
+                onClick={() => onCreateTranslation(firstExistingCourse.id, lang)}
+                disabled={isCreatingTranslation}
+                title={t('courses.createTranslation', { lang: lang.toUpperCase() })}
+                className={clsx(
+                  'text-[10px] font-bold uppercase px-2 py-0.5 rounded border border-dashed cursor-pointer transition-colors',
+                  'border-dark-500 text-dark-500 hover:border-dark-300 hover:text-dark-300',
+                  isCreatingTranslation && 'opacity-50 cursor-wait',
+                )}
+              >
+                +{lang}
+              </button>
+            )
+          })}
+        </div>
       </div>
 
       <div className="flex items-center gap-1 flex-shrink-0">
@@ -341,21 +378,14 @@ function CourseRow({
           <ChevronDown className="h-4 w-4" />
         </button>
         <button
-          onClick={course.published ? onUnpublish : onPublish}
-          title={(course.published ? t('courses.unpublish') : t('courses.publish')) + ' (wszystkie języki)'}
-          className={`p-2 transition-colors ${course.published ? 'text-emerald-400 hover:text-orange-400' : 'text-dark-400 hover:text-dark-100'}`}
+          onClick={() => displayCourse.published ? onUnpublish(displayCourse.id) : onPublish(displayCourse.id)}
+          title={(displayCourse.published ? t('courses.unpublish') : t('courses.publish')) + ' (wszystkie języki)'}
+          className={`p-2 transition-colors ${displayCourse.published ? 'text-emerald-400 hover:text-orange-400' : 'text-dark-400 hover:text-dark-100'}`}
         >
-          {course.published ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+          {displayCourse.published ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
         </button>
         <button
-          onClick={onEdit}
-          title={t('courses.edit')}
-          className="p-2 text-dark-400 hover:text-dark-100 transition-colors"
-        >
-          <Pencil className="h-4 w-4" />
-        </button>
-        <button
-          onClick={onDelete}
+          onClick={() => onDelete(groupCourses.map(c => c.id))}
           title={t('courses.delete')}
           className="p-2 text-dark-400 hover:text-red-400 transition-colors"
         >
@@ -548,20 +578,24 @@ function EditView({
           if (pending.preview) URL.revokeObjectURL(pending.preview)
         }
       }
+      const hadNewMedia = blocksToSave.some(b => b.type === 'IMAGE')
       const emptyTextBlocks = pendingBlocks.filter(
         (b) => b.type === 'TEXT' && b.content.trim().length === 0
       )
       setPendingBlocks(emptyTextBlocks)
-      if (goBack) {
-        await invalidate()
+      await invalidate()
+      if (hadNewMedia && hasTranslationSiblings) {
+        setIsSaving(false)
+        setShowSyncMediaModal(true)
+      } else if (goBack) {
         onBack()
         return
       }
     } catch (err) {
       setSaveError(getErrorMessage(err))
+      invalidate()
     } finally {
       setIsSaving(false)
-      invalidate()
     }
   }
 
@@ -663,6 +697,27 @@ function EditView({
     },
   })
 
+  const hasTranslationSiblings = existingLanguages.length > 1
+
+  const syncMediaMutation = useMutation({
+    mutationFn: () => adminCoursesApi.syncMediaToTranslations(courseId),
+    onSuccess: () => {
+      invalidate()
+    },
+  })
+
+  const [showSyncMediaModal, setShowSyncMediaModal] = useState(false)
+
+  const [deleteSingleConfirm, setDeleteSingleConfirm] = useState(false)
+
+  const deleteSingleMutation = useMutation({
+    mutationFn: () => adminCoursesApi.delete(courseId),
+    onSuccess: () => {
+      invalidate()
+      onBack()
+    },
+  })
+
   // ---------- Render ----------
   return (
     <div className="pb-24 space-y-8">
@@ -751,6 +806,16 @@ function EditView({
           <p className="text-sm text-red-400 mt-2">
             {getErrorMessage(duplicateMutation.error)}
           </p>
+        )}
+        {hasTranslationSiblings && (
+          <div className="mt-4 pt-4 border-t border-dark-600">
+            <button
+              onClick={() => setDeleteSingleConfirm(true)}
+              className="text-sm text-red-400 hover:text-red-300 transition-colors"
+            >
+              {t('courses.deleteSingleVersion', { lang: detail.language.toUpperCase() })}
+            </button>
+          </div>
         )}
       </section>
 
@@ -1090,6 +1155,44 @@ function EditView({
           }
         }}
       />
+
+      {/* Confirm: usuń pojedynczą wersję językową */}
+      <ConfirmModal
+        isOpen={deleteSingleConfirm}
+        title={t('courses.deleteSingleConfirmTitle')}
+        message={t('courses.deleteSingleConfirmMessage', { lang: detail.language.toUpperCase() })}
+        confirmText={t('courses.delete')}
+        onConfirm={() => deleteSingleMutation.mutate()}
+        onClose={() => setDeleteSingleConfirm(false)}
+      />
+
+      {/* Sync media modal */}
+      <Modal
+        isOpen={showSyncMediaModal}
+        onClose={() => { setShowSyncMediaModal(false); onBack() }}
+        title={t('courses.syncMediaModalTitle')}
+      >
+        <p className="text-dark-300 text-sm mb-6">{t('courses.syncMediaModalMessage')}</p>
+        <div className="flex justify-end gap-3">
+          <Button
+            variant="secondary"
+            onClick={() => { setShowSyncMediaModal(false); onBack() }}
+          >
+            {t('courses.syncMediaSkip')}
+          </Button>
+          <Button
+            onClick={async () => {
+              await syncMediaMutation.mutateAsync()
+              setShowSyncMediaModal(false)
+              onBack()
+            }}
+            loading={syncMediaMutation.isPending}
+            disabled={syncMediaMutation.isPending}
+          >
+            {t('courses.syncMediaConfirm')}
+          </Button>
+        </div>
+      </Modal>
 
     </div>
   )

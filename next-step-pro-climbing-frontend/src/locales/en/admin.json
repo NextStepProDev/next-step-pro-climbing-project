@@ -29,7 +29,13 @@
     "allLanguages": "All languages",
     "duplicateAsTranslation": "Duplicate as translation",
     "translationExists": "All translations already exist",
-    "duplicateSuccess": "Duplicated as translation"
+    "duplicateSuccess": "Duplicated as translation",
+    "deleteSingleVersion": "Delete {{lang}} version only",
+    "deleteSingleConfirmTitle": "Delete language version",
+    "deleteSingleConfirmMessage": "Are you sure you want to delete the {{lang}} version ({{name}})? Other language versions will not be affected.",
+    "deleteSingleConfirm": "Delete",
+    "deleteGroupConfirmMessage": "Are you sure you want to delete this person and all their language versions? This action cannot be undone.",
+    "createTranslation": "Create translation ({{lang}})"
   },
   "site": {
     "title": "Homepage settings",
@@ -152,7 +158,10 @@
     "syncMediaModalTitle": "Sync media",
     "syncMediaModalMessage": "You added new images or videos. Do you want to append them to other language versions of this article?",
     "syncMediaConfirm": "Yes, sync to all languages",
-    "syncMediaSkip": "No, this language only"
+    "syncMediaSkip": "No, this language only",
+    "deleteSingleVersion": "Delete {{lang}} version only",
+    "deleteSingleConfirmTitle": "Delete language version",
+    "deleteSingleConfirmMessage": "Are you sure you want to delete the {{lang}} version of this article? Other language versions will not be affected."
   },
   "courses": {
     "title": "Courses",
@@ -221,7 +230,16 @@
     "allLanguages": "All languages",
     "duplicateAsTranslation": "Duplicate as translation",
     "translationExists": "All translations already exist",
-    "duplicateSuccess": "Course duplicated as translation"
+    "duplicateSuccess": "Course duplicated as translation",
+    "deleteGroupConfirmMessage": "Are you sure you want to delete this course and all its translations? This action cannot be undone.",
+    "createTranslation": "Create translation ({{lang}})",
+    "syncMediaModalTitle": "Sync media",
+    "syncMediaModalMessage": "You added new images. Do you want to add them to the other language versions of this course?",
+    "syncMediaConfirm": "Yes, add to all languages",
+    "syncMediaSkip": "No, only this language",
+    "deleteSingleVersion": "Delete {{lang}} version only",
+    "deleteSingleConfirmTitle": "Delete language version",
+    "deleteSingleConfirmMessage": "Are you sure you want to delete the {{lang}} version of this course? Other language versions will not be affected."
   },
   "slots": {
     "addSlot": "Add slot",
