@@ -432,6 +432,73 @@ public class AdminNewsService {
         }
     }
 
+    // --- Synchronizacja mediów do tłumaczeń ---
+
+    @CacheEvict(value = {"newsList", "newsDetail"}, allEntries = true)
+    public SyncMediaResultDto syncMediaToTranslations(UUID sourceNewsId) {
+        News source = findNews(sourceNewsId);
+        List<NewsContentBlock> sourceBlocks = blockRepository.findByNewsIdOrderByDisplayOrderAsc(sourceNewsId);
+
+        List<NewsContentBlock> sourceMediaBlocks = sourceBlocks.stream()
+                .filter(b -> b.getBlockType() == BlockType.IMAGE || b.getBlockType() == BlockType.VIDEO_EMBED)
+                .toList();
+
+        if (sourceMediaBlocks.isEmpty()) {
+            return new SyncMediaResultDto(0);
+        }
+
+        List<News> siblings = newsRepository.findByTranslationGroupId(source.getTranslationGroupId())
+                .stream()
+                .filter(s -> !s.getId().equals(sourceNewsId))
+                .toList();
+
+        int totalAdded = 0;
+
+        for (News sibling : siblings) {
+            List<NewsContentBlock> siblingBlocks = blockRepository.findByNewsIdOrderByDisplayOrderAsc(sibling.getId());
+            int maxOrder = siblingBlocks.stream()
+                    .mapToInt(NewsContentBlock::getDisplayOrder)
+                    .max()
+                    .orElse(-1);
+
+            for (NewsContentBlock srcBlock : sourceMediaBlocks) {
+                boolean alreadyExists = siblingBlocks.stream().anyMatch(sb -> mediaBlockMatches(sb, srcBlock));
+                if (!alreadyExists) {
+                    maxOrder++;
+                    NewsContentBlock copy = new NewsContentBlock(sibling, srcBlock.getBlockType());
+                    copy.setContent(srcBlock.getContent());
+                    copy.setImageFilename(srcBlock.getImageFilename());
+                    copy.setImageUrl(srcBlock.getImageUrl());
+                    copy.setCaption(srcBlock.getCaption());
+                    copy.setDisplayOrder(maxOrder);
+                    blockRepository.save(copy);
+                    totalAdded++;
+                }
+            }
+        }
+
+        return new SyncMediaResultDto(totalAdded);
+    }
+
+    private boolean mediaBlockMatches(NewsContentBlock existing, NewsContentBlock source) {
+        if (existing.getBlockType() != source.getBlockType()) {
+            return false;
+        }
+        if (source.getBlockType() == BlockType.IMAGE) {
+            if (source.getImageFilename() != null) {
+                return source.getImageFilename().equals(existing.getImageFilename());
+            }
+            if (source.getImageUrl() != null) {
+                return source.getImageUrl().equals(existing.getImageUrl());
+            }
+            return false;
+        }
+        if (source.getBlockType() == BlockType.VIDEO_EMBED) {
+            return source.getContent() != null && source.getContent().equals(existing.getContent());
+        }
+        return false;
+    }
+
     // --- Newsletter ---
 
     @Transactional(readOnly = true)

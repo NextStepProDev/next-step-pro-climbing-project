@@ -474,6 +474,16 @@ function EditView({
     },
   })
 
+  const hasTranslationSiblings = existingLanguages.length > 1
+  const hasMediaBlocks = detail.blocks.some(b => b.blockType === 'IMAGE' || b.blockType === 'VIDEO_EMBED')
+
+  const syncMediaMutation = useMutation({
+    mutationFn: () => adminNewsApi.syncMediaToTranslations(newsId),
+    onSuccess: () => {
+      invalidate()
+    },
+  })
+
   // ---------- Meta state ----------
   const [title, setTitle] = useState(detail.title)
   const [excerpt, setExcerpt] = useState(detail.excerpt ?? '')
@@ -857,6 +867,28 @@ function EditView({
         )}
         {duplicateMutation.isSuccess && (
           <p className="text-sm text-green-400 mt-2">{t('news.duplicateSuccess')}</p>
+        )}
+
+        {hasTranslationSiblings && hasMediaBlocks && (
+          <div className="mt-4 pt-4 border-t border-dark-700">
+            <p className="text-sm text-dark-400 mb-2">{t('news.syncMediaDescription')}</p>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => syncMediaMutation.mutate()}
+              disabled={syncMediaMutation.isPending}
+            >
+              {syncMediaMutation.isPending ? t('news.syncMediaPending') : t('news.syncMediaButton')}
+            </Button>
+            {syncMediaMutation.isError && (
+              <p className="text-sm text-red-400 mt-2">{getErrorMessage(syncMediaMutation.error)}</p>
+            )}
+            {syncMediaMutation.isSuccess && (
+              <p className="text-sm text-green-400 mt-2">
+                {t('news.syncMediaSuccess', { count: syncMediaMutation.data?.blocksAdded ?? 0 })}
+              </p>
+            )}
+          </div>
         )}
       </section>
 

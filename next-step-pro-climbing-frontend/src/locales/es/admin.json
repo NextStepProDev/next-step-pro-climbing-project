@@ -29,7 +29,11 @@
     "allLanguages": "Todos los idiomas",
     "duplicateAsTranslation": "Duplicar como traducción",
     "translationExists": "Todas las traducciones ya existen",
-    "duplicateSuccess": "Duplicado como traducción"
+    "duplicateSuccess": "Duplicado como traducción",
+    "syncMediaButton": "Sincronizar medios con traducciones",
+    "syncMediaPending": "Sincronizando...",
+    "syncMediaDescription": "Añadir imágenes y vídeos faltantes a las otras versiones de idioma.",
+    "syncMediaSuccess": "Sincronizado — {{count}} bloques de medios añadidos"
   },
   "site": {
     "title": "Configuración de la página principal",

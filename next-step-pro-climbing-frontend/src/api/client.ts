@@ -775,6 +775,11 @@ export const adminNewsApi = {
       method: 'POST',
       body: JSON.stringify({ targetLanguage }),
     }),
+
+  syncMediaToTranslations: (id: string) =>
+    fetchApi<{ blocksAdded: number }>(`/admin/news/${id}/sync-media-to-translations`, {
+      method: 'POST',
+    }),
 }
 
 // ==================== Courses (publiczne) ====================

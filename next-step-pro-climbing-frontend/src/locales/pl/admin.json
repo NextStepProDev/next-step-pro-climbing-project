@@ -29,7 +29,11 @@
     "allLanguages": "Wszystkie języki",
     "duplicateAsTranslation": "Duplikuj jako tłumaczenie",
     "translationExists": "Wszystkie tłumaczenia już istnieją",
-    "duplicateSuccess": "Zduplikowano jako tłumaczenie"
+    "duplicateSuccess": "Zduplikowano jako tłumaczenie",
+    "syncMediaButton": "Synchronizuj media do tłumaczeń",
+    "syncMediaPending": "Synchronizuję...",
+    "syncMediaDescription": "Dopisz brakujące zdjęcia i filmy do pozostałych wersji językowych.",
+    "syncMediaSuccess": "Zsynchronizowano — dodano {{count}} bloków medialnych"
   },
   "site": {
     "title": "Ustawienia strony głównej",

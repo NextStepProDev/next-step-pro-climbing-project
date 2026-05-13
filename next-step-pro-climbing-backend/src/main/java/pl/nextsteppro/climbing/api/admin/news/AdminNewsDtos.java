@@ -133,4 +133,6 @@ public class AdminNewsDtos {
     ) {}
 
     public record NewsletterSentDto(int subscriberCount) {}
+
+    public record SyncMediaResultDto(int blocksAdded) {}
 }

@@ -126,6 +126,18 @@ public class AdminNewsController {
         return ResponseEntity.ok(adminNewsService.duplicateAsTranslation(id, request.targetLanguage()));
     }
 
+    @Operation(summary = "Synchronizuj bloki medialne (IMAGE/VIDEO) do wszystkich tłumaczeń")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Media zsynchronizowane"),
+        @ApiResponse(responseCode = "400", description = "Aktualność nie znaleziona"),
+        @ApiResponse(responseCode = "403", description = "Brak uprawnień administratora")
+    })
+    @PostMapping("/{id}/sync-media-to-translations")
+    public ResponseEntity<AdminNewsDtos.SyncMediaResultDto> syncMediaToTranslations(
+            @Parameter(description = "ID aktualności źródłowej") @PathVariable UUID id) {
+        return ResponseEntity.ok(adminNewsService.syncMediaToTranslations(id));
+    }
+
     @Operation(summary = "Usuń aktualność wraz z plikami")
     @ApiResponses({
         @ApiResponse(responseCode = "204", description = "Aktualność usunięta"),
