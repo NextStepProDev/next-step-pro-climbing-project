@@ -455,8 +455,8 @@ function EditView({
 
   // ---------- Translation duplication ----------
   const { data: allArticles } = useQuery({
-    queryKey: ['admin', 'news'],
-    queryFn: () => adminNewsApi.getAll(),
+    queryKey: ['admin', 'news', 'translations'],
+    queryFn: () => adminNewsApi.getAll(0, 500),
   })
 
   const existingLanguages = (allArticles?.content ?? [])
@@ -633,8 +633,11 @@ function EditView({
           })
       )
 
-      // 4. New blocks (sequential to preserve order)
-      for (const pending of pendingBlocks) {
+      // 4. New blocks (sequential to preserve order, skip empty text blocks)
+      const blocksToSave = pendingBlocks.filter(
+        (b) => b.type !== 'TEXT' || b.content.trim().length > 0
+      )
+      for (const pending of blocksToSave) {
         if (pending.type === 'TEXT') {
           await adminNewsApi.addTextBlock(newsId, { content: pending.content })
         } else if (pending.type === 'VIDEO_EMBED') {
@@ -646,7 +649,10 @@ function EditView({
           if (pending.preview) URL.revokeObjectURL(pending.preview)
         }
       }
-      setPendingBlocks([])
+      const emptyTextBlocks = pendingBlocks.filter(
+        (b) => b.type === 'TEXT' && b.content.trim().length === 0
+      )
+      setPendingBlocks(emptyTextBlocks)
       await invalidate()
       onBack()
     } catch (err) {

@@ -534,8 +534,11 @@ function EditView({
           })
       )
 
-      // 4. New blocks (sequential to preserve order)
-      for (const pending of pendingBlocks) {
+      // 4. New blocks (sequential to preserve order, skip empty text blocks)
+      const blocksToSave = pendingBlocks.filter(
+        (b) => b.type !== 'TEXT' || b.content.trim().length > 0
+      )
+      for (const pending of blocksToSave) {
         if (pending.type === 'TEXT') {
           await adminCoursesApi.addTextBlock(courseId, { content: pending.content })
         } else if ((pending.source === 'library' || pending.source === 'gallery') && pending.imageUrl) {
@@ -545,7 +548,10 @@ function EditView({
           if (pending.preview) URL.revokeObjectURL(pending.preview)
         }
       }
-      setPendingBlocks([])
+      const emptyTextBlocks = pendingBlocks.filter(
+        (b) => b.type === 'TEXT' && b.content.trim().length === 0
+      )
+      setPendingBlocks(emptyTextBlocks)
       if (goBack) {
         await invalidate()
         onBack()
