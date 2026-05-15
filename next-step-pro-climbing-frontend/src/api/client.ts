@@ -129,19 +129,35 @@ async function fetchApi<T>(
     headers['Authorization'] = `Bearer ${token}`
   }
 
-  const controller = new AbortController()
-  const timeoutId = setTimeout(() => controller.abort(), 30000)
-
   let response: Response
+
+  const doFetch = async (): Promise<Response> => {
+    const ctrl = new AbortController()
+    const tid = setTimeout(() => ctrl.abort(), 30000)
+    try {
+      const res = await fetch(`${API_BASE}${endpoint}`, {
+        ...options,
+        headers,
+        signal: ctrl.signal,
+      })
+      clearTimeout(tid)
+      return res
+    } catch (err) {
+      clearTimeout(tid)
+      throw err
+    }
+  }
+
   try {
-    response = await fetch(`${API_BASE}${endpoint}`, {
-      ...options,
-      headers,
-      signal: controller.signal,
-    })
+    response = await doFetch()
   } catch {
-    clearTimeout(timeoutId)
-    throw new Error(i18n.t('network', { ns: 'errors' }))
+    console.warn(`[API] ${options?.method ?? 'GET'} ${endpoint} — network error, retrying in 1.5s…`)
+    await new Promise(r => setTimeout(r, 1500))
+    try {
+      response = await doFetch()
+    } catch {
+      throw new Error(i18n.t('network', { ns: 'errors' }))
+    }
   }
 
   // If 401, try one refresh and retry
@@ -149,47 +165,26 @@ async function fetchApi<T>(
     const newToken = await doRefresh()
     if (newToken) {
       headers['Authorization'] = `Bearer ${newToken}`
-      clearTimeout(timeoutId)
-      const retryController = new AbortController()
-      const retryTimeoutId = setTimeout(() => retryController.abort(), 30000)
       try {
-        response = await fetch(`${API_BASE}${endpoint}`, {
-          ...options,
-          headers,
-          signal: retryController.signal,
-        })
+        response = await doFetch()
       } catch {
-        clearTimeout(retryTimeoutId)
         throw new Error(i18n.t('network', { ns: 'errors' }))
       }
-      clearTimeout(retryTimeoutId)
     } else {
-      clearTimeout(timeoutId)
       throw new Error(i18n.t('sessionExpired', { ns: 'errors' }))
     }
-  } else {
-    clearTimeout(timeoutId)
   }
 
   if (response.status >= 500 && response.status < 600) {
     console.warn(`[API] ${options?.method ?? 'GET'} ${endpoint} → ${response.status}, retrying in 1s…`)
-    await new Promise(resolve => setTimeout(resolve, 1000))
+    await new Promise(r => setTimeout(r, 1000))
     const retryToken = await ensureValidToken()
-    const retryHeaders: Record<string, string> = { ...headers }
-    if (retryToken) retryHeaders['Authorization'] = `Bearer ${retryToken}`
-    const retryController = new AbortController()
-    const retryTimeoutId = setTimeout(() => retryController.abort(), 30000)
+    if (retryToken) headers['Authorization'] = `Bearer ${retryToken}`
     try {
-      response = await fetch(`${API_BASE}${endpoint}`, {
-        ...options,
-        headers: retryHeaders,
-        signal: retryController.signal,
-      })
+      response = await doFetch()
     } catch {
-      clearTimeout(retryTimeoutId)
       throw new Error(i18n.t('network', { ns: 'errors' }))
     }
-    clearTimeout(retryTimeoutId)
   }
 
   if (!response.ok) {
