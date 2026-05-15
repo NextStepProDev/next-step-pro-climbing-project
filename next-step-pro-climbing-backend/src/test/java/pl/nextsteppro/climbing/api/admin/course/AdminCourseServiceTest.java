@@ -66,6 +66,7 @@ class AdminCourseServiceTest {
         // Given
         CreateCourseRequest request = new CreateCourseRequest("Nowy kurs", "150 zł", null);
 
+        when(courseRepository.findMaxDisplayOrder()).thenReturn(0);
         when(courseRepository.save(any(Course.class))).thenAnswer(inv -> {
             Course c = inv.getArgument(0);
             setCourseIdViaReflection(c, UUID.randomUUID());
@@ -82,9 +83,9 @@ class AdminCourseServiceTest {
         assertFalse(result.published());
 
         ArgumentCaptor<Course> captor = ArgumentCaptor.forClass(Course.class);
-        verify(courseRepository, times(3)).save(captor.capture());
-        assertEquals("Nowy kurs", captor.getAllValues().getFirst().getTitle());
-        assertEquals("150 zł", captor.getAllValues().getFirst().getPrice());
+        verify(courseRepository).save(captor.capture());
+        assertEquals("Nowy kurs", captor.getValue().getTitle());
+        assertEquals("150 zł", captor.getValue().getPrice());
     }
 
     // ========== UPDATE META ==========
