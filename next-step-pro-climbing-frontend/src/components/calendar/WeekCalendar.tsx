@@ -1,6 +1,6 @@
 import { useMemo, useRef, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ChevronLeft, ChevronRight, Scissors, Bell, Check, X } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Scissors, Copy, Bell, Check, X } from 'lucide-react'
 import { format, isToday, isBefore, startOfDay } from 'date-fns'
 import clsx from 'clsx'
 import type { WeekDay, TimeSlot, EventSummary } from '../../types'
@@ -29,7 +29,9 @@ interface WeekCalendarProps {
   isAdmin?: boolean
   onSlotDrop?: (slotId: string, newDate: string, newStartTime: string, newEndTime: string, oldDate: string, oldStartTime: string, oldEndTime: string) => void
   onSlotCut?: (slot: TimeSlot, date: string) => void
+  onSlotCopy?: (slot: TimeSlot, date: string) => void
   cutSlotId?: string
+  copiedSlotId?: string
   onColumnClick?: (date: string, time: string) => void
   onNotifyParticipants?: (slotId: string) => void
   pendingSlotId?: string
@@ -105,7 +107,9 @@ export function WeekCalendar({
   isAdmin = false,
   onSlotDrop,
   onSlotCut,
+  onSlotCopy,
   cutSlotId,
+  copiedSlotId,
   onColumnClick,
   onNotifyParticipants,
   pendingSlotId,
@@ -168,6 +172,8 @@ export function WeekCalendar({
   }, [days])
 
   const inCutMode = isAdmin && !!cutSlotId
+  const inCopyMode = isAdmin && !!copiedSlotId
+  const inPasteMode = inCutMode || inCopyMode
 
   return (
     <div className="bg-dark-900 rounded-xl border border-dark-800 overflow-hidden">
@@ -274,11 +280,11 @@ export function WeekCalendar({
                     'relative border-l border-dark-800',
                     today && 'bg-primary-500/5',
                     past && 'opacity-40',
-                    inCutMode && !past && 'cursor-crosshair',
+                    inPasteMode && !past && 'cursor-crosshair',
                   )}
                   style={{ height: TOTAL_HOURS * HOUR_HEIGHT }}
                   onClick={(e) => {
-                    if (!inCutMode || !onColumnClick) return
+                    if (!inPasteMode || !onColumnClick) return
                     if ((e.target as HTMLElement).closest('button')) return
                     const rect = e.currentTarget.getBoundingClientRect()
                     const relY = e.clientY - rect.top
@@ -323,6 +329,7 @@ export function WeekCalendar({
                     const showTitle = height >= 30
                     const dragging = isBeingDragged(slot.id)
                     const isCut = cutSlotId === slot.id
+                    const isCopied = copiedSlotId === slot.id
                     const isPast = slot.status === 'PAST'
                     const isDraggable = isAdmin && !isPast
                     const isPending = pendingSlotId === slot.id
@@ -338,6 +345,7 @@ export function WeekCalendar({
                           isDraggable && !dragging && 'cursor-grab',
                           dragging && 'opacity-30 cursor-grabbing',
                           isCut && 'ring-2 ring-dashed ring-amber-400 opacity-60',
+                          isCopied && 'ring-2 ring-dashed ring-primary-400',
                           slot.isUserRegistered && !isPending && 'ring-1 ring-primary-400',
                         )}
                         style={{ top, height }}
@@ -413,6 +421,16 @@ export function WeekCalendar({
                                     title="Powiadom uczestników"
                                   >
                                     <Bell className="w-2.5 h-2.5" />
+                                  </button>
+                                )}
+                                {onSlotCopy && (
+                                  <button
+                                    data-admin-action
+                                    onClick={(e) => { e.stopPropagation(); onSlotCopy(slot, day.date) }}
+                                    className="p-0.5 rounded bg-dark-900/70 text-dark-300 hover:text-primary-300 transition-colors"
+                                    title="Kopiuj slot"
+                                  >
+                                    <Copy className="w-2.5 h-2.5" />
                                   </button>
                                 )}
                                 {onSlotCut && (

@@ -91,6 +91,7 @@ export interface TimeSlotDetail {
   confirmationDeadline: string | null
   userWaitlistPosition: number
   isAvailabilityWindow: boolean
+  title: string | null
 }
 
 export type SlotStatus = 'AVAILABLE' | 'FULL' | 'BLOCKED' | 'PAST' | 'BOOKING_CLOSED' | 'AVAILABILITY_WINDOW'

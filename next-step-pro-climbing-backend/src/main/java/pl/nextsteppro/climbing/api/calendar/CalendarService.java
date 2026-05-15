@@ -265,7 +265,8 @@ public class CalendarService {
             waitlistEntryId,
             confirmationDeadline,
             userWaitlistPosition,
-            slot.isAvailabilityWindow()
+            slot.isAvailabilityWindow(),
+            slot.getTitle()
         );
     }
 

@@ -1,13 +1,14 @@
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { format } from "date-fns";
-import { Clock, Users, Calendar, Clock3, Phone, Trash2, AlertTriangle } from "lucide-react";
+import { Clock, Users, Calendar, Clock3, Phone, Trash2, AlertTriangle, Pencil } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { Modal } from "../ui/Modal";
 import { Button } from "../ui/Button";
 import { ShareButtons } from "../ui/ShareButtons";
 import { CompleteProfileModal } from "../ui/CompleteProfileModal";
+import { TimeScrollPicker } from "../ui/TimeScrollPicker";
 import { useAuth } from "../../context/AuthContext";
 import { saveRedirectPath } from "../../utils/redirect";
 import { adminApi, reservationApi } from "../../api/client";
@@ -37,6 +38,14 @@ export function SlotDetailModal({
   const [showParticipants, setShowParticipants] = useState(false);
   const [showCompleteProfile, setShowCompleteProfile] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+  const [editForm, setEditForm] = useState({
+    title: '',
+    startTime: '',
+    endTime: '',
+    maxParticipants: 1,
+    isAvailabilityWindow: false,
+  });
   const pendingAction = useRef<(() => void) | null>(null);
 
   const requireProfile = (action: () => void) => {
@@ -119,6 +128,17 @@ export function SlotDetailModal({
       queryClient.invalidateQueries({ queryKey: ["admin", "slots"] });
       setShowDeleteConfirm(false);
       onClose();
+    },
+  });
+
+  const editSlotMutation = useMutation({
+    mutationFn: (data: { startTime: string; endTime: string; maxParticipants: number; title: string; isAvailabilityWindow: boolean }) =>
+      adminApi.updateTimeSlot(slot!.id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["calendar"] });
+      queryClient.invalidateQueries({ queryKey: ["slot"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "slots"] });
+      setEditMode(false);
     },
   });
 
@@ -340,7 +360,108 @@ export function SlotDetailModal({
           />
         )}
 
-        {/* Admin delete */}
+        {/* Admin edit & delete */}
+        {isAdmin && !isPast && (
+          <>
+            {editMode ? (
+              <div className="p-4 bg-dark-800/50 border border-dark-700 rounded-lg space-y-4">
+                <h3 className="text-sm font-semibold text-dark-200">{ta('slots.editTitle')}</h3>
+                <div>
+                  <label className="block text-sm text-dark-400 mb-1">{ta('slots.titleLabel')}</label>
+                  <input
+                    type="text"
+                    value={editForm.title}
+                    onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
+                    placeholder={ta('slots.titlePlaceholder')}
+                    maxLength={200}
+                    className="w-full bg-dark-800 border border-dark-700 rounded-lg px-4 py-2 text-dark-100 text-sm"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <TimeScrollPicker
+                    label={ta('slots.from')}
+                    value={editForm.startTime}
+                    onChange={(v) => setEditForm({ ...editForm, startTime: v })}
+                  />
+                  <TimeScrollPicker
+                    label={ta('slots.to')}
+                    value={editForm.endTime}
+                    onChange={(v) => setEditForm({ ...editForm, endTime: v })}
+                  />
+                </div>
+                {editForm.endTime <= editForm.startTime && (
+                  <p className="text-sm text-rose-400/80">{ta('slots.endAfterStart')}</p>
+                )}
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={editForm.isAvailabilityWindow}
+                    onChange={(e) => setEditForm({ ...editForm, isAvailabilityWindow: e.target.checked })}
+                    className="mt-0.5 accent-violet-500"
+                  />
+                  <div>
+                    <span className="text-sm font-medium text-violet-300">{ta('slots.availabilityWindow')}</span>
+                    <p className="text-xs text-dark-400 mt-0.5">{ta('slots.availabilityWindowHint')}</p>
+                  </div>
+                </label>
+                {!editForm.isAvailabilityWindow && (
+                  <div>
+                    <label className="block text-sm text-dark-400 mb-1">{ta('slots.maxParticipants')}</label>
+                    <input
+                      type="number"
+                      min={1}
+                      value={editForm.maxParticipants}
+                      onChange={(e) => setEditForm({ ...editForm, maxParticipants: parseInt(e.target.value) })}
+                      className="w-full bg-dark-800 border border-dark-700 rounded-lg px-4 py-2 text-dark-100 text-sm"
+                    />
+                  </div>
+                )}
+                <div className="flex gap-3">
+                  <Button
+                    loading={editSlotMutation.isPending}
+                    className="flex-1"
+                    onClick={() => {
+                      if (editForm.endTime <= editForm.startTime) return;
+                      editSlotMutation.mutate({
+                        startTime: editForm.startTime,
+                        endTime: editForm.endTime,
+                        maxParticipants: editForm.isAvailabilityWindow ? 1 : editForm.maxParticipants,
+                        title: editForm.title || '',
+                        isAvailabilityWindow: editForm.isAvailabilityWindow,
+                      });
+                    }}
+                  >
+                    {ta('slots.saveChanges')}
+                  </Button>
+                  <Button variant="ghost" onClick={() => setEditMode(false)}>
+                    {ta('slots.cancel')}
+                  </Button>
+                </div>
+                {editSlotMutation.isError && (
+                  <p className="text-sm text-rose-400/80">{getErrorMessage(editSlotMutation.error)}</p>
+                )}
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => {
+                  setEditForm({
+                    title: slot.title ?? '',
+                    startTime: slot.startTime.slice(0, 5),
+                    endTime: slot.endTime.slice(0, 5),
+                    maxParticipants: slot.maxParticipants,
+                    isAvailabilityWindow: slot.isAvailabilityWindow,
+                  });
+                  setEditMode(true);
+                }}
+                className="flex items-center gap-2 text-sm text-primary-400 hover:text-primary-300 transition-colors"
+              >
+                <Pencil className="w-4 h-4" />
+                {ta('slots.editSlot')}
+              </button>
+            )}
+          </>
+        )}
         {isAdmin && (
           <button
             type="button"

@@ -14,7 +14,7 @@ import { EventSignupModal } from "../components/calendar/EventSignupModal";
 import { CreateSlotModal } from "../components/calendar/CreateSlotModal";
 import { LoadingSpinner } from "../components/ui/LoadingSpinner";
 import { QueryError } from "../components/ui/QueryError";
-import { Phone, Mail, ExternalLink, Scissors, X, Bell } from "lucide-react";
+import { Phone, Mail, ExternalLink, Scissors, Copy, X, Bell } from "lucide-react";
 import { formatAvailability, buildEventColorMap } from "../utils/events";
 import type { EventSummary, TimeSlot } from "../types";
 
@@ -44,6 +44,7 @@ export function CalendarPage() {
   const [selectedEvent, setSelectedEvent] = useState<EventSummary | null>(null);
   const [showCreateSlotModal, setShowCreateSlotModal] = useState(false);
   const [cutSlot, setCutSlot] = useState<{ id: string; date: string; startTime: string; endTime: string } | null>(null);
+  const [copiedSlot, setCopiedSlot] = useState<{ id: string; date: string; startTime: string; endTime: string; title?: string; maxParticipants: number; isAvailabilityWindow: boolean } | null>(null);
   const [notifyToast, setNotifyToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const lastSlotMoveRef = useRef<Map<string, { previousDate: string; previousStartTime: string; previousEndTime: string }>>(new Map());
   const [pendingSlotMove, setPendingSlotMove] = useState<{
@@ -303,33 +304,75 @@ export function CalendarPage() {
     return () => { window.removeEventListener('beforeunload', handleBeforeUnload); };
   }, [pendingSlotMove, fireRevertFetch]);
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setCutSlot(null);
+        setCopiedSlot(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   const handleSlotCut = useCallback((slot: TimeSlot, date: string) => {
+    setCopiedSlot(null);
     setCutSlot({ id: slot.id, date, startTime: slot.startTime, endTime: slot.endTime });
   }, []);
 
+  const handleSlotCopy = useCallback((slot: TimeSlot, date: string) => {
+    setCutSlot(null);
+    setCopiedSlot({
+      id: slot.id, date, startTime: slot.startTime, endTime: slot.endTime,
+      title: slot.eventTitle ?? undefined,
+      maxParticipants: slot.maxParticipants,
+      isAvailabilityWindow: slot.isAvailabilityWindow,
+    });
+  }, []);
+
+  const copySlotMutation = useMutation({
+    mutationFn: adminApi.createTimeSlot,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['calendar'] });
+      void queryClient.invalidateQueries({ queryKey: ['admin', 'slots'] });
+    },
+  });
+
   const handleColumnClick = useCallback((date: string, startTime: string) => {
-    if (!cutSlot) return;
-    const [sh, sm] = cutSlot.startTime.split(':').map(Number);
-    const [eh, em] = cutSlot.endTime.split(':').map(Number);
+    const source = cutSlot ?? copiedSlot;
+    if (!source) return;
+    const [sh, sm] = source.startTime.split(':').map(Number);
+    const [eh, em] = source.endTime.split(':').map(Number);
     const durationMin = (eh * 60 + em) - (sh * 60 + sm);
     const [clickH, clickM] = startTime.split(':').map(Number);
     const endAbsMin = clickH * 60 + clickM + durationMin;
     const endH = Math.floor(endAbsMin / 60);
     const endM = endAbsMin % 60;
     const endTime = `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`;
-    setPendingSlotMove(prev => {
-      if (prev && prev.slotId !== cutSlot.id) {
-        lastSlotMoveRef.current.set(prev.slotId, {
-          previousDate: prev.originalDate,
-          previousStartTime: prev.originalStartTime,
-          previousEndTime: prev.originalEndTime,
-        });
-      }
-      return { slotId: cutSlot.id, originalDate: cutSlot.date, originalStartTime: cutSlot.startTime, originalEndTime: cutSlot.endTime };
-    });
-    moveSlotMutation.mutate({ slotId: cutSlot.id, date, startTime, endTime });
-    setCutSlot(null);
-  }, [cutSlot, moveSlotMutation]);
+
+    if (cutSlot) {
+      setPendingSlotMove(prev => {
+        if (prev && prev.slotId !== cutSlot.id) {
+          lastSlotMoveRef.current.set(prev.slotId, {
+            previousDate: prev.originalDate,
+            previousStartTime: prev.originalStartTime,
+            previousEndTime: prev.originalEndTime,
+          });
+        }
+        return { slotId: cutSlot.id, originalDate: cutSlot.date, originalStartTime: cutSlot.startTime, originalEndTime: cutSlot.endTime };
+      });
+      moveSlotMutation.mutate({ slotId: cutSlot.id, date, startTime, endTime });
+      setCutSlot(null);
+    } else if (copiedSlot) {
+      copySlotMutation.mutate({
+        date, startTime, endTime,
+        maxParticipants: copiedSlot.maxParticipants,
+        title: copiedSlot.title,
+        isAvailabilityWindow: copiedSlot.isAvailabilityWindow,
+      });
+      setCopiedSlot(null);
+    }
+  }, [cutSlot, copiedSlot, moveSlotMutation, copySlotMutation]);
 
   const cancelEventMutation = useMutation({
     mutationFn: (eventId: string) => reservationApi.cancelForEvent(eventId),
@@ -449,6 +492,23 @@ export function CalendarPage() {
               </div>
             )}
 
+            {/* Copy-mode banner */}
+            {isAdmin && copiedSlot && (
+              <div className="mb-3 flex items-center gap-3 px-4 py-2.5 bg-primary-500/10 border border-primary-500/30 rounded-lg">
+                <Copy className="w-4 h-4 text-primary-400 shrink-0" />
+                <span className="text-sm text-primary-300 flex-1">
+                  Slot <strong>{copiedSlot.startTime.slice(0, 5)}–{copiedSlot.endTime.slice(0, 5)}</strong> skopiowany — kliknij w wolne miejsce w kalendarzu, aby wkleić kopię
+                </span>
+                <button
+                  onClick={() => setCopiedSlot(null)}
+                  className="p-1 text-primary-400 hover:text-primary-200 transition-colors"
+                  title="Anuluj"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+
             <WeekCalendar
               startDate={weekData.startDate}
               days={weekData.days}
@@ -463,8 +523,10 @@ export function CalendarPage() {
               isAdmin={isAdmin}
               onSlotDrop={isAdmin ? handleSlotDrop : undefined}
               onSlotCut={isAdmin ? handleSlotCut : undefined}
+              onSlotCopy={isAdmin ? handleSlotCopy : undefined}
               cutSlotId={cutSlot?.id}
-              onColumnClick={isAdmin && cutSlot ? handleColumnClick : undefined}
+              copiedSlotId={copiedSlot?.id}
+              onColumnClick={isAdmin && (cutSlot || copiedSlot) ? handleColumnClick : undefined}
               onNotifyParticipants={isAdmin ? handleNotifyParticipants : undefined}
               pendingSlotId={pendingSlotMove?.slotId}
               onConfirmSlotMove={isAdmin ? handleConfirmSlotMove : undefined}

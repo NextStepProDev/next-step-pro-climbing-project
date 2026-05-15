@@ -62,7 +62,8 @@ record TimeSlotDetailDto(
     @Nullable UUID waitlistEntryId,
     @Nullable Instant confirmationDeadline,
     int userWaitlistPosition,
-    boolean isAvailabilityWindow
+    boolean isAvailabilityWindow,
+    @Nullable String title
 ) implements CalendarDtos {}
 
 record CourseEventDto(
