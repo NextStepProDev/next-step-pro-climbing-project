@@ -258,6 +258,7 @@ export function AdminSlotsPanel() {
         isOpen={showCreateModal}
         onClose={() => setShowCreateModal(false)}
         defaultDate={filterDate ?? format(new Date(), 'yyyy-MM-dd')}
+        onSuccess={invalidateSlots}
       />
 
       {/* Edit Slot Modal */}
