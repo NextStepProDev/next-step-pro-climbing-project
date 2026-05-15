@@ -171,6 +171,27 @@ async function fetchApi<T>(
     clearTimeout(timeoutId)
   }
 
+  if (response.status >= 500 && response.status < 600) {
+    console.warn(`[API] ${options?.method ?? 'GET'} ${endpoint} → ${response.status}, retrying in 1s…`)
+    await new Promise(resolve => setTimeout(resolve, 1000))
+    const retryToken = await ensureValidToken()
+    const retryHeaders: Record<string, string> = { ...headers }
+    if (retryToken) retryHeaders['Authorization'] = `Bearer ${retryToken}`
+    const retryController = new AbortController()
+    const retryTimeoutId = setTimeout(() => retryController.abort(), 30000)
+    try {
+      response = await fetch(`${API_BASE}${endpoint}`, {
+        ...options,
+        headers: retryHeaders,
+        signal: retryController.signal,
+      })
+    } catch {
+      clearTimeout(retryTimeoutId)
+      throw new Error(i18n.t('network', { ns: 'errors' }))
+    }
+    clearTimeout(retryTimeoutId)
+  }
+
   if (!response.ok) {
     const body = await response.json().catch(() => null)
     const serverMessage = body?.message
