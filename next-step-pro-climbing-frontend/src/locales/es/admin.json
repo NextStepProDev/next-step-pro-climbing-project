@@ -35,7 +35,11 @@
     "deleteSingleConfirmMessage": "¿Estás seguro de que deseas eliminar la versión {{lang}} ({{name}})? Las otras versiones de idioma no se verán afectadas.",
     "deleteSingleConfirm": "Eliminar",
     "deleteGroupConfirmMessage": "¿Estás seguro de que deseas eliminar a esta persona y todas sus versiones de idioma? Esta acción no se puede deshacer.",
-    "createTranslation": "Crear traducción ({{lang}})"
+    "createTranslation": "Crear traducción ({{lang}})",
+    "exitConfirmTitle": "Cambios sin guardar",
+    "exitConfirmMessage": "Tienes cambios sin guardar. ¿Estás seguro de que deseas salir sin guardar?",
+    "exitConfirm": "Salir sin guardar",
+    "exitConfirmSave": "Guardar cambios"
   },
   "site": {
     "title": "Configuración de la página principal",

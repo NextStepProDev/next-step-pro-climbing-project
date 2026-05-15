@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { User, Upload, Trash2, Plus, Library, Images, X, ChevronUp, ChevronDown, Copy } from 'lucide-react'
@@ -106,6 +106,60 @@ export function AdminTeamMemberPanel({ memberType }: Props) {
   const [badgeTargetId, setBadgeTargetId] = useState<string | null>(null)
   const [photoGalleryOpen, setPhotoGalleryOpen] = useState(false)
   const [deleteSingleConfirm, setDeleteSingleConfirm] = useState(false)
+  const [showCreateExitConfirm, setShowCreateExitConfirm] = useState(false)
+  const [showEditExitConfirm, setShowEditExitConfirm] = useState(false)
+  const editFormRef = useRef<HTMLFormElement>(null)
+
+  const isCreateDirty = useCallback(() => {
+    if (!createModalOpen) return false
+    const form = document.querySelector<HTMLFormElement>('[data-form="create-member"]')
+    if (!form) return false
+    const firstName = (form.elements.namedItem('firstName') as HTMLInputElement)?.value ?? ''
+    const lastName = (form.elements.namedItem('lastName') as HTMLInputElement)?.value ?? ''
+    return firstName.trim() !== '' || lastName.trim() !== '' ||
+      createBioBlocks.length > 0 || createCerts.some(c => c.trim() !== '') || create8aUrl.trim() !== ''
+  }, [createModalOpen, createBioBlocks, createCerts, create8aUrl])
+
+  const isEditDirty = useCallback(() => {
+    if (!selectedMember || !editModalOpen) return false
+    const form = editFormRef.current
+    if (!form) return false
+    const firstName = (form.elements.namedItem('firstName') as HTMLInputElement)?.value ?? ''
+    const lastName = (form.elements.namedItem('lastName') as HTMLInputElement)?.value ?? ''
+    const active = (form.elements.namedItem('active') as HTMLInputElement)?.checked ?? false
+    const origBio = deserializeBio(selectedMember.bio ?? '')
+    const origCerts = selectedMember.certifications ? selectedMember.certifications.split('\n').filter(Boolean) : []
+    const bioChanged = serializeBio(editBioBlocks) !== serializeBio(origBio)
+    const certsChanged = editCerts.filter(Boolean).join('\n') !== origCerts.join('\n')
+    const focalChanged = selectedMember.photoUrl != null &&
+      (focalPoint.x !== (selectedMember.focalPointX ?? 0.5) || focalPoint.y !== (selectedMember.focalPointY ?? 0.5))
+    return firstName !== selectedMember.firstName ||
+      lastName !== selectedMember.lastName ||
+      active !== selectedMember.active ||
+      bioChanged || certsChanged || focalChanged ||
+      edit8aUrl.trim() !== (selectedMember.profile8aUrl ?? '')
+  }, [selectedMember, editModalOpen, editBioBlocks, editCerts, edit8aUrl, focalPoint])
+
+  const handleCreateClose = useCallback(() => {
+    if (isCreateDirty()) {
+      setShowCreateExitConfirm(true)
+    } else {
+      setCreateModalOpen(false)
+    }
+  }, [isCreateDirty])
+
+  const handleEditClose = useCallback(() => {
+    if (isEditDirty()) {
+      setShowEditExitConfirm(true)
+    } else {
+      setEditModalOpen(false)
+      setSelectedMember(null)
+    }
+  }, [isEditDirty])
+
+  const handleEditSaveAndClose = useCallback(() => {
+    editFormRef.current?.requestSubmit()
+  }, [])
 
   const { data: allMembers, isLoading, error } = useQuery({
     queryKey: ['admin', 'instructors'],
@@ -433,8 +487,8 @@ export function AdminTeamMemberPanel({ memberType }: Props) {
       )}
 
       {/* ── Create Modal ── */}
-      <Modal isOpen={createModalOpen} onClose={() => setCreateModalOpen(false)} title={`Dodaj ${entityLabel}`} size="lg">
-        <form onSubmit={handleCreate} className="space-y-4">
+      <Modal isOpen={createModalOpen} onClose={handleCreateClose} title={`Dodaj ${entityLabel}`} size="lg">
+        <form onSubmit={handleCreate} data-form="create-member" className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-dark-200 mb-1">Imię *</label>
             <input type="text" name="firstName" required maxLength={100} className={inputCls} />
@@ -466,7 +520,7 @@ export function AdminTeamMemberPanel({ memberType }: Props) {
             <LanguageBadge language="pl" />
           </div>
           <div className="flex gap-2 justify-end">
-            <Button type="button" variant="ghost" onClick={() => setCreateModalOpen(false)}>Anuluj</Button>
+            <Button type="button" variant="ghost" onClick={handleCreateClose}>Anuluj</Button>
             <Button type="submit" loading={createMutation.isPending}>Dodaj</Button>
           </div>
           {createMutation.error && <div className="text-rose-400 text-sm">{String(createMutation.error)}</div>}
@@ -475,8 +529,8 @@ export function AdminTeamMemberPanel({ memberType }: Props) {
 
       {/* ── Edit Modal ── */}
       {selectedMember && (
-        <Modal isOpen={editModalOpen} onClose={() => { setEditModalOpen(false); setSelectedMember(null) }} title={`Edytuj ${entityLabel}`} size="lg">
-          <form onSubmit={handleUpdate} className="space-y-4">
+        <Modal isOpen={editModalOpen} onClose={handleEditClose} title={`Edytuj ${entityLabel}`} size="lg">
+          <form ref={editFormRef} onSubmit={handleUpdate} className="space-y-4">
             {/* Language badge + duplication */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -618,7 +672,7 @@ export function AdminTeamMemberPanel({ memberType }: Props) {
             )}
 
             <div className="flex gap-2 justify-end">
-              <Button type="button" variant="ghost" onClick={() => { setEditModalOpen(false); setSelectedMember(null) }}>Anuluj</Button>
+              <Button type="button" variant="ghost" onClick={handleEditClose}>Anuluj</Button>
               <Button type="submit" loading={updateMutation.isPending}>Zapisz</Button>
             </div>
             {updateMutation.error && <div className="text-rose-400 text-sm">{String(updateMutation.error)}</div>}
@@ -683,6 +737,26 @@ export function AdminTeamMemberPanel({ memberType }: Props) {
         title={t('team.deleteSingleConfirmTitle')}
         message={t('team.deleteSingleConfirmMessage', { lang: selectedMember?.language.toUpperCase(), name: `${selectedMember?.firstName} ${selectedMember?.lastName}` })}
         confirmText={t('team.deleteSingleConfirm')} />
+
+      {/* Create exit confirm (no save option — new unsaved item should not be persisted) */}
+      <ConfirmModal isOpen={showCreateExitConfirm}
+        onClose={() => setShowCreateExitConfirm(false)}
+        onConfirm={() => { setShowCreateExitConfirm(false); setCreateModalOpen(false); setCreateBioBlocks([]); setCreateCerts([]); setCreate8aUrl('') }}
+        title={t('team.exitConfirmTitle')}
+        message={t('team.exitConfirmMessage')}
+        confirmText={t('team.exitConfirm')}
+        variant="primary" />
+
+      {/* Edit exit confirm (with save option) */}
+      <ConfirmModal isOpen={showEditExitConfirm}
+        onClose={() => setShowEditExitConfirm(false)}
+        onConfirm={() => { setShowEditExitConfirm(false); setEditModalOpen(false); setSelectedMember(null) }}
+        onSave={() => { setShowEditExitConfirm(false); handleEditSaveAndClose() }}
+        title={t('team.exitConfirmTitle')}
+        message={t('team.exitConfirmMessage')}
+        confirmText={t('team.exitConfirm')}
+        saveText={t('team.exitConfirmSave')}
+        variant="primary" />
     </div>
   )
 }

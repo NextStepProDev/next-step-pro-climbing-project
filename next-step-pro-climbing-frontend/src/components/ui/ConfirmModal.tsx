@@ -8,10 +8,12 @@ interface ConfirmModalProps {
   isOpen: boolean
   onClose: () => void
   onConfirm: () => void
+  onSave?: () => void
   title: string
   message: string
   confirmText?: string
   cancelText?: string
+  saveText?: string
   variant?: 'danger' | 'primary'
 }
 
@@ -19,10 +21,12 @@ export function ConfirmModal({
   isOpen,
   onClose,
   onConfirm,
+  onSave,
   title,
   message,
   confirmText,
   cancelText,
+  saveText,
   variant = 'danger',
 }: ConfirmModalProps) {
   const { t } = useTranslation('common')
@@ -85,6 +89,18 @@ export function ConfirmModal({
             >
               {confirmText ?? t('confirm')}
             </Button>
+            {onSave && (
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => {
+                  onSave()
+                  onClose()
+                }}
+              >
+                {saveText ?? t('save')}
+              </Button>
+            )}
           </div>
         </div>
       </div>
