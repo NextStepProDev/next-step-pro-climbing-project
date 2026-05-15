@@ -39,7 +39,12 @@
     "deleteSingleVersion": "Usuń tylko wersję {{lang}}",
     "deleteSingleConfirmTitle": "Usuń wersję językową",
     "deleteSingleConfirmMessage": "Czy na pewno chcesz usunąć wersję {{lang}} ({{name}})? Pozostałe wersje językowe nie zostaną usunięte.",
-    "deleteSingleConfirm": "Usuń"
+    "deleteSingleConfirm": "Usuń",
+    "syncMediaModalTitle": "Synchronizacja mediów",
+    "syncMediaModalMessage": "Zmieniłeś zdjęcie lub badge. Chcesz zastosować te zmiany do pozostałych wersji językowych?",
+    "syncMediaCancel": "Anuluj",
+    "syncMediaConfirm": "Tak, zastosuj do wszystkich języków",
+    "syncMediaSkip": "Nie, tylko ten język"
   },
   "site": {
     "title": "Ustawienia strony głównej",
@@ -161,6 +166,7 @@
     "createTranslation": "Utwórz tłumaczenie ({{lang}})",
     "syncMediaModalTitle": "Synchronizacja mediów",
     "syncMediaModalMessage": "Dodałeś nowe zdjęcia lub filmy. Chcesz dopisać je do pozostałych wersji językowych tego artykułu?",
+    "syncMediaCancel": "Anuluj",
     "syncMediaConfirm": "Tak, dopisz do wszystkich języków",
     "syncMediaSkip": "Nie, tylko ten język",
     "deleteSingleVersion": "Usuń tylko wersję {{lang}}",
@@ -239,6 +245,7 @@
     "createTranslation": "Utwórz tłumaczenie ({{lang}})",
     "syncMediaModalTitle": "Synchronizacja mediów",
     "syncMediaModalMessage": "Dodałeś nowe zdjęcia. Chcesz dopisać je do pozostałych wersji językowych tego kursu?",
+    "syncMediaCancel": "Anuluj",
     "syncMediaConfirm": "Tak, dopisz do wszystkich języków",
     "syncMediaSkip": "Nie, tylko ten język",
     "deleteSingleVersion": "Usuń tylko wersję {{lang}}",

@@ -108,6 +108,8 @@ export function AdminTeamMemberPanel({ memberType }: Props) {
   const [deleteSingleConfirm, setDeleteSingleConfirm] = useState(false)
   const [showCreateExitConfirm, setShowCreateExitConfirm] = useState(false)
   const [showEditExitConfirm, setShowEditExitConfirm] = useState(false)
+  const [showSyncMediaModal, setShowSyncMediaModal] = useState(false)
+  const [syncSourceId, setSyncSourceId] = useState<string | null>(null)
   const editFormRef = useRef<HTMLFormElement>(null)
 
   const isCreateDirty = useCallback(() => {
@@ -233,28 +235,38 @@ export function AdminTeamMemberPanel({ memberType }: Props) {
 
   const uploadPhotoMutation = useMutation({
     mutationFn: ({ id, file }: { id: string; file: File }) => adminInstructorApi.uploadPhoto(id, file),
-    onSuccess: () => {
+    onSuccess: (_, { id }) => {
       invalidateAll()
       setUploadPhotoModalOpen(false)
       setSelectedMember(null)
       setPhotoPreview(null)
       setSelectedFile(null)
+      triggerSyncCheck(id)
     },
   })
 
   const deletePhotoMutation = useMutation({
     mutationFn: adminInstructorApi.deletePhoto,
-    onSuccess: () => { invalidateAll() },
+    onSuccess: (_, id) => {
+      invalidateAll()
+      triggerSyncCheck(id)
+    },
   })
 
   const setBadgeMutation = useMutation({
     mutationFn: ({ id, badgeUrl }: { id: string; badgeUrl: string }) => adminInstructorApi.setBadge(id, badgeUrl),
-    onSuccess: () => { invalidateAll() },
+    onSuccess: (_, { id }) => {
+      invalidateAll()
+      triggerSyncCheck(id)
+    },
   })
 
   const deleteBadgeMutation = useMutation({
     mutationFn: adminInstructorApi.deleteBadge,
-    onSuccess: () => { invalidateAll() },
+    onSuccess: (_, id) => {
+      invalidateAll()
+      triggerSyncCheck(id)
+    },
   })
 
   const moveUpMutation = useMutation({
@@ -270,10 +282,11 @@ export function AdminTeamMemberPanel({ memberType }: Props) {
   const setPhotoUrlMutation = useMutation({
     mutationFn: ({ id, photoUrl }: { id: string; photoUrl: string | null }) =>
       adminInstructorApi.setPhotoUrl(id, photoUrl),
-    onSuccess: () => {
+    onSuccess: (_, { id }) => {
       invalidateAll()
       setUploadPhotoModalOpen(false)
       setSelectedMember(null)
+      triggerSyncCheck(id)
     },
   })
 
@@ -308,6 +321,24 @@ export function AdminTeamMemberPanel({ memberType }: Props) {
       setEditModalOpen(true)
     },
   })
+
+  const syncMediaMutation = useMutation({
+    mutationFn: (id: string) => adminInstructorApi.syncMediaToTranslations(id),
+    onSuccess: () => { invalidateAll() },
+  })
+
+  const hasSiblings = (memberId: string) => {
+    const member = (allMembers ?? []).find(m => m.id === memberId)
+    if (!member) return false
+    return (allMembers ?? []).some(m => m.translationGroupId === member.translationGroupId && m.id !== memberId)
+  }
+
+  const triggerSyncCheck = (memberId: string) => {
+    if (hasSiblings(memberId)) {
+      setSyncSourceId(memberId)
+      setShowSyncMediaModal(true)
+    }
+  }
 
   const handleCreate = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -757,6 +788,38 @@ export function AdminTeamMemberPanel({ memberType }: Props) {
         confirmText={t('team.exitConfirm')}
         saveText={t('team.exitConfirmSave')}
         variant="primary" />
+
+      {/* Sync media to translations */}
+      <Modal isOpen={showSyncMediaModal} onClose={() => setShowSyncMediaModal(false)}
+        title={t('team.syncMediaModalTitle')}>
+        <p className="text-sm text-dark-300 mb-4">{t('team.syncMediaModalMessage')}</p>
+        {syncMediaMutation.isError && (
+          <p className="text-sm text-red-400 mb-4">{String(syncMediaMutation.error)}</p>
+        )}
+        <div className="flex gap-3 justify-end">
+          <Button variant="ghost" size="sm"
+            disabled={syncMediaMutation.isPending}
+            onClick={() => setShowSyncMediaModal(false)}>
+            {t('team.syncMediaCancel')}
+          </Button>
+          <Button variant="secondary" size="sm"
+            disabled={syncMediaMutation.isPending}
+            onClick={() => setShowSyncMediaModal(false)}>
+            {t('team.syncMediaSkip')}
+          </Button>
+          <Button variant="primary" size="sm"
+            onClick={async () => {
+              if (syncSourceId) {
+                await syncMediaMutation.mutateAsync(syncSourceId)
+              }
+              setShowSyncMediaModal(false)
+            }}
+            disabled={syncMediaMutation.isPending}
+            loading={syncMediaMutation.isPending}>
+            {t('team.syncMediaConfirm')}
+          </Button>
+        </div>
+      </Modal>
     </div>
   )
 }

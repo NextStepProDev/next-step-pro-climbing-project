@@ -473,6 +473,7 @@ function EditView({
   })
 
   const [showSyncMediaModal, setShowSyncMediaModal] = useState(false)
+  const [pendingSyncAction, setPendingSyncAction] = useState<'save' | 'publish' | null>(null)
 
   const [deleteSingleConfirm, setDeleteSingleConfirm] = useState(false)
 
@@ -592,95 +593,133 @@ function EditView({
   const [isSaving, setIsSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
 
-  const handleSave = async () => {
+  const performSave = async (syncMedia: boolean) => {
+    // 1. Meta
+    if (metaDirty) {
+      await adminNewsApi.updateMeta(newsId, { title, excerpt })
+    }
+
+    // 2. Thumbnail + focal point
+    const fpX = focalPoint?.x ?? null
+    const fpY = focalPoint?.y ?? null
+    if (thumbnailFromLibrary) {
+      await adminNewsApi.setThumbnailUrl(newsId, thumbnailFromLibrary)
+      await adminNewsApi.updateThumbnailFocalPoint(newsId, fpX, fpY)
+      setThumbnailFromLibrary(null)
+    } else if (thumbnailFile) {
+      await adminNewsApi.uploadThumbnail(newsId, thumbnailFile)
+      await adminNewsApi.updateThumbnailFocalPoint(newsId, fpX, fpY)
+      setThumbnailFile(null)
+      if (thumbnailPreview) {
+        URL.revokeObjectURL(thumbnailPreview)
+        setThumbnailPreview(null)
+      }
+    } else if (focalPointDirty) {
+      await adminNewsApi.updateThumbnailFocalPoint(newsId, fpX, fpY)
+    }
+
+    // 3. Existing block edits
+    await Promise.all(
+      detail.blocks
+        .filter((b) => {
+          const edit = blockEdits[b.id]
+          if (!edit) return false
+          if (b.blockType === 'TEXT') return edit.content !== (b.content ?? undefined)
+          if (b.blockType === 'IMAGE') return edit.caption !== (b.caption ?? undefined)
+          if (b.blockType === 'VIDEO_EMBED') return edit.content !== (b.content ?? undefined)
+          return false
+        })
+        .map((b) => {
+          const edit = blockEdits[b.id]
+          if (b.blockType === 'TEXT') {
+            return adminNewsApi.updateTextBlock(b.id, { content: edit.content ?? '' })
+          }
+          if (b.blockType === 'VIDEO_EMBED') {
+            return adminNewsApi.updateVideoEmbedBlock(b.id, edit.content ?? '')
+          }
+          return adminNewsApi.updateImageBlock(b.id, { caption: edit.caption || undefined })
+        })
+    )
+
+    // 4. New blocks (sequential to preserve order, skip empty text blocks)
+    const blocksToSave = pendingBlocks.filter(
+      (b) => b.type !== 'TEXT' || b.content.trim().length > 0
+    )
+    for (const pending of blocksToSave) {
+      if (pending.type === 'TEXT') {
+        await adminNewsApi.addTextBlock(newsId, { content: pending.content })
+      } else if (pending.type === 'VIDEO_EMBED') {
+        await adminNewsApi.addVideoEmbedBlock(newsId, pending.url)
+      } else if ((pending.source === 'library' || pending.source === 'gallery') && pending.imageUrl) {
+        await adminNewsApi.addImageBlockFromUrl(newsId, pending.imageUrl, pending.caption || undefined)
+      } else if (pending.source === 'file' && pending.file) {
+        await adminNewsApi.addImageBlock(newsId, pending.file, pending.caption || undefined)
+        if (pending.preview) URL.revokeObjectURL(pending.preview)
+      }
+    }
+
+    // 5. Sync media to translations if requested
+    if (syncMedia) {
+      await syncMediaMutation.mutateAsync()
+    }
+
+    const emptyTextBlocks = pendingBlocks.filter(
+      (b) => b.type === 'TEXT' && b.content.trim().length === 0
+    )
+    setPendingBlocks(emptyTextBlocks)
+    await invalidate()
+  }
+
+  const executeSave = async (syncMedia: boolean) => {
     setIsSaving(true)
     setSaveError(null)
     try {
-      // 1. Meta
-      if (metaDirty) {
-        await adminNewsApi.updateMeta(newsId, { title, excerpt })
+      await performSave(syncMedia)
+      if (pendingSyncAction === 'publish') {
+        publishMutation.mutate()
       }
-
-      // 2. Thumbnail + focal point
-      const fpX = focalPoint?.x ?? null
-      const fpY = focalPoint?.y ?? null
-      if (thumbnailFromLibrary) {
-        await adminNewsApi.setThumbnailUrl(newsId, thumbnailFromLibrary)
-        await adminNewsApi.updateThumbnailFocalPoint(newsId, fpX, fpY)
-        setThumbnailFromLibrary(null)
-      } else if (thumbnailFile) {
-        await adminNewsApi.uploadThumbnail(newsId, thumbnailFile)
-        await adminNewsApi.updateThumbnailFocalPoint(newsId, fpX, fpY)
-        setThumbnailFile(null)
-        if (thumbnailPreview) {
-          URL.revokeObjectURL(thumbnailPreview)
-          setThumbnailPreview(null)
-        }
-      } else if (focalPointDirty) {
-        await adminNewsApi.updateThumbnailFocalPoint(newsId, fpX, fpY)
-      }
-
-      // 3. Existing block edits
-      await Promise.all(
-        detail.blocks
-          .filter((b) => {
-            const edit = blockEdits[b.id]
-            if (!edit) return false
-            if (b.blockType === 'TEXT') return edit.content !== (b.content ?? undefined)
-            if (b.blockType === 'IMAGE') return edit.caption !== (b.caption ?? undefined)
-            if (b.blockType === 'VIDEO_EMBED') return edit.content !== (b.content ?? undefined)
-            return false
-          })
-          .map((b) => {
-            const edit = blockEdits[b.id]
-            if (b.blockType === 'TEXT') {
-              return adminNewsApi.updateTextBlock(b.id, { content: edit.content ?? '' })
-            }
-            if (b.blockType === 'VIDEO_EMBED') {
-              return adminNewsApi.updateVideoEmbedBlock(b.id, edit.content ?? '')
-            }
-            return adminNewsApi.updateImageBlock(b.id, { caption: edit.caption || undefined })
-          })
-      )
-
-      // 4. New blocks (sequential to preserve order, skip empty text blocks)
-      const blocksToSave = pendingBlocks.filter(
-        (b) => b.type !== 'TEXT' || b.content.trim().length > 0
-      )
-      for (const pending of blocksToSave) {
-        if (pending.type === 'TEXT') {
-          await adminNewsApi.addTextBlock(newsId, { content: pending.content })
-        } else if (pending.type === 'VIDEO_EMBED') {
-          await adminNewsApi.addVideoEmbedBlock(newsId, pending.url)
-        } else if ((pending.source === 'library' || pending.source === 'gallery') && pending.imageUrl) {
-          await adminNewsApi.addImageBlockFromUrl(newsId, pending.imageUrl, pending.caption || undefined)
-        } else if (pending.source === 'file' && pending.file) {
-          await adminNewsApi.addImageBlock(newsId, pending.file, pending.caption || undefined)
-          if (pending.preview) URL.revokeObjectURL(pending.preview)
-        }
-      }
-      const hadNewMedia = blocksToSave.some(b => b.type === 'IMAGE' || b.type === 'VIDEO_EMBED')
-      const emptyTextBlocks = pendingBlocks.filter(
-        (b) => b.type === 'TEXT' && b.content.trim().length === 0
-      )
-      setPendingBlocks(emptyTextBlocks)
-      await invalidate()
-      if (hadNewMedia && hasTranslationSiblings) {
-        setIsSaving(false)
-        setShowSyncMediaModal(true)
-      } else {
-        onBack()
-      }
+      setShowSyncMediaModal(false)
+      setPendingSyncAction(null)
+      onBack()
     } catch (err) {
       setSaveError(getErrorMessage(err))
-      setIsSaving(false)
       invalidate()
+    } finally {
+      setIsSaving(false)
     }
+  }
+
+  const handleSave = async () => {
+    const hasNewMedia = pendingBlocks.some(b => b.type === 'IMAGE' || b.type === 'VIDEO_EMBED')
+    if (hasNewMedia && hasTranslationSiblings) {
+      setPendingSyncAction('save')
+      setShowSyncMediaModal(true)
+      return
+    }
+    await executeSave(false)
   }
 
   // ---------- Publish (save if dirty, then publish) ----------
   const handlePublish = async () => {
-    if (isDirty) await handleSave()
+    const hasNewMedia = pendingBlocks.some(b => b.type === 'IMAGE' || b.type === 'VIDEO_EMBED')
+    if (isDirty && hasNewMedia && hasTranslationSiblings) {
+      setPendingSyncAction('publish')
+      setShowSyncMediaModal(true)
+      return
+    }
+    if (isDirty) {
+      setIsSaving(true)
+      setSaveError(null)
+      try {
+        await performSave(false)
+      } catch (err) {
+        setSaveError(getErrorMessage(err))
+        setIsSaving(false)
+        invalidate()
+        return
+      }
+      setIsSaving(false)
+    }
     publishMutation.mutate()
   }
 
@@ -1222,31 +1261,36 @@ function EditView({
       {/* Modal: synchronizacja mediów do tłumaczeń */}
       <Modal
         isOpen={showSyncMediaModal}
-        onClose={() => { setShowSyncMediaModal(false); onBack() }}
+        onClose={() => { setShowSyncMediaModal(false); setPendingSyncAction(null) }}
         title={t('news.syncMediaModalTitle')}
       >
         <p className="text-sm text-dark-300 mb-4">{t('news.syncMediaModalMessage')}</p>
-        {syncMediaMutation.isError && (
-          <p className="text-sm text-red-400 mb-4">{getErrorMessage(syncMediaMutation.error)}</p>
+        {saveError && (
+          <p className="text-sm text-red-400 mb-4">{saveError}</p>
         )}
         <div className="flex gap-3 justify-end">
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => { setShowSyncMediaModal(false); onBack() }}
-            disabled={syncMediaMutation.isPending}
+            onClick={() => { setShowSyncMediaModal(false); setPendingSyncAction(null) }}
+            disabled={isSaving}
+          >
+            {t('news.syncMediaCancel')}
+          </Button>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => executeSave(false)}
+            disabled={isSaving}
+            loading={isSaving && !syncMediaMutation.isPending}
           >
             {t('news.syncMediaSkip')}
           </Button>
           <Button
             variant="primary"
             size="sm"
-            onClick={async () => {
-              await syncMediaMutation.mutateAsync()
-              setShowSyncMediaModal(false)
-              onBack()
-            }}
-            disabled={syncMediaMutation.isPending}
+            onClick={() => executeSave(true)}
+            disabled={isSaving}
             loading={syncMediaMutation.isPending}
           >
             {t('news.syncMediaConfirm')}

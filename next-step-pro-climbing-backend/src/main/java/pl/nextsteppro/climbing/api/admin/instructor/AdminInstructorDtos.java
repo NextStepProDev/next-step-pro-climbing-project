@@ -41,6 +41,8 @@ public class AdminInstructorDtos {
 
     public record SetPhotoUrlRequest(@Nullable String photoUrl) {}
 
+    public record SyncMediaResultDto(int updatedCount) {}
+
     public record InstructorAdminDto(
             UUID id,
             String firstName,

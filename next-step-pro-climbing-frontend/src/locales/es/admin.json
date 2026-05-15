@@ -39,7 +39,12 @@
     "exitConfirmTitle": "Cambios sin guardar",
     "exitConfirmMessage": "Tienes cambios sin guardar. ¿Estás seguro de que deseas salir sin guardar?",
     "exitConfirm": "Salir sin guardar",
-    "exitConfirmSave": "Guardar cambios"
+    "exitConfirmSave": "Guardar cambios",
+    "syncMediaModalTitle": "Sincronización de medios",
+    "syncMediaModalMessage": "Cambiaste la foto o el badge. ¿Quieres aplicar estos cambios a las otras versiones de idioma?",
+    "syncMediaCancel": "Cancelar",
+    "syncMediaConfirm": "Sí, aplicar a todos los idiomas",
+    "syncMediaSkip": "No, solo este idioma"
   },
   "site": {
     "title": "Configuración de la página principal",
@@ -159,6 +164,7 @@
     "createTranslation": "Crear traducción ({{lang}})",
     "syncMediaModalTitle": "Sincronizar medios",
     "syncMediaModalMessage": "Has añadido nuevas imágenes o vídeos. ¿Quieres añadirlos a las otras versiones de idioma de este artículo?",
+    "syncMediaCancel": "Cancelar",
     "syncMediaConfirm": "Sí, sincronizar con todos los idiomas",
     "syncMediaSkip": "No, solo este idioma",
     "deleteSingleVersion": "Eliminar solo versión {{lang}}",
@@ -237,6 +243,7 @@
     "createTranslation": "Crear traducción ({{lang}})",
     "syncMediaModalTitle": "Sincronizar medios",
     "syncMediaModalMessage": "Has añadido nuevas imágenes. ¿Quieres añadirlas a las otras versiones de idioma de este curso?",
+    "syncMediaCancel": "Cancelar",
     "syncMediaConfirm": "Sí, añadir a todos los idiomas",
     "syncMediaSkip": "No, solo este idioma",
     "deleteSingleVersion": "Eliminar solo versión {{lang}}",

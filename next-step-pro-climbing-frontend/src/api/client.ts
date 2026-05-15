@@ -566,6 +566,10 @@ export const adminInstructorApi = {
       method: 'POST',
       body: JSON.stringify({ targetLanguage }),
     }),
+  syncMediaToTranslations: (id: string) =>
+    fetchApi<{ updatedCount: number }>(`/admin/instructors/${id}/sync-media-to-translations`, {
+      method: 'POST',
+    }),
 }
 
 // Admin Gallery

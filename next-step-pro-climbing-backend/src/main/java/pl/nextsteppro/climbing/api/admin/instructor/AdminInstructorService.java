@@ -272,6 +272,50 @@ public class AdminInstructorService {
     }
 
     @CacheEvict(value = "instructorList", allEntries = true)
+    public AdminInstructorDtos.SyncMediaResultDto syncMediaToTranslations(UUID sourceId) {
+        Instructor source = instructorRepository.findById(sourceId)
+                .orElseThrow(() -> new IllegalArgumentException("Instructor not found"));
+
+        List<Instructor> siblings = instructorRepository.findByTranslationGroupId(source.getTranslationGroupId())
+                .stream()
+                .filter(s -> !s.getId().equals(sourceId))
+                .toList();
+
+        int updated = 0;
+        for (Instructor sibling : siblings) {
+            boolean changed = false;
+
+            if (!java.util.Objects.equals(sibling.getPhotoFilename(), source.getPhotoFilename())) {
+                sibling.setPhotoFilename(source.getPhotoFilename());
+                changed = true;
+            }
+            if (!java.util.Objects.equals(sibling.getPhotoExternalUrl(), source.getPhotoExternalUrl())) {
+                sibling.setPhotoExternalUrl(source.getPhotoExternalUrl());
+                changed = true;
+            }
+            if (!java.util.Objects.equals(sibling.getFocalPointX(), source.getFocalPointX())) {
+                sibling.setFocalPointX(source.getFocalPointX());
+                changed = true;
+            }
+            if (!java.util.Objects.equals(sibling.getFocalPointY(), source.getFocalPointY())) {
+                sibling.setFocalPointY(source.getFocalPointY());
+                changed = true;
+            }
+            if (!java.util.Objects.equals(sibling.getBadgeUrl(), source.getBadgeUrl())) {
+                sibling.setBadgeUrl(source.getBadgeUrl());
+                changed = true;
+            }
+
+            if (changed) {
+                instructorRepository.save(sibling);
+                updated++;
+            }
+        }
+
+        return new AdminInstructorDtos.SyncMediaResultDto(updated);
+    }
+
+    @CacheEvict(value = "instructorList", allEntries = true)
     public InstructorAdminDto setBadge(UUID id, @Nullable String badgeUrl) {
         Instructor instructor = instructorRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Instructor not found"));

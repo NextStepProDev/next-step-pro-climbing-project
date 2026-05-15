@@ -518,79 +518,106 @@ function EditView({
   const [isSaving, setIsSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
 
-  const handleSave = async ({ goBack = false } = {}) => {
+  const performSave = async (syncMedia: boolean) => {
+    // 1. Meta
+    if (metaDirty) {
+      await adminCoursesApi.updateMeta(courseId, { title, price })
+    }
+
+    // 2. Thumbnail + focal point (zawsze razem gdy nowy plik)
+    if (thumbnailFromLibrary) {
+      await adminCoursesApi.setThumbnailUrl(courseId, thumbnailFromLibrary)
+      await adminCoursesApi.updateThumbnailFocalPoint(courseId, focalPoint.x, focalPoint.y)
+      setThumbnailFromLibrary(null)
+    } else if (thumbnailFile) {
+      await adminCoursesApi.uploadThumbnail(courseId, thumbnailFile)
+      await adminCoursesApi.updateThumbnailFocalPoint(courseId, focalPoint.x, focalPoint.y)
+      setThumbnailFile(null)
+      if (thumbnailPreview) {
+        URL.revokeObjectURL(thumbnailPreview)
+        setThumbnailPreview(null)
+      }
+    } else if (focalPointDirty) {
+      await adminCoursesApi.updateThumbnailFocalPoint(courseId, focalPoint.x, focalPoint.y)
+    }
+
+    // 3. Existing block edits
+    await Promise.all(
+      detail.blocks
+        .filter((b) => {
+          const edit = blockEdits[b.id]
+          if (!edit) return false
+          if (b.blockType === 'TEXT') return edit.content !== (b.content ?? undefined)
+          if (b.blockType === 'IMAGE') return edit.caption !== (b.caption ?? undefined)
+          return false
+        })
+        .map((b) => {
+          const edit = blockEdits[b.id]
+          if (b.blockType === 'TEXT') {
+            return adminCoursesApi.updateTextBlock(b.id, { content: edit.content ?? '' })
+          }
+          return adminCoursesApi.updateImageBlock(b.id, { caption: edit.caption || undefined })
+        })
+    )
+
+    // 4. New blocks (sequential to preserve order, skip empty text blocks)
+    const blocksToSave = pendingBlocks.filter(
+      (b) => b.type !== 'TEXT' || b.content.trim().length > 0
+    )
+    for (const pending of blocksToSave) {
+      if (pending.type === 'TEXT') {
+        await adminCoursesApi.addTextBlock(courseId, { content: pending.content })
+      } else if ((pending.source === 'library' || pending.source === 'gallery') && pending.imageUrl) {
+        await adminCoursesApi.addImageBlockFromUrl(courseId, pending.imageUrl, pending.caption || undefined)
+      } else if (pending.source === 'file' && pending.file) {
+        await adminCoursesApi.addImageBlock(courseId, pending.file, pending.caption || undefined)
+        if (pending.preview) URL.revokeObjectURL(pending.preview)
+      }
+    }
+
+    // 5. Sync media to translations if requested
+    if (syncMedia) {
+      await syncMediaMutation.mutateAsync()
+    }
+
+    const emptyTextBlocks = pendingBlocks.filter(
+      (b) => b.type === 'TEXT' && b.content.trim().length === 0
+    )
+    setPendingBlocks(emptyTextBlocks)
+    await invalidate()
+  }
+
+  const executeSave = async (syncMedia: boolean) => {
     setIsSaving(true)
     setSaveError(null)
     try {
-      // 1. Meta
-      if (metaDirty) {
-        await adminCoursesApi.updateMeta(courseId, { title, price })
+      await performSave(syncMedia)
+      if (pendingSyncAction === 'publish') {
+        await publishMutation.mutateAsync()
       }
+      setShowSyncMediaModal(false)
+      setPendingSyncAction(null)
+      onBack()
+    } catch (err) {
+      setSaveError(getErrorMessage(err))
+      invalidate()
+    } finally {
+      setIsSaving(false)
+    }
+  }
 
-      // 2. Thumbnail + focal point (zawsze razem gdy nowy plik)
-      if (thumbnailFromLibrary) {
-        await adminCoursesApi.setThumbnailUrl(courseId, thumbnailFromLibrary)
-        await adminCoursesApi.updateThumbnailFocalPoint(courseId, focalPoint.x, focalPoint.y)
-        setThumbnailFromLibrary(null)
-      } else if (thumbnailFile) {
-        await adminCoursesApi.uploadThumbnail(courseId, thumbnailFile)
-        await adminCoursesApi.updateThumbnailFocalPoint(courseId, focalPoint.x, focalPoint.y)
-        setThumbnailFile(null)
-        if (thumbnailPreview) {
-          URL.revokeObjectURL(thumbnailPreview)
-          setThumbnailPreview(null)
-        }
-      } else if (focalPointDirty) {
-        // 3. Focal point dla istniejącej miniaturki (zmiana bez nowego pliku)
-        await adminCoursesApi.updateThumbnailFocalPoint(courseId, focalPoint.x, focalPoint.y)
-      }
-
-      // 4. Existing block edits
-      await Promise.all(
-        detail.blocks
-          .filter((b) => {
-            const edit = blockEdits[b.id]
-            if (!edit) return false
-            if (b.blockType === 'TEXT') return edit.content !== (b.content ?? undefined)
-            if (b.blockType === 'IMAGE') return edit.caption !== (b.caption ?? undefined)
-            return false
-          })
-          .map((b) => {
-            const edit = blockEdits[b.id]
-            if (b.blockType === 'TEXT') {
-              return adminCoursesApi.updateTextBlock(b.id, { content: edit.content ?? '' })
-            }
-            return adminCoursesApi.updateImageBlock(b.id, { caption: edit.caption || undefined })
-          })
-      )
-
-      // 4. New blocks (sequential to preserve order, skip empty text blocks)
-      const blocksToSave = pendingBlocks.filter(
-        (b) => b.type !== 'TEXT' || b.content.trim().length > 0
-      )
-      for (const pending of blocksToSave) {
-        if (pending.type === 'TEXT') {
-          await adminCoursesApi.addTextBlock(courseId, { content: pending.content })
-        } else if ((pending.source === 'library' || pending.source === 'gallery') && pending.imageUrl) {
-          await adminCoursesApi.addImageBlockFromUrl(courseId, pending.imageUrl, pending.caption || undefined)
-        } else if (pending.source === 'file' && pending.file) {
-          await adminCoursesApi.addImageBlock(courseId, pending.file, pending.caption || undefined)
-          if (pending.preview) URL.revokeObjectURL(pending.preview)
-        }
-      }
-      const hadNewMedia = blocksToSave.some(b => b.type === 'IMAGE')
-      const emptyTextBlocks = pendingBlocks.filter(
-        (b) => b.type === 'TEXT' && b.content.trim().length === 0
-      )
-      setPendingBlocks(emptyTextBlocks)
-      await invalidate()
-      if (hadNewMedia && hasTranslationSiblings) {
-        setIsSaving(false)
-        setShowSyncMediaModal(true)
-      } else if (goBack) {
-        onBack()
-        return
-      }
+  const handleSave = async ({ goBack = false } = {}) => {
+    const hasNewMedia = pendingBlocks.some(b => b.type === 'IMAGE')
+    if (hasNewMedia && hasTranslationSiblings) {
+      setPendingSyncAction('save')
+      setShowSyncMediaModal(true)
+      return
+    }
+    setIsSaving(true)
+    setSaveError(null)
+    try {
+      await performSave(false)
+      if (goBack) onBack()
     } catch (err) {
       setSaveError(getErrorMessage(err))
       invalidate()
@@ -601,9 +628,24 @@ function EditView({
 
   // ---------- Publish (save if dirty, then publish) ----------
   const handlePublish = async () => {
-    if (isDirty) await handleSave()
-    await publishMutation.mutateAsync()
-    onBack()
+    const hasNewMedia = pendingBlocks.some(b => b.type === 'IMAGE')
+    if (isDirty && hasNewMedia && hasTranslationSiblings) {
+      setPendingSyncAction('publish')
+      setShowSyncMediaModal(true)
+      return
+    }
+    setIsSaving(true)
+    setSaveError(null)
+    try {
+      if (isDirty) await performSave(false)
+      await publishMutation.mutateAsync()
+      onBack()
+    } catch (err) {
+      setSaveError(getErrorMessage(err))
+      invalidate()
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   // ---------- Cancel (discard local changes) ----------
@@ -707,6 +749,7 @@ function EditView({
   })
 
   const [showSyncMediaModal, setShowSyncMediaModal] = useState(false)
+  const [pendingSyncAction, setPendingSyncAction] = useState<'save' | 'publish' | null>(null)
 
   const [deleteSingleConfirm, setDeleteSingleConfirm] = useState(false)
 
@@ -1169,25 +1212,37 @@ function EditView({
       {/* Sync media modal */}
       <Modal
         isOpen={showSyncMediaModal}
-        onClose={() => { setShowSyncMediaModal(false); onBack() }}
+        onClose={() => { setShowSyncMediaModal(false); setPendingSyncAction(null) }}
         title={t('courses.syncMediaModalTitle')}
       >
         <p className="text-dark-300 text-sm mb-6">{t('courses.syncMediaModalMessage')}</p>
+        {saveError && (
+          <p className="text-sm text-red-400 mb-4">{saveError}</p>
+        )}
         <div className="flex justify-end gap-3">
           <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => { setShowSyncMediaModal(false); setPendingSyncAction(null) }}
+            disabled={isSaving}
+          >
+            {t('courses.syncMediaCancel')}
+          </Button>
+          <Button
             variant="secondary"
-            onClick={() => { setShowSyncMediaModal(false); onBack() }}
+            size="sm"
+            onClick={() => executeSave(false)}
+            disabled={isSaving}
+            loading={isSaving && !syncMediaMutation.isPending}
           >
             {t('courses.syncMediaSkip')}
           </Button>
           <Button
-            onClick={async () => {
-              await syncMediaMutation.mutateAsync()
-              setShowSyncMediaModal(false)
-              onBack()
-            }}
+            variant="primary"
+            size="sm"
+            onClick={() => executeSave(true)}
+            disabled={isSaving}
             loading={syncMediaMutation.isPending}
-            disabled={syncMediaMutation.isPending}
           >
             {t('courses.syncMediaConfirm')}
           </Button>

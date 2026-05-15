@@ -39,7 +39,12 @@
     "exitConfirmTitle": "Unsaved changes",
     "exitConfirmMessage": "You have unsaved changes. Are you sure you want to leave without saving?",
     "exitConfirm": "Leave without saving",
-    "exitConfirmSave": "Save changes"
+    "exitConfirmSave": "Save changes",
+    "syncMediaModalTitle": "Media synchronization",
+    "syncMediaModalMessage": "You changed the photo or badge. Do you want to apply these changes to the other language versions?",
+    "syncMediaCancel": "Cancel",
+    "syncMediaConfirm": "Yes, apply to all languages",
+    "syncMediaSkip": "No, only this language"
   },
   "site": {
     "title": "Homepage settings",
@@ -161,6 +166,7 @@
     "createTranslation": "Create translation ({{lang}})",
     "syncMediaModalTitle": "Sync media",
     "syncMediaModalMessage": "You added new images or videos. Do you want to append them to other language versions of this article?",
+    "syncMediaCancel": "Cancel",
     "syncMediaConfirm": "Yes, sync to all languages",
     "syncMediaSkip": "No, this language only",
     "deleteSingleVersion": "Delete {{lang}} version only",
@@ -239,6 +245,7 @@
     "createTranslation": "Create translation ({{lang}})",
     "syncMediaModalTitle": "Sync media",
     "syncMediaModalMessage": "You added new images. Do you want to add them to the other language versions of this course?",
+    "syncMediaCancel": "Cancel",
     "syncMediaConfirm": "Yes, add to all languages",
     "syncMediaSkip": "No, only this language",
     "deleteSingleVersion": "Delete {{lang}} version only",

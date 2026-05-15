@@ -175,6 +175,18 @@ public class AdminInstructorController {
         return ResponseEntity.ok(adminInstructorService.duplicateAsTranslation(id, request.targetLanguage()));
     }
 
+    @Operation(summary = "Synchronizuj media do tłumaczeń", description = "Kopiuje zdjęcie, focal point i badge do pozostałych wersji językowych")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Media zsynchronizowane"),
+        @ApiResponse(responseCode = "400", description = "Instruktor nie znaleziony"),
+        @ApiResponse(responseCode = "403", description = "Brak uprawnień administratora")
+    })
+    @PostMapping("/{id}/sync-media-to-translations")
+    public ResponseEntity<AdminInstructorDtos.SyncMediaResultDto> syncMediaToTranslations(
+            @Parameter(description = "ID instruktora źródłowego") @PathVariable UUID id) {
+        return ResponseEntity.ok(adminInstructorService.syncMediaToTranslations(id));
+    }
+
     @Operation(summary = "Ustaw zdjęcie z zewnętrznego URL")
     @PutMapping("/{id}/photo-url")
     public ResponseEntity<InstructorAdminDto> setPhotoUrl(
