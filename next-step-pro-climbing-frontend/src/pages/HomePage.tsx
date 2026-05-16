@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "../components/ui/Button";
+import { AnimatedCounter } from "../components/ui/AnimatedCounter";
 import { ShareButtons } from "../components/ui/ShareButtons";
 import { CurrentLocationSection } from "../components/ui/CurrentLocationSection";
 import { siteSettingsApi } from "../api/client";
@@ -218,6 +219,27 @@ export function HomePage() {
                 <p className="text-dark-400 text-sm">
                   {t(`steps.${step.key}.description`)}
                 </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Stats Section */}
+      <section className="py-16 sm:py-20 bg-dark-900/50">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+            {[
+              { target: 200, suffix: '+', label: 'Przeszkolonych osób' },
+              { target: 10, suffix: '+', label: 'Lat doświadczenia' },
+              { target: 6, suffix: '', label: 'Typów kursów' },
+              { target: 100, suffix: '%', label: 'Pasji i zaangażowania' },
+            ].map((stat) => (
+              <div key={stat.label} className="text-center">
+                <p className="text-4xl sm:text-5xl font-bold text-primary-400 mb-2">
+                  <AnimatedCounter target={stat.target} suffix={stat.suffix} />
+                </p>
+                <p className="text-sm text-dark-400">{stat.label}</p>
               </div>
             ))}
           </div>
