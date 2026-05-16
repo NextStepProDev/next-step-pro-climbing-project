@@ -126,7 +126,7 @@ export function HomePage() {
               className={`hidden sm:block absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ${heroImgLoaded ? 'opacity-100' : 'opacity-0'}`}
               style={{ objectPosition }}
             />
-            <div className={`hidden sm:block absolute inset-0 bg-gradient-to-b from-dark-950/40 via-dark-950/55 to-dark-950 transition-opacity duration-700 ${heroImgLoaded ? 'opacity-100' : 'opacity-0'}`} />
+            <div className={`hidden sm:block absolute inset-0 bg-gradient-to-b from-dark-950/25 via-dark-950/35 to-dark-950 transition-opacity duration-700 ${heroImgLoaded ? 'opacity-100' : 'opacity-0'}`} />
           </>
         )}
         {badgeLeftImageUrl && (
