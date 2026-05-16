@@ -9,7 +9,6 @@ import { coursesApi, calendarApi } from '../api/client'
 import type { CourseSummary } from '../types'
 import { LoadingSpinner } from '../components/ui/LoadingSpinner'
 import { AccordionSkeleton } from '../components/ui/CardSkeleton'
-import { FadeImage } from '../components/ui/FadeImage'
 import { QueryError } from '../components/ui/QueryError'
 import { CourseContentBlocks, CourseEventsList } from '../components/courses/CourseContentBlocks'
 import { COURSE_CONTENT_LANGUAGES, getDefaultCourseContentLanguage } from '../constants/courseLanguages'
@@ -126,7 +125,7 @@ function CourseAccordionItem({ course, defaultOpen = false }: { course: CourseSu
         {/* Miniaturka */}
         <div className="flex-shrink-0 w-20 h-20 bg-dark-700 rounded-lg overflow-hidden">
           {course.thumbnailUrl ? (
-            <FadeImage
+            <img
               src={course.thumbnailUrl}
               alt={course.title}
               className="w-full h-full object-contain"

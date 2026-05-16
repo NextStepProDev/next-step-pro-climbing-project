@@ -8,7 +8,6 @@ import { useScrollReveal } from '../hooks/useScrollReveal'
 import clsx from 'clsx'
 import { instructorApi } from '../api/client'
 import { TileSkeleton } from '../components/ui/CardSkeleton'
-import { FadeImage } from '../components/ui/FadeImage'
 import { QueryError } from '../components/ui/QueryError'
 import { ShareButtons } from '../components/ui/ShareButtons'
 import { renderRichText } from '../utils/renderRichText'
@@ -56,7 +55,7 @@ function MemberTile({
       className="group relative aspect-[3/4] w-full overflow-hidden rounded-xl bg-dark-800 border border-transparent hover:border-primary-500/50 hover:-translate-y-0.5 transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
     >
       {member.photoUrl ? (
-        <FadeImage
+        <img
           src={member.photoUrl}
           alt={`${member.firstName} ${member.lastName}`}
           className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
@@ -75,7 +74,7 @@ function MemberTile({
       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
 
       {member.badgeUrl && (
-        <FadeImage
+        <img
           src={member.badgeUrl}
           alt="badge"
           className="absolute top-3 right-3 w-14 h-14 rounded-full object-contain drop-shadow-lg"
@@ -123,7 +122,7 @@ function MemberModal({
 
         <div className="relative h-[28rem] md:h-[32rem] w-full overflow-hidden rounded-t-2xl bg-dark-800">
           {member.photoUrl ? (
-            <FadeImage
+            <img
               src={member.photoUrl}
               alt={`${member.firstName} ${member.lastName}`}
               className="h-full w-full object-cover"
@@ -141,7 +140,7 @@ function MemberModal({
           <div className="absolute inset-0 bg-gradient-to-t from-dark-900 via-dark-900/60 to-transparent" />
 
           {member.badgeUrl && (
-            <FadeImage
+            <img
               src={member.badgeUrl}
               alt="badge"
               className="absolute top-4 right-14 w-16 h-16 rounded-full object-contain drop-shadow-lg"
