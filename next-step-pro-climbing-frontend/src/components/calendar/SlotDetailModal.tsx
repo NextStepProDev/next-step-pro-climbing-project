@@ -6,6 +6,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { Modal } from "../ui/Modal";
 import { Button } from "../ui/Button";
+import { SuccessCheckmark } from "../ui/SuccessCheckmark";
 import { ShareButtons } from "../ui/ShareButtons";
 import { CompleteProfileModal } from "../ui/CompleteProfileModal";
 import { TimeScrollPicker } from "../ui/TimeScrollPicker";
@@ -38,6 +39,7 @@ export function SlotDetailModal({
   const [showParticipants, setShowParticipants] = useState(false);
   const [showCompleteProfile, setShowCompleteProfile] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [editForm, setEditForm] = useState({
     title: '',
@@ -69,7 +71,7 @@ export function SlotDetailModal({
       queryClient.invalidateQueries({ queryKey: ["slot"] });
       queryClient.invalidateQueries({ queryKey: ["reservations"] });
       setComment("");
-      onClose();
+      setShowSuccess(true);
     },
   });
 
@@ -164,6 +166,7 @@ export function SlotDetailModal({
 
   return (
     <>
+    {showSuccess && <SuccessCheckmark onDone={() => { setShowSuccess(false); onClose(); }} />}
     <Modal isOpen={isOpen} onClose={onClose} title={t('slot.title')}>
       <div className="space-y-6">
         {/* Date and time */}

@@ -88,6 +88,12 @@ body {
   transform: translateY(0);
 }
 
+@keyframes success-pulse {
+  0% { transform: scale(0); opacity: 0; }
+  50% { transform: scale(1.15); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
 .card-glass {
   background: color-mix(in srgb, var(--color-dark-800) 80%, transparent);
   backdrop-filter: blur(4px);

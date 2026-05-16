@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext'
 import { consumeRedirectPath } from '../utils/redirect'
 import { getErrorMessage } from '../utils/errors'
 import { Button } from '../components/ui/Button'
+import { SuccessCheckmark } from '../components/ui/SuccessCheckmark'
 import logoWhite from '../assets/logo/logo-white.png'
 
 export function LoginPage() {
@@ -15,6 +16,7 @@ export function LoginPage() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [showSuccess, setShowSuccess] = useState(false)
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
@@ -23,16 +25,16 @@ export function LoginPage() {
 
     try {
       await login(email, password)
-      const redirect = consumeRedirectPath()
-      navigate(redirect || '/', { replace: true })
+      setShowSuccess(true)
     } catch (err) {
       setError(getErrorMessage(err))
-    } finally {
       setLoading(false)
     }
   }
 
   return (
+    <>
+    {showSuccess && <SuccessCheckmark onDone={() => navigate(consumeRedirectPath() || '/', { replace: true })} />}
     <div className="flex flex-col items-center justify-center min-h-[60vh] px-4">
       <div className="bg-dark-900 rounded-xl p-8 max-w-md w-full border border-dark-800">
         <div className="text-center mb-6">
@@ -134,5 +136,6 @@ export function LoginPage() {
         </div>
       </div>
     </div>
+    </>
   )
 }

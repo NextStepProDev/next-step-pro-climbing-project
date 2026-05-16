@@ -5,6 +5,7 @@ import { registerUser } from '../api/auth'
 import { validatePassword, validatePhone, validateName } from '../utils/validation'
 import { getErrorMessage } from '../utils/errors'
 import { Button } from '../components/ui/Button'
+import { SuccessCheckmark } from '../components/ui/SuccessCheckmark'
 import logoWhite from '../assets/logo/logo-white.png'
 
 export function RegisterPage() {
@@ -23,6 +24,7 @@ export function RegisterPage() {
   const [lastNameError, setLastNameError] = useState<string | null>(null)
   const [phoneError, setPhoneError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
+  const [showCheckmark, setShowCheckmark] = useState(false)
   const [loading, setLoading] = useState(false)
 
   const updateField = (field: string, value: string) => {
@@ -63,12 +65,15 @@ export function RegisterPage() {
         newsletterSubscribed,
         preferredLanguage: i18n.language,
       })
-      setSuccess(true)
+      setShowCheckmark(true)
     } catch (err) {
       setError(getErrorMessage(err))
-    } finally {
       setLoading(false)
     }
+  }
+
+  if (showCheckmark) {
+    return <SuccessCheckmark onDone={() => setSuccess(true)} />
   }
 
   if (success) {

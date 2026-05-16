@@ -6,6 +6,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, useNavigate } from 'react-router-dom'
 import { Modal } from '../ui/Modal'
 import { Button } from '../ui/Button'
+import { SuccessCheckmark } from '../ui/SuccessCheckmark'
 import { ShareButtons } from '../ui/ShareButtons'
 import { CompleteProfileModal } from '../ui/CompleteProfileModal'
 import { useAuth } from '../../context/AuthContext'
@@ -34,6 +35,7 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
   const [userEditParticipants, setUserEditParticipants] = useState<number | null>(null)
   const [showCompleteProfile, setShowCompleteProfile] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [showSuccess, setShowSuccess] = useState(false)
   const pendingAction = useRef<(() => void) | null>(null)
 
   const requireProfile = (action: () => void) => {
@@ -68,7 +70,7 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
       queryClient.invalidateQueries({ queryKey: ['eventSummary', event?.id] })
       setComment('')
       setParticipants(1)
-      onClose()
+      setShowSuccess(true)
     },
   })
 
@@ -370,6 +372,7 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
 
   return (
     <>
+    {showSuccess && <SuccessCheckmark onDone={() => { setShowSuccess(false); onClose(); }} />}
     <Modal isOpen={isOpen} onClose={onClose} title={t('event.title')}>
       <div className="space-y-6">
         {/* Event type badge */}
