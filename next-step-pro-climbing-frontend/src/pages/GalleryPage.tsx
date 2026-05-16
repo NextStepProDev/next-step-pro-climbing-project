@@ -50,7 +50,7 @@ export function GalleryPage() {
           <Link
             key={album.id}
             to={`/galeria/${album.id}`}
-            className="group bg-dark-800 rounded-lg overflow-hidden border border-dark-700 hover:border-primary-500/50 transition-colors"
+            className="group bg-dark-800 rounded-lg overflow-hidden border border-dark-700 hover:border-primary-500/50 hover:-translate-y-0.5 transition-all duration-200"
           >
             {/* Thumbnail */}
             <div className="aspect-video bg-dark-700 relative overflow-hidden">

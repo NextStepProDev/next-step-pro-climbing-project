@@ -52,3 +52,11 @@ body {
 .animation-fade-in {
   animation: fade-in-up 0.15s ease-out;
 }
+
+@keyframes ken-burns {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.08); }
+}
+.animation-ken-burns {
+  animation: ken-burns 20s ease-in-out infinite;
+}

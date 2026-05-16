@@ -51,7 +51,7 @@ function MemberTile({
   return (
     <button
       onClick={onClick}
-      className="group relative aspect-[3/4] w-full overflow-hidden rounded-xl bg-dark-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
+      className="group relative aspect-[3/4] w-full overflow-hidden rounded-xl bg-dark-800 border border-transparent hover:border-primary-500/50 hover:-translate-y-0.5 transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
     >
       {member.photoUrl ? (
         <img

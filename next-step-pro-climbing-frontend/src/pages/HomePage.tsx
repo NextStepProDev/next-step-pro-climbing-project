@@ -110,7 +110,7 @@ export function HomePage() {
                 src={heroImageUrl}
                 alt=""
                 aria-hidden="true"
-                className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ${heroImgLoaded ? 'opacity-100' : 'opacity-0'}`}
+                className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ${heroImgLoaded ? 'opacity-100 animation-ken-burns' : 'opacity-0'}`}
                 style={{ objectPosition }}
               />
               <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-dark-950" />
@@ -123,7 +123,7 @@ export function HomePage() {
               src={heroImageUrl}
               alt=""
               aria-hidden="true"
-              className={`hidden sm:block absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ${heroImgLoaded ? 'opacity-100' : 'opacity-0'}`}
+              className={`hidden sm:block absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ${heroImgLoaded ? 'opacity-100 animation-ken-burns' : 'opacity-0'}`}
               style={{ objectPosition }}
             />
             <div className={`hidden sm:block absolute inset-0 bg-gradient-to-b from-dark-950/25 via-dark-950/35 to-dark-950 transition-opacity duration-700 ${heroImgLoaded ? 'opacity-100' : 'opacity-0'}`} />
@@ -238,7 +238,7 @@ export function HomePage() {
 
           <div className="grid md:grid-cols-3 gap-8">
             {/* Course */}
-            <Link to="/kursy" className="block bg-dark-900 rounded-xl border border-dark-800 p-6 hover:border-primary-500/50 hover:-translate-y-1 transition-all duration-300">
+            <Link to="/kursy" className="block bg-dark-900 rounded-xl border border-dark-800 p-6 hover:border-primary-500/50 hover:-translate-y-0.5 transition-all duration-200">
               <div className="w-12 h-12 bg-primary-500/10 rounded-lg flex items-center justify-center mb-4">
                 <Award className="w-6 h-6 text-primary-400" />
               </div>
@@ -265,7 +265,7 @@ export function HomePage() {
             </Link>
 
             {/* Training */}
-            <Link to="/kursy" className="block bg-dark-900 rounded-xl border border-dark-800 p-6 hover:border-primary-500/50 hover:-translate-y-1 transition-all duration-300">
+            <Link to="/kursy" className="block bg-dark-900 rounded-xl border border-dark-800 p-6 hover:border-primary-500/50 hover:-translate-y-0.5 transition-all duration-200">
               <div className="w-12 h-12 bg-green-500/10 rounded-lg flex items-center justify-center mb-4">
                 <Users className="w-6 h-6 text-green-400" />
               </div>
@@ -296,7 +296,7 @@ export function HomePage() {
             </Link>
 
             {/* Workshop */}
-            <Link to="/kursy" className="block bg-dark-900 rounded-xl border border-dark-800 p-6 hover:border-primary-500/50 hover:-translate-y-1 transition-all duration-300">
+            <Link to="/kursy" className="block bg-dark-900 rounded-xl border border-dark-800 p-6 hover:border-primary-500/50 hover:-translate-y-0.5 transition-all duration-200">
               <div className="w-12 h-12 bg-amber-500/10 rounded-lg flex items-center justify-center mb-4">
                 <Calendar className="w-6 h-6 text-amber-400" />
               </div>
