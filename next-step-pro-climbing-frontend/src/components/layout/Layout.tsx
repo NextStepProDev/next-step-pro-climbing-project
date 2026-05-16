@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import { Clock3 } from 'lucide-react'
 import { Navbar } from './Navbar'
 import { Footer } from './Footer'
+import { ScrollToTopButton } from '../ui/ScrollToTopButton'
 import { useAuth } from '../../context/AuthContext'
 import { NewsletterChoiceModal } from '../ui/NewsletterChoiceModal'
 import { reservationApi } from '../../api/client'
@@ -52,6 +53,7 @@ export function Layout() {
         </div>
       </main>
       <Footer />
+      <ScrollToTopButton />
       {showNewsletterModal && (
         <NewsletterChoiceModal onDone={refreshUser} />
       )}
