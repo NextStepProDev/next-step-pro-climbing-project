@@ -80,7 +80,7 @@ body {
 
 .scroll-reveal {
   opacity: 0;
-  transform: translateY(24px);
+  transform: translateY(12px);
   transition: opacity 0.5s ease-out, transform 0.5s ease-out;
 }
 .scroll-reveal-visible {

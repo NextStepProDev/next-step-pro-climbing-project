@@ -16,7 +16,7 @@ export function useScrollReveal() {
           }
         })
       },
-      { threshold: 0.1, rootMargin: '0px 0px -40px 0px' }
+      { threshold: 0.05 }
     )
 
     function observeChildren() {
@@ -30,9 +30,17 @@ export function useScrollReveal() {
     const mo = new MutationObserver(observeChildren)
     mo.observe(container, { childList: true, subtree: true })
 
+    // Fallback: reveal all after 2s in case IntersectionObserver fails (mobile Safari)
+    const fallback = setTimeout(() => {
+      container!.querySelectorAll('.scroll-reveal:not(.scroll-reveal-visible)').forEach((el) => {
+        (el as HTMLElement).classList.add('scroll-reveal-visible')
+      })
+    }, 2000)
+
     return () => {
       io.disconnect()
       mo.disconnect()
+      clearTimeout(fallback)
     }
   }, [])
 
