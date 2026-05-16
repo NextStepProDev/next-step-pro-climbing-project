@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Link, useLocation } from 'react-router-dom'
+import { PageHead } from '../components/ui/PageHead'
 import { ChevronDown, BookOpen, ArrowRight } from 'lucide-react'
 import { coursesApi, calendarApi } from '../api/client'
 import type { CourseSummary } from '../types'
@@ -53,6 +54,7 @@ export function CoursesPage() {
 
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <PageHead title={t('courses.title')} description={t('courses.metaDescription')} path="/kursy" availableLanguages={['pl', 'en', 'es']} currentLanguage={contentLanguage} />
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-3xl font-bold text-dark-100">{t('courses.title')}</h1>
         <div className="flex items-center gap-1 bg-dark-800 border border-dark-700 rounded-lg p-1">

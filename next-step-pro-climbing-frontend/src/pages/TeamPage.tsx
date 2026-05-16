@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { useParams, useNavigate } from 'react-router-dom'
+import { PageHead } from '../components/ui/PageHead'
 import { User, X, ExternalLink } from 'lucide-react'
 import clsx from 'clsx'
 import { instructorApi } from '../api/client'
@@ -239,6 +240,7 @@ export function TeamPage({ memberType }: { memberType: InstructorType }) {
 
   return (
     <>
+      <PageHead title={title} description={memberType === 'INSTRUCTOR' ? t('team.instructorsMetaDescription') : t('team.competitorsMetaDescription')} path={memberType === 'INSTRUCTOR' ? '/team/instruktorzy' : '/team/zawodnicy'} availableLanguages={['pl', 'en', 'es']} currentLanguage={contentLanguage} />
       <div className="container mx-auto px-4 py-8">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
           <h1 className="text-3xl font-bold text-dark-100">{title}</h1>

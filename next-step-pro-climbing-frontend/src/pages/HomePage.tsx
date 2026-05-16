@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { PageHead } from "../components/ui/PageHead";
 import {
   Calendar,
   Users,
@@ -85,6 +86,7 @@ export function HomePage() {
 
   return (
     <div>
+      <PageHead description={t('metaDescription')} />
       {/* Hero Section */}
       <section className="relative overflow-hidden sm:min-h-[70vh] sm:flex sm:flex-col sm:justify-center">
         {/* Base gradient — always rendered as placeholder/fallback */}

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, useMemo } from 'react'
 import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
+import { PageHead } from '../components/ui/PageHead'
 import { Newspaper, Search, Star } from 'lucide-react'
 import { newsApi } from '../api/client'
 import { LoadingSpinner } from '../components/ui/LoadingSpinner'
@@ -107,6 +108,7 @@ export function NewsPage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
+      <PageHead title={t('news.title')} description={t('news.metaDescription')} path="/aktualnosci" availableLanguages={['pl', 'en', 'es']} currentLanguage={contentLanguage} />
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <h1 className="text-3xl font-bold text-dark-100">{t('news.title')}</h1>
         <div className="flex items-center gap-1 bg-dark-800 border border-dark-700 rounded-lg p-1">

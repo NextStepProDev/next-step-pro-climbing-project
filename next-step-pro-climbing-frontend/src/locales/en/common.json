@@ -62,10 +62,13 @@
     "certifications": "Certifications:",
     "achievements": "Achievements:",
     "about": "About me:",
-    "profile8aLink": "Profile on 8a.nu"
+    "profile8aLink": "Profile on 8a.nu",
+    "instructorsMetaDescription": "Meet the Next Step Pro Climbing instructors — experienced climbing coaches.",
+    "competitorsMetaDescription": "Meet the Next Step Pro Climbing competitors."
   },
   "gallery": {
     "title": "Gallery",
+    "metaDescription": "Photo gallery from climbing courses, training sessions and competitions.",
     "noAlbums": "No albums to display",
     "albumNotFound": "Album not found",
     "backToGallery": "Back to gallery",
@@ -76,6 +79,7 @@
   },
   "courses": {
     "title": "Courses",
+    "metaDescription": "Climbing courses — from basics to advanced techniques.",
     "noCourses": "No courses to display",
     "availableDates": "Available dates",
     "noDates": "No available dates",
@@ -95,6 +99,7 @@
   },
   "contact": {
     "title": "Contact",
+    "metaDescription": "Contact Next Step Pro Climbing — phone, email, social media.",
     "subtitle": "Get in touch with us — we're happy to answer any questions about training and courses.",
     "directContact": "Contact details",
     "instructor": "Instructor",
@@ -107,11 +112,13 @@
   },
   "videos": {
     "title": "Videos",
+    "metaDescription": "Climbing videos — techniques, course reports and competitions.",
     "noVideos": "No videos to display",
     "watchOnYoutube": "Watch on YouTube"
   },
   "news": {
     "title": "News",
+    "metaDescription": "Climbing news — events, reports and updates.",
     "noArticles": "No articles to display",
     "noSearchResults": "No search results",
     "noStarredArticles": "No saved articles",

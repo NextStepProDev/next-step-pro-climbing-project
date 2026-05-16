@@ -2,6 +2,7 @@ import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { PageHead } from "../components/ui/PageHead";
 import { format, startOfWeek, addWeeks, subWeeks } from "date-fns";
 import { calendarApi, reservationApi, adminApi } from "../api/client";
 import { getAccessToken } from "../utils/tokenStorage";
@@ -384,6 +385,7 @@ export function CalendarPage() {
 
   return (
     <div className={`mx-auto px-4 sm:px-6 lg:px-8 py-8 ${viewMode === 'week' && !selectedDate ? 'max-w-6xl' : 'max-w-4xl'}`}>
+      <PageHead title={t('title')} description={t('metaDescription')} />
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-dark-100 mb-2">{t('title')}</h1>
         <p className="text-dark-400">

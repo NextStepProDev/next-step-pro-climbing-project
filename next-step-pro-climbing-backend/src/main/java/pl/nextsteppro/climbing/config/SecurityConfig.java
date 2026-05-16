@@ -90,6 +90,7 @@ public class SecurityConfig {
                     .requestMatchers(HttpMethod.GET, "/api/settings/**").permitAll()
                     // OG meta tags for social sharing bots (GET + HEAD - bots use HEAD to preflight)
                     .requestMatchers("/api/og/**").permitAll()
+                    .requestMatchers(HttpMethod.GET, "/api/sitemap.xml").permitAll()
                     // Public unsubscribe endpoint (no login required - GDPR compliance)
                     .requestMatchers(HttpMethod.GET, "/api/user/unsubscribe").permitAll();
                 // Dev endpoints only in dev profile

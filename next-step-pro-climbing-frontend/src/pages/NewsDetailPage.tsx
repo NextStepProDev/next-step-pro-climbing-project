@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { useParams, Link } from 'react-router-dom'
 import { ArrowLeft, Star } from 'lucide-react'
 import { newsApi } from '../api/client'
+import { PageHead } from '../components/ui/PageHead'
 import { LoadingSpinner } from '../components/ui/LoadingSpinner'
 import { QueryError } from '../components/ui/QueryError'
 import { ShareButtons } from '../components/ui/ShareButtons'
@@ -70,6 +71,7 @@ export function NewsDetailPage() {
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-3xl">
+      <PageHead title={article.title} />
       {/* Breadcrumb */}
       <Link
         to="/aktualnosci"

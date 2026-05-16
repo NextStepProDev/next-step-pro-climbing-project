@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { ExternalLink, Play } from 'lucide-react'
 import { videoApi } from '../api/client'
+import { PageHead } from '../components/ui/PageHead'
 import { LoadingSpinner } from '../components/ui/LoadingSpinner'
 import { QueryError } from '../components/ui/QueryError'
 import { renderRichText } from '../utils/renderRichText'
@@ -61,6 +62,7 @@ export function VideosPage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
+      <PageHead title={t('videos.title')} description={t('videos.metaDescription')} />
       <h1 className="text-3xl font-bold text-dark-100 mb-8">{t('videos.title')}</h1>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">

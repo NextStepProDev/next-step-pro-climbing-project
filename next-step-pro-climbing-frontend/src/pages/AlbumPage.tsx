@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { useParams, Link } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
 import { galleryApi } from '../api/client'
+import { PageHead } from '../components/ui/PageHead'
 import { LoadingSpinner } from '../components/ui/LoadingSpinner'
 import { QueryError } from '../components/ui/QueryError'
 import { Lightbox } from '../components/gallery/Lightbox'
@@ -45,6 +46,7 @@ export function AlbumPage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
+      <PageHead title={album.name} />
       {/* Breadcrumb */}
       <Link
         to="/galeria"

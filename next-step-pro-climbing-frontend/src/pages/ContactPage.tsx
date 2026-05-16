@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next'
+import { PageHead } from '../components/ui/PageHead'
 import { Mail, Phone, User, Facebook, Youtube, Instagram, ExternalLink } from 'lucide-react'
 import logoWhite from '../assets/logo/logo-white.png'
 import { pzaLogo } from '../assets'
@@ -10,6 +11,7 @@ export function ContactPage() {
 
   return (
     <div className="min-h-screen bg-dark-950">
+      <PageHead title={t('contact.title')} description={t('contact.metaDescription')} />
       {/* Hero */}
       <div className="relative overflow-hidden bg-gradient-to-b from-dark-900 to-dark-950 border-b border-dark-800">
         <div className="absolute inset-0 opacity-5">

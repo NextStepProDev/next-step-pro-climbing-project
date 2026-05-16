@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { ChevronDown } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { PageHead } from '../components/ui/PageHead'
 import clsx from 'clsx'
 
 interface FaqItem {
@@ -32,6 +33,7 @@ export function FAQPage() {
 
   return (
     <div className="min-h-screen bg-dark-950">
+      <PageHead title="FAQ" description={t('metaDescription')} />
       {/* Hero */}
       <div className="relative overflow-hidden bg-gradient-to-b from-dark-900 to-dark-950 border-b border-dark-800">
         <div className="absolute inset-0 opacity-5">

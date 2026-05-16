@@ -11,6 +11,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.TimeUnit;
+import pl.nextsteppro.climbing.api.course.CourseDtos.CourseDetailDto;
+import pl.nextsteppro.climbing.api.course.CourseService;
 import pl.nextsteppro.climbing.api.instructor.InstructorDtos.InstructorPublicDto;
 import pl.nextsteppro.climbing.api.instructor.InstructorService;
 import pl.nextsteppro.climbing.api.news.NewsDtos.NewsDetailDto;
@@ -24,13 +26,16 @@ import java.util.UUID;
 public class OgController {
 
     private final NewsService newsService;
+    private final CourseService courseService;
     private final InstructorService instructorService;
     private final String baseUrl;
 
     public OgController(NewsService newsService,
+                        CourseService courseService,
                         InstructorService instructorService,
                         @Value("${app.base-url}") String baseUrl) {
         this.newsService = newsService;
+        this.courseService = courseService;
         this.instructorService = instructorService;
         this.baseUrl = baseUrl;
     }
@@ -51,6 +56,27 @@ public class OgController {
                 : "Next Step Pro Climbing";
         String image = article.thumbnailUrl() != null
                 ? article.thumbnailUrl()
+                : baseUrl + "/og-default.jpg";
+
+        return ogResponse(buildHtml("article", title, description, image, pageUrl));
+    }
+
+    @GetMapping(value = "/course/{id}", produces = MediaType.TEXT_HTML_VALUE)
+    public ResponseEntity<String> courseOg(@PathVariable UUID id) {
+        CourseDetailDto course;
+        try {
+            course = courseService.getPublishedById(id);
+        } catch (Exception e) {
+            return ResponseEntity.notFound().build();
+        }
+
+        String pageUrl = baseUrl + "/kursy/" + id;
+        String title = escapeHtml(course.title());
+        String description = course.price() != null
+                ? escapeHtml("Kurs wspinaczkowy — " + course.price())
+                : "Next Step Pro Climbing";
+        String image = course.thumbnailUrl() != null
+                ? course.thumbnailUrl()
                 : baseUrl + "/og-default.jpg";
 
         return ogResponse(buildHtml("article", title, description, image, pageUrl));
