@@ -109,7 +109,14 @@ export function AdminTeamMemberPanel({ memberType }: Props) {
   const [showCreateExitConfirm, setShowCreateExitConfirm] = useState(false)
   const [showEditExitConfirm, setShowEditExitConfirm] = useState(false)
   const [showSyncMediaModal, setShowSyncMediaModal] = useState(false)
-  const [syncSourceId, setSyncSourceId] = useState<string | null>(null)
+  const [pendingMediaAction, setPendingMediaAction] = useState<
+    | { type: 'uploadPhoto'; id: string; file: File }
+    | { type: 'deletePhoto'; id: string }
+    | { type: 'setBadge'; id: string; badgeUrl: string }
+    | { type: 'deleteBadge'; id: string }
+    | { type: 'setPhotoUrl'; id: string; photoUrl: string | null }
+    | null
+  >(null)
   const editFormRef = useRef<HTMLFormElement>(null)
 
   const isCreateDirty = useCallback(() => {
@@ -235,37 +242,33 @@ export function AdminTeamMemberPanel({ memberType }: Props) {
 
   const uploadPhotoMutation = useMutation({
     mutationFn: ({ id, file }: { id: string; file: File }) => adminInstructorApi.uploadPhoto(id, file),
-    onSuccess: (_, { id }) => {
+    onSuccess: () => {
       invalidateAll()
       setUploadPhotoModalOpen(false)
       setSelectedMember(null)
       setPhotoPreview(null)
       setSelectedFile(null)
-      triggerSyncCheck(id)
     },
   })
 
   const deletePhotoMutation = useMutation({
     mutationFn: adminInstructorApi.deletePhoto,
-    onSuccess: (_, id) => {
+    onSuccess: () => {
       invalidateAll()
-      triggerSyncCheck(id)
     },
   })
 
   const setBadgeMutation = useMutation({
     mutationFn: ({ id, badgeUrl }: { id: string; badgeUrl: string }) => adminInstructorApi.setBadge(id, badgeUrl),
-    onSuccess: (_, { id }) => {
+    onSuccess: () => {
       invalidateAll()
-      triggerSyncCheck(id)
     },
   })
 
   const deleteBadgeMutation = useMutation({
     mutationFn: adminInstructorApi.deleteBadge,
-    onSuccess: (_, id) => {
+    onSuccess: () => {
       invalidateAll()
-      triggerSyncCheck(id)
     },
   })
 
@@ -282,11 +285,10 @@ export function AdminTeamMemberPanel({ memberType }: Props) {
   const setPhotoUrlMutation = useMutation({
     mutationFn: ({ id, photoUrl }: { id: string; photoUrl: string | null }) =>
       adminInstructorApi.setPhotoUrl(id, photoUrl),
-    onSuccess: (_, { id }) => {
+    onSuccess: () => {
       invalidateAll()
       setUploadPhotoModalOpen(false)
       setSelectedMember(null)
-      triggerSyncCheck(id)
     },
   })
 
@@ -333,10 +335,35 @@ export function AdminTeamMemberPanel({ memberType }: Props) {
     return (allMembers ?? []).some(m => m.translationGroupId === member.translationGroupId && m.id !== memberId)
   }
 
-  const triggerSyncCheck = (memberId: string) => {
-    if (hasSiblings(memberId)) {
-      setSyncSourceId(memberId)
+  const executePendingAction = async (action: NonNullable<typeof pendingMediaAction>, sync: boolean) => {
+    switch (action.type) {
+      case 'uploadPhoto':
+        await uploadPhotoMutation.mutateAsync({ id: action.id, file: action.file })
+        break
+      case 'deletePhoto':
+        await deletePhotoMutation.mutateAsync(action.id)
+        break
+      case 'setBadge':
+        await setBadgeMutation.mutateAsync({ id: action.id, badgeUrl: action.badgeUrl })
+        break
+      case 'deleteBadge':
+        await deleteBadgeMutation.mutateAsync(action.id)
+        break
+      case 'setPhotoUrl':
+        await setPhotoUrlMutation.mutateAsync({ id: action.id, photoUrl: action.photoUrl })
+        break
+    }
+    if (sync) {
+      await syncMediaMutation.mutateAsync(action.id)
+    }
+  }
+
+  const requestMediaAction = (action: NonNullable<typeof pendingMediaAction>) => {
+    if (hasSiblings(action.id)) {
+      setPendingMediaAction(action)
       setShowSyncMediaModal(true)
+    } else {
+      executePendingAction(action, false)
     }
   }
 
@@ -609,7 +636,7 @@ export function AdminTeamMemberPanel({ memberType }: Props) {
                       style={selectedMember.focalPointX != null ? { objectPosition: `${selectedMember.focalPointX * 100}% ${(selectedMember.focalPointY ?? 0.5) * 100}%` } : undefined} />
                     <div className="flex flex-col gap-1">
                       <span className="text-xs text-dark-400">Podgląd · przesuń punkt ostrości poniżej</span>
-                      <button type="button" onClick={() => { if (confirm('Czy na pewno usunąć zdjęcie?')) deletePhotoMutation.mutate(selectedMember.id) }}
+                      <button type="button" onClick={() => { if (confirm('Czy na pewno usunąć zdjęcie?')) requestMediaAction({ type: 'deletePhoto', id: selectedMember.id }) }}
                         className="text-xs text-rose-400 hover:text-rose-300 text-left transition-colors">
                         Usuń zdjęcie
                       </button>
@@ -647,7 +674,7 @@ export function AdminTeamMemberPanel({ memberType }: Props) {
                   </Button>
                   {selectedMember.badgeUrl && (
                     <Button type="button" variant="ghost" size="sm"
-                      onClick={() => deleteBadgeMutation.mutate(selectedMember.id)}
+                      onClick={() => requestMediaAction({ type: 'deleteBadge', id: selectedMember.id })}
                       loading={deleteBadgeMutation.isPending}>
                       <Trash2 className="w-3.5 h-3.5 text-rose-400 mr-1" /> Usuń
                     </Button>
@@ -731,7 +758,7 @@ export function AdminTeamMemberPanel({ memberType }: Props) {
               <Button type="button" variant="ghost" onClick={() => {
                 setUploadPhotoModalOpen(false); setSelectedMember(null); setPhotoPreview(null); setSelectedFile(null)
               }}>Anuluj</Button>
-              <Button onClick={() => { if (selectedMember && selectedFile) uploadPhotoMutation.mutate({ id: selectedMember.id, file: selectedFile }) }}
+              <Button onClick={() => { if (selectedMember && selectedFile) requestMediaAction({ type: 'uploadPhoto', id: selectedMember.id, file: selectedFile }) }}
                 disabled={!selectedFile} loading={uploadPhotoMutation.isPending}>Prześlij</Button>
             </div>
             {uploadPhotoMutation.error && <div className="text-rose-400 text-sm">{String(uploadPhotoMutation.error)}</div>}
@@ -742,14 +769,14 @@ export function AdminTeamMemberPanel({ memberType }: Props) {
       {/* Badge picker */}
       <MediaPickerModal isOpen={badgePickerOpen} onClose={() => setBadgePickerOpen(false)}
         onSelect={(asset) => {
-          if (badgeTargetId) setBadgeMutation.mutate({ id: badgeTargetId, badgeUrl: asset.url })
+          if (badgeTargetId) requestMediaAction({ type: 'setBadge', id: badgeTargetId, badgeUrl: asset.url })
           setBadgePickerOpen(false)
         }} />
 
       {/* Photo gallery picker */}
       <GalleryPickerModal isOpen={photoGalleryOpen} onClose={() => setPhotoGalleryOpen(false)}
         onSelect={(url) => {
-          if (selectedMember) setPhotoUrlMutation.mutate({ id: selectedMember.id, photoUrl: url })
+          if (selectedMember) requestMediaAction({ type: 'setPhotoUrl', id: selectedMember.id, photoUrl: url })
           setPhotoGalleryOpen(false)
         }} />
 
@@ -790,7 +817,7 @@ export function AdminTeamMemberPanel({ memberType }: Props) {
         variant="primary" />
 
       {/* Sync media to translations */}
-      <Modal isOpen={showSyncMediaModal} onClose={() => setShowSyncMediaModal(false)}
+      <Modal isOpen={showSyncMediaModal} onClose={() => { setShowSyncMediaModal(false); setPendingMediaAction(null) }}
         title={t('team.syncMediaModalTitle')}>
         <p className="text-sm text-dark-300 mb-4">{t('team.syncMediaModalMessage')}</p>
         {syncMediaMutation.isError && (
@@ -798,24 +825,32 @@ export function AdminTeamMemberPanel({ memberType }: Props) {
         )}
         <div className="flex gap-3 justify-end">
           <Button variant="ghost" size="sm"
-            disabled={syncMediaMutation.isPending}
-            onClick={() => setShowSyncMediaModal(false)}>
+            disabled={uploadPhotoMutation.isPending || deletePhotoMutation.isPending || setBadgeMutation.isPending || deleteBadgeMutation.isPending || setPhotoUrlMutation.isPending || syncMediaMutation.isPending}
+            onClick={() => { setShowSyncMediaModal(false); setPendingMediaAction(null) }}>
             {t('team.syncMediaCancel')}
           </Button>
           <Button variant="secondary" size="sm"
-            disabled={syncMediaMutation.isPending}
-            onClick={() => setShowSyncMediaModal(false)}>
+            disabled={uploadPhotoMutation.isPending || deletePhotoMutation.isPending || setBadgeMutation.isPending || deleteBadgeMutation.isPending || setPhotoUrlMutation.isPending || syncMediaMutation.isPending}
+            loading={!syncMediaMutation.isPending && (uploadPhotoMutation.isPending || deletePhotoMutation.isPending || setBadgeMutation.isPending || deleteBadgeMutation.isPending || setPhotoUrlMutation.isPending)}
+            onClick={async () => {
+              if (pendingMediaAction) {
+                await executePendingAction(pendingMediaAction, false)
+              }
+              setShowSyncMediaModal(false)
+              setPendingMediaAction(null)
+            }}>
             {t('team.syncMediaSkip')}
           </Button>
           <Button variant="primary" size="sm"
             onClick={async () => {
-              if (syncSourceId) {
-                await syncMediaMutation.mutateAsync(syncSourceId)
+              if (pendingMediaAction) {
+                await executePendingAction(pendingMediaAction, true)
               }
               setShowSyncMediaModal(false)
+              setPendingMediaAction(null)
             }}
-            disabled={syncMediaMutation.isPending}
-            loading={syncMediaMutation.isPending}>
+            disabled={uploadPhotoMutation.isPending || deletePhotoMutation.isPending || setBadgeMutation.isPending || deleteBadgeMutation.isPending || setPhotoUrlMutation.isPending || syncMediaMutation.isPending}
+            loading={syncMediaMutation.isPending || uploadPhotoMutation.isPending || deletePhotoMutation.isPending || setBadgeMutation.isPending || deleteBadgeMutation.isPending || setPhotoUrlMutation.isPending}>
             {t('team.syncMediaConfirm')}
           </Button>
         </div>
