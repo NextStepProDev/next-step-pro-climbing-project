@@ -31,6 +31,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
 
+// TODO: extract common waitlist logic with WaitlistService if a third type is needed
 @Service
 @Transactional
 public class EventWaitlistService {

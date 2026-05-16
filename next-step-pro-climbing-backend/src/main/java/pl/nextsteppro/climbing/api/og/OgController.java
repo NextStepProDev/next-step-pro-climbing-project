@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.nio.charset.StandardCharsets;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import pl.nextsteppro.climbing.api.course.CourseDtos.CourseDetailDto;
 import pl.nextsteppro.climbing.api.course.CourseService;
@@ -18,8 +19,6 @@ import pl.nextsteppro.climbing.api.instructor.InstructorService;
 import pl.nextsteppro.climbing.api.news.NewsDtos.NewsDetailDto;
 import pl.nextsteppro.climbing.api.news.NewsService;
 import pl.nextsteppro.climbing.domain.instructor.InstructorType;
-
-import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/og")

@@ -270,9 +270,6 @@ export const calendarApi = {
   getEventSummary: (eventId: string) =>
     fetchApi<EventSummary>(`/calendar/event/${eventId}`),
 
-  getCourseEvents: (courseId: string) =>
-    fetchApi<CourseEvent[]>(`/calendar/course/${courseId}/events`),
-
   getCourseEventsByTranslationGroup: (translationGroupId: string) =>
     fetchApi<CourseEvent[]>(`/calendar/course-group/${translationGroupId}/events`),
 }
@@ -403,9 +400,6 @@ export const adminApi = {
   getAllEvents: () =>
     fetchApi<EventDetail[]>('/admin/events'),
 
-  getEventDetails: (eventId: string) =>
-    fetchApi<EventDetail>(`/admin/events/${eventId}`),
-
   getEventParticipants: (eventId: string) =>
     fetchApi<EventParticipants>(`/admin/events/${eventId}/participants`),
 
@@ -463,9 +457,6 @@ export const adminApi = {
 
   getPastReservations: () =>
     fetchApi<ReservationAdmin[]>('/admin/reservations/past'),
-
-  getReservationsByDate: (date: string) =>
-    fetchApi<ReservationAdmin[]>(`/admin/reservations/date/${date}`),
 
   // Users
   getAllUsers: () =>
