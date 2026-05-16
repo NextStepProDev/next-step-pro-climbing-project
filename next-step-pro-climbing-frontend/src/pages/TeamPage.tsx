@@ -4,7 +4,6 @@ import { useTranslation } from 'react-i18next'
 import { useParams, useNavigate } from 'react-router-dom'
 import { PageHead } from '../components/ui/PageHead'
 import { User, X, ExternalLink } from 'lucide-react'
-import { useScrollReveal } from '../hooks/useScrollReveal'
 import clsx from 'clsx'
 import { instructorApi } from '../api/client'
 import { TileSkeleton } from '../components/ui/CardSkeleton'
@@ -195,7 +194,6 @@ export function TeamPage({ memberType }: { memberType: InstructorType }) {
   const { t, i18n } = useTranslation('common')
   const { memberId } = useParams<{ memberId?: string }>()
   const navigate = useNavigate()
-  const scrollRef = useScrollReveal()
 
   const [contentLanguage, setContentLanguage] = useState(() =>
     getDefaultCourseContentLanguage(i18n.language)
@@ -268,7 +266,7 @@ export function TeamPage({ memberType }: { memberType: InstructorType }) {
         {members.length === 0 ? (
           <div className="text-center text-dark-400">{t('team.noMembers')}</div>
         ) : (
-          <div ref={scrollRef} className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
             {members.map((m) => (
               <div key={m.id} className="scroll-reveal">
                 <MemberTile member={m} onClick={() => openModal(m)} />
