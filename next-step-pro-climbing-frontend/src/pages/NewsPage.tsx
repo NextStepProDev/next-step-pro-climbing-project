@@ -8,6 +8,7 @@ import { useScrollReveal } from '../hooks/useScrollReveal'
 import { newsApi } from '../api/client'
 import { LoadingSpinner } from '../components/ui/LoadingSpinner'
 import { CardSkeleton } from '../components/ui/CardSkeleton'
+import { FadeImage } from '../components/ui/FadeImage'
 import { QueryError } from '../components/ui/QueryError'
 import { renderRichText } from '../utils/renderRichText'
 import { useAuth } from '../context/AuthContext'
@@ -190,7 +191,7 @@ export function NewsPage() {
                   <div className="aspect-video bg-dark-700 relative overflow-hidden">
                     {article.thumbnailUrl ? (
                       article.thumbnailFocalPointX != null ? (
-                        <img
+                        <FadeImage
                           src={article.thumbnailUrl}
                           alt={article.title}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
@@ -204,7 +205,7 @@ export function NewsPage() {
                             aria-hidden="true"
                             className="absolute inset-0 w-full h-full object-cover blur-xl scale-110"
                           />
-                          <img
+                          <FadeImage
                             src={article.thumbnailUrl}
                             alt={article.title}
                             className="relative w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"

@@ -6,6 +6,7 @@ import { ArrowLeft } from 'lucide-react'
 import { galleryApi } from '../api/client'
 import { PageHead } from '../components/ui/PageHead'
 import { LoadingSpinner } from '../components/ui/LoadingSpinner'
+import { FadeImage } from '../components/ui/FadeImage'
 import { QueryError } from '../components/ui/QueryError'
 import { Lightbox } from '../components/gallery/Lightbox'
 
@@ -87,7 +88,7 @@ export function AlbumPage() {
                 className="absolute inset-0 w-full h-full object-cover blur-xl scale-110"
                 style={photo.focalPointX != null ? { objectPosition: `${photo.focalPointX * 100}% ${(photo.focalPointY ?? 0.5) * 100}%` } : undefined}
               />
-              <img
+              <FadeImage
                 src={photo.url}
                 alt={photo.caption || ''}
                 className="relative w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"

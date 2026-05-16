@@ -5,6 +5,7 @@ import { useScrollReveal } from '../hooks/useScrollReveal'
 import { videoApi } from '../api/client'
 import { PageHead } from '../components/ui/PageHead'
 import { CardSkeleton } from '../components/ui/CardSkeleton'
+import { FadeImage } from '../components/ui/FadeImage'
 import { QueryError } from '../components/ui/QueryError'
 import { renderRichText } from '../utils/renderRichText'
 
@@ -85,7 +86,7 @@ export function VideosPage() {
                 aria-label={video.title}
               >
                 {thumbnail ? (
-                  <img
+                  <FadeImage
                     src={thumbnail}
                     alt={video.title}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"

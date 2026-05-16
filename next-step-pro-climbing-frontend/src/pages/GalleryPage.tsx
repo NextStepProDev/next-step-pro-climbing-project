@@ -6,6 +6,7 @@ import { useScrollReveal } from '../hooks/useScrollReveal'
 import { galleryApi } from '../api/client'
 import { PageHead } from '../components/ui/PageHead'
 import { CardSkeleton } from '../components/ui/CardSkeleton'
+import { FadeImage } from '../components/ui/FadeImage'
 import { QueryError } from '../components/ui/QueryError'
 
 export function GalleryPage() {
@@ -66,7 +67,7 @@ export function GalleryPage() {
                     className="absolute inset-0 w-full h-full object-cover blur-xl scale-110"
                     style={album.thumbnailFocalPointX != null ? { objectPosition: `${album.thumbnailFocalPointX * 100}% ${(album.thumbnailFocalPointY ?? 0.5) * 100}%` } : undefined}
                   />
-                  <img
+                  <FadeImage
                     src={album.thumbnailUrl}
                     alt={album.name}
                     className="relative w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
