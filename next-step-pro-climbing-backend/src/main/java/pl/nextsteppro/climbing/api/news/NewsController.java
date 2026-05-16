@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import pl.nextsteppro.climbing.api.news.NewsDtos.*;
 import pl.nextsteppro.climbing.config.CurrentUserId;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -49,6 +50,12 @@ public class NewsController {
             @Parameter(description = "ID aktualności") @PathVariable UUID id,
             @Nullable @CurrentUserId UUID userId) {
         return ResponseEntity.ok(newsService.getPublishedById(id, userId));
+    }
+
+    @Operation(summary = "Pobierz dostępne wersje językowe artykułu")
+    @GetMapping("/by-group/{translationGroupId}")
+    public ResponseEntity<List<NewsTranslationDto>> getTranslations(@PathVariable UUID translationGroupId) {
+        return ResponseEntity.ok(newsService.getAvailableTranslations(translationGroupId));
     }
 
     @Operation(summary = "Dodaj aktualność do ulubionych")

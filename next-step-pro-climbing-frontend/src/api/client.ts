@@ -38,6 +38,7 @@ import type {
   UploadPhotoResponse,
   SetThumbnailPhotoRequest,
   NewsDetail,
+  NewsTranslation,
   NewsAdmin,
   NewsDetailAdmin,
   ContentBlockAdmin,
@@ -645,6 +646,8 @@ export const newsApi = {
     return fetchApi<NewsPageDto>(`/news?${params}`)
   },
   getById: (id: string) => fetchApi<NewsDetail>(`/news/${id}`),
+  getTranslations: (translationGroupId: string) =>
+    fetchApi<NewsTranslation[]>(`/news/by-group/${translationGroupId}`),
   star: (id: string) => fetchApi<void>(`/news/${id}/star`, { method: 'POST' }),
   unstar: (id: string) => fetchApi<void>(`/news/${id}/star`, { method: 'DELETE' }),
 }

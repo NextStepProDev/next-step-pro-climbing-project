@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link, useNavigate } from 'react-router-dom'
 import { ArrowLeft, Star } from 'lucide-react'
 import { ReadingProgressBar } from '../components/ui/ReadingProgressBar'
 import { newsApi } from '../api/client'
@@ -10,11 +10,13 @@ import { QueryError } from '../components/ui/QueryError'
 import { ShareButtons } from '../components/ui/ShareButtons'
 import { renderRichText } from '../utils/renderRichText'
 import { useAuth } from '../context/AuthContext'
+import { COURSE_CONTENT_LANGUAGES } from '../constants/courseLanguages'
 import clsx from 'clsx'
 
 export function NewsDetailPage() {
   const { t } = useTranslation('common')
   const { newsId } = useParams<{ newsId: string }>()
+  const navigate = useNavigate()
   const { isAuthenticated } = useAuth()
   const queryClient = useQueryClient()
 
@@ -22,6 +24,12 @@ export function NewsDetailPage() {
     queryKey: ['news', newsId],
     queryFn: () => newsApi.getById(newsId!),
     enabled: !!newsId,
+  })
+
+  const { data: translations } = useQuery({
+    queryKey: ['newsTranslations', article?.translationGroupId],
+    queryFn: () => newsApi.getTranslations(article!.translationGroupId),
+    enabled: !!article?.translationGroupId,
   })
 
   const starMutation = useMutation({
@@ -111,7 +119,34 @@ export function NewsDetailPage() {
               year: 'numeric',
             })}
           </p>
-          <ShareButtons title={article.title} />
+          <div className="flex items-center gap-3">
+            {translations && translations.length > 1 && (
+              <div className="flex items-center gap-1 bg-dark-800 border border-dark-700 rounded-lg p-1">
+                {COURSE_CONTENT_LANGUAGES.map((lang) => {
+                  const translation = translations.find(tr => tr.language === lang.code)
+                  if (!translation) return null
+                  const isActive = article.language === lang.code
+                  return (
+                    <button
+                      key={lang.code}
+                      onClick={() => {
+                        if (!isActive) navigate(`/aktualnosci/${translation.id}`)
+                      }}
+                      className={clsx(
+                        'px-2.5 py-1 rounded-md text-xs font-medium transition-all duration-150',
+                        isActive
+                          ? 'bg-primary-500 text-white'
+                          : 'text-dark-400 hover:text-dark-100 hover:bg-dark-700'
+                      )}
+                    >
+                      {lang.label}
+                    </button>
+                  )
+                })}
+              </div>
+            )}
+            <ShareButtons title={article.title} />
+          </div>
         </div>
       </div>
 

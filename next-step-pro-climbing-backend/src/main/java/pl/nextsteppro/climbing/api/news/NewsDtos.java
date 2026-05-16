@@ -54,4 +54,9 @@ public class NewsDtos {
             long totalElements,
             boolean hasNext
     ) {}
+
+    public record NewsTranslationDto(
+            UUID id,
+            String language
+    ) {}
 }

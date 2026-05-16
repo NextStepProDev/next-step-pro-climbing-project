@@ -106,6 +106,13 @@ public class NewsService {
         );
     }
 
+    public List<NewsTranslationDto> getAvailableTranslations(UUID translationGroupId) {
+        return newsRepository.findByTranslationGroupId(translationGroupId).stream()
+                .filter(News::isPublished)
+                .map(n -> new NewsTranslationDto(n.getId(), n.getLanguage()))
+                .toList();
+    }
+
     @Transactional
     public void starNews(UUID newsId, UUID userId) {
         newsRepository.findById(newsId)

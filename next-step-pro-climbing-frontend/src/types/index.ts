@@ -552,6 +552,11 @@ export interface NewsDetail {
   translationGroupId: string
 }
 
+export interface NewsTranslation {
+  id: string
+  language: string
+}
+
 export interface ContentBlockAdmin {
   id: string
   blockType: BlockType
