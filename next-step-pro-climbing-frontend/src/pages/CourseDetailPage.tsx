@@ -66,9 +66,13 @@ export function CourseDetailPage() {
     )
   }
 
+  const metaDescription = course.blocks
+    .find(b => b.blockType === 'TEXT' && b.content)
+    ?.content?.replace(/<[^>]*>/g, '').slice(0, 160) ?? undefined
+
   return (
     <div className="container mx-auto px-4 py-8 max-w-3xl">
-      <PageHead title={course.title} />
+      <PageHead title={course.title} description={metaDescription} path={`/kursy/${courseId}`} />
       <div className="flex items-center justify-between mb-6">
         <Link
           to="/kursy"
