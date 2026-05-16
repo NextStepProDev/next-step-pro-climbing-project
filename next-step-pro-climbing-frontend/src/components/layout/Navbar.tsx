@@ -1,6 +1,6 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ChevronDown, LogOut, Menu, User, X } from "lucide-react";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useLayoutEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../../context/AuthContext";
 import { Button } from "../ui/Button";
@@ -91,6 +91,31 @@ export function Navbar() {
 
   const userInitial = user?.firstName?.charAt(0).toUpperCase() ?? "?";
 
+  const navContainerRef = useRef<HTMLDivElement>(null);
+  const [indicator, setIndicator] = useState({ left: 0, width: 0 });
+  const [hasIndicator, setHasIndicator] = useState(false);
+
+  const updateIndicator = useCallback(() => {
+    const container = navContainerRef.current;
+    if (!container) return;
+    const active = container.querySelector('[data-nav-active="true"]') as HTMLElement | null;
+    if (active) {
+      const containerRect = container.getBoundingClientRect();
+      const activeRect = active.getBoundingClientRect();
+      setIndicator({
+        left: activeRect.left - containerRect.left,
+        width: activeRect.width,
+      });
+      setHasIndicator(true);
+    } else {
+      setHasIndicator(false);
+    }
+  }, []);
+
+  useLayoutEffect(() => {
+    updateIndicator();
+  }, [location.pathname, updateIndicator]);
+
   return (
     <nav className="bg-dark-900/80 backdrop-blur-sm border-b border-dark-800 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -108,15 +133,22 @@ export function Navbar() {
           </Link>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center gap-1">
+          <div ref={navContainerRef} className="hidden md:flex items-center gap-1 relative">
+            {hasIndicator && (
+              <div
+                className="absolute bottom-0 h-0.5 bg-primary-400 rounded-full transition-all duration-300 ease-out"
+                style={{ left: indicator.left, width: indicator.width }}
+              />
+            )}
             {navLinksBefore.map((link) => (
               <Link
                 key={link.to}
                 to={link.to}
+                data-nav-active={isLinkActive(link.to) || undefined}
                 className={clsx(
                   "px-3 py-1.5 rounded-lg text-base font-semibold tracking-wide transition-colors",
                   isLinkActive(link.to)
-                    ? "bg-dark-800 text-dark-100"
+                    ? "text-dark-100"
                     : "text-dark-400 hover:bg-dark-800/60 hover:text-dark-200",
                 )}
               >
@@ -128,10 +160,11 @@ export function Navbar() {
             <div className="relative" ref={teamMenuRef}>
               <button
                 onClick={() => setTeamMenuOpen(!teamMenuOpen)}
+                data-nav-active={isTeamActive || undefined}
                 className={clsx(
                   "flex items-center gap-1 px-3 py-1.5 rounded-lg text-base font-semibold tracking-wide transition-colors",
                   isTeamActive
-                    ? "bg-dark-800 text-dark-100"
+                    ? "text-dark-100"
                     : "text-dark-400 hover:bg-dark-800/60 hover:text-dark-200",
                 )}
               >
@@ -171,10 +204,11 @@ export function Navbar() {
             <div className="relative" ref={mediaMenuRef}>
               <button
                 onClick={() => setMediaMenuOpen(!mediaMenuOpen)}
+                data-nav-active={isMediaActive || undefined}
                 className={clsx(
                   "flex items-center gap-1 px-3 py-1.5 rounded-lg text-base font-semibold tracking-wide transition-colors",
                   isMediaActive
-                    ? "bg-dark-800 text-dark-100"
+                    ? "text-dark-100"
                     : "text-dark-400 hover:bg-dark-800/60 hover:text-dark-200",
                 )}
               >
@@ -214,10 +248,11 @@ export function Navbar() {
               <Link
                 key={link.to}
                 to={link.to}
+                data-nav-active={isLinkActive(link.to) || undefined}
                 className={clsx(
                   "px-3 py-1.5 rounded-lg text-base font-semibold tracking-wide transition-colors",
                   isLinkActive(link.to)
-                    ? "bg-dark-800 text-dark-100"
+                    ? "text-dark-100"
                     : "text-dark-400 hover:bg-dark-800/60 hover:text-dark-200",
                 )}
               >
