@@ -8,7 +8,8 @@ export function Footer() {
   const { t } = useTranslation('common')
 
   return (
-    <footer className="bg-dark-900 border-t border-dark-800">
+    <footer className="bg-dark-900">
+      <div className="h-0.5 bg-gradient-to-r from-transparent via-primary-400 to-transparent" />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {/* Brand */}
@@ -22,7 +23,7 @@ export function Footer() {
           {/* Contact */}
           <div>
             <h3 className="font-semibold mb-4">
-              <Link to="/kontakt" className="text-dark-100 hover:text-primary-400 transition-colors">
+              <Link to="/kontakt" className="text-dark-100 hover:text-primary-400 transition-all duration-150 active:scale-95">
                 {t('footer.contact')}
               </Link>
             </h3>
@@ -33,13 +34,13 @@ export function Footer() {
               </li>
               <li className="flex items-center gap-2 text-dark-400 text-sm">
                 <Phone className="w-4 h-4 shrink-0" />
-                <a href={CONTACT.phoneHref} className="hover:text-primary-400 transition-colors">
+                <a href={CONTACT.phoneHref} className="hover:text-primary-400 hover:translate-x-1 transition-all duration-200">
                   {CONTACT.phone}
                 </a>
               </li>
               <li className="flex items-center gap-2 text-dark-400 text-sm">
                 <Mail className="w-4 h-4 shrink-0" />
-                <a href={CONTACT.emailHref} className="hover:text-primary-400 transition-colors">
+                <a href={CONTACT.emailHref} className="hover:text-primary-400 hover:translate-x-1 transition-all duration-200">
                   {CONTACT.email}
                 </a>
               </li>
@@ -49,7 +50,7 @@ export function Footer() {
                   href={CONTACT.facebook}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="hover:text-primary-400 transition-colors"
+                  className="hover:text-primary-400 hover:translate-x-1 transition-all duration-200"
                 >
                   Facebook
                 </a>
@@ -60,7 +61,7 @@ export function Footer() {
                   href={CONTACT.youtube}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="hover:text-primary-400 transition-colors"
+                  className="hover:text-primary-400 hover:translate-x-1 transition-all duration-200"
                 >
                   YouTube
                 </a>
@@ -72,7 +73,7 @@ export function Footer() {
                     href={CONTACT.instagram}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="hover:text-primary-400 transition-colors"
+                    className="hover:text-primary-400 hover:translate-x-1 transition-all duration-200"
                   >
                     Instagram
                   </a>
