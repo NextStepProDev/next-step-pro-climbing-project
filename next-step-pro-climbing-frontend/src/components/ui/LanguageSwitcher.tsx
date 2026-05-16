@@ -41,7 +41,7 @@ export function LanguageSwitcher() {
     <div className="relative" ref={ref}>
       <button
         onClick={() => setOpen(!open)}
-        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-dark-300 hover:text-dark-100 hover:bg-dark-800 transition-colors text-sm"
+        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-dark-300 hover:text-dark-100 hover:bg-dark-800 transition-all duration-150 active:scale-95 text-sm"
       >
         <Globe className="w-4 h-4" />
         <span className="font-medium">{currentLang.label}</span>

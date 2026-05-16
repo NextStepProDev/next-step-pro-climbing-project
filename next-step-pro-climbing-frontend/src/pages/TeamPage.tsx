@@ -253,7 +253,7 @@ export function TeamPage({ memberType }: { memberType: InstructorType }) {
                 key={lang.code}
                 onClick={() => setContentLanguage(lang.code)}
                 className={clsx(
-                  'px-3 py-1.5 rounded-md text-sm font-medium transition-colors',
+                  'px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-150 active:scale-95',
                   contentLanguage === lang.code
                     ? 'bg-primary-500 text-white'
                     : 'text-dark-400 hover:text-dark-100 hover:bg-dark-700'

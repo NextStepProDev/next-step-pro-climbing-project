@@ -146,7 +146,7 @@ export function Navbar() {
                 to={link.to}
                 data-nav-active={isLinkActive(link.to) || undefined}
                 className={clsx(
-                  "px-3 py-1.5 rounded-lg text-base font-semibold tracking-wide transition-colors",
+                  "px-3 py-1.5 rounded-lg text-base font-semibold tracking-wide transition-all duration-150 active:scale-95",
                   isLinkActive(link.to)
                     ? "text-dark-100"
                     : "text-dark-400 hover:bg-dark-800/60 hover:text-dark-200",
@@ -250,7 +250,7 @@ export function Navbar() {
                 to={link.to}
                 data-nav-active={isLinkActive(link.to) || undefined}
                 className={clsx(
-                  "px-3 py-1.5 rounded-lg text-base font-semibold tracking-wide transition-colors",
+                  "px-3 py-1.5 rounded-lg text-base font-semibold tracking-wide transition-all duration-150 active:scale-95",
                   isLinkActive(link.to)
                     ? "text-dark-100"
                     : "text-dark-400 hover:bg-dark-800/60 hover:text-dark-200",
