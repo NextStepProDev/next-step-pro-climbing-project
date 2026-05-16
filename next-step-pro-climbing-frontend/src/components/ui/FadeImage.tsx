@@ -1,17 +1,16 @@
-import { useRef, useState, useEffect, type ImgHTMLAttributes } from 'react'
+import { useCallback, useState, type ImgHTMLAttributes } from 'react'
 import clsx from 'clsx'
 
 export function FadeImage({ className, onLoad, ...props }: ImgHTMLAttributes<HTMLImageElement>) {
   const [loaded, setLoaded] = useState(false)
-  const imgRef = useRef<HTMLImageElement>(null)
 
-  useEffect(() => {
-    if (imgRef.current?.complete) setLoaded(true)
+  const refCallback = useCallback((img: HTMLImageElement | null) => {
+    if (img?.complete) setLoaded(true)
   }, [])
 
   return (
     <img
-      ref={imgRef}
+      ref={refCallback}
       {...props}
       className={clsx(className, 'transition-opacity duration-300', loaded ? 'opacity-100' : 'opacity-0')}
       onLoad={(e) => {
