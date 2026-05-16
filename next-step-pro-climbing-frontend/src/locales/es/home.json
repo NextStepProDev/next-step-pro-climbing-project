@@ -47,6 +47,12 @@
       "item3": "Técnicas seleccionadas de cuerda y aseguramiento"
     }
   },
+  "stats": {
+    "trained": "Personas formadas",
+    "experience": "Años de experiencia",
+    "courseTypes": "Tipos de cursos",
+    "passion": "Pasión y dedicación"
+  },
   "cta": {
     "title": "¿Listo para dar el primer paso?",
     "subtitle": "Consulta los horarios disponibles e inscríbete en las sesiones que prefieras. ¡Te esperamos!",

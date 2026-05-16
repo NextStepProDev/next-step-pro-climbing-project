@@ -230,10 +230,10 @@ export function HomePage() {
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             {[
-              { target: 200, suffix: '+', label: 'Przeszkolonych osób' },
-              { target: 10, suffix: '+', label: 'Lat doświadczenia' },
-              { target: 6, suffix: '', label: 'Typów kursów' },
-              { target: 100, suffix: '%', label: 'Pasji i zaangażowania' },
+              { target: 200, suffix: '+', label: t('stats.trained') },
+              { target: 10, suffix: '+', label: t('stats.experience') },
+              { target: 6, suffix: '', label: t('stats.courseTypes') },
+              { target: 100, suffix: '%', label: t('stats.passion') },
             ].map((stat) => (
               <div key={stat.label} className="text-center">
                 <p className="text-4xl sm:text-5xl font-bold text-primary-400 mb-2">

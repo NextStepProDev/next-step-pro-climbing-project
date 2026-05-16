@@ -47,6 +47,12 @@
       "item3": "Wybrane techniki linowe i asekuracyjne"
     }
   },
+  "stats": {
+    "trained": "Przeszkolonych osób",
+    "experience": "Lat doświadczenia",
+    "courseTypes": "Typów kursów",
+    "passion": "Pasji i zaangażowania"
+  },
   "cta": {
     "title": "Gotowy na pierwszy krok?",
     "subtitle": "Sprawdź dostępne terminy i zapisz się na wybrane zajęcia. Czekamy na Ciebie!",

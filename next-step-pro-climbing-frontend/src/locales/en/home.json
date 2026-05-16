@@ -47,6 +47,12 @@
       "item3": "Selected rope and belaying techniques"
     }
   },
+  "stats": {
+    "trained": "People trained",
+    "experience": "Years of experience",
+    "courseTypes": "Course types",
+    "passion": "Passion & dedication"
+  },
   "cta": {
     "title": "Ready to take the first step?",
     "subtitle": "Check available time slots and sign up for your chosen sessions. We look forward to seeing you!",
