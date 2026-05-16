@@ -6,6 +6,7 @@ import { PageHead } from '../components/ui/PageHead'
 import { Newspaper, Search, Star } from 'lucide-react'
 import { newsApi } from '../api/client'
 import { LoadingSpinner } from '../components/ui/LoadingSpinner'
+import { CardSkeleton } from '../components/ui/CardSkeleton'
 import { QueryError } from '../components/ui/QueryError'
 import { renderRichText } from '../utils/renderRichText'
 import { useAuth } from '../context/AuthContext'
@@ -170,9 +171,7 @@ export function NewsPage() {
       </div>
 
       {isLoading ? (
-        <div className="flex justify-center py-12">
-          <LoadingSpinner />
-        </div>
+        <CardSkeleton count={6} columns={3} />
       ) : articles.length === 0 && !isFetching ? (
         <div className="text-center text-dark-400 py-12">
           {emptyMessage}

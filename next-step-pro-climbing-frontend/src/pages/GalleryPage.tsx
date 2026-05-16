@@ -5,6 +5,7 @@ import { Image as ImageIcon } from 'lucide-react'
 import { galleryApi } from '../api/client'
 import { PageHead } from '../components/ui/PageHead'
 import { LoadingSpinner } from '../components/ui/LoadingSpinner'
+import { CardSkeleton } from '../components/ui/CardSkeleton'
 import { QueryError } from '../components/ui/QueryError'
 
 export function GalleryPage() {
@@ -16,8 +17,9 @@ export function GalleryPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-[50vh] flex items-center justify-center">
-        <LoadingSpinner />
+      <div className="container mx-auto px-4 py-8">
+        <h1 className="text-3xl font-bold text-dark-100 mb-8">{t('gallery.title')}</h1>
+        <CardSkeleton count={6} columns={3} />
       </div>
     )
   }

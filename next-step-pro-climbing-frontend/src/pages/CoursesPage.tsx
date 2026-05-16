@@ -7,6 +7,7 @@ import { ChevronDown, BookOpen, ArrowRight } from 'lucide-react'
 import { coursesApi, calendarApi } from '../api/client'
 import type { CourseSummary } from '../types'
 import { LoadingSpinner } from '../components/ui/LoadingSpinner'
+import { AccordionSkeleton } from '../components/ui/CardSkeleton'
 import { QueryError } from '../components/ui/QueryError'
 import { CourseContentBlocks, CourseEventsList } from '../components/courses/CourseContentBlocks'
 import { COURSE_CONTENT_LANGUAGES, getDefaultCourseContentLanguage } from '../constants/courseLanguages'
@@ -38,8 +39,9 @@ export function CoursesPage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-24">
-        <LoadingSpinner />
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <h1 className="text-3xl font-bold text-dark-100 mb-8">{t('courses.title')}</h1>
+        <AccordionSkeleton count={4} />
       </div>
     )
   }

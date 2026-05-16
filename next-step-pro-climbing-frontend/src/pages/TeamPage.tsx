@@ -7,6 +7,7 @@ import { User, X, ExternalLink } from 'lucide-react'
 import clsx from 'clsx'
 import { instructorApi } from '../api/client'
 import { LoadingSpinner } from '../components/ui/LoadingSpinner'
+import { TileSkeleton } from '../components/ui/CardSkeleton'
 import { QueryError } from '../components/ui/QueryError'
 import { ShareButtons } from '../components/ui/ShareButtons'
 import { renderRichText } from '../utils/renderRichText'
@@ -222,8 +223,9 @@ export function TeamPage({ memberType }: { memberType: InstructorType }) {
 
   if (isLoading) {
     return (
-      <div className="min-h-[50vh] flex items-center justify-center">
-        <LoadingSpinner />
+      <div className="container mx-auto px-4 py-8">
+        <h1 className="text-3xl font-bold text-dark-100 mb-8">{title}</h1>
+        <TileSkeleton count={8} />
       </div>
     )
   }
