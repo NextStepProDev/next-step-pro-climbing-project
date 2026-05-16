@@ -1,4 +1,4 @@
-import { Outlet, Link } from 'react-router-dom'
+import { Outlet, Link, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import { Clock3 } from 'lucide-react'
@@ -9,6 +9,7 @@ import { NewsletterChoiceModal } from '../ui/NewsletterChoiceModal'
 import { reservationApi } from '../../api/client'
 
 export function Layout() {
+  const location = useLocation()
   const { user, refreshUser, isAuthenticated } = useAuth()
   const { t } = useTranslation('reservations')
   const showNewsletterModal = !!user && !user.newsletterChoiceMade
@@ -46,7 +47,9 @@ export function Layout() {
         </Link>
       )}
       <main className="flex-1">
-        <Outlet />
+        <div key={location.pathname} className="animation-page-fade">
+          <Outlet />
+        </div>
       </main>
       <Footer />
       {showNewsletterModal && (
