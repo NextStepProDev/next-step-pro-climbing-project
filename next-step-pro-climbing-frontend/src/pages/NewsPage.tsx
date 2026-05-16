@@ -184,7 +184,7 @@ export function NewsPage() {
               <div key={article.id} className="relative group">
                 <Link
                   to={`/aktualnosci/${article.id}`}
-                  className="block bg-dark-800 rounded-lg overflow-hidden border border-dark-700 hover:border-primary-500/50 hover:-translate-y-0.5 transition-all duration-200"
+                  className="block card-glass hover-gradient-border rounded-lg overflow-hidden border border-dark-700/50 hover:-translate-y-0.5 transition-all duration-200"
                 >
                   <div className="aspect-video bg-dark-700 relative overflow-hidden">
                     {article.thumbnailUrl ? (

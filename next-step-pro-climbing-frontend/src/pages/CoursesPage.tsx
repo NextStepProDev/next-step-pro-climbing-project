@@ -111,7 +111,7 @@ function CourseAccordionItem({ course, defaultOpen = false }: { course: CourseSu
   })
 
   return (
-    <div id={`course-${course.id}`} className="bg-dark-800 border border-dark-700 rounded-lg overflow-hidden scroll-mt-24 hover:border-primary-500/50 hover:-translate-y-0.5 transition-all duration-200">
+    <div id={`course-${course.id}`} className="card-glass hover-gradient-border border border-dark-700/50 rounded-lg overflow-hidden scroll-mt-24 hover:-translate-y-0.5 transition-all duration-200">
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="w-full flex items-center gap-4 p-4 text-left hover:bg-dark-750 transition-colors"

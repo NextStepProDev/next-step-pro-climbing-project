@@ -54,9 +54,37 @@ body {
 }
 
 @keyframes ken-burns {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.08); }
+  from { transform: scale(1); }
+  to { transform: scale(1.15); }
 }
 .animation-ken-burns {
-  animation: ken-burns 20s ease-in-out infinite;
+  animation: ken-burns 30s ease-out forwards;
+}
+
+.card-glass {
+  background: color-mix(in srgb, var(--color-dark-800) 80%, transparent);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+.hover-gradient-border {
+  position: relative;
+}
+.hover-gradient-border::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, var(--color-primary-500), #8b5cf6);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  pointer-events: none;
+}
+.hover-gradient-border:hover::before {
+  opacity: 1;
 }
