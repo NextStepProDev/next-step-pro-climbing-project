@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { Link, useLocation } from 'react-router-dom'
 import { PageHead } from '../components/ui/PageHead'
 import { ChevronDown, BookOpen, ArrowRight } from 'lucide-react'
+import { useScrollReveal } from '../hooks/useScrollReveal'
 import { coursesApi, calendarApi } from '../api/client'
 import type { CourseSummary } from '../types'
 import { LoadingSpinner } from '../components/ui/LoadingSpinner'
@@ -17,6 +18,7 @@ export function CoursesPage() {
   const { t, i18n } = useTranslation('common')
   const { hash } = useLocation()
   const scrolledRef = useRef('')
+  const scrollRef = useScrollReveal()
   const [contentLanguage, setContentLanguage] = useState(() =>
     getDefaultCourseContentLanguage(i18n.language)
   )
@@ -80,9 +82,9 @@ export function CoursesPage() {
       {!courses || courses.length === 0 ? (
         <p className="text-dark-400 text-center py-12">{t('courses.noCourses')}</p>
       ) : (
-        <div className="space-y-3">
-          {courses.map((course, i) => (
-            <div key={course.id} className="animation-stagger" style={{ animationDelay: `${i * 120}ms` }}>
+        <div ref={scrollRef} className="space-y-3">
+          {courses.map((course) => (
+            <div key={course.id} className="scroll-reveal">
               <CourseAccordionItem
                 course={course}
                 defaultOpen={hash === `#course-${course.id}`}

@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { PageHead } from '../components/ui/PageHead'
 import { Newspaper, Search, Star } from 'lucide-react'
+import { useScrollReveal } from '../hooks/useScrollReveal'
 import { newsApi } from '../api/client'
 import { LoadingSpinner } from '../components/ui/LoadingSpinner'
 import { CardSkeleton } from '../components/ui/CardSkeleton'
@@ -17,6 +18,7 @@ export function NewsPage() {
   const { t, i18n } = useTranslation('common')
   const { isAuthenticated } = useAuth()
   const queryClient = useQueryClient()
+  const scrollRef = useScrollReveal()
 
   const [searchInput, setSearchInput] = useState('')
   const [q, setQ] = useState('')
@@ -178,9 +180,9 @@ export function NewsPage() {
         </div>
       ) : (
         <div className={clsx('transition-opacity duration-150', isFetching && 'opacity-60')}>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {articles.map((article, i) => (
-              <div key={article.id} className="relative group animation-stagger" style={{ animationDelay: `${i * 120}ms` }}>
+          <div ref={scrollRef} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {articles.map((article) => (
+              <div key={article.id} className="relative group scroll-reveal">
                 <Link
                   to={`/aktualnosci/${article.id}`}
                   className="block card-glass rounded-lg overflow-hidden border border-dark-700/50 hover:border-primary-500/50 hover:-translate-y-0.5 transition-all duration-200"

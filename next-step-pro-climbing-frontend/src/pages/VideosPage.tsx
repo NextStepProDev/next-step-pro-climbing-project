@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { ExternalLink, Play } from 'lucide-react'
+import { useScrollReveal } from '../hooks/useScrollReveal'
 import { videoApi } from '../api/client'
 import { PageHead } from '../components/ui/PageHead'
 import { CardSkeleton } from '../components/ui/CardSkeleton'
@@ -30,6 +31,7 @@ function getYouTubeThumbnail(url: string): string | null {
 
 export function VideosPage() {
   const { t } = useTranslation('common')
+  const scrollRef = useScrollReveal()
   const { data: videos, isLoading, error } = useQuery({
     queryKey: ['videos'],
     queryFn: videoApi.getAll,
@@ -66,14 +68,13 @@ export function VideosPage() {
       <PageHead title={t('videos.title')} description={t('videos.metaDescription')} />
       <h1 className="text-3xl font-bold text-dark-100 mb-8">{t('videos.title')}</h1>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {videos.map((video, i) => {
+      <div ref={scrollRef} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {videos.map((video) => {
           const thumbnail = getYouTubeThumbnail(video.youtubeUrl)
           return (
             <div
               key={video.id}
-              className="card-glass rounded-lg overflow-hidden border border-dark-700/50 flex flex-col hover:border-primary-500/50 hover:-translate-y-0.5 transition-all duration-200 animation-stagger"
-              style={{ animationDelay: `${i * 120}ms` }}
+              className="scroll-reveal card-glass rounded-lg overflow-hidden border border-dark-700/50 flex flex-col hover:border-primary-500/50 hover:-translate-y-0.5 transition-all duration-200"
             >
               {/* Thumbnail */}
               <a

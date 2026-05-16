@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { Image as ImageIcon } from 'lucide-react'
+import { useScrollReveal } from '../hooks/useScrollReveal'
 import { galleryApi } from '../api/client'
 import { PageHead } from '../components/ui/PageHead'
 import { CardSkeleton } from '../components/ui/CardSkeleton'
@@ -9,6 +10,7 @@ import { QueryError } from '../components/ui/QueryError'
 
 export function GalleryPage() {
   const { t } = useTranslation('common')
+  const scrollRef = useScrollReveal()
   const { data: albums, isLoading, error } = useQuery({
     queryKey: ['gallery', 'albums'],
     queryFn: galleryApi.getAlbums,
@@ -46,13 +48,12 @@ export function GalleryPage() {
       <PageHead title={t('gallery.title')} description={t('gallery.metaDescription')} />
       <h1 className="text-3xl font-bold text-dark-100 mb-8">{t('gallery.title')}</h1>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {albums.map((album, i) => (
+      <div ref={scrollRef} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {albums.map((album) => (
           <Link
             key={album.id}
             to={`/galeria/${album.id}`}
-            className="group card-glass rounded-lg overflow-hidden border border-dark-700/50 hover:border-primary-500/50 hover:-translate-y-0.5 transition-all duration-200 animation-stagger"
-            style={{ animationDelay: `${i * 120}ms` }}
+            className="scroll-reveal group card-glass rounded-lg overflow-hidden border border-dark-700/50 hover:border-primary-500/50 hover:-translate-y-0.5 transition-all duration-200"
           >
             {/* Thumbnail */}
             <div className="aspect-video bg-dark-700 relative overflow-hidden">
