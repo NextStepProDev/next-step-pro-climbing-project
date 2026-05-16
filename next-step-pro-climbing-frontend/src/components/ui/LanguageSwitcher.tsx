@@ -54,7 +54,7 @@ export function LanguageSwitcher() {
               key={lang.code}
               onClick={() => handleLanguageChange(lang.code)}
               className={clsx(
-                'w-full px-4 py-2 text-sm text-left transition-colors',
+                'w-full px-4 py-2 text-sm text-left transition-all duration-150 active:scale-95',
                 lang.code === i18n.language
                   ? 'bg-primary-500/10 text-primary-400'
                   : 'text-dark-300 hover:bg-dark-800 hover:text-dark-100',

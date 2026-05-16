@@ -162,7 +162,7 @@ export function Navbar() {
                 onClick={() => setTeamMenuOpen(!teamMenuOpen)}
                 data-nav-active={isTeamActive || undefined}
                 className={clsx(
-                  "flex items-center gap-1 px-3 py-1.5 rounded-lg text-base font-semibold tracking-wide transition-colors",
+                  "flex items-center gap-1 px-3 py-1.5 rounded-lg text-base font-semibold tracking-wide transition-all duration-150 active:scale-95",
                   isTeamActive
                     ? "text-dark-100"
                     : "text-dark-400 hover:bg-dark-800/60 hover:text-dark-200",
@@ -186,7 +186,7 @@ export function Navbar() {
                         to={link.to}
                         onClick={() => setTeamMenuOpen(false)}
                         className={clsx(
-                          "block px-4 py-2.5 text-sm transition-colors",
+                          "block px-4 py-2.5 text-sm transition-all duration-150 active:scale-95",
                           isLinkActive(link.to)
                             ? "text-dark-100 bg-dark-800"
                             : "text-dark-300 hover:bg-dark-800 hover:text-dark-100",
@@ -206,7 +206,7 @@ export function Navbar() {
                 onClick={() => setMediaMenuOpen(!mediaMenuOpen)}
                 data-nav-active={isMediaActive || undefined}
                 className={clsx(
-                  "flex items-center gap-1 px-3 py-1.5 rounded-lg text-base font-semibold tracking-wide transition-colors",
+                  "flex items-center gap-1 px-3 py-1.5 rounded-lg text-base font-semibold tracking-wide transition-all duration-150 active:scale-95",
                   isMediaActive
                     ? "text-dark-100"
                     : "text-dark-400 hover:bg-dark-800/60 hover:text-dark-200",
@@ -230,7 +230,7 @@ export function Navbar() {
                         to={link.to}
                         onClick={() => setMediaMenuOpen(false)}
                         className={clsx(
-                          "block px-4 py-2.5 text-sm transition-colors",
+                          "block px-4 py-2.5 text-sm transition-all duration-150 active:scale-95",
                           isLinkActive(link.to)
                             ? "text-dark-100 bg-dark-800"
                             : "text-dark-300 hover:bg-dark-800 hover:text-dark-100",
