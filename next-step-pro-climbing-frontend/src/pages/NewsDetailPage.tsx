@@ -120,31 +120,32 @@ export function NewsDetailPage() {
             })}
           </p>
           <div className="flex items-center gap-3">
-            {translations && translations.length > 1 && (
-              <div className="flex items-center gap-1 bg-dark-800 border border-dark-700 rounded-lg p-1">
-                {COURSE_CONTENT_LANGUAGES.map((lang) => {
-                  const translation = translations.find(tr => tr.language === lang.code)
-                  if (!translation) return null
-                  const isActive = article.language === lang.code
-                  return (
-                    <button
-                      key={lang.code}
-                      onClick={() => {
-                        if (!isActive) navigate(`/aktualnosci/${translation.id}`)
-                      }}
-                      className={clsx(
-                        'px-2.5 py-1 rounded-md text-xs font-medium transition-all duration-150',
-                        isActive
-                          ? 'bg-primary-500 text-white'
-                          : 'text-dark-400 hover:text-dark-100 hover:bg-dark-700'
-                      )}
-                    >
-                      {lang.label}
-                    </button>
-                  )
-                })}
-              </div>
-            )}
+            <div className="flex items-center gap-1 bg-dark-800 border border-dark-700 rounded-lg p-1">
+              {COURSE_CONTENT_LANGUAGES.map((lang) => {
+                const translation = translations?.find(tr => tr.language === lang.code)
+                const isActive = article.language === lang.code
+                const isAvailable = isActive || !!translation
+                return (
+                  <button
+                    key={lang.code}
+                    disabled={!isAvailable}
+                    onClick={() => {
+                      if (!isActive && translation) navigate(`/aktualnosci/${translation.id}`)
+                    }}
+                    className={clsx(
+                      'px-2.5 py-1 rounded-md text-xs font-medium transition-all duration-150',
+                      isActive
+                        ? 'bg-primary-500 text-white'
+                        : isAvailable
+                          ? 'text-dark-400 hover:text-dark-100 hover:bg-dark-700'
+                          : 'text-dark-600 cursor-not-allowed opacity-40'
+                    )}
+                  >
+                    {lang.label}
+                  </button>
+                )
+              })}
+            </div>
             <ShareButtons title={article.title} />
           </div>
         </div>
