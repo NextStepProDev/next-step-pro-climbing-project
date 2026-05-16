@@ -17,6 +17,8 @@ export function Navbar() {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [mediaMenuOpen, setMediaMenuOpen] = useState(false);
   const [teamMenuOpen, setTeamMenuOpen] = useState(false);
+  const [navHidden, setNavHidden] = useState(false);
+  const lastScrollY = useRef(0);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const mediaMenuRef = useRef<HTMLDivElement>(null);
   const teamMenuRef = useRef<HTMLDivElement>(null);
@@ -80,6 +82,22 @@ export function Navbar() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  useEffect(() => {
+    function onScroll() {
+      const y = window.scrollY;
+      if (y < 60) {
+        setNavHidden(false);
+      } else if (y > lastScrollY.current + 5) {
+        setNavHidden(true);
+      } else if (y < lastScrollY.current - 5) {
+        setNavHidden(false);
+      }
+      lastScrollY.current = y;
+    }
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
   // Close dropdowns on route change
   const [prevPathname, setPrevPathname] = useState(location.pathname);
   if (prevPathname !== location.pathname) {
@@ -117,7 +135,7 @@ export function Navbar() {
   }, [location.pathname, updateIndicator]);
 
   return (
-    <nav className="bg-dark-900/80 backdrop-blur-sm border-b border-dark-800 sticky top-0 z-50">
+    <nav className={clsx("bg-dark-900/80 backdrop-blur-sm border-b border-dark-800 sticky top-0 z-50 transition-transform duration-300", navHidden && !mobileMenuOpen && "-translate-y-full")}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-18">
           {/* Logo */}
