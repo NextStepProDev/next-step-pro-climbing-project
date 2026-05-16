@@ -338,7 +338,8 @@ export function WeekCalendar({
                       <div
                         key={slot.id}
                         className={clsx(
-                          'group absolute left-1 right-1 rounded border overflow-hidden transition-colors z-10',
+                          'group absolute left-1 right-1 rounded border transition-colors z-10',
+                          isPending ? 'overflow-visible' : 'overflow-hidden',
                           isPending
                             ? 'bg-red-600/40 border-red-400/70 text-red-200'
                             : getSlotColors(slot.status),
@@ -388,8 +389,10 @@ export function WeekCalendar({
                           <div
                             data-admin-action
                             className={clsx(
-                              'absolute top-0.5 right-0.5 flex gap-0.5 z-20',
-                              !isPending && 'opacity-0 group-hover:opacity-100'
+                              'absolute flex z-20',
+                              isPending
+                                ? 'top-0 right-0 gap-1 p-0.5'
+                                : 'top-0.5 right-0.5 gap-0.5 opacity-0 group-hover:opacity-100'
                             )}
                           >
                             {isPending ? (
@@ -397,18 +400,18 @@ export function WeekCalendar({
                                 <button
                                   data-admin-action
                                   onClick={(e) => { e.stopPropagation(); onConfirmSlotMove?.(slot.id) }}
-                                  className="p-0.5 rounded bg-green-900/80 text-green-300 hover:text-green-100 transition-colors"
+                                  className="p-1.5 sm:p-0.5 rounded bg-green-900/80 text-green-300 hover:text-green-100 transition-colors"
                                   title="Zatwierdź"
                                 >
-                                  <Check className="w-3 h-3" />
+                                  <Check className="w-4 h-4 sm:w-3 sm:h-3" />
                                 </button>
                                 <button
                                   data-admin-action
                                   onClick={(e) => { e.stopPropagation(); onCancelSlotMove?.(slot.id) }}
-                                  className="p-0.5 rounded bg-red-900/80 text-red-300 hover:text-red-100 transition-colors"
+                                  className="p-1.5 sm:p-0.5 rounded bg-red-900/80 text-red-300 hover:text-red-100 transition-colors"
                                   title="Anuluj"
                                 >
-                                  <X className="w-3 h-3" />
+                                  <X className="w-4 h-4 sm:w-3 sm:h-3" />
                                 </button>
                               </>
                             ) : (
