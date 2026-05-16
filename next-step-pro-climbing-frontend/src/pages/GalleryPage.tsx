@@ -4,7 +4,6 @@ import { Link } from 'react-router-dom'
 import { Image as ImageIcon } from 'lucide-react'
 import { galleryApi } from '../api/client'
 import { PageHead } from '../components/ui/PageHead'
-import { LoadingSpinner } from '../components/ui/LoadingSpinner'
 import { CardSkeleton } from '../components/ui/CardSkeleton'
 import { QueryError } from '../components/ui/QueryError'
 
