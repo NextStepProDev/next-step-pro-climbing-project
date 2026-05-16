@@ -238,7 +238,7 @@ export function HomePage() {
 
           <div className="grid md:grid-cols-3 gap-8">
             {/* Course */}
-            <Link to="/kursy" className="block card-glass hover-gradient-border rounded-xl border border-dark-700/50 p-6 hover:-translate-y-0.5 transition-all duration-200 animation-stagger" style={{ animationDelay: '0ms' }}>
+            <Link to="/kursy" className="block card-glass rounded-xl border border-dark-700/50 p-6 hover:border-primary-500/50 hover:-translate-y-0.5 transition-all duration-200 animation-stagger" style={{ animationDelay: '0ms' }}>
               <div className="w-12 h-12 bg-primary-500/10 rounded-lg flex items-center justify-center mb-4">
                 <Award className="w-6 h-6 text-primary-400" />
               </div>
@@ -265,7 +265,7 @@ export function HomePage() {
             </Link>
 
             {/* Training */}
-            <Link to="/kursy" className="block card-glass hover-gradient-border rounded-xl border border-dark-700/50 p-6 hover:-translate-y-0.5 transition-all duration-200 animation-stagger" style={{ animationDelay: '100ms' }}>
+            <Link to="/kursy" className="block card-glass rounded-xl border border-dark-700/50 p-6 hover:border-primary-500/50 hover:-translate-y-0.5 transition-all duration-200 animation-stagger" style={{ animationDelay: '100ms' }}>
               <div className="w-12 h-12 bg-green-500/10 rounded-lg flex items-center justify-center mb-4">
                 <Users className="w-6 h-6 text-green-400" />
               </div>
@@ -296,7 +296,7 @@ export function HomePage() {
             </Link>
 
             {/* Workshop */}
-            <Link to="/kursy" className="block card-glass hover-gradient-border rounded-xl border border-dark-700/50 p-6 hover:-translate-y-0.5 transition-all duration-200 animation-stagger" style={{ animationDelay: '200ms' }}>
+            <Link to="/kursy" className="block card-glass rounded-xl border border-dark-700/50 p-6 hover:border-primary-500/50 hover:-translate-y-0.5 transition-all duration-200 animation-stagger" style={{ animationDelay: '200ms' }}>
               <div className="w-12 h-12 bg-amber-500/10 rounded-lg flex items-center justify-center mb-4">
                 <Calendar className="w-6 h-6 text-amber-400" />
               </div>

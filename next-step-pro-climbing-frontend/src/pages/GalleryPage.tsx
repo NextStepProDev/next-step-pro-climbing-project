@@ -51,7 +51,7 @@ export function GalleryPage() {
           <Link
             key={album.id}
             to={`/galeria/${album.id}`}
-            className="group card-glass hover-gradient-border rounded-lg overflow-hidden border border-dark-700/50 hover:-translate-y-0.5 transition-all duration-200 animation-stagger"
+            className="group card-glass rounded-lg overflow-hidden border border-dark-700/50 hover:border-primary-500/50 hover:-translate-y-0.5 transition-all duration-200 animation-stagger"
             style={{ animationDelay: `${i * 120}ms` }}
           >
             {/* Thumbnail */}
