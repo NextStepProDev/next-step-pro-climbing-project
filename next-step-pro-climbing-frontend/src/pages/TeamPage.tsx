@@ -266,8 +266,10 @@ export function TeamPage({ memberType }: { memberType: InstructorType }) {
           <div className="text-center text-dark-400">{t('team.noMembers')}</div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-            {members.map((m) => (
-              <MemberTile key={m.id} member={m} onClick={() => openModal(m)} />
+            {members.map((m, i) => (
+              <div key={m.id} className="animation-stagger" style={{ animationDelay: `${i * 120}ms` }}>
+                <MemberTile member={m} onClick={() => openModal(m)} />
+              </div>
             ))}
           </div>
         )}

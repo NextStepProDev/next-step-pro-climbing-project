@@ -66,12 +66,13 @@ export function VideosPage() {
       <h1 className="text-3xl font-bold text-dark-100 mb-8">{t('videos.title')}</h1>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {videos.map((video) => {
+        {videos.map((video, i) => {
           const thumbnail = getYouTubeThumbnail(video.youtubeUrl)
           return (
             <div
               key={video.id}
-              className="bg-dark-800 rounded-lg overflow-hidden border border-dark-700 flex flex-col"
+              className="card-glass hover-gradient-border rounded-lg overflow-hidden border border-dark-700/50 flex flex-col hover:-translate-y-0.5 transition-all duration-200 animation-stagger"
+              style={{ animationDelay: `${i * 120}ms` }}
             >
               {/* Thumbnail */}
               <a

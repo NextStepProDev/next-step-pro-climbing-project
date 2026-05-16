@@ -46,11 +46,12 @@ export function GalleryPage() {
       <h1 className="text-3xl font-bold text-dark-100 mb-8">{t('gallery.title')}</h1>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {albums.map((album) => (
+        {albums.map((album, i) => (
           <Link
             key={album.id}
             to={`/galeria/${album.id}`}
-            className="group card-glass hover-gradient-border rounded-lg overflow-hidden border border-dark-700/50 hover:-translate-y-0.5 transition-all duration-200"
+            className="group card-glass hover-gradient-border rounded-lg overflow-hidden border border-dark-700/50 hover:-translate-y-0.5 transition-all duration-200 animation-stagger"
+            style={{ animationDelay: `${i * 120}ms` }}
           >
             {/* Thumbnail */}
             <div className="aspect-video bg-dark-700 relative overflow-hidden">

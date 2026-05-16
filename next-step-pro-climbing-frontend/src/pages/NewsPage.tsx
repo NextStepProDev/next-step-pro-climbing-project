@@ -180,8 +180,8 @@ export function NewsPage() {
       ) : (
         <div className={clsx('transition-opacity duration-150', isFetching && 'opacity-60')}>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {articles.map((article) => (
-              <div key={article.id} className="relative group">
+            {articles.map((article, i) => (
+              <div key={article.id} className="relative group animation-stagger" style={{ animationDelay: `${i * 120}ms` }}>
                 <Link
                   to={`/aktualnosci/${article.id}`}
                   className="block card-glass hover-gradient-border rounded-lg overflow-hidden border border-dark-700/50 hover:-translate-y-0.5 transition-all duration-200"

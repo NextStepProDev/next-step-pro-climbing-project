@@ -79,12 +79,13 @@ export function CoursesPage() {
         <p className="text-dark-400 text-center py-12">{t('courses.noCourses')}</p>
       ) : (
         <div className="space-y-3">
-          {courses.map((course) => (
-            <CourseAccordionItem
-              key={course.id}
-              course={course}
-              defaultOpen={hash === `#course-${course.id}`}
-            />
+          {courses.map((course, i) => (
+            <div key={course.id} className="animation-stagger" style={{ animationDelay: `${i * 120}ms` }}>
+              <CourseAccordionItem
+                course={course}
+                defaultOpen={hash === `#course-${course.id}`}
+              />
+            </div>
           ))}
         </div>
       )}
