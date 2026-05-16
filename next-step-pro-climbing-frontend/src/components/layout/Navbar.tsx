@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, useLayoutEffect, useCallback } from "react
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../../context/AuthContext";
 import { Button } from "../ui/Button";
+import { SuccessCheckmark } from "../ui/SuccessCheckmark";
 import { LanguageSwitcher } from "../ui/LanguageSwitcher";
 import clsx from "clsx";
 import logoWhite from "../../assets/logo/logo-white.png";
@@ -18,6 +19,7 @@ export function Navbar() {
   const [mediaMenuOpen, setMediaMenuOpen] = useState(false);
   const [teamMenuOpen, setTeamMenuOpen] = useState(false);
   const [navHidden, setNavHidden] = useState(false);
+  const [showLogoutSuccess, setShowLogoutSuccess] = useState(false);
   const lastScrollY = useRef(0);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const mediaMenuRef = useRef<HTMLDivElement>(null);
@@ -135,6 +137,8 @@ export function Navbar() {
   }, [location.pathname, updateIndicator]);
 
   return (
+    <>
+    {showLogoutSuccess && <SuccessCheckmark onDone={() => { setShowLogoutSuccess(false); logout(); }} />}
     <nav className={clsx("bg-dark-900/80 backdrop-blur-sm border-b border-dark-800 sticky top-0 z-50 transition-transform duration-300", navHidden && !mobileMenuOpen && "-translate-y-full")}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-18">
@@ -325,7 +329,7 @@ export function Navbar() {
                       <button
                         onClick={() => {
                           setUserMenuOpen(false);
-                          logout();
+                          setShowLogoutSuccess(true);
                         }}
                         className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-rose-400/70 hover:bg-dark-800 hover:text-rose-300/80 transition-colors"
                       >
@@ -410,8 +414,8 @@ export function Navbar() {
                   </Link>
                   <button
                     onClick={() => {
-                      logout();
                       setMobileMenuOpen(false);
+                      setShowLogoutSuccess(true);
                     }}
                     className="flex items-center gap-3 px-1 py-2 text-rose-400/70 text-sm"
                   >
@@ -431,5 +435,6 @@ export function Navbar() {
         </div>
       )}
     </nav>
+    </>
   );
 }
