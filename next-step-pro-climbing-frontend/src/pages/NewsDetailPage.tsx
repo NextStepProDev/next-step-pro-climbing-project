@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { useParams, Link } from 'react-router-dom'
 import { ArrowLeft, Star } from 'lucide-react'
+import { ReadingProgressBar } from '../components/ui/ReadingProgressBar'
 import { newsApi } from '../api/client'
 import { PageHead } from '../components/ui/PageHead'
 import { LoadingSpinner } from '../components/ui/LoadingSpinner'
@@ -71,6 +72,7 @@ export function NewsDetailPage() {
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-3xl">
+      <ReadingProgressBar />
       <PageHead title={article.title} />
       {/* Breadcrumb */}
       <Link
