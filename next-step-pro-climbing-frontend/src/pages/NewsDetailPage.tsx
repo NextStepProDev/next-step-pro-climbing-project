@@ -43,7 +43,7 @@ export function NewsDetailPage() {
       }
     }
     prevLangRef.current = currentContentLang
-  })
+  }, [currentContentLang, article, translations, navigate])
 
   const starMutation = useMutation({
     mutationFn: (isStarred: boolean) =>
