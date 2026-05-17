@@ -80,13 +80,15 @@ export function AlbumPage() {
               onClick={() => setLightboxIndex(index)}
               className="aspect-square bg-dark-700 rounded-lg overflow-hidden hover:ring-2 hover:ring-primary-500/50 transition-all group relative"
             >
-              <img
-                src={photo.url}
-                alt=""
-                aria-hidden="true"
-                loading="lazy"
-                className="absolute inset-0 w-full h-full object-cover blur-xl scale-110"
-                style={photo.focalPointX != null ? { objectPosition: `${photo.focalPointX * 100}% ${(photo.focalPointY ?? 0.5) * 100}%` } : undefined}
+              <div
+                className="absolute inset-0 scale-110 blur-xl"
+                style={{
+                  backgroundImage: `url(${photo.url})`,
+                  backgroundSize: 'cover',
+                  backgroundPosition: photo.focalPointX != null
+                    ? `${photo.focalPointX * 100}% ${(photo.focalPointY ?? 0.5) * 100}%`
+                    : 'center',
+                }}
               />
               <img
                 src={photo.url}

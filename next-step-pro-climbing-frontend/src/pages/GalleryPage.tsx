@@ -57,13 +57,15 @@ export function GalleryPage() {
             <div className="aspect-video bg-dark-700 relative overflow-hidden">
               {album.thumbnailUrl ? (
                 <>
-                  <img
-                    src={album.thumbnailUrl}
-                    alt=""
-                    aria-hidden="true"
-                    loading="lazy"
-                    className="absolute inset-0 w-full h-full object-cover blur-xl scale-110"
-                    style={album.thumbnailFocalPointX != null ? { objectPosition: `${album.thumbnailFocalPointX * 100}% ${(album.thumbnailFocalPointY ?? 0.5) * 100}%` } : undefined}
+                  <div
+                    className="absolute inset-0 scale-110 blur-xl"
+                    style={{
+                      backgroundImage: `url(${album.thumbnailUrl})`,
+                      backgroundSize: 'cover',
+                      backgroundPosition: album.thumbnailFocalPointX != null
+                        ? `${album.thumbnailFocalPointX * 100}% ${(album.thumbnailFocalPointY ?? 0.5) * 100}%`
+                        : 'center',
+                    }}
                   />
                   <img
                     src={album.thumbnailUrl}
