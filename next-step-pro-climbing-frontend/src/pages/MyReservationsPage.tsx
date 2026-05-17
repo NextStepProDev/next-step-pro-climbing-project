@@ -66,12 +66,14 @@ export function MyReservationsPage() {
     queryKey: ['reservations', 'waitlist'],
     queryFn: reservationApi.getMyWaitlist,
     refetchInterval: 30_000,
+    refetchIntervalInBackground: false,
   })
 
   const { data: eventWaitlistData } = useQuery({
     queryKey: ['reservations', 'event-waitlist'],
     queryFn: reservationApi.getMyEventWaitlist,
     refetchInterval: 30_000,
+    refetchIntervalInBackground: false,
   })
 
   const confirmOfferMutation = useMutation({

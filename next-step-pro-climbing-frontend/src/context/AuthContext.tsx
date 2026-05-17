@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { authApi } from '../api/client'
@@ -66,20 +66,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener('auth:session-expired', handler)
   }, [queryClient])
 
-  const login = async (email: string, password: string) => {
+  const login = useCallback(async (email: string, password: string) => {
     const tokens = await apiLogin({ email, password })
     saveTokens(tokens)
     const currentUser = await authApi.getCurrentUser()
     setUser(currentUser)
     syncLanguage(currentUser.preferredLanguage)
-  }
+  }, [syncLanguage])
 
-  const loginWithTokens = async (tokens: AuthTokens) => {
+  const loginWithTokens = useCallback(async (tokens: AuthTokens) => {
     saveTokens(tokens)
     const currentUser = await authApi.getCurrentUser()
     setUser(currentUser)
     syncLanguage(currentUser.preferredLanguage)
-  }
+  }, [syncLanguage])
 
   const logout = useCallback(() => {
     authApi.logout()
@@ -87,19 +87,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     queryClient.clear()
   }, [queryClient])
 
+  const value = useMemo<AuthContextType>(() => ({
+    user,
+    isLoading,
+    isAuthenticated: !!user,
+    isAdmin: user?.isAdmin ?? false,
+    login,
+    loginWithTokens,
+    logout,
+    refreshUser: fetchUser,
+  }), [user, isLoading, login, loginWithTokens, logout, fetchUser])
+
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        isLoading,
-        isAuthenticated: !!user,
-        isAdmin: user?.isAdmin ?? false,
-        login,
-        loginWithTokens,
-        logout,
-        refreshUser: fetchUser,
-      }}
-    >
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   )

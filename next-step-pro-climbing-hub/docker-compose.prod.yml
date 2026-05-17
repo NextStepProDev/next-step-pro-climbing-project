@@ -2,6 +2,18 @@ services:
   postgres:
     image: postgres:17-alpine
     container_name: nsp-postgres-prod
+    command:
+      - "postgres"
+      - "-c"
+      - "shared_buffers=128MB"
+      - "-c"
+      - "work_mem=8MB"
+      - "-c"
+      - "effective_cache_size=256MB"
+      - "-c"
+      - "random_page_cost=1.1"
+      - "-c"
+      - "checkpoint_completion_target=0.9"
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}

@@ -17,6 +17,17 @@ export default defineConfig({
   define: {
     __APP_VERSION__: JSON.stringify(version),
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom', 'react-router-dom'],
+          query: ['@tanstack/react-query'],
+          i18n: ['i18next', 'react-i18next'],
+        },
+      },
+    },
+  },
   server: {
     port: 5173,
     proxy: {

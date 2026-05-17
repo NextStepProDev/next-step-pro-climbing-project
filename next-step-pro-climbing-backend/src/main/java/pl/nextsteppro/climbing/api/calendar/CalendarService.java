@@ -192,13 +192,9 @@ public class CalendarService {
 
         int userParticipants = 0;
         if (userId != null && isUserRegistered) {
-            List<TimeSlot> eventSlots = timeSlotRepository.findByEventId(eventId);
-            for (TimeSlot slot : eventSlots) {
-                Reservation r = reservationRepository.findByUserIdAndTimeSlotId(userId, slot.getId());
-                if (r != null && r.getStatus() == ReservationStatus.CONFIRMED) {
-                    userParticipants = r.getParticipants();
-                    break;
-                }
+            List<Integer> participants = reservationRepository.findUserParticipantsForEvent(userId, eventId);
+            if (!participants.isEmpty()) {
+                userParticipants = participants.getFirst();
             }
         }
 

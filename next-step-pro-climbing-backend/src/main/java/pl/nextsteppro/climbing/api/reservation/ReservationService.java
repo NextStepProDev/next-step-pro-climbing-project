@@ -513,16 +513,13 @@ public class ReservationService {
             throw new IllegalStateException(msg.get("reservation.cancel.window"));
         }
 
-        List<Reservation> userReservations = slots.stream()
-            .map(slot -> reservationRepository.findByUserIdAndTimeSlotId(userId, slot.getId()))
-            .filter(r -> r != null && r.isConfirmed())
-            .toList();
+        List<UUID> slotIds = slots.stream().map(TimeSlot::getId).toList();
+        List<Reservation> userReservations = reservationRepository.findConfirmedByUserIdAndSlotIds(userId, slotIds);
 
         if (userReservations.isEmpty()) {
             throw new IllegalStateException(msg.get("reservation.event.not.registered"));
         }
 
-        List<UUID> slotIds = slots.stream().map(TimeSlot::getId).toList();
         Map<UUID, Integer> countMap = reservationRepository.countConfirmedByTimeSlotIds(slotIds).stream()
             .collect(Collectors.toMap(
                 SlotParticipantCount::slotId,

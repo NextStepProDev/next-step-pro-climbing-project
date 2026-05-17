@@ -84,12 +84,14 @@ export function AlbumPage() {
                 src={photo.url}
                 alt=""
                 aria-hidden="true"
+                loading="lazy"
                 className="absolute inset-0 w-full h-full object-cover blur-xl scale-110"
                 style={photo.focalPointX != null ? { objectPosition: `${photo.focalPointX * 100}% ${(photo.focalPointY ?? 0.5) * 100}%` } : undefined}
               />
               <img
                 src={photo.url}
                 alt={photo.caption || ''}
+                loading="lazy"
                 className="relative w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
               />
             </button>

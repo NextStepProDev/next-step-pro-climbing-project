@@ -61,12 +61,14 @@ export function GalleryPage() {
                     src={album.thumbnailUrl}
                     alt=""
                     aria-hidden="true"
+                    loading="lazy"
                     className="absolute inset-0 w-full h-full object-cover blur-xl scale-110"
                     style={album.thumbnailFocalPointX != null ? { objectPosition: `${album.thumbnailFocalPointX * 100}% ${(album.thumbnailFocalPointY ?? 0.5) * 100}%` } : undefined}
                   />
                   <img
                     src={album.thumbnailUrl}
                     alt={album.name}
+                    loading="lazy"
                     className="relative w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
                   />
                 </>
