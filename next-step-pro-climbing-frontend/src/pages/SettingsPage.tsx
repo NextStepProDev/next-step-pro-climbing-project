@@ -311,9 +311,13 @@ function NotificationsSection({
   onUpdated: () => Promise<void>
 }) {
   const { t } = useTranslation('settings')
+  const { showToast } = useToast()
   const mutation = useMutation({
     mutationFn: (newEnabled: boolean) => authApi.updateNotifications(newEnabled),
-    onSuccess: () => onUpdated(),
+    onSuccess: async () => {
+      await onUpdated()
+      showToast(t('notifications.success'))
+    },
   })
 
   return (
@@ -354,9 +358,13 @@ function NewsletterSection({
   onUpdated: () => Promise<void>
 }) {
   const { t } = useTranslation('settings')
+  const { showToast } = useToast()
   const mutation = useMutation({
     mutationFn: (newSubscribed: boolean) => authApi.updateNewsletter(newSubscribed),
-    onSuccess: () => onUpdated(),
+    onSuccess: async () => {
+      await onUpdated()
+      showToast(t('newsletter.success'))
+    },
   })
 
   return (

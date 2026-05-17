@@ -34,12 +34,14 @@
   "notifications": {
     "title": "Notificaciones por email",
     "reservations": "Notificaciones de reservas",
-    "description": "Confirmaciones de reservas, cancelaciones y notificaciones de lista de espera"
+    "description": "Confirmaciones de reservas, cancelaciones y notificaciones de lista de espera",
+    "success": "Configuración de notificaciones guardada"
   },
   "newsletter": {
     "title": "Boletín",
     "label": "Suscripción al boletín",
-    "description": "Noticias, nuevos cursos y ofertas especiales de Next Step Pro Climbing. Al activar el boletín, consientes recibirlo. Puedes darte de baja en cualquier momento."
+    "description": "Noticias, nuevos cursos y ofertas especiales de Next Step Pro Climbing. Al activar el boletín, consientes recibirlo. Puedes darte de baja en cualquier momento.",
+    "success": "Preferencias del boletín guardadas"
   },
   "completeProfile": {
     "title": "Completa tu perfil",
