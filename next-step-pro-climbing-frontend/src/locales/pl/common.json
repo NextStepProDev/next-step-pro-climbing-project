@@ -137,5 +137,9 @@
       "copy": "Kopiuj link",
       "copied": "Skopiowano!"
     }
+  },
+  "calendarAction": {
+    "addToCalendar": "Dodaj do kalendarza",
+    "downloadIcs": "Pobierz plik .ics"
   }
 }

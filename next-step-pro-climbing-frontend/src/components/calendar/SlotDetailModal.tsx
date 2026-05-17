@@ -8,6 +8,7 @@ import { Modal } from "../ui/Modal";
 import { Button } from "../ui/Button";
 import { SuccessCheckmark } from "../ui/SuccessCheckmark";
 import { ShareButtons } from "../ui/ShareButtons";
+import { AddToCalendarButton } from "../ui/AddToCalendarButton";
 import { CompleteProfileModal } from "../ui/CompleteProfileModal";
 import { TimeScrollPicker } from "../ui/TimeScrollPicker";
 import { useAuth } from "../../context/AuthContext";
@@ -249,10 +250,18 @@ export function SlotDetailModal({
 
         {/* User status */}
         {!isAvailabilityWindow && slot.isUserRegistered && (
-          <div className="p-3 bg-primary-500/10 border border-primary-500/20 rounded-lg">
-            <span className="text-primary-400 font-medium">
-              {t('slot.hasReservation')}
-            </span>
+          <div className="space-y-3">
+            <div className="p-3 bg-primary-500/10 border border-primary-500/20 rounded-lg">
+              <span className="text-primary-400 font-medium">
+                {t('slot.hasReservation')}
+              </span>
+            </div>
+            <AddToCalendarButton
+              title={slot.eventTitle || t('slot.title')}
+              date={slot.date}
+              startTime={slot.startTime}
+              endTime={slot.endTime}
+            />
           </div>
         )}
 

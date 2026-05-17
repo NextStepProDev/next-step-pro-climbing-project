@@ -13,6 +13,7 @@ import { Button } from '../components/ui/Button'
 import { ConfirmModal } from '../components/ui/ConfirmModal'
 import { SlotDetailModal } from '../components/calendar/SlotDetailModal'
 import { EventSignupModal } from '../components/calendar/EventSignupModal'
+import { AddToCalendarButton } from '../components/ui/AddToCalendarButton'
 import type { MyReservations, WaitlistEntry, EventWaitlistEntry } from '../types'
 
 export function MyReservationsPage() {
@@ -426,6 +427,14 @@ function UpcomingReservations({
                       <span>"{event.comment}"</span>
                     </div>
                   )}
+                  {!isCancelledByAdmin && (
+                    <div className="mt-3" onClick={(e) => e.stopPropagation()}>
+                      <AddToCalendarButton
+                        title={event.eventTitle}
+                        date={event.startDate}
+                      />
+                    </div>
+                  )}
                 </div>
 
                 {!isCancelledByAdmin && (
@@ -554,6 +563,16 @@ function UpcomingReservations({
                       <div className="flex items-start gap-2 mt-2 text-sm text-dark-400">
                         <MessageSquare className="w-4 h-4 mt-0.5 shrink-0" />
                         <span>"{reservation.comment}"</span>
+                      </div>
+                    )}
+                    {!isCancelledByAdmin && (
+                      <div className="mt-3" onClick={(e) => e.stopPropagation()}>
+                        <AddToCalendarButton
+                          title={reservation.eventTitle || t('trainings')}
+                          date={reservation.date}
+                          startTime={reservation.startTime}
+                          endTime={reservation.endTime}
+                        />
                       </div>
                     )}
                   </div>

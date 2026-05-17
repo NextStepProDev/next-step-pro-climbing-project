@@ -56,10 +56,14 @@ public class WaitlistMailService {
         if (!user.isEmailNotificationsEnabled()) return;
 
         String lang = user.getPreferredLanguage();
-        String subject = msg.getForLang("email.waitlist.confirmed.subject", lang);
-        String body = buildConfirmedBody(lang, user, slot);
+        String title = slot.getDisplayTitle() != null ? slot.getDisplayTitle() : "Next Step Pro Climbing";
+        String googleUrl = CalendarUtils.buildGoogleCalendarUrl(title, slot.getDate(), null, slot.getStartTime(), slot.getEndTime(), null);
+        byte[] ics = CalendarUtils.buildIcsFile(title, slot.getDate(), null, slot.getStartTime(), slot.getEndTime(), null, null);
 
-        sendEmail(user.getEmail(), subject, body);
+        String subject = msg.getForLang("email.waitlist.confirmed.subject", lang);
+        String body = buildConfirmedBody(lang, user, slot, googleUrl);
+
+        sendEmail(user.getEmail(), subject, body, ics);
     }
 
     private String buildOfferNotificationBody(String lang, User user, TimeSlot slot, String deadline) {
@@ -100,7 +104,7 @@ public class WaitlistMailService {
         );
     }
 
-    private String buildConfirmedBody(String lang, User user, TimeSlot slot) {
+    private String buildConfirmedBody(String lang, User user, TimeSlot slot, String googleCalendarUrl) {
         return """
             <html>
             <body style="font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5;">
@@ -115,6 +119,7 @@ public class WaitlistMailService {
                             <p style="margin: 0 0 8px 0;"><strong>%s</strong> %s</p>
                             <p style="margin: 0;"><strong>%s</strong> %s - %s</p>
                         </div>
+                        %s
                         <p style="margin-top: 20px; color: #333;">%s</p>
                         <p style="color: #666; font-size: 14px;">%s</p>
                     </div>
@@ -127,6 +132,7 @@ public class WaitlistMailService {
             msg.getForLang("email.waitlist.confirmed.body", lang),
             msg.getForLang("email.reservation.date", lang), slot.getDate().format(DATE_FORMAT),
             msg.getForLang("email.reservation.time", lang), slot.getStartTime().format(TIME_FORMAT), slot.getEndTime().format(TIME_FORMAT),
+            buildCalendarSection(lang, googleCalendarUrl),
             msg.getForLang("email.reservation.see.you", lang),
             msg.getForLang("email.reservation.team", lang)
         );
@@ -149,9 +155,12 @@ public class WaitlistMailService {
         if (!user.isEmailNotificationsEnabled()) return;
 
         String lang = user.getPreferredLanguage();
+        String googleUrl = CalendarUtils.buildGoogleCalendarUrl(event.getTitle(), event.getStartDate(), event.getEndDate(), event.getStartTime(), event.getEndTime(), event.getLocation());
+        byte[] ics = CalendarUtils.buildIcsFile(event.getTitle(), event.getStartDate(), event.getEndDate(), event.getStartTime(), event.getEndTime(), event.getLocation(), event.getDescription());
+
         String subject = msg.getForLang("email.event.waitlist.confirmed.subject", lang);
-        String body = buildEventConfirmedBody(lang, user, event);
-        sendEmail(user.getEmail(), subject, body);
+        String body = buildEventConfirmedBody(lang, user, event, googleUrl);
+        sendEmail(user.getEmail(), subject, body, ics);
     }
 
     private String buildEventOfferBody(String lang, User user, Event event, String deadline) {
@@ -196,7 +205,7 @@ public class WaitlistMailService {
         );
     }
 
-    private String buildEventConfirmedBody(String lang, User user, Event event) {
+    private String buildEventConfirmedBody(String lang, User user, Event event, String googleCalendarUrl) {
         String dates = event.getStartDate().format(DATE_FORMAT);
         if (!event.getStartDate().equals(event.getEndDate())) {
             dates += " - " + event.getEndDate().format(DATE_FORMAT);
@@ -215,6 +224,7 @@ public class WaitlistMailService {
                             <p style="margin: 0 0 8px 0;"><strong>%s</strong></p>
                             <p style="margin: 0;"><strong>%s</strong> %s</p>
                         </div>
+                        %s
                         <p style="margin-top: 20px; color: #333;">%s</p>
                         <p style="color: #666; font-size: 14px;">%s</p>
                     </div>
@@ -227,6 +237,7 @@ public class WaitlistMailService {
             msg.getForLang("email.event.waitlist.confirmed.body", lang),
             event.getTitle(),
             msg.getForLang("email.reservation.date", lang), dates,
+            buildCalendarSection(lang, googleCalendarUrl),
             msg.getForLang("email.reservation.see.you", lang),
             msg.getForLang("email.reservation.team", lang)
         );
@@ -318,7 +329,25 @@ public class WaitlistMailService {
         );
     }
 
+    private String buildCalendarSection(String lang, String googleCalendarUrl) {
+        return """
+                        <div style="margin-top: 16px; padding: 14px 20px; background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; text-align: center;">
+                            <p style="margin: 0 0 8px 0; font-size: 14px; color: #0369a1; font-weight: bold;">%s</p>
+                            <a href="%s" target="_blank" style="display: inline-block; padding: 8px 20px; background: #0284c7; color: white; text-decoration: none; border-radius: 6px; font-size: 14px; font-weight: 500;">📅 Google Calendar</a>
+                            <p style="margin: 10px 0 0 0; font-size: 12px; color: #64748b;">%s</p>
+                        </div>
+            """.formatted(
+            msg.getForLang("email.calendar.title", lang),
+            googleCalendarUrl,
+            msg.getForLang("email.calendar.ics.hint", lang)
+        );
+    }
+
     private void sendEmail(String to, String subject, String body) {
+        sendEmail(to, subject, body, null);
+    }
+
+    private void sendEmail(String to, String subject, String body, @org.jspecify.annotations.Nullable byte[] icsAttachment) {
         try {
             var message = mailSender.createMimeMessage();
             var helper = new MimeMessageHelper(message, true);
@@ -329,6 +358,10 @@ public class WaitlistMailService {
 
             var logoResource = new org.springframework.core.io.ClassPathResource("static/logo/logo-white.png");
             helper.addInline("logo", logoResource, "image/png");
+
+            if (icsAttachment != null) {
+                helper.addAttachment("reservation.ics", () -> new java.io.ByteArrayInputStream(icsAttachment), "text/calendar");
+            }
 
             mailSender.send(message);
             log.info("Waitlist email sent to: {}", to);

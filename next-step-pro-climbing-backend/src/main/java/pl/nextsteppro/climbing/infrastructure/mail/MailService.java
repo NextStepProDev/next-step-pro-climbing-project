@@ -60,10 +60,14 @@ public class MailService {
         String lang = user.getPreferredLanguage();
         TimeSlot slot = reservation.getTimeSlot();
 
-        String subject = msg.getForLang("email.reservation.subject", lang);
-        String body = buildReservationConfirmationBody(lang, user, slot, reservation.getParticipants(), displayTitle);
+        String title = displayTitle != null ? displayTitle : "Next Step Pro Climbing";
+        String googleUrl = CalendarUtils.buildGoogleCalendarUrl(title, slot.getDate(), null, slot.getStartTime(), slot.getEndTime(), null);
+        byte[] ics = CalendarUtils.buildIcsFile(title, slot.getDate(), null, slot.getStartTime(), slot.getEndTime(), null, null);
 
-        sendEmail(user.getEmail(), subject, body, null);
+        String subject = msg.getForLang("email.reservation.subject", lang);
+        String body = buildReservationConfirmationBody(lang, user, slot, reservation.getParticipants(), displayTitle, googleUrl);
+
+        sendEmail(user.getEmail(), subject, body, ics);
     }
 
     @Async("mailExecutor")
@@ -94,10 +98,13 @@ public class MailService {
         if (!user.isEmailNotificationsEnabled()) return;
 
         String lang = user.getPreferredLanguage();
-        String subject = msg.getForLang("email.event.reservation.subject", lang);
-        String body = buildEventReservationConfirmationBody(lang, user, event, participants);
+        String googleUrl = CalendarUtils.buildGoogleCalendarUrl(event.getTitle(), event.getStartDate(), event.getEndDate(), event.getStartTime(), event.getEndTime(), event.getLocation());
+        byte[] ics = CalendarUtils.buildIcsFile(event.getTitle(), event.getStartDate(), event.getEndDate(), event.getStartTime(), event.getEndTime(), event.getLocation(), event.getDescription());
 
-        sendEmail(user.getEmail(), subject, body, null);
+        String subject = msg.getForLang("email.event.reservation.subject", lang);
+        String body = buildEventReservationConfirmationBody(lang, user, event, participants, googleUrl);
+
+        sendEmail(user.getEmail(), subject, body, ics);
     }
 
     @Async("mailExecutor")
@@ -334,6 +341,20 @@ public class MailService {
         return text;
     }
 
+    private String buildCalendarSection(String lang, String googleCalendarUrl) {
+        return """
+                        <div style="margin-top: 16px; padding: 14px 20px; background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; text-align: center;">
+                            <p style="margin: 0 0 8px 0; font-size: 14px; color: #0369a1; font-weight: bold;">%s</p>
+                            <a href="%s" target="_blank" style="display: inline-block; padding: 8px 20px; background: #0284c7; color: white; text-decoration: none; border-radius: 6px; font-size: 14px; font-weight: 500;">📅 Google Calendar</a>
+                            <p style="margin: 10px 0 0 0; font-size: 12px; color: #64748b;">%s</p>
+                        </div>
+            """.formatted(
+            msg.getForLang("email.calendar.title", lang),
+            googleCalendarUrl,
+            msg.getForLang("email.calendar.ics.hint", lang)
+        );
+    }
+
     private String buildChangesHtml(String lang, java.util.List<FieldChange> changes) {
         StringBuilder sb = new StringBuilder();
         for (FieldChange change : changes) {
@@ -449,13 +470,14 @@ public class MailService {
         }
     }
 
-    private String buildReservationConfirmationBody(String lang, User user, TimeSlot slot, int participants, @Nullable String displayTitle) {
+    private String buildReservationConfirmationBody(String lang, User user, TimeSlot slot, int participants, @Nullable String displayTitle, String googleCalendarUrl) {
         String participantsLine = "<p><strong>%s</strong> %d</p>".formatted(
             msg.getForLang("email.reservation.participants", lang), participants);
         String titleLine = displayTitle != null
             ? "<p><strong>%s</strong> %s</p>".formatted(
                 msg.getForLang("email.slot.title.label", lang), displayTitle)
             : "";
+        String calendarSection = buildCalendarSection(lang, googleCalendarUrl);
         return """
             <html>
             <body style="font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5;">
@@ -472,6 +494,7 @@ public class MailService {
                             <p><strong>%s</strong> %s - %s</p>
                             %s
                         </div>
+                        %s
                         <p style="margin-top: 20px; color: #333;">%s</p>
                         <p style="color: #666; font-size: 14px;">%s</p>
                     </div>
@@ -489,6 +512,7 @@ public class MailService {
             slot.getStartTime().format(TIME_FORMAT),
             slot.getEndTime().format(TIME_FORMAT),
             participantsLine,
+            calendarSection,
             msg.getForLang("email.reservation.see.you", lang),
             msg.getForLang("email.reservation.team", lang)
         );
@@ -579,9 +603,10 @@ public class MailService {
         );
     }
 
-    private String buildEventReservationConfirmationBody(String lang, User user, Event event, int participants) {
+    private String buildEventReservationConfirmationBody(String lang, User user, Event event, int participants, String googleCalendarUrl) {
         String participantsLine = "<p><strong>%s</strong> %d</p>".formatted(
             msg.getForLang("email.reservation.participants", lang), participants);
+        String calendarSection = buildCalendarSection(lang, googleCalendarUrl);
         return """
             <html>
             <body style="font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5;">
@@ -597,6 +622,7 @@ public class MailService {
                             <p><strong>%s</strong> %s - %s</p>
                             %s
                         </div>
+                        %s
                         <p style="margin-top: 20px; color: #333;">%s</p>
                         <p style="color: #666; font-size: 14px;">%s</p>
                     </div>
@@ -610,6 +636,7 @@ public class MailService {
             msg.getForLang("email.event.reservation.event", lang), event.getTitle(),
             msg.getForLang("email.event.reservation.dates", lang), event.getStartDate().format(DATE_FORMAT), event.getEndDate().format(DATE_FORMAT),
             participantsLine,
+            calendarSection,
             msg.getForLang("email.see.you", lang),
             msg.getForLang("email.reservation.team", lang)
         );

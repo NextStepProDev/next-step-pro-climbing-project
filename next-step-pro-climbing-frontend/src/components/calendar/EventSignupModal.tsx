@@ -8,6 +8,7 @@ import { Modal } from '../ui/Modal'
 import { Button } from '../ui/Button'
 import { SuccessCheckmark } from '../ui/SuccessCheckmark'
 import { ShareButtons } from '../ui/ShareButtons'
+import { AddToCalendarButton } from '../ui/AddToCalendarButton'
 import { CompleteProfileModal } from '../ui/CompleteProfileModal'
 import { useAuth } from '../../context/AuthContext'
 import { saveRedirectPath } from '../../utils/redirect'
@@ -443,6 +444,12 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
                 {t('event.hasReservation')}
               </span>
             </div>
+            <AddToCalendarButton
+              title={ev.title}
+              date={ev.startDate}
+              location={ev.location}
+              description={ev.description}
+            />
 
             {ev.enrollmentOpen && ev.userParticipants > 0 && (
               <div>
