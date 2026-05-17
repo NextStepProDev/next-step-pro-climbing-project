@@ -1,7 +1,8 @@
 import { useState, useMemo } from 'react'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { Search, X, CheckSquare, Square, Send, Users, User, Mail } from 'lucide-react'
+import { Search, CheckSquare, Square, Send, Users, User, Mail } from 'lucide-react'
+import { useToast } from '../../context/ToastContext'
 import { adminApi } from '../../api/client'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
 import { QueryError } from '../../components/ui/QueryError'
@@ -13,6 +14,7 @@ type RecipientType = 'ALL' | 'NEWSLETTER' | 'SELECTED'
 
 export function AdminMailPanel() {
   const { t } = useTranslation('admin')
+  const { showToast } = useToast()
 
   const [recipientType, setRecipientType] = useState<RecipientType>('ALL')
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
@@ -20,8 +22,6 @@ export function AdminMailPanel() {
   const [subject, setSubject] = useState('')
   const [body, setBody] = useState('')
   const [showConfirm, setShowConfirm] = useState(false)
-  const [successMsg, setSuccessMsg] = useState<string | null>(null)
-  const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
   const { data: users, isLoading, isError, error, refetch } = useQuery({
     queryKey: ['admin', 'users'],
@@ -44,16 +44,14 @@ export function AdminMailPanel() {
   const sendMutation = useMutation({
     mutationFn: adminApi.sendMail,
     onSuccess: (data) => {
-      setSuccessMsg(t('mail.successMessage', { count: data.recipientCount }))
-      setErrorMsg(null)
+      showToast(t('mail.successMessage', { count: data.recipientCount }))
       setSubject('')
       setBody('')
       setSelectedIds(new Set())
       setRecipientType('ALL')
     },
     onError: () => {
-      setErrorMsg(t('mail.errorMessage'))
-      setSuccessMsg(null)
+      showToast(t('mail.errorMessage'), 'error')
     },
   })
 
@@ -93,23 +91,6 @@ export function AdminMailPanel() {
         <p className="text-dark-400 text-sm mt-1">{t('mail.subtitle')}</p>
       </div>
 
-      {/* Feedback */}
-      {successMsg && (
-        <div className="flex items-start gap-3 bg-green-900/30 border border-green-700 rounded-lg p-4">
-          <p className="text-green-300 text-sm flex-1">{successMsg}</p>
-          <button onClick={() => setSuccessMsg(null)} className="text-green-400 hover:text-green-200">
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-      )}
-      {errorMsg && (
-        <div className="flex items-start gap-3 bg-red-900/30 border border-red-700 rounded-lg p-4">
-          <p className="text-red-300 text-sm flex-1">{errorMsg}</p>
-          <button onClick={() => setErrorMsg(null)} className="text-red-400 hover:text-red-200">
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Left: Recipients */}

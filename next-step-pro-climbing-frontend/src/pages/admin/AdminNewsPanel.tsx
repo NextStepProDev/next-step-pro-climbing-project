@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { useToast } from '../../context/ToastContext'
 import { getErrorMessage } from '../../utils/errors'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
@@ -102,6 +103,7 @@ function LanguageBadge({ lang }: { lang: string }) {
 
 export function AdminNewsPanel() {
   const { t } = useTranslation('admin')
+  const { showToast } = useToast()
   const queryClient = useQueryClient()
   const [view, setView] = useState<View>('list')
   const [selectedNewsId, setSelectedNewsId] = useState<string | null>(null)
@@ -178,14 +180,12 @@ export function AdminNewsPanel() {
 
   const [deleteGroupArticles, setDeleteGroupArticles] = useState<string[] | null>(null)
   const [newsletterConfirmId, setNewsletterConfirmId] = useState<string | null>(null)
-  const [newsletterSentCount, setNewsletterSentCount] = useState<number | null>(null)
 
   const sendNewsletterMutation = useMutation({
     mutationFn: (id: string) => adminNewsApi.sendNewsletter(id),
     onSuccess: (result) => {
       setNewsletterConfirmId(null)
-      setNewsletterSentCount(result.subscriberCount)
-      setTimeout(() => setNewsletterSentCount(null), 5000)
+      showToast(t('news.newsletterSentSuccess', { count: result.subscriberCount }))
     },
   })
 
@@ -279,12 +279,6 @@ export function AdminNewsPanel() {
         onConfirm={() => newsletterConfirmId && sendNewsletterMutation.mutate(newsletterConfirmId)}
         onClose={() => setNewsletterConfirmId(null)}
       />
-
-      {newsletterSentCount !== null && (
-        <div className="fixed bottom-4 right-4 bg-green-900/90 border border-green-600 text-green-300 px-4 py-3 rounded-lg text-sm shadow-lg">
-          {t('news.newsletterSentSuccess', { count: newsletterSentCount })}
-        </div>
-      )}
 
     </div>
   )

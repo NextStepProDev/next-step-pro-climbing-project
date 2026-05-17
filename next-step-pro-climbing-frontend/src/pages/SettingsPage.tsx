@@ -1,8 +1,9 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useMutation } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../context/AuthContext'
+import { useToast } from '../context/ToastContext'
 import { authApi } from '../api/client'
 import { getErrorMessage } from '../utils/errors'
 import { validatePhone, validateName } from '../utils/validation'
@@ -47,6 +48,7 @@ function ProfileSection({
   onUpdated: () => Promise<void>
 }) {
   const { t } = useTranslation('settings')
+  const { showToast } = useToast()
   const [firstName, setFirstName] = useState(user?.firstName ?? '')
   const [lastName, setLastName] = useState(user?.lastName ?? '')
   const [phone, setPhone] = useState(user?.phone ?? '')
@@ -54,22 +56,12 @@ function ProfileSection({
   const [firstNameError, setFirstNameError] = useState<string | null>(null)
   const [lastNameError, setLastNameError] = useState<string | null>(null)
   const [phoneError, setPhoneError] = useState<string | null>(null)
-  const [success, setSuccess] = useState(false)
-  const successTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-
-  useEffect(() => {
-    return () => {
-      if (successTimerRef.current) clearTimeout(successTimerRef.current)
-    }
-  }, [])
 
   const mutation = useMutation({
     mutationFn: () => authApi.updateProfile(firstName, lastName, phone, nickname),
     onSuccess: async () => {
       await onUpdated()
-      setSuccess(true)
-      if (successTimerRef.current) clearTimeout(successTimerRef.current)
-      successTimerRef.current = setTimeout(() => setSuccess(false), 3000)
+      showToast(t('profile.success'))
     },
   })
 
@@ -155,9 +147,6 @@ function ProfileSection({
         {mutation.isError && (
           <p className="text-sm text-rose-400/80">{getErrorMessage(mutation.error)}</p>
         )}
-        {success && (
-          <p className="text-sm text-green-400">{t('profile.success')}</p>
-        )}
       </form>
     </section>
   )
@@ -166,23 +155,14 @@ function ProfileSection({
 function LanguageSection() {
   const { t, i18n } = useTranslation('settings')
   const { isAuthenticated } = useAuth()
-  const [success, setSuccess] = useState(false)
-  const successTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-
-  useEffect(() => {
-    return () => {
-      if (successTimerRef.current) clearTimeout(successTimerRef.current)
-    }
-  }, [])
+  const { showToast } = useToast()
 
   const handleChange = (langCode: string) => {
     i18n.changeLanguage(langCode)
     if (isAuthenticated) {
       authApi.updateLanguage(langCode).catch(() => {})
     }
-    setSuccess(true)
-    if (successTimerRef.current) clearTimeout(successTimerRef.current)
-    successTimerRef.current = setTimeout(() => setSuccess(false), 3000)
+    showToast(t('language.success'))
   }
 
   return (
@@ -204,28 +184,18 @@ function LanguageSection() {
           </button>
         ))}
       </div>
-      {success && (
-        <p className="text-sm text-green-400 mt-3">{t('language.success')}</p>
-      )}
     </section>
   )
 }
 
 function ChangePasswordSection() {
   const { t } = useTranslation('settings')
+  const { showToast } = useToast()
   const [expanded, setExpanded] = useState(false)
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [validationError, setValidationError] = useState<string | null>(null)
-  const [success, setSuccess] = useState(false)
-  const successTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-
-  useEffect(() => {
-    return () => {
-      if (successTimerRef.current) clearTimeout(successTimerRef.current)
-    }
-  }, [])
 
   const mutation = useMutation({
     mutationFn: () => authApi.changePassword(currentPassword, newPassword),
@@ -234,17 +204,14 @@ function ChangePasswordSection() {
       setNewPassword('')
       setConfirmPassword('')
       setValidationError(null)
-      setSuccess(true)
       setExpanded(false)
-      if (successTimerRef.current) clearTimeout(successTimerRef.current)
-      successTimerRef.current = setTimeout(() => setSuccess(false), 3000)
+      showToast(t('changePassword.success'))
     },
   })
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     setValidationError(null)
-    setSuccess(false)
 
     if (newPassword.length < 8) {
       setValidationError(t('changePassword.tooShort'))
@@ -282,10 +249,6 @@ function ChangePasswordSection() {
           {expanded ? t('changePassword.cancel') : t('changePassword.expand')}
         </button>
       </div>
-
-      {success && (
-        <p className="text-sm text-green-400 mt-3">{t('changePassword.success')}</p>
-      )}
 
       {expanded && (
         <form onSubmit={handleSubmit} className="space-y-4 mt-4">
