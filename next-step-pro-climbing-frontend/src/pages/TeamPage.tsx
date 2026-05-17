@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { useParams, useNavigate } from 'react-router-dom'
@@ -198,6 +198,12 @@ export function TeamPage({ memberType }: { memberType: InstructorType }) {
   const [contentLanguage, setContentLanguage] = useState(() =>
     getDefaultCourseContentLanguage(i18n.language)
   )
+
+  useEffect(() => {
+    const handler = (lng: string) => setContentLanguage(getDefaultCourseContentLanguage(lng))
+    i18n.on('languageChanged', handler)
+    return () => { i18n.off('languageChanged', handler) }
+  }, [i18n])
 
   const { data: allMembers, isLoading, error } = useQuery({
     queryKey: ['instructors', contentLanguage],

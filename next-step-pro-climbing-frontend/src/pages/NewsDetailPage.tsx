@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { useParams, Link, useNavigate } from 'react-router-dom'
@@ -10,11 +11,11 @@ import { QueryError } from '../components/ui/QueryError'
 import { ShareButtons } from '../components/ui/ShareButtons'
 import { renderRichText } from '../utils/renderRichText'
 import { useAuth } from '../context/AuthContext'
-import { COURSE_CONTENT_LANGUAGES } from '../constants/courseLanguages'
+import { COURSE_CONTENT_LANGUAGES, getDefaultCourseContentLanguage } from '../constants/courseLanguages'
 import clsx from 'clsx'
 
 export function NewsDetailPage() {
-  const { t } = useTranslation('common')
+  const { t, i18n } = useTranslation('common')
   const { newsId } = useParams<{ newsId: string }>()
   const navigate = useNavigate()
   const { isAuthenticated } = useAuth()
@@ -31,6 +32,18 @@ export function NewsDetailPage() {
     queryFn: () => newsApi.getTranslations(article!.translationGroupId),
     enabled: !!article?.translationGroupId,
   })
+
+  useEffect(() => {
+    const handler = (lng: string) => {
+      const newLang = getDefaultCourseContentLanguage(lng)
+      if (article && translations && article.language !== newLang) {
+        const target = translations.find(tr => tr.language === newLang)
+        if (target) navigate(`/aktualnosci/${target.id}`, { replace: true })
+      }
+    }
+    i18n.on('languageChanged', handler)
+    return () => { i18n.off('languageChanged', handler) }
+  }, [i18n, navigate, article, translations])
 
   const starMutation = useMutation({
     mutationFn: (isStarred: boolean) =>

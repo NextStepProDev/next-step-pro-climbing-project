@@ -21,6 +21,12 @@ export function CoursesPage() {
     getDefaultCourseContentLanguage(i18n.language)
   )
 
+  useEffect(() => {
+    const handler = (lng: string) => setContentLanguage(getDefaultCourseContentLanguage(lng))
+    i18n.on('languageChanged', handler)
+    return () => { i18n.off('languageChanged', handler) }
+  }, [i18n])
+
   const { data: courses, isLoading, error } = useQuery({
     queryKey: ['courses', contentLanguage],
     queryFn: () => coursesApi.getAll(contentLanguage),

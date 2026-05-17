@@ -24,6 +24,13 @@ export function NewsPage() {
   const [contentLanguage, setContentLanguage] = useState(() =>
     getDefaultCourseContentLanguage(i18n.language)
   )
+
+  useEffect(() => {
+    const handler = (lng: string) => setContentLanguage(getDefaultCourseContentLanguage(lng))
+    i18n.on('languageChanged', handler)
+    return () => { i18n.off('languageChanged', handler) }
+  }, [i18n])
+
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
