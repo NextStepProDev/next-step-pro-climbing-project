@@ -52,11 +52,13 @@ export function NewsPreviewModal({
               />
             ) : (
               <>
-                <img
-                  src={thumbnailUrl}
-                  alt=""
-                  aria-hidden="true"
-                  className="absolute inset-0 w-full h-full object-cover blur-xl scale-110"
+                <div
+                  className="absolute inset-0 scale-110 blur-xl"
+                  style={{
+                    backgroundImage: `url(${thumbnailUrl})`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                  }}
                 />
                 <img
                   src={thumbnailUrl}

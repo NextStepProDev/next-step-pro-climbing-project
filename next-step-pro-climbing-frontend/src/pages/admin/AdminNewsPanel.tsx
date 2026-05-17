@@ -934,11 +934,13 @@ function EditView({
               />
             ) : (
               <div className="relative rounded-lg overflow-hidden bg-dark-700 aspect-video">
-                <img
-                  src={thumbnailPreview ?? thumbnailFromLibrary ?? detail.thumbnailUrl ?? ''}
-                  alt=""
-                  aria-hidden="true"
-                  className="absolute inset-0 w-full h-full object-cover blur-xl scale-110"
+                <div
+                  className="absolute inset-0 scale-110 blur-xl"
+                  style={{
+                    backgroundImage: `url(${thumbnailPreview ?? thumbnailFromLibrary ?? detail.thumbnailUrl ?? ''})`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                  }}
                 />
                 <img
                   src={thumbnailPreview ?? thumbnailFromLibrary ?? detail.thumbnailUrl ?? ''}

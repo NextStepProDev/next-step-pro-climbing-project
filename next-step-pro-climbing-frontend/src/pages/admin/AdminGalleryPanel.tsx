@@ -312,12 +312,15 @@ export function AdminGalleryPanel() {
                   <div className="flex-shrink-0 w-full sm:w-auto">
                     {album.thumbnailUrl ? (
                       <div className="w-full h-40 sm:w-32 sm:h-24 rounded-lg overflow-hidden relative bg-dark-700">
-                        <img
-                          src={album.thumbnailUrl}
-                          alt=""
-                          aria-hidden="true"
-                          className="absolute inset-0 w-full h-full object-cover blur-xl scale-110"
-                          style={album.thumbnailFocalPointX != null ? { objectPosition: `${album.thumbnailFocalPointX * 100}% ${(album.thumbnailFocalPointY ?? 0.5) * 100}%` } : undefined}
+                        <div
+                          className="absolute inset-0 scale-110 blur-xl"
+                          style={{
+                            backgroundImage: `url(${album.thumbnailUrl})`,
+                            backgroundSize: 'cover',
+                            backgroundPosition: album.thumbnailFocalPointX != null
+                              ? `${album.thumbnailFocalPointX * 100}% ${(album.thumbnailFocalPointY ?? 0.5) * 100}%`
+                              : 'center',
+                          }}
                         />
                         <img
                           src={album.thumbnailUrl}
@@ -480,11 +483,13 @@ export function AdminGalleryPanel() {
                             setLightboxIndex(idx >= 0 ? idx : 0)
                           }}
                         >
-                          <img
-                            src={photo.url}
-                            alt=""
-                            aria-hidden="true"
-                            className="absolute inset-0 w-full h-full object-cover blur-xl scale-110"
+                          <div
+                            className="absolute inset-0 scale-110 blur-xl"
+                            style={{
+                              backgroundImage: `url(${photo.url})`,
+                              backgroundSize: 'cover',
+                              backgroundPosition: 'center',
+                            }}
                           />
                           <img
                             src={photo.url}
