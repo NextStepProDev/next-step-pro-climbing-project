@@ -90,6 +90,13 @@ body {
   100% { transform: scale(1); opacity: 1; }
 }
 
+.btn-glow {
+  transition: box-shadow 0.3s ease;
+}
+.btn-glow:hover {
+  box-shadow: 0 0 24px rgba(71, 85, 105, 0.5), 0 0 48px rgba(71, 85, 105, 0.2);
+}
+
 .card-glass {
   background: color-mix(in srgb, var(--color-dark-800) 80%, transparent);
   backdrop-filter: blur(4px);
