@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { useParams, Link, useNavigate } from 'react-router-dom'
@@ -33,17 +33,17 @@ export function NewsDetailPage() {
     enabled: !!article?.translationGroupId,
   })
 
+  const currentContentLang = getDefaultCourseContentLanguage(i18n.language)
+  const prevLangRef = useRef(currentContentLang)
   useEffect(() => {
-    const handler = (lng: string) => {
-      const newLang = getDefaultCourseContentLanguage(lng)
-      if (article && translations && article.language !== newLang) {
-        const target = translations.find(tr => tr.language === newLang)
-        if (target) navigate(`/aktualnosci/${target.id}`, { replace: true })
+    if (prevLangRef.current !== currentContentLang && article && translations) {
+      const target = translations.find(tr => tr.language === currentContentLang)
+      if (target && target.id !== article.id) {
+        navigate(`/aktualnosci/${target.id}`, { replace: true })
       }
     }
-    i18n.on('languageChanged', handler)
-    return () => { i18n.off('languageChanged', handler) }
-  }, [i18n, navigate, article, translations])
+    prevLangRef.current = currentContentLang
+  })
 
   const starMutation = useMutation({
     mutationFn: (isStarred: boolean) =>
