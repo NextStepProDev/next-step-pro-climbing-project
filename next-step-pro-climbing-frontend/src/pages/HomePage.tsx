@@ -20,6 +20,18 @@ import { siteSettingsApi } from "../api/client";
 import logoWhite from "../assets/logo/logo-white.png";
 import logoBlack from "../assets/logo/logo-black.png";
 
+function usePreloadImage(url: string | null | undefined) {
+  useEffect(() => {
+    if (!url) return;
+    const link = document.createElement('link');
+    link.rel = 'preload';
+    link.as = 'image';
+    link.href = url;
+    document.head.appendChild(link);
+    return () => { document.head.removeChild(link); };
+  }, [url]);
+}
+
 function BadgeImg({ src, href, className }: { src: string; href?: string | null; className?: string }) {
   const img = (
     <img
@@ -46,43 +58,22 @@ export function HomePage() {
   const { t } = useTranslation("home");
   const [heroImgLoaded, setHeroImgLoaded] = useState(false);
 
-  const { data: heroData, isPending } = useQuery({
-    queryKey: ["heroImage"],
-    queryFn: siteSettingsApi.getHero,
+  const { data: homeSettings, isPending } = useQuery({
+    queryKey: ["homeSettings"],
+    queryFn: siteSettingsApi.getHome,
     staleTime: 30 * 60 * 1000,
   });
-  const heroImageUrl = heroData?.imageUrl ?? null;
 
-  const { data: badgeData } = useQuery({
-    queryKey: ["badgeImage"],
-    queryFn: siteSettingsApi.getBadge,
-    staleTime: 30 * 60 * 1000,
-    retry: false,
-  });
-  const badgeImageUrl = badgeData?.imageUrl ?? null;
+  const heroImageUrl = homeSettings?.hero.imageUrl ?? null;
+  const badgeImageUrl = homeSettings?.badge.imageUrl ?? null;
+  const badgeLeftImageUrl = homeSettings?.badgeLeft.imageUrl ?? null;
 
-  const { data: badgeLeftData } = useQuery({
-    queryKey: ["badgeLeftImage"],
-    queryFn: siteSettingsApi.getBadgeLeft,
-    staleTime: 30 * 60 * 1000,
-    retry: false,
-  });
-  const badgeLeftImageUrl = badgeLeftData?.imageUrl ?? null;
+  usePreloadImage(heroImageUrl);
 
-  useEffect(() => {
-    if (!heroImageUrl) return;
-    const img = new Image();
-    img.onload = () => setHeroImgLoaded(true);
-    img.src = heroImageUrl;
-    // Check if image was cached and already complete - defer to avoid sync setState in effect
-    if (img.complete) queueMicrotask(() => setHeroImgLoaded(true));
-    return () => { img.onload = null; };
-  }, [heroImageUrl]);
-  const objectPosition = heroData?.focalPointX != null
-    ? `${(heroData.focalPointX * 100).toFixed(1)}% ${((heroData.focalPointY ?? 0.5) * 100).toFixed(1)}%`
+  const objectPosition = homeSettings?.hero.focalPointX != null
+    ? `${(homeSettings.hero.focalPointX * 100).toFixed(1)}% ${((homeSettings.hero.focalPointY ?? 0.5) * 100).toFixed(1)}%`
     : 'center center';
 
-  // No image configured (API responded with no image) — show watermark
   const showWatermark = !isPending && !heroImageUrl;
 
   return (
@@ -111,7 +102,9 @@ export function HomePage() {
                 src={heroImageUrl}
                 alt=""
                 aria-hidden="true"
-                className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ${heroImgLoaded ? 'opacity-100 animation-ken-burns' : 'opacity-0'}`}
+                fetchPriority="high"
+                onLoad={() => setHeroImgLoaded(true)}
+                className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ${heroImgLoaded ? 'opacity-100 animation-ken-burns' : 'opacity-0'}`}
                 style={{ objectPosition }}
               />
               <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-dark-950" />
@@ -124,7 +117,9 @@ export function HomePage() {
               src={heroImageUrl}
               alt=""
               aria-hidden="true"
-              className={`hidden sm:block absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ${heroImgLoaded ? 'opacity-100 animation-ken-burns' : 'opacity-0'}`}
+              fetchPriority="high"
+              onLoad={() => setHeroImgLoaded(true)}
+              className={`hidden sm:block absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ${heroImgLoaded ? 'opacity-100 animation-ken-burns' : 'opacity-0'}`}
               style={{ objectPosition }}
             />
             <div className={`hidden sm:block absolute inset-0 bg-gradient-to-b from-dark-950/25 via-dark-950/35 to-dark-950 transition-opacity duration-700 ${heroImgLoaded ? 'opacity-100' : 'opacity-0'}`} />
@@ -133,14 +128,14 @@ export function HomePage() {
         {badgeLeftImageUrl && (
           <BadgeImg
             src={badgeLeftImageUrl}
-            href={badgeLeftData?.linkUrl}
+            href={homeSettings?.badgeLeft.linkUrl}
             className="absolute top-3 left-3 sm:top-12 sm:left-36 z-20 w-[52px] h-[52px] sm:w-24 sm:h-24"
           />
         )}
         {badgeImageUrl && (
           <BadgeImg
             src={badgeImageUrl}
-            href={badgeData?.linkUrl}
+            href={homeSettings?.badge.linkUrl}
             className="absolute top-3 right-3 sm:top-12 sm:right-36 z-20 w-[52px] h-[52px] sm:w-24 sm:h-24"
           />
         )}

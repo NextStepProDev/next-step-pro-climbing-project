@@ -48,6 +48,7 @@ export function AdminSitePanel() {
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: ['admin', 'hero'] })
     queryClient.invalidateQueries({ queryKey: ['heroImage'] })
+    queryClient.invalidateQueries({ queryKey: ['homeSettings'] })
   }
 
   const clearPending = () => {
@@ -309,6 +310,7 @@ function BadgeSection() {
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: ['admin', 'badge'] })
     queryClient.invalidateQueries({ queryKey: ['badgeImage'] })
+    queryClient.invalidateQueries({ queryKey: ['homeSettings'] })
   }
 
   const setUrlMutation = useMutation({
@@ -453,6 +455,7 @@ function BadgeLeftSection() {
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: ['admin', 'badgeLeft'] })
     queryClient.invalidateQueries({ queryKey: ['badgeLeftImage'] })
+    queryClient.invalidateQueries({ queryKey: ['homeSettings'] })
   }
 
   const setUrlMutation = useMutation({

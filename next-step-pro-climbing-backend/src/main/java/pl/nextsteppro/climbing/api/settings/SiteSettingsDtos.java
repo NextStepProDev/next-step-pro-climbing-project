@@ -13,4 +13,10 @@ public class SiteSettingsDtos {
     public record SlotTemplateDto(String name, int maxParticipants) {}
 
     public record BadgeImageDto(@Nullable String imageUrl, @Nullable String linkUrl) {}
+
+    public record HomeSettingsDto(
+            HeroImageDto hero,
+            BadgeImageDto badge,
+            BadgeImageDto badgeLeft
+    ) {}
 }

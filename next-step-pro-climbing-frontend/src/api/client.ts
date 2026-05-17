@@ -65,6 +65,7 @@ import type {
   UpdateVideoRequest,
   HeroImageDto,
   BadgeImageDto,
+  HomeSettingsDto,
   SlotTemplate,
 } from '../types'
 import {
@@ -1001,6 +1002,7 @@ export const adminVideoApi = {
 
 // Site Settings (public)
 export const siteSettingsApi = {
+  getHome: () => fetchApi<HomeSettingsDto>('/settings/home'),
   getHero: () => fetchApi<HeroImageDto>('/settings/hero'),
   getBadge: () => fetchApi<BadgeImageDto>('/settings/badge'),
   getBadgeLeft: () => fetchApi<BadgeImageDto>('/settings/badge-left'),

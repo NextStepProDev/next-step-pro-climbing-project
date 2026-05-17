@@ -791,6 +791,12 @@ export interface BadgeImageDto {
   linkUrl: string | null
 }
 
+export interface HomeSettingsDto {
+  hero: HeroImageDto
+  badge: BadgeImageDto
+  badgeLeft: BadgeImageDto
+}
+
 export interface SlotTemplate {
   name: string
   maxParticipants: number

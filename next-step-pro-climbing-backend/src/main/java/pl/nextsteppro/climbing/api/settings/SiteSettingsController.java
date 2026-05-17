@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RestController;
 import pl.nextsteppro.climbing.api.admin.settings.AdminSiteSettingsService;
 import pl.nextsteppro.climbing.api.settings.SiteSettingsDtos.BadgeImageDto;
 import pl.nextsteppro.climbing.api.settings.SiteSettingsDtos.HeroImageDto;
+import pl.nextsteppro.climbing.api.settings.SiteSettingsDtos.HomeSettingsDto;
 
 @RestController
 @RequestMapping("/api/settings")
@@ -20,6 +21,17 @@ public class SiteSettingsController {
 
     public SiteSettingsController(AdminSiteSettingsService adminSiteSettingsService) {
         this.adminSiteSettingsService = adminSiteSettingsService;
+    }
+
+    @GetMapping("/home")
+    @Operation(summary = "Pobierz wszystkie ustawienia strony głównej (hero + badges) jednym zapytaniem")
+    @ApiResponse(responseCode = "200", description = "Hero image + badges")
+    public ResponseEntity<HomeSettingsDto> getHomeSettings() {
+        return ResponseEntity.ok(new HomeSettingsDto(
+                adminSiteSettingsService.getHeroImage(),
+                adminSiteSettingsService.getBadgeImage(),
+                adminSiteSettingsService.getBadgeLeftImage()
+        ));
     }
 
     @GetMapping("/hero")
