@@ -63,6 +63,7 @@ export function GalleryPickerModal({ isOpen, onClose, onSelect }: GalleryPickerM
                   <img
                     src={album.thumbnailUrl}
                     alt={album.name}
+                    loading="lazy"
                     className="w-full h-full object-cover"
                   />
                 ) : (
@@ -101,6 +102,7 @@ export function GalleryPickerModal({ isOpen, onClose, onSelect }: GalleryPickerM
                   <img
                     src={photo.url}
                     alt={photo.caption ?? ''}
+                    loading="lazy"
                     className="w-full h-full object-cover"
                   />
                 </button>

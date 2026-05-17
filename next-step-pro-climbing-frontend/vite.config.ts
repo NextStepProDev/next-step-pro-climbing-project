@@ -24,6 +24,8 @@ export default defineConfig({
           vendor: ['react', 'react-dom', 'react-router-dom'],
           query: ['@tanstack/react-query'],
           i18n: ['i18next', 'react-i18next'],
+          icons: ['lucide-react'],
+          dates: ['date-fns'],
         },
       },
     },

@@ -53,6 +53,7 @@ export function MediaPickerModal({ isOpen, onClose, onSelect }: MediaPickerModal
               <img
                 src={asset.url}
                 alt={asset.originalName}
+                loading="lazy"
                 className="w-full h-full object-cover"
               />
               {selected === asset.id && (
