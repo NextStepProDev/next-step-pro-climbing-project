@@ -203,15 +203,18 @@ export function NewsPage() {
                         />
                       ) : (
                         <>
-                          <img
-                            src={article.thumbnailUrl}
-                            alt=""
-                            aria-hidden="true"
-                            className="absolute inset-0 w-full h-full object-cover blur-xl scale-110"
+                          <div
+                            className="absolute inset-0 scale-110 blur-xl"
+                            style={{
+                              backgroundImage: `url(${article.thumbnailUrl})`,
+                              backgroundSize: 'cover',
+                              backgroundPosition: 'center',
+                            }}
                           />
                           <img
                             src={article.thumbnailUrl}
                             alt={article.title}
+                            loading="lazy"
                             className="relative w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
                           />
                         </>
