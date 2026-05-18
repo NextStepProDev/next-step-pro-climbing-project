@@ -42,7 +42,7 @@ export function NewsPreviewModal({
 
         {/* Thumbnail */}
         {thumbnailUrl ? (
-          <div className="w-full rounded-lg overflow-hidden mb-6 bg-dark-700 relative aspect-video">
+          <div className="w-full rounded-lg overflow-hidden mb-6 bg-surface-700 relative aspect-video">
             {focalPoint ? (
               <img
                 src={thumbnailUrl}
@@ -69,22 +69,22 @@ export function NewsPreviewModal({
             )}
           </div>
         ) : (
-          <div className="w-full h-40 bg-dark-800 rounded-lg flex items-center justify-center mb-6">
-            <Newspaper className="h-12 w-12 text-dark-500" />
+          <div className="w-full h-40 bg-surface-800 rounded-lg flex items-center justify-center mb-6">
+            <Newspaper className="h-12 w-12 text-surface-500" />
           </div>
         )}
 
         {/* Title */}
-        <h1 className="text-2xl font-bold text-dark-100 mb-3">
-          {title || <span className="text-dark-500 italic">{t('news.previewNoTitle')}</span>}
+        <h1 className="text-2xl font-bold text-surface-100 mb-3">
+          {title || <span className="text-surface-500 italic">{t('news.previewNoTitle')}</span>}
         </h1>
 
         {/* Excerpt */}
         {excerpt && (
-          <p className="text-dark-300 text-sm mb-6 leading-relaxed">{excerpt}</p>
+          <p className="text-surface-300 text-sm mb-6 leading-relaxed">{excerpt}</p>
         )}
 
-        {blocks.length > 0 && <hr className="border-dark-700 mb-6" />}
+        {blocks.length > 0 && <hr className="border-surface-700 mb-6" />}
 
         {/* Content blocks */}
         <div className="space-y-6">
@@ -93,11 +93,11 @@ export function NewsPreviewModal({
               return (
                 <div
                   key={block.tempId}
-                  className="text-dark-200 leading-relaxed"
+                  className="text-surface-200 leading-relaxed"
                   dangerouslySetInnerHTML={{
                     __html: block.content
                       ? renderRichText(block.content)
-                      : `<span class="text-dark-500 italic">${t('news.previewEmptyBlock')}</span>`,
+                      : `<span class="text-surface-500 italic">${t('news.previewEmptyBlock')}</span>`,
                   }}
                 ></div>
               )
@@ -113,7 +113,7 @@ export function NewsPreviewModal({
                     />
                   )}
                   {block.caption && (
-                    <figcaption className="text-sm text-dark-400 text-center mt-2">
+                    <figcaption className="text-sm text-surface-400 text-center mt-2">
                       {block.caption}
                     </figcaption>
                   )}
@@ -138,7 +138,7 @@ export function NewsPreviewModal({
         </div>
 
         {blocks.length === 0 && !excerpt && (
-          <p className="text-dark-500 italic text-sm">{t('news.previewNoContent')}</p>
+          <p className="text-surface-500 italic text-sm">{t('news.previewNoContent')}</p>
         )}
       </div>
     </Modal>

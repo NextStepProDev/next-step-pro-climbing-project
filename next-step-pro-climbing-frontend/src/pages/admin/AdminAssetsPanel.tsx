@@ -77,7 +77,7 @@ export function AdminAssetsPanel() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-semibold text-dark-100">{t('assets.title')}</h2>
+        <h2 className="text-xl font-semibold text-surface-100">{t('assets.title')}</h2>
         <Button onClick={() => setUploadModalOpen(true)}>
           <Upload className="w-4 h-4 mr-2" />
           {t('assets.upload')}
@@ -93,7 +93,7 @@ export function AdminAssetsPanel() {
       {error && <QueryError error={error} />}
 
       {assets && assets.length === 0 && (
-        <div className="text-center py-16 text-dark-400">
+        <div className="text-center py-16 text-surface-400">
           {t('assets.empty')}
         </div>
       )}
@@ -101,15 +101,15 @@ export function AdminAssetsPanel() {
       {assets && assets.length > 0 && (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
           {assets.map((asset) => (
-            <div key={asset.id} className="group relative bg-dark-800 rounded-lg overflow-hidden border border-dark-700">
-              <div className="aspect-square bg-dark-900 flex items-center justify-center overflow-hidden">
+            <div key={asset.id} className="group relative bg-surface-800 rounded-lg overflow-hidden border border-surface-700">
+              <div className="aspect-square bg-surface-900 flex items-center justify-center overflow-hidden">
                 <img
                   src={asset.url}
                   alt={asset.originalName}
                   className="w-full h-full object-contain"
                 />
               </div>
-              <div className="px-2 py-1 text-xs text-dark-400 truncate" title={asset.originalName}>
+              <div className="px-2 py-1 text-xs text-surface-400 truncate" title={asset.originalName}>
                 {asset.originalName} · {formatBytes(asset.sizeBytes)}
               </div>
 
@@ -159,11 +159,11 @@ export function AdminAssetsPanel() {
 
           {uploadMutation.isPending && uploadProgress > 0 && (
             <div className="space-y-1">
-              <div className="flex justify-between text-xs text-dark-400">
+              <div className="flex justify-between text-xs text-surface-400">
                 <span>{t('assets.uploading')}</span>
                 <span>{uploadProgress}%</span>
               </div>
-              <div className="w-full bg-dark-700 rounded-full h-1.5">
+              <div className="w-full bg-surface-700 rounded-full h-1.5">
                 <div
                   className="bg-primary-500 h-1.5 rounded-full transition-all"
                   style={{ width: `${uploadProgress}%` }}
@@ -179,7 +179,7 @@ export function AdminAssetsPanel() {
           )}
 
           <div className="flex justify-between items-center">
-            <span className="text-sm text-dark-400">
+            <span className="text-sm text-surface-400">
               {selectedFiles.length > 0 && t('assets.selectedCount', { count: selectedFiles.length })}
             </span>
             <div className="flex gap-3">

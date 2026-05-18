@@ -1,21 +1,24 @@
 import { Phone, Mail, User, Facebook, Youtube, Instagram } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
+import { useTheme } from '../../context/ThemeContext'
 import logoWhite from '../../assets/logo/logo-white.png'
+import logoBlack from '../../assets/logo/logo-black.png'
 import { CONTACT } from '../../constants/contact'
 
 export function Footer() {
   const { t } = useTranslation('common')
+  const { theme } = useTheme()
 
   return (
-    <footer className="bg-dark-900">
+    <footer className="bg-surface-900">
       <div className="h-0.5 bg-gradient-to-r from-transparent via-primary-400 to-transparent" />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {/* Brand */}
           <div>
-            <img src={logoWhite} alt="Next Step Pro Climbing" className="h-16 mb-4" />
-            <p className="text-dark-400 text-sm">
+            <img src={theme === 'dark' ? logoWhite : logoBlack} alt="Next Step Pro Climbing" className="h-16 mb-4" />
+            <p className="text-surface-400 text-sm">
               {t('footer.description')}
             </p>
           </div>
@@ -23,28 +26,28 @@ export function Footer() {
           {/* Contact */}
           <div>
             <h3 className="font-semibold mb-4">
-              <Link to="/kontakt" className="text-dark-100 hover:text-primary-400 transition-all duration-150 active:scale-95">
+              <Link to="/kontakt" className="text-surface-100 hover:text-primary-400 transition-all duration-150 active:scale-95">
                 {t('footer.contact')}
               </Link>
             </h3>
             <ul className="space-y-3">
-              <li className="flex items-center gap-2 text-dark-400 text-sm">
+              <li className="flex items-center gap-2 text-surface-400 text-sm">
                 <User className="w-4 h-4 shrink-0" />
                 <span>{t('footer.instructor')}</span>
               </li>
-              <li className="flex items-center gap-2 text-dark-400 text-sm">
+              <li className="flex items-center gap-2 text-surface-400 text-sm">
                 <Phone className="w-4 h-4 shrink-0" />
                 <a href={CONTACT.phoneHref} className="hover:text-primary-400 hover:translate-x-1 transition-all duration-200">
                   {CONTACT.phone}
                 </a>
               </li>
-              <li className="flex items-center gap-2 text-dark-400 text-sm">
+              <li className="flex items-center gap-2 text-surface-400 text-sm">
                 <Mail className="w-4 h-4 shrink-0" />
                 <a href={CONTACT.emailHref} className="hover:text-primary-400 hover:translate-x-1 transition-all duration-200">
                   {CONTACT.email}
                 </a>
               </li>
-              <li className="flex items-center gap-2 text-dark-400 text-sm">
+              <li className="flex items-center gap-2 text-surface-400 text-sm">
                 <Facebook className="w-4 h-4 shrink-0" />
                 <a
                   href={CONTACT.facebook}
@@ -55,7 +58,7 @@ export function Footer() {
                   Facebook
                 </a>
               </li>
-              <li className="flex items-center gap-2 text-dark-400 text-sm">
+              <li className="flex items-center gap-2 text-surface-400 text-sm">
                 <Youtube className="w-4 h-4 shrink-0" />
                 <a
                   href={CONTACT.youtube}
@@ -67,7 +70,7 @@ export function Footer() {
                 </a>
               </li>
               {CONTACT.instagram && (
-                <li className="flex items-center gap-2 text-dark-400 text-sm">
+                <li className="flex items-center gap-2 text-surface-400 text-sm">
                   <Instagram className="w-4 h-4 shrink-0" />
                   <a
                     href={CONTACT.instagram}
@@ -84,8 +87,8 @@ export function Footer() {
 
           {/* Hours */}
           <div>
-            <h3 className="font-semibold text-dark-100 mb-4">{t('footer.hours')}</h3>
-            <ul className="space-y-2 text-dark-400 text-sm">
+            <h3 className="font-semibold text-surface-100 mb-4">{t('footer.hours')}</h3>
+            <ul className="space-y-2 text-surface-400 text-sm">
               <li className="flex justify-between">
                 <span>{t('footer.weekdays')}</span>
                 <span>{t('footer.seeCalendar')}</span>
@@ -102,17 +105,17 @@ export function Footer() {
           </div>
         </div>
 
-        <div className="mt-8 pt-8 border-t border-dark-800 text-center text-dark-500 text-sm">
+        <div className="mt-8 pt-8 border-t border-surface-800 text-center text-surface-500 text-sm">
           <p>&copy; {new Date().getFullYear()} Next Step Pro Climbing. {t('footer.copyright')}</p>
           <p className="mt-1 space-x-3">
-            <Link to="/polityka-prywatnosci" className="text-dark-600 hover:text-dark-400 transition-colors text-xs">
+            <Link to="/polityka-prywatnosci" className="text-surface-600 hover:text-surface-400 transition-colors text-xs">
               Polityka prywatności
             </Link>
-            <Link to="/faq" className="text-dark-600 hover:text-dark-400 transition-colors text-xs">
+            <Link to="/faq" className="text-surface-600 hover:text-surface-400 transition-colors text-xs">
               {t('nav.help')}
             </Link>
           </p>
-          <p className="mt-1 text-dark-600 text-xs">v{__APP_VERSION__}</p>
+          <p className="mt-1 text-surface-600 text-xs">v{__APP_VERSION__}</p>
         </div>
       </div>
     </footer>

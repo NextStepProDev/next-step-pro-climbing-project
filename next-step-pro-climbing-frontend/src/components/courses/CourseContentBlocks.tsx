@@ -19,7 +19,7 @@ export function CourseContentBlocks({ detail }: { detail: CourseDetail }) {
           return (
             <div
               key={block.id}
-              className="text-dark-200 leading-relaxed"
+              className="text-surface-200 leading-relaxed"
               dangerouslySetInnerHTML={{ __html: renderRichText(block.content ?? '') }}
             />
           )
@@ -42,12 +42,12 @@ export function CourseContentBlocks({ detail }: { detail: CourseDetail }) {
                 />
               ) : null}
               <div
-                className="w-full h-32 bg-dark-700 rounded-lg items-center justify-center hidden"
+                className="w-full h-32 bg-surface-700 rounded-lg items-center justify-center hidden"
               >
-                <ImageIcon className="h-8 w-8 text-dark-500" />
+                <ImageIcon className="h-8 w-8 text-surface-500" />
               </div>
               {block.caption && (
-                <figcaption className="text-sm text-dark-400 mt-2 text-center italic">
+                <figcaption className="text-sm text-surface-400 mt-2 text-center italic">
                   {block.caption}
                 </figcaption>
               )}
@@ -66,13 +66,13 @@ export function CourseEventsList({ events }: { events: CourseEvent[] | undefined
 
   return (
     <div>
-      <h3 className="text-base font-semibold text-dark-200 mb-3 flex items-center gap-2">
+      <h3 className="text-base font-semibold text-surface-200 mb-3 flex items-center gap-2">
         <Calendar className="h-4 w-4 text-primary-400" />
         {t('courses.availableDates')}
       </h3>
 
       {!events || events.length === 0 ? (
-        <p className="text-sm text-dark-500">{t('courses.noDates')}</p>
+        <p className="text-sm text-surface-500">{t('courses.noDates')}</p>
       ) : (
         <div className="space-y-2">
           {events.map((event) => (
@@ -104,13 +104,13 @@ export function CourseEventRow({ event }: { event: CourseEvent }) {
     : t(event.availableSpots === 1 ? 'courses.spotsOne' : 'courses.spots', { count: event.availableSpots })
 
   return (
-    <div className="flex items-center justify-between bg-dark-900 rounded-lg px-4 py-3 gap-4">
+    <div className="flex items-center justify-between bg-surface-900 rounded-lg px-4 py-3 gap-4">
       <div className="min-w-0">
-        <p className="text-sm text-dark-200 capitalize">
+        <p className="text-sm text-surface-200 capitalize">
           {endDate ? `${startDate} – ${endDate}` : startDate}
         </p>
         {event.startTime && event.endTime && (
-          <p className="text-xs text-dark-400 flex items-center gap-1">
+          <p className="text-xs text-surface-400 flex items-center gap-1">
             <Clock className="h-3 w-3" />
             {event.startTime.slice(0, 5)} – {event.endTime.slice(0, 5)}
           </p>

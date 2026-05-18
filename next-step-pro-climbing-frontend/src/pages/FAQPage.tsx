@@ -32,19 +32,19 @@ export function FAQPage() {
   }
 
   return (
-    <div className="min-h-screen bg-dark-950">
+    <div className="min-h-screen bg-surface-950">
       <PageHead title="FAQ" description={t('metaDescription')} />
       {/* Hero */}
-      <div className="relative overflow-hidden bg-gradient-to-b from-dark-900 to-dark-950 border-b border-dark-800">
+      <div className="relative overflow-hidden bg-gradient-to-b from-surface-900 to-surface-950 border-b border-surface-800">
         <div className="absolute inset-0 opacity-5">
           <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary-500 rounded-full blur-3xl" />
           <div className="absolute bottom-0 right-1/4 w-64 h-64 bg-primary-700 rounded-full blur-3xl" />
         </div>
         <div className="relative max-w-4xl mx-auto px-4 py-16 sm:py-24 text-center">
-          <h1 className="text-3xl sm:text-4xl font-bold text-dark-100 mb-3">
+          <h1 className="text-3xl sm:text-4xl font-bold text-surface-100 mb-3">
             {t('hero.title')}
           </h1>
-          <p className="text-dark-400 text-lg max-w-xl mx-auto">
+          <p className="text-surface-400 text-lg max-w-xl mx-auto">
             {t('hero.subtitle')}
           </p>
         </div>
@@ -54,7 +54,7 @@ export function FAQPage() {
       <div className="max-w-3xl mx-auto px-4 py-12 sm:py-16 space-y-10">
         {sections.map((section) => (
           <section key={section.title}>
-            <h2 className="text-lg font-semibold text-primary-400 mb-4 pb-2 border-b border-dark-800">
+            <h2 className="text-lg font-semibold text-primary-400 mb-4 pb-2 border-b border-surface-800">
               {section.title}
             </h2>
             <div className="space-y-2">
@@ -64,26 +64,26 @@ export function FAQPage() {
                 return (
                   <div
                     key={key}
-                    className="bg-dark-900 border border-dark-800 rounded-xl overflow-hidden"
+                    className="bg-surface-900 border border-surface-800 rounded-xl overflow-hidden"
                   >
                     <button
                       type="button"
                       onClick={() => toggleItem(key)}
-                      className="w-full flex items-center justify-between gap-4 px-5 py-4 text-left hover:bg-dark-800/50 transition-colors"
+                      className="w-full flex items-center justify-between gap-4 px-5 py-4 text-left hover:bg-surface-800/50 transition-colors"
                     >
-                      <span className="text-dark-100 font-medium text-sm sm:text-base">
+                      <span className="text-surface-100 font-medium text-sm sm:text-base">
                         {item.question}
                       </span>
                       <ChevronDown
                         className={clsx(
-                          'w-4 h-4 shrink-0 text-dark-500 transition-transform duration-200',
+                          'w-4 h-4 shrink-0 text-surface-500 transition-transform duration-200',
                           isOpen && 'rotate-180',
                         )}
                       />
                     </button>
                     {isOpen && (
                       <div className="px-5 pb-5 pt-1">
-                        <p className="text-dark-400 text-sm sm:text-base leading-relaxed">
+                        <p className="text-surface-400 text-sm sm:text-base leading-relaxed">
                           {item.answer}
                         </p>
                       </div>
@@ -96,11 +96,11 @@ export function FAQPage() {
         ))}
 
         {/* CTA */}
-        <div className="bg-dark-900 border border-dark-800 rounded-2xl p-6 sm:p-8 text-center mt-12">
-          <h3 className="text-dark-100 font-semibold text-lg mb-2">
+        <div className="bg-surface-900 border border-surface-800 rounded-2xl p-6 sm:p-8 text-center mt-12">
+          <h3 className="text-surface-100 font-semibold text-lg mb-2">
             {t('cta.title')}
           </h3>
-          <p className="text-dark-400 text-sm mb-4">
+          <p className="text-surface-400 text-sm mb-4">
             {t('cta.subtitle')}
           </p>
           <a

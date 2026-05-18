@@ -57,10 +57,10 @@ export function ConfirmModal({
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div
-        className="absolute inset-0 bg-dark-950/80 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
         onClick={onClose}
       />
-      <div className="relative bg-dark-900 rounded-xl border border-dark-800 shadow-xl max-w-sm w-full mx-4">
+      <div className="relative bg-surface-900 rounded-xl border border-surface-800 shadow-xl max-w-sm w-full mx-4">
         <div className="p-5">
           <div className="flex items-start gap-3 mb-4">
             <div className={`p-2 rounded-lg shrink-0 ${
@@ -71,8 +71,8 @@ export function ConfirmModal({
               <AlertTriangle className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-dark-100">{title}</h3>
-              <p className="text-sm text-dark-400 mt-1">{message}</p>
+              <h3 className="text-lg font-semibold text-surface-100">{title}</h3>
+              <p className="text-sm text-surface-400 mt-1">{message}</p>
             </div>
           </div>
           <div className="flex gap-3 justify-end">

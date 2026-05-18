@@ -34,11 +34,11 @@ export class ErrorBoundary extends Component<Props, State> {
       const t = i18n.t.bind(i18n)
       return (
         <div className="flex flex-col items-center justify-center min-h-[60vh] px-4">
-          <div className="bg-dark-900 rounded-xl p-8 max-w-md w-full border border-dark-800 text-center">
-            <h2 className="text-xl font-bold text-dark-100 mb-2">
+          <div className="bg-surface-900 rounded-xl p-8 max-w-md w-full border border-surface-800 text-center">
+            <h2 className="text-xl font-bold text-surface-100 mb-2">
               {t('boundary.title', { ns: 'errors' })}
             </h2>
-            <p className="text-dark-400 mb-6">
+            <p className="text-surface-400 mb-6">
               {t('boundary.message', { ns: 'errors' })}
             </p>
             <Button

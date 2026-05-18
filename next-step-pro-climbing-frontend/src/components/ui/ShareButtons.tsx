@@ -41,19 +41,19 @@ export function ShareButtons({ title, url: urlProp, description, compact }: { ti
       <div ref={containerRef} className="relative">
         <button
           onClick={() => setOpen(o => !o)}
-          className="flex items-center gap-1.5 text-dark-400 hover:text-dark-200 transition-colors"
+          className="flex items-center gap-1.5 text-surface-400 hover:text-surface-200 transition-colors"
           aria-label="Share"
         >
           <Share2 className="w-4 h-4" />
         </button>
         {open && (
-          <div className="absolute bottom-full right-0 mb-2 flex items-center gap-1 bg-dark-800 border border-dark-700 rounded-lg px-2 py-1.5 shadow-lg animation-fade-in">
+          <div className="absolute bottom-full right-0 mb-2 flex items-center gap-1 bg-surface-800 border border-surface-700 rounded-lg px-2 py-1.5 shadow-lg animation-fade-in">
             <a
               href={`https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`}
               target="_blank"
               rel="noopener noreferrer"
               title="Facebook"
-              className="p-1.5 rounded text-dark-400 hover:text-[#1877F2] hover:bg-dark-700 transition-colors"
+              className="p-1.5 rounded text-surface-400 hover:text-[#1877F2] hover:bg-surface-700 transition-colors"
               aria-label="Facebook"
             >
               <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
@@ -65,7 +65,7 @@ export function ShareButtons({ title, url: urlProp, description, compact }: { ti
               target="_blank"
               rel="noopener noreferrer"
               title="WhatsApp"
-              className="p-1.5 rounded text-dark-400 hover:text-[#25D366] hover:bg-dark-700 transition-colors"
+              className="p-1.5 rounded text-surface-400 hover:text-[#25D366] hover:bg-surface-700 transition-colors"
               aria-label="WhatsApp"
             >
               <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
@@ -75,7 +75,7 @@ export function ShareButtons({ title, url: urlProp, description, compact }: { ti
             <button
               onClick={handleCopy}
               title={copied ? t('news.share.copied') : t('news.share.copy')}
-              className="p-1.5 rounded text-dark-400 hover:text-dark-100 hover:bg-dark-700 transition-colors"
+              className="p-1.5 rounded text-surface-400 hover:text-surface-100 hover:bg-surface-700 transition-colors"
               aria-label={copied ? t('news.share.copied') : t('news.share.copy')}
             >
               {copied ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
@@ -88,13 +88,13 @@ export function ShareButtons({ title, url: urlProp, description, compact }: { ti
 
   return (
     <div className="flex items-center gap-2">
-      <span className="text-xs text-dark-500">{t('news.share.shareOn')}</span>
+      <span className="text-xs text-surface-500">{t('news.share.shareOn')}</span>
       <a
         href={`https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`}
         target="_blank"
         rel="noopener noreferrer"
         title="Facebook"
-        className="p-1.5 rounded text-dark-400 hover:text-[#1877F2] hover:bg-dark-700 transition-colors"
+        className="p-1.5 rounded text-surface-400 hover:text-[#1877F2] hover:bg-surface-700 transition-colors"
         aria-label="Facebook"
       >
         <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
@@ -106,7 +106,7 @@ export function ShareButtons({ title, url: urlProp, description, compact }: { ti
         target="_blank"
         rel="noopener noreferrer"
         title="WhatsApp"
-        className="p-1.5 rounded text-dark-400 hover:text-[#25D366] hover:bg-dark-700 transition-colors"
+        className="p-1.5 rounded text-surface-400 hover:text-[#25D366] hover:bg-surface-700 transition-colors"
         aria-label="WhatsApp"
       >
         <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
@@ -116,7 +116,7 @@ export function ShareButtons({ title, url: urlProp, description, compact }: { ti
       <button
         onClick={handleCopy}
         title={copied ? t('news.share.copied') : t('news.share.copy')}
-        className="p-1.5 rounded text-dark-400 hover:text-dark-100 hover:bg-dark-700 transition-colors"
+        className="p-1.5 rounded text-surface-400 hover:text-surface-100 hover:bg-surface-700 transition-colors"
         aria-label={copied ? t('news.share.copied') : t('news.share.copy')}
       >
         {copied ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}

@@ -33,11 +33,11 @@ export function EventPage() {
   if (error || !event) {
     return (
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="bg-dark-900 rounded-xl border border-dark-800 p-8 text-center">
-          <h2 className="text-xl font-semibold text-dark-100 mb-2">
+        <div className="bg-surface-900 rounded-xl border border-surface-800 p-8 text-center">
+          <h2 className="text-xl font-semibold text-surface-100 mb-2">
             {t('eventPage.notFound')}
           </h2>
-          <p className="text-dark-400 mb-4">
+          <p className="text-surface-400 mb-4">
             {t('eventPage.notFoundDesc')}
           </p>
           <Link to="/calendar">
@@ -52,15 +52,15 @@ export function EventPage() {
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <Link
         to="/calendar"
-        className="inline-flex items-center text-dark-400 hover:text-dark-200 mb-6"
+        className="inline-flex items-center text-surface-400 hover:text-surface-200 mb-6"
       >
         <ArrowLeft className="w-4 h-4 mr-2" />
         {t('eventPage.backToCalendar')}
       </Link>
 
-      <div className="bg-dark-900 rounded-xl border border-dark-800 overflow-hidden">
+      <div className="bg-surface-900 rounded-xl border border-surface-800 overflow-hidden">
         {/* Header */}
-        <div className="p-6 border-b border-dark-800">
+        <div className="p-6 border-b border-surface-800">
           <div className="flex items-center gap-2 mb-2">
             {(() => {
               const color = getEventColorByType(event.eventType)
@@ -71,13 +71,13 @@ export function EventPage() {
               )
             })()}
           </div>
-          <h1 className="text-2xl font-bold text-dark-100">{event.title}</h1>
+          <h1 className="text-2xl font-bold text-surface-100">{event.title}</h1>
         </div>
 
         {/* Details */}
         <div className="p-6 space-y-6">
           {/* Dates */}
-          <div className="flex items-center gap-3 text-dark-300">
+          <div className="flex items-center gap-3 text-surface-300">
             <Calendar className="w-5 h-5" />
             <span>
               {format(new Date(event.startDate), 'd MMMM yyyy', { locale })}
@@ -92,30 +92,30 @@ export function EventPage() {
 
           {/* Location */}
           {event.location && (
-            <div className="flex items-center gap-3 text-dark-300">
+            <div className="flex items-center gap-3 text-surface-300">
               <MapPin className="w-5 h-5" />
               <span>{event.location}</span>
             </div>
           )}
 
           {/* Capacity */}
-          <div className="flex items-center gap-3 text-dark-300">
+          <div className="flex items-center gap-3 text-surface-300">
             <Users className="w-5 h-5" />
             <span>{t('eventPage.maxParticipants', { count: event.maxParticipants })}</span>
           </div>
 
           {/* Description */}
           {event.description && (
-            <div className="pt-4 border-t border-dark-800">
-              <h3 className="text-sm font-medium text-dark-400 mb-2">{t('eventPage.description')}</h3>
-              <p className="text-dark-200 whitespace-pre-wrap">
+            <div className="pt-4 border-t border-surface-800">
+              <h3 className="text-sm font-medium text-surface-400 mb-2">{t('eventPage.description')}</h3>
+              <p className="text-surface-200 whitespace-pre-wrap">
                 {event.description}
               </p>
             </div>
           )}
 
           {/* CTA */}
-          <div className="pt-4 border-t border-dark-800 flex items-center justify-between">
+          <div className="pt-4 border-t border-surface-800 flex items-center justify-between">
             <Link to={`/calendar?date=${event.startDate}`}>
               <Button variant="primary">
                 {t('eventPage.viewSlots')}

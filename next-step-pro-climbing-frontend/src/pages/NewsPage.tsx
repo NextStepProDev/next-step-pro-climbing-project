@@ -118,8 +118,8 @@ export function NewsPage() {
     <div className="container mx-auto px-4 py-8">
       <PageHead title={t('news.title')} description={t('news.metaDescription')} path="/aktualnosci" availableLanguages={['pl', 'en', 'es']} currentLanguage={contentLanguage} />
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-        <h1 className="text-3xl font-bold text-dark-100">{t('news.title')}</h1>
-        <div className="flex items-center gap-1 bg-dark-800 border border-dark-700 rounded-lg p-1">
+        <h1 className="text-3xl font-bold text-surface-100">{t('news.title')}</h1>
+        <div className="flex items-center gap-1 bg-surface-800 border border-surface-700 rounded-lg p-1">
           {COURSE_CONTENT_LANGUAGES.map((lang) => (
             <button
               key={lang.code}
@@ -128,7 +128,7 @@ export function NewsPage() {
                 'px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-150 active:scale-95',
                 contentLanguage === lang.code
                   ? 'bg-primary-500 text-white'
-                  : 'text-dark-400 hover:text-dark-100 hover:bg-dark-700'
+                  : 'text-surface-400 hover:text-surface-100 hover:bg-surface-700'
               )}
             >
               {lang.label}
@@ -150,11 +150,11 @@ export function NewsPage() {
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
             placeholder={t('news.searchPlaceholder')}
-            className="flex-1 px-4 py-2 bg-dark-800 border border-dark-600 rounded-lg text-dark-100 placeholder-dark-400 focus:outline-none focus:border-primary-500 transition-colors"
+            className="flex-1 px-4 py-2 bg-surface-800 border border-surface-600 rounded-lg text-surface-100 placeholder-surface-400 focus:outline-none focus:border-primary-500 transition-colors"
           />
           <button
             type="submit"
-            className="flex items-center gap-2 px-4 py-2 bg-dark-700 hover:bg-dark-600 text-dark-100 rounded-lg transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-surface-700 hover:bg-surface-600 text-surface-100 rounded-lg transition-colors"
           >
             <Search className="h-4 w-4" />
             <span className="hidden sm:inline">{t('news.searchButton')}</span>
@@ -168,7 +168,7 @@ export function NewsPage() {
               'flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors',
               starredOnly
                 ? 'bg-yellow-500/20 border-yellow-500/50 text-yellow-400'
-                : 'bg-dark-800 border-dark-600 text-dark-300 hover:border-primary-500/50 hover:text-dark-100'
+                : 'bg-surface-800 border-surface-600 text-surface-300 hover:border-primary-500/50 hover:text-surface-100'
             )}
           >
             <Star className={clsx('h-4 w-4', starredOnly && 'fill-yellow-400')} />
@@ -180,7 +180,7 @@ export function NewsPage() {
       {isLoading ? (
         <CardSkeleton count={6} columns={3} />
       ) : articles.length === 0 && !isFetching ? (
-        <div className="text-center text-dark-400 py-12">
+        <div className="text-center text-surface-400 py-12">
           {emptyMessage}
         </div>
       ) : (
@@ -190,9 +190,9 @@ export function NewsPage() {
               <div key={article.id} className="relative group scroll-reveal">
                 <Link
                   to={`/aktualnosci/${article.id}`}
-                  className="block card-glass rounded-lg overflow-hidden border border-dark-700/50 hover:border-primary-500/50 hover:-translate-y-0.5 transition-all duration-200"
+                  className="block card-glass rounded-lg overflow-hidden border border-surface-700/50 hover:border-primary-500/50 hover:-translate-y-0.5 transition-all duration-200"
                 >
-                  <div className="aspect-video bg-dark-700 relative overflow-hidden">
+                  <div className="aspect-video bg-surface-700 relative overflow-hidden">
                     {article.thumbnailUrl ? (
                       article.thumbnailFocalPointX != null ? (
                         <img
@@ -221,10 +221,10 @@ export function NewsPage() {
                       )
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">
-                        <Newspaper className="h-16 w-16 text-dark-500" />
+                        <Newspaper className="h-16 w-16 text-surface-500" />
                       </div>
                     )}
-                    <div className="absolute bottom-2 left-2 bg-dark-900/80 px-2 py-1 rounded text-xs text-dark-300">
+                    <div className="absolute bottom-2 left-2 bg-surface-900/80 px-2 py-1 rounded text-xs text-surface-300">
                       {new Date(article.publishedAt).toLocaleDateString('pl-PL', {
                         day: 'numeric',
                         month: 'short',
@@ -234,11 +234,11 @@ export function NewsPage() {
                   </div>
 
                   <div className="p-4">
-                    <h2 className="text-lg font-semibold text-dark-100 group-hover:text-primary-400 transition-colors">
+                    <h2 className="text-lg font-semibold text-surface-100 group-hover:text-primary-400 transition-colors">
                       {article.title}
                     </h2>
                     {article.excerpt && (
-                      <p className="mt-2 text-sm text-dark-300 line-clamp-3"
+                      <p className="mt-2 text-sm text-surface-300 line-clamp-3"
                         dangerouslySetInnerHTML={{ __html: renderRichText(article.excerpt) }} />
                     )}
                   </div>
@@ -251,8 +251,8 @@ export function NewsPage() {
                     className={clsx(
                       'absolute top-2 right-2 p-1.5 rounded-full transition-colors z-10',
                       article.starred
-                        ? 'text-yellow-400 bg-dark-900/80 hover:bg-dark-900'
-                        : 'text-dark-400 bg-dark-900/60 hover:text-yellow-400 hover:bg-dark-900/80'
+                        ? 'text-yellow-400 bg-surface-900/80 hover:bg-surface-900'
+                        : 'text-surface-400 bg-surface-900/60 hover:text-yellow-400 hover:bg-surface-900/80'
                     )}
                   >
                     <Star className={clsx('h-4 w-4', article.starred && 'fill-yellow-400')} />
@@ -267,7 +267,7 @@ export function NewsPage() {
               <button
                 onClick={() => fetchNextPage()}
                 disabled={isFetchingNextPage}
-                className="px-6 py-2 bg-dark-700 hover:bg-dark-600 text-dark-100 rounded-lg transition-colors disabled:opacity-50"
+                className="px-6 py-2 bg-surface-700 hover:bg-surface-600 text-surface-100 rounded-lg transition-colors disabled:opacity-50"
               >
                 {isFetchingNextPage ? <LoadingSpinner /> : t('news.loadMore')}
               </button>

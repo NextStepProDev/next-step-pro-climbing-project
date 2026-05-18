@@ -45,19 +45,19 @@ function SlotButton({
       className={clsx(
         "w-full p-4 rounded-lg border transition-all text-left",
         slot.status === "AVAILABLE" &&
-          "border-dark-700 hover:border-primary-500 hover:bg-dark-800",
+          "border-surface-700 hover:border-primary-500 hover:bg-surface-800",
         slot.status === "FULL" &&
-          "border-dark-700 hover:border-amber-500 hover:bg-dark-800",
+          "border-surface-700 hover:border-amber-500 hover:bg-surface-800",
         slot.status === "BLOCKED" && !isAdmin &&
-          "border-dark-800 bg-dark-900/50 cursor-not-allowed opacity-50",
+          "border-surface-800 bg-surface-900/50 cursor-not-allowed opacity-50",
         slot.status === "BLOCKED" && isAdmin &&
-          "border-dark-800 bg-dark-900/50 opacity-50 hover:opacity-70 hover:border-rose-500/50",
+          "border-surface-800 bg-surface-900/50 opacity-50 hover:opacity-70 hover:border-rose-500/50",
         slot.status === "PAST" && !isAdmin &&
-          "border-dark-800 bg-dark-900/50 cursor-not-allowed opacity-40",
+          "border-surface-800 bg-surface-900/50 cursor-not-allowed opacity-40",
         slot.status === "PAST" && isAdmin &&
-          "border-dark-800 bg-dark-900/50 opacity-40 hover:opacity-60 hover:border-rose-500/50",
+          "border-surface-800 bg-surface-900/50 opacity-40 hover:opacity-60 hover:border-rose-500/50",
         slot.status === "BOOKING_CLOSED" &&
-          "border-dark-700 hover:border-amber-500 hover:bg-dark-800",
+          "border-surface-700 hover:border-amber-500 hover:bg-surface-800",
         isAvailabilityWindow &&
           "border-violet-500/50 bg-violet-500/5 hover:bg-violet-500/10",
         slot.isUserRegistered && "border-primary-500 bg-primary-500/10",
@@ -67,14 +67,14 @@ function SlotButton({
         <div className="flex items-center gap-3">
           {isAvailabilityWindow
             ? <Phone className="w-5 h-5 text-violet-400" />
-            : <Clock className="w-5 h-5 text-dark-400" />
+            : <Clock className="w-5 h-5 text-surface-400" />
           }
           <div>
-            <span className={clsx("font-medium", isAvailabilityWindow ? "text-violet-300" : "text-dark-100")}>
+            <span className={clsx("font-medium", isAvailabilityWindow ? "text-violet-300" : "text-surface-100")}>
               {slot.startTime.slice(0, 5)} - {slot.endTime.slice(0, 5)}
             </span>
             {showTitle && slot.eventTitle && (
-              <p className="text-sm text-dark-300 mt-0.5">{slot.eventTitle}</p>
+              <p className="text-sm text-surface-300 mt-0.5">{slot.eventTitle}</p>
             )}
           </div>
         </div>
@@ -106,7 +106,7 @@ function SlotButton({
             </div>
           )}
           {slot.status === "BLOCKED" && (
-            <span className="px-2 py-1 text-xs font-medium bg-dark-700 text-dark-400 rounded">
+            <span className="px-2 py-1 text-xs font-medium bg-surface-700 text-surface-400 rounded">
               {t('day.blocked')}
             </span>
           )}
@@ -116,7 +116,7 @@ function SlotButton({
             </span>
           )}
           {slot.status === "PAST" && (
-            <span className="px-2 py-1 text-xs font-medium bg-dark-700 text-dark-500 rounded">
+            <span className="px-2 py-1 text-xs font-medium bg-surface-700 text-surface-500 rounded">
               {t('day.past')}
             </span>
           )}
@@ -180,17 +180,17 @@ export function DayView({
   const hasAnyContent = slots.length > 0 || events.length > 0;
 
   return (
-    <div className="bg-dark-900 rounded-xl border border-dark-800 overflow-hidden">
+    <div className="bg-surface-900 rounded-xl border border-surface-800 overflow-hidden">
       {/* Header */}
-      <div className="flex items-center gap-4 p-4 border-b border-dark-800">
+      <div className="flex items-center gap-4 p-4 border-b border-surface-800">
         <button
           onClick={onBack}
-          className="p-2 text-dark-400 hover:text-dark-100 hover:bg-dark-800 rounded-lg transition-colors"
+          className="p-2 text-surface-400 hover:text-surface-100 hover:bg-surface-800 rounded-lg transition-colors"
         >
           <ArrowLeft className="w-5 h-5" />
         </button>
 
-        <h2 className="text-lg font-semibold text-dark-100 capitalize flex-1">
+        <h2 className="text-lg font-semibold text-surface-100 capitalize flex-1">
           {format(dateObj, "EEEE, d MMMM yyyy", { locale })}
         </h2>
 
@@ -198,7 +198,7 @@ export function DayView({
           <button
             onClick={onAddSlot}
             title={t('createSlot.title')}
-            className="p-2 text-dark-400 hover:text-primary-400 hover:bg-dark-800 rounded-lg transition-colors"
+            className="p-2 text-surface-400 hover:text-primary-400 hover:bg-surface-800 rounded-lg transition-colors"
           >
             <Plus className="w-5 h-5" />
           </button>
@@ -208,7 +208,7 @@ export function DayView({
       {/* Content */}
       <div className="p-4 space-y-6">
         {!hasAnyContent ? (
-          <div className="text-center py-8 text-dark-400">
+          <div className="text-center py-8 text-surface-400">
             {t('day.noSlots')}
           </div>
         ) : (
@@ -230,7 +230,7 @@ export function DayView({
                       {event.title}
                     </h3>
                     {event.description && (
-                      <p className="text-sm text-dark-300 mb-3">{event.description}</p>
+                      <p className="text-sm text-surface-300 mb-3">{event.description}</p>
                     )}
                     <div className="p-3 rounded-lg bg-violet-500/10 border border-violet-500/20">
                       <p className="text-sm text-violet-300">{t('contactDay.message')}</p>
@@ -272,7 +272,7 @@ export function DayView({
                         )}
                       </div>
 
-                      <p className="text-sm text-dark-400 mt-1">
+                      <p className="text-sm text-surface-400 mt-1">
                         <span className={badgeClass}>{label}</span>
                         {event.isMultiDay && (
                           <span>
@@ -343,7 +343,7 @@ export function DayView({
                           {event.title}
                         </button>
 
-                        <div className="flex items-center gap-4 mt-1 text-sm text-dark-400">
+                        <div className="flex items-center gap-4 mt-1 text-sm text-surface-400">
                           <span className={`flex items-center gap-1 ${badgeClass}`}>
                             <Users className="w-4 h-4" />
                             {label}

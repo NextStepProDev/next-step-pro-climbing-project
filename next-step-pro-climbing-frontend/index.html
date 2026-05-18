@@ -20,6 +20,13 @@
     <title>Next Step Pro Climbing</title>
   </head>
   <body>
+    <script>
+      (function(){
+        var t = localStorage.getItem('nsp-theme');
+        if (t === 'system' || !t) t = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+        document.documentElement.dataset.theme = t;
+      })();
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

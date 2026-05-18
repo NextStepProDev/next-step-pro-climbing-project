@@ -13,8 +13,8 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
 
     const variants = {
       primary: 'bg-primary-600 text-white hover:bg-primary-700 focus-visible:outline-white',
-      secondary: 'bg-dark-700 text-dark-100 hover:bg-dark-600 focus-visible:outline-dark-300',
-      ghost: 'bg-transparent text-dark-300 hover:bg-dark-800 hover:text-dark-100 focus-visible:outline-dark-400',
+      secondary: 'bg-surface-700 text-surface-100 hover:bg-surface-600 focus-visible:outline-surface-300',
+      ghost: 'bg-transparent text-surface-300 hover:bg-surface-800 hover:text-surface-100 focus-visible:outline-surface-400',
       danger: 'bg-rose-500/15 text-rose-300 hover:bg-rose-500/25 border border-rose-500/20 focus-visible:outline-rose-400',
     }
 

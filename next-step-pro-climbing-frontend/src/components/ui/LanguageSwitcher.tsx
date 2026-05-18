@@ -41,14 +41,14 @@ export function LanguageSwitcher() {
     <div className="relative" ref={ref}>
       <button
         onClick={() => setOpen(!open)}
-        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-dark-300 hover:text-dark-100 hover:bg-dark-800 transition-all duration-150 active:scale-95 text-sm"
+        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-surface-300 hover:text-surface-100 hover:bg-surface-800 transition-all duration-150 active:scale-95 text-sm"
       >
         <Globe className="w-4 h-4" />
         <span className="font-medium">{currentLang.label}</span>
       </button>
 
       {open && (
-        <div className="absolute right-0 mt-1 bg-dark-900 border border-dark-700 rounded-lg shadow-lg shadow-black/30 overflow-hidden z-50">
+        <div className="absolute right-0 mt-1 bg-surface-900 border border-surface-700 rounded-lg shadow-lg shadow-black/30 overflow-hidden z-50">
           {LANGUAGES.map((lang) => (
             <button
               key={lang.code}
@@ -57,7 +57,7 @@ export function LanguageSwitcher() {
                 'w-full px-4 py-2 text-sm text-left transition-all duration-150 active:scale-95',
                 lang.code === i18n.language
                   ? 'bg-primary-500/10 text-primary-400'
-                  : 'text-dark-300 hover:bg-dark-800 hover:text-dark-100',
+                  : 'text-surface-300 hover:bg-surface-800 hover:text-surface-100',
               )}
             >
               {lang.label}

@@ -26,6 +26,13 @@
     "cancel": "Cancelar",
     "success": "La contraseña se ha cambiado"
   },
+  "theme": {
+    "title": "Tema",
+    "description": "Elige el modo de visualización de la aplicación",
+    "dark": "Oscuro",
+    "light": "Claro",
+    "system": "Sistema"
+  },
   "language": {
     "title": "Idioma de la interfaz",
     "description": "Elige el idioma de visualización de la aplicación",

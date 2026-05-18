@@ -87,15 +87,15 @@ export function AdminMailPanel() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-bold text-dark-100">{t('mail.title')}</h2>
-        <p className="text-dark-400 text-sm mt-1">{t('mail.subtitle')}</p>
+        <h2 className="text-xl font-bold text-surface-100">{t('mail.title')}</h2>
+        <p className="text-surface-400 text-sm mt-1">{t('mail.subtitle')}</p>
       </div>
 
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Left: Recipients */}
-        <div className="bg-dark-800 border border-dark-700 rounded-lg p-5 space-y-4">
-          <h3 className="font-semibold text-dark-200">{t('mail.recipientType')}</h3>
+        <div className="bg-surface-800 border border-surface-700 rounded-lg p-5 space-y-4">
+          <h3 className="font-semibold text-surface-200">{t('mail.recipientType')}</h3>
 
           {/* Type selector */}
           <div className="flex flex-wrap gap-3">
@@ -104,7 +104,7 @@ export function AdminMailPanel() {
               className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                 recipientType === 'ALL'
                   ? 'bg-primary-500/20 text-primary-400 border border-primary-500/40'
-                  : 'bg-dark-700 text-dark-300 border border-dark-600 hover:border-dark-500'
+                  : 'bg-surface-700 text-surface-300 border border-surface-600 hover:border-surface-500'
               }`}
             >
               <Users className="w-4 h-4" />
@@ -115,7 +115,7 @@ export function AdminMailPanel() {
               className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                 recipientType === 'NEWSLETTER'
                   ? 'bg-primary-500/20 text-primary-400 border border-primary-500/40'
-                  : 'bg-dark-700 text-dark-300 border border-dark-600 hover:border-dark-500'
+                  : 'bg-surface-700 text-surface-300 border border-surface-600 hover:border-surface-500'
               }`}
             >
               <Mail className="w-4 h-4" />
@@ -126,7 +126,7 @@ export function AdminMailPanel() {
               className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                 recipientType === 'SELECTED'
                   ? 'bg-primary-500/20 text-primary-400 border border-primary-500/40'
-                  : 'bg-dark-700 text-dark-300 border border-dark-600 hover:border-dark-500'
+                  : 'bg-surface-700 text-surface-300 border border-surface-600 hover:border-surface-500'
               }`}
             >
               <User className="w-4 h-4" />
@@ -143,13 +143,13 @@ export function AdminMailPanel() {
                 </p>
               )}
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-dark-400" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-surface-400" />
                 <input
                   type="text"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder={t('mail.searchUsers')}
-                  className="w-full pl-9 pr-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-sm text-dark-200 placeholder-dark-500 focus:outline-none focus:border-primary-500"
+                  className="w-full pl-9 pr-3 py-2 bg-surface-700 border border-surface-600 rounded-lg text-sm text-surface-200 placeholder-surface-500 focus:outline-none focus:border-primary-500"
                 />
               </div>
 
@@ -160,7 +160,7 @@ export function AdminMailPanel() {
               ) : (
                 <div className="max-h-64 overflow-y-auto space-y-1 pr-1">
                   {filteredUsers.length === 0 ? (
-                    <p className="text-dark-500 text-sm text-center py-4">{t('mail.noUsersFound')}</p>
+                    <p className="text-surface-500 text-sm text-center py-4">{t('mail.noUsersFound')}</p>
                   ) : (
                     filteredUsers.map((user) => {
                       const checked = selectedIds.has(user.id)
@@ -171,19 +171,19 @@ export function AdminMailPanel() {
                           className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${
                             checked
                               ? 'bg-primary-500/10 border border-primary-500/30'
-                              : 'hover:bg-dark-700 border border-transparent'
+                              : 'hover:bg-surface-700 border border-transparent'
                           }`}
                         >
                           {checked ? (
                             <CheckSquare className="w-4 h-4 text-primary-400 shrink-0" />
                           ) : (
-                            <Square className="w-4 h-4 text-dark-500 shrink-0" />
+                            <Square className="w-4 h-4 text-surface-500 shrink-0" />
                           )}
                           <div className="min-w-0">
-                            <p className="text-sm text-dark-200 truncate">
+                            <p className="text-sm text-surface-200 truncate">
                               {user.firstName} {user.lastName}
                             </p>
-                            <p className="text-xs text-dark-500 truncate">{user.email}</p>
+                            <p className="text-xs text-surface-500 truncate">{user.email}</p>
                           </div>
                         </button>
                       )
@@ -196,22 +196,22 @@ export function AdminMailPanel() {
         </div>
 
         {/* Right: Compose */}
-        <div className="bg-dark-800 border border-dark-700 rounded-lg p-5 space-y-4">
-          <h3 className="font-semibold text-dark-200">{t('mail.title')}</h3>
+        <div className="bg-surface-800 border border-surface-700 rounded-lg p-5 space-y-4">
+          <h3 className="font-semibold text-surface-200">{t('mail.title')}</h3>
 
           <div>
-            <label className="block text-sm text-dark-400 mb-1">{t('mail.subject')}</label>
+            <label className="block text-sm text-surface-400 mb-1">{t('mail.subject')}</label>
             <input
               type="text"
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
               placeholder={t('mail.subjectPlaceholder')}
-              className="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-sm text-dark-200 placeholder-dark-500 focus:outline-none focus:border-primary-500"
+              className="w-full px-3 py-2 bg-surface-700 border border-surface-600 rounded-lg text-sm text-surface-200 placeholder-surface-500 focus:outline-none focus:border-primary-500"
             />
           </div>
 
           <div>
-            <label className="block text-sm text-dark-400 mb-1">{t('mail.body')}</label>
+            <label className="block text-sm text-surface-400 mb-1">{t('mail.body')}</label>
             <RichTextEditor
               value={body}
               onChange={setBody}

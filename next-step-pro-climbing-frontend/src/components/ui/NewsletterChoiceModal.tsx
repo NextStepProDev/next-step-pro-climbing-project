@@ -25,15 +25,15 @@ export function NewsletterChoiceModal({ onDone }: Props) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
-      <div className="relative bg-dark-900 border border-dark-700 rounded-xl p-6 max-w-sm w-full shadow-2xl">
+      <div className="relative bg-surface-900 border border-surface-700 rounded-xl p-6 max-w-sm w-full shadow-2xl">
         <div className="flex items-center justify-center w-12 h-12 bg-primary-500/15 rounded-full mx-auto mb-4">
           <Mail className="w-6 h-6 text-primary-400" />
         </div>
 
-        <h2 className="text-lg font-semibold text-dark-100 text-center mb-2">
+        <h2 className="text-lg font-semibold text-surface-100 text-center mb-2">
           {t('newsletter.modalTitle')}
         </h2>
-        <p className="text-sm text-dark-400 text-center mb-6 leading-relaxed">
+        <p className="text-sm text-surface-400 text-center mb-6 leading-relaxed">
           {t('newsletter.modalDescription')}
         </p>
 
@@ -49,7 +49,7 @@ export function NewsletterChoiceModal({ onDone }: Props) {
           <button
             onClick={() => handleChoice(false)}
             disabled={loading}
-            className="w-full py-2 text-sm text-dark-400 hover:text-dark-200 transition-colors disabled:opacity-50"
+            className="w-full py-2 text-sm text-surface-400 hover:text-surface-200 transition-colors disabled:opacity-50"
           >
             {t('newsletter.modalNo')}
           </button>

@@ -46,7 +46,7 @@ export function CoursesPage() {
   if (isLoading) {
     return (
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <h1 className="text-3xl font-bold text-dark-100 mb-8">{t('courses.title')}</h1>
+        <h1 className="text-3xl font-bold text-surface-100 mb-8">{t('courses.title')}</h1>
         <AccordionSkeleton count={4} />
       </div>
     )
@@ -64,8 +64,8 @@ export function CoursesPage() {
     <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       <PageHead title={t('courses.title')} description={t('courses.metaDescription')} path="/kursy" availableLanguages={['pl', 'en', 'es']} currentLanguage={contentLanguage} />
       <div className="flex items-center justify-between mb-8">
-        <h1 className="text-3xl font-bold text-dark-100">{t('courses.title')}</h1>
-        <div className="flex items-center gap-1 bg-dark-800 border border-dark-700 rounded-lg p-1">
+        <h1 className="text-3xl font-bold text-surface-100">{t('courses.title')}</h1>
+        <div className="flex items-center gap-1 bg-surface-800 border border-surface-700 rounded-lg p-1">
           {COURSE_CONTENT_LANGUAGES.map((lang) => (
             <button
               key={lang.code}
@@ -74,7 +74,7 @@ export function CoursesPage() {
                 'px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-150 active:scale-95',
                 contentLanguage === lang.code
                   ? 'bg-primary-500 text-white'
-                  : 'text-dark-400 hover:text-dark-100 hover:bg-dark-700'
+                  : 'text-surface-400 hover:text-surface-100 hover:bg-surface-700'
               )}
             >
               {lang.label}
@@ -84,7 +84,7 @@ export function CoursesPage() {
       </div>
 
       {!courses || courses.length === 0 ? (
-        <p className="text-dark-400 text-center py-12">{t('courses.noCourses')}</p>
+        <p className="text-surface-400 text-center py-12">{t('courses.noCourses')}</p>
       ) : (
         <div className="space-y-3">
           {courses.map((course) => (
@@ -120,14 +120,14 @@ function CourseAccordionItem({ course, defaultOpen = false }: { course: CourseSu
   })
 
   return (
-    <div id={`course-${course.id}`} className="card-glass border border-dark-700/50 rounded-lg overflow-hidden scroll-mt-24 hover:border-primary-500/50 hover:-translate-y-0.5 transition-all duration-200">
+    <div id={`course-${course.id}`} className="card-glass border border-surface-700/50 rounded-lg overflow-hidden scroll-mt-24 hover:border-primary-500/50 hover:-translate-y-0.5 transition-all duration-200">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center gap-4 p-4 text-left hover:bg-dark-750 transition-colors"
+        className="w-full flex items-center gap-4 p-4 text-left hover:bg-surface-700 transition-colors"
         aria-expanded={isOpen}
       >
         {/* Miniaturka */}
-        <div className="flex-shrink-0 w-20 h-20 bg-dark-700 rounded-lg overflow-hidden">
+        <div className="flex-shrink-0 w-20 h-20 bg-surface-700 rounded-lg overflow-hidden">
           {course.thumbnailUrl ? (
             <img
               src={course.thumbnailUrl}
@@ -137,23 +137,23 @@ function CourseAccordionItem({ course, defaultOpen = false }: { course: CourseSu
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center">
-              <BookOpen className="h-8 w-8 text-dark-500" />
+              <BookOpen className="h-8 w-8 text-surface-500" />
             </div>
           )}
         </div>
 
         {/* Tytuł + cena */}
         <div className="flex-1 min-w-0">
-          <p className="font-semibold text-dark-100 text-lg leading-snug">{course.title}</p>
+          <p className="font-semibold text-surface-100 text-lg leading-snug">{course.title}</p>
           {course.price && (
-            <p className="text-sm text-dark-400 mt-1 line-clamp-2">{course.price}</p>
+            <p className="text-sm text-surface-400 mt-1 line-clamp-2">{course.price}</p>
           )}
         </div>
 
         {/* Chevron */}
         <ChevronDown
           className={clsx(
-            'flex-shrink-0 h-5 w-5 text-dark-400 transition-transform duration-200',
+            'flex-shrink-0 h-5 w-5 text-surface-400 transition-transform duration-200',
             isOpen && 'rotate-180'
           )}
         />
@@ -161,7 +161,7 @@ function CourseAccordionItem({ course, defaultOpen = false }: { course: CourseSu
 
       {/* Rozwinięta treść */}
       {isOpen && (
-        <div className="border-t border-dark-700 px-6 py-6 space-y-8">
+        <div className="border-t border-surface-700 px-6 py-6 space-y-8">
           {isLoading ? (
             <div className="flex justify-center py-8">
               <LoadingSpinner />

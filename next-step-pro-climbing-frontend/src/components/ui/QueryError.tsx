@@ -12,11 +12,11 @@ export function QueryError({ error, onRetry }: QueryErrorProps) {
   const { t } = useTranslation('errors')
 
   return (
-    <div className="bg-dark-900 rounded-xl border border-dark-800 p-8 text-center">
-      <h2 className="text-lg font-semibold text-dark-100 mb-2">
+    <div className="bg-surface-900 rounded-xl border border-surface-800 p-8 text-center">
+      <h2 className="text-lg font-semibold text-surface-100 mb-2">
         {t('queryError.title')}
       </h2>
-      <p className="text-dark-400 mb-4">
+      <p className="text-surface-400 mb-4">
         {getErrorMessage(error)}
       </p>
       {onRetry && (

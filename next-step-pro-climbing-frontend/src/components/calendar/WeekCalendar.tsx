@@ -55,15 +55,15 @@ function getSlotColors(status: string): string {
     case 'FULL':
       return 'bg-amber-600/30 border-amber-500/50 text-amber-300'
     case 'BLOCKED':
-      return 'bg-dark-700/50 border-dark-600/50 text-dark-400'
+      return 'bg-surface-700/50 border-surface-600/50 text-surface-400'
     case 'BOOKING_CLOSED':
-      return 'bg-dark-700/40 border-dark-600/40 text-dark-400'
+      return 'bg-surface-700/40 border-surface-600/40 text-surface-400'
     case 'PAST':
-      return 'bg-dark-800/30 border-dark-700/30 text-dark-500'
+      return 'bg-surface-800/30 border-surface-700/30 text-surface-500'
     case 'AVAILABILITY_WINDOW':
       return 'bg-violet-600/30 border-violet-500/50 text-violet-300 hover:bg-violet-600/40'
     default:
-      return 'bg-dark-700/50 border-dark-600/50 text-dark-400'
+      return 'bg-surface-700/50 border-surface-600/50 text-surface-400'
   }
 }
 
@@ -176,18 +176,18 @@ export function WeekCalendar({
   const inPasteMode = inCutMode || inCopyMode
 
   return (
-    <div className="bg-dark-900 rounded-xl border border-dark-800 overflow-hidden">
+    <div className="bg-surface-900 rounded-xl border border-surface-800 overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-dark-800">
+      <div className="flex items-center justify-between p-4 border-b border-surface-800">
         <button
           onClick={onPrevWeek}
-          className="p-2 text-dark-400 hover:text-dark-100 hover:bg-dark-800 rounded-lg transition-colors"
+          className="p-2 text-surface-400 hover:text-surface-100 hover:bg-surface-800 rounded-lg transition-colors"
         >
           <ChevronLeft className="w-5 h-5" />
         </button>
 
         <div className="flex items-center gap-3">
-          <h2 className="text-lg font-semibold text-dark-100">
+          <h2 className="text-lg font-semibold text-surface-100">
             {format(start, 'd MMM', { locale })} - {format(end, 'd MMM yyyy', { locale })}
           </h2>
           <button
@@ -200,7 +200,7 @@ export function WeekCalendar({
 
         <button
           onClick={onNextWeek}
-          className="p-2 text-dark-400 hover:text-dark-100 hover:bg-dark-800 rounded-lg transition-colors"
+          className="p-2 text-surface-400 hover:text-surface-100 hover:bg-surface-800 rounded-lg transition-colors"
         >
           <ChevronRight className="w-5 h-5" />
         </button>
@@ -210,7 +210,7 @@ export function WeekCalendar({
       <div ref={scrollRef} className="overflow-x-auto">
         <div className="min-w-[900px]">
           {/* Column headers */}
-          <div className="grid border-b border-dark-800" style={{ gridTemplateColumns: '60px repeat(7, 1fr)' }}>
+          <div className="grid border-b border-surface-800" style={{ gridTemplateColumns: '60px repeat(7, 1fr)' }}>
             <div className="py-2" />
             {days.map((day, i) => {
               const date = new Date(day.date)
@@ -222,16 +222,16 @@ export function WeekCalendar({
                   key={day.date}
                   onClick={() => onDayClick(day.date)}
                   className={clsx(
-                    'py-2 text-center border-l border-dark-800 transition-colors',
+                    'py-2 text-center border-l border-surface-800 transition-colors',
                     today && 'bg-primary-500/10',
                     past && 'opacity-50',
-                    !past && 'hover:bg-dark-800/50 cursor-pointer',
+                    !past && 'hover:bg-surface-800/50 cursor-pointer',
                   )}
                 >
-                  <div className="text-xs text-dark-500 font-medium">{weekdays[i]}</div>
+                  <div className="text-xs text-surface-500 font-medium">{weekdays[i]}</div>
                   <div className={clsx(
                     'text-sm font-semibold',
-                    today ? 'text-primary-400' : 'text-dark-200',
+                    today ? 'text-primary-400' : 'text-surface-200',
                   )}>
                     {format(date, 'd')}
                   </div>
@@ -251,16 +251,16 @@ export function WeekCalendar({
           {/* Time grid */}
           <div className="relative grid" style={{ gridTemplateColumns: '60px repeat(7, 1fr)' }}>
             {/* Hour labels (sticky left) */}
-            <div className="sticky left-0 z-10 bg-dark-900">
+            <div className="sticky left-0 z-10 bg-surface-900">
               {hours.map((hour) => (
                 <div
                   key={hour}
-                  className="relative border-b border-dark-600/50 text-right pr-2 text-xs text-dark-500"
+                  className="relative border-b border-surface-600/50 text-right pr-2 text-xs text-surface-500"
                   style={{ height: HOUR_HEIGHT }}
                 >
                   <span className="relative -top-2">{`${hour}:00`}</span>
                   {/* Half-hour tick */}
-                  <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] text-dark-600">·</span>
+                  <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] text-surface-600">·</span>
                 </div>
               ))}
             </div>
@@ -277,7 +277,7 @@ export function WeekCalendar({
                   key={day.date}
                   ref={(el) => { dayColumnRefs.current[dayIndex] = el }}
                   className={clsx(
-                    'relative border-l border-dark-800',
+                    'relative border-l border-surface-800',
                     today && 'bg-primary-500/5',
                     past && 'opacity-40',
                     inPasteMode && !past && 'cursor-crosshair',
@@ -296,11 +296,11 @@ export function WeekCalendar({
                   {hours.map((hour) => (
                     <div
                       key={hour}
-                      className="absolute w-full border-b border-dark-600/50"
+                      className="absolute w-full border-b border-surface-600/50"
                       style={{ top: (hour - START_HOUR) * HOUR_HEIGHT, height: HOUR_HEIGHT }}
                     >
                       {/* Half-hour line */}
-                      <div className="absolute w-full border-b border-dark-700/40" style={{ top: '50%' }} />
+                      <div className="absolute w-full border-b border-surface-700/40" style={{ top: '50%' }} />
                     </div>
                   ))}
 
@@ -420,7 +420,7 @@ export function WeekCalendar({
                                   <button
                                     data-admin-action
                                     onClick={(e) => { e.stopPropagation(); onNotifyParticipants(slot.id) }}
-                                    className="p-0.5 rounded bg-dark-900/70 text-dark-300 hover:text-amber-300 transition-colors"
+                                    className="p-0.5 rounded bg-surface-900/70 text-surface-300 hover:text-amber-300 transition-colors"
                                     title="Powiadom uczestników"
                                   >
                                     <Bell className="w-2.5 h-2.5" />
@@ -430,7 +430,7 @@ export function WeekCalendar({
                                   <button
                                     data-admin-action
                                     onClick={(e) => { e.stopPropagation(); onSlotCopy(slot, day.date) }}
-                                    className="p-0.5 rounded bg-dark-900/70 text-dark-300 hover:text-primary-300 transition-colors"
+                                    className="p-0.5 rounded bg-surface-900/70 text-surface-300 hover:text-primary-300 transition-colors"
                                     title="Kopiuj slot"
                                   >
                                     <Copy className="w-2.5 h-2.5" />
@@ -440,7 +440,7 @@ export function WeekCalendar({
                                   <button
                                     data-admin-action
                                     onClick={(e) => { e.stopPropagation(); onSlotCut(slot, day.date) }}
-                                    className="p-0.5 rounded bg-dark-900/70 text-dark-300 hover:text-amber-300 transition-colors"
+                                    className="p-0.5 rounded bg-surface-900/70 text-surface-300 hover:text-amber-300 transition-colors"
                                     title="Wytnij slot"
                                   >
                                     <Scissors className="w-2.5 h-2.5" />

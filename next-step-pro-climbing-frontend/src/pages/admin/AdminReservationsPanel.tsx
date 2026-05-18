@@ -102,12 +102,12 @@ export function AdminReservationsPanel() {
     <div className="space-y-6">
       {/* Upcoming */}
       {!hasUpcoming ? (
-        <div className="bg-dark-900 rounded-lg border border-dark-800 p-8 text-center text-dark-400">
+        <div className="bg-surface-900 rounded-lg border border-surface-800 p-8 text-center text-surface-400">
           {t('reservations.noUpcoming')}
         </div>
       ) : (
         <>
-          <p className="text-sm text-dark-400">
+          <p className="text-sm text-surface-400">
             {t('reservations.allUpcoming', { count: totalCount })}
           </p>
           <ReservationList sortedDates={sortedDates} grouped={grouped} />
@@ -118,7 +118,7 @@ export function AdminReservationsPanel() {
       <div>
         <button
           onClick={() => setShowArchive(!showArchive)}
-          className="flex items-center gap-2 text-sm text-dark-500 hover:text-dark-300 transition-colors mb-3"
+          className="flex items-center gap-2 text-sm text-surface-500 hover:text-surface-300 transition-colors mb-3"
         >
           {showArchive ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
           {t('reservations.archive')}
@@ -137,7 +137,7 @@ export function AdminReservationsPanel() {
               </div>
             )}
             {pastReservations && pastReservations.length === 0 && (
-              <p className="text-dark-500 text-sm">{t('reservations.noPast')}</p>
+              <p className="text-surface-500 text-sm">{t('reservations.noPast')}</p>
             )}
             {pastReservations && pastReservations.length > 0 && (
               <PastReservationList reservations={pastReservations} />
@@ -166,7 +166,7 @@ function PastReservationList({ reservations }: { reservations: ReservationAdmin[
 
   return (
     <div className="space-y-6 opacity-60">
-      <p className="text-sm text-dark-400">
+      <p className="text-sm text-surface-400">
         {t('reservations.pastReservations', { count: reservations.length })}
         {totalPages > 1 && ` · ${t('reservations.pageInfo', { page: safePage, total: totalPages, count: totalCount })}`}
       </p>
@@ -174,24 +174,24 @@ function PastReservationList({ reservations }: { reservations: ReservationAdmin[
 
       {totalPages > 1 && (
         <div className="flex items-center justify-between pt-2">
-          <span className="text-sm text-dark-500">
+          <span className="text-sm text-surface-500">
             {t('reservations.totalItems', { count: reservations.length })}
           </span>
           <div className="flex items-center gap-2">
             <button
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={safePage <= 1}
-              className="p-2 text-dark-400 hover:text-dark-100 hover:bg-dark-800 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+              className="p-2 text-surface-400 hover:text-surface-100 hover:bg-surface-800 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
-            <span className="text-sm text-dark-300 min-w-[80px] text-center">
+            <span className="text-sm text-surface-300 min-w-[80px] text-center">
               {safePage} / {totalPages}
             </span>
             <button
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               disabled={safePage >= totalPages}
-              className="p-2 text-dark-400 hover:text-dark-100 hover:bg-dark-800 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+              className="p-2 text-surface-400 hover:text-surface-100 hover:bg-surface-800 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
             >
               <ChevronRight className="w-4 h-4" />
             </button>
@@ -240,9 +240,9 @@ function EventReservationCard({ group }: { group: EventGroup }) {
   const [expanded, setExpanded] = useState(false)
 
   return (
-    <div className="bg-dark-900 rounded-lg border border-dark-800 p-4">
+    <div className="bg-surface-900 rounded-lg border border-surface-800 p-4">
       <div className="flex items-center gap-3 flex-wrap">
-        <span className="font-medium text-dark-100">{group.title}</span>
+        <span className="font-medium text-surface-100">{group.title}</span>
         <span className="text-xs bg-primary-500/10 text-primary-400 px-2 py-0.5 rounded">
           {format(new Date(group.eventStartDate), 'dd.MM')} - {format(new Date(group.eventEndDate), 'dd.MM.yyyy')}
         </span>
@@ -250,7 +250,7 @@ function EventReservationCard({ group }: { group: EventGroup }) {
 
       <button
         onClick={() => setExpanded(!expanded)}
-        className="flex items-center gap-1.5 mt-2 text-sm text-dark-400 hover:text-dark-200 transition-colors"
+        className="flex items-center gap-1.5 mt-2 text-sm text-surface-400 hover:text-surface-200 transition-colors"
       >
         {expanded ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
         <Users className="w-3.5 h-3.5" />
@@ -260,9 +260,9 @@ function EventReservationCard({ group }: { group: EventGroup }) {
       {expanded && (
         <div className="mt-2 ml-1 space-y-2">
           {group.reservations.map((r) => (
-            <div key={r.id} className="bg-dark-800/50 rounded-lg px-3 py-2 text-sm">
-              <div className="font-medium text-dark-200">{r.userFullName}</div>
-              <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-dark-400 text-xs mt-0.5">
+            <div key={r.id} className="bg-surface-800/50 rounded-lg px-3 py-2 text-sm">
+              <div className="font-medium text-surface-200">{r.userFullName}</div>
+              <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-surface-400 text-xs mt-0.5">
                 <span className="inline-flex items-center gap-1">
                   <Mail className="w-3 h-3" />
                   {r.userEmail}
@@ -276,7 +276,7 @@ function EventReservationCard({ group }: { group: EventGroup }) {
                 )}
               </div>
               {r.comment && (
-                <div className="text-dark-500 text-xs mt-1">"{r.comment}"</div>
+                <div className="text-surface-500 text-xs mt-1">"{r.comment}"</div>
               )}
             </div>
           ))}
@@ -289,17 +289,17 @@ function EventReservationCard({ group }: { group: EventGroup }) {
 function SlotReservationCard({ r }: { r: ReservationAdmin }) {
   const { t } = useTranslation('admin')
   return (
-    <div className="bg-dark-900 rounded-lg border border-dark-800 p-4 flex items-start justify-between gap-4">
+    <div className="bg-surface-900 rounded-lg border border-surface-800 p-4 flex items-start justify-between gap-4">
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-3 flex-wrap">
-          <span className="font-medium text-dark-100">{r.userFullName}</span>
+          <span className="font-medium text-surface-100">{r.userFullName}</span>
           {r.title && (
             <span className="text-xs bg-primary-500/10 text-primary-400 px-2 py-0.5 rounded">
               {r.title}
             </span>
           )}
         </div>
-        <div className="text-sm text-dark-400 mt-1">
+        <div className="text-sm text-surface-400 mt-1">
           {r.userEmail} | {r.userPhone}
         </div>
         {r.participants > 1 && (
@@ -312,7 +312,7 @@ function SlotReservationCard({ r }: { r: ReservationAdmin }) {
         )}
       </div>
       <div className="text-right shrink-0">
-        <div className="text-dark-200 font-medium">
+        <div className="text-surface-200 font-medium">
           {r.startTime.slice(0, 5)} - {r.endTime.slice(0, 5)}
         </div>
       </div>

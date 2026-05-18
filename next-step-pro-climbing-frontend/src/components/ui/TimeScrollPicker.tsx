@@ -32,15 +32,15 @@ export function TimeScrollPicker({ value, onChange, label }: TimeScrollPickerPro
 
   return (
     <div>
-      {label && <label className="block text-sm text-dark-400 mb-1">{label}</label>}
-      <div className="flex items-center gap-1 bg-dark-800 border border-dark-700 rounded-lg p-2">
+      {label && <label className="block text-sm text-surface-400 mb-1">{label}</label>}
+      <div className="flex items-center gap-1 bg-surface-800 border border-surface-700 rounded-lg p-2">
         <ScrollColumn
           items={HOURS}
           selectedIndex={hour}
           onChange={handleHourChange}
           formatItem={(v) => String(v).padStart(2, '0')}
         />
-        <span className="text-dark-300 text-xl font-bold px-1">:</span>
+        <span className="text-surface-300 text-xl font-bold px-1">:</span>
         <ScrollColumn
           items={MINUTES}
           selectedIndex={MINUTES.indexOf(minute)}
@@ -132,8 +132,8 @@ function ScrollColumn({
             }}
             className={`flex items-center justify-center cursor-pointer transition-all ${
               idx === selectedIndex
-                ? 'text-dark-100 font-bold text-lg'
-                : 'text-dark-500 text-base'
+                ? 'text-surface-100 font-bold text-lg'
+                : 'text-surface-500 text-base'
             }`}
             style={{
               height: ITEM_HEIGHT,

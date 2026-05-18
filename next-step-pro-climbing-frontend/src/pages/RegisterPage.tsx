@@ -6,10 +6,13 @@ import { validatePassword, validatePhone, validateName } from '../utils/validati
 import { getErrorMessage } from '../utils/errors'
 import { Button } from '../components/ui/Button'
 import { SuccessCheckmark } from '../components/ui/SuccessCheckmark'
+import { useTheme } from '../context/ThemeContext'
 import logoWhite from '../assets/logo/logo-white.png'
+import logoBlack from '../assets/logo/logo-black.png'
 
 export function RegisterPage() {
   const { t, i18n } = useTranslation('auth')
+  const { theme } = useTheme()
   const [form, setForm] = useState({
     email: '',
     password: '',
@@ -79,14 +82,14 @@ export function RegisterPage() {
   if (success) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] px-4">
-        <div className="bg-dark-900 rounded-xl p-8 max-w-md w-full border border-dark-800 text-center">
+        <div className="bg-surface-900 rounded-xl p-8 max-w-md w-full border border-surface-800 text-center">
           <div className="w-12 h-12 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
             <svg className="w-6 h-6 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
             </svg>
           </div>
-          <h2 className="text-xl font-bold text-dark-100 mb-2">{t('register.successTitle')}</h2>
-          <p className="text-dark-400 mb-6">
+          <h2 className="text-xl font-bold text-surface-100 mb-2">{t('register.successTitle')}</h2>
+          <p className="text-surface-400 mb-6">
             {t('register.successMessage')}
           </p>
           <Link
@@ -102,16 +105,16 @@ export function RegisterPage() {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] px-4 py-8">
-      <div className="bg-dark-900 rounded-xl p-8 max-w-md w-full border border-dark-800">
+      <div className="bg-surface-900 rounded-xl p-8 max-w-md w-full border border-surface-800">
         <div className="text-center mb-6">
-          <img src={logoWhite} alt="Next Step Pro Climbing" className="h-16 mx-auto mb-4" />
-          <h1 className="text-2xl font-bold text-dark-100">{t('register.title')}</h1>
+          <img src={theme === 'dark' ? logoWhite : logoBlack} alt="Next Step Pro Climbing" className="h-16 mx-auto mb-4" />
+          <h1 className="text-2xl font-bold text-surface-100">{t('register.title')}</h1>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label htmlFor="firstName" className="block text-sm font-medium text-dark-300 mb-1">
+              <label htmlFor="firstName" className="block text-sm font-medium text-surface-300 mb-1">
                 {t('register.firstName')}
               </label>
               <input
@@ -121,12 +124,12 @@ export function RegisterPage() {
                 minLength={3}
                 value={form.firstName}
                 onChange={(e) => { updateField('firstName', e.target.value); setFirstNameError(null) }}
-                className="w-full px-3 py-2 bg-dark-800 border border-dark-700 rounded-lg text-dark-100 placeholder-dark-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                className="w-full px-3 py-2 bg-surface-800 border border-surface-700 rounded-lg text-surface-100 placeholder-surface-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               />
               {firstNameError && <p className="text-xs text-rose-400/80 mt-1">{firstNameError}</p>}
             </div>
             <div>
-              <label htmlFor="lastName" className="block text-sm font-medium text-dark-300 mb-1">
+              <label htmlFor="lastName" className="block text-sm font-medium text-surface-300 mb-1">
                 {t('register.lastName')}
               </label>
               <input
@@ -136,14 +139,14 @@ export function RegisterPage() {
                 minLength={3}
                 value={form.lastName}
                 onChange={(e) => { updateField('lastName', e.target.value); setLastNameError(null) }}
-                className="w-full px-3 py-2 bg-dark-800 border border-dark-700 rounded-lg text-dark-100 placeholder-dark-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                className="w-full px-3 py-2 bg-surface-800 border border-surface-700 rounded-lg text-surface-100 placeholder-surface-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               />
               {lastNameError && <p className="text-xs text-rose-400/80 mt-1">{lastNameError}</p>}
             </div>
           </div>
 
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-dark-300 mb-1">
+            <label htmlFor="email" className="block text-sm font-medium text-surface-300 mb-1">
               {t('register.email')}
             </label>
             <input
@@ -152,13 +155,13 @@ export function RegisterPage() {
               required
               value={form.email}
               onChange={(e) => updateField('email', e.target.value)}
-              className="w-full px-3 py-2 bg-dark-800 border border-dark-700 rounded-lg text-dark-100 placeholder-dark-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              className="w-full px-3 py-2 bg-surface-800 border border-surface-700 rounded-lg text-surface-100 placeholder-surface-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               placeholder={t('register.emailPlaceholder')}
             />
           </div>
 
           <div>
-            <label htmlFor="phone" className="block text-sm font-medium text-dark-300 mb-1">
+            <label htmlFor="phone" className="block text-sm font-medium text-surface-300 mb-1">
               {t('register.phone')}
             </label>
             <input
@@ -167,14 +170,14 @@ export function RegisterPage() {
               required
               value={form.phone}
               onChange={(e) => { updateField('phone', e.target.value); setPhoneError(null) }}
-              className="w-full px-3 py-2 bg-dark-800 border border-dark-700 rounded-lg text-dark-100 placeholder-dark-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              className="w-full px-3 py-2 bg-surface-800 border border-surface-700 rounded-lg text-surface-100 placeholder-surface-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               placeholder={t('register.phonePlaceholder')}
             />
             {phoneError && <p className="text-xs text-rose-400/80 mt-1">{phoneError}</p>}
           </div>
 
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-dark-300 mb-1">
+            <label htmlFor="password" className="block text-sm font-medium text-surface-300 mb-1">
               {t('register.password')}
             </label>
             <input
@@ -184,15 +187,15 @@ export function RegisterPage() {
               minLength={8}
               value={form.password}
               onChange={(e) => updateField('password', e.target.value)}
-              className="w-full px-3 py-2 bg-dark-800 border border-dark-700 rounded-lg text-dark-100 placeholder-dark-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              className="w-full px-3 py-2 bg-surface-800 border border-surface-700 rounded-lg text-surface-100 placeholder-surface-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             />
-            <p className="text-xs text-dark-500 mt-1">
+            <p className="text-xs text-surface-500 mt-1">
               {t('register.passwordHint')}
             </p>
           </div>
 
           <div>
-            <label htmlFor="confirmPassword" className="block text-sm font-medium text-dark-300 mb-1">
+            <label htmlFor="confirmPassword" className="block text-sm font-medium text-surface-300 mb-1">
               {t('register.confirmPassword')}
             </label>
             <input
@@ -201,7 +204,7 @@ export function RegisterPage() {
               required
               value={form.confirmPassword}
               onChange={(e) => updateField('confirmPassword', e.target.value)}
-              className="w-full px-3 py-2 bg-dark-800 border border-dark-700 rounded-lg text-dark-100 placeholder-dark-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              className="w-full px-3 py-2 bg-surface-800 border border-surface-700 rounded-lg text-surface-100 placeholder-surface-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             />
           </div>
 
@@ -210,11 +213,11 @@ export function RegisterPage() {
               type="checkbox"
               checked={newsletterSubscribed}
               onChange={(e) => setNewsletterSubscribed(e.target.checked)}
-              className="mt-0.5 w-4 h-4 rounded border-dark-600 bg-dark-800 text-primary-500 focus:ring-primary-500 focus:ring-offset-0 flex-shrink-0"
+              className="mt-0.5 w-4 h-4 rounded border-surface-600 bg-surface-800 text-primary-500 focus:ring-primary-500 focus:ring-offset-0 flex-shrink-0"
             />
-            <span className="text-sm text-dark-300">
+            <span className="text-sm text-surface-300">
               {t('register.newsletter')}
-              <span className="block text-xs text-dark-500 mt-0.5">{t('register.newsletterHint')}</span>
+              <span className="block text-xs text-surface-500 mt-0.5">{t('register.newsletterHint')}</span>
             </span>
           </label>
 
@@ -226,10 +229,10 @@ export function RegisterPage() {
             {t('register.submit')}
           </Button>
 
-          <p className="text-center text-xs text-dark-500">
+          <p className="text-center text-xs text-surface-500">
             <Trans i18nKey="register.privacyNotice" ns="auth">
               Rejestrując się, akceptujesz naszą{' '}
-              <Link to="/polityka-prywatnosci" className="text-dark-400 hover:text-primary-400 underline transition-colors">
+              <Link to="/polityka-prywatnosci" className="text-surface-400 hover:text-primary-400 underline transition-colors">
                 Politykę prywatności
               </Link>
               .
@@ -239,10 +242,10 @@ export function RegisterPage() {
 
         <div className="relative my-6">
           <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-dark-700" />
+            <div className="w-full border-t border-surface-700" />
           </div>
           <div className="relative flex justify-center text-sm">
-            <span className="bg-dark-900 px-2 text-dark-500">{t('oauth.divider')}</span>
+            <span className="bg-surface-900 px-2 text-surface-500">{t('oauth.divider')}</span>
           </div>
         </div>
 
@@ -271,7 +274,7 @@ export function RegisterPage() {
           {t('oauth.google')}
         </a>
 
-        <p className="mt-6 text-center text-sm text-dark-400">
+        <p className="mt-6 text-center text-sm text-surface-400">
           {t('register.hasAccount')}{' '}
           <Link to="/login" className="text-primary-400 hover:text-primary-300">
             {t('register.login')}

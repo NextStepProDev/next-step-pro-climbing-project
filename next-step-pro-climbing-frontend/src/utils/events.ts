@@ -119,7 +119,7 @@ export function pluralizeTraining(n: number): string {
 
 export function formatAvailability(event: EventSummary) {
   if (!event.enrollmentOpen) {
-    return { label: i18n.t('availability.closed', { ns: 'calendar' }), badgeClass: "bg-dark-700 text-dark-400" };
+    return { label: i18n.t('availability.closed', { ns: 'calendar' }), badgeClass: "bg-surface-700 text-surface-400" };
   }
 
   const free = event.maxParticipants - event.currentParticipants;

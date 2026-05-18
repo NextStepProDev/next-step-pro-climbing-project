@@ -1,17 +1,20 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { ChevronDown, LogOut, Menu, User, X } from "lucide-react";
+import { ChevronDown, LogOut, Menu, Moon, Sun, User, X } from "lucide-react";
 import { useState, useRef, useEffect, useLayoutEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../../context/AuthContext";
+import { useTheme } from "../../context/ThemeContext";
 import { Button } from "../ui/Button";
 import { SuccessCheckmark } from "../ui/SuccessCheckmark";
 import { LanguageSwitcher } from "../ui/LanguageSwitcher";
 import clsx from "clsx";
 import logoWhite from "../../assets/logo/logo-white.png";
+import logoBlack from "../../assets/logo/logo-black.png";
 
 export function Navbar() {
   const { t } = useTranslation('common');
   const { user, isAuthenticated, isAdmin, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -139,7 +142,7 @@ export function Navbar() {
   return (
     <>
     {showLogoutSuccess && <SuccessCheckmark onDone={() => { setShowLogoutSuccess(false); logout(); }} />}
-    <nav className={clsx("bg-dark-900/80 backdrop-blur-sm border-b border-dark-800 sticky top-0 z-50 transition-transform duration-300", navHidden && !mobileMenuOpen && "-translate-y-full")}>
+    <nav className={clsx("bg-surface-900/80 backdrop-blur-sm border-b border-surface-800 sticky top-0 z-50 transition-transform duration-300", navHidden && !mobileMenuOpen && "-translate-y-full")}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-18">
           {/* Logo */}
@@ -148,7 +151,7 @@ export function Navbar() {
             className="flex items-center hover:opacity-80 transition-opacity"
           >
             <img
-              src={logoWhite}
+              src={theme === 'dark' ? logoWhite : logoBlack}
               alt="Next Step Pro Climbing"
               className="h-10 cursor-pointer"
             />
@@ -170,8 +173,8 @@ export function Navbar() {
                 className={clsx(
                   "px-3 py-1.5 rounded-lg text-base font-semibold tracking-wide transition-all duration-150 active:scale-95",
                   isLinkActive(link.to)
-                    ? "text-dark-100"
-                    : "text-dark-400 hover:bg-dark-800/60 hover:text-dark-200",
+                    ? "text-surface-100"
+                    : "text-surface-400 hover:bg-surface-800/60 hover:text-surface-200",
                 )}
               >
                 {link.label}
@@ -186,8 +189,8 @@ export function Navbar() {
                 className={clsx(
                   "flex items-center gap-1 px-3 py-1.5 rounded-lg text-base font-semibold tracking-wide transition-all duration-150 active:scale-95",
                   isTeamActive
-                    ? "text-dark-100"
-                    : "text-dark-400 hover:bg-dark-800/60 hover:text-dark-200",
+                    ? "text-surface-100"
+                    : "text-surface-400 hover:bg-surface-800/60 hover:text-surface-200",
                 )}
               >
                 {t('nav.team')}
@@ -200,7 +203,7 @@ export function Navbar() {
               </button>
 
               {teamMenuOpen && (
-                <div className="absolute left-0 mt-2 w-40 bg-dark-900 border border-dark-700 rounded-xl shadow-lg shadow-black/30 overflow-hidden">
+                <div className="absolute left-0 mt-2 w-40 bg-surface-900 border border-surface-700 rounded-xl shadow-lg shadow-black/30 overflow-hidden">
                   <div className="py-1">
                     {teamLinks.map((link) => (
                       <Link
@@ -210,8 +213,8 @@ export function Navbar() {
                         className={clsx(
                           "block px-4 py-2.5 text-sm transition-all duration-150 active:scale-95",
                           isLinkActive(link.to)
-                            ? "text-dark-100 bg-dark-800"
-                            : "text-dark-300 hover:bg-dark-800 hover:text-dark-100",
+                            ? "text-surface-100 bg-surface-800"
+                            : "text-surface-300 hover:bg-surface-800 hover:text-surface-100",
                         )}
                       >
                         {link.label}
@@ -230,8 +233,8 @@ export function Navbar() {
                 className={clsx(
                   "flex items-center gap-1 px-3 py-1.5 rounded-lg text-base font-semibold tracking-wide transition-all duration-150 active:scale-95",
                   isMediaActive
-                    ? "text-dark-100"
-                    : "text-dark-400 hover:bg-dark-800/60 hover:text-dark-200",
+                    ? "text-surface-100"
+                    : "text-surface-400 hover:bg-surface-800/60 hover:text-surface-200",
                 )}
               >
                 {t('nav.media')}
@@ -244,7 +247,7 @@ export function Navbar() {
               </button>
 
               {mediaMenuOpen && (
-                <div className="absolute left-0 mt-2 w-40 bg-dark-900 border border-dark-700 rounded-xl shadow-lg shadow-black/30 overflow-hidden">
+                <div className="absolute left-0 mt-2 w-40 bg-surface-900 border border-surface-700 rounded-xl shadow-lg shadow-black/30 overflow-hidden">
                   <div className="py-1">
                     {mediaLinks.map((link) => (
                       <Link
@@ -254,8 +257,8 @@ export function Navbar() {
                         className={clsx(
                           "block px-4 py-2.5 text-sm transition-all duration-150 active:scale-95",
                           isLinkActive(link.to)
-                            ? "text-dark-100 bg-dark-800"
-                            : "text-dark-300 hover:bg-dark-800 hover:text-dark-100",
+                            ? "text-surface-100 bg-surface-800"
+                            : "text-surface-300 hover:bg-surface-800 hover:text-surface-100",
                         )}
                       >
                         {link.label}
@@ -274,8 +277,8 @@ export function Navbar() {
                 className={clsx(
                   "px-3 py-1.5 rounded-lg text-base font-semibold tracking-wide transition-all duration-150 active:scale-95",
                   isLinkActive(link.to)
-                    ? "text-dark-100"
-                    : "text-dark-400 hover:bg-dark-800/60 hover:text-dark-200",
+                    ? "text-surface-100"
+                    : "text-surface-400 hover:bg-surface-800/60 hover:text-surface-200",
                 )}
               >
                 {link.label}
@@ -285,43 +288,50 @@ export function Navbar() {
 
           {/* User Actions */}
           <div className="hidden md:flex items-center gap-2">
+            <button
+              onClick={toggleTheme}
+              className="p-2 rounded-lg text-surface-300 hover:text-surface-100 hover:bg-surface-800 transition-all duration-150 active:scale-95"
+              aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+            >
+              {theme === 'dark' ? <Sun className="w-4.5 h-4.5" /> : <Moon className="w-4.5 h-4.5" />}
+            </button>
             <LanguageSwitcher />
             {isAuthenticated ? (
               <div className="relative" ref={userMenuRef}>
                 <button
                   onClick={() => setUserMenuOpen(!userMenuOpen)}
-                  className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-dark-800 transition-colors"
+                  className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-surface-800 transition-colors"
                 >
                   <div className="w-9 h-9 rounded-full bg-primary-600 flex items-center justify-center">
                     <span className="text-sm font-bold text-white">
                       {userInitial}
                     </span>
                   </div>
-                  <span className="text-sm font-medium text-dark-200">
+                  <span className="text-sm font-medium text-surface-200">
                     {user?.firstName}
                   </span>
                   <ChevronDown
                     className={clsx(
-                      "w-4 h-4 text-dark-400 transition-transform",
+                      "w-4 h-4 text-surface-400 transition-transform",
                       userMenuOpen && "rotate-180",
                     )}
                   />
                 </button>
 
                 {userMenuOpen && (
-                  <div className="absolute right-0 mt-2 w-56 bg-dark-900 border border-dark-700 rounded-xl shadow-lg shadow-black/30 overflow-hidden">
-                    <div className="px-4 py-3 border-b border-dark-800">
-                      <p className="text-sm font-medium text-dark-100">
+                  <div className="absolute right-0 mt-2 w-56 bg-surface-900 border border-surface-700 rounded-xl shadow-lg shadow-black/30 overflow-hidden">
+                    <div className="px-4 py-3 border-b border-surface-800">
+                      <p className="text-sm font-medium text-surface-100">
                         {user?.firstName} {user?.lastName}
                       </p>
-                      <p className="text-xs text-dark-500 mt-0.5">
+                      <p className="text-xs text-surface-500 mt-0.5">
                         {user?.email}
                       </p>
                     </div>
                     <div className="py-1">
                       <button
                         onClick={() => navigate("/settings")}
-                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-dark-300 hover:bg-dark-800 hover:text-dark-100 transition-colors"
+                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-surface-300 hover:bg-surface-800 hover:text-surface-100 transition-colors"
                       >
                         <User className="w-4 h-4" />
                         {t('nav.profile')}
@@ -331,7 +341,7 @@ export function Navbar() {
                           setUserMenuOpen(false);
                           setShowLogoutSuccess(true);
                         }}
-                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-rose-400/70 hover:bg-dark-800 hover:text-rose-300/80 transition-colors"
+                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-rose-400/70 hover:bg-surface-800 hover:text-rose-300/80 transition-colors"
                       >
                         <LogOut className="w-4 h-4" />
                         {t('nav.logout')}
@@ -353,7 +363,7 @@ export function Navbar() {
 
           {/* Mobile menu button */}
           <button
-            className="md:hidden text-dark-300"
+            className="md:hidden text-surface-300"
             aria-label={mobileMenuOpen ? t('nav.closeMenu') : t('nav.openMenu')}
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           >
@@ -368,7 +378,7 @@ export function Navbar() {
 
       {/* Mobile menu */}
       {mobileMenuOpen && (
-        <div className="md:hidden bg-dark-900 border-t border-dark-800 max-h-[calc(100dvh-4.5rem)] overflow-y-auto">
+        <div className="md:hidden bg-surface-900 border-t border-surface-800 max-h-[calc(100dvh-4.5rem)] overflow-y-auto">
           <div className="px-4 py-4 space-y-3">
             {mobileNavLinks.map((link) => (
               <Link
@@ -379,14 +389,21 @@ export function Navbar() {
                   "block py-2 text-base font-semibold tracking-wide",
                   isLinkActive(link.to)
                     ? "text-primary-400"
-                    : "text-dark-300",
+                    : "text-surface-300",
                 )}
               >
                 {link.label}
               </Link>
             ))}
-            <div className="pt-4 border-t border-dark-800">
-              <div className="mb-3">
+            <div className="pt-4 border-t border-surface-800">
+              <div className="mb-3 flex items-center gap-2">
+                <button
+                  onClick={toggleTheme}
+                  className="p-2 rounded-lg text-surface-300 hover:text-surface-100 hover:bg-surface-800 transition-all duration-150 active:scale-95"
+                  aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+                >
+                  {theme === 'dark' ? <Sun className="w-4.5 h-4.5" /> : <Moon className="w-4.5 h-4.5" />}
+                </button>
                 <LanguageSwitcher />
               </div>
               {isAuthenticated ? (
@@ -398,16 +415,16 @@ export function Navbar() {
                       </span>
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-dark-200">
+                      <p className="text-sm font-medium text-surface-200">
                         {user?.firstName} {user?.lastName}
                       </p>
-                      <p className="text-xs text-dark-500">{user?.email}</p>
+                      <p className="text-xs text-surface-500">{user?.email}</p>
                     </div>
                   </div>
                   <Link
                     to="/settings"
                     onClick={() => setMobileMenuOpen(false)}
-                    className="flex items-center gap-3 px-1 py-2 text-dark-300 text-sm"
+                    className="flex items-center gap-3 px-1 py-2 text-surface-300 text-sm"
                   >
                     <User className="w-4 h-4" />
                     {t('nav.profile')}

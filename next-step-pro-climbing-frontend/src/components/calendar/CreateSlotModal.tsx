@@ -70,7 +70,7 @@ export function CreateSlotModal({
       >
         {templates.length > 0 && (
           <div>
-            <label className="block text-sm text-dark-400 mb-1">{t('createSlot.templateLabel')}</label>
+            <label className="block text-sm text-surface-400 mb-1">{t('createSlot.templateLabel')}</label>
             <select
               value=""
               onChange={(e) => {
@@ -79,7 +79,7 @@ export function CreateSlotModal({
                   setForm((f) => ({ ...f, title: tpl.name, maxParticipants: tpl.maxParticipants }))
                 }
               }}
-              className="w-full bg-dark-800 border border-dark-700 rounded-lg px-4 py-2 text-dark-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
+              className="w-full bg-surface-800 border border-surface-700 rounded-lg px-4 py-2 text-surface-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
             >
               <option value="">{t('createSlot.templatePlaceholder')}</option>
               {templates.map((tpl, i) => (
@@ -92,25 +92,25 @@ export function CreateSlotModal({
         )}
 
         <div>
-          <label className="block text-sm text-dark-400 mb-1">{t('createSlot.slotTitle')}</label>
+          <label className="block text-sm text-surface-400 mb-1">{t('createSlot.slotTitle')}</label>
           <input
             type="text"
             value={form.title}
             onChange={(e) => setForm({ ...form, title: e.target.value })}
             placeholder={t('createSlot.slotTitlePlaceholder')}
             maxLength={200}
-            className="w-full bg-dark-800 border border-dark-700 rounded-lg px-4 py-2 text-dark-100"
+            className="w-full bg-surface-800 border border-surface-700 rounded-lg px-4 py-2 text-surface-100"
           />
         </div>
 
         <div>
-          <label className="block text-sm text-dark-400 mb-1">{t('createSlot.date')}</label>
+          <label className="block text-sm text-surface-400 mb-1">{t('createSlot.date')}</label>
           <input
             type="date"
             value={form.date}
             onChange={(e) => setForm({ ...form, date: e.target.value })}
             onKeyUp={(e) => { if (e.key === 'Enter') submitForm() }}
-            className="w-full bg-dark-800 border border-dark-700 rounded-lg px-4 py-2 text-dark-100"
+            className="w-full bg-surface-800 border border-surface-700 rounded-lg px-4 py-2 text-surface-100"
           />
         </div>
 
@@ -142,19 +142,19 @@ export function CreateSlotModal({
           />
           <div>
             <span className="text-sm font-medium text-violet-300">{t('createSlot.availabilityWindow')}</span>
-            <p className="text-xs text-dark-400 mt-0.5">{t('createSlot.availabilityWindowHint')}</p>
+            <p className="text-xs text-surface-400 mt-0.5">{t('createSlot.availabilityWindowHint')}</p>
           </div>
         </label>
 
         {!form.isAvailabilityWindow && (
           <div>
-            <label className="block text-sm text-dark-400 mb-1">{t('createSlot.maxParticipants')}</label>
+            <label className="block text-sm text-surface-400 mb-1">{t('createSlot.maxParticipants')}</label>
             <input
               type="number"
               min={1}
               value={form.maxParticipants}
               onChange={(e) => setForm({ ...form, maxParticipants: parseInt(e.target.value) })}
-              className="w-full bg-dark-800 border border-dark-700 rounded-lg px-4 py-2 text-dark-100"
+              className="w-full bg-surface-800 border border-surface-700 rounded-lg px-4 py-2 text-surface-100"
             />
           </div>
         )}

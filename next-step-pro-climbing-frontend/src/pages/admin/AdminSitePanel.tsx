@@ -144,18 +144,18 @@ export function AdminSitePanel() {
   return (
     <div className="space-y-8">
       <div>
-        <h2 className="text-xl font-semibold text-dark-100 mb-1">
+        <h2 className="text-xl font-semibold text-surface-100 mb-1">
           {t('site.title')}
         </h2>
-        <p className="text-dark-400 text-sm">
+        <p className="text-surface-400 text-sm">
           {t('site.subtitle')}
         </p>
       </div>
 
       {/* Hero image section */}
-      <section className="bg-dark-800 border border-dark-700 rounded-lg p-6 space-y-4">
+      <section className="bg-surface-800 border border-surface-700 rounded-lg p-6 space-y-4">
         <div className="flex items-center justify-between">
-          <h3 className="text-base font-semibold text-dark-100">
+          <h3 className="text-base font-semibold text-surface-100">
             {t('site.heroTitle')}
           </h3>
           {hasPending && (
@@ -165,14 +165,14 @@ export function AdminSitePanel() {
           )}
         </div>
 
-        <p className="text-dark-400 text-sm">
+        <p className="text-surface-400 text-sm">
           {t('site.heroDescription')}
         </p>
 
         {/* Preview / FocalPointEditor */}
         {isLoading ? (
-          <div className="w-full aspect-[21/9] rounded-lg bg-dark-900 border border-dark-700 flex items-center justify-center">
-            <span className="text-dark-500 text-sm">{t('site.loading')}</span>
+          <div className="w-full aspect-[21/9] rounded-lg bg-surface-900 border border-surface-700 flex items-center justify-center">
+            <span className="text-surface-500 text-sm">{t('site.loading')}</span>
           </div>
         ) : displayUrl ? (
           <div className="space-y-2">
@@ -183,10 +183,10 @@ export function AdminSitePanel() {
               aspectRatio="21/9"
               className="w-full"
             />
-            <p className="text-xs text-dark-500">{t('site.focalPointHint')}</p>
+            <p className="text-xs text-surface-500">{t('site.focalPointHint')}</p>
           </div>
         ) : (
-          <div className="w-full aspect-[21/9] rounded-lg bg-dark-900 border border-dark-700 flex flex-col items-center justify-center gap-2 text-dark-500">
+          <div className="w-full aspect-[21/9] rounded-lg bg-surface-900 border border-surface-700 flex flex-col items-center justify-center gap-2 text-surface-500">
             <ImageIcon className="w-10 h-10" />
             <span className="text-sm">{t('site.noHeroImage')}</span>
           </div>
@@ -216,7 +216,7 @@ export function AdminSitePanel() {
           <label
             htmlFor="hero-file-input"
             className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors
-              bg-dark-700 text-dark-100 hover:bg-dark-600
+              bg-surface-700 text-surface-100 hover:bg-surface-600
               ${isBusy ? 'opacity-50 cursor-not-allowed pointer-events-none' : 'cursor-pointer'}`}
           >
             <Upload className="w-4 h-4" />
@@ -344,20 +344,20 @@ function BadgeSection() {
 
   return (
     <>
-      <section className="bg-dark-800 border border-dark-700 rounded-lg p-6 space-y-4">
-        <h3 className="text-base font-semibold text-dark-100">
+      <section className="bg-surface-800 border border-surface-700 rounded-lg p-6 space-y-4">
+        <h3 className="text-base font-semibold text-surface-100">
           {t('site.badgeTitle')}
         </h3>
-        <p className="text-dark-400 text-sm">
+        <p className="text-surface-400 text-sm">
           {t('site.badgeDescription')}
         </p>
 
         {isLoading ? (
-          <div className="w-24 h-24 rounded-lg bg-dark-900 border border-dark-700 flex items-center justify-center">
-            <span className="text-dark-500 text-xs">{t('site.loading')}</span>
+          <div className="w-24 h-24 rounded-lg bg-surface-900 border border-surface-700 flex items-center justify-center">
+            <span className="text-surface-500 text-xs">{t('site.loading')}</span>
           </div>
         ) : savedUrl ? (
-          <div className="inline-flex items-center gap-4 bg-dark-900 border border-dark-700 rounded-lg p-4">
+          <div className="inline-flex items-center gap-4 bg-surface-900 border border-surface-700 rounded-lg p-4">
             <img
               src={savedUrl}
               alt="Badge"
@@ -365,7 +365,7 @@ function BadgeSection() {
             />
           </div>
         ) : (
-          <div className="w-24 h-24 rounded-lg bg-dark-900 border border-dark-700 flex flex-col items-center justify-center gap-1 text-dark-500">
+          <div className="w-24 h-24 rounded-lg bg-surface-900 border border-surface-700 flex flex-col items-center justify-center gap-1 text-surface-500">
             <Shield className="w-8 h-8" />
             <span className="text-xs">{t('site.noBadge')}</span>
           </div>
@@ -373,7 +373,7 @@ function BadgeSection() {
 
         {savedUrl && (
           <div className="space-y-2">
-            <label className="block text-sm font-medium text-dark-300">
+            <label className="block text-sm font-medium text-surface-300">
               {t('site.badgeLinkLabel')}
             </label>
             <div className="flex gap-2">
@@ -382,7 +382,7 @@ function BadgeSection() {
                 value={displayLink}
                 onChange={e => { setLinkInput(e.target.value); setLinkDirty(true) }}
                 placeholder="https://..."
-                className="flex-1 rounded-lg bg-dark-900 border border-dark-700 px-3 py-2 text-sm text-dark-100 placeholder-dark-500 focus:border-primary-500 focus:outline-none"
+                className="flex-1 rounded-lg bg-surface-900 border border-surface-700 px-3 py-2 text-sm text-surface-100 placeholder-surface-500 focus:border-primary-500 focus:outline-none"
               />
               {linkDirty && (
                 <Button onClick={handleLinkSave} disabled={isBusy}>
@@ -391,7 +391,7 @@ function BadgeSection() {
                 </Button>
               )}
             </div>
-            <p className="text-xs text-dark-500">{t('site.badgeLinkHint')}</p>
+            <p className="text-xs text-surface-500">{t('site.badgeLinkHint')}</p>
           </div>
         )}
 
@@ -489,20 +489,20 @@ function BadgeLeftSection() {
 
   return (
     <>
-      <section className="bg-dark-800 border border-dark-700 rounded-lg p-6 space-y-4">
-        <h3 className="text-base font-semibold text-dark-100">
+      <section className="bg-surface-800 border border-surface-700 rounded-lg p-6 space-y-4">
+        <h3 className="text-base font-semibold text-surface-100">
           {t('site.badgeLeftTitle')}
         </h3>
-        <p className="text-dark-400 text-sm">
+        <p className="text-surface-400 text-sm">
           {t('site.badgeLeftDescription')}
         </p>
 
         {isLoading ? (
-          <div className="w-24 h-24 rounded-lg bg-dark-900 border border-dark-700 flex items-center justify-center">
-            <span className="text-dark-500 text-xs">{t('site.loading')}</span>
+          <div className="w-24 h-24 rounded-lg bg-surface-900 border border-surface-700 flex items-center justify-center">
+            <span className="text-surface-500 text-xs">{t('site.loading')}</span>
           </div>
         ) : savedUrl ? (
-          <div className="inline-flex items-center gap-4 bg-dark-900 border border-dark-700 rounded-lg p-4">
+          <div className="inline-flex items-center gap-4 bg-surface-900 border border-surface-700 rounded-lg p-4">
             <img
               src={savedUrl}
               alt="Badge"
@@ -510,7 +510,7 @@ function BadgeLeftSection() {
             />
           </div>
         ) : (
-          <div className="w-24 h-24 rounded-lg bg-dark-900 border border-dark-700 flex flex-col items-center justify-center gap-1 text-dark-500">
+          <div className="w-24 h-24 rounded-lg bg-surface-900 border border-surface-700 flex flex-col items-center justify-center gap-1 text-surface-500">
             <Shield className="w-8 h-8" />
             <span className="text-xs">{t('site.noBadgeLeft')}</span>
           </div>
@@ -518,7 +518,7 @@ function BadgeLeftSection() {
 
         {savedUrl && (
           <div className="space-y-2">
-            <label className="block text-sm font-medium text-dark-300">
+            <label className="block text-sm font-medium text-surface-300">
               {t('site.badgeLinkLabel')}
             </label>
             <div className="flex gap-2">
@@ -527,7 +527,7 @@ function BadgeLeftSection() {
                 value={displayLink}
                 onChange={e => { setLinkInput(e.target.value); setLinkDirty(true) }}
                 placeholder="https://..."
-                className="flex-1 rounded-lg bg-dark-900 border border-dark-700 px-3 py-2 text-sm text-dark-100 placeholder-dark-500 focus:border-primary-500 focus:outline-none"
+                className="flex-1 rounded-lg bg-surface-900 border border-surface-700 px-3 py-2 text-sm text-surface-100 placeholder-surface-500 focus:border-primary-500 focus:outline-none"
               />
               {linkDirty && (
                 <Button onClick={handleLinkSave} disabled={isBusy}>
@@ -536,7 +536,7 @@ function BadgeLeftSection() {
                 </Button>
               )}
             </div>
-            <p className="text-xs text-dark-500">{t('site.badgeLinkHint')}</p>
+            <p className="text-xs text-surface-500">{t('site.badgeLinkHint')}</p>
           </div>
         )}
 

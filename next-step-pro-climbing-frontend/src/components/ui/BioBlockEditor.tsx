@@ -76,13 +76,13 @@ export function BioBlockEditor({
     diskRef.current?.click()
   }
 
-  const btnCls = 'p-1.5 rounded-lg bg-dark-900/80 text-dark-300 hover:text-dark-100 transition-colors'
-  const arrowCls = 'p-1 rounded text-dark-500 hover:text-dark-100 hover:bg-dark-700 disabled:opacity-25 disabled:cursor-not-allowed transition-colors'
+  const btnCls = 'p-1.5 rounded-lg bg-surface-900/80 text-surface-300 hover:text-surface-100 transition-colors'
+  const arrowCls = 'p-1 rounded text-surface-500 hover:text-surface-100 hover:bg-surface-700 disabled:opacity-25 disabled:cursor-not-allowed transition-colors'
 
   return (
     <div className="space-y-3">
       {blocks.length === 0 && (
-        <p className="text-sm text-dark-500 italic">
+        <p className="text-sm text-surface-500 italic">
           Brak bloków. Dodaj tekst lub zdjęcie poniżej.
         </p>
       )}
@@ -108,7 +108,7 @@ export function BioBlockEditor({
                 rows={16}
               />
             ) : (
-              <div className="relative rounded-lg overflow-hidden border border-dark-600 bg-dark-800">
+              <div className="relative rounded-lg overflow-hidden border border-surface-600 bg-surface-800">
                 <img src={block.url} alt={block.alt} className="max-h-56 w-full object-contain" />
                 {/* Replace buttons overlay */}
                 <div className="absolute top-2 right-2 flex gap-1">
@@ -131,7 +131,7 @@ export function BioBlockEditor({
 
           {/* Delete */}
           <button type="button" onClick={() => remove(idx)}
-            className="p-1.5 mt-1 shrink-0 rounded text-dark-500 hover:text-rose-400 transition-colors"
+            className="p-1.5 mt-1 shrink-0 rounded text-surface-500 hover:text-rose-400 transition-colors"
             title="Usuń blok">
             <X className="w-4 h-4" />
           </button>
@@ -139,32 +139,32 @@ export function BioBlockEditor({
       ))}
 
       {/* Add row */}
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 pt-1 border-t border-dark-700">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 pt-1 border-t border-surface-700">
         <button type="button"
           onClick={() => onChange([...blocks, { type: 'text', content: '' }])}
           className="flex items-center gap-1.5 text-sm text-primary-400 hover:text-primary-300 transition-colors">
           <Plus className="w-3.5 h-3.5" /> Dodaj tekst
         </button>
 
-        <span className="text-dark-600 text-xs">|</span>
-        <span className="text-xs text-dark-400">Dodaj zdjęcie:</span>
+        <span className="text-surface-600 text-xs">|</span>
+        <span className="text-xs text-surface-400">Dodaj zdjęcie:</span>
 
         <button type="button"
           onClick={() => setMediaPickerAction({ action: 'add' })}
-          className="flex items-center gap-1 text-sm text-dark-300 hover:text-dark-100 transition-colors"
+          className="flex items-center gap-1 text-sm text-surface-300 hover:text-surface-100 transition-colors"
           title="Z biblioteki mediów">
           <Library className="w-3.5 h-3.5" /> Biblioteka
         </button>
         <button type="button"
           onClick={() => setGalleryPickerAction({ action: 'add' })}
-          className="flex items-center gap-1 text-sm text-dark-300 hover:text-dark-100 transition-colors"
+          className="flex items-center gap-1 text-sm text-surface-300 hover:text-surface-100 transition-colors"
           title="Z galerii">
           <Images className="w-3.5 h-3.5" /> Galeria
         </button>
         <button type="button"
           onClick={() => openDisk({ action: 'add' })}
           disabled={isUploading}
-          className="flex items-center gap-1 text-sm text-dark-300 hover:text-dark-100 disabled:opacity-50 transition-colors"
+          className="flex items-center gap-1 text-sm text-surface-300 hover:text-surface-100 disabled:opacity-50 transition-colors"
           title="Z dysku">
           <HardDriveUpload className="w-3.5 h-3.5" />
           {isUploading ? 'Wgrywanie…' : 'Dysk'}

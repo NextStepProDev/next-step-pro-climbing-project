@@ -21,12 +21,12 @@ export function CurrentLocationSection() {
                 {t("location.title")}
               </h2>
             </div>
-            <p className="text-dark-300 text-sm mb-4">
+            <p className="text-surface-300 text-sm mb-4">
               {t("location.subtitle")}
             </p>
             <ul className="space-y-1.5">
               {LOCATIONS.map((place) => (
-                <li key={place} className="flex items-center gap-2 text-dark-200 text-sm">
+                <li key={place} className="flex items-center gap-2 text-surface-200 text-sm">
                   <span className="w-1.5 h-1.5 bg-amber-400 rounded-full shrink-0" />
                   {place}
                 </li>
@@ -38,14 +38,14 @@ export function CurrentLocationSection() {
           <div className="sm:self-center flex flex-col gap-3">
             <Link
               to="/calendar"
-              className="inline-flex items-center gap-2 px-5 py-2.5 bg-amber-500/10 text-amber-400 border border-amber-500/30 rounded-lg hover:bg-amber-500/20 transition-colors font-medium text-sm whitespace-nowrap"
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-amber-500/10 text-amber-400 border border-amber-500/30 rounded-lg hover:bg-amber-500/20 transition-all duration-150 active:scale-95 font-medium text-sm whitespace-nowrap"
             >
               {t("location.ctaCalendar")}
               <ArrowRight className="w-4 h-4" />
             </Link>
             <Link
               to="/kursy"
-              className="inline-flex items-center gap-2 px-5 py-2.5 bg-amber-500/10 text-amber-400 border border-amber-500/30 rounded-lg hover:bg-amber-500/20 transition-colors font-medium text-sm whitespace-nowrap"
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-amber-500/10 text-amber-400 border border-amber-500/30 rounded-lg hover:bg-amber-500/20 transition-all duration-150 active:scale-95 font-medium text-sm whitespace-nowrap"
             >
               {t("location.ctaCourses")}
               <ArrowRight className="w-4 h-4" />

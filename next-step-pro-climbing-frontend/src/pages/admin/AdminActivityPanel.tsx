@@ -167,12 +167,12 @@ export function AdminActivityPanel() {
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
-        <p className="text-sm text-dark-400">
+        <p className="text-sm text-surface-400">
           {t('activity.title')}
         </p>
         <button
           onClick={handleRefresh}
-          className="flex items-center gap-1.5 text-sm text-dark-400 hover:text-dark-200 transition-colors"
+          className="flex items-center gap-1.5 text-sm text-surface-400 hover:text-surface-200 transition-colors"
         >
           <RefreshCw className="w-3.5 h-3.5" />
           {t('activity.refresh')}
@@ -184,7 +184,7 @@ export function AdminActivityPanel() {
       ) : isError ? (
         <QueryError error={error} onRetry={handleRefresh} />
       ) : allLogs.length === 0 ? (
-        <div className="bg-dark-900 rounded-lg border border-dark-800 p-8 text-center text-dark-400">
+        <div className="bg-surface-900 rounded-lg border border-surface-800 p-8 text-center text-surface-400">
           {t('activity.noActivity')}
         </div>
       ) : (
@@ -197,7 +197,7 @@ export function AdminActivityPanel() {
               return (
                 <div
                   key={log.id}
-                  className="bg-dark-900 rounded-lg border border-dark-800 p-4 flex items-start gap-3"
+                  className="bg-surface-900 rounded-lg border border-surface-800 p-4 flex items-start gap-3"
                 >
                   {/* Icon */}
                   <div
@@ -209,10 +209,10 @@ export function AdminActivityPanel() {
                   {/* Content */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-dark-100 font-medium text-sm">
+                      <span className="text-surface-100 font-medium text-sm">
                         {log.userFullName}
                       </span>
-                      <span className="text-dark-500 text-xs">{log.userEmail}</span>
+                      <span className="text-surface-500 text-xs">{log.userEmail}</span>
                     </div>
 
                     <div className="flex items-center gap-2 mt-1 flex-wrap">
@@ -224,7 +224,7 @@ export function AdminActivityPanel() {
 
                       {/* Slot info */}
                       {log.slotDate && (
-                        <span className="text-dark-300 text-xs">
+                        <span className="text-surface-300 text-xs">
                           {format(new Date(log.slotDate), 'd MMM yyyy', { locale })}
                           {log.slotStartTime && log.slotEndTime && (
                             <>
@@ -233,17 +233,17 @@ export function AdminActivityPanel() {
                             </>
                           )}
                           {log.slotTitle && (
-                            <span className="text-dark-400"> ({log.slotTitle})</span>
+                            <span className="text-surface-400"> ({log.slotTitle})</span>
                           )}
                         </span>
                       )}
 
                       {/* Event info */}
                       {log.eventTitle && (
-                        <span className="text-dark-300 text-xs">
+                        <span className="text-surface-300 text-xs">
                           {log.eventTitle}
                           {log.eventStartDate && log.eventEndDate && (
-                            <span className="text-dark-500">
+                            <span className="text-surface-500">
                               {' '}
                               ({format(new Date(log.eventStartDate), 'd MMM', { locale })}
                               {' - '}
@@ -255,14 +255,14 @@ export function AdminActivityPanel() {
 
                       {/* Participants */}
                       {log.participants != null && log.participants > 1 && (
-                        <span className="text-dark-500 text-xs">
+                        <span className="text-surface-500 text-xs">
                           {t('activity.persons', { count: log.participants })}
                         </span>
                       )}
 
                       {/* Description (admin actions context) */}
                       {log.description && (
-                        <span className="text-dark-400 text-xs">
+                        <span className="text-surface-400 text-xs">
                           {log.description}
                         </span>
                       )}
@@ -271,10 +271,10 @@ export function AdminActivityPanel() {
 
                   {/* Timestamp */}
                   <div className="flex-shrink-0 text-right">
-                    <div className="text-dark-500 text-xs">
+                    <div className="text-surface-500 text-xs">
                       {format(new Date(log.createdAt), 'd MMM', { locale })}
                     </div>
-                    <div className="text-dark-500 text-xs">
+                    <div className="text-surface-500 text-xs">
                       {format(new Date(log.createdAt), 'HH:mm')}
                     </div>
                   </div>
@@ -289,7 +289,7 @@ export function AdminActivityPanel() {
               <button
                 onClick={loadMore}
                 disabled={loadingMore}
-                className="inline-flex items-center gap-2 px-4 py-2 text-sm text-dark-300 hover:text-dark-100 bg-dark-800 hover:bg-dark-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="inline-flex items-center gap-2 px-4 py-2 text-sm text-surface-300 hover:text-surface-100 bg-surface-800 hover:bg-surface-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loadingMore ? (
                   <LoadingSpinner />

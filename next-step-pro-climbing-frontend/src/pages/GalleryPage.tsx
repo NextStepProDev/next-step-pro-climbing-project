@@ -17,7 +17,7 @@ export function GalleryPage() {
   if (isLoading) {
     return (
       <div className="container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold text-dark-100 mb-8">{t('gallery.title')}</h1>
+        <h1 className="text-3xl font-bold text-surface-100 mb-8">{t('gallery.title')}</h1>
         <CardSkeleton count={6} columns={3} />
       </div>
     )
@@ -34,7 +34,7 @@ export function GalleryPage() {
   if (!albums || albums.length === 0) {
     return (
       <div className="container mx-auto px-4 py-8">
-        <div className="text-center text-dark-400">
+        <div className="text-center text-surface-400">
           {t('gallery.noAlbums')}
         </div>
       </div>
@@ -44,17 +44,17 @@ export function GalleryPage() {
   return (
     <div className="container mx-auto px-4 py-8">
       <PageHead title={t('gallery.title')} description={t('gallery.metaDescription')} />
-      <h1 className="text-3xl font-bold text-dark-100 mb-8">{t('gallery.title')}</h1>
+      <h1 className="text-3xl font-bold text-surface-100 mb-8">{t('gallery.title')}</h1>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {albums.map((album) => (
           <Link
             key={album.id}
             to={`/galeria/${album.id}`}
-            className="scroll-reveal group card-glass rounded-lg overflow-hidden border border-dark-700/50 hover:border-primary-500/50 hover:-translate-y-0.5 transition-all duration-200"
+            className="scroll-reveal group card-glass rounded-lg overflow-hidden border border-surface-700/50 hover:border-primary-500/50 hover:-translate-y-0.5 transition-all duration-200"
           >
             {/* Thumbnail */}
-            <div className="aspect-video bg-dark-700 relative overflow-hidden">
+            <div className="aspect-video bg-surface-700 relative overflow-hidden">
               {album.thumbnailUrl ? (
                 <>
                   <div
@@ -76,21 +76,21 @@ export function GalleryPage() {
                 </>
               ) : (
                 <div className="w-full h-full flex items-center justify-center">
-                  <ImageIcon className="h-16 w-16 text-dark-500" />
+                  <ImageIcon className="h-16 w-16 text-surface-500" />
                 </div>
               )}
-              <div className="absolute top-2 right-2 bg-dark-900/80 px-2 py-1 rounded text-sm text-dark-200">
+              <div className="absolute top-2 right-2 bg-surface-900/80 px-2 py-1 rounded text-sm text-surface-200">
                 {album.photoCount} {t(`gallery.photo_${album.photoCount === 1 ? 'one' : 'many'}`)}
               </div>
             </div>
 
             {/* Info */}
             <div className="p-4">
-              <h2 className="text-lg font-semibold text-dark-100 group-hover:text-primary-400 transition-colors">
+              <h2 className="text-lg font-semibold text-surface-100 group-hover:text-primary-400 transition-colors">
                 {album.name}
               </h2>
               {album.description && (
-                <p className="mt-2 text-sm text-dark-300 line-clamp-2">
+                <p className="mt-2 text-sm text-surface-300 line-clamp-2">
                   {album.description}
                 </p>
               )}

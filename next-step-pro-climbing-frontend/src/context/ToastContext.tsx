@@ -43,8 +43,8 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
             className={clsx(
               'pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg border animate-[slide-in-right_0.3s_ease-out]',
               toast.type === 'success'
-                ? 'bg-dark-800 border-green-600/40 text-green-300'
-                : 'bg-dark-800 border-rose-600/40 text-rose-300'
+                ? 'bg-surface-800 border-green-600/40 text-green-300'
+                : 'bg-surface-800 border-rose-600/40 text-rose-300'
             )}
           >
             {toast.type === 'success'
@@ -54,7 +54,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
             <span className="text-sm">{toast.message}</span>
             <button
               onClick={() => dismiss(toast.id)}
-              className="ml-2 text-dark-400 hover:text-dark-200 transition-colors"
+              className="ml-2 text-surface-400 hover:text-surface-200 transition-colors"
             >
               <X className="w-3.5 h-3.5" />
             </button>

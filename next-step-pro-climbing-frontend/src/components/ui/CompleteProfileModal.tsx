@@ -42,49 +42,49 @@ export function CompleteProfileModal({ onCompleted, onClose }: Props) {
   return createPortal(
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-dark-900 border border-dark-700 rounded-xl p-6 max-w-sm w-full shadow-2xl">
+      <div className="relative bg-surface-900 border border-surface-700 rounded-xl p-6 max-w-sm w-full shadow-2xl">
         <div className="flex items-center justify-center w-12 h-12 bg-primary-500/15 rounded-full mx-auto mb-4">
           <UserCircle className="w-6 h-6 text-primary-400" />
         </div>
 
-        <h2 className="text-lg font-semibold text-dark-100 text-center mb-2">
+        <h2 className="text-lg font-semibold text-surface-100 text-center mb-2">
           {t('completeProfile.title')}
         </h2>
-        <p className="text-sm text-dark-400 text-center mb-6 leading-relaxed">
+        <p className="text-sm text-surface-400 text-center mb-6 leading-relaxed">
           {t('completeProfile.description')}
         </p>
 
         <div className="space-y-3">
           <div>
-            <label className="block text-sm text-dark-400 mb-1">{t('profile.firstName')}</label>
+            <label className="block text-sm text-surface-400 mb-1">{t('profile.firstName')}</label>
             <input
               type="text"
               value={firstName}
               onChange={(e) => { setFirstName(e.target.value); setFirstNameError(null) }}
               placeholder={t('profile.firstNamePlaceholder')}
-              className="w-full bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-dark-100 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 placeholder:text-dark-500"
+              className="w-full bg-surface-800 border border-surface-700 rounded-lg px-3 py-2 text-surface-100 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 placeholder:text-surface-500"
             />
             {firstNameError && <p className="text-xs text-rose-400/80 mt-1">{firstNameError}</p>}
           </div>
           <div>
-            <label className="block text-sm text-dark-400 mb-1">{t('profile.lastName')}</label>
+            <label className="block text-sm text-surface-400 mb-1">{t('profile.lastName')}</label>
             <input
               type="text"
               value={lastName}
               onChange={(e) => { setLastName(e.target.value); setLastNameError(null) }}
               placeholder={t('profile.lastNamePlaceholder')}
-              className="w-full bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-dark-100 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 placeholder:text-dark-500"
+              className="w-full bg-surface-800 border border-surface-700 rounded-lg px-3 py-2 text-surface-100 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 placeholder:text-surface-500"
             />
             {lastNameError && <p className="text-xs text-rose-400/80 mt-1">{lastNameError}</p>}
           </div>
           <div>
-            <label className="block text-sm text-dark-400 mb-1">{t('profile.phone')}</label>
+            <label className="block text-sm text-surface-400 mb-1">{t('profile.phone')}</label>
             <input
               type="tel"
               value={phone}
               onChange={(e) => { setPhone(e.target.value); setPhoneError(null) }}
               placeholder={t('profile.phonePlaceholder')}
-              className="w-full bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-dark-100 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 placeholder:text-dark-500"
+              className="w-full bg-surface-800 border border-surface-700 rounded-lg px-3 py-2 text-surface-100 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 placeholder:text-surface-500"
             />
             {phoneError && <p className="text-xs text-rose-400/80 mt-1">{phoneError}</p>}
           </div>
@@ -115,7 +115,7 @@ export function CompleteProfileModal({ onCompleted, onClose }: Props) {
           <button
             onClick={onClose}
             disabled={mutation.isPending}
-            className="w-full py-2 text-sm text-dark-400 hover:text-dark-200 transition-colors disabled:opacity-50"
+            className="w-full py-2 text-sm text-surface-400 hover:text-surface-200 transition-colors disabled:opacity-50"
           >
             {t('completeProfile.cancel')}
           </button>

@@ -17,6 +17,7 @@ import { AnimatedCounter } from "../components/ui/AnimatedCounter";
 import { ShareButtons } from "../components/ui/ShareButtons";
 import { CurrentLocationSection } from "../components/ui/CurrentLocationSection";
 import { siteSettingsApi } from "../api/client";
+import { useTheme } from "../context/ThemeContext";
 import logoWhite from "../assets/logo/logo-white.png";
 import logoBlack from "../assets/logo/logo-black.png";
 
@@ -56,6 +57,7 @@ function BadgeImg({ src, href, className }: { src: string; href?: string | null;
 
 export function HomePage() {
   const { t } = useTranslation("home");
+  const { theme } = useTheme();
   const [heroImgLoaded, setHeroImgLoaded] = useState(false);
 
   const { data: homeSettings, isPending } = useQuery({
@@ -82,7 +84,7 @@ export function HomePage() {
       {/* Hero Section */}
       <section className="relative overflow-hidden sm:min-h-[70vh] sm:flex sm:flex-col sm:justify-center">
         {/* Base gradient — always rendered as placeholder/fallback */}
-        <div className="absolute inset-0 bg-gradient-to-br from-primary-900/20 via-dark-950 to-dark-950" />
+        <div className="absolute inset-0 bg-gradient-to-br from-primary-900/20 via-surface-950 to-surface-950" />
 
         {/* Watermark logo — only when API confirmed no hero image is set */}
         {showWatermark && (
@@ -107,8 +109,8 @@ export function HomePage() {
                 className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ${heroImgLoaded ? 'opacity-100 animation-ken-burns' : 'opacity-0'}`}
                 style={{ objectPosition }}
               />
-              <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-dark-950" />
-              <div className="absolute bottom-3 right-3 z-20 bg-dark-900/60 backdrop-blur-sm rounded-full px-2.5 py-1 border border-dark-700/40">
+              <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-surface-950" />
+              <div className="absolute bottom-3 right-3 z-20 bg-surface-900/60 backdrop-blur-sm rounded-full px-2.5 py-1 border border-surface-700/40">
                 <ShareButtons title="Next Step Pro Climbing" url={window.location.origin} compact />
               </div>
             </div>
@@ -122,7 +124,7 @@ export function HomePage() {
               className={`hidden sm:block absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ${heroImgLoaded ? 'opacity-100 animation-ken-burns' : 'opacity-0'}`}
               style={{ objectPosition }}
             />
-            <div className={`hidden sm:block absolute inset-0 bg-gradient-to-b from-dark-950/25 via-dark-950/35 to-dark-950 transition-opacity duration-700 ${heroImgLoaded ? 'opacity-100' : 'opacity-0'}`} />
+            <div className={`hidden sm:block absolute inset-0 bg-gradient-to-b from-surface-950/25 via-surface-950/35 to-surface-950 transition-opacity duration-700 ${heroImgLoaded ? 'opacity-100' : 'opacity-0'}`} />
           </>
         )}
         {badgeLeftImageUrl && (
@@ -148,14 +150,14 @@ export function HomePage() {
             </div>
             {/* === END BADGE === */}
             <img
-              src={logoWhite}
+              src={theme === 'dark' ? logoWhite : logoBlack}
               alt="Next Step Pro Climbing"
               className="h-32 sm:h-40 lg:h-48 mx-auto mb-8 drop-shadow-[0_0_30px_rgba(59,130,246,0.3)]"
             />
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-dark-50 mb-4">
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-surface-50 mb-4">
               {t("hero.tagline")}
             </h1>
-            <p className="text-base sm:text-lg text-dark-400 mb-8 max-w-2xl mx-auto">
+            <p className="text-base sm:text-lg text-surface-400 mb-8 max-w-2xl mx-auto">
               {t("hero.subtitle")}
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -177,7 +179,7 @@ export function HomePage() {
             </div>
           </div>
         </div>
-        <div className="hidden sm:block absolute bottom-6 right-6 z-20 bg-dark-900/60 backdrop-blur-sm rounded-full px-3 py-1.5 border border-dark-700/40">
+        <div className="hidden sm:block absolute bottom-6 right-6 z-20 bg-surface-900/60 backdrop-blur-sm rounded-full px-3 py-1.5 border border-surface-700/40">
           <ShareButtons title="Next Step Pro Climbing" url={window.location.origin} compact />
         </div>
       </section>
@@ -189,7 +191,7 @@ export function HomePage() {
       {/* Steps Section */}
       <section className="py-16 sm:py-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl font-bold text-dark-100 mb-12 text-center">
+          <h2 className="text-3xl font-bold text-surface-100 mb-12 text-center">
             {t("steps.title")}
           </h2>
           <div className="grid md:grid-cols-3 gap-8 md:gap-0">
@@ -200,7 +202,7 @@ export function HomePage() {
             ].map((step, i) => (
               <div
                 key={step.key}
-                className={`flex flex-col items-center text-center px-6 ${i < 2 ? "md:border-r md:border-dark-800" : ""}`}
+                className={`flex flex-col items-center text-center px-6 ${i < 2 ? "md:border-r md:border-surface-800" : ""}`}
               >
                 <span className="text-sm font-mono text-primary-400 mb-3">
                   {step.num}
@@ -208,10 +210,10 @@ export function HomePage() {
                 <div className="w-12 h-12 bg-primary-500/10 rounded-lg flex items-center justify-center mb-4">
                   <step.icon className="w-6 h-6 text-primary-400" />
                 </div>
-                <h3 className="text-lg font-semibold text-dark-100 mb-2">
+                <h3 className="text-lg font-semibold text-surface-100 mb-2">
                   {t(`steps.${step.key}.title`)}
                 </h3>
-                <p className="text-dark-400 text-sm">
+                <p className="text-surface-400 text-sm">
                   {t(`steps.${step.key}.description`)}
                 </p>
               </div>
@@ -221,7 +223,7 @@ export function HomePage() {
       </section>
 
       {/* Stats Section */}
-      <section className="py-16 sm:py-20 bg-dark-900/50">
+      <section className="py-16 sm:py-20 bg-surface-900/50">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             {[
@@ -234,7 +236,7 @@ export function HomePage() {
                 <p className="text-4xl sm:text-5xl font-bold text-primary-400 mb-2">
                   <AnimatedCounter target={stat.target} suffix={stat.suffix} />
                 </p>
-                <p className="text-sm text-dark-400">{stat.label}</p>
+                <p className="text-sm text-surface-400">{stat.label}</p>
               </div>
             ))}
           </div>
@@ -242,30 +244,30 @@ export function HomePage() {
       </section>
 
       {/* Features Section */}
-      <section id="offer" className="py-16 sm:py-24 bg-dark-900/50">
+      <section id="offer" className="py-16 sm:py-24 bg-surface-900/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-dark-100 mb-4">
+            <h2 className="text-3xl font-bold text-surface-100 mb-4">
               {t("offer.title")}
             </h2>
-            <p className="text-dark-400 max-w-2xl mx-auto">
+            <p className="text-surface-400 max-w-2xl mx-auto">
               {t("offer.subtitle")}
             </p>
           </div>
 
           <div className="grid md:grid-cols-3 gap-8">
             {/* Course */}
-            <Link to="/kursy" className="block card-glass rounded-xl border border-dark-700/50 p-6 hover:border-primary-500/50 hover:-translate-y-0.5 transition-all duration-200 animation-stagger" style={{ animationDelay: '0ms' }}>
+            <Link to="/kursy" className="block card-glass rounded-xl border border-surface-700/50 p-6 hover:border-primary-500/50 hover:-translate-y-0.5 transition-all duration-200 animation-stagger" style={{ animationDelay: '0ms' }}>
               <div className="w-12 h-12 bg-primary-500/10 rounded-lg flex items-center justify-center mb-4">
                 <Award className="w-6 h-6 text-primary-400" />
               </div>
-              <h3 className="text-xl font-semibold text-dark-100 mb-2">
+              <h3 className="text-xl font-semibold text-surface-100 mb-2">
                 {t("offer.courses.title")}
               </h3>
-              <p className="text-dark-400 mb-4">
+              <p className="text-surface-400 mb-4">
                 {t("offer.courses.description")}
               </p>
-              <ul className="space-y-2 text-sm text-dark-300">
+              <ul className="space-y-2 text-sm text-surface-300">
                 <li className="flex items-center gap-2">
                   <span className="w-1.5 h-1.5 bg-primary-400 rounded-full shrink-0" />
                   {t("offer.courses.item1")}
@@ -282,17 +284,17 @@ export function HomePage() {
             </Link>
 
             {/* Training */}
-            <Link to="/kursy" className="block card-glass rounded-xl border border-dark-700/50 p-6 hover:border-primary-500/50 hover:-translate-y-0.5 transition-all duration-200 animation-stagger" style={{ animationDelay: '100ms' }}>
+            <Link to="/kursy" className="block card-glass rounded-xl border border-surface-700/50 p-6 hover:border-primary-500/50 hover:-translate-y-0.5 transition-all duration-200 animation-stagger" style={{ animationDelay: '100ms' }}>
               <div className="w-12 h-12 bg-green-500/10 rounded-lg flex items-center justify-center mb-4">
                 <Users className="w-6 h-6 text-green-400" />
               </div>
-              <h3 className="text-xl font-semibold text-dark-100 mb-2">
+              <h3 className="text-xl font-semibold text-surface-100 mb-2">
                 {t("offer.trainings.title")}
               </h3>
-              <p className="text-dark-400 mb-4">
+              <p className="text-surface-400 mb-4">
                 {t("offer.trainings.description")}
               </p>
-              <ul className="space-y-2 text-sm text-dark-300">
+              <ul className="space-y-2 text-sm text-surface-300">
                 <li className="flex items-center gap-2">
                   <span className="w-1.5 h-1.5 bg-green-400 rounded-full" />
                   {t("offer.trainings.item1")}
@@ -313,17 +315,17 @@ export function HomePage() {
             </Link>
 
             {/* Workshop */}
-            <Link to="/kursy" className="block card-glass rounded-xl border border-dark-700/50 p-6 hover:border-primary-500/50 hover:-translate-y-0.5 transition-all duration-200 animation-stagger" style={{ animationDelay: '200ms' }}>
+            <Link to="/kursy" className="block card-glass rounded-xl border border-surface-700/50 p-6 hover:border-primary-500/50 hover:-translate-y-0.5 transition-all duration-200 animation-stagger" style={{ animationDelay: '200ms' }}>
               <div className="w-12 h-12 bg-amber-500/10 rounded-lg flex items-center justify-center mb-4">
                 <Calendar className="w-6 h-6 text-amber-400" />
               </div>
-              <h3 className="text-xl font-semibold text-dark-100 mb-2">
+              <h3 className="text-xl font-semibold text-surface-100 mb-2">
                 {t("offer.workshops.title")}
               </h3>
-              <p className="text-dark-400 mb-4">
+              <p className="text-surface-400 mb-4">
                 {t("offer.workshops.description")}
               </p>
-              <ul className="space-y-2 text-sm text-dark-300">
+              <ul className="space-y-2 text-sm text-surface-300">
                 <li className="flex items-center gap-2">
                   <span className="w-1.5 h-1.5 bg-amber-400 rounded-full" />
                   {t("offer.workshops.item1")}
@@ -351,10 +353,10 @@ export function HomePage() {
           className="absolute -right-20 top-1/2 -translate-y-1/2 w-[300px] sm:w-[400px] opacity-[0.03] pointer-events-none select-none rotate-12"
         />
         <div className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl font-bold text-dark-100 mb-4">
+          <h2 className="text-3xl font-bold text-surface-100 mb-4">
             {t("cta.title")}
           </h2>
-          <p className="text-dark-400 mb-8">
+          <p className="text-surface-400 mb-8">
             {t("cta.subtitle")}
           </p>
           <Link to="/calendar">

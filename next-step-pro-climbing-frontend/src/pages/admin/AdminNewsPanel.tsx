@@ -93,7 +93,7 @@ function LanguageBadge({ lang }: { lang: string }) {
     es: 'bg-purple-900/40 text-purple-400 border-purple-700',
   }
   return (
-    <span className={clsx('text-[10px] font-bold uppercase px-1.5 py-0.5 rounded border', colors[lang] ?? 'bg-dark-600 text-dark-400 border-dark-500')}>
+    <span className={clsx('text-[10px] font-bold uppercase px-1.5 py-0.5 rounded border', colors[lang] ?? 'bg-surface-600 text-surface-400 border-surface-500')}>
       {lang}
     </span>
   )
@@ -225,7 +225,7 @@ export function AdminNewsPanel() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-semibold text-dark-100">{t('news.title')}</h2>
+        <h2 className="text-xl font-semibold text-surface-100">{t('news.title')}</h2>
         <Button
           onClick={() => createMutation.mutate({ title: t('news.newArticleDefaultTitle'), language: 'pl' })}
           disabled={createMutation.isPending}
@@ -236,7 +236,7 @@ export function AdminNewsPanel() {
       </div>
 
       {groups.length === 0 ? (
-        <div className="text-center text-dark-400 py-12">
+        <div className="text-center text-surface-400 py-12">
           {t('news.noArticles')}
         </div>
       ) : (
@@ -316,13 +316,13 @@ function TranslationGroupRow({
   const firstExistingArticle = groupArticles[0]
 
   return (
-    <div className="flex items-center gap-4 bg-dark-800 border border-dark-700 rounded-lg p-4">
-      <div className="flex-shrink-0 w-16 h-16 bg-dark-700 rounded overflow-hidden">
+    <div className="flex items-center gap-4 bg-surface-800 border border-surface-700 rounded-lg p-4">
+      <div className="flex-shrink-0 w-16 h-16 bg-surface-700 rounded overflow-hidden">
         {displayArticle.thumbnailUrl ? (
           <img src={displayArticle.thumbnailUrl} alt={displayArticle.title} className="w-full h-full object-cover" />
         ) : (
           <div className="w-full h-full flex items-center justify-center">
-            <Newspaper className="h-6 w-6 text-dark-500" />
+            <Newspaper className="h-6 w-6 text-surface-500" />
           </div>
         )}
       </div>
@@ -334,18 +334,18 @@ function TranslationGroupRow({
               'text-xs px-2 py-0.5 rounded-full',
               displayArticle.published
                 ? 'bg-green-900/40 text-green-400'
-                : 'bg-dark-600 text-dark-400'
+                : 'bg-surface-600 text-surface-400'
             )}
           >
             {displayArticle.published ? t('news.published') : t('news.draft')}
           </span>
           {displayArticle.publishedAt && (
-            <span className="text-xs text-dark-400">
+            <span className="text-xs text-surface-400">
               {new Date(displayArticle.publishedAt).toLocaleDateString('pl-PL')}
             </span>
           )}
         </div>
-        <p className="font-medium text-dark-100 truncate">{displayArticle.title}</p>
+        <p className="font-medium text-surface-100 truncate">{displayArticle.title}</p>
         <div className="flex items-center gap-1.5 mt-1">
           {LANG_ORDER.map((lang) => {
             const article = langMap.get(lang)
@@ -374,7 +374,7 @@ function TranslationGroupRow({
                 title={t('news.createTranslation', { lang: lang.toUpperCase() })}
                 className={clsx(
                   'text-[10px] font-bold uppercase px-2 py-0.5 rounded border border-dashed cursor-pointer transition-colors',
-                  'border-dark-500 text-dark-500 hover:border-dark-300 hover:text-dark-300',
+                  'border-surface-500 text-surface-500 hover:border-surface-300 hover:text-surface-300',
                   isCreatingTranslation && 'opacity-50 cursor-wait',
                 )}
               >
@@ -390,7 +390,7 @@ function TranslationGroupRow({
           <button
             onClick={() => onSendNewsletter(displayArticle.id)}
             title={t('news.newsletterSend')}
-            className="p-2 text-dark-400 hover:text-primary-400 transition-colors"
+            className="p-2 text-surface-400 hover:text-primary-400 transition-colors"
           >
             <Send className="h-4 w-4" />
           </button>
@@ -398,14 +398,14 @@ function TranslationGroupRow({
         <button
           onClick={() => displayArticle.published ? onUnpublish(displayArticle.id) : onPublish(displayArticle.id)}
           title={(displayArticle.published ? t('news.unpublish') : t('news.publish')) + ' (wszystkie języki)'}
-          className={`p-2 transition-colors ${displayArticle.published ? 'text-emerald-400 hover:text-orange-400' : 'text-dark-400 hover:text-dark-100'}`}
+          className={`p-2 transition-colors ${displayArticle.published ? 'text-emerald-400 hover:text-orange-400' : 'text-surface-400 hover:text-surface-100'}`}
         >
           {displayArticle.published ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
         </button>
         <button
           onClick={() => onDelete(groupArticles.map(a => a.id))}
           title={t('news.delete')}
-          className="p-2 text-dark-400 hover:text-red-400 transition-colors"
+          className="p-2 text-surface-400 hover:text-red-400 transition-colors"
         >
           <Trash2 className="h-4 w-4" />
         </button>
@@ -811,36 +811,36 @@ function EditView({
       {/* Powrót do listy */}
       <button
         onClick={handleExit}
-        className="inline-flex items-center gap-2 text-dark-300 hover:text-dark-100 transition-colors text-sm"
+        className="inline-flex items-center gap-2 text-surface-300 hover:text-surface-100 transition-colors text-sm"
       >
         <ArrowLeft className="h-4 w-4" />
         {t('news.backToList')}
       </button>
 
       {/* Sekcja 1: Metadane */}
-      <section className="bg-dark-800 border border-dark-700 rounded-lg p-6">
+      <section className="bg-surface-800 border border-surface-700 rounded-lg p-6">
         <div className="flex items-center gap-3 mb-4">
-          <h3 className="text-lg font-semibold text-dark-100">{t('news.sectionMeta')}</h3>
+          <h3 className="text-lg font-semibold text-surface-100">{t('news.sectionMeta')}</h3>
           <LanguageBadge lang={detail.language} />
           <span className={clsx(
             'text-xs px-2.5 py-1 rounded-full',
-            published ? 'bg-green-900/40 text-green-400' : 'bg-dark-600 text-dark-400'
+            published ? 'bg-green-900/40 text-green-400' : 'bg-surface-600 text-surface-400'
           )}>
             {published ? t('news.published') : t('news.draft')}
           </span>
         </div>
         <div className="space-y-4">
           <div>
-            <label className="block text-sm text-dark-300 mb-1">{t('news.titleLabel')}</label>
+            <label className="block text-sm text-surface-300 mb-1">{t('news.titleLabel')}</label>
             <input
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full bg-dark-700 border border-dark-600 rounded px-3 py-2 text-dark-100 focus:outline-none focus:border-primary-500"
+              className="w-full bg-surface-700 border border-surface-600 rounded px-3 py-2 text-surface-100 focus:outline-none focus:border-primary-500"
             />
           </div>
           <div>
-            <label className="block text-sm text-dark-300 mb-1">{t('news.excerptLabel')}</label>
+            <label className="block text-sm text-surface-300 mb-1">{t('news.excerptLabel')}</label>
             <RichTextEditor
               value={excerpt}
               onChange={setExcerpt}
@@ -849,7 +849,7 @@ function EditView({
           </div>
           {detail.publishedAt && (
             <div>
-              <label className="block text-sm text-dark-300 mb-1">{t('news.publishedAtLabel')}</label>
+              <label className="block text-sm text-surface-300 mb-1">{t('news.publishedAtLabel')}</label>
               <div className="flex items-center gap-2">
                 <input
                   type="datetime-local"
@@ -861,13 +861,13 @@ function EditView({
                       updatePublishedAtMutation.mutate(newDate)
                     }
                   }}
-                  className="bg-dark-700 border border-dark-600 rounded px-3 py-2 text-dark-100 text-sm focus:outline-none focus:border-primary-500"
+                  className="bg-surface-700 border border-surface-600 rounded px-3 py-2 text-surface-100 text-sm focus:outline-none focus:border-primary-500"
                 />
                 <button
                   type="button"
                   onClick={() => updatePublishedAtMutation.mutate(new Date().toISOString())}
                   title={t('news.publishedAtNow')}
-                  className="inline-flex items-center gap-1.5 px-3 py-2 text-sm rounded border border-dark-600 bg-dark-700 text-dark-300 hover:text-dark-100 hover:border-dark-500 transition-colors"
+                  className="inline-flex items-center gap-1.5 px-3 py-2 text-sm rounded border border-surface-600 bg-surface-700 text-surface-300 hover:text-surface-100 hover:border-surface-500 transition-colors"
                 >
                   <CalendarClock className="h-4 w-4" />
                   {t('news.publishedAtNow')}
@@ -882,10 +882,10 @@ function EditView({
       </section>
 
       {/* Sekcja: Tłumaczenia */}
-      <section className="bg-dark-800 border border-dark-700 rounded-lg p-6">
-        <h3 className="text-lg font-semibold text-dark-100 mb-3">{t('news.duplicateAsTranslation')}</h3>
+      <section className="bg-surface-800 border border-surface-700 rounded-lg p-6">
+        <h3 className="text-lg font-semibold text-surface-100 mb-3">{t('news.duplicateAsTranslation')}</h3>
         {availableTargetLanguages.length === 0 ? (
-          <p className="text-sm text-dark-400">{t('news.translationExists')}</p>
+          <p className="text-sm text-surface-400">{t('news.translationExists')}</p>
         ) : (
           <div className="flex gap-2">
             {availableTargetLanguages.map((lang) => (
@@ -908,7 +908,7 @@ function EditView({
           <p className="text-sm text-green-400 mt-2">{t('news.duplicateSuccess')}</p>
         )}
         {hasTranslationSiblings && (
-          <div className="mt-4 pt-4 border-t border-dark-600">
+          <div className="mt-4 pt-4 border-t border-surface-600">
             <button
               onClick={() => setDeleteSingleConfirm(true)}
               className="text-sm text-red-400 hover:text-red-300 transition-colors"
@@ -920,8 +920,8 @@ function EditView({
       </section>
 
       {/* Sekcja 2: Miniaturka */}
-      <section className="bg-dark-800 border border-dark-700 rounded-lg p-6">
-        <h3 className="text-lg font-semibold text-dark-100 mb-4">{t('news.sectionThumbnail')}</h3>
+      <section className="bg-surface-800 border border-surface-700 rounded-lg p-6">
+        <h3 className="text-lg font-semibold text-surface-100 mb-4">{t('news.sectionThumbnail')}</h3>
 
         {(thumbnailPreview || thumbnailFromLibrary || detail.thumbnailUrl) && (
           <div className="mb-4 relative max-w-sm">
@@ -933,7 +933,7 @@ function EditView({
                 aspectRatio="16/9"
               />
             ) : (
-              <div className="relative rounded-lg overflow-hidden bg-dark-700 aspect-video">
+              <div className="relative rounded-lg overflow-hidden bg-surface-700 aspect-video">
                 <div
                   className="absolute inset-0 scale-110 blur-xl"
                   style={{
@@ -972,7 +972,7 @@ function EditView({
                 setThumbnailPreview(URL.createObjectURL(file))
               }}
             />
-            <span className="inline-flex items-center gap-2 px-3 py-2 bg-dark-700 border border-dark-600 rounded text-sm text-dark-200 hover:border-primary-500 transition-colors cursor-pointer">
+            <span className="inline-flex items-center gap-2 px-3 py-2 bg-surface-700 border border-surface-600 rounded text-sm text-surface-200 hover:border-primary-500 transition-colors cursor-pointer">
               <Upload className="h-4 w-4" />
               {t('news.chooseThumbnail')}
             </span>
@@ -980,7 +980,7 @@ function EditView({
 
           <button
             onClick={() => { setPickerTarget('thumbnail'); setShowMediaPicker(true) }}
-            className="inline-flex items-center gap-2 px-3 py-2 bg-dark-700 border border-dark-600 rounded text-sm text-dark-200 hover:border-primary-500 transition-colors"
+            className="inline-flex items-center gap-2 px-3 py-2 bg-surface-700 border border-surface-600 rounded text-sm text-surface-200 hover:border-primary-500 transition-colors"
           >
             <Library className="h-4 w-4" />
             {t('mediaPicker.chooseThumbnailFromLibrary')}
@@ -988,7 +988,7 @@ function EditView({
 
           <button
             onClick={() => { setPickerTarget('thumbnail'); setShowGalleryPicker(true) }}
-            className="inline-flex items-center gap-2 px-3 py-2 bg-dark-700 border border-dark-600 rounded text-sm text-dark-200 hover:border-primary-500 transition-colors"
+            className="inline-flex items-center gap-2 px-3 py-2 bg-surface-700 border border-surface-600 rounded text-sm text-surface-200 hover:border-primary-500 transition-colors"
           >
             <Images className="h-4 w-4" />
             {t('galleryPicker.chooseFromGallery')}
@@ -1002,7 +1002,7 @@ function EditView({
               className={`inline-flex items-center gap-2 px-3 py-2 border rounded text-sm transition-colors ${
                 cropEnabled
                   ? 'bg-primary-600/20 border-primary-500 text-primary-300 hover:bg-primary-600/30'
-                  : 'bg-dark-700 border-dark-600 text-dark-200 hover:border-primary-500'
+                  : 'bg-surface-700 border-surface-600 text-surface-200 hover:border-primary-500'
               }`}
             >
               <Crop className="h-4 w-4" />
@@ -1018,7 +1018,7 @@ function EditView({
                 setThumbnailPreview(null)
                 setThumbnailFromLibrary(null)
               }}
-              className="text-sm text-dark-400 hover:text-dark-100 transition-colors"
+              className="text-sm text-surface-400 hover:text-surface-100 transition-colors"
             >
               {t('news.cancelThumbnail')}
             </button>
@@ -1037,8 +1037,8 @@ function EditView({
       </section>
 
       {/* Sekcja 3: Bloki treści */}
-      <section className="bg-dark-800 border border-dark-700 rounded-lg p-6">
-        <h3 className="text-lg font-semibold text-dark-100 mb-4">{t('news.sectionContent')}</h3>
+      <section className="bg-surface-800 border border-surface-700 rounded-lg p-6">
+        <h3 className="text-lg font-semibold text-surface-100 mb-4">{t('news.sectionContent')}</h3>
 
         {/* Istniejące bloki */}
         {detail.blocks.length > 0 || pendingBlocks.length > 0 ? (
@@ -1079,7 +1079,7 @@ function EditView({
             ))}
           </div>
         ) : (
-          <p className="text-dark-400 text-sm mb-6">{t('news.noBlocks')}</p>
+          <p className="text-surface-400 text-sm mb-6">{t('news.noBlocks')}</p>
         )}
 
         {/* Dodaj blok */}
@@ -1113,7 +1113,7 @@ function EditView({
                 e.target.value = ''
               }}
             />
-            <span className="inline-flex items-center gap-2 px-3 py-2 bg-dark-800 border border-dark-600 rounded text-sm text-dark-200 hover:border-dark-400 transition-colors cursor-pointer font-medium">
+            <span className="inline-flex items-center gap-2 px-3 py-2 bg-surface-800 border border-surface-600 rounded text-sm text-surface-200 hover:border-surface-400 transition-colors cursor-pointer font-medium">
               <ImageIcon className="h-4 w-4" />
               {t('news.addImage')}
             </span>
@@ -1121,7 +1121,7 @@ function EditView({
 
           <button
             onClick={() => { setPickerTarget('block'); setShowMediaPicker(true) }}
-            className="inline-flex items-center gap-2 px-3 py-2 bg-dark-800 border border-dark-600 rounded text-sm text-dark-200 hover:border-dark-400 transition-colors font-medium"
+            className="inline-flex items-center gap-2 px-3 py-2 bg-surface-800 border border-surface-600 rounded text-sm text-surface-200 hover:border-surface-400 transition-colors font-medium"
           >
             <Library className="h-4 w-4" />
             {t('mediaPicker.chooseFromLibrary')}
@@ -1129,7 +1129,7 @@ function EditView({
 
           <button
             onClick={() => { setPickerTarget('block'); setShowGalleryPicker(true) }}
-            className="inline-flex items-center gap-2 px-3 py-2 bg-dark-800 border border-dark-600 rounded text-sm text-dark-200 hover:border-dark-400 transition-colors font-medium"
+            className="inline-flex items-center gap-2 px-3 py-2 bg-surface-800 border border-surface-600 rounded text-sm text-surface-200 hover:border-surface-400 transition-colors font-medium"
           >
             <Images className="h-4 w-4" />
             {t('galleryPicker.chooseFromGallery')}
@@ -1142,7 +1142,7 @@ function EditView({
                 { type: 'VIDEO_EMBED', tempId: crypto.randomUUID(), url: '' },
               ])
             }
-            className="inline-flex items-center gap-2 px-3 py-2 bg-dark-800 border border-dark-600 rounded text-sm text-dark-200 hover:border-dark-400 transition-colors font-medium"
+            className="inline-flex items-center gap-2 px-3 py-2 bg-surface-800 border border-surface-600 rounded text-sm text-surface-200 hover:border-surface-400 transition-colors font-medium"
           >
             <Video className="h-4 w-4" />
             {t('news.addVideo')}
@@ -1151,7 +1151,7 @@ function EditView({
       </section>
 
       {/* Sticky bottom bar */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 bg-dark-900/95 backdrop-blur border-t border-dark-700 px-6 py-4">
+      <div className="fixed bottom-0 left-0 right-0 z-40 bg-surface-900/95 backdrop-blur border-t border-surface-700 px-6 py-4">
         <div className="max-w-5xl mx-auto flex items-center justify-end gap-4">
           <div className="flex items-center gap-3">
             {saveError && (
@@ -1179,7 +1179,7 @@ function EditView({
               <X className="h-4 w-4 mr-1.5" />
               {t('news.cancel')}
             </Button>
-            <span className="text-[10px] text-dark-500 hidden sm:block">Publikacja dotyczy wszystkich języków</span>
+            <span className="text-[10px] text-surface-500 hidden sm:block">Publikacja dotyczy wszystkich języków</span>
             {published ? (
               <>
                 <Button
@@ -1260,7 +1260,7 @@ function EditView({
         onClose={() => { setShowSyncMediaModal(false); setPendingSyncAction(null) }}
         title={t('news.syncMediaModalTitle')}
       >
-        <p className="text-sm text-dark-300 mb-4">{t('news.syncMediaModalMessage')}</p>
+        <p className="text-sm text-surface-300 mb-4">{t('news.syncMediaModalMessage')}</p>
         {saveError && (
           <p className="text-sm text-red-400 mb-4">{saveError}</p>
         )}
@@ -1378,7 +1378,7 @@ function BlockEditor({
   return (
     <div className={clsx(
       'border rounded-lg p-4',
-      isModified ? 'border-amber-500/50' : 'border-dark-600'
+      isModified ? 'border-amber-500/50' : 'border-surface-600'
     )}>
       {/* Header bloku */}
       <div className="flex items-center justify-between mb-3">
@@ -1406,7 +1406,7 @@ function BlockEditor({
           <button
             onClick={onMoveUp}
             disabled={isFirst}
-            className="p-1 text-dark-400 hover:text-dark-100 disabled:opacity-30 transition-colors"
+            className="p-1 text-surface-400 hover:text-surface-100 disabled:opacity-30 transition-colors"
             title={t('news.moveUp')}
           >
             <ChevronUp className="h-4 w-4" />
@@ -1414,14 +1414,14 @@ function BlockEditor({
           <button
             onClick={onMoveDown}
             disabled={isLast}
-            className="p-1 text-dark-400 hover:text-dark-100 disabled:opacity-30 transition-colors"
+            className="p-1 text-surface-400 hover:text-surface-100 disabled:opacity-30 transition-colors"
             title={t('news.moveDown')}
           >
             <ChevronDown className="h-4 w-4" />
           </button>
           <button
             onClick={onDelete}
-            className="p-1 text-dark-400 hover:text-red-400 transition-colors"
+            className="p-1 text-surface-400 hover:text-red-400 transition-colors"
             title={t('news.deleteBlock')}
           >
             <Trash2 className="h-4 w-4" />
@@ -1442,9 +1442,9 @@ function BlockEditor({
             value={editState.content ?? ''}
             onChange={(e) => onChange({ ...editState, content: e.target.value })}
             placeholder={t('news.videoUrlPlaceholder')}
-            className="w-full bg-dark-700 border border-dark-600 rounded px-3 py-2 text-dark-100 focus:outline-none focus:border-primary-500 text-sm"
+            className="w-full bg-surface-700 border border-surface-600 rounded px-3 py-2 text-surface-100 focus:outline-none focus:border-primary-500 text-sm"
           />
-          <p className="text-xs text-dark-500">{t('news.videoUrlHint')}</p>
+          <p className="text-xs text-surface-500">{t('news.videoUrlHint')}</p>
         </div>
       ) : (
         <div className="space-y-2">
@@ -1453,7 +1453,7 @@ function BlockEditor({
               <img
                 src={block.imageUrl}
                 alt={editState.caption ?? ''}
-                className="max-h-72 max-w-full w-auto h-auto rounded border border-dark-600"
+                className="max-h-72 max-w-full w-auto h-auto rounded border border-surface-600"
               />
             </div>
           )}
@@ -1462,7 +1462,7 @@ function BlockEditor({
             value={editState.caption ?? ''}
             onChange={(e) => onChange({ ...editState, caption: e.target.value })}
             placeholder={t('news.captionPlaceholder')}
-            className="w-full bg-dark-700 border border-dark-600 rounded px-3 py-2 text-dark-100 focus:outline-none focus:border-primary-500 text-sm"
+            className="w-full bg-surface-700 border border-surface-600 rounded px-3 py-2 text-surface-100 focus:outline-none focus:border-primary-500 text-sm"
           />
         </div>
       )}
@@ -1515,7 +1515,7 @@ function PendingBlockItem({
           <button
             onClick={onMoveUp}
             disabled={isFirst}
-            className="p-1 text-dark-400 hover:text-dark-100 disabled:opacity-30 transition-colors"
+            className="p-1 text-surface-400 hover:text-surface-100 disabled:opacity-30 transition-colors"
             title={t('news.moveUp')}
           >
             <ChevronUp className="h-4 w-4" />
@@ -1523,14 +1523,14 @@ function PendingBlockItem({
           <button
             onClick={onMoveDown}
             disabled={isLast}
-            className="p-1 text-dark-400 hover:text-dark-100 disabled:opacity-30 transition-colors"
+            className="p-1 text-surface-400 hover:text-surface-100 disabled:opacity-30 transition-colors"
             title={t('news.moveDown')}
           >
             <ChevronDown className="h-4 w-4" />
           </button>
           <button
             onClick={onDelete}
-            className="p-1 text-dark-400 hover:text-red-400 transition-colors"
+            className="p-1 text-surface-400 hover:text-red-400 transition-colors"
             title={t('news.deleteBlock')}
           >
             <Trash2 className="h-4 w-4" />
@@ -1550,9 +1550,9 @@ function PendingBlockItem({
             value={block.url}
             onChange={(e) => onChange({ url: e.target.value })}
             placeholder={t('news.videoUrlPlaceholder')}
-            className="w-full bg-dark-700 border border-dark-600 rounded px-3 py-2 text-dark-100 focus:outline-none focus:border-primary-500 text-sm"
+            className="w-full bg-surface-700 border border-surface-600 rounded px-3 py-2 text-surface-100 focus:outline-none focus:border-primary-500 text-sm"
           />
-          <p className="text-xs text-dark-500">{t('news.videoUrlHint')}</p>
+          <p className="text-xs text-surface-500">{t('news.videoUrlHint')}</p>
         </div>
       ) : (
         <div className="space-y-2">
@@ -1561,7 +1561,7 @@ function PendingBlockItem({
               <img
                 src={block.imageUrl ?? block.preview}
                 alt={block.caption}
-                className="max-h-72 max-w-full w-auto h-auto rounded border border-dark-600"
+                className="max-h-72 max-w-full w-auto h-auto rounded border border-surface-600"
               />
             </div>
           )}
@@ -1570,7 +1570,7 @@ function PendingBlockItem({
             value={block.caption}
             onChange={(e) => onChange({ caption: e.target.value })}
             placeholder={t('news.captionPlaceholder')}
-            className="w-full bg-dark-700 border border-dark-600 rounded px-3 py-2 text-dark-100 focus:outline-none focus:border-primary-500 text-sm"
+            className="w-full bg-surface-700 border border-surface-600 rounded px-3 py-2 text-surface-100 focus:outline-none focus:border-primary-500 text-sm"
           />
         </div>
       )}

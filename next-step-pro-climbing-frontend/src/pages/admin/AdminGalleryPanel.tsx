@@ -286,7 +286,7 @@ export function AdminGalleryPanel() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-dark-100">Zarządzanie Galerią</h2>
+        <h2 className="text-2xl font-bold text-surface-100">Zarządzanie Galerią</h2>
         <Button onClick={() => setCreateAlbumModalOpen(true)}>
           <Plus className="h-4 w-4 mr-2" />
           Nowy album
@@ -295,7 +295,7 @@ export function AdminGalleryPanel() {
 
       {/* Albums List */}
       {orderedAlbums.length === 0 && !isLoading ? (
-        <div className="text-center py-12 text-dark-400">
+        <div className="text-center py-12 text-surface-400">
           Brak albumów. Dodaj pierwszy używając przycisku powyżej.
         </div>
       ) : (
@@ -303,7 +303,7 @@ export function AdminGalleryPanel() {
           {orderedAlbums.map((album, index) => (
             <div
               key={album.id}
-              className="bg-dark-800 rounded-lg border border-dark-700 overflow-hidden"
+              className="bg-surface-800 rounded-lg border border-surface-700 overflow-hidden"
             >
               {/* Album Header */}
               <div className="p-4 sm:p-6">
@@ -311,7 +311,7 @@ export function AdminGalleryPanel() {
                   {/* Thumbnail */}
                   <div className="flex-shrink-0 w-full sm:w-auto">
                     {album.thumbnailUrl ? (
-                      <div className="w-full h-40 sm:w-32 sm:h-24 rounded-lg overflow-hidden relative bg-dark-700">
+                      <div className="w-full h-40 sm:w-32 sm:h-24 rounded-lg overflow-hidden relative bg-surface-700">
                         <div
                           className="absolute inset-0 scale-110 blur-xl"
                           style={{
@@ -329,8 +329,8 @@ export function AdminGalleryPanel() {
                         />
                       </div>
                     ) : (
-                      <div className="w-full h-40 sm:w-32 sm:h-24 bg-dark-700 rounded-lg flex items-center justify-center">
-                        <ImageIcon className="h-8 w-8 text-dark-500" />
+                      <div className="w-full h-40 sm:w-32 sm:h-24 bg-surface-700 rounded-lg flex items-center justify-center">
+                        <ImageIcon className="h-8 w-8 text-surface-500" />
                       </div>
                     )}
                   </div>
@@ -340,24 +340,24 @@ export function AdminGalleryPanel() {
                     <div className="flex flex-col gap-3">
                       <div>
                         <div className="flex items-center gap-2 flex-wrap">
-                          <h3 className="text-xl font-bold text-dark-100">{album.name}</h3>
+                          <h3 className="text-xl font-bold text-surface-100">{album.name}</h3>
                           {album.published ? (
                             <span className="flex items-center gap-1 text-xs text-emerald-400 font-medium">
                               <Eye className="h-3 w-3" />
                               Opublikowany
                             </span>
                           ) : (
-                            <span className="flex items-center gap-1 text-xs text-dark-400 font-medium bg-dark-700 px-2 py-0.5 rounded-full">
+                            <span className="flex items-center gap-1 text-xs text-surface-400 font-medium bg-surface-700 px-2 py-0.5 rounded-full">
                               <EyeOff className="h-3 w-3" />
                               Szkic
                             </span>
                           )}
                         </div>
-                        <p className="text-sm text-dark-400 mt-1">
+                        <p className="text-sm text-surface-400 mt-1">
                           {album.photoCount} {album.photoCount === 1 ? 'zdjęcie' : 'zdjęć'}
                         </p>
                         {album.description && (
-                          <p className="text-dark-300 mt-2 text-sm">{album.description}</p>
+                          <p className="text-surface-300 mt-2 text-sm">{album.description}</p>
                         )}
                       </div>
                       <div className="flex flex-wrap gap-1.5">
@@ -438,9 +438,9 @@ export function AdminGalleryPanel() {
 
               {/* Expanded Photos */}
               {expandedAlbumId === album.id && albumDetail && (
-                <div className="border-t border-dark-700 p-6 bg-dark-900/50">
+                <div className="border-t border-surface-700 p-6 bg-surface-900/50">
                   <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
-                    <h4 className="font-semibold text-dark-100">Zdjęcia w albumie</h4>
+                    <h4 className="font-semibold text-surface-100">Zdjęcia w albumie</h4>
                     <div className="flex gap-2">
                       {albumDetail.photos.length > 0 && (
                         <Button
@@ -469,7 +469,7 @@ export function AdminGalleryPanel() {
                   </div>
 
                   {albumDetail.photos.length === 0 ? (
-                    <div className="text-center py-8 text-dark-400 text-sm">
+                    <div className="text-center py-8 text-surface-400 text-sm">
                       Ten album nie zawiera jeszcze zdjęć
                     </div>
                   ) : (
@@ -477,7 +477,7 @@ export function AdminGalleryPanel() {
                       {albumDetail.photos.map((photo) => (
                         <div
                           key={photo.id}
-                          className="group relative bg-dark-700 rounded-lg overflow-hidden aspect-square cursor-pointer"
+                          className="group relative bg-surface-700 rounded-lg overflow-hidden aspect-square cursor-pointer"
                           onClick={() => {
                             const idx = albumDetail!.photos.findIndex(p => p.id === photo.id)
                             setLightboxIndex(idx >= 0 ? idx : 0)
@@ -497,7 +497,7 @@ export function AdminGalleryPanel() {
                             className="relative w-full h-full object-contain"
                           />
                           {photo.caption && (
-                            <div className="p-2 text-xs text-dark-300 line-clamp-2">
+                            <div className="p-2 text-xs text-surface-300 line-clamp-2">
                               {photo.caption}
                             </div>
                           )}
@@ -507,7 +507,7 @@ export function AdminGalleryPanel() {
                               className="absolute top-2 left-2 bg-amber-400 rounded-full p-1 shadow-md"
                               title="Miniaturka albumu"
                             >
-                              <Star className="h-3 w-3 text-dark-900" fill="currentColor" />
+                              <Star className="h-3 w-3 text-surface-900" fill="currentColor" />
                             </div>
                           )}
                           <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
@@ -523,7 +523,7 @@ export function AdminGalleryPanel() {
                               }}
                               disabled={setThumbnailMutation.isPending}
                               title={albumDetail.thumbnailPhotoId === photo.id ? 'Aktualnie ustawiona miniaturka' : 'Ustaw jako miniaturkę'}
-                              className={`bg-dark-800/80 hover:bg-dark-700${albumDetail.thumbnailPhotoId === photo.id ? ' text-amber-400' : ''}`}
+                              className={`bg-surface-800/80 hover:bg-surface-700${albumDetail.thumbnailPhotoId === photo.id ? ' text-amber-400' : ''}`}
                             >
                               <Star
                                 className="h-4 w-4"
@@ -539,7 +539,7 @@ export function AdminGalleryPanel() {
                                 setFocalPoint({ x: photo.focalPointX ?? 0.5, y: photo.focalPointY ?? 0.5 })
                                 setEditPhotoModalOpen(true)
                               }}
-                              className="bg-dark-800/80 hover:bg-dark-700"
+                              className="bg-surface-800/80 hover:bg-surface-700"
                             >
                               <Pencil className="h-4 w-4" />
                             </Button>
@@ -551,7 +551,7 @@ export function AdminGalleryPanel() {
                                 setSelectedPhotoId(photo.id)
                                 setDeletePhotoConfirmOpen(true)
                               }}
-                              className="bg-dark-800/80 hover:bg-dark-700"
+                              className="bg-surface-800/80 hover:bg-surface-700"
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
@@ -580,7 +580,7 @@ export function AdminGalleryPanel() {
       >
         <form onSubmit={handleCreateAlbum} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-dark-200 mb-1">
+            <label className="block text-sm font-medium text-surface-200 mb-1">
               Nazwa albumu *
             </label>
             <input
@@ -588,18 +588,18 @@ export function AdminGalleryPanel() {
               name="name"
               required
               maxLength={255}
-              className="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-dark-100 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              className="w-full px-3 py-2 bg-surface-700 border border-surface-600 rounded-lg text-surface-100 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-dark-200 mb-1">
+            <label className="block text-sm font-medium text-surface-200 mb-1">
               Opis
             </label>
             <textarea
               name="description"
               rows={8}
-              className="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-dark-100 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              className="w-full px-3 py-2 bg-surface-700 border border-surface-600 rounded-lg text-surface-100 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             />
           </div>
 
@@ -634,7 +634,7 @@ export function AdminGalleryPanel() {
         >
           <form onSubmit={handleUpdateAlbum} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-dark-200 mb-1">
+              <label className="block text-sm font-medium text-surface-200 mb-1">
                 Nazwa albumu *
               </label>
               <input
@@ -643,19 +643,19 @@ export function AdminGalleryPanel() {
                 defaultValue={selectedAlbum.name}
                 required
                 maxLength={255}
-                className="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-dark-100 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                className="w-full px-3 py-2 bg-surface-700 border border-surface-600 rounded-lg text-surface-100 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-dark-200 mb-1">
+              <label className="block text-sm font-medium text-surface-200 mb-1">
                 Opis
               </label>
               <textarea
                 name="description"
                 defaultValue={selectedAlbum.description || ''}
                 rows={8}
-                className="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-dark-100 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                className="w-full px-3 py-2 bg-surface-700 border border-surface-600 rounded-lg text-surface-100 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               />
             </div>
 
@@ -707,24 +707,24 @@ export function AdminGalleryPanel() {
             />
 
             <div>
-              <label className="block text-sm font-medium text-dark-200 mb-1">
+              <label className="block text-sm font-medium text-surface-200 mb-1">
                 Podpis (opcjonalnie, tylko dla pojedynczego zdjęcia)
               </label>
               <input
                 type="text"
                 name="caption"
                 disabled={selectedFiles.length > 1}
-                className="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-dark-100 focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:opacity-50"
+                className="w-full px-3 py-2 bg-surface-700 border border-surface-600 rounded-lg text-surface-100 focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:opacity-50"
               />
             </div>
 
             {uploadProgress > 0 && uploadProgress < 100 && (
               <div className="space-y-2">
-                <div className="flex justify-between text-sm text-dark-300">
+                <div className="flex justify-between text-sm text-surface-300">
                   <span>Przesyłanie...</span>
                   <span>{uploadProgress}%</span>
                 </div>
-                <div className="w-full bg-dark-700 rounded-full h-2 overflow-hidden">
+                <div className="w-full bg-surface-700 rounded-full h-2 overflow-hidden">
                   <div
                     className="bg-primary-500 h-full transition-all duration-300"
                     style={{ width: `${uploadProgress}%` }}
@@ -776,21 +776,21 @@ export function AdminGalleryPanel() {
         >
           <form onSubmit={handleUpdatePhoto} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-dark-200 mb-1">
+              <label className="block text-sm font-medium text-surface-200 mb-1">
                 Podpis
               </label>
               <textarea
                 name="caption"
                 defaultValue={selectedPhoto.caption || ''}
                 rows={2}
-                className="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-dark-100 focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
+                className="w-full px-3 py-2 bg-surface-700 border border-surface-600 rounded-lg text-surface-100 focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
                 placeholder="Dodaj opis zdjęcia..."
               />
             </div>
 
             <div>
               <div className="flex items-center justify-between mb-2">
-                <label className="block text-sm font-medium text-dark-200">
+                <label className="block text-sm font-medium text-surface-200">
                   Kadrowanie
                 </label>
                 <button
@@ -953,7 +953,7 @@ export function AdminGalleryPanel() {
                 }}
                 disabled={setThumbnailMutation.isPending}
                 title={albumDetail?.thumbnailPhotoId === lightboxPhotos[lightboxIndex].id ? 'Aktualnie ustawiona miniaturka' : 'Ustaw jako miniaturkę'}
-                className={`bg-dark-800/80 hover:bg-dark-700 text-white${albumDetail?.thumbnailPhotoId === lightboxPhotos[lightboxIndex].id ? ' !text-amber-400' : ''}`}
+                className={`bg-surface-800/80 hover:bg-surface-700 text-white${albumDetail?.thumbnailPhotoId === lightboxPhotos[lightboxIndex].id ? ' !text-amber-400' : ''}`}
               >
                 <Star
                   className="h-4 w-4"
@@ -970,7 +970,7 @@ export function AdminGalleryPanel() {
                   setLightboxIndex(null)
                   setEditPhotoModalOpen(true)
                 }}
-                className="bg-dark-800/80 hover:bg-dark-700 text-white"
+                className="bg-surface-800/80 hover:bg-surface-700 text-white"
               >
                 <Pencil className="h-4 w-4" />
               </Button>
@@ -982,7 +982,7 @@ export function AdminGalleryPanel() {
                   setLightboxIndex(null)
                   setDeletePhotoConfirmOpen(true)
                 }}
-                className="bg-dark-800/80 hover:bg-dark-700 text-white"
+                className="bg-surface-800/80 hover:bg-surface-700 text-white"
               >
                 <Trash2 className="h-4 w-4" />
               </Button>

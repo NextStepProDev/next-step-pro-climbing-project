@@ -170,7 +170,7 @@ export function AdminVideosPanel() {
         <div className="flex items-center justify-between mb-6">
           <button
             onClick={handleBackToList}
-            className="inline-flex items-center gap-2 text-dark-400 hover:text-dark-200 transition-colors text-sm"
+            className="inline-flex items-center gap-2 text-surface-400 hover:text-surface-200 transition-colors text-sm"
           >
             <ArrowLeft className="w-4 h-4" />
             {t('videos.backToList')}
@@ -181,7 +181,7 @@ export function AdminVideosPanel() {
               {t('videos.published')}
             </span>
           ) : (
-            <span className="px-2 py-1 rounded-full text-xs font-medium bg-dark-700 text-dark-400">
+            <span className="px-2 py-1 rounded-full text-xs font-medium bg-surface-700 text-surface-400">
               {t('videos.draft')}
             </span>
           )}
@@ -191,7 +191,7 @@ export function AdminVideosPanel() {
         <div className="space-y-6">
           {/* Title */}
           <div>
-            <label className="block text-sm font-medium text-dark-300 mb-1.5">
+            <label className="block text-sm font-medium text-surface-300 mb-1.5">
               {t('videos.titleLabel')}
             </label>
             <input
@@ -199,13 +199,13 @@ export function AdminVideosPanel() {
               value={formTitle}
               onChange={(e) => setFormTitle(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleSaveDraft() } }}
-              className="w-full bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-dark-100 placeholder-dark-500 focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500/30"
+              className="w-full bg-surface-800 border border-surface-700 rounded-lg px-3 py-2 text-surface-100 placeholder-surface-500 focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500/30"
             />
           </div>
 
           {/* YouTube URL */}
           <div>
-            <label className="block text-sm font-medium text-dark-300 mb-1.5">
+            <label className="block text-sm font-medium text-surface-300 mb-1.5">
               {t('videos.youtubeUrlLabel')}
             </label>
             <input
@@ -214,7 +214,7 @@ export function AdminVideosPanel() {
               onChange={(e) => setFormYoutubeUrl(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleSaveDraft() } }}
               placeholder={t('videos.youtubeUrlPlaceholder')}
-              className="w-full bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-dark-100 placeholder-dark-500 focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500/30"
+              className="w-full bg-surface-800 border border-surface-700 rounded-lg px-3 py-2 text-surface-100 placeholder-surface-500 focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500/30"
             />
             {formYoutubeUrl && (
               <a
@@ -231,7 +231,7 @@ export function AdminVideosPanel() {
 
           {/* Excerpt */}
           <div>
-            <label className="block text-sm font-medium text-dark-300 mb-1.5">
+            <label className="block text-sm font-medium text-surface-300 mb-1.5">
               {t('videos.excerptLabel')}
             </label>
             <RichTextEditor
@@ -244,7 +244,7 @@ export function AdminVideosPanel() {
 
           {/* Content */}
           <div>
-            <label className="block text-sm font-medium text-dark-300 mb-1.5">
+            <label className="block text-sm font-medium text-surface-300 mb-1.5">
               {t('videos.contentLabel')}
             </label>
             <RichTextEditor
@@ -305,7 +305,7 @@ export function AdminVideosPanel() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-bold text-dark-100">{t('videos.title')}</h2>
+        <h2 className="text-xl font-bold text-surface-100">{t('videos.title')}</h2>
         <Button
           variant="primary"
           size="sm"
@@ -327,7 +327,7 @@ export function AdminVideosPanel() {
       {error && <QueryError error={error} />}
 
       {!isLoading && !error && (!videos || videos.length === 0) && (
-        <p className="text-dark-400 text-sm">{t('videos.noVideos')}</p>
+        <p className="text-surface-400 text-sm">{t('videos.noVideos')}</p>
       )}
 
       {!isLoading && !error && videos && videos.length > 0 && (
@@ -335,7 +335,7 @@ export function AdminVideosPanel() {
           {videos.map((video, idx) => (
             <div
               key={video.id}
-              className="flex items-center gap-3 bg-dark-800 rounded-lg px-4 py-3 border border-dark-700"
+              className="flex items-center gap-3 bg-surface-800 rounded-lg px-4 py-3 border border-surface-700"
             >
               {/* Order buttons */}
               <div className="flex flex-col gap-0.5 shrink-0">
@@ -346,8 +346,8 @@ export function AdminVideosPanel() {
                   className={clsx(
                     'p-0.5 rounded transition-colors',
                     idx === 0
-                      ? 'text-dark-700 cursor-not-allowed'
-                      : 'text-dark-400 hover:text-dark-200'
+                      ? 'text-surface-700 cursor-not-allowed'
+                      : 'text-surface-400 hover:text-surface-200'
                   )}
                 >
                   <ChevronUp className="w-4 h-4" />
@@ -363,8 +363,8 @@ export function AdminVideosPanel() {
                   className={clsx(
                     'p-0.5 rounded transition-colors',
                     idx === videos.length - 1
-                      ? 'text-dark-700 cursor-not-allowed'
-                      : 'text-dark-400 hover:text-dark-200'
+                      ? 'text-surface-700 cursor-not-allowed'
+                      : 'text-surface-400 hover:text-surface-200'
                   )}
                 >
                   <ChevronDown className="w-4 h-4" />
@@ -373,8 +373,8 @@ export function AdminVideosPanel() {
 
               {/* Title + status */}
               <div className="flex-1 min-w-0">
-                <span className="text-dark-100 font-medium truncate block">{video.title}</span>
-                <span className="text-xs text-dark-500 truncate block">{video.youtubeUrl}</span>
+                <span className="text-surface-100 font-medium truncate block">{video.title}</span>
+                <span className="text-xs text-surface-500 truncate block">{video.youtubeUrl}</span>
               </div>
 
               {/* Status badge */}
@@ -383,7 +383,7 @@ export function AdminVideosPanel() {
                   'flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium shrink-0',
                   video.published
                     ? 'bg-green-500/10 text-green-400'
-                    : 'bg-dark-700 text-dark-400'
+                    : 'bg-surface-700 text-surface-400'
                 )}
               >
                 {video.published ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
@@ -400,21 +400,21 @@ export function AdminVideosPanel() {
                   }
                   disabled={publishMutation.isPending}
                   title={video.published ? t('videos.unpublish') : t('videos.publish')}
-                  className={video.published ? 'text-emerald-400 hover:text-orange-400' : 'text-dark-400 hover:text-dark-100'}
+                  className={video.published ? 'text-emerald-400 hover:text-orange-400' : 'text-surface-400 hover:text-surface-100'}
                 >
                   {video.published ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
                 </Button>
                 <button
                   onClick={() => openEditView(video)}
                   title={t('videos.edit')}
-                  className="p-1.5 rounded text-dark-400 hover:text-dark-200 hover:bg-dark-700 transition-colors"
+                  className="p-1.5 rounded text-surface-400 hover:text-surface-200 hover:bg-surface-700 transition-colors"
                 >
                   <Pencil className="w-4 h-4" />
                 </button>
                 <button
                   onClick={() => setDeleteConfirm({ open: true, video })}
                   title={t('videos.delete')}
-                  className="p-1.5 rounded text-dark-400 hover:text-rose-400 hover:bg-dark-700 transition-colors"
+                  className="p-1.5 rounded text-surface-400 hover:text-rose-400 hover:bg-surface-700 transition-colors"
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>

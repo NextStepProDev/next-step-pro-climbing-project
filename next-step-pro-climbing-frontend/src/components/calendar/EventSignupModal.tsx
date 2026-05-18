@@ -385,7 +385,7 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
 
         {/* Title + course link */}
         <div className="flex items-start justify-between gap-3">
-          <h3 className="text-lg font-semibold text-dark-100">{ev.title}</h3>
+          <h3 className="text-lg font-semibold text-surface-100">{ev.title}</h3>
           {ev.courseId && (
             <Link
               to={`/kursy/${ev.courseId}`}
@@ -400,11 +400,11 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
 
         {/* Description */}
         {ev.description && (
-          <p className="text-sm text-dark-300 whitespace-pre-wrap">{ev.description}</p>
+          <p className="text-sm text-surface-300 whitespace-pre-wrap">{ev.description}</p>
         )}
 
         {/* Date */}
-        <div className="flex items-center gap-2 text-dark-300">
+        <div className="flex items-center gap-2 text-surface-300">
           <Calendar className="w-5 h-5" />
           <span>
             {format(new Date(ev.startDate), 'dd.MM.yyyy')}
@@ -416,14 +416,14 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
 
         {/* Location */}
         {ev.location && (
-          <div className="flex items-center gap-2 text-dark-300">
+          <div className="flex items-center gap-2 text-surface-300">
             <MapPin className="w-5 h-5" />
             <span>{ev.location}</span>
           </div>
         )}
 
         {/* Capacity */}
-        <div className="flex items-center gap-2 text-dark-300">
+        <div className="flex items-center gap-2 text-surface-300">
           <Users className="w-5 h-5" />
           <span>
             {t('event.participants', { current: ev.currentParticipants, max: ev.maxParticipants })}
@@ -453,27 +453,27 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
 
             {ev.enrollmentOpen && ev.userParticipants > 0 && (
               <div>
-                <label className="block text-sm text-dark-400 mb-2">{t('event.editParticipantsLabel')}</label>
+                <label className="block text-sm text-surface-400 mb-2">{t('event.editParticipantsLabel')}</label>
                 <div className="flex items-center gap-3">
                   <button
                     type="button"
                     onClick={() => setUserEditParticipants(Math.max(0, editParticipants - 1))}
-                    className="w-9 h-9 rounded-lg bg-dark-800 border border-dark-700 text-dark-200 hover:bg-dark-700 transition-colors text-lg font-bold"
+                    className="w-9 h-9 rounded-lg bg-surface-800 border border-surface-700 text-surface-200 hover:bg-surface-700 transition-colors text-lg font-bold"
                   >
                     -
                   </button>
-                  <span className={`text-lg font-semibold w-8 text-center ${editParticipants === 0 ? 'text-rose-400' : 'text-dark-100'}`}>
+                  <span className={`text-lg font-semibold w-8 text-center ${editParticipants === 0 ? 'text-rose-400' : 'text-surface-100'}`}>
                     {editParticipants}
                   </span>
                   <button
                     type="button"
                     onClick={() => setUserEditParticipants(editParticipants + 1)}
                     disabled={editParticipants >= spotsLeft + ev.userParticipants}
-                    className="w-9 h-9 rounded-lg bg-dark-800 border border-dark-700 text-dark-200 hover:bg-dark-700 transition-colors text-lg font-bold disabled:opacity-40"
+                    className="w-9 h-9 rounded-lg bg-surface-800 border border-surface-700 text-surface-200 hover:bg-surface-700 transition-colors text-lg font-bold disabled:opacity-40"
                   >
                     +
                   </button>
-                  <span className="text-sm text-dark-500">{t('event.spotsOf', { count: spotsLeft + ev.userParticipants })}</span>
+                  <span className="text-sm text-surface-500">{t('event.spotsOf', { count: spotsLeft + ev.userParticipants })}</span>
                 </div>
                 {editParticipants === 0 && (
                   <p className="text-sm text-rose-400/80 mt-2">{t('event.zeroParticipantsHint')}</p>
@@ -512,24 +512,24 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
             )}
             {spotsLeft > 1 && showParticipants && (
               <div>
-                <label className="block text-sm text-dark-400 mb-1">{t('event.spotsLabel')}</label>
+                <label className="block text-sm text-surface-400 mb-1">{t('event.spotsLabel')}</label>
                 <div className="flex items-center gap-3">
                   <button
                     type="button"
                     onClick={() => setParticipants(Math.max(1, participants - 1))}
-                    className="w-9 h-9 rounded-lg bg-dark-800 border border-dark-700 text-dark-200 hover:bg-dark-700 transition-colors text-lg font-bold"
+                    className="w-9 h-9 rounded-lg bg-surface-800 border border-surface-700 text-surface-200 hover:bg-surface-700 transition-colors text-lg font-bold"
                   >
                     -
                   </button>
-                  <span className="text-lg font-semibold text-dark-100 w-8 text-center">{participants}</span>
+                  <span className="text-lg font-semibold text-surface-100 w-8 text-center">{participants}</span>
                   <button
                     type="button"
                     onClick={() => setParticipants(Math.min(spotsLeft, participants + 1))}
-                    className="w-9 h-9 rounded-lg bg-dark-800 border border-dark-700 text-dark-200 hover:bg-dark-700 transition-colors text-lg font-bold"
+                    className="w-9 h-9 rounded-lg bg-surface-800 border border-surface-700 text-surface-200 hover:bg-surface-700 transition-colors text-lg font-bold"
                   >
                     +
                   </button>
-                  <span className="text-sm text-dark-500">{t('event.spotsOf', { count: spotsLeft })}</span>
+                  <span className="text-sm text-surface-500">{t('event.spotsOf', { count: spotsLeft })}</span>
                 </div>
               </div>
             )}
@@ -540,9 +540,9 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
                 placeholder={t('event.commentPlaceholder')}
                 maxLength={500}
                 rows={2}
-                className="w-full bg-dark-800 border border-dark-700 rounded-lg px-4 py-2 text-dark-100 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary-500 placeholder:text-dark-500"
+                className="w-full bg-surface-800 border border-surface-700 rounded-lg px-4 py-2 text-surface-100 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary-500 placeholder:text-surface-500"
               />
-              <div className="text-xs text-dark-500 text-right mt-1">{comment.length}/500</div>
+              <div className="text-xs text-surface-500 text-right mt-1">{comment.length}/500</div>
             </div>
           </>
         )}
@@ -567,7 +567,7 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
         />
 
         {/* Actions */}
-        <div className="flex gap-3 pt-4 border-t border-dark-800">
+        <div className="flex gap-3 pt-4 border-t border-surface-800">
           {renderActions()}
         </div>
 
@@ -613,8 +613,8 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
           : ta('events.deleteTitle')}
       >
         <div className="space-y-4">
-          <div className="text-sm text-dark-400">
-            {ta('events.eventLabel')}<span className="text-dark-200">{ev.title}</span>
+          <div className="text-sm text-surface-400">
+            {ta('events.eventLabel')}<span className="text-surface-200">{ev.title}</span>
           </div>
 
           {deleteConfirmParticipants.participants.length > 0 ? (
@@ -627,21 +627,21 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
                 </div>
               </div>
               <div>
-                <h3 className="text-sm font-medium text-dark-300 mb-2">
+                <h3 className="text-sm font-medium text-surface-300 mb-2">
                   {ta('events.registered', { count: deleteConfirmParticipants.participants.length })}
                 </h3>
                 <ul className="space-y-2 max-h-48 overflow-y-auto">
                   {deleteConfirmParticipants.participants.map((p) => (
-                    <li key={p.userId} className="bg-dark-800 rounded-lg p-3">
-                      <div className="font-medium text-dark-100">{p.fullName}</div>
-                      <div className="text-sm text-dark-400">{p.email}</div>
+                    <li key={p.userId} className="bg-surface-800 rounded-lg p-3">
+                      <div className="font-medium text-surface-100">{p.fullName}</div>
+                      <div className="text-sm text-surface-400">{p.email}</div>
                     </li>
                   ))}
                 </ul>
               </div>
             </>
           ) : (
-            <p className="text-dark-400 text-sm">{ta('events.noRegistered')}</p>
+            <p className="text-surface-400 text-sm">{ta('events.noRegistered')}</p>
           )}
 
           <div className="flex gap-3 pt-2">

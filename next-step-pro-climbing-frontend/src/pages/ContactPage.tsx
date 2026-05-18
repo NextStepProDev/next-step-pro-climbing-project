@@ -1,33 +1,36 @@
 import { useTranslation } from 'react-i18next'
 import { PageHead } from '../components/ui/PageHead'
 import { Mail, Phone, User, Facebook, Youtube, Instagram, ExternalLink } from 'lucide-react'
+import { useTheme } from '../context/ThemeContext'
 import logoWhite from '../assets/logo/logo-white.png'
+import logoBlack from '../assets/logo/logo-black.png'
 import { pzaLogo } from '../assets'
 import { CONTACT } from '../constants/contact'
 import { useState } from 'react'
 
 export function ContactPage() {
   const { t } = useTranslation('common')
+  const { theme } = useTheme()
 
   return (
-    <div className="min-h-screen bg-dark-950">
+    <div className="min-h-screen bg-surface-950">
       <PageHead title={t('contact.title')} description={t('contact.metaDescription')} />
       {/* Hero */}
-      <div className="relative overflow-hidden bg-gradient-to-b from-dark-900 to-dark-950 border-b border-dark-800">
+      <div className="relative overflow-hidden bg-gradient-to-b from-surface-900 to-surface-950 border-b border-surface-800">
         <div className="absolute inset-0 opacity-5">
           <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary-500 rounded-full blur-3xl" />
           <div className="absolute bottom-0 right-1/4 w-64 h-64 bg-primary-700 rounded-full blur-3xl" />
         </div>
         <div className="relative max-w-4xl mx-auto px-4 py-16 sm:py-24 text-center">
           <img
-            src={logoWhite}
+            src={theme === 'dark' ? logoWhite : logoBlack}
             alt={CONTACT.clubName}
             className="h-20 sm:h-24 mx-auto mb-6 drop-shadow-lg"
           />
-          <h1 className="text-3xl sm:text-4xl font-bold text-dark-100 mb-3">
+          <h1 className="text-3xl sm:text-4xl font-bold text-surface-100 mb-3">
             {t('contact.title')}
           </h1>
-          <p className="text-dark-400 text-lg max-w-xl mx-auto">
+          <p className="text-surface-400 text-lg max-w-xl mx-auto">
             {t('contact.subtitle')}
           </p>
         </div>
@@ -38,8 +41,8 @@ export function ContactPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
           {/* Karta: Dane kontaktowe */}
-          <div className="bg-dark-900 border border-dark-800 rounded-2xl p-6 sm:p-8 space-y-5">
-            <h2 className="text-lg font-semibold text-dark-100 mb-6">
+          <div className="bg-surface-900 border border-surface-800 rounded-2xl p-6 sm:p-8 space-y-5">
+            <h2 className="text-lg font-semibold text-surface-100 mb-6">
               {t('contact.directContact')}
             </h2>
 
@@ -71,8 +74,8 @@ export function ContactPage() {
           </div>
 
           {/* Karta: Social media */}
-          <div className="bg-dark-900 border border-dark-800 rounded-2xl p-6 sm:p-8">
-            <h2 className="text-lg font-semibold text-dark-100 mb-6">
+          <div className="bg-surface-900 border border-surface-800 rounded-2xl p-6 sm:p-8">
+            <h2 className="text-lg font-semibold text-surface-100 mb-6">
               {t('contact.followUs')}
             </h2>
 
@@ -132,7 +135,7 @@ export function ContactPage() {
           </div>
 
           {/* Karta: PZA */}
-          <div className="md:col-span-2 bg-dark-900 border border-dark-800 rounded-2xl p-6 sm:p-8">
+          <div className="md:col-span-2 bg-surface-900 border border-surface-800 rounded-2xl p-6 sm:p-8">
             <PzaSection t={t} />
           </div>
         </div>
@@ -160,16 +163,16 @@ function ContactRow({
     <div className="flex items-start gap-4 group">
       <div className={`mt-0.5 shrink-0 ${iconColor}`}>{icon}</div>
       <div className="min-w-0">
-        <p className="text-xs text-dark-500 uppercase tracking-wider mb-0.5">{label}</p>
+        <p className="text-xs text-surface-500 uppercase tracking-wider mb-0.5">{label}</p>
         {href ? (
           <a
             href={href}
-            className="text-dark-200 font-medium hover:text-primary-400 transition-colors break-all"
+            className="inline-block text-surface-200 font-medium hover:text-primary-400 hover:translate-x-1 transition-all duration-200 break-all"
           >
             {value}
           </a>
         ) : (
-          <p className="text-dark-200 font-medium">{value}</p>
+          <p className="text-surface-200 font-medium">{value}</p>
         )}
       </div>
     </div>
@@ -196,14 +199,14 @@ function SocialLink({
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className={`flex items-center gap-4 p-4 rounded-xl border border-dark-700 transition-all duration-200 group ${color}`}
+      className={`flex items-center gap-4 p-4 rounded-xl border border-surface-700 transition-all duration-200 active:scale-95 group ${color}`}
     >
       <div className={`shrink-0 ${iconColor}`}>{icon}</div>
       <div className="flex-1 min-w-0">
-        <p className="text-dark-200 font-medium">{label}</p>
-        <p className="text-dark-500 text-sm truncate">@{handle}</p>
+        <p className="text-surface-200 font-medium">{label}</p>
+        <p className="text-surface-500 text-sm truncate">@{handle}</p>
       </div>
-      <ExternalLink className="w-4 h-4 text-dark-600 group-hover:text-dark-400 transition-colors shrink-0" />
+      <ExternalLink className="w-4 h-4 text-surface-600 group-hover:text-surface-400 transition-colors shrink-0" />
     </a>
   )
 }
@@ -232,10 +235,10 @@ function PzaSection({ t }: { t: (key: string) => string }) {
         </div>
       )}
       <div>
-        <h2 className="text-lg font-semibold text-dark-100 mb-2">
+        <h2 className="text-lg font-semibold text-surface-100 mb-2">
           {t('contact.pzaTitle')}
         </h2>
-        <p className="text-dark-400 text-sm leading-relaxed">
+        <p className="text-surface-400 text-sm leading-relaxed">
           {t('contact.pzaDescription')}
         </p>
       </div>

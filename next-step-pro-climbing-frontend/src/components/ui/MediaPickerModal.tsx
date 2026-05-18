@@ -37,7 +37,7 @@ export function MediaPickerModal({ isOpen, onClose, onSelect }: MediaPickerModal
           <LoadingSpinner />
         </div>
       ) : !assets || assets.length === 0 ? (
-        <p className="text-center text-dark-400 py-8">{t('assets.empty')}</p>
+        <p className="text-center text-surface-400 py-8">{t('assets.empty')}</p>
       ) : (
         <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
           {assets.map((asset) => (
@@ -47,7 +47,7 @@ export function MediaPickerModal({ isOpen, onClose, onSelect }: MediaPickerModal
               className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-colors ${
                 selected === asset.id
                   ? 'border-blue-500'
-                  : 'border-dark-700 hover:border-dark-500'
+                  : 'border-surface-700 hover:border-surface-500'
               }`}
             >
               <img

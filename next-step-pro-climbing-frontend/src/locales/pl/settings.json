@@ -26,6 +26,13 @@
     "cancel": "Anuluj",
     "success": "Hasło zostało zmienione"
   },
+  "theme": {
+    "title": "Motyw",
+    "description": "Wybierz tryb wyświetlania aplikacji",
+    "dark": "Ciemny",
+    "light": "Jasny",
+    "system": "Systemowy"
+  },
   "language": {
     "title": "Język interfejsu",
     "description": "Wybierz język wyświetlania aplikacji",

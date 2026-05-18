@@ -114,7 +114,7 @@ export function FileUpload({
                 <img
                   src={preview}
                   alt={`Preview ${index + 1}`}
-                  className="w-full h-32 object-cover rounded-lg border border-dark-700"
+                  className="w-full h-32 object-cover rounded-lg border border-surface-700"
                 />
               </div>
             ))}
@@ -135,7 +135,7 @@ export function FileUpload({
             'border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors',
             dragActive
               ? 'border-primary-500 bg-primary-500/5'
-              : 'border-dark-700 hover:border-dark-600 hover:bg-dark-800/50',
+              : 'border-surface-700 hover:border-surface-600 hover:bg-surface-800/50',
             error && 'border-rose-500/50'
           )}
           onDragEnter={handleDrag}
@@ -157,15 +157,15 @@ export function FileUpload({
             {dragActive ? (
               <Upload className="h-12 w-12 text-primary-500" />
             ) : (
-              <ImageIcon className="h-12 w-12 text-dark-400" />
+              <ImageIcon className="h-12 w-12 text-surface-400" />
             )}
-            <div className="text-dark-300">
-              <span className="font-medium text-dark-100">
+            <div className="text-surface-300">
+              <span className="font-medium text-surface-100">
                 Kliknij aby wybrać {multiple ? 'pliki' : 'plik'}
               </span>
               {' lub przeciągnij i upuść'}
             </div>
-            <div className="text-sm text-dark-400">
+            <div className="text-sm text-surface-400">
               {accept.split(',').map((type) => type.split('/')[1].toUpperCase()).join(', ')}
               {' '}
               (max {maxSizeMB}MB {multiple ? 'każdy' : ''})

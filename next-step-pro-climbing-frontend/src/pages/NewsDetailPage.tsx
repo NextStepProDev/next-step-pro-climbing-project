@@ -86,7 +86,7 @@ export function NewsDetailPage() {
   if (!article) {
     return (
       <div className="container mx-auto px-4 py-8">
-        <div className="text-center text-dark-400">{t('news.articleNotFound')}</div>
+        <div className="text-center text-surface-400">{t('news.articleNotFound')}</div>
       </div>
     )
   }
@@ -98,7 +98,7 @@ export function NewsDetailPage() {
       {/* Breadcrumb */}
       <Link
         to="/aktualnosci"
-        className="inline-flex items-center gap-2 text-dark-300 hover:text-dark-100 mb-6 transition-colors"
+        className="inline-flex items-center gap-2 text-surface-300 hover:text-surface-100 mb-6 transition-colors"
       >
         <ArrowLeft className="h-4 w-4" />
         {t('news.backToNews')}
@@ -107,7 +107,7 @@ export function NewsDetailPage() {
       {/* Header */}
       <div className="mb-8">
         <div className="flex items-start justify-between gap-4">
-          <h1 className="text-3xl font-bold text-dark-100 mb-3">{article.title}</h1>
+          <h1 className="text-3xl font-bold text-surface-100 mb-3">{article.title}</h1>
           {isAuthenticated && (
             <button
               onClick={() => starMutation.mutate(article.starred === true)}
@@ -116,8 +116,8 @@ export function NewsDetailPage() {
               className={clsx(
                 'flex-shrink-0 mt-1 p-2 rounded-full transition-colors',
                 article.starred
-                  ? 'text-yellow-400 hover:bg-dark-700'
-                  : 'text-dark-400 hover:text-yellow-400 hover:bg-dark-700'
+                  ? 'text-yellow-400 hover:bg-surface-700'
+                  : 'text-surface-400 hover:text-yellow-400 hover:bg-surface-700'
               )}
             >
               <Star className={clsx('h-5 w-5', article.starred && 'fill-yellow-400')} />
@@ -125,7 +125,7 @@ export function NewsDetailPage() {
           )}
         </div>
         <div className="flex items-center justify-between gap-4 flex-wrap">
-          <p className="text-sm text-dark-400">
+          <p className="text-sm text-surface-400">
             {t('news.published')}: {new Date(article.publishedAt).toLocaleDateString('pl-PL', {
               day: 'numeric',
               month: 'long',
@@ -133,7 +133,7 @@ export function NewsDetailPage() {
             })}
           </p>
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-1 bg-dark-800 border border-dark-700 rounded-lg p-1">
+            <div className="flex items-center gap-1 bg-surface-800 border border-surface-700 rounded-lg p-1">
               {COURSE_CONTENT_LANGUAGES.map((lang) => {
                 const translation = translations?.find(tr => tr.language === lang.code)
                 const isActive = article.language === lang.code
@@ -150,8 +150,8 @@ export function NewsDetailPage() {
                       isActive
                         ? 'bg-primary-500 text-white'
                         : isAvailable
-                          ? 'text-dark-400 hover:text-dark-100 hover:bg-dark-700'
-                          : 'text-dark-600 cursor-not-allowed opacity-40'
+                          ? 'text-surface-400 hover:text-surface-100 hover:bg-surface-700'
+                          : 'text-surface-600 cursor-not-allowed opacity-40'
                     )}
                   >
                     {lang.label}
@@ -164,7 +164,7 @@ export function NewsDetailPage() {
         </div>
       </div>
 
-      <hr className="border-dark-700 mb-8" />
+      <hr className="border-surface-700 mb-8" />
 
       {/* Bloki treści */}
       <div className="space-y-6">
@@ -173,7 +173,7 @@ export function NewsDetailPage() {
             return (
               <div
                 key={block.id}
-                className="text-dark-200 leading-relaxed"
+                className="text-surface-200 leading-relaxed"
                 dangerouslySetInnerHTML={{ __html: renderRichText(block.content ?? '') }}
               />
             )
@@ -188,7 +188,7 @@ export function NewsDetailPage() {
                   className="block max-w-full max-h-[70vh] rounded-lg mx-auto"
                 />
                 {block.caption && (
-                  <figcaption className="text-sm text-dark-400 text-center mt-2">
+                  <figcaption className="text-sm text-surface-400 text-center mt-2">
                     {block.caption}
                   </figcaption>
                 )}

@@ -38,7 +38,7 @@ export function VideosPage() {
   if (isLoading) {
     return (
       <div className="container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold text-dark-100 mb-8">{t('videos.title')}</h1>
+        <h1 className="text-3xl font-bold text-surface-100 mb-8">{t('videos.title')}</h1>
         <CardSkeleton count={6} columns={3} />
       </div>
     )
@@ -55,8 +55,8 @@ export function VideosPage() {
   if (!videos || videos.length === 0) {
     return (
       <div className="container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold text-dark-100 mb-8">{t('videos.title')}</h1>
-        <div className="text-center text-dark-400">{t('videos.noVideos')}</div>
+        <h1 className="text-3xl font-bold text-surface-100 mb-8">{t('videos.title')}</h1>
+        <div className="text-center text-surface-400">{t('videos.noVideos')}</div>
       </div>
     )
   }
@@ -64,7 +64,7 @@ export function VideosPage() {
   return (
     <div className="container mx-auto px-4 py-8">
       <PageHead title={t('videos.title')} description={t('videos.metaDescription')} />
-      <h1 className="text-3xl font-bold text-dark-100 mb-8">{t('videos.title')}</h1>
+      <h1 className="text-3xl font-bold text-surface-100 mb-8">{t('videos.title')}</h1>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {videos.map((video) => {
@@ -72,14 +72,14 @@ export function VideosPage() {
           return (
             <div
               key={video.id}
-              className="scroll-reveal card-glass rounded-lg overflow-hidden border border-dark-700/50 flex flex-col hover:border-primary-500/50 hover:-translate-y-0.5 transition-all duration-200"
+              className="scroll-reveal card-glass rounded-lg overflow-hidden border border-surface-700/50 flex flex-col hover:border-primary-500/50 hover:-translate-y-0.5 transition-all duration-200"
             >
               {/* Thumbnail */}
               <a
                 href={video.youtubeUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="group block aspect-video bg-dark-700 relative overflow-hidden"
+                className="group block aspect-video bg-surface-700 relative overflow-hidden"
                 aria-label={video.title}
               >
                 {thumbnail ? (
@@ -90,7 +90,7 @@ export function VideosPage() {
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center">
-                    <Play className="w-16 h-16 text-dark-500" />
+                    <Play className="w-16 h-16 text-surface-500" />
                   </div>
                 )}
                 {/* Play overlay */}
@@ -103,20 +103,20 @@ export function VideosPage() {
 
               {/* Content */}
               <div className="p-4 flex flex-col flex-1">
-                <h2 className="text-lg font-semibold text-dark-100 mb-2">
+                <h2 className="text-lg font-semibold text-surface-100 mb-2">
                   {video.title}
                 </h2>
 
                 {video.excerpt && (
                   <div
-                    className="text-sm text-dark-300 mb-3 line-clamp-3 prose-sm"
+                    className="text-sm text-surface-300 mb-3 line-clamp-3 prose-sm"
                     dangerouslySetInnerHTML={{ __html: renderRichText(video.excerpt) }}
                   />
                 )}
 
                 {video.content && (
                   <div
-                    className="text-sm text-dark-400 mb-3"
+                    className="text-sm text-surface-400 mb-3"
                     dangerouslySetInnerHTML={{ __html: renderRichText(video.content) }}
                   />
                 )}

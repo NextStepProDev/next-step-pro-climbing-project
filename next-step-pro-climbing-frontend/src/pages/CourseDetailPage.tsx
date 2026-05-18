@@ -61,7 +61,7 @@ export function CourseDetailPage() {
   if (!course) {
     return (
       <div className="container mx-auto px-4 py-8">
-        <div className="text-center text-dark-400">{t('courses.courseNotFound')}</div>
+        <div className="text-center text-surface-400">{t('courses.courseNotFound')}</div>
       </div>
     )
   }
@@ -76,13 +76,13 @@ export function CourseDetailPage() {
       <div className="flex items-center justify-between mb-6">
         <Link
           to="/kursy"
-          className="inline-flex items-center gap-2 text-dark-300 hover:text-dark-100 transition-colors"
+          className="inline-flex items-center gap-2 text-surface-300 hover:text-surface-100 transition-colors"
         >
           <ArrowLeft className="h-4 w-4" />
           {t('courses.backToCourses')}
         </Link>
 
-        <div className="flex items-center gap-1 bg-dark-800 border border-dark-700 rounded-lg p-1">
+        <div className="flex items-center gap-1 bg-surface-800 border border-surface-700 rounded-lg p-1">
           {COURSE_CONTENT_LANGUAGES.map((lang) => (
             <button
               key={lang.code}
@@ -91,7 +91,7 @@ export function CourseDetailPage() {
                 'px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-150 active:scale-95',
                 course.language === lang.code
                   ? 'bg-primary-500 text-white'
-                  : 'text-dark-400 hover:text-dark-100 hover:bg-dark-700'
+                  : 'text-surface-400 hover:text-surface-100 hover:bg-surface-700'
               )}
             >
               {lang.label}
@@ -101,7 +101,7 @@ export function CourseDetailPage() {
       </div>
 
       {course.thumbnailUrl && (
-        <div className="mb-6 rounded-lg overflow-hidden bg-dark-800">
+        <div className="mb-6 rounded-lg overflow-hidden bg-surface-800">
           <img
             src={course.thumbnailUrl}
             alt={course.title}
@@ -118,18 +118,18 @@ export function CourseDetailPage() {
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-center gap-3 min-w-0">
             {!course.thumbnailUrl && (
-              <div className="flex-shrink-0 w-10 h-10 bg-dark-700 rounded-lg flex items-center justify-center">
-                <BookOpen className="h-5 w-5 text-dark-500" />
+              <div className="flex-shrink-0 w-10 h-10 bg-surface-700 rounded-lg flex items-center justify-center">
+                <BookOpen className="h-5 w-5 text-surface-500" />
               </div>
             )}
-            <h1 className="text-3xl font-bold text-dark-100">{course.title}</h1>
+            <h1 className="text-3xl font-bold text-surface-100">{course.title}</h1>
           </div>
         </div>
 
         <div className="flex items-center justify-between gap-4 flex-wrap mt-3">
           <div className="flex items-center gap-3">
             {course.price && (
-              <span className="text-sm text-dark-300 bg-dark-700 px-3 py-1 rounded-full">
+              <span className="text-sm text-surface-300 bg-surface-700 px-3 py-1 rounded-full">
                 {course.price}
               </span>
             )}
@@ -138,7 +138,7 @@ export function CourseDetailPage() {
         </div>
       </div>
 
-      <hr className="border-dark-700 mb-8" />
+      <hr className="border-surface-700 mb-8" />
 
       <div className="space-y-8">
         <CourseContentBlocks detail={course} />

@@ -49,14 +49,14 @@ export function CoursePreviewModal({
             />
           </div>
         ) : (
-          <div className="w-full h-40 bg-dark-800 rounded-lg flex items-center justify-center mb-6">
-            <BookOpen className="h-12 w-12 text-dark-500" />
+          <div className="w-full h-40 bg-surface-800 rounded-lg flex items-center justify-center mb-6">
+            <BookOpen className="h-12 w-12 text-surface-500" />
           </div>
         )}
 
         {/* Title */}
-        <h1 className="text-2xl font-bold text-dark-100 mb-3">
-          {title || <span className="text-dark-500 italic">{t('courses.previewNoTitle')}</span>}
+        <h1 className="text-2xl font-bold text-surface-100 mb-3">
+          {title || <span className="text-surface-500 italic">{t('courses.previewNoTitle')}</span>}
         </h1>
 
         {/* Cena */}
@@ -64,7 +64,7 @@ export function CoursePreviewModal({
           <p className="text-primary-400 font-medium mb-6">{price}</p>
         )}
 
-        {blocks.length > 0 && <hr className="border-dark-700 mb-6" />}
+        {blocks.length > 0 && <hr className="border-surface-700 mb-6" />}
 
         {/* Content blocks */}
         <div className="space-y-6">
@@ -73,11 +73,11 @@ export function CoursePreviewModal({
               return (
                 <div
                   key={block.tempId}
-                  className="text-dark-200 leading-relaxed"
+                  className="text-surface-200 leading-relaxed"
                   dangerouslySetInnerHTML={{
                     __html: block.content
                       ? renderRichText(block.content)
-                      : `<span class="text-dark-500 italic">${t('courses.previewEmptyBlock')}</span>`,
+                      : `<span class="text-surface-500 italic">${t('courses.previewEmptyBlock')}</span>`,
                   }}
                 ></div>
               )
@@ -93,7 +93,7 @@ export function CoursePreviewModal({
                     />
                   )}
                   {block.caption && (
-                    <figcaption className="text-sm text-dark-400 text-center mt-2">
+                    <figcaption className="text-sm text-surface-400 text-center mt-2">
                       {block.caption}
                     </figcaption>
                   )}
@@ -105,7 +105,7 @@ export function CoursePreviewModal({
         </div>
 
         {blocks.length === 0 && !price && (
-          <p className="text-dark-500 italic text-sm">{t('courses.previewNoContent')}</p>
+          <p className="text-surface-500 italic text-sm">{t('courses.previewNoContent')}</p>
         )}
       </div>
     </Modal>

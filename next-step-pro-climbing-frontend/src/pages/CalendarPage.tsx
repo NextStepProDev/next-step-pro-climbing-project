@@ -387,8 +387,8 @@ export function CalendarPage() {
     <div className={`mx-auto px-4 sm:px-6 lg:px-8 py-8 ${viewMode === 'week' && !selectedDate ? 'max-w-6xl' : 'max-w-4xl'}`}>
       <PageHead title={t('title')} description={t('metaDescription')} />
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-dark-100 mb-2">{t('title')}</h1>
-        <p className="text-dark-400">
+        <h1 className="text-2xl font-bold text-surface-100 mb-2">{t('title')}</h1>
+        <p className="text-surface-400">
           {t('subtitle')}
         </p>
 
@@ -404,13 +404,13 @@ export function CalendarPage() {
 
         {/* View mode toggle */}
         {!selectedDate && (
-          <div className="mt-4 flex gap-1 bg-dark-800 rounded-lg p-1 w-fit">
+          <div className="mt-4 flex gap-1 bg-surface-800 rounded-lg p-1 w-fit">
             <button
               onClick={() => handleViewModeChange('month')}
               className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
                 viewMode === 'month'
                   ? 'bg-primary-600 text-white'
-                  : 'text-dark-400 hover:text-dark-200'
+                  : 'text-surface-400 hover:text-surface-200'
               }`}
             >
               {t('viewMode.month')}
@@ -420,7 +420,7 @@ export function CalendarPage() {
               className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
                 viewMode === 'week'
                   ? 'bg-primary-600 text-white'
-                  : 'text-dark-400 hover:text-dark-200'
+                  : 'text-surface-400 hover:text-surface-200'
               }`}
             >
               {t('viewMode.week')}
@@ -457,8 +457,8 @@ export function CalendarPage() {
             {notifyToast && (
               <div className={`fixed bottom-6 right-6 z-50 flex items-center gap-3 px-4 py-2.5 rounded-lg border shadow-lg max-w-sm ${
                 notifyToast.type === 'success'
-                  ? 'bg-dark-900 border-primary-500/30 text-primary-300'
-                  : 'bg-dark-900 border-red-500/30 text-red-300'
+                  ? 'bg-surface-900 border-primary-500/30 text-primary-300'
+                  : 'bg-surface-900 border-red-500/30 text-red-300'
               }`}>
                 <Bell className="w-4 h-4 shrink-0" />
                 <span className="text-sm flex-1">{notifyToast.message}</span>
@@ -537,8 +537,8 @@ export function CalendarPage() {
 
             {/* Events legend for week view */}
             {weekData.events.length > 0 && (
-              <div className="mt-6 bg-dark-900 rounded-xl border border-dark-800 p-4">
-                <h3 className="text-sm font-medium text-dark-300 mb-3">
+              <div className="mt-6 bg-surface-900 rounded-xl border border-surface-800 p-4">
+                <h3 className="text-sm font-medium text-surface-300 mb-3">
                   {t('week.events')}
                 </h3>
                 <div className="space-y-2">
@@ -549,11 +549,11 @@ export function CalendarPage() {
                     return (
                       <div
                         key={event.id}
-                        className="text-sm bg-dark-800/40 rounded-lg px-3 py-2 cursor-pointer hover:bg-dark-800/70 transition-colors"
+                        className="text-sm bg-surface-800/40 rounded-lg px-3 py-2 cursor-pointer hover:bg-surface-800/70 transition-colors"
                         onClick={() => setSelectedEvent(event)}
                       >
                         <div className="flex items-center justify-between">
-                          <span className="flex items-center gap-2 text-dark-100 font-medium min-w-0">
+                          <span className="flex items-center gap-2 text-surface-100 font-medium min-w-0">
                             <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${color.dot}`} />
                             {event.title}
                           </span>
@@ -561,7 +561,7 @@ export function CalendarPage() {
                             <span className={`px-2 py-1 rounded-full text-xs font-medium ${badgeClass}`}>
                               {label}
                             </span>
-                            <span className="text-dark-400 text-xs">
+                            <span className="text-surface-400 text-xs">
                               {format(new Date(event.startDate), "dd.MM")}
                               {event.isMultiDay && (
                                 <> - {format(new Date(event.endDate), "dd.MM")}</>
@@ -572,7 +572,7 @@ export function CalendarPage() {
                                 {t('signedUp')}
                               </span>
                             ) : !event.enrollmentOpen ? (
-                              <span className="px-3 py-1 text-xs font-medium rounded-full bg-dark-700 text-dark-400">
+                              <span className="px-3 py-1 text-xs font-medium rounded-full bg-surface-700 text-surface-400">
                                 {t('common:callPhone')}
                               </span>
                             ) : isFull ? (
@@ -626,9 +626,9 @@ export function CalendarPage() {
           {monthData.events.length > 0 && (
             <div
               ref={eventsRef}
-              className="mt-6 bg-dark-900 rounded-xl border border-dark-800 p-4"
+              className="mt-6 bg-surface-900 rounded-xl border border-surface-800 p-4"
             >
-              <h3 className="text-sm font-medium text-dark-300 mb-3">
+              <h3 className="text-sm font-medium text-surface-300 mb-3">
                 {t('eventsThisMonth')}
               </h3>
 
@@ -641,11 +641,11 @@ export function CalendarPage() {
                   return (
                     <div
                       key={event.id}
-                      className="text-sm bg-dark-800/40 rounded-lg px-3 py-2 cursor-pointer hover:bg-dark-800/70 transition-colors"
+                      className="text-sm bg-surface-800/40 rounded-lg px-3 py-2 cursor-pointer hover:bg-surface-800/70 transition-colors"
                       onClick={() => setSelectedEvent(event)}
                     >
                       <div className="flex items-center justify-between">
-                      <span className="flex items-center gap-2 text-dark-100 font-medium min-w-0">
+                      <span className="flex items-center gap-2 text-surface-100 font-medium min-w-0">
                         <span
                           className={`w-2.5 h-2.5 rounded-full shrink-0 ${color.dot}`}
                         />
@@ -661,7 +661,7 @@ export function CalendarPage() {
                         </span>
 
                         {/* date */}
-                        <span className="text-dark-400 text-xs">
+                        <span className="text-surface-400 text-xs">
                           {format(new Date(event.startDate), "dd.MM")}
                           {event.isMultiDay && (
                             <> - {format(new Date(event.endDate), "dd.MM")}</>
@@ -678,7 +678,7 @@ export function CalendarPage() {
                             {t('common:callPhone')}
                           </span>
                         ) : !event.enrollmentOpen ? (
-                          <span className="px-3 py-1 text-xs font-medium rounded bg-dark-700 text-dark-400">
+                          <span className="px-3 py-1 text-xs font-medium rounded bg-surface-700 text-surface-400">
                             {t('common:callPhone')}
                           </span>
                         ) : isFull ? (
@@ -741,10 +741,10 @@ export function CalendarPage() {
       )}
 
       {/* Indywidualny termin */}
-      <div className="mt-6 bg-dark-900 rounded-xl border border-dark-800 p-5 flex flex-col sm:flex-row items-start sm:items-center gap-4">
+      <div className="mt-6 bg-surface-900 rounded-xl border border-surface-800 p-5 flex flex-col sm:flex-row items-start sm:items-center gap-4">
         <div className="flex-1">
-          <p className="text-dark-100 font-semibold text-sm">{t('customSlot.title')}</p>
-          <p className="text-dark-400 text-sm mt-1">{t('customSlot.description')}</p>
+          <p className="text-surface-100 font-semibold text-sm">{t('customSlot.title')}</p>
+          <p className="text-surface-400 text-sm mt-1">{t('customSlot.description')}</p>
         </div>
         <div className="flex flex-col sm:flex-row gap-3 shrink-0">
           <a
@@ -756,7 +756,7 @@ export function CalendarPage() {
           </a>
           <a
             href="mailto:nextsteppro.team@gmail.com"
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-dark-800 hover:bg-dark-700 text-dark-200 text-sm font-medium transition-colors"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-surface-800 hover:bg-surface-700 text-surface-200 text-sm font-medium transition-colors"
           >
             <Mail className="w-4 h-4" />
             {t('customSlot.email')}

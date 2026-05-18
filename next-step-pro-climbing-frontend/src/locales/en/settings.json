@@ -26,6 +26,13 @@
     "cancel": "Cancel",
     "success": "Password has been changed"
   },
+  "theme": {
+    "title": "Theme",
+    "description": "Choose the display mode of the application",
+    "dark": "Dark",
+    "light": "Light",
+    "system": "System"
+  },
   "language": {
     "title": "Interface language",
     "description": "Choose the display language of the application",

@@ -30,7 +30,7 @@ export function PzaBadge({ variant = 'badge', size = 'md', className }: PzaBadge
     return (
       <div
         className={clsx(
-          'absolute bottom-0 right-0 rounded-full bg-white shadow-md border border-dark-600 flex items-center justify-center overflow-hidden',
+          'absolute bottom-0 right-0 rounded-full bg-white shadow-md border border-surface-600 flex items-center justify-center overflow-hidden',
           stickerSizes[size],
           className,
         )}
@@ -50,7 +50,7 @@ export function PzaBadge({ variant = 'badge', size = 'md', className }: PzaBadge
   return (
     <div
       className={clsx(
-        'inline-flex items-center gap-2 px-3 py-1.5 bg-dark-800 border border-dark-700 rounded-lg',
+        'inline-flex items-center gap-2 px-3 py-1.5 bg-surface-800 border border-surface-700 rounded-lg',
         className,
       )}
     >
@@ -60,7 +60,7 @@ export function PzaBadge({ variant = 'badge', size = 'md', className }: PzaBadge
         className={clsx('object-contain', logoSizes[size])}
         onError={() => setHidden(true)}
       />
-      <span className="text-dark-200 text-sm font-medium">{t('pza.recommended')}</span>
+      <span className="text-surface-200 text-sm font-medium">{t('pza.recommended')}</span>
     </div>
   )
 }

@@ -53,13 +53,13 @@ export function OAuthCallbackPage() {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] px-4">
-      <div className="bg-dark-900 rounded-xl p-8 max-w-md w-full border border-dark-800 text-center">
+      <div className="bg-surface-900 rounded-xl p-8 max-w-md w-full border border-surface-800 text-center">
         {error ? (
           <p className="text-rose-400/80">{error}</p>
         ) : (
           <>
             <LoadingSpinner />
-            <p className="text-dark-300 mt-4">{t('oauth.callbackLoading')}</p>
+            <p className="text-surface-300 mt-4">{t('oauth.callbackLoading')}</p>
           </>
         )}
       </div>

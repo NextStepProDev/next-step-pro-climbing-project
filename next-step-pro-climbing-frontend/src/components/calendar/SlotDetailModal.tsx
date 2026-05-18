@@ -171,7 +171,7 @@ export function SlotDetailModal({
     <Modal isOpen={isOpen} onClose={onClose} title={t('slot.title')}>
       <div className="space-y-6">
         {/* Date and time */}
-        <div className="flex items-center gap-4 text-dark-300">
+        <div className="flex items-center gap-4 text-surface-300">
           <div className="flex items-center gap-2">
             <Calendar className="w-5 h-5" />
             <span className="capitalize">
@@ -191,7 +191,7 @@ export function SlotDetailModal({
           <div className="p-3 bg-primary-500/10 border border-primary-500/20 rounded-lg">
             <span className="text-sm font-medium text-primary-400">{slot.eventTitle}</span>
             {slot.eventDescription && (
-              <p className="text-sm text-dark-300 mt-2 whitespace-pre-wrap">{slot.eventDescription}</p>
+              <p className="text-sm text-surface-300 mt-2 whitespace-pre-wrap">{slot.eventDescription}</p>
             )}
           </div>
         )}
@@ -211,7 +211,7 @@ export function SlotDetailModal({
               url={`${window.location.origin}/calendar?date=${slot.date}&slot=${slot.id}`}
               description={`${format(dateObj, "EEEE, d MMMM", { locale })} ${slot.startTime.slice(0, 5)} - ${slot.endTime.slice(0, 5)}`}
             />
-            <div className="flex gap-3 pt-4 border-t border-dark-800">
+            <div className="flex gap-3 pt-4 border-t border-surface-800">
               <Button variant="ghost" className="flex-1" onClick={onClose}>
                 {t('slot.close')}
               </Button>
@@ -220,7 +220,7 @@ export function SlotDetailModal({
         )}
 
         {/* Capacity */}
-        {!isAvailabilityWindow && <div className="flex items-center gap-2 text-dark-300">
+        {!isAvailabilityWindow && <div className="flex items-center gap-2 text-surface-300">
           <Users className="w-5 h-5" />
           <span>
             {t('slot.participants', { current: slot.currentParticipants, max: slot.maxParticipants })}
@@ -232,8 +232,8 @@ export function SlotDetailModal({
 
         {/* Past slot info */}
         {!isAvailabilityWindow && isPast && (
-          <div className="p-3 bg-dark-800 border border-dark-700 rounded-lg">
-            <span className="text-dark-400 text-sm">
+          <div className="p-3 bg-surface-800 border border-surface-700 rounded-lg">
+            <span className="text-surface-400 text-sm">
               {t('slot.past')}
             </span>
           </div>
@@ -295,8 +295,8 @@ export function SlotDetailModal({
 
         {/* Waitlist — WAITING (w kolejce) */}
         {!isAvailabilityWindow && isWaiting && (
-          <div className="p-3 bg-dark-800 border border-dark-700 rounded-lg">
-            <span className="text-dark-300 text-sm">
+          <div className="p-3 bg-surface-800 border border-surface-700 rounded-lg">
+            <span className="text-surface-300 text-sm">
               {t('slot.waitlist.waiting')}
             </span>
           </div>
@@ -316,7 +316,7 @@ export function SlotDetailModal({
             )}
             {spotsLeft > 1 && showParticipants && (
               <div>
-                <label className="block text-sm text-dark-400 mb-1">
+                <label className="block text-sm text-surface-400 mb-1">
                   {t('slot.spotsLabel')}
                 </label>
                 <div className="flex items-center gap-3">
@@ -325,11 +325,11 @@ export function SlotDetailModal({
                     onClick={() =>
                       setParticipants(Math.max(1, participants - 1))
                     }
-                    className="w-9 h-9 rounded-lg bg-dark-800 border border-dark-700 text-dark-200 hover:bg-dark-700 transition-colors text-lg font-bold"
+                    className="w-9 h-9 rounded-lg bg-surface-800 border border-surface-700 text-surface-200 hover:bg-surface-700 transition-colors text-lg font-bold"
                   >
                     -
                   </button>
-                  <span className="text-lg font-semibold text-dark-100 w-8 text-center">
+                  <span className="text-lg font-semibold text-surface-100 w-8 text-center">
                     {participants}
                   </span>
                   <button
@@ -337,11 +337,11 @@ export function SlotDetailModal({
                     onClick={() =>
                       setParticipants(Math.min(spotsLeft, participants + 1))
                     }
-                    className="w-9 h-9 rounded-lg bg-dark-800 border border-dark-700 text-dark-200 hover:bg-dark-700 transition-colors text-lg font-bold"
+                    className="w-9 h-9 rounded-lg bg-surface-800 border border-surface-700 text-surface-200 hover:bg-surface-700 transition-colors text-lg font-bold"
                   >
                     +
                   </button>
-                  <span className="text-sm text-dark-500">
+                  <span className="text-sm text-surface-500">
                     {t('slot.spotsOf', { count: spotsLeft })}
                   </span>
                 </div>
@@ -354,9 +354,9 @@ export function SlotDetailModal({
                 placeholder={t('slot.commentPlaceholder')}
                 maxLength={500}
                 rows={2}
-                className="w-full bg-dark-800 border border-dark-700 rounded-lg px-4 py-2 text-dark-100 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary-500 placeholder:text-dark-500"
+                className="w-full bg-surface-800 border border-surface-700 rounded-lg px-4 py-2 text-surface-100 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary-500 placeholder:text-surface-500"
               />
-              <div className="text-xs text-dark-500 text-right mt-1">
+              <div className="text-xs text-surface-500 text-right mt-1">
                 {comment.length}/500
               </div>
             </div>
@@ -376,17 +376,17 @@ export function SlotDetailModal({
         {isAdmin && !isPast && (
           <>
             {editMode ? (
-              <div className="p-4 bg-dark-800/50 border border-dark-700 rounded-lg space-y-4">
-                <h3 className="text-sm font-semibold text-dark-200">{ta('slots.editTitle')}</h3>
+              <div className="p-4 bg-surface-800/50 border border-surface-700 rounded-lg space-y-4">
+                <h3 className="text-sm font-semibold text-surface-200">{ta('slots.editTitle')}</h3>
                 <div>
-                  <label className="block text-sm text-dark-400 mb-1">{ta('slots.titleLabel')}</label>
+                  <label className="block text-sm text-surface-400 mb-1">{ta('slots.titleLabel')}</label>
                   <input
                     type="text"
                     value={editForm.title}
                     onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
                     placeholder={ta('slots.titlePlaceholder')}
                     maxLength={200}
-                    className="w-full bg-dark-800 border border-dark-700 rounded-lg px-4 py-2 text-dark-100 text-sm"
+                    className="w-full bg-surface-800 border border-surface-700 rounded-lg px-4 py-2 text-surface-100 text-sm"
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
@@ -413,18 +413,18 @@ export function SlotDetailModal({
                   />
                   <div>
                     <span className="text-sm font-medium text-violet-300">{ta('slots.availabilityWindow')}</span>
-                    <p className="text-xs text-dark-400 mt-0.5">{ta('slots.availabilityWindowHint')}</p>
+                    <p className="text-xs text-surface-400 mt-0.5">{ta('slots.availabilityWindowHint')}</p>
                   </div>
                 </label>
                 {!editForm.isAvailabilityWindow && (
                   <div>
-                    <label className="block text-sm text-dark-400 mb-1">{ta('slots.maxParticipants')}</label>
+                    <label className="block text-sm text-surface-400 mb-1">{ta('slots.maxParticipants')}</label>
                     <input
                       type="number"
                       min={1}
                       value={editForm.maxParticipants}
                       onChange={(e) => setEditForm({ ...editForm, maxParticipants: parseInt(e.target.value) })}
-                      className="w-full bg-dark-800 border border-dark-700 rounded-lg px-4 py-2 text-dark-100 text-sm"
+                      className="w-full bg-surface-800 border border-surface-700 rounded-lg px-4 py-2 text-surface-100 text-sm"
                     />
                   </div>
                 )}
@@ -486,7 +486,7 @@ export function SlotDetailModal({
         )}
 
         {/* Actions */}
-        {!isAvailabilityWindow && <div className="flex gap-3 pt-4 border-t border-dark-800">
+        {!isAvailabilityWindow && <div className="flex gap-3 pt-4 border-t border-surface-800">
           {!isAuthenticated ? (
             <Button
               variant="primary"
@@ -616,7 +616,7 @@ export function SlotDetailModal({
           : ta('slots.deleteTitle')}
       >
         <div className="space-y-4">
-          <div className="text-sm text-dark-400">
+          <div className="text-sm text-surface-400">
             {format(dateObj, 'EEEE, d MMMM', { locale })} |{' '}
             {slot.startTime.slice(0, 5)} - {slot.endTime.slice(0, 5)}
           </div>
@@ -631,21 +631,21 @@ export function SlotDetailModal({
                 </div>
               </div>
               <div>
-                <h3 className="text-sm font-medium text-dark-300 mb-2">
+                <h3 className="text-sm font-medium text-surface-300 mb-2">
                   {ta('slots.registered', { count: deleteConfirmParticipants.participants.length })}
                 </h3>
                 <ul className="space-y-2 max-h-48 overflow-y-auto">
                   {deleteConfirmParticipants.participants.map((p) => (
-                    <li key={p.userId} className="bg-dark-800 rounded-lg p-3">
-                      <div className="font-medium text-dark-100">{p.fullName}</div>
-                      <div className="text-sm text-dark-400">{p.email}</div>
+                    <li key={p.userId} className="bg-surface-800 rounded-lg p-3">
+                      <div className="font-medium text-surface-100">{p.fullName}</div>
+                      <div className="text-sm text-surface-400">{p.email}</div>
                     </li>
                   ))}
                 </ul>
               </div>
             </>
           ) : (
-            <p className="text-dark-400 text-sm">{ta('slots.noRegistered')}</p>
+            <p className="text-surface-400 text-sm">{ta('slots.noRegistered')}</p>
           )}
 
           <div className="flex gap-3 pt-2">

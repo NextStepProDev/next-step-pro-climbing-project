@@ -31,14 +31,14 @@ export function ForgotPasswordPage() {
   if (success) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] px-4">
-        <div className="bg-dark-900 rounded-xl p-8 max-w-md w-full border border-dark-800 text-center">
+        <div className="bg-surface-900 rounded-xl p-8 max-w-md w-full border border-surface-800 text-center">
           <div className="w-12 h-12 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
             <svg className="w-6 h-6 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
             </svg>
           </div>
-          <h2 className="text-xl font-bold text-dark-100 mb-2">{t('forgotPassword.successTitle')}</h2>
-          <p className="text-dark-400 mb-6">
+          <h2 className="text-xl font-bold text-surface-100 mb-2">{t('forgotPassword.successTitle')}</h2>
+          <p className="text-surface-400 mb-6">
             {t('forgotPassword.successMessage')}
           </p>
           <Link
@@ -54,18 +54,18 @@ export function ForgotPasswordPage() {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] px-4">
-      <div className="bg-dark-900 rounded-xl p-8 max-w-md w-full border border-dark-800">
+      <div className="bg-surface-900 rounded-xl p-8 max-w-md w-full border border-surface-800">
         <div className="text-center mb-6">
           <KeyRound className="w-10 h-10 text-primary-500 mx-auto mb-3" />
-          <h1 className="text-2xl font-bold text-dark-100">{t('forgotPassword.title')}</h1>
-          <p className="text-dark-400 mt-2 text-sm">
+          <h1 className="text-2xl font-bold text-surface-100">{t('forgotPassword.title')}</h1>
+          <p className="text-surface-400 mt-2 text-sm">
             {t('forgotPassword.description')}
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-dark-300 mb-1">
+            <label htmlFor="email" className="block text-sm font-medium text-surface-300 mb-1">
               {t('forgotPassword.email')}
             </label>
             <input
@@ -74,7 +74,7 @@ export function ForgotPasswordPage() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-3 py-2 bg-dark-800 border border-dark-700 rounded-lg text-dark-100 placeholder-dark-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              className="w-full px-3 py-2 bg-surface-800 border border-surface-700 rounded-lg text-surface-100 placeholder-surface-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               placeholder={t('forgotPassword.emailPlaceholder')}
             />
           </div>
@@ -88,7 +88,7 @@ export function ForgotPasswordPage() {
           </Button>
         </form>
 
-        <p className="mt-6 text-center text-sm text-dark-400">
+        <p className="mt-6 text-center text-sm text-surface-400">
           <Link to="/login" className="text-primary-400 hover:text-primary-300">
             {t('forgotPassword.backToLogin')}
           </Link>

@@ -13,28 +13,28 @@
   --color-primary-800: #0f172a;
   --color-primary-900: #020617;
 
-  /* Cieplejsze, matowe ciemne szarości - rozjaśnione dla mniejszego kontrastu */
-  --color-dark-50: #fafaf9;
-  --color-dark-100: #f5f5f4;
-  --color-dark-200: #e7e5e4;
-  --color-dark-300: #d6d3d1;
-  --color-dark-400: #a8a29e;
-  --color-dark-500: #78716c;
-  --color-dark-600: #57534e;
-  --color-dark-700: #44403c;
-  --color-dark-800: #312e2b;
-  --color-dark-900: #252220;
-  --color-dark-950: #1a1816;
+  /* Neutral surface scale — theme-aware via [data-theme] override */
+  --color-surface-50: #fafaf9;
+  --color-surface-100: #f5f5f4;
+  --color-surface-200: #e7e5e4;
+  --color-surface-300: #d6d3d1;
+  --color-surface-400: #a8a29e;
+  --color-surface-500: #78716c;
+  --color-surface-600: #57534e;
+  --color-surface-700: #44403c;
+  --color-surface-800: #312e2b;
+  --color-surface-900: #252220;
+  --color-surface-950: #1a1816;
 }
 
 body {
-  @apply bg-dark-950 text-dark-100 antialiased min-h-screen m-0;
+  @apply bg-surface-950 text-surface-100 antialiased min-h-screen m-0;
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
 }
 
 * {
   scrollbar-width: thin;
-  scrollbar-color: var(--color-dark-700) var(--color-dark-900);
+  scrollbar-color: var(--color-surface-700) var(--color-surface-900);
 }
 
 .scrollbar-hide {
@@ -103,8 +103,51 @@ body {
 }
 
 .card-glass {
-  background: color-mix(in srgb, var(--color-dark-800) 80%, transparent);
+  background: color-mix(in srgb, var(--color-surface-800) 80%, transparent);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
+}
+
+[data-theme="light"] {
+  --color-surface-50: #0c0a09;
+  --color-surface-100: #1c1917;
+  --color-surface-200: #292524;
+  --color-surface-300: #3d3a37;
+  --color-surface-400: #57534e;
+  --color-surface-500: #78716c;
+  --color-surface-600: #a8a29e;
+  --color-surface-700: #c5bfb7;
+  --color-surface-800: #e0dbd4;
+  --color-surface-900: #ece7e0;
+  --color-surface-950: #f5f0ea;
+  --color-primary-50: #f0f5ff;
+  --color-primary-100: #dbe8fe;
+  --color-primary-200: #bdd4fe;
+  --color-primary-300: #2d5f9a;
+  --color-primary-400: #1e4d85;
+  --color-primary-500: #1a4070;
+  --color-primary-600: #153660;
+  --color-primary-700: #0f2847;
+  --color-primary-800: #0a1b30;
+  --color-primary-900: #050e1a;
+  --color-amber-200: #d4940c;
+  --color-amber-300: #c88a08;
+  --color-amber-400: #b87d05;
+  --color-amber-500: #d49a0a;
+  --color-amber-600: #e5a811;
+}
+
+[data-theme="light"] .bg-amber-500\/5 { background-color: color-mix(in srgb, var(--color-amber-500) 12%, transparent); }
+[data-theme="light"] .bg-amber-500\/10 { background-color: color-mix(in srgb, var(--color-amber-500) 20%, transparent); }
+[data-theme="light"] .bg-amber-500\/15 { background-color: color-mix(in srgb, var(--color-amber-500) 25%, transparent); }
+[data-theme="light"] .bg-amber-500\/20 { background-color: color-mix(in srgb, var(--color-amber-500) 30%, transparent); }
+
+[data-theme="light"] .card-glass {
+  background: color-mix(in srgb, var(--color-surface-800) 90%, transparent);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="light"] .btn-glow:hover {
+  box-shadow: 0 0 20px rgba(71, 85, 105, 0.3), 0 0 40px rgba(71, 85, 105, 0.1);
 }
 

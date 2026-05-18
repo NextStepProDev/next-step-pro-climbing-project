@@ -58,8 +58,8 @@ export function AdminStoragePanel() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-semibold text-dark-100">{t('storage.title')}</h2>
-          <p className="text-sm text-dark-400 mt-1">{t('storage.description')}</p>
+          <h2 className="text-xl font-semibold text-surface-100">{t('storage.title')}</h2>
+          <p className="text-sm text-surface-400 mt-1">{t('storage.description')}</p>
         </div>
         <button
           onClick={handleRunAudit}
@@ -107,13 +107,13 @@ export function AdminStoragePanel() {
             <StatCard
               label={t('storage.orphaned')}
               value={data.orphanedFiles.length.toString()}
-              icon={<AlertTriangle className={`w-5 h-5 ${data.orphanedFiles.length > 0 ? 'text-yellow-400' : 'text-dark-400'}`} />}
+              icon={<AlertTriangle className={`w-5 h-5 ${data.orphanedFiles.length > 0 ? 'text-yellow-400' : 'text-surface-400'}`} />}
               highlight={data.orphanedFiles.length > 0}
             />
             <StatCard
               label={t('storage.totalSize')}
               value={formatBytes(data.totalSizeBytesOnDisk)}
-              icon={<HardDrive className="w-5 h-5 text-dark-400" />}
+              icon={<HardDrive className="w-5 h-5 text-surface-400" />}
             />
           </div>
 
@@ -141,22 +141,22 @@ export function AdminStoragePanel() {
                   {t('storage.deleteOrphaned')}
                 </button>
               </div>
-              <p className="text-xs text-dark-400 mb-3">{t('storage.orphanedDesc')}</p>
-              <div className="bg-dark-800 rounded-lg overflow-hidden">
+              <p className="text-xs text-surface-400 mb-3">{t('storage.orphanedDesc')}</p>
+              <div className="bg-surface-800 rounded-lg overflow-hidden">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-dark-700">
-                      <th className="text-left px-4 py-2 text-dark-400 font-medium">{t('storage.colFolder')}</th>
-                      <th className="text-left px-4 py-2 text-dark-400 font-medium">{t('storage.colFilename')}</th>
-                      <th className="text-right px-4 py-2 text-dark-400 font-medium">{t('storage.colSize')}</th>
+                    <tr className="border-b border-surface-700">
+                      <th className="text-left px-4 py-2 text-surface-400 font-medium">{t('storage.colFolder')}</th>
+                      <th className="text-left px-4 py-2 text-surface-400 font-medium">{t('storage.colFilename')}</th>
+                      <th className="text-right px-4 py-2 text-surface-400 font-medium">{t('storage.colSize')}</th>
                     </tr>
                   </thead>
                   <tbody>
                     {data.orphanedFiles.map((f) => (
-                      <tr key={`${f.folder}/${f.filename}`} className="border-b border-dark-700/50 last:border-0">
-                        <td className="px-4 py-2 text-dark-300">{f.folder}</td>
-                        <td className="px-4 py-2 font-mono text-xs text-dark-300 break-all">{f.filename}</td>
-                        <td className="px-4 py-2 text-right text-dark-400">{formatBytes(f.sizeBytes)}</td>
+                      <tr key={`${f.folder}/${f.filename}`} className="border-b border-surface-700/50 last:border-0">
+                        <td className="px-4 py-2 text-surface-300">{f.folder}</td>
+                        <td className="px-4 py-2 font-mono text-xs text-surface-300 break-all">{f.filename}</td>
+                        <td className="px-4 py-2 text-right text-surface-400">{formatBytes(f.sizeBytes)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -172,20 +172,20 @@ export function AdminStoragePanel() {
                 <FileX className="w-4 h-4" />
                 {t('storage.missingTitle')} ({data.missingFiles.length})
               </h3>
-              <p className="text-xs text-dark-400 mb-3">{t('storage.missingDesc')}</p>
-              <div className="bg-dark-800 rounded-lg overflow-hidden">
+              <p className="text-xs text-surface-400 mb-3">{t('storage.missingDesc')}</p>
+              <div className="bg-surface-800 rounded-lg overflow-hidden">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-dark-700">
-                      <th className="text-left px-4 py-2 text-dark-400 font-medium">{t('storage.colFolder')}</th>
-                      <th className="text-left px-4 py-2 text-dark-400 font-medium">{t('storage.colFilename')}</th>
+                    <tr className="border-b border-surface-700">
+                      <th className="text-left px-4 py-2 text-surface-400 font-medium">{t('storage.colFolder')}</th>
+                      <th className="text-left px-4 py-2 text-surface-400 font-medium">{t('storage.colFilename')}</th>
                     </tr>
                   </thead>
                   <tbody>
                     {data.missingFiles.map((f) => (
-                      <tr key={`${f.folder}/${f.filename}`} className="border-b border-dark-700/50 last:border-0">
-                        <td className="px-4 py-2 text-dark-300">{f.folder}</td>
-                        <td className="px-4 py-2 font-mono text-xs text-dark-300 break-all">{f.filename}</td>
+                      <tr key={`${f.folder}/${f.filename}`} className="border-b border-surface-700/50 last:border-0">
+                        <td className="px-4 py-2 text-surface-300">{f.folder}</td>
+                        <td className="px-4 py-2 font-mono text-xs text-surface-300 break-all">{f.filename}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -197,7 +197,7 @@ export function AdminStoragePanel() {
       )}
 
       {!enabled && !data && (
-        <div className="text-center py-16 text-dark-400">
+        <div className="text-center py-16 text-surface-400">
           <HardDrive className="w-10 h-10 mx-auto mb-3 opacity-30" />
           <p className="text-sm">{t('storage.prompt')}</p>
         </div>
@@ -228,10 +228,10 @@ function StatCard({
   highlight?: boolean
 }) {
   return (
-    <div className={`rounded-lg p-4 border ${highlight ? 'bg-yellow-500/5 border-yellow-500/20' : 'bg-dark-800 border-dark-700'}`}>
+    <div className={`rounded-lg p-4 border ${highlight ? 'bg-yellow-500/5 border-yellow-500/20' : 'bg-surface-800 border-surface-700'}`}>
       <div className="flex items-center gap-2 mb-1">{icon}</div>
-      <div className={`text-2xl font-bold ${highlight ? 'text-yellow-400' : 'text-dark-100'}`}>{value}</div>
-      <div className="text-xs text-dark-400 mt-0.5">{label}</div>
+      <div className={`text-2xl font-bold ${highlight ? 'text-yellow-400' : 'text-surface-100'}`}>{value}</div>
+      <div className="text-xs text-surface-400 mt-0.5">{label}</div>
     </div>
   )
 }

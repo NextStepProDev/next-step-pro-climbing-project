@@ -120,12 +120,12 @@ export function AdminSlotsPanel() {
               setFilterDate(e.target.value || null)
               e.target.blur()
             }}
-            className="bg-dark-800 border border-dark-700 rounded-lg px-4 py-2 text-dark-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
+            className="bg-surface-800 border border-surface-700 rounded-lg px-4 py-2 text-surface-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
           />
           {filterDate && (
             <button
               onClick={() => setFilterDate(null)}
-              className="p-2 text-dark-400 hover:text-dark-100 transition-colors"
+              className="p-2 text-surface-400 hover:text-surface-100 transition-colors"
               aria-label={t('slots.clearFilter')}
               title={t('slots.clearFilter')}
             >
@@ -145,14 +145,14 @@ export function AdminSlotsPanel() {
       ) : isError ? (
         <QueryError error={error} onRetry={() => refetch()} />
       ) : sortedDays.length === 0 ? (
-        <div className="bg-dark-900 rounded-lg border border-dark-800 p-8 text-center text-dark-400">
+        <div className="bg-surface-900 rounded-lg border border-surface-800 p-8 text-center text-surface-400">
           {filterDate ? t('slots.noSlotsOnDay') : t('slots.noUpcoming')}
         </div>
       ) : (
         <div className="space-y-6">
           {sortedDays.map((date) => (
             <div key={date}>
-              <h3 className="text-sm font-semibold text-dark-300 uppercase tracking-wider mb-2 px-1">
+              <h3 className="text-sm font-semibold text-surface-300 uppercase tracking-wider mb-2 px-1">
                 {format(parseISO(date), 'EEEE, d MMMM', { locale })}
               </h3>
               <div className="space-y-2">
@@ -178,7 +178,7 @@ export function AdminSlotsPanel() {
       <div className="mt-6">
         <button
           onClick={() => setShowArchive(!showArchive)}
-          className="flex items-center gap-2 text-sm text-dark-500 hover:text-dark-300 transition-colors mb-3"
+          className="flex items-center gap-2 text-sm text-surface-500 hover:text-surface-300 transition-colors mb-3"
         >
           {showArchive ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
           {t('slots.archive')}
@@ -197,13 +197,13 @@ export function AdminSlotsPanel() {
               </div>
             )}
             {pastSlots && pastSlots.length === 0 && (
-              <p className="text-dark-500 text-sm">{t('slots.noPast')}</p>
+              <p className="text-surface-500 text-sm">{t('slots.noPast')}</p>
             )}
             {pastSlots && pastSlots.length > 0 && (
               <div className="space-y-6">
                 {pastPagedDays.map((date) => (
                   <div key={date}>
-                    <h3 className="text-sm font-semibold text-dark-300 uppercase tracking-wider mb-2 px-1">
+                    <h3 className="text-sm font-semibold text-surface-300 uppercase tracking-wider mb-2 px-1">
                       {format(parseISO(date), 'EEEE, d MMMM', { locale })}
                     </h3>
                     <div className="space-y-2">
@@ -230,17 +230,17 @@ export function AdminSlotsPanel() {
                     <button
                       onClick={() => setArchivePage((p) => Math.max(1, p - 1))}
                       disabled={pastSafePage === 1}
-                      className="p-1 text-dark-400 hover:text-dark-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                      className="p-1 text-surface-400 hover:text-surface-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                     >
                       <ChevronLeft className="w-4 h-4" />
                     </button>
-                    <span className="text-xs text-dark-500">
+                    <span className="text-xs text-surface-500">
                       {t('slots.pageInfo', { page: pastSafePage, total: pastTotalPages })}
                     </span>
                     <button
                       onClick={() => setArchivePage((p) => Math.min(pastTotalPages, p + 1))}
                       disabled={pastSafePage === pastTotalPages}
-                      className="p-1 text-dark-400 hover:text-dark-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                      className="p-1 text-surface-400 hover:text-surface-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                     >
                       <ChevronRight className="w-4 h-4" />
                     </button>
@@ -327,9 +327,9 @@ function SlotRow({
   onDelete: () => void
 }) {
   return (
-    <div className={`bg-dark-900 rounded-lg border border-dark-800 p-4 flex items-center justify-between${archived ? ' opacity-60' : ''}`}>
+    <div className={`bg-surface-900 rounded-lg border border-surface-800 p-4 flex items-center justify-between${archived ? ' opacity-60' : ''}`}>
       <div>
-        <div className="font-medium text-dark-100">
+        <div className="font-medium text-surface-100">
           {slot.startTime.slice(0, 5)} – {slot.endTime.slice(0, 5)}
         </div>
         {slot.title && (
@@ -341,7 +341,7 @@ function SlotRow({
               {t('slots.availabilityWindow')}
             </span>
           ) : (
-            <span className="text-sm text-dark-400">
+            <span className="text-sm text-surface-400">
               {slot.currentParticipants}/{slot.maxParticipants}
             </span>
           )}
@@ -460,14 +460,14 @@ function EditSlotModal({
         className="space-y-4"
       >
         <div>
-          <label className="block text-sm text-dark-400 mb-1">{t('slots.titleLabel')}</label>
+          <label className="block text-sm text-surface-400 mb-1">{t('slots.titleLabel')}</label>
           <input
             type="text"
             value={form.title}
             onChange={(e) => setForm({ ...form, title: e.target.value })}
             placeholder={t('slots.titlePlaceholder')}
             maxLength={200}
-            className="w-full bg-dark-800 border border-dark-700 rounded-lg px-4 py-2 text-dark-100"
+            className="w-full bg-surface-800 border border-surface-700 rounded-lg px-4 py-2 text-surface-100"
           />
         </div>
 
@@ -499,19 +499,19 @@ function EditSlotModal({
           />
           <div>
             <span className="text-sm font-medium text-violet-300">{t('slots.availabilityWindow')}</span>
-            <p className="text-xs text-dark-400 mt-0.5">{t('slots.availabilityWindowHint')}</p>
+            <p className="text-xs text-surface-400 mt-0.5">{t('slots.availabilityWindowHint')}</p>
           </div>
         </label>
 
         {!form.isAvailabilityWindow && (
           <div>
-            <label className="block text-sm text-dark-400 mb-1">{t('slots.maxParticipants')}</label>
+            <label className="block text-sm text-surface-400 mb-1">{t('slots.maxParticipants')}</label>
             <input
               type="number"
               min={1}
               value={form.maxParticipants}
               onChange={(e) => setForm({ ...form, maxParticipants: parseInt(e.target.value) })}
-              className="w-full bg-dark-800 border border-dark-700 rounded-lg px-4 py-2 text-dark-100"
+              className="w-full bg-surface-800 border border-surface-700 rounded-lg px-4 py-2 text-surface-100"
             />
           </div>
         )}
@@ -561,7 +561,7 @@ function ConfirmBlockModal({
         : action === 'block' ? t('slots.blockTitle') : t('slots.deleteTitle')}
     >
       <div className="space-y-4">
-        <div className="text-sm text-dark-400">
+        <div className="text-sm text-surface-400">
           {format(parseISO(data.date), 'EEEE, d MMMM', { locale })} |{' '}
           {data.startTime.slice(0, 5)} - {data.endTime.slice(0, 5)}
         </div>
@@ -579,21 +579,21 @@ function ConfirmBlockModal({
             </div>
 
             <div>
-              <h3 className="text-sm font-medium text-dark-300 mb-2">
+              <h3 className="text-sm font-medium text-surface-300 mb-2">
                 {t('slots.registered', { count: data.participants.length })}
               </h3>
               <ul className="space-y-2 max-h-48 overflow-y-auto">
                 {data.participants.map((p) => (
-                  <li key={p.userId} className="bg-dark-800 rounded-lg p-3">
-                    <div className="font-medium text-dark-100">{p.fullName}</div>
-                    <div className="text-sm text-dark-400">{p.email}</div>
+                  <li key={p.userId} className="bg-surface-800 rounded-lg p-3">
+                    <div className="font-medium text-surface-100">{p.fullName}</div>
+                    <div className="text-sm text-surface-400">{p.email}</div>
                   </li>
                 ))}
               </ul>
             </div>
           </>
         ) : (
-          <p className="text-dark-400 text-sm">
+          <p className="text-surface-400 text-sm">
             {t('slots.noRegistered')}
           </p>
         )}
@@ -698,22 +698,22 @@ function ParticipantsModal({
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={t('slots.participantsTitle')}>
       <div className="space-y-4">
-        <div className="text-sm text-dark-400">
+        <div className="text-sm text-surface-400">
           {format(parseISO(data.date), 'EEEE, d MMMM', { locale })} |{' '}
           {data.startTime.slice(0, 5)} - {data.endTime.slice(0, 5)}
         </div>
 
         {/* Confirmed participants */}
         <div>
-          <h3 className="text-sm font-medium text-dark-300 mb-2">
+          <h3 className="text-sm font-medium text-surface-300 mb-2">
             {t('slots.registeredOf', { count: totalSpots, max: data.maxParticipants })}
           </h3>
           {data.participants.length === 0 && data.guestParticipants.length === 0 ? (
-            <p className="text-dark-500 text-sm">{t('slots.noRegisteredShort')}</p>
+            <p className="text-surface-500 text-sm">{t('slots.noRegisteredShort')}</p>
           ) : (
             <ul className="space-y-2">
               {data.participants.map((p) => (
-                <li key={p.userId} className="bg-dark-800 rounded-lg p-3">
+                <li key={p.userId} className="bg-surface-800 rounded-lg p-3">
                   {confirmCancelFor === p.reservationId ? (
                     <div className="space-y-2">
                       <p className="text-sm text-rose-400">{t('slots.confirmCancelReservation')}</p>
@@ -733,7 +733,7 @@ function ParticipantsModal({
                     </div>
                   ) : editingSpotsFor === p.reservationId ? (
                     <div className="space-y-2">
-                      <p className="text-sm text-dark-300">{p.fullName} — {t('slots.editSpots')}</p>
+                      <p className="text-sm text-surface-300">{p.fullName} — {t('slots.editSpots')}</p>
                       <div className="flex items-center gap-2">
                         <input
                           type="number"
@@ -741,7 +741,7 @@ function ParticipantsModal({
                           max={data.maxParticipants}
                           value={editedSpots}
                           onChange={(e) => setEditedSpots(Number(e.target.value))}
-                          className="w-20 bg-dark-700 border border-dark-600 rounded px-2 py-1 text-dark-100 text-sm"
+                          className="w-20 bg-surface-700 border border-surface-600 rounded px-2 py-1 text-surface-100 text-sm"
                         />
                         <Button
                           size="sm"
@@ -762,9 +762,9 @@ function ParticipantsModal({
                   ) : (
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
-                        <div className="font-medium text-dark-100">{p.fullName}</div>
-                        <div className="text-sm text-dark-400">{p.email}</div>
-                        <div className="text-sm text-dark-400">{p.phone}</div>
+                        <div className="font-medium text-surface-100">{p.fullName}</div>
+                        <div className="text-sm text-surface-400">{p.email}</div>
+                        <div className="text-sm text-surface-400">{p.phone}</div>
                         {p.comment && (
                           <div className="text-sm text-amber-400 mt-1">"{p.comment}"</div>
                         )}
@@ -778,14 +778,14 @@ function ParticipantsModal({
                         <button
                           onClick={() => { setEditingSpotsFor(p.reservationId); setEditedSpots(p.participants) }}
                           title={t('slots.editSpots')}
-                          className="p-1 text-dark-400 hover:text-primary-400 transition-colors"
+                          className="p-1 text-surface-400 hover:text-primary-400 transition-colors"
                         >
                           <Pencil className="w-3.5 h-3.5" />
                         </button>
                         <button
                           onClick={() => setConfirmCancelFor(p.reservationId)}
                           title={t('slots.cancelReservation')}
-                          className="p-1 text-dark-400 hover:text-rose-400 transition-colors"
+                          className="p-1 text-surface-400 hover:text-rose-400 transition-colors"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -822,7 +822,7 @@ function ParticipantsModal({
                           <span className="text-xs text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded">
                             {t('slots.guest')}
                           </span>
-                          <span className="font-medium text-dark-100">{g.note}</span>
+                          <span className="font-medium text-surface-100">{g.note}</span>
                         </div>
                         {g.participants > 1 && (
                           <span className="inline-block mt-1 text-xs text-amber-400/80 bg-amber-500/10 px-2 py-0.5 rounded-full">
@@ -833,7 +833,7 @@ function ParticipantsModal({
                       <button
                         onClick={() => setConfirmDeleteGuestId(g.id)}
                         title={t('slots.cancelReservation')}
-                        className="p-1 text-dark-400 hover:text-rose-400 transition-colors shrink-0"
+                        className="p-1 text-surface-400 hover:text-rose-400 transition-colors shrink-0"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -855,18 +855,18 @@ function ParticipantsModal({
             {t('slots.addParticipant')}
           </button>
         ) : (
-          <div className="border border-dark-700 rounded-lg p-3 space-y-3">
+          <div className="border border-surface-700 rounded-lg p-3 space-y-3">
             {/* Mode tabs */}
             <div className="flex gap-2">
               <button
                 onClick={() => setAddMode('registered')}
-                className={`text-xs px-3 py-1 rounded-full transition-colors ${addMode === 'registered' ? 'bg-primary-500/20 text-primary-300' : 'text-dark-400 hover:text-dark-200'}`}
+                className={`text-xs px-3 py-1 rounded-full transition-colors ${addMode === 'registered' ? 'bg-primary-500/20 text-primary-300' : 'text-surface-400 hover:text-surface-200'}`}
               >
                 {t('slots.addRegistered')}
               </button>
               <button
                 onClick={() => setAddMode('guest')}
-                className={`text-xs px-3 py-1 rounded-full transition-colors ${addMode === 'guest' ? 'bg-amber-500/20 text-amber-300' : 'text-dark-400 hover:text-dark-200'}`}
+                className={`text-xs px-3 py-1 rounded-full transition-colors ${addMode === 'guest' ? 'bg-amber-500/20 text-amber-300' : 'text-surface-400 hover:text-surface-200'}`}
               >
                 {t('slots.addGuest')}
               </button>
@@ -880,14 +880,14 @@ function ParticipantsModal({
                   onChange={setSelectedUserId}
                 />
                 <div className="flex items-center gap-2">
-                  <label className="text-xs text-dark-400 shrink-0">{t('slots.spots')}:</label>
+                  <label className="text-xs text-surface-400 shrink-0">{t('slots.spots')}:</label>
                   <input
                     type="number"
                     min={1}
                     max={20}
                     value={addParticipants}
                     onChange={(e) => setAddParticipants(Number(e.target.value))}
-                    className="w-16 bg-dark-800 border border-dark-700 rounded px-2 py-1 text-dark-100 text-sm"
+                    className="w-16 bg-surface-800 border border-surface-700 rounded px-2 py-1 text-surface-100 text-sm"
                   />
                 </div>
                 <input
@@ -896,7 +896,7 @@ function ParticipantsModal({
                   onChange={(e) => setAddComment(e.target.value)}
                   placeholder={t('slots.commentOptional')}
                   maxLength={500}
-                  className="w-full bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-dark-100 text-sm"
+                  className="w-full bg-surface-800 border border-surface-700 rounded-lg px-3 py-2 text-surface-100 text-sm"
                 />
                 {addRegisteredMutation.isError && (
                   <p className="text-xs text-rose-400">{getErrorMessage(addRegisteredMutation.error)}</p>
@@ -923,17 +923,17 @@ function ParticipantsModal({
                   onChange={(e) => setGuestNote(e.target.value)}
                   placeholder={t('slots.guestNotePlaceholder')}
                   maxLength={500}
-                  className="w-full bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-dark-100 text-sm"
+                  className="w-full bg-surface-800 border border-surface-700 rounded-lg px-3 py-2 text-surface-100 text-sm"
                 />
                 <div className="flex items-center gap-2">
-                  <label className="text-xs text-dark-400 shrink-0">{t('slots.spots')}:</label>
+                  <label className="text-xs text-surface-400 shrink-0">{t('slots.spots')}:</label>
                   <input
                     type="number"
                     min={1}
                     max={20}
                     value={addParticipants}
                     onChange={(e) => setAddParticipants(Number(e.target.value))}
-                    className="w-16 bg-dark-800 border border-dark-700 rounded px-2 py-1 text-dark-100 text-sm"
+                    className="w-16 bg-surface-800 border border-surface-700 rounded px-2 py-1 text-surface-100 text-sm"
                   />
                 </div>
                 {addGuestMutation.isError && (
@@ -992,25 +992,25 @@ function SlotTemplatesSection() {
   }
 
   return (
-    <div className="mt-10 pt-8 border-t border-dark-800">
+    <div className="mt-10 pt-8 border-t border-surface-800">
       <div className="mb-4">
-        <h3 className="text-base font-semibold text-dark-100">{t('slots.templatesTitle')}</h3>
-        <p className="text-dark-400 text-sm mt-1">{t('slots.templatesDescription')}</p>
+        <h3 className="text-base font-semibold text-surface-100">{t('slots.templatesTitle')}</h3>
+        <p className="text-surface-400 text-sm mt-1">{t('slots.templatesDescription')}</p>
       </div>
 
       {templates.length === 0 ? (
-        <p className="text-dark-500 text-sm mb-4">{t('slots.templatesEmpty')}</p>
+        <p className="text-surface-500 text-sm mb-4">{t('slots.templatesEmpty')}</p>
       ) : (
         <ul className="space-y-2 mb-4">
           {templates.map((tpl, i) => (
-            <li key={i} className="flex items-center gap-3 bg-dark-900 border border-dark-800 rounded-lg px-4 py-2">
-              <span className="flex-1 text-dark-100 font-medium">{tpl.name}</span>
-              <span className="text-sm text-dark-400">{tpl.maxParticipants} os.</span>
+            <li key={i} className="flex items-center gap-3 bg-surface-900 border border-surface-800 rounded-lg px-4 py-2">
+              <span className="flex-1 text-surface-100 font-medium">{tpl.name}</span>
+              <span className="text-sm text-surface-400">{tpl.maxParticipants} os.</span>
               <button
                 onClick={() => removeTemplate(i)}
                 disabled={saveMutation.isPending}
                 aria-label={t('slots.templateRemove')}
-                className="p-1 text-dark-500 hover:text-rose-400 transition-colors disabled:opacity-40"
+                className="p-1 text-surface-500 hover:text-rose-400 transition-colors disabled:opacity-40"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -1024,24 +1024,24 @@ function SlotTemplatesSection() {
         className="flex items-end gap-3"
       >
         <div className="flex-1">
-          <label className="block text-xs text-dark-400 mb-1">{t('slots.templateNameLabel')}</label>
+          <label className="block text-xs text-surface-400 mb-1">{t('slots.templateNameLabel')}</label>
           <input
             type="text"
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
             placeholder={t('slots.templateNamePlaceholder')}
             maxLength={200}
-            className="w-full bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-dark-100 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+            className="w-full bg-surface-800 border border-surface-700 rounded-lg px-3 py-2 text-surface-100 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
           />
         </div>
         <div className="w-24">
-          <label className="block text-xs text-dark-400 mb-1">{t('slots.templateParticipantsLabel')}</label>
+          <label className="block text-xs text-surface-400 mb-1">{t('slots.templateParticipantsLabel')}</label>
           <input
             type="number"
             min={1}
             value={newMax}
             onChange={(e) => setNewMax(Math.max(1, parseInt(e.target.value) || 1))}
-            className="w-full bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-dark-100 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+            className="w-full bg-surface-800 border border-surface-700 rounded-lg px-3 py-2 text-surface-100 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
           />
         </div>
         <Button

@@ -39,7 +39,7 @@ export function AlbumPage() {
   if (!album) {
     return (
       <div className="container mx-auto px-4 py-8">
-        <div className="text-center text-dark-400">{t('gallery.albumNotFound')}</div>
+        <div className="text-center text-surface-400">{t('gallery.albumNotFound')}</div>
       </div>
     )
   }
@@ -50,7 +50,7 @@ export function AlbumPage() {
       {/* Breadcrumb */}
       <Link
         to="/galeria"
-        className="inline-flex items-center gap-2 text-dark-300 hover:text-dark-100 mb-6 transition-colors"
+        className="inline-flex items-center gap-2 text-surface-300 hover:text-surface-100 mb-6 transition-colors"
       >
         <ArrowLeft className="h-4 w-4" />
         {t('gallery.backToGallery')}
@@ -58,18 +58,18 @@ export function AlbumPage() {
 
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-dark-100 mb-2">{album.name}</h1>
+        <h1 className="text-3xl font-bold text-surface-100 mb-2">{album.name}</h1>
         {album.description && (
-          <p className="text-dark-300">{album.description}</p>
+          <p className="text-surface-300">{album.description}</p>
         )}
-        <p className="text-sm text-dark-400 mt-2">
+        <p className="text-sm text-surface-400 mt-2">
           {album.photos.length} {t(`gallery.photo_${album.photos.length === 1 ? 'one' : 'many'}`)}
         </p>
       </div>
 
       {/* Photos Grid */}
       {album.photos.length === 0 ? (
-        <div className="text-center text-dark-400 py-12">
+        <div className="text-center text-surface-400 py-12">
           {t('gallery.noPhotos')}
         </div>
       ) : (
@@ -78,7 +78,7 @@ export function AlbumPage() {
             <button
               key={photo.id}
               onClick={() => setLightboxIndex(index)}
-              className="aspect-square bg-dark-700 rounded-lg overflow-hidden hover:ring-2 hover:ring-primary-500/50 transition-all group relative"
+              className="aspect-square bg-surface-700 rounded-lg overflow-hidden hover:ring-2 hover:ring-primary-500/50 transition-all group relative"
             >
               <div
                 className="absolute inset-0 scale-110 blur-xl"

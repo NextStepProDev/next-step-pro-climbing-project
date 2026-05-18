@@ -148,10 +148,10 @@ export function MyReservationsPage() {
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-dark-100 mb-2">
+        <h1 className="text-2xl font-bold text-surface-100 mb-2">
           {t('title')}
         </h1>
-        <p className="text-dark-400">
+        <p className="text-surface-400">
           {t('subtitle')}
         </p>
       </div>
@@ -191,12 +191,12 @@ export function MyReservationsPage() {
       )}
 
       {isEmpty ? (
-        <div className="bg-dark-900 rounded-xl border border-dark-800 p-8 text-center">
-          <Calendar className="w-12 h-12 text-dark-600 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-dark-300 mb-2">
+        <div className="bg-surface-900 rounded-xl border border-surface-800 p-8 text-center">
+          <Calendar className="w-12 h-12 text-surface-600 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-surface-300 mb-2">
             {t('empty.title')}
           </h3>
-          <p className="text-dark-500 mb-4">
+          <p className="text-surface-500 mb-4">
             {t('empty.message')}
           </p>
           <a href="/calendar">
@@ -229,7 +229,7 @@ export function MyReservationsPage() {
       <div className="mt-8">
         <button
           onClick={() => setShowArchive(!showArchive)}
-          className="flex items-center gap-2 text-sm text-dark-500 hover:text-dark-300 transition-colors mb-3"
+          className="flex items-center gap-2 text-sm text-surface-500 hover:text-surface-300 transition-colors mb-3"
         >
           {showArchive ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
           {t('archive')}
@@ -248,7 +248,7 @@ export function MyReservationsPage() {
               </div>
             )}
             {pastData && !hasPastData && (
-              <p className="text-dark-500 text-sm">{t('noPastReservations')}</p>
+              <p className="text-surface-500 text-sm">{t('noPastReservations')}</p>
             )}
             {pastData && hasPastData && (
               <PastReservations slots={pastSlots} events={pastEvents} />
@@ -320,7 +320,7 @@ function UpcomingReservations({
     <div className="space-y-6">
       {events.length > 0 && (
         <div className="space-y-4">
-          <h2 className="text-sm font-medium text-dark-400 uppercase tracking-wider">
+          <h2 className="text-sm font-medium text-surface-400 uppercase tracking-wider">
             {t('events')}
           </h2>
           {events.map((event) => {
@@ -331,7 +331,7 @@ function UpcomingReservations({
               className={
                 isCancelledByAdmin
                   ? 'bg-rose-500/5 rounded-xl border border-rose-500/30 p-4 sm:p-6 cursor-pointer hover:border-rose-500/50 transition-colors'
-                  : 'bg-dark-900 rounded-xl border border-dark-800 p-4 sm:p-6 cursor-pointer hover:border-dark-700 transition-colors'
+                  : 'bg-surface-900 rounded-xl border border-surface-800 p-4 sm:p-6 cursor-pointer hover:border-surface-700 transition-colors'
               }
               onClick={() => onEventClick(event.eventId)}
             >
@@ -344,7 +344,7 @@ function UpcomingReservations({
                     <span className={`inline-block px-2 py-0.5 text-xs font-medium rounded ${isCancelledByAdmin ? 'bg-rose-500/20 text-rose-400' : 'bg-primary-500/20 text-primary-400'}`}>
                       {tc(`eventTypes.${event.eventType}`)}
                     </span>
-                    <span className="font-medium text-dark-100">
+                    <span className="font-medium text-surface-100">
                       {event.eventTitle}
                     </span>
                     {isCancelledByAdmin && (
@@ -363,7 +363,7 @@ function UpcomingReservations({
                       </Link>
                     )}
                   </div>
-                  <div className="flex items-center gap-3 text-dark-400">
+                  <div className="flex items-center gap-3 text-surface-400">
                     <Calendar className="w-5 h-5" />
                     <span>
                       {format(new Date(event.startDate), 'd MMMM', { locale })}
@@ -372,20 +372,20 @@ function UpcomingReservations({
                     </span>
                   </div>
                   <div className="flex items-center gap-2 mt-2" onClick={(e) => e.stopPropagation()}>
-                    <Users className="w-4 h-4 text-dark-400 shrink-0" />
+                    <Users className="w-4 h-4 text-surface-400 shrink-0" />
                     {!isCancelledByAdmin && editingId === event.eventId ? (
                       <div className="flex items-center gap-2 flex-wrap">
                         <button
                           type="button"
                           onClick={() => setEditCount(Math.max(1, editCount - 1))}
-                          className="w-6 h-6 rounded bg-dark-800 border border-dark-700 text-dark-200 hover:bg-dark-700 transition-colors text-sm font-bold flex items-center justify-center"
+                          className="w-6 h-6 rounded bg-surface-800 border border-surface-700 text-surface-200 hover:bg-surface-700 transition-colors text-sm font-bold flex items-center justify-center"
                         >-</button>
-                        <span className="text-dark-100 font-medium w-4 text-center text-sm">{editCount}</span>
+                        <span className="text-surface-100 font-medium w-4 text-center text-sm">{editCount}</span>
                         <button
                           type="button"
                           onClick={() => setEditCount(Math.min(event.spotsAvailable, editCount + 1))}
                           disabled={editCount >= event.spotsAvailable}
-                          className="w-6 h-6 rounded bg-dark-800 border border-dark-700 text-dark-200 hover:bg-dark-700 transition-colors text-sm font-bold flex items-center justify-center disabled:opacity-40"
+                          className="w-6 h-6 rounded bg-surface-800 border border-surface-700 text-surface-200 hover:bg-surface-700 transition-colors text-sm font-bold flex items-center justify-center disabled:opacity-40"
                         >+</button>
                         <button
                           type="button"
@@ -399,7 +399,7 @@ function UpcomingReservations({
                         <button
                           type="button"
                           onClick={() => setEditingId(null)}
-                          className="text-xs px-2 py-1 rounded bg-dark-800 text-dark-400 hover:text-dark-300 transition-colors"
+                          className="text-xs px-2 py-1 rounded bg-surface-800 text-surface-400 hover:text-surface-300 transition-colors"
                         >
                           {t('updateParticipants.cancel')}
                         </button>
@@ -409,12 +409,12 @@ function UpcomingReservations({
                       </div>
                     ) : (
                       <div className="flex items-center gap-2">
-                        <span className="text-sm text-dark-400">{t('spotsReserved', { count: event.participants })}</span>
+                        <span className="text-sm text-surface-400">{t('spotsReserved', { count: event.participants })}</span>
                         {!isCancelledByAdmin && (
                           <button
                             type="button"
                             onClick={() => { setEditingId(event.eventId); setEditCount(event.participants) }}
-                            className="flex items-center gap-1 text-xs text-dark-500 hover:text-dark-300 transition-colors"
+                            className="flex items-center gap-1 text-xs text-surface-500 hover:text-surface-300 transition-colors"
                           >
                             <Pencil className="w-3 h-3" />
                             {t('updateParticipants.edit')}
@@ -424,7 +424,7 @@ function UpcomingReservations({
                     )}
                   </div>
                   {event.comment && (
-                    <div className="flex items-start gap-2 mt-2 text-sm text-dark-400">
+                    <div className="flex items-start gap-2 mt-2 text-sm text-surface-400">
                       <MessageSquare className="w-4 h-4 mt-0.5 shrink-0" />
                       <span>"{event.comment}"</span>
                     </div>
@@ -464,7 +464,7 @@ function UpcomingReservations({
 
       {slots.length > 0 && (
         <div className="space-y-4">
-          <h2 className="text-sm font-medium text-dark-400 uppercase tracking-wider">
+          <h2 className="text-sm font-medium text-surface-400 uppercase tracking-wider">
             {t('trainings')}
           </h2>
           {slots.map((reservation) => {
@@ -476,7 +476,7 @@ function UpcomingReservations({
                 className={
                   isCancelledByAdmin
                     ? 'bg-rose-500/5 rounded-xl border border-rose-500/30 p-4 sm:p-6 cursor-pointer hover:border-rose-500/50 transition-colors'
-                    : 'bg-dark-900 rounded-xl border border-dark-800 p-4 sm:p-6 cursor-pointer hover:border-dark-700 transition-colors'
+                    : 'bg-surface-900 rounded-xl border border-surface-800 p-4 sm:p-6 cursor-pointer hover:border-surface-700 transition-colors'
                 }
                 onClick={() => onSlotClick(reservation.timeSlotId)}
               >
@@ -488,7 +488,7 @@ function UpcomingReservations({
                       ) : (
                         <Calendar className="w-5 h-5 text-primary-400" />
                       )}
-                      <span className="font-medium text-dark-100 capitalize">
+                      <span className="font-medium text-surface-100 capitalize">
                         {format(dateObj, 'EEEE, d MMMM yyyy', { locale })}
                       </span>
                       {isCancelledByAdmin && (
@@ -497,7 +497,7 @@ function UpcomingReservations({
                         </span>
                       )}
                     </div>
-                    <div className="flex items-center gap-3 text-dark-400">
+                    <div className="flex items-center gap-3 text-surface-400">
                       <Clock className="w-5 h-5" />
                       <span>
                         {reservation.startTime.slice(0, 5)} -{' '}
@@ -506,20 +506,20 @@ function UpcomingReservations({
                     </div>
                     {!isCancelledByAdmin && (
                       <div className="flex items-center gap-2 mt-2" onClick={(e) => e.stopPropagation()}>
-                        <Users className="w-4 h-4 text-dark-400 shrink-0" />
+                        <Users className="w-4 h-4 text-surface-400 shrink-0" />
                         {editingId === reservation.id ? (
                           <div className="flex items-center gap-2 flex-wrap">
                             <button
                               type="button"
                               onClick={() => setEditCount(Math.max(1, editCount - 1))}
-                              className="w-6 h-6 rounded bg-dark-800 border border-dark-700 text-dark-200 hover:bg-dark-700 transition-colors text-sm font-bold flex items-center justify-center"
+                              className="w-6 h-6 rounded bg-surface-800 border border-surface-700 text-surface-200 hover:bg-surface-700 transition-colors text-sm font-bold flex items-center justify-center"
                             >-</button>
-                            <span className="text-dark-100 font-medium w-4 text-center text-sm">{editCount}</span>
+                            <span className="text-surface-100 font-medium w-4 text-center text-sm">{editCount}</span>
                             <button
                               type="button"
                               onClick={() => setEditCount(Math.min(reservation.spotsAvailable, editCount + 1))}
                               disabled={editCount >= reservation.spotsAvailable}
-                              className="w-6 h-6 rounded bg-dark-800 border border-dark-700 text-dark-200 hover:bg-dark-700 transition-colors text-sm font-bold flex items-center justify-center disabled:opacity-40"
+                              className="w-6 h-6 rounded bg-surface-800 border border-surface-700 text-surface-200 hover:bg-surface-700 transition-colors text-sm font-bold flex items-center justify-center disabled:opacity-40"
                             >+</button>
                             <button
                               type="button"
@@ -533,7 +533,7 @@ function UpcomingReservations({
                             <button
                               type="button"
                               onClick={() => setEditingId(null)}
-                              className="text-xs px-2 py-1 rounded bg-dark-800 text-dark-400 hover:text-dark-300 transition-colors"
+                              className="text-xs px-2 py-1 rounded bg-surface-800 text-surface-400 hover:text-surface-300 transition-colors"
                             >
                               {t('updateParticipants.cancel')}
                             </button>
@@ -543,11 +543,11 @@ function UpcomingReservations({
                           </div>
                         ) : (
                           <div className="flex items-center gap-2">
-                            <span className="text-sm text-dark-400">{t('spotsReserved', { count: reservation.participants })}</span>
+                            <span className="text-sm text-surface-400">{t('spotsReserved', { count: reservation.participants })}</span>
                             <button
                               type="button"
                               onClick={() => { setEditingId(reservation.id); setEditCount(reservation.participants) }}
-                              className="flex items-center gap-1 text-xs text-dark-500 hover:text-dark-300 transition-colors"
+                              className="flex items-center gap-1 text-xs text-surface-500 hover:text-surface-300 transition-colors"
                             >
                               <Pencil className="w-3 h-3" />
                               {t('updateParticipants.edit')}
@@ -562,7 +562,7 @@ function UpcomingReservations({
                       </div>
                     )}
                     {reservation.comment && (
-                      <div className="flex items-start gap-2 mt-2 text-sm text-dark-400">
+                      <div className="flex items-start gap-2 mt-2 text-sm text-surface-400">
                         <MessageSquare className="w-4 h-4 mt-0.5 shrink-0" />
                         <span>"{reservation.comment}"</span>
                       </div>
@@ -658,24 +658,24 @@ function PastReservations({
     <div className="space-y-6 opacity-60">
       {visibleEvents.length > 0 && (
         <div className="space-y-3">
-          <h2 className="text-sm font-medium text-dark-400 uppercase tracking-wider">
+          <h2 className="text-sm font-medium text-surface-400 uppercase tracking-wider">
             {t('events')}
           </h2>
           {visibleEvents.map((event) => (
             <div
               key={event.eventId}
-              className="bg-dark-900 rounded-xl border border-dark-800/50 p-4 sm:p-6"
+              className="bg-surface-900 rounded-xl border border-surface-800/50 p-4 sm:p-6"
             >
               <div className="flex-1">
                 <div className="flex items-center gap-3 mb-2">
                   <span className="inline-block px-2 py-0.5 text-xs font-medium rounded bg-primary-500/20 text-primary-400">
                     {tc(`eventTypes.${event.eventType}`)}
                   </span>
-                  <span className="font-medium text-dark-100">
+                  <span className="font-medium text-surface-100">
                     {event.eventTitle}
                   </span>
                 </div>
-                <div className="flex items-center gap-3 text-dark-400">
+                <div className="flex items-center gap-3 text-surface-400">
                   <Calendar className="w-5 h-5" />
                   <span>
                     {format(new Date(event.startDate), 'd MMMM', { locale })}
@@ -684,7 +684,7 @@ function PastReservations({
                   </span>
                 </div>
                 {event.participants > 1 && (
-                  <div className="flex items-center gap-2 mt-2 text-sm text-dark-400">
+                  <div className="flex items-center gap-2 mt-2 text-sm text-surface-400">
                     <Users className="w-4 h-4" />
                     <span>{t('spotsReserved', { count: event.participants })}</span>
                   </div>
@@ -697,7 +697,7 @@ function PastReservations({
 
       {visibleSlots.length > 0 && (
         <div className="space-y-3">
-          <h2 className="text-sm font-medium text-dark-400 uppercase tracking-wider">
+          <h2 className="text-sm font-medium text-surface-400 uppercase tracking-wider">
             {t('trainings')}
           </h2>
           {visibleSlots.map((reservation) => {
@@ -707,21 +707,21 @@ function PastReservations({
             return (
               <div
                 key={reservation.id}
-                className="bg-dark-900 rounded-xl border border-dark-800/50 p-4 sm:p-6"
+                className="bg-surface-900 rounded-xl border border-surface-800/50 p-4 sm:p-6"
               >
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-2">
-                    <Calendar className="w-5 h-5 text-dark-500" />
-                    <span className="font-medium text-dark-100 capitalize">
+                    <Calendar className="w-5 h-5 text-surface-500" />
+                    <span className="font-medium text-surface-100 capitalize">
                       {format(dateObj, 'EEEE, d MMMM yyyy', { locale })}
                     </span>
                     {isCancelled && (
-                      <span className="inline-block px-2 py-0.5 text-xs font-medium rounded bg-dark-700 text-dark-400">
+                      <span className="inline-block px-2 py-0.5 text-xs font-medium rounded bg-surface-700 text-surface-400">
                         {t('cancelled')}
                       </span>
                     )}
                   </div>
-                  <div className="flex items-center gap-3 text-dark-400">
+                  <div className="flex items-center gap-3 text-surface-400">
                     <Clock className="w-5 h-5" />
                     <span>
                       {reservation.startTime.slice(0, 5)} -{' '}
@@ -729,7 +729,7 @@ function PastReservations({
                     </span>
                   </div>
                   {reservation.participants > 1 && (
-                    <div className="flex items-center gap-2 mt-2 text-sm text-dark-400">
+                    <div className="flex items-center gap-2 mt-2 text-sm text-surface-400">
                       <Users className="w-4 h-4" />
                       <span>{t('spotsReserved', { count: reservation.participants })}</span>
                     </div>
@@ -748,24 +748,24 @@ function PastReservations({
 
       {totalPages > 1 && (
         <div className="flex items-center justify-between pt-2">
-          <span className="text-sm text-dark-500">
+          <span className="text-sm text-surface-500">
             {t('totalItems', { count: totalItems })}
           </span>
           <div className="flex items-center gap-2">
             <button
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={safePage <= 1}
-              className="p-2 text-dark-400 hover:text-dark-100 hover:bg-dark-800 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+              className="p-2 text-surface-400 hover:text-surface-100 hover:bg-surface-800 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
-            <span className="text-sm text-dark-300 min-w-[80px] text-center">
+            <span className="text-sm text-surface-300 min-w-[80px] text-center">
               {safePage} / {totalPages}
             </span>
             <button
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               disabled={safePage >= totalPages}
-              className="p-2 text-dark-400 hover:text-dark-100 hover:bg-dark-800 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+              className="p-2 text-surface-400 hover:text-surface-100 hover:bg-surface-800 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
             >
               <ChevronRight className="w-4 h-4" />
             </button>
@@ -803,11 +803,11 @@ function WaitlistPendingSection({
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-1">
                 <Clock3 className="w-4 h-4 text-amber-400" />
-                <span className="font-medium text-dark-100 capitalize">
+                <span className="font-medium text-surface-100 capitalize">
                   {format(new Date(entry.slotDate), 'EEEE, d MMMM yyyy', { locale })}
                 </span>
               </div>
-              <div className="flex items-center gap-2 text-dark-400 text-sm">
+              <div className="flex items-center gap-2 text-surface-400 text-sm">
                 <Clock className="w-4 h-4" />
                 <span>{entry.slotStartTime.slice(0, 5)} - {entry.slotEndTime.slice(0, 5)}</span>
                 {entry.slotTitle && <span className="text-primary-400">· {entry.slotTitle}</span>}
@@ -858,24 +858,24 @@ function WaitlistWaitingSection({
 
   return (
     <div className="mb-6 space-y-3">
-      <h2 className="text-sm font-medium text-dark-400 uppercase tracking-wider flex items-center gap-2">
+      <h2 className="text-sm font-medium text-surface-400 uppercase tracking-wider flex items-center gap-2">
         <ListX className="w-4 h-4" />
         {t('waitlist.waiting.title')}
       </h2>
       {entries.map((entry) => (
         <div
           key={entry.id}
-          className="bg-dark-900 rounded-xl border border-dark-800 p-4 sm:p-5"
+          className="bg-surface-900 rounded-xl border border-surface-800 p-4 sm:p-5"
         >
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-1">
-                <Calendar className="w-4 h-4 text-dark-400" />
-                <span className="font-medium text-dark-100 capitalize">
+                <Calendar className="w-4 h-4 text-surface-400" />
+                <span className="font-medium text-surface-100 capitalize">
                   {format(new Date(entry.slotDate), 'EEEE, d MMMM yyyy', { locale })}
                 </span>
               </div>
-              <div className="flex items-center gap-2 text-dark-400 text-sm">
+              <div className="flex items-center gap-2 text-surface-400 text-sm">
                 <Clock className="w-4 h-4" />
                 <span>{entry.slotStartTime.slice(0, 5)} - {entry.slotEndTime.slice(0, 5)}</span>
                 {entry.slotTitle && <span className="text-primary-400">· {entry.slotTitle}</span>}
@@ -923,9 +923,9 @@ function EventWaitlistPendingSection({
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-1">
                 <Clock3 className="w-4 h-4 text-amber-400" />
-                <span className="font-medium text-dark-100">{entry.eventTitle}</span>
+                <span className="font-medium text-surface-100">{entry.eventTitle}</span>
               </div>
-              <div className="flex items-center gap-2 text-dark-400 text-sm">
+              <div className="flex items-center gap-2 text-surface-400 text-sm">
                 <Calendar className="w-4 h-4" />
                 <span>
                   {format(new Date(entry.eventStartDate), 'd MMMM', { locale })}
@@ -983,22 +983,22 @@ function EventWaitlistWaitingSection({
 
   return (
     <div className="mb-6 space-y-3">
-      <h2 className="text-sm font-medium text-dark-400 uppercase tracking-wider flex items-center gap-2">
+      <h2 className="text-sm font-medium text-surface-400 uppercase tracking-wider flex items-center gap-2">
         <ListX className="w-4 h-4" />
         {t('waitlist.waiting.title')}
       </h2>
       {entries.map((entry) => (
         <div
           key={entry.id}
-          className="bg-dark-900 rounded-xl border border-dark-800 p-4 sm:p-5"
+          className="bg-surface-900 rounded-xl border border-surface-800 p-4 sm:p-5"
         >
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-1">
-                <Calendar className="w-4 h-4 text-dark-400" />
-                <span className="font-medium text-dark-100">{entry.eventTitle}</span>
+                <Calendar className="w-4 h-4 text-surface-400" />
+                <span className="font-medium text-surface-100">{entry.eventTitle}</span>
               </div>
-              <div className="flex items-center gap-2 text-dark-400 text-sm">
+              <div className="flex items-center gap-2 text-surface-400 text-sm">
                 <span>
                   {format(new Date(entry.eventStartDate), 'd MMMM', { locale })}
                   {entry.eventStartDate !== entry.eventEndDate && (

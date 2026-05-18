@@ -50,14 +50,14 @@ export function GalleryPickerModal({ isOpen, onClose, onSelect }: GalleryPickerM
         </div>
       ) : selectedAlbumId === null ? (
         !albums || albums.length === 0 ? (
-          <p className="text-center text-dark-400 py-8">{t('galleryPicker.noAlbums')}</p>
+          <p className="text-center text-surface-400 py-8">{t('galleryPicker.noAlbums')}</p>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             {albums.map((album) => (
               <button
                 key={album.id}
                 onClick={() => setSelectedAlbumId(album.id)}
-                className="relative aspect-video rounded-lg overflow-hidden border-2 border-dark-700 hover:border-dark-500 transition-colors group"
+                className="relative aspect-video rounded-lg overflow-hidden border-2 border-surface-700 hover:border-surface-500 transition-colors group"
               >
                 {album.thumbnailUrl ? (
                   <img
@@ -67,8 +67,8 @@ export function GalleryPickerModal({ isOpen, onClose, onSelect }: GalleryPickerM
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <div className="w-full h-full bg-dark-700 flex items-center justify-center">
-                    <span className="text-dark-400 text-xs">{t('galleryPicker.noThumbnail')}</span>
+                  <div className="w-full h-full bg-surface-700 flex items-center justify-center">
+                    <span className="text-surface-400 text-xs">{t('galleryPicker.noThumbnail')}</span>
                   </div>
                 )}
                 <div className="absolute inset-0 bg-black/40 group-hover:bg-black/50 transition-colors flex items-end">
@@ -84,20 +84,20 @@ export function GalleryPickerModal({ isOpen, onClose, onSelect }: GalleryPickerM
         <>
           <button
             onClick={() => setSelectedAlbumId(null)}
-            className="flex items-center gap-1 text-sm text-dark-300 hover:text-dark-100 transition-colors mb-4"
+            className="flex items-center gap-1 text-sm text-surface-300 hover:text-surface-100 transition-colors mb-4"
           >
             <ChevronLeft className="h-4 w-4" />
             {t('galleryPicker.backToAlbums')}
           </button>
           {!albumDetail || albumDetail.photos.length === 0 ? (
-            <p className="text-center text-dark-400 py-8">{t('galleryPicker.noPhotos')}</p>
+            <p className="text-center text-surface-400 py-8">{t('galleryPicker.noPhotos')}</p>
           ) : (
             <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
               {albumDetail.photos.map((photo) => (
                 <button
                   key={photo.id}
                   onClick={() => handleSelectPhoto(photo)}
-                  className="relative aspect-square rounded-lg overflow-hidden border-2 border-dark-700 hover:border-dark-500 transition-colors"
+                  className="relative aspect-square rounded-lg overflow-hidden border-2 border-surface-700 hover:border-surface-500 transition-colors"
                 >
                   <img
                     src={photo.url}

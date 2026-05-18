@@ -77,32 +77,32 @@ export function MonthCalendar({ currentMonth, onMonthChange, days, events, onDay
   }
 
   return (
-    <div className="bg-dark-900 rounded-xl border border-dark-800 overflow-hidden">
+    <div className="bg-surface-900 rounded-xl border border-surface-800 overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-dark-800">
+      <div className="flex items-center justify-between p-4 border-b border-surface-800">
         <button
           onClick={goToPreviousMonth}
-          className="p-2 text-dark-400 hover:text-dark-100 hover:bg-dark-800 rounded-lg transition-colors"
+          className="p-2 text-surface-400 hover:text-surface-100 hover:bg-surface-800 rounded-lg transition-colors"
         >
           <ChevronLeft className="w-5 h-5" />
         </button>
-        <h2 className="text-lg font-semibold text-dark-100 capitalize">
+        <h2 className="text-lg font-semibold text-surface-100 capitalize">
           {format(currentMonth, 'LLLL yyyy', { locale })}
         </h2>
         <button
           onClick={goToNextMonth}
-          className="p-2 text-dark-400 hover:text-dark-100 hover:bg-dark-800 rounded-lg transition-colors"
+          className="p-2 text-surface-400 hover:text-surface-100 hover:bg-surface-800 rounded-lg transition-colors"
         >
           <ChevronRight className="w-5 h-5" />
         </button>
       </div>
 
       {/* Weekday headers */}
-      <div className="grid grid-cols-7 border-b border-dark-800">
+      <div className="grid grid-cols-7 border-b border-surface-800">
         {weekdays.map((day) => (
           <div
             key={day}
-            className="py-2 text-center text-sm font-medium text-dark-500"
+            className="py-2 text-center text-sm font-medium text-surface-500"
           >
             {day}
           </div>
@@ -113,7 +113,7 @@ export function MonthCalendar({ currentMonth, onMonthChange, days, events, onDay
       <div className="grid grid-cols-7">
         {calendarDays.map((day, index) => {
           if (!day) {
-            return <div key={`empty-${index}`} className="aspect-square bg-dark-950/50" />
+            return <div key={`empty-${index}`} className="aspect-square bg-surface-950/50" />
           }
 
           const dateString = format(day, 'yyyy-MM-dd')
@@ -132,10 +132,10 @@ export function MonthCalendar({ currentMonth, onMonthChange, days, events, onDay
               onClick={() => isClickable && onDayClick(dateString)}
               disabled={!isClickable}
               className={clsx(
-                'aspect-square p-0.5 sm:p-2 border-b border-r border-dark-800 transition-colors relative',
+                'aspect-square p-0.5 sm:p-2 border-b border-r border-surface-800 transition-colors relative',
                 !isSameMonth(day, currentMonth) && 'opacity-30',
                 isPast && 'opacity-40 cursor-not-allowed',
-                isClickable && 'hover:bg-dark-800 cursor-pointer',
+                isClickable && 'hover:bg-surface-800 cursor-pointer',
                 !isClickable && 'cursor-default',
                 hasEvents && !isPast && (dayEvents.every(e => e.eventType === 'CONTACT_DAY') ? 'bg-violet-500/10' : 'bg-primary-500/10')
               )}
@@ -144,7 +144,7 @@ export function MonthCalendar({ currentMonth, onMonthChange, days, events, onDay
                 className={clsx(
                   'text-sm font-medium mb-0.5',
                   isToday(day) && 'text-primary-400',
-                  !isToday(day) && 'text-dark-300'
+                  !isToday(day) && 'text-surface-300'
                 )}
               >
                 {format(day, 'd')}

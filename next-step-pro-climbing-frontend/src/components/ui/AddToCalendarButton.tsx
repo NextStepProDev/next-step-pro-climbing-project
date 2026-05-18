@@ -46,19 +46,19 @@ export function AddToCalendarButton(props: AddToCalendarButtonProps) {
       </button>
 
       {open && (
-        <div className="absolute bottom-full mb-2 left-0 bg-dark-800 border border-dark-700 rounded-lg shadow-lg py-1 z-50 min-w-[180px]">
+        <div className="absolute bottom-full mb-2 left-0 bg-surface-800 border border-surface-700 rounded-lg shadow-lg py-1 z-50 min-w-[180px]">
           <a
             href={buildGoogleCalendarUrl(event)}
             target="_blank"
             rel="noopener noreferrer"
             onClick={() => setOpen(false)}
-            className="block px-4 py-2 text-sm text-dark-200 hover:bg-dark-700 transition-colors"
+            className="block px-4 py-2 text-sm text-surface-200 hover:bg-surface-700 transition-colors"
           >
             Google Calendar
           </a>
           <button
             onClick={() => { downloadIcs(event); setOpen(false) }}
-            className="block w-full text-left px-4 py-2 text-sm text-dark-200 hover:bg-dark-700 transition-colors"
+            className="block w-full text-left px-4 py-2 text-sm text-surface-200 hover:bg-surface-700 transition-colors"
           >
             {t('calendarAction.downloadIcs')}
           </button>

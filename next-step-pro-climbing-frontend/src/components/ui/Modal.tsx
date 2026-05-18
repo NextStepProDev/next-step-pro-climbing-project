@@ -38,7 +38,7 @@ export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalPr
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-dark-950/80 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
         onClick={onClose}
       />
 
@@ -47,15 +47,15 @@ export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalPr
         role="dialog"
         aria-modal="true"
         aria-labelledby="modal-title"
-        className={`relative bg-dark-900 rounded-xl border border-dark-800 shadow-xl w-full mx-4 max-h-[90vh] overflow-y-auto ${size === 'xl' ? 'max-w-4xl' : size === 'lg' ? 'max-w-3xl' : 'max-w-lg'}`}
+        className={`relative bg-surface-900 rounded-xl border border-surface-800 shadow-xl w-full mx-4 max-h-[90vh] overflow-y-auto ${size === 'xl' ? 'max-w-4xl' : size === 'lg' ? 'max-w-3xl' : 'max-w-lg'}`}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-dark-800">
-          <h2 id="modal-title" className="text-lg font-semibold text-dark-100">{title}</h2>
+        <div className="flex items-center justify-between p-4 border-b border-surface-800">
+          <h2 id="modal-title" className="text-lg font-semibold text-surface-100">{title}</h2>
           <button
             onClick={onClose}
             aria-label={title ? `Close ${title}` : 'Close'}
-            className="text-dark-400 hover:text-dark-200 transition-colors"
+            className="text-surface-400 hover:text-surface-200 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>

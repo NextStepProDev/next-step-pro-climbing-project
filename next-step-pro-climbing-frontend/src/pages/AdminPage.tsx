@@ -74,19 +74,19 @@ export function AdminPage() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-dark-100 mb-2">
+        <h1 className="text-2xl font-bold text-surface-100 mb-2">
           {t('title')}
         </h1>
-        <p className="text-dark-400">
+        <p className="text-surface-400">
           {t('subtitle')}
         </p>
       </div>
 
       {/* Tabs */}
-      <div className="flex flex-wrap gap-x-6 gap-y-3 mb-6 border-b border-dark-800 pb-4">
+      <div className="flex flex-wrap gap-x-6 gap-y-3 mb-6 border-b border-surface-800 pb-4">
         {adminTabGroups.map((group) => (
           <div key={group.groupKey} className="flex flex-col gap-1.5 max-sm:w-full">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-dark-500 px-1">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-surface-500 px-1">
               {t(group.groupKey)}
             </span>
             <div className="flex flex-wrap gap-1">
@@ -103,7 +103,7 @@ export function AdminPage() {
                       'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors whitespace-nowrap',
                       isActive
                         ? 'bg-primary-500/10 text-primary-400'
-                        : 'text-dark-400 hover:text-dark-200 hover:bg-dark-800'
+                        : 'text-surface-400 hover:text-surface-200 hover:bg-surface-800'
                     )}
                   >
                     <Icon className="w-4 h-4" />

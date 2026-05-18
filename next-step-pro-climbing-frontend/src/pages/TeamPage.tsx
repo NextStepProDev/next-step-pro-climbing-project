@@ -21,7 +21,7 @@ function renderBio(bio: string) {
       return <img key={i} src={block.url} alt={block.alt} className="max-w-full rounded-lg my-2" />
     }
     return (
-      <div key={i} className="text-dark-200 whitespace-pre-wrap"
+      <div key={i} className="text-surface-200 whitespace-pre-wrap"
         dangerouslySetInnerHTML={{ __html: renderRichText(block.content) }} />
     )
   })
@@ -34,7 +34,7 @@ function renderCertifications(text: string) {
       {lines.map((line, i) => (
         <li key={i} className="flex items-start gap-2.5">
           <span className="w-1.5 h-1.5 rounded-full bg-primary-400 mt-2 shrink-0" />
-          <span className="text-dark-200">{line}</span>
+          <span className="text-surface-200">{line}</span>
         </li>
       ))}
     </ul>
@@ -51,7 +51,7 @@ function MemberTile({
   return (
     <button
       onClick={onClick}
-      className="group relative aspect-[3/4] w-full overflow-hidden rounded-xl bg-dark-800 border border-transparent hover:border-primary-500/50 hover:-translate-y-0.5 transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
+      className="group relative aspect-[3/4] w-full overflow-hidden rounded-xl bg-surface-800 border border-transparent hover:border-primary-500/50 hover:-translate-y-0.5 transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
     >
       {member.photoUrl ? (
         <img
@@ -65,8 +65,8 @@ function MemberTile({
           }
         />
       ) : (
-        <div className="absolute inset-0 flex items-center justify-center bg-dark-700">
-          <User className="h-20 w-20 text-dark-500" />
+        <div className="absolute inset-0 flex items-center justify-center bg-surface-700">
+          <User className="h-20 w-20 text-surface-500" />
         </div>
       )}
 
@@ -109,17 +109,17 @@ function MemberModal({
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
 
       <div
-        className="relative z-10 w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl bg-dark-900 border border-dark-700 shadow-2xl"
+        className="relative z-10 w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl bg-surface-900 border border-surface-700 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 z-20 p-2 rounded-full bg-dark-800 hover:bg-dark-700 text-dark-300 hover:text-dark-100 transition-colors"
+          className="absolute top-4 right-4 z-20 p-2 rounded-full bg-surface-800 hover:bg-surface-700 text-surface-300 hover:text-surface-100 transition-colors"
         >
           <X className="w-5 h-5" />
         </button>
 
-        <div className="relative h-[28rem] md:h-[32rem] w-full overflow-hidden rounded-t-2xl bg-dark-800">
+        <div className="relative h-[28rem] md:h-[32rem] w-full overflow-hidden rounded-t-2xl bg-surface-800">
           {member.photoUrl ? (
             <img
               src={member.photoUrl}
@@ -133,10 +133,10 @@ function MemberModal({
             />
           ) : (
             <div className="flex h-full items-center justify-center">
-              <User className="h-24 w-24 text-dark-500" />
+              <User className="h-24 w-24 text-surface-500" />
             </div>
           )}
-          <div className="absolute inset-0 bg-gradient-to-t from-dark-900 via-dark-900/60 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-surface-900 via-surface-900/60 to-transparent" />
 
           {member.badgeUrl && (
             <img
@@ -181,7 +181,7 @@ function MemberModal({
               <h3 className="text-xs font-bold tracking-widest uppercase text-primary-400">
                 {aboutLabel}
               </h3>
-              <div className="text-dark-200">{renderBio(member.bio)}</div>
+              <div className="text-surface-200">{renderBio(member.bio)}</div>
             </div>
           )}
         </div>
@@ -229,7 +229,7 @@ export function TeamPage({ memberType }: { memberType: InstructorType }) {
   if (isLoading) {
     return (
       <div className="container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold text-dark-100 mb-8">{title}</h1>
+        <h1 className="text-3xl font-bold text-surface-100 mb-8">{title}</h1>
         <TileSkeleton count={8} />
       </div>
     )
@@ -250,8 +250,8 @@ export function TeamPage({ memberType }: { memberType: InstructorType }) {
       <PageHead title={title} description={memberType === 'INSTRUCTOR' ? t('team.instructorsMetaDescription') : t('team.competitorsMetaDescription')} path={memberType === 'INSTRUCTOR' ? '/team/instruktorzy' : '/team/zawodnicy'} availableLanguages={['pl', 'en', 'es']} currentLanguage={contentLanguage} />
       <div className="container mx-auto px-4 py-8">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
-          <h1 className="text-3xl font-bold text-dark-100">{title}</h1>
-          <div className="flex items-center gap-1 bg-dark-800 border border-dark-700 rounded-lg p-1">
+          <h1 className="text-3xl font-bold text-surface-100">{title}</h1>
+          <div className="flex items-center gap-1 bg-surface-800 border border-surface-700 rounded-lg p-1">
             {COURSE_CONTENT_LANGUAGES.map((lang) => (
               <button
                 key={lang.code}
@@ -260,7 +260,7 @@ export function TeamPage({ memberType }: { memberType: InstructorType }) {
                   'px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-150 active:scale-95',
                   contentLanguage === lang.code
                     ? 'bg-primary-500 text-white'
-                    : 'text-dark-400 hover:text-dark-100 hover:bg-dark-700'
+                    : 'text-surface-400 hover:text-surface-100 hover:bg-surface-700'
                 )}
               >
                 {lang.label}
@@ -270,7 +270,7 @@ export function TeamPage({ memberType }: { memberType: InstructorType }) {
         </div>
 
         {members.length === 0 ? (
-          <div className="text-center text-dark-400">{t('team.noMembers')}</div>
+          <div className="text-center text-surface-400">{t('team.noMembers')}</div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
             {members.map((m) => (

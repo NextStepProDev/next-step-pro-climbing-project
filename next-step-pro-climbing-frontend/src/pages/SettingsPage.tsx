@@ -3,12 +3,20 @@ import { useNavigate } from 'react-router-dom'
 import { useMutation } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../context/AuthContext'
+import { useTheme } from '../context/ThemeContext'
 import { useToast } from '../context/ToastContext'
 import { authApi } from '../api/client'
 import { getErrorMessage } from '../utils/errors'
 import { validatePhone, validateName } from '../utils/validation'
+import { Moon, Sun, Monitor } from 'lucide-react'
 import { Button } from '../components/ui/Button'
 import { Modal } from '../components/ui/Modal'
+
+const THEME_OPTIONS = [
+  { value: 'dark' as const, labelKey: 'theme.dark', Icon: Moon },
+  { value: 'light' as const, labelKey: 'theme.light', Icon: Sun },
+  { value: 'system' as const, labelKey: 'theme.system', Icon: Monitor },
+]
 
 const LANGUAGES = [
   { code: 'pl', label: 'Polski' },
@@ -22,9 +30,10 @@ export function SettingsPage() {
 
   return (
     <div className="max-w-2xl mx-auto space-y-8">
-      <h1 className="text-2xl font-bold text-dark-100">{t('title')}</h1>
+      <h1 className="text-2xl font-bold text-surface-100">{t('title')}</h1>
 
       <ProfileSection key={user?.id ?? ''} user={user} onUpdated={refreshUser} />
+      <ThemeSection />
       <LanguageSection />
       <ChangePasswordSection />
       <NotificationsSection
@@ -68,8 +77,8 @@ function ProfileSection({
   const missingData = !user?.firstName || !user?.lastName || !user?.phone
 
   return (
-    <section className="bg-dark-900 rounded-lg border border-dark-800 p-6">
-      <h2 className="text-lg font-semibold text-dark-100 mb-4">{t('profile.title')}</h2>
+    <section className="bg-surface-900 rounded-lg border border-surface-800 p-6">
+      <h2 className="text-lg font-semibold text-surface-100 mb-4">{t('profile.title')}</h2>
 
       {missingData && (
         <div className="mb-4 flex items-start gap-2 rounded-lg bg-amber-500/10 border border-amber-500/30 px-4 py-3 text-sm text-amber-400">
@@ -96,47 +105,47 @@ function ProfileSection({
       >
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm text-dark-400 mb-1">{t('profile.firstName')}</label>
+            <label className="block text-sm text-surface-400 mb-1">{t('profile.firstName')}</label>
             <input
               type="text"
               value={firstName}
               onChange={(e) => { setFirstName(e.target.value); setFirstNameError(null) }}
               placeholder={t('profile.firstNamePlaceholder')}
-              className="w-full bg-dark-800 border border-dark-700 rounded-lg px-4 py-2 text-dark-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
+              className="w-full bg-surface-800 border border-surface-700 rounded-lg px-4 py-2 text-surface-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
             />
             {firstNameError && <p className="text-xs text-rose-400/80 mt-1">{firstNameError}</p>}
           </div>
           <div>
-            <label className="block text-sm text-dark-400 mb-1">{t('profile.lastName')}</label>
+            <label className="block text-sm text-surface-400 mb-1">{t('profile.lastName')}</label>
             <input
               type="text"
               value={lastName}
               onChange={(e) => { setLastName(e.target.value); setLastNameError(null) }}
               placeholder={t('profile.lastNamePlaceholder')}
-              className="w-full bg-dark-800 border border-dark-700 rounded-lg px-4 py-2 text-dark-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
+              className="w-full bg-surface-800 border border-surface-700 rounded-lg px-4 py-2 text-surface-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
             />
             {lastNameError && <p className="text-xs text-rose-400/80 mt-1">{lastNameError}</p>}
           </div>
         </div>
         <div>
-          <label className="block text-sm text-dark-400 mb-1">{t('profile.phone')}</label>
+          <label className="block text-sm text-surface-400 mb-1">{t('profile.phone')}</label>
           <input
             type="tel"
             value={phone}
             onChange={(e) => { setPhone(e.target.value); setPhoneError(null) }}
             placeholder={t('profile.phonePlaceholder')}
-            className="w-full bg-dark-800 border border-dark-700 rounded-lg px-4 py-2 text-dark-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
+            className="w-full bg-surface-800 border border-surface-700 rounded-lg px-4 py-2 text-surface-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
           />
           {phoneError && <p className="text-xs text-rose-400/80 mt-1">{phoneError}</p>}
         </div>
         <div>
-          <label className="block text-sm text-dark-400 mb-1">{t('profile.nickname')}</label>
+          <label className="block text-sm text-surface-400 mb-1">{t('profile.nickname')}</label>
           <input
             type="text"
             value={nickname}
             onChange={(e) => setNickname(e.target.value)}
             placeholder={t('profile.nicknamePlaceholder')}
-            className="w-full bg-dark-800 border border-dark-700 rounded-lg px-4 py-2 text-dark-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
+            className="w-full bg-surface-800 border border-surface-700 rounded-lg px-4 py-2 text-surface-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
           />
         </div>
 
@@ -148,6 +157,34 @@ function ProfileSection({
           <p className="text-sm text-rose-400/80">{getErrorMessage(mutation.error)}</p>
         )}
       </form>
+    </section>
+  )
+}
+
+function ThemeSection() {
+  const { t } = useTranslation('settings')
+  const { choice, setTheme } = useTheme()
+
+  return (
+    <section className="bg-surface-900 rounded-lg border border-surface-800 p-6">
+      <h2 className="text-lg font-semibold text-surface-100 mb-1">{t('theme.title')}</h2>
+      <p className="text-sm text-surface-400 mb-4">{t('theme.description')}</p>
+      <div className="flex gap-3">
+        {THEME_OPTIONS.map(({ value, labelKey, Icon }) => (
+          <button
+            key={value}
+            onClick={() => setTheme(value)}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${
+              choice === value
+                ? 'bg-primary-500/15 border-primary-500/40 text-primary-400'
+                : 'border-surface-700 text-surface-300 hover:bg-surface-800 hover:text-surface-100'
+            }`}
+          >
+            <Icon className="w-4 h-4" />
+            {t(labelKey)}
+          </button>
+        ))}
+      </div>
     </section>
   )
 }
@@ -166,9 +203,9 @@ function LanguageSection() {
   }
 
   return (
-    <section className="bg-dark-900 rounded-lg border border-dark-800 p-6">
-      <h2 className="text-lg font-semibold text-dark-100 mb-1">{t('language.title')}</h2>
-      <p className="text-sm text-dark-400 mb-4">{t('language.description')}</p>
+    <section className="bg-surface-900 rounded-lg border border-surface-800 p-6">
+      <h2 className="text-lg font-semibold text-surface-100 mb-1">{t('language.title')}</h2>
+      <p className="text-sm text-surface-400 mb-4">{t('language.description')}</p>
       <div className="flex gap-3">
         {LANGUAGES.map((lang) => (
           <button
@@ -177,7 +214,7 @@ function LanguageSection() {
             className={`px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${
               i18n.language === lang.code
                 ? 'bg-primary-500/15 border-primary-500/40 text-primary-400'
-                : 'border-dark-700 text-dark-300 hover:bg-dark-800 hover:text-dark-100'
+                : 'border-surface-700 text-surface-300 hover:bg-surface-800 hover:text-surface-100'
             }`}
           >
             {lang.label}
@@ -238,9 +275,9 @@ function ChangePasswordSection() {
   }
 
   return (
-    <section className="bg-dark-900 rounded-lg border border-dark-800 p-6">
+    <section className="bg-surface-900 rounded-lg border border-surface-800 p-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-dark-100">{t('changePassword.title')}</h2>
+        <h2 className="text-lg font-semibold text-surface-100">{t('changePassword.title')}</h2>
         <button
           type="button"
           onClick={handleToggle}
@@ -253,35 +290,35 @@ function ChangePasswordSection() {
       {expanded && (
         <form onSubmit={handleSubmit} className="space-y-4 mt-4">
           <div>
-            <label className="block text-sm text-dark-400 mb-1">{t('changePassword.currentPassword')}</label>
+            <label className="block text-sm text-surface-400 mb-1">{t('changePassword.currentPassword')}</label>
             <input
               type="password"
               value={currentPassword}
               onChange={(e) => setCurrentPassword(e.target.value)}
               required
-              className="w-full bg-dark-800 border border-dark-700 rounded-lg px-4 py-2 text-dark-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
+              className="w-full bg-surface-800 border border-surface-700 rounded-lg px-4 py-2 text-surface-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
             />
           </div>
           <div>
-            <label className="block text-sm text-dark-400 mb-1">{t('changePassword.newPassword')}</label>
+            <label className="block text-sm text-surface-400 mb-1">{t('changePassword.newPassword')}</label>
             <input
               type="password"
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
               required
               minLength={8}
-              className="w-full bg-dark-800 border border-dark-700 rounded-lg px-4 py-2 text-dark-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
+              className="w-full bg-surface-800 border border-surface-700 rounded-lg px-4 py-2 text-surface-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
             />
           </div>
           <div>
-            <label className="block text-sm text-dark-400 mb-1">{t('changePassword.confirmPassword')}</label>
+            <label className="block text-sm text-surface-400 mb-1">{t('changePassword.confirmPassword')}</label>
             <input
               type="password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               required
               minLength={8}
-              className="w-full bg-dark-800 border border-dark-700 rounded-lg px-4 py-2 text-dark-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
+              className="w-full bg-surface-800 border border-surface-700 rounded-lg px-4 py-2 text-surface-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
             />
           </div>
 
@@ -321,12 +358,12 @@ function NotificationsSection({
   })
 
   return (
-    <section className="bg-dark-900 rounded-lg border border-dark-800 p-6">
-      <h2 className="text-lg font-semibold text-dark-100 mb-4">{t('notifications.title')}</h2>
+    <section className="bg-surface-900 rounded-lg border border-surface-800 p-6">
+      <h2 className="text-lg font-semibold text-surface-100 mb-4">{t('notifications.title')}</h2>
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-dark-200">{t('notifications.reservations')}</p>
-          <p className="text-sm text-dark-400">
+          <p className="text-surface-200">{t('notifications.reservations')}</p>
+          <p className="text-sm text-surface-400">
             {t('notifications.description')}
           </p>
         </div>
@@ -338,7 +375,7 @@ function NotificationsSection({
             disabled={mutation.isPending}
             className="sr-only peer"
           />
-          <div className="w-11 h-6 bg-dark-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-500"></div>
+          <div className="w-11 h-6 bg-surface-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-500"></div>
         </label>
       </div>
       {mutation.isError && (
@@ -368,12 +405,12 @@ function NewsletterSection({
   })
 
   return (
-    <section className="bg-dark-900 rounded-lg border border-dark-800 p-6">
-      <h2 className="text-lg font-semibold text-dark-100 mb-4">{t('newsletter.title')}</h2>
+    <section className="bg-surface-900 rounded-lg border border-surface-800 p-6">
+      <h2 className="text-lg font-semibold text-surface-100 mb-4">{t('newsletter.title')}</h2>
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-dark-200">{t('newsletter.label')}</p>
-          <p className="text-sm text-dark-400">{t('newsletter.description')}</p>
+          <p className="text-surface-200">{t('newsletter.label')}</p>
+          <p className="text-sm text-surface-400">{t('newsletter.description')}</p>
         </div>
         <label className="relative inline-flex items-center cursor-pointer">
           <input
@@ -383,7 +420,7 @@ function NewsletterSection({
             disabled={mutation.isPending}
             className="sr-only peer"
           />
-          <div className="w-11 h-6 bg-dark-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-500"></div>
+          <div className="w-11 h-6 bg-surface-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-500"></div>
         </label>
       </div>
       {mutation.isError && (
@@ -411,9 +448,9 @@ function DeleteAccountSection({ onDeleted, hasPassword }: { onDeleted: () => voi
   })
 
   return (
-    <section className="bg-dark-900 rounded-lg border border-rose-900/20 p-6">
+    <section className="bg-surface-900 rounded-lg border border-rose-900/20 p-6">
       <h2 className="text-lg font-semibold text-rose-400/80 mb-2">{t('deleteAccount.title')}</h2>
-      <p className="text-sm text-dark-400 mb-4">
+      <p className="text-sm text-surface-400 mb-4">
         {t('deleteAccount.description')}
       </p>
       <Button variant="danger" onClick={() => setShowModal(true)}>
@@ -426,7 +463,7 @@ function DeleteAccountSection({ onDeleted, hasPassword }: { onDeleted: () => voi
         title={t('deleteAccount.modalTitle')}
       >
         <div className="space-y-4">
-          <p className="text-dark-300">
+          <p className="text-surface-300">
             {t('deleteAccount.modalMessage')}
           </p>
           {hasPassword && (
@@ -435,7 +472,7 @@ function DeleteAccountSection({ onDeleted, hasPassword }: { onDeleted: () => voi
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder={t('deleteAccount.passwordPlaceholder')}
-              className="w-full bg-dark-800 border border-dark-700 rounded-lg px-4 py-2 text-dark-100 focus:outline-none focus:ring-2 focus:ring-rose-500/40"
+              className="w-full bg-surface-800 border border-surface-700 rounded-lg px-4 py-2 text-surface-100 focus:outline-none focus:ring-2 focus:ring-rose-500/40"
             />
           )}
           <div className="flex gap-3">
