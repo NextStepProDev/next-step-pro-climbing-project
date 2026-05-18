@@ -136,7 +136,7 @@ function MemberModal({
               <User className="h-24 w-24 text-surface-500" />
             </div>
           )}
-          <div className="absolute inset-0 bg-gradient-to-t from-surface-900 via-surface-900/60 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-surface-900 via-surface-900/30 to-transparent" />
 
           {member.badgeUrl && (
             <img
@@ -147,7 +147,7 @@ function MemberModal({
           )}
 
           <div className="absolute bottom-0 left-0 p-6 space-y-2">
-            <h2 className="text-3xl font-bold text-white">
+            <h2 className="text-3xl font-bold text-surface-50">
               {member.firstName} {member.lastName}
             </h2>
             <div className="flex items-center gap-3 flex-wrap">

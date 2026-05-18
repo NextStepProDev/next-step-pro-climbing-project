@@ -225,7 +225,7 @@ function PzaSection({ t }: { t: (key: string) => string }) {
   return (
     <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
       {!logoHidden && (
-        <div className="shrink-0 w-20 h-20 bg-white rounded-2xl flex items-center justify-center shadow-lg p-2">
+        <div className="shrink-0 w-20 h-20 flex items-center justify-center">
           <img
             src={pzaLogo}
             alt="PZA"
