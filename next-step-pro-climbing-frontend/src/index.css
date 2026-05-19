@@ -145,12 +145,29 @@ body {
   --color-amber-600: #e5a811;
   --color-green-400: #5a7a3e;
   --color-green-500: #4d6935;
+  --color-green-700: #a3b893;
+  --color-blue-400: #1e40af;
+  --color-blue-700: #93c5fd;
+  --color-purple-400: #7e22ce;
+  --color-purple-700: #d8b4fe;
+  --color-rose-400: #be123c;
 }
+
+[data-theme="light"] .bg-blue-900\/40 { background-color: #dbeafe; }
+[data-theme="light"] .bg-green-900\/40 { background-color: #e2edd6; }
+[data-theme="light"] .bg-purple-900\/40 { background-color: #f3e8ff; }
+[data-theme="light"] .bg-rose-900\/40 { background-color: #ffe4e6; }
+[data-theme="light"] .bg-rose-500\/10 { background-color: #ffe4e6; }
+[data-theme="light"] .hover\:bg-blue-900\/60:hover { background-color: #bfdbfe; }
+[data-theme="light"] .hover\:bg-green-900\/60:hover { background-color: #d4e4c4; }
+[data-theme="light"] .hover\:bg-purple-900\/60:hover { background-color: #e9d5ff; }
 
 [data-theme="light"] .bg-amber-500\/5 { background-color: color-mix(in srgb, var(--color-amber-500) 12%, transparent); }
 [data-theme="light"] .bg-amber-500\/10 { background-color: color-mix(in srgb, var(--color-amber-500) 20%, transparent); }
 [data-theme="light"] .bg-amber-500\/15 { background-color: color-mix(in srgb, var(--color-amber-500) 25%, transparent); }
 [data-theme="light"] .bg-amber-500\/20 { background-color: color-mix(in srgb, var(--color-amber-500) 30%, transparent); }
+[data-theme="light"] .bg-amber-500\/30 { background-color: color-mix(in srgb, var(--color-amber-500) 40%, transparent); }
+[data-theme="light"] .hover\:bg-amber-500\/30:hover { background-color: color-mix(in srgb, var(--color-amber-500) 40%, transparent); }
 
 [data-theme="light"] .card-glass {
   background: color-mix(in srgb, var(--color-surface-800) 90%, transparent);

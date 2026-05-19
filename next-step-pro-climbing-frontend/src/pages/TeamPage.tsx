@@ -163,7 +163,7 @@ function MemberModal({
                   href={member.profile8aUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-orange-500/20 border border-orange-500/40 text-orange-300 hover:bg-orange-500/30 transition-colors text-sm font-medium"
+                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-400 hover:bg-amber-500/30 transition-colors text-sm font-medium"
                 >
                   <ExternalLink className="w-3.5 h-3.5" />
                   {t('team.profile8aLink')}
