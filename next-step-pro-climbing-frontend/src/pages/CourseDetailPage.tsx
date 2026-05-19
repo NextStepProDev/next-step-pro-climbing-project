@@ -2,6 +2,7 @@ import { useRef } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { useParams, useNavigate, Link } from 'react-router-dom'
+import { Helmet } from 'react-helmet-async'
 import { ArrowLeft, BookOpen } from 'lucide-react'
 import { coursesApi, calendarApi } from '../api/client'
 import { PageHead } from '../components/ui/PageHead'
@@ -70,9 +71,36 @@ export function CourseDetailPage() {
     .find(b => b.blockType === 'TEXT' && b.content)
     ?.content?.replace(/<[^>]*>/g, '').slice(0, 160) ?? undefined
 
+  const currency = course.language === 'pl' ? 'PLN' : 'EUR'
+  const courseJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Course',
+    name: course.title,
+    description: metaDescription,
+    provider: {
+      '@type': 'Organization',
+      name: 'Next Step Pro Climbing',
+      url: 'https://nextsteppro.pl',
+    },
+    ...(course.thumbnailUrl && { image: course.thumbnailUrl }),
+    ...(course.price && {
+      offers: {
+        '@type': 'Offer',
+        price: course.price.replace(/[^\d.,]/g, '').replace(',', '.'),
+        priceCurrency: currency,
+        availability: 'https://schema.org/InStock',
+        url: `https://nextsteppro.pl/kursy/${courseId}`,
+      },
+    }),
+    inLanguage: course.language,
+  }
+
   return (
     <div className="container mx-auto px-4 py-8 max-w-3xl">
       <PageHead title={course.title} description={metaDescription} path={`/kursy/${courseId}`} ogImage={course.thumbnailUrl ?? undefined} />
+      <Helmet>
+        <script type="application/ld+json">{JSON.stringify(courseJsonLd)}</script>
+      </Helmet>
       <div className="flex items-center justify-between mb-6">
         <Link
           to="/kursy"

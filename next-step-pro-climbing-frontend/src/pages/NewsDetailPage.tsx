@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { useParams, Link, useNavigate } from 'react-router-dom'
+import { Helmet } from 'react-helmet-async'
 import { ArrowLeft, Star } from 'lucide-react'
 import { ReadingProgressBar } from '../components/ui/ReadingProgressBar'
 import { newsApi } from '../api/client'
@@ -100,6 +101,22 @@ export function NewsDetailPage() {
         path={`/aktualnosci/${newsId}`}
         ogImage={article.thumbnailUrl ?? undefined}
       />
+      <Helmet>
+        <script type="application/ld+json">{JSON.stringify({
+          '@context': 'https://schema.org',
+          '@type': 'Article',
+          headline: article.title,
+          ...(article.thumbnailUrl && { image: article.thumbnailUrl }),
+          datePublished: article.publishedAt,
+          publisher: {
+            '@type': 'Organization',
+            name: 'Next Step Pro Climbing',
+            url: 'https://nextsteppro.pl',
+          },
+          mainEntityOfPage: `https://nextsteppro.pl/aktualnosci/${newsId}`,
+          inLanguage: article.language,
+        })}</script>
+      </Helmet>
       {/* Breadcrumb */}
       <Link
         to="/aktualnosci"

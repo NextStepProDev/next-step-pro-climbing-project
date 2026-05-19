@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { Helmet } from "react-helmet-async";
 import { PageHead } from "../components/ui/PageHead";
 import {
   Calendar,
@@ -80,7 +81,26 @@ export function HomePage() {
 
   return (
     <div>
-      <PageHead description={t('metaDescription')} />
+      <PageHead description={t('metaDescription')} path="/" />
+      <Helmet>
+        <script type="application/ld+json">{JSON.stringify({
+          '@context': 'https://schema.org',
+          '@type': 'Organization',
+          name: 'Next Step Pro Climbing',
+          url: 'https://nextsteppro.pl',
+          logo: 'https://nextsteppro.pl/logo/logo-white.png',
+          contactPoint: {
+            '@type': 'ContactPoint',
+            telephone: '+34-622-257-683',
+            contactType: 'customer service',
+            availableLanguage: ['Polish', 'English', 'Spanish'],
+          },
+          sameAs: [
+            'https://www.facebook.com/ClimbingTeamofPoland',
+            'https://www.youtube.com/@ZeroGravityLab',
+          ],
+        })}</script>
+      </Helmet>
       {/* Hero Section */}
       <section className="relative overflow-hidden sm:min-h-[70vh] sm:flex sm:flex-col sm:justify-center">
         {/* Base gradient — always rendered as placeholder/fallback */}
