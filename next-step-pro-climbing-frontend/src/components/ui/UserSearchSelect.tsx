@@ -62,6 +62,7 @@ export function UserSearchSelect({ users, value, onChange, placeholder }: UserSe
           </div>
           <button
             type="button"
+            aria-label="Clear selection"
             onClick={handleClear}
             className="ml-2 shrink-0 text-surface-400 hover:text-surface-200 transition-colors"
           >

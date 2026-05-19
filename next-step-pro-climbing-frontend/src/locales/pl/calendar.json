@@ -10,9 +10,15 @@
     "month": "Miesiąc",
     "week": "Tydzień"
   },
+  "month": {
+    "previousMonth": "Poprzedni miesiąc",
+    "nextMonth": "Następny miesiąc"
+  },
   "week": {
     "today": "Dziś",
-    "events": "Wydarzenia w tym tygodniu:"
+    "events": "Wydarzenia w tym tygodniu:",
+    "previousWeek": "Poprzedni tydzień",
+    "nextWeek": "Następny tydzień"
   },
   "eventsThisMonth": "Wydarzenia w tym miesiącu:",
   "signedUp": "Zapisany",
@@ -31,6 +37,7 @@
   "training_few": "{{count}} treningi",
   "training_many": "{{count}} treningów",
   "day": {
+    "back": "Wróć",
     "available": "Dostępne",
     "full": "Pełne",
     "fullWaitlist": "Pełne · lista rezerwowa",

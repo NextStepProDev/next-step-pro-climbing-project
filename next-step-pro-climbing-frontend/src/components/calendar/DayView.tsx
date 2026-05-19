@@ -184,6 +184,7 @@ export function DayView({
       {/* Header */}
       <div className="flex items-center gap-4 p-4 border-b border-surface-800">
         <button
+          aria-label={t('day.back')}
           onClick={onBack}
           className="p-2 text-surface-400 hover:text-surface-100 hover:bg-surface-800 rounded-lg transition-colors"
         >

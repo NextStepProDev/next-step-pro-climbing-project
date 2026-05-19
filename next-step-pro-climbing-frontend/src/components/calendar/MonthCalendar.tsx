@@ -81,6 +81,7 @@ export function MonthCalendar({ currentMonth, onMonthChange, days, events, onDay
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-surface-800">
         <button
+          aria-label={t('month.previousMonth')}
           onClick={goToPreviousMonth}
           className="p-2 text-surface-400 hover:text-surface-100 hover:bg-surface-800 rounded-lg transition-colors"
         >
@@ -90,6 +91,7 @@ export function MonthCalendar({ currentMonth, onMonthChange, days, events, onDay
           {format(currentMonth, 'LLLL yyyy', { locale })}
         </h2>
         <button
+          aria-label={t('month.nextMonth')}
           onClick={goToNextMonth}
           className="p-2 text-surface-400 hover:text-surface-100 hover:bg-surface-800 rounded-lg transition-colors"
         >

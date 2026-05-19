@@ -180,6 +180,7 @@ export function WeekCalendar({
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-surface-800">
         <button
+          aria-label={t('week.previousWeek')}
           onClick={onPrevWeek}
           className="p-2 text-surface-400 hover:text-surface-100 hover:bg-surface-800 rounded-lg transition-colors"
         >
@@ -199,6 +200,7 @@ export function WeekCalendar({
         </div>
 
         <button
+          aria-label={t('week.nextWeek')}
           onClick={onNextWeek}
           className="p-2 text-surface-400 hover:text-surface-100 hover:bg-surface-800 rounded-lg transition-colors"
         >
