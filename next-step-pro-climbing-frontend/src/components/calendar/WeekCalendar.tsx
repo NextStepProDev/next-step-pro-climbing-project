@@ -351,7 +351,7 @@ export function WeekCalendar({
                           isCopied && 'ring-2 ring-dashed ring-primary-400',
                           slot.isUserRegistered && !isPending && 'ring-1 ring-primary-400',
                         )}
-                        style={{ top, height }}
+                        style={{ top, height, touchAction: isDraggable ? 'none' : undefined }}
                         onPointerDown={isDraggable
                           ? (e) => onSlotPointerDown(slot.id, day.date, slot.startTime, slot.endTime, e)
                           : undefined
@@ -458,6 +458,7 @@ export function WeekCalendar({
                           <div
                             data-admin-action
                             className="absolute bottom-0 left-0 right-0 h-2 cursor-ns-resize z-20"
+                            style={{ touchAction: 'none' }}
                             onPointerDown={(e) => onResizePointerDown(slot.id, day.date, slot.startTime, slot.endTime, e)}
                           />
                         )}
