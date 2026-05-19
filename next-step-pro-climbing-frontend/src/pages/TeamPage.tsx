@@ -58,6 +58,7 @@ function MemberTile({
         <img
           src={member.photoUrl}
           alt={`${member.firstName} ${member.lastName}`}
+          loading="lazy"
           className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
           style={
             member.focalPointX != null

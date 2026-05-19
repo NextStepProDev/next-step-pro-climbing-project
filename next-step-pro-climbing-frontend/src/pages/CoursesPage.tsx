@@ -132,6 +132,7 @@ function CourseAccordionItem({ course, defaultOpen = false }: { course: CourseSu
             <img
               src={course.thumbnailUrl}
               alt={course.title}
+              loading="lazy"
               className="w-full h-full object-contain"
               onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none' }}
             />

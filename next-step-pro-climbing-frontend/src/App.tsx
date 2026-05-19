@@ -2,14 +2,14 @@ import { lazy, Suspense } from 'react'
 import { Routes, Route } from 'react-router-dom'
 import { Layout } from './components/layout/Layout'
 import { HomePage } from './pages/HomePage'
-import { CalendarPage } from './pages/CalendarPage'
-import { LoginPage } from './pages/LoginPage'
 import { ProtectedRoute } from './components/layout/ProtectedRoute'
 import { AdminRoute } from './components/layout/AdminRoute'
 import { ErrorBoundary } from './components/ui/ErrorBoundary'
 import { ScrollToTop } from './components/ScrollToTop'
 import { LoadingSpinner } from './components/ui/LoadingSpinner'
 
+const CalendarPage = lazy(() => import('./pages/CalendarPage').then(m => ({ default: m.CalendarPage })))
+const LoginPage = lazy(() => import('./pages/LoginPage').then(m => ({ default: m.LoginPage })))
 const MyReservationsPage = lazy(() => import('./pages/MyReservationsPage').then(m => ({ default: m.MyReservationsPage })))
 const EventPage = lazy(() => import('./pages/EventPage').then(m => ({ default: m.EventPage })))
 const TeamPage = lazy(() => import('./pages/TeamPage').then(m => ({ default: m.TeamPage })))

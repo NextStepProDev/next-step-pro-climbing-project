@@ -32,6 +32,7 @@ export function CourseContentBlocks({ detail }: { detail: CourseDetail }) {
                 <img
                   src={block.imageUrl}
                   alt={block.caption ?? ''}
+                  loading="lazy"
                   className="block max-w-full max-h-[70vh] rounded-lg mx-auto"
                   onError={(e) => {
                     const el = e.currentTarget
