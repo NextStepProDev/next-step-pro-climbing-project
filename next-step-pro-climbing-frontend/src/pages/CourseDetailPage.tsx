@@ -72,7 +72,7 @@ export function CourseDetailPage() {
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-3xl">
-      <PageHead title={course.title} description={metaDescription} path={`/kursy/${courseId}`} />
+      <PageHead title={course.title} description={metaDescription} path={`/kursy/${courseId}`} ogImage={course.thumbnailUrl ?? undefined} />
       <div className="flex items-center justify-between mb-6">
         <Link
           to="/kursy"

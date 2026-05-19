@@ -94,7 +94,12 @@ export function NewsDetailPage() {
   return (
     <div className="container mx-auto px-4 py-8 max-w-3xl">
       <ReadingProgressBar />
-      <PageHead title={article.title} />
+      <PageHead
+        title={article.title}
+        description={article.blocks.find(b => b.blockType === 'TEXT' && b.content)?.content?.replace(/<[^>]*>/g, '').slice(0, 160) ?? undefined}
+        path={`/aktualnosci/${newsId}`}
+        ogImage={article.thumbnailUrl ?? undefined}
+      />
       {/* Breadcrumb */}
       <Link
         to="/aktualnosci"
