@@ -400,7 +400,7 @@ export function AdminVideosPanel() {
                   }
                   disabled={publishMutation.isPending}
                   title={video.published ? t('videos.unpublish') : t('videos.publish')}
-                  className={video.published ? 'text-emerald-400 hover:text-orange-400' : 'text-surface-400 hover:text-surface-100'}
+                  className={video.published ? 'text-green-400 hover:text-orange-400' : 'text-surface-400 hover:text-surface-100'}
                 >
                   {video.published ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
                 </Button>

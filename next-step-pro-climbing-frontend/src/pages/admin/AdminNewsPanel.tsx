@@ -89,7 +89,7 @@ function normalizeVideoUrlForPreview(url: string): string | undefined {
 function LanguageBadge({ lang }: { lang: string }) {
   const colors: Record<string, string> = {
     pl: 'bg-blue-900/40 text-blue-400 border-blue-700',
-    en: 'bg-emerald-900/40 text-emerald-400 border-emerald-700',
+    en: 'bg-green-900/40 text-green-400 border-green-700',
     es: 'bg-purple-900/40 text-purple-400 border-purple-700',
   }
   return (
@@ -358,7 +358,7 @@ function TranslationGroupRow({
                   className={clsx(
                     'text-[10px] font-bold uppercase px-2 py-0.5 rounded border cursor-pointer transition-colors',
                     lang === 'pl' && 'bg-blue-900/40 text-blue-400 border-blue-700 hover:bg-blue-900/60',
-                    lang === 'en' && 'bg-emerald-900/40 text-emerald-400 border-emerald-700 hover:bg-emerald-900/60',
+                    lang === 'en' && 'bg-green-900/40 text-green-400 border-green-700 hover:bg-green-900/60',
                     lang === 'es' && 'bg-purple-900/40 text-purple-400 border-purple-700 hover:bg-purple-900/60',
                   )}
                 >
@@ -398,7 +398,7 @@ function TranslationGroupRow({
         <button
           onClick={() => displayArticle.published ? onUnpublish(displayArticle.id) : onPublish(displayArticle.id)}
           title={(displayArticle.published ? t('news.unpublish') : t('news.publish')) + ' (wszystkie języki)'}
-          className={`p-2 transition-colors ${displayArticle.published ? 'text-emerald-400 hover:text-orange-400' : 'text-surface-400 hover:text-surface-100'}`}
+          className={`p-2 transition-colors ${displayArticle.published ? 'text-green-400 hover:text-orange-400' : 'text-surface-400 hover:text-surface-100'}`}
         >
           {displayArticle.published ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
         </button>

@@ -31,13 +31,13 @@ const ACTION_CONFIG: Record<
 > = {
   RESERVATION_CREATED: {
     icon: CalendarPlus,
-    color: 'text-emerald-400',
-    bgColor: 'bg-emerald-500/10',
+    color: 'text-green-400',
+    bgColor: 'bg-green-500/10',
   },
   RESERVATION_REACTIVATED: {
     icon: CalendarCheck,
-    color: 'text-emerald-400',
-    bgColor: 'bg-emerald-500/10',
+    color: 'text-green-400',
+    bgColor: 'bg-green-500/10',
   },
   RESERVATION_CANCELLED: {
     icon: CalendarX,
@@ -61,8 +61,8 @@ const ACTION_CONFIG: Record<
   },
   RESERVATION_UPDATED: {
     icon: CalendarCheck,
-    color: 'text-emerald-400',
-    bgColor: 'bg-emerald-500/10',
+    color: 'text-green-400',
+    bgColor: 'bg-green-500/10',
   },
   RESERVATION_CANCELLED_BY_ADMIN: {
     icon: ShieldAlert,

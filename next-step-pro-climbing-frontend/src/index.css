@@ -13,6 +13,14 @@
   --color-primary-800: #0f172a;
   --color-primary-900: #020617;
 
+  /* Warm sage green — stonowany, ciepły, pasujący do palety */
+  --color-green-100: #e2edd6;
+  --color-green-300: #a3b893;
+  --color-green-400: #87a572;
+  --color-green-500: #6d8e57;
+  --color-green-600: #587842;
+  --color-green-900: #283024;
+
   /* Neutral surface scale — theme-aware via [data-theme] override */
   --color-surface-50: #fafaf9;
   --color-surface-100: #f5f5f4;

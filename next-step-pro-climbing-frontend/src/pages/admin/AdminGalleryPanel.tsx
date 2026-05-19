@@ -342,7 +342,7 @@ export function AdminGalleryPanel() {
                         <div className="flex items-center gap-2 flex-wrap">
                           <h3 className="text-xl font-bold text-surface-100">{album.name}</h3>
                           {album.published ? (
-                            <span className="flex items-center gap-1 text-xs text-emerald-400 font-medium">
+                            <span className="flex items-center gap-1 text-xs text-green-400 font-medium">
                               <Eye className="h-3 w-3" />
                               Opublikowany
                             </span>
@@ -395,7 +395,7 @@ export function AdminGalleryPanel() {
                             onClick={() => unpublishAlbumMutation.mutate(album.id)}
                             disabled={unpublishAlbumMutation.isPending}
                             title="Cofnij publikację (schowaj publicznie)"
-                            className="text-emerald-400 hover:text-orange-400"
+                            className="text-green-400 hover:text-orange-400"
                           >
                             <Eye className="h-4 w-4" />
                           </Button>

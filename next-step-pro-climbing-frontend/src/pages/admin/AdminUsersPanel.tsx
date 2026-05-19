@@ -128,7 +128,7 @@ export function AdminUsersPanel() {
                       <div className="flex items-center gap-1.5">
                         <span className="text-surface-300">{user.email}</span>
                         <span title={user.newsletterSubscribed ? 'Subskrybent newslettera' : 'Bez newslettera'}>
-                          <Mail className={`w-3 h-3 shrink-0 ${user.newsletterSubscribed ? 'text-emerald-400/60' : 'text-surface-600/50'}`} />
+                          <Mail className={`w-3 h-3 shrink-0 ${user.newsletterSubscribed ? 'text-green-400/60' : 'text-surface-600/50'}`} />
                         </span>
                       </div>
                     </td>

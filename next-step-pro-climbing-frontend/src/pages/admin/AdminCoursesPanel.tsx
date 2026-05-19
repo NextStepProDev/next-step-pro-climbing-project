@@ -333,7 +333,7 @@ function TranslationGroupRow({
                   className={clsx(
                     'text-[10px] font-bold uppercase px-2 py-0.5 rounded border cursor-pointer transition-colors',
                     lang === 'pl' && 'bg-blue-900/40 text-blue-400 border-blue-700 hover:bg-blue-900/60',
-                    lang === 'en' && 'bg-emerald-900/40 text-emerald-400 border-emerald-700 hover:bg-emerald-900/60',
+                    lang === 'en' && 'bg-green-900/40 text-green-400 border-green-700 hover:bg-green-900/60',
                     lang === 'es' && 'bg-purple-900/40 text-purple-400 border-purple-700 hover:bg-purple-900/60',
                   )}
                 >
@@ -380,7 +380,7 @@ function TranslationGroupRow({
         <button
           onClick={() => displayCourse.published ? onUnpublish(displayCourse.id) : onPublish(displayCourse.id)}
           title={(displayCourse.published ? t('courses.unpublish') : t('courses.publish')) + ' (wszystkie języki)'}
-          className={`p-2 transition-colors ${displayCourse.published ? 'text-emerald-400 hover:text-orange-400' : 'text-surface-400 hover:text-surface-100'}`}
+          className={`p-2 transition-colors ${displayCourse.published ? 'text-green-400 hover:text-orange-400' : 'text-surface-400 hover:text-surface-100'}`}
         >
           {displayCourse.published ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
         </button>
@@ -787,7 +787,7 @@ function EditView({
             className={clsx(
               'text-xs px-2.5 py-1 rounded-full font-medium',
               detail.language === 'pl' && 'bg-blue-900/40 text-blue-400',
-              detail.language === 'en' && 'bg-emerald-900/40 text-emerald-400',
+              detail.language === 'en' && 'bg-green-900/40 text-green-400',
               detail.language === 'es' && 'bg-purple-900/40 text-purple-400',
             )}
           >

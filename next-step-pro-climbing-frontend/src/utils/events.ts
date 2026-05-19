@@ -22,10 +22,10 @@ const EVENT_TYPE_COLORS: Record<string, EventAccentColor> = {
     barText: 'text-orange-300', barHover: 'hover:bg-orange-600/50',
   },
   WORKSHOP: {
-    text: 'text-emerald-400', border: 'border-emerald-500/30', bg: 'bg-emerald-500/5',
-    hoverBorder: 'hover:border-emerald-500', dot: 'bg-emerald-400',
-    barBg: 'bg-emerald-600/40', barBorder: 'border-emerald-500/40',
-    barText: 'text-emerald-300', barHover: 'hover:bg-emerald-600/50',
+    text: 'text-green-400', border: 'border-green-500/30', bg: 'bg-green-500/5',
+    hoverBorder: 'hover:border-green-500', dot: 'bg-green-400',
+    barBg: 'bg-green-600/40', barBorder: 'border-green-500/40',
+    barText: 'text-green-300', barHover: 'hover:bg-green-600/50',
   },
   CONTACT_DAY: {
     text: 'text-violet-400', border: 'border-violet-500/30', bg: 'bg-violet-500/5',
@@ -45,7 +45,7 @@ const EVENT_TYPE_COLORS: Record<string, EventAccentColor> = {
 const INDEX_PALETTE: EventAccentColor[] = [
   { text: 'text-violet-400', border: 'border-violet-500/30', bg: 'bg-violet-500/5', hoverBorder: 'hover:border-violet-500', dot: 'bg-violet-400', barBg: 'bg-violet-600/40', barBorder: 'border-violet-500/40', barText: 'text-violet-300', barHover: 'hover:bg-violet-600/50' },
   { text: 'text-sky-400', border: 'border-sky-500/30', bg: 'bg-sky-500/5', hoverBorder: 'hover:border-sky-500', dot: 'bg-sky-400', barBg: 'bg-sky-600/40', barBorder: 'border-sky-500/40', barText: 'text-sky-300', barHover: 'hover:bg-sky-600/50' },
-  { text: 'text-emerald-400', border: 'border-emerald-500/30', bg: 'bg-emerald-500/5', hoverBorder: 'hover:border-emerald-500', dot: 'bg-emerald-400', barBg: 'bg-emerald-600/40', barBorder: 'border-emerald-500/40', barText: 'text-emerald-300', barHover: 'hover:bg-emerald-600/50' },
+  { text: 'text-green-400', border: 'border-green-500/30', bg: 'bg-green-500/5', hoverBorder: 'hover:border-green-500', dot: 'bg-green-400', barBg: 'bg-green-600/40', barBorder: 'border-green-500/40', barText: 'text-green-300', barHover: 'hover:bg-green-600/50' },
   { text: 'text-orange-400', border: 'border-orange-500/30', bg: 'bg-orange-500/5', hoverBorder: 'hover:border-orange-500', dot: 'bg-orange-400', barBg: 'bg-orange-600/40', barBorder: 'border-orange-500/40', barText: 'text-orange-300', barHover: 'hover:bg-orange-600/50' },
   { text: 'text-pink-400', border: 'border-pink-500/30', bg: 'bg-pink-500/5', hoverBorder: 'hover:border-pink-500', dot: 'bg-pink-400', barBg: 'bg-pink-600/40', barBorder: 'border-pink-500/40', barText: 'text-pink-300', barHover: 'hover:bg-pink-600/50' },
   { text: 'text-teal-400', border: 'border-teal-500/30', bg: 'bg-teal-500/5', hoverBorder: 'hover:border-teal-500', dot: 'bg-teal-400', barBg: 'bg-teal-600/40', barBorder: 'border-teal-500/40', barText: 'text-teal-300', barHover: 'hover:bg-teal-600/50' },
