@@ -177,7 +177,7 @@ export function HomePage() {
             <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-surface-50 mb-4">
               {t("hero.tagline")}
             </h1>
-            <p className="text-base sm:text-lg text-surface-400 mb-8 max-w-2xl mx-auto">
+            <p className="text-base sm:text-lg text-surface-200 mb-8 max-w-2xl mx-auto">
               {t("hero.subtitle")}
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
