@@ -2,8 +2,10 @@ import { useParams, Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { format } from 'date-fns'
 import { useTranslation } from 'react-i18next'
+import { Helmet } from 'react-helmet-async'
 import { ArrowLeft, Calendar, MapPin, Users } from 'lucide-react'
 import { calendarApi } from '../api/client'
+import { PageHead } from '../components/ui/PageHead'
 import { LoadingSpinner } from '../components/ui/LoadingSpinner'
 import { Button } from '../components/ui/Button'
 import { ShareButtons } from '../components/ui/ShareButtons'
@@ -48,8 +50,39 @@ export function EventPage() {
     )
   }
 
+  const eventJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Event',
+    name: event.title,
+    startDate: event.startDate,
+    endDate: event.endDate,
+    ...(event.location && {
+      location: {
+        '@type': 'Place',
+        name: event.location,
+      },
+    }),
+    ...(event.description && { description: event.description }),
+    organizer: {
+      '@type': 'Organization',
+      name: 'Next Step Pro Climbing',
+      url: 'https://nextsteppro.pl',
+    },
+    eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode',
+    eventStatus: 'https://schema.org/EventScheduled',
+    url: `https://nextsteppro.pl/event/${eventId}`,
+  }
+
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <PageHead
+        title={event.title}
+        description={event.description ?? tc(`eventTypes.${event.eventType}`)}
+        path={`/event/${eventId}`}
+      />
+      <Helmet>
+        <script type="application/ld+json">{JSON.stringify(eventJsonLd)}</script>
+      </Helmet>
       <Link
         to="/calendar"
         className="inline-flex items-center text-surface-400 hover:text-surface-200 mb-6"
