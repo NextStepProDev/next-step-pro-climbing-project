@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useFocusTrap } from '../../utils/useFocusTrap'
 import { Mail } from 'lucide-react'
 import { authApi } from '../../api/client'
 import { Button } from './Button'
@@ -9,6 +10,7 @@ interface Props {
 }
 
 export function NewsletterChoiceModal({ onDone }: Props) {
+  const trapRef = useFocusTrap(true)
   const { t } = useTranslation('common')
   const [loading, setLoading] = useState(false)
 
@@ -25,7 +27,7 @@ export function NewsletterChoiceModal({ onDone }: Props) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
-      <div className="relative bg-surface-900 border border-surface-700 rounded-xl p-6 max-w-sm w-full shadow-2xl">
+      <div ref={trapRef} role="dialog" aria-modal="true" className="relative bg-surface-900 border border-surface-700 rounded-xl p-6 max-w-sm w-full shadow-2xl">
         <div className="flex items-center justify-center w-12 h-12 bg-primary-500/15 rounded-full mx-auto mb-4">
           <Mail className="w-6 h-6 text-primary-400" />
         </div>

@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { createPortal } from 'react-dom'
+import { useFocusTrap } from '../../utils/useFocusTrap'
 import { AlertTriangle } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Button } from './Button'
@@ -30,6 +31,7 @@ export function ConfirmModal({
   variant = 'danger',
 }: ConfirmModalProps) {
   const { t } = useTranslation('common')
+  const trapRef = useFocusTrap(isOpen)
 
   useEffect(() => {
     if (isOpen) {
@@ -60,7 +62,7 @@ export function ConfirmModal({
         className="absolute inset-0 bg-black/60 backdrop-blur-sm"
         onClick={onClose}
       />
-      <div className="relative bg-surface-900 rounded-xl border border-surface-800 shadow-xl max-w-sm w-full mx-4">
+      <div ref={trapRef} role="dialog" aria-modal="true" className="relative bg-surface-900 rounded-xl border border-surface-800 shadow-xl max-w-sm w-full mx-4">
         <div className="p-5">
           <div className="flex items-start gap-3 mb-4">
             <div className={`p-2 rounded-lg shrink-0 ${

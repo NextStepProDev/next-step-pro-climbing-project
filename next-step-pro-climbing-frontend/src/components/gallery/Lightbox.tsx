@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { X, ChevronLeft, ChevronRight } from 'lucide-react'
+import { useFocusTrap } from '../../utils/useFocusTrap'
 import { Button } from '../ui/Button'
 import type { Photo } from '../../types'
 
@@ -11,6 +12,7 @@ interface LightboxProps {
 }
 
 export function Lightbox({ photos, currentIndex, onClose, onNavigate }: LightboxProps) {
+  const trapRef = useFocusTrap(true)
   const currentPhoto = photos[currentIndex]
   const hasPrevious = currentIndex > 0
   const hasNext = currentIndex < photos.length - 1
@@ -40,6 +42,10 @@ export function Lightbox({ photos, currentIndex, onClose, onNavigate }: Lightbox
 
   return (
     <div
+      ref={trapRef}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Photo lightbox"
       className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center"
       onClick={onClose}
     >
@@ -47,6 +53,7 @@ export function Lightbox({ photos, currentIndex, onClose, onNavigate }: Lightbox
       <Button
         variant="ghost"
         size="sm"
+        aria-label="Close"
         onClick={onClose}
         className="absolute top-4 right-4 text-white hover:bg-white/10"
       >
@@ -63,6 +70,7 @@ export function Lightbox({ photos, currentIndex, onClose, onNavigate }: Lightbox
         <Button
           variant="ghost"
           size="sm"
+          aria-label="Previous photo"
           onClick={(e) => {
             e.stopPropagation()
             onNavigate(currentIndex - 1)
@@ -78,6 +86,7 @@ export function Lightbox({ photos, currentIndex, onClose, onNavigate }: Lightbox
         <Button
           variant="ghost"
           size="sm"
+          aria-label="Next photo"
           onClick={(e) => {
             e.stopPropagation()
             onNavigate(currentIndex + 1)

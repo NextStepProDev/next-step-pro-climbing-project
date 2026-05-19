@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useFocusTrap } from '../utils/useFocusTrap'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { useParams, useNavigate } from 'react-router-dom'
@@ -101,6 +102,7 @@ function MemberModal({
   onClose: () => void
 }) {
   const { t } = useTranslation('common')
+  const trapRef = useFocusTrap(true)
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
@@ -109,10 +111,14 @@ function MemberModal({
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
 
       <div
+        ref={trapRef}
+        role="dialog"
+        aria-modal="true"
         className="relative z-10 w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl bg-surface-900 border border-surface-700 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <button
+          aria-label={t('close')}
           onClick={onClose}
           className="absolute top-4 right-4 z-20 p-2 rounded-full bg-surface-800 hover:bg-surface-700 text-surface-300 hover:text-surface-100 transition-colors"
         >

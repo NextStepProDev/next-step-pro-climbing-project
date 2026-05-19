@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { createPortal } from 'react-dom'
+import { useFocusTrap } from '../../utils/useFocusTrap'
 import { useTranslation } from 'react-i18next'
 import { UserCircle } from 'lucide-react'
 import { useMutation } from '@tanstack/react-query'
@@ -15,6 +16,7 @@ interface Props {
 }
 
 export function CompleteProfileModal({ onCompleted, onClose }: Props) {
+  const trapRef = useFocusTrap(true)
   const { t } = useTranslation('settings')
   const { user, refreshUser } = useAuth()
 
@@ -42,7 +44,7 @@ export function CompleteProfileModal({ onCompleted, onClose }: Props) {
   return createPortal(
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-surface-900 border border-surface-700 rounded-xl p-6 max-w-sm w-full shadow-2xl">
+      <div ref={trapRef} role="dialog" aria-modal="true" className="relative bg-surface-900 border border-surface-700 rounded-xl p-6 max-w-sm w-full shadow-2xl">
         <div className="flex items-center justify-center w-12 h-12 bg-primary-500/15 rounded-full mx-auto mb-4">
           <UserCircle className="w-6 h-6 text-primary-400" />
         </div>

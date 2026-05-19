@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { useFocusTrap } from '../../utils/useFocusTrap'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Image as ImageIcon, Plus, Pencil, Trash2, Upload, ChevronUp, ChevronDown, Star, Eye, EyeOff, ChevronLeft, ChevronRight, X } from 'lucide-react'
 import { adminGalleryApi } from '../../api/client'
@@ -30,6 +31,7 @@ export function AdminGalleryPanel() {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
   const [uploadProgress, setUploadProgress] = useState<number>(0)
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
+  const lightboxTrapRef = useFocusTrap(lightboxIndex !== null)
 
   const { data: albums, isLoading, error } = useQuery({
     queryKey: ['admin', 'gallery', 'albums'],
@@ -902,10 +904,15 @@ export function AdminGalleryPanel() {
       {/* Photo Lightbox */}
       {lightboxIndex !== null && lightboxPhotos[lightboxIndex] && (
         <div
+          ref={lightboxTrapRef}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Photo lightbox"
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/90"
           onClick={() => setLightboxIndex(null)}
         >
           <button
+            aria-label="Close"
             onClick={(e) => { e.stopPropagation(); setLightboxIndex(null) }}
             className="absolute top-4 right-4 text-white/70 hover:text-white transition-colors z-10"
           >
@@ -918,6 +925,7 @@ export function AdminGalleryPanel() {
 
           {lightboxIndex > 0 && (
             <button
+              aria-label="Previous photo"
               onClick={(e) => { e.stopPropagation(); handleLightboxPrev() }}
               className="absolute left-4 top-1/2 -translate-y-1/2 text-white/50 hover:text-white transition-colors z-10"
             >
@@ -927,6 +935,7 @@ export function AdminGalleryPanel() {
 
           {lightboxIndex < lightboxPhotos.length - 1 && (
             <button
+              aria-label="Next photo"
               onClick={(e) => { e.stopPropagation(); handleLightboxNext() }}
               className="absolute right-4 top-1/2 -translate-y-1/2 text-white/50 hover:text-white transition-colors z-10"
             >
