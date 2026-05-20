@@ -674,7 +674,7 @@ export function CalendarPage() {
                             {t('signedUp')}
                           </span>
                         ) : event.eventType === 'CONTACT_DAY' ? (
-                          <span className="px-3 py-1 text-xs font-medium rounded bg-violet-500/20 text-violet-400">
+                          <span className="px-3 py-1 text-xs font-medium rounded bg-indigo-500/20 text-indigo-400">
                             {t('common:callPhone')}
                           </span>
                         ) : !event.enrollmentOpen ? (

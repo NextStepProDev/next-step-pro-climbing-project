@@ -71,28 +71,28 @@ const ACTION_CONFIG: Record<
   },
   ADMIN_SLOT_CREATED: {
     icon: CalendarPlus,
-    color: 'text-violet-400',
-    bgColor: 'bg-violet-500/10',
+    color: 'text-indigo-400',
+    bgColor: 'bg-indigo-500/10',
   },
   ADMIN_SLOT_UPDATED: {
     icon: Settings,
-    color: 'text-violet-400',
-    bgColor: 'bg-violet-500/10',
+    color: 'text-indigo-400',
+    bgColor: 'bg-indigo-500/10',
   },
   ADMIN_SLOT_DELETED: {
     icon: Trash2,
-    color: 'text-violet-400',
-    bgColor: 'bg-violet-500/10',
+    color: 'text-indigo-400',
+    bgColor: 'bg-indigo-500/10',
   },
   ADMIN_SLOT_BLOCKED: {
     icon: Lock,
-    color: 'text-violet-400',
-    bgColor: 'bg-violet-500/10',
+    color: 'text-indigo-400',
+    bgColor: 'bg-indigo-500/10',
   },
   ADMIN_SLOT_UNBLOCKED: {
     icon: Unlock,
-    color: 'text-violet-400',
-    bgColor: 'bg-violet-500/10',
+    color: 'text-indigo-400',
+    bgColor: 'bg-indigo-500/10',
   },
   ADMIN_EVENT_CREATED: {
     icon: CalendarPlus,

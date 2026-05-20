@@ -61,7 +61,7 @@ function getSlotColors(status: string): string {
     case 'PAST':
       return 'bg-surface-800/30 border-surface-700/30 text-surface-500'
     case 'AVAILABILITY_WINDOW':
-      return 'bg-violet-600/30 border-violet-500/50 text-violet-300 hover:bg-violet-600/40'
+      return 'bg-teal-600/30 border-teal-500/50 text-teal-300 hover:bg-teal-600/40'
     default:
       return 'bg-surface-700/50 border-surface-600/50 text-surface-400'
   }
@@ -121,7 +121,7 @@ export function WeekCalendar({
   const scrollRef = useRef<HTMLDivElement>(null)
   const dayColumnRefs = useRef<(HTMLDivElement | null)[]>([])
 
-  const { dragState, isBeingDragged, wasJustDragged, onSlotPointerDown, onResizePointerDown } = useSlotDrag({
+  const { dragState, isBeingDragged, wasJustDragged, onSlotPointerDown, onResizePointerDown, longPressSlotId } = useSlotDrag({
     days,
     dayColumnRefs,
     onDrop: onSlotDrop ?? (() => {}),
@@ -240,7 +240,7 @@ export function WeekCalendar({
                   {dayEvents.length > 0 && !past && (
                     <div className={clsx(
                       "w-1.5 h-1.5 rounded-full mx-auto mt-0.5",
-                      dayEvents.every(e => e.eventType === 'CONTACT_DAY') ? 'bg-violet-500'
+                      dayEvents.every(e => e.eventType === 'CONTACT_DAY') ? 'bg-indigo-500'
                         : dayEvents.every(e => e.currentParticipants >= e.maxParticipants) ? 'bg-amber-500'
                         : 'bg-primary-500'
                     )} />
@@ -335,6 +335,7 @@ export function WeekCalendar({
                     const isPast = slot.status === 'PAST'
                     const isDraggable = isAdmin && !isPast
                     const isPending = pendingSlotId === slot.id
+                    const isLongPressing = longPressSlotId === slot.id
 
                     return (
                       <div
@@ -349,9 +350,10 @@ export function WeekCalendar({
                           dragging && 'opacity-30 cursor-grabbing',
                           isCut && 'ring-2 ring-dashed ring-amber-400 opacity-60',
                           isCopied && 'ring-2 ring-dashed ring-primary-400',
+                          isLongPressing && !dragging && 'ring-2 ring-primary-400/60 z-30',
                           slot.isUserRegistered && !isPending && 'ring-1 ring-primary-400',
                         )}
-                        style={{ top, height, touchAction: isDraggable ? 'none' : undefined }}
+                        style={{ top, height }}
                         onPointerDown={isDraggable
                           ? (e) => onSlotPointerDown(slot.id, day.date, slot.startTime, slot.endTime, e)
                           : undefined

@@ -146,6 +146,20 @@ body {
   --color-green-400: #5a7a3e;
   --color-green-500: #4d6935;
   --color-green-700: #a3b893;
+  --color-indigo-200: #4338ca;
+  --color-indigo-300: #3730a3;
+  --color-indigo-400: #312e81;
+  --color-indigo-500: #4f46e5;
+  --color-indigo-600: #6366f1;
+  --color-red-200: #991b1b;
+  --color-red-300: #7f1d1d;
+  --color-red-400: #b91c1c;
+  --color-green-300: #1a5c2e;
+  --color-teal-200: #0f766e;
+  --color-teal-300: #115e59;
+  --color-teal-400: #134e4a;
+  --color-teal-500: #0d9488;
+  --color-teal-600: #14b8a6;
   --color-blue-400: #1e40af;
   --color-blue-700: #93c5fd;
   --color-purple-400: #7e22ce;
@@ -168,6 +182,26 @@ body {
 [data-theme="light"] .bg-amber-500\/20 { background-color: color-mix(in srgb, var(--color-amber-500) 30%, transparent); }
 [data-theme="light"] .bg-amber-500\/30 { background-color: color-mix(in srgb, var(--color-amber-500) 40%, transparent); }
 [data-theme="light"] .hover\:bg-amber-500\/30:hover { background-color: color-mix(in srgb, var(--color-amber-500) 40%, transparent); }
+
+[data-theme="light"] .bg-indigo-500\/5 { background-color: color-mix(in srgb, var(--color-indigo-500) 12%, transparent); }
+[data-theme="light"] .bg-indigo-500\/10 { background-color: color-mix(in srgb, var(--color-indigo-500) 20%, transparent); }
+[data-theme="light"] .bg-indigo-500\/20 { background-color: color-mix(in srgb, var(--color-indigo-500) 30%, transparent); }
+[data-theme="light"] .bg-indigo-600\/30 { background-color: color-mix(in srgb, var(--color-indigo-500) 25%, transparent); }
+[data-theme="light"] .bg-indigo-600\/40 { background-color: color-mix(in srgb, var(--color-indigo-500) 35%, transparent); }
+[data-theme="light"] .hover\:bg-indigo-500\/10:hover { background-color: color-mix(in srgb, var(--color-indigo-500) 25%, transparent); }
+[data-theme="light"] .hover\:bg-indigo-600\/40:hover { background-color: color-mix(in srgb, var(--color-indigo-500) 40%, transparent); }
+[data-theme="light"] .hover\:bg-indigo-600\/50:hover { background-color: color-mix(in srgb, var(--color-indigo-500) 50%, transparent); }
+
+[data-theme="light"] .bg-teal-500\/5 { background-color: color-mix(in srgb, var(--color-teal-500) 12%, transparent); }
+[data-theme="light"] .bg-teal-500\/10 { background-color: color-mix(in srgb, var(--color-teal-500) 20%, transparent); }
+[data-theme="light"] .bg-teal-500\/20 { background-color: color-mix(in srgb, var(--color-teal-500) 30%, transparent); }
+[data-theme="light"] .bg-teal-600\/30 { background-color: color-mix(in srgb, var(--color-teal-500) 25%, transparent); }
+[data-theme="light"] .hover\:bg-teal-500\/10:hover { background-color: color-mix(in srgb, var(--color-teal-500) 25%, transparent); }
+[data-theme="light"] .hover\:bg-teal-600\/40:hover { background-color: color-mix(in srgb, var(--color-teal-500) 40%, transparent); }
+
+[data-theme="light"] .bg-red-600\/40 { background-color: color-mix(in srgb, #dc2626 30%, transparent); }
+[data-theme="light"] .bg-red-900\/80 { background-color: color-mix(in srgb, #7f1d1d 90%, transparent); }
+[data-theme="light"] .bg-green-900\/80 { background-color: color-mix(in srgb, #166534 90%, transparent); }
 
 [data-theme="light"] .card-glass {
   background: color-mix(in srgb, var(--color-surface-800) 90%, transparent);

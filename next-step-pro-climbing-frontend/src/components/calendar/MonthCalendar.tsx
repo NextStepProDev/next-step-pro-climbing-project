@@ -139,7 +139,7 @@ export function MonthCalendar({ currentMonth, onMonthChange, days, events, onDay
                 isPast && 'opacity-40 cursor-not-allowed',
                 isClickable && 'hover:bg-surface-800 cursor-pointer',
                 !isClickable && 'cursor-default',
-                hasEvents && !isPast && (dayEvents.every(e => e.eventType === 'CONTACT_DAY') ? 'bg-violet-500/10' : 'bg-primary-500/10')
+                hasEvents && !isPast && (dayEvents.every(e => e.eventType === 'CONTACT_DAY') ? 'bg-indigo-500/10' : 'bg-primary-500/10')
               )}
             >
               <div
@@ -175,7 +175,7 @@ export function MonthCalendar({ currentMonth, onMonthChange, days, events, onDay
               ) : null}
 
               {hasAvailabilityWindow && !isPast && (
-                <div className="text-[10px] text-violet-400 font-medium leading-tight">
+                <div className="text-[10px] text-teal-400 font-medium leading-tight">
                   {t('day.callToBook')}
                 </div>
               )}

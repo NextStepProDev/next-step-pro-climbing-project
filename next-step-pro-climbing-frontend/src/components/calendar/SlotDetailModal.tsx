@@ -199,12 +199,12 @@ export function SlotDetailModal({
         {/* Availability window — special info, no booking */}
         {isAvailabilityWindow && (
           <>
-            <div className="p-4 bg-violet-500/10 border border-violet-500/20 rounded-lg space-y-2">
+            <div className="p-4 bg-teal-500/10 border border-teal-500/20 rounded-lg space-y-2">
               <div className="flex items-center gap-2">
-                <Phone className="w-5 h-5 text-violet-400 shrink-0" />
-                <span className="text-violet-300 font-semibold">{t('slot.availabilityWindow.title')}</span>
+                <Phone className="w-5 h-5 text-teal-400 shrink-0" />
+                <span className="text-teal-300 font-semibold">{t('slot.availabilityWindow.title')}</span>
               </div>
-              <p className="text-violet-200/80 text-sm">{t('slot.availabilityWindow.body')}</p>
+              <p className="text-teal-200/80 text-sm">{t('slot.availabilityWindow.body')}</p>
             </div>
             <ShareButtons
               title={slot.eventTitle || t('slot.title')}
@@ -409,10 +409,10 @@ export function SlotDetailModal({
                     type="checkbox"
                     checked={editForm.isAvailabilityWindow}
                     onChange={(e) => setEditForm({ ...editForm, isAvailabilityWindow: e.target.checked })}
-                    className="mt-0.5 accent-violet-500"
+                    className="mt-0.5 accent-teal-500"
                   />
                   <div>
-                    <span className="text-sm font-medium text-violet-300">{ta('slots.availabilityWindow')}</span>
+                    <span className="text-sm font-medium text-teal-300">{ta('slots.availabilityWindow')}</span>
                     <p className="text-xs text-surface-400 mt-0.5">{ta('slots.availabilityWindowHint')}</p>
                   </div>
                 </label>

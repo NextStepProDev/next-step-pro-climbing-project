@@ -138,10 +138,10 @@ export function CreateSlotModal({
             type="checkbox"
             checked={!!form.isAvailabilityWindow}
             onChange={(e) => setForm({ ...form, isAvailabilityWindow: e.target.checked })}
-            className="mt-0.5 accent-violet-500"
+            className="mt-0.5 accent-teal-500"
           />
           <div>
-            <span className="text-sm font-medium text-violet-300">{t('createSlot.availabilityWindow')}</span>
+            <span className="text-sm font-medium text-teal-300">{t('createSlot.availabilityWindow')}</span>
             <p className="text-xs text-surface-400 mt-0.5">{t('createSlot.availabilityWindowHint')}</p>
           </div>
         </label>

@@ -6,6 +6,8 @@ const END_HOUR = 23
 const SNAP_MINUTES = 15
 const MIN_DURATION_MINUTES = 15
 const DRAG_THRESHOLD_PX = 5
+const LONG_PRESS_MS = 350
+const LONG_PRESS_TOLERANCE_PX = 10
 
 function snapMinutes(minutes: number): number {
   return Math.round(minutes / SNAP_MINUTES) * SNAP_MINUTES
@@ -63,12 +65,24 @@ export function useSlotDrag({ days, dayColumnRefs, onDrop, enabled }: UseSlotDra
   const lastDragSlotRef = useRef<string | null>(null)
   const [dragState, setDragState] = useState<LiveDragState | null>(null)
 
-  // Keep stable refs updated via effects (avoids writing to refs during render)
+  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const dragActivatedRef = useRef(false)
+  const [longPressSlotId, setLongPressSlotId] = useState<string | null>(null)
+
   const daysRef = useRef(days)
   useEffect(() => { daysRef.current = days }, [days])
 
   const onDropRef = useRef(onDrop)
   useEffect(() => { onDropRef.current = onDrop }, [onDrop])
+
+  const cancelLongPress = useCallback(() => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current)
+      longPressTimerRef.current = null
+    }
+    dragActivatedRef.current = false
+    setLongPressSlotId(null)
+  }, [])
 
   const buildGhostRect = useCallback((dayIndex: number, topPx: number, heightPx: number): GhostRect | null => {
     const col = dayColumnRefs.current[dayIndex]
@@ -98,13 +112,14 @@ export function useSlotDrag({ days, dayColumnRefs, onDrop, enabled }: UseSlotDra
     return dayColumnRefs.current[dayIndex]?.getBoundingClientRect().top ?? 0
   }, [dayColumnRefs])
 
-  // Document-level listeners — stable, read everything from refs
   useEffect(() => {
     if (!enabled) return
 
     const handleMove = (e: PointerEvent) => {
       const gesture = gestureRef.current
       if (!gesture) return
+
+      if (e.pointerType === 'touch' && !dragActivatedRef.current) return
 
       const dx = Math.abs(e.clientX - pointerDownPos.current.x)
       const dy = Math.abs(e.clientY - pointerDownPos.current.y)
@@ -156,6 +171,8 @@ export function useSlotDrag({ days, dayColumnRefs, onDrop, enabled }: UseSlotDra
     }
 
     const handleUp = () => {
+      cancelLongPress()
+
       const gesture = gestureRef.current
       const livePos = livePosRef.current
 
@@ -203,13 +220,44 @@ export function useSlotDrag({ days, dayColumnRefs, onDrop, enabled }: UseSlotDra
       setDragState(null)
     }
 
+    const handleTouchMove = (e: TouchEvent) => {
+      if (longPressTimerRef.current && !dragActivatedRef.current) {
+        const touch = e.touches[0]
+        if (touch) {
+          const dx = Math.abs(touch.clientX - pointerDownPos.current.x)
+          const dy = Math.abs(touch.clientY - pointerDownPos.current.y)
+          if (dx > LONG_PRESS_TOLERANCE_PX || dy > LONG_PRESS_TOLERANCE_PX) {
+            cancelLongPress()
+          }
+        }
+        return
+      }
+
+      if (dragActivatedRef.current && gestureRef.current) {
+        e.preventDefault()
+      }
+    }
+
+    const handleTouchEnd = () => {
+      if (longPressTimerRef.current) {
+        cancelLongPress()
+      }
+    }
+
     document.addEventListener('pointermove', handleMove)
     document.addEventListener('pointerup', handleUp)
+    document.addEventListener('pointercancel', handleUp)
+    document.addEventListener('touchmove', handleTouchMove, { passive: false })
+    document.addEventListener('touchend', handleTouchEnd)
     return () => {
       document.removeEventListener('pointermove', handleMove)
       document.removeEventListener('pointerup', handleUp)
+      document.removeEventListener('pointercancel', handleUp)
+      document.removeEventListener('touchmove', handleTouchMove)
+      document.removeEventListener('touchend', handleTouchEnd)
+      if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current)
     }
-  }, [enabled, getDayIndex, getColumnTop, buildGhostRect])
+  }, [enabled, getDayIndex, getColumnTop, buildGhostRect, cancelLongPress])
 
   const onSlotPointerDown = useCallback((
     slotId: string,
@@ -220,7 +268,6 @@ export function useSlotDrag({ days, dayColumnRefs, onDrop, enabled }: UseSlotDra
   ) => {
     if (!enabled || e.button !== 0) return
     if ((e.target as HTMLElement).closest('[data-admin-action]')) return
-    e.preventDefault()
 
     const dayIndex = getDayIndex(e.clientX)
     const columnTop = getColumnTop(dayIndex)
@@ -230,6 +277,28 @@ export function useSlotDrag({ days, dayColumnRefs, onDrop, enabled }: UseSlotDra
 
     pointerDownPos.current = { x: e.clientX, y: e.clientY }
     hasMoved.current = false
+
+    if (e.pointerType === 'touch') {
+      dragActivatedRef.current = false
+
+      longPressTimerRef.current = setTimeout(() => {
+        dragActivatedRef.current = true
+        setLongPressSlotId(slotId)
+
+        gestureRef.current = {
+          mode: 'move',
+          slotId,
+          slotDate,
+          slotStartTime,
+          durationMinutes,
+          grabOffsetMinutes,
+          originalStartAbsMinutes: timeToMinutes(slotStartTime),
+        }
+      }, LONG_PRESS_MS)
+      return
+    }
+
+    e.preventDefault()
 
     gestureRef.current = {
       mode: 'move',
@@ -271,6 +340,7 @@ export function useSlotDrag({ days, dayColumnRefs, onDrop, enabled }: UseSlotDra
 
     pointerDownPos.current = { x: e.clientX, y: e.clientY }
     hasMoved.current = false
+    dragActivatedRef.current = true
 
     gestureRef.current = {
       mode: 'resize',
@@ -309,5 +379,6 @@ export function useSlotDrag({ days, dayColumnRefs, onDrop, enabled }: UseSlotDra
     wasJustDragged,
     onSlotPointerDown,
     onResizePointerDown,
+    longPressSlotId,
   }
 }

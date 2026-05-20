@@ -59,18 +59,18 @@ function SlotButton({
         slot.status === "BOOKING_CLOSED" &&
           "border-surface-700 hover:border-amber-500 hover:bg-surface-800",
         isAvailabilityWindow &&
-          "border-violet-500/50 bg-violet-500/5 hover:bg-violet-500/10",
+          "border-teal-500/50 bg-teal-500/5 hover:bg-teal-500/10",
         slot.isUserRegistered && "border-primary-500 bg-primary-500/10",
       )}
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           {isAvailabilityWindow
-            ? <Phone className="w-5 h-5 text-violet-400" />
+            ? <Phone className="w-5 h-5 text-teal-400" />
             : <Clock className="w-5 h-5 text-surface-400" />
           }
           <div>
-            <span className={clsx("font-medium", isAvailabilityWindow ? "text-violet-300" : "text-surface-100")}>
+            <span className={clsx("font-medium", isAvailabilityWindow ? "text-teal-300" : "text-surface-100")}>
               {slot.startTime.slice(0, 5)} - {slot.endTime.slice(0, 5)}
             </span>
             {showTitle && slot.eventTitle && (
@@ -81,7 +81,7 @@ function SlotButton({
 
         <div className="flex items-center gap-2">
           {isAvailabilityWindow && (
-            <span className="px-2 py-1 text-xs font-medium bg-violet-500/20 text-violet-400 rounded">
+            <span className="px-2 py-1 text-xs font-medium bg-teal-500/20 text-teal-400 rounded">
               {t('day.callToBook')}
             </span>
           )}
@@ -233,11 +233,11 @@ export function DayView({
                     {event.description && (
                       <p className="text-sm text-surface-300 mb-3">{event.description}</p>
                     )}
-                    <div className="p-3 rounded-lg bg-violet-500/10 border border-violet-500/20">
-                      <p className="text-sm text-violet-300">{t('contactDay.message')}</p>
+                    <div className="p-3 rounded-lg bg-indigo-500/10 border border-indigo-500/20">
+                      <p className="text-sm text-indigo-300">{t('contactDay.message')}</p>
                       <Link
                         to="/kontakt"
-                        className="inline-flex items-center gap-1 mt-2 text-sm font-medium text-violet-400 hover:text-violet-300 transition-colors"
+                        className="inline-flex items-center gap-1 mt-2 text-sm font-medium text-indigo-400 hover:text-indigo-300 transition-colors"
                       >
                         {t('contactDay.cta')}
                       </Link>
@@ -409,7 +409,7 @@ export function DayView({
             {/* Availability windows */}
             {standaloneSlots.some(s => s.isAvailabilityWindow) && (
               <div>
-                <h3 className="text-base font-semibold text-violet-400 mb-3">
+                <h3 className="text-base font-semibold text-teal-400 mb-3">
                   {t('day.availabilityWindows')}
                 </h3>
                 <div className="space-y-3">

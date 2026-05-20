@@ -28,10 +28,10 @@ const EVENT_TYPE_COLORS: Record<string, EventAccentColor> = {
     barText: 'text-green-300', barHover: 'hover:bg-green-600/50',
   },
   CONTACT_DAY: {
-    text: 'text-violet-400', border: 'border-violet-500/30', bg: 'bg-violet-500/5',
-    hoverBorder: 'hover:border-violet-500', dot: 'bg-violet-400',
-    barBg: 'bg-violet-600/40', barBorder: 'border-violet-500/40',
-    barText: 'text-violet-300', barHover: 'hover:bg-violet-600/50',
+    text: 'text-indigo-400', border: 'border-indigo-500/30', bg: 'bg-indigo-500/5',
+    hoverBorder: 'hover:border-indigo-500', dot: 'bg-indigo-400',
+    barBg: 'bg-indigo-600/40', barBorder: 'border-indigo-500/40',
+    barText: 'text-indigo-300', barHover: 'hover:bg-indigo-600/50',
   },
   FULL: {
     text: 'text-amber-400', border: 'border-amber-500/30', bg: 'bg-amber-500/5',
@@ -43,7 +43,7 @@ const EVENT_TYPE_COLORS: Record<string, EventAccentColor> = {
 
 // Palette for non-full events — avoids amber (full) and primary blue (available slots)
 const INDEX_PALETTE: EventAccentColor[] = [
-  { text: 'text-violet-400', border: 'border-violet-500/30', bg: 'bg-violet-500/5', hoverBorder: 'hover:border-violet-500', dot: 'bg-violet-400', barBg: 'bg-violet-600/40', barBorder: 'border-violet-500/40', barText: 'text-violet-300', barHover: 'hover:bg-violet-600/50' },
+  { text: 'text-indigo-400', border: 'border-indigo-500/30', bg: 'bg-indigo-500/5', hoverBorder: 'hover:border-indigo-500', dot: 'bg-indigo-400', barBg: 'bg-indigo-600/40', barBorder: 'border-indigo-500/40', barText: 'text-indigo-300', barHover: 'hover:bg-indigo-600/50' },
   { text: 'text-sky-400', border: 'border-sky-500/30', bg: 'bg-sky-500/5', hoverBorder: 'hover:border-sky-500', dot: 'bg-sky-400', barBg: 'bg-sky-600/40', barBorder: 'border-sky-500/40', barText: 'text-sky-300', barHover: 'hover:bg-sky-600/50' },
   { text: 'text-green-400', border: 'border-green-500/30', bg: 'bg-green-500/5', hoverBorder: 'hover:border-green-500', dot: 'bg-green-400', barBg: 'bg-green-600/40', barBorder: 'border-green-500/40', barText: 'text-green-300', barHover: 'hover:bg-green-600/50' },
   { text: 'text-orange-400', border: 'border-orange-500/30', bg: 'bg-orange-500/5', hoverBorder: 'hover:border-orange-500', dot: 'bg-orange-400', barBg: 'bg-orange-600/40', barBorder: 'border-orange-500/40', barText: 'text-orange-300', barHover: 'hover:bg-orange-600/50' },
@@ -55,7 +55,7 @@ export function getEventColorByType(eventType: string): EventAccentColor {
   return EVENT_TYPE_COLORS[eventType] ?? EVENT_TYPE_COLORS.COURSE;
 }
 
-/** Stable color for an event — CONTACT_DAY → violet, full → amber, others → hash-based from ID. */
+/** Stable color for an event — CONTACT_DAY → indigo, full → amber, others → hash-based from ID. */
 export function getEventColorByIndex(eventId: string, eventType: string, isFull: boolean): EventAccentColor {
   if (eventType === 'CONTACT_DAY') return EVENT_TYPE_COLORS.CONTACT_DAY;
   if (isFull) return EVENT_TYPE_COLORS.FULL;

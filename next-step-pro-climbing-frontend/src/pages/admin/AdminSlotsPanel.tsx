@@ -337,7 +337,7 @@ function SlotRow({
         )}
         <div className="flex items-center gap-2 mt-1">
           {slot.isAvailabilityWindow ? (
-            <span className="text-xs text-violet-400 bg-violet-500/10 px-2 py-0.5 rounded-full">
+            <span className="text-xs text-teal-400 bg-teal-500/10 px-2 py-0.5 rounded-full">
               {t('slots.availabilityWindow')}
             </span>
           ) : (
@@ -495,10 +495,10 @@ function EditSlotModal({
             type="checkbox"
             checked={form.isAvailabilityWindow}
             onChange={(e) => setForm({ ...form, isAvailabilityWindow: e.target.checked })}
-            className="mt-0.5 accent-violet-500"
+            className="mt-0.5 accent-teal-500"
           />
           <div>
-            <span className="text-sm font-medium text-violet-300">{t('slots.availabilityWindow')}</span>
+            <span className="text-sm font-medium text-teal-300">{t('slots.availabilityWindow')}</span>
             <p className="text-xs text-surface-400 mt-0.5">{t('slots.availabilityWindowHint')}</p>
           </div>
         </label>
