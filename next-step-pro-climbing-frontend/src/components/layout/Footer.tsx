@@ -13,11 +13,11 @@ export function Footer() {
   return (
     <footer className="bg-surface-900">
       <div className="h-0.5 bg-gradient-to-r from-transparent via-primary-400 to-transparent" />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
           {/* Brand */}
           <div>
-            <img src={theme === 'dark' ? logoWhite : logoBlack} alt="Next Step Pro Climbing" className="h-16 mb-4" />
+            <img src={theme === 'dark' ? logoWhite : logoBlack} alt="Next Step Pro Climbing" className="h-12 mb-3" />
             <p className="text-surface-400 text-sm">
               {t('footer.description')}
             </p>
@@ -25,12 +25,12 @@ export function Footer() {
 
           {/* Contact */}
           <div>
-            <h3 className="font-semibold mb-4">
+            <h3 className="font-semibold mb-2">
               <Link to="/kontakt" className="text-surface-100 hover:text-primary-400 transition-all duration-150 active:scale-95">
                 {t('footer.contact')}
               </Link>
             </h3>
-            <ul className="space-y-3">
+            <ul className="space-y-1.5">
               <li className="flex items-center gap-2 text-surface-400 text-sm">
                 <User className="w-4 h-4 shrink-0" />
                 <span>{t('footer.instructor')}</span>
@@ -87,8 +87,8 @@ export function Footer() {
 
           {/* Hours */}
           <div>
-            <h3 className="font-semibold text-surface-100 mb-4">{t('footer.hours')}</h3>
-            <ul className="space-y-2 text-surface-400 text-sm">
+            <h3 className="font-semibold text-surface-100 mb-2">{t('footer.hours')}</h3>
+            <ul className="space-y-1 text-surface-400 text-sm">
               <li className="flex justify-between">
                 <span>{t('footer.weekdays')}</span>
                 <span>{t('footer.seeCalendar')}</span>
@@ -105,7 +105,7 @@ export function Footer() {
           </div>
         </div>
 
-        <div className="mt-8 pt-8 border-t border-surface-800 text-center text-surface-500 text-sm">
+        <div className="mt-5 pt-4 border-t border-surface-800 text-center text-surface-500 text-sm">
           <p>&copy; {new Date().getFullYear()} Next Step Pro Climbing. {t('footer.copyright')}</p>
           <p className="mt-1 space-x-3">
             <Link to="/polityka-prywatnosci" className="text-surface-600 hover:text-surface-400 transition-colors text-xs">
