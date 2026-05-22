@@ -96,7 +96,7 @@ export function LoginPage() {
 
         <a
           href="/oauth2/authorization/google"
-          className="flex w-full items-center justify-center gap-3 rounded-lg bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 transition-colors"
+          className="flex w-full items-center justify-center gap-3 rounded-lg border border-surface-700 bg-surface-800 px-4 py-2.5 text-sm font-medium text-surface-200 hover:bg-surface-700 transition-colors"
         >
           <svg className="h-5 w-5" viewBox="0 0 24 24">
             <path
