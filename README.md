@@ -4,15 +4,44 @@ A booking and management system for climbing courses, trainings, and workshops.
 
 Users can browse a public calendar, reserve time slots and sign up for events. Administrators get a full management panel for slots, events, reservations, and users.
 
+## Key Features
+
+### Booking & Calendar
+- **Interactive calendar** with month, week, and day views — privacy-aware (other users' reservations shown only as "reserved")
+- **Concurrent-safe reservations** — pessimistic locking with timeouts prevents double-booking under load
+- **Dual-track waitlist** — automatic promotion with 24-hour confirmation windows for both time slots and events
+
+### Content Management (CMS)
+- **Block-based editor** for news articles and courses — TEXT, IMAGE, and VIDEO_EMBED blocks with drag & drop reordering
+- **Draft / publish workflow** with scheduled publication dates
+- **Multilingual content** — translation groups across PL / EN / ES with one-click duplication as a new translation
+- **Image focal points** — stored X/Y coordinates for intelligent responsive cropping on thumbnails and photos
+
+### Authentication & Security
+- **Email / password + Google OAuth2** with automatic account provisioning and linking
+- **Per-endpoint rate limiting** — separate Caffeine-backed IP buckets for auth, reservations, and admin routes
+- **Account lockout** after repeated failed login attempts (brute-force protection)
+- **Zero-copy file streaming** — `InputStreamResource` serving (0 MB RAM), UUID filenames, strict regex to block path traversal
+
+### Newsletter & Communication
+- **GDPR-compliant newsletter** — opt-in consent logging, tokenized one-click unsubscribe (no login required), full audit trail
+- **Templated multi-language emails** — verification, password reset, waitlist notifications, and admin mass-mail
+- **Activity audit log** — 23 action types tracking reservations, admin operations, and user lifecycle events
+
+### Performance
+- **Multi-tier Caffeine cache** — 2 min TTL for real-time calendar data up to 60 min for content details, with targeted eviction on mutations
+- **Optimized queries** — N+1 fixes via SQL projections, batch loading of reservation counts and user state
+
 ## Tech Stack
 
 ### Backend
 - **Java 25** + **Spring Boot 4.0.2**
-- Spring Security + JWT (email/password auth)
+- Spring Security + JWT + OAuth2 (Google)
 - Spring Data JPA + **PostgreSQL 17**
-- **Flyway** (database migrations)
+- **Flyway** (53 migrations)
 - SpringDoc OpenAPI (Swagger UI)
-- Caffeine Cache
+- Caffeine Cache (multi-tier TTL)
+- Spring Boot Starter Mail
 - JSpecify 1.0.0 (null-safety)
 - Testcontainers + JUnit 5
 
