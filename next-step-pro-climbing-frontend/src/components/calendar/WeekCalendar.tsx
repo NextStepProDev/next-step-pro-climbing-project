@@ -226,7 +226,7 @@ export function WeekCalendar({
                   className={clsx(
                     'py-2 text-center border-l border-surface-800 transition-colors',
                     today && 'bg-primary-500/10',
-                    past && 'opacity-50',
+                    past && 'opacity-60',
                     !past && 'hover:bg-surface-800/50 cursor-pointer',
                   )}
                 >
@@ -281,7 +281,7 @@ export function WeekCalendar({
                   className={clsx(
                     'relative border-l border-surface-800',
                     today && 'bg-primary-500/5',
-                    past && 'opacity-40',
+                    past && 'opacity-50',
                     inPasteMode && !past && 'cursor-crosshair',
                   )}
                   style={{ height: TOTAL_HOURS * HOUR_HEIGHT }}

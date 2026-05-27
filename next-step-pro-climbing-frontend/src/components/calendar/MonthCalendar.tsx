@@ -135,8 +135,8 @@ export function MonthCalendar({ currentMonth, onMonthChange, days, events, onDay
               disabled={!isClickable}
               className={clsx(
                 'aspect-square p-0.5 sm:p-2 border-b border-r border-surface-800 transition-colors relative',
-                !isSameMonth(day, currentMonth) && 'opacity-30',
-                isPast && 'opacity-40 cursor-not-allowed',
+                !isSameMonth(day, currentMonth) && 'opacity-40',
+                isPast && 'opacity-50 cursor-not-allowed',
                 isClickable && 'hover:bg-surface-800 cursor-pointer',
                 !isClickable && 'cursor-default',
                 hasEvents && !isPast && (dayEvents.every(e => e.eventType === 'CONTACT_DAY') ? 'bg-indigo-500/10' : 'bg-primary-500/10')

@@ -144,7 +144,7 @@ export function HomePage() {
               className={`hidden sm:block absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ${heroImgLoaded ? 'opacity-100 animation-ken-burns' : 'opacity-0'}`}
               style={{ objectPosition }}
             />
-            <div className={`hidden sm:block absolute inset-0 bg-gradient-to-b from-surface-950/25 via-surface-950/35 to-surface-950 transition-opacity duration-700 ${heroImgLoaded ? 'opacity-100' : 'opacity-0'}`} />
+            <div className={`hidden sm:block absolute inset-0 bg-gradient-to-b from-surface-950/15 via-surface-950/25 to-surface-950 transition-opacity duration-700 ${heroImgLoaded ? 'opacity-100' : 'opacity-0'}`} />
           </>
         )}
         {badgeLeftImageUrl && (

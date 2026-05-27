@@ -49,13 +49,13 @@ function SlotButton({
         slot.status === "FULL" &&
           "border-surface-700 hover:border-amber-500 hover:bg-surface-800",
         slot.status === "BLOCKED" && !isAdmin &&
-          "border-surface-800 bg-surface-900/50 cursor-not-allowed opacity-50",
+          "border-surface-800 bg-surface-900/50 cursor-not-allowed opacity-60",
         slot.status === "BLOCKED" && isAdmin &&
-          "border-surface-800 bg-surface-900/50 opacity-50 hover:opacity-70 hover:border-rose-500/50",
+          "border-surface-800 bg-surface-900/50 opacity-60 hover:opacity-80 hover:border-rose-500/50",
         slot.status === "PAST" && !isAdmin &&
-          "border-surface-800 bg-surface-900/50 cursor-not-allowed opacity-40",
+          "border-surface-800 bg-surface-900/50 cursor-not-allowed opacity-50",
         slot.status === "PAST" && isAdmin &&
-          "border-surface-800 bg-surface-900/50 opacity-40 hover:opacity-60 hover:border-rose-500/50",
+          "border-surface-800 bg-surface-900/50 opacity-50 hover:opacity-70 hover:border-rose-500/50",
         slot.status === "BOOKING_CLOSED" &&
           "border-surface-700 hover:border-amber-500 hover:bg-surface-800",
         isAvailabilityWindow &&
