@@ -146,6 +146,12 @@ function PrivacyPolicyPl({ logo }: { logo: string }) {
               Po jego usunięciu wszystkie Twoje dane są trwale i nieodwracalnie usuwane z bazy danych.
             </p>
             <p>
+              <span className="text-surface-200 font-medium">Historia rezerwacji</span> — przechowywana przez
+              okres <span className="text-surface-200 font-medium">3 lat</span> od daty rezerwacji. Anulowane rezerwacje
+              i rezerwacje gości są automatycznie usuwane po upływie tego okresu. Okres 3 lat jest zbieżny
+              z ogólnym terminem przedawnienia roszczeń wynikającym z Kodeksu cywilnego.
+            </p>
+            <p>
               <span className="text-surface-200 font-medium">Logi aktywności</span> — usuwane automatycznie razem z kontem
               (kaskadowe usunięcie na poziomie bazy danych). Nie ma możliwości ich odzyskania po usunięciu konta.
             </p>
@@ -368,6 +374,12 @@ function PrivacyPolicyEn({ logo }: { logo: string }) {
             <p>
               <span className="text-surface-200 font-medium">Account data</span> — stored for the entire duration of the account.
               Upon deletion, all your data is permanently and irreversibly removed from the database.
+            </p>
+            <p>
+              <span className="text-surface-200 font-medium">Reservation history</span> — stored for
+              a period of <span className="text-surface-200 font-medium">3 years</span> from the reservation date.
+              Cancelled reservations and guest reservations are automatically deleted after this period.
+              The 3-year period aligns with the general statute of limitations for claims under Polish civil law.
             </p>
             <p>
               <span className="text-surface-200 font-medium">Activity logs</span> — automatically deleted together with your account

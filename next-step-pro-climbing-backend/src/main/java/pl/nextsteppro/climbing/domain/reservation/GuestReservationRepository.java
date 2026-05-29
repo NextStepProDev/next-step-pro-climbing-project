@@ -1,9 +1,11 @@
 package pl.nextsteppro.climbing.domain.reservation;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDate;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
@@ -29,4 +31,8 @@ public interface GuestReservationRepository extends JpaRepository<GuestReservati
 
     @Query("SELECT new pl.nextsteppro.climbing.domain.reservation.SlotParticipantCount(g.event.id, COALESCE(SUM(g.participants), 0)) FROM GuestReservation g WHERE g.event.id IN :eventIds GROUP BY g.event.id")
     List<SlotParticipantCount> sumParticipantsByEventIds(@Param("eventIds") Collection<UUID> eventIds);
+
+    @Modifying
+    @Query("DELETE FROM GuestReservation g WHERE g.timeSlot.date < :cutoffDate")
+    int deleteBySlotDateBefore(@Param("cutoffDate") LocalDate cutoffDate);
 }

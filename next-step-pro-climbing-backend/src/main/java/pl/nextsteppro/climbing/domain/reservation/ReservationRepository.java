@@ -60,4 +60,8 @@ public interface ReservationRepository extends JpaRepository<Reservation, UUID> 
     @Modifying
     @Query("UPDATE Reservation r SET r.status = 'CANCELLED' WHERE r.user.id = :userId AND r.status = 'CONFIRMED'")
     void cancelConfirmedByUserId(UUID userId);
+
+    @Modifying
+    @Query("DELETE FROM Reservation r WHERE r.timeSlot.date < :cutoffDate AND r.status != 'CONFIRMED'")
+    int deleteCancelledBefore(LocalDate cutoffDate);
 }
