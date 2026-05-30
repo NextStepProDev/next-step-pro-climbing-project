@@ -139,6 +139,25 @@ CI/CD via GitHub Actions:
 
 Production: `nextsteppro.pl`
 
+## Backups
+
+Automated daily backups at 3:00 AM via cron on the production server:
+
+- **Database:** `pg_dump` exports the full PostgreSQL database, compressed with gzip
+- **Files:** `tar` archives the `uploads/` directory (instructor photos, gallery, courses, news, assets)
+- **Offsite sync:** `rclone` uploads backup files to Google Drive
+- **Retention:** local backups older than 7 days are automatically deleted
+
+### Manual restore
+
+```bash
+# Database
+gunzip -c backup_YYYY-MM-DD.sql.gz | docker exec -i nsp-postgres-prod psql -U $POSTGRES_USER -d $POSTGRES_DB
+
+# Files
+tar -xzf uploads_YYYY-MM-DD.tar.gz -C /path/to/uploads/
+```
+
 ## License
 
 This project is licensed under the [MIT License](LICENSE).
