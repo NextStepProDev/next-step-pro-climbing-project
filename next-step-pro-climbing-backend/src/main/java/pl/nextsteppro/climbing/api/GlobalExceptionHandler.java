@@ -67,11 +67,8 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     public ResponseEntity<ErrorResponse> handleMaxUploadSize(MaxUploadSizeExceededException ex) {
         log.warn("Upload size exceeded: {}", ex.getMessage());
-        String message = ex.getMessage() != null && ex.getMessage().contains("request")
-                ? messageService.get("request.too.large")
-                : messageService.get("file.too.large");
         return ResponseEntity.status(HttpStatus.CONTENT_TOO_LARGE)
-            .body(new ErrorResponse("PAYLOAD_TOO_LARGE", message, Instant.now()));
+            .body(new ErrorResponse("PAYLOAD_TOO_LARGE", messageService.get("file.too.large"), Instant.now()));
     }
 
     @ExceptionHandler(Exception.class)
