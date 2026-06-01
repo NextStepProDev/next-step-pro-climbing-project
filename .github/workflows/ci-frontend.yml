@@ -38,6 +38,8 @@ jobs:
 
       - run: npx tsc -b
 
+      - run: npm test
+
       - run: npm run build
 
   docker:
