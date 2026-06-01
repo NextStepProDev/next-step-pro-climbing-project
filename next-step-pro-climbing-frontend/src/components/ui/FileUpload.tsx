@@ -1,7 +1,8 @@
 import { useState, useRef, type DragEvent, type ChangeEvent } from 'react'
-import { Upload, X, Image as ImageIcon } from 'lucide-react'
+import { Upload, X, Image as ImageIcon, Loader2 } from 'lucide-react'
 import clsx from 'clsx'
 import { Button } from './Button'
+import { compressImage } from '../../utils/imageUtils'
 
 interface FileUploadProps {
   onFileSelect: (files: File[]) => void
@@ -22,6 +23,7 @@ export function FileUpload({
 }: FileUploadProps) {
   const [dragActive, setDragActive] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [compressing, setCompressing] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const validateFile = (file: File): boolean => {
@@ -40,7 +42,7 @@ export function FileUpload({
     return true
   }
 
-  const handleFiles = (fileList: FileList | null) => {
+  const handleFiles = async (fileList: FileList | null) => {
     if (!fileList || fileList.length === 0) return
 
     const files = Array.from(fileList)
@@ -62,7 +64,13 @@ export function FileUpload({
     }
 
     if (validFiles.length > 0) {
-      onFileSelect(validFiles)
+      setCompressing(true)
+      try {
+        const compressed = await Promise.all(validFiles.map(compressImage))
+        onFileSelect(compressed)
+      } finally {
+        setCompressing(false)
+      }
     }
   }
 
@@ -82,13 +90,13 @@ export function FileUpload({
     setDragActive(false)
 
     if (e.dataTransfer.files) {
-      handleFiles(e.dataTransfer.files)
+      void handleFiles(e.dataTransfer.files)
     }
   }
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
-      handleFiles(e.target.files)
+      void handleFiles(e.target.files)
     }
   }
 
@@ -154,16 +162,24 @@ export function FileUpload({
           />
 
           <div className="flex flex-col items-center gap-2">
-            {dragActive ? (
+            {compressing ? (
+              <Loader2 className="h-12 w-12 text-primary-500 animate-spin" />
+            ) : dragActive ? (
               <Upload className="h-12 w-12 text-primary-500" />
             ) : (
               <ImageIcon className="h-12 w-12 text-surface-400" />
             )}
             <div className="text-surface-300">
-              <span className="font-medium text-surface-100">
-                Kliknij aby wybrać {multiple ? 'pliki' : 'plik'}
-              </span>
-              {' lub przeciągnij i upuść'}
+              {compressing ? (
+                <span className="font-medium text-primary-400">Optymalizacja zdjęć...</span>
+              ) : (
+                <>
+                  <span className="font-medium text-surface-100">
+                    Kliknij aby wybrać {multiple ? 'pliki' : 'plik'}
+                  </span>
+                  {' lub przeciągnij i upuść'}
+                </>
+              )}
             </div>
             <div className="text-sm text-surface-400">
               {accept.split(',').map((type) => type.split('/')[1].toUpperCase()).join(', ')}

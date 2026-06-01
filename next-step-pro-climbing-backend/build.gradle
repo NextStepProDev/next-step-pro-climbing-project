@@ -49,6 +49,9 @@ dependencies {
     // API Documentation (Swagger/OpenAPI)
     implementation "org.springdoc:springdoc-openapi-starter-webmvc-ui:${springdocVersion}"
 
+    // Image optimization
+    implementation "net.coobird:thumbnailator:${thumbnailatorVersion}"
+
     // JWT (JSON Web Tokens)
     implementation "io.jsonwebtoken:jjwt-api:${jjwtVersion}"
     runtimeOnly "io.jsonwebtoken:jjwt-impl:${jjwtVersion}"

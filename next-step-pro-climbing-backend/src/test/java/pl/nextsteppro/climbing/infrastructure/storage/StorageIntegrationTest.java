@@ -25,7 +25,7 @@ class StorageIntegrationTest {
     @Test
     void shouldHandleCompleteFileLifecycle() throws IOException {
         // Given
-        LocalFileStorageService service = new LocalFileStorageService(tempDir.toString());
+        LocalFileStorageService service = new LocalFileStorageService(tempDir.toString(), new ImageOptimizer());
         byte[] originalContent = "Test image content for integration test".getBytes();
         MultipartFile file = new MockMultipartFile(
                 "photo",
@@ -68,7 +68,7 @@ class StorageIntegrationTest {
     @Test
     void shouldHandleMultipleFilesInDifferentFolders() throws IOException {
         // Given
-        LocalFileStorageService service = new LocalFileStorageService(tempDir.toString());
+        LocalFileStorageService service = new LocalFileStorageService(tempDir.toString(), new ImageOptimizer());
 
         byte[] instructorPhoto = "Instructor photo".getBytes();
         byte[] galleryPhoto1 = "Gallery photo 1".getBytes();
@@ -116,7 +116,7 @@ class StorageIntegrationTest {
     @Test
     void shouldStreamLargeFileWithoutLoadingIntoMemory() throws IOException {
         // Given: Simulate large file (5MB)
-        LocalFileStorageService service = new LocalFileStorageService(tempDir.toString());
+        LocalFileStorageService service = new LocalFileStorageService(tempDir.toString(), new ImageOptimizer());
         byte[] largeContent = new byte[5 * 1024 * 1024];
         // Fill with pattern to verify integrity
         for (int i = 0; i < largeContent.length; i++) {

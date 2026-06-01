@@ -9,6 +9,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import pl.nextsteppro.climbing.infrastructure.i18n.MessageService;
 
 import java.time.Instant;
@@ -61,6 +62,16 @@ public class GlobalExceptionHandler {
         log.warn("Access denied: {}", ex.getMessage());
         return ResponseEntity.status(HttpStatus.FORBIDDEN)
             .body(new ErrorResponse("FORBIDDEN", messageService.get("error.forbidden"), Instant.now()));
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ErrorResponse> handleMaxUploadSize(MaxUploadSizeExceededException ex) {
+        log.warn("Upload size exceeded: {}", ex.getMessage());
+        String message = ex.getMessage() != null && ex.getMessage().contains("request")
+                ? messageService.get("request.too.large")
+                : messageService.get("file.too.large");
+        return ResponseEntity.status(HttpStatus.CONTENT_TOO_LARGE)
+            .body(new ErrorResponse("PAYLOAD_TOO_LARGE", message, Instant.now()));
     }
 
     @ExceptionHandler(Exception.class)

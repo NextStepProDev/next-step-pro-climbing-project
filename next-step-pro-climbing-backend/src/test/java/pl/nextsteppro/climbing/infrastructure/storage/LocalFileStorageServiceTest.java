@@ -24,7 +24,7 @@ class LocalFileStorageServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new LocalFileStorageService(tempDir.toString());
+        service = new LocalFileStorageService(tempDir.toString(), new ImageOptimizer());
     }
 
     @AfterEach

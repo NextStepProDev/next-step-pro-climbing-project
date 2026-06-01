@@ -22,6 +22,10 @@
     "phoneInvalid": "Invalid format. Required: +[country code][9 digits], e.g. +48123456789",
     "nameTooShort": "Name must be at least 3 characters long"
   },
+  "uploadFailed": "Failed to upload file. Please try again.",
+  "fileTooLarge": "File is too large ({{size}} MB). Maximum size is 10 MB.",
+  "fileInvalidType": "Invalid file format. Allowed: JPG, PNG, WebP.",
+  "imageLoadFailed": "Failed to load image.",
   "authServer": "Server error. Please try again later.",
   "authGeneric": "An error occurred ({{status}}). Please try again."
 }

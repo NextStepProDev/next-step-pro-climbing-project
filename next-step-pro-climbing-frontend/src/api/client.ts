@@ -1,4 +1,5 @@
 import i18n from '../i18n'
+import { compressImage, validateImageFile } from '../utils/imageUtils'
 import type {
   AssetDto,
   EventWaitlistEntry,
@@ -514,9 +515,12 @@ export const adminInstructorApi = {
   delete: (id: string) =>
     fetchApi<void>(`/admin/instructors/${id}`, { method: 'DELETE' }),
   uploadPhoto: async (id: string, file: File) => {
+    const error = validateImageFile(file)
+    if (error) throw new Error(error)
+    const compressed = await compressImage(file)
     const token = await ensureValidToken()
     const formData = new FormData()
-    formData.append('file', file)
+    formData.append('file', compressed)
 
     const headers: Record<string, string> = {
       'Accept-Language': i18n.language,
@@ -596,9 +600,12 @@ export const adminGalleryApi = {
 
   // Photos
   uploadPhoto: async (albumId: string, file: File, caption?: string) => {
+    const error = validateImageFile(file)
+    if (error) throw new Error(error)
+    const compressed = await compressImage(file)
     const token = await ensureValidToken()
     const formData = new FormData()
-    formData.append('file', file)
+    formData.append('file', compressed)
     if (caption) {
       formData.append('caption', caption)
     }
@@ -686,9 +693,12 @@ export const adminNewsApi = {
     fetchApi<void>(`/admin/news/${id}`, { method: 'DELETE' }),
 
   uploadThumbnail: async (id: string, file: File): Promise<UploadThumbnailResponse> => {
+    const error = validateImageFile(file)
+    if (error) throw new Error(error)
+    const compressed = await compressImage(file)
     const token = await ensureValidToken()
     const formData = new FormData()
-    formData.append('file', file)
+    formData.append('file', compressed)
     const headers: Record<string, string> = { 'Accept-Language': i18n.language }
     if (token) headers['Authorization'] = `Bearer ${token}`
     const response = await fetch(`${API_BASE}/admin/news/${id}/thumbnail`, {
@@ -719,9 +729,12 @@ export const adminNewsApi = {
     }),
 
   addImageBlock: async (newsId: string, file: File, caption?: string): Promise<UploadBlockImageResponse> => {
+    const error = validateImageFile(file)
+    if (error) throw new Error(error)
+    const compressed = await compressImage(file)
     const token = await ensureValidToken()
     const formData = new FormData()
-    formData.append('file', file)
+    formData.append('file', compressed)
     if (caption) formData.append('caption', caption)
     const headers: Record<string, string> = { 'Accept-Language': i18n.language }
     if (token) headers['Authorization'] = `Bearer ${token}`
@@ -837,9 +850,12 @@ export const adminCoursesApi = {
     }),
 
   uploadThumbnail: async (id: string, file: File): Promise<UploadThumbnailResponse> => {
+    const error = validateImageFile(file)
+    if (error) throw new Error(error)
+    const compressed = await compressImage(file)
     const token = await ensureValidToken()
     const formData = new FormData()
-    formData.append('file', file)
+    formData.append('file', compressed)
     const headers: Record<string, string> = { 'Accept-Language': i18n.language }
     if (token) headers['Authorization'] = `Bearer ${token}`
     const response = await fetch(`${API_BASE}/admin/courses/${id}/thumbnail`, {
@@ -870,9 +886,12 @@ export const adminCoursesApi = {
     }),
 
   addImageBlock: async (courseId: string, file: File, caption?: string): Promise<UploadBlockImageResponse> => {
+    const error = validateImageFile(file)
+    if (error) throw new Error(error)
+    const compressed = await compressImage(file)
     const token = await ensureValidToken()
     const formData = new FormData()
-    formData.append('file', file)
+    formData.append('file', compressed)
     if (caption) formData.append('caption', caption)
     const headers: Record<string, string> = { 'Accept-Language': i18n.language }
     if (token) headers['Authorization'] = `Bearer ${token}`
@@ -937,9 +956,12 @@ export const adminAssetsApi = {
   list: () => fetchApi<AssetDto[]>('/admin/assets'),
 
   upload: async (file: File): Promise<AssetDto> => {
+    const error = validateImageFile(file)
+    if (error) throw new Error(error)
+    const compressed = await compressImage(file)
     const token = await ensureValidToken()
     const formData = new FormData()
-    formData.append('file', file)
+    formData.append('file', compressed)
 
     const headers: Record<string, string> = {
       'Accept-Language': i18n.language,
@@ -1013,9 +1035,12 @@ export const adminSiteApi = {
   getHero: () => fetchApi<HeroImageDto>('/admin/settings/hero'),
 
   uploadHeroImage: async (file: File, focalPointX?: number, focalPointY?: number): Promise<HeroImageDto> => {
+    const error = validateImageFile(file)
+    if (error) throw new Error(error)
+    const compressed = await compressImage(file)
     const token = await ensureValidToken()
     const formData = new FormData()
-    formData.append('file', file)
+    formData.append('file', compressed)
     if (focalPointX != null) formData.append('focalPointX', String(focalPointX))
     if (focalPointY != null) formData.append('focalPointY', String(focalPointY))
     const headers: Record<string, string> = { 'Accept-Language': i18n.language }
