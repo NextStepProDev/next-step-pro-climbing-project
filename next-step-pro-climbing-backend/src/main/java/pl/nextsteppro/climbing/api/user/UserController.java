@@ -209,9 +209,11 @@ record UserProfileDto(
 record UpdateProfileRequest(
     @Schema(description = "Imię", example = "Jan")
     @jakarta.validation.constraints.Size(min = 3, max = 100, message = "{validation.firstname.size}")
+    @jakarta.validation.constraints.Pattern(regexp = "^[\\p{L} .'-]+$", message = "{validation.name.invalid}")
     String firstName,
     @Schema(description = "Nazwisko", example = "Kowalski")
     @jakarta.validation.constraints.Size(min = 3, max = 100, message = "{validation.lastname.size}")
+    @jakarta.validation.constraints.Pattern(regexp = "^[\\p{L} .'-]+$", message = "{validation.name.invalid}")
     String lastName,
     @Schema(description = "Numer telefonu", example = "+48123456789")
     @jakarta.validation.constraints.Pattern(regexp = "^\\+[0-9]{1,4}[0-9]{9}$", message = "{validation.phone.invalid}")

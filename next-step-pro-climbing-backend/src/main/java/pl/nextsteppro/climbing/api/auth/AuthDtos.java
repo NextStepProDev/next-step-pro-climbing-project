@@ -18,10 +18,12 @@ public final class AuthDtos {
 
         @NotBlank(message = "{validation.firstname.required}")
         @Size(min = 3, max = 100, message = "{validation.firstname.size}")
+        @Pattern(regexp = "^[\\p{L} .'-]+$", message = "{validation.name.invalid}")
         String firstName,
 
         @NotBlank(message = "{validation.lastname.required}")
         @Size(min = 3, max = 100, message = "{validation.lastname.size}")
+        @Pattern(regexp = "^[\\p{L} .'-]+$", message = "{validation.name.invalid}")
         String lastName,
 
         @NotBlank(message = "{validation.phone.required}")

@@ -8,6 +8,7 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.web.util.HtmlUtils;
 import pl.nextsteppro.climbing.config.AdminEmailConfig;
 import pl.nextsteppro.climbing.config.AppConfig;
 import pl.nextsteppro.climbing.domain.event.Event;
@@ -341,6 +342,15 @@ public class MailService {
         return text;
     }
 
+    /**
+     * Escapuje wartości kontrolowane przez użytkownika (np. imię/nazwisko) przed wstawieniem
+     * do treści HTML maila — zapobiega HTML injection. UWAGA: stosować tylko w treści HTML,
+     * NIE w temacie maila (temat to plain text — encje by się nie zdekodowały, np. &oacute;).
+     */
+    private static String esc(@Nullable String value) {
+        return value == null ? "" : HtmlUtils.htmlEscape(value);
+    }
+
     private String buildCalendarSection(String lang, String googleCalendarUrl) {
         return """
                         <div style="margin-top: 16px; padding: 14px 20px; background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; text-align: center;">
@@ -554,7 +564,7 @@ public class MailService {
             """.formatted(
             siteUrl,
             msg.getForLang("email.admin.new.reservation", ADMIN_LANG),
-            msg.getForLang("email.admin.client", ADMIN_LANG), user.getFullName(),
+            msg.getForLang("email.admin.client", ADMIN_LANG), esc(user.getFullName()),
             msg.getForLang("email.admin.email", ADMIN_LANG), user.getEmail(),
             msg.getForLang("email.admin.phone", ADMIN_LANG), user.getPhone(),
             titleLine,
@@ -667,7 +677,7 @@ public class MailService {
             """.formatted(
             siteUrl,
             msg.getForLang("email.admin.event.title", ADMIN_LANG),
-            msg.getForLang("email.admin.client", ADMIN_LANG), user.getFullName(),
+            msg.getForLang("email.admin.client", ADMIN_LANG), esc(user.getFullName()),
             msg.getForLang("email.admin.email", ADMIN_LANG), user.getEmail(),
             msg.getForLang("email.admin.phone", ADMIN_LANG), user.getPhone(),
             msg.getForLang("email.admin.event.event", ADMIN_LANG), event.getTitle(),
@@ -855,7 +865,7 @@ public class MailService {
             """.formatted(
             siteUrl,
             msg.getForLang("email.user.cancel.admin.title", ADMIN_LANG),
-            msg.getForLang("email.admin.client", ADMIN_LANG), user.getFullName(),
+            msg.getForLang("email.admin.client", ADMIN_LANG), esc(user.getFullName()),
             msg.getForLang("email.admin.email", ADMIN_LANG), user.getEmail(),
             msg.getForLang("email.admin.phone", ADMIN_LANG), user.getPhone(),
             titleLine,
@@ -888,7 +898,7 @@ public class MailService {
             """.formatted(
             siteUrl,
             msg.getForLang("email.user.event.cancel.admin.title", ADMIN_LANG),
-            msg.getForLang("email.admin.client", ADMIN_LANG), user.getFullName(),
+            msg.getForLang("email.admin.client", ADMIN_LANG), esc(user.getFullName()),
             msg.getForLang("email.admin.email", ADMIN_LANG), user.getEmail(),
             msg.getForLang("email.admin.phone", ADMIN_LANG), user.getPhone(),
             msg.getForLang("email.admin.event.event", ADMIN_LANG), event.getTitle(),
