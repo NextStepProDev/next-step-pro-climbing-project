@@ -218,7 +218,10 @@ record UpdateProfileRequest(
     @Schema(description = "Numer telefonu", example = "+48123456789")
     @jakarta.validation.constraints.Pattern(regexp = "^\\+[0-9]{1,4}[0-9]{9}$", message = "{validation.phone.invalid}")
     String phone,
-    @Schema(description = "Nick/pseudonim", example = "Climber123") String nickname
+    @Schema(description = "Nick/pseudonim", example = "Climber123")
+    @jakarta.validation.constraints.Size(min = 3, max = 50, message = "{validation.nickname.size}")
+    @jakarta.validation.constraints.Pattern(regexp = "^[\\p{L}\\p{N} ._-]+$", message = "{validation.nickname.invalid}")
+    String nickname
 ) {}
 
 @Schema(description = "Zmiana hasła")
