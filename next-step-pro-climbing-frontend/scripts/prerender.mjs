@@ -113,11 +113,13 @@ try {
     }
     html = html.replace('</head>', `${inject}  </head>`)
 
-    // Write: home overwrites dist/index.html, others go to dist/<path>/index.html
+    // Write: home overwrites dist/index.html, others go to a flat dist/<path>.html
+    // so nginx serves /faq from /faq.html with no trailing-slash redirect and the
+    // served URL matches the canonical (.../faq) exactly.
     const outFile =
       route.path === '/'
         ? distIndex
-        : join(root, 'dist', route.path.replace(/^\//, ''), 'index.html')
+        : join(root, 'dist', `${route.path.replace(/^\//, '')}.html`)
     mkdirSync(dirname(outFile), { recursive: true })
     writeFileSync(outFile, html, 'utf-8')
     written++
