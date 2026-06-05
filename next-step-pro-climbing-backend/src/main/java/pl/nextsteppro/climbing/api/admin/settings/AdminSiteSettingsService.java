@@ -174,24 +174,11 @@ public class AdminSiteSettingsService {
 
     @Transactional(readOnly = true)
     public List<SlotTemplateDto> getSlotTemplates() {
-        String json = siteSettingsRepository.findById(KEY_SLOT_TEMPLATES)
-                .map(SiteSetting::getValue)
-                .orElse(null);
-        if (json == null) return List.of();
-        try {
-            return OBJECT_MAPPER.readValue(json, new TypeReference<List<SlotTemplateDto>>() {});
-        } catch (Exception e) {
-            logger.warn("Failed to parse slot templates: {}", e.getMessage());
-            return List.of();
-        }
+        return readJson(KEY_SLOT_TEMPLATES, new TypeReference<List<SlotTemplateDto>>() {}, List.of());
     }
 
     public List<SlotTemplateDto> saveSlotTemplates(List<SlotTemplateDto> templates) {
-        try {
-            save(KEY_SLOT_TEMPLATES, OBJECT_MAPPER.writeValueAsString(templates));
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to serialize slot templates", e);
-        }
+        writeJson(KEY_SLOT_TEMPLATES, templates);
         return templates;
     }
 
@@ -200,28 +187,14 @@ public class AdminSiteSettingsService {
     @Cacheable(value = "siteSettings", key = "'homeLocation'")
     @Transactional(readOnly = true)
     public LocationSectionDto getLocationSection() {
-        String json = siteSettingsRepository.findById(KEY_LOCATION_ACTIVE)
-                .map(SiteSetting::getValue)
-                .orElse(null);
-        if (json == null) {
-            // Brak konfiguracji: sekcja widoczna, pusta mapa = front zrobi fallback do i18n.
-            return new LocationSectionDto(true, Map.of());
-        }
-        try {
-            return OBJECT_MAPPER.readValue(json, LocationSectionDto.class);
-        } catch (Exception e) {
-            logger.warn("Failed to parse home location section: {}", e.getMessage());
-            return new LocationSectionDto(true, Map.of());
-        }
+        // Brak konfiguracji: sekcja widoczna, pusta mapa = front zrobi fallback do i18n.
+        return readJson(KEY_LOCATION_ACTIVE, new TypeReference<LocationSectionDto>() {},
+                new LocationSectionDto(true, Map.of()));
     }
 
     @CacheEvict(value = "siteSettings", allEntries = true)
     public LocationSectionDto saveLocationSection(LocationSectionDto section) {
-        try {
-            save(KEY_LOCATION_ACTIVE, OBJECT_MAPPER.writeValueAsString(section));
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to serialize home location section", e);
-        }
+        writeJson(KEY_LOCATION_ACTIVE, section);
         return section;
     }
 
@@ -229,16 +202,7 @@ public class AdminSiteSettingsService {
 
     @Transactional(readOnly = true)
     public List<LocationPresetDto> getLocationPresets() {
-        String json = siteSettingsRepository.findById(KEY_LOCATION_PRESETS)
-                .map(SiteSetting::getValue)
-                .orElse(null);
-        if (json == null) return List.of();
-        try {
-            return OBJECT_MAPPER.readValue(json, new TypeReference<List<LocationPresetDto>>() {});
-        } catch (Exception e) {
-            logger.warn("Failed to parse home location presets: {}", e.getMessage());
-            return List.of();
-        }
+        return readJson(KEY_LOCATION_PRESETS, new TypeReference<List<LocationPresetDto>>() {}, List.of());
     }
 
     public LocationPresetDto saveLocationPreset(LocationPresetDto preset) {
@@ -267,10 +231,28 @@ public class AdminSiteSettingsService {
     }
 
     private void persistPresets(List<LocationPresetDto> presets) {
+        writeJson(KEY_LOCATION_PRESETS, presets);
+    }
+
+    // Wspólne odczyt/zapis ustawień przechowywanych jako JSON w site_settings.
+    private <T> T readJson(String key, TypeReference<T> typeRef, T defaultValue) {
+        String json = siteSettingsRepository.findById(key)
+                .map(SiteSetting::getValue)
+                .orElse(null);
+        if (json == null) return defaultValue;
         try {
-            save(KEY_LOCATION_PRESETS, OBJECT_MAPPER.writeValueAsString(presets));
+            return OBJECT_MAPPER.readValue(json, typeRef);
         } catch (Exception e) {
-            throw new RuntimeException("Failed to serialize home location presets", e);
+            logger.warn("Failed to parse setting {}: {}", key, e.getMessage());
+            return defaultValue;
+        }
+    }
+
+    private void writeJson(String key, Object value) {
+        try {
+            save(key, OBJECT_MAPPER.writeValueAsString(value));
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to serialize setting " + key, e);
         }
     }
 

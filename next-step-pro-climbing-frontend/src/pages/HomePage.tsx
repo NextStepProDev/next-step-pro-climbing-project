@@ -17,6 +17,7 @@ import { Button } from "../components/ui/Button";
 import { AnimatedCounter } from "../components/ui/AnimatedCounter";
 import { ShareButtons } from "../components/ui/ShareButtons";
 import { CurrentLocationSection } from "../components/ui/CurrentLocationSection";
+import { useLocationContent } from "../hooks/useLocationContent";
 import { siteSettingsApi } from "../api/client";
 import { useTheme } from "../context/ThemeContext";
 import logoWhite from "../assets/logo/logo-white.png";
@@ -57,8 +58,9 @@ function BadgeImg({ src, href, className }: { src: string; href?: string | null;
 }
 
 export function HomePage() {
-  const { t, i18n } = useTranslation("home");
+  const { t } = useTranslation("home");
   const { theme } = useTheme();
+  const { enabled: locationEnabled, badge: locationBadge } = useLocationContent();
   const [heroImgLoaded, setHeroImgLoaded] = useState(false);
 
   const { data: homeSettings, isPending } = useQuery({
@@ -69,14 +71,6 @@ export function HomePage() {
 
   const heroImageUrl = homeSettings?.hero.imageUrl ?? null;
   const badgeImageUrl = homeSettings?.badge.imageUrl ?? null;
-
-  // Plakietka "Obecnie w..." — z panelu admina (per język), fallback do i18n.
-  // Widoczność sterowana tym samym przełącznikiem co cała sekcja "Gdzie teraz szkolę".
-  const locationLang = i18n.language?.slice(0, 2) ?? "pl";
-  const locationEnabled = homeSettings?.location?.enabled !== false;
-  const locationBadge =
-    homeSettings?.location?.translations?.[locationLang]?.badge?.trim() ||
-    t("location.badge");
   const badgeLeftImageUrl = homeSettings?.badgeLeft.imageUrl ?? null;
 
   usePreloadImage(heroImageUrl);

@@ -1,37 +1,14 @@
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { useQuery } from "@tanstack/react-query";
 import { MapPin, ArrowRight } from "lucide-react";
-import { siteSettingsApi } from "../../api/client";
-
-// === DOMYŚLNA LISTA LOKALIZACJI (fallback gdy admin nic nie zapisał) ===
-const DEFAULT_LOCATIONS = ["El Chorro", "Granada", "Motril", "Los Cahorros", "Órgiva"];
-// =======================================================================
+import { useLocationContent } from "../../hooks/useLocationContent";
 
 export function CurrentLocationSection() {
-  const { t, i18n } = useTranslation("home");
-
-  const { data: homeSettings } = useQuery({
-    queryKey: ["homeSettings"],
-    queryFn: siteSettingsApi.getHome,
-    staleTime: 30 * 60 * 1000,
-  });
-
-  const location = homeSettings?.location;
+  const { t } = useTranslation("home");
+  const { enabled, title, subtitle, places } = useLocationContent();
 
   // Sekcja ukryta przez admina
-  if (location && location.enabled === false) return null;
-
-  // Treść dla aktualnego języka (np. "en-US" → "en"); fallback do i18n gdy puste/brak
-  const lang = i18n.language?.slice(0, 2) ?? "pl";
-  const content = location?.translations?.[lang];
-
-  const title = content?.title?.trim() || t("location.title");
-  const subtitle = content?.subtitle?.trim() || t("location.subtitle");
-  const places =
-    content?.locations && content.locations.length > 0
-      ? content.locations
-      : DEFAULT_LOCATIONS;
+  if (!enabled) return null;
 
   return (
     <section className="border-y border-amber-500/20 bg-amber-500/5">

@@ -632,18 +632,22 @@ function LocationSection() {
   const savePresetMutation = useMutation({
     mutationFn: (preset: LocationPresetDto) => adminSiteApi.saveLocationPreset(preset),
     onSuccess: () => {
+      setSaveError(null)
       setNameModal(null)
       setNameInput('')
       queryClient.invalidateQueries({ queryKey: ['admin', 'locationPresets'] })
     },
+    onError: (e: Error) => setSaveError(e.message),
   })
 
   const deletePresetMutation = useMutation({
     mutationFn: (id: string) => adminSiteApi.deleteLocationPreset(id),
     onSuccess: () => {
+      setSaveError(null)
       setPresetToDelete(null)
       queryClient.invalidateQueries({ queryKey: ['admin', 'locationPresets'] })
     },
+    onError: (e: Error) => setSaveError(e.message),
   })
 
   const serverSection: LocationSectionDto | null = section
