@@ -128,6 +128,8 @@ public class OgController {
                 <head>
                   <meta charset="UTF-8">
                   <title>%s</title>
+                  <meta name="description" content="%s">
+                  <link rel="canonical" href="%s">
                   <meta property="og:type" content="%s">
                   <meta property="og:site_name" content="Next Step Pro">
                   <meta property="og:title" content="%s">
@@ -143,7 +145,7 @@ public class OgController {
                 </head>
                 <body></body>
                 </html>
-                """.formatted(title, type, title, description, image, pageUrl,
+                """.formatted(title, description, pageUrl, type, title, description, image, pageUrl,
                               title, description, image, pageUrl);
     }
 
