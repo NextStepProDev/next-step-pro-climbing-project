@@ -786,7 +786,7 @@ public class AdminService {
         boolean isNewsletter = request.recipientType() == RecipientType.NEWSLETTER;
         for (User recipient : recipients) {
             if (isNewsletter) {
-                mailService.sendNewsletterMail(recipient.getEmail(), request.subject(), request.body(), recipient.getPreferredLanguage());
+                mailService.sendNewsletterMail(recipient, request.subject(), request.body());
             } else {
                 mailService.sendCustomAdminMail(recipient.getEmail(), request.subject(), request.body());
             }

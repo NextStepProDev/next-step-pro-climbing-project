@@ -42,6 +42,7 @@ class MailServiceTest {
     @Mock private AppConfig appConfig;
     @Mock private AdminEmailConfig adminEmailConfig;
     @Mock private MessageService msg;
+    @Mock private pl.nextsteppro.climbing.api.user.UserService userService;
 
     private AppConfig.Mail mailConfig;
     private MailService mailService;
@@ -63,7 +64,10 @@ class MailServiceTest {
         lenient().when(mailSender.createMimeMessage())
                 .thenReturn(new MimeMessage((Session) null));
 
-        mailService = new MailService(mailSender, appConfig, adminEmailConfig, msg);
+        lenient().when(userService.generateNewsletterUnsubscribeToken(any()))
+                .thenReturn("test-unsubscribe-token");
+
+        mailService = new MailService(mailSender, appConfig, adminEmailConfig, msg, userService);
     }
 
     // ============================================================
@@ -196,7 +200,9 @@ class MailServiceTest {
                 .thenReturn("Unsubscribe footer text");
 
         // When
-        mailService.sendNewsletterMail("subscriber@example.com", "Newsletter Subject", "<p>Content</p>", "pl");
+        User subscriber = createUser("subscriber@example.com", true);
+        subscriber.setPreferredLanguage("pl");
+        mailService.sendNewsletterMail(subscriber, "Newsletter Subject", "<p>Content</p>");
 
         // Then
         verify(mailSender).send(any(MimeMessage.class));
@@ -209,7 +215,9 @@ class MailServiceTest {
                 .thenReturn("Unsubscribe footer text");
 
         // When
-        mailService.sendNewsletterMail("subscriber@example.com", "Newsletter", "<p>Content</p>", "en");
+        User subscriber = createUser("subscriber@example.com", true);
+        subscriber.setPreferredLanguage("en");
+        mailService.sendNewsletterMail(subscriber, "Newsletter", "<p>Content</p>");
 
         // Then
         verify(mailSender).send(any(MimeMessage.class));

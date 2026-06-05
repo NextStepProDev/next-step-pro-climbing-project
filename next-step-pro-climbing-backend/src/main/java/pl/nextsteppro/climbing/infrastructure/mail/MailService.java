@@ -15,6 +15,7 @@ import pl.nextsteppro.climbing.domain.event.Event;
 import pl.nextsteppro.climbing.domain.reservation.Reservation;
 import pl.nextsteppro.climbing.domain.timeslot.TimeSlot;
 import pl.nextsteppro.climbing.domain.user.User;
+import pl.nextsteppro.climbing.api.user.UserService;
 import pl.nextsteppro.climbing.infrastructure.i18n.MessageService;
 import jakarta.annotation.PostConstruct;
 import java.time.format.DateTimeFormatter;
@@ -34,13 +35,15 @@ public class MailService {
     private final AppConfig appConfig;
     private final AdminEmailConfig adminEmailConfig;
     private final MessageService msg;
+    private final UserService userService;
     private final String siteUrl;
 
-    public MailService(JavaMailSender mailSender, AppConfig appConfig, AdminEmailConfig adminEmailConfig, MessageService msg) {
+    public MailService(JavaMailSender mailSender, AppConfig appConfig, AdminEmailConfig adminEmailConfig, MessageService msg, UserService userService) {
         this.mailSender = mailSender;
         this.appConfig = appConfig;
         this.adminEmailConfig = adminEmailConfig;
         this.msg = msg;
+        this.userService = userService;
         this.siteUrl = appConfig.getSiteUrl();
     }
 
@@ -194,11 +197,14 @@ public class MailService {
     }
 
     @Async("mailExecutor")
-    public void sendNewsletterMail(String to, String subject, String body, String lang) {
+    public void sendNewsletterMail(User recipient, String subject, String body) {
+        String lang = recipient.getPreferredLanguage();
+        String unsubscribeToken = userService.generateNewsletterUnsubscribeToken(recipient);
+        String unsubscribeUrl = siteUrl + "/api/user/unsubscribe?token=" + unsubscribeToken;
         String settingsUrl = siteUrl + "/settings";
-        String footerText = msg.getForLang("email.newsletter.footer", lang, settingsUrl);
+        String footerText = msg.getForLang("email.newsletter.footer", lang, unsubscribeUrl, settingsUrl);
         String htmlBody = buildCustomAdminMailBody(subject, body, footerText);
-        sendEmail(to, subject, htmlBody, null);
+        sendEmail(recipient.getEmail(), subject, htmlBody, null);
     }
 
     @Async("mailExecutor")
