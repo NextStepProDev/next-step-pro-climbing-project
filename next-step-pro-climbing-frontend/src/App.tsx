@@ -1,4 +1,5 @@
-import { lazy, Suspense } from 'react'
+import { Suspense } from 'react'
+import { lazyWithReload } from './utils/lazyWithReload'
 import { Routes, Route } from 'react-router-dom'
 import { Layout } from './components/layout/Layout'
 import { HomePage } from './pages/HomePage'
@@ -8,29 +9,29 @@ import { ErrorBoundary } from './components/ui/ErrorBoundary'
 import { ScrollToTop } from './components/ScrollToTop'
 import { LoadingSpinner } from './components/ui/LoadingSpinner'
 
-const CalendarPage = lazy(() => import('./pages/CalendarPage').then(m => ({ default: m.CalendarPage })))
-const LoginPage = lazy(() => import('./pages/LoginPage').then(m => ({ default: m.LoginPage })))
-const MyReservationsPage = lazy(() => import('./pages/MyReservationsPage').then(m => ({ default: m.MyReservationsPage })))
-const EventPage = lazy(() => import('./pages/EventPage').then(m => ({ default: m.EventPage })))
-const TeamPage = lazy(() => import('./pages/TeamPage').then(m => ({ default: m.TeamPage })))
-const GalleryPage = lazy(() => import('./pages/GalleryPage').then(m => ({ default: m.GalleryPage })))
-const AlbumPage = lazy(() => import('./pages/AlbumPage').then(m => ({ default: m.AlbumPage })))
-const VideosPage = lazy(() => import('./pages/VideosPage').then(m => ({ default: m.VideosPage })))
-const NewsPage = lazy(() => import('./pages/NewsPage').then(m => ({ default: m.NewsPage })))
-const NewsDetailPage = lazy(() => import('./pages/NewsDetailPage').then(m => ({ default: m.NewsDetailPage })))
-const CoursesPage = lazy(() => import('./pages/CoursesPage').then(m => ({ default: m.CoursesPage })))
-const CourseDetailPage = lazy(() => import('./pages/CourseDetailPage').then(m => ({ default: m.CourseDetailPage })))
-const RegisterPage = lazy(() => import('./pages/RegisterPage').then(m => ({ default: m.RegisterPage })))
-const VerifyEmailPage = lazy(() => import('./pages/VerifyEmailPage').then(m => ({ default: m.VerifyEmailPage })))
-const ForgotPasswordPage = lazy(() => import('./pages/ForgotPasswordPage').then(m => ({ default: m.ForgotPasswordPage })))
-const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage').then(m => ({ default: m.ResetPasswordPage })))
-const ResendVerificationPage = lazy(() => import('./pages/ResendVerificationPage').then(m => ({ default: m.ResendVerificationPage })))
-const OAuthCallbackPage = lazy(() => import('./pages/OAuthCallbackPage').then(m => ({ default: m.OAuthCallbackPage })))
-const ContactPage = lazy(() => import('./pages/ContactPage').then(m => ({ default: m.ContactPage })))
-const FAQPage = lazy(() => import('./pages/FAQPage').then(m => ({ default: m.FAQPage })))
-const PrivacyPolicyPage = lazy(() => import('./pages/PrivacyPolicyPage').then(m => ({ default: m.PrivacyPolicyPage })))
-const SettingsPage = lazy(() => import('./pages/SettingsPage').then(m => ({ default: m.SettingsPage })))
-const AdminPage = lazy(() => import('./pages/AdminPage').then(m => ({ default: m.AdminPage })))
+const CalendarPage = lazyWithReload(() => import('./pages/CalendarPage').then(m => ({ default: m.CalendarPage })))
+const LoginPage = lazyWithReload(() => import('./pages/LoginPage').then(m => ({ default: m.LoginPage })))
+const MyReservationsPage = lazyWithReload(() => import('./pages/MyReservationsPage').then(m => ({ default: m.MyReservationsPage })))
+const EventPage = lazyWithReload(() => import('./pages/EventPage').then(m => ({ default: m.EventPage })))
+const TeamPage = lazyWithReload(() => import('./pages/TeamPage').then(m => ({ default: m.TeamPage })))
+const GalleryPage = lazyWithReload(() => import('./pages/GalleryPage').then(m => ({ default: m.GalleryPage })))
+const AlbumPage = lazyWithReload(() => import('./pages/AlbumPage').then(m => ({ default: m.AlbumPage })))
+const VideosPage = lazyWithReload(() => import('./pages/VideosPage').then(m => ({ default: m.VideosPage })))
+const NewsPage = lazyWithReload(() => import('./pages/NewsPage').then(m => ({ default: m.NewsPage })))
+const NewsDetailPage = lazyWithReload(() => import('./pages/NewsDetailPage').then(m => ({ default: m.NewsDetailPage })))
+const CoursesPage = lazyWithReload(() => import('./pages/CoursesPage').then(m => ({ default: m.CoursesPage })))
+const CourseDetailPage = lazyWithReload(() => import('./pages/CourseDetailPage').then(m => ({ default: m.CourseDetailPage })))
+const RegisterPage = lazyWithReload(() => import('./pages/RegisterPage').then(m => ({ default: m.RegisterPage })))
+const VerifyEmailPage = lazyWithReload(() => import('./pages/VerifyEmailPage').then(m => ({ default: m.VerifyEmailPage })))
+const ForgotPasswordPage = lazyWithReload(() => import('./pages/ForgotPasswordPage').then(m => ({ default: m.ForgotPasswordPage })))
+const ResetPasswordPage = lazyWithReload(() => import('./pages/ResetPasswordPage').then(m => ({ default: m.ResetPasswordPage })))
+const ResendVerificationPage = lazyWithReload(() => import('./pages/ResendVerificationPage').then(m => ({ default: m.ResendVerificationPage })))
+const OAuthCallbackPage = lazyWithReload(() => import('./pages/OAuthCallbackPage').then(m => ({ default: m.OAuthCallbackPage })))
+const ContactPage = lazyWithReload(() => import('./pages/ContactPage').then(m => ({ default: m.ContactPage })))
+const FAQPage = lazyWithReload(() => import('./pages/FAQPage').then(m => ({ default: m.FAQPage })))
+const PrivacyPolicyPage = lazyWithReload(() => import('./pages/PrivacyPolicyPage').then(m => ({ default: m.PrivacyPolicyPage })))
+const SettingsPage = lazyWithReload(() => import('./pages/SettingsPage').then(m => ({ default: m.SettingsPage })))
+const AdminPage = lazyWithReload(() => import('./pages/AdminPage').then(m => ({ default: m.AdminPage })))
 
 const LazyFallback = () => (
   <div className="flex justify-center py-12">
