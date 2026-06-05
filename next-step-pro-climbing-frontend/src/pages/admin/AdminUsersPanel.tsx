@@ -12,9 +12,12 @@ import { getErrorMessage } from '../../utils/errors'
 
 const PAGE_SIZE = 20
 
+type NewsletterFilter = 'all' | 'subscribed' | 'unsubscribed'
+
 export function AdminUsersPanel() {
   const { t } = useTranslation('admin')
   const [search, setSearch] = useState('')
+  const [newsletterFilter, setNewsletterFilter] = useState<NewsletterFilter>('all')
   const [page, setPage] = useState(1)
   const [confirmAction, setConfirmAction] = useState<{
     type: 'makeAdmin' | 'removeAdmin' | 'delete'
@@ -49,17 +52,25 @@ export function AdminUsersPanel() {
 
   const filtered = useMemo(() => {
     if (!users) return []
-    if (!search.trim()) return users
+
+    const byNewsletter =
+      newsletterFilter === 'all'
+        ? users
+        : users.filter((u) =>
+            newsletterFilter === 'subscribed' ? u.newsletterSubscribed : !u.newsletterSubscribed,
+          )
+
+    if (!search.trim()) return byNewsletter
 
     const q = search.toLowerCase().trim()
-    return users.filter(
+    return byNewsletter.filter(
       (u) =>
         u.firstName.toLowerCase().includes(q) ||
         u.lastName.toLowerCase().includes(q) ||
         u.email.toLowerCase().includes(q) ||
         `${u.firstName} ${u.lastName}`.toLowerCase().includes(q),
     )
-  }, [users, search])
+  }, [users, search, newsletterFilter])
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
   const safePage = Math.min(page, totalPages)
@@ -70,6 +81,17 @@ export function AdminUsersPanel() {
     setPage(1)
   }
 
+  const handleFilterChange = (value: NewsletterFilter) => {
+    setNewsletterFilter(value)
+    setPage(1)
+  }
+
+  const filterOptions: { value: NewsletterFilter; label: string }[] = [
+    { value: 'all', label: t('users.newsletterFilterAll') },
+    { value: 'subscribed', label: t('users.newsletterFilterSubscribed') },
+    { value: 'unsubscribed', label: t('users.newsletterFilterUnsubscribed') },
+  ]
+
   return (
     <div>
       {actionError && (
@@ -77,6 +99,23 @@ export function AdminUsersPanel() {
           {actionError}
         </div>
       )}
+
+      {/* Newsletter filter */}
+      <div className="flex gap-1.5 mb-3 p-1 bg-surface-800 border border-surface-700 rounded-lg w-fit">
+        {filterOptions.map((opt) => (
+          <button
+            key={opt.value}
+            onClick={() => handleFilterChange(opt.value)}
+            className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
+              newsletterFilter === opt.value
+                ? 'bg-primary-500/20 text-primary-300'
+                : 'text-surface-400 hover:text-surface-200 hover:bg-surface-700/50'
+            }`}
+          >
+            {opt.label}
+          </button>
+        ))}
+      </div>
 
       {/* Search */}
       <div className="relative mb-4">
@@ -127,7 +166,7 @@ export function AdminUsersPanel() {
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1.5">
                         <span className="text-surface-300">{user.email}</span>
-                        <span title={user.newsletterSubscribed ? 'Subskrybent newslettera' : 'Bez newslettera'}>
+                        <span title={user.newsletterSubscribed ? t('users.newsletterYes') : t('users.newsletterNo')}>
                           <Mail className={`w-3 h-3 shrink-0 ${user.newsletterSubscribed ? 'text-green-400/60' : 'text-surface-600/50'}`} />
                         </span>
                       </div>
@@ -190,7 +229,7 @@ export function AdminUsersPanel() {
 
             {paged.length === 0 && (
               <div className="p-8 text-center text-surface-400">
-                {search.trim()
+                {search.trim() || newsletterFilter !== 'all'
                   ? t('users.noSearchResults')
                   : t('users.noUsers')}
               </div>
