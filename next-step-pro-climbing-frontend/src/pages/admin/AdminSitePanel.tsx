@@ -1,14 +1,15 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Upload, Trash2, Library, ImageIcon, Save, X, Shield } from 'lucide-react'
+import { Upload, Trash2, Library, ImageIcon, Save, X, Shield, MapPin, Plus, ArrowUp, ArrowDown } from 'lucide-react'
 import { adminSiteApi } from '../../api/client'
 import { Button } from '../../components/ui/Button'
 import { ConfirmModal } from '../../components/ui/ConfirmModal'
+import { Modal } from '../../components/ui/Modal'
 import { MediaPickerModal } from '../../components/ui/MediaPickerModal'
 import { GalleryPickerModal } from '../../components/ui/GalleryPickerModal'
 import { FocalPointEditor } from '../../components/ui/FocalPointEditor'
-import type { AssetDto } from '../../types'
+import type { AssetDto, LocationSectionDto, LocationContentDto, LocationPresetDto } from '../../types'
 
 interface FocalPoint { x: number; y: number }
 
@@ -265,6 +266,9 @@ export function AdminSitePanel() {
       {/* Badge section */}
       <BadgeSection />
       <BadgeLeftSection />
+
+      {/* "Gdzie teraz szkolę" section */}
+      <LocationSection />
 
       {/* Modals */}
       <MediaPickerModal
@@ -579,4 +583,345 @@ function BadgeLeftSection() {
       />
     </>
   )
+}
+
+const LOCATION_LANGS = [
+  { code: 'pl', label: 'PL' },
+  { code: 'en', label: 'EN' },
+  { code: 'es', label: 'ES' },
+] as const
+
+const EMPTY_CONTENT: LocationContentDto = { badge: '', title: '', subtitle: '', locations: [] }
+
+function LocationSection() {
+  const { t } = useTranslation('admin')
+  const queryClient = useQueryClient()
+
+  // null = brak edycji (pokazujemy wartość z serwera); non-null = użytkownik edytuje
+  const [edited, setEdited] = useState<LocationSectionDto | null>(null)
+  const [activeLang, setActiveLang] = useState<string>('pl')
+  const [saveError, setSaveError] = useState<string | null>(null)
+
+  // Modal nazwy presetu: tryb create (nowy) lub rename (zmiana nazwy istniejącego)
+  const [nameModal, setNameModal] = useState<{ mode: 'create' | 'rename'; presetId?: string } | null>(null)
+  const [nameInput, setNameInput] = useState('')
+  const [presetToApply, setPresetToApply] = useState<LocationPresetDto | null>(null)
+  const [presetToDelete, setPresetToDelete] = useState<LocationPresetDto | null>(null)
+
+  const { data: section, isLoading } = useQuery({
+    queryKey: ['admin', 'homeLocation'],
+    queryFn: adminSiteApi.getLocationSection,
+  })
+
+  const { data: presets } = useQuery({
+    queryKey: ['admin', 'locationPresets'],
+    queryFn: adminSiteApi.getLocationPresets,
+  })
+
+  const saveSectionMutation = useMutation({
+    mutationFn: (s: LocationSectionDto) => adminSiteApi.saveLocationSection(s),
+    onSuccess: (result) => {
+      setSaveError(null)
+      setEdited(null)
+      queryClient.setQueryData(['admin', 'homeLocation'], result)
+      queryClient.invalidateQueries({ queryKey: ['homeSettings'] })
+    },
+    onError: (e: Error) => setSaveError(e.message),
+  })
+
+  const savePresetMutation = useMutation({
+    mutationFn: (preset: LocationPresetDto) => adminSiteApi.saveLocationPreset(preset),
+    onSuccess: () => {
+      setNameModal(null)
+      setNameInput('')
+      queryClient.invalidateQueries({ queryKey: ['admin', 'locationPresets'] })
+    },
+  })
+
+  const deletePresetMutation = useMutation({
+    mutationFn: (id: string) => adminSiteApi.deleteLocationPreset(id),
+    onSuccess: () => {
+      setPresetToDelete(null)
+      queryClient.invalidateQueries({ queryKey: ['admin', 'locationPresets'] })
+    },
+  })
+
+  const serverSection: LocationSectionDto | null = section
+    ? { enabled: section.enabled, translations: section.translations }
+    : null
+
+  if (isLoading || serverSection === null) {
+    return (
+      <section className="bg-surface-800 border border-surface-700 rounded-lg p-6">
+        <span className="text-surface-500 text-sm">{t('site.loading')}</span>
+      </section>
+    )
+  }
+
+  // Wyświetlana treść: edytowana (jeśli trwa edycja) lub wartość z serwera
+  const draft = edited ?? serverSection
+  const content = draft.translations[activeLang] ?? EMPTY_CONTENT
+  const isDirty = edited !== null && JSON.stringify(edited) !== JSON.stringify(serverSection)
+  const isBusy = saveSectionMutation.isPending
+
+  const updateContent = (partial: Partial<LocationContentDto>) => {
+    setEdited({
+      ...draft,
+      translations: { ...draft.translations, [activeLang]: { ...EMPTY_CONTENT, ...draft.translations[activeLang], ...partial } },
+    })
+  }
+
+  const updateLocation = (idx: number, value: string) => {
+    const next = [...content.locations]
+    next[idx] = value
+    updateContent({ locations: next })
+  }
+  const addLocation = () => updateContent({ locations: [...content.locations, ''] })
+  const removeLocation = (idx: number) =>
+    updateContent({ locations: content.locations.filter((_, i) => i !== idx) })
+  const moveLocation = (idx: number, dir: -1 | 1) => {
+    const target = idx + dir
+    if (target < 0 || target >= content.locations.length) return
+    const next = [...content.locations]
+    ;[next[idx], next[target]] = [next[target], next[idx]]
+    updateContent({ locations: next })
+  }
+
+  const openCreatePreset = () => { setNameModal({ mode: 'create' }); setNameInput('') }
+  const openRenamePreset = (preset: LocationPresetDto) => {
+    setNameModal({ mode: 'rename', presetId: preset.id ?? undefined })
+    setNameInput(preset.name)
+  }
+
+  const submitName = () => {
+    const name = nameInput.trim()
+    if (!name) return
+    if (nameModal?.mode === 'create') {
+      // Czyścimy listy z pustych wpisów przed zapisem
+      savePresetMutation.mutate({ id: null, name, translations: cleanTranslations(draft.translations) })
+    } else if (nameModal?.mode === 'rename' && nameModal.presetId) {
+      const preset = presets?.find(p => p.id === nameModal.presetId)
+      if (preset) savePresetMutation.mutate({ ...preset, name })
+    }
+  }
+
+  const applyPreset = (preset: LocationPresetDto) => {
+    saveSectionMutation.mutate({ enabled: draft.enabled, translations: { ...preset.translations } })
+    setPresetToApply(null)
+  }
+
+  return (
+    <section className="bg-surface-800 border border-surface-700 rounded-lg p-6 space-y-5">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <MapPin className="w-5 h-5 text-amber-400" />
+          <h3 className="text-base font-semibold text-surface-100">{t('site.location.title')}</h3>
+        </div>
+        {isDirty && (
+          <span className="text-xs px-2 py-1 bg-amber-500/10 text-amber-400 border border-amber-500/30 rounded-full">
+            {t('site.unsavedChanges')}
+          </span>
+        )}
+      </div>
+      <p className="text-surface-400 text-sm">{t('site.location.description')}</p>
+
+      {/* Toggle widoczności */}
+      <label className="flex items-center gap-3 cursor-pointer select-none">
+        <input
+          type="checkbox"
+          checked={draft.enabled}
+          onChange={e => setEdited({ ...draft, enabled: e.target.checked })}
+          className="w-4 h-4 rounded border-surface-600 bg-surface-900 text-primary-500 focus:ring-primary-500"
+        />
+        <span className="text-sm text-surface-200">{t('site.location.enabledLabel')}</span>
+      </label>
+
+      {/* Zakładki języka */}
+      <div className="flex gap-1.5">
+        {LOCATION_LANGS.map(l => (
+          <button
+            key={l.code}
+            type="button"
+            onClick={() => setActiveLang(l.code)}
+            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+              activeLang === l.code
+                ? 'bg-primary-500 text-white'
+                : 'bg-surface-900 text-surface-300 hover:bg-surface-700'
+            }`}
+          >
+            {l.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Pola tekstowe */}
+      <div className="space-y-3">
+        <Field label={t('site.location.badgeLabel')}>
+          <input
+            type="text"
+            value={content.badge}
+            onChange={e => updateContent({ badge: e.target.value })}
+            className={inputClass}
+          />
+        </Field>
+        <Field label={t('site.location.titleLabel')}>
+          <input
+            type="text"
+            value={content.title}
+            onChange={e => updateContent({ title: e.target.value })}
+            className={inputClass}
+          />
+        </Field>
+        <Field label={t('site.location.subtitleLabel')}>
+          <textarea
+            value={content.subtitle}
+            onChange={e => updateContent({ subtitle: e.target.value })}
+            rows={2}
+            className={inputClass}
+          />
+        </Field>
+      </div>
+
+      {/* Lista miejsc */}
+      <div className="space-y-2">
+        <span className="block text-sm font-medium text-surface-300">{t('site.location.locationsLabel')}</span>
+        {content.locations.map((place, idx) => (
+          <div key={idx} className="flex items-center gap-2">
+            <input
+              type="text"
+              value={place}
+              onChange={e => updateLocation(idx, e.target.value)}
+              placeholder={t('site.location.locationPlaceholder')}
+              className={`${inputClass} flex-1`}
+            />
+            <button type="button" onClick={() => moveLocation(idx, -1)} disabled={idx === 0}
+              className="p-2 text-surface-400 hover:text-surface-100 disabled:opacity-30" aria-label={t('site.location.moveUp')}>
+              <ArrowUp className="w-4 h-4" />
+            </button>
+            <button type="button" onClick={() => moveLocation(idx, 1)} disabled={idx === content.locations.length - 1}
+              className="p-2 text-surface-400 hover:text-surface-100 disabled:opacity-30" aria-label={t('site.location.moveDown')}>
+              <ArrowDown className="w-4 h-4" />
+            </button>
+            <button type="button" onClick={() => removeLocation(idx)}
+              className="p-2 text-red-400 hover:text-red-300" aria-label={t('site.location.remove')}>
+              <Trash2 className="w-4 h-4" />
+            </button>
+          </div>
+        ))}
+        <Button variant="secondary" onClick={addLocation}>
+          <Plus className="w-4 h-4 mr-2" />
+          {t('site.location.addLocation')}
+        </Button>
+      </div>
+
+      {saveError && <p className="text-red-400 text-sm">{saveError}</p>}
+
+      {/* Akcje zapisu */}
+      <div className="flex flex-wrap gap-3 pt-2 border-t border-surface-700">
+        <Button onClick={() => saveSectionMutation.mutate(draft)} disabled={isBusy || !isDirty}>
+          <Save className="w-4 h-4 mr-2" />
+          {saveSectionMutation.isPending ? t('site.saving') : t('site.location.saveActive')}
+        </Button>
+        <Button variant="secondary" onClick={openCreatePreset} disabled={isBusy}>
+          <Library className="w-4 h-4 mr-2" />
+          {t('site.location.saveAsPreset')}
+        </Button>
+      </div>
+
+      {/* Presety */}
+      <div className="space-y-2 pt-2">
+        <h4 className="text-sm font-semibold text-surface-200">{t('site.location.presetsTitle')}</h4>
+        <p className="text-xs text-surface-500">{t('site.location.presetsHint')}</p>
+        {presets && presets.length > 0 ? (
+          <ul className="space-y-2">
+            {presets.map(preset => (
+              <li key={preset.id ?? preset.name}
+                className="flex items-center justify-between gap-2 bg-surface-900 border border-surface-700 rounded-lg px-3 py-2">
+                <span className="text-sm text-surface-100 truncate">{preset.name}</span>
+                <div className="flex gap-2 shrink-0">
+                  <Button variant="secondary" onClick={() => setPresetToApply(preset)}>
+                    {t('site.location.apply')}
+                  </Button>
+                  <Button variant="secondary" onClick={() => openRenamePreset(preset)}>
+                    {t('site.location.rename')}
+                  </Button>
+                  <Button variant="danger" onClick={() => setPresetToDelete(preset)}>
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-sm text-surface-500">{t('site.location.noPresets')}</p>
+        )}
+      </div>
+
+      {/* Modal nazwy presetu */}
+      <Modal
+        isOpen={nameModal !== null}
+        onClose={() => setNameModal(null)}
+        title={nameModal?.mode === 'rename' ? t('site.location.rename') : t('site.location.saveAsPreset')}
+      >
+        <div className="space-y-4">
+          <input
+            type="text"
+            autoFocus
+            value={nameInput}
+            onChange={e => setNameInput(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') submitName() }}
+            placeholder={t('site.location.presetNamePlaceholder')}
+            className={inputClass}
+          />
+          <div className="flex justify-end gap-2">
+            <Button variant="secondary" onClick={() => setNameModal(null)}>{t('site.cancel')}</Button>
+            <Button onClick={submitName} disabled={!nameInput.trim() || savePresetMutation.isPending}>
+              {t('site.save')}
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      <ConfirmModal
+        isOpen={presetToApply !== null}
+        title={t('site.location.applyConfirmTitle')}
+        message={t('site.location.applyConfirmMessage')}
+        confirmText={t('site.location.apply')}
+        onConfirm={() => presetToApply && applyPreset(presetToApply)}
+        onClose={() => setPresetToApply(null)}
+      />
+
+      <ConfirmModal
+        isOpen={presetToDelete !== null}
+        title={t('site.location.deletePresetConfirmTitle')}
+        message={t('site.location.deletePresetConfirmMessage')}
+        confirmText={t('site.location.remove')}
+        onConfirm={() => presetToDelete?.id && deletePresetMutation.mutate(presetToDelete.id)}
+        onClose={() => setPresetToDelete(null)}
+      />
+    </section>
+  )
+}
+
+const inputClass =
+  'w-full rounded-lg bg-surface-900 border border-surface-700 px-3 py-2 text-sm text-surface-100 placeholder-surface-500 focus:border-primary-500 focus:outline-none'
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <label className="block space-y-1">
+      <span className="block text-sm font-medium text-surface-300">{label}</span>
+      {children}
+    </label>
+  )
+}
+
+/** Usuwa puste nazwy miejsc z każdego języka przed zapisem presetu. */
+function cleanTranslations(
+  translations: Record<string, LocationContentDto>,
+): Record<string, LocationContentDto> {
+  const out: Record<string, LocationContentDto> = {}
+  for (const [lang, c] of Object.entries(translations)) {
+    out[lang] = { ...c, locations: c.locations.filter(l => l.trim() !== '') }
+  }
+  return out
 }

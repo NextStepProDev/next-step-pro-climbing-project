@@ -13,13 +13,18 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import pl.nextsteppro.climbing.api.settings.SiteSettingsDtos.BadgeImageDto;
 import pl.nextsteppro.climbing.api.settings.SiteSettingsDtos.HeroImageDto;
+import pl.nextsteppro.climbing.api.settings.SiteSettingsDtos.LocationPresetDto;
+import pl.nextsteppro.climbing.api.settings.SiteSettingsDtos.LocationSectionDto;
 import pl.nextsteppro.climbing.api.settings.SiteSettingsDtos.SlotTemplateDto;
 import pl.nextsteppro.climbing.domain.settings.SiteSetting;
 import pl.nextsteppro.climbing.domain.settings.SiteSettingsRepository;
 import pl.nextsteppro.climbing.infrastructure.storage.FileStorageService;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 @Service
 @Transactional
@@ -36,6 +41,8 @@ public class AdminSiteSettingsService {
     private static final String KEY_BADGE_LEFT_IMAGE_URL = "badge_left_image_url";
     private static final String KEY_BADGE_LEFT_LINK_URL = "badge_left_link_url";
     private static final String KEY_SLOT_TEMPLATES = "slot_templates";
+    private static final String KEY_LOCATION_ACTIVE = "home_location_active";
+    private static final String KEY_LOCATION_PRESETS = "home_location_presets";
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     private final SiteSettingsRepository siteSettingsRepository;
@@ -186,6 +193,92 @@ public class AdminSiteSettingsService {
             throw new RuntimeException("Failed to serialize slot templates", e);
         }
         return templates;
+    }
+
+    // === Sekcja "Gdzie teraz szkolę" (aktywna treść) ===
+
+    @Cacheable(value = "siteSettings", key = "'homeLocation'")
+    @Transactional(readOnly = true)
+    public LocationSectionDto getLocationSection() {
+        String json = siteSettingsRepository.findById(KEY_LOCATION_ACTIVE)
+                .map(SiteSetting::getValue)
+                .orElse(null);
+        if (json == null) {
+            // Brak konfiguracji: sekcja widoczna, pusta mapa = front zrobi fallback do i18n.
+            return new LocationSectionDto(true, Map.of());
+        }
+        try {
+            return OBJECT_MAPPER.readValue(json, LocationSectionDto.class);
+        } catch (Exception e) {
+            logger.warn("Failed to parse home location section: {}", e.getMessage());
+            return new LocationSectionDto(true, Map.of());
+        }
+    }
+
+    @CacheEvict(value = "siteSettings", allEntries = true)
+    public LocationSectionDto saveLocationSection(LocationSectionDto section) {
+        try {
+            save(KEY_LOCATION_ACTIVE, OBJECT_MAPPER.writeValueAsString(section));
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to serialize home location section", e);
+        }
+        return section;
+    }
+
+    // === Presety sekcji (lista zapisanych wariantów, CRUD) ===
+
+    @Transactional(readOnly = true)
+    public List<LocationPresetDto> getLocationPresets() {
+        String json = siteSettingsRepository.findById(KEY_LOCATION_PRESETS)
+                .map(SiteSetting::getValue)
+                .orElse(null);
+        if (json == null) return List.of();
+        try {
+            return OBJECT_MAPPER.readValue(json, new TypeReference<List<LocationPresetDto>>() {});
+        } catch (Exception e) {
+            logger.warn("Failed to parse home location presets: {}", e.getMessage());
+            return List.of();
+        }
+    }
+
+    public LocationPresetDto saveLocationPreset(LocationPresetDto preset) {
+        List<LocationPresetDto> presets = new ArrayList<>(getLocationPresets());
+        LocationPresetDto stored;
+        if (preset.id() == null || preset.id().isBlank()) {
+            stored = new LocationPresetDto(UUID.randomUUID().toString(), preset.name(), preset.translations());
+            presets.add(stored);
+        } else {
+            stored = preset;
+            int idx = indexOfPreset(presets, preset.id());
+            if (idx >= 0) {
+                presets.set(idx, stored);
+            } else {
+                presets.add(stored);
+            }
+        }
+        persistPresets(presets);
+        return stored;
+    }
+
+    public void deleteLocationPreset(String id) {
+        List<LocationPresetDto> presets = new ArrayList<>(getLocationPresets());
+        presets.removeIf(p -> id.equals(p.id()));
+        persistPresets(presets);
+    }
+
+    private void persistPresets(List<LocationPresetDto> presets) {
+        try {
+            save(KEY_LOCATION_PRESETS, OBJECT_MAPPER.writeValueAsString(presets));
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to serialize home location presets", e);
+        }
+    }
+
+    private static int indexOfPreset(List<LocationPresetDto> presets, String id) {
+        for (int i = 0; i < presets.size(); i++) {
+            if (id.equals(presets.get(i).id())) return i;
+        }
+        return -1;
     }
 
     private void saveFocalPoint(@Nullable Float x, @Nullable Float y) {

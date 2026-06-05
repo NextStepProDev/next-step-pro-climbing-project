@@ -30,7 +30,8 @@ public class SiteSettingsController {
         return ResponseEntity.ok(new HomeSettingsDto(
                 adminSiteSettingsService.getHeroImage(),
                 adminSiteSettingsService.getBadgeImage(),
-                adminSiteSettingsService.getBadgeLeftImage()
+                adminSiteSettingsService.getBadgeLeftImage(),
+                adminSiteSettingsService.getLocationSection()
         ));
     }
 

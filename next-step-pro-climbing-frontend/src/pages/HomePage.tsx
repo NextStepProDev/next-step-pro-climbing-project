@@ -57,7 +57,7 @@ function BadgeImg({ src, href, className }: { src: string; href?: string | null;
 }
 
 export function HomePage() {
-  const { t } = useTranslation("home");
+  const { t, i18n } = useTranslation("home");
   const { theme } = useTheme();
   const [heroImgLoaded, setHeroImgLoaded] = useState(false);
 
@@ -69,6 +69,14 @@ export function HomePage() {
 
   const heroImageUrl = homeSettings?.hero.imageUrl ?? null;
   const badgeImageUrl = homeSettings?.badge.imageUrl ?? null;
+
+  // Plakietka "Obecnie w..." — z panelu admina (per język), fallback do i18n.
+  // Widoczność sterowana tym samym przełącznikiem co cała sekcja "Gdzie teraz szkolę".
+  const locationLang = i18n.language?.slice(0, 2) ?? "pl";
+  const locationEnabled = homeSettings?.location?.enabled !== false;
+  const locationBadge =
+    homeSettings?.location?.translations?.[locationLang]?.badge?.trim() ||
+    t("location.badge");
   const badgeLeftImageUrl = homeSettings?.badgeLeft.imageUrl ?? null;
 
   usePreloadImage(heroImageUrl);
@@ -163,11 +171,13 @@ export function HomePage() {
         )}
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-32">
           <div className="text-center max-w-3xl mx-auto">
-            {/* === ANDALUSIA BADGE — zakomentuj ten blok aby usunąć === */}
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-amber-500/10 border border-amber-500/30 rounded-full text-amber-400 text-sm font-medium mb-6">
-              <span>📍</span>
-              <span>{t("location.badge")}</span>
-            </div>
+            {/* === ANDALUSIA BADGE — widoczność: przełącznik sekcji lokalizacji w panelu admina === */}
+            {locationEnabled && (
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-amber-500/10 border border-amber-500/30 rounded-full text-amber-400 text-sm font-medium mb-6">
+                <span>📍</span>
+                <span>{locationBadge}</span>
+              </div>
+            )}
             {/* === END BADGE === */}
             <img
               src={theme === 'dark' ? logoWhite : logoBlack}

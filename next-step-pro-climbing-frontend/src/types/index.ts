@@ -795,9 +795,29 @@ export interface HomeSettingsDto {
   hero: HeroImageDto
   badge: BadgeImageDto
   badgeLeft: BadgeImageDto
+  location: LocationSectionDto
 }
 
 export interface SlotTemplate {
   name: string
   maxParticipants: number
+}
+
+// "Gdzie teraz szkolę" — editable location section
+export interface LocationContentDto {
+  badge: string
+  title: string
+  subtitle: string
+  locations: string[]
+}
+
+export interface LocationSectionDto {
+  enabled: boolean
+  translations: Record<string, LocationContentDto>
+}
+
+export interface LocationPresetDto {
+  id: string | null
+  name: string
+  translations: Record<string, LocationContentDto>
 }

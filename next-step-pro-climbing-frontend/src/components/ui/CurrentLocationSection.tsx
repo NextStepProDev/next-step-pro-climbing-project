@@ -1,13 +1,37 @@
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { useQuery } from "@tanstack/react-query";
 import { MapPin, ArrowRight } from "lucide-react";
+import { siteSettingsApi } from "../../api/client";
 
-// === ZMIANA LOKALIZACJI: edytuj tylko tę tablicę ===
-const LOCATIONS = ["El Chorro", "Granada", "Motril", "Los Cahorros", "Órgiva"];
-// ===================================================
+// === DOMYŚLNA LISTA LOKALIZACJI (fallback gdy admin nic nie zapisał) ===
+const DEFAULT_LOCATIONS = ["El Chorro", "Granada", "Motril", "Los Cahorros", "Órgiva"];
+// =======================================================================
 
 export function CurrentLocationSection() {
-  const { t } = useTranslation("home");
+  const { t, i18n } = useTranslation("home");
+
+  const { data: homeSettings } = useQuery({
+    queryKey: ["homeSettings"],
+    queryFn: siteSettingsApi.getHome,
+    staleTime: 30 * 60 * 1000,
+  });
+
+  const location = homeSettings?.location;
+
+  // Sekcja ukryta przez admina
+  if (location && location.enabled === false) return null;
+
+  // Treść dla aktualnego języka (np. "en-US" → "en"); fallback do i18n gdy puste/brak
+  const lang = i18n.language?.slice(0, 2) ?? "pl";
+  const content = location?.translations?.[lang];
+
+  const title = content?.title?.trim() || t("location.title");
+  const subtitle = content?.subtitle?.trim() || t("location.subtitle");
+  const places =
+    content?.locations && content.locations.length > 0
+      ? content.locations
+      : DEFAULT_LOCATIONS;
 
   return (
     <section className="border-y border-amber-500/20 bg-amber-500/5">
@@ -17,15 +41,11 @@ export function CurrentLocationSection() {
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-3">
               <MapPin className="w-5 h-5 text-amber-400 shrink-0" />
-              <h2 className="text-xl font-bold text-amber-300">
-                {t("location.title")}
-              </h2>
+              <h2 className="text-xl font-bold text-amber-300">{title}</h2>
             </div>
-            <p className="text-surface-300 text-sm mb-4">
-              {t("location.subtitle")}
-            </p>
+            <p className="text-surface-300 text-sm mb-4">{subtitle}</p>
             <ul className="space-y-1.5">
-              {LOCATIONS.map((place) => (
+              {places.map((place) => (
                 <li key={place} className="flex items-center gap-2 text-surface-200 text-sm">
                   <span className="w-1.5 h-1.5 bg-amber-400 rounded-full shrink-0" />
                   {place}

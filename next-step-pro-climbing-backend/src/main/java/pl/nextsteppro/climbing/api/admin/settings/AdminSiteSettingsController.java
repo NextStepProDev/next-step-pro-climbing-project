@@ -12,6 +12,8 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import pl.nextsteppro.climbing.api.settings.SiteSettingsDtos.BadgeImageDto;
 import pl.nextsteppro.climbing.api.settings.SiteSettingsDtos.HeroImageDto;
+import pl.nextsteppro.climbing.api.settings.SiteSettingsDtos.LocationPresetDto;
+import pl.nextsteppro.climbing.api.settings.SiteSettingsDtos.LocationSectionDto;
 import pl.nextsteppro.climbing.api.settings.SiteSettingsDtos.SlotTemplateDto;
 
 import java.io.IOException;
@@ -132,6 +134,37 @@ public class AdminSiteSettingsController {
     @Operation(summary = "Zapisz predefiniowane szablony slotów")
     public ResponseEntity<List<SlotTemplateDto>> saveSlotTemplates(@RequestBody List<SlotTemplateDto> templates) {
         return ResponseEntity.ok(adminSiteSettingsService.saveSlotTemplates(templates));
+    }
+
+    @GetMapping("/home-location")
+    @Operation(summary = "Pobierz aktywną treść sekcji 'Gdzie teraz szkolę'")
+    public ResponseEntity<LocationSectionDto> getLocationSection() {
+        return ResponseEntity.ok(adminSiteSettingsService.getLocationSection());
+    }
+
+    @PutMapping("/home-location")
+    @Operation(summary = "Zapisz aktywną treść sekcji 'Gdzie teraz szkolę' (wszystkie języki)")
+    public ResponseEntity<LocationSectionDto> saveLocationSection(@RequestBody LocationSectionDto section) {
+        return ResponseEntity.ok(adminSiteSettingsService.saveLocationSection(section));
+    }
+
+    @GetMapping("/home-location/presets")
+    @Operation(summary = "Pobierz zapisane warianty (presety) sekcji lokalizacji")
+    public ResponseEntity<List<LocationPresetDto>> getLocationPresets() {
+        return ResponseEntity.ok(adminSiteSettingsService.getLocationPresets());
+    }
+
+    @PostMapping("/home-location/presets")
+    @Operation(summary = "Utwórz lub zaktualizuj preset sekcji lokalizacji")
+    public ResponseEntity<LocationPresetDto> saveLocationPreset(@RequestBody LocationPresetDto preset) {
+        return ResponseEntity.ok(adminSiteSettingsService.saveLocationPreset(preset));
+    }
+
+    @DeleteMapping("/home-location/presets/{id}")
+    @Operation(summary = "Usuń preset sekcji lokalizacji")
+    public ResponseEntity<Void> deleteLocationPreset(@PathVariable String id) {
+        adminSiteSettingsService.deleteLocationPreset(id);
+        return ResponseEntity.noContent().build();
     }
 
     public record SetHeroUrlRequest(String url, @Nullable Float focalPointX, @Nullable Float focalPointY) {}
