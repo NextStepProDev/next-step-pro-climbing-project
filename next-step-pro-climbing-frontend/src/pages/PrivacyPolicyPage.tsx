@@ -156,7 +156,7 @@ function PrivacyPolicyPl({ logo }: { logo: string }) {
               (kaskadowe usunięcie na poziomie bazy danych). Nie ma możliwości ich odzyskania po usunięciu konta.
             </p>
             <p>
-              <span className="text-surface-200 font-medium">Tokeny bezpieczeństwa</span> (weryfikacja e-mail: 24h, reset hasła: 1h,
+              <span className="text-surface-200 font-medium">Tokeny bezpieczeństwa</span> (weryfikacja e-mail: 15 min, reset hasła: 1h,
               sesja: 7 dni) — usuwane automatycznie po wygaśnięciu przez wbudowany mechanizm czyszczenia.
             </p>
             <p>
@@ -386,7 +386,7 @@ function PrivacyPolicyEn({ logo }: { logo: string }) {
               (cascading deletion at database level). They cannot be recovered after account deletion.
             </p>
             <p>
-              <span className="text-surface-200 font-medium">Security tokens</span> (email verification: 24h, password reset: 1h,
+              <span className="text-surface-200 font-medium">Security tokens</span> (email verification: 15 min, password reset: 1h,
               session: 7 days) — automatically deleted upon expiry by a built-in cleanup mechanism.
             </p>
             <p>
