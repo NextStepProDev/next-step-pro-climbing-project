@@ -148,12 +148,12 @@ export function Navbar() {
           {/* Logo */}
           <Link
             to="/"
-            className="flex items-center hover:opacity-80 transition-opacity"
+            className="flex items-center shrink-0 hover:opacity-80 transition-opacity"
           >
             <img
               src={theme === 'dark' ? logoWhite : logoBlack}
               alt="Next Step Pro Climbing"
-              className="h-10 cursor-pointer"
+              className="h-10 w-auto cursor-pointer"
             />
           </Link>
 
