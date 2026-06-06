@@ -59,9 +59,7 @@
     "button": "Go to calendar"
   },
   "location": {
-    "badge": "Now in Andalusia — bookings open",
     "title": "Where I am now",
-    "subtitle": "Based in Andalusia – currently climbing and coaching in:",
     "ctaCalendar": "Check available dates",
     "ctaCourses": "Browse courses"
   }

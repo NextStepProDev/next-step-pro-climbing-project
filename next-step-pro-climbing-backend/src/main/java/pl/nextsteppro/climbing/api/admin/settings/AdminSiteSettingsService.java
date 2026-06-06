@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import pl.nextsteppro.climbing.api.settings.SiteSettingsDtos.BadgeImageDto;
 import pl.nextsteppro.climbing.api.settings.SiteSettingsDtos.HeroImageDto;
+import pl.nextsteppro.climbing.api.settings.SiteSettingsDtos.LocationActiveStateDto;
 import pl.nextsteppro.climbing.api.settings.SiteSettingsDtos.LocationPresetDto;
 import pl.nextsteppro.climbing.api.settings.SiteSettingsDtos.LocationSectionDto;
 import pl.nextsteppro.climbing.api.settings.SiteSettingsDtos.SlotTemplateDto;
@@ -182,29 +183,43 @@ public class AdminSiteSettingsService {
         return templates;
     }
 
-    // === Sekcja "Gdzie teraz szkolę" (aktywna treść) ===
+    // === Sekcja "Gdzie teraz szkolę" — aktywny szablon (referencja po ID) ===
 
     @Cacheable(value = "siteSettings", key = "'homeLocation'")
     @Transactional(readOnly = true)
     public LocationSectionDto getLocationSection() {
-        // Brak konfiguracji: sekcja widoczna, pusta mapa = front zrobi fallback do i18n.
-        return readJson(KEY_LOCATION_ACTIVE, new TypeReference<LocationSectionDto>() {},
-                new LocationSectionDto(true, Map.of()));
+        // Sekcja pokazuje się TYLKO gdy wybrany jest istniejący szablon; inaczej enabled=false (brak sekcji).
+        String activeId = getActiveState().activePresetId();
+        if (activeId == null) return new LocationSectionDto(false, Map.of());
+        return getLocationPresets().stream()
+                .filter(p -> activeId.equals(p.id()))
+                .findFirst()
+                .map(p -> new LocationSectionDto(true, p.translations()))
+                .orElse(new LocationSectionDto(false, Map.of()));
+    }
+
+    @Transactional(readOnly = true)
+    public LocationActiveStateDto getActiveState() {
+        return readJson(KEY_LOCATION_ACTIVE, new TypeReference<LocationActiveStateDto>() {},
+                new LocationActiveStateDto(null));
     }
 
     @CacheEvict(value = "siteSettings", allEntries = true)
-    public LocationSectionDto saveLocationSection(LocationSectionDto section) {
-        writeJson(KEY_LOCATION_ACTIVE, section);
-        return section;
+    public LocationActiveStateDto setActivePreset(@Nullable String presetId) {
+        LocationActiveStateDto state = new LocationActiveStateDto(presetId);
+        writeJson(KEY_LOCATION_ACTIVE, state);
+        return state;
     }
 
-    // === Presety sekcji (lista zapisanych wariantów, CRUD) ===
+    // === Szablony sekcji (CRUD) ===
 
     @Transactional(readOnly = true)
     public List<LocationPresetDto> getLocationPresets() {
         return readJson(KEY_LOCATION_PRESETS, new TypeReference<List<LocationPresetDto>>() {}, List.of());
     }
 
+    // Zapis szablonu może zmienić treść na żywo (gdy edytujemy szablon będący na stronie) → evict cache.
+    @CacheEvict(value = "siteSettings", allEntries = true)
     public LocationPresetDto saveLocationPreset(LocationPresetDto preset) {
         List<LocationPresetDto> presets = new ArrayList<>(getLocationPresets());
         LocationPresetDto stored;
@@ -224,10 +239,15 @@ public class AdminSiteSettingsService {
         return stored;
     }
 
+    @CacheEvict(value = "siteSettings", allEntries = true)
     public void deleteLocationPreset(String id) {
         List<LocationPresetDto> presets = new ArrayList<>(getLocationPresets());
         presets.removeIf(p -> id.equals(p.id()));
         persistPresets(presets);
+        // Jeśli usunięty szablon był na stronie — zdejmij go (sekcja zniknie).
+        if (id.equals(getActiveState().activePresetId())) {
+            writeJson(KEY_LOCATION_ACTIVE, new LocationActiveStateDto(null));
+        }
     }
 
     private void persistPresets(List<LocationPresetDto> presets) {

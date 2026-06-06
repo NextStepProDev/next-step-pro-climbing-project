@@ -20,15 +20,17 @@ export function CurrentLocationSection() {
               <MapPin className="w-5 h-5 text-amber-400 shrink-0" />
               <h2 className="text-xl font-bold text-amber-300">{title}</h2>
             </div>
-            <p className="text-surface-300 text-sm mb-4">{subtitle}</p>
-            <ul className="space-y-1.5">
-              {places.map((place) => (
-                <li key={place} className="flex items-center gap-2 text-surface-200 text-sm">
-                  <span className="w-1.5 h-1.5 bg-amber-400 rounded-full shrink-0" />
-                  {place}
-                </li>
-              ))}
-            </ul>
+            {subtitle && <p className="text-surface-300 text-sm mb-4">{subtitle}</p>}
+            {places.length > 0 && (
+              <ul className="space-y-1.5">
+                {places.map((place) => (
+                  <li key={place} className="flex items-center gap-2 text-surface-200 text-sm">
+                    <span className="w-1.5 h-1.5 bg-amber-400 rounded-full shrink-0" />
+                    {place}
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
 
           {/* Right: CTAs */}

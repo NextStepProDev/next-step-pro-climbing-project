@@ -17,10 +17,13 @@ public class SiteSettingsDtos {
 
     public record BadgeImageDto(@Nullable String imageUrl, @Nullable String linkUrl) {}
 
-    /** Treść sekcji "Gdzie teraz szkolę" dla jednego języka. */
+    /**
+     * Treść sekcji "Gdzie teraz szkolę" dla jednego języka.
+     * Tytuł NIE jest tu trzymany — jest stały i tłumaczony we froncie (i18n).
+     * Edytowalne: badge (np. "Obecnie w Andaluzji..."), podtytuł i lista miejsc.
+     */
     public record LocationContentDto(
             String badge,
-            String title,
             String subtitle,
             List<String> locations
     ) {}
@@ -31,11 +34,16 @@ public class SiteSettingsDtos {
             Map<String, LocationContentDto> translations
     ) {}
 
-    /** Zapisany preset całej konfiguracji (wszystkie języki), do ponownego użycia. */
+    /** Zapisany szablon całej konfiguracji (wszystkie języki), do ponownego użycia. */
     public record LocationPresetDto(
             @Nullable String id,
             String name,
             Map<String, LocationContentDto> translations
+    ) {}
+
+    /** Który szablon jest aktualnie na stronie (null = sekcja niepokazywana). */
+    public record LocationActiveStateDto(
+            @Nullable String activePresetId
     ) {}
 
     public record HomeSettingsDto(

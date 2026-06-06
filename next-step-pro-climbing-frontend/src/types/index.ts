@@ -803,10 +803,11 @@ export interface SlotTemplate {
   maxParticipants: number
 }
 
-// "Gdzie teraz szkolę" — editable location section
+// "Gdzie teraz szkolę" — editable location section.
+// The title is fixed (translated via i18n). Badge, subtitle and the list of
+// places are editable per language.
 export interface LocationContentDto {
   badge: string
-  title: string
   subtitle: string
   locations: string[]
 }
@@ -820,4 +821,9 @@ export interface LocationPresetDto {
   id: string | null
   name: string
   translations: Record<string, LocationContentDto>
+}
+
+// Który szablon jest aktualnie na stronie (null = sekcja niepokazywana)
+export interface LocationActiveStateDto {
+  activePresetId: string | null
 }

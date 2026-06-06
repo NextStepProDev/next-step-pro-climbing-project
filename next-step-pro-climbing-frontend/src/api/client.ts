@@ -68,7 +68,7 @@ import type {
   BadgeImageDto,
   HomeSettingsDto,
   SlotTemplate,
-  LocationSectionDto,
+  LocationActiveStateDto,
   LocationPresetDto,
 } from '../types'
 import {
@@ -1108,13 +1108,13 @@ export const adminSiteApi = {
       body: JSON.stringify(templates),
     }),
 
-  getLocationSection: () =>
-    fetchApi<LocationSectionDto>('/admin/settings/home-location'),
+  getActiveState: () =>
+    fetchApi<LocationActiveStateDto>('/admin/settings/home-location'),
 
-  saveLocationSection: (section: LocationSectionDto) =>
-    fetchApi<LocationSectionDto>('/admin/settings/home-location', {
+  setActivePreset: (presetId: string | null) =>
+    fetchApi<LocationActiveStateDto>('/admin/settings/home-location', {
       method: 'PUT',
-      body: JSON.stringify(section),
+      body: JSON.stringify({ activePresetId: presetId }),
     }),
 
   getLocationPresets: () =>

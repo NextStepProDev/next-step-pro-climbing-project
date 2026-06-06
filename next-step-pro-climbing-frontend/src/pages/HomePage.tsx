@@ -165,8 +165,8 @@ export function HomePage() {
         )}
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-32">
           <div className="text-center max-w-3xl mx-auto">
-            {/* === ANDALUSIA BADGE — widoczność: przełącznik sekcji lokalizacji w panelu admina === */}
-            {locationEnabled && (
+            {/* === ANDALUSIA BADGE — pokazywana gdy sekcja aktywna i plakietka niepusta === */}
+            {locationEnabled && locationBadge && (
               <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-amber-500/10 border border-amber-500/30 rounded-full text-amber-400 text-sm font-medium mb-6">
                 <span>📍</span>
                 <span>{locationBadge}</span>

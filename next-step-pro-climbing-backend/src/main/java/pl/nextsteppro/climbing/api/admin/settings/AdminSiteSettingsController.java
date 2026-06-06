@@ -12,8 +12,8 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import pl.nextsteppro.climbing.api.settings.SiteSettingsDtos.BadgeImageDto;
 import pl.nextsteppro.climbing.api.settings.SiteSettingsDtos.HeroImageDto;
+import pl.nextsteppro.climbing.api.settings.SiteSettingsDtos.LocationActiveStateDto;
 import pl.nextsteppro.climbing.api.settings.SiteSettingsDtos.LocationPresetDto;
-import pl.nextsteppro.climbing.api.settings.SiteSettingsDtos.LocationSectionDto;
 import pl.nextsteppro.climbing.api.settings.SiteSettingsDtos.SlotTemplateDto;
 
 import java.io.IOException;
@@ -137,19 +137,19 @@ public class AdminSiteSettingsController {
     }
 
     @GetMapping("/home-location")
-    @Operation(summary = "Pobierz aktywną treść sekcji 'Gdzie teraz szkolę'")
-    public ResponseEntity<LocationSectionDto> getLocationSection() {
-        return ResponseEntity.ok(adminSiteSettingsService.getLocationSection());
+    @Operation(summary = "Pobierz, który szablon jest aktualnie na stronie (lub null)")
+    public ResponseEntity<LocationActiveStateDto> getActiveState() {
+        return ResponseEntity.ok(adminSiteSettingsService.getActiveState());
     }
 
     @PutMapping("/home-location")
-    @Operation(summary = "Zapisz aktywną treść sekcji 'Gdzie teraz szkolę' (wszystkie języki)")
-    public ResponseEntity<LocationSectionDto> saveLocationSection(@RequestBody LocationSectionDto section) {
-        return ResponseEntity.ok(adminSiteSettingsService.saveLocationSection(section));
+    @Operation(summary = "Ustaw szablon na stronie (activePresetId = null zdejmuje sekcję)")
+    public ResponseEntity<LocationActiveStateDto> setActivePreset(@RequestBody LocationActiveStateDto state) {
+        return ResponseEntity.ok(adminSiteSettingsService.setActivePreset(state.activePresetId()));
     }
 
     @GetMapping("/home-location/presets")
-    @Operation(summary = "Pobierz zapisane warianty (presety) sekcji lokalizacji")
+    @Operation(summary = "Pobierz zapisane szablony sekcji lokalizacji")
     public ResponseEntity<List<LocationPresetDto>> getLocationPresets() {
         return ResponseEntity.ok(adminSiteSettingsService.getLocationPresets());
     }
