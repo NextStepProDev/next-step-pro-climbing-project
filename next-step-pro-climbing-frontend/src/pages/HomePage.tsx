@@ -104,7 +104,7 @@ export function HomePage() {
         })}</script>
       </Helmet>
       {/* Hero Section */}
-      <section className="relative overflow-hidden sm:min-h-[70vh] sm:flex sm:flex-col sm:justify-center">
+      <section className="relative overflow-hidden sm:min-h-[calc(100vh-4.5rem)] sm:flex sm:flex-col sm:justify-center">
         {/* Base gradient — always rendered as placeholder/fallback */}
         <div className="absolute inset-0 bg-gradient-to-br from-primary-900/20 via-surface-950 to-surface-950" />
 
@@ -163,7 +163,7 @@ export function HomePage() {
             className="absolute top-3 right-3 sm:top-12 sm:right-36 z-20 w-[52px] h-[52px] sm:w-24 sm:h-24"
           />
         )}
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-32">
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-8">
           <div className="text-center max-w-3xl mx-auto">
             {/* === ANDALUSIA BADGE — pokazywana gdy sekcja aktywna i plakietka niepusta === */}
             {locationEnabled && locationBadge && (
@@ -176,12 +176,12 @@ export function HomePage() {
             <img
               src={theme === 'dark' ? logoWhite : logoBlack}
               alt="Next Step Pro Climbing"
-              className="h-32 sm:h-40 lg:h-48 mx-auto mb-8 drop-shadow-[0_0_30px_rgba(59,130,246,0.3)]"
+              className="h-32 sm:h-36 lg:h-40 mx-auto mb-8 sm:mb-6 drop-shadow-[0_0_30px_rgba(59,130,246,0.3)]"
             />
             <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-surface-50 mb-4">
               {t("hero.tagline")}
             </h1>
-            <p className="text-base sm:text-lg text-surface-200 mb-8 max-w-2xl mx-auto">
+            <p className="text-base sm:text-lg text-surface-200 mb-8 sm:mb-6 max-w-2xl mx-auto">
               {t("hero.subtitle")}
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
