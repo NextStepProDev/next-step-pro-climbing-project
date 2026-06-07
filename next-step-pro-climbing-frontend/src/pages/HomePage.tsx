@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, type CSSProperties } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Helmet } from "react-helmet-async";
@@ -18,6 +18,7 @@ import { AnimatedCounter } from "../components/ui/AnimatedCounter";
 import { ShareButtons } from "../components/ui/ShareButtons";
 import { CurrentLocationSection } from "../components/ui/CurrentLocationSection";
 import { useLocationContent } from "../hooks/useLocationContent";
+import { useInView } from "../hooks/useInView";
 import { siteSettingsApi } from "../api/client";
 import { useTheme } from "../context/ThemeContext";
 import logoWhite from "../assets/logo/logo-white.png";
@@ -62,6 +63,7 @@ export function HomePage() {
   const { theme } = useTheme();
   const { enabled: locationEnabled, badge: locationBadge } = useLocationContent();
   const [heroImgLoaded, setHeroImgLoaded] = useState(false);
+  const { ref: stepsRef, inView: stepsInView } = useInView<HTMLDivElement>();
 
   const { data: homeSettings, isPending } = useQuery({
     queryKey: ["homeSettings"],
@@ -218,7 +220,10 @@ export function HomePage() {
           <h2 className="text-3xl font-bold text-surface-100 mb-12 text-center">
             {t("steps.title")}
           </h2>
-          <div className="grid md:grid-cols-3 gap-8 md:gap-0">
+          <div
+            ref={stepsRef}
+            className={`steps-grid grid md:grid-cols-3 gap-8 md:gap-0 ${stepsInView ? "is-visible" : ""}`}
+          >
             {[
               { num: "01", icon: Search, key: "step1" },
               { num: "02", icon: CalendarCheck, key: "step2" },
@@ -226,18 +231,19 @@ export function HomePage() {
             ].map((step, i) => (
               <div
                 key={step.key}
-                className={`flex flex-col items-center text-center px-6 ${i < 2 ? "md:border-r md:border-surface-800" : ""}`}
+                style={{ "--step-delay": `${i * 280}ms` } as CSSProperties}
+                className={`step-card flex flex-col items-center text-center px-6 ${i < 2 ? "md:border-r md:border-surface-800" : ""}`}
               >
-                <span className="text-sm font-mono text-primary-400 mb-3">
+                <span className="step-num text-sm font-mono text-primary-400 mb-3">
                   {step.num}
                 </span>
-                <div className="w-12 h-12 bg-primary-500/10 rounded-lg flex items-center justify-center mb-4">
+                <div className="step-icon w-12 h-12 bg-primary-500/10 rounded-lg flex items-center justify-center mb-4">
                   <step.icon className="w-6 h-6 text-primary-400" />
                 </div>
-                <h3 className="text-lg font-semibold text-surface-100 mb-2">
+                <h3 className="step-title text-lg font-semibold text-surface-100 mb-2">
                   {t(`steps.${step.key}.title`)}
                 </h3>
-                <p className="text-surface-400 text-sm">
+                <p className="step-desc text-surface-400 text-sm">
                   {t(`steps.${step.key}.description`)}
                 </p>
               </div>
