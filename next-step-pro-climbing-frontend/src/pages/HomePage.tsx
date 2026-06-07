@@ -146,7 +146,7 @@ export function HomePage() {
               className={`hidden sm:block absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ${heroImgLoaded ? 'opacity-100 animation-ken-burns' : 'opacity-0'}`}
               style={{ objectPosition }}
             />
-            <div className={`hidden sm:block absolute inset-0 bg-gradient-to-b from-surface-950/15 via-surface-950/25 to-surface-950 transition-opacity duration-700 ${heroImgLoaded ? 'opacity-100' : 'opacity-0'}`} />
+            <div className={`hidden sm:block absolute inset-0 bg-gradient-to-b from-surface-950/5 via-surface-950/15 to-surface-950 transition-opacity duration-700 ${heroImgLoaded ? 'opacity-100' : 'opacity-0'}`} />
           </>
         )}
         {badgeLeftImageUrl && (
@@ -167,7 +167,7 @@ export function HomePage() {
           <div className="text-center max-w-3xl mx-auto">
             {/* === ANDALUSIA BADGE — pokazywana gdy sekcja aktywna i plakietka niepusta === */}
             {locationEnabled && locationBadge && (
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-amber-500/10 border border-amber-500/30 rounded-full text-amber-400 text-sm font-medium mb-6">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-amber-500/15 backdrop-blur-md border border-amber-400/40 rounded-full text-amber-400 text-sm font-medium mb-6 shadow-lg [text-shadow:_0_1px_4px_rgb(0_0_0_/_60%)]">
                 <span>📍</span>
                 <span>{locationBadge}</span>
               </div>
