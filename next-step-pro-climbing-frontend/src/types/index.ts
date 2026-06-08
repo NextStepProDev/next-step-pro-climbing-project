@@ -675,6 +675,11 @@ export interface CourseDetail {
   publishedAt: string | null
 }
 
+export interface CourseTranslation {
+  id: string
+  language: string
+}
+
 export interface CourseAdmin {
   id: string
   title: string

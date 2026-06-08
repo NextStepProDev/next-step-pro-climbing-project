@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useEffect, useRef } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { useParams, useNavigate, Link } from 'react-router-dom'
@@ -10,19 +10,24 @@ import { LoadingSpinner } from '../components/ui/LoadingSpinner'
 import { QueryError } from '../components/ui/QueryError'
 import { ShareButtons } from '../components/ui/ShareButtons'
 import { CourseContentBlocks, CourseEventsList } from '../components/courses/CourseContentBlocks'
-import { COURSE_CONTENT_LANGUAGES } from '../constants/courseLanguages'
+import { COURSE_CONTENT_LANGUAGES, getDefaultCourseContentLanguage, pickBestTranslation } from '../constants/courseLanguages'
 import clsx from 'clsx'
 
 export function CourseDetailPage() {
-  const { t } = useTranslation('common')
+  const { t, i18n } = useTranslation('common')
   const { courseId } = useParams<{ courseId: string }>()
   const navigate = useNavigate()
-  const switchLangRef = useRef<{ translationGroupId: string } | null>(null)
 
   const { data: course, isLoading, error } = useQuery({
     queryKey: ['courses', courseId],
     queryFn: () => coursesApi.getById(courseId!),
     enabled: !!courseId,
+  })
+
+  const { data: translations } = useQuery({
+    queryKey: ['courseTranslations', course?.translationGroupId],
+    queryFn: () => coursesApi.getTranslations(course!.translationGroupId),
+    enabled: !!course?.translationGroupId,
   })
 
   const { data: courseEvents } = useQuery({
@@ -32,16 +37,19 @@ export function CourseDetailPage() {
     staleTime: 5 * 60 * 1000,
   })
 
-  async function handleLanguageSwitch(lang: string) {
-    if (lang === course?.language || !course) return
-    switchLangRef.current = { translationGroupId: course.translationGroupId }
-    const courses = await coursesApi.getAll(lang)
-    const match = courses.find(c => c.translationGroupId === switchLangRef.current?.translationGroupId)
-    switchLangRef.current = null
-    if (match) {
-      navigate(`/kursy/${match.id}`, { replace: true })
+  // Zmiana języka globalnego (pasek górny) przełącza otwarty kurs na ten język;
+  // jeśli brak tłumaczenia w tym języku — fallback do dostępnego (EN → PL → ES).
+  const currentContentLang = getDefaultCourseContentLanguage(i18n.language)
+  const prevLangRef = useRef(currentContentLang)
+  useEffect(() => {
+    if (prevLangRef.current !== currentContentLang && course && translations) {
+      const target = pickBestTranslation(translations, currentContentLang)
+      if (target && target.id !== course.id) {
+        navigate(`/kursy/${target.id}`, { replace: true })
+      }
     }
-  }
+    prevLangRef.current = currentContentLang
+  }, [currentContentLang, course, translations, navigate])
 
   if (isLoading) {
     return (
@@ -111,20 +119,30 @@ export function CourseDetailPage() {
         </Link>
 
         <div className="flex items-center gap-1 bg-surface-800 border border-surface-700 rounded-lg p-1">
-          {COURSE_CONTENT_LANGUAGES.map((lang) => (
-            <button
-              key={lang.code}
-              onClick={() => handleLanguageSwitch(lang.code)}
-              className={clsx(
-                'px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-150 active:scale-95',
-                course.language === lang.code
-                  ? 'bg-primary-500 text-white'
-                  : 'text-surface-400 hover:text-surface-100 hover:bg-surface-700'
-              )}
-            >
-              {lang.label}
-            </button>
-          ))}
+          {COURSE_CONTENT_LANGUAGES.map((lang) => {
+            const translation = translations?.find(tr => tr.language === lang.code)
+            const isActive = course.language === lang.code
+            const isAvailable = isActive || !!translation
+            return (
+              <button
+                key={lang.code}
+                disabled={!isAvailable}
+                onClick={() => {
+                  if (!isActive && translation) navigate(`/kursy/${translation.id}`)
+                }}
+                className={clsx(
+                  'px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-150 active:scale-95',
+                  isActive
+                    ? 'bg-primary-500 text-white'
+                    : isAvailable
+                      ? 'text-surface-400 hover:text-surface-100 hover:bg-surface-700'
+                      : 'text-surface-600 cursor-not-allowed opacity-40'
+                )}
+              >
+                {lang.label}
+              </button>
+            )
+          })}
         </div>
       </div>
 

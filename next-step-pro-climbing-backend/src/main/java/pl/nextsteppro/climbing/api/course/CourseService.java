@@ -62,6 +62,13 @@ public class CourseService {
         );
     }
 
+    public List<CourseTranslationDto> getAvailableTranslations(UUID translationGroupId) {
+        return courseRepository.findByTranslationGroupId(translationGroupId).stream()
+                .filter(c -> c.isPublished())
+                .map(c -> new CourseTranslationDto(c.getId(), c.getLanguage()))
+                .toList();
+    }
+
     private CourseSummaryDto toSummaryDto(CourseSummaryProjection projection) {
         return new CourseSummaryDto(
                 projection.getId(),

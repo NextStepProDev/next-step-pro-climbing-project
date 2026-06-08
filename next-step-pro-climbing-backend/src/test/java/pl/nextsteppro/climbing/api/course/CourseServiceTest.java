@@ -211,6 +211,48 @@ class CourseServiceTest {
         assertEquals("Podpis zdjęcia", image.caption());
     }
 
+    // ========== getAvailableTranslations ==========
+
+    @Test
+    void shouldReturnOnlyPublishedTranslationsWithLanguageAndId() {
+        // Given — group with PL (published), EN (published), ES (draft)
+        UUID groupId = UUID.randomUUID();
+        Course pl = buildTranslation(UUID.randomUUID(), "pl", true);
+        Course en = buildTranslation(UUID.randomUUID(), "en", true);
+        Course es = buildTranslation(UUID.randomUUID(), "es", false);
+        when(courseRepository.findByTranslationGroupId(groupId)).thenReturn(List.of(pl, en, es));
+
+        // When
+        List<CourseTranslationDto> result = courseService.getAvailableTranslations(groupId);
+
+        // Then — only published ones (PL, EN), draft ES excluded
+        assertEquals(2, result.size());
+        assertTrue(result.stream().anyMatch(t -> t.language().equals("pl") && t.id().equals(pl.getId())));
+        assertTrue(result.stream().anyMatch(t -> t.language().equals("en") && t.id().equals(en.getId())));
+        assertFalse(result.stream().anyMatch(t -> t.language().equals("es")));
+    }
+
+    @Test
+    void shouldReturnEmptyListWhenGroupHasNoPublishedTranslations() {
+        UUID groupId = UUID.randomUUID();
+        when(courseRepository.findByTranslationGroupId(groupId))
+                .thenReturn(List.of(buildTranslation(UUID.randomUUID(), "pl", false)));
+
+        assertTrue(courseService.getAvailableTranslations(groupId).isEmpty());
+    }
+
+    private Course buildTranslation(UUID id, String language, boolean published) {
+        Course course = new Course("Kurs " + language);
+        try {
+            setField(course, "id", id);
+            setField(course, "language", language);
+            setField(course, "published", published);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        return course;
+    }
+
     // ========== Helpers ==========
 
     private CourseSummaryProjection buildProjection(UUID id, String title, String price, String thumbnailFilename, Instant publishedAt, String language) {

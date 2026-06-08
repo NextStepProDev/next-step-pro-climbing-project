@@ -44,4 +44,9 @@ public class CourseDtos {
             @Nullable String caption,
             int displayOrder
     ) {}
+
+    public record CourseTranslationDto(
+            UUID id,
+            String language
+    ) {}
 }

@@ -12,7 +12,7 @@ import { QueryError } from '../components/ui/QueryError'
 import { ShareButtons } from '../components/ui/ShareButtons'
 import { renderRichText } from '../utils/renderRichText'
 import { useAuth } from '../context/AuthContext'
-import { COURSE_CONTENT_LANGUAGES, getDefaultCourseContentLanguage } from '../constants/courseLanguages'
+import { COURSE_CONTENT_LANGUAGES, getDefaultCourseContentLanguage, pickBestTranslation } from '../constants/courseLanguages'
 import clsx from 'clsx'
 
 export function NewsDetailPage() {
@@ -38,7 +38,7 @@ export function NewsDetailPage() {
   const prevLangRef = useRef(currentContentLang)
   useEffect(() => {
     if (prevLangRef.current !== currentContentLang && article && translations) {
-      const target = translations.find(tr => tr.language === currentContentLang)
+      const target = pickBestTranslation(translations, currentContentLang)
       if (target && target.id !== article.id) {
         navigate(`/aktualnosci/${target.id}`, { replace: true })
       }

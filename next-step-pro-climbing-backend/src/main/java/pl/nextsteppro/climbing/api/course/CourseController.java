@@ -44,4 +44,11 @@ public class CourseController {
             @Parameter(description = "ID kursu") @PathVariable UUID id) {
         return ResponseEntity.ok(courseService.getPublishedById(id));
     }
+
+    @Operation(summary = "Pobierz dostępne wersje językowe kursu")
+    @GetMapping("/by-group/{translationGroupId}")
+    public ResponseEntity<List<CourseTranslationDto>> getTranslations(
+            @Parameter(description = "ID grupy tłumaczeń") @PathVariable UUID translationGroupId) {
+        return ResponseEntity.ok(courseService.getAvailableTranslations(translationGroupId));
+    }
 }

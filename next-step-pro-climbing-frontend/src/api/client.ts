@@ -54,6 +54,7 @@ import type {
   AdminNewsPageDto,
   CourseSummary,
   CourseDetail,
+  CourseTranslation,
   CourseAdmin,
   CourseDetailAdmin,
   CreateCourseRequest,
@@ -819,6 +820,8 @@ export const coursesApi = {
   getAll: (language?: string) =>
     fetchApi<CourseSummary[]>(`/courses${language ? `?language=${language}` : ''}`),
   getById: (id: string) => fetchApi<CourseDetail>(`/courses/${id}`),
+  getTranslations: (translationGroupId: string) =>
+    fetchApi<CourseTranslation[]>(`/courses/by-group/${translationGroupId}`),
 }
 
 // ==================== Admin Courses ====================
