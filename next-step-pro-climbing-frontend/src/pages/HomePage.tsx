@@ -149,9 +149,10 @@ export function HomePage() {
               style={{ objectPosition }}
             />
             <div className={`hidden sm:block absolute inset-0 bg-gradient-to-b from-surface-950/5 via-surface-950/15 to-surface-950 transition-opacity duration-700 ${heroImgLoaded ? 'opacity-100' : 'opacity-0'}`} />
-            {/* Desktop: stały ciemny podkład pod treścią (oba motywy) — żeby jasny napis/logo
-                były czytelne na każdym zdjęciu; zanika do przezroczystości, więc brzegi zdjęcia zostają jasne */}
-            <div className="hidden sm:block absolute inset-0 z-[1] pointer-events-none bg-[radial-gradient(ellipse_75%_70%_at_50%_50%,rgba(0,0,0,0.55),rgba(0,0,0,0.15)_60%,transparent_80%)]" />
+            {/* Desktop: stały, delikatny ciemny podkład pod treścią (oba motywy) — głównie pod logo,
+                żeby jasny napis/logo były czytelne na każdym zdjęciu; zanika do przezroczystości, więc
+                brzegi zdjęcia zostają jasne. Sam tekst dostaje dodatkowo halo (.hero-over-photo). */}
+            <div className="hidden sm:block absolute inset-0 z-[1] pointer-events-none bg-[radial-gradient(ellipse_75%_70%_at_50%_50%,rgba(0,0,0,0.5),rgba(0,0,0,0.14)_60%,transparent_80%)]" />
           </>
         )}
         {badgeLeftImageUrl && (
@@ -201,10 +202,10 @@ export function HomePage() {
                 className="h-32 sm:h-36 lg:h-40 mx-auto mb-8 sm:mb-6 drop-shadow-[0_0_30px_rgba(59,130,246,0.3)]"
               />
             )}
-            <h1 className={`text-3xl sm:text-4xl lg:text-5xl font-bold mb-4 ${heroImageUrl ? 'text-surface-50 sm:text-white' : 'text-surface-50'}`}>
+            <h1 className={`text-3xl sm:text-4xl lg:text-5xl font-bold mb-4 ${heroImageUrl ? 'text-surface-50 sm:text-white hero-over-photo' : 'text-surface-50'}`}>
               {t("hero.tagline")}
             </h1>
-            <p className={`text-base sm:text-lg mb-8 sm:mb-6 max-w-2xl mx-auto ${heroImageUrl ? 'text-surface-200 sm:text-white/90' : 'text-surface-200'}`}>
+            <p className={`text-base sm:text-lg mb-8 sm:mb-6 max-w-2xl mx-auto ${heroImageUrl ? 'text-surface-200 sm:text-white/90 hero-over-photo' : 'text-surface-200'}`}>
               {t("hero.subtitle")}
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
