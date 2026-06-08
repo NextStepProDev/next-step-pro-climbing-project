@@ -11,6 +11,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import pl.nextsteppro.climbing.api.settings.SiteSettingsDtos.BadgeImageDto;
+import pl.nextsteppro.climbing.api.settings.SiteSettingsDtos.CalendarPromoPresetDto;
 import pl.nextsteppro.climbing.api.settings.SiteSettingsDtos.HeroImageDto;
 import pl.nextsteppro.climbing.api.settings.SiteSettingsDtos.LocationActiveStateDto;
 import pl.nextsteppro.climbing.api.settings.SiteSettingsDtos.LocationPresetDto;
@@ -164,6 +165,37 @@ public class AdminSiteSettingsController {
     @Operation(summary = "Usuń preset sekcji lokalizacji")
     public ResponseEntity<Void> deleteLocationPreset(@PathVariable String id) {
         adminSiteSettingsService.deleteLocationPreset(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/calendar-promo")
+    @Operation(summary = "Pobierz, który szablon promocji jest aktualnie nad kalendarzem (lub null)")
+    public ResponseEntity<LocationActiveStateDto> getCalendarPromoActiveState() {
+        return ResponseEntity.ok(adminSiteSettingsService.getCalendarPromoActiveState());
+    }
+
+    @PutMapping("/calendar-promo")
+    @Operation(summary = "Ustaw szablon promocji nad kalendarzem (activePresetId = null zdejmuje promocję)")
+    public ResponseEntity<LocationActiveStateDto> setCalendarPromoActivePreset(@RequestBody LocationActiveStateDto state) {
+        return ResponseEntity.ok(adminSiteSettingsService.setCalendarPromoActivePreset(state.activePresetId()));
+    }
+
+    @GetMapping("/calendar-promo/presets")
+    @Operation(summary = "Pobierz zapisane szablony promocji kalendarza")
+    public ResponseEntity<List<CalendarPromoPresetDto>> getCalendarPromoPresets() {
+        return ResponseEntity.ok(adminSiteSettingsService.getCalendarPromoPresets());
+    }
+
+    @PostMapping("/calendar-promo/presets")
+    @Operation(summary = "Utwórz lub zaktualizuj szablon promocji kalendarza")
+    public ResponseEntity<CalendarPromoPresetDto> saveCalendarPromoPreset(@RequestBody CalendarPromoPresetDto preset) {
+        return ResponseEntity.ok(adminSiteSettingsService.saveCalendarPromoPreset(preset));
+    }
+
+    @DeleteMapping("/calendar-promo/presets/{id}")
+    @Operation(summary = "Usuń szablon promocji kalendarza")
+    public ResponseEntity<Void> deleteCalendarPromoPreset(@PathVariable String id) {
+        adminSiteSettingsService.deleteCalendarPromoPreset(id);
         return ResponseEntity.noContent().build();
     }
 

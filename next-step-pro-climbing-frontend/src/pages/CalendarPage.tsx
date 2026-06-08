@@ -17,10 +17,12 @@ import { LoadingSpinner } from "../components/ui/LoadingSpinner";
 import { QueryError } from "../components/ui/QueryError";
 import { Phone, Mail, ExternalLink, Scissors, Copy, X, Bell } from "lucide-react";
 import { formatAvailability, buildEventColorMap } from "../utils/events";
+import { useCalendarPromo } from "../hooks/useCalendarPromo";
 import type { EventSummary, TimeSlot } from "../types";
 
 export function CalendarPage() {
   const { t } = useTranslation('calendar');
+  const promo = useCalendarPromo();
   const { isAdmin } = useAuth();
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -392,15 +394,45 @@ export function CalendarPage() {
           {t('subtitle')}
         </p>
 
-        {/* PROMOCJA */}
-        <div className="mt-4 inline-block bg-amber-500/10 border border-amber-500/30 rounded-lg px-4 py-3">
-          <p className="text-amber-400 font-semibold text-sm">
-            {t('promo.title')}
-          </p>
-          <p className="text-amber-300/80 text-xs mt-1">
-            {t('promo.description')}
-          </p>
-        </div>
+        {/* PROMOCJA — edytowalna w panelu admina (Ustawienia strony → Promocja kalendarza) */}
+        {promo.enabled && promo.title && (
+          <div className="calendar-promo relative mt-4 inline-block overflow-hidden bg-amber-500/10 border border-amber-500/30 rounded-xl px-5 py-4 shadow-lg [text-shadow:_0_1px_3px_rgb(0_0_0_/_45%)]">
+            {promo.badge && (
+              <span className="calendar-promo-badge inline-flex items-center gap-1.5 mb-2 px-2.5 py-0.5 bg-amber-400/20 border border-amber-400/40 rounded-full text-amber-300 text-[11px] font-bold uppercase tracking-wide">
+                {promo.badge}
+              </span>
+            )}
+            <p className="calendar-promo-title text-amber-400 font-bold text-base sm:text-lg">
+              {promo.title}
+            </p>
+            <p className="calendar-promo-desc text-amber-300/85 text-xs sm:text-sm mt-1">
+              {promo.description}
+            </p>
+            {promo.ctaLabel && promo.ctaUrl && (
+              <div className="calendar-promo-cta mt-3">
+                {/^https?:\/\//.test(promo.ctaUrl) ? (
+                  <a
+                    href={promo.ctaUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-amber-500 hover:bg-amber-400 text-surface-950 font-semibold text-sm rounded-lg transition-colors [text-shadow:none]"
+                  >
+                    {promo.ctaLabel}
+                    <ExternalLink className="w-4 h-4" />
+                  </a>
+                ) : (
+                  <Link
+                    to={promo.ctaUrl}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-amber-500 hover:bg-amber-400 text-surface-950 font-semibold text-sm rounded-lg transition-colors [text-shadow:none]"
+                  >
+                    {promo.ctaLabel}
+                    <span aria-hidden>→</span>
+                  </Link>
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* View mode toggle */}
         {!selectedDate && (

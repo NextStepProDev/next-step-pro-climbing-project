@@ -12,6 +12,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import pl.nextsteppro.climbing.api.settings.SiteSettingsDtos.BadgeImageDto;
+import pl.nextsteppro.climbing.api.settings.SiteSettingsDtos.CalendarPromoPresetDto;
+import pl.nextsteppro.climbing.api.settings.SiteSettingsDtos.CalendarPromoSectionDto;
 import pl.nextsteppro.climbing.api.settings.SiteSettingsDtos.HeroImageDto;
 import pl.nextsteppro.climbing.api.settings.SiteSettingsDtos.LocationActiveStateDto;
 import pl.nextsteppro.climbing.api.settings.SiteSettingsDtos.LocationPresetDto;
@@ -44,6 +46,8 @@ public class AdminSiteSettingsService {
     private static final String KEY_SLOT_TEMPLATES = "slot_templates";
     private static final String KEY_LOCATION_ACTIVE = "home_location_active";
     private static final String KEY_LOCATION_PRESETS = "home_location_presets";
+    private static final String KEY_CALENDAR_PROMO_ACTIVE = "calendar_promo_active";
+    private static final String KEY_CALENDAR_PROMO_PRESETS = "calendar_promo_presets";
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     private final SiteSettingsRepository siteSettingsRepository;
@@ -252,6 +256,77 @@ public class AdminSiteSettingsService {
 
     private void persistPresets(List<LocationPresetDto> presets) {
         writeJson(KEY_LOCATION_PRESETS, presets);
+    }
+
+    // === Promocja nad kalendarzem — aktywny szablon (referencja po ID) ===
+
+    @Cacheable(value = "siteSettings", key = "'calendarPromo'")
+    @Transactional(readOnly = true)
+    public CalendarPromoSectionDto getCalendarPromoSection() {
+        // Promocja pokazuje się TYLKO gdy wybrany jest istniejący szablon; inaczej enabled=false.
+        String activeId = getCalendarPromoActiveState().activePresetId();
+        if (activeId == null) return new CalendarPromoSectionDto(false, Map.of());
+        return getCalendarPromoPresets().stream()
+                .filter(p -> activeId.equals(p.id()))
+                .findFirst()
+                .map(p -> new CalendarPromoSectionDto(true, p.translations()))
+                .orElse(new CalendarPromoSectionDto(false, Map.of()));
+    }
+
+    @Transactional(readOnly = true)
+    public LocationActiveStateDto getCalendarPromoActiveState() {
+        return readJson(KEY_CALENDAR_PROMO_ACTIVE, new TypeReference<LocationActiveStateDto>() {},
+                new LocationActiveStateDto(null));
+    }
+
+    @CacheEvict(value = "siteSettings", allEntries = true)
+    public LocationActiveStateDto setCalendarPromoActivePreset(@Nullable String presetId) {
+        LocationActiveStateDto state = new LocationActiveStateDto(presetId);
+        writeJson(KEY_CALENDAR_PROMO_ACTIVE, state);
+        return state;
+    }
+
+    @Transactional(readOnly = true)
+    public List<CalendarPromoPresetDto> getCalendarPromoPresets() {
+        return readJson(KEY_CALENDAR_PROMO_PRESETS, new TypeReference<List<CalendarPromoPresetDto>>() {}, List.of());
+    }
+
+    @CacheEvict(value = "siteSettings", allEntries = true)
+    public CalendarPromoPresetDto saveCalendarPromoPreset(CalendarPromoPresetDto preset) {
+        List<CalendarPromoPresetDto> presets = new ArrayList<>(getCalendarPromoPresets());
+        CalendarPromoPresetDto stored;
+        if (preset.id() == null || preset.id().isBlank()) {
+            stored = new CalendarPromoPresetDto(UUID.randomUUID().toString(), preset.name(), preset.translations());
+            presets.add(stored);
+        } else {
+            stored = preset;
+            int idx = indexOfPromoPreset(presets, preset.id());
+            if (idx >= 0) {
+                presets.set(idx, stored);
+            } else {
+                presets.add(stored);
+            }
+        }
+        writeJson(KEY_CALENDAR_PROMO_PRESETS, presets);
+        return stored;
+    }
+
+    @CacheEvict(value = "siteSettings", allEntries = true)
+    public void deleteCalendarPromoPreset(String id) {
+        List<CalendarPromoPresetDto> presets = new ArrayList<>(getCalendarPromoPresets());
+        presets.removeIf(p -> id.equals(p.id()));
+        writeJson(KEY_CALENDAR_PROMO_PRESETS, presets);
+        // Jeśli usunięty szablon był na stronie — zdejmij go (promocja zniknie).
+        if (id.equals(getCalendarPromoActiveState().activePresetId())) {
+            writeJson(KEY_CALENDAR_PROMO_ACTIVE, new LocationActiveStateDto(null));
+        }
+    }
+
+    private static int indexOfPromoPreset(List<CalendarPromoPresetDto> presets, String id) {
+        for (int i = 0; i < presets.size(); i++) {
+            if (id.equals(presets.get(i).id())) return i;
+        }
+        return -1;
     }
 
     // Wspólne odczyt/zapis ustawień przechowywanych jako JSON w site_settings.

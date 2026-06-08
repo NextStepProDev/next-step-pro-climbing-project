@@ -169,7 +169,7 @@ export function HomePage() {
           <div className="text-center max-w-3xl mx-auto">
             {/* === ANDALUSIA BADGE — pokazywana gdy sekcja aktywna i plakietka niepusta === */}
             {locationEnabled && locationBadge && (
-              <div className="location-badge inline-flex items-center gap-2 px-3 py-1.5 bg-amber-500/15 backdrop-blur-md border border-amber-400/40 rounded-full text-amber-400 text-sm font-medium mb-6 shadow-lg [text-shadow:_0_1px_4px_rgb(0_0_0_/_60%)]">
+              <div className="location-badge inline-flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2 bg-amber-500/15 backdrop-blur-md border border-amber-400/40 rounded-full text-amber-400 text-sm sm:text-base font-medium mb-6 shadow-lg">
                 <span className="location-badge-pin">📍</span>
                 <span>{locationBadge}</span>
               </div>

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Upload, Trash2, Library, ImageIcon, Save, X, Shield, MapPin, Plus, ArrowUp, ArrowDown, Pencil, Check } from 'lucide-react'
+import { Upload, Trash2, Library, ImageIcon, Save, X, Shield, MapPin, Plus, ArrowUp, ArrowDown, Pencil, Check, Megaphone } from 'lucide-react'
 import { adminSiteApi } from '../../api/client'
 import { useToast } from '../../context/ToastContext'
 import { Button } from '../../components/ui/Button'
@@ -10,7 +10,7 @@ import { Modal } from '../../components/ui/Modal'
 import { MediaPickerModal } from '../../components/ui/MediaPickerModal'
 import { GalleryPickerModal } from '../../components/ui/GalleryPickerModal'
 import { FocalPointEditor } from '../../components/ui/FocalPointEditor'
-import type { AssetDto, LocationContentDto, LocationPresetDto } from '../../types'
+import type { AssetDto, LocationContentDto, LocationPresetDto, CalendarPromoContentDto, CalendarPromoPresetDto } from '../../types'
 
 interface FocalPoint { x: number; y: number }
 
@@ -270,6 +270,9 @@ export function AdminSitePanel() {
 
       {/* "Gdzie teraz szkolę" section */}
       <LocationSection />
+
+      {/* Promocja nad kalendarzem */}
+      <CalendarPromoSection />
 
       {/* Modals */}
       <MediaPickerModal
@@ -907,6 +910,313 @@ function LocationSection() {
       />
     </section>
   )
+}
+
+const EMPTY_PROMO: CalendarPromoContentDto = { badge: '', title: '', description: '', ctaLabel: '', ctaUrl: '' }
+
+function CalendarPromoSection() {
+  const { t } = useTranslation('admin')
+  const queryClient = useQueryClient()
+  const { showToast } = useToast()
+
+  const [editor, setEditor] = useState<{ mode: 'new' } | { mode: 'edit'; preset: CalendarPromoPresetDto } | null>(null)
+  const [draft, setDraft] = useState<Record<string, CalendarPromoContentDto>>({})
+  const [activeLang, setActiveLang] = useState<string>('pl')
+  const [saveError, setSaveError] = useState<string | null>(null)
+
+  const [nameModal, setNameModal] = useState<{ mode: 'create' } | { mode: 'rename'; preset: CalendarPromoPresetDto } | null>(null)
+  const [nameInput, setNameInput] = useState('')
+  const [presetToDelete, setPresetToDelete] = useState<CalendarPromoPresetDto | null>(null)
+
+  const { data: presets, isLoading } = useQuery({
+    queryKey: ['admin', 'calendarPromoPresets'],
+    queryFn: adminSiteApi.getCalendarPromoPresets,
+  })
+
+  const { data: activeState } = useQuery({
+    queryKey: ['admin', 'calendarPromoActive'],
+    queryFn: adminSiteApi.getCalendarPromoActiveState,
+  })
+
+  const activePresetId = activeState?.activePresetId ?? null
+
+  const invalidateAll = () => {
+    queryClient.invalidateQueries({ queryKey: ['admin', 'calendarPromoPresets'] })
+    queryClient.invalidateQueries({ queryKey: ['admin', 'calendarPromoActive'] })
+    queryClient.invalidateQueries({ queryKey: ['calendarPromo'] })
+  }
+
+  const savePresetMutation = useMutation({
+    mutationFn: (preset: CalendarPromoPresetDto) => adminSiteApi.saveCalendarPromoPreset(preset),
+    onSuccess: () => {
+      setSaveError(null)
+      setEditor(null)
+      setDraft({})
+      setNameModal(null)
+      setNameInput('')
+      invalidateAll()
+      showToast(t('site.calendarPromo.presetSavedToast'))
+    },
+    onError: (e: Error) => setSaveError(e.message),
+  })
+
+  const deletePresetMutation = useMutation({
+    mutationFn: (id: string) => adminSiteApi.deleteCalendarPromoPreset(id),
+    onSuccess: () => {
+      setSaveError(null)
+      setPresetToDelete(null)
+      invalidateAll()
+      showToast(t('site.calendarPromo.presetDeletedToast'))
+    },
+    onError: (e: Error) => { setPresetToDelete(null); setSaveError(e.message) },
+  })
+
+  const setActiveMutation = useMutation({
+    mutationFn: (presetId: string | null) => adminSiteApi.setCalendarPromoActivePreset(presetId),
+    onSuccess: (_res, presetId) => {
+      setSaveError(null)
+      queryClient.invalidateQueries({ queryKey: ['admin', 'calendarPromoActive'] })
+      queryClient.invalidateQueries({ queryKey: ['calendarPromo'] })
+      showToast(presetId ? t('site.calendarPromo.appliedToast') : t('site.calendarPromo.disabledToast'))
+    },
+    onError: (e: Error) => setSaveError(e.message),
+  })
+
+  if (isLoading) {
+    return (
+      <section className="bg-surface-800 border border-surface-700 rounded-lg p-6">
+        <span className="text-surface-500 text-sm">{t('site.loading')}</span>
+      </section>
+    )
+  }
+
+  const content = draft[activeLang] ?? EMPTY_PROMO
+
+  const updateContent = (partial: Partial<CalendarPromoContentDto>) => {
+    setDraft({ ...draft, [activeLang]: { ...EMPTY_PROMO, ...draft[activeLang], ...partial } })
+  }
+
+  const openNew = () => { setEditor({ mode: 'new' }); setDraft({}); setActiveLang('pl'); setSaveError(null) }
+  const openEdit = (preset: CalendarPromoPresetDto) => {
+    setEditor({ mode: 'edit', preset }); setDraft({ ...preset.translations }); setActiveLang('pl'); setSaveError(null)
+  }
+  const closeEditor = () => { setEditor(null); setDraft({}); setSaveError(null) }
+
+  // Title + description są obowiązkowe — co najmniej jeden język musi mieć oba.
+  const hasRequiredContent = (translations: Record<string, CalendarPromoContentDto>) =>
+    Object.values(translations).some(c => c.title.trim() !== '' && c.description.trim() !== '')
+
+  const saveEditor = () => {
+    if (!editor) return
+    if (!hasRequiredContent(draft)) {
+      setSaveError(t('site.calendarPromo.requiredError'))
+      return
+    }
+    if (editor.mode === 'edit') {
+      savePresetMutation.mutate({ id: editor.preset.id, name: editor.preset.name, translations: cleanPromoTranslations(draft) })
+    } else {
+      setNameModal({ mode: 'create' })
+      setNameInput('')
+    }
+  }
+
+  const openRename = (preset: CalendarPromoPresetDto) => { setNameModal({ mode: 'rename', preset }); setNameInput(preset.name) }
+
+  const submitName = () => {
+    const name = nameInput.trim()
+    if (!name || !nameModal) return
+    if (nameModal.mode === 'create') {
+      savePresetMutation.mutate({ id: null, name, translations: cleanPromoTranslations(draft) })
+    } else {
+      savePresetMutation.mutate({ ...nameModal.preset, name })
+    }
+  }
+
+  return (
+    <section className="bg-surface-800 border border-surface-700 rounded-lg p-6 space-y-5">
+      <div className="flex items-center gap-2">
+        <Megaphone className="w-5 h-5 text-amber-400" />
+        <h3 className="text-base font-semibold text-surface-100">{t('site.calendarPromo.title')}</h3>
+      </div>
+      <p className="text-surface-400 text-sm">{t('site.calendarPromo.description')}</p>
+
+      {editor ? (
+        <>
+          <div className="flex items-center gap-2 px-3 py-2 bg-primary-500/10 border border-primary-500/30 rounded-lg text-sm text-primary-300">
+            <Pencil className="w-4 h-4 shrink-0" />
+            {editor.mode === 'edit'
+              ? t('site.calendarPromo.editingTemplateBanner', { name: editor.preset.name })
+              : t('site.calendarPromo.newTemplateTitle')}
+          </div>
+
+          <div className="flex gap-1.5">
+            {LOCATION_LANGS.map(l => (
+              <button key={l.code} type="button" onClick={() => setActiveLang(l.code)}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                  activeLang === l.code ? 'bg-primary-500 text-white' : 'bg-surface-900 text-surface-300 hover:bg-surface-700'
+                }`}>
+                {l.label}
+              </button>
+            ))}
+          </div>
+          {activeLang !== 'en' && (
+            <p className="text-xs text-surface-500 -mt-2">{t('site.calendarPromo.langFallbackHint')}</p>
+          )}
+
+          <div className="space-y-3">
+            <Field label={t('site.calendarPromo.badgeLabel')}>
+              <input type="text" value={content.badge} placeholder={t('site.calendarPromo.badgePlaceholder')}
+                onChange={e => updateContent({ badge: e.target.value })} className={inputClass} />
+            </Field>
+            <Field label={t('site.calendarPromo.titleLabel')}>
+              <input type="text" value={content.title}
+                onChange={e => updateContent({ title: e.target.value })} className={inputClass} />
+            </Field>
+            <Field label={t('site.calendarPromo.descriptionLabel')}>
+              <textarea value={content.description} rows={2}
+                onChange={e => updateContent({ description: e.target.value })} className={inputClass} />
+            </Field>
+            <div className="grid sm:grid-cols-2 gap-3">
+              <Field label={t('site.calendarPromo.ctaLabelLabel')}>
+                <input type="text" value={content.ctaLabel} placeholder={t('site.calendarPromo.ctaLabelPlaceholder')}
+                  onChange={e => updateContent({ ctaLabel: e.target.value })} className={inputClass} />
+              </Field>
+              <Field label={t('site.calendarPromo.ctaUrlLabel')}>
+                <input type="text" value={content.ctaUrl} placeholder={t('site.calendarPromo.ctaUrlPlaceholder')}
+                  onChange={e => updateContent({ ctaUrl: e.target.value })} className={inputClass} />
+              </Field>
+            </div>
+            <p className="text-xs text-surface-500">{t('site.calendarPromo.ctaHint')}</p>
+          </div>
+
+          {saveError && <p className="text-red-400 text-sm">{saveError}</p>}
+
+          <div className="flex flex-wrap gap-3 pt-2 border-t border-surface-700">
+            <Button onClick={saveEditor} disabled={savePresetMutation.isPending}>
+              <Save className="w-4 h-4 mr-2" />
+              {savePresetMutation.isPending ? t('site.saving') : t('site.calendarPromo.saveTemplate')}
+            </Button>
+            <Button variant="secondary" onClick={closeEditor} disabled={savePresetMutation.isPending}>
+              <X className="w-4 h-4 mr-2" />
+              {t('site.cancel')}
+            </Button>
+          </div>
+        </>
+      ) : (
+        <>
+          <Button variant="secondary" onClick={openNew}>
+            <Plus className="w-4 h-4 mr-2" />
+            {t('site.calendarPromo.addTemplate')}
+          </Button>
+
+          {saveError && <p className="text-red-400 text-sm">{saveError}</p>}
+
+          <div className="space-y-2">
+            <h4 className="text-sm font-semibold text-surface-200">{t('site.calendarPromo.presetsTitle')}</h4>
+            {presets && presets.length > 0 ? (
+              <ul className="space-y-2">
+                {presets.map(preset => {
+                  const isActive = preset.id === activePresetId
+                  return (
+                    <li key={preset.id ?? preset.name}
+                      className={`flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 bg-surface-900 border rounded-lg px-3 py-2 ${
+                        isActive ? 'border-green-500/40' : 'border-surface-700'
+                      }`}>
+                      <span className="flex items-center gap-2 min-w-0">
+                        <span className="text-sm text-surface-100 truncate">{preset.name}</span>
+                        {isActive && (
+                          <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 bg-green-500/15 text-green-400 border border-green-500/30 rounded-full whitespace-nowrap shrink-0">
+                            <Check className="w-3 h-3" />
+                            {t('site.calendarPromo.onSite')}
+                          </span>
+                        )}
+                      </span>
+                      <div className="flex flex-wrap gap-2 shrink-0">
+                        {isActive ? (
+                          <Button variant="secondary" onClick={() => setActiveMutation.mutate(null)} disabled={setActiveMutation.isPending}>
+                            {t('site.calendarPromo.disable')}
+                          </Button>
+                        ) : (
+                          <Button variant="secondary" onClick={() => preset.id && setActiveMutation.mutate(preset.id)} disabled={setActiveMutation.isPending}>
+                            {t('site.calendarPromo.apply')}
+                          </Button>
+                        )}
+                        <Button variant="secondary" onClick={() => openEdit(preset)}>
+                          <Pencil className="w-4 h-4 mr-1" />
+                          {t('site.calendarPromo.edit')}
+                        </Button>
+                        <Button variant="secondary" onClick={() => openRename(preset)}>
+                          {t('site.calendarPromo.rename')}
+                        </Button>
+                        <Button variant="danger" onClick={() => setPresetToDelete(preset)}>
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </li>
+                  )
+                })}
+              </ul>
+            ) : (
+              <p className="text-sm text-surface-500">{t('site.calendarPromo.noPresets')}</p>
+            )}
+          </div>
+        </>
+      )}
+
+      <Modal
+        isOpen={nameModal !== null}
+        onClose={() => setNameModal(null)}
+        title={nameModal?.mode === 'rename' ? t('site.calendarPromo.rename') : t('site.calendarPromo.saveTemplate')}
+      >
+        <div className="space-y-4">
+          <input
+            type="text"
+            autoFocus
+            value={nameInput}
+            onChange={e => setNameInput(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') submitName() }}
+            placeholder={t('site.calendarPromo.presetNamePlaceholder')}
+            className={inputClass}
+          />
+          <div className="flex justify-end gap-2">
+            <Button variant="secondary" onClick={() => setNameModal(null)}>{t('site.cancel')}</Button>
+            <Button onClick={submitName} disabled={!nameInput.trim() || savePresetMutation.isPending}>
+              {t('site.save')}
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      <ConfirmModal
+        isOpen={presetToDelete !== null}
+        title={t('site.calendarPromo.deletePresetConfirmTitle')}
+        message={t('site.calendarPromo.deletePresetConfirmMessage')}
+        confirmText={t('site.calendarPromo.remove')}
+        onConfirm={() => presetToDelete?.id && deletePresetMutation.mutate(presetToDelete.id)}
+        onClose={() => setPresetToDelete(null)}
+      />
+    </section>
+  )
+}
+
+/** Przycina białe znaki we wszystkich polach; pomija języki bez tytułu i opisu. */
+function cleanPromoTranslations(
+  translations: Record<string, CalendarPromoContentDto>,
+): Record<string, CalendarPromoContentDto> {
+  const out: Record<string, CalendarPromoContentDto> = {}
+  for (const [lang, c] of Object.entries(translations)) {
+    const cleaned: CalendarPromoContentDto = {
+      badge: c.badge.trim(),
+      title: c.title.trim(),
+      description: c.description.trim(),
+      ctaLabel: c.ctaLabel.trim(),
+      ctaUrl: c.ctaUrl.trim(),
+    }
+    // Pomijaj puste języki (bez tytułu i opisu), by nie zaśmiecać szablonu.
+    if (cleaned.title === '' && cleaned.description === '') continue
+    out[lang] = cleaned
+  }
+  return out
 }
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {

@@ -2,10 +2,6 @@
   "title": "Calendar",
   "metaDescription": "Climbing class schedule — check available dates and book your spot.",
   "subtitle": "Select a day to see available time slots and sign up for sessions.",
-  "promo": {
-    "title": "Promotion until end of May only!!",
-    "description": "Buy 2 training sessions and pay for two!!"
-  },
   "viewMode": {
     "month": "Month",
     "week": "Week"

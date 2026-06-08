@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import pl.nextsteppro.climbing.api.admin.settings.AdminSiteSettingsService;
 import pl.nextsteppro.climbing.api.settings.SiteSettingsDtos.BadgeImageDto;
+import pl.nextsteppro.climbing.api.settings.SiteSettingsDtos.CalendarPromoSectionDto;
 import pl.nextsteppro.climbing.api.settings.SiteSettingsDtos.HeroImageDto;
 import pl.nextsteppro.climbing.api.settings.SiteSettingsDtos.HomeSettingsDto;
 
@@ -54,5 +55,12 @@ public class SiteSettingsController {
     @ApiResponse(responseCode = "200", description = "URL badge lub null gdy brak")
     public ResponseEntity<BadgeImageDto> getBadgeLeftImage() {
         return ResponseEntity.ok(adminSiteSettingsService.getBadgeLeftImage());
+    }
+
+    @GetMapping("/calendar-promo")
+    @Operation(summary = "Pobierz aktywną promocję nad kalendarzem (enabled=false gdy brak)")
+    @ApiResponse(responseCode = "200", description = "Treść promocji per język lub enabled=false")
+    public ResponseEntity<CalendarPromoSectionDto> getCalendarPromo() {
+        return ResponseEntity.ok(adminSiteSettingsService.getCalendarPromoSection());
     }
 }

@@ -46,6 +46,32 @@ public class SiteSettingsDtos {
             @Nullable String activePresetId
     ) {}
 
+    /**
+     * Treść promocji nad kalendarzem dla jednego języka.
+     * Obowiązkowe: title + description. Opcjonalne: badge (plakietka u góry)
+     * oraz przycisk CTA (ctaLabel + ctaUrl) — gdy oba puste, przycisku nie ma.
+     */
+    public record CalendarPromoContentDto(
+            String badge,
+            String title,
+            String description,
+            String ctaLabel,
+            String ctaUrl
+    ) {}
+
+    /** Aktywna (wyświetlana) promocja kalendarza: widoczność + treść per język. */
+    public record CalendarPromoSectionDto(
+            boolean enabled,
+            Map<String, CalendarPromoContentDto> translations
+    ) {}
+
+    /** Zapisany szablon promocji kalendarza (wszystkie języki), do ponownego użycia. */
+    public record CalendarPromoPresetDto(
+            @Nullable String id,
+            String name,
+            Map<String, CalendarPromoContentDto> translations
+    ) {}
+
     public record HomeSettingsDto(
             HeroImageDto hero,
             BadgeImageDto badge,

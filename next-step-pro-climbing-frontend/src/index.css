@@ -239,6 +239,63 @@ body {
   transition: box-shadow 0.25s ease;
 }
 
+/* === Calendar promo banner — premium entrance, matches the hero location badge === */
+@keyframes calendar-promo-in {
+  0%   { opacity: 0; transform: translateY(-14px) scale(0.92); filter: blur(5px); }
+  55%  { opacity: 1; transform: translateY(0) scale(1.02); filter: blur(0); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes calendar-promo-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(251, 191, 36, 0), 0 8px 24px rgba(0, 0, 0, 0.3); }
+  50%      { box-shadow: 0 0 22px 2px rgba(251, 191, 36, 0.32), 0 8px 24px rgba(0, 0, 0, 0.3); }
+}
+
+/* diagonal light sweep — one quick pass, long pause, on loop */
+@keyframes calendar-promo-shine {
+  0%   { transform: translateX(-160%) skewX(-22deg); }
+  16%  { transform: translateX(320%) skewX(-22deg); }
+  100% { transform: translateX(320%) skewX(-22deg); }
+}
+
+.calendar-promo {
+  opacity: 0;
+  transform-origin: center;
+  will-change: transform, opacity;
+  animation:
+    calendar-promo-in 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) 0.15s both,
+    calendar-promo-glow 3.4s ease-in-out 1s infinite;
+}
+.calendar-promo::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 45%;
+  height: 100%;
+  pointer-events: none;
+  background: linear-gradient(
+    100deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.55) 50%,
+    transparent 100%
+  );
+  animation: calendar-promo-shine 6s ease-in-out 0.9s infinite;
+}
+
+/* inner pieces assemble in sequence after the banner lands (reuses step-rise) */
+.calendar-promo-badge,
+.calendar-promo-title,
+.calendar-promo-desc,
+.calendar-promo-cta {
+  opacity: 0;
+  animation: step-rise 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.calendar-promo-badge { animation-delay: 0.45s; }
+.calendar-promo-title { animation-delay: 0.55s; }
+.calendar-promo-desc  { animation-delay: 0.68s; }
+.calendar-promo-cta   { animation-delay: 0.82s; }
+
 .btn-glow {
   transition: box-shadow 0.3s ease;
 }

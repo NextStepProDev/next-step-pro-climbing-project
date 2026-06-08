@@ -827,3 +827,24 @@ export interface LocationPresetDto {
 export interface LocationActiveStateDto {
   activePresetId: string | null
 }
+
+// Promocja nad kalendarzem. Obowiązkowe: title + description.
+// Opcjonalne: badge (plakietka) i przycisk CTA (ctaLabel + ctaUrl).
+export interface CalendarPromoContentDto {
+  badge: string
+  title: string
+  description: string
+  ctaLabel: string
+  ctaUrl: string
+}
+
+export interface CalendarPromoSectionDto {
+  enabled: boolean
+  translations: Record<string, CalendarPromoContentDto>
+}
+
+export interface CalendarPromoPresetDto {
+  id: string | null
+  name: string
+  translations: Record<string, CalendarPromoContentDto>
+}

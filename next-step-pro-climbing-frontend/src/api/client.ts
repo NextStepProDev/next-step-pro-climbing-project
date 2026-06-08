@@ -70,6 +70,8 @@ import type {
   SlotTemplate,
   LocationActiveStateDto,
   LocationPresetDto,
+  CalendarPromoSectionDto,
+  CalendarPromoPresetDto,
 } from '../types'
 import {
   getAccessToken,
@@ -1030,6 +1032,7 @@ export const siteSettingsApi = {
   getHero: () => fetchApi<HeroImageDto>('/settings/hero'),
   getBadge: () => fetchApi<BadgeImageDto>('/settings/badge'),
   getBadgeLeft: () => fetchApi<BadgeImageDto>('/settings/badge-left'),
+  getCalendarPromo: () => fetchApi<CalendarPromoSectionDto>('/settings/calendar-promo'),
 }
 
 // Admin Site Settings
@@ -1128,6 +1131,29 @@ export const adminSiteApi = {
 
   deleteLocationPreset: (id: string) =>
     fetchApi<void>(`/admin/settings/home-location/presets/${id}`, {
+      method: 'DELETE',
+    }),
+
+  getCalendarPromoActiveState: () =>
+    fetchApi<LocationActiveStateDto>('/admin/settings/calendar-promo'),
+
+  setCalendarPromoActivePreset: (presetId: string | null) =>
+    fetchApi<LocationActiveStateDto>('/admin/settings/calendar-promo', {
+      method: 'PUT',
+      body: JSON.stringify({ activePresetId: presetId }),
+    }),
+
+  getCalendarPromoPresets: () =>
+    fetchApi<CalendarPromoPresetDto[]>('/admin/settings/calendar-promo/presets'),
+
+  saveCalendarPromoPreset: (preset: CalendarPromoPresetDto) =>
+    fetchApi<CalendarPromoPresetDto>('/admin/settings/calendar-promo/presets', {
+      method: 'POST',
+      body: JSON.stringify(preset),
+    }),
+
+  deleteCalendarPromoPreset: (id: string) =>
+    fetchApi<void>(`/admin/settings/calendar-promo/presets/${id}`, {
       method: 'DELETE',
     }),
 }
