@@ -284,7 +284,7 @@ export function HomePage() {
               { target: 100, suffix: '%', label: t('stats.passion') },
             ].map((stat) => (
               <div key={stat.label} className="text-center">
-                <p className="text-4xl sm:text-5xl font-bold text-primary-400 mb-2">
+                <p className="font-display text-4xl sm:text-5xl font-bold text-primary-400 mb-2">
                   <AnimatedCounter target={stat.target} suffix={stat.suffix} />
                 </p>
                 <p className="text-sm text-surface-400">{stat.label}</p>
