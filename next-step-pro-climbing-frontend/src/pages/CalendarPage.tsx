@@ -750,14 +750,14 @@ export function CalendarPage() {
       )}
 
       <SlotDetailModal
-        key={selectedSlotId ?? 'closed'}
+        key={selectedSlotId ?? 'slot-closed'}
         slot={slotDetail ?? null}
         isOpen={!!selectedSlotId}
         onClose={handleModalClose}
       />
 
       <EventSignupModal
-        key={selectedEvent?.id ?? 'closed'}
+        key={selectedEvent?.id ?? 'event-closed'}
         event={selectedEvent}
         isOpen={!!selectedEvent}
         onClose={() => setSelectedEvent(null)}
