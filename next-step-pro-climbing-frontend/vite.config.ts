@@ -27,12 +27,23 @@ export default defineConfig({
   build: {
     rollupOptions: {
       output: {
-        manualChunks: {
-          vendor: ['react', 'react-dom', 'react-router-dom'],
-          query: ['@tanstack/react-query'],
-          i18n: ['i18next', 'react-i18next'],
-          icons: ['lucide-react'],
-          dates: ['date-fns'],
+        // Vite 8 bundles with Rolldown, which only accepts the function form of
+        // manualChunks. Order matters: more specific packages are matched before
+        // the generic react/* fallthrough (e.g. react-i18next -> i18n, not vendor).
+        manualChunks: (id) => {
+          if (!id.includes('node_modules')) return
+          if (id.includes('@tanstack')) return 'query'
+          if (id.includes('i18next')) return 'i18n'
+          if (id.includes('lucide-react')) return 'icons'
+          if (id.includes('date-fns')) return 'dates'
+          if (
+            id.includes('react-router') ||
+            id.includes('react-dom') ||
+            id.includes('/react/') ||
+            id.includes('scheduler')
+          ) {
+            return 'vendor'
+          }
         },
       },
     },

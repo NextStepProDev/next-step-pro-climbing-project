@@ -1,4 +1,5 @@
-import { Phone, Mail, User, Facebook, Youtube, Instagram } from 'lucide-react'
+import { Phone, Mail, User } from 'lucide-react'
+import { Facebook, Youtube, Instagram } from '../ui/BrandIcons'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { useTheme } from '../../context/ThemeContext'

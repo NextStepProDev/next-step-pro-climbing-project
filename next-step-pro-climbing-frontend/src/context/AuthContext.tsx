@@ -23,10 +23,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient()
   const { i18n } = useTranslation()
   const [user, setUser] = useState<User | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
+  // Initialise from token presence so the "logged out" case needs no synchronous
+  // state update on mount (avoids set-state-in-effect).
+  const [isLoading, setIsLoading] = useState(() => hasTokens())
 
   const i18nRef = useRef(i18n)
-  i18nRef.current = i18n
+  useEffect(() => {
+    i18nRef.current = i18n
+  }, [i18n])
 
   const syncLanguage = useCallback((preferredLanguage: string) => {
     if (preferredLanguage && preferredLanguage !== i18nRef.current.language) {
@@ -52,9 +56,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [syncLanguage])
 
+  // Load the existing session on mount. With no tokens the initial state already
+  // reflects "logged out", so we bail out without a synchronous state update; every
+  // state write below happens only after the request settles.
   useEffect(() => {
-    fetchUser()
-  }, [fetchUser])
+    if (!hasTokens()) return
+    let cancelled = false
+    authApi.getCurrentUser()
+      .then((currentUser) => {
+        if (cancelled) return
+        setUser(currentUser)
+        syncLanguage(currentUser.preferredLanguage)
+      })
+      .catch(() => {
+        if (cancelled) return
+        clearTokens()
+        setUser(null)
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [syncLanguage])
 
   useEffect(() => {
     const handler = () => {

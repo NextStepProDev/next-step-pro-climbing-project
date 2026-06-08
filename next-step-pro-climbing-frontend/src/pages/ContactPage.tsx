@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next'
 import { PageHead } from '../components/ui/PageHead'
-import { Mail, Phone, User, Facebook, Youtube, Instagram, ExternalLink } from 'lucide-react'
+import { Mail, Phone, User, ExternalLink } from 'lucide-react'
+import { Facebook, Youtube, Instagram } from '../components/ui/BrandIcons'
 import { useTheme } from '../context/ThemeContext'
 import logoWhite from '../assets/logo/logo-white.png'
 import logoBlack from '../assets/logo/logo-black.png'
