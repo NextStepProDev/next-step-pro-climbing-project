@@ -149,6 +149,9 @@ export function HomePage() {
               style={{ objectPosition }}
             />
             <div className={`hidden sm:block absolute inset-0 bg-gradient-to-b from-surface-950/5 via-surface-950/15 to-surface-950 transition-opacity duration-700 ${heroImgLoaded ? 'opacity-100' : 'opacity-0'}`} />
+            {/* Desktop: stały ciemny podkład pod treścią (oba motywy) — żeby jasny napis/logo
+                były czytelne na każdym zdjęciu; zanika do przezroczystości, więc brzegi zdjęcia zostają jasne */}
+            <div className="hidden sm:block absolute inset-0 z-[1] pointer-events-none bg-[radial-gradient(ellipse_75%_70%_at_50%_50%,rgba(0,0,0,0.55),rgba(0,0,0,0.15)_60%,transparent_80%)]" />
           </>
         )}
         {badgeLeftImageUrl && (
@@ -175,15 +178,33 @@ export function HomePage() {
               </div>
             )}
             {/* === END BADGE === */}
-            <img
-              src={theme === 'dark' ? logoWhite : logoBlack}
-              alt="Next Step Pro Climbing"
-              className="h-32 sm:h-36 lg:h-40 mx-auto mb-8 sm:mb-6 drop-shadow-[0_0_30px_rgba(59,130,246,0.3)]"
-            />
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-surface-50 mb-4">
+            {heroImageUrl ? (
+              <>
+                {/* mobile: logo pod zdjęciem, na tle strony → zależne od motywu */}
+                <img
+                  src={theme === 'dark' ? logoWhite : logoBlack}
+                  alt="Next Step Pro Climbing"
+                  className="sm:hidden h-32 mx-auto mb-8 drop-shadow-[0_0_30px_rgba(59,130,246,0.3)]"
+                />
+                {/* desktop: logo na zdjęciu → zawsze białe */}
+                <img
+                  src={logoWhite}
+                  alt=""
+                  aria-hidden="true"
+                  className="hidden sm:block h-36 lg:h-40 mx-auto mb-6 drop-shadow-[0_0_30px_rgba(59,130,246,0.3)]"
+                />
+              </>
+            ) : (
+              <img
+                src={theme === 'dark' ? logoWhite : logoBlack}
+                alt="Next Step Pro Climbing"
+                className="h-32 sm:h-36 lg:h-40 mx-auto mb-8 sm:mb-6 drop-shadow-[0_0_30px_rgba(59,130,246,0.3)]"
+              />
+            )}
+            <h1 className={`text-3xl sm:text-4xl lg:text-5xl font-bold mb-4 ${heroImageUrl ? 'text-surface-50 sm:text-white' : 'text-surface-50'}`}>
               {t("hero.tagline")}
             </h1>
-            <p className="text-base sm:text-lg text-surface-200 mb-8 sm:mb-6 max-w-2xl mx-auto">
+            <p className={`text-base sm:text-lg mb-8 sm:mb-6 max-w-2xl mx-auto ${heroImageUrl ? 'text-surface-200 sm:text-white/90' : 'text-surface-200'}`}>
               {t("hero.subtitle")}
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
