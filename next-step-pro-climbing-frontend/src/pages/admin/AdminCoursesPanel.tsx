@@ -453,7 +453,10 @@ function EditView({
     return map
   })
 
-  useEffect(() => {
+  // Sync new blocks added via invalidate (e.g. after immediate ops) without resetting user edits.
+  // Done as a guarded state update during render rather than in an effect, so it can't trigger
+  // cascading re-renders; the guard makes it run only when a genuinely new block id appears.
+  if (detail.blocks.some((b) => !(b.id in blockEdits))) {
     setBlockEdits((prev) => {
       const next = { ...prev }
       detail.blocks.forEach((b) => {
@@ -463,7 +466,7 @@ function EditView({
       })
       return next
     })
-  }, [detail.blocks])
+  }
 
   // ---------- Pending new blocks ----------
   const [pendingBlocks, setPendingBlocks] = useState<PendingBlock[]>([])
