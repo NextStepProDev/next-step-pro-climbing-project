@@ -405,6 +405,19 @@ body {
   box-shadow: 0 0 20px rgba(71, 85, 105, 0.3), 0 0 40px rgba(71, 85, 105, 0.1);
 }
 
+/* Hero location badge sits on the hero photo (theme-independent background).
+   The global light-theme overrides flip amber to dark brown, which makes it
+   unreadable in light mode — pin it to the dark-theme amber look instead. */
+[data-theme="light"] .location-badge {
+  background-color: color-mix(in srgb, #f59e0b 15%, transparent);
+  border-color: color-mix(in srgb, #fbbf24 40%, transparent);
+  color: #fbbf24;
+}
+
+/* Calendar promo: drop the text-shadow in light mode — on a light background
+   it reads as a smudge under the text. */
+[data-theme="light"] .calendar-promo { text-shadow: none; }
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
