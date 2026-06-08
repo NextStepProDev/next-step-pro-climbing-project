@@ -41,11 +41,19 @@ export function CoursePreviewModal({
 
         {/* Thumbnail */}
         {thumbnailUrl ? (
-          <div className="w-full rounded-lg overflow-hidden mb-6">
+          <div className="relative w-full rounded-lg overflow-hidden mb-6 bg-surface-800 aspect-video">
+            {/* Rozmyte tło z tego samego zdjęcia — wypełnia puste miejsca zamiast czarnego pasa */}
+            <img
+              src={thumbnailUrl}
+              alt=""
+              aria-hidden="true"
+              className="absolute inset-0 w-full h-full object-cover scale-110 blur-2xl"
+            />
+            {/* Pełne zdjęcie, wyśrodkowane */}
             <img
               src={thumbnailUrl}
               alt={title}
-              className="w-full max-h-80 object-contain"
+              className="relative w-full h-full object-contain"
             />
           </div>
         ) : (

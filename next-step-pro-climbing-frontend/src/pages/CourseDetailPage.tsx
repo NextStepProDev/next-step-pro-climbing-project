@@ -129,15 +129,23 @@ export function CourseDetailPage() {
       </div>
 
       {course.thumbnailUrl && (
-        <div className="mb-6 rounded-lg overflow-hidden bg-surface-800">
+        <div className="relative mb-6 rounded-lg overflow-hidden bg-surface-800 h-64 sm:h-80 lg:h-[400px]">
+          {/* Rozmyte tło z TEGO SAMEGO zdjęcia — wypełnia puste miejsca zamiast czarnego pasa */}
           <img
             src={course.thumbnailUrl}
-            alt={course.title}
-            className="w-full max-h-[400px] object-contain"
+            alt=""
+            aria-hidden="true"
+            className="absolute inset-0 w-full h-full object-cover scale-110 blur-2xl"
             style={course.thumbnailFocalPointX != null && course.thumbnailFocalPointY != null
               ? { objectPosition: `${course.thumbnailFocalPointX * 100}% ${course.thumbnailFocalPointY * 100}%` }
               : undefined
             }
+          />
+          {/* Pełne zdjęcie, wyśrodkowane */}
+          <img
+            src={course.thumbnailUrl}
+            alt={course.title}
+            className="relative w-full h-full object-contain"
           />
         </div>
       )}
