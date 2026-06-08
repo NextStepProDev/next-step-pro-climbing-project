@@ -148,11 +148,11 @@ export function HomePage() {
               className={`hidden sm:block absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ${heroImgLoaded ? 'opacity-100 animation-ken-burns' : 'opacity-0'}`}
               style={{ objectPosition }}
             />
-            <div className={`hidden sm:block absolute inset-0 bg-gradient-to-b from-surface-950/5 via-surface-950/15 to-surface-950 transition-opacity duration-700 ${heroImgLoaded ? 'opacity-100' : 'opacity-0'}`} />
+            <div className={`hidden sm:block absolute inset-0 bg-gradient-to-b from-transparent via-surface-950/8 to-surface-950 transition-opacity duration-700 ${heroImgLoaded ? 'opacity-100' : 'opacity-0'}`} />
             {/* Desktop: stały, delikatny ciemny podkład pod treścią (oba motywy) — głównie pod logo,
                 żeby jasny napis/logo były czytelne na każdym zdjęciu; zanika do przezroczystości, więc
                 brzegi zdjęcia zostają jasne. Sam tekst dostaje dodatkowo halo (.hero-over-photo). */}
-            <div className="hidden sm:block absolute inset-0 z-[1] pointer-events-none bg-[radial-gradient(ellipse_75%_70%_at_50%_50%,rgba(0,0,0,0.5),rgba(0,0,0,0.14)_60%,transparent_80%)]" />
+            <div className="hidden sm:block absolute inset-0 z-[1] pointer-events-none bg-[radial-gradient(ellipse_75%_70%_at_50%_50%,rgba(0,0,0,0.3),rgba(0,0,0,0.08)_60%,transparent_80%)]" />
           </>
         )}
         {badgeLeftImageUrl && (
