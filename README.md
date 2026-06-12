@@ -35,10 +35,10 @@ Users can browse a public calendar, reserve time slots and sign up for events. A
 ## Tech Stack
 
 ### Backend
-- **Java 25** + **Spring Boot 4.0.2**
+- **Java 25** + **Spring Boot 4.1.0**
 - Spring Security + JWT + OAuth2 (Google)
 - Spring Data JPA + **PostgreSQL 17**
-- **Flyway** (53 migrations)
+- **Flyway** (56 migrations)
 - SpringDoc OpenAPI (Swagger UI)
 - Caffeine Cache (multi-tier TTL)
 - Spring Boot Starter Mail
@@ -46,8 +46,8 @@ Users can browse a public calendar, reserve time slots and sign up for events. A
 - Testcontainers + JUnit 5
 
 ### Frontend
-- **React 19.2** + **TypeScript 5.9**
-- **Vite 7.2**
+- **React 19.2** + **TypeScript 6.0**
+- **Vite 8**
 - **Tailwind CSS 4**
 - TanStack React Query 5
 - React Router 7
@@ -69,7 +69,7 @@ next-step-pro-climbing-project/
 ├── next-step-pro-climbing-frontend/   # React SPA
 ├── next-step-pro-climbing-hub/        # Docker Compose (dev/prod), .env
 ├── .github/workflows/                 # CI/CD pipelines
-├── VERSION                            # Application version (1.0.0)
+├── VERSION                            # Application version (4.8.x)
 └── CLAUDE.md                          # AI context
 ```
 
@@ -135,7 +135,7 @@ Available after starting the backend:
 CI/CD via GitHub Actions:
 1. Push/PR to `main` runs tests (backend: Gradle test, frontend: lint + typecheck + build)
 2. Merge to `main` builds Docker images and pushes to GHCR
-3. Production deploy — manual trigger in GitHub Actions
+3. Production deploy — manual trigger in GitHub Actions; after the container is healthy, an external smoke test hits the public endpoints and fails the deploy if any isn't `200`
 
 Production: `nextsteppro.pl`
 
