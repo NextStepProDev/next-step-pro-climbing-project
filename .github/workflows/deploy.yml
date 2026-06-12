@@ -71,3 +71,42 @@ jobs:
             echo "ERROR: Backend did not become healthy within 4 minutes."
             docker logs --tail 80 nsp-backend-prod
             exit 1
+
+      - name: Smoke test public endpoints
+        run: |
+          BASE="https://nextsteppro.pl"
+          MONTH=$(date +%Y-%m)
+          # Read-only GETs the live frontend actually uses; covers nginx routing
+          # + backend + DB across several modules. Skips bare /api/settings (it
+          # returns 500 by design — unused path with no sub-resource).
+          PATHS=(
+            "/"
+            "/api/courses?language=pl"
+            "/api/news?page=0&size=3&language=pl"
+            "/api/instructors?language=pl"
+            "/api/calendar/month/${MONTH}"
+            "/api/settings/home"
+            "/api/settings/hero"
+            "/api/settings/calendar-promo"
+          )
+          FAILED=0
+          for p in "${PATHS[@]}"; do
+            CODE="000"
+            for attempt in 1 2 3; do
+              CODE=$(curl -sS -m 15 -o /dev/null -w "%{http_code}" "${BASE}${p}" || echo "000")
+              [ "$CODE" = "200" ] && break
+              echo "  ${p} -> HTTP ${CODE} (attempt ${attempt}/3), retrying in 5s..."
+              sleep 5
+            done
+            if [ "$CODE" = "200" ]; then
+              echo "OK   HTTP 200  ${p}"
+            else
+              echo "FAIL HTTP ${CODE}  ${p}"
+              FAILED=1
+            fi
+          done
+          if [ "$FAILED" -ne 0 ]; then
+            echo "ERROR: one or more public endpoints did not return 200 — deploy is unhealthy."
+            exit 1
+          fi
+          echo "Smoke test passed: all public endpoints return 200."
