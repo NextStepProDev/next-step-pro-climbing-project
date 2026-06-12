@@ -58,7 +58,7 @@ Users can browse a public calendar, reserve time slots and sign up for events. A
 - Docker + Docker Compose
 - GitHub Actions (CI/CD)
 - GitHub Container Registry (GHCR)
-- Oracle Cloud (production VM)
+- Cloud VM (production)
 - Nginx Proxy Manager + Let's Encrypt SSL
 
 ## Project Structure

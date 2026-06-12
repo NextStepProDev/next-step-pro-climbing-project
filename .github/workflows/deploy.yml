@@ -35,7 +35,7 @@ jobs:
         id: compose
         run: echo "content=$(base64 -w 0 next-step-pro-climbing-hub/docker-compose.prod.yml)" >> $GITHUB_OUTPUT
 
-      - name: Deploy to Oracle Cloud VM
+      - name: Deploy to production VM
         uses: appleboy/ssh-action@v1
         env:
           COMPOSE_B64: ${{ steps.compose.outputs.content }}

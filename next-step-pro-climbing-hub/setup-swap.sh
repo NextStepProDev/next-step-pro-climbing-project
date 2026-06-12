@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 #
-# setup-swap.sh — konfiguracja 2 GB swap dla serwera produkcyjnego (1 GB RAM).
+# setup-swap.sh — konfiguracja 2 GB swap dla serwera produkcyjnego.
 #
-# Krytyczne dla maszyny Oracle Always Free (1 GB RAM): bez swapu backend
+# Krytyczne dla maszyny produkcyjnej o ograniczonej pamięci: bez swapu backend
 # (Java/Spring) + PostgreSQL laduja OOM. Tworzy /swapfile, ustawia swappiness 10
 # i utrwala obie rzeczy na reboot (fstab + sysctl).
 #
