@@ -198,7 +198,7 @@ function PrivacyPolicyPl({ logo }: { logo: string }) {
             />
             <InfoItem
               title="Google LLC (logowanie przez Google oraz kopie zapasowe)"
-              description="Jeśli wybierzesz logowanie przez Google, Twoje podstawowe dane profilowe są przekazywane zgodnie z warunkami Google OAuth 2.0. Ponadto kopie zapasowe bazy danych przechowywane są na prywatnym, niepublicznym dysku Google Drive."
+              description="Jeśli wybierzesz logowanie przez Google, Twoje podstawowe dane profilowe są przekazywane zgodnie z warunkami Google OAuth 2.0. Ponadto zaszyfrowane kopie zapasowe bazy danych przechowywane są na prywatnym, niepublicznym dysku Google Drive."
             />
           </div>
           <div className="mt-4 bg-surface-800/50 rounded-xl p-4">
@@ -447,7 +447,7 @@ function PrivacyPolicyEn({ logo }: { logo: string }) {
             />
             <InfoItem
               title="Google LLC (Google sign-in and backups)"
-              description="If you choose to sign in with Google, your basic profile data is transmitted in accordance with the Google OAuth 2.0 terms. In addition, database backups are stored on a private, non-public Google Drive."
+              description="If you choose to sign in with Google, your basic profile data is transmitted in accordance with the Google OAuth 2.0 terms. In addition, encrypted database backups are stored on a private, non-public Google Drive."
             />
           </div>
           <div className="mt-4 bg-surface-800/50 rounded-xl p-4">
