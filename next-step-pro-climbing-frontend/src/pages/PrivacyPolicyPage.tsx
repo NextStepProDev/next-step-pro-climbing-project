@@ -4,8 +4,8 @@ import logoWhite from '../assets/logo/logo-white.png'
 import logoBlack from '../assets/logo/logo-black.png'
 import { CONTACT } from '../constants/contact'
 
-const LAST_UPDATED_PL = '19 kwietnia 2026'
-const LAST_UPDATED_EN = '19 April 2026'
+const LAST_UPDATED_PL = '13 czerwca 2026'
+const LAST_UPDATED_EN = '13 June 2026'
 
 export function PrivacyPolicyPage() {
   const { i18n } = useTranslation()
@@ -74,8 +74,9 @@ function PrivacyPolicyPl({ logo }: { logo: string }) {
             </p>
           </div>
           <p className="text-surface-400 text-sm mt-4 leading-relaxed">
-            W sprawach dotyczących danych osobowych możesz kontaktować się ze mną pod powyższym adresem e-mail.
-            Staram się odpowiadać na wszystkie wiadomości w ciągu 72 godzin.
+            Nie wyznaczyłem Inspektora Ochrony Danych (nie ma takiego obowiązku w tym przypadku).
+            We wszystkich sprawach dotyczących danych osobowych możesz kontaktować się ze mną pod powyższym
+            adresem e-mail. Staram się odpowiadać na wszystkie wiadomości w ciągu 72 godzin.
           </p>
         </Section>
 
@@ -136,6 +137,15 @@ function PrivacyPolicyPl({ logo }: { logo: string }) {
               basis="Art. 6 ust. 1 lit. b RODO — wykonanie umowy"
             />
           </div>
+          <p className="text-surface-400 text-sm mt-6 leading-relaxed">
+            Podanie danych jest dobrowolne, ale niezbędne do założenia konta i korzystania z systemu rezerwacji —
+            bez nich nie jesteśmy w stanie wyświadczyć usługi. Zgoda na newsletter jest w pełni dobrowolna i nie
+            wpływa na możliwość korzystania z serwisu.
+          </p>
+          <p className="text-surface-400 text-sm mt-3 leading-relaxed">
+            Twoje dane <span className="text-surface-200 font-medium">nie są wykorzystywane do zautomatyzowanego
+            podejmowania decyzji ani profilowania</span> w rozumieniu art. 22 RODO.
+          </p>
         </Section>
 
         {/* 4. Jak długo przechowujemy dane */}
@@ -167,30 +177,39 @@ function PrivacyPolicyPl({ logo }: { logo: string }) {
         </Section>
 
         {/* 5. Komu udostępniamy dane */}
-        <Section title="5. Komu udostępniamy dane">
+        <Section title="5. Komu powierzamy dane">
           <p className="text-surface-300 leading-relaxed font-medium text-lg mb-4">
-            Nikomu. I nigdy tego nie zrobimy.
+            Nie sprzedajemy ani nie udostępniamy Twoich danych w celach komercyjnych.
           </p>
           <p className="text-surface-400 leading-relaxed mb-4">
             Twoje dane osobowe nie są sprzedawane, wynajmowane ani przekazywane żadnym podmiotom trzecim w celach
-            marketingowych, reklamowych ani żadnych innych celach komercyjnych.
-          </p>
-          <p className="text-surface-400 leading-relaxed mb-4">
-            Jedynymi podmiotami, z którymi współpracujemy w ramach technicznego przetwarzania danych, są:
+            marketingowych ani reklamowych. Korzystamy z zaufanych, zewnętrznych dostawców usług, którzy przetwarzają
+            dane wyłącznie w celu świadczenia nam swoich usług i tylko w zakresie niezbędnym do działania serwisu —
+            zgodnie z regulaminami tych usług oraz obowiązującymi przepisami o ochronie danych:
           </p>
           <div className="space-y-3">
             <InfoItem
-              title="Oracle Cloud Infrastructure (EU)"
-              description="Serwer aplikacji i baza danych zlokalizowane w regionie europejskim (Frankfurt, Niemcy). Dane nie opuszczają Europejskiego Obszaru Gospodarczego."
+              title="Oracle Cloud Infrastructure (EOG)"
+              description="Serwer aplikacji i baza danych zlokalizowane w regionie europejskim (Frankfurt, Niemcy)."
             />
             <InfoItem
-              title="Zewnętrzny serwer poczty e-mail (SMTP)"
+              title="Zewnętrzny dostawca poczty e-mail (SMTP)"
               description="Wykorzystywany wyłącznie do dostarczenia wiadomości (weryfikacja konta, newsletter, reset hasła). Dostawca nie przetwarza Twoich danych w żadnym innym celu."
             />
             <InfoItem
-              title="Google LLC (wyłącznie przy logowaniu przez Google)"
-              description="Jeśli wybierzesz logowanie przez Google, Twoje podstawowe dane profilowe są przekazywane przez Google do naszego serwisu zgodnie z warunkami Google OAuth 2.0."
+              title="Google LLC (logowanie przez Google oraz kopie zapasowe)"
+              description="Jeśli wybierzesz logowanie przez Google, Twoje podstawowe dane profilowe są przekazywane zgodnie z warunkami Google OAuth 2.0. Ponadto kopie zapasowe bazy danych przechowywane są na prywatnym, niepublicznym dysku Google Drive."
             />
+          </div>
+          <div className="mt-4 bg-surface-800/50 rounded-xl p-4">
+            <p className="text-surface-200 font-medium text-sm mb-1">Przekazywanie danych poza EOG</p>
+            <p className="text-surface-500 text-sm leading-relaxed">
+              Serwer i baza danych pozostają w EOG. W zakresie usług Google (logowanie przez Google oraz kopie
+              zapasowe na Google Drive) — dostawcy z siedzibą w USA — niektóre dane mogą być przetwarzane poza EOG.
+              Transfer odbywa się na podstawie programu EU‑US Data Privacy Framework (Google jest certyfikowany)
+              oraz standardowych klauzul umownych zatwierdzonych przez Komisję Europejską (SCC), które zapewniają
+              odpowiedni poziom ochrony. Kopię stosowanych zabezpieczeń możesz uzyskać, kontaktując się ze mną.
+            </p>
           </div>
         </Section>
 
@@ -308,6 +327,7 @@ function PrivacyPolicyEn({ logo }: { logo: string }) {
             </p>
           </div>
           <p className="text-surface-400 text-sm mt-4 leading-relaxed">
+            I have not appointed a Data Protection Officer (there is no such obligation in this case).
             For any questions regarding your personal data, please contact me at the e-mail address above.
             I aim to respond to all messages within 72 hours.
           </p>
@@ -366,6 +386,15 @@ function PrivacyPolicyEn({ logo }: { logo: string }) {
               basis="Art. 6(1)(b) GDPR — performance of a contract"
             />
           </div>
+          <p className="text-surface-400 text-sm mt-6 leading-relaxed">
+            Providing your data is voluntary but necessary to create an account and use the booking system —
+            without it we cannot provide the service. Newsletter consent is entirely voluntary and does not
+            affect your ability to use the service.
+          </p>
+          <p className="text-surface-400 text-sm mt-3 leading-relaxed">
+            Your data is <span className="text-surface-200 font-medium">not used for automated
+            decision-making or profiling</span> within the meaning of Art. 22 GDPR.
+          </p>
         </Section>
 
         {/* 4 */}
@@ -397,30 +426,39 @@ function PrivacyPolicyEn({ logo }: { logo: string }) {
         </Section>
 
         {/* 5 */}
-        <Section title="5. Who We Share Your Data With">
+        <Section title="5. Who We Entrust Your Data To">
           <p className="text-surface-300 leading-relaxed font-medium text-lg mb-4">
-            Nobody. And we never will.
+            We do not sell or share your data for commercial purposes.
           </p>
           <p className="text-surface-400 leading-relaxed mb-4">
-            Your personal data is not sold, rented, or transferred to any third parties for marketing,
-            advertising, or any other commercial purposes.
-          </p>
-          <p className="text-surface-400 leading-relaxed mb-4">
-            The only parties involved in the technical processing of data are:
+            Your personal data is not sold, rented, or transferred to any third parties for marketing or
+            advertising purposes. We use trusted external service providers that process data solely to provide
+            us with their services and only to the extent necessary to run the service — in accordance with
+            their terms of service and applicable data protection law:
           </p>
           <div className="space-y-3">
             <InfoItem
-              title="Oracle Cloud Infrastructure (EU)"
-              description="Application server and database located in the European region (Frankfurt, Germany). Data does not leave the European Economic Area."
+              title="Oracle Cloud Infrastructure (EEA)"
+              description="Application server and database located in the European region (Frankfurt, Germany)."
             />
             <InfoItem
-              title="External e-mail server (SMTP)"
+              title="External e-mail provider (SMTP)"
               description="Used solely to deliver messages (account verification, newsletter, password reset). The provider does not process your data for any other purpose."
             />
             <InfoItem
-              title="Google LLC (only when signing in with Google)"
-              description="If you choose to sign in with Google, your basic profile data is transmitted by Google to our service in accordance with the Google OAuth 2.0 terms."
+              title="Google LLC (Google sign-in and backups)"
+              description="If you choose to sign in with Google, your basic profile data is transmitted in accordance with the Google OAuth 2.0 terms. In addition, database backups are stored on a private, non-public Google Drive."
             />
+          </div>
+          <div className="mt-4 bg-surface-800/50 rounded-xl p-4">
+            <p className="text-surface-200 font-medium text-sm mb-1">Transfers outside the EEA</p>
+            <p className="text-surface-500 text-sm leading-relaxed">
+              The server and database remain within the EEA. For Google services (Google sign-in and backups on
+              Google Drive) — a provider based in the USA — some data may be processed outside the EEA. Such
+              transfers rely on the EU‑US Data Privacy Framework (Google is certified) and the Standard
+              Contractual Clauses approved by the European Commission (SCC), which ensure an adequate level of
+              protection. You can obtain a copy of the safeguards in place by contacting me.
+            </p>
           </div>
         </Section>
 
