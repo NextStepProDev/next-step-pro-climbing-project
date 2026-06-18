@@ -12,6 +12,10 @@ on:
       - next-step-pro-climbing-frontend/**
       - VERSION
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
   packages: write
@@ -19,6 +23,7 @@ permissions:
 jobs:
   lint-typecheck-build:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     defaults:
       run:
         working-directory: next-step-pro-climbing-frontend
@@ -46,6 +51,7 @@ jobs:
     needs: lint-typecheck-build
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    timeout-minutes: 30
 
     steps:
       - uses: actions/checkout@v5
