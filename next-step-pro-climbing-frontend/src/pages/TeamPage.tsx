@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { useFocusTrap } from '../utils/useFocusTrap'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { PageHead } from '../components/ui/PageHead'
 import { User, X, ExternalLink } from 'lucide-react'
 import clsx from 'clsx'
@@ -202,15 +202,50 @@ export function TeamPage({ memberType }: { memberType: InstructorType }) {
   const { memberId } = useParams<{ memberId?: string }>()
   const navigate = useNavigate()
 
-  const [contentLanguage, setContentLanguage] = useState(() =>
-    getDefaultCourseContentLanguage(i18n.language)
-  )
+  const basePath = memberType === 'INSTRUCTOR' ? '/team/instruktorzy' : '/team/zawodnicy'
+  const [searchParams, setSearchParams] = useSearchParams()
 
+  // Język treści żyje w URL (?lang=...), więc PRZETRWUJE remount strony, który
+  // Layout wymusza przy każdej zmianie ścieżki (`key={location.pathname}`).
+  // Wcześniej był to lokalny useState — otwarcie członka (zmiana ścieżki) montowało
+  // stronę od nowa i resetowało wybór języka do globalnego, więc modal próbował
+  // pokazać rekord w złym języku (id jest zależne od języka) i nic się nie wyświetlało.
+  const langParam = searchParams.get('lang')
+  const contentLanguage =
+    langParam === 'pl' || langParam === 'en' || langParam === 'es'
+      ? langParam
+      : getDefaultCourseContentLanguage(i18n.language)
+
+  const setContentLanguage = (code: string) =>
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev)
+        next.set('lang', code)
+        return next
+      },
+      { replace: true }
+    )
+
+  // Trasy zachowują wybrany język w query, żeby przetrwał remount/nawigację.
+  const memberUrl = (id: string) => `${basePath}/${id}?lang=${contentLanguage}`
+  const listUrl = `${basePath}?lang=${contentLanguage}`
+
+  // Globalny przełącznik języka aktualizuje też treść zespołu.
   useEffect(() => {
-    const handler = (lng: string) => setContentLanguage(getDefaultCourseContentLanguage(lng))
+    const handler = (lng: string) => {
+      const code = getDefaultCourseContentLanguage(lng)
+      setSearchParams(
+        (prev) => {
+          const next = new URLSearchParams(prev)
+          next.set('lang', code)
+          return next
+        },
+        { replace: true }
+      )
+    }
     i18n.on('languageChanged', handler)
     return () => { i18n.off('languageChanged', handler) }
-  }, [i18n])
+  }, [i18n, setSearchParams])
 
   const { data: allMembers, isLoading, error } = useQuery({
     queryKey: ['instructors', contentLanguage],
@@ -221,16 +256,39 @@ export function TeamPage({ memberType }: { memberType: InstructorType }) {
     ? (allMembers.find(m => m.id === memberId) ?? null)
     : null
 
+  // Zmiana języka treści przy OTWARTYM członku (np. globalnym przełącznikiem)
+  // przełącza go na ten język. Każda wersja językowa to osobny rekord z innym id,
+  // więc mapujemy po translationGroupId na odpowiednik w nowym języku (jak Courses/News).
+  const lastOpenedRef = useRef<InstructorPublic | null>(null)
+  useEffect(() => {
+    if (selected) lastOpenedRef.current = selected
+  }, [selected])
+
+  const prevLangRef = useRef(contentLanguage)
+  useEffect(() => {
+    if (prevLangRef.current === contentLanguage) return
+    if (!allMembers) return // poczekaj na listę w nowym języku przed synchronizacją
+    prevLangRef.current = contentLanguage
+    if (!memberId) return // brak otwartego modala — nic do synchronizacji
+    const prev = lastOpenedRef.current
+    const target = prev
+      ? allMembers.find(m => m.translationGroupId === prev.translationGroupId)
+      : undefined
+    navigate(target ? memberUrl(target.id) : listUrl, { replace: true })
+    // memberUrl/listUrl zależą tylko od basePath+contentLanguage (już w deps)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [contentLanguage, allMembers, memberId, basePath, navigate])
+
   const title = memberType === 'INSTRUCTOR' ? t('team.instructors') : t('team.competitors')
   const certificationsLabel = memberType === 'INSTRUCTOR' ? t('team.certifications') : t('team.achievements')
   const aboutLabel = t('team.about')
 
   const openModal = (m: InstructorPublic) => {
-    navigate(m.id)
+    navigate(memberUrl(m.id))
   }
 
   const closeModal = () => {
-    navigate('..', { relative: 'path' })
+    navigate(listUrl)
   }
 
   if (isLoading) {
