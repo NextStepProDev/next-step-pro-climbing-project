@@ -4,8 +4,8 @@ import logoWhite from '../assets/logo/logo-white.png'
 import logoBlack from '../assets/logo/logo-black.png'
 import { CONTACT } from '../constants/contact'
 
-const LAST_UPDATED_PL = '13 czerwca 2026'
-const LAST_UPDATED_EN = '13 June 2026'
+const LAST_UPDATED_PL = '20 czerwca 2026'
+const LAST_UPDATED_EN = '20 June 2026'
 
 export function PrivacyPolicyPage() {
   const { i18n } = useTranslation()
@@ -51,6 +51,11 @@ function PrivacyPolicyPl({ logo }: { logo: string }) {
             Niniejsza polityka prywatności wyjaśnia, jakie dane zbieram, w jakim celu i na jakiej podstawie prawnej,
             jak długo je przechowuję oraz jakie prawa Ci przysługują. Napisana jest w sposób prosty i zrozumiały —
             bez zbędnego żargonu prawniczego.
+          </p>
+          <p className="text-surface-300 leading-relaxed mt-4">
+            Ta Polityka ma charakter informacyjny. Korzystając z konta, potwierdzasz, że znasz zasady przetwarzania
+            Twoich danych. Dane konta przetwarzam na podstawie umowy (art. 6 ust. 1 lit. b RODO), a zgody na newsletter
+            są dobrowolne i możesz je w każdej chwili wycofać.
           </p>
           <p className="text-surface-500 text-sm mt-4">
             Ostatnia aktualizacja: {LAST_UPDATED_PL}
@@ -308,6 +313,11 @@ function PrivacyPolicyEn({ logo }: { logo: string }) {
             This privacy policy explains what data I collect, for what purpose and on what legal basis,
             how long I store it, and what rights you have. It is written in a clear and straightforward
             way — without unnecessary legal jargon.
+          </p>
+          <p className="text-surface-300 leading-relaxed mt-4">
+            This Policy is informational in nature. By using your account, you confirm that you are aware of how
+            your data is processed. I process account data on the basis of a contract (Art. 6(1)(b) GDPR), while
+            consents for the newsletter are voluntary and can be withdrawn at any time.
           </p>
           <p className="text-surface-500 text-sm mt-4">Last updated: {LAST_UPDATED_EN}</p>
         </div>

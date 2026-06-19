@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { useTranslation } from 'react-i18next'
+import { Trans, useTranslation } from 'react-i18next'
 import { useAuth } from '../context/AuthContext'
 import { consumeRedirectPath } from '../utils/redirect'
 import { getErrorMessage } from '../utils/errors'
@@ -118,6 +118,18 @@ export function LoginPage() {
           </svg>
           {t('oauth.google')}
         </a>
+
+        {/* Obowiązek informacyjny RODO (art. 13) w momencie pozyskania danych: logowanie Google
+            zakłada konto, więc polityka jest dostępna już tutaj, zanim user kliknie. */}
+        <p className="mt-3 text-center text-xs text-surface-500 leading-relaxed">
+          <Trans
+            i18nKey="oauth.privacyNotice"
+            ns="auth"
+            components={{
+              1: <Link to="/polityka-prywatnosci" target="_blank" className="text-surface-400 hover:text-primary-400 underline transition-colors" />,
+            }}
+          />
+        </p>
 
         <div className="mt-6 space-y-2 text-center text-sm">
           <p className="text-surface-400">

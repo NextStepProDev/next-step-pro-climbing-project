@@ -33,7 +33,8 @@
     "modalTitle": "Chcesz otrzymywać newsletter?",
     "modalDescription": "Wysyłamy aktualności, informacje o nowych kursach i ofertach specjalnych. Klikając Tak, wyrażasz zgodę na otrzymywanie newslettera od szkoły wspinaczkowej Next Step Pro Climbing. Możesz zrezygnować w każdej chwili przez link w wiadomości.",
     "modalYes": "Tak, chcę otrzymywać newsletter",
-    "modalNo": "Nie, dziękuję"
+    "modalNo": "Nie, dziękuję",
+    "privacyNotice": "Logując się, przyjmujesz do wiadomości zasady przetwarzania danych opisane w naszej <1>Polityce prywatności</1>."
   },
   "confirm": "Potwierdź",
   "cancel": "Anuluj",
