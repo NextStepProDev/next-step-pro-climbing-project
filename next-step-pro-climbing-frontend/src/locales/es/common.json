@@ -33,7 +33,8 @@
     "modalTitle": "¿Quieres recibir nuestro boletín?",
     "modalDescription": "Enviamos noticias, información sobre nuevos cursos y ofertas especiales. Al hacer clic en \"Sí\", consientes recibir el boletín de Next Step Pro Climbing. Puedes darte de baja en cualquier momento mediante el enlace en cualquier correo.",
     "modalYes": "Sí, apúntame",
-    "modalNo": "No, gracias"
+    "modalNo": "No, gracias",
+    "privacyNotice": "Al iniciar sesión, reconoces las reglas de tratamiento de datos descritas en nuestra <1>Política de privacidad</1>."
   },
   "confirm": "Confirmar",
   "cancel": "Cancelar",

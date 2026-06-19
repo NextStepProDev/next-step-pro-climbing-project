@@ -230,13 +230,13 @@ export function RegisterPage() {
           </Button>
 
           <p className="text-center text-xs text-surface-500">
-            <Trans i18nKey="register.privacyNotice" ns="auth">
-              Rejestrując się, akceptujesz naszą{' '}
-              <Link to="/polityka-prywatnosci" className="text-surface-400 hover:text-primary-400 underline transition-colors">
-                Politykę prywatności
-              </Link>
-              .
-            </Trans>
+            <Trans
+              i18nKey="register.privacyNotice"
+              ns="auth"
+              components={{
+                1: <Link to="/polityka-prywatnosci" className="text-surface-400 hover:text-primary-400 underline transition-colors" />,
+              }}
+            />
           </p>
         </form>
 

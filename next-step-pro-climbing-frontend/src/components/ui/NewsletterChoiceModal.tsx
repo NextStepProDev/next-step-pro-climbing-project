@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { useTranslation } from 'react-i18next'
+import { Trans, useTranslation } from 'react-i18next'
+import { Link } from 'react-router-dom'
 import { useFocusTrap } from '../../utils/useFocusTrap'
 import { Mail } from 'lucide-react'
 import { authApi } from '../../api/client'
@@ -56,6 +57,19 @@ export function NewsletterChoiceModal({ onDone }: Props) {
             {t('newsletter.modalNo')}
           </button>
         </div>
+
+        {/* Obowiązek informacyjny RODO (art. 13): polityka prywatności pokazana w momencie
+            zakładania konta — to informacja, nie zgoda, więc bez checkboxa. Newsletter powyżej
+            to odrębna, dobrowolna zgoda (opt-in). */}
+        <p className="mt-5 pt-4 border-t border-surface-800 text-xs text-surface-500 text-center leading-relaxed">
+          <Trans
+            i18nKey="newsletter.privacyNotice"
+            ns="common"
+            components={{
+              1: <Link to="/polityka-prywatnosci" target="_blank" className="text-surface-400 hover:text-primary-400 underline transition-colors" />,
+            }}
+          />
+        </p>
       </div>
     </div>
   )
