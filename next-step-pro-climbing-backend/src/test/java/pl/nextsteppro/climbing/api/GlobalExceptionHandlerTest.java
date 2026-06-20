@@ -1,8 +1,10 @@
 package pl.nextsteppro.climbing.api;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 import pl.nextsteppro.climbing.infrastructure.i18n.MessageService;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -69,6 +71,21 @@ class GlobalExceptionHandlerTest {
 
         assertEquals(HttpStatus.CONFLICT, response.getStatusCode());
         assertEquals("CONFLICT", response.getBody().code());
+    }
+
+    @Test
+    void shouldReturn404WhenNoResourceFoundForUnmappedPath() {
+        when(messageService.get("error.not.found")).thenReturn("Nie znaleziono zasobu");
+        var ex = new NoResourceFoundException(HttpMethod.GET, "/api/settings", "api/settings");
+
+        var response = handler.handleNoResourceFound(ex);
+
+        assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
+        var body = response.getBody();
+        assertNotNull(body);
+        assertEquals("NOT_FOUND", body.code());
+        assertEquals("Nie znaleziono zasobu", body.message());
+        assertNotNull(body.timestamp());
     }
 
     @Test
