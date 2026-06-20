@@ -716,7 +716,8 @@ public class AdminService {
                     r.getComment(),
                     r.getParticipants(),
                     event != null ? event.getStartDate() : null,
-                    event != null ? event.getEndDate() : null
+                    event != null ? event.getEndDate() : null,
+                    event != null ? event.getId() : null
                 );
             })
             .toList();
@@ -910,6 +911,49 @@ public class AdminService {
         if (slot.belongsToEvent()) {
             eventWaitlistService.notifyAll(slot.getEvent().getId());
         }
+    }
+
+    /**
+     * Trwale (hard delete) usuwa pojedynczą archiwalną rezerwację — czyszczenie archiwum.
+     * W przeciwieństwie do {@link #cancelReservationByAdmin} NIE powiadamia użytkownika ani listy
+     * oczekujących i nie loguje anulowania — to porządkowanie minionych wpisów, nie anulacja.
+     * Dozwolone tylko dla slotów z przeszłości (UI wystawia akcję wyłącznie w archiwum).
+     */
+    @Caching(evict = {
+        @CacheEvict(value = "calendarMonth", allEntries = true),
+        @CacheEvict(value = "calendarWeek", allEntries = true),
+        @CacheEvict(value = "calendarDay", allEntries = true)
+    })
+    public void deleteReservationPermanently(UUID reservationId) {
+        Reservation reservation = reservationRepository.findById(reservationId)
+            .orElseThrow(() -> new IllegalArgumentException("Reservation not found"));
+        TimeSlot slot = reservation.getTimeSlot();
+        if (slot.getDate().atTime(slot.getEndTime()).isAfter(LocalDateTime.now())) {
+            throw new IllegalStateException("Only past reservations can be permanently deleted");
+        }
+        reservationRepository.delete(reservation);
+    }
+
+    /**
+     * Trwale usuwa wszystkie rezerwacje archiwalnego wydarzenia (czyszczenie archiwum grupy).
+     * Samo wydarzenie pozostaje — kasowane są tylko zapisy na jego slotach. Dozwolone tylko gdy
+     * wydarzenie jest już zakończone.
+     */
+    @Caching(evict = {
+        @CacheEvict(value = "calendarMonth", allEntries = true),
+        @CacheEvict(value = "calendarWeek", allEntries = true),
+        @CacheEvict(value = "calendarDay", allEntries = true)
+    })
+    public void deletePastEventReservations(UUID eventId) {
+        Event event = eventRepository.findById(eventId)
+            .orElseThrow(() -> new IllegalArgumentException("Event not found"));
+        if (!LocalDate.now().isAfter(event.getEndDate())) {
+            throw new IllegalStateException("Only past events can have their reservations permanently deleted");
+        }
+        List<TimeSlot> slots = timeSlotRepository.findByEventId(eventId);
+        if (slots.isEmpty()) return;
+        List<UUID> slotIds = slots.stream().map(TimeSlot::getId).toList();
+        reservationRepository.deleteByTimeSlotIds(slotIds);
     }
 
     @Caching(evict = {

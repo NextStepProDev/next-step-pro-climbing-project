@@ -396,7 +396,11 @@
     "pageInfo": "strona {{page}}/{{total}} ({{count}} na tej stronie)",
     "totalItems": "{{count}} pozycji",
     "participants": "Uczestnicy ({{count}})",
-    "spots": "{{count}} miejsca"
+    "spots": "{{count}} miejsca",
+    "deleteTitle": "Usunąć trwale?",
+    "deletePermanent": "Usuń trwale",
+    "deleteMessage": "Ta archiwalna rezerwacja zostanie bezpowrotnie usunięta. Tej operacji nie można cofnąć.",
+    "deleteEventMessage": "Wszystkie rezerwacje tego archiwalnego wydarzenia zostaną bezpowrotnie usunięte. Tej operacji nie można cofnąć."
   },
   "events": {
     "addEvent": "Dodaj wydarzenie",

@@ -433,6 +433,24 @@ public class AdminController {
         return ResponseEntity.noContent().build();
     }
 
+    @Tag(name = "Admin - Reservations")
+    @Operation(summary = "Trwale usuń archiwalną rezerwację", description = "Bezpowrotnie usuwa pojedynczą minioną rezerwację (czyszczenie archiwum; bez maili i powiadomień waitlisty)")
+    @DeleteMapping("/reservations/{reservationId}/permanent")
+    public ResponseEntity<Void> deleteReservationPermanently(
+            @Parameter(description = "UUID rezerwacji") @PathVariable UUID reservationId) {
+        adminService.deleteReservationPermanently(reservationId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @Tag(name = "Admin - Events")
+    @Operation(summary = "Trwale usuń archiwalne rezerwacje wydarzenia", description = "Bezpowrotnie usuwa wszystkie rezerwacje zakończonego wydarzenia (czyszczenie archiwum; samo wydarzenie pozostaje)")
+    @DeleteMapping("/events/{eventId}/reservations/permanent")
+    public ResponseEntity<Void> deletePastEventReservations(
+            @Parameter(description = "UUID wydarzenia") @PathVariable UUID eventId) {
+        adminService.deletePastEventReservations(eventId);
+        return ResponseEntity.noContent().build();
+    }
+
     @Tag(name = "Admin - Events")
     @Operation(summary = "Zmień liczbę uczestników rezerwacji na wydarzeniu", description = "Zmienia liczbę zarezerwowanych miejsc użytkownika na wydarzeniu i wysyła email powiadamiający")
     @PatchMapping("/events/{eventId}/participants/{userId}")

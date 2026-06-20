@@ -394,7 +394,11 @@
     "pageInfo": "página {{page}}/{{total}} ({{count}} en esta página)",
     "totalItems": "{{count}} elementos",
     "participants": "Participantes ({{count}})",
-    "spots": "{{count}} plazas"
+    "spots": "{{count}} plazas",
+    "deleteTitle": "¿Eliminar permanentemente?",
+    "deletePermanent": "Eliminar permanentemente",
+    "deleteMessage": "Esta reserva archivada se eliminará permanentemente. Esta acción no se puede deshacer.",
+    "deleteEventMessage": "Todas las reservas de este evento archivado se eliminarán permanentemente. Esta acción no se puede deshacer."
   },
   "events": {
     "addEvent": "Añadir evento",

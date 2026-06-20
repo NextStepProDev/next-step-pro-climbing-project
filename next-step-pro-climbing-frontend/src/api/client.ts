@@ -433,6 +433,12 @@ export const adminApi = {
   cancelReservationByAdmin: (reservationId: string) =>
     fetchApi<void>(`/admin/reservations/${reservationId}`, { method: 'DELETE' }),
 
+  deleteReservationPermanently: (reservationId: string) =>
+    fetchApi<void>(`/admin/reservations/${reservationId}/permanent`, { method: 'DELETE' }),
+
+  deletePastEventReservations: (eventId: string) =>
+    fetchApi<void>(`/admin/events/${eventId}/reservations/permanent`, { method: 'DELETE' }),
+
   updateReservationParticipants: (reservationId: string, participants: number) =>
     fetchApi<void>(`/admin/reservations/${reservationId}/participants`, {
       method: 'PATCH',

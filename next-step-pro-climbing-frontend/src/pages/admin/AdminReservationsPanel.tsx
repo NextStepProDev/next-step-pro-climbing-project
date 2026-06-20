@@ -1,11 +1,12 @@
 import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { format } from 'date-fns'
-import { ChevronDown, ChevronRight, ChevronLeft, Users, Mail, Phone } from 'lucide-react'
+import { ChevronDown, ChevronRight, ChevronLeft, Users, Mail, Phone, Trash2 } from 'lucide-react'
 import { adminApi } from '../../api/client'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
 import { QueryError } from '../../components/ui/QueryError'
+import { ConfirmModal } from '../../components/ui/ConfirmModal'
 import { getErrorMessage } from '../../utils/errors'
 import { useDateLocale } from '../../utils/dateFnsLocale'
 import type { ReservationAdmin } from '../../types'
@@ -20,6 +21,7 @@ interface EventGroup {
   title: string
   eventStartDate: string
   eventEndDate: string
+  eventId: string | null
   reservations: ReservationAdmin[]
 }
 
@@ -49,6 +51,7 @@ function groupReservations(reservations: ReservationAdmin[]) {
           title: r.title!,
           eventStartDate: r.eventStartDate!,
           eventEndDate: r.eventEndDate!,
+          eventId: r.eventId,
           reservations: [r],
         })
       }
@@ -154,6 +157,21 @@ const ARCHIVE_PAGE_SIZE = 15
 function PastReservationList({ reservations }: { reservations: ReservationAdmin[] }) {
   const { t } = useTranslation('admin')
   const [page, setPage] = useState(1)
+  const queryClient = useQueryClient()
+
+  const invalidate = () => {
+    queryClient.invalidateQueries({ queryKey: ['admin', 'reservations'] })
+    queryClient.invalidateQueries({ queryKey: ['calendar'] })
+  }
+
+  const deleteSlotMutation = useMutation({
+    mutationFn: (reservationId: string) => adminApi.deleteReservationPermanently(reservationId),
+    onSuccess: invalidate,
+  })
+  const deleteEventMutation = useMutation({
+    mutationFn: (eventId: string) => adminApi.deletePastEventReservations(eventId),
+    onSuccess: invalidate,
+  })
 
   const sorted = [...reservations].sort((a, b) => b.date.localeCompare(a.date))
   const totalPages = Math.max(1, Math.ceil(sorted.length / ARCHIVE_PAGE_SIZE))
@@ -170,7 +188,12 @@ function PastReservationList({ reservations }: { reservations: ReservationAdmin[
         {t('reservations.pastReservations', { count: reservations.length })}
         {totalPages > 1 && ` · ${t('reservations.pageInfo', { page: safePage, total: totalPages, count: totalCount })}`}
       </p>
-      <ReservationList sortedDates={sortedDates} grouped={grouped} />
+      <ReservationList
+        sortedDates={sortedDates}
+        grouped={grouped}
+        onDeleteSlot={(id) => deleteSlotMutation.mutate(id)}
+        onDeleteEvent={(eventId) => deleteEventMutation.mutate(eventId)}
+      />
 
       {totalPages > 1 && (
         <div className="flex items-center justify-between pt-2">
@@ -202,7 +225,17 @@ function PastReservationList({ reservations }: { reservations: ReservationAdmin[
   )
 }
 
-function ReservationList({ sortedDates, grouped }: { sortedDates: string[]; grouped: Map<string, GroupItem[]> }) {
+function ReservationList({
+  sortedDates,
+  grouped,
+  onDeleteSlot,
+  onDeleteEvent,
+}: {
+  sortedDates: string[]
+  grouped: Map<string, GroupItem[]>
+  onDeleteSlot?: (reservationId: string) => void
+  onDeleteEvent?: (eventId: string) => void
+}) {
   const locale = useDateLocale()
   return (
     <>
@@ -222,9 +255,9 @@ function ReservationList({ sortedDates, grouped }: { sortedDates: string[]; grou
             <div className="space-y-2">
               {items.map((item) =>
                 item.type === 'event' ? (
-                  <EventReservationCard key={item.key} group={item} />
+                  <EventReservationCard key={item.key} group={item} onDelete={onDeleteEvent} />
                 ) : (
-                  <SlotReservationCard key={item.reservation.id} r={item.reservation} />
+                  <SlotReservationCard key={item.reservation.id} r={item.reservation} onDelete={onDeleteSlot} />
                 )
               )}
             </div>
@@ -235,17 +268,30 @@ function ReservationList({ sortedDates, grouped }: { sortedDates: string[]; grou
   )
 }
 
-function EventReservationCard({ group }: { group: EventGroup }) {
+function EventReservationCard({ group, onDelete }: { group: EventGroup; onDelete?: (eventId: string) => void }) {
   const { t } = useTranslation('admin')
   const [expanded, setExpanded] = useState(false)
+  const [confirmOpen, setConfirmOpen] = useState(false)
+  const canDelete = onDelete && group.eventId
 
   return (
     <div className="bg-surface-900 rounded-lg border border-surface-800 p-4">
-      <div className="flex items-center gap-3 flex-wrap">
-        <span className="font-medium text-surface-100">{group.title}</span>
-        <span className="text-xs bg-primary-500/10 text-primary-400 px-2 py-0.5 rounded">
-          {format(new Date(group.eventStartDate), 'dd.MM')} - {format(new Date(group.eventEndDate), 'dd.MM.yyyy')}
-        </span>
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex items-center gap-3 flex-wrap min-w-0">
+          <span className="font-medium text-surface-100">{group.title}</span>
+          <span className="text-xs bg-primary-500/10 text-primary-400 px-2 py-0.5 rounded">
+            {format(new Date(group.eventStartDate), 'dd.MM')} - {format(new Date(group.eventEndDate), 'dd.MM.yyyy')}
+          </span>
+        </div>
+        {canDelete && (
+          <button
+            onClick={() => setConfirmOpen(true)}
+            title={t('reservations.deletePermanent')}
+            className="shrink-0 p-1.5 text-surface-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        )}
       </div>
 
       <button
@@ -282,12 +328,27 @@ function EventReservationCard({ group }: { group: EventGroup }) {
           ))}
         </div>
       )}
+
+      {canDelete && (
+        <ConfirmModal
+          isOpen={confirmOpen}
+          onClose={() => setConfirmOpen(false)}
+          onConfirm={() => {
+            onDelete!(group.eventId!)
+            setConfirmOpen(false)
+          }}
+          title={t('reservations.deleteTitle')}
+          message={t('reservations.deleteEventMessage')}
+          confirmText={t('reservations.deletePermanent')}
+        />
+      )}
     </div>
   )
 }
 
-function SlotReservationCard({ r }: { r: ReservationAdmin }) {
+function SlotReservationCard({ r, onDelete }: { r: ReservationAdmin; onDelete?: (reservationId: string) => void }) {
   const { t } = useTranslation('admin')
+  const [confirmOpen, setConfirmOpen] = useState(false)
   return (
     <div className="bg-surface-900 rounded-lg border border-surface-800 p-4 flex items-start justify-between gap-4">
       <div className="flex-1 min-w-0">
@@ -311,11 +372,36 @@ function SlotReservationCard({ r }: { r: ReservationAdmin }) {
           <div className="text-sm text-amber-400 mt-1">"{r.comment}"</div>
         )}
       </div>
-      <div className="text-right shrink-0">
-        <div className="text-surface-200 font-medium">
-          {r.startTime.slice(0, 5)} - {r.endTime.slice(0, 5)}
+      <div className="flex items-start gap-2 shrink-0">
+        <div className="text-right">
+          <div className="text-surface-200 font-medium">
+            {r.startTime.slice(0, 5)} - {r.endTime.slice(0, 5)}
+          </div>
         </div>
+        {onDelete && (
+          <button
+            onClick={() => setConfirmOpen(true)}
+            title={t('reservations.deletePermanent')}
+            className="p-1.5 text-surface-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        )}
       </div>
+
+      {onDelete && (
+        <ConfirmModal
+          isOpen={confirmOpen}
+          onClose={() => setConfirmOpen(false)}
+          onConfirm={() => {
+            onDelete(r.id)
+            setConfirmOpen(false)
+          }}
+          title={t('reservations.deleteTitle')}
+          message={t('reservations.deleteMessage')}
+          confirmText={t('reservations.deletePermanent')}
+        />
+      )}
     </div>
   )
 }
