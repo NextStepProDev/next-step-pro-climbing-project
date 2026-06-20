@@ -110,6 +110,12 @@ export function HomePage() {
         {/* Base gradient — always rendered as placeholder/fallback */}
         <div className="absolute inset-0 bg-gradient-to-br from-primary-900/20 via-surface-950 to-surface-950" />
 
+        {/* Reflektor ładowania — czekanie na zdjęcie z dysku ubrane w rozgrzewające
+            się światło sceny; znika gdy zdjęcie wejdzie i je przejmie */}
+        {heroImageUrl && !heroImgLoaded && (
+          <div className="hero-loading-glow absolute inset-0 z-[1] pointer-events-none" />
+        )}
+
         {/* Watermark logo — only when API confirmed no hero image is set */}
         {showWatermark && (
           <img
@@ -130,7 +136,7 @@ export function HomePage() {
                 aria-hidden="true"
                 fetchPriority="high"
                 onLoad={() => setHeroImgLoaded(true)}
-                className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ${heroImgLoaded ? 'opacity-100 animation-ken-burns' : 'opacity-0'}`}
+                className={`absolute inset-0 w-full h-full object-cover ${heroImgLoaded ? 'hero-cinematic' : 'opacity-0'}`}
                 style={{ objectPosition }}
               />
               <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-surface-950" />
@@ -145,7 +151,7 @@ export function HomePage() {
               aria-hidden="true"
               fetchPriority="high"
               onLoad={() => setHeroImgLoaded(true)}
-              className={`hidden sm:block absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ${heroImgLoaded ? 'opacity-100 animation-ken-burns' : 'opacity-0'}`}
+              className={`hidden sm:block absolute inset-0 w-full h-full object-cover ${heroImgLoaded ? 'hero-cinematic' : 'opacity-0'}`}
               style={{ objectPosition }}
             />
             <div className={`hidden sm:block absolute inset-0 bg-gradient-to-b from-transparent via-surface-950/4 to-surface-950 transition-opacity duration-700 ${heroImgLoaded ? 'opacity-100' : 'opacity-0'}`} />
@@ -185,30 +191,33 @@ export function HomePage() {
                 <img
                   src={theme === 'dark' ? logoWhite : logoBlack}
                   alt="Next Step Pro Climbing"
-                  className="sm:hidden h-32 mx-auto mb-8 drop-shadow-[0_0_30px_rgba(59,130,246,0.3)]"
+                  style={{ '--hero-delay': '120ms' } as CSSProperties}
+                  className="hero-rise sm:hidden h-32 mx-auto mb-8 drop-shadow-[0_0_30px_rgba(59,130,246,0.3)]"
                 />
                 {/* desktop: logo na zdjęciu → zawsze białe */}
                 <img
                   src={logoWhite}
                   alt=""
                   aria-hidden="true"
-                  className="hidden sm:block h-36 lg:h-40 mx-auto mb-6 drop-shadow-[0_0_30px_rgba(59,130,246,0.3)]"
+                  style={{ '--hero-delay': '120ms' } as CSSProperties}
+                  className="hero-rise hidden sm:block h-36 lg:h-40 mx-auto mb-6 drop-shadow-[0_0_30px_rgba(59,130,246,0.3)]"
                 />
               </>
             ) : (
               <img
                 src={theme === 'dark' ? logoWhite : logoBlack}
                 alt="Next Step Pro Climbing"
-                className="h-32 sm:h-36 lg:h-40 mx-auto mb-8 sm:mb-6 drop-shadow-[0_0_30px_rgba(59,130,246,0.3)]"
+                style={{ '--hero-delay': '120ms' } as CSSProperties}
+                className="hero-rise h-32 sm:h-36 lg:h-40 mx-auto mb-8 sm:mb-6 drop-shadow-[0_0_30px_rgba(59,130,246,0.3)]"
               />
             )}
-            <h1 className={`text-3xl sm:text-4xl lg:text-5xl font-bold mb-4 ${heroImageUrl ? 'text-surface-50 sm:text-white hero-over-photo' : 'text-surface-50'}`}>
+            <h1 style={{ '--hero-delay': '240ms' } as CSSProperties} className={`hero-rise text-3xl sm:text-4xl lg:text-5xl font-bold mb-4 ${heroImageUrl ? 'text-surface-50 sm:text-white hero-over-photo' : 'text-surface-50'}`}>
               {t("hero.tagline")}
             </h1>
-            <p className={`text-base sm:text-lg mb-8 sm:mb-6 max-w-2xl mx-auto ${heroImageUrl ? 'text-surface-200 sm:text-white/90 hero-over-photo' : 'text-surface-200'}`}>
+            <p style={{ '--hero-delay': '360ms' } as CSSProperties} className={`hero-rise text-base sm:text-lg mb-8 sm:mb-6 max-w-2xl mx-auto ${heroImageUrl ? 'text-surface-200 sm:text-white/90 hero-over-photo' : 'text-surface-200'}`}>
               {t("hero.subtitle")}
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <div style={{ '--hero-delay': '480ms' } as CSSProperties} className="hero-rise flex flex-col sm:flex-row gap-4 justify-center">
               <Link to="/calendar">
                 <Button size="lg" className="w-full sm:w-auto btn-glow">
                   <Calendar className="w-5 h-5 mr-2" />

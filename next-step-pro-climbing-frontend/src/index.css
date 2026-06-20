@@ -439,6 +439,52 @@ h1, h2, h3, h4, h5, h6, .font-display {
   }
 }
 
+/* === HERO — cinematic entrance ============================================
+   Robi ze ŚCIĄGANIA zdjęcia z dysku gwóźdź programu, nie zacinkę.
+
+   Faza 0 (ładowanie): treść (logo → nagłówek → podtytuł → CTA) montuje się
+   kaskadą nad oddychającą poświatą — czekanie wygląda jak plansza tytułowa,
+   nie jak zawieszenie.
+   Faza 1 (onLoad): zdjęcie ROZKWITA — schodzi ze scale 1.12, rozjaśnia się
+   z mroku i wchodzi w ostrość z miękkiego blura, po czym płynnie przejmuje
+   to powolny ken-burns. Reveal + ken-burns żyją w JEDNYM keyframie, żeby dwa
+   transformy się nie biły. */
+
+@keyframes hero-cinematic {
+  0%   { opacity: 0; transform: scale(1.12); filter: brightness(0.45) saturate(0.85) blur(10px); }
+  6%   { opacity: 1; transform: scale(1);    filter: brightness(1)    saturate(1)    blur(0); }
+  100% { opacity: 1; transform: scale(1.14); filter: brightness(1)    saturate(1)    blur(0); }
+}
+.hero-cinematic {
+  will-change: transform, opacity, filter;
+  /* 6% z 24s ≈ 1.44s na sam reveal; reszta to spokojny dryf ken-burns */
+  animation: hero-cinematic 24s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+}
+
+/* treść hero wjeżdża z dołu, z blura do ostrości — kaskada przez --hero-delay */
+@keyframes hero-rise {
+  0%   { opacity: 0; transform: translateY(20px); filter: blur(10px); }
+  100% { opacity: 1; transform: translateY(0);    filter: blur(0); }
+}
+.hero-rise {
+  opacity: 0;
+  will-change: transform, opacity, filter;
+  animation: hero-rise 0.85s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+  animation-delay: var(--hero-delay, 0ms);
+}
+
+/* oddychający reflektor pod logo, póki zdjęcie leci z dysku — ciemne tło
+   ożywa jak rozgrzewające się światło sceny zamiast pustej klatki */
+@keyframes hero-glow-breathe {
+  0%, 100% { opacity: 0.35; transform: scale(0.92); }
+  50%      { opacity: 0.7;  transform: scale(1.05); }
+}
+.hero-loading-glow {
+  background: radial-gradient(ellipse 60% 55% at 50% 45%,
+    rgba(71, 85, 105, 0.55), rgba(71, 85, 105, 0.12) 55%, transparent 75%);
+  animation: hero-glow-breathe 2.8s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
