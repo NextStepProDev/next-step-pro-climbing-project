@@ -1150,8 +1150,8 @@ public class AdminService {
         boolean slotInPast = LocalDateTime.now().isAfter(slot.getDate().atTime(slot.getStartTime()));
         if (!slotInPast) {
             mailService.sendReservationConfirmation(reservation, displayTitle);
+            mailService.sendAdminNotification(reservation, displayTitle);
         }
-        mailService.sendAdminNotification(reservation, displayTitle);
         activityLogService.logReservationCreated(user, slot, request.participants());
     }
 
@@ -1248,8 +1248,8 @@ public class AdminService {
             boolean eventInPast = LocalDate.now().isAfter(event.getEndDate());
             if (!eventInPast) {
                 mailService.sendEventReservationUpdateConfirmation(user, event, currentUserParticipants, newTotal);
+                mailService.sendEventAdminNotification(user, event, newTotal);
             }
-            mailService.sendEventAdminNotification(user, event, newTotal);
             activityLogService.logEventReservationUpdated(user, event, newTotal);
         } else {
             // No existing reservation — create new reservations on all slots
@@ -1271,8 +1271,8 @@ public class AdminService {
             boolean eventInPast = LocalDate.now().isAfter(event.getEndDate());
             if (!eventInPast) {
                 mailService.sendEventReservationConfirmation(user, event, request.participants());
+                mailService.sendEventAdminNotification(user, event, request.participants());
             }
-            mailService.sendEventAdminNotification(user, event, request.participants());
             activityLogService.logEventReservationCreated(user, event, request.participants());
         }
     }
