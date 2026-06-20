@@ -111,6 +111,25 @@ public class WaitlistService {
         Waitlist entry = waitlistRepository.findByUserIdAndSlotId(userId, slotId)
             .orElseThrow(() -> new IllegalArgumentException(msg.get("waitlist.not.found")));
 
+        removeEntryAndMaybeNotify(entry);
+        log.info("User {} left waitlist for slot {}", userId, slotId);
+    }
+
+    // Usuwa WSZYSTKIE aktywne wpisy waitlisty użytkownika (przy usuwaniu konta).
+    // Jeśli użytkownik miał aktywną ofertę (PENDING_CONFIRMATION), zwolnione miejsce
+    // jest re-oferowane pozostałym oczekującym — ta sama logika co przy leaveWaitlist.
+    public void removeUserFromAllWaitlists(UUID userId) {
+        List<Waitlist> entries = waitlistRepository.findActiveByUserId(userId);
+        for (Waitlist entry : entries) {
+            removeEntryAndMaybeNotify(entry);
+        }
+        if (!entries.isEmpty()) {
+            log.info("Removed user {} from {} waitlist(s) during account deletion", userId, entries.size());
+        }
+    }
+
+    private void removeEntryAndMaybeNotify(Waitlist entry) {
+        UUID slotId = entry.getTimeSlot().getId();
         boolean wasPending = entry.isPendingConfirmation();
         waitlistRepository.delete(entry);
         waitlistRepository.flush();
@@ -129,8 +148,6 @@ public class WaitlistService {
                 }
             }
         }
-
-        log.info("User {} left waitlist for slot {}", userId, slotId);
     }
 
     @Caching(evict = {

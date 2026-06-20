@@ -10,6 +10,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import pl.nextsteppro.climbing.domain.auth.AuthToken;
 import pl.nextsteppro.climbing.domain.auth.AuthTokenRepository;
 import pl.nextsteppro.climbing.domain.auth.TokenType;
+import pl.nextsteppro.climbing.api.reservation.EventWaitlistService;
+import pl.nextsteppro.climbing.api.reservation.WaitlistService;
 import pl.nextsteppro.climbing.domain.newsletter.NewsletterConsentLog;
 import pl.nextsteppro.climbing.domain.newsletter.NewsletterConsentLogRepository;
 import pl.nextsteppro.climbing.domain.reservation.ReservationRepository;
@@ -20,6 +22,7 @@ import pl.nextsteppro.climbing.infrastructure.mail.AuthMailService;
 import pl.nextsteppro.climbing.infrastructure.security.JwtService;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -61,6 +64,10 @@ class UserServiceTest {
     private MessageService msg;
     @Mock
     private NewsletterConsentLogRepository consentLogRepository;
+    @Mock
+    private WaitlistService waitlistService;
+    @Mock
+    private EventWaitlistService eventWaitlistService;
 
     private UserService userService;
     private User testUser;
@@ -76,7 +83,9 @@ class UserServiceTest {
             authTokenRepository,
             jwtService,
             msg,
-            consentLogRepository
+            consentLogRepository,
+            waitlistService,
+            eventWaitlistService
         );
 
         userId = UUID.randomUUID();
@@ -295,6 +304,63 @@ class UserServiceTest {
         inOrder.verify(reservationRepository).cancelConfirmedByUserId(userId);
         inOrder.verify(authTokenRepository).deleteAllByUserId(userId);
         inOrder.verify(userRepository).delete(testUser);
+    }
+
+    @Test
+    void shouldNotifyWaitlistsAndAdminWhenDeletingAccountWithReservations() {
+        // Given — user has a confirmed standalone slot reservation and an event reservation
+        UUID slotId = UUID.randomUUID();
+        UUID eventId = UUID.randomUUID();
+        when(userRepository.findById(userId)).thenReturn(Optional.of(testUser));
+        when(passwordEncoder.matches("correctPassword", "hashedPassword")).thenReturn(true);
+        when(reservationRepository.findConfirmedSlotIdsByUserId(userId)).thenReturn(List.of(slotId));
+        when(reservationRepository.findConfirmedEventIdsByUserId(userId)).thenReturn(List.of(eventId));
+
+        // When
+        userService.deleteAccount(userId, "correctPassword");
+
+        // Then — freed spots trigger waitlist notifications and admin is informed
+        verify(reservationRepository).cancelConfirmedByUserId(userId);
+        verify(waitlistService).notifyAll(slotId);
+        verify(eventWaitlistService).notifyAll(eventId);
+        verify(waitlistService).removeUserFromAllWaitlists(userId);
+        verify(eventWaitlistService).removeUserFromAllWaitlists(userId);
+        verify(authMailService).sendAccountSelfDeletedAdminNotification(testUser, 1);
+        verify(userRepository).delete(testUser);
+    }
+
+    @Test
+    void shouldFreeSpotsBeforeNotifyingWaitlistAndDeleteUserLast() {
+        // Given
+        UUID slotId = UUID.randomUUID();
+        when(userRepository.findById(userId)).thenReturn(Optional.of(testUser));
+        when(passwordEncoder.matches("correctPassword", "hashedPassword")).thenReturn(true);
+        when(reservationRepository.findConfirmedSlotIdsByUserId(userId)).thenReturn(List.of(slotId));
+
+        // When
+        userService.deleteAccount(userId, "correctPassword");
+
+        // Then — reservation must be cancelled (spot freed) before waitlist is notified, user deleted last
+        var inOrder = inOrder(reservationRepository, waitlistService, userRepository);
+        inOrder.verify(reservationRepository).cancelConfirmedByUserId(userId);
+        inOrder.verify(waitlistService).notifyAll(slotId);
+        inOrder.verify(userRepository).delete(testUser);
+    }
+
+    @Test
+    void shouldStillNotifyAdminWhenDeletingAccountWithoutReservations() {
+        // Given — no reservations (Mockito returns empty lists by default)
+        when(userRepository.findById(userId)).thenReturn(Optional.of(testUser));
+        when(passwordEncoder.matches("correctPassword", "hashedPassword")).thenReturn(true);
+
+        // When
+        userService.deleteAccount(userId, "correctPassword");
+
+        // Then — admin notified with zero cancelled reservations, no waitlist offers
+        verify(authMailService).sendAccountSelfDeletedAdminNotification(testUser, 0);
+        verify(waitlistService, never()).notifyAll(any());
+        verify(eventWaitlistService, never()).notifyAll(any());
+        verify(userRepository).delete(testUser);
     }
 
     // ========== NOTIFICATION PREFERENCE TESTS ==========

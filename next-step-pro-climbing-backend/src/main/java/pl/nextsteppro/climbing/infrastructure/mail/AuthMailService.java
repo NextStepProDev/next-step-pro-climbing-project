@@ -1,5 +1,6 @@
 package pl.nextsteppro.climbing.infrastructure.mail;
 
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.mail.MailException;
@@ -7,23 +8,29 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import pl.nextsteppro.climbing.config.AdminEmailConfig;
 import pl.nextsteppro.climbing.config.AppConfig;
 import pl.nextsteppro.climbing.domain.user.User;
 import pl.nextsteppro.climbing.infrastructure.i18n.MessageService;
+
+import java.util.List;
 
 @Service
 public class AuthMailService {
 
     private static final Logger log = LoggerFactory.getLogger(AuthMailService.class);
+    private static final String ADMIN_LANG = "pl";
 
     private final JavaMailSender mailSender;
     private final AppConfig appConfig;
+    private final AdminEmailConfig adminEmailConfig;
     private final MessageService msg;
     private final String siteUrl;
 
-    public AuthMailService(JavaMailSender mailSender, AppConfig appConfig, MessageService msg) {
+    public AuthMailService(JavaMailSender mailSender, AppConfig appConfig, AdminEmailConfig adminEmailConfig, MessageService msg) {
         this.mailSender = mailSender;
         this.appConfig = appConfig;
+        this.adminEmailConfig = adminEmailConfig;
         this.msg = msg;
         this.siteUrl = appConfig.getSiteUrl();
     }
@@ -65,6 +72,15 @@ public class AuthMailService {
         sendEmail(user.getEmail(), subject, body);
     }
 
+    // Powiadomienie do ADMINA, gdy użytkownik SAM usunął swoje konto.
+    // affectedReservations = liczba anulowanych potwierdzonych rezerwacji (zwolnione miejsca).
+    @Async
+    public void sendAccountSelfDeletedAdminNotification(User user, int affectedReservations) {
+        String subject = msg.getForLang("email.admin.account.deleted.subject", ADMIN_LANG, user.getFullName());
+        String body = buildAccountSelfDeletedAdminBody(user, affectedReservations);
+        sendToAdmins(subject, body);
+    }
+
     @Async
     public void sendPasswordChangedNotification(User user) {
         String lang = user.getPreferredLanguage();
@@ -92,6 +108,65 @@ public class AuthMailService {
         } catch (MailException | jakarta.mail.MessagingException e) {
             log.error("Failed to send auth email to: {}", to, e);
         }
+    }
+
+    private List<String> resolveAdminEmails() {
+        var emails = adminEmailConfig.getAdminEmails();
+        if (!emails.isEmpty()) {
+            return List.copyOf(emails);
+        }
+        String fallback = appConfig.getMail().getFrom();
+        if (fallback != null && !fallback.isBlank()) {
+            log.warn("ADMIN_EMAIL is empty, falling back to MAIL_FROM: '{}'", fallback);
+            return List.of(fallback.trim());
+        }
+        log.error("Cannot send admin notification: no admin email configured (ADMIN_EMAIL and MAIL_FROM are both empty)");
+        return List.of();
+    }
+
+    private void sendToAdmins(String subject, String body) {
+        for (String adminEmail : resolveAdminEmails()) {
+            sendEmail(adminEmail, subject, body);
+        }
+    }
+
+    private static String esc(@Nullable String value) {
+        return value == null ? "" : org.springframework.web.util.HtmlUtils.htmlEscape(value);
+    }
+
+    private String buildAccountSelfDeletedAdminBody(User user, int affectedReservations) {
+        String reservationsLine = affectedReservations > 0
+            ? msg.getForLang("email.admin.account.deleted.reservations", ADMIN_LANG, affectedReservations)
+            : msg.getForLang("email.admin.account.deleted.reservations.none", ADMIN_LANG);
+        return """
+            <html>
+            <body style="font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5;">
+                <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden;">
+                    <div style="background: #1a1816; padding: 20px; text-align: center;">
+                        <a href="%s" style="display: inline-block; text-decoration: none; cursor: pointer; line-height: 0; font-size: 0;"><img src="cid:logo" alt="Next Step Pro Climbing" style="height: 100px; display: block; border: 0;" /></a>
+                    </div>
+                    <div style="padding: 30px;">
+                        <h2 style="color: #e11d48; margin-top: 0;">%s</h2>
+                        <p style="font-size: 16px; line-height: 1.6;">%s</p>
+                        <div style="background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; padding: 20px; border-radius: 8px;">
+                            <p><strong>%s</strong> %s</p>
+                            <p><strong>%s</strong> %s</p>
+                            <p><strong>%s</strong> %s</p>
+                            <p style="margin-bottom: 0;">%s</p>
+                        </div>
+                    </div>
+                </div>
+            </body>
+            </html>
+            """.formatted(
+            siteUrl,
+            msg.getForLang("email.admin.account.deleted.title", ADMIN_LANG),
+            msg.getForLang("email.admin.account.deleted.body", ADMIN_LANG),
+            msg.getForLang("email.admin.client", ADMIN_LANG), esc(user.getFullName()),
+            msg.getForLang("email.admin.email", ADMIN_LANG), esc(user.getEmail()),
+            msg.getForLang("email.admin.phone", ADMIN_LANG), esc(user.getPhone()),
+            reservationsLine
+        );
     }
 
     private String buildWelcomeEmailBody(String lang, String firstName) {

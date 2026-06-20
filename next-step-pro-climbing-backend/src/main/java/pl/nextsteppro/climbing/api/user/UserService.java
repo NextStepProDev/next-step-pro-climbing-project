@@ -1,8 +1,12 @@
 package pl.nextsteppro.climbing.api.user;
 
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import pl.nextsteppro.climbing.api.reservation.EventWaitlistService;
+import pl.nextsteppro.climbing.api.reservation.WaitlistService;
 import pl.nextsteppro.climbing.domain.auth.AuthToken;
 import pl.nextsteppro.climbing.domain.auth.AuthTokenRepository;
 import pl.nextsteppro.climbing.domain.auth.TokenType;
@@ -19,6 +23,7 @@ import org.jspecify.annotations.Nullable;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -33,6 +38,8 @@ public class UserService {
     private final JwtService jwtService;
     private final MessageService msg;
     private final NewsletterConsentLogRepository consentLogRepository;
+    private final WaitlistService waitlistService;
+    private final EventWaitlistService eventWaitlistService;
 
     public UserService(UserRepository userRepository,
                        PasswordEncoder passwordEncoder,
@@ -41,7 +48,9 @@ public class UserService {
                        AuthTokenRepository authTokenRepository,
                        JwtService jwtService,
                        MessageService msg,
-                       NewsletterConsentLogRepository consentLogRepository) {
+                       NewsletterConsentLogRepository consentLogRepository,
+                       WaitlistService waitlistService,
+                       EventWaitlistService eventWaitlistService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.authMailService = authMailService;
@@ -50,6 +59,8 @@ public class UserService {
         this.jwtService = jwtService;
         this.msg = msg;
         this.consentLogRepository = consentLogRepository;
+        this.waitlistService = waitlistService;
+        this.eventWaitlistService = eventWaitlistService;
     }
 
     @Transactional(readOnly = true)
@@ -88,6 +99,11 @@ public class UserService {
         authMailService.sendPasswordChangedNotification(user);
     }
 
+    @Caching(evict = {
+        @CacheEvict(value = "calendarMonth", allEntries = true),
+        @CacheEvict(value = "calendarWeek", allEntries = true),
+        @CacheEvict(value = "calendarDay", allEntries = true)
+    })
     public void deleteAccount(UUID userId, @Nullable String password) {
         User user = userRepository.findById(userId)
             .orElseThrow(() -> new IllegalArgumentException("User not found"));
@@ -98,13 +114,36 @@ public class UserService {
             }
         }
 
-        // Cancel all confirmed reservations (bulk UPDATE — avoids Hibernate session conflict with deleted parent)
+        // 1. Zbierz dotknięte sloty/wydarzenia ZANIM anulujemy rezerwacje (projekcje — nie ładują encji do sesji).
+        List<UUID> affectedSlotIds = reservationRepository.findConfirmedSlotIdsByUserId(userId);
+        List<UUID> affectedEventIds = reservationRepository.findConfirmedEventIdsByUserId(userId);
+        int cancelledReservations = affectedSlotIds.size();
+
+        // 2. Anuluj wszystkie potwierdzone rezerwacje (bulk UPDATE → CANCELLED).
+        //    Bulk zamiast ładowania encji — unika konfliktu sesji Hibernate z usuwanym rodzicem (user).
+        //    Po tym kroku miejsca są w bazie zwolnione (status != CONFIRMED).
         reservationRepository.cancelConfirmedByUserId(userId);
 
-        // Remove tokens (bulk DELETE)
-        authTokenRepository.deleteAllByUserId(userId);
+        // 3. Powiadom listy oczekujących o zwolnionych miejscach (najpierw sloty, potem wydarzenia).
+        //    notifyAll liczy wolne miejsca świeżym zapytaniem agregującym, więc widzi już anulowane rezerwacje.
+        for (UUID slotId : affectedSlotIds) {
+            waitlistService.notifyAll(slotId);
+        }
+        for (UUID eventId : affectedEventIds) {
+            eventWaitlistService.notifyAll(eventId);
+        }
 
-        // Delete user
+        // 4. Usuń użytkownika z list oczekujących, na których SAM czekał.
+        //    Jeśli miał aktywną ofertę (PENDING), zwolnione miejsce trafia do pozostałych oczekujących.
+        waitlistService.removeUserFromAllWaitlists(userId);
+        eventWaitlistService.removeUserFromAllWaitlists(userId);
+
+        // 5. Powiadom administratora o usunięciu konta (async, nie blokuje transakcji).
+        authMailService.sendAccountSelfDeletedAdminNotification(user, cancelledReservations);
+
+        // 6. Usuń tokeny (bulk DELETE) i samego użytkownika.
+        //    DB kaskaduje (ON DELETE CASCADE): anulowane rezerwacje, wpisy waitlisty, logi, gwiazdki.
+        authTokenRepository.deleteAllByUserId(userId);
         userRepository.delete(user);
     }
 

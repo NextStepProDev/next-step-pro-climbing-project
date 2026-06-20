@@ -61,6 +61,14 @@ public interface ReservationRepository extends JpaRepository<Reservation, UUID> 
     @Query("UPDATE Reservation r SET r.status = 'CANCELLED' WHERE r.user.id = :userId AND r.status = 'CONFIRMED'")
     void cancelConfirmedByUserId(UUID userId);
 
+    // Projekcje (nie ładują encji Reservation do sesji) — używane przy usuwaniu konta,
+    // by zebrać dotknięte sloty/wydarzenia ZANIM rezerwacje zostaną anulowane/usunięte kaskadą.
+    @Query("SELECT r.timeSlot.id FROM Reservation r WHERE r.user.id = :userId AND r.status = 'CONFIRMED'")
+    List<UUID> findConfirmedSlotIdsByUserId(UUID userId);
+
+    @Query("SELECT DISTINCT r.timeSlot.event.id FROM Reservation r WHERE r.user.id = :userId AND r.status = 'CONFIRMED' AND r.timeSlot.event IS NOT NULL")
+    List<UUID> findConfirmedEventIdsByUserId(UUID userId);
+
     @Modifying
     @Query("DELETE FROM Reservation r WHERE r.timeSlot.date < :cutoffDate AND r.status != 'CONFIRMED'")
     int deleteCancelledBefore(LocalDate cutoffDate);
