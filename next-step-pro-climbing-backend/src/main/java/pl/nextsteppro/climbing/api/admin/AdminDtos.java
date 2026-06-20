@@ -203,7 +203,8 @@ record ReservationAdminDto(
     @Nullable String comment,
     int participants,
     @Nullable LocalDate eventStartDate,
-    @Nullable LocalDate eventEndDate
+    @Nullable LocalDate eventEndDate,
+    @Nullable UUID eventId
 ) {}
 
 // User DTOs

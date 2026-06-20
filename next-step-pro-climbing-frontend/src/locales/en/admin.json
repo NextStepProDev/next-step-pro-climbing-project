@@ -396,7 +396,11 @@
     "pageInfo": "page {{page}}/{{total}} ({{count}} on this page)",
     "totalItems": "{{count}} items",
     "participants": "Participants ({{count}})",
-    "spots": "{{count}} spots"
+    "spots": "{{count}} spots",
+    "deleteTitle": "Delete permanently?",
+    "deletePermanent": "Delete permanently",
+    "deleteMessage": "This archived reservation will be permanently deleted. This action cannot be undone.",
+    "deleteEventMessage": "All reservations for this archived event will be permanently deleted. This action cannot be undone."
   },
   "events": {
     "addEvent": "Add event",
