@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { format } from 'date-fns'
-import { Shield, ShieldOff, Trash2, Search, ChevronLeft, ChevronRight, Mail } from 'lucide-react'
+import { Shield, ShieldOff, Trash2, Search, ChevronLeft, ChevronRight, Mail, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react'
 import { adminApi } from '../../api/client'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
 import { QueryError } from '../../components/ui/QueryError'
@@ -10,14 +10,18 @@ import { Button } from '../../components/ui/Button'
 import { ConfirmModal } from '../../components/ui/ConfirmModal'
 import { getErrorMessage } from '../../utils/errors'
 
-const PAGE_SIZE = 20
+const PAGE_SIZE = 50
 
 type NewsletterFilter = 'all' | 'subscribed' | 'unsubscribed'
+type SortKey = 'user' | 'email' | 'role' | 'createdAt'
+type SortDir = 'asc' | 'desc'
 
 export function AdminUsersPanel() {
   const { t } = useTranslation('admin')
   const [search, setSearch] = useState('')
   const [newsletterFilter, setNewsletterFilter] = useState<NewsletterFilter>('all')
+  const [sortKey, setSortKey] = useState<SortKey>('createdAt')
+  const [sortDir, setSortDir] = useState<SortDir>('desc')
   const [page, setPage] = useState(1)
   const [confirmAction, setConfirmAction] = useState<{
     type: 'makeAdmin' | 'removeAdmin' | 'delete'
@@ -72,9 +76,43 @@ export function AdminUsersPanel() {
     )
   }, [users, search, newsletterFilter])
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
+  const sorted = useMemo(() => {
+    const arr = [...filtered]
+    const dir = sortDir === 'asc' ? 1 : -1
+    arr.sort((a, b) => {
+      let cmp = 0
+      switch (sortKey) {
+        case 'user':
+          cmp = `${a.firstName} ${a.lastName}`.localeCompare(`${b.firstName} ${b.lastName}`, 'pl', { sensitivity: 'base' })
+          break
+        case 'email':
+          cmp = a.email.localeCompare(b.email, 'pl', { sensitivity: 'base' })
+          break
+        case 'role':
+          cmp = a.role.localeCompare(b.role)
+          break
+        case 'createdAt':
+          cmp = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+          break
+      }
+      return cmp * dir
+    })
+    return arr
+  }, [filtered, sortKey, sortDir])
+
+  const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE))
   const safePage = Math.min(page, totalPages)
-  const paged = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE)
+  const paged = sorted.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE)
+
+  const toggleSort = (key: SortKey) => {
+    if (sortKey === key) {
+      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))
+    } else {
+      setSortKey(key)
+      setSortDir(key === 'createdAt' ? 'desc' : 'asc')
+    }
+    setPage(1)
+  }
 
   const handleSearchChange = (value: string) => {
     setSearch(value)
@@ -85,6 +123,22 @@ export function AdminUsersPanel() {
     setNewsletterFilter(value)
     setPage(1)
   }
+
+  const sortHeader = (key: SortKey, label: string) => (
+    <th className="text-left px-4 py-3 text-sm font-medium text-surface-300">
+      <button
+        onClick={() => toggleSort(key)}
+        className="flex items-center gap-1 hover:text-surface-100 transition-colors"
+      >
+        {label}
+        {sortKey === key ? (
+          sortDir === 'asc' ? <ArrowUp className="w-3.5 h-3.5" /> : <ArrowDown className="w-3.5 h-3.5" />
+        ) : (
+          <ArrowUpDown className="w-3.5 h-3.5 text-surface-600" />
+        )}
+      </button>
+    </th>
+  )
 
   const filterOptions: { value: NewsletterFilter; label: string }[] = [
     { value: 'all', label: t('users.newsletterFilterAll') },
@@ -139,21 +193,13 @@ export function AdminUsersPanel() {
             <table className="w-full min-w-[700px]">
               <thead className="bg-surface-800">
                 <tr>
-                  <th className="text-left px-4 py-3 text-sm font-medium text-surface-300">
-                    {t('users.userColumn')}
-                  </th>
-                  <th className="text-left px-4 py-3 text-sm font-medium text-surface-300">
-                    {t('users.emailColumn')}
-                  </th>
+                  {sortHeader('user', t('users.userColumn'))}
+                  {sortHeader('email', t('users.emailColumn'))}
                   <th className="text-left px-4 py-3 text-sm font-medium text-surface-300">
                     {t('users.phoneColumn')}
                   </th>
-                  <th className="text-left px-4 py-3 text-sm font-medium text-surface-300">
-                    {t('users.roleColumn')}
-                  </th>
-                  <th className="text-left px-4 py-3 text-sm font-medium text-surface-300">
-                    {t('users.registrationDate')}
-                  </th>
+                  {sortHeader('role', t('users.roleColumn'))}
+                  {sortHeader('createdAt', t('users.registrationDate'))}
                   <th className="px-4 py-3"></th>
                 </tr>
               </thead>
