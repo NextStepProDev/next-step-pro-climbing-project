@@ -273,7 +273,12 @@ public class AdminService {
         TimeSlot slot = timeSlotRepository.findById(slotId)
             .orElseThrow(() -> new IllegalArgumentException("Time slot not found"));
 
-        boolean isPast = slot.getDate().isBefore(LocalDate.now());
+        // "Past" = slot fully ended (same definition as the archive query findPastOrdered):
+        // a slot that already ended earlier *today* is archived, so deleting it must NOT notify
+        // — keeps slot deletion consistent with deleteEvent (which already treats today as past).
+        LocalDate today = LocalDate.now();
+        boolean isPast = slot.getDate().isBefore(today)
+            || (slot.getDate().isEqual(today) && !slot.getEndTime().isAfter(LocalTime.now()));
 
         // Capture slot description before deletion (FK will be SET NULL after delete)
         var tf = DateTimeFormatter.ofPattern("HH:mm");
