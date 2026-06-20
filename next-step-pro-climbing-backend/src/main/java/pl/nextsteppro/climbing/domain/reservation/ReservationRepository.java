@@ -68,8 +68,4 @@ public interface ReservationRepository extends JpaRepository<Reservation, UUID> 
 
     @Query("SELECT DISTINCT r.timeSlot.event.id FROM Reservation r WHERE r.user.id = :userId AND r.status = 'CONFIRMED' AND r.timeSlot.event IS NOT NULL")
     List<UUID> findConfirmedEventIdsByUserId(UUID userId);
-
-    @Modifying
-    @Query("DELETE FROM Reservation r WHERE r.timeSlot.date < :cutoffDate AND r.status != 'CONFIRMED'")
-    int deleteCancelledBefore(LocalDate cutoffDate);
 }

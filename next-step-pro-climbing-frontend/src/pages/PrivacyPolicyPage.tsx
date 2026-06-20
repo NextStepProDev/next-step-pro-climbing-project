@@ -4,8 +4,8 @@ import logoWhite from '../assets/logo/logo-white.png'
 import logoBlack from '../assets/logo/logo-black.png'
 import { CONTACT } from '../constants/contact'
 
-const LAST_UPDATED_PL = '20 czerwca 2026'
-const LAST_UPDATED_EN = '20 June 2026'
+const LAST_UPDATED_PL = '21 czerwca 2026'
+const LAST_UPDATED_EN = '21 June 2026'
 
 export function PrivacyPolicyPage() {
   const { i18n } = useTranslation()
@@ -114,6 +114,7 @@ function PrivacyPolicyPl({ logo }: { logo: string }) {
               'Logi aktywności — historia rezerwacji i ich zmian (data, godzina, rodzaj akcji, np. utworzenie lub anulowanie rezerwacji)',
               'Preferencje językowe',
               'Zgoda na newsletter i jej timestamp (wymagany przez RODO jako dowód zgody)',
+              'Zdjęcie profilowe (awatar) — opcjonalne; jeśli je dodasz, jest przycinane do koła w Twojej przeglądarce i przechowywane na serwerze w EOG. Możesz je w każdej chwili zmienić lub usunąć w ustawieniach konta',
             ]} />
           </SubSection>
 
@@ -161,10 +162,9 @@ function PrivacyPolicyPl({ logo }: { logo: string }) {
               Po jego usunięciu wszystkie Twoje dane są trwale i nieodwracalnie usuwane z bazy danych.
             </p>
             <p>
-              <span className="text-surface-200 font-medium">Historia rezerwacji</span> — przechowywana przez
-              okres <span className="text-surface-200 font-medium">3 lat</span> od daty rezerwacji. Anulowane rezerwacje
-              i rezerwacje gości są automatycznie usuwane po upływie tego okresu. Okres 3 lat jest zbieżny
-              z ogólnym terminem przedawnienia roszczeń wynikającym z Kodeksu cywilnego.
+              <span className="text-surface-200 font-medium">Historia rezerwacji</span> — powiązana z Twoim kontem
+              i przechowywana przez cały czas jego istnienia. Po usunięciu konta jest trwale i nieodwracalnie
+              usuwana razem z pozostałymi danymi.
             </p>
             <p>
               <span className="text-surface-200 font-medium">Logi aktywności</span> — usuwane automatycznie razem z kontem
@@ -177,6 +177,10 @@ function PrivacyPolicyPl({ logo }: { logo: string }) {
             <p>
               <span className="text-surface-200 font-medium">Timestamp zgody na newsletter</span> — przechowywany do momentu
               usunięcia konta jako wymagany przez RODO dowód wyrażonej zgody.
+            </p>
+            <p>
+              <span className="text-surface-200 font-medium">Zdjęcie profilowe (awatar)</span> — przechowywane do momentu jego
+              usunięcia przez Ciebie lub usunięcia konta; trwale usuwane razem z kontem.
             </p>
           </div>
         </Section>
@@ -369,6 +373,7 @@ function PrivacyPolicyEn({ logo }: { logo: string }) {
               'Activity logs — booking history and changes (date, time, action type, e.g. reservation created or cancelled)',
               'Language preferences',
               'Newsletter consent and its timestamp (required by GDPR as proof of consent)',
+              'Profile picture (avatar) — optional; if you add one, it is cropped to a circle in your browser and stored on the server within the EEA. You can change or remove it at any time in account settings',
             ]} />
           </SubSection>
           <p className="text-surface-500 text-sm mt-4">
@@ -415,10 +420,9 @@ function PrivacyPolicyEn({ logo }: { logo: string }) {
               Upon deletion, all your data is permanently and irreversibly removed from the database.
             </p>
             <p>
-              <span className="text-surface-200 font-medium">Reservation history</span> — stored for
-              a period of <span className="text-surface-200 font-medium">3 years</span> from the reservation date.
-              Cancelled reservations and guest reservations are automatically deleted after this period.
-              The 3-year period aligns with the general statute of limitations for claims under Polish civil law.
+              <span className="text-surface-200 font-medium">Reservation history</span> — linked to your account
+              and stored for the entire duration of the account. Upon account deletion it is permanently and
+              irreversibly removed together with your other data.
             </p>
             <p>
               <span className="text-surface-200 font-medium">Activity logs</span> — automatically deleted together with your account
@@ -431,6 +435,10 @@ function PrivacyPolicyEn({ logo }: { logo: string }) {
             <p>
               <span className="text-surface-200 font-medium">Newsletter consent timestamp</span> — stored until account deletion
               as GDPR-required proof of consent.
+            </p>
+            <p>
+              <span className="text-surface-200 font-medium">Profile picture (avatar)</span> — stored until you remove it or
+              delete your account; permanently deleted together with the account.
             </p>
           </div>
         </Section>
