@@ -1,5 +1,22 @@
 {
   "title": "Ajustes",
+  "avatar": {
+    "title": "Foto de perfil",
+    "upload": "Añadir foto",
+    "change": "Cambiar foto",
+    "remove": "Quitar foto",
+    "formatHint": "JPG, PNG o WebP. La recortarás en un círculo.",
+    "cropTitle": "Recorta tu foto",
+    "cropHint": "Arrastra la foto para colocarla y acerca con el control deslizante. El avatar se guarda tal como lo encuadres.",
+    "zoom": "Zoom",
+    "zoomIn": "Acercar",
+    "zoomOut": "Alejar",
+    "cancel": "Cancelar",
+    "save": "Guardar foto",
+    "saved": "Foto de perfil actualizada",
+    "removed": "Foto de perfil eliminada",
+    "invalidType": "Elige un archivo de imagen (JPG, PNG o WebP)"
+  },
   "profile": {
     "title": "Datos del perfil",
     "firstName": "Nombre",

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState, type ChangeEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useMutation } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
@@ -8,9 +8,11 @@ import { useToast } from '../context/ToastContext'
 import { authApi } from '../api/client'
 import { getErrorMessage } from '../utils/errors'
 import { validatePhone, validateName } from '../utils/validation'
-import { Moon, Sun, Monitor } from 'lucide-react'
+import { Camera, Moon, Sun, Monitor, Trash2 } from 'lucide-react'
 import { Button } from '../components/ui/Button'
 import { Modal } from '../components/ui/Modal'
+import { Avatar } from '../components/ui/Avatar'
+import { AvatarCropper } from '../components/ui/AvatarCropper'
 
 const THEME_OPTIONS = [
   { value: 'dark' as const, labelKey: 'theme.dark', Icon: Moon },
@@ -32,6 +34,7 @@ export function SettingsPage() {
     <div className="max-w-2xl mx-auto space-y-8">
       <h1 className="text-2xl font-bold text-surface-100">{t('title')}</h1>
 
+      <AvatarSection user={user} onUpdated={refreshUser} />
       <ProfileSection key={user?.id ?? ''} user={user} onUpdated={refreshUser} />
       <ThemeSection />
       <LanguageSection />
@@ -46,6 +49,108 @@ export function SettingsPage() {
       />
       <DeleteAccountSection onDeleted={logout} hasPassword={user?.hasPassword ?? true} />
     </div>
+  )
+}
+
+function AvatarSection({
+  user,
+  onUpdated,
+}: {
+  user: ReturnType<typeof useAuth>['user']
+  onUpdated: () => Promise<void>
+}) {
+  const { t } = useTranslation('settings')
+  const { showToast } = useToast()
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [cropSrc, setCropSrc] = useState<string | null>(null)
+  const [removing, setRemoving] = useState(false)
+
+  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    e.target.value = '' // pozwól wybrać ten sam plik ponownie
+    if (!file) return
+    if (!file.type.startsWith('image/')) {
+      showToast(t('avatar.invalidType'), 'error')
+      return
+    }
+    setCropSrc(URL.createObjectURL(file))
+  }
+
+  const closeCropper = () => {
+    if (cropSrc) URL.revokeObjectURL(cropSrc)
+    setCropSrc(null)
+  }
+
+  const handleSave = async (blob: Blob) => {
+    try {
+      await authApi.uploadAvatar(blob)
+      await onUpdated()
+      showToast(t('avatar.saved'))
+      closeCropper()
+    } catch (err) {
+      showToast(getErrorMessage(err), 'error')
+      throw err
+    }
+  }
+
+  const handleRemove = async () => {
+    setRemoving(true)
+    try {
+      await authApi.deleteAvatar()
+      await onUpdated()
+      showToast(t('avatar.removed'))
+    } catch (err) {
+      showToast(getErrorMessage(err), 'error')
+    } finally {
+      setRemoving(false)
+    }
+  }
+
+  return (
+    <section className="bg-surface-900 rounded-lg border border-surface-800 p-6">
+      <h2 className="text-lg font-semibold text-surface-100 mb-4">{t('avatar.title')}</h2>
+      <div className="flex items-center gap-5">
+        <button
+          type="button"
+          onClick={() => fileInputRef.current?.click()}
+          aria-label={t('avatar.change')}
+          className="relative group rounded-full focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 focus:ring-offset-surface-900"
+        >
+          <Avatar
+            src={user?.avatarUrl}
+            name={user?.firstName}
+            className="w-24 h-24"
+            textClassName="text-3xl"
+          />
+          <span className="absolute inset-0 flex items-center justify-center rounded-full bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity">
+            <Camera className="w-7 h-7 text-white" />
+          </span>
+        </button>
+        <div className="flex flex-col gap-2">
+          <Button type="button" variant="secondary" onClick={() => fileInputRef.current?.click()}>
+            <Camera className="w-4 h-4 mr-1.5" />
+            {user?.avatarUrl ? t('avatar.change') : t('avatar.upload')}
+          </Button>
+          {user?.avatarUrl && (
+            <Button type="button" variant="secondary" onClick={handleRemove} loading={removing}>
+              <Trash2 className="w-4 h-4 mr-1.5" />
+              {t('avatar.remove')}
+            </Button>
+          )}
+          <p className="text-xs text-surface-500">{t('avatar.formatHint')}</p>
+        </div>
+      </div>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        onChange={handleFileChange}
+        className="hidden"
+      />
+      {cropSrc && (
+        <AvatarCropper imageSrc={cropSrc} onCancel={closeCropper} onSave={handleSave} />
+      )}
+    </section>
   )
 }
 

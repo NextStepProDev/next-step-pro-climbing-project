@@ -24,6 +24,7 @@ export interface User {
   newsletterSubscribed: boolean
   newsletterChoiceMade: boolean
   hasPassword: boolean
+  avatarUrl: string | null
   createdAt: string
 }
 

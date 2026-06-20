@@ -97,6 +97,17 @@ public class FileController {
         return serveFile(filename, "site");
     }
 
+    @Operation(summary = "Pobierz avatar użytkownika")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Plik znaleziony"),
+        @ApiResponse(responseCode = "404", description = "Plik nie istnieje")
+    })
+    @GetMapping("/avatars/{filename}")
+    public ResponseEntity<Resource> getAvatarFile(
+            @Parameter(description = "Nazwa pliku") @PathVariable String filename) throws IOException {
+        return serveFile(filename, "avatars");
+    }
+
     private ResponseEntity<Resource> serveFile(String filename, String folder) throws IOException {
         if (!fileStorageService.exists(filename, folder)) {
             return ResponseEntity.notFound().build();

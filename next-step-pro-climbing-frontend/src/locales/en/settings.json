@@ -1,5 +1,22 @@
 {
   "title": "Settings",
+  "avatar": {
+    "title": "Profile picture",
+    "upload": "Add photo",
+    "change": "Change photo",
+    "remove": "Remove photo",
+    "formatHint": "JPG, PNG or WebP. You'll crop it in a circle.",
+    "cropTitle": "Crop your photo",
+    "cropHint": "Drag the photo to position it and zoom with the slider. The avatar is saved exactly as framed.",
+    "zoom": "Zoom",
+    "zoomIn": "Zoom in",
+    "zoomOut": "Zoom out",
+    "cancel": "Cancel",
+    "save": "Save photo",
+    "saved": "Profile picture updated",
+    "removed": "Profile picture removed",
+    "invalidType": "Choose an image file (JPG, PNG or WebP)"
+  },
   "profile": {
     "title": "Profile details",
     "firstName": "First name",

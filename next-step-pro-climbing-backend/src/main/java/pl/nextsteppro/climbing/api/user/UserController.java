@@ -11,10 +11,12 @@ import jakarta.validation.Valid;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import pl.nextsteppro.climbing.config.AppConfig;
 import pl.nextsteppro.climbing.config.CurrentUserId;
 import pl.nextsteppro.climbing.domain.user.User;
 
+import java.io.IOException;
 import java.util.UUID;
 
 @RestController
@@ -110,6 +112,34 @@ public class UserController {
         return ResponseEntity.noContent().build();
     }
 
+    @Operation(summary = "Ustaw avatar", description = "Wgrywa zdjęcie profilowe użytkownika (zastępuje poprzednie)")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Avatar zapisany",
+            content = @Content(schema = @Schema(implementation = UserProfileDto.class))),
+        @ApiResponse(responseCode = "401", description = "Użytkownik niezalogowany"),
+        @ApiResponse(responseCode = "400", description = "Nieprawidłowy plik")
+    })
+    @PostMapping(value = "/me/avatar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<UserProfileDto> uploadAvatar(
+            @Parameter(hidden = true) @CurrentUserId UUID userId,
+            @RequestParam("file") MultipartFile file) throws IOException {
+
+        return ResponseEntity.ok(toProfileDto(userService.uploadAvatar(userId, file)));
+    }
+
+    @Operation(summary = "Usuń avatar", description = "Usuwa zdjęcie profilowe użytkownika")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Avatar usunięty",
+            content = @Content(schema = @Schema(implementation = UserProfileDto.class))),
+        @ApiResponse(responseCode = "401", description = "Użytkownik niezalogowany")
+    })
+    @DeleteMapping("/me/avatar")
+    public ResponseEntity<UserProfileDto> deleteAvatar(
+            @Parameter(hidden = true) @CurrentUserId UUID userId) {
+
+        return ResponseEntity.ok(toProfileDto(userService.deleteAvatar(userId)));
+    }
+
     @Operation(summary = "Zmień język", description = "Ustawia preferowany język użytkownika")
     @ApiResponses({
         @ApiResponse(responseCode = "204", description = "Język zmieniony"),
@@ -168,6 +198,9 @@ public class UserController {
     }
 
     private UserProfileDto toProfileDto(User user) {
+        String avatarUrl = user.getAvatarFilename() != null
+            ? "/api/files/avatars/" + user.getAvatarFilename()
+            : null;
         return new UserProfileDto(
             user.getId(),
             user.getEmail(),
@@ -182,6 +215,7 @@ public class UserController {
             user.isNewsletterSubscribed(),
             user.isNewsletterChoiceMade(),
             user.hasPassword(),
+            avatarUrl,
             user.getCreatedAt()
         );
     }
@@ -202,6 +236,7 @@ record UserProfileDto(
     @Schema(description = "Czy subskrybuje newsletter") boolean newsletterSubscribed,
     @Schema(description = "Czy podjął decyzję ws. newslettera") boolean newsletterChoiceMade,
     @Schema(description = "Czy konto ma hasło (false = tylko OAuth)") boolean hasPassword,
+    @Schema(description = "URL avatara (null gdy brak)") @org.jspecify.annotations.Nullable String avatarUrl,
     @Schema(description = "Data utworzenia konta") java.time.Instant createdAt
 ) {}
 
