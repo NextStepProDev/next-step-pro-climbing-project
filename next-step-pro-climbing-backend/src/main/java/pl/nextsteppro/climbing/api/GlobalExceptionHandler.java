@@ -10,6 +10,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 import pl.nextsteppro.climbing.infrastructure.i18n.MessageService;
 
 import java.time.Instant;
@@ -69,6 +70,13 @@ public class GlobalExceptionHandler {
         log.warn("Upload size exceeded: {}", ex.getMessage());
         return ResponseEntity.status(HttpStatus.CONTENT_TOO_LARGE)
             .body(new ErrorResponse("PAYLOAD_TOO_LARGE", messageService.get("file.too.large"), Instant.now()));
+    }
+
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<ErrorResponse> handleNoResourceFound(NoResourceFoundException ex) {
+        log.debug("No resource for request: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+            .body(new ErrorResponse("NOT_FOUND", messageService.get("error.not.found"), Instant.now()));
     }
 
     @ExceptionHandler(Exception.class)
