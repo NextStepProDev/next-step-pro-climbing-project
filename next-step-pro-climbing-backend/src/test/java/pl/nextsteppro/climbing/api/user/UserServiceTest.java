@@ -68,6 +68,8 @@ class UserServiceTest {
     private WaitlistService waitlistService;
     @Mock
     private EventWaitlistService eventWaitlistService;
+    @Mock
+    private pl.nextsteppro.climbing.infrastructure.storage.FileStorageService fileStorageService;
 
     private UserService userService;
     private User testUser;
@@ -85,7 +87,8 @@ class UserServiceTest {
             msg,
             consentLogRepository,
             waitlistService,
-            eventWaitlistService
+            eventWaitlistService,
+            fileStorageService
         );
 
         userId = UUID.randomUUID();

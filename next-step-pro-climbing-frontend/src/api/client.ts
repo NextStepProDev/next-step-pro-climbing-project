@@ -128,9 +128,13 @@ async function fetchApi<T>(
   const token = await ensureValidToken()
 
   const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
     'Accept-Language': i18n.language,
     ...(options?.headers as Record<string, string>),
+  }
+
+  // FormData ustawia własny Content-Type z boundary — nie nadpisuj go.
+  if (!(options?.body instanceof FormData)) {
+    headers['Content-Type'] = headers['Content-Type'] ?? 'application/json'
   }
 
   if (token) {
@@ -259,6 +263,12 @@ export const authApi = {
       method: 'PUT',
       body: JSON.stringify({ firstName, lastName, phone, nickname }),
     }),
+  uploadAvatar: (blob: Blob) => {
+    const formData = new FormData()
+    formData.append('file', blob, 'avatar.jpg')
+    return fetchApi<User>('/user/me/avatar', { method: 'POST', body: formData })
+  },
+  deleteAvatar: () => fetchApi<User>('/user/me/avatar', { method: 'DELETE' }),
 }
 
 // Calendar

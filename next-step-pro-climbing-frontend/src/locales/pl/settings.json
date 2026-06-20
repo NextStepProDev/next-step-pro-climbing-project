@@ -1,5 +1,22 @@
 {
   "title": "Ustawienia",
+  "avatar": {
+    "title": "Zdjęcie profilowe",
+    "upload": "Dodaj zdjęcie",
+    "change": "Zmień zdjęcie",
+    "remove": "Usuń zdjęcie",
+    "formatHint": "JPG, PNG lub WebP. Zdjęcie wykadrujesz w kółku.",
+    "cropTitle": "Wykadruj zdjęcie",
+    "cropHint": "Przeciągnij zdjęcie, aby je ustawić, i przybliż suwakiem. Tak skadrowany avatar zostanie zapisany.",
+    "zoom": "Przybliżenie",
+    "zoomIn": "Przybliż",
+    "zoomOut": "Oddal",
+    "cancel": "Anuluj",
+    "save": "Zapisz zdjęcie",
+    "saved": "Zdjęcie profilowe zaktualizowane",
+    "removed": "Zdjęcie profilowe usunięte",
+    "invalidType": "Wybierz plik obrazu (JPG, PNG lub WebP)"
+  },
   "profile": {
     "title": "Dane profilu",
     "firstName": "Imię",

@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { useAuth } from "../../context/AuthContext";
 import { useTheme } from "../../context/ThemeContext";
 import { Button } from "../ui/Button";
+import { Avatar } from "../ui/Avatar";
 import { SuccessCheckmark } from "../ui/SuccessCheckmark";
 import { LanguageSwitcher } from "../ui/LanguageSwitcher";
 import clsx from "clsx";
@@ -112,7 +113,6 @@ export function Navbar() {
     setTeamMenuOpen(false);
   }
 
-  const userInitial = user?.firstName?.charAt(0).toUpperCase() ?? "?";
 
   const navContainerRef = useRef<HTMLDivElement>(null);
   const [indicator, setIndicator] = useState({ left: 0, width: 0 });
@@ -302,11 +302,7 @@ export function Navbar() {
                   onClick={() => setUserMenuOpen(!userMenuOpen)}
                   className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-surface-800 transition-colors"
                 >
-                  <div className="w-9 h-9 rounded-full bg-primary-600 flex items-center justify-center">
-                    <span className="text-sm font-bold text-white">
-                      {userInitial}
-                    </span>
-                  </div>
+                  <Avatar src={user?.avatarUrl} name={user?.firstName} className="w-9 h-9" />
                   <span className="text-sm font-medium text-surface-200">
                     {user?.firstName}
                   </span>
@@ -409,11 +405,7 @@ export function Navbar() {
               {isAuthenticated ? (
                 <div className="space-y-1">
                   <div className="flex items-center gap-3 px-1 py-2">
-                    <div className="w-9 h-9 rounded-full bg-primary-600 flex items-center justify-center">
-                      <span className="text-sm font-bold text-white">
-                        {userInitial}
-                      </span>
-                    </div>
+                    <Avatar src={user?.avatarUrl} name={user?.firstName} className="w-9 h-9" />
                     <div>
                       <p className="text-sm font-medium text-surface-200">
                         {user?.firstName} {user?.lastName}

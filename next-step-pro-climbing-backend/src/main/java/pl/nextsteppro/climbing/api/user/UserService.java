@@ -1,10 +1,13 @@
 package pl.nextsteppro.climbing.api.user;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Caching;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 import pl.nextsteppro.climbing.api.reservation.EventWaitlistService;
 import pl.nextsteppro.climbing.api.reservation.WaitlistService;
 import pl.nextsteppro.climbing.domain.auth.AuthToken;
@@ -18,9 +21,11 @@ import pl.nextsteppro.climbing.domain.user.UserRepository;
 import pl.nextsteppro.climbing.infrastructure.i18n.MessageService;
 import pl.nextsteppro.climbing.infrastructure.mail.AuthMailService;
 import pl.nextsteppro.climbing.infrastructure.security.JwtService;
+import pl.nextsteppro.climbing.infrastructure.storage.FileStorageService;
 
 import org.jspecify.annotations.Nullable;
 
+import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
@@ -29,6 +34,9 @@ import java.util.UUID;
 @Service
 @Transactional
 public class UserService {
+
+    private static final Logger logger = LoggerFactory.getLogger(UserService.class);
+    private static final String AVATAR_FOLDER = "avatars";
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
@@ -40,6 +48,7 @@ public class UserService {
     private final NewsletterConsentLogRepository consentLogRepository;
     private final WaitlistService waitlistService;
     private final EventWaitlistService eventWaitlistService;
+    private final FileStorageService fileStorageService;
 
     public UserService(UserRepository userRepository,
                        PasswordEncoder passwordEncoder,
@@ -50,7 +59,8 @@ public class UserService {
                        MessageService msg,
                        NewsletterConsentLogRepository consentLogRepository,
                        WaitlistService waitlistService,
-                       EventWaitlistService eventWaitlistService) {
+                       EventWaitlistService eventWaitlistService,
+                       FileStorageService fileStorageService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.authMailService = authMailService;
@@ -61,6 +71,42 @@ public class UserService {
         this.consentLogRepository = consentLogRepository;
         this.waitlistService = waitlistService;
         this.eventWaitlistService = eventWaitlistService;
+        this.fileStorageService = fileStorageService;
+    }
+
+    @Transactional
+    public User uploadAvatar(UUID userId, MultipartFile file) throws IOException {
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new IllegalArgumentException("User not found"));
+        String oldFilename = user.getAvatarFilename();
+        String filename = fileStorageService.store(file, AVATAR_FOLDER);
+        user.setAvatarFilename(filename);
+        userRepository.save(user);
+        if (oldFilename != null) {
+            deleteAvatarFileQuietly(oldFilename);
+        }
+        return user;
+    }
+
+    @Transactional
+    public User deleteAvatar(UUID userId) {
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new IllegalArgumentException("User not found"));
+        String oldFilename = user.getAvatarFilename();
+        if (oldFilename != null) {
+            user.setAvatarFilename(null);
+            userRepository.save(user);
+            deleteAvatarFileQuietly(oldFilename);
+        }
+        return user;
+    }
+
+    private void deleteAvatarFileQuietly(String filename) {
+        try {
+            fileStorageService.delete(filename, AVATAR_FOLDER);
+        } catch (IOException e) {
+            logger.warn("Failed to delete avatar file {}: {}", filename, e.getMessage());
+        }
     }
 
     @Transactional(readOnly = true)
@@ -141,7 +187,12 @@ public class UserService {
         // 5. Powiadom administratora o usunięciu konta (async, nie blokuje transakcji).
         authMailService.sendAccountSelfDeletedAdminNotification(user, cancelledReservations);
 
-        // 6. Usuń tokeny (bulk DELETE) i samego użytkownika.
+        // 6. Usuń plik avatara z dysku (jeśli był) — encja kaskaduje, ale plik nie.
+        if (user.getAvatarFilename() != null) {
+            deleteAvatarFileQuietly(user.getAvatarFilename());
+        }
+
+        // 7. Usuń tokeny (bulk DELETE) i samego użytkownika.
         //    DB kaskaduje (ON DELETE CASCADE): anulowane rezerwacje, wpisy waitlisty, logi, gwiazdki.
         authTokenRepository.deleteAllByUserId(userId);
         userRepository.delete(user);

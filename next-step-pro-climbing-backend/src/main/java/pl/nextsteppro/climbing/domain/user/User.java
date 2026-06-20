@@ -30,6 +30,10 @@ public class User {
     @Column(nullable = false)
     private String nickname;
 
+    @Column(name = "avatar_filename")
+    @Nullable
+    private String avatarFilename;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private UserRole role = UserRole.USER;
@@ -145,6 +149,15 @@ public class User {
 
     public void setNickname(String nickname) {
         this.nickname = nickname;
+    }
+
+    @Nullable
+    public String getAvatarFilename() {
+        return avatarFilename;
+    }
+
+    public void setAvatarFilename(@Nullable String avatarFilename) {
+        this.avatarFilename = avatarFilename;
     }
 
     public UserRole getRole() {
