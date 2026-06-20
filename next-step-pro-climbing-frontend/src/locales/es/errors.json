@@ -3,6 +3,7 @@
   "sessionExpired": "La sesión ha expirado. Inicia sesión de nuevo.",
   "server": "Error del servidor. Inténtalo de nuevo más tarde.",
   "serviceUnavailable": "El servidor no está disponible temporalmente. Inténtalo de nuevo en unos momentos.",
+  "serviceUpdating": "El servicio se está actualizando. Actualiza en un momento.",
   "notFound": "Recurso no encontrado.",
   "forbidden": "No tienes permisos para realizar esta operación.",
   "generic": "Se ha producido un error ({{status}}). Inténtalo de nuevo.",
