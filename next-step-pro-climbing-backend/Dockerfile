@@ -27,4 +27,10 @@ COPY --from=build /app/build/libs/*.jar app.jar
 ENV SPRING_PROFILES_ACTIVE=docker
 
 EXPOSE 8080
-ENTRYPOINT ["java", "-XX:+UseContainerSupport", "-XX:MaxRAMPercentage=75.0", "-jar", "app.jar"]
+# Memory tuning for a ~1GB RAM / 400m-limited container (see CLAUDE.md "Wydajność"):
+# - MaxRAMPercentage=55 -> ~220MB heap, leaving room for metaspace+threads+direct so
+#   heap+non-heap stays under the 400m mem_limit (75% risked OOM-kill: 300MB heap + ~120MB
+#   non-heap > 400MB). Smaller committed heap also cuts swap usage on the tight box.
+# - MaxMetaspaceSize caps non-heap growth. ExitOnOutOfMemoryError -> clean restart (compose
+#   restart: unless-stopped) instead of a wedged JVM. GC left to ergonomics (SerialGC on <2GB).
+ENTRYPOINT ["java", "-XX:+UseContainerSupport", "-XX:MaxRAMPercentage=55.0", "-XX:MaxMetaspaceSize=128m", "-XX:+ExitOnOutOfMemoryError", "-jar", "app.jar"]

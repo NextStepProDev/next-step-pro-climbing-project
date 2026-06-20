@@ -115,6 +115,12 @@ management:
   endpoint:
     health:
       show-details: never
+  health:
+    # Exclude the SMTP probe from /actuator/health: a slow mail server (observed ~10s)
+    # exceeds the Docker healthcheck timeout (5s) and can flap the container to "unhealthy",
+    # triggering needless restarts. Mail failures surface via logs, not liveness.
+    mail:
+      enabled: false
 
 logging:
   level:
