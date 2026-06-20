@@ -3,6 +3,7 @@
   "sessionExpired": "Your session has expired. Please log in again.",
   "server": "Server error. Please try again later.",
   "serviceUnavailable": "The server is temporarily unavailable. Please try again in a moment.",
+  "serviceUpdating": "The service is being updated. Please refresh in a moment.",
   "notFound": "Resource not found.",
   "forbidden": "You do not have permission to perform this action.",
   "generic": "An error occurred ({{status}}). Please try again.",

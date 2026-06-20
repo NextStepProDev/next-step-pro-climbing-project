@@ -3,6 +3,7 @@
   "sessionExpired": "Sesja wygasła. Zaloguj się ponownie.",
   "server": "Błąd serwera. Spróbuj ponownie później.",
   "serviceUnavailable": "Serwer jest tymczasowo niedostępny. Spróbuj ponownie za chwilę.",
+  "serviceUpdating": "Trwa aktualizacja serwisu. Odśwież stronę za chwilę.",
   "notFound": "Nie znaleziono zasobu.",
   "forbidden": "Brak uprawnień do wykonania tej operacji.",
   "generic": "Wystąpił błąd ({{status}}). Spróbuj ponownie.",

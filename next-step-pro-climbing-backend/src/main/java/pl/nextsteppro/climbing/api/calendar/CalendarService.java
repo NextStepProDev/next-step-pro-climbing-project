@@ -127,6 +127,7 @@ public class CalendarService {
         return new WeekViewDto(startDate, endDate, days, eventSummaries);
     }
 
+    @Cacheable(value = "calendarDay", key = "#date", condition = "#userId == null")
     public DayViewDto getDayView(LocalDate date, @Nullable UUID userId) {
         List<TimeSlot> slots = timeSlotRepository.findByDateSorted(date);
         List<Event> events = eventRepository.findActiveEventsOnDate(date);

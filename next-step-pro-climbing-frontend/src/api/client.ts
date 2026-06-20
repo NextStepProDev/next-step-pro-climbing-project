@@ -187,15 +187,25 @@ async function fetchApi<T>(
     }
   }
 
+  // Gateway errors (502/503/504) almost always mean the backend is restarting — most
+  // often a deploy, during which it can be unreachable for ~2 min while the JVM boots.
+  // Retry a few times with backoff so a redeploy degrades to a brief "updating" blip
+  // (combined with React Query's own retries) instead of a hard error screen. A genuine
+  // 500 (app error) gets a single quick retry — no point waiting on a real bug.
   if (response.status >= 500 && response.status < 600) {
-    console.warn(`[API] ${options?.method ?? 'GET'} ${endpoint} → ${response.status}, retrying in 1s…`)
-    await new Promise(r => setTimeout(r, 1000))
-    const retryToken = await ensureValidToken()
-    if (retryToken) headers['Authorization'] = `Bearer ${retryToken}`
-    try {
-      response = await doFetch()
-    } catch {
-      throw new Error(i18n.t('network', { ns: 'errors' }))
+    const isGateway = response.status === 502 || response.status === 503 || response.status === 504
+    const backoffs = isGateway ? [1500, 3000, 5000] : [1000]
+    for (const delay of backoffs) {
+      console.warn(`[API] ${options?.method ?? 'GET'} ${endpoint} → ${response.status}, retrying in ${delay}ms…`)
+      await new Promise(r => setTimeout(r, delay))
+      const retryToken = await ensureValidToken()
+      if (retryToken) headers['Authorization'] = `Bearer ${retryToken}`
+      try {
+        response = await doFetch()
+      } catch {
+        continue // network error mid-retry — keep trying remaining backoffs
+      }
+      if (!(response.status >= 500 && response.status < 600)) break
     }
   }
 
@@ -208,8 +218,9 @@ async function fetchApi<T>(
     if (response.status === 500) {
       throw new Error(i18n.t('server', { ns: 'errors' }))
     }
-    if (response.status === 503) {
-      throw new Error(i18n.t('serviceUnavailable', { ns: 'errors' }))
+    // 502/503/504 survived the retry loop above -> backend still down (likely a deploy).
+    if (response.status === 502 || response.status === 503 || response.status === 504) {
+      throw new Error(i18n.t('serviceUpdating', { ns: 'errors' }))
     }
     if (response.status === 404) {
       throw new Error(i18n.t('notFound', { ns: 'errors' }))

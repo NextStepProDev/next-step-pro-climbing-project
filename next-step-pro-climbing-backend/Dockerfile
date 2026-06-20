@@ -33,4 +33,10 @@ EXPOSE 8080
 #   non-heap > 400MB). Smaller committed heap also cuts swap usage on the tight box.
 # - MaxMetaspaceSize caps non-heap growth. ExitOnOutOfMemoryError -> clean restart (compose
 #   restart: unless-stopped) instead of a wedged JVM. GC left to ergonomics (SerialGC on <2GB).
-ENTRYPOINT ["java", "-XX:+UseContainerSupport", "-XX:MaxRAMPercentage=55.0", "-XX:MaxMetaspaceSize=128m", "-XX:+ExitOnOutOfMemoryError", "-jar", "app.jar"]
+# - TieredStopAtLevel=1 -> C1-only JIT: skips the C2 optimizing compiler. Slightly faster
+#   warmup and a bit less RAM (no C2 compiler threads / C2 code cache) — same memory-first
+#   trade as the heap caps above, on a box where CPU is idle and RAM is the bottleneck. The
+#   only cost is lower peak throughput of hot paths, irrelevant at this load and a one-flag
+#   revert if traffic ever grows. (CDS was evaluated and dropped: ~4% local gain wasn't worth
+#   the build-time no-DB training run breaking silently on future Spring upgrades.)
+ENTRYPOINT ["java", "-XX:+UseContainerSupport", "-XX:MaxRAMPercentage=55.0", "-XX:MaxMetaspaceSize=128m", "-XX:+ExitOnOutOfMemoryError", "-XX:TieredStopAtLevel=1", "-jar", "app.jar"]
