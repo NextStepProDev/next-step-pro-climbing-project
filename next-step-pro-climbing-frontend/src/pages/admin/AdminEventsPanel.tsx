@@ -624,6 +624,7 @@ function EventCard({
           isOpen={showDeleteConfirm}
           onClose={() => setShowDeleteConfirm(false)}
           eventTitle={event.title}
+          archived={archived}
           participants={participantsData.participants}
           onConfirm={() => {
             onDelete()
@@ -639,20 +640,25 @@ function ConfirmDeleteEventModal({
   isOpen,
   onClose,
   eventTitle,
+  archived,
   participants,
   onConfirm,
 }: {
   isOpen: boolean
   onClose: () => void
   eventTitle: string
+  archived?: boolean
   participants: { userId: string; fullName: string; email: string }[]
   onConfirm: () => void
 }) {
   const { t } = useTranslation('admin')
   const hasParticipants = participants.length > 0
+  // Archived (past) events: deletion is a permanent archive cleanup — backend sends NO emails,
+  // so don't show the "reservations will be cancelled / users notified" warning.
+  const showActiveWarning = hasParticipants && !archived
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={hasParticipants ? t('events.warningActiveReservations') : t('events.deleteTitle')}>
+    <Modal isOpen={isOpen} onClose={onClose} title={showActiveWarning ? t('events.warningActiveReservations') : t('events.deleteTitle')}>
       <div className="space-y-4">
         <div className="text-sm text-surface-400">
           {t('events.eventLabel')}<span className="text-surface-200">{eventTitle}</span>
@@ -660,15 +666,21 @@ function ConfirmDeleteEventModal({
 
         {hasParticipants ? (
           <>
-            <div className="flex items-start gap-3 p-3 bg-rose-500/10 border border-rose-500/20 rounded-lg">
-              <AlertTriangle className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
-              <div className="text-sm text-rose-300">
-                <p className="font-medium mb-1">{t('events.hasParticipants')}</p>
-                <p className="text-rose-400/80">
-                  {t('events.deleteWarning')}
-                </p>
+            {showActiveWarning ? (
+              <div className="flex items-start gap-3 p-3 bg-rose-500/10 border border-rose-500/20 rounded-lg">
+                <AlertTriangle className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
+                <div className="text-sm text-rose-300">
+                  <p className="font-medium mb-1">{t('events.hasParticipants')}</p>
+                  <p className="text-rose-400/80">
+                    {t('events.deleteWarning')}
+                  </p>
+                </div>
               </div>
-            </div>
+            ) : (
+              <p className="text-surface-400 text-sm">
+                {t('events.archivedDeleteWarning')}
+              </p>
+            )}
 
             <div>
               <h3 className="text-sm font-medium text-surface-300 mb-2">
@@ -692,7 +704,7 @@ function ConfirmDeleteEventModal({
 
         <div className="flex gap-3 pt-2">
           <Button variant="danger" className="flex-1" onClick={onConfirm}>
-            {hasParticipants ? t('events.deleteAndCancel') : t('events.deleteSimple')}
+            {showActiveWarning ? t('events.deleteAndCancel') : t('events.deleteSimple')}
           </Button>
           <Button variant="ghost" onClick={onClose}>
             {t('events.cancel')}

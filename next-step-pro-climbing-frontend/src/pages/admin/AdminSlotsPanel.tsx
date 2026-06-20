@@ -25,7 +25,7 @@ export function AdminSlotsPanel() {
   const [showParticipantsModal, setShowParticipantsModal] = useState(false)
   const [editingSlot, setEditingSlot] = useState<TimeSlotAdmin | null>(null)
   const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null)
-  const [confirmAction, setConfirmAction] = useState<{ slotId: string; action: 'block' | 'delete' } | null>(null)
+  const [confirmAction, setConfirmAction] = useState<{ slotId: string; action: 'block' | 'delete'; archived?: boolean } | null>(null)
   const [showArchive, setShowArchive] = useState(false)
   const [archivePage, setArchivePage] = useState(1)
 
@@ -105,7 +105,7 @@ export function AdminSlotsPanel() {
     onEdit: (slot: TimeSlotAdmin) => setEditingSlot(slot),
     onBlock: (slotId: string) => setConfirmAction({ slotId, action: 'block' }),
     onUnblock: (slotId: string) => unblockMutation.mutate(slotId),
-    onDelete: (slotId: string) => setConfirmAction({ slotId, action: 'delete' }),
+    onDelete: (slotId: string, archived = false) => setConfirmAction({ slotId, action: 'delete', archived }),
   }
 
   return (
@@ -217,7 +217,7 @@ export function AdminSlotsPanel() {
                           onEdit={() => slotHandlers.onEdit(slot)}
                           onBlock={() => slotHandlers.onBlock(slot.id)}
                           onUnblock={() => slotHandlers.onUnblock(slot.id)}
-                          onDelete={() => slotHandlers.onDelete(slot.id)}
+                          onDelete={() => slotHandlers.onDelete(slot.id, true)}
                         />
                       ))}
                     </div>
@@ -289,6 +289,7 @@ export function AdminSlotsPanel() {
           isOpen={!!confirmAction}
           onClose={() => setConfirmAction(null)}
           action={confirmAction.action}
+          archived={confirmAction.archived}
           data={confirmParticipants}
           onConfirm={() => {
             if (confirmAction.action === 'block') {
@@ -539,24 +540,29 @@ function ConfirmBlockModal({
   isOpen,
   onClose,
   action,
+  archived,
   data,
   onConfirm,
 }: {
   isOpen: boolean
   onClose: () => void
   action: 'block' | 'delete'
+  archived?: boolean
   data: SlotParticipants
   onConfirm: () => void
 }) {
   const { t } = useTranslation('admin')
   const locale = useDateLocale()
   const hasParticipants = data.participants.length > 0
+  // Archived (past) slots: deletion is a permanent archive cleanup — backend sends NO emails,
+  // so don't show the "reservations will be cancelled / users notified" warning.
+  const showActiveWarning = hasParticipants && !archived
 
   return (
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={hasParticipants
+      title={showActiveWarning
         ? t('slots.warningActiveReservations')
         : action === 'block' ? t('slots.blockTitle') : t('slots.deleteTitle')}
     >
@@ -568,15 +574,21 @@ function ConfirmBlockModal({
 
         {hasParticipants ? (
           <>
-            <div className="flex items-start gap-3 p-3 bg-rose-500/10 border border-rose-500/20 rounded-lg">
-              <AlertTriangle className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
-              <div className="text-sm text-rose-300">
-                <p className="font-medium mb-1">{t('slots.hasActiveReservations')}</p>
-                <p className="text-rose-400/80">
-                  {action === 'block' ? t('slots.blockWarning') : t('slots.deleteWarning')}
-                </p>
+            {showActiveWarning ? (
+              <div className="flex items-start gap-3 p-3 bg-rose-500/10 border border-rose-500/20 rounded-lg">
+                <AlertTriangle className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
+                <div className="text-sm text-rose-300">
+                  <p className="font-medium mb-1">{t('slots.hasActiveReservations')}</p>
+                  <p className="text-rose-400/80">
+                    {action === 'block' ? t('slots.blockWarning') : t('slots.deleteWarning')}
+                  </p>
+                </div>
               </div>
-            </div>
+            ) : (
+              <p className="text-surface-400 text-sm">
+                {t('slots.archivedDeleteWarning')}
+              </p>
+            )}
 
             <div>
               <h3 className="text-sm font-medium text-surface-300 mb-2">
@@ -604,7 +616,7 @@ function ConfirmBlockModal({
             className="flex-1"
             onClick={onConfirm}
           >
-            {hasParticipants
+            {showActiveWarning
               ? action === 'block' ? t('slots.blockAndCancel') : t('slots.deleteAndCancel')
               : action === 'block' ? t('slots.blockSimple') : t('slots.deleteSimple')}
           </Button>
