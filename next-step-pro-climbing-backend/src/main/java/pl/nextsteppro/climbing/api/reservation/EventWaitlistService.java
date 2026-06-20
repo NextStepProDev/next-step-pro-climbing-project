@@ -117,6 +117,24 @@ public class EventWaitlistService {
         EventWaitlist entry = eventWaitlistRepository.findByUserIdAndEventId(userId, eventId)
             .orElseThrow(() -> new IllegalArgumentException(msg.get("waitlist.not.found")));
 
+        removeEntryAndMaybeNotify(entry);
+        log.info("User {} left event waitlist for event {}", userId, eventId);
+    }
+
+    // Usuwa WSZYSTKIE aktywne wpisy waitlisty wydarzeń użytkownika (przy usuwaniu konta).
+    // Analogicznie do removeUserFromAllWaitlists w WaitlistService.
+    public void removeUserFromAllWaitlists(UUID userId) {
+        List<EventWaitlist> entries = eventWaitlistRepository.findActiveByUserId(userId);
+        for (EventWaitlist entry : entries) {
+            removeEntryAndMaybeNotify(entry);
+        }
+        if (!entries.isEmpty()) {
+            log.info("Removed user {} from {} event waitlist(s) during account deletion", userId, entries.size());
+        }
+    }
+
+    private void removeEntryAndMaybeNotify(EventWaitlist entry) {
+        UUID eventId = entry.getEvent().getId();
         boolean wasPending = entry.isPendingConfirmation();
         eventWaitlistRepository.delete(entry);
         eventWaitlistRepository.flush();
@@ -132,8 +150,6 @@ public class EventWaitlistService {
                 }
             }
         }
-
-        log.info("User {} left event waitlist for event {}", userId, eventId);
     }
 
     @Caching(evict = {
