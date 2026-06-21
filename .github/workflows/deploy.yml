@@ -118,3 +118,9 @@ jobs:
             exit 1
           fi
           echo "Smoke test passed: all public endpoints return 200."
+
+      - name: SEO smoke test (crawler routing + robots)
+        # Read-only GETs with bot user-agents. Guards the silent indexing failures
+        # unit tests can't reach: the nginx $is_bot meta-refresh loop and robots.txt
+        # blanket-blocks. Blocking — a failure here fails the deploy.
+        run: bash next-step-pro-climbing-hub/seo-smoke.sh https://nextsteppro.pl
