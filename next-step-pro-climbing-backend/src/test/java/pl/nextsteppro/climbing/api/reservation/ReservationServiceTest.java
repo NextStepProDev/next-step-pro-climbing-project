@@ -344,6 +344,52 @@ class ReservationServiceTest {
         assertTrue(saved.getComment().length() <= 500);
     }
 
+    // ========== UPDATE PARTICIPANTS — WAITLIST NOTIFICATION TESTS ==========
+
+    @Test
+    void shouldNotifyWaitlistWhenClientReducesSlotParticipants() {
+        // Given — confirmed reservation for 4 people on a standalone slot (capacity 10)
+        UUID reservationId = UUID.randomUUID();
+        Reservation reservation = new Reservation(testUser, testSlot);
+        reservation.setParticipants(4);
+        setEntityIdViaReflection(reservation, reservationId);
+
+        when(reservationRepository.findById(reservationId)).thenReturn(Optional.of(reservation));
+        when(timeSlotRepository.findByIdForUpdate(slotId)).thenReturn(Optional.of(testSlot));
+        when(reservationRepository.countConfirmedByTimeSlotId(slotId)).thenReturn(4);
+        when(guestReservationRepository.sumParticipantsByTimeSlotId(slotId)).thenReturn(0);
+        when(userRepository.findById(userId)).thenReturn(Optional.of(testUser));
+
+        // When — client reduces 4 -> 2, freeing two spots
+        reservationService.updateSlotParticipants(reservationId, userId, 2);
+
+        // Then — freed spots must trigger a waitlist offer (standalone slot -> only slot waitlist)
+        verify(waitlistService).notifyAll(slotId);
+        verify(eventWaitlistService, never()).notifyAll(any());
+    }
+
+    @Test
+    void shouldNotNotifyWaitlistWhenClientIncreasesSlotParticipants() {
+        // Given — confirmed reservation for 2 people on a standalone slot (capacity 10)
+        UUID reservationId = UUID.randomUUID();
+        Reservation reservation = new Reservation(testUser, testSlot);
+        reservation.setParticipants(2);
+        setEntityIdViaReflection(reservation, reservationId);
+
+        when(reservationRepository.findById(reservationId)).thenReturn(Optional.of(reservation));
+        when(timeSlotRepository.findByIdForUpdate(slotId)).thenReturn(Optional.of(testSlot));
+        when(reservationRepository.countConfirmedByTimeSlotId(slotId)).thenReturn(2);
+        when(guestReservationRepository.sumParticipantsByTimeSlotId(slotId)).thenReturn(0);
+        when(userRepository.findById(userId)).thenReturn(Optional.of(testUser));
+
+        // When — client increases 2 -> 5 (no spot is freed)
+        reservationService.updateSlotParticipants(reservationId, userId, 5);
+
+        // Then — nothing freed, the waitlist must not be touched
+        verify(waitlistService, never()).notifyAll(any());
+        verify(eventWaitlistService, never()).notifyAll(any());
+    }
+
     // ========== CANCELLATION TESTS ==========
 
     @Test
