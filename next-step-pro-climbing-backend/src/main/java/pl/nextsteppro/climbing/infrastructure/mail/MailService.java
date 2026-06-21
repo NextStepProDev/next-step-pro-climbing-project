@@ -3,9 +3,6 @@ package pl.nextsteppro.climbing.infrastructure.mail;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.mail.MailException;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.web.util.HtmlUtils;
@@ -31,15 +28,15 @@ public class MailService {
     private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm");
     private static final String ADMIN_LANG = "pl";
 
-    private final JavaMailSender mailSender;
+    private final MailDispatcher mailDispatcher;
     private final AppConfig appConfig;
     private final AdminEmailConfig adminEmailConfig;
     private final MessageService msg;
     private final UserService userService;
     private final String siteUrl;
 
-    public MailService(JavaMailSender mailSender, AppConfig appConfig, AdminEmailConfig adminEmailConfig, MessageService msg, UserService userService) {
-        this.mailSender = mailSender;
+    public MailService(MailDispatcher mailDispatcher, AppConfig appConfig, AdminEmailConfig adminEmailConfig, MessageService msg, UserService userService) {
+        this.mailDispatcher = mailDispatcher;
         this.appConfig = appConfig;
         this.adminEmailConfig = adminEmailConfig;
         this.msg = msg;
@@ -463,27 +460,7 @@ public class MailService {
     }
 
     private void sendEmail(String to, String subject, String body, @Nullable byte[] icsAttachment) {
-        try {
-            var message = mailSender.createMimeMessage();
-            var helper = new MimeMessageHelper(message, true);
-
-            helper.setTo(to);
-            helper.setSubject(subject);
-            helper.setText(body, true);
-            helper.setFrom(appConfig.getMail().getFrom());
-
-            var logoResource = new org.springframework.core.io.ClassPathResource("static/logo/logo-white.png");
-            helper.addInline("logo", logoResource, "image/png");
-
-            if (icsAttachment != null) {
-                helper.addAttachment("reservation.ics", () -> new java.io.ByteArrayInputStream(icsAttachment), "text/calendar");
-            }
-
-            mailSender.send(message);
-            log.info("Email sent to: {}", to);
-        } catch (MailException | jakarta.mail.MessagingException e) {
-            log.error("Failed to send email to: {}", to, e);
-        }
+        mailDispatcher.sendHtml(to, subject, body, icsAttachment);
     }
 
     private String buildReservationConfirmationBody(String lang, User user, TimeSlot slot, int participants, @Nullable String displayTitle, String googleCalendarUrl) {

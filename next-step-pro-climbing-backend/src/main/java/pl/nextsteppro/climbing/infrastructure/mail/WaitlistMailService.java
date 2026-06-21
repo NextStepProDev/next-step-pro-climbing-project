@@ -1,10 +1,5 @@
 package pl.nextsteppro.climbing.infrastructure.mail;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.mail.MailException;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import pl.nextsteppro.climbing.config.AppConfig;
@@ -20,19 +15,18 @@ import java.time.format.DateTimeFormatter;
 @Service
 public class WaitlistMailService {
 
-    private static final Logger log = LoggerFactory.getLogger(WaitlistMailService.class);
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("dd.MM.yyyy");
     private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm");
     private static final DateTimeFormatter DEADLINE_FORMAT = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm");
     private static final ZoneId WARSAW = ZoneId.of("Europe/Warsaw");
 
-    private final JavaMailSender mailSender;
+    private final MailDispatcher mailDispatcher;
     private final AppConfig appConfig;
     private final MessageService msg;
     private final String siteUrl;
 
-    public WaitlistMailService(JavaMailSender mailSender, AppConfig appConfig, MessageService msg) {
-        this.mailSender = mailSender;
+    public WaitlistMailService(MailDispatcher mailDispatcher, AppConfig appConfig, MessageService msg) {
+        this.mailDispatcher = mailDispatcher;
         this.appConfig = appConfig;
         this.msg = msg;
         this.siteUrl = appConfig.getSiteUrl();
@@ -348,25 +342,6 @@ public class WaitlistMailService {
     }
 
     private void sendEmail(String to, String subject, String body, @org.jspecify.annotations.Nullable byte[] icsAttachment) {
-        try {
-            var message = mailSender.createMimeMessage();
-            var helper = new MimeMessageHelper(message, true);
-            helper.setTo(to);
-            helper.setSubject(subject);
-            helper.setText(body, true);
-            helper.setFrom(appConfig.getMail().getFrom());
-
-            var logoResource = new org.springframework.core.io.ClassPathResource("static/logo/logo-white.png");
-            helper.addInline("logo", logoResource, "image/png");
-
-            if (icsAttachment != null) {
-                helper.addAttachment("reservation.ics", () -> new java.io.ByteArrayInputStream(icsAttachment), "text/calendar");
-            }
-
-            mailSender.send(message);
-            log.info("Waitlist email sent to: {}", to);
-        } catch (MailException | jakarta.mail.MessagingException e) {
-            log.error("Failed to send waitlist email to: {}", to, e);
-        }
+        mailDispatcher.sendHtml(to, subject, body, icsAttachment);
     }
 }

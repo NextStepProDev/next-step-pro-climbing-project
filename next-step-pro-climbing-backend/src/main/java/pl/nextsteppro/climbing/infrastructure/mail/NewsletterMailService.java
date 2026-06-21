@@ -3,9 +3,6 @@ package pl.nextsteppro.climbing.infrastructure.mail;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.mail.MailException;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import pl.nextsteppro.climbing.api.user.UserService;
@@ -23,14 +20,14 @@ public class NewsletterMailService {
 
     private static final Logger log = LoggerFactory.getLogger(NewsletterMailService.class);
 
-    private final JavaMailSender mailSender;
+    private final MailDispatcher mailDispatcher;
     private final AppConfig appConfig;
     private final MessageService msg;
     private final UserService userService;
     private final String siteUrl;
 
-    public NewsletterMailService(JavaMailSender mailSender, AppConfig appConfig, MessageService msg, UserService userService) {
-        this.mailSender = mailSender;
+    public NewsletterMailService(MailDispatcher mailDispatcher, AppConfig appConfig, MessageService msg, UserService userService) {
+        this.mailDispatcher = mailDispatcher;
         this.appConfig = appConfig;
         this.msg = msg;
         this.userService = userService;
@@ -53,23 +50,7 @@ public class NewsletterMailService {
         String subject = news.getTitle();
         String body = buildBody(news, blocks, subscriber, baseUrl, lang, unsubscribeUrl);
 
-        try {
-            var message = mailSender.createMimeMessage();
-            var helper = new MimeMessageHelper(message, true, "UTF-8");
-
-            helper.setTo(subscriber.getEmail());
-            helper.setSubject(subject);
-            helper.setText(body, true);
-            helper.setFrom(appConfig.getMail().getFrom());
-
-            var logoResource = new org.springframework.core.io.ClassPathResource("static/logo/logo-white.png");
-            helper.addInline("logo", logoResource, "image/png");
-
-            mailSender.send(message);
-            log.debug("Newsletter sent to: {}", subscriber.getEmail());
-        } catch (MailException | jakarta.mail.MessagingException e) {
-            log.error("Failed to send newsletter to: {}", subscriber.getEmail(), e);
-        }
+        mailDispatcher.sendHtml(subscriber.getEmail(), subject, body);
     }
 
     private String buildBody(News news, List<NewsContentBlock> blocks, User subscriber, String baseUrl, String lang, String unsubscribeUrl) {
