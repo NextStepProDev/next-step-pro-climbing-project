@@ -484,6 +484,15 @@ public class ReservationService {
         mailService.sendReservationUpdateConfirmation(user, slot, oldParticipants, participants);
         activityLogService.logReservationUpdated(user, slot, participants);
 
+        // Zmniejszenie liczby osób zwalnia miejsce — powiadamiamy oczekujących (spójnie z anulowaniem
+        // i z odpowiednikiem po stronie admina w AdminService.updateReservationParticipants).
+        if (participants < oldParticipants) {
+            waitlistService.notifyAll(slot.getId());
+            if (slot.belongsToEvent()) {
+                eventWaitlistService.notifyAll(slot.getEvent().getId());
+            }
+        }
+
         return new ReservationResultDto(reservation.getId(), true, msg.get("reservation.updated"));
     }
 
@@ -542,6 +551,15 @@ public class ReservationService {
             .orElseThrow(() -> new IllegalArgumentException("User not found"));
         mailService.sendEventReservationUpdateConfirmation(user, event, currentUserParticipants, participants);
         activityLogService.logEventReservationUpdated(user, event, participants);
+
+        // Zmniejszenie liczby osób zwalnia miejsce — powiadamiamy oczekujących (spójnie z rezygnacją
+        // i z odpowiednikiem po stronie admina w AdminService.updateEventReservationParticipants).
+        if (participants < currentUserParticipants) {
+            eventWaitlistService.notifyAll(eventId);
+            for (TimeSlot slot : slots) {
+                waitlistService.notifyAll(slot.getId());
+            }
+        }
 
         return new EventReservationResultDto(eventId, true, msg.get("reservation.updated"), userReservations.size());
     }
