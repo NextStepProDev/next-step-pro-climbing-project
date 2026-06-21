@@ -11,6 +11,10 @@ import java.util.UUID;
 @Table(name = "users")
 public class User {
 
+    // Account lockout policy
+    private static final int MAX_FAILED_LOGIN_ATTEMPTS = 5;
+    private static final Duration LOCKOUT_DURATION = Duration.ofMinutes(15);
+
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
@@ -289,10 +293,22 @@ public class User {
     }
 
     public void incrementFailedLoginAttempts() {
+        incrementFailedLoginAttempts(Instant.now());
+    }
+
+    // Package-private overload for deterministic testing (inject "now")
+    void incrementFailedLoginAttempts(Instant now) {
+        // If a previous lockout has already expired, start a fresh counting window.
+        // Without this, the first wrong password after the lockout expires would push
+        // the stale counter past the threshold and re-lock the account immediately.
+        if (this.lockedUntil != null && now.isAfter(this.lockedUntil)) {
+            this.failedLoginAttempts = 0;
+            this.lockedUntil = null;
+        }
         this.failedLoginAttempts++;
-        // Lock account for 15 minutes after 5 failed attempts
-        if (this.failedLoginAttempts >= 5) {
-            this.lockedUntil = Instant.now().plusSeconds(15 * 60);
+        // Lock account after too many failed attempts
+        if (this.failedLoginAttempts >= MAX_FAILED_LOGIN_ATTEMPTS) {
+            this.lockedUntil = now.plus(LOCKOUT_DURATION);
         }
     }
 
