@@ -91,6 +91,12 @@ public class ReservationService {
             throw new IllegalStateException("This time slot is blocked");
         }
 
+        // Okno dostępności to blok informacyjny ("zadzwoń i ustal termin") — klient nie może
+        // zarezerwować go samodzielnie. Front nie pokazuje przycisku, ale strzeżemy też API.
+        if (slot.isAvailabilityWindow()) {
+            throw new IllegalStateException(msg.get("reservation.slot.availability.window"));
+        }
+
         if (reservationRepository.existsByUserIdAndTimeSlotIdAndStatus(userId, slotId, ReservationStatus.CONFIRMED)) {
             throw new IllegalStateException(msg.get("reservation.already.exists"));
         }
