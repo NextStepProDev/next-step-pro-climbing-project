@@ -67,7 +67,10 @@ class MailServiceTest {
         lenient().when(userService.generateNewsletterUnsubscribeToken(any()))
                 .thenReturn("test-unsubscribe-token");
 
-        mailService = new MailService(mailSender, appConfig, adminEmailConfig, msg, userService);
+        // Wrap the mocked JavaMailSender in a real dispatcher with near-zero backoff,
+        // so the existing verify(mailSender).send(...) expectations still hold.
+        MailDispatcher mailDispatcher = new MailDispatcher(mailSender, appConfig, new long[]{0L, 0L});
+        mailService = new MailService(mailDispatcher, appConfig, adminEmailConfig, msg, userService);
     }
 
     // ============================================================
