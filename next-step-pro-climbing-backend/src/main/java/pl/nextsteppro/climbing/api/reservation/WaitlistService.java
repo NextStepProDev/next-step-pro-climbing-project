@@ -74,6 +74,10 @@ public class WaitlistService {
         if (slot.isBlocked()) {
             throw new IllegalStateException("This time slot is blocked");
         }
+        // Okno dostępności nie podlega samoobsłudze — nie można też zapisać się na jego kolejkę.
+        if (slot.isAvailabilityWindow()) {
+            throw new IllegalStateException(msg.get("reservation.slot.availability.window"));
+        }
 
         User user = userRepository.findById(userId)
             .orElseThrow(() -> new IllegalArgumentException("User not found"));

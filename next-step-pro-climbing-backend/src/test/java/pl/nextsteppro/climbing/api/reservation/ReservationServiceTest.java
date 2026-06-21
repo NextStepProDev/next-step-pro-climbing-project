@@ -344,6 +344,24 @@ class ReservationServiceTest {
         assertTrue(saved.getComment().length() <= 500);
     }
 
+    @Test
+    void shouldRejectReservationForAvailabilityWindow() {
+        // Given — an availability window cannot be self-booked, even via the API
+        testSlot.setAvailabilityWindow(true);
+        when(timeSlotRepository.findByIdForUpdate(slotId)).thenReturn(Optional.of(testSlot));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(testUser));
+        when(msg.get("reservation.slot.availability.window")).thenReturn("availability window");
+
+        // When & Then
+        IllegalStateException ex = assertThrows(
+            IllegalStateException.class,
+            () -> reservationService.createReservation(slotId, userId, null, 1)
+        );
+        assertEquals("availability window", ex.getMessage());
+        verify(reservationRepository, never()).save(any(Reservation.class));
+        verify(mailService, never()).sendReservationConfirmation(any(), any());
+    }
+
     // ========== UPDATE PARTICIPANTS — WAITLIST NOTIFICATION TESTS ==========
 
     @Test
