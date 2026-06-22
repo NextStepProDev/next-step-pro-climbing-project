@@ -43,6 +43,14 @@ public class AuthService {
     private final MessageService msg;
     private final NewsletterConsentLogRepository consentLogRepository;
 
+    /**
+     * Pre-computed BCrypt hash used to equalize login response time when an account does not
+     * exist (or is OAuth-only). Derived from the configured PasswordEncoder at construction, so it
+     * always carries the same cost factor as real password hashes — never hardcode a literal, or a
+     * cost-factor mismatch would re-open the timing side-channel it is meant to close.
+     */
+    private final String dummyHash;
+
     public AuthService(
             UserRepository userRepository,
             AuthTokenRepository authTokenRepository,
@@ -60,6 +68,7 @@ public class AuthService {
         this.adminEmailConfig = adminEmailConfig;
         this.msg = msg;
         this.consentLogRepository = consentLogRepository;
+        this.dummyHash = passwordEncoder.encode("timing-attack-mitigation-dummy");
     }
 
     @Transactional
@@ -102,10 +111,20 @@ public class AuthService {
 
     @Transactional(noRollbackFor = {IllegalArgumentException.class, IllegalStateException.class})
     public AuthTokensResponse login(LoginRequest request) {
-        User user = userRepository.findByEmail(request.email())
-            .orElseThrow(() -> new IllegalArgumentException(msg.get("auth.login.invalid")));
+        User user = userRepository.findByEmail(request.email()).orElse(null);
+
+        // Timing-attack / user-enumeration mitigation: when the account does not exist (or is
+        // OAuth-only and has no password), still run a full BCrypt comparison against a dummy hash
+        // so the response latency matches a real password check. Without this, a missing email
+        // returns in ~1ms while an existing one takes ~100ms+ (BCrypt cost 12), letting an attacker
+        // enumerate registered emails purely from timing.
+        if (user == null) {
+            passwordEncoder.matches(request.password(), dummyHash);
+            throw new IllegalArgumentException(msg.get("auth.login.invalid"));
+        }
 
         if (user.getPasswordHash() == null) {
+            passwordEncoder.matches(request.password(), dummyHash);
             throw new IllegalArgumentException(msg.get("auth.login.oauth"));
         }
 
@@ -180,9 +199,11 @@ public class AuthService {
             return new MessageResponse(msg.get("auth.resend.already.verified"));
         }
 
-        // Check cooldown
+        // Cooldown: silently skip the resend and return the generic success message. Throwing a
+        // distinct 409 here would leak account existence — two requests for a target email (first
+        // 200, second 409) would reveal that the account exists, an enumeration oracle.
         if (authTokenRepository.hasRecentUnusedToken(user.getId(), TokenType.EMAIL_VERIFICATION, Instant.now().minus(RESEND_COOLDOWN))) {
-            throw new IllegalStateException(msg.get("auth.resend.cooldown"));
+            return new MessageResponse(msg.get("auth.resend.success"));
         }
 
         sendVerificationEmail(user);
@@ -203,9 +224,11 @@ public class AuthService {
             return new MessageResponse(msg.get("auth.forgot.success"));
         }
 
-        // Check cooldown
+        // Cooldown: silently skip the send and return the generic success message. Throwing a
+        // distinct 409 here would leak account existence — two requests for a target email (first
+        // 200, second 409) would reveal that the account exists, an enumeration oracle.
         if (authTokenRepository.hasRecentUnusedToken(user.getId(), TokenType.PASSWORD_RESET, Instant.now().minus(RESEND_COOLDOWN))) {
-            throw new IllegalStateException(msg.get("auth.forgot.cooldown"));
+            return new MessageResponse(msg.get("auth.forgot.success"));
         }
 
         sendPasswordResetEmail(user);
