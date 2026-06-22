@@ -110,6 +110,16 @@ public class RateLimitFilter extends OncePerRequestFilter {
     }
 
     private String getClientIp(HttpServletRequest request) {
+        // Cloudflare sets CF-Connecting-IP to the real client IP. With the origin
+        // firewalled to Cloudflare ranges, this header cannot be forged by reaching
+        // the origin directly, so it is the trustworthy key for per-IP rate limiting.
+        // (The first X-Forwarded-For hop is client-controlled when proxies append to
+        // it, which let a spoofed XFF bypass the limit — see security tests 2026-06.)
+        String cfIp = request.getHeader("CF-Connecting-IP");
+        if (cfIp != null && !cfIp.isBlank()) {
+            return cfIp.trim();
+        }
+        // Fallback for non-Cloudflare environments (local/dev): first XFF hop, then peer.
         String xff = request.getHeader("X-Forwarded-For");
         if (xff != null && !xff.isEmpty()) {
             return xff.split(",")[0].trim();

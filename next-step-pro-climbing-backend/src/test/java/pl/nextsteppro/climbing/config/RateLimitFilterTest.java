@@ -111,6 +111,38 @@ class RateLimitFilterTest {
         }
     }
 
+    @Test
+    void shouldRateLimitByCfConnectingIpEvenWhenXForwardedForIsSpoofed() throws Exception {
+        // Same real client (CF-Connecting-IP) but a different spoofed XFF every request:
+        // the limiter must key on CF-Connecting-IP, so the spoofing must NOT grant new buckets.
+        for (int i = 0; i < 15; i++) {
+            MockHttpServletResponse response = new MockHttpServletResponse();
+            filter.doFilterInternal(cfRequest("203.0.113.7", "1.2.3." + i), response, new MockFilterChain());
+            assertEquals(200, response.getStatus());
+        }
+        MockHttpServletResponse blocked = new MockHttpServletResponse();
+        filter.doFilterInternal(cfRequest("203.0.113.7", "9.9.9.9"), blocked, new MockFilterChain());
+        assertEquals(429, blocked.getStatus(), "spoofed X-Forwarded-For must not bypass the per-IP limit");
+    }
+
+    @Test
+    void shouldKeyOnCfConnectingIpSoDifferentClientsGetSeparateBuckets() throws Exception {
+        // 20 requests, each from a distinct CF-Connecting-IP -> distinct buckets -> never limited.
+        for (int i = 0; i < 20; i++) {
+            MockHttpServletResponse response = new MockHttpServletResponse();
+            filter.doFilterInternal(cfRequest("203.0.113." + i, "1.2.3.4"), response, new MockFilterChain());
+            assertEquals(200, response.getStatus());
+        }
+    }
+
+    private MockHttpServletRequest cfRequest(String cfConnectingIp, String spoofedXff) {
+        MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api/auth/login");
+        request.setRemoteAddr("10.0.0.1");
+        request.addHeader("CF-Connecting-IP", cfConnectingIp);
+        request.addHeader("X-Forwarded-For", spoofedXff);
+        return request;
+    }
+
     private MockHttpServletRequest createAuthRequest(String language) {
         MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api/auth/login");
         request.setRemoteAddr("192.168.1.1");
