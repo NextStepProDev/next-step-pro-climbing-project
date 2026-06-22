@@ -257,6 +257,37 @@ class AuthServiceTest {
     }
 
     @Test
+    void shouldRunPasswordCheckEvenWhenUserDoesNotExist() {
+        // Given - timing-attack mitigation: a missing email must still trigger a BCrypt comparison
+        // so the response time is indistinguishable from a real (existing) account.
+        LoginRequest request = new LoginRequest("nonexistent@example.com", "password123");
+        when(userRepository.findByEmail(request.email())).thenReturn(Optional.empty());
+        when(msg.get("auth.login.invalid")).thenReturn("Invalid credentials");
+
+        // When
+        assertThrows(IllegalArgumentException.class, () -> authService.login(request));
+
+        // Then - a password comparison ran despite no user being found
+        verify(passwordEncoder).matches(eq("password123"), any());
+    }
+
+    @Test
+    void shouldRunPasswordCheckEvenWhenOAuthUserHasNoPassword() {
+        // Given - OAuth-only accounts (no password hash) must also burn the same BCrypt time.
+        testUser.setPasswordHash(null);
+        testUser.setOauthProvider("google");
+        LoginRequest request = new LoginRequest("test@example.com", "password123");
+        when(userRepository.findByEmail(request.email())).thenReturn(Optional.of(testUser));
+        when(msg.get("auth.login.oauth")).thenReturn("OAuth user cannot login with password");
+
+        // When
+        assertThrows(IllegalArgumentException.class, () -> authService.login(request));
+
+        // Then - a password comparison ran even though there is no stored password hash
+        verify(passwordEncoder).matches(eq("password123"), any());
+    }
+
+    @Test
     void shouldThrowExceptionWhenPasswordIsWrong() {
         // Given
         LoginRequest request = new LoginRequest("test@example.com", "wrongPassword");
@@ -506,22 +537,24 @@ class AuthServiceTest {
     }
 
     @Test
-    void shouldThrowExceptionWhenResendCooldownNotExpired() {
-        // Given
+    void shouldReturnGenericSuccessWhenResendCooldownNotExpired() {
+        // Given - cooldown must not be revealed via a distinct response, or two requests would
+        // enumerate account existence. Skip the resend silently, return the generic success.
         testUser.setEmailVerified(false);
         ResendVerificationRequest request = new ResendVerificationRequest("test@example.com");
 
         when(userRepository.findByEmail(request.email())).thenReturn(Optional.of(testUser));
         when(authTokenRepository.hasRecentUnusedToken(eq(testUser.getId()), eq(TokenType.EMAIL_VERIFICATION), any(Instant.class)))
             .thenReturn(true);
-        when(msg.get("auth.resend.cooldown")).thenReturn("Please wait before resending");
+        when(msg.get("auth.resend.success")).thenReturn("Verification email sent");
 
-        // When & Then
-        IllegalStateException exception = assertThrows(
-            IllegalStateException.class,
-            () -> authService.resendVerification(request)
-        );
-        assertEquals("Please wait before resending", exception.getMessage());
+        // When
+        MessageResponse response = authService.resendVerification(request);
+
+        // Then - same response as a real send, but no email actually goes out
+        assertEquals("Verification email sent", response.message());
+        verify(authMailService, never()).sendVerificationEmail(any(), any());
+        verify(authTokenRepository, never()).save(any(AuthToken.class));
     }
 
     // ========== FORGOT PASSWORD TESTS ==========
@@ -583,21 +616,23 @@ class AuthServiceTest {
     }
 
     @Test
-    void shouldThrowExceptionWhenForgotPasswordCooldownNotExpired() {
-        // Given
+    void shouldReturnGenericSuccessWhenForgotPasswordCooldownNotExpired() {
+        // Given - cooldown must not be revealed via a distinct response, or two requests would
+        // enumerate account existence. Skip the send silently, return the generic success.
         ForgotPasswordRequest request = new ForgotPasswordRequest("test@example.com");
 
         when(userRepository.findByEmail(request.email())).thenReturn(Optional.of(testUser));
         when(authTokenRepository.hasRecentUnusedToken(eq(testUser.getId()), eq(TokenType.PASSWORD_RESET), any(Instant.class)))
             .thenReturn(true);
-        when(msg.get("auth.forgot.cooldown")).thenReturn("Please wait before requesting another reset");
+        when(msg.get("auth.forgot.success")).thenReturn("Reset email sent");
 
-        // When & Then
-        IllegalStateException exception = assertThrows(
-            IllegalStateException.class,
-            () -> authService.forgotPassword(request)
-        );
-        assertEquals("Please wait before requesting another reset", exception.getMessage());
+        // When
+        MessageResponse response = authService.forgotPassword(request);
+
+        // Then - same response as a real send, but no email actually goes out
+        assertEquals("Reset email sent", response.message());
+        verify(authMailService, never()).sendPasswordResetEmail(any(), any());
+        verify(authTokenRepository, never()).save(any(AuthToken.class));
     }
 
     // ========== RESET PASSWORD TESTS ==========
