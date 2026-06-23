@@ -73,6 +73,13 @@
     "submit": "Guardar y continuar",
     "cancel": "Cancelar"
   },
+  "sessions": {
+    "title": "Sesiones activas",
+    "description": "Cierra sesión en todos los dispositivos donde has iniciado sesión (teléfono, ordenador, otros navegadores). Útil si pierdes un dispositivo o sospechas de un acceso no autorizado. También se cerrará tu sesión aquí.",
+    "button": "Cerrar sesión en todos los dispositivos",
+    "confirmTitle": "¿Cerrar sesión en todos los dispositivos?",
+    "confirmMessage": "Todas las sesiones activas se cerrarán y tendrás que iniciar sesión de nuevo en cada dispositivo."
+  },
   "deleteAccount": {
     "title": "Eliminar cuenta",
     "description": "Esta operación es irreversible. Todas tus reservas serán canceladas y los datos de tu cuenta eliminados permanentemente.",

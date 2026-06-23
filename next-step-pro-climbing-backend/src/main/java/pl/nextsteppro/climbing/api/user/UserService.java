@@ -204,6 +204,15 @@ public class UserService {
         userRepository.delete(user);
     }
 
+    /**
+     * Wylogowuje użytkownika ze wszystkich urządzeń — usuwa wszystkie jego refresh tokeny.
+     * Access tokeny (15 min) pozostają ważne do wygaśnięcia (bezstanowy JWT), ale po nim
+     * żadne urządzenie nie odświeży sesji → realne wylogowanie wszędzie w ciągu ≤15 min.
+     */
+    public void logoutAllDevices(UUID userId) {
+        authTokenRepository.deleteByUserIdAndTokenType(userId, TokenType.REFRESH_TOKEN);
+    }
+
     public void updateNotificationPreference(UUID userId, boolean enabled) {
         User user = userRepository.findById(userId)
             .orElseThrow(() -> new IllegalArgumentException("User not found"));

@@ -556,6 +556,24 @@ public class AdminController {
         return ResponseEntity.noContent().build();
     }
 
+    @Tag(name = "Admin - Users")
+    @Operation(
+        summary = "Wyloguj użytkownika ze wszystkich urządzeń",
+        description = "Unieważnia wszystkie refresh tokeny użytkownika (np. przy przejęciu konta). Wylogowanie nastąpi w ciągu ≤15 min."
+    )
+    @ApiResponses({
+        @ApiResponse(responseCode = "204", description = "Sesje użytkownika unieważnione"),
+        @ApiResponse(responseCode = "404", description = "Użytkownik nie istnieje"),
+        @ApiResponse(responseCode = "403", description = "Brak uprawnień administratora")
+    })
+    @PostMapping("/users/{userId}/logout-all")
+    public ResponseEntity<Void> forceLogout(
+            @CurrentUserId UUID adminId,
+            @Parameter(description = "UUID użytkownika") @PathVariable UUID userId) {
+        adminService.forceLogout(adminId, userId);
+        return ResponseEntity.noContent().build();
+    }
+
     // ==================== Mail ====================
 
     @Tag(name = "Admin - Mail", description = "Wysyłanie wiadomości email do użytkowników")

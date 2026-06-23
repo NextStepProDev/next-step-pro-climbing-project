@@ -73,6 +73,13 @@
     "submit": "Save and continue",
     "cancel": "Cancel"
   },
+  "sessions": {
+    "title": "Active sessions",
+    "description": "Sign out from all devices where you are logged in (phone, computer, other browsers). Useful if you lose a device or suspect unauthorized access. You will be signed out here too.",
+    "button": "Sign out from all devices",
+    "confirmTitle": "Sign out from all devices?",
+    "confirmMessage": "All active sessions will be ended and you will need to sign in again on every device."
+  },
   "deleteAccount": {
     "title": "Delete account",
     "description": "This action is irreversible. All your reservations will be cancelled and your account data will be permanently deleted.",

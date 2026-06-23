@@ -73,6 +73,13 @@
     "submit": "Zapisz i kontynuuj",
     "cancel": "Anuluj"
   },
+  "sessions": {
+    "title": "Aktywne sesje",
+    "description": "Wyloguj się ze wszystkich urządzeń, na których jesteś zalogowany (telefon, komputer, inne przeglądarki). Przydatne, gdy zgubisz urządzenie lub podejrzewasz nieautoryzowany dostęp. Zostaniesz wylogowany również tutaj.",
+    "button": "Wyloguj ze wszystkich urządzeń",
+    "confirmTitle": "Wyloguj ze wszystkich urządzeń?",
+    "confirmMessage": "Wszystkie aktywne sesje zostaną zakończone i będziesz musiał zalogować się ponownie na każdym urządzeniu."
+  },
   "deleteAccount": {
     "title": "Usuwanie konta",
     "description": "Ta operacja jest nieodwracalna. Wszystkie Twoje rezerwacje zostaną anulowane, a dane konta trwale usunięte.",

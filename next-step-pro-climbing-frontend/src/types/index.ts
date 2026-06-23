@@ -334,6 +334,7 @@ export type ActivityActionType =
   | 'ADMIN_USER_MAKE_ADMIN'
   | 'ADMIN_USER_ADMIN_REMOVED'
   | 'ADMIN_USER_DELETED'
+  | 'ADMIN_USER_FORCE_LOGOUT'
 
 export interface ActivityLog {
   id: string

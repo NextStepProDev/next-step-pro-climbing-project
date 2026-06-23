@@ -98,6 +98,20 @@ public class UserController {
         return ResponseEntity.noContent().build();
     }
 
+    @Operation(summary = "Wyloguj ze wszystkich urządzeń",
+        description = "Unieważnia wszystkie refresh tokeny użytkownika — wylogowuje go ze wszystkich urządzeń (w ciągu ≤15 min)")
+    @ApiResponses({
+        @ApiResponse(responseCode = "204", description = "Sesje unieważnione"),
+        @ApiResponse(responseCode = "401", description = "Użytkownik niezalogowany")
+    })
+    @PostMapping("/me/logout-all")
+    public ResponseEntity<Void> logoutAllDevices(
+            @Parameter(hidden = true) @CurrentUserId UUID userId) {
+
+        userService.logoutAllDevices(userId);
+        return ResponseEntity.noContent().build();
+    }
+
     @Operation(summary = "Ustawienia powiadomień", description = "Włącza lub wyłącza powiadomienia email")
     @ApiResponses({
         @ApiResponse(responseCode = "204", description = "Preferencje zaktualizowane"),

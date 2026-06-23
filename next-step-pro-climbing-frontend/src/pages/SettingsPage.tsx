@@ -8,9 +8,10 @@ import { useToast } from '../context/ToastContext'
 import { authApi } from '../api/client'
 import { getErrorMessage } from '../utils/errors'
 import { validatePhone, validateName } from '../utils/validation'
-import { Camera, Moon, Sun, Monitor, Trash2 } from 'lucide-react'
+import { Camera, Moon, Sun, Monitor, Trash2, LogOut } from 'lucide-react'
 import { Button } from '../components/ui/Button'
 import { Modal } from '../components/ui/Modal'
+import { ConfirmModal } from '../components/ui/ConfirmModal'
 import { Avatar } from '../components/ui/Avatar'
 import { AvatarCropper } from '../components/ui/AvatarCropper'
 import { PasswordStrengthMeter } from '../components/ui/PasswordStrengthMeter'
@@ -48,6 +49,7 @@ export function SettingsPage() {
         subscribed={user?.newsletterSubscribed ?? false}
         onUpdated={refreshUser}
       />
+      <SessionsSection onLoggedOut={logout} />
       <DeleteAccountSection onDeleted={logout} hasPassword={user?.hasPassword ?? true} />
     </div>
   )
@@ -535,6 +537,48 @@ function NewsletterSection({
           {getErrorMessage(mutation.error)}
         </p>
       )}
+    </section>
+  )
+}
+
+function SessionsSection({ onLoggedOut }: { onLoggedOut: () => void }) {
+  const { t } = useTranslation('settings')
+  const navigate = useNavigate()
+  const [showConfirm, setShowConfirm] = useState(false)
+
+  const mutation = useMutation({
+    mutationFn: () => authApi.logoutAllDevices(),
+    onSuccess: () => {
+      onLoggedOut()
+      navigate('/login')
+    },
+  })
+
+  return (
+    <section className="bg-surface-900 rounded-lg border border-surface-800 p-6">
+      <h2 className="text-lg font-semibold text-surface-100 mb-2">{t('sessions.title')}</h2>
+      <p className="text-sm text-surface-400 mb-4">{t('sessions.description')}</p>
+      <Button
+        variant="secondary"
+        loading={mutation.isPending}
+        onClick={() => setShowConfirm(true)}
+      >
+        <LogOut className="w-4 h-4 mr-2" />
+        {t('sessions.button')}
+      </Button>
+      {mutation.isError && (
+        <p className="text-sm text-rose-400/80 mt-2">{getErrorMessage(mutation.error)}</p>
+      )}
+
+      <ConfirmModal
+        isOpen={showConfirm}
+        onClose={() => setShowConfirm(false)}
+        onConfirm={() => mutation.mutate()}
+        title={t('sessions.confirmTitle')}
+        message={t('sessions.confirmMessage')}
+        confirmText={t('sessions.button')}
+        variant="primary"
+      />
     </section>
   )
 }

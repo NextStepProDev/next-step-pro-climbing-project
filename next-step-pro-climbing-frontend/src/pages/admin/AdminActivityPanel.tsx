@@ -16,6 +16,7 @@ import {
   UserCheck,
   UserX,
   UserMinus,
+  LogOut,
 } from 'lucide-react'
 import { adminApi } from '../../api/client'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
@@ -123,6 +124,11 @@ const ACTION_CONFIG: Record<
     icon: UserX,
     color: 'text-red-400',
     bgColor: 'bg-red-500/10',
+  },
+  ADMIN_USER_FORCE_LOGOUT: {
+    icon: LogOut,
+    color: 'text-orange-400',
+    bgColor: 'bg-orange-500/10',
   },
 }
 

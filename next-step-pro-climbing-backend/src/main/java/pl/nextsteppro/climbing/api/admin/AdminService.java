@@ -19,6 +19,7 @@ import pl.nextsteppro.climbing.domain.reservation.SlotParticipantCount;
 import pl.nextsteppro.climbing.domain.timeslot.TimeSlot;
 import pl.nextsteppro.climbing.domain.timeslot.TimeSlotRepository;
 import pl.nextsteppro.climbing.domain.auth.AuthTokenRepository;
+import pl.nextsteppro.climbing.domain.auth.TokenType;
 import pl.nextsteppro.climbing.domain.user.User;
 import pl.nextsteppro.climbing.domain.user.UserRepository;
 import pl.nextsteppro.climbing.domain.user.UserRole;
@@ -799,6 +800,21 @@ public class AdminService {
         }
 
         return recipients.size();
+    }
+
+    /**
+     * Wymusza wylogowanie użytkownika ze wszystkich urządzeń (np. przejęte konto).
+     * Usuwa wszystkie refresh tokeny — access tokeny (15 min) wygasną same.
+     */
+    public void forceLogout(UUID adminId, UUID userId) {
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        authTokenRepository.deleteByUserIdAndTokenType(userId, TokenType.REFRESH_TOKEN);
+        jwtAuthenticationFilter.evictUser(userId);
+
+        User admin = userRepository.findById(adminId).orElseThrow();
+        activityLogService.logAdminUserForceLogout(admin, user.getFullName() + " (" + user.getEmail() + ")");
     }
 
     public void deleteUser(UUID adminId, UUID userId) {
