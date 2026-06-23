@@ -18,7 +18,7 @@ export function validatePassword(password: string, confirmPassword: string): str
   if (password !== confirmPassword) {
     return i18n.t('validation.passwordsMismatch', { ns: 'errors' })
   }
-  if (password.length < 8) {
+  if (password.length < 10) {
     return i18n.t('validation.passwordTooShort', { ns: 'errors' })
   }
   return null

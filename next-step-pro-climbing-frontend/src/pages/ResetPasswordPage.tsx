@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { KeyRound } from 'lucide-react'
 import { resetPassword } from '../api/auth'
 import { validatePassword } from '../utils/validation'
+import { PasswordStrengthMeter } from '../components/ui/PasswordStrengthMeter'
 import { getErrorMessage } from '../utils/errors'
 import { Button } from '../components/ui/Button'
 
@@ -92,11 +93,12 @@ export function ResetPasswordPage() {
               id="password"
               type="password"
               required
-              minLength={8}
+              minLength={10}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="w-full px-3 py-2 bg-surface-800 border border-surface-700 rounded-lg text-surface-100 placeholder-surface-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             />
+            <PasswordStrengthMeter password={password} />
             <p className="text-xs text-surface-500 mt-1">
               {t('resetPassword.passwordHint')}
             </p>

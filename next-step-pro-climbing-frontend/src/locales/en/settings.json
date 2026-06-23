@@ -37,7 +37,7 @@
     "newPassword": "New password",
     "confirmPassword": "Confirm new password",
     "submit": "Change password",
-    "tooShort": "Password must be at least 8 characters long",
+    "tooShort": "Password must be at least 10 characters long",
     "mismatch": "Passwords do not match",
     "expand": "Change password",
     "cancel": "Cancel",

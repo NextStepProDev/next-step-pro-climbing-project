@@ -21,6 +21,7 @@ import pl.nextsteppro.climbing.domain.user.UserRepository;
 import pl.nextsteppro.climbing.infrastructure.i18n.MessageService;
 import pl.nextsteppro.climbing.infrastructure.mail.AuthMailService;
 import pl.nextsteppro.climbing.infrastructure.security.JwtService;
+import pl.nextsteppro.climbing.infrastructure.security.PasswordPolicyValidator;
 import pl.nextsteppro.climbing.infrastructure.storage.FileStorageService;
 
 import org.jspecify.annotations.Nullable;
@@ -49,6 +50,7 @@ public class UserService {
     private final WaitlistService waitlistService;
     private final EventWaitlistService eventWaitlistService;
     private final FileStorageService fileStorageService;
+    private final PasswordPolicyValidator passwordPolicy;
 
     public UserService(UserRepository userRepository,
                        PasswordEncoder passwordEncoder,
@@ -60,7 +62,8 @@ public class UserService {
                        NewsletterConsentLogRepository consentLogRepository,
                        WaitlistService waitlistService,
                        EventWaitlistService eventWaitlistService,
-                       FileStorageService fileStorageService) {
+                       FileStorageService fileStorageService,
+                       PasswordPolicyValidator passwordPolicy) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.authMailService = authMailService;
@@ -72,6 +75,7 @@ public class UserService {
         this.waitlistService = waitlistService;
         this.eventWaitlistService = eventWaitlistService;
         this.fileStorageService = fileStorageService;
+        this.passwordPolicy = passwordPolicy;
     }
 
     @Transactional
@@ -138,6 +142,8 @@ public class UserService {
         if (!passwordEncoder.matches(currentPassword, user.getPasswordHash())) {
             throw new IllegalStateException(msg.get("user.wrong.current.password"));
         }
+
+        passwordPolicy.validate(newPassword, user.getEmail(), user.getFirstName(), user.getLastName());
 
         user.setPasswordHash(passwordEncoder.encode(newPassword));
         userRepository.save(user);

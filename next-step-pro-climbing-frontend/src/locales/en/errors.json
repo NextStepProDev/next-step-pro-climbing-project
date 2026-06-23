@@ -19,7 +19,7 @@
   },
   "validation": {
     "passwordsMismatch": "Passwords do not match",
-    "passwordTooShort": "Password must be at least 8 characters long",
+    "passwordTooShort": "Password must be at least 10 characters long",
     "phoneInvalid": "Invalid format. Required: +[country code][9 digits], e.g. +48123456789",
     "nameTooShort": "Name must be at least 3 characters long"
   },

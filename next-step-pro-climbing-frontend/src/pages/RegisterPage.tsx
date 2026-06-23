@@ -6,6 +6,7 @@ import { validatePassword, validatePhone, validateName } from '../utils/validati
 import { getErrorMessage } from '../utils/errors'
 import { Button } from '../components/ui/Button'
 import { SuccessCheckmark } from '../components/ui/SuccessCheckmark'
+import { PasswordStrengthMeter } from '../components/ui/PasswordStrengthMeter'
 import { useTheme } from '../context/ThemeContext'
 import logoWhite from '../assets/logo/logo-white.png'
 import logoBlack from '../assets/logo/logo-black.png'
@@ -184,11 +185,12 @@ export function RegisterPage() {
               id="password"
               type="password"
               required
-              minLength={8}
+              minLength={10}
               value={form.password}
               onChange={(e) => updateField('password', e.target.value)}
               className="w-full px-3 py-2 bg-surface-800 border border-surface-700 rounded-lg text-surface-100 placeholder-surface-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             />
+            <PasswordStrengthMeter password={form.password} />
             <p className="text-xs text-surface-500 mt-1">
               {t('register.passwordHint')}
             </p>

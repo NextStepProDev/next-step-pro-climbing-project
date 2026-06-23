@@ -267,7 +267,7 @@ record ChangePasswordRequest(
 
     @Schema(description = "Nowe hasło")
     @jakarta.validation.constraints.NotBlank(message = "{validation.password.required}")
-    @jakarta.validation.constraints.Size(min = 8, max = 100, message = "{validation.password.size}")
+    @jakarta.validation.constraints.Size(min = 10, max = 100, message = "{validation.password.size}")
     String newPassword
 ) {}
 

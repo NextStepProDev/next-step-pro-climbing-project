@@ -19,7 +19,7 @@
   },
   "validation": {
     "passwordsMismatch": "Las contraseñas no coinciden",
-    "passwordTooShort": "La contraseña debe tener al menos 8 caracteres",
+    "passwordTooShort": "La contraseña debe tener al menos 10 caracteres",
     "phoneInvalid": "Formato inválido. Requerido: +[código de país][9 dígitos], p. ej. +48123456789",
     "nameTooShort": "El nombre debe tener al menos 3 caracteres"
   },
