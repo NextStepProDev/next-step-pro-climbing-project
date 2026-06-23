@@ -18,6 +18,7 @@ import pl.nextsteppro.climbing.domain.user.UserRole;
 import pl.nextsteppro.climbing.infrastructure.i18n.MessageService;
 import pl.nextsteppro.climbing.infrastructure.mail.AuthMailService;
 import pl.nextsteppro.climbing.infrastructure.security.JwtService;
+import pl.nextsteppro.climbing.infrastructure.security.PasswordPolicyValidator;
 
 import org.springframework.context.i18n.LocaleContextHolder;
 
@@ -42,6 +43,7 @@ public class AuthService {
     private final AdminEmailConfig adminEmailConfig;
     private final MessageService msg;
     private final NewsletterConsentLogRepository consentLogRepository;
+    private final PasswordPolicyValidator passwordPolicy;
 
     /**
      * Pre-computed BCrypt hash used to equalize login response time when an account does not
@@ -59,7 +61,8 @@ public class AuthService {
             AuthMailService authMailService,
             AdminEmailConfig adminEmailConfig,
             MessageService msg,
-            NewsletterConsentLogRepository consentLogRepository) {
+            NewsletterConsentLogRepository consentLogRepository,
+            PasswordPolicyValidator passwordPolicy) {
         this.userRepository = userRepository;
         this.authTokenRepository = authTokenRepository;
         this.passwordEncoder = passwordEncoder;
@@ -68,6 +71,7 @@ public class AuthService {
         this.adminEmailConfig = adminEmailConfig;
         this.msg = msg;
         this.consentLogRepository = consentLogRepository;
+        this.passwordPolicy = passwordPolicy;
         this.dummyHash = passwordEncoder.encode("timing-attack-mitigation-dummy");
     }
 
@@ -76,6 +80,8 @@ public class AuthService {
         if (userRepository.existsByEmail(request.email())) {
             throw new IllegalArgumentException(msg.get("auth.email.exists"));
         }
+
+        passwordPolicy.validate(request.password(), request.email(), request.firstName(), request.lastName());
 
         User user = new User(
             request.email(),
@@ -243,6 +249,7 @@ public class AuthService {
             .orElseThrow(() -> new IllegalArgumentException(msg.get("auth.reset.invalid")));
 
         User user = authToken.getUser();
+        passwordPolicy.validate(request.newPassword(), user.getEmail(), user.getFirstName(), user.getLastName());
         user.setPasswordHash(passwordEncoder.encode(request.newPassword()));
         authToken.markAsUsed();
 

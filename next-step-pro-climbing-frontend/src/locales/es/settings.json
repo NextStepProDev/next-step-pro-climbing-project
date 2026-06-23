@@ -37,7 +37,7 @@
     "newPassword": "Nueva contraseña",
     "confirmPassword": "Confirmar nueva contraseña",
     "submit": "Cambiar contraseña",
-    "tooShort": "La contraseña debe tener al menos 8 caracteres",
+    "tooShort": "La contraseña debe tener al menos 10 caracteres",
     "mismatch": "Las contraseñas no coinciden",
     "expand": "Cambiar contraseña",
     "cancel": "Cancelar",

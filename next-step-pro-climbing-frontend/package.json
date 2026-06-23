@@ -15,6 +15,8 @@
   },
   "dependencies": {
     "@tanstack/react-query": "^5.90.20",
+    "@zxcvbn-ts/core": "^4.1.2",
+    "@zxcvbn-ts/language-common": "^4.1.2",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
     "i18next": "^26.3.1",

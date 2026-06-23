@@ -13,7 +13,7 @@ public final class AuthDtos {
         String email,
 
         @NotBlank(message = "{validation.password.required}")
-        @Size(min = 8, max = 100, message = "{validation.password.size}")
+        @Size(min = 10, max = 100, message = "{validation.password.size}")
         String password,
 
         @NotBlank(message = "{validation.firstname.required}")
@@ -66,7 +66,7 @@ public final class AuthDtos {
         String token,
 
         @NotBlank(message = "{validation.password.required}")
-        @Size(min = 8, max = 100, message = "{validation.password.size}")
+        @Size(min = 10, max = 100, message = "{validation.password.size}")
         String newPassword
     ) {}
 

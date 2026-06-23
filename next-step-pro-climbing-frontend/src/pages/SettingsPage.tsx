@@ -13,6 +13,7 @@ import { Button } from '../components/ui/Button'
 import { Modal } from '../components/ui/Modal'
 import { Avatar } from '../components/ui/Avatar'
 import { AvatarCropper } from '../components/ui/AvatarCropper'
+import { PasswordStrengthMeter } from '../components/ui/PasswordStrengthMeter'
 
 const THEME_OPTIONS = [
   { value: 'dark' as const, labelKey: 'theme.dark', Icon: Moon },
@@ -355,7 +356,7 @@ function ChangePasswordSection() {
     e.preventDefault()
     setValidationError(null)
 
-    if (newPassword.length < 8) {
+    if (newPassword.length < 10) {
       setValidationError(t('changePassword.tooShort'))
       return
     }
@@ -411,9 +412,10 @@ function ChangePasswordSection() {
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
               required
-              minLength={8}
+              minLength={10}
               className="w-full bg-surface-800 border border-surface-700 rounded-lg px-4 py-2 text-surface-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
             />
+            <PasswordStrengthMeter password={newPassword} />
           </div>
           <div>
             <label className="block text-sm text-surface-400 mb-1">{t('changePassword.confirmPassword')}</label>

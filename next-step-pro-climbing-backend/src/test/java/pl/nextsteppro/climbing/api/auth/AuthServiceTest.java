@@ -59,6 +59,8 @@ class AuthServiceTest {
     private MessageService msg;
     @Mock
     private NewsletterConsentLogRepository consentLogRepository;
+    @Mock
+    private pl.nextsteppro.climbing.infrastructure.security.PasswordPolicyValidator passwordPolicy;
 
     private AuthService authService;
     private User testUser;
@@ -73,7 +75,8 @@ class AuthServiceTest {
             authMailService,
             adminEmailConfig,
             msg,
-            consentLogRepository
+            consentLogRepository,
+            passwordPolicy
         );
 
         testUser = new User("test@example.com", "John", "Doe", "+48123456789", "johndoe");

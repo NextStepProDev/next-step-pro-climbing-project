@@ -37,7 +37,7 @@
     "newPassword": "Nowe hasło",
     "confirmPassword": "Potwierdź nowe hasło",
     "submit": "Zmień hasło",
-    "tooShort": "Hasło musi mieć co najmniej 8 znaków",
+    "tooShort": "Hasło musi mieć co najmniej 10 znaków",
     "mismatch": "Hasła nie są zgodne",
     "expand": "Zmień hasło",
     "cancel": "Anuluj",
