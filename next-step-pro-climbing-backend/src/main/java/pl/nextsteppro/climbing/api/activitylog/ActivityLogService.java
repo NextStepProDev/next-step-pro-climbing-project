@@ -99,6 +99,10 @@ public class ActivityLogService {
         save(admin, ActivityActionType.ADMIN_USER_DELETED, null, null, null, description);
     }
 
+    public void logAdminUserForceLogout(User admin, String description) {
+        save(admin, ActivityActionType.ADMIN_USER_FORCE_LOGOUT, null, null, null, description);
+    }
+
     @Transactional(readOnly = true)
     public List<ActivityLogDto> getRecentLogs(int page, int size) {
         List<ActivityLog> logs = activityLogRepository.findRecentWithDetails(PageRequest.of(page, size));

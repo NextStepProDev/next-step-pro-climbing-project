@@ -466,6 +466,7 @@
     "grantAdmin": "Conceder permisos de administrador",
     "revokeAdmin": "Revocar permisos de administrador",
     "deleteUser": "Eliminar usuario",
+    "forceLogout": "Cerrar sesión en todos los dispositivos",
     "noSearchResults": "No hay resultados para la búsqueda indicada",
     "noUsers": "No hay usuarios registrados",
     "newsletterFilterAll": "Todos",
@@ -485,7 +486,10 @@
     "deleteUserMessage": "¿Estás seguro/a de que quieres eliminar al usuario {{name}}? Esta operación es irreversible.",
     "confirmGrant": "Sí, conceder",
     "confirmRevoke": "Sí, revocar",
-    "confirmDelete": "Sí, eliminar"
+    "confirmDelete": "Sí, eliminar",
+    "forceLogoutTitle": "Cerrar sesión en todos los dispositivos",
+    "forceLogoutMessage": "¿Estás seguro/a de que quieres cerrar la sesión del usuario {{name}} en todos los dispositivos? Las sesiones expirarán en ≤15 min y deberá iniciar sesión de nuevo.",
+    "confirmForceLogout": "Sí, cerrar sesión"
   },
   "activity": {
     "title": "Registro de actividad (actualización automática cada 30s)",
@@ -511,7 +515,8 @@
       "ADMIN_EVENT_DELETED": "Evento eliminado",
       "ADMIN_USER_MAKE_ADMIN": "Rol de admin concedido",
       "ADMIN_USER_ADMIN_REMOVED": "Rol de admin revocado",
-      "ADMIN_USER_DELETED": "Usuario eliminado"
+      "ADMIN_USER_DELETED": "Usuario eliminado",
+      "ADMIN_USER_FORCE_LOGOUT": "Sesión cerrada en todos los dispositivos"
     },
     "persons": "({{count}} pers.)"
   },

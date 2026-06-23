@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { format } from 'date-fns'
-import { Shield, ShieldOff, Trash2, Search, ChevronLeft, ChevronRight, Mail, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react'
+import { Shield, ShieldOff, Trash2, Search, ChevronLeft, ChevronRight, Mail, ArrowUp, ArrowDown, ArrowUpDown, LogOut } from 'lucide-react'
 import { adminApi } from '../../api/client'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
 import { QueryError } from '../../components/ui/QueryError'
@@ -24,7 +24,7 @@ export function AdminUsersPanel() {
   const [sortDir, setSortDir] = useState<SortDir>('desc')
   const [page, setPage] = useState(1)
   const [confirmAction, setConfirmAction] = useState<{
-    type: 'makeAdmin' | 'removeAdmin' | 'delete'
+    type: 'makeAdmin' | 'removeAdmin' | 'delete' | 'forceLogout'
     userId: string
     userName: string
   } | null>(null)
@@ -51,6 +51,12 @@ export function AdminUsersPanel() {
   const deleteUserMutation = useMutation({
     mutationFn: adminApi.deleteUser,
     onSuccess: () => { setActionError(null); queryClient.invalidateQueries({ queryKey: ['admin', 'users'] }) },
+    onError: (err) => setActionError(getErrorMessage(err)),
+  })
+
+  const forceLogoutMutation = useMutation({
+    mutationFn: adminApi.forceLogout,
+    onSuccess: () => setActionError(null),
     onError: (err) => setActionError(getErrorMessage(err)),
   })
 
@@ -234,16 +240,27 @@ export function AdminUsersPanel() {
                     </td>
                     <td className="px-4 py-3 flex gap-1">
                       {user.role === 'ADMIN' ? (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setConfirmAction({ type: 'removeAdmin', userId: user.id, userName: `${user.firstName} ${user.lastName}` })}
-                          title={t('users.revokeAdmin')}
-                          className="group !text-amber-400 hover:bg-orange-500/10"
-                        >
-                          <Shield className="w-4 h-4 group-hover:hidden" />
-                          <ShieldOff className="w-4 h-4 hidden group-hover:block text-surface-400" />
-                        </Button>
+                        <>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setConfirmAction({ type: 'removeAdmin', userId: user.id, userName: `${user.firstName} ${user.lastName}` })}
+                            title={t('users.revokeAdmin')}
+                            className="group !text-amber-400 hover:bg-orange-500/10"
+                          >
+                            <Shield className="w-4 h-4 group-hover:hidden" />
+                            <ShieldOff className="w-4 h-4 hidden group-hover:block text-surface-400" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setConfirmAction({ type: 'forceLogout', userId: user.id, userName: `${user.firstName} ${user.lastName}` })}
+                            title={t('users.forceLogout')}
+                            className="text-surface-500 hover:text-surface-200 hover:bg-surface-700/50"
+                          >
+                            <LogOut className="w-4 h-4" />
+                          </Button>
+                        </>
                       ) : (
                         <>
                           <Button
@@ -255,6 +272,15 @@ export function AdminUsersPanel() {
                           >
                             <ShieldOff className="w-4 h-4 group-hover:hidden" />
                             <Shield className="w-4 h-4 hidden group-hover:block !text-amber-400" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setConfirmAction({ type: 'forceLogout', userId: user.id, userName: `${user.firstName} ${user.lastName}` })}
+                            title={t('users.forceLogout')}
+                            className="text-surface-500 hover:text-surface-200 hover:bg-surface-700/50"
+                          >
+                            <LogOut className="w-4 h-4" />
                           </Button>
                           <Button
                             variant="ghost"
@@ -325,6 +351,8 @@ export function AdminUsersPanel() {
             makeAdminMutation.mutate(confirmAction.userId)
           } else if (confirmAction.type === 'removeAdmin') {
             removeAdminMutation.mutate(confirmAction.userId)
+          } else if (confirmAction.type === 'forceLogout') {
+            forceLogoutMutation.mutate(confirmAction.userId)
           } else {
             deleteUserMutation.mutate(confirmAction.userId)
           }
@@ -334,23 +362,29 @@ export function AdminUsersPanel() {
             ? t('users.grantAdminTitle')
             : confirmAction?.type === 'removeAdmin'
               ? t('users.revokeAdminTitle')
-              : t('users.deleteUserTitle')
+              : confirmAction?.type === 'forceLogout'
+                ? t('users.forceLogoutTitle')
+                : t('users.deleteUserTitle')
         }
         message={
           confirmAction?.type === 'makeAdmin'
             ? t('users.grantAdminMessage', { name: confirmAction.userName })
             : confirmAction?.type === 'removeAdmin'
               ? t('users.revokeAdminMessage', { name: confirmAction?.userName })
-              : t('users.deleteUserMessage', { name: confirmAction?.userName })
+              : confirmAction?.type === 'forceLogout'
+                ? t('users.forceLogoutMessage', { name: confirmAction?.userName })
+                : t('users.deleteUserMessage', { name: confirmAction?.userName })
         }
         confirmText={
           confirmAction?.type === 'makeAdmin'
             ? t('users.confirmGrant')
             : confirmAction?.type === 'removeAdmin'
               ? t('users.confirmRevoke')
-              : t('users.confirmDelete')
+              : confirmAction?.type === 'forceLogout'
+                ? t('users.confirmForceLogout')
+                : t('users.confirmDelete')
         }
-        variant={confirmAction?.type === 'makeAdmin' ? 'primary' : 'danger'}
+        variant={confirmAction?.type === 'makeAdmin' || confirmAction?.type === 'forceLogout' ? 'primary' : 'danger'}
       />
     </div>
   )

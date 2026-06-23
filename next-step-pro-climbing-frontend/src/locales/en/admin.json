@@ -468,6 +468,7 @@
     "grantAdmin": "Grant admin privileges",
     "revokeAdmin": "Revoke admin privileges",
     "deleteUser": "Delete user",
+    "forceLogout": "Sign out from all devices",
     "noSearchResults": "No results for the given search",
     "noUsers": "No registered users",
     "newsletterFilterAll": "All",
@@ -487,7 +488,10 @@
     "deleteUserMessage": "Are you sure you want to delete user {{name}}? This action is irreversible.",
     "confirmGrant": "Yes, grant",
     "confirmRevoke": "Yes, revoke",
-    "confirmDelete": "Yes, delete"
+    "confirmDelete": "Yes, delete",
+    "forceLogoutTitle": "Sign out from all devices",
+    "forceLogoutMessage": "Are you sure you want to sign out {{name}} from all devices? Sessions will expire within ≤15 min and they will need to sign in again.",
+    "confirmForceLogout": "Yes, sign out"
   },
   "activity": {
     "title": "Activity log (auto-refresh every 30s)",
@@ -513,7 +517,8 @@
       "ADMIN_EVENT_DELETED": "Event deleted",
       "ADMIN_USER_MAKE_ADMIN": "Admin role granted",
       "ADMIN_USER_ADMIN_REMOVED": "Admin role revoked",
-      "ADMIN_USER_DELETED": "User deleted"
+      "ADMIN_USER_DELETED": "User deleted",
+      "ADMIN_USER_FORCE_LOGOUT": "Signed out from all devices"
     },
     "persons": "({{count}} pers.)"
   },

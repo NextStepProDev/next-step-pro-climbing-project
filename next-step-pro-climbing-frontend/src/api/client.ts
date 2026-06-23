@@ -259,6 +259,8 @@ export const authApi = {
       method: 'PUT',
       body: JSON.stringify({ enabled }),
     }),
+  logoutAllDevices: () =>
+    fetchApi<void>('/user/me/logout-all', { method: 'POST' }),
   updateLanguage: (language: string) =>
     fetchApi<void>('/user/me/language', {
       method: 'PUT',
@@ -505,6 +507,9 @@ export const adminApi = {
 
   deleteUser: (userId: string) =>
     fetchApi<void>(`/admin/users/${userId}`, { method: 'DELETE' }),
+
+  forceLogout: (userId: string) =>
+    fetchApi<void>(`/admin/users/${userId}/logout-all`, { method: 'POST' }),
 
   // Mail
   sendMail: (data: { recipientType: 'ALL' | 'NEWSLETTER' | 'SELECTED'; userIds?: string[]; subject: string; body: string }) =>
