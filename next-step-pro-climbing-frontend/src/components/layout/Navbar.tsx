@@ -88,6 +88,24 @@ export function Navbar() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // Mobile Safari/Chrome render this `position: sticky` navbar overlapping the
+  // page content on the very first paint (before any scroll), tucking the top
+  // of the hero — incl. the admin badge — under the bar until you scroll. A 1px
+  // scroll nudge across two frames forces the browser to recompute the sticky
+  // offset so the hero is fully visible on load. Runs once, only when at top.
+  useEffect(() => {
+    if (window.scrollY !== 0) return;
+    let raf2 = 0;
+    const raf1 = requestAnimationFrame(() => {
+      window.scrollTo(0, 1);
+      raf2 = requestAnimationFrame(() => window.scrollTo(0, 0));
+    });
+    return () => {
+      cancelAnimationFrame(raf1);
+      cancelAnimationFrame(raf2);
+    };
+  }, []);
+
   useEffect(() => {
     function onScroll() {
       const y = window.scrollY;
