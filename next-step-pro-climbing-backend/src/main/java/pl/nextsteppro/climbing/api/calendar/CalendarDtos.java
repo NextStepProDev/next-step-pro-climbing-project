@@ -84,6 +84,8 @@ record EventSummaryDto(
     String eventType,
     LocalDate startDate,
     LocalDate endDate,
+    @Nullable LocalTime startTime,
+    @Nullable LocalTime endTime,
     boolean isMultiDay,
     int maxParticipants,
     int currentParticipants,

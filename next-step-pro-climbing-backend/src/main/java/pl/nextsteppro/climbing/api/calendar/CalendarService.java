@@ -201,7 +201,8 @@ public class CalendarService {
 
         return new EventSummaryDto(
             event.getId(), title, event.getDescription(), event.getLocation(),
-            event.getEventType().name(), event.getStartDate(), event.getEndDate(), event.isMultiDay(),
+            event.getEventType().name(), event.getStartDate(), event.getEndDate(),
+            event.getStartTime(), event.getEndTime(), event.isMultiDay(),
             event.getMaxParticipants(), currentParticipants, isUserRegistered, enrollmentOpen,
             courseId, coursePublished,
             userWaitlistStatus, waitlistEntryId, confirmationDeadline, userWaitlistPosition,
@@ -433,7 +434,8 @@ public class CalendarService {
         boolean coursePublished = course != null && course.isPublished();
         return new EventSummaryDto(
             event.getId(), title, event.getDescription(), event.getLocation(),
-            event.getEventType().name(), event.getStartDate(), event.getEndDate(), event.isMultiDay(),
+            event.getEventType().name(), event.getStartDate(), event.getEndDate(),
+            event.getStartTime(), event.getEndTime(), event.isMultiDay(),
             event.getMaxParticipants(), currentParticipants, isUserRegistered, enrollmentOpen,
             courseId, coursePublished,
             null, null, null, 0, 0

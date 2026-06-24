@@ -120,6 +120,8 @@ export interface EventSummary {
   eventType: EventType
   startDate: string
   endDate: string
+  startTime: string | null
+  endTime: string | null
   isMultiDay: boolean
   maxParticipants: number
   currentParticipants: number
