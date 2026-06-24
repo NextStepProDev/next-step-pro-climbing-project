@@ -717,6 +717,19 @@ function LocationSection() {
     }
   }
 
+  // Save stays disabled until the draft differs from the edited preset (edit),
+  // or until some content has been entered (new template).
+  const editorDirty = (() => {
+    if (!editor) return false
+    const cleaned = cleanTranslations(draft)
+    if (editor.mode === 'edit') {
+      return JSON.stringify(cleaned) !== JSON.stringify(cleanTranslations(editor.preset.translations))
+    }
+    return Object.values(cleaned).some(
+      (c) => c.locations.length > 0 || c.badge.trim() !== '' || c.subtitle.trim() !== '',
+    )
+  })()
+
   const openRename = (preset: LocationPresetDto) => { setNameModal({ mode: 'rename', preset }); setNameInput(preset.name) }
 
   const submitName = () => {
@@ -804,7 +817,7 @@ function LocationSection() {
           {saveError && <p className="text-red-400 text-sm">{saveError}</p>}
 
           <div className="flex flex-wrap gap-3 pt-2 border-t border-surface-700">
-            <Button onClick={saveEditor} disabled={savePresetMutation.isPending}>
+            <Button onClick={saveEditor} disabled={savePresetMutation.isPending || !editorDirty}>
               <Save className="w-4 h-4 mr-2" />
               {savePresetMutation.isPending ? t('site.saving') : t('site.location.saveTemplate')}
             </Button>
@@ -1020,6 +1033,16 @@ function CalendarPromoSection() {
     }
   }
 
+  // Save stays disabled until the draft differs from the edited preset (edit),
+  // or until the required title+description are present (new template).
+  const editorDirty = (() => {
+    if (!editor) return false
+    if (editor.mode === 'edit') {
+      return JSON.stringify(cleanPromoTranslations(draft)) !== JSON.stringify(cleanPromoTranslations(editor.preset.translations))
+    }
+    return hasRequiredContent(draft)
+  })()
+
   const openRename = (preset: CalendarPromoPresetDto) => { setNameModal({ mode: 'rename', preset }); setNameInput(preset.name) }
 
   const submitName = () => {
@@ -1092,7 +1115,7 @@ function CalendarPromoSection() {
           {saveError && <p className="text-red-400 text-sm">{saveError}</p>}
 
           <div className="flex flex-wrap gap-3 pt-2 border-t border-surface-700">
-            <Button onClick={saveEditor} disabled={savePresetMutation.isPending}>
+            <Button onClick={saveEditor} disabled={savePresetMutation.isPending || !editorDirty}>
               <Save className="w-4 h-4 mr-2" />
               {savePresetMutation.isPending ? t('site.saving') : t('site.calendarPromo.saveTemplate')}
             </Button>
