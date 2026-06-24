@@ -118,6 +118,11 @@ export function AdminTeamMemberPanel({ memberType }: Props) {
     | null
   >(null)
   const editFormRef = useRef<HTMLFormElement>(null)
+  // Controlled so the edit form's dirtiness can be derived during render
+  // (drives the "Zapisz" disabled state).
+  const [editFirstName, setEditFirstName] = useState('')
+  const [editLastName, setEditLastName] = useState('')
+  const [editActive, setEditActive] = useState(false)
 
   const isCreateDirty = useCallback(() => {
     if (!createModalOpen) return false
@@ -131,23 +136,18 @@ export function AdminTeamMemberPanel({ memberType }: Props) {
 
   const isEditDirty = useCallback(() => {
     if (!selectedMember || !editModalOpen) return false
-    const form = editFormRef.current
-    if (!form) return false
-    const firstName = (form.elements.namedItem('firstName') as HTMLInputElement)?.value ?? ''
-    const lastName = (form.elements.namedItem('lastName') as HTMLInputElement)?.value ?? ''
-    const active = (form.elements.namedItem('active') as HTMLInputElement)?.checked ?? false
     const origBio = deserializeBio(selectedMember.bio ?? '')
     const origCerts = selectedMember.certifications ? selectedMember.certifications.split('\n').filter(Boolean) : []
     const bioChanged = serializeBio(editBioBlocks) !== serializeBio(origBio)
     const certsChanged = editCerts.filter(Boolean).join('\n') !== origCerts.join('\n')
     const focalChanged = selectedMember.photoUrl != null &&
       (focalPoint.x !== (selectedMember.focalPointX ?? 0.5) || focalPoint.y !== (selectedMember.focalPointY ?? 0.5))
-    return firstName !== selectedMember.firstName ||
-      lastName !== selectedMember.lastName ||
-      active !== selectedMember.active ||
+    return editFirstName !== selectedMember.firstName ||
+      editLastName !== selectedMember.lastName ||
+      editActive !== selectedMember.active ||
       bioChanged || certsChanged || focalChanged ||
       edit8aUrl.trim() !== (selectedMember.profile8aUrl ?? '')
-  }, [selectedMember, editModalOpen, editBioBlocks, editCerts, edit8aUrl, focalPoint])
+  }, [selectedMember, editModalOpen, editFirstName, editLastName, editActive, editBioBlocks, editCerts, edit8aUrl, focalPoint])
 
   const handleCreateClose = useCallback(() => {
     if (isCreateDirty()) {
@@ -301,6 +301,9 @@ export function AdminTeamMemberPanel({ memberType }: Props) {
       setSelectedMember(null)
       setTimeout(() => {
         setSelectedMember(newMember)
+        setEditFirstName(newMember.firstName)
+        setEditLastName(newMember.lastName)
+        setEditActive(newMember.active)
         setFocalPoint({ x: newMember.focalPointX ?? 0.5, y: newMember.focalPointY ?? 0.5 })
         setEditBioBlocks(deserializeBio(newMember.bio ?? ''))
         setEditCerts(newMember.certifications ? newMember.certifications.split('\n').filter(Boolean) : [])
@@ -316,6 +319,9 @@ export function AdminTeamMemberPanel({ memberType }: Props) {
     onSuccess: (newMember) => {
       invalidateAll()
       setSelectedMember(newMember)
+      setEditFirstName(newMember.firstName)
+      setEditLastName(newMember.lastName)
+      setEditActive(newMember.active)
       setFocalPoint({ x: newMember.focalPointX ?? 0.5, y: newMember.focalPointY ?? 0.5 })
       setEditBioBlocks(deserializeBio(newMember.bio ?? ''))
       setEditCerts(newMember.certifications ? newMember.certifications.split('\n').filter(Boolean) : [])
@@ -385,13 +391,12 @@ export function AdminTeamMemberPanel({ memberType }: Props) {
   const handleUpdate = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     if (!selectedMember) return
-    const formData = new FormData(e.currentTarget)
     const data: UpdateInstructorRequest = {
-      firstName: formData.get('firstName') as string,
-      lastName: formData.get('lastName') as string,
+      firstName: editFirstName,
+      lastName: editLastName,
       bio: serializeBio(editBioBlocks) || undefined,
       certifications: editCerts.filter(Boolean).join('\n') || undefined,
-      active: formData.get('active') === 'on',
+      active: editActive,
       profile8aUrl: edit8aUrl.trim(),
       ...(selectedMember.photoUrl ? { focalPointX: focalPoint.x, focalPointY: focalPoint.y } : {}),
     }
@@ -482,6 +487,9 @@ export function AdminTeamMemberPanel({ memberType }: Props) {
                             key={lang}
                             onClick={() => {
                               setSelectedMember(member)
+                              setEditFirstName(member.firstName)
+                              setEditLastName(member.lastName)
+                              setEditActive(member.active)
                               setFocalPoint({ x: member.focalPointX ?? 0.5, y: member.focalPointY ?? 0.5 })
                               setEditBioBlocks(deserializeBio(member.bio ?? ''))
                               setEditCerts(member.certifications ? member.certifications.split('\n').filter(Boolean) : [])
@@ -685,11 +693,11 @@ export function AdminTeamMemberPanel({ memberType }: Props) {
 
             <div>
               <label className="block text-sm font-medium text-surface-200 mb-1">Imię *</label>
-              <input type="text" name="firstName" defaultValue={selectedMember.firstName} required maxLength={100} className={inputCls} />
+              <input type="text" name="firstName" value={editFirstName} onChange={(e) => setEditFirstName(e.target.value)} required maxLength={100} className={inputCls} />
             </div>
             <div>
               <label className="block text-sm font-medium text-surface-200 mb-1">Nazwisko *</label>
-              <input type="text" name="lastName" defaultValue={selectedMember.lastName} required maxLength={100} className={inputCls} />
+              <input type="text" name="lastName" value={editLastName} onChange={(e) => setEditLastName(e.target.value)} required maxLength={100} className={inputCls} />
             </div>
             <div>
               <label className="block text-sm font-medium text-surface-200 mb-2">{certLabel}</label>
@@ -711,7 +719,7 @@ export function AdminTeamMemberPanel({ memberType }: Props) {
             </div>
 
             <label className="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" name="active" defaultChecked={selectedMember.active}
+              <input type="checkbox" name="active" checked={editActive} onChange={(e) => setEditActive(e.target.checked)}
                 className="w-4 h-4 rounded border-surface-600 bg-surface-700 text-primary-500 focus:ring-2 focus:ring-primary-500" />
               <span className="text-sm text-surface-200">Aktywny</span>
               <span className="text-xs text-surface-500">(wszystkie języki)</span>
@@ -731,7 +739,7 @@ export function AdminTeamMemberPanel({ memberType }: Props) {
 
             <div className="flex gap-2 justify-end">
               <Button type="button" variant="ghost" onClick={handleEditClose}>Anuluj</Button>
-              <Button type="submit" loading={updateMutation.isPending}>Zapisz</Button>
+              <Button type="submit" loading={updateMutation.isPending} disabled={!isEditDirty()}>Zapisz</Button>
             </div>
             {updateMutation.error && <div className="text-rose-400 text-sm">{String(updateMutation.error)}</div>}
           </form>

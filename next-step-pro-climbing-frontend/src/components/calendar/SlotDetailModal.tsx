@@ -160,6 +160,18 @@ export function SlotDetailModal({
   const isPendingConfirmation = slot.userWaitlistStatus === "PENDING_CONFIRMATION";
   const canJoinWaitlist = isFull && !isWaiting && !isPendingConfirmation && !isPast && !isBookingClosed && !slot.isUserRegistered;
 
+  // Admin inline edit: "Save changes" stays disabled until the form actually
+  // differs from the slot's current values (baseline set when entering edit mode).
+  const editBaseline = {
+    title: slot.title ?? '',
+    startTime: slot.startTime.slice(0, 5),
+    endTime: slot.endTime.slice(0, 5),
+    maxParticipants: slot.maxParticipants,
+    isAvailabilityWindow: slot.isAvailabilityWindow,
+  };
+  const editTimeError = editForm.endTime <= editForm.startTime;
+  const editDirty = JSON.stringify(editForm) !== JSON.stringify(editBaseline);
+
   const handleLoginRedirect = () => {
     saveRedirectPath(`/calendar?date=${slot.date}`);
     navigate("/login");
@@ -431,6 +443,7 @@ export function SlotDetailModal({
                 <div className="flex gap-3">
                   <Button
                     loading={editSlotMutation.isPending}
+                    disabled={!editDirty || editTimeError}
                     className="flex-1"
                     onClick={() => {
                       if (editForm.endTime <= editForm.startTime) return;

@@ -13,6 +13,7 @@ import { TimeScrollPicker } from '../../components/ui/TimeScrollPicker'
 import { UserSearchSelect } from '../../components/ui/UserSearchSelect'
 import { CreateSlotModal } from '../../components/calendar/CreateSlotModal'
 import { useDateLocale } from '../../utils/dateFnsLocale'
+import { useDirty } from '../../hooks/useDirty'
 import type { SlotParticipants, SlotTemplate, TimeSlotAdmin, User } from '../../types'
 
 const ARCHIVE_PAGE_SIZE = 15
@@ -438,6 +439,8 @@ function EditSlotModal({
     },
   })
 
+  const isDirty = useDirty(form)
+
   if (!slot) return null
 
   const timeError = form.endTime <= form.startTime
@@ -518,7 +521,7 @@ function EditSlotModal({
         )}
 
         <div className="flex gap-3 pt-4">
-          <Button type="submit" loading={updateMutation.isPending} className="flex-1">
+          <Button type="submit" loading={updateMutation.isPending} disabled={!isDirty || !!timeError} className="flex-1">
             {t('slots.saveChanges')}
           </Button>
           <Button type="button" variant="ghost" onClick={onClose}>

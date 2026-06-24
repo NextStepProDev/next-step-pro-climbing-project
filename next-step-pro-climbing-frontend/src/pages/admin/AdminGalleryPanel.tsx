@@ -33,6 +33,22 @@ export function AdminGalleryPanel() {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
   const lightboxTrapRef = useFocusTrap(lightboxIndex !== null)
 
+  // Controlled edit fields so the "Zapisz" dirty state can be derived during render.
+  const [editAlbumName, setEditAlbumName] = useState('')
+  const [editAlbumDescription, setEditAlbumDescription] = useState('')
+  const [editPhotoCaption, setEditPhotoCaption] = useState('')
+
+  const albumDirty = selectedAlbum != null && (
+    editAlbumName !== selectedAlbum.name ||
+    editAlbumDescription !== (selectedAlbum.description || '')
+  )
+
+  const photoDirty = selectedPhoto != null && (
+    editPhotoCaption !== (selectedPhoto.caption || '') ||
+    focalPoint.x !== (selectedPhoto.focalPointX ?? 0.5) ||
+    focalPoint.y !== (selectedPhoto.focalPointY ?? 0.5)
+  )
+
   const { data: albums, isLoading, error } = useQuery({
     queryKey: ['admin', 'gallery', 'albums'],
     queryFn: adminGalleryApi.getAllAlbums,
@@ -159,10 +175,9 @@ export function AdminGalleryPanel() {
   const handleUpdateAlbum = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     if (!selectedAlbum) return
-    const formData = new FormData(e.currentTarget)
     const data: UpdateAlbumRequest = {
-      name: formData.get('name') as string,
-      description: formData.get('description') as string || undefined,
+      name: editAlbumName,
+      description: editAlbumDescription || undefined,
     }
     updateAlbumMutation.mutate({ id: selectedAlbum.id, data })
   }
@@ -260,12 +275,10 @@ export function AdminGalleryPanel() {
   const handleUpdatePhoto = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     if (!selectedPhoto) return
-    const formData = new FormData(e.currentTarget)
-    const caption = formData.get('caption') as string
     updatePhotoMutation.mutate({
       photoId: selectedPhoto.id,
       data: {
-        caption: caption || undefined,
+        caption: editPhotoCaption || undefined,
         focalPointX: focalPoint.x,
         focalPointY: focalPoint.y,
       },
@@ -417,6 +430,8 @@ export function AdminGalleryPanel() {
                           size="sm"
                           onClick={() => {
                             setSelectedAlbum(album)
+                            setEditAlbumName(album.name)
+                            setEditAlbumDescription(album.description || '')
                             setEditAlbumModalOpen(true)
                           }}
                         >
@@ -538,6 +553,7 @@ export function AdminGalleryPanel() {
                               onClick={(e) => {
                                 e.stopPropagation()
                                 setSelectedPhoto({ id: photo.id, caption: photo.caption, url: photo.url, focalPointX: photo.focalPointX, focalPointY: photo.focalPointY })
+                                setEditPhotoCaption(photo.caption || '')
                                 setFocalPoint({ x: photo.focalPointX ?? 0.5, y: photo.focalPointY ?? 0.5 })
                                 setEditPhotoModalOpen(true)
                               }}
@@ -642,7 +658,8 @@ export function AdminGalleryPanel() {
               <input
                 type="text"
                 name="name"
-                defaultValue={selectedAlbum.name}
+                value={editAlbumName}
+                onChange={(e) => setEditAlbumName(e.target.value)}
                 required
                 maxLength={255}
                 className="w-full px-3 py-2 bg-surface-700 border border-surface-600 rounded-lg text-surface-100 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
@@ -655,7 +672,8 @@ export function AdminGalleryPanel() {
               </label>
               <textarea
                 name="description"
-                defaultValue={selectedAlbum.description || ''}
+                value={editAlbumDescription}
+                onChange={(e) => setEditAlbumDescription(e.target.value)}
                 rows={8}
                 className="w-full px-3 py-2 bg-surface-700 border border-surface-600 rounded-lg text-surface-100 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               />
@@ -672,7 +690,7 @@ export function AdminGalleryPanel() {
               >
                 Anuluj
               </Button>
-              <Button type="submit" loading={updateAlbumMutation.isPending}>
+              <Button type="submit" loading={updateAlbumMutation.isPending} disabled={!albumDirty}>
                 Zapisz
               </Button>
             </div>
@@ -783,7 +801,8 @@ export function AdminGalleryPanel() {
               </label>
               <textarea
                 name="caption"
-                defaultValue={selectedPhoto.caption || ''}
+                value={editPhotoCaption}
+                onChange={(e) => setEditPhotoCaption(e.target.value)}
                 rows={2}
                 className="w-full px-3 py-2 bg-surface-700 border border-surface-600 rounded-lg text-surface-100 focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
                 placeholder="Dodaj opis zdjęcia..."
@@ -838,6 +857,7 @@ export function AdminGalleryPanel() {
               <Button
                 type="submit"
                 loading={updatePhotoMutation.isPending}
+                disabled={!photoDirty}
               >
                 Zapisz
               </Button>
@@ -975,6 +995,7 @@ export function AdminGalleryPanel() {
                 onClick={() => {
                   const photo = lightboxPhotos[lightboxIndex]
                   setSelectedPhoto({ id: photo.id, caption: photo.caption, url: photo.url, focalPointX: photo.focalPointX, focalPointY: photo.focalPointY })
+                  setEditPhotoCaption(photo.caption || '')
                   setFocalPoint({ x: photo.focalPointX ?? 0.5, y: photo.focalPointY ?? 0.5 })
                   setLightboxIndex(null)
                   setEditPhotoModalOpen(true)

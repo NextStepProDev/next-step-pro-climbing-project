@@ -7,6 +7,7 @@ import { Plus, Trash2, Eye, EyeOff, Clock, Pencil, ChevronDown, ChevronRight, Ch
 import { adminApi, adminCoursesApi } from '../../api/client'
 import { UserSearchSelect } from '../../components/ui/UserSearchSelect'
 import { getErrorMessage } from '../../utils/errors'
+import { useDirty } from '../../hooks/useDirty'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
 import { QueryError } from '../../components/ui/QueryError'
 import { Button } from '../../components/ui/Button'
@@ -767,6 +768,8 @@ function EditEventModal({
     },
   })
 
+  const isDirty = useDirty({ form, courseId, allDay })
+
   if (!event) return null
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -935,7 +938,7 @@ function EditEventModal({
         </div>
 
         <div className="flex gap-3 pt-4">
-          <Button type="submit" loading={updateMutation.isPending} className="flex-1">
+          <Button type="submit" loading={updateMutation.isPending} disabled={!isDirty} className="flex-1">
             {t('events.saveChanges')}
           </Button>
           <Button type="button" variant="ghost" onClick={onClose}>
