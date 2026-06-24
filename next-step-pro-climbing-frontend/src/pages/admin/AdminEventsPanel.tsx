@@ -302,15 +302,21 @@ function EventCard({
             </div>
           )}
           <div className="flex items-center gap-3 mt-0.5 flex-wrap">
-            <span className="text-sm text-surface-500">
-              {t('events.participantsCount', { current: event.currentParticipants, max: event.maxParticipants })}
-            </span>
-            {event.maxParticipants - event.currentParticipants > 0 ? (
-              <span className="text-sm text-green-400">
-                {t('events.freeSpots', { count: event.maxParticipants - event.currentParticipants })}
-              </span>
+            {event.eventType === 'UNAVAILABLE' ? (
+              <span className="text-sm text-slate-400">{tc('eventTypes.UNAVAILABLE')}</span>
             ) : (
-              <span className="text-sm text-rose-400">{t('events.noFreeSpots')}</span>
+              <>
+                <span className="text-sm text-surface-500">
+                  {t('events.participantsCount', { current: event.currentParticipants, max: event.maxParticipants })}
+                </span>
+                {event.maxParticipants - event.currentParticipants > 0 ? (
+                  <span className="text-sm text-green-400">
+                    {t('events.freeSpots', { count: event.maxParticipants - event.currentParticipants })}
+                  </span>
+                ) : (
+                  <span className="text-sm text-rose-400">{t('events.noFreeSpots')}</span>
+                )}
+              </>
             )}
             {event.courseId && (
               <Link
@@ -819,13 +825,17 @@ function EditEventModal({
           <label className="block text-sm text-surface-400 mb-1">{t('events.typeLabel')}</label>
           <select
             value={form.eventType}
-            onChange={(e) => setForm({ ...form, eventType: e.target.value as EventType })}
+            onChange={(e) => {
+              const eventType = e.target.value as EventType
+              setForm({ ...form, eventType, maxParticipants: eventType === 'UNAVAILABLE' ? 0 : form.maxParticipants })
+            }}
             className="w-full bg-surface-800 border border-surface-700 rounded-lg px-4 py-2 text-surface-100"
           >
             <option value="COURSE">{tc('eventTypes.COURSE')}</option>
             <option value="TRAINING">{tc('eventTypes.TRAINING')}</option>
             <option value="WORKSHOP">{tc('eventTypes.WORKSHOP')}</option>
             <option value="CONTACT_DAY">{tc('eventTypes.CONTACT_DAY')}</option>
+            <option value="UNAVAILABLE">{tc('eventTypes.UNAVAILABLE')}</option>
           </select>
         </div>
 
@@ -916,10 +926,11 @@ function EditEventModal({
           <label className="block text-sm text-surface-400 mb-1">{t('events.maxParticipantsLabel')}</label>
           <input
             type="number"
-            min={1}
-            value={form.maxParticipants}
+            min={0}
+            disabled={form.eventType === 'UNAVAILABLE'}
+            value={form.eventType === 'UNAVAILABLE' ? 0 : form.maxParticipants}
             onChange={(e) => setForm({ ...form, maxParticipants: parseInt(e.target.value) })}
-            className="w-full bg-surface-800 border border-surface-700 rounded-lg px-4 py-2 text-surface-100"
+            className="w-full bg-surface-800 border border-surface-700 rounded-lg px-4 py-2 text-surface-100 disabled:opacity-50"
           />
         </div>
 
@@ -1048,13 +1059,17 @@ function CreateEventModal({
           <label className="block text-sm text-surface-400 mb-1">{t('events.typeLabel')}</label>
           <select
             value={form.eventType}
-            onChange={(e) => setForm({ ...form, eventType: e.target.value as EventType })}
+            onChange={(e) => {
+              const eventType = e.target.value as EventType
+              setForm({ ...form, eventType, maxParticipants: eventType === 'UNAVAILABLE' ? 0 : form.maxParticipants })
+            }}
             className="w-full bg-surface-800 border border-surface-700 rounded-lg px-4 py-2 text-surface-100"
           >
             <option value="COURSE">{tc('eventTypes.COURSE')}</option>
             <option value="TRAINING">{tc('eventTypes.TRAINING')}</option>
             <option value="WORKSHOP">{tc('eventTypes.WORKSHOP')}</option>
             <option value="CONTACT_DAY">{tc('eventTypes.CONTACT_DAY')}</option>
+            <option value="UNAVAILABLE">{tc('eventTypes.UNAVAILABLE')}</option>
           </select>
         </div>
 
@@ -1145,10 +1160,11 @@ function CreateEventModal({
           <label className="block text-sm text-surface-400 mb-1">{t('events.maxParticipantsLabel')}</label>
           <input
             type="number"
-            min={1}
-            value={form.maxParticipants}
+            min={0}
+            disabled={form.eventType === 'UNAVAILABLE'}
+            value={form.eventType === 'UNAVAILABLE' ? 0 : form.maxParticipants}
             onChange={(e) => setForm({ ...form, maxParticipants: parseInt(e.target.value) })}
-            className="w-full bg-surface-800 border border-surface-700 rounded-lg px-4 py-2 text-surface-100"
+            className="w-full bg-surface-800 border border-surface-700 rounded-lg px-4 py-2 text-surface-100 disabled:opacity-50"
           />
         </div>
 

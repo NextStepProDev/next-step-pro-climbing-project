@@ -220,6 +220,26 @@ export function DayView({
               const { label, badgeClass } = formatAvailability(event);
               const color = getEventColorByIndex(event.id, event.eventType, event.currentParticipants >= event.maxParticipants);
 
+              /* UNAVAILABLE — instructor absence / blocked day, no enrollment */
+              if (event.eventType === 'UNAVAILABLE') {
+                return (
+                  <div
+                    key={event.id}
+                    className={clsx("rounded-lg border p-4", color.border, color.bg)}
+                  >
+                    <h3 className={clsx("text-base font-semibold mb-2", color.text)}>
+                      {event.title}
+                    </h3>
+                    {event.description && (
+                      <p className="text-sm text-surface-300 mb-3">{event.description}</p>
+                    )}
+                    <div className="p-3 rounded-lg bg-slate-500/10 border border-slate-500/20">
+                      <p className="text-sm text-slate-300">{t('unavailable.message')}</p>
+                    </div>
+                  </div>
+                );
+              }
+
               /* CONTACT_DAY — no enrollment, just info + contact prompt */
               if (event.eventType === 'CONTACT_DAY') {
                 return (

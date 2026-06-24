@@ -82,6 +82,8 @@
   },
   "event": {
     "title": "Sign up for event",
+    "unavailable": "Unavailable",
+    "unavailableInfo": "We're unavailable on this date — sign-ups are not possible.",
     "bookingClosed": "Online booking is available up to 12 hours before the event. Contact the instructor by phone to check availability.",
     "hasReservation": "You have a reservation for this event",
     "addMoreParticipants": "I want to book for more than 1 person",
@@ -154,10 +156,14 @@
     "message": "Contact us to arrange a session at the climbing wall or outdoors.",
     "cta": "Go to contact"
   },
+  "unavailable": {
+    "message": "We're unavailable on this date — no classes and no sign-ups."
+  },
   "availability": {
     "closed": "Bookings closed",
     "noSpots": "No spots",
     "oneSpot": "1 spot available",
-    "freeSpots": "{{free}}/{{max}} available"
+    "freeSpots": "{{free}}/{{max}} available",
+    "unavailable": "Unavailable"
   }
 }

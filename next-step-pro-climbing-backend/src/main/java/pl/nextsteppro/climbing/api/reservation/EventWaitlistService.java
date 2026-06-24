@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 import pl.nextsteppro.climbing.api.activitylog.ActivityLogService;
 import pl.nextsteppro.climbing.domain.event.Event;
 import pl.nextsteppro.climbing.domain.event.EventRepository;
+import pl.nextsteppro.climbing.domain.event.EventType;
 import pl.nextsteppro.climbing.domain.reservation.Reservation;
 import pl.nextsteppro.climbing.domain.reservation.ReservationRepository;
 import pl.nextsteppro.climbing.domain.reservation.ReservationStatus;
@@ -73,6 +74,10 @@ public class EventWaitlistService {
 
         if (!event.isActive()) {
             throw new IllegalStateException(msg.get("reservation.event.inactive"));
+        }
+
+        if (event.getEventType().blocksEnrollment()) {
+            throw new IllegalStateException(msg.get("reservation.event.enrollment.closed"));
         }
 
         LocalTime eventStartTime = event.getStartTime() != null ? event.getStartTime() : LocalTime.of(0, 0);

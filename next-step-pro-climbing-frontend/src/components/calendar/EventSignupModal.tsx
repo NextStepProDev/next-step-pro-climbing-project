@@ -422,19 +422,21 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
           </div>
         )}
 
-        {/* Capacity */}
-        <div className="flex items-center gap-2 text-surface-300">
-          <Users className="w-5 h-5" />
-          <span>
-            {t('event.participants', { current: ev.currentParticipants, max: ev.maxParticipants })}
-            {spotsLeft > 0 && (
-              <span className="text-primary-400 ml-2">{t('event.spotsFree', { count: spotsLeft })}</span>
-            )}
-            {isFull && (
-              <span className="text-amber-400 ml-2">{t('event.full')}</span>
-            )}
-          </span>
-        </div>
+        {/* Capacity — hidden for unavailable (absence) events */}
+        {ev.eventType !== 'UNAVAILABLE' && (
+          <div className="flex items-center gap-2 text-surface-300">
+            <Users className="w-5 h-5" />
+            <span>
+              {t('event.participants', { current: ev.currentParticipants, max: ev.maxParticipants })}
+              {spotsLeft > 0 && (
+                <span className="text-primary-400 ml-2">{t('event.spotsFree', { count: spotsLeft })}</span>
+              )}
+              {isFull && (
+                <span className="text-amber-400 ml-2">{t('event.full')}</span>
+              )}
+            </span>
+          </div>
+        )}
 
         {/* User registered info */}
         {ev.isUserRegistered && (
@@ -486,8 +488,17 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
           </div>
         )}
 
+        {/* Unavailable (absence) info */}
+        {ev.eventType === 'UNAVAILABLE' && (
+          <div className="p-3 bg-slate-500/10 border border-slate-500/20 rounded-lg">
+            <span className="text-slate-300 text-sm">
+              {t('event.unavailableInfo')}
+            </span>
+          </div>
+        )}
+
         {/* Enrollment closed info */}
-        {enrollmentClosed && !ev.isUserRegistered && (
+        {ev.eventType !== 'UNAVAILABLE' && enrollmentClosed && !ev.isUserRegistered && (
           <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg">
             <span className="text-amber-400 text-sm">
               {t('event.bookingClosed')}

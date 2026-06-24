@@ -164,7 +164,7 @@ export interface EventDetail {
   slots?: TimeSlotAdmin[]
 }
 
-export type EventType = 'COURSE' | 'TRAINING' | 'WORKSHOP' | 'CONTACT_DAY'
+export type EventType = 'COURSE' | 'TRAINING' | 'WORKSHOP' | 'CONTACT_DAY' | 'UNAVAILABLE'
 
 // Reservation types
 export interface UserReservation {

@@ -183,7 +183,7 @@ public class CalendarService {
             event.getStartDate(),
             event.getStartTime() != null ? event.getStartTime() : LocalTime.of(0, 0)
         );
-        boolean enrollmentOpen = event.getEventType() != EventType.CONTACT_DAY
+        boolean enrollmentOpen = !event.getEventType().blocksEnrollment()
             && eventStart.isAfter(LocalDateTime.now().plusHours(BOOKING_CUTOFF_HOURS));
 
         Course course = event.getCourse();
@@ -425,7 +425,7 @@ public class CalendarService {
             event.getStartDate(),
             event.getStartTime() != null ? event.getStartTime() : LocalTime.of(0, 0)
         );
-        boolean enrollmentOpen = event.getEventType() != EventType.CONTACT_DAY
+        boolean enrollmentOpen = !event.getEventType().blocksEnrollment()
             && eventStart.isAfter(LocalDateTime.now().plusHours(BOOKING_CUTOFF_HOURS));
         Course course = event.getCourse();
         String title = course != null ? course.getTitle() : event.getTitle();

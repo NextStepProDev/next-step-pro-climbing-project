@@ -599,7 +599,11 @@ export function CalendarPage() {
                                 <> - {format(new Date(event.endDate), "dd.MM")}</>
                               )}
                             </span>
-                            {event.isUserRegistered ? (
+                            {event.eventType === 'UNAVAILABLE' ? (
+                              <span className="px-3 py-1 text-xs font-medium rounded-full bg-slate-500/20 text-slate-300">
+                                {t('event.unavailable')}
+                              </span>
+                            ) : event.isUserRegistered ? (
                               <span className="px-3 py-1 text-xs font-medium rounded-full bg-primary-500/20 text-primary-400">
                                 {t('signedUp')}
                               </span>
@@ -701,7 +705,11 @@ export function CalendarPage() {
                         </span>
 
                         {/* status indicator */}
-                        {event.isUserRegistered ? (
+                        {event.eventType === 'UNAVAILABLE' ? (
+                          <span className="px-3 py-1 text-xs font-medium rounded bg-slate-500/20 text-slate-300">
+                            {t('event.unavailable')}
+                          </span>
+                        ) : event.isUserRegistered ? (
                           <span className="px-3 py-1 text-xs font-medium rounded bg-primary-500/20 text-primary-400">
                             {t('signedUp')}
                           </span>

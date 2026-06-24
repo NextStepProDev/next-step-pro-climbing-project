@@ -131,11 +131,13 @@ export function EventPage() {
             </div>
           )}
 
-          {/* Capacity */}
-          <div className="flex items-center gap-3 text-surface-300">
-            <Users className="w-5 h-5" />
-            <span>{t('eventPage.maxParticipants', { count: event.maxParticipants })}</span>
-          </div>
+          {/* Capacity — hidden for unavailable (absence) events */}
+          {event.eventType !== 'UNAVAILABLE' && (
+            <div className="flex items-center gap-3 text-surface-300">
+              <Users className="w-5 h-5" />
+              <span>{t('eventPage.maxParticipants', { count: event.maxParticipants })}</span>
+            </div>
+          )}
 
           {/* Description */}
           {event.description && (

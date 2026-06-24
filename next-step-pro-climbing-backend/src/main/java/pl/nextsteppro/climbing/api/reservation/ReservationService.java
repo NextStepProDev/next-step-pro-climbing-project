@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 import pl.nextsteppro.climbing.domain.BookingTimeValidator;
 import pl.nextsteppro.climbing.domain.event.Event;
 import pl.nextsteppro.climbing.domain.event.EventRepository;
+import pl.nextsteppro.climbing.domain.event.EventType;
 import pl.nextsteppro.climbing.domain.reservation.GuestReservationRepository;
 import pl.nextsteppro.climbing.domain.reservation.Reservation;
 import pl.nextsteppro.climbing.domain.reservation.ReservationRepository;
@@ -321,6 +322,10 @@ public class ReservationService {
 
         if (!event.isActive()) {
             throw new IllegalStateException(msg.get("reservation.event.inactive"));
+        }
+
+        if (event.getEventType().blocksEnrollment()) {
+            throw new IllegalStateException(msg.get("reservation.event.enrollment.closed"));
         }
 
         LocalTime eventStartTime = event.getStartTime() != null ? event.getStartTime() : LocalTime.of(0, 0);

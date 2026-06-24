@@ -151,7 +151,7 @@ export function CreateSlotModal({
             <label className="block text-sm text-surface-400 mb-1">{t('createSlot.maxParticipants')}</label>
             <input
               type="number"
-              min={1}
+              min={0}
               value={form.maxParticipants}
               onChange={(e) => setForm({ ...form, maxParticipants: parseInt(e.target.value) })}
               className="w-full bg-surface-800 border border-surface-700 rounded-lg px-4 py-2 text-surface-100"
