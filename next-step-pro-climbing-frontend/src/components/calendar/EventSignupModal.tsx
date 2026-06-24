@@ -374,7 +374,7 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
   return (
     <>
     {showSuccess && <SuccessCheckmark onDone={() => { setShowSuccess(false); onClose(); }} />}
-    <Modal isOpen={isOpen} onClose={onClose} title={t('event.title')}>
+    <Modal isOpen={isOpen} onClose={onClose} title={ev.eventType === 'UNAVAILABLE' ? tc('eventTypes.UNAVAILABLE') : t('event.title')}>
       <div className="space-y-6">
         {/* Event type badge */}
         <div>
@@ -403,14 +403,23 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
           <p className="text-sm text-surface-300 whitespace-pre-wrap">{ev.description}</p>
         )}
 
-        {/* Date */}
+        {/* Date / time */}
         <div className="flex items-center gap-2 text-surface-300">
           <Calendar className="w-5 h-5" />
           <span>
-            {format(new Date(ev.startDate), 'dd.MM.yyyy')}
-            {ev.isMultiDay && (
-              <> - {format(new Date(ev.endDate), 'dd.MM.yyyy')}</>
-            )}
+            {(() => {
+              const startD = format(new Date(ev.startDate), 'dd.MM.yyyy')
+              const endD = format(new Date(ev.endDate), 'dd.MM.yyyy')
+              const startT = ev.startTime ? ev.startTime.slice(0, 5) : null
+              const endT = ev.endTime ? ev.endTime.slice(0, 5) : null
+              // Unavailable: show the full span — first day (opt. start hour) → last day (opt. end hour)
+              if (ev.eventType === 'UNAVAILABLE') {
+                if (ev.isMultiDay) return `${startD}${startT ? ` ${startT}` : ''} – ${endD}${endT ? ` ${endT}` : ''}`
+                if (startT && endT) return `${startD} · ${startT}–${endT}`
+                return `${startD} · ${tc('allDay')}`
+              }
+              return ev.isMultiDay ? `${startD} - ${endD}` : startD
+            })()}
           </span>
         </div>
 

@@ -48,6 +48,34 @@ function getSlotPosition(startTime: string, endTime: string) {
   }
 }
 
+const GRID_START_MIN = START_HOUR * 60
+const GRID_END_MIN = END_HOUR * 60
+
+function timeToMin(time: string): number {
+  const [h, m] = time.split(':').map(Number)
+  return h * 60 + m
+}
+
+/** Returns the segments of [start, end] (in minutes, clamped to the grid) NOT covered by any
+ *  `covers` interval — used to draw the "unavailable" fill broken around slots/availability windows. */
+function subtractIntervals(start: number, end: number, covers: Array<[number, number]>): Array<[number, number]> {
+  const from = Math.max(start, GRID_START_MIN)
+  const to = Math.min(end, GRID_END_MIN)
+  if (to <= from) return []
+  const sorted = covers
+    .map(([s, e]) => [Math.max(s, from), Math.min(e, to)] as [number, number])
+    .filter(([s, e]) => e > s)
+    .sort((a, b) => a[0] - b[0])
+  const segments: Array<[number, number]> = []
+  let cursor = from
+  for (const [s, e] of sorted) {
+    if (s > cursor) segments.push([cursor, s])
+    cursor = Math.max(cursor, e)
+  }
+  if (cursor < to) segments.push([cursor, to])
+  return segments
+}
+
 function getSlotColors(status: string): string {
   switch (status) {
     case 'AVAILABLE':
@@ -307,8 +335,44 @@ export function WeekCalendar({
                     </div>
                   ))}
 
+                  {/* Unavailable (absence) fill — spans the day, broken around real slots/windows */}
+                  {dayEvents.filter((event) => event.eventType === 'UNAVAILABLE').flatMap((event) => {
+                    const isFirst = day.date === event.startDate
+                    const isLast = day.date === event.endDate
+                    const rangeStart = event.startTime && isFirst ? timeToMin(event.startTime) : GRID_START_MIN
+                    const rangeEnd = event.endTime && isLast ? timeToMin(event.endTime) : GRID_END_MIN
+                    const slotCovers = day.slots.map((s) => [timeToMin(s.startTime), timeToMin(s.endTime)] as [number, number])
+                    const segments = subtractIntervals(rangeStart, rangeEnd, slotCovers)
+                    // Label goes on the tallest segment so it stays visible even when a slot
+                    // covers the spot where it would normally sit (the natural top of the range).
+                    let labelIdx = 0
+                    for (let k = 1; k < segments.length; k++) {
+                      if (segments[k][1] - segments[k][0] > segments[labelIdx][1] - segments[labelIdx][0]) labelIdx = k
+                    }
+                    return segments.map(([segStart, segEnd], i) => {
+                      const top = (segStart - GRID_START_MIN) / 60 * HOUR_HEIGHT
+                      const height = (segEnd - segStart) / 60 * HOUR_HEIGHT
+                      return (
+                        <button
+                          key={`${event.id}-unavail-${i}`}
+                          onClick={() => onEventClick(event)}
+                          title={event.title}
+                          className="group/unavail absolute left-1 right-1 z-[1] rounded border border-slate-500/40 bg-slate-600/25 hover:bg-slate-600/35 text-slate-300 transition-colors cursor-pointer overflow-hidden text-left"
+                          style={{ top, height }}
+                        >
+                          {i === labelIdx && height >= 24 && (
+                            <div className="px-1.5 py-0.5">
+                              <div className="text-[11px] font-semibold leading-tight truncate">{t('event.unavailable')}</div>
+                              <div className="text-[10px] leading-tight truncate opacity-80">{event.title}</div>
+                            </div>
+                          )}
+                        </button>
+                      )
+                    })
+                  })}
+
                   {/* Event bars at top area */}
-                  {dayEvents.map((event, eventIndex) => {
+                  {dayEvents.filter((event) => event.eventType !== 'UNAVAILABLE').map((event, eventIndex) => {
                     const color = eventColorMap.get(event.id) ?? getEventColorByIndex(event.id, event.eventType, event.currentParticipants >= event.maxParticipants)
                     return (
                       <button
