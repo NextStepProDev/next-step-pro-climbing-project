@@ -82,6 +82,8 @@
   },
   "event": {
     "title": "Zapisz się na wydarzenie",
+    "unavailable": "Niedostępny",
+    "unavailableInfo": "W tym terminie jesteśmy niedostępni — zapisy nie są możliwe.",
     "bookingClosed": "Rezerwacja online jest możliwa do 12 godzin przed wydarzeniem. Skontaktuj się z instruktorem telefonicznie, aby sprawdzić dostępność.",
     "hasReservation": "Masz rezerwację na to wydarzenie",
     "editParticipantsLabel": "Zmień liczbę uczestników",
@@ -154,10 +156,14 @@
     "message": "Skontaktuj się z nami, aby ustalić termin zajęć na ściance lub skałach.",
     "cta": "Przejdź do kontaktu"
   },
+  "unavailable": {
+    "message": "W tym terminie jesteśmy niedostępni — brak zajęć i zapisów."
+  },
   "availability": {
     "closed": "Zapisy zamknięte",
     "noSpots": "Brak miejsc",
     "oneSpot": "1 miejsce wolne",
-    "freeSpots": "{{free}}/{{max}} wolne"
+    "freeSpots": "{{free}}/{{max}} wolne",
+    "unavailable": "Niedostępny"
   }
 }

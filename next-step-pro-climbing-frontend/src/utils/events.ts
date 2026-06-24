@@ -39,6 +39,12 @@ const EVENT_TYPE_COLORS: Record<string, EventAccentColor> = {
     barBg: 'bg-amber-600/40', barBorder: 'border-amber-500/40',
     barText: 'text-amber-300', barHover: 'hover:bg-amber-600/50',
   },
+  UNAVAILABLE: {
+    text: 'text-slate-400', border: 'border-slate-500/30', bg: 'bg-slate-500/5',
+    hoverBorder: 'hover:border-slate-500', dot: 'bg-slate-400',
+    barBg: 'bg-slate-600/40', barBorder: 'border-slate-500/40',
+    barText: 'text-slate-300', barHover: 'hover:bg-slate-600/50',
+  },
 };
 
 // Palette for non-full events — avoids amber (full) and primary blue (available slots)
@@ -57,6 +63,7 @@ export function getEventColorByType(eventType: string): EventAccentColor {
 
 /** Stable color for an event — CONTACT_DAY → indigo, full → amber, others → hash-based from ID. */
 export function getEventColorByIndex(eventId: string, eventType: string, isFull: boolean): EventAccentColor {
+  if (eventType === 'UNAVAILABLE') return EVENT_TYPE_COLORS.UNAVAILABLE;
   if (eventType === 'CONTACT_DAY') return EVENT_TYPE_COLORS.CONTACT_DAY;
   if (isFull) return EVENT_TYPE_COLORS.FULL;
   const hash = eventId.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
@@ -69,7 +76,7 @@ export function buildEventColorMap(events: EventSummary[]): Map<string, EventAcc
   const map = new Map<string, EventAccentColor>()
 
   const paletteEvents = events.filter(
-    e => e.eventType !== 'CONTACT_DAY' && e.currentParticipants < e.maxParticipants
+    e => e.eventType !== 'CONTACT_DAY' && e.eventType !== 'UNAVAILABLE' && e.currentParticipants < e.maxParticipants
   )
 
   const sorted = [...paletteEvents].sort(
@@ -105,7 +112,8 @@ export function buildEventColorMap(events: EventSummary[]): Map<string, EventAcc
 
   events.forEach(e => {
     if (!map.has(e.id)) {
-      if (e.eventType === 'CONTACT_DAY') map.set(e.id, EVENT_TYPE_COLORS.CONTACT_DAY)
+      if (e.eventType === 'UNAVAILABLE') map.set(e.id, EVENT_TYPE_COLORS.UNAVAILABLE)
+      else if (e.eventType === 'CONTACT_DAY') map.set(e.id, EVENT_TYPE_COLORS.CONTACT_DAY)
       else map.set(e.id, EVENT_TYPE_COLORS.FULL)
     }
   })
@@ -118,6 +126,9 @@ export function pluralizeTraining(n: number): string {
 }
 
 export function formatAvailability(event: EventSummary) {
+  if (event.eventType === 'UNAVAILABLE') {
+    return { label: i18n.t('availability.unavailable', { ns: 'calendar' }), badgeClass: "bg-slate-500/10 text-slate-300" };
+  }
   if (!event.enrollmentOpen) {
     return { label: i18n.t('availability.closed', { ns: 'calendar' }), badgeClass: "bg-surface-700 text-surface-400" };
   }

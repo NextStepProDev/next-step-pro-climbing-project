@@ -421,7 +421,7 @@ export function SlotDetailModal({
                     <label className="block text-sm text-surface-400 mb-1">{ta('slots.maxParticipants')}</label>
                     <input
                       type="number"
-                      min={1}
+                      min={0}
                       value={editForm.maxParticipants}
                       onChange={(e) => setEditForm({ ...editForm, maxParticipants: parseInt(e.target.value) })}
                       className="w-full bg-surface-800 border border-surface-700 rounded-lg px-4 py-2 text-surface-100 text-sm"

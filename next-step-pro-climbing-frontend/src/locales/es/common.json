@@ -48,7 +48,8 @@
     "COURSE": "Curso",
     "TRAINING": "Entrenamiento",
     "WORKSHOP": "Taller",
-    "CONTACT_DAY": "Sesión privada"
+    "CONTACT_DAY": "Sesión privada",
+    "UNAVAILABLE": "No disponible"
   },
   "allDay": "Todo el día",
   "participants_one": "{{count}} participante",

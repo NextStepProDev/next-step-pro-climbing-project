@@ -82,6 +82,8 @@
   },
   "event": {
     "title": "Inscribirse en el evento",
+    "unavailable": "No disponible",
+    "unavailableInfo": "No estamos disponibles en esta fecha — no es posible inscribirse.",
     "bookingClosed": "La reserva online es posible hasta 12 horas antes del evento. Contacta con el instructor por teléfono para consultar la disponibilidad.",
     "hasReservation": "Tienes una reserva para este evento",
     "addMoreParticipants": "Quiero reservar para más de 1 persona",
@@ -154,10 +156,14 @@
     "message": "Contáctenos para concertar una sesión en el rocódromo o en las rocas.",
     "cta": "Ir a contacto"
   },
+  "unavailable": {
+    "message": "No estamos disponibles en esta fecha — sin clases ni inscripciones."
+  },
   "availability": {
     "closed": "Inscripciones cerradas",
     "noSpots": "Sin plazas",
     "oneSpot": "1 plaza libre",
-    "freeSpots": "{{free}}/{{max}} libres"
+    "freeSpots": "{{free}}/{{max}} libres",
+    "unavailable": "No disponible"
   }
 }

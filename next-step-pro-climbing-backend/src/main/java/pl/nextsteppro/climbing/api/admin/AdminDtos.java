@@ -19,7 +19,7 @@ record CreateTimeSlotRequest(
     @NotNull LocalDate date,
     @NotNull LocalTime startTime,
     @NotNull LocalTime endTime,
-    @Min(1) @Max(100) int maxParticipants,
+    @Min(0) @Max(100) int maxParticipants,
     @Nullable String title,
     @Nullable UUID eventId,
     boolean isAvailabilityWindow
@@ -102,7 +102,7 @@ record UpdateTimeSlotRequest(
     @Nullable LocalDate date,
     @Nullable LocalTime startTime,
     @Nullable LocalTime endTime,
-    @Nullable @Min(1) @Max(100) Integer maxParticipants,
+    @Nullable @Min(0) @Max(100) Integer maxParticipants,
     @Nullable String title,
     @Nullable Boolean isAvailabilityWindow,
     @Nullable Boolean sendNotifications
@@ -121,7 +121,7 @@ record CreateEventRequest(
     @NotBlank String eventType,
     @NotNull LocalDate startDate,
     @NotNull LocalDate endDate,
-    @Min(1) @Max(100) int maxParticipants,
+    @Min(0) @Max(100) int maxParticipants,
     @Nullable LocalTime startTime,
     @Nullable LocalTime endTime,
     @Nullable UUID courseId

@@ -48,7 +48,8 @@
     "COURSE": "Kurs",
     "TRAINING": "Trening",
     "WORKSHOP": "Warsztat",
-    "CONTACT_DAY": "Zajęcia na zlecenie"
+    "CONTACT_DAY": "Zajęcia na zlecenie",
+    "UNAVAILABLE": "Niedostępność"
   },
   "allDay": "Cały dzień",
   "participants_one": "{{count}} uczestnik",
