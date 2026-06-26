@@ -20,6 +20,10 @@ interface TypewriterProps {
   keepCaretWhenDone?: boolean;
   /** wołane gdy cały tekst został wystukany */
   onDone?: () => void;
+  /** fragment tekstu (np. słowo kluczowe) stylowany OD POCZĄTKU pisania, nie po zakończeniu */
+  highlight?: string;
+  /** klasa CSS nakładana na wyróżniony fragment */
+  highlightClassName?: string;
 }
 
 /**
@@ -35,6 +39,8 @@ export function Typewriter({
   startDelay = 0,
   keepCaretWhenDone = false,
   onDone,
+  highlight,
+  highlightClassName,
 }: TypewriterProps) {
   const reduced = useMemo(prefersReducedMotion, []);
   const [count, setCount] = useState(0);
@@ -68,13 +74,32 @@ export function Typewriter({
 
   const showCaret = active && !reduced && (!done || keepCaretWhenDone);
 
+  // renderuje pierwsze `upto` znaków, opakowując część należącą do `highlight` w span z klasą
+  const renderPortion = (upto: number) => {
+    const shown = text.slice(0, upto);
+    if (!highlight) return shown;
+    const hi = text.indexOf(highlight);
+    if (hi < 0) return shown;
+    const hiEnd = hi + highlight.length;
+    const before = shown.slice(0, Math.min(upto, hi));
+    const mid = upto > hi ? shown.slice(hi, Math.min(upto, hiEnd)) : "";
+    const after = upto > hiEnd ? shown.slice(hiEnd) : "";
+    return (
+      <>
+        {before}
+        {mid && <span className={highlightClassName}>{mid}</span>}
+        {after}
+      </>
+    );
+  };
+
   return (
     <span className="grid">
       <span aria-hidden className="invisible [grid-area:1/1]">
-        {text}
+        {renderPortion(text.length)}
       </span>
       <span className="[grid-area:1/1]">
-        {text.slice(0, count)}
+        {renderPortion(count)}
         {showCaret && <span className="tw-caret">|</span>}
       </span>
     </span>

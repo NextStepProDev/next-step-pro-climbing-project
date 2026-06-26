@@ -72,6 +72,9 @@ export function HomePage() {
   // reset przy zmianie języka (tekst tytułu się zmienia → efekt rusza od nowa)
   // — pattern „reset state during render" z docs React, bez efektu.
   const heroTagline = t("hero.tagline");
+  // słowo kluczowe (wspinaczce/climbing/escalada) podświetlamy gradientem dopiero PO
+  // wystukaniu nagłówka — wtedy się „zapala". Rozbijamy tagline na część przed/po słowie.
+  const heroKeyword = t("hero.taglineHighlight");
   const [titleTyped, setTitleTyped] = useState(false);
   const [prevTagline, setPrevTagline] = useState(heroTagline);
   if (prevTagline !== heroTagline) {
@@ -110,7 +113,7 @@ export function HomePage() {
   const heroReady = heroImgLoaded || heroRevealTimedOut;
 
   const objectPosition = isDefaultHero
-    ? '46% 30%' // kadr pod climbera na domyślnym zdjęciu (lewy-środek, górna część)
+    ? '52% 20%' // kadr: więcej skały nad climberem (climber niżej → odstęp od logo) + lekko w lewo
     : homeSettings?.hero.focalPointX != null
       ? `${(homeSettings.hero.focalPointX * 100).toFixed(1)}% ${((homeSettings.hero.focalPointY ?? 0.5) * 100).toFixed(1)}%`
       : 'center center';
@@ -209,20 +212,22 @@ export function HomePage() {
             {/* === END BADGE === */}
             {heroImageUrl ? (
               <>
-                {/* mobile: logo pod zdjęciem, na tle strony → zależne od motywu */}
+                {/* mobile: logo pod zdjęciem, na tle strony → zależne od motywu.
+                    „Wskakuje" (hero-logo-in) jako FINAŁ — dopiero po wystukaniu nagłówka
+                    (titleTyped), z lekkim delayem, żeby było ostatnim akcentem hero. */}
                 <img
                   src={theme === 'dark' ? logoWhite : logoBlack}
                   alt="Next Step Pro Climbing"
-                  style={{ '--hero-delay': '120ms' } as CSSProperties}
-                  className="hero-rise sm:hidden h-32 mx-auto mb-8 drop-shadow-[0_0_30px_rgba(59,130,246,0.3)]"
+                  style={{ animationDelay: '1100ms' }}
+                  className={`sm:hidden h-32 mx-auto mb-8 drop-shadow-[0_0_30px_rgba(59,130,246,0.3)] ${titleTyped ? 'hero-logo-in' : 'opacity-0'}`}
                 />
                 {/* desktop: logo na zdjęciu → zawsze białe */}
                 <img
                   src={logoWhite}
                   alt=""
                   aria-hidden="true"
-                  style={{ '--hero-delay': '120ms' } as CSSProperties}
-                  className="hero-rise hidden sm:block h-36 lg:h-40 mx-auto mb-6 drop-shadow-[0_0_30px_rgba(59,130,246,0.3)]"
+                  style={{ animationDelay: '1100ms' }}
+                  className={`hidden sm:block h-36 lg:h-40 mx-auto mb-6 drop-shadow-[0_0_30px_rgba(59,130,246,0.3)] ${titleTyped ? 'hero-logo-in' : 'opacity-0'}`}
                 />
               </>
             ) : (
@@ -239,6 +244,8 @@ export function HomePage() {
                 active={heroReady}
                 speed={28}
                 startDelay={300}
+                highlight={heroKeyword}
+                highlightClassName="hero-keyword"
                 onDone={() => setTitleTyped(true)}
               />
             </h1>

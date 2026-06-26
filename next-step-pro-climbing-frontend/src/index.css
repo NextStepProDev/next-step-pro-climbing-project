@@ -451,16 +451,18 @@ h1, h2, h3, h4, h5, h6, .font-display {
    transformy się nie biły. */
 
 @keyframes hero-cinematic {
-  /* scale(1) = pełne pokrycie (object-cover) bez brzegów — to „najbardziej oddalony" kadr.
-     Łagodny ken-burns trzyma się blisko 1, więc obraz cały czas jest pulled-back. */
-  0%   { opacity: 0; transform: scale(1.05); filter: brightness(0.45) saturate(0.85) blur(10px); }
-  6%   { opacity: 1; transform: scale(1);    filter: brightness(1)    saturate(1)    blur(0); }
-  100% { opacity: 1; transform: scale(1.04); filter: brightness(1)    saturate(1)    blur(0); }
+  /* Ken-burns „oddalający": reveal siada na lekko przybliżonym kadrze (1.06) i powoli pełza
+     w TYŁ do scale(1) = pełne pokrycie (object-cover) bez brzegów. Poniżej 1 nie schodzimy,
+     bo wyszłyby puste krawędzie, więc scale(1) to docelowy „najbardziej oddalony" kadr. */
+  0%   { opacity: 0; transform: scale(1.10); filter: brightness(0.45) saturate(0.85) blur(10px); }
+  6%   { opacity: 1; transform: scale(1.07); filter: brightness(1)    saturate(1)    blur(0); }
+  100% { opacity: 1; transform: scale(1);    filter: brightness(1)    saturate(1)    blur(0); }
 }
 .hero-cinematic {
   will-change: transform, opacity, filter;
-  /* 6% z 24s ≈ 1.44s na sam reveal; reszta to spokojny dryf ken-burns */
-  animation: hero-cinematic 24s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+  /* 6% z 28s ≈ 1.68s na sam reveal; reszta (~26s) to spokojny dryf ken-burns.
+     zakres 1.07→1 przy 28s daje ~tę samą prędkość co wcześniej 1.06→1 przy 24s */
+  animation: hero-cinematic 28s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
 }
 
 /* treść hero wjeżdża z dołu, z blura do ostrości — kaskada przez --hero-delay */
@@ -473,6 +475,38 @@ h1, h2, h3, h4, h5, h6, .font-display {
   will-change: transform, opacity, filter;
   animation: hero-rise 0.85s cubic-bezier(0.22, 0.61, 0.36, 1) both;
   animation-delay: var(--hero-delay, 0ms);
+}
+
+/* Logo hero materializuje się „z niczego" zsynchronizowane z wjazdem tekstu (bramka
+   heroReady w JSX): z rozmycia i lekko mniejszego rozmiaru wyostrza się i dorasta
+   MONOTONICZNIE do docelowego (nigdy większe niż finał — żadnego overshoot/kurczenia),
+   z miękkim narastaniem niebieskiej poświaty. Kończy na spoczynkowym glow (== drop-shadow
+   utility), więc przejście jest bezszwowe. */
+@keyframes hero-logo-in {
+  /* „Wbija się" ze skali (0.7 → 1, MONOTONICZNIE — nigdy >1, więc bez overshoot/kurczenia)
+     z miękkim bloomem niebieskiej poświaty i krótkim rozjaśnieniem, lądując na spoczynkowym
+     glow (== drop-shadow utility). Naturalne wyhamowanie sprawia, że logo „siada" na miejscu. */
+  0%   { opacity: 0; transform: scale(0.7);
+         filter: blur(8px) brightness(1.25) drop-shadow(0 0 0 rgba(59, 130, 246, 0)); }
+  55%  { opacity: 1;
+         filter: blur(0) brightness(1.2) drop-shadow(0 0 50px rgba(59, 130, 246, 0.7)); }
+  100% { opacity: 1; transform: scale(1);
+         filter: blur(0) brightness(1) drop-shadow(0 0 30px rgba(59, 130, 246, 0.3)); }
+}
+.hero-logo-in {
+  opacity: 0;
+  will-change: transform, opacity, filter;
+  animation: hero-logo-in 0.75s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Słowo kluczowe w nagłówku hero (wspinaczce/climbing/escalada) — wypełnione chłodnym
+   gradientem; „zapala się" bloomem niebieskiej poświaty w chwili, gdy nagłówek zostanie
+   wystukany i słowo wchodzi na scenę. Gradient zostaje też przy prefers-reduced-motion. */
+.hero-keyword {
+  /* litery jako KONTUR: przezroczyste wypełnienie + biały obrys (widać tło w środku) */
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  -webkit-text-stroke: 1.5px #fff;
 }
 
 /* migający kursor maszyny do pisania (Typewriter) — dziedziczy kolor tekstu */
