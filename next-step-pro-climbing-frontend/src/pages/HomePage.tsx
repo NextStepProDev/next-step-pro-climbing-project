@@ -16,6 +16,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Button } from "../components/ui/Button";
 import { AnimatedCounter } from "../components/ui/AnimatedCounter";
 import { ShareButtons } from "../components/ui/ShareButtons";
+import { Typewriter } from "../components/ui/Typewriter";
 import { CurrentLocationSection } from "../components/ui/CurrentLocationSection";
 import { useLocationContent } from "../hooks/useLocationContent";
 import { useInView } from "../hooks/useInView";
@@ -64,6 +65,17 @@ export function HomePage() {
   const { enabled: locationEnabled, badge: locationBadge } = useLocationContent();
   const [heroImgLoaded, setHeroImgLoaded] = useState(false);
   const { ref: stepsRef, inView: stepsInView } = useInView<HTMLDivElement>();
+
+  // typewriter: tytuł wystukuje się pierwszy, akapit dopiero po nim.
+  // reset przy zmianie języka (tekst tytułu się zmienia → efekt rusza od nowa)
+  // — pattern „reset state during render" z docs React, bez efektu.
+  const heroTagline = t("hero.tagline");
+  const [titleTyped, setTitleTyped] = useState(false);
+  const [prevTagline, setPrevTagline] = useState(heroTagline);
+  if (prevTagline !== heroTagline) {
+    setPrevTagline(heroTagline);
+    setTitleTyped(false);
+  }
 
   const { data: homeSettings, isPending } = useQuery({
     queryKey: ["homeSettings"],
@@ -212,12 +224,20 @@ export function HomePage() {
               />
             )}
             <h1 style={{ '--hero-delay': '240ms' } as CSSProperties} className={`hero-rise text-3xl sm:text-4xl lg:text-5xl font-bold mb-4 ${heroImageUrl ? 'text-surface-50 sm:text-white hero-over-photo' : 'text-surface-50'}`}>
-              {t("hero.tagline")}
+              <Typewriter
+                text={heroTagline}
+                speed={28}
+                startDelay={300}
+                onDone={() => setTitleTyped(true)}
+              />
             </h1>
-            <p style={{ '--hero-delay': '360ms' } as CSSProperties} className={`hero-rise text-base sm:text-lg mb-8 sm:mb-6 max-w-2xl mx-auto ${heroImageUrl ? 'text-surface-200 sm:text-white/90 hero-over-photo' : 'text-surface-200'}`}>
+            {/* akapit pojawia się (hero-rise) dopiero gdy nagłówek został wystukany;
+                do tego czasu opacity-0 rezerwuje wysokość → przyciski poniżej nie skaczą */}
+            <p style={{ '--hero-delay': '120ms' } as CSSProperties} className={`text-base sm:text-lg mb-8 sm:mb-6 max-w-2xl mx-auto ${titleTyped ? 'hero-rise' : 'opacity-0'} ${heroImageUrl ? 'text-surface-200 sm:text-white/90 hero-over-photo' : 'text-surface-200'}`}>
               {t("hero.subtitle")}
             </p>
-            <div style={{ '--hero-delay': '480ms' } as CSSProperties} className="hero-rise flex flex-col sm:flex-row gap-4 justify-center">
+            {/* przyciski wjeżdżają zaraz po akapicie — kaskada od góry, dopiero po wystukaniu nagłówka */}
+            <div style={{ '--hero-delay': '320ms' } as CSSProperties} className={`flex flex-col sm:flex-row gap-4 justify-center ${titleTyped ? 'hero-rise' : 'opacity-0'}`}>
               <Link to="/calendar">
                 <Button size="lg" className="w-full sm:w-auto btn-glow">
                   <Calendar className="w-5 h-5 mr-2" />
