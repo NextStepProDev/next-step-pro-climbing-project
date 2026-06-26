@@ -24,6 +24,7 @@ import { siteSettingsApi } from "../api/client";
 import { useTheme } from "../context/ThemeContext";
 import logoWhite from "../assets/logo/logo-white.png";
 import logoBlack from "../assets/logo/logo-black.png";
+import heroDefault from "../assets/hero-default.jpg";
 
 function usePreloadImage(url: string | null | undefined) {
   useEffect(() => {
@@ -42,7 +43,7 @@ function BadgeImg({ src, href, className }: { src: string; href?: string | null;
     <img
       src={src}
       alt="Badge"
-      className={`${className} object-contain opacity-75 drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)] transition-opacity duration-500`}
+      className={`${className} object-contain opacity-90 drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)] transition-opacity duration-500`}
     />
   );
   if (href) {
@@ -51,7 +52,7 @@ function BadgeImg({ src, href, className }: { src: string; href?: string | null;
         <img
           src={src}
           alt="Badge"
-          className="w-full h-full object-contain opacity-75 hover:opacity-100 drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)] transition-opacity duration-300"
+          className="w-full h-full object-contain opacity-90 hover:opacity-100 drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)] transition-opacity duration-300"
         />
       </a>
     );
@@ -64,6 +65,7 @@ export function HomePage() {
   const { theme } = useTheme();
   const { enabled: locationEnabled, badge: locationBadge } = useLocationContent();
   const [heroImgLoaded, setHeroImgLoaded] = useState(false);
+  const [heroReady, setHeroReady] = useState(false);
   const { ref: stepsRef, inView: stepsInView } = useInView<HTMLDivElement>();
 
   // typewriter: tytuł wystukuje się pierwszy, akapit dopiero po nim.
@@ -77,23 +79,43 @@ export function HomePage() {
     setTitleTyped(false);
   }
 
-  const { data: homeSettings, isPending } = useQuery({
+  const { data: homeSettings } = useQuery({
     queryKey: ["homeSettings"],
     queryFn: siteSettingsApi.getHome,
     staleTime: 30 * 60 * 1000,
   });
 
-  const heroImageUrl = homeSettings?.hero.imageUrl ?? null;
+  // Admin może wgrać własne hero (imageUrl ustawiony) albo go nie mieć — wtedy pokazujemy
+  // hardcodowany domyślny obraz z bundla. Domyślny jest natychmiast (leci równolegle z JS,
+  // bez round-tripu do /api/settings/home ani osobnego fetcha pliku z dysku serwera), więc
+  // nie ma już opóźnienia. Własne zdjęcie admina nadpisuje domyślne, gdy ustawienia dojadą.
+  const customHeroUrl = homeSettings?.hero.imageUrl ?? null;
+  const isDefaultHero = !customHeroUrl;
+  const heroImageUrl = customHeroUrl ?? heroDefault;
   const badgeImageUrl = homeSettings?.badge.imageUrl ?? null;
   const badgeLeftImageUrl = homeSettings?.badgeLeft.imageUrl ?? null;
 
   usePreloadImage(heroImageUrl);
 
-  const objectPosition = homeSettings?.hero.focalPointX != null
-    ? `${(homeSettings.hero.focalPointX * 100).toFixed(1)}% ${((homeSettings.hero.focalPointY ?? 0.5) * 100).toFixed(1)}%`
-    : 'center center';
+  // Nagłówek (typewriter) startuje dopiero gdy widoczne zdjęcie hero się załaduje — tekst i
+  // obraz odsłaniają się razem, zamiast tekst-pierwszy-zdjęcie-później. Domyślny obraz ładuje
+  // się błyskawicznie, więc start jest natychmiastowy; bezpiecznik 1.5 s gdyby zdjęcie (własne
+  // admina) leciało wolno. W czasie czekania gra hero-loading-glow.
+  useEffect(() => {
+    if (heroReady) return;
+    if (heroImgLoaded) {
+      setHeroReady(true);
+      return;
+    }
+    const t = setTimeout(() => setHeroReady(true), 1500);
+    return () => clearTimeout(t);
+  }, [heroReady, heroImgLoaded]);
 
-  const showWatermark = !isPending && !heroImageUrl;
+  const objectPosition = isDefaultHero
+    ? '46% 30%' // kadr pod climbera na domyślnym zdjęciu (lewy-środek, górna część)
+    : homeSettings?.hero.focalPointX != null
+      ? `${(homeSettings.hero.focalPointX * 100).toFixed(1)}% ${((homeSettings.hero.focalPointY ?? 0.5) * 100).toFixed(1)}%`
+      : 'center center';
 
   return (
     <div>
@@ -126,16 +148,6 @@ export function HomePage() {
             się światło sceny; znika gdy zdjęcie wejdzie i je przejmie */}
         {heroImageUrl && !heroImgLoaded && (
           <div className="hero-loading-glow absolute inset-0 z-[1] pointer-events-none" />
-        )}
-
-        {/* Watermark logo — only when API confirmed no hero image is set */}
-        {showWatermark && (
-          <img
-            src={logoBlack}
-            alt=""
-            aria-hidden="true"
-            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] sm:w-[800px] lg:w-[1000px] opacity-[0.04] pointer-events-none select-none"
-          />
         )}
 
         {heroImageUrl && (
@@ -226,6 +238,7 @@ export function HomePage() {
             <h1 style={{ '--hero-delay': '240ms' } as CSSProperties} className={`hero-rise text-3xl sm:text-4xl lg:text-5xl font-bold mb-4 ${heroImageUrl ? 'text-surface-50 sm:text-white hero-over-photo' : 'text-surface-50'}`}>
               <Typewriter
                 text={heroTagline}
+                active={heroReady}
                 speed={28}
                 startDelay={300}
                 onDone={() => setTitleTyped(true)}

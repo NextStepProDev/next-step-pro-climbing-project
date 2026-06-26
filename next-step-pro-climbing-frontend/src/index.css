@@ -451,9 +451,11 @@ h1, h2, h3, h4, h5, h6, .font-display {
    transformy się nie biły. */
 
 @keyframes hero-cinematic {
-  0%   { opacity: 0; transform: scale(1.12); filter: brightness(0.45) saturate(0.85) blur(10px); }
+  /* scale(1) = pełne pokrycie (object-cover) bez brzegów — to „najbardziej oddalony" kadr.
+     Łagodny ken-burns trzyma się blisko 1, więc obraz cały czas jest pulled-back. */
+  0%   { opacity: 0; transform: scale(1.05); filter: brightness(0.45) saturate(0.85) blur(10px); }
   6%   { opacity: 1; transform: scale(1);    filter: brightness(1)    saturate(1)    blur(0); }
-  100% { opacity: 1; transform: scale(1.14); filter: brightness(1)    saturate(1)    blur(0); }
+  100% { opacity: 1; transform: scale(1.04); filter: brightness(1)    saturate(1)    blur(0); }
 }
 .hero-cinematic {
   will-change: transform, opacity, filter;
