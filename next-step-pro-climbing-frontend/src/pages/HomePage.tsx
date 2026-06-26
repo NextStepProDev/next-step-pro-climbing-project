@@ -65,7 +65,7 @@ export function HomePage() {
   const { theme } = useTheme();
   const { enabled: locationEnabled, badge: locationBadge } = useLocationContent();
   const [heroImgLoaded, setHeroImgLoaded] = useState(false);
-  const [heroReady, setHeroReady] = useState(false);
+  const [heroRevealTimedOut, setHeroRevealTimedOut] = useState(false);
   const { ref: stepsRef, inView: stepsInView } = useInView<HTMLDivElement>();
 
   // typewriter: tytuł wystukuje się pierwszy, akapit dopiero po nim.
@@ -102,14 +102,12 @@ export function HomePage() {
   // się błyskawicznie, więc start jest natychmiastowy; bezpiecznik 1.5 s gdyby zdjęcie (własne
   // admina) leciało wolno. W czasie czekania gra hero-loading-glow.
   useEffect(() => {
-    if (heroReady) return;
-    if (heroImgLoaded) {
-      setHeroReady(true);
-      return;
-    }
-    const t = setTimeout(() => setHeroReady(true), 1500);
-    return () => clearTimeout(t);
-  }, [heroReady, heroImgLoaded]);
+    if (heroImgLoaded) return;
+    const timer = setTimeout(() => setHeroRevealTimedOut(true), 1500);
+    return () => clearTimeout(timer);
+  }, [heroImgLoaded]);
+
+  const heroReady = heroImgLoaded || heroRevealTimedOut;
 
   const objectPosition = isDefaultHero
     ? '46% 30%' // kadr pod climbera na domyślnym zdjęciu (lewy-środek, górna część)
