@@ -39,6 +39,10 @@ public class AdminSiteSettingsService {
     private static final String KEY_IMAGE_FILENAME = "hero_image_filename";
     private static final String KEY_FOCAL_POINT_X = "hero_focal_point_x";
     private static final String KEY_FOCAL_POINT_Y = "hero_focal_point_y";
+    private static final String KEY_MOBILE_IMAGE_URL = "hero_mobile_image_url";
+    private static final String KEY_MOBILE_IMAGE_FILENAME = "hero_mobile_image_filename";
+    private static final String KEY_MOBILE_FOCAL_POINT_X = "hero_mobile_focal_point_x";
+    private static final String KEY_MOBILE_FOCAL_POINT_Y = "hero_mobile_focal_point_y";
     private static final String KEY_BADGE_IMAGE_URL = "badge_image_url";
     private static final String KEY_BADGE_LINK_URL = "badge_link_url";
     private static final String KEY_BADGE_LEFT_IMAGE_URL = "badge_left_image_url";
@@ -79,48 +83,105 @@ public class AdminSiteSettingsService {
 
     @CacheEvict(value = "siteSettings", allEntries = true)
     public HeroImageDto uploadHeroImage(MultipartFile file, @Nullable Float focalPointX, @Nullable Float focalPointY) throws IOException {
-        deleteExistingFileIfPresent();
-
-        String filename = fileStorageService.store(file, FOLDER);
-        String imageUrl = baseUrl + "/api/files/" + FOLDER + "/" + filename;
-
-        save(KEY_IMAGE_URL, imageUrl);
-        save(KEY_IMAGE_FILENAME, filename);
-        saveFocalPoint(focalPointX, focalPointY);
-
-        return new HeroImageDto(imageUrl, focalPointX, focalPointY);
+        return uploadHero(file, focalPointX, focalPointY, KEY_IMAGE_URL, KEY_IMAGE_FILENAME, KEY_FOCAL_POINT_X, KEY_FOCAL_POINT_Y);
     }
 
     @CacheEvict(value = "siteSettings", allEntries = true)
     public HeroImageDto setHeroImageUrl(String url, @Nullable Float focalPointX, @Nullable Float focalPointY) {
-        deleteExistingFileIfPresent();
-
-        save(KEY_IMAGE_URL, url);
-        siteSettingsRepository.deleteById(KEY_IMAGE_FILENAME);
-        saveFocalPoint(focalPointX, focalPointY);
-
-        return new HeroImageDto(url, focalPointX, focalPointY);
+        return setHeroUrl(url, focalPointX, focalPointY, KEY_IMAGE_URL, KEY_IMAGE_FILENAME, KEY_FOCAL_POINT_X, KEY_FOCAL_POINT_Y);
     }
 
     @CacheEvict(value = "siteSettings", allEntries = true)
     public HeroImageDto setFocalPoint(float x, float y) {
-        save(KEY_FOCAL_POINT_X, String.valueOf(x));
-        save(KEY_FOCAL_POINT_Y, String.valueOf(y));
+        return setHeroFocalPoint(x, y, KEY_IMAGE_URL, KEY_FOCAL_POINT_X, KEY_FOCAL_POINT_Y);
+    }
 
-        String imageUrl = siteSettingsRepository.findById(KEY_IMAGE_URL)
+    @CacheEvict(value = "siteSettings", allEntries = true)
+    public void deleteHeroImage() throws IOException {
+        deleteHero(KEY_IMAGE_URL, KEY_IMAGE_FILENAME, KEY_FOCAL_POINT_X, KEY_FOCAL_POINT_Y);
+    }
+
+    // === Hero MOBILE — osobne zdjęcie pionowe dla telefonów (te same operacje, własne klucze) ===
+
+    @Cacheable(value = "siteSettings", key = "'heroMobile'")
+    @Transactional(readOnly = true)
+    public HeroImageDto getMobileHeroImage() {
+        String imageUrl = siteSettingsRepository.findById(KEY_MOBILE_IMAGE_URL)
+                .map(SiteSetting::getValue)
+                .orElse(null);
+        Float focalPointX = parseFloat(siteSettingsRepository.findById(KEY_MOBILE_FOCAL_POINT_X)
+                .map(SiteSetting::getValue)
+                .orElse(null));
+        Float focalPointY = parseFloat(siteSettingsRepository.findById(KEY_MOBILE_FOCAL_POINT_Y)
+                .map(SiteSetting::getValue)
+                .orElse(null));
+        return new HeroImageDto(imageUrl, focalPointX, focalPointY);
+    }
+
+    @CacheEvict(value = "siteSettings", allEntries = true)
+    public HeroImageDto uploadMobileHeroImage(MultipartFile file, @Nullable Float focalPointX, @Nullable Float focalPointY) throws IOException {
+        return uploadHero(file, focalPointX, focalPointY, KEY_MOBILE_IMAGE_URL, KEY_MOBILE_IMAGE_FILENAME, KEY_MOBILE_FOCAL_POINT_X, KEY_MOBILE_FOCAL_POINT_Y);
+    }
+
+    @CacheEvict(value = "siteSettings", allEntries = true)
+    public HeroImageDto setMobileHeroImageUrl(String url, @Nullable Float focalPointX, @Nullable Float focalPointY) {
+        return setHeroUrl(url, focalPointX, focalPointY, KEY_MOBILE_IMAGE_URL, KEY_MOBILE_IMAGE_FILENAME, KEY_MOBILE_FOCAL_POINT_X, KEY_MOBILE_FOCAL_POINT_Y);
+    }
+
+    @CacheEvict(value = "siteSettings", allEntries = true)
+    public HeroImageDto setMobileFocalPoint(float x, float y) {
+        return setHeroFocalPoint(x, y, KEY_MOBILE_IMAGE_URL, KEY_MOBILE_FOCAL_POINT_X, KEY_MOBILE_FOCAL_POINT_Y);
+    }
+
+    @CacheEvict(value = "siteSettings", allEntries = true)
+    public void deleteMobileHeroImage() throws IOException {
+        deleteHero(KEY_MOBILE_IMAGE_URL, KEY_MOBILE_IMAGE_FILENAME, KEY_MOBILE_FOCAL_POINT_X, KEY_MOBILE_FOCAL_POINT_Y);
+    }
+
+    // === Wspólna logika hero (desktop + mobile), sparametryzowana kluczami ===
+
+    private HeroImageDto uploadHero(MultipartFile file, @Nullable Float focalPointX, @Nullable Float focalPointY,
+                                    String urlKey, String filenameKey, String focalXKey, String focalYKey) throws IOException {
+        deleteExistingFileIfPresent(filenameKey);
+
+        String filename = fileStorageService.store(file, FOLDER);
+        String imageUrl = baseUrl + "/api/files/" + FOLDER + "/" + filename;
+
+        save(urlKey, imageUrl);
+        save(filenameKey, filename);
+        saveFocalPoint(focalPointX, focalPointY, focalXKey, focalYKey);
+
+        return new HeroImageDto(imageUrl, focalPointX, focalPointY);
+    }
+
+    private HeroImageDto setHeroUrl(String url, @Nullable Float focalPointX, @Nullable Float focalPointY,
+                                   String urlKey, String filenameKey, String focalXKey, String focalYKey) {
+        deleteExistingFileIfPresent(filenameKey);
+
+        save(urlKey, url);
+        siteSettingsRepository.deleteById(filenameKey);
+        saveFocalPoint(focalPointX, focalPointY, focalXKey, focalYKey);
+
+        return new HeroImageDto(url, focalPointX, focalPointY);
+    }
+
+    private HeroImageDto setHeroFocalPoint(float x, float y, String urlKey, String focalXKey, String focalYKey) {
+        save(focalXKey, String.valueOf(x));
+        save(focalYKey, String.valueOf(y));
+
+        String imageUrl = siteSettingsRepository.findById(urlKey)
                 .map(SiteSetting::getValue)
                 .orElse(null);
         return new HeroImageDto(imageUrl, x, y);
     }
 
-    @CacheEvict(value = "siteSettings", allEntries = true)
-    public void deleteHeroImage() throws IOException {
-        deleteExistingFileIfPresent();
+    private void deleteHero(String urlKey, String filenameKey, String focalXKey, String focalYKey) throws IOException {
+        deleteExistingFileIfPresent(filenameKey);
 
-        siteSettingsRepository.deleteById(KEY_IMAGE_URL);
-        siteSettingsRepository.deleteById(KEY_IMAGE_FILENAME);
-        siteSettingsRepository.deleteById(KEY_FOCAL_POINT_X);
-        siteSettingsRepository.deleteById(KEY_FOCAL_POINT_Y);
+        siteSettingsRepository.deleteById(urlKey);
+        siteSettingsRepository.deleteById(filenameKey);
+        siteSettingsRepository.deleteById(focalXKey);
+        siteSettingsRepository.deleteById(focalYKey);
     }
 
     @Cacheable(value = "siteSettings", key = "'badge'")
@@ -358,13 +419,13 @@ public class AdminSiteSettingsService {
         return -1;
     }
 
-    private void saveFocalPoint(@Nullable Float x, @Nullable Float y) {
+    private void saveFocalPoint(@Nullable Float x, @Nullable Float y, String focalXKey, String focalYKey) {
         if (x != null && y != null) {
-            save(KEY_FOCAL_POINT_X, String.valueOf(x));
-            save(KEY_FOCAL_POINT_Y, String.valueOf(y));
+            save(focalXKey, String.valueOf(x));
+            save(focalYKey, String.valueOf(y));
         } else {
-            siteSettingsRepository.deleteById(KEY_FOCAL_POINT_X);
-            siteSettingsRepository.deleteById(KEY_FOCAL_POINT_Y);
+            siteSettingsRepository.deleteById(focalXKey);
+            siteSettingsRepository.deleteById(focalYKey);
         }
     }
 
@@ -378,8 +439,8 @@ public class AdminSiteSettingsService {
         }
     }
 
-    private void deleteExistingFileIfPresent() {
-        siteSettingsRepository.findById(KEY_IMAGE_FILENAME)
+    private void deleteExistingFileIfPresent(String filenameKey) {
+        siteSettingsRepository.findById(filenameKey)
                 .map(SiteSetting::getValue)
                 .ifPresent(filename -> {
                     try {

@@ -74,6 +74,7 @@ public class SiteSettingsDtos {
 
     public record HomeSettingsDto(
             HeroImageDto hero,
+            HeroImageDto heroMobile,
             BadgeImageDto badge,
             BadgeImageDto badgeLeft,
             LocationSectionDto location

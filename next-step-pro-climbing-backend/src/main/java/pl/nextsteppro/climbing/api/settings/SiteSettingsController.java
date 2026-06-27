@@ -30,6 +30,7 @@ public class SiteSettingsController {
     public ResponseEntity<HomeSettingsDto> getHomeSettings() {
         return ResponseEntity.ok(new HomeSettingsDto(
                 adminSiteSettingsService.getHeroImage(),
+                adminSiteSettingsService.getMobileHeroImage(),
                 adminSiteSettingsService.getBadgeImage(),
                 adminSiteSettingsService.getBadgeLeftImage(),
                 adminSiteSettingsService.getLocationSection()
@@ -37,10 +38,17 @@ public class SiteSettingsController {
     }
 
     @GetMapping("/hero")
-    @Operation(summary = "Pobierz zdjęcie tła strony głównej")
+    @Operation(summary = "Pobierz zdjęcie tła strony głównej (desktop)")
     @ApiResponse(responseCode = "200", description = "URL zdjęcia hero lub null gdy brak")
     public ResponseEntity<HeroImageDto> getHeroImage() {
         return ResponseEntity.ok(adminSiteSettingsService.getHeroImage());
+    }
+
+    @GetMapping("/hero-mobile")
+    @Operation(summary = "Pobierz zdjęcie tła strony głównej (mobile)")
+    @ApiResponse(responseCode = "200", description = "URL zdjęcia hero mobile lub null gdy brak")
+    public ResponseEntity<HeroImageDto> getMobileHeroImage() {
+        return ResponseEntity.ok(adminSiteSettingsService.getMobileHeroImage());
     }
 
     @GetMapping("/badge")

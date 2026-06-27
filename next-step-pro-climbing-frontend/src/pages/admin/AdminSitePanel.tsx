@@ -18,7 +18,44 @@ const DEFAULT_FOCAL: FocalPoint = { x: 0.5, y: 0.5 }
 
 export function AdminSitePanel() {
   const { t } = useTranslation('admin')
+
+  return (
+    <div className="space-y-8">
+      <div>
+        <h2 className="text-xl font-semibold text-surface-100 mb-1">
+          {t('site.title')}
+        </h2>
+        <p className="text-surface-400 text-sm">
+          {t('site.subtitle')}
+        </p>
+      </div>
+
+      {/* Hero image — osobno desktop (panorama) i mobile (pionowe zdjęcie pod telefon) */}
+      <HeroImageSection variant="desktop" />
+      <HeroImageSection variant="mobile" />
+
+      {/* Badge section */}
+      <BadgeSection />
+      <BadgeLeftSection />
+
+      {/* "Gdzie teraz szkolę" section */}
+      <LocationSection />
+
+      {/* Promocja nad kalendarzem */}
+      <CalendarPromoSection />
+    </div>
+  )
+}
+
+/**
+ * Sekcja zarządzania zdjęciem hero — ta sama mechanika dla desktopu i mobile,
+ * różnią się tylko endpointem, proporcjami kadru i opisami. Każda wersja ma
+ * własny, niezależny stan i upload (osobne pliki na dysku).
+ */
+function HeroImageSection({ variant }: { variant: 'desktop' | 'mobile' }) {
+  const { t } = useTranslation('admin')
   const queryClient = useQueryClient()
+  const isMobile = variant === 'mobile'
 
   const [showMediaPicker, setShowMediaPicker] = useState(false)
   const [showGalleryPicker, setShowGalleryPicker] = useState(false)
@@ -30,14 +67,33 @@ export function AdminSitePanel() {
   const [localPreviewUrl, setLocalPreviewUrl] = useState<string | null>(null)
 
   // Focal point override: null = use server value, non-null = user is editing
-  // This avoids setState-in-effect by deriving the displayed value directly.
   const [focalOverride, setFocalOverride] = useState<FocalPoint | null>(null)
 
   const [saveError, setSaveError] = useState<string | null>(null)
 
+  const api = isMobile
+    ? {
+        get: adminSiteApi.getHeroMobile,
+        upload: adminSiteApi.uploadHeroMobileImage,
+        setUrl: adminSiteApi.setHeroMobileImageUrl,
+        setFocal: adminSiteApi.setHeroMobileFocalPoint,
+        remove: adminSiteApi.deleteHeroMobileImage,
+      }
+    : {
+        get: adminSiteApi.getHero,
+        upload: adminSiteApi.uploadHeroImage,
+        setUrl: adminSiteApi.setHeroImageUrl,
+        setFocal: adminSiteApi.setFocalPoint,
+        remove: adminSiteApi.deleteHeroImage,
+      }
+
+  const queryKeyName = isMobile ? 'heroMobile' : 'hero'
+  const aspectRatio = isMobile ? '9/16' : '21/9'
+  const fileInputId = isMobile ? 'hero-mobile-file-input' : 'hero-desktop-file-input'
+
   const { data: hero, isLoading } = useQuery({
-    queryKey: ['admin', 'hero'],
-    queryFn: adminSiteApi.getHero,
+    queryKey: ['admin', queryKeyName],
+    queryFn: api.get,
   })
 
   // Cleanup object URL when localPreviewUrl changes or on unmount
@@ -48,7 +104,7 @@ export function AdminSitePanel() {
   }, [localPreviewUrl])
 
   const invalidate = () => {
-    queryClient.invalidateQueries({ queryKey: ['admin', 'hero'] })
+    queryClient.invalidateQueries({ queryKey: ['admin', queryKeyName] })
     queryClient.invalidateQueries({ queryKey: ['heroImage'] })
     queryClient.invalidateQueries({ queryKey: ['homeSettings'] })
   }
@@ -78,11 +134,11 @@ export function AdminSitePanel() {
   const saveMutation = useMutation({
     mutationFn: async () => {
       if (pendingFile) {
-        return adminSiteApi.uploadHeroImage(pendingFile, focalPoint.x, focalPoint.y)
+        return api.upload(pendingFile, focalPoint.x, focalPoint.y)
       } else if (pendingUrl) {
-        return adminSiteApi.setHeroImageUrl(pendingUrl, focalPoint.x, focalPoint.y)
+        return api.setUrl(pendingUrl, focalPoint.x, focalPoint.y)
       } else {
-        return adminSiteApi.setFocalPoint(focalPoint.x, focalPoint.y)
+        return api.setFocal(focalPoint.x, focalPoint.y)
       }
     },
     onSuccess: () => {
@@ -95,7 +151,7 @@ export function AdminSitePanel() {
   })
 
   const deleteMutation = useMutation({
-    mutationFn: adminSiteApi.deleteHeroImage,
+    mutationFn: api.remove,
     onSuccess: () => {
       setShowDeleteConfirm(false)
       clearPending()
@@ -143,136 +199,117 @@ export function AdminSitePanel() {
   const displayUrl = localPreviewUrl ?? pendingUrl ?? savedImageUrl
   const isBusy = saveMutation.isPending || deleteMutation.isPending
 
+  // Pionowy podgląd jest węższy, żeby nie zajmował całej szerokości panelu.
+  const previewWrapClass = isMobile ? 'max-w-[220px]' : 'w-full'
+
   return (
-    <div className="space-y-8">
-      <div>
-        <h2 className="text-xl font-semibold text-surface-100 mb-1">
-          {t('site.title')}
-        </h2>
-        <p className="text-surface-400 text-sm">
-          {t('site.subtitle')}
-        </p>
+    <section className="bg-surface-800 border border-surface-700 rounded-lg p-6 space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="text-base font-semibold text-surface-100">
+          {t(isMobile ? 'site.heroMobileTitle' : 'site.heroDesktopTitle')}
+        </h3>
+        {hasPending && (
+          <span className="text-xs px-2 py-1 bg-amber-500/10 text-amber-400 border border-amber-500/30 rounded-full">
+            {t('site.unsavedChanges')}
+          </span>
+        )}
       </div>
 
-      {/* Hero image section */}
-      <section className="bg-surface-800 border border-surface-700 rounded-lg p-6 space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-base font-semibold text-surface-100">
-            {t('site.heroTitle')}
-          </h3>
-          {hasPending && (
-            <span className="text-xs px-2 py-1 bg-amber-500/10 text-amber-400 border border-amber-500/30 rounded-full">
-              {t('site.unsavedChanges')}
-            </span>
-          )}
+      <p className="text-surface-400 text-sm">
+        {t(isMobile ? 'site.heroMobileDescription' : 'site.heroDesktopDescription')}
+      </p>
+
+      {/* Preview / FocalPointEditor */}
+      {isLoading ? (
+        <div className={`${previewWrapClass} rounded-lg bg-surface-900 border border-surface-700 flex items-center justify-center`} style={{ aspectRatio }}>
+          <span className="text-surface-500 text-sm">{t('site.loading')}</span>
         </div>
-
-        <p className="text-surface-400 text-sm">
-          {t('site.heroDescription')}
-        </p>
-
-        {/* Preview / FocalPointEditor */}
-        {isLoading ? (
-          <div className="w-full aspect-[21/9] rounded-lg bg-surface-900 border border-surface-700 flex items-center justify-center">
-            <span className="text-surface-500 text-sm">{t('site.loading')}</span>
-          </div>
-        ) : displayUrl ? (
-          <div className="space-y-2">
-            <FocalPointEditor
-              imageUrl={displayUrl}
-              value={focalPoint}
-              onChange={setFocalOverride}
-              aspectRatio="21/9"
-              className="w-full"
-            />
-            <p className="text-xs text-surface-500">{t('site.focalPointHint')}</p>
-          </div>
-        ) : (
-          <div className="w-full aspect-[21/9] rounded-lg bg-surface-900 border border-surface-700 flex flex-col items-center justify-center gap-2 text-surface-500">
-            <ImageIcon className="w-10 h-10" />
-            <span className="text-sm">{t('site.noHeroImage')}</span>
-          </div>
-        )}
-
-        {/* Error */}
-        {saveError && (
-          <p className="text-red-400 text-sm">{saveError}</p>
-        )}
-
-        {/* Save / Cancel row */}
-        {canSave && (
-          <div className="flex gap-3">
-            <Button onClick={() => saveMutation.mutate()} disabled={isBusy}>
-              <Save className="w-4 h-4 mr-2" />
-              {saveMutation.isPending ? t('site.saving') : t('site.save')}
-            </Button>
-            <Button variant="secondary" onClick={handleCancel} disabled={isBusy}>
-              <X className="w-4 h-4 mr-2" />
-              {t('site.cancel')}
-            </Button>
-          </div>
-        )}
-
-        {/* Image source buttons */}
-        <div className="flex flex-wrap gap-3">
-          <label
-            htmlFor="hero-file-input"
-            className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors
-              bg-surface-700 text-surface-100 hover:bg-surface-600
-              ${isBusy ? 'opacity-50 cursor-not-allowed pointer-events-none' : 'cursor-pointer'}`}
-          >
-            <Upload className="w-4 h-4" />
-            {t('site.uploadFromDisk')}
-          </label>
-          <input
-            id="hero-file-input"
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            className="hidden"
-            disabled={isBusy}
-            onChange={handleFileChange}
+      ) : displayUrl ? (
+        <div className="space-y-2">
+          <FocalPointEditor
+            imageUrl={displayUrl}
+            value={focalPoint}
+            onChange={setFocalOverride}
+            aspectRatio={aspectRatio}
+            className={previewWrapClass}
           />
-
-          <Button
-            variant="secondary"
-            onClick={() => setShowMediaPicker(true)}
-            disabled={isBusy}
-          >
-            <Library className="w-4 h-4 mr-2" />
-            {t('site.pickFromLibrary')}
-          </Button>
-
-          <Button
-            variant="secondary"
-            onClick={() => setShowGalleryPicker(true)}
-            disabled={isBusy}
-          >
-            <ImageIcon className="w-4 h-4 mr-2" />
-            {t('site.pickFromGallery')}
-          </Button>
-
-          {savedImageUrl && !hasPending && (
-            <Button
-              variant="danger"
-              onClick={() => setShowDeleteConfirm(true)}
-              disabled={isBusy}
-            >
-              <Trash2 className="w-4 h-4 mr-2" />
-              {t('site.deleteHeroImage')}
-            </Button>
-          )}
+          <p className="text-xs text-surface-500">{t('site.focalPointHint')}</p>
         </div>
-      </section>
+      ) : (
+        <div className={`${previewWrapClass} rounded-lg bg-surface-900 border border-surface-700 flex flex-col items-center justify-center gap-2 text-surface-500`} style={{ aspectRatio }}>
+          <ImageIcon className="w-10 h-10" />
+          <span className="text-sm text-center px-3">{t(isMobile ? 'site.noHeroMobileImage' : 'site.noHeroImage')}</span>
+        </div>
+      )}
 
-      {/* Badge section */}
-      <BadgeSection />
-      <BadgeLeftSection />
+      {/* Error */}
+      {saveError && (
+        <p className="text-red-400 text-sm">{saveError}</p>
+      )}
 
-      {/* "Gdzie teraz szkolę" section */}
-      <LocationSection />
+      {/* Save / Cancel row */}
+      {canSave && (
+        <div className="flex gap-3">
+          <Button onClick={() => saveMutation.mutate()} disabled={isBusy}>
+            <Save className="w-4 h-4 mr-2" />
+            {saveMutation.isPending ? t('site.saving') : t('site.save')}
+          </Button>
+          <Button variant="secondary" onClick={handleCancel} disabled={isBusy}>
+            <X className="w-4 h-4 mr-2" />
+            {t('site.cancel')}
+          </Button>
+        </div>
+      )}
 
-      {/* Promocja nad kalendarzem */}
-      <CalendarPromoSection />
+      {/* Image source buttons */}
+      <div className="flex flex-wrap gap-3">
+        <label
+          htmlFor={fileInputId}
+          className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors
+            bg-surface-700 text-surface-100 hover:bg-surface-600
+            ${isBusy ? 'opacity-50 cursor-not-allowed pointer-events-none' : 'cursor-pointer'}`}
+        >
+          <Upload className="w-4 h-4" />
+          {t('site.uploadFromDisk')}
+        </label>
+        <input
+          id={fileInputId}
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          className="hidden"
+          disabled={isBusy}
+          onChange={handleFileChange}
+        />
+
+        <Button
+          variant="secondary"
+          onClick={() => setShowMediaPicker(true)}
+          disabled={isBusy}
+        >
+          <Library className="w-4 h-4 mr-2" />
+          {t('site.pickFromLibrary')}
+        </Button>
+
+        <Button
+          variant="secondary"
+          onClick={() => setShowGalleryPicker(true)}
+          disabled={isBusy}
+        >
+          <ImageIcon className="w-4 h-4 mr-2" />
+          {t('site.pickFromGallery')}
+        </Button>
+
+        {savedImageUrl && !hasPending && (
+          <Button
+            variant="danger"
+            onClick={() => setShowDeleteConfirm(true)}
+            disabled={isBusy}
+          >
+            <Trash2 className="w-4 h-4 mr-2" />
+            {t('site.deleteHeroImage')}
+          </Button>
+        )}
+      </div>
 
       {/* Modals */}
       <MediaPickerModal
@@ -290,12 +327,12 @@ export function AdminSitePanel() {
       <ConfirmModal
         isOpen={showDeleteConfirm}
         title={t('site.deleteConfirmTitle')}
-        message={t('site.deleteConfirmMessage')}
+        message={t(isMobile ? 'site.deleteMobileConfirmMessage' : 'site.deleteConfirmMessage')}
         confirmText={t('site.deleteHeroImage')}
         onConfirm={() => deleteMutation.mutate()}
         onClose={() => setShowDeleteConfirm(false)}
       />
-    </div>
+    </section>
   )
 }
 
