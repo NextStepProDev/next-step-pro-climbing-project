@@ -151,7 +151,7 @@ export function HomePage() {
         })}</script>
       </Helmet>
       {/* Hero Section */}
-      <section className="relative overflow-hidden min-h-[calc(100dvh-4.5rem)] flex flex-col sm:min-h-[calc(100vh-4.5rem)] sm:justify-center">
+      <section className="relative overflow-hidden min-h-[100svh] -mt-18 flex flex-col sm:min-h-screen sm:justify-center">
         {/* Base gradient — always rendered as placeholder/fallback */}
         <div className="absolute inset-0 bg-gradient-to-br from-primary-900/20 via-surface-950 to-surface-950" />
 
@@ -197,14 +197,14 @@ export function HomePage() {
           <BadgeImg
             src={badgeLeftImageUrl}
             href={homeSettings?.badgeLeft.linkUrl}
-            className="absolute top-3 left-3 sm:top-12 sm:left-36 z-20 w-[52px] h-[52px] sm:w-24 sm:h-24"
+            className="absolute top-20 left-3 sm:top-24 sm:left-36 z-20 w-[52px] h-[52px] sm:w-24 sm:h-24"
           />
         )}
         {badgeImageUrl && (
           <BadgeImg
             src={badgeImageUrl}
             href={homeSettings?.badge.linkUrl}
-            className="absolute top-3 right-3 sm:top-12 sm:right-36 z-20 w-[52px] h-[52px] sm:w-24 sm:h-24"
+            className="absolute top-20 right-3 sm:top-24 sm:right-36 z-20 w-[52px] h-[52px] sm:w-24 sm:h-24"
           />
         )}
         {/* Mobile: stały pasek zdjęcia u góry (karta nigdy nie wchodzi pod plakietki PZA)

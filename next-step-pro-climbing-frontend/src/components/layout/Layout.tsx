@@ -39,7 +39,7 @@ export function Layout() {
       {pendingCount > 0 && (
         <Link
           to="/my-reservations"
-          className="block w-full bg-amber-500 hover:bg-amber-400 transition-colors text-black text-center py-2.5 px-4 text-sm font-semibold"
+          className="relative z-40 block w-full bg-amber-500 hover:bg-amber-400 transition-colors text-black text-center py-2.5 px-4 text-sm font-semibold"
         >
           <span className="inline-flex items-center gap-2">
             <Clock3 className="w-4 h-4" />
