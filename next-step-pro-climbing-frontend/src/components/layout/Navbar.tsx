@@ -23,6 +23,7 @@ export function Navbar() {
   const [mediaMenuOpen, setMediaMenuOpen] = useState(false);
   const [teamMenuOpen, setTeamMenuOpen] = useState(false);
   const [navHidden, setNavHidden] = useState(false);
+  const [atTop, setAtTop] = useState(true);
   const [showLogoutSuccess, setShowLogoutSuccess] = useState(false);
   const lastScrollY = useRef(0);
   const userMenuRef = useRef<HTMLDivElement>(null);
@@ -109,6 +110,7 @@ export function Navbar() {
   useEffect(() => {
     function onScroll() {
       const y = window.scrollY;
+      setAtTop(y < 60);
       if (y < 60) {
         setNavHidden(false);
       } else if (y > lastScrollY.current + 5) {
@@ -157,12 +159,30 @@ export function Navbar() {
     updateIndicator();
   }, [location.pathname, updateIndicator]);
 
+  // Na stronie głównej u góry navbar „leży" na zdjęciu hero jako szkło (frosted),
+  // żeby było widać zdjęcie za logo/hamburgerem. Po zescrollowaniu, przy otwartym
+  // menu oraz na desktopie (md:) wraca do normalnego ciemnego tła.
+  const heroOverlay = location.pathname === "/" && atTop && !mobileMenuOpen;
+
   return (
     <>
     {showLogoutSuccess && <SuccessCheckmark onDone={() => { setShowLogoutSuccess(false); logout(); }} />}
-    <nav className={clsx("bg-surface-900/80 backdrop-blur-sm border-b border-surface-800 sticky top-0 z-50 transition-transform duration-300", navHidden && !mobileMenuOpen && "-translate-y-full")}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-18">
+    <nav className={clsx(
+      "sticky top-0 z-50 transition-[transform,background-color,border-color] duration-300",
+      navHidden && !mobileMenuOpen && "-translate-y-full",
+      heroOverlay
+        ? "bg-transparent border-b border-transparent"
+        : "bg-surface-900/80 backdrop-blur-sm border-b border-surface-800",
+    )}>
+      <div className={clsx("max-w-7xl mx-auto px-4 sm:px-6 lg:px-8", heroOverlay && "py-2")}>
+        {/* W trybie glass (home u góry) navbar staje się pływającą kapsułą (pill) z owalnymi
+            końcami, odsuniętą od krawędzi. W zwykłym trybie to pełny pasek (h-18). */}
+        <div className={clsx(
+          "flex items-center justify-between",
+          heroOverlay
+            ? "h-14 mx-6 sm:mx-0 rounded-full px-5 sm:px-6 border border-white/12 bg-surface-950/40 backdrop-blur-[2px] md:bg-surface-950/45"
+            : "h-18",
+        )}>
           {/* Logo */}
           <Link
             to="/"
