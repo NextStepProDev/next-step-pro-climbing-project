@@ -1065,6 +1065,7 @@ export const adminVideoApi = {
 export const siteSettingsApi = {
   getHome: () => fetchApi<HomeSettingsDto>('/settings/home'),
   getHero: () => fetchApi<HeroImageDto>('/settings/hero'),
+  getHeroMobile: () => fetchApi<HeroImageDto>('/settings/hero-mobile'),
   getBadge: () => fetchApi<BadgeImageDto>('/settings/badge'),
   getBadgeLeft: () => fetchApi<BadgeImageDto>('/settings/badge-left'),
   getCalendarPromo: () => fetchApi<CalendarPromoSectionDto>('/settings/calendar-promo'),
@@ -1114,6 +1115,50 @@ export const adminSiteApi = {
 
   deleteHeroImage: () =>
     fetchApi<void>('/admin/settings/hero', { method: 'DELETE' }),
+
+  // --- Hero MOBILE (osobne pionowe zdjęcie dla telefonów) ---
+  getHeroMobile: () => fetchApi<HeroImageDto>('/admin/settings/hero-mobile'),
+
+  uploadHeroMobileImage: async (file: File, focalPointX?: number, focalPointY?: number): Promise<HeroImageDto> => {
+    const error = validateImageFile(file)
+    if (error) throw new Error(error)
+    const compressed = await compressImage(file)
+    const token = await ensureValidToken()
+    const formData = new FormData()
+    formData.append('file', compressed)
+    if (focalPointX != null) formData.append('focalPointX', String(focalPointX))
+    if (focalPointY != null) formData.append('focalPointY', String(focalPointY))
+    const headers: Record<string, string> = { 'Accept-Language': i18n.language }
+    if (token) headers['Authorization'] = `Bearer ${token}`
+
+    const response = await fetch(`${API_BASE}/admin/settings/hero-mobile`, {
+      method: 'POST',
+      headers,
+      body: formData,
+    })
+
+    if (!response.ok) {
+      const body = await response.json().catch(() => null)
+      throw new Error(body?.message || i18n.t('uploadFailed', { ns: 'errors' }))
+    }
+
+    return response.json()
+  },
+
+  setHeroMobileImageUrl: (url: string, focalPointX?: number, focalPointY?: number) =>
+    fetchApi<HeroImageDto>('/admin/settings/hero-mobile/url', {
+      method: 'PUT',
+      body: JSON.stringify({ url, focalPointX: focalPointX ?? null, focalPointY: focalPointY ?? null }),
+    }),
+
+  setHeroMobileFocalPoint: (x: number, y: number) =>
+    fetchApi<HeroImageDto>('/admin/settings/hero-mobile/focal-point', {
+      method: 'PUT',
+      body: JSON.stringify({ x, y }),
+    }),
+
+  deleteHeroMobileImage: () =>
+    fetchApi<void>('/admin/settings/hero-mobile', { method: 'DELETE' }),
 
   getBadge: () => fetchApi<BadgeImageDto>('/admin/settings/badge'),
 

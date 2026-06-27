@@ -87,6 +87,61 @@ public class AdminSiteSettingsController {
         return ResponseEntity.noContent().build();
     }
 
+    @GetMapping("/hero-mobile")
+    @Operation(summary = "Pobierz aktualne zdjęcie hero (mobile) strony głównej")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "URL zdjęcia lub null"),
+        @ApiResponse(responseCode = "403", description = "Brak uprawnień admina")
+    })
+    public ResponseEntity<HeroImageDto> getMobileHeroImage() {
+        return ResponseEntity.ok(adminSiteSettingsService.getMobileHeroImage());
+    }
+
+    @PostMapping("/hero-mobile")
+    @Operation(summary = "Wgraj zdjęcie hero (mobile) z dysku", description = "Upload pionowego tła dla telefonów (max 10MB, JPEG/PNG/WebP)")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Zdjęcie wgrane"),
+        @ApiResponse(responseCode = "400", description = "Nieprawidłowy plik"),
+        @ApiResponse(responseCode = "403", description = "Brak uprawnień admina")
+    })
+    public ResponseEntity<HeroImageDto> uploadMobileHeroImage(
+            @Parameter(description = "Plik zdjęcia") @RequestParam("file") MultipartFile file,
+            @RequestParam(value = "focalPointX", required = false) @Nullable Float focalPointX,
+            @RequestParam(value = "focalPointY", required = false) @Nullable Float focalPointY) throws IOException {
+        return ResponseEntity.ok(adminSiteSettingsService.uploadMobileHeroImage(file, focalPointX, focalPointY));
+    }
+
+    @PutMapping("/hero-mobile/url")
+    @Operation(summary = "Ustaw zdjęcie hero (mobile) z biblioteki mediów lub galerii")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "URL zapisany"),
+        @ApiResponse(responseCode = "403", description = "Brak uprawnień admina")
+    })
+    public ResponseEntity<HeroImageDto> setMobileHeroImageUrl(@RequestBody SetHeroUrlRequest request) {
+        return ResponseEntity.ok(adminSiteSettingsService.setMobileHeroImageUrl(request.url(), request.focalPointX(), request.focalPointY()));
+    }
+
+    @PutMapping("/hero-mobile/focal-point")
+    @Operation(summary = "Zaktualizuj focal point zdjęcia hero (mobile)")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Focal point zapisany"),
+        @ApiResponse(responseCode = "403", description = "Brak uprawnień admina")
+    })
+    public ResponseEntity<HeroImageDto> setMobileFocalPoint(@RequestBody SetFocalPointRequest request) {
+        return ResponseEntity.ok(adminSiteSettingsService.setMobileFocalPoint(request.x(), request.y()));
+    }
+
+    @DeleteMapping("/hero-mobile")
+    @Operation(summary = "Usuń zdjęcie hero (mobile) strony głównej")
+    @ApiResponses({
+        @ApiResponse(responseCode = "204", description = "Zdjęcie usunięte"),
+        @ApiResponse(responseCode = "403", description = "Brak uprawnień admina")
+    })
+    public ResponseEntity<Void> deleteMobileHeroImage() throws IOException {
+        adminSiteSettingsService.deleteMobileHeroImage();
+        return ResponseEntity.noContent().build();
+    }
+
     @GetMapping("/badge")
     @Operation(summary = "Pobierz aktualne logo/badge strony głównej")
     public ResponseEntity<BadgeImageDto> getBadgeImage() {

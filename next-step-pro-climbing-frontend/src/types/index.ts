@@ -803,6 +803,7 @@ export interface BadgeImageDto {
 
 export interface HomeSettingsDto {
   hero: HeroImageDto
+  heroMobile: HeroImageDto
   badge: BadgeImageDto
   badgeLeft: BadgeImageDto
   location: LocationSectionDto
