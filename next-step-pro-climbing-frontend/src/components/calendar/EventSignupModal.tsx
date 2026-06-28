@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { format } from 'date-fns'
 import { Calendar, ExternalLink, MapPin, Users, Trash2, AlertTriangle } from 'lucide-react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { Modal } from '../ui/Modal'
 import { Button } from '../ui/Button'
 import { SuccessCheckmark } from '../ui/SuccessCheckmark'
@@ -15,6 +15,15 @@ import { saveRedirectPath } from '../../utils/redirect'
 import { adminApi, calendarApi, reservationApi } from '../../api/client'
 import { getErrorMessage } from '../../utils/errors'
 import type { EventSummary } from '../../types'
+
+// Build a URL that re-opens this event modal when the user comes back from the
+// linked course detail page. Reuses the calendar `?event=<id>` deep-link so the
+// same modal pops open again (see CalendarPage deepLinkEvent effect).
+function buildEventReturnTo(location: { pathname: string; search: string }, eventId: string): string {
+  const params = new URLSearchParams(location.search)
+  params.set('event', eventId)
+  return `${location.pathname}?${params.toString()}`
+}
 
 interface EventSignupModalProps {
   event: EventSummary | null
@@ -28,6 +37,7 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
   const { t: ta } = useTranslation('admin')
   const { isAuthenticated, isAdmin, user } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
   const queryClient = useQueryClient()
   const [comment, setComment] = useState('')
   const [participants, setParticipants] = useState(1)
@@ -389,6 +399,7 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
           {ev.courseId && (
             <Link
               to={`/kursy/${ev.courseId}`}
+              state={{ returnTo: buildEventReturnTo(location, ev.id) }}
               onClick={onClose}
               className="flex items-center gap-1 text-xs text-primary-400 hover:text-primary-300 transition-colors shrink-0"
             >

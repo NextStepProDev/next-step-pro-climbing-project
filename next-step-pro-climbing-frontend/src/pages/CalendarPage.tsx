@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useSearchParams, Link } from "react-router-dom";
+import { useSearchParams, useLocation, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { PageHead } from "../components/ui/PageHead";
 import { format, startOfWeek, addWeeks, subWeeks } from "date-fns";
@@ -26,6 +26,9 @@ export function CalendarPage() {
   const { isAdmin } = useAuth();
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
+  const location = useLocation();
+  // Back-link target so CourseDetailPage returns to the calendar instead of the course list.
+  const courseReturnTo = location.pathname + location.search;
   const [viewMode, setViewMode] = useState<'month' | 'week'>(() => {
     return searchParams.get("view") === 'month' ? 'month' : 'week';
   });
@@ -655,6 +658,7 @@ export function CalendarPage() {
                         {event.courseId && (
                           <Link
                             to={`/kursy/${event.courseId}`}
+                            state={{ returnTo: courseReturnTo }}
                             onClick={(e) => e.stopPropagation()}
                             className="mt-1.5 flex items-center gap-1 text-xs text-primary-400 hover:text-primary-300 transition-colors"
                           >
@@ -765,6 +769,7 @@ export function CalendarPage() {
                       {event.courseId && (
                         <Link
                           to={`/kursy/${event.courseId}`}
+                          state={{ returnTo: courseReturnTo }}
                           onClick={(e) => e.stopPropagation()}
                           className="mt-1.5 flex items-center gap-1 text-xs text-primary-400 hover:text-primary-300 transition-colors"
                         >

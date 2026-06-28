@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { format } from 'date-fns'
@@ -291,6 +291,9 @@ function UpcomingReservations({
   const { t: tc } = useTranslation('common')
   const { t: tcal } = useTranslation('calendar')
   const locale = useDateLocale()
+  const location = useLocation()
+  // Back-link target so CourseDetailPage returns here instead of the course list.
+  const courseReturnTo = location.pathname + location.search
   const queryClient = useQueryClient()
   const [confirmCancel, setConfirmCancel] = useState<{ type: 'slot' | 'event'; id: string } | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -355,6 +358,7 @@ function UpcomingReservations({
                     {event.courseId && (
                       <Link
                         to={`/kursy/${event.courseId}`}
+                        state={{ returnTo: courseReturnTo }}
                         onClick={(e) => e.stopPropagation()}
                         className="flex items-center gap-1 text-xs text-primary-400 hover:text-primary-300 transition-colors shrink-0"
                       >

@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { format } from "date-fns";
 import { ArrowLeft, Clock, Calendar, Users, Plus, ExternalLink, X, Phone } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import clsx from "clsx";
 import type { TimeSlot, EventSummary } from "../../types";
 import { formatAvailability, getEventColorByIndex } from "../../utils/events";
@@ -141,6 +141,9 @@ export function DayView({
 }: DayViewProps) {
   const { t } = useTranslation('calendar');
   const locale = useDateLocale();
+  const location = useLocation();
+  // Back-link target so CourseDetailPage returns here instead of the course list.
+  const courseReturnTo = location.pathname + location.search;
   const dateObj = new Date(date);
 
   const { eventSlotGroups, standaloneSlots } = useMemo(() => {
@@ -285,6 +288,7 @@ export function DayView({
                         {event.courseId && (
                           <Link
                             to={`/kursy/${event.courseId}`}
+                            state={{ returnTo: courseReturnTo }}
                             className="flex items-center gap-1 text-xs text-primary-400 hover:text-primary-300 transition-colors shrink-0 mt-0.5"
                           >
                             <ExternalLink className="w-3 h-3" />
@@ -414,6 +418,7 @@ export function DayView({
                       {event.courseId && (
                         <Link
                           to={`/kursy/${event.courseId}`}
+                          state={{ returnTo: courseReturnTo }}
                           className="flex items-center gap-1 text-xs text-primary-400 hover:text-primary-300 transition-colors shrink-0 mt-0.5"
                         >
                           <ExternalLink className="w-3 h-3" />

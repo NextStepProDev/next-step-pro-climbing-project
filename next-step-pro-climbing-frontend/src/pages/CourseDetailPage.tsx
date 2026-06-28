@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { useParams, useNavigate, Link } from 'react-router-dom'
+import { useParams, useNavigate, useLocation, Link } from 'react-router-dom'
 import { Helmet } from 'react-helmet-async'
 import { ArrowLeft, BookOpen } from 'lucide-react'
 import { coursesApi, calendarApi } from '../api/client'
@@ -17,6 +17,10 @@ export function CourseDetailPage() {
   const { t, i18n } = useTranslation('common')
   const { courseId } = useParams<{ courseId: string }>()
   const navigate = useNavigate()
+  const location = useLocation()
+  // When arriving from a calendar event modal, go back to it instead of the
+  // course list (the returnTo URL carries `?event=<id>` to re-open the modal).
+  const returnTo = (location.state as { returnTo?: string } | null)?.returnTo
 
   const { data: course, isLoading, error } = useQuery({
     queryKey: ['courses', courseId],
@@ -45,11 +49,11 @@ export function CourseDetailPage() {
     if (prevLangRef.current !== currentContentLang && course && translations) {
       const target = pickBestTranslation(translations, currentContentLang)
       if (target && target.id !== course.id) {
-        navigate(`/kursy/${target.id}`, { replace: true })
+        navigate(`/kursy/${target.id}`, { replace: true, state: returnTo ? { returnTo } : undefined })
       }
     }
     prevLangRef.current = currentContentLang
-  }, [currentContentLang, course, translations, navigate])
+  }, [currentContentLang, course, translations, navigate, returnTo])
 
   if (isLoading) {
     return (
@@ -111,11 +115,11 @@ export function CourseDetailPage() {
       </Helmet>
       <div className="flex items-center justify-between mb-6">
         <Link
-          to="/kursy"
+          to={returnTo ?? '/kursy'}
           className="inline-flex items-center gap-2 text-surface-300 hover:text-surface-100 transition-colors"
         >
           <ArrowLeft className="h-4 w-4" />
-          {t('courses.backToCourses')}
+          {returnTo ? t('courses.back') : t('courses.backToCourses')}
         </Link>
 
         <div className="flex items-center gap-1 bg-surface-800 border border-surface-700 rounded-lg p-1">
@@ -128,7 +132,7 @@ export function CourseDetailPage() {
                 key={lang.code}
                 disabled={!isAvailable}
                 onClick={() => {
-                  if (!isActive && translation) navigate(`/kursy/${translation.id}`)
+                  if (!isActive && translation) navigate(`/kursy/${translation.id}`, { state: returnTo ? { returnTo } : undefined })
                 }}
                 className={clsx(
                   'px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-150 active:scale-95',
