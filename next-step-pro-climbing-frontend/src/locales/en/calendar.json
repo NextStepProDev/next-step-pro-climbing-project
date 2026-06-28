@@ -129,7 +129,10 @@
     "backToCalendar": "Back to calendar",
     "maxParticipants": "Max. {{count}} participants",
     "description": "Description",
-    "viewSlots": "View available time slots"
+    "viewSlots": "View available time slots",
+    "signUp": "Sign up",
+    "partOfCourse": "This event is part of a course",
+    "viewCourse": "View course"
   },
   "createSlot": {
     "title": "Add new time slot",

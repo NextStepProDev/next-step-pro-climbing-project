@@ -7,6 +7,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import pl.nextsteppro.climbing.api.calendar.CalendarService;
+import pl.nextsteppro.climbing.api.calendar.EventOgView;
 import pl.nextsteppro.climbing.api.course.CourseDtos.CourseDetailDto;
 import pl.nextsteppro.climbing.api.course.CourseService;
 import pl.nextsteppro.climbing.api.instructor.InstructorDtos.InstructorPublicDto;
@@ -16,6 +18,7 @@ import pl.nextsteppro.climbing.api.news.NewsService;
 import pl.nextsteppro.climbing.domain.instructor.InstructorType;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
@@ -46,12 +49,14 @@ class OgControllerTest {
     private CourseService courseService;
     @Mock
     private InstructorService instructorService;
+    @Mock
+    private CalendarService calendarService;
 
     private OgController controller;
 
     @BeforeEach
     void setUp() {
-        controller = new OgController(newsService, courseService, instructorService, BASE);
+        controller = new OgController(newsService, courseService, instructorService, calendarService, BASE);
     }
 
     @Test
@@ -100,7 +105,7 @@ class OgControllerTest {
         String html = controller.newsOg(id).getBody();
 
         // Then
-        assertTrue(html.contains("<meta property=\"og:image\" content=\"" + BASE + "/og-default.jpg\">"));
+        assertTrue(html.contains("<meta property=\"og:image\" content=\"" + BASE + "/og-image.jpg\">"));
     }
 
     @Test
@@ -185,6 +190,79 @@ class OgControllerTest {
 
         // Then
         assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
+    }
+
+    @Test
+    void shouldRenderEventOgWithDatesAndCanonical() {
+        // Given
+        UUID id = UUID.randomUUID();
+        when(calendarService.getEventOgView(id))
+                .thenReturn(eventView("Warsztaty bulderowe", "Kraków",
+                        LocalDate.of(2026, 7, 4), LocalDate.of(2026, 7, 4), null, false));
+
+        // When
+        ResponseEntity<String> response = controller.eventOg(id);
+
+        // Then
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        String html = response.getBody();
+        assertTrue(html.contains("<meta property=\"og:title\" content=\"Warsztaty bulderowe\">"));
+        assertTrue(html.contains("<link rel=\"canonical\" href=\"" + BASE + "/events/" + id + "\">"));
+        assertTrue(html.contains("Kraków"), "location should appear in description");
+    }
+
+    @Test
+    void shouldUseCourseThumbnailForEventLinkedToPublishedCourse() {
+        // Given
+        UUID id = UUID.randomUUID();
+        UUID courseId = UUID.randomUUID();
+        when(calendarService.getEventOgView(id))
+                .thenReturn(eventView("Kurs lead", null,
+                        LocalDate.of(2026, 7, 1), LocalDate.of(2026, 7, 3), courseId, true));
+        when(courseService.getPublishedById(courseId))
+                .thenReturn(new CourseDetailDto(courseId, "Kurs lead", "500 zł",
+                        BASE + "/api/files/courses/thumb.jpg", null, null,
+                        "pl", UUID.randomUUID(), List.of(), Instant.now()));
+
+        // When
+        String html = controller.eventOg(id).getBody();
+
+        // Then
+        assertTrue(html.contains("<meta property=\"og:image\" content=\"" + BASE + "/api/files/courses/thumb.jpg\">"));
+    }
+
+    @Test
+    void shouldFallBackToDefaultImageWhenEventHasNoCourse() {
+        // Given
+        UUID id = UUID.randomUUID();
+        when(calendarService.getEventOgView(id))
+                .thenReturn(eventView("Trening", null,
+                        LocalDate.of(2026, 7, 1), LocalDate.of(2026, 7, 1), null, false));
+
+        // When
+        String html = controller.eventOg(id).getBody();
+
+        // Then
+        assertTrue(html.contains("<meta property=\"og:image\" content=\"" + BASE + "/og-image.jpg\">"));
+    }
+
+    @Test
+    void shouldReturn404WhenEventMissing() {
+        // Given
+        UUID id = UUID.randomUUID();
+        when(calendarService.getEventOgView(id)).thenThrow(new RuntimeException("not found"));
+
+        // When
+        ResponseEntity<String> response = controller.eventOg(id);
+
+        // Then
+        assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
+    }
+
+    private EventOgView eventView(String title, String location,
+                                  LocalDate startDate, LocalDate endDate,
+                                  UUID courseId, boolean coursePublished) {
+        return new EventOgView(title, location, startDate, endDate, courseId, coursePublished);
     }
 
     private NewsDetailDto newsDto(UUID id, String title, String excerpt, String thumbnailUrl) {

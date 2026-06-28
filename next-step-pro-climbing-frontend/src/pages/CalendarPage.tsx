@@ -106,6 +106,26 @@ export function CalendarPage() {
     enabled: !!selectedSlotId,
   });
 
+  // Deep link from a shared event link (/calendar?event=<id>) — opens the
+  // signup modal for that event directly (e.g. landing from EventPage CTA).
+  const eventParam = searchParams.get("event");
+  const { data: deepLinkEvent } = useQuery({
+    queryKey: ["event", eventParam],
+    queryFn: () => calendarApi.getEventSummary(eventParam!),
+    enabled: !!eventParam,
+  });
+  const openedEventParamRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!eventParam) {
+      openedEventParamRef.current = null;
+      return;
+    }
+    if (deepLinkEvent && openedEventParamRef.current !== eventParam) {
+      openedEventParamRef.current = eventParam;
+      setSelectedEvent(deepLinkEvent);
+    }
+  }, [eventParam, deepLinkEvent]);
+
   const monthColorMap = useMemo(
     () => monthData ? buildEventColorMap(monthData.events) : new Map(),
     [monthData],
@@ -187,6 +207,16 @@ export function CalendarPage() {
       if (!prev.has('slot')) return prev;
       const next = new URLSearchParams(prev);
       next.delete('slot');
+      return next;
+    });
+  }, [setSearchParams]);
+
+  const handleEventModalClose = useCallback(() => {
+    setSelectedEvent(null);
+    setSearchParams(prev => {
+      if (!prev.has('event')) return prev;
+      const next = new URLSearchParams(prev);
+      next.delete('event');
       return next;
     });
   }, [setSearchParams]);
@@ -768,7 +798,7 @@ export function CalendarPage() {
         key={selectedEvent?.id ?? 'event-closed'}
         event={selectedEvent}
         isOpen={!!selectedEvent}
-        onClose={() => setSelectedEvent(null)}
+        onClose={handleEventModalClose}
       />
 
       {isAdmin && selectedDate && (

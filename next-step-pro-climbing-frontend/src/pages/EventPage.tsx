@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { format } from 'date-fns'
 import { useTranslation } from 'react-i18next'
 import { Helmet } from 'react-helmet-async'
-import { ArrowLeft, Calendar, MapPin, Users } from 'lucide-react'
+import { ArrowLeft, BookOpen, Calendar, MapPin, Users } from 'lucide-react'
 import { calendarApi } from '../api/client'
 import { PageHead } from '../components/ui/PageHead'
 import { LoadingSpinner } from '../components/ui/LoadingSpinner'
@@ -70,7 +70,7 @@ export function EventPage() {
     },
     eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode',
     eventStatus: 'https://schema.org/EventScheduled',
-    url: `https://nextsteppro.pl/event/${eventId}`,
+    url: `https://nextsteppro.pl/events/${eventId}`,
   }
 
   return (
@@ -78,7 +78,7 @@ export function EventPage() {
       <PageHead
         title={event.title}
         description={event.description ?? tc(`eventTypes.${event.eventType}`)}
-        path={`/event/${eventId}`}
+        path={`/events/${eventId}`}
       />
       <Helmet>
         <script type="application/ld+json">{JSON.stringify(eventJsonLd)}</script>
@@ -149,13 +149,33 @@ export function EventPage() {
             </div>
           )}
 
+          {/* Linked course */}
+          {event.courseId && event.coursePublished && (
+            <Link
+              to={`/kursy/${event.courseId}`}
+              className="flex items-center justify-between gap-3 p-4 rounded-lg border border-primary-500/30 bg-primary-500/10 hover:bg-primary-500/15 transition-colors"
+            >
+              <div className="flex items-center gap-3 text-surface-200">
+                <BookOpen className="w-5 h-5 text-primary-400 shrink-0" />
+                <span className="text-sm">{t('eventPage.partOfCourse')}</span>
+              </div>
+              <span className="text-sm font-medium text-primary-400 shrink-0">
+                {t('eventPage.viewCourse')} →
+              </span>
+            </Link>
+          )}
+
           {/* CTA */}
           <div className="pt-4 border-t border-surface-800 flex items-center justify-between">
-            <Link to={`/calendar?date=${event.startDate}`}>
-              <Button variant="primary">
-                {t('eventPage.viewSlots')}
-              </Button>
-            </Link>
+            {event.eventType !== 'UNAVAILABLE' ? (
+              <Link to={`/calendar?date=${event.startDate}&event=${eventId}`}>
+                <Button variant="primary">
+                  {t('eventPage.signUp')}
+                </Button>
+              </Link>
+            ) : (
+              <span />
+            )}
             <ShareButtons title={event.title} />
           </div>
         </div>

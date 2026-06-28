@@ -10,8 +10,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.Locale;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import pl.nextsteppro.climbing.api.calendar.CalendarService;
+import pl.nextsteppro.climbing.api.calendar.EventOgView;
 import pl.nextsteppro.climbing.api.course.CourseDtos.CourseDetailDto;
 import pl.nextsteppro.climbing.api.course.CourseService;
 import pl.nextsteppro.climbing.api.instructor.InstructorDtos.InstructorPublicDto;
@@ -24,18 +29,24 @@ import pl.nextsteppro.climbing.domain.instructor.InstructorType;
 @RequestMapping("/api/og")
 public class OgController {
 
+    private static final DateTimeFormatter DATE_FMT =
+            DateTimeFormatter.ofPattern("d MMMM yyyy", Locale.of("pl"));
+
     private final NewsService newsService;
     private final CourseService courseService;
     private final InstructorService instructorService;
+    private final CalendarService calendarService;
     private final String baseUrl;
 
     public OgController(NewsService newsService,
                         CourseService courseService,
                         InstructorService instructorService,
+                        CalendarService calendarService,
                         @Value("${app.base-url}") String baseUrl) {
         this.newsService = newsService;
         this.courseService = courseService;
         this.instructorService = instructorService;
+        this.calendarService = calendarService;
         this.baseUrl = baseUrl;
     }
 
@@ -55,7 +66,7 @@ public class OgController {
                 : "Next Step Pro Climbing";
         String image = article.thumbnailUrl() != null
                 ? article.thumbnailUrl()
-                : baseUrl + "/og-default.jpg";
+                : baseUrl + "/og-image.jpg";
 
         return ogResponse(buildHtml("article", title, description, image, pageUrl));
     }
@@ -76,7 +87,7 @@ public class OgController {
                 : "Next Step Pro Climbing";
         String image = course.thumbnailUrl() != null
                 ? course.thumbnailUrl()
-                : baseUrl + "/og-default.jpg";
+                : baseUrl + "/og-image.jpg";
 
         return ogResponse(buildHtml("article", title, description, image, pageUrl));
     }
@@ -98,9 +109,38 @@ public class OgController {
         String description = buildInstructorDescription(instructor);
         String image = instructor.photoUrl() != null
                 ? instructor.photoUrl()
-                : baseUrl + "/og-default.jpg";
+                : baseUrl + "/og-image.jpg";
 
         return ogResponse(buildHtml("profile", title, description, image, pageUrl));
+    }
+
+    @GetMapping(value = "/event/{id}", produces = MediaType.TEXT_HTML_VALUE)
+    public ResponseEntity<String> eventOg(@PathVariable UUID id) {
+        EventOgView event;
+        try {
+            event = calendarService.getEventOgView(id);
+        } catch (Exception e) {
+            return ResponseEntity.notFound().build();
+        }
+
+        String pageUrl = baseUrl + "/events/" + id;
+        String title = escapeHtml(event.title());
+        String description = buildEventDescription(event);
+        // Events have no own image; reuse the linked course thumbnail when the
+        // course is published, otherwise the site default.
+        String image = baseUrl + "/og-image.jpg";
+        if (event.courseId() != null && event.coursePublished()) {
+            try {
+                CourseDetailDto course = courseService.getPublishedById(event.courseId());
+                if (course.thumbnailUrl() != null) {
+                    image = course.thumbnailUrl();
+                }
+            } catch (Exception ignored) {
+                // course unavailable -> keep default image
+            }
+        }
+
+        return ogResponse(buildHtml("article", title, description, image, pageUrl));
     }
 
     private ResponseEntity<String> ogResponse(String body) {
@@ -119,6 +159,18 @@ public class OgController {
             return escapeHtml(truncate(stripHtml(instructor.bio()), 200));
         }
         return "Next Step Pro Climbing";
+    }
+
+    private String buildEventDescription(EventOgView event) {
+        LocalDate start = event.startDate();
+        LocalDate end = event.endDate();
+        String dateStr = start.equals(end)
+                ? DATE_FMT.format(start)
+                : DATE_FMT.format(start) + " – " + DATE_FMT.format(end);
+        if (event.location() != null && !event.location().isBlank()) {
+            return escapeHtml(truncate(dateStr + " · " + event.location(), 200));
+        }
+        return escapeHtml(dateStr);
     }
 
     private String buildHtml(String type, String title, String description, String image, String pageUrl) {

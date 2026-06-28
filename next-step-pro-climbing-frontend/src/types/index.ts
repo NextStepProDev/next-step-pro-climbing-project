@@ -128,6 +128,7 @@ export interface EventSummary {
   isUserRegistered: boolean
   enrollmentOpen: boolean
   courseId: string | null
+  coursePublished: boolean
   // Waitlist — null in list views, populated in getEventSummary (single event)
   userWaitlistStatus: WaitlistStatus | null
   waitlistEntryId: string | null
