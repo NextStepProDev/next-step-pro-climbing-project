@@ -338,12 +338,9 @@ export function Navbar() {
               <div className="relative" ref={userMenuRef}>
                 <button
                   onClick={() => setUserMenuOpen(!userMenuOpen)}
-                  className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-surface-800 transition-colors"
+                  className="flex items-center gap-2 px-2 py-2 rounded-lg hover:bg-surface-800 transition-colors"
                 >
                   <Avatar src={user?.avatarUrl} name={user?.firstName} className="w-9 h-9" />
-                  <span className="text-sm font-medium text-surface-200">
-                    {user?.firstName}
-                  </span>
                   <ChevronDown
                     className={clsx(
                       "w-4 h-4 text-surface-400 transition-transform",
