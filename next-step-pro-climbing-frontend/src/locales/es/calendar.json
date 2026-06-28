@@ -129,7 +129,10 @@
     "backToCalendar": "Volver al calendario",
     "maxParticipants": "Máx. {{count}} participantes",
     "description": "Descripción",
-    "viewSlots": "Ver franjas horarias disponibles"
+    "viewSlots": "Ver franjas horarias disponibles",
+    "signUp": "Inscríbete",
+    "partOfCourse": "Este evento forma parte de un curso",
+    "viewCourse": "Ver curso"
   },
   "createSlot": {
     "title": "Añadir nueva franja horaria",

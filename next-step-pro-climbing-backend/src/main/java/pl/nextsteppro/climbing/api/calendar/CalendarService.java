@@ -210,6 +210,15 @@ public class CalendarService {
         );
     }
 
+    /** Lightweight projection for OG link previews (no auth/waitlist context). */
+    public EventOgView getEventOgView(UUID eventId) {
+        EventSummaryDto summary = getEventSummary(eventId, null);
+        return new EventOgView(
+            summary.title(), summary.location(), summary.startDate(), summary.endDate(),
+            summary.courseId(), summary.coursePublished()
+        );
+    }
+
     public TimeSlotDetailDto getSlotDetails(UUID slotId, @Nullable UUID userId) {
         TimeSlot slot = timeSlotRepository.findById(slotId)
             .orElseThrow(() -> new IllegalArgumentException("Time slot not found: " + slotId));

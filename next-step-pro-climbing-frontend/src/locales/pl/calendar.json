@@ -129,7 +129,10 @@
     "backToCalendar": "Wróć do kalendarza",
     "maxParticipants": "Maks. {{count}} uczestników",
     "description": "Opis",
-    "viewSlots": "Zobacz dostępne terminy"
+    "viewSlots": "Zobacz dostępne terminy",
+    "signUp": "Zapisz się",
+    "partOfCourse": "To wydarzenie jest częścią kursu",
+    "viewCourse": "Zobacz kurs"
   },
   "createSlot": {
     "title": "Dodaj nowy termin",
