@@ -1,4 +1,4 @@
-import { useParams, Link } from 'react-router-dom'
+import { useParams, useLocation, Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { format } from 'date-fns'
 import { useTranslation } from 'react-i18next'
@@ -17,6 +17,9 @@ export function EventPage() {
   const { t: tc } = useTranslation('common')
   const locale = useDateLocale()
   const { eventId } = useParams<{ eventId: string }>()
+  const location = useLocation()
+  // Back-link target so CourseDetailPage returns to this event page, not the course list.
+  const courseReturnTo = location.pathname + location.search
 
   const { data: event, isLoading, error } = useQuery({
     queryKey: ['event', eventId],
@@ -153,6 +156,7 @@ export function EventPage() {
           {event.courseId && event.coursePublished && (
             <Link
               to={`/kursy/${event.courseId}`}
+              state={{ returnTo: courseReturnTo }}
               className="flex items-center justify-between gap-3 p-4 rounded-lg border border-primary-500/30 bg-primary-500/10 hover:bg-primary-500/15 transition-colors"
             >
               <div className="flex items-center gap-3 text-surface-200">
