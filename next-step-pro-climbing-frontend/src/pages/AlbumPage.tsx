@@ -18,6 +18,9 @@ export function AlbumPage() {
     queryKey: ['gallery', 'album', albumId],
     queryFn: () => galleryApi.getAlbum(albumId!),
     enabled: !!albumId,
+    // Detail-by-id: navigating album A -> B must not flash A's photos while B
+    // loads. Opt out of the global keepPreviousData and show the spinner instead.
+    placeholderData: undefined,
   })
 
   if (isLoading) {

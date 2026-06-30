@@ -60,7 +60,8 @@ export function NewsPage() {
     initialPageParam: 0,
     getNextPageParam: (lastPage) => lastPage.hasNext ? lastPage.page + 1 : undefined,
     staleTime: 0,
-    placeholderData: (previousData) => previousData,
+    // keepPreviousData is now the global default (see main.tsx) — keeps the list
+    // visible while language/search/star-filter changes refetch.
   })
 
   const starMutation = useMutation({

@@ -98,6 +98,9 @@ export function AdminCoursesPanel() {
     queryKey: ['admin', 'courses', selectedCourseId],
     queryFn: () => adminCoursesApi.getById(selectedCourseId!),
     enabled: !!selectedCourseId && view === 'edit',
+    // Detail-by-id feeding the edit form: opening a different course must not
+    // flash the previous one's content. Opt out of the global keepPreviousData.
+    placeholderData: undefined,
   })
 
   const createMutation = useMutation({

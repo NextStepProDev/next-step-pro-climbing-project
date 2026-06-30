@@ -26,12 +26,18 @@ export function CourseDetailPage() {
     queryKey: ['courses', courseId],
     queryFn: () => coursesApi.getById(courseId!),
     enabled: !!courseId,
+    // Detail-by-id: navigating course A -> B must not flash A's content while B
+    // loads. Opt out of the global keepPreviousData and show the spinner instead.
+    placeholderData: undefined,
   })
 
   const { data: translations } = useQuery({
     queryKey: ['courseTranslations', course?.translationGroupId],
     queryFn: () => coursesApi.getTranslations(course!.translationGroupId),
     enabled: !!course?.translationGroupId,
+    // Re-keys per course; opt out so the language switcher never shows another
+    // course's translations during navigation.
+    placeholderData: undefined,
   })
 
   const { data: courseEvents } = useQuery({
@@ -39,6 +45,9 @@ export function CourseDetailPage() {
     queryFn: () => calendarApi.getCourseEventsByTranslationGroup(course!.translationGroupId),
     enabled: !!course?.translationGroupId,
     staleTime: 5 * 60 * 1000,
+    // Re-keys per course; opt out so the "terminy" list never shows another
+    // course's events during navigation.
+    placeholderData: undefined,
   })
 
   // Zmiana języka globalnego (pasek górny) przełącza otwarty kurs na ten język;

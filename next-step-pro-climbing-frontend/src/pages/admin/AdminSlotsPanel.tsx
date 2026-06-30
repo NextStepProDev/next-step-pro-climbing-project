@@ -53,12 +53,18 @@ export function AdminSlotsPanel() {
     queryKey: ['admin', 'participants', selectedSlotId],
     queryFn: () => adminApi.getSlotParticipants(selectedSlotId!),
     enabled: !!selectedSlotId && showParticipantsModal,
+    // Detail-by-id feeding the participants modal: opening a different slot must
+    // not flash the previous slot's participants. Opt out of keepPreviousData.
+    placeholderData: undefined,
   })
 
   const { data: confirmParticipants } = useQuery({
     queryKey: ['admin', 'participants', confirmAction?.slotId],
     queryFn: () => adminApi.getSlotParticipants(confirmAction!.slotId),
     enabled: !!confirmAction,
+    // Detail-by-id feeding the confirm dialog: opt out so a different action
+    // never shows the previous slot's participants.
+    placeholderData: undefined,
   })
 
   const blockMutation = useMutation({

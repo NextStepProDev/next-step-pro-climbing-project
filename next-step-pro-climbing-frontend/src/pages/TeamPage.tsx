@@ -247,7 +247,7 @@ export function TeamPage({ memberType }: { memberType: InstructorType }) {
     return () => { i18n.off('languageChanged', handler) }
   }, [i18n, setSearchParams])
 
-  const { data: allMembers, isLoading, error } = useQuery({
+  const { data: allMembers, isLoading, isFetching, error } = useQuery({
     queryKey: ['instructors', contentLanguage],
     queryFn: () => instructorApi.getAll(contentLanguage),
   })
@@ -337,7 +337,7 @@ export function TeamPage({ memberType }: { memberType: InstructorType }) {
         {members.length === 0 ? (
           <div className="text-center text-surface-400">{t('team.noMembers')}</div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+          <div className={clsx('grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 transition-opacity duration-150', isFetching && 'opacity-60')}>
             {members.map((m) => (
               <div key={m.id} className="scroll-reveal">
                 <MemberTile member={m} onClick={() => openModal(m)} />

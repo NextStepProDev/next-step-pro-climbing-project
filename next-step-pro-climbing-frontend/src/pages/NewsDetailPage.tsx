@@ -26,12 +26,18 @@ export function NewsDetailPage() {
     queryKey: ['news', newsId],
     queryFn: () => newsApi.getById(newsId!),
     enabled: !!newsId,
+    // Detail-by-id: navigating article A -> B must not flash A's content while B
+    // loads. Opt out of the global keepPreviousData and show the spinner instead.
+    placeholderData: undefined,
   })
 
   const { data: translations } = useQuery({
     queryKey: ['newsTranslations', article?.translationGroupId],
     queryFn: () => newsApi.getTranslations(article!.translationGroupId),
     enabled: !!article?.translationGroupId,
+    // Re-keys per article; opt out so the language switcher never shows another
+    // article's translations during navigation.
+    placeholderData: undefined,
   })
 
   const currentContentLang = getDefaultCourseContentLanguage(i18n.language)
