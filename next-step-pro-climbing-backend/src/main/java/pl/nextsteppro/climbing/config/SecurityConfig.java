@@ -75,22 +75,34 @@ public class SecurityConfig {
                 // Authentication endpoints
                 auth.requestMatchers("/api/auth/**").permitAll()
                     // OAuth2 endpoints
-                    .requestMatchers("/oauth2/**", "/login/oauth2/**").permitAll()
+                    .requestMatchers("/oauth2/**", "/login/oauth2/**").permitAll();
+
+                // Public read-only endpoints — allow both GET and HEAD. HEAD is used by
+                // uptime monitors, SEO crawlers and link checkers to preflight a resource
+                // without fetching a body; matching only GET let HEAD fall through to
+                // anyRequest().authenticated() and return 401 (e.g. UptimeRobot defaults
+                // to HEAD on /api/settings/home).
+                String[] publicReadPaths = {
                     // Public calendar endpoints
-                    .requestMatchers(HttpMethod.GET, "/api/calendar/**").permitAll()
-                    .requestMatchers(HttpMethod.GET, "/api/events/**").permitAll()
+                    "/api/calendar/**",
+                    "/api/events/**",
                     // Public instructor, gallery and news endpoints
-                    .requestMatchers(HttpMethod.GET, "/api/instructors/**").permitAll()
-                    .requestMatchers(HttpMethod.GET, "/api/gallery/**").permitAll()
-                    .requestMatchers(HttpMethod.GET, "/api/news/**").permitAll()
-                    .requestMatchers(HttpMethod.GET, "/api/courses/**").permitAll()
-                    .requestMatchers(HttpMethod.GET, "/api/videos/**").permitAll()
-                    .requestMatchers(HttpMethod.GET, "/api/files/**").permitAll()
+                    "/api/instructors/**",
+                    "/api/gallery/**",
+                    "/api/news/**",
+                    "/api/courses/**",
+                    "/api/videos/**",
+                    "/api/files/**",
                     // Public site settings (hero image etc.)
-                    .requestMatchers(HttpMethod.GET, "/api/settings/**").permitAll()
-                    // OG meta tags for social sharing bots (GET + HEAD - bots use HEAD to preflight)
-                    .requestMatchers("/api/og/**").permitAll()
-                    .requestMatchers(HttpMethod.GET, "/api/sitemap.xml").permitAll()
+                    "/api/settings/**",
+                    "/api/sitemap.xml"
+                };
+                for (HttpMethod method : new HttpMethod[]{HttpMethod.GET, HttpMethod.HEAD}) {
+                    auth.requestMatchers(method, publicReadPaths).permitAll();
+                }
+
+                // OG meta tags for social sharing bots (all methods incl. HEAD to preflight)
+                auth.requestMatchers("/api/og/**").permitAll()
                     // Public unsubscribe endpoint (no login required - GDPR compliance)
                     .requestMatchers(HttpMethod.GET, "/api/user/unsubscribe").permitAll();
                 // Dev endpoints only in dev profile
