@@ -50,7 +50,7 @@ export function InvitedUsersPicker({ value, onChange, maxSeats }: InvitedUsersPi
 
   return (
     <div>
-      <label className="block text-sm font-medium text-amber-300 mb-1">{t('invites.label')}</label>
+      <label className="block text-sm font-medium text-violet-300 mb-1">{t('invites.label')}</label>
       <p className="text-xs text-surface-400 mb-2">{t('invites.hint')}</p>
 
       {value.length > 0 && (
@@ -58,13 +58,13 @@ export function InvitedUsersPicker({ value, onChange, maxSeats }: InvitedUsersPi
           {value.map((u) => (
             <span
               key={u.userId}
-              className="inline-flex items-center gap-1.5 bg-amber-500/15 text-amber-200 border border-amber-500/30 rounded-full pl-3 pr-1.5 py-1 text-sm"
+              className="inline-flex items-center gap-1.5 bg-violet-500/15 text-violet-200 border border-violet-500/30 rounded-full pl-3 pr-1.5 py-1 text-sm"
             >
               <span title={u.email}>{u.fullName || u.email}</span>
               <button
                 type="button"
                 onClick={() => remove(u.userId)}
-                className="rounded-full p-0.5 hover:bg-amber-500/30"
+                className="rounded-full p-0.5 hover:bg-violet-500/30"
                 aria-label={t('invites.remove')}
               >
                 <X size={14} />
@@ -79,7 +79,7 @@ export function InvitedUsersPicker({ value, onChange, maxSeats }: InvitedUsersPi
         value={search}
         onChange={(e) => setSearch(e.target.value)}
         placeholder={t('invites.searchPlaceholder')}
-        className="w-full bg-surface-800 border border-surface-700 rounded-lg px-4 py-2 text-surface-100 focus:outline-none focus:ring-2 focus:ring-amber-500"
+        className="w-full bg-surface-800 border border-surface-700 rounded-lg px-4 py-2 text-surface-100 focus:outline-none focus:ring-2 focus:ring-violet-500"
       />
 
       {results.length > 0 && (

@@ -8,7 +8,8 @@
   },
   "month": {
     "previousMonth": "Poprzedni miesiąc",
-    "nextMonth": "Następny miesiąc"
+    "nextMonth": "Następny miesiąc",
+    "invitedOnly": "🎟 Dla zaproszonych"
   },
   "week": {
     "today": "Dziś",
@@ -38,6 +39,8 @@
     "full": "Pełne",
     "fullWaitlist": "Pełne · lista rezerwowa",
     "waitlistHint": "Dołącz do listy rezerwowej →",
+    "invitedOnly": "🎟 Dla zaproszonych",
+    "invitedLoginHint": "Zaloguj się i sprawdź →",
     "blocked": "Zarezerwowane",
     "bookingClosed": "Zadzwoń",
     "past": "Zakończone",
@@ -73,8 +76,9 @@
     "participants": "{{current}} / {{max}} uczestników",
     "spotsFree": "({{count}} wolne)",
     "reservedForInvited": "· {{count}} zarezerwowane dla zaproszonych",
-    "reservedForYou": "To miejsce jest zarezerwowane dla Ciebie 🧗 — możesz potwierdzić rezerwację.",
-    "reservedOnlyLeft": "Brak wolnych miejsc — pozostałe miejsca są zarezerwowane dla zaproszonych uczestników.",
+    "reservedForYou": "To miejsce jest trzymane dla Ciebie — możesz teraz potwierdzić rezerwację.",
+    "reservedOnlyLeft": "Wolne miejsca są zarezerwowane dla zaproszonych osób.",
+    "reservedOnlyLeftGuest": "Niektóre miejsca są trzymane dla zaproszonych gości. Zaloguj się, aby sprawdzić, czy to miejsce jest trzymane dla Ciebie.",
     "availabilityWindow": {
       "title": "Ten blok czasu jest dostępny",
       "body": "Zadzwoń lub napisz do nas, aby ustalić konkretną godzinę treningu w tym oknie czasowym."
@@ -117,8 +121,9 @@
     "participants": "{{current}} / {{max}} uczestników",
     "spotsFree": "({{count}} wolnych)",
     "reservedForInvited": "· {{count}} zarezerwowane dla zaproszonych",
-    "reservedForYou": "To miejsce jest zarezerwowane dla Ciebie 🧗 — możesz potwierdzić rezerwację.",
-    "reservedOnlyLeft": "Brak wolnych miejsc — pozostałe miejsca są zarezerwowane dla zaproszonych uczestników.",
+    "reservedForYou": "To miejsce na wydarzenie jest trzymane dla Ciebie — możesz teraz potwierdzić rezerwację.",
+    "reservedOnlyLeft": "Wolne miejsca są zarezerwowane dla zaproszonych osób.",
+    "reservedOnlyLeftGuest": "Niektóre miejsca są trzymane dla zaproszonych gości. Zaloguj się, aby sprawdzić, czy to miejsce jest trzymane dla Ciebie.",
     "courseDetails": "Szczegóły kursu",
     "waitlist": {
       "join": "Zapisz się na listę rezerwową",

@@ -158,6 +158,9 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
   const spotsLeft = ev.maxParticipants - ev.currentParticipants - reservedForOthers
   const isFull = spotsLeft <= 0
   const blockedByReserved = isFull && reservedForOthers > 0 && !ev.isReservedForUser && !ev.isUserRegistered
+  // Realnie pełny = zajęty potwierdzonymi rezerwacjami. Lista oczekujących tylko tu — miejsca
+  // trzymane na zaproszenie same się nie zwolnią, więc kolejka po nie byłaby ślepym zaułkiem.
+  const genuinelyFull = ev.currentParticipants >= ev.maxParticipants
   const waitlistStatus = ev.userWaitlistStatus
   const waitlistEntryId = ev.waitlistEntryId
   const confirmationDeadline = ev.confirmationDeadline
@@ -168,7 +171,7 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
   }
 
   const renderWaitlistSection = () => {
-    if (!isFull || ev.isUserRegistered || enrollmentClosed) return null
+    if (!genuinelyFull || ev.isUserRegistered || enrollmentClosed) return null
 
     if (!isAuthenticated) {
       return (
@@ -253,7 +256,7 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
             className="flex-1"
             onClick={handleLoginRedirect}
           >
-            {isFull ? t('event.waitlist.loginToJoin') : t('event.loginToBook')}
+            {genuinelyFull ? t('event.waitlist.loginToJoin') : t('event.loginToBook')}
           </Button>
           <Button variant="ghost" onClick={onClose}>{t('event.close')}</Button>
         </>
@@ -310,7 +313,7 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
       )
     }
 
-    if (isFull) {
+    if (genuinelyFull) {
       if (waitlistStatus === 'PENDING_CONFIRMATION' && waitlistEntryId) {
         return (
           <>
@@ -362,6 +365,13 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
           </Button>
           <Button variant="ghost" onClick={onClose}>{t('event.close')}</Button>
         </>
+      )
+    }
+
+    // Pełny tylko przez miejsca trzymane na zaproszenie — nie można zarezerwować ani dołączyć do kolejki
+    if (isFull) {
+      return (
+        <Button variant="ghost" className="flex-1" onClick={onClose}>{t('event.close')}</Button>
       )
     }
 
@@ -458,8 +468,8 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
               {isFull && (
                 <span className="text-amber-400 ml-2">{t('event.full')}</span>
               )}
-              {reservedForOthers > 0 && (
-                <span className="text-amber-400/80 ml-2">{t('event.reservedForInvited', { count: reservedForOthers })}</span>
+              {reservedForOthers > 0 && (!isAuthenticated || ev.isReservedForUser) && (
+                <span className="text-violet-300/90 ml-2">{t('event.reservedForInvited', { count: reservedForOthers })}</span>
               )}
             </span>
           </div>
@@ -467,15 +477,17 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
 
         {/* Zaproszony: miejsce trzymane dla Ciebie */}
         {ev.eventType !== 'UNAVAILABLE' && ev.isReservedForUser && !ev.isUserRegistered && !enrollmentClosed && (
-          <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg">
-            <span className="text-amber-300 font-medium">{t('event.reservedForYou')}</span>
+          <div className="p-3 bg-violet-500/10 border border-violet-500/30 rounded-lg">
+            <span className="text-violet-200 font-medium">🎟 {t('event.reservedForYou')}</span>
           </div>
         )}
 
-        {/* Niezaproszony: zostały tylko miejsca trzymane */}
+        {/* Niezalogowanym podpowiadamy logowanie; zalogowany nie-zaproszony dostaje zwięzły fakt + listę rezerwową. */}
         {ev.eventType !== 'UNAVAILABLE' && blockedByReserved && !enrollmentClosed && (
-          <div className="p-3 bg-surface-800 border border-surface-700 rounded-lg">
-            <span className="text-surface-300 text-sm">{t('event.reservedOnlyLeft')}</span>
+          <div className="p-3 bg-violet-500/10 border border-violet-500/20 rounded-lg">
+            <span className="text-violet-200/90 text-sm">
+              {isAuthenticated ? t('event.reservedOnlyLeft') : t('event.reservedOnlyLeftGuest')}
+            </span>
           </div>
         )}
 

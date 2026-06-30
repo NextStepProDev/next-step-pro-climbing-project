@@ -8,7 +8,8 @@
   },
   "month": {
     "previousMonth": "Previous month",
-    "nextMonth": "Next month"
+    "nextMonth": "Next month",
+    "invitedOnly": "🎟 For invited guests"
   },
   "week": {
     "today": "Today",
@@ -38,6 +39,8 @@
     "full": "Full",
     "fullWaitlist": "Full · waitlist",
     "waitlistHint": "Join waitlist →",
+    "invitedOnly": "🎟 For invited guests",
+    "invitedLoginHint": "Log in to check →",
     "blocked": "Reserved",
     "bookingClosed": "Call",
     "past": "Finished",
@@ -73,8 +76,9 @@
     "participants": "{{current}} / {{max}} participants",
     "spotsFree": "({{count}} available)",
     "reservedForInvited": "· {{count}} reserved for invited guests",
-    "reservedForYou": "This seat is reserved for you 🧗 — you can confirm your booking.",
-    "reservedOnlyLeft": "No free seats — the remaining seats are reserved for invited participants.",
+    "reservedForYou": "This seat is being held for you — you can confirm your booking now.",
+    "reservedOnlyLeft": "The remaining seats are reserved for invited guests.",
+    "reservedOnlyLeftGuest": "Some seats are held for invited guests. Log in to check whether this seat is being held for you.",
     "availabilityWindow": {
       "title": "This time block is available",
       "body": "Call or write to us to arrange a specific training time within this window."
@@ -117,8 +121,9 @@
     "participants": "{{current}} / {{max}} participants",
     "spotsFree": "({{count}} available)",
     "reservedForInvited": "· {{count}} reserved for invited guests",
-    "reservedForYou": "This event seat is reserved for you 🧗 — you can confirm your booking.",
-    "reservedOnlyLeft": "No free seats — the remaining seats are reserved for invited participants.",
+    "reservedForYou": "This event seat is being held for you — you can confirm your booking now.",
+    "reservedOnlyLeft": "The remaining seats are reserved for invited guests.",
+    "reservedOnlyLeftGuest": "Some seats are held for invited guests. Log in to check whether this seat is being held for you.",
     "courseDetails": "Course details",
     "waitlist": {
       "join": "Join the waitlist",

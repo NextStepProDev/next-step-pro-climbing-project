@@ -81,7 +81,7 @@ public class EventWaitlistService {
         }
 
         LocalTime eventStartTime = event.getStartTime() != null ? event.getStartTime() : LocalTime.of(0, 0);
-        if (LocalDateTime.of(event.getStartDate(), eventStartTime).isBefore(LocalDateTime.now())) {
+        if (LocalDateTime.of(event.getStartDate(), eventStartTime).isBefore(LocalDateTime.now(WARSAW))) {
             throw new IllegalArgumentException(msg.get("reservation.slot.past"));
         }
 
@@ -192,7 +192,7 @@ public class EventWaitlistService {
         // Tworzymy rezerwacje na wszystkie aktywne sloty (z pominięciem booking window)
         List<TimeSlot> activeSlots = slots.stream()
             .filter(slot -> !slot.isBlocked())
-            .filter(slot -> !LocalDateTime.of(slot.getDate(), slot.getStartTime()).isBefore(LocalDateTime.now()))
+            .filter(slot -> !LocalDateTime.of(slot.getDate(), slot.getStartTime()).isBefore(LocalDateTime.now(WARSAW)))
             .toList();
 
         int slotsReserved = 0;

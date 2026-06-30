@@ -8,7 +8,8 @@
   },
   "month": {
     "previousMonth": "Mes anterior",
-    "nextMonth": "Mes siguiente"
+    "nextMonth": "Mes siguiente",
+    "invitedOnly": "🎟 Para invitados"
   },
   "week": {
     "today": "Hoy",
@@ -38,6 +39,8 @@
     "full": "Completo",
     "fullWaitlist": "Completo · lista de espera",
     "waitlistHint": "Unirse a la lista →",
+    "invitedOnly": "🎟 Para invitados",
+    "invitedLoginHint": "Inicia sesión para comprobar →",
     "blocked": "Reservado",
     "bookingClosed": "Llamar",
     "past": "Finalizado",
@@ -73,8 +76,9 @@
     "participants": "{{current}} / {{max}} participantes",
     "spotsFree": "({{count}} libres)",
     "reservedForInvited": "· {{count}} reservadas para invitados",
-    "reservedForYou": "Esta plaza está reservada para ti 🧗 — puedes confirmar tu reserva.",
-    "reservedOnlyLeft": "No hay plazas libres — las plazas restantes están reservadas para participantes invitados.",
+    "reservedForYou": "Esta plaza está guardada para ti — ya puedes confirmar tu reserva.",
+    "reservedOnlyLeft": "Las plazas libres están reservadas para invitados.",
+    "reservedOnlyLeftGuest": "Algunas plazas están guardadas para invitados. Inicia sesión para comprobar si esta plaza está guardada para ti.",
     "availabilityWindow": {
       "title": "Este bloque de tiempo está disponible",
       "body": "Llámanos o escríbenos para concertar una hora específica de entrenamiento en esta franja."
@@ -117,8 +121,9 @@
     "participants": "{{current}} / {{max}} participantes",
     "spotsFree": "({{count}} libres)",
     "reservedForInvited": "· {{count}} reservadas para invitados",
-    "reservedForYou": "Esta plaza del evento está reservada para ti 🧗 — puedes confirmar tu reserva.",
-    "reservedOnlyLeft": "No hay plazas libres — las plazas restantes están reservadas para participantes invitados.",
+    "reservedForYou": "Esta plaza del evento está guardada para ti — ya puedes confirmar tu reserva.",
+    "reservedOnlyLeft": "Las plazas libres están reservadas para invitados.",
+    "reservedOnlyLeftGuest": "Algunas plazas están guardadas para invitados. Inicia sesión para comprobar si esta plaza está guardada para ti.",
     "courseDetails": "Detalles del curso",
     "waitlist": {
       "join": "Apuntarse a lista de espera",

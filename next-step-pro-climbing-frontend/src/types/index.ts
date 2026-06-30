@@ -41,6 +41,8 @@ export interface DaySummary {
   availableSlots: number
   hasUserReservation: boolean
   hasAvailabilityWindow: boolean
+  // dzień bez wolnych miejsc dla publiki, ale z miejscami „na zaproszenie"
+  hasReservedSeats: boolean
 }
 
 export interface DayView {
