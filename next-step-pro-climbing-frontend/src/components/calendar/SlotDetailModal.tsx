@@ -162,9 +162,13 @@ export function SlotDetailModal({
   const isFull = slot.status === "FULL" || (slot.status === "AVAILABLE" && spotsLeft <= 0);
   // Niezaproszony widz, dla którego zostały już tylko miejsca trzymane
   const blockedByReserved = isFull && reservedForOthers > 0 && !slot.isReservedForUser && !slot.isUserRegistered;
+  // Realnie pełny = zajęty potwierdzonymi rezerwacjami. Lista oczekujących ma sens TYLKO tu —
+  // miejsca trzymane na zaproszenie same się nie zwolnią, a backend i tak odrzuca kolejkę po nie
+  // (liczy trzymane miejsce jako wolne). Bez tego przycisk „dołącz" prowadziłby w ślepy zaułek.
+  const genuinelyFull = (slot.currentParticipants ?? 0) >= (slot.maxParticipants ?? 0);
   const isWaiting = slot.userWaitlistStatus === "WAITING";
   const isPendingConfirmation = slot.userWaitlistStatus === "PENDING_CONFIRMATION";
-  const canJoinWaitlist = isFull && !isWaiting && !isPendingConfirmation && !isPast && !isBookingClosed && !slot.isUserRegistered;
+  const canJoinWaitlist = genuinelyFull && !isWaiting && !isPendingConfirmation && !isPast && !isBookingClosed && !slot.isUserRegistered;
 
   // Admin inline edit: "Save changes" stays disabled until the form actually
   // differs from the slot's current values (baseline set when entering edit mode).
@@ -245,23 +249,26 @@ export function SlotDetailModal({
             {spotsLeft > 0 && (
               <span className="text-primary-400 ml-2">{t('slot.spotsFree', { count: spotsLeft })}</span>
             )}
-            {reservedForOthers > 0 && (
-              <span className="text-amber-400/80 ml-2">{t('slot.reservedForInvited', { count: reservedForOthers })}</span>
+            {reservedForOthers > 0 && (!isAuthenticated || slot.isReservedForUser) && (
+              <span className="text-violet-300/90 ml-2">{t('slot.reservedForInvited', { count: reservedForOthers })}</span>
             )}
           </span>
         </div>}
 
         {/* Zaproszony: miejsce trzymane dla Ciebie */}
         {!isAvailabilityWindow && slot.isReservedForUser && !slot.isUserRegistered && !isPast && (
-          <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg">
-            <span className="text-amber-300 font-medium">{t('slot.reservedForYou')}</span>
+          <div className="p-3 bg-violet-500/10 border border-violet-500/30 rounded-lg">
+            <span className="text-violet-200 font-medium">🎟 {t('slot.reservedForYou')}</span>
           </div>
         )}
 
-        {/* Niezaproszony: zostały tylko miejsca trzymane */}
+        {/* Wyjaśnia pozornie wolny licznik (np. „0 / 1") gdy reszta miejsc jest trzymana na zaproszenie.
+            Niezalogowanym podpowiadamy logowanie; zalogowany nie-zaproszony dostaje zwięzły fakt + listę rezerwową. */}
         {!isAvailabilityWindow && blockedByReserved && !isPast && (
-          <div className="p-3 bg-surface-800 border border-surface-700 rounded-lg">
-            <span className="text-surface-300 text-sm">{t('slot.reservedOnlyLeft')}</span>
+          <div className="p-3 bg-violet-500/10 border border-violet-500/20 rounded-lg">
+            <span className="text-violet-200/90 text-sm">
+              {isAuthenticated ? t('slot.reservedOnlyLeft') : t('slot.reservedOnlyLeftGuest')}
+            </span>
           </div>
         )}
 

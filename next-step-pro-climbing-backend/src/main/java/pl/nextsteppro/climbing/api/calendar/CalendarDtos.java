@@ -23,7 +23,9 @@ record DaySummaryDto(
     int totalSlots,
     int availableSlots,
     boolean hasUserReservation,
-    boolean hasAvailabilityWindow
+    boolean hasAvailabilityWindow,
+    // dzień bez wolnych miejsc dla publiki, ale z miejscami trzymanymi „na zaproszenie"
+    boolean hasReservedSeats
 ) implements CalendarDtos {}
 
 record DayViewDto(

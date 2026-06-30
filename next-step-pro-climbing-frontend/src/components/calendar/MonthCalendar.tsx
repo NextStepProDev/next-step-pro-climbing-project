@@ -7,6 +7,7 @@ import type { DaySummary, EventSummary } from '../../types'
 import type { EventColorMap } from '../../utils/events'
 import { getEventColorByIndex, pluralizeTraining } from '../../utils/events'
 import { useDateLocale } from '../../utils/dateFnsLocale'
+import { useAuth } from '../../context/AuthContext'
 
 interface MonthCalendarProps {
   currentMonth: Date
@@ -20,6 +21,7 @@ interface MonthCalendarProps {
 
 export function MonthCalendar({ currentMonth, onMonthChange, days, events, onDayClick, allDaysClickable, eventColorMap }: MonthCalendarProps) {
   const { t } = useTranslation('calendar')
+  const { isAuthenticated } = useAuth()
   const locale = useDateLocale()
 
   const weekdays = [
@@ -171,6 +173,10 @@ export function MonthCalendar({ currentMonth, onMonthChange, days, events, onDay
               {dayData && dayData.availableSlots > 0 && !isPast ? (
                 <div className="text-xs text-primary-400 font-medium">
                   {pluralizeTraining(dayData.availableSlots)}
+                </div>
+              ) : dayData && dayData.totalSlots > 0 && dayData.availableSlots === 0 && dayData.hasReservedSeats && !isAuthenticated && !isPast ? (
+                <div className="text-xs text-violet-300 font-medium leading-tight">
+                  {t('month.invitedOnly')}
                 </div>
               ) : dayData && dayData.totalSlots > 0 && dayData.availableSlots === 0 && !hasEvents && !isPast ? (
                 <div className="text-xs text-amber-400 font-medium">

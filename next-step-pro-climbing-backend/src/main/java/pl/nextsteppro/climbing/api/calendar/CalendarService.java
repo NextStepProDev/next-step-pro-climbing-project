@@ -206,12 +206,15 @@ public class CalendarService {
             }
         }
 
+        boolean isReservedForUser = eventData.userInvitedEventIds().contains(event.getId());
+
         LocalDateTime eventStart = LocalDateTime.of(
             event.getStartDate(),
             event.getStartTime() != null ? event.getStartTime() : LocalTime.of(0, 0)
         );
+        // Okno 12 h NIE dotyczy zaproszonych — mogą potwierdzić swoje miejsce do ostatniej chwili.
         boolean enrollmentOpen = !event.getEventType().blocksEnrollment()
-            && eventStart.isAfter(LocalDateTime.now().plusHours(BOOKING_CUTOFF_HOURS));
+            && (isReservedForUser || eventStart.isAfter(LocalDateTime.now(WARSAW).plusHours(BOOKING_CUTOFF_HOURS)));
 
         Course course = event.getCourse();
         String title = course != null ? course.getTitle() : event.getTitle();
@@ -227,7 +230,6 @@ public class CalendarService {
         }
 
         int reservedSeats = eventData.inviteMap().getOrDefault(event.getId(), 0);
-        boolean isReservedForUser = eventData.userInvitedEventIds().contains(event.getId());
 
         return new EventSummaryDto(
             event.getId(), title, event.getDescription(), event.getLocation(),
@@ -315,7 +317,7 @@ public class CalendarService {
     }
 
     public List<CourseEventDto> getCourseEvents(UUID courseId) {
-        List<Event> events = eventRepository.findUpcomingByCourseId(courseId, LocalDate.now());
+        List<Event> events = eventRepository.findUpcomingByCourseId(courseId, LocalDate.now(WARSAW));
         if (events.isEmpty()) return List.of();
 
         EventData eventData = computeEventData(events, null);
@@ -329,7 +331,7 @@ public class CalendarService {
                     event.getStartDate(),
                     event.getStartTime() != null ? event.getStartTime() : LocalTime.of(0, 0)
                 );
-                LocalDateTime now = LocalDateTime.now();
+                LocalDateTime now = LocalDateTime.now(WARSAW);
                 SlotStatus status;
                 if (eventStart.isBefore(now)) {
                     status = SlotStatus.PAST;
@@ -355,7 +357,7 @@ public class CalendarService {
     }
 
     public List<CourseEventDto> getCourseEventsByTranslationGroup(UUID translationGroupId) {
-        List<Event> events = eventRepository.findUpcomingByTranslationGroupId(translationGroupId, LocalDate.now());
+        List<Event> events = eventRepository.findUpcomingByTranslationGroupId(translationGroupId, LocalDate.now(WARSAW));
         if (events.isEmpty()) return List.of();
 
         EventData eventData = computeEventData(events, null);
@@ -369,7 +371,7 @@ public class CalendarService {
                     event.getStartDate(),
                     event.getStartTime() != null ? event.getStartTime() : LocalTime.of(0, 0)
                 );
-                LocalDateTime now = LocalDateTime.now();
+                LocalDateTime now = LocalDateTime.now(WARSAW);
                 SlotStatus status;
                 if (eventStart.isBefore(now)) {
                     status = SlotStatus.PAST;
@@ -411,8 +413,9 @@ public class CalendarService {
         int totalSlots = bookableSlots.size();
         int availableSlots = 0;
         boolean hasUserReservation = false;
+        boolean hasReservedSeats = false;
 
-        LocalDateTime cutoff = LocalDateTime.now().plusHours(BOOKING_CUTOFF_HOURS);
+        LocalDateTime cutoff = LocalDateTime.now(WARSAW).plusHours(BOOKING_CUTOFF_HOURS);
         for (TimeSlot slot : bookableSlots) {
             LocalDateTime slotDateTime = LocalDateTime.of(slot.getDate(), slot.getStartTime());
             if (!slot.isBlocked() && slotDateTime.isAfter(cutoff)) {
@@ -422,6 +425,10 @@ public class CalendarService {
                     - (userInvitedSlotIds.contains(slot.getId()) ? 1 : 0);
                 if (confirmed + reservedForOthers < slot.getMaxParticipants()) {
                     availableSlots++;
+                } else if (reservedForOthers > 0) {
+                    // Pełny dla tego widza, ale tylko przez miejsca trzymane na zaproszenie —
+                    // sygnał dla frontu, by zachęcić zaproszonych do zalogowania zamiast „brak miejsc".
+                    hasReservedSeats = true;
                 }
             }
             if (userConfirmedSlotIds.contains(slot.getId())) {
@@ -429,7 +436,7 @@ public class CalendarService {
             }
         }
 
-        return new DaySummaryDto(date, totalSlots, availableSlots, hasUserReservation, hasAvailabilityWindow);
+        return new DaySummaryDto(date, totalSlots, availableSlots, hasUserReservation, hasAvailabilityWindow, hasReservedSeats);
     }
 
     private TimeSlotDto toTimeSlotDto(TimeSlot slot, int confirmedCount, boolean isUserRegistered,
@@ -452,10 +459,12 @@ public class CalendarService {
     }
 
     private static final int BOOKING_CUTOFF_HOURS = 12;
+    // Czas polski (kontener prod = UTC). Patrz BookingTimeValidator — ta sama korekta dla widoków kalendarza.
+    private static final java.time.ZoneId WARSAW = java.time.ZoneId.of("Europe/Warsaw");
 
     private SlotStatus determineSlotStatus(TimeSlot slot, int confirmedCount, int reservedSeats, boolean isReservedForUser) {
         LocalDateTime slotDateTime = LocalDateTime.of(slot.getDate(), slot.getStartTime());
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(WARSAW);
         if (slot.isAvailabilityWindow()) {
             return slotDateTime.isBefore(now) ? SlotStatus.PAST : SlotStatus.AVAILABILITY_WINDOW;
         }
@@ -471,7 +480,8 @@ public class CalendarService {
         if (confirmedCount + reservedForOthers >= slot.getMaxParticipants()) {
             return SlotStatus.FULL;
         }
-        if (slotDateTime.isBefore(now.plusHours(BOOKING_CUTOFF_HOURS))) {
+        // Okno 12 h NIE dotyczy zaproszonych — ich trzymane miejsce można zająć do ostatniej chwili.
+        if (!isReservedForUser && slotDateTime.isBefore(now.plusHours(BOOKING_CUTOFF_HOURS))) {
             return SlotStatus.BOOKING_CLOSED;
         }
         return SlotStatus.AVAILABLE;
@@ -483,8 +493,9 @@ public class CalendarService {
             event.getStartDate(),
             event.getStartTime() != null ? event.getStartTime() : LocalTime.of(0, 0)
         );
+        // Okno 12 h NIE dotyczy zaproszonych — mogą potwierdzić swoje miejsce do ostatniej chwili.
         boolean enrollmentOpen = !event.getEventType().blocksEnrollment()
-            && eventStart.isAfter(LocalDateTime.now().plusHours(BOOKING_CUTOFF_HOURS));
+            && (isReservedForUser || eventStart.isAfter(LocalDateTime.now(WARSAW).plusHours(BOOKING_CUTOFF_HOURS)));
         Course course = event.getCourse();
         String title = course != null ? course.getTitle() : event.getTitle();
         UUID courseId = course != null ? course.getId() : null;

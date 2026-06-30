@@ -209,6 +209,35 @@ class ReservationServiceTest {
     }
 
     @Test
+    void shouldAllowInvitedUserToBookInsideBookingWindow() {
+        // Given — slot za 6 h (w oknie 12 h), ale użytkownik jest zaproszony → okno go nie ogranicza
+        LocalDateTime targetDateTime = LocalDateTime.now().plusHours(6);
+        TimeSlot soonSlot = new TimeSlot(targetDateTime.toLocalDate(), targetDateTime.toLocalTime(),
+            targetDateTime.toLocalTime().plusHours(1), 10);
+        setEntityIdViaReflection(soonSlot, slotId);
+
+        when(timeSlotRepository.findByIdForUpdate(slotId)).thenReturn(Optional.of(soonSlot));
+        when(reservedSeatRepository.existsPendingBySlotIdAndUserId(slotId, userId)).thenReturn(true);
+        when(userRepository.findById(userId)).thenReturn(Optional.of(testUser));
+        when(reservationRepository.existsByUserIdAndTimeSlotIdAndStatus(userId, slotId, ReservationStatus.CONFIRMED))
+            .thenReturn(false);
+        when(reservationRepository.findByUserIdAndTimeSlotId(userId, slotId)).thenReturn(null);
+        when(reservationRepository.save(any(Reservation.class))).thenAnswer(inv -> {
+            Reservation r = inv.getArgument(0);
+            setEntityIdViaReflection(r, UUID.randomUUID());
+            return r;
+        });
+        when(msg.get("reservation.confirmed")).thenReturn("Reservation confirmed");
+
+        // When
+        ReservationResultDto result = reservationService.createReservation(slotId, userId, null, 1);
+
+        // Then
+        assertTrue(result.success());
+        verify(reservationRepository).save(any(Reservation.class));
+    }
+
+    @Test
     void shouldThrowExceptionWhenSlotIsBlocked() {
         // Given
         testSlot.block("Maintenance");

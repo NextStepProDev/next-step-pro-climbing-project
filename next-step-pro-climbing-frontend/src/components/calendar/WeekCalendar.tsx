@@ -8,6 +8,7 @@ import type { EventColorMap } from '../../utils/events'
 import { getEventColorByIndex } from '../../utils/events'
 import { useDateLocale } from '../../utils/dateFnsLocale'
 import { useSlotDrag } from '../../hooks/useSlotDrag'
+import { useAuth } from '../../context/AuthContext'
 
 const HOUR_HEIGHT = 40
 const START_HOUR = 7
@@ -145,6 +146,7 @@ export function WeekCalendar({
   onCancelSlotMove,
 }: WeekCalendarProps) {
   const { t } = useTranslation('calendar')
+  const { isAuthenticated } = useAuth()
   const locale = useDateLocale()
   const scrollRef = useRef<HTMLDivElement>(null)
   const dayColumnRefs = useRef<(HTMLDivElement | null)[]>([])
@@ -401,6 +403,10 @@ export function WeekCalendar({
                     const isDraggable = isAdmin && !isPast
                     const isPending = pendingSlotId === slot.id
                     const isLongPressing = longPressSlotId === slot.id
+                    // „Na zaproszenie" (fioletowy) tylko dla niezalogowanych — zalogowany nie-zaproszony
+                    // widzi zwykłe „pełne". Zaproszony i tak ma status AVAILABLE.
+                    const invitedOnly = !isAuthenticated && slot.status === 'FULL' && slot.reservedSeats > 0 && !slot.isReservedForUser && !slot.isUserRegistered
+                    const genuinelyFull = slot.currentParticipants >= slot.maxParticipants
 
                     return (
                       <div
@@ -410,6 +416,8 @@ export function WeekCalendar({
                           isPending ? 'overflow-visible' : 'overflow-hidden',
                           isPending
                             ? 'bg-red-600/40 border-red-400/70 text-red-200'
+                            : invitedOnly
+                            ? 'bg-violet-600/30 border-violet-500/50 text-violet-200'
                             : getSlotColors(slot.status),
                           isDraggable && !dragging && 'cursor-grab',
                           dragging && 'opacity-30 cursor-grabbing',
@@ -444,7 +452,7 @@ export function WeekCalendar({
                           {showTitle && (
                             <div className="text-[10px] leading-tight truncate opacity-80">
                               {slot.status === 'FULL' && !slot.isUserRegistered
-                                ? t('day.fullWaitlist')
+                                ? (invitedOnly ? t('day.invitedOnly') : (genuinelyFull ? t('day.fullWaitlist') : t('day.full')))
                                 : slot.eventTitle || getStatusLabel(slot.status, t)}
                             </div>
                           )}

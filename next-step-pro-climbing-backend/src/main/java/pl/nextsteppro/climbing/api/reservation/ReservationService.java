@@ -26,12 +26,16 @@ import pl.nextsteppro.climbing.api.activitylog.ActivityLogService;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.ZoneId;
 import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
 @Transactional
 public class ReservationService {
+
+    // Czas polski (kontener prod = UTC) — spójnie z BookingTimeValidator/CalendarService.
+    private static final ZoneId WARSAW = ZoneId.of("Europe/Warsaw");
 
     private final ReservationRepository reservationRepository;
     private final GuestReservationRepository guestReservationRepository;
@@ -85,7 +89,9 @@ public class ReservationService {
         if (BookingTimeValidator.isPast(slot.getDate(), slot.getStartTime())) {
             throw new IllegalArgumentException(msg.get("reservation.slot.past"));
         }
-        if (!BookingTimeValidator.isWithinBookingWindow(slot.getDate(), slot.getStartTime())) {
+        // Zaproszeni omijają okno 12 h — trzymane miejsce mogą zająć do ostatniej chwili.
+        boolean isInvited = reservedSeatRepository.existsPendingBySlotIdAndUserId(slotId, userId);
+        if (!isInvited && !BookingTimeValidator.isWithinBookingWindow(slot.getDate(), slot.getStartTime())) {
             throw new IllegalStateException(msg.get("reservation.booking.window"));
         }
 
@@ -200,7 +206,7 @@ public class ReservationService {
 
     @Transactional(readOnly = true)
     public MyReservationsDto getUserUpcomingReservations(UUID userId) {
-        List<Reservation> allReservations = reservationRepository.findUpcomingByUserIdIncludingAdminCancelled(userId, LocalDate.now(), LocalTime.now());
+        List<Reservation> allReservations = reservationRepository.findUpcomingByUserIdIncludingAdminCancelled(userId, LocalDate.now(WARSAW), LocalTime.now(WARSAW));
 
         List<Reservation> standaloneReservations = new ArrayList<>();
         Map<UUID, List<Reservation>> eventReservations = new LinkedHashMap<>();
@@ -274,7 +280,7 @@ public class ReservationService {
 
     @Transactional(readOnly = true)
     public MyReservationsDto getUserPastReservations(UUID userId) {
-        List<Reservation> allReservations = reservationRepository.findPastByUserId(userId, LocalDate.now(), LocalTime.now());
+        List<Reservation> allReservations = reservationRepository.findPastByUserId(userId, LocalDate.now(WARSAW), LocalTime.now(WARSAW));
 
         List<UserReservationDto> standaloneSlots = new ArrayList<>();
         Map<UUID, List<Reservation>> eventReservations = new LinkedHashMap<>();
@@ -337,7 +343,9 @@ public class ReservationService {
         }
 
         LocalTime eventStartTime = event.getStartTime() != null ? event.getStartTime() : LocalTime.of(0, 0);
-        if (!BookingTimeValidator.isWithinBookingWindow(event.getStartDate(), eventStartTime)) {
+        // Zaproszeni omijają okno 12 h — trzymane miejsce mogą zająć do ostatniej chwili.
+        boolean isInvited = reservedSeatRepository.existsPendingByEventIdAndUserId(eventId, userId);
+        if (!isInvited && !BookingTimeValidator.isWithinBookingWindow(event.getStartDate(), eventStartTime)) {
             throw new IllegalStateException(msg.get("reservation.event.booking.window"));
         }
 
@@ -352,7 +360,7 @@ public class ReservationService {
 
         List<TimeSlot> activeSlots = allSlots.stream()
             .filter(slot -> !slot.isBlocked())
-            .filter(slot -> !LocalDateTime.of(slot.getDate(), slot.getStartTime()).isBefore(LocalDateTime.now()))
+            .filter(slot -> !LocalDateTime.of(slot.getDate(), slot.getStartTime()).isBefore(LocalDateTime.now(WARSAW)))
             .toList();
 
         if (activeSlots.isEmpty()) {

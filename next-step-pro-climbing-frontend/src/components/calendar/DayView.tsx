@@ -33,10 +33,15 @@ function SlotButton({
   showTitle?: boolean;
 }) {
   const { t } = useTranslation('calendar');
-  const { isAdmin } = useAuth();
+  const { isAdmin, isAuthenticated } = useAuth();
 
   const isAvailabilityWindow = slot.status === "AVAILABILITY_WINDOW";
   const isDisabled = !isAdmin && (slot.status === "BLOCKED" || slot.status === "PAST");
+  // „Na zaproszenie" pokazujemy TYLKO niezalogowanym — bo wśród nich może być nierozpoznany
+  // zaproszony. Zalogowany nie-zaproszony widzi zwykłe „pełne" (nie musi wiedzieć o zaproszeniach).
+  const invitedOnly = !isAuthenticated && slot.status === "FULL" && slot.reservedSeats > 0 && !slot.isReservedForUser && !slot.isUserRegistered;
+  // Realnie pełny (potwierdzonymi) — tylko wtedy lista rezerwowa ma sens
+  const genuinelyFull = slot.currentParticipants >= slot.maxParticipants;
 
   return (
     <button
@@ -46,8 +51,10 @@ function SlotButton({
         "w-full p-4 rounded-lg border transition-all text-left",
         slot.status === "AVAILABLE" &&
           "border-surface-700 hover:border-primary-500 hover:bg-surface-800",
-        slot.status === "FULL" &&
+        slot.status === "FULL" && !invitedOnly &&
           "border-surface-700 hover:border-amber-500 hover:bg-surface-800",
+        slot.status === "FULL" && invitedOnly &&
+          "border-violet-500/40 hover:border-violet-500 hover:bg-surface-800",
         slot.status === "BLOCKED" && !isAdmin &&
           "border-surface-800 bg-surface-900/50 cursor-not-allowed opacity-60",
         slot.status === "BLOCKED" && isAdmin &&
@@ -95,14 +102,26 @@ function SlotButton({
               {t('day.available')}
             </span>
           )}
-          {slot.status === "FULL" && !slot.isUserRegistered && (
+          {slot.status === "FULL" && !slot.isUserRegistered && invitedOnly && (
+            <div className="flex flex-col items-end gap-0.5">
+              <span className="px-2 py-1 text-xs font-medium bg-violet-500/15 text-violet-200 rounded">
+                {t('day.invitedOnly')}
+              </span>
+              <span className="text-xs text-violet-300/80 pr-1">
+                {t('day.invitedLoginHint')}
+              </span>
+            </div>
+          )}
+          {slot.status === "FULL" && !slot.isUserRegistered && !invitedOnly && (
             <div className="flex flex-col items-end gap-0.5">
               <span className="px-2 py-1 text-xs font-medium bg-amber-500/10 text-amber-400 rounded">
                 {t('day.full')}
               </span>
-              <span className="text-xs text-amber-300/70 pr-1">
-                {t('day.waitlistHint')}
-              </span>
+              {genuinelyFull && (
+                <span className="text-xs text-amber-300/70 pr-1">
+                  {t('day.waitlistHint')}
+                </span>
+              )}
             </div>
           )}
           {slot.status === "BLOCKED" && (
