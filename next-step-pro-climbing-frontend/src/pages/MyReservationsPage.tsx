@@ -38,12 +38,18 @@ export function MyReservationsPage() {
     queryKey: ['slot', selectedSlotId],
     queryFn: () => calendarApi.getSlotDetails(selectedSlotId!),
     enabled: !!selectedSlotId,
+    // Detail-by-id feeding the slot modal: opening a different slot must not
+    // flash the previously opened slot. Opt out of the global keepPreviousData.
+    placeholderData: undefined,
   })
 
   const { data: eventSummary } = useQuery({
     queryKey: ['event-summary', selectedEventId],
     queryFn: () => calendarApi.getEventSummary(selectedEventId!),
     enabled: !!selectedEventId,
+    // Detail-by-id feeding the event modal: opt out so opening a different
+    // event never flashes the previously opened one.
+    placeholderData: undefined,
   })
 
   const cancelMutation = useMutation({

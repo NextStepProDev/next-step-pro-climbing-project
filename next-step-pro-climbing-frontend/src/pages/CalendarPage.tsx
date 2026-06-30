@@ -68,6 +68,7 @@ export function CalendarPage() {
   const {
     data: monthData,
     isLoading: monthLoading,
+    isFetching: monthFetching,
     isError: monthError,
     error: monthErrorObj,
     refetch: refetchMonth,
@@ -81,6 +82,7 @@ export function CalendarPage() {
   const {
     data: weekData,
     isLoading: weekLoading,
+    isFetching: weekFetching,
     isError: weekError,
     error: weekErrorObj,
     refetch: refetchWeek,
@@ -107,6 +109,9 @@ export function CalendarPage() {
     queryKey: ["slot", selectedSlotId],
     queryFn: () => calendarApi.getSlotDetails(selectedSlotId!),
     enabled: !!selectedSlotId,
+    // Detail-by-id feeding the slot modal: opening a different slot must not
+    // flash the previously opened slot. Opt out of the global keepPreviousData.
+    placeholderData: undefined,
   });
 
   // Deep link from a shared event link (/calendar?event=<id>) — opens the
@@ -116,6 +121,9 @@ export function CalendarPage() {
     queryKey: ["event", eventParam],
     queryFn: () => calendarApi.getEventSummary(eventParam!),
     enabled: !!eventParam,
+    // Detail-by-id feeding the signup modal: opt out so a changed deep link
+    // never flashes the previous event.
+    placeholderData: undefined,
   });
   const openedEventParamRef = useRef<string | null>(null);
   useEffect(() => {
@@ -576,6 +584,7 @@ export function CalendarPage() {
               </div>
             )}
 
+            <div className={`transition-opacity duration-150 ${weekFetching ? 'opacity-60' : ''}`}>
             <WeekCalendar
               startDate={weekData.startDate}
               days={weekData.days}
@@ -599,6 +608,7 @@ export function CalendarPage() {
               onConfirmSlotMove={isAdmin ? handleConfirmSlotMove : undefined}
               onCancelSlotMove={isAdmin ? handleCancelSlotMove : undefined}
             />
+            </div>
 
             {/* Events legend for week view */}
             {weekData.events.length > 0 && (
@@ -682,15 +692,17 @@ export function CalendarPage() {
         <QueryError error={monthErrorObj} onRetry={() => refetchMonth()} />
       ) : monthData ? (
         <>
-          <MonthCalendar
-            currentMonth={currentMonth}
-            onMonthChange={setCurrentMonth}
-            days={monthData.days}
-            events={monthData.events}
-            onDayClick={handleDayClick}
-            allDaysClickable={isAdmin}
-            eventColorMap={monthColorMap}
-          />
+          <div className={`transition-opacity duration-150 ${monthFetching ? 'opacity-60' : ''}`}>
+            <MonthCalendar
+              currentMonth={currentMonth}
+              onMonthChange={setCurrentMonth}
+              days={monthData.days}
+              events={monthData.events}
+              onDayClick={handleDayClick}
+              allDaysClickable={isAdmin}
+              eventColorMap={monthColorMap}
+            />
+          </div>
 
           {/* Events legend */}
           {monthData.events.length > 0 && (

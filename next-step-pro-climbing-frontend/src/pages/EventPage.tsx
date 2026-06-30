@@ -25,6 +25,9 @@ export function EventPage() {
     queryKey: ['event', eventId],
     queryFn: () => calendarApi.getEventSummary(eventId!),
     enabled: !!eventId,
+    // Detail-by-id: navigating event A -> B must not flash A's content while B
+    // loads. Opt out of the global keepPreviousData and show the spinner instead.
+    placeholderData: undefined,
   })
 
   if (isLoading) {

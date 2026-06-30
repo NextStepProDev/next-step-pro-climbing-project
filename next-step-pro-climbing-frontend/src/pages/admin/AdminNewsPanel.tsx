@@ -135,6 +135,9 @@ export function AdminNewsPanel() {
     queryKey: ['admin', 'news', selectedNewsId],
     queryFn: () => adminNewsApi.getById(selectedNewsId!),
     enabled: !!selectedNewsId && view === 'edit',
+    // Detail-by-id feeding the edit form: opening a different article must not
+    // flash the previous one's content. Opt out of the global keepPreviousData.
+    placeholderData: undefined,
   })
 
   const createMutation = useMutation({

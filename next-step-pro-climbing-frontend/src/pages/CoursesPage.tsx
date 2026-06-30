@@ -27,7 +27,7 @@ export function CoursesPage() {
     return () => { i18n.off('languageChanged', handler) }
   }, [i18n])
 
-  const { data: courses, isLoading, error } = useQuery({
+  const { data: courses, isLoading, isFetching, error } = useQuery({
     queryKey: ['courses', contentLanguage],
     queryFn: () => coursesApi.getAll(contentLanguage),
     staleTime: 5 * 60 * 1000,
@@ -86,7 +86,7 @@ export function CoursesPage() {
       {!courses || courses.length === 0 ? (
         <p className="text-surface-400 text-center py-12">{t('courses.noCourses')}</p>
       ) : (
-        <div className="space-y-3">
+        <div className={clsx('space-y-3 transition-opacity duration-150', isFetching && 'opacity-60')}>
           {courses.map((course) => (
             <div key={course.id} className="scroll-reveal">
               <CourseAccordionItem

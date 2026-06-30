@@ -60,6 +60,9 @@ export function AdminGalleryPanel() {
     queryKey: ['admin', 'gallery', 'album', expandedAlbumId],
     queryFn: () => adminGalleryApi.getAlbum(expandedAlbumId!),
     enabled: !!expandedAlbumId,
+    // Detail-by-id: expanding a different album must not flash the previously
+    // expanded album's photos. Opt out of the global keepPreviousData.
+    placeholderData: undefined,
   })
 
   const createAlbumMutation = useMutation({
