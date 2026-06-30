@@ -6,6 +6,7 @@ import { format } from 'date-fns'
 import { Plus, Trash2, Eye, EyeOff, Clock, Pencil, ChevronDown, ChevronRight, ChevronLeft, MapPin, Users, Mail, Phone, AlertTriangle, BookOpen, UserPlus } from 'lucide-react'
 import { adminApi, adminCoursesApi } from '../../api/client'
 import { UserSearchSelect } from '../../components/ui/UserSearchSelect'
+import { InvitedUsersPicker } from '../../components/ui/InvitedUsersPicker'
 import { getErrorMessage } from '../../utils/errors'
 import { useDirty } from '../../hooks/useDirty'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
@@ -13,7 +14,7 @@ import { QueryError } from '../../components/ui/QueryError'
 import { Button } from '../../components/ui/Button'
 import { Modal } from '../../components/ui/Modal'
 import { TimeScrollPicker } from '../../components/ui/TimeScrollPicker'
-import type { CreateEventRequest, EventDetail, EventType, User } from '../../types'
+import type { CreateEventRequest, EventDetail, EventType, InvitedUser, User } from '../../types'
 import { getEventColorByType } from '../../utils/events'
 
 export function AdminEventsPanel() {
@@ -755,10 +756,22 @@ function EditEventModal({
     staleTime: 5 * 60 * 1000,
   })
 
+  // Zaproszenia: baseline z serwera, lokalny override dopiero gdy admin coś zmieni
+  const [editedInvited, setEditedInvited] = useState<InvitedUser[] | null>(null)
+  const { data: invitesData } = useQuery({
+    queryKey: ['admin', 'eventInvites', event?.id],
+    queryFn: () => adminApi.getEventInvites(event!.id),
+    enabled: !!event && isOpen,
+  })
+  const baselineInvited = invitesData ?? []
+  const invited = editedInvited ?? baselineInvited
+  const invitedKey = (list: InvitedUser[]) => list.map((u) => u.userId).sort().join(',')
+  const invitedDirty = invitedKey(invited) !== invitedKey(baselineInvited)
+
   const queryClient = useQueryClient()
 
   const updateMutation = useMutation({
-    mutationFn: (data: CreateEventRequest & { courseId?: string | null; removeCourse?: boolean }) =>
+    mutationFn: (data: CreateEventRequest & { courseId?: string | null; removeCourse?: boolean; invitedUserIds?: string[] }) =>
       adminApi.updateEvent(event!.id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'events'] })
@@ -768,13 +781,13 @@ function EditEventModal({
     },
   })
 
-  const isDirty = useDirty({ form, courseId, allDay })
+  const isDirty = useDirty({ form, courseId, allDay }) || invitedDirty
 
   if (!event) return null
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    const payload: CreateEventRequest & { courseId?: string | null; removeCourse?: boolean } = { ...form }
+    const payload: CreateEventRequest & { courseId?: string | null; removeCourse?: boolean; invitedUserIds?: string[] } = { ...form }
     if (allDay) {
       delete payload.startTime
       delete payload.endTime
@@ -784,6 +797,7 @@ function EditEventModal({
     } else if (event.courseId) {
       payload.removeCourse = true
     }
+    payload.invitedUserIds = form.eventType === 'UNAVAILABLE' ? [] : invited.map((u) => u.userId)
     updateMutation.mutate(payload)
   }
 
@@ -937,6 +951,10 @@ function EditEventModal({
           />
         </div>
 
+        {form.eventType !== 'UNAVAILABLE' && (
+          <InvitedUsersPicker value={invited} onChange={setEditedInvited} maxSeats={form.maxParticipants} />
+        )}
+
         <div className="flex gap-3 pt-4">
           <Button type="submit" loading={updateMutation.isPending} disabled={!isDirty} className="flex-1">
             {t('events.saveChanges')}
@@ -979,6 +997,8 @@ function CreateEventModal({
     maxParticipants: 4,
   })
 
+  const [invited, setInvited] = useState<InvitedUser[]>([])
+
   const { data: courses } = useQuery({
     queryKey: ['admin', 'courses'],
     queryFn: () => adminCoursesApi.getAll(),
@@ -996,6 +1016,7 @@ function CreateEventModal({
       onClose()
       setAllDay(true)
       setCourseId(undefined)
+      setInvited([])
       setForm({
         title: '',
         description: '',
@@ -1016,6 +1037,7 @@ function CreateEventModal({
       delete payload.endTime
     }
     if (courseId) payload.courseId = courseId
+    payload.invitedUserIds = form.eventType === 'UNAVAILABLE' ? [] : invited.map((u) => u.userId)
     createMutation.mutate(payload)
   }
 
@@ -1170,6 +1192,10 @@ function CreateEventModal({
             className="w-full bg-surface-800 border border-surface-700 rounded-lg px-4 py-2 text-surface-100 disabled:opacity-50"
           />
         </div>
+
+        {form.eventType !== 'UNAVAILABLE' && (
+          <InvitedUsersPicker value={invited} onChange={setInvited} maxSeats={form.maxParticipants} />
+        )}
 
         <div className="flex gap-3 pt-4">
           <Button type="submit" loading={createMutation.isPending} className="flex-1">

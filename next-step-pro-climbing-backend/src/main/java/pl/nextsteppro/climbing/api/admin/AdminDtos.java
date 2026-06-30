@@ -22,7 +22,16 @@ record CreateTimeSlotRequest(
     @Min(0) @Max(100) int maxParticipants,
     @Nullable String title,
     @Nullable UUID eventId,
-    boolean isAvailabilityWindow
+    boolean isAvailabilityWindow,
+    // Użytkownicy, dla których miejsca są trzymane "na zaproszenie"
+    @Nullable List<UUID> invitedUserIds
+) {}
+
+// Trzymane miejsce + dane zaproszonej osoby (prefill formularza edycji slotu/wydarzenia)
+record InvitedUserDto(
+    UUID userId,
+    String fullName,
+    String email
 ) {}
 
 record TimeSlotAdminDto(
@@ -105,7 +114,9 @@ record UpdateTimeSlotRequest(
     @Nullable @Min(0) @Max(100) Integer maxParticipants,
     @Nullable String title,
     @Nullable Boolean isAvailabilityWindow,
-    @Nullable Boolean sendNotifications
+    @Nullable Boolean sendNotifications,
+    // null = nie zmieniaj zaproszeń; lista (także pusta) = ustaw dokładnie ten zestaw zaproszonych
+    @Nullable List<UUID> invitedUserIds
 ) {}
 
 record UpdateReservationParticipantsRequest(
@@ -124,7 +135,8 @@ record CreateEventRequest(
     @Min(0) @Max(100) int maxParticipants,
     @Nullable LocalTime startTime,
     @Nullable LocalTime endTime,
-    @Nullable UUID courseId
+    @Nullable UUID courseId,
+    @Nullable List<UUID> invitedUserIds
 ) {
     @AssertTrue(message = "{validation.event.date.range}")
     boolean isDateRangeValid() {
@@ -144,7 +156,9 @@ record UpdateEventRequest(
     @Nullable LocalTime startTime,
     @Nullable LocalTime endTime,
     @Nullable UUID courseId,
-    @Nullable Boolean removeCourse
+    @Nullable Boolean removeCourse,
+    // null = nie zmieniaj zaproszeń; lista (także pusta) = ustaw dokładnie ten zestaw zaproszonych
+    @Nullable List<UUID> invitedUserIds
 ) {}
 
 record EventAdminDto(

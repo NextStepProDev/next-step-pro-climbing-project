@@ -11,10 +11,11 @@ import { Button } from '../../components/ui/Button'
 import { Modal } from '../../components/ui/Modal'
 import { TimeScrollPicker } from '../../components/ui/TimeScrollPicker'
 import { UserSearchSelect } from '../../components/ui/UserSearchSelect'
+import { InvitedUsersPicker } from '../../components/ui/InvitedUsersPicker'
 import { CreateSlotModal } from '../../components/calendar/CreateSlotModal'
 import { useDateLocale } from '../../utils/dateFnsLocale'
 import { useDirty } from '../../hooks/useDirty'
-import type { SlotParticipants, SlotTemplate, TimeSlotAdmin, User } from '../../types'
+import type { InvitedUser, SlotParticipants, SlotTemplate, TimeSlotAdmin, User } from '../../types'
 
 const ARCHIVE_PAGE_SIZE = 15
 
@@ -436,8 +437,21 @@ function EditSlotModal({
     isAvailabilityWindow: slot?.isAvailabilityWindow ?? false,
   })
 
+  // Zaproszenia: baseline z serwera, lokalny override dopiero gdy admin coś zmieni
+  // (override-pattern zamiast setState w useEffect — unika kaskadowych renderów).
+  const [editedInvited, setEditedInvited] = useState<InvitedUser[] | null>(null)
+  const { data: invitesData } = useQuery({
+    queryKey: ['admin', 'slotInvites', slot?.id],
+    queryFn: () => adminApi.getSlotInvites(slot!.id),
+    enabled: !!slot && isOpen,
+  })
+  const baselineInvited = invitesData ?? []
+  const invited = editedInvited ?? baselineInvited
+  const invitedKey = (list: InvitedUser[]) => list.map((u) => u.userId).sort().join(',')
+  const invitedDirty = invitedKey(invited) !== invitedKey(baselineInvited)
+
   const updateMutation = useMutation({
-    mutationFn: (data: { startTime?: string; endTime?: string; maxParticipants?: number; title?: string; isAvailabilityWindow?: boolean }) =>
+    mutationFn: (data: { startTime?: string; endTime?: string; maxParticipants?: number; title?: string; isAvailabilityWindow?: boolean; invitedUserIds?: string[] }) =>
       adminApi.updateTimeSlot(slot!.id, data),
     onSuccess: () => {
       onSuccess()
@@ -445,7 +459,7 @@ function EditSlotModal({
     },
   })
 
-  const isDirty = useDirty(form)
+  const isDirty = useDirty(form) || invitedDirty
 
   if (!slot) return null
 
@@ -465,6 +479,7 @@ function EditSlotModal({
             maxParticipants: form.isAvailabilityWindow ? 1 : form.maxParticipants,
             title: form.title || '',
             isAvailabilityWindow: form.isAvailabilityWindow,
+            invitedUserIds: form.isAvailabilityWindow ? [] : invited.map((u) => u.userId),
           })
         }}
         className="space-y-4"
@@ -524,6 +539,10 @@ function EditSlotModal({
               className="w-full bg-surface-800 border border-surface-700 rounded-lg px-4 py-2 text-surface-100"
             />
           </div>
+        )}
+
+        {!form.isAvailabilityWindow && (
+          <InvitedUsersPicker value={invited} onChange={setEditedInvited} maxSeats={form.maxParticipants} />
         )}
 
         <div className="flex gap-3 pt-4">

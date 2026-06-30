@@ -47,6 +47,13 @@
     "callToBook": "Call to arrange",
     "availabilityWindows": "Available to arrange"
   },
+  "invites": {
+    "label": "Invited — seats reserved only for them",
+    "hint": "Selected people will see the free seat once logged in; for everyone else it stays unavailable.",
+    "searchPlaceholder": "Search by name or email...",
+    "remove": "Remove",
+    "overLimit": "Number of invitations exceeds the number of seats ({{count}})."
+  },
   "slot": {
     "title": "Slot details",
     "past": "This time slot has already ended",
@@ -65,6 +72,9 @@
     "bookSingle": "Sign up",
     "participants": "{{current}} / {{max}} participants",
     "spotsFree": "({{count}} available)",
+    "reservedForInvited": "· {{count}} reserved for invited guests",
+    "reservedForYou": "This seat is reserved for you 🧗 — you can confirm your booking.",
+    "reservedOnlyLeft": "No free seats — the remaining seats are reserved for invited participants.",
     "availabilityWindow": {
       "title": "This time block is available",
       "body": "Call or write to us to arrange a specific training time within this window."
@@ -106,6 +116,9 @@
     "bookSingle": "Sign up",
     "participants": "{{current}} / {{max}} participants",
     "spotsFree": "({{count}} available)",
+    "reservedForInvited": "· {{count}} reserved for invited guests",
+    "reservedForYou": "This event seat is reserved for you 🧗 — you can confirm your booking.",
+    "reservedOnlyLeft": "No free seats — the remaining seats are reserved for invited participants.",
     "courseDetails": "Course details",
     "waitlist": {
       "join": "Join the waitlist",

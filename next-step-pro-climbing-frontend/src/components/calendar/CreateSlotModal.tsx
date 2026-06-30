@@ -6,7 +6,8 @@ import { getErrorMessage } from '../../utils/errors'
 import { Button } from '../ui/Button'
 import { Modal } from '../ui/Modal'
 import { TimeScrollPicker } from '../ui/TimeScrollPicker'
-import type { CreateTimeSlotRequest } from '../../types'
+import { InvitedUsersPicker } from '../ui/InvitedUsersPicker'
+import type { CreateTimeSlotRequest, InvitedUser } from '../../types'
 
 interface CreateSlotModalProps {
   isOpen: boolean
@@ -36,6 +37,7 @@ export function CreateSlotModal({
     title: '',
     isAvailabilityWindow: false,
   })
+  const [invited, setInvited] = useState<InvitedUser[]>([])
 
   const queryClient = useQueryClient()
 
@@ -59,6 +61,7 @@ export function CreateSlotModal({
       ...rest,
       maxParticipants: form.isAvailabilityWindow ? 1 : form.maxParticipants,
       title: title || undefined,
+      invitedUserIds: form.isAvailabilityWindow ? [] : invited.map((u) => u.userId),
     })
   }
 
@@ -157,6 +160,10 @@ export function CreateSlotModal({
               className="w-full bg-surface-800 border border-surface-700 rounded-lg px-4 py-2 text-surface-100"
             />
           </div>
+        )}
+
+        {!form.isAvailabilityWindow && (
+          <InvitedUsersPicker value={invited} onChange={setInvited} maxSeats={form.maxParticipants} />
         )}
 
         <div className="flex gap-3 pt-4">

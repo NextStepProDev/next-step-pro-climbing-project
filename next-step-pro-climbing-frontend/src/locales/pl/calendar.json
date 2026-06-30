@@ -47,6 +47,13 @@
     "callToBook": "Dostępny — umów godzinę",
     "availabilityWindows": "Dostępne terminy do umówienia"
   },
+  "invites": {
+    "label": "Zaproszeni — miejsca zarezerwowane tylko dla nich",
+    "hint": "Wybrane osoby zobaczą wolne miejsce po zalogowaniu; dla pozostałych będzie niedostępne.",
+    "searchPlaceholder": "Szukaj po imieniu, nazwisku lub e-mailu...",
+    "remove": "Usuń",
+    "overLimit": "Liczba zaproszeń przekracza liczbę miejsc ({{count}})."
+  },
   "slot": {
     "title": "Szczegóły terminu",
     "past": "Ten termin już się zakończył",
@@ -65,6 +72,9 @@
     "bookSingle": "Zapisz się",
     "participants": "{{current}} / {{max}} uczestników",
     "spotsFree": "({{count}} wolne)",
+    "reservedForInvited": "· {{count}} zarezerwowane dla zaproszonych",
+    "reservedForYou": "To miejsce jest zarezerwowane dla Ciebie 🧗 — możesz potwierdzić rezerwację.",
+    "reservedOnlyLeft": "Brak wolnych miejsc — pozostałe miejsca są zarezerwowane dla zaproszonych uczestników.",
     "availabilityWindow": {
       "title": "Ten blok czasu jest dostępny",
       "body": "Zadzwoń lub napisz do nas, aby ustalić konkretną godzinę treningu w tym oknie czasowym."
@@ -106,6 +116,9 @@
     "bookSingle": "Zapisz się",
     "participants": "{{current}} / {{max}} uczestników",
     "spotsFree": "({{count}} wolnych)",
+    "reservedForInvited": "· {{count}} zarezerwowane dla zaproszonych",
+    "reservedForYou": "To miejsce jest zarezerwowane dla Ciebie 🧗 — możesz potwierdzić rezerwację.",
+    "reservedOnlyLeft": "Brak wolnych miejsc — pozostałe miejsca są zarezerwowane dla zaproszonych uczestników.",
     "courseDetails": "Szczegóły kursu",
     "waitlist": {
       "join": "Zapisz się na listę rezerwową",

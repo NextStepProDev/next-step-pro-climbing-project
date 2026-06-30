@@ -16,6 +16,8 @@ import pl.nextsteppro.climbing.domain.reservation.Reservation;
 import pl.nextsteppro.climbing.domain.reservation.ReservationRepository;
 import pl.nextsteppro.climbing.domain.reservation.ReservationStatus;
 import pl.nextsteppro.climbing.domain.reservation.SlotParticipantCount;
+import pl.nextsteppro.climbing.domain.reservedseat.ReservedSeat;
+import pl.nextsteppro.climbing.domain.reservedseat.ReservedSeatRepository;
 import pl.nextsteppro.climbing.domain.timeslot.TimeSlot;
 import pl.nextsteppro.climbing.domain.timeslot.TimeSlotRepository;
 import pl.nextsteppro.climbing.domain.auth.AuthTokenRepository;
@@ -40,10 +42,13 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -67,6 +72,7 @@ public class AdminService {
     private final pl.nextsteppro.climbing.infrastructure.mail.AuthMailService authMailService;
     private final WaitlistService waitlistService;
     private final EventWaitlistService eventWaitlistService;
+    private final ReservedSeatRepository reservedSeatRepository;
 
     public AdminService(TimeSlotRepository timeSlotRepository,
                        EventRepository eventRepository,
@@ -83,7 +89,8 @@ public class AdminService {
                        EventWaitlistRepository eventWaitlistRepository,
                        pl.nextsteppro.climbing.infrastructure.mail.AuthMailService authMailService,
                        WaitlistService waitlistService,
-                       EventWaitlistService eventWaitlistService) {
+                       EventWaitlistService eventWaitlistService,
+                       ReservedSeatRepository reservedSeatRepository) {
         this.timeSlotRepository = timeSlotRepository;
         this.eventRepository = eventRepository;
         this.courseRepository = courseRepository;
@@ -100,6 +107,7 @@ public class AdminService {
         this.authMailService = authMailService;
         this.waitlistService = waitlistService;
         this.eventWaitlistService = eventWaitlistService;
+        this.reservedSeatRepository = reservedSeatRepository;
     }
 
     @Caching(evict = {
@@ -133,6 +141,10 @@ public class AdminService {
         slot.setAvailabilityWindow(request.isAvailabilityWindow());
 
         slot = timeSlotRepository.save(slot);
+
+        if (request.invitedUserIds() != null) {
+            syncSlotInvites(slot, request.invitedUserIds());
+        }
 
         User admin = userRepository.findById(adminId).orElseThrow();
         activityLogService.logAdminSlotCreated(admin, slot);
@@ -176,6 +188,10 @@ public class AdminService {
         }
 
         slot = timeSlotRepository.save(slot);
+
+        if (request.invitedUserIds() != null) {
+            syncSlotInvites(slot, request.invitedUserIds());
+        }
 
         User admin = userRepository.findById(adminId).orElseThrow();
         activityLogService.logAdminSlotUpdated(admin, slot);
@@ -476,6 +492,10 @@ public class AdminService {
 
         event = eventRepository.save(event);
 
+        if (request.invitedUserIds() != null) {
+            syncEventInvites(event, request.invitedUserIds());
+        }
+
         User admin = userRepository.findById(adminId).orElseThrow();
         activityLogService.logAdminEventCreated(admin, event);
 
@@ -530,6 +550,10 @@ public class AdminService {
         }
 
         event = eventRepository.save(event);
+
+        if (request.invitedUserIds() != null) {
+            syncEventInvites(event, request.invitedUserIds());
+        }
 
         User admin = userRepository.findById(adminId).orElseThrow();
         activityLogService.logAdminEventUpdated(admin, event);
@@ -864,6 +888,93 @@ public class AdminService {
         List<UUID> slotIds = slots.stream().map(TimeSlot::getId).toList();
         return reservationRepository.countConfirmedByTimeSlotIds(slotIds).stream()
             .collect(Collectors.toMap(SlotParticipantCount::slotId, SlotParticipantCount::countAsInt));
+    }
+
+    // ---- Zaproszenia (trzymane miejsca) ----
+
+    @Transactional(readOnly = true)
+    public List<InvitedUserDto> getSlotInvites(UUID slotId) {
+        return reservedSeatRepository.findBySlotIdWithUser(slotId).stream()
+            .map(rs -> new InvitedUserDto(rs.getUser().getId(), rs.getUser().getFullName(), rs.getUser().getEmail()))
+            .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<InvitedUserDto> getEventInvites(UUID eventId) {
+        return reservedSeatRepository.findByEventIdWithUser(eventId).stream()
+            .map(rs -> new InvitedUserDto(rs.getUser().getId(), rs.getUser().getFullName(), rs.getUser().getEmail()))
+            .toList();
+    }
+
+    /** Ustawia dokładnie podany zestaw zaproszonych dla slotu (diff: dodaje/usuwa). */
+    private void syncSlotInvites(TimeSlot slot, List<UUID> desiredUserIds) {
+        Set<UUID> desired = new LinkedHashSet<>(desiredUserIds);
+        int confirmed = reservationRepository.countConfirmedByTimeSlotId(slot.getId())
+            + guestReservationRepository.sumParticipantsByTimeSlotId(slot.getId());
+        if (desired.size() + confirmed > slot.getMaxParticipants()) {
+            throw new IllegalStateException(msg.get("admin.invites.too.many", String.valueOf(slot.getMaxParticipants())));
+        }
+
+        Set<UUID> existingUserIds = new HashSet<>();
+        boolean removedAny = false;
+        for (ReservedSeat rs : reservedSeatRepository.findBySlotIdWithUser(slot.getId())) {
+            UUID uid = rs.getUser().getId();
+            existingUserIds.add(uid);
+            if (!desired.contains(uid)) {
+                reservedSeatRepository.delete(rs);
+                removedAny = true;
+            }
+        }
+        for (UUID uid : desired) {
+            if (!existingUserIds.contains(uid)) {
+                User user = userRepository.findById(uid)
+                    .orElseThrow(() -> new IllegalArgumentException("User not found: " + uid));
+                reservedSeatRepository.save(new ReservedSeat(slot, user));
+            }
+        }
+        // Usunięcie zaproszenia zwalnia miejsce dla wszystkich — powiadamiamy oczekujących.
+        if (removedAny) {
+            waitlistService.notifyAll(slot.getId());
+            if (slot.belongsToEvent()) {
+                eventWaitlistService.notifyAll(slot.getEvent().getId());
+            }
+        }
+    }
+
+    /** Ustawia dokładnie podany zestaw zaproszonych dla wydarzenia (diff: dodaje/usuwa). */
+    private void syncEventInvites(Event event, List<UUID> desiredUserIds) {
+        Set<UUID> desired = new LinkedHashSet<>(desiredUserIds);
+        List<TimeSlot> eventSlots = timeSlotRepository.findByEventId(event.getId());
+        int maxConfirmed = 0;
+        if (!eventSlots.isEmpty()) {
+            List<UUID> slotIds = eventSlots.stream().map(TimeSlot::getId).toList();
+            maxConfirmed = reservationRepository.countConfirmedByTimeSlotIds(slotIds)
+                .stream().mapToInt(SlotParticipantCount::countAsInt).max().orElse(0);
+        }
+        if (desired.size() + maxConfirmed > event.getMaxParticipants()) {
+            throw new IllegalStateException(msg.get("admin.invites.too.many", String.valueOf(event.getMaxParticipants())));
+        }
+
+        Set<UUID> existingUserIds = new HashSet<>();
+        boolean removedAny = false;
+        for (ReservedSeat rs : reservedSeatRepository.findByEventIdWithUser(event.getId())) {
+            UUID uid = rs.getUser().getId();
+            existingUserIds.add(uid);
+            if (!desired.contains(uid)) {
+                reservedSeatRepository.delete(rs);
+                removedAny = true;
+            }
+        }
+        for (UUID uid : desired) {
+            if (!existingUserIds.contains(uid)) {
+                User user = userRepository.findById(uid)
+                    .orElseThrow(() -> new IllegalArgumentException("User not found: " + uid));
+                reservedSeatRepository.save(new ReservedSeat(event, user));
+            }
+        }
+        if (removedAny) {
+            eventWaitlistService.notifyAll(event.getId());
+        }
     }
 
     @Transactional(readOnly = true)

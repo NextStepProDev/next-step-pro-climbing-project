@@ -199,6 +199,13 @@ public class AdminController {
         return ResponseEntity.ok(adminService.getSlotWaitlist(slotId));
     }
 
+    @Operation(summary = "Zaproszeni do terminu", description = "Zwraca użytkowników, dla których trzymane są miejsca na zaproszenie (prefill formularza edycji).")
+    @GetMapping("/slots/{slotId}/invites")
+    public ResponseEntity<List<InvitedUserDto>> getSlotInvites(
+            @Parameter(description = "UUID terminu") @PathVariable UUID slotId) {
+        return ResponseEntity.ok(adminService.getSlotInvites(slotId));
+    }
+
     @Tag(name = "Admin - Slots")
     @Operation(summary = "Zapisz zarejestrowanego użytkownika na termin", description = "Admin zapisuje wybranego użytkownika na termin — z potwierdzeniem mailowym i wpisem w 'Moje rezerwacje'")
     @PostMapping("/slots/{slotId}/participants/registered")
@@ -368,6 +375,14 @@ public class AdminController {
             @Parameter(description = "UUID wydarzenia") @PathVariable UUID eventId) {
         EventParticipantsDto participants = adminService.getEventParticipants(eventId);
         return ResponseEntity.ok(participants);
+    }
+
+    @Tag(name = "Admin - Events")
+    @Operation(summary = "Zaproszeni do wydarzenia", description = "Zwraca użytkowników, dla których trzymane są miejsca na zaproszenie (prefill formularza edycji).")
+    @GetMapping("/events/{eventId}/invites")
+    public ResponseEntity<List<InvitedUserDto>> getEventInvites(
+            @Parameter(description = "UUID wydarzenia") @PathVariable UUID eventId) {
+        return ResponseEntity.ok(adminService.getEventInvites(eventId));
     }
 
     // ==================== Reservations Overview ====================

@@ -13,6 +13,8 @@ import pl.nextsteppro.climbing.domain.reservation.Reservation;
 import pl.nextsteppro.climbing.domain.reservation.ReservationRepository;
 import pl.nextsteppro.climbing.domain.reservation.ReservationStatus;
 import pl.nextsteppro.climbing.domain.reservation.SlotParticipantCount;
+import pl.nextsteppro.climbing.domain.reservedseat.ReservedSeatCount;
+import pl.nextsteppro.climbing.domain.reservedseat.ReservedSeatRepository;
 import pl.nextsteppro.climbing.domain.timeslot.TimeSlot;
 import pl.nextsteppro.climbing.domain.timeslot.TimeSlotRepository;
 import pl.nextsteppro.climbing.domain.waitlist.EventWaitlist;
@@ -39,19 +41,22 @@ public class CalendarService {
     private final EventRepository eventRepository;
     private final WaitlistRepository waitlistRepository;
     private final EventWaitlistRepository eventWaitlistRepository;
+    private final ReservedSeatRepository reservedSeatRepository;
 
     public CalendarService(TimeSlotRepository timeSlotRepository,
                           ReservationRepository reservationRepository,
                           GuestReservationRepository guestReservationRepository,
                           EventRepository eventRepository,
                           WaitlistRepository waitlistRepository,
-                          EventWaitlistRepository eventWaitlistRepository) {
+                          EventWaitlistRepository eventWaitlistRepository,
+                          ReservedSeatRepository reservedSeatRepository) {
         this.timeSlotRepository = timeSlotRepository;
         this.reservationRepository = reservationRepository;
         this.guestReservationRepository = guestReservationRepository;
         this.eventRepository = eventRepository;
         this.waitlistRepository = waitlistRepository;
         this.eventWaitlistRepository = eventWaitlistRepository;
+        this.reservedSeatRepository = reservedSeatRepository;
     }
 
     @Cacheable(value = "calendarMonth", key = "#yearMonth", condition = "#userId == null")
@@ -65,10 +70,14 @@ public class CalendarService {
         // Batch: load all confirmed counts at once
         List<UUID> allSlotIds = slots.stream().map(TimeSlot::getId).toList();
         Map<UUID, Integer> countMap = buildCountMap(allSlotIds);
+        Map<UUID, Integer> inviteMap = buildSlotInviteMap(allSlotIds);
 
         // Batch: load user's confirmed slot IDs at once
         Set<UUID> userConfirmedSlotIds = userId != null && !allSlotIds.isEmpty()
             ? new HashSet<>(reservationRepository.findUserConfirmedSlotIds(userId, allSlotIds))
+            : Set.of();
+        Set<UUID> userInvitedSlotIds = userId != null && !allSlotIds.isEmpty()
+            ? new HashSet<>(reservedSeatRepository.findUserPendingSlotInviteIds(userId, allSlotIds))
             : Set.of();
 
         Map<LocalDate, List<TimeSlot>> slotsByDate = slots.stream()
@@ -77,14 +86,16 @@ public class CalendarService {
         List<DaySummaryDto> days = new ArrayList<>();
         for (LocalDate date = startDate; !date.isAfter(endDate); date = date.plusDays(1)) {
             List<TimeSlot> daySlots = slotsByDate.getOrDefault(date, List.of());
-            days.add(createDaySummary(date, daySlots, countMap, userConfirmedSlotIds));
+            days.add(createDaySummary(date, daySlots, countMap, userConfirmedSlotIds, inviteMap, userInvitedSlotIds));
         }
 
         EventData eventData = computeEventData(events, userId);
 
         List<EventSummaryDto> eventSummaries = events.stream()
             .map(event -> toEventSummary(event, eventData.participantsMap().getOrDefault(event.getId(), 0),
-                                         eventData.userRegisteredEventIds().contains(event.getId())))
+                                         eventData.userRegisteredEventIds().contains(event.getId()),
+                                         eventData.inviteMap().getOrDefault(event.getId(), 0),
+                                         eventData.userInvitedEventIds().contains(event.getId())))
             .toList();
 
         return new MonthViewDto(yearMonth.toString(), days, eventSummaries);
@@ -100,8 +111,12 @@ public class CalendarService {
 
         List<UUID> allSlotIds = slots.stream().map(TimeSlot::getId).toList();
         Map<UUID, Integer> countMap = buildCountMap(allSlotIds);
+        Map<UUID, Integer> inviteMap = buildSlotInviteMap(allSlotIds);
         Set<UUID> userConfirmedSlotIds = userId != null && !allSlotIds.isEmpty()
             ? new HashSet<>(reservationRepository.findUserConfirmedSlotIds(userId, allSlotIds))
+            : Set.of();
+        Set<UUID> userInvitedSlotIds = userId != null && !allSlotIds.isEmpty()
+            ? new HashSet<>(reservedSeatRepository.findUserPendingSlotInviteIds(userId, allSlotIds))
             : Set.of();
 
         Map<LocalDate, List<TimeSlot>> slotsByDate = slots.stream()
@@ -113,7 +128,9 @@ public class CalendarService {
             List<TimeSlotDto> slotDtos = daySlots.stream()
                 .filter(slot -> !slot.belongsToEvent())
                 .map(slot -> toTimeSlotDto(slot, countMap.getOrDefault(slot.getId(), 0),
-                                           userConfirmedSlotIds.contains(slot.getId())))
+                                           userConfirmedSlotIds.contains(slot.getId()),
+                                           inviteMap.getOrDefault(slot.getId(), 0),
+                                           userInvitedSlotIds.contains(slot.getId())))
                 .toList();
             days.add(new WeekDayDto(date, slotDtos));
         }
@@ -121,7 +138,9 @@ public class CalendarService {
         EventData eventData = computeEventData(events, userId);
         List<EventSummaryDto> eventSummaries = events.stream()
             .map(event -> toEventSummary(event, eventData.participantsMap().getOrDefault(event.getId(), 0),
-                                         eventData.userRegisteredEventIds().contains(event.getId())))
+                                         eventData.userRegisteredEventIds().contains(event.getId()),
+                                         eventData.inviteMap().getOrDefault(event.getId(), 0),
+                                         eventData.userInvitedEventIds().contains(event.getId())))
             .toList();
 
         return new WeekViewDto(startDate, endDate, days, eventSummaries);
@@ -134,21 +153,29 @@ public class CalendarService {
 
         List<UUID> slotIds = slots.stream().map(TimeSlot::getId).toList();
         Map<UUID, Integer> countMap = buildCountMap(slotIds);
+        Map<UUID, Integer> inviteMap = buildSlotInviteMap(slotIds);
         Set<UUID> userConfirmedSlotIds = userId != null && !slotIds.isEmpty()
             ? new HashSet<>(reservationRepository.findUserConfirmedSlotIds(userId, slotIds))
+            : Set.of();
+        Set<UUID> userInvitedSlotIds = userId != null && !slotIds.isEmpty()
+            ? new HashSet<>(reservedSeatRepository.findUserPendingSlotInviteIds(userId, slotIds))
             : Set.of();
 
         List<TimeSlotDto> slotDtos = slots.stream()
             .filter(slot -> !slot.belongsToEvent())
             .map(slot -> toTimeSlotDto(slot, countMap.getOrDefault(slot.getId(), 0),
-                                       userConfirmedSlotIds.contains(slot.getId())))
+                                       userConfirmedSlotIds.contains(slot.getId()),
+                                       inviteMap.getOrDefault(slot.getId(), 0),
+                                       userInvitedSlotIds.contains(slot.getId())))
             .toList();
 
         EventData eventData = computeEventData(events, userId);
 
         List<EventSummaryDto> eventSummaries = events.stream()
             .map(event -> toEventSummary(event, eventData.participantsMap().getOrDefault(event.getId(), 0),
-                                         eventData.userRegisteredEventIds().contains(event.getId())))
+                                         eventData.userRegisteredEventIds().contains(event.getId()),
+                                         eventData.inviteMap().getOrDefault(event.getId(), 0),
+                                         eventData.userInvitedEventIds().contains(event.getId())))
             .toList();
 
         return new DayViewDto(date, slotDtos, eventSummaries);
@@ -199,6 +226,9 @@ public class CalendarService {
             }
         }
 
+        int reservedSeats = eventData.inviteMap().getOrDefault(event.getId(), 0);
+        boolean isReservedForUser = eventData.userInvitedEventIds().contains(event.getId());
+
         return new EventSummaryDto(
             event.getId(), title, event.getDescription(), event.getLocation(),
             event.getEventType().name(), event.getStartDate(), event.getEndDate(),
@@ -206,7 +236,8 @@ public class CalendarService {
             event.getMaxParticipants(), currentParticipants, isUserRegistered, enrollmentOpen,
             courseId, coursePublished,
             userWaitlistStatus, waitlistEntryId, confirmationDeadline, userWaitlistPosition,
-            userParticipants
+            userParticipants,
+            reservedSeats, isReservedForUser
         );
     }
 
@@ -229,7 +260,10 @@ public class CalendarService {
         // Efektywna liczba zajętych miejsc uwzględnia PENDING_CONFIRMATION z waitlisty
         int effectiveCount = confirmedCount + pendingWaitlistCount;
 
+        int reservedSeats = reservedSeatRepository.countPendingBySlotId(slotId);
+
         boolean isUserRegistered = false;
+        boolean isReservedForUser = false;
         @Nullable UUID reservationId = null;
         @Nullable WaitlistStatus userWaitlistStatus = null;
         @Nullable UUID waitlistEntryId = null;
@@ -237,6 +271,7 @@ public class CalendarService {
         int userWaitlistPosition = 0;
 
         if (userId != null) {
+            isReservedForUser = reservedSeatRepository.existsPendingBySlotIdAndUserId(slotId, userId);
             Reservation reservation = reservationRepository.findByUserIdAndTimeSlotId(userId, slotId);
             if (reservation != null && reservation.getStatus() == ReservationStatus.CONFIRMED) {
                 isUserRegistered = true;
@@ -253,7 +288,7 @@ public class CalendarService {
             }
         }
 
-        SlotStatus status = determineSlotStatus(slot, effectiveCount);
+        SlotStatus status = determineSlotStatus(slot, effectiveCount, reservedSeats, isReservedForUser);
 
         return new TimeSlotDetailDto(
             slot.getId(),
@@ -273,7 +308,9 @@ public class CalendarService {
             confirmationDeadline,
             userWaitlistPosition,
             slot.isAvailabilityWindow(),
-            slot.getTitle()
+            slot.getTitle(),
+            reservedSeats,
+            isReservedForUser
         );
     }
 
@@ -358,7 +395,8 @@ public class CalendarService {
     }
 
     private DaySummaryDto createDaySummary(LocalDate date, List<TimeSlot> slots,
-                                          Map<UUID, Integer> countMap, Set<UUID> userConfirmedSlotIds) {
+                                          Map<UUID, Integer> countMap, Set<UUID> userConfirmedSlotIds,
+                                          Map<UUID, Integer> inviteMap, Set<UUID> userInvitedSlotIds) {
         List<TimeSlot> standaloneSlots = slots.stream()
             .filter(slot -> !slot.belongsToEvent())
             .toList();
@@ -379,7 +417,10 @@ public class CalendarService {
             LocalDateTime slotDateTime = LocalDateTime.of(slot.getDate(), slot.getStartTime());
             if (!slot.isBlocked() && slotDateTime.isAfter(cutoff)) {
                 int confirmed = countMap.getOrDefault(slot.getId(), 0);
-                if (confirmed < slot.getMaxParticipants()) {
+                // Miejsca trzymane dla zaproszonych liczą się jako zajęte; własne zaproszenie widza nie.
+                int reservedForOthers = inviteMap.getOrDefault(slot.getId(), 0)
+                    - (userInvitedSlotIds.contains(slot.getId()) ? 1 : 0);
+                if (confirmed + reservedForOthers < slot.getMaxParticipants()) {
                     availableSlots++;
                 }
             }
@@ -391,8 +432,9 @@ public class CalendarService {
         return new DaySummaryDto(date, totalSlots, availableSlots, hasUserReservation, hasAvailabilityWindow);
     }
 
-    private TimeSlotDto toTimeSlotDto(TimeSlot slot, int confirmedCount, boolean isUserRegistered) {
-        SlotStatus status = determineSlotStatus(slot, confirmedCount);
+    private TimeSlotDto toTimeSlotDto(TimeSlot slot, int confirmedCount, boolean isUserRegistered,
+                                      int reservedSeats, boolean isReservedForUser) {
+        SlotStatus status = determineSlotStatus(slot, confirmedCount, reservedSeats, isReservedForUser);
 
         return new TimeSlotDto(
             slot.getId(),
@@ -403,13 +445,15 @@ public class CalendarService {
             status,
             isUserRegistered,
             slot.getDisplayTitle(),
-            slot.isAvailabilityWindow()
+            slot.isAvailabilityWindow(),
+            reservedSeats,
+            isReservedForUser
         );
     }
 
     private static final int BOOKING_CUTOFF_HOURS = 12;
 
-    private SlotStatus determineSlotStatus(TimeSlot slot, int confirmedCount) {
+    private SlotStatus determineSlotStatus(TimeSlot slot, int confirmedCount, int reservedSeats, boolean isReservedForUser) {
         LocalDateTime slotDateTime = LocalDateTime.of(slot.getDate(), slot.getStartTime());
         LocalDateTime now = LocalDateTime.now();
         if (slot.isAvailabilityWindow()) {
@@ -421,7 +465,10 @@ public class CalendarService {
         if (slot.isBlocked()) {
             return SlotStatus.BLOCKED;
         }
-        if (confirmedCount >= slot.getMaxParticipants()) {
+        // Trzymane miejsca innych zaproszonych są dla tego widza niedostępne (FULL z reservedSeats>0 →
+        // front pokaże "zarezerwowane dla zaproszonych"). Własne zaproszenie widza nie blokuje.
+        int reservedForOthers = reservedSeats - (isReservedForUser ? 1 : 0);
+        if (confirmedCount + reservedForOthers >= slot.getMaxParticipants()) {
             return SlotStatus.FULL;
         }
         if (slotDateTime.isBefore(now.plusHours(BOOKING_CUTOFF_HOURS))) {
@@ -430,7 +477,8 @@ public class CalendarService {
         return SlotStatus.AVAILABLE;
     }
 
-    private EventSummaryDto toEventSummary(Event event, int currentParticipants, boolean isUserRegistered) {
+    private EventSummaryDto toEventSummary(Event event, int currentParticipants, boolean isUserRegistered,
+                                           int reservedSeats, boolean isReservedForUser) {
         LocalDateTime eventStart = LocalDateTime.of(
             event.getStartDate(),
             event.getStartTime() != null ? event.getStartTime() : LocalTime.of(0, 0)
@@ -447,15 +495,17 @@ public class CalendarService {
             event.getStartTime(), event.getEndTime(), event.isMultiDay(),
             event.getMaxParticipants(), currentParticipants, isUserRegistered, enrollmentOpen,
             courseId, coursePublished,
-            null, null, null, 0, 0
+            null, null, null, 0, 0,
+            reservedSeats, isReservedForUser
         );
     }
 
-    private record EventData(Map<UUID, Integer> participantsMap, Set<UUID> userRegisteredEventIds) {}
+    private record EventData(Map<UUID, Integer> participantsMap, Set<UUID> userRegisteredEventIds,
+                             Map<UUID, Integer> inviteMap, Set<UUID> userInvitedEventIds) {}
 
     private EventData computeEventData(List<Event> events, @Nullable UUID userId) {
         if (events.isEmpty()) {
-            return new EventData(Map.of(), Set.of());
+            return new EventData(Map.of(), Set.of(), Map.of(), Set.of());
         }
 
         List<UUID> eventIds = events.stream().map(Event::getId).toList();
@@ -486,7 +536,13 @@ public class CalendarService {
             }
         }
 
-        return new EventData(participantsMap, userRegisteredEventIds);
+        Map<UUID, Integer> inviteMap = reservedSeatRepository.countPendingByEventIds(eventIds).stream()
+            .collect(Collectors.toMap(ReservedSeatCount::targetId, ReservedSeatCount::countAsInt));
+        Set<UUID> userInvitedEventIds = userId != null
+            ? new HashSet<>(reservedSeatRepository.findUserPendingEventInviteIds(userId, eventIds))
+            : Set.of();
+
+        return new EventData(participantsMap, userRegisteredEventIds, inviteMap, userInvitedEventIds);
     }
 
     private Map<UUID, Integer> buildCountMap(List<UUID> slotIds) {
@@ -498,5 +554,11 @@ public class CalendarService {
         guestReservationRepository.sumParticipantsByTimeSlotIds(slotIds)
             .forEach(g -> countMap.merge(g.slotId(), g.countAsInt(), Integer::sum));
         return countMap;
+    }
+
+    private Map<UUID, Integer> buildSlotInviteMap(List<UUID> slotIds) {
+        if (slotIds.isEmpty()) return Map.of();
+        return reservedSeatRepository.countPendingBySlotIds(slotIds).stream()
+            .collect(Collectors.toMap(ReservedSeatCount::targetId, ReservedSeatCount::countAsInt));
     }
 }

@@ -41,7 +41,10 @@ record TimeSlotDto(
     SlotStatus status,
     boolean isUserRegistered,
     @Nullable String eventTitle,
-    boolean isAvailabilityWindow
+    boolean isAvailabilityWindow,
+    // Miejsca trzymane "na zaproszenie": liczba wiszących zaproszeń + czy bieżący widz jest jednym z zaproszonych
+    int reservedSeats,
+    boolean isReservedForUser
 ) implements CalendarDtos {}
 
 record TimeSlotDetailDto(
@@ -63,7 +66,9 @@ record TimeSlotDetailDto(
     @Nullable Instant confirmationDeadline,
     int userWaitlistPosition,
     boolean isAvailabilityWindow,
-    @Nullable String title
+    @Nullable String title,
+    int reservedSeats,
+    boolean isReservedForUser
 ) implements CalendarDtos {}
 
 record CourseEventDto(
@@ -99,7 +104,10 @@ record EventSummaryDto(
     @Nullable Instant confirmationDeadline,
     int userWaitlistPosition,
     // 0 w widokach listy, wypełnione w getEventSummary gdy użytkownik jest zapisany
-    int userParticipants
+    int userParticipants,
+    // Miejsca trzymane "na zaproszenie": liczba wiszących zaproszeń + czy bieżący widz jest zaproszony
+    int reservedSeats,
+    boolean isReservedForUser
 ) implements CalendarDtos {}
 
 record WeekViewDto(

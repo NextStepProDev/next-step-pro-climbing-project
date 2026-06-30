@@ -20,6 +20,7 @@ import type {
   GuestParticipant,
   CreateTimeSlotRequest,
   CreateEventRequest,
+  InvitedUser,
   EventDetail,
   EventParticipants,
   ReservationAdmin,
@@ -380,11 +381,14 @@ export const adminApi = {
       body: JSON.stringify(data),
     }),
 
-  updateTimeSlot: (slotId: string, data: { date?: string; startTime?: string; endTime?: string; maxParticipants?: number; title?: string; isAvailabilityWindow?: boolean; sendNotifications?: boolean }) =>
+  updateTimeSlot: (slotId: string, data: { date?: string; startTime?: string; endTime?: string; maxParticipants?: number; title?: string; isAvailabilityWindow?: boolean; sendNotifications?: boolean; invitedUserIds?: string[] }) =>
     fetchApi<TimeSlotAdmin>(`/admin/slots/${slotId}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     }),
+
+  getSlotInvites: (slotId: string) =>
+    fetchApi<InvitedUser[]>(`/admin/slots/${slotId}/invites`),
 
   notifySlotParticipants: (slotId: string, previousSlot?: { previousDate?: string; previousStartTime?: string; previousEndTime?: string }) =>
     fetchApi<{ notifiedCount: number }>(`/admin/slots/${slotId}/notify-participants`, {
@@ -419,11 +423,14 @@ export const adminApi = {
       body: JSON.stringify(data),
     }),
 
-  updateEvent: (eventId: string, data: Partial<CreateEventRequest> & { active?: boolean; courseId?: string | null; removeCourse?: boolean }) =>
+  updateEvent: (eventId: string, data: Partial<CreateEventRequest> & { active?: boolean; courseId?: string | null; removeCourse?: boolean; invitedUserIds?: string[] }) =>
     fetchApi<EventDetail>(`/admin/events/${eventId}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     }),
+
+  getEventInvites: (eventId: string) =>
+    fetchApi<InvitedUser[]>(`/admin/events/${eventId}/invites`),
 
   deleteEvent: (eventId: string) =>
     fetchApi<void>(`/admin/events/${eventId}`, { method: 'DELETE' }),
