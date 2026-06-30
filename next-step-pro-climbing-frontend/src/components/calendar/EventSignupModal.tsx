@@ -152,8 +152,12 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
   if (!ev) return null
 
   const enrollmentClosed = !ev.enrollmentOpen
-  const spotsLeft = ev.maxParticipants - ev.currentParticipants
+  // Miejsca trzymane "na zaproszenie" — niedostępne dla niezaproszonych; własne zaproszenie nie blokuje.
+  const reservedSeats = ev.reservedSeats ?? 0
+  const reservedForOthers = Math.max(0, reservedSeats - (ev.isReservedForUser ? 1 : 0))
+  const spotsLeft = ev.maxParticipants - ev.currentParticipants - reservedForOthers
   const isFull = spotsLeft <= 0
+  const blockedByReserved = isFull && reservedForOthers > 0 && !ev.isReservedForUser && !ev.isUserRegistered
   const waitlistStatus = ev.userWaitlistStatus
   const waitlistEntryId = ev.waitlistEntryId
   const confirmationDeadline = ev.confirmationDeadline
@@ -454,7 +458,24 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
               {isFull && (
                 <span className="text-amber-400 ml-2">{t('event.full')}</span>
               )}
+              {reservedForOthers > 0 && (
+                <span className="text-amber-400/80 ml-2">{t('event.reservedForInvited', { count: reservedForOthers })}</span>
+              )}
             </span>
+          </div>
+        )}
+
+        {/* Zaproszony: miejsce trzymane dla Ciebie */}
+        {ev.eventType !== 'UNAVAILABLE' && ev.isReservedForUser && !ev.isUserRegistered && !enrollmentClosed && (
+          <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg">
+            <span className="text-amber-300 font-medium">{t('event.reservedForYou')}</span>
+          </div>
+        )}
+
+        {/* Niezaproszony: zostały tylko miejsca trzymane */}
+        {ev.eventType !== 'UNAVAILABLE' && blockedByReserved && !enrollmentClosed && (
+          <div className="p-3 bg-surface-800 border border-surface-700 rounded-lg">
+            <span className="text-surface-300 text-sm">{t('event.reservedOnlyLeft')}</span>
           </div>
         )}
 

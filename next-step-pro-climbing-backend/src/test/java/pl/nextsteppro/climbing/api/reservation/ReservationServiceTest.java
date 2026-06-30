@@ -68,6 +68,8 @@ class ReservationServiceTest {
     private WaitlistService waitlistService;
     @Mock
     private EventWaitlistService eventWaitlistService;
+    @Mock
+    private pl.nextsteppro.climbing.domain.reservedseat.ReservedSeatRepository reservedSeatRepository;
 
     private ReservationService reservationService;
     private User testUser;
@@ -89,7 +91,8 @@ class ReservationServiceTest {
             activityLogService,
             msg,
             waitlistService,
-            eventWaitlistService
+            eventWaitlistService,
+            reservedSeatRepository
         );
 
         userId = UUID.randomUUID();
@@ -254,6 +257,50 @@ class ReservationServiceTest {
             () -> reservationService.createReservation(slotId, userId, null, 1)
         );
         assertEquals("No spots available", exception.getMessage());
+    }
+
+    @Test
+    void shouldThrowReservedMessageWhenOnlyReservedSeatsRemainForSlot() {
+        // Given — 2 fizyczne miejsca wolne, ale oba trzymane dla INNYCH zaproszonych osób
+        when(timeSlotRepository.findByIdForUpdate(slotId)).thenReturn(Optional.of(testSlot));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(testUser));
+        when(reservationRepository.existsByUserIdAndTimeSlotIdAndStatus(userId, slotId, ReservationStatus.CONFIRMED))
+            .thenReturn(false);
+        when(reservationRepository.countConfirmedByTimeSlotId(slotId)).thenReturn(8); // slot max = 10
+        when(reservedSeatRepository.countPendingBySlotIdExcludingUser(slotId, userId)).thenReturn(2);
+        when(msg.get("reservation.no.spots.reserved")).thenReturn("Reserved for invited");
+
+        // When & Then
+        IllegalStateException exception = assertThrows(
+            IllegalStateException.class,
+            () -> reservationService.createReservation(slotId, userId, null, 1)
+        );
+        assertEquals("Reserved for invited", exception.getMessage());
+    }
+
+    @Test
+    void shouldAllowInvitedUserToBookHeldSeat() {
+        // Given — 2 fizyczne miejsca wolne; 1 trzymane dla innej osoby, drugie dla NASZEGO usera
+        when(timeSlotRepository.findByIdForUpdate(slotId)).thenReturn(Optional.of(testSlot));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(testUser));
+        when(reservationRepository.existsByUserIdAndTimeSlotIdAndStatus(userId, slotId, ReservationStatus.CONFIRMED))
+            .thenReturn(false);
+        when(reservationRepository.countConfirmedByTimeSlotId(slotId)).thenReturn(8); // slot max = 10
+        when(reservedSeatRepository.countPendingBySlotIdExcludingUser(slotId, userId)).thenReturn(1);
+        when(reservationRepository.findByUserIdAndTimeSlotId(userId, slotId)).thenReturn(null);
+        when(reservationRepository.save(any(Reservation.class))).thenAnswer(inv -> {
+            Reservation r = inv.getArgument(0);
+            setEntityIdViaReflection(r, UUID.randomUUID());
+            return r;
+        });
+        when(msg.get("reservation.confirmed")).thenReturn("Reservation confirmed");
+
+        // When
+        ReservationResultDto result = reservationService.createReservation(slotId, userId, null, 1);
+
+        // Then
+        assertTrue(result.success());
+        verify(reservationRepository).save(any(Reservation.class));
     }
 
     @Test

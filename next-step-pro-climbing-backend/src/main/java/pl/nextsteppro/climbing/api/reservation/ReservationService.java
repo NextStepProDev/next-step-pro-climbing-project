@@ -14,6 +14,7 @@ import pl.nextsteppro.climbing.domain.reservation.Reservation;
 import pl.nextsteppro.climbing.domain.reservation.ReservationRepository;
 import pl.nextsteppro.climbing.domain.reservation.ReservationStatus;
 import pl.nextsteppro.climbing.domain.reservation.SlotParticipantCount;
+import pl.nextsteppro.climbing.domain.reservedseat.ReservedSeatRepository;
 import pl.nextsteppro.climbing.domain.timeslot.TimeSlot;
 import pl.nextsteppro.climbing.domain.timeslot.TimeSlotRepository;
 import pl.nextsteppro.climbing.domain.user.User;
@@ -42,6 +43,7 @@ public class ReservationService {
     private final MessageService msg;
     private final WaitlistService waitlistService;
     private final EventWaitlistService eventWaitlistService;
+    private final ReservedSeatRepository reservedSeatRepository;
 
     public ReservationService(ReservationRepository reservationRepository,
                              GuestReservationRepository guestReservationRepository,
@@ -52,7 +54,8 @@ public class ReservationService {
                              ActivityLogService activityLogService,
                              MessageService msg,
                              WaitlistService waitlistService,
-                             EventWaitlistService eventWaitlistService) {
+                             EventWaitlistService eventWaitlistService,
+                             ReservedSeatRepository reservedSeatRepository) {
         this.reservationRepository = reservationRepository;
         this.guestReservationRepository = guestReservationRepository;
         this.timeSlotRepository = timeSlotRepository;
@@ -63,6 +66,7 @@ public class ReservationService {
         this.msg = msg;
         this.waitlistService = waitlistService;
         this.eventWaitlistService = eventWaitlistService;
+        this.reservedSeatRepository = reservedSeatRepository;
     }
 
     @Caching(evict = {
@@ -104,9 +108,13 @@ public class ReservationService {
 
         int currentCount = reservationRepository.countConfirmedByTimeSlotId(slotId)
             + guestReservationRepository.sumParticipantsByTimeSlotId(slotId);
-        int spotsLeft = slot.getMaxParticipants() - currentCount;
+        // Miejsca trzymane dla INNYCH zaproszonych osób są dla tego użytkownika niedostępne;
+        // jego własne zaproszenie (jeśli ma) nie jest odejmowane, więc może zająć trzymane miejsce.
+        int reservedForOthers = reservedSeatRepository.countPendingBySlotIdExcludingUser(slotId, userId);
+        int spotsLeft = slot.getMaxParticipants() - currentCount - reservedForOthers;
         if (spotsLeft <= 0) {
-            throw new IllegalStateException(msg.get("reservation.no.spots"));
+            boolean onlyReservedLeft = slot.getMaxParticipants() - currentCount > 0;
+            throw new IllegalStateException(msg.get(onlyReservedLeft ? "reservation.no.spots.reserved" : "reservation.no.spots"));
         }
         if (participants > spotsLeft) {
             throw new IllegalStateException(msg.get("reservation.spots.available", spotsLeft, participants));
@@ -365,9 +373,11 @@ public class ReservationService {
             ));
         int currentParticipants = countMap.values().stream().mapToInt(Integer::intValue).max().orElse(0);
 
-        int spotsLeft = event.getMaxParticipants() - currentParticipants;
+        int reservedForOthers = reservedSeatRepository.countPendingByEventIdExcludingUser(eventId, userId);
+        int spotsLeft = event.getMaxParticipants() - currentParticipants - reservedForOthers;
         if (spotsLeft <= 0) {
-            throw new IllegalStateException(msg.get("reservation.event.no.spots"));
+            boolean onlyReservedLeft = event.getMaxParticipants() - currentParticipants > 0;
+            throw new IllegalStateException(msg.get(onlyReservedLeft ? "reservation.event.no.spots.reserved" : "reservation.event.no.spots"));
         }
         if (participants > spotsLeft) {
             throw new IllegalStateException(msg.get("reservation.event.spots.available", spotsLeft, participants));

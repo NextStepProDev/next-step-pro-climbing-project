@@ -65,6 +65,9 @@ class CalendarServiceTest {
     @Mock
     private EventWaitlistRepository eventWaitlistRepository;
 
+    @Mock
+    private pl.nextsteppro.climbing.domain.reservedseat.ReservedSeatRepository reservedSeatRepository;
+
     private CalendarService calendarService;
 
     private UUID testUserId;
@@ -74,7 +77,7 @@ class CalendarServiceTest {
 
     @BeforeEach
     void setUp() {
-        calendarService = new CalendarService(timeSlotRepository, reservationRepository, guestReservationRepository, eventRepository, waitlistRepository, eventWaitlistRepository);
+        calendarService = new CalendarService(timeSlotRepository, reservationRepository, guestReservationRepository, eventRepository, waitlistRepository, eventWaitlistRepository, reservedSeatRepository);
         testUserId = UUID.randomUUID();
 
         // Setup test user

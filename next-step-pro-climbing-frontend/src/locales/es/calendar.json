@@ -47,6 +47,13 @@
     "callToBook": "Llama para concertar",
     "availabilityWindows": "Disponible para concertar"
   },
+  "invites": {
+    "label": "Invitados — plazas reservadas solo para ellos",
+    "hint": "Las personas seleccionadas verán la plaza libre tras iniciar sesión; para el resto no estará disponible.",
+    "searchPlaceholder": "Buscar por nombre o correo...",
+    "remove": "Quitar",
+    "overLimit": "El número de invitaciones supera el número de plazas ({{count}})."
+  },
   "slot": {
     "title": "Detalles de la franja horaria",
     "past": "Esta franja horaria ya ha finalizado",
@@ -65,6 +72,9 @@
     "bookSingle": "Inscribirse",
     "participants": "{{current}} / {{max}} participantes",
     "spotsFree": "({{count}} libres)",
+    "reservedForInvited": "· {{count}} reservadas para invitados",
+    "reservedForYou": "Esta plaza está reservada para ti 🧗 — puedes confirmar tu reserva.",
+    "reservedOnlyLeft": "No hay plazas libres — las plazas restantes están reservadas para participantes invitados.",
     "availabilityWindow": {
       "title": "Este bloque de tiempo está disponible",
       "body": "Llámanos o escríbenos para concertar una hora específica de entrenamiento en esta franja."
@@ -106,6 +116,9 @@
     "bookSingle": "Inscribirse",
     "participants": "{{current}} / {{max}} participantes",
     "spotsFree": "({{count}} libres)",
+    "reservedForInvited": "· {{count}} reservadas para invitados",
+    "reservedForYou": "Esta plaza del evento está reservada para ti 🧗 — puedes confirmar tu reserva.",
+    "reservedOnlyLeft": "No hay plazas libres — las plazas restantes están reservadas para participantes invitados.",
     "courseDetails": "Detalles del curso",
     "waitlist": {
       "join": "Apuntarse a lista de espera",

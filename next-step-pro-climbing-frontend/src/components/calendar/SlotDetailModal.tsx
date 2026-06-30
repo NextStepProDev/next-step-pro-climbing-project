@@ -149,13 +149,19 @@ export function SlotDetailModal({
 
   const isAvailabilityWindow = slot.isAvailabilityWindow;
   const dateObj = new Date(slot.date);
+  // Miejsca trzymane "na zaproszenie": niedostępne dla niezaproszonych. Własne zaproszenie widza
+  // nie blokuje — dlatego odejmujemy tylko zaproszenia INNYCH osób.
+  const reservedSeats = slot.reservedSeats ?? 0;
+  const reservedForOthers = Math.max(0, reservedSeats - (slot.isReservedForUser ? 1 : 0));
   const spotsLeft =
-    (slot.maxParticipants ?? 0) - (slot.currentParticipants ?? 0);
+    (slot.maxParticipants ?? 0) - (slot.currentParticipants ?? 0) - reservedForOthers;
 
   const isPast = slot.status === "PAST";
   const isBookingClosed = slot.status === "BOOKING_CLOSED";
   const isAvailable = slot.status === "AVAILABLE" && spotsLeft > 0;
   const isFull = slot.status === "FULL" || (slot.status === "AVAILABLE" && spotsLeft <= 0);
+  // Niezaproszony widz, dla którego zostały już tylko miejsca trzymane
+  const blockedByReserved = isFull && reservedForOthers > 0 && !slot.isReservedForUser && !slot.isUserRegistered;
   const isWaiting = slot.userWaitlistStatus === "WAITING";
   const isPendingConfirmation = slot.userWaitlistStatus === "PENDING_CONFIRMATION";
   const canJoinWaitlist = isFull && !isWaiting && !isPendingConfirmation && !isPast && !isBookingClosed && !slot.isUserRegistered;
@@ -239,8 +245,25 @@ export function SlotDetailModal({
             {spotsLeft > 0 && (
               <span className="text-primary-400 ml-2">{t('slot.spotsFree', { count: spotsLeft })}</span>
             )}
+            {reservedForOthers > 0 && (
+              <span className="text-amber-400/80 ml-2">{t('slot.reservedForInvited', { count: reservedForOthers })}</span>
+            )}
           </span>
         </div>}
+
+        {/* Zaproszony: miejsce trzymane dla Ciebie */}
+        {!isAvailabilityWindow && slot.isReservedForUser && !slot.isUserRegistered && !isPast && (
+          <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg">
+            <span className="text-amber-300 font-medium">{t('slot.reservedForYou')}</span>
+          </div>
+        )}
+
+        {/* Niezaproszony: zostały tylko miejsca trzymane */}
+        {!isAvailabilityWindow && blockedByReserved && !isPast && (
+          <div className="p-3 bg-surface-800 border border-surface-700 rounded-lg">
+            <span className="text-surface-300 text-sm">{t('slot.reservedOnlyLeft')}</span>
+          </div>
+        )}
 
         {/* Past slot info */}
         {!isAvailabilityWindow && isPast && (

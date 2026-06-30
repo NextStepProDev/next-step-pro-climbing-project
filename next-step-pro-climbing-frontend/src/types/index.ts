@@ -71,6 +71,9 @@ export interface TimeSlot {
   isUserRegistered: boolean
   eventTitle: string | null
   isAvailabilityWindow: boolean
+  // Miejsca trzymane "na zaproszenie"
+  reservedSeats: number
+  isReservedForUser: boolean
 }
 
 export interface TimeSlotDetail {
@@ -93,6 +96,9 @@ export interface TimeSlotDetail {
   userWaitlistPosition: number
   isAvailabilityWindow: boolean
   title: string | null
+  // Miejsca trzymane "na zaproszenie"
+  reservedSeats: number
+  isReservedForUser: boolean
 }
 
 export type SlotStatus = 'AVAILABLE' | 'FULL' | 'BLOCKED' | 'PAST' | 'BOOKING_CLOSED' | 'AVAILABILITY_WINDOW'
@@ -136,6 +142,9 @@ export interface EventSummary {
   userWaitlistPosition: number
   // 0 in list views, populated in getEventSummary when user is registered
   userParticipants: number
+  // Miejsca trzymane "na zaproszenie"
+  reservedSeats: number
+  isReservedForUser: boolean
 }
 
 export interface EventWaitlistEntry {
@@ -275,6 +284,14 @@ export interface CreateTimeSlotRequest {
   title?: string
   eventId?: string
   isAvailabilityWindow?: boolean
+  invitedUserIds?: string[]
+}
+
+// Zaproszony do trzymanego miejsca (prefill formularzy admina)
+export interface InvitedUser {
+  userId: string
+  fullName: string
+  email: string
 }
 
 export interface CourseEvent {
@@ -314,6 +331,7 @@ export interface CreateEventRequest {
   startTime?: string
   endTime?: string
   courseId?: string
+  invitedUserIds?: string[]
 }
 
 // Activity Log types
