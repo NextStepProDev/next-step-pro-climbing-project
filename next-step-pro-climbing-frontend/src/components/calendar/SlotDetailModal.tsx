@@ -162,13 +162,13 @@ export function SlotDetailModal({
   const isFull = slot.status === "FULL" || (slot.status === "AVAILABLE" && spotsLeft <= 0);
   // Niezaproszony widz, dla którego zostały już tylko miejsca trzymane
   const blockedByReserved = isFull && reservedForOthers > 0 && !slot.isReservedForUser && !slot.isUserRegistered;
-  // Realnie pełny = zajęty potwierdzonymi rezerwacjami. Lista oczekujących ma sens TYLKO tu —
-  // miejsca trzymane na zaproszenie same się nie zwolnią, a backend i tak odrzuca kolejkę po nie
-  // (liczy trzymane miejsce jako wolne). Bez tego przycisk „dołącz" prowadziłby w ślepy zaułek.
-  const genuinelyFull = (slot.currentParticipants ?? 0) >= (slot.maxParticipants ?? 0);
+  // Lista oczekujących ma sens gdy dla tego widza nie ma miejsca — także gdy blokują je wyłącznie
+  // miejsca trzymane na zaproszenie. Zwolnią się, gdy ktoś potwierdzony anuluje LUB admin zdejmie
+  // zaproszenie (oba wołają notifyAll), więc kolejka nie jest ślepym zaułkiem. Backend liczy trzymane
+  // cudze miejsca jako zajęte przy zapisie do kolejki, więc front i API są tu spójne.
   const isWaiting = slot.userWaitlistStatus === "WAITING";
   const isPendingConfirmation = slot.userWaitlistStatus === "PENDING_CONFIRMATION";
-  const canJoinWaitlist = genuinelyFull && !isWaiting && !isPendingConfirmation && !isPast && !isBookingClosed && !slot.isUserRegistered;
+  const canJoinWaitlist = isFull && !isWaiting && !isPendingConfirmation && !isPast && !isBookingClosed && !slot.isUserRegistered;
 
   // Admin inline edit: "Save changes" stays disabled until the form actually
   // differs from the slot's current values (baseline set when entering edit mode).

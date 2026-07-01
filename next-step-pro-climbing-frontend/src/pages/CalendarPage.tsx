@@ -619,7 +619,9 @@ export function CalendarPage() {
                 <div className="space-y-2">
                   {weekData.events.map((event) => {
                     const { label, badgeClass } = formatAvailability(event);
-                    const isFull = event.currentParticipants >= event.maxParticipants;
+                    // Pełny także gdy resztę miejsc trzymają zaproszenia innych — wtedy lista rezerwowa.
+                    const reservedForOthers = Math.max(0, (event.reservedSeats ?? 0) - (event.isReservedForUser ? 1 : 0));
+                    const isFull = event.currentParticipants + reservedForOthers >= event.maxParticipants;
                     const color = weekColorMap.get(event.id)!;
                     return (
                       <div
@@ -717,7 +719,9 @@ export function CalendarPage() {
               <div className="space-y-2">
                 {monthData.events.map((event) => {
                   const { label, badgeClass } = formatAvailability(event);
-                  const isFull = event.currentParticipants >= event.maxParticipants;
+                  // Pełny także gdy resztę miejsc trzymają zaproszenia innych — wtedy lista rezerwowa.
+                  const reservedForOthers = Math.max(0, (event.reservedSeats ?? 0) - (event.isReservedForUser ? 1 : 0));
+                  const isFull = event.currentParticipants + reservedForOthers >= event.maxParticipants;
                   const color = monthColorMap.get(event.id)!;
 
                   return (

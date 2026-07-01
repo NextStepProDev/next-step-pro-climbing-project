@@ -12,6 +12,7 @@ import pl.nextsteppro.climbing.domain.event.EventRepository;
 import pl.nextsteppro.climbing.domain.event.EventType;
 import pl.nextsteppro.climbing.domain.reservation.Reservation;
 import pl.nextsteppro.climbing.domain.reservation.ReservationRepository;
+import pl.nextsteppro.climbing.domain.reservedseat.ReservedSeatRepository;
 import pl.nextsteppro.climbing.domain.reservation.ReservationStatus;
 import pl.nextsteppro.climbing.domain.reservation.SlotParticipantCount;
 import pl.nextsteppro.climbing.domain.timeslot.TimeSlot;
@@ -60,6 +61,8 @@ class EventWaitlistServiceTest {
     @Mock
     private ReservationRepository reservationRepository;
     @Mock
+    private ReservedSeatRepository reservedSeatRepository;
+    @Mock
     private UserRepository userRepository;
     @Mock
     private WaitlistMailService waitlistMailService;
@@ -81,6 +84,7 @@ class EventWaitlistServiceTest {
             eventRepository,
             timeSlotRepository,
             reservationRepository,
+            reservedSeatRepository,
             userRepository,
             waitlistMailService,
             activityLogService,
@@ -271,6 +275,56 @@ class EventWaitlistServiceTest {
             () -> eventWaitlistService.joinEventWaitlist(eventId, userId)
         );
         assertEquals("Event has available spots", exception.getMessage());
+    }
+
+    @Test
+    void shouldJoinWaitlistWhenEventFullOnlyByReservedSeats() {
+        // Given — 8/10 potwierdzonych + 2 miejsca trzymane na zaproszenie innych = efektywnie pełne.
+        // Niezaproszony widz nie ma jak się zapisać normalnie → kolejka musi być dostępna.
+        TimeSlot slot = createSlot(testEvent);
+        when(eventRepository.findById(eventId)).thenReturn(Optional.of(testEvent));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(testUser));
+        when(timeSlotRepository.findByEventId(eventId)).thenReturn(List.of(slot));
+        when(reservationRepository.existsByUserIdAndTimeSlotIdAndStatus(userId, slot.getId(), ReservationStatus.CONFIRMED))
+            .thenReturn(false);
+        when(eventWaitlistRepository.existsByUserAndEventAndStatuses(eq(userId), eq(eventId), anyList()))
+            .thenReturn(false);
+        when(reservationRepository.countConfirmedByTimeSlotIds(anyList()))
+            .thenReturn(List.of(new SlotParticipantCount(slot.getId(), 8L)));
+        when(eventWaitlistRepository.countPendingConfirmationByEventId(eventId)).thenReturn(0);
+        when(reservedSeatRepository.countPendingByEventIdExcludingUser(eventId, userId)).thenReturn(2);
+        when(eventWaitlistRepository.findMaxPositionForEvent(eventId)).thenReturn(0);
+        when(msg.get("waitlist.joined")).thenReturn("Successfully joined waitlist");
+
+        // When
+        WaitlistResultDto result = eventWaitlistService.joinEventWaitlist(eventId, userId);
+
+        // Then
+        assertTrue(result.success());
+        verify(eventWaitlistRepository).save(any(EventWaitlist.class));
+    }
+
+    @Test
+    void shouldFailConfirmOfferWhenReservedSeatsFillRemainingSpots() {
+        // Given — 9/10 potwierdzonych + 1 miejsce trzymane na zaproszenie innej osoby = pełne.
+        // Potwierdzenie oferty z kolejki nie może wejść ponad limit.
+        TimeSlot slot = createSlot(testEvent);
+        UUID waitlistId = UUID.randomUUID();
+        EventWaitlist entry = new EventWaitlist(testUser, testEvent, 1);
+        setFieldViaReflection(entry, EventWaitlist.class, "id", waitlistId);
+        entry.offerSpot(Instant.now().plusSeconds(3600)); // → PENDING_CONFIRMATION
+        when(eventWaitlistRepository.findById(waitlistId)).thenReturn(Optional.of(entry));
+        when(timeSlotRepository.findByEventId(eventId)).thenReturn(List.of(slot));
+        when(reservationRepository.countConfirmedByTimeSlotIds(anyList()))
+            .thenReturn(List.of(new SlotParticipantCount(slot.getId(), 9L)));
+        when(reservedSeatRepository.countPendingByEventIdExcludingUser(eventId, userId)).thenReturn(1);
+        when(msg.get("waitlist.race.lost")).thenReturn("Someone was faster");
+
+        // When & Then
+        assertThrows(IllegalStateException.class,
+            () -> eventWaitlistService.confirmEventOffer(waitlistId, userId));
+        assertEquals(WaitlistStatus.WAITING, entry.getStatus());
+        verify(reservationRepository, never()).save(any(Reservation.class));
     }
 
     // ========== LEAVE EVENT WAITLIST TESTS ==========

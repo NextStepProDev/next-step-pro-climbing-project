@@ -158,9 +158,10 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
   const spotsLeft = ev.maxParticipants - ev.currentParticipants - reservedForOthers
   const isFull = spotsLeft <= 0
   const blockedByReserved = isFull && reservedForOthers > 0 && !ev.isReservedForUser && !ev.isUserRegistered
-  // Realnie pełny = zajęty potwierdzonymi rezerwacjami. Lista oczekujących tylko tu — miejsca
-  // trzymane na zaproszenie same się nie zwolnią, więc kolejka po nie byłaby ślepym zaułkiem.
-  const genuinelyFull = ev.currentParticipants >= ev.maxParticipants
+  // Pełny dla tego widza (`isFull`) = można dołączyć do kolejki, także gdy blokują wyłącznie miejsca
+  // trzymane na zaproszenie. Zwolnią się przy anulowaniu potwierdzonej rezerwacji LUB zdjęciu
+  // zaproszenia przez admina (oba wołają notifyAll), więc kolejka nie jest ślepym zaułkiem. Backend
+  // liczy cudze trzymane miejsca jako zajęte przy zapisie do kolejki — front i API są spójne.
   const waitlistStatus = ev.userWaitlistStatus
   const waitlistEntryId = ev.waitlistEntryId
   const confirmationDeadline = ev.confirmationDeadline
@@ -171,9 +172,11 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
   }
 
   const renderWaitlistSection = () => {
-    if (!genuinelyFull || ev.isUserRegistered || enrollmentClosed) return null
+    if (!isFull || ev.isUserRegistered || enrollmentClosed) return null
 
     if (!isAuthenticated) {
+      // Przy blockedByReserved fioletowy box wyżej już tłumaczy sytuację — nie dublujemy.
+      if (blockedByReserved) return null
       return (
         <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-lg">
           <p className="text-sm font-semibold text-amber-400 mb-1">
@@ -227,7 +230,9 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
       )
     }
 
-    // Authenticated, full, not yet on waitlist — hint shown above the button
+    // Authenticated, full, not yet on waitlist — hint shown above the button.
+    // Przy blockedByReserved fioletowy box wyżej już tłumaczy pełność — nie dublujemy komunikatu.
+    if (blockedByReserved) return null
     return (
       <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg">
         <p className="text-sm text-amber-400">
@@ -256,7 +261,7 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
             className="flex-1"
             onClick={handleLoginRedirect}
           >
-            {genuinelyFull ? t('event.waitlist.loginToJoin') : t('event.loginToBook')}
+            {isFull ? t('event.waitlist.loginToJoin') : t('event.loginToBook')}
           </Button>
           <Button variant="ghost" onClick={onClose}>{t('event.close')}</Button>
         </>
@@ -313,7 +318,7 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
       )
     }
 
-    if (genuinelyFull) {
+    if (isFull) {
       if (waitlistStatus === 'PENDING_CONFIRMATION' && waitlistEntryId) {
         return (
           <>
@@ -365,13 +370,6 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
           </Button>
           <Button variant="ghost" onClick={onClose}>{t('event.close')}</Button>
         </>
-      )
-    }
-
-    // Pełny tylko przez miejsca trzymane na zaproszenie — nie można zarezerwować ani dołączyć do kolejki
-    if (isFull) {
-      return (
-        <Button variant="ghost" className="flex-1" onClick={onClose}>{t('event.close')}</Button>
       )
     }
 

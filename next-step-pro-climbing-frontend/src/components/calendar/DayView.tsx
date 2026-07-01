@@ -40,8 +40,6 @@ function SlotButton({
   // „Na zaproszenie" pokazujemy TYLKO niezalogowanym — bo wśród nich może być nierozpoznany
   // zaproszony. Zalogowany nie-zaproszony widzi zwykłe „pełne" (nie musi wiedzieć o zaproszeniach).
   const invitedOnly = !isAuthenticated && slot.status === "FULL" && slot.reservedSeats > 0 && !slot.isReservedForUser && !slot.isUserRegistered;
-  // Realnie pełny (potwierdzonymi) — tylko wtedy lista rezerwowa ma sens
-  const genuinelyFull = slot.currentParticipants >= slot.maxParticipants;
 
   return (
     <button
@@ -117,11 +115,9 @@ function SlotButton({
               <span className="px-2 py-1 text-xs font-medium bg-amber-500/10 text-amber-400 rounded">
                 {t('day.full')}
               </span>
-              {genuinelyFull && (
-                <span className="text-xs text-amber-300/70 pr-1">
-                  {t('day.waitlistHint')}
-                </span>
-              )}
+              <span className="text-xs text-amber-300/70 pr-1">
+                {t('day.waitlistHint')}
+              </span>
             </div>
           )}
           {slot.status === "BLOCKED" && (
@@ -290,7 +286,10 @@ export function DayView({
 
               /* Event WITH time slots */
               if (eventSlots && eventSlots.length > 0) {
-                const isFull = event.currentParticipants >= event.maxParticipants;
+                // Pełny dla widza także gdy resztę miejsc trzymają zaproszenia innych osób
+                // (spójnie z EventSignupModal — wtedy dostępna jest lista rezerwowa, nie zapis).
+                const reservedForOthers = Math.max(0, (event.reservedSeats ?? 0) - (event.isReservedForUser ? 1 : 0));
+                const isFull = event.currentParticipants + reservedForOthers >= event.maxParticipants;
                 return (
                   <div
                     key={event.id}
@@ -372,7 +371,10 @@ export function DayView({
 
               /* Event WITHOUT slots on this day → show availability from EventSummary */
               {
-                const isFull = event.currentParticipants >= event.maxParticipants;
+                // Pełny dla widza także gdy resztę miejsc trzymają zaproszenia innych osób
+                // (spójnie z EventSignupModal — wtedy dostępna jest lista rezerwowa, nie zapis).
+                const reservedForOthers = Math.max(0, (event.reservedSeats ?? 0) - (event.isReservedForUser ? 1 : 0));
+                const isFull = event.currentParticipants + reservedForOthers >= event.maxParticipants;
                 return (
                   <div
                     key={event.id}

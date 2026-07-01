@@ -406,7 +406,6 @@ export function WeekCalendar({
                     // „Na zaproszenie" (fioletowy) tylko dla niezalogowanych — zalogowany nie-zaproszony
                     // widzi zwykłe „pełne". Zaproszony i tak ma status AVAILABLE.
                     const invitedOnly = !isAuthenticated && slot.status === 'FULL' && slot.reservedSeats > 0 && !slot.isReservedForUser && !slot.isUserRegistered
-                    const genuinelyFull = slot.currentParticipants >= slot.maxParticipants
 
                     return (
                       <div
@@ -452,7 +451,7 @@ export function WeekCalendar({
                           {showTitle && (
                             <div className="text-[10px] leading-tight truncate opacity-80">
                               {slot.status === 'FULL' && !slot.isUserRegistered
-                                ? (invitedOnly ? t('day.invitedOnly') : (genuinelyFull ? t('day.fullWaitlist') : t('day.full')))
+                                ? (invitedOnly ? t('day.invitedOnly') : t('day.fullWaitlist'))
                                 : slot.eventTitle || getStatusLabel(slot.status, t)}
                             </div>
                           )}
