@@ -71,7 +71,7 @@ public class WaitlistMailService {
                     <div style="padding: 30px;">
                         <h2 style="color: #312e2b; margin-top: 0;">%s</h2>
                         <p style="color: #333;">%s</p>
-                        <div style="background: #252220; color: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                        <div style="background: #eff6ff; border: 1px solid #bfdbfe; padding: 20px; border-radius: 8px; margin: 20px 0;">
                             <p style="margin: 0 0 8px 0;"><strong>%s</strong> %s</p>
                             <p style="margin: 0;"><strong>%s</strong> %s - %s</p>
                         </div>
@@ -109,7 +109,7 @@ public class WaitlistMailService {
                     <div style="padding: 30px;">
                         <h2 style="color: #312e2b; margin-top: 0;">%s</h2>
                         <p style="color: #333;">%s</p>
-                        <div style="background: #252220; color: white; padding: 20px; border-radius: 8px;">
+                        <div style="background: #eff6ff; border: 1px solid #bfdbfe; padding: 20px; border-radius: 8px;">
                             <p style="margin: 0 0 8px 0;"><strong>%s</strong> %s</p>
                             <p style="margin: 0;"><strong>%s</strong> %s - %s</p>
                         </div>
@@ -172,7 +172,7 @@ public class WaitlistMailService {
                     <div style="padding: 30px;">
                         <h2 style="color: #312e2b; margin-top: 0;">%s</h2>
                         <p style="color: #333;">%s</p>
-                        <div style="background: #252220; color: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                        <div style="background: #eff6ff; border: 1px solid #bfdbfe; padding: 20px; border-radius: 8px; margin: 20px 0;">
                             <p style="margin: 0 0 8px 0;"><strong>%s</strong></p>
                             <p style="margin: 0;"><strong>%s</strong> %s</p>
                         </div>
@@ -214,7 +214,7 @@ public class WaitlistMailService {
                     <div style="padding: 30px;">
                         <h2 style="color: #312e2b; margin-top: 0;">%s</h2>
                         <p style="color: #333;">%s</p>
-                        <div style="background: #252220; color: white; padding: 20px; border-radius: 8px;">
+                        <div style="background: #eff6ff; border: 1px solid #bfdbfe; padding: 20px; border-radius: 8px;">
                             <p style="margin: 0 0 8px 0;"><strong>%s</strong></p>
                             <p style="margin: 0;"><strong>%s</strong> %s</p>
                         </div>
@@ -270,7 +270,7 @@ public class WaitlistMailService {
                     <div style="padding: 30px;">
                         <h2 style="color: #312e2b; margin-top: 0;">%s</h2>
                         <p style="color: #333;">%s</p>
-                        <div style="background: #252220; color: white; padding: 20px; border-radius: 8px;">
+                        <div style="background: #eff6ff; border: 1px solid #bfdbfe; padding: 20px; border-radius: 8px;">
                             <p style="margin: 0 0 8px 0;"><strong>%s</strong> %s</p>
                             <p style="margin: 0;"><strong>%s</strong> %s - %s</p>
                         </div>
@@ -304,7 +304,7 @@ public class WaitlistMailService {
                     <div style="padding: 30px;">
                         <h2 style="color: #312e2b; margin-top: 0;">%s</h2>
                         <p style="color: #333;">%s</p>
-                        <div style="background: #252220; color: white; padding: 20px; border-radius: 8px;">
+                        <div style="background: #eff6ff; border: 1px solid #bfdbfe; padding: 20px; border-radius: 8px;">
                             <p style="margin: 0 0 8px 0;"><strong>%s</strong></p>
                             <p style="margin: 0;"><strong>%s</strong> %s</p>
                         </div>
