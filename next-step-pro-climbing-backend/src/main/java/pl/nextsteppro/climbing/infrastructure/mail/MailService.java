@@ -481,7 +481,7 @@ public class MailService {
                     <div style="padding: 30px;">
                         <h2 style="color: #312e2b; margin-top: 0;">%s</h2>
                         <p style="color: #333;">%s</p>
-                        <div style="background: #252220; color: white; padding: 20px; border-radius: 8px;">
+                        <div style="background: #eff6ff; border: 1px solid #bfdbfe; padding: 20px; border-radius: 8px;">
                             %s
                             <p><strong>%s</strong> %s</p>
                             <p><strong>%s</strong> %s - %s</p>
@@ -610,7 +610,7 @@ public class MailService {
                     <div style="padding: 30px;">
                         <h2 style="color: #312e2b; margin-top: 0;">%s</h2>
                         <p style="color: #333;">%s</p>
-                        <div style="background: #252220; color: white; padding: 20px; border-radius: 8px;">
+                        <div style="background: #eff6ff; border: 1px solid #bfdbfe; padding: 20px; border-radius: 8px;">
                             <p><strong>%s</strong> %s</p>
                             <p><strong>%s</strong> %s - %s</p>
                             %s
@@ -782,6 +782,7 @@ public class MailService {
                     <div style="padding: 30px;">
                         <h2 style="color: #312e2b; margin-top: 0;">%s</h2>
                         <p style="color: #333;">%s</p>
+                        <p style="margin-top: 20px; color: #333;">%s</p>
                         <p style="color: #666; font-size: 14px;">%s</p>
                     </div>
                 </div>
@@ -791,7 +792,8 @@ public class MailService {
             siteUrl,
             msg.getForLang("email.admin.participants.reduced.greeting", lang, user.getFirstName()),
             msg.getForLang("email.admin.participants.reduced.body", lang, displayLabel, String.valueOf(oldParticipants), String.valueOf(newParticipants)),
-            msg.getForLang("email.admin.participants.reduced.contact", lang)
+            msg.getForLang("email.admin.participants.reduced.contact", lang),
+            msg.getForLang("email.reservation.team", lang)
         );
     }
 
@@ -806,6 +808,7 @@ public class MailService {
                     <div style="padding: 30px;">
                         <h2 style="color: #312e2b; margin-top: 0;">%s</h2>
                         <p style="color: #333;">%s</p>
+                        <p style="margin-top: 20px; color: #333;">%s</p>
                         <p style="color: #666; font-size: 14px;">%s</p>
                     </div>
                 </div>
@@ -815,7 +818,8 @@ public class MailService {
             siteUrl,
             msg.getForLang("email.reservation.updated.greeting", lang, user.getFirstName()),
             msg.getForLang("email.reservation.updated.body", lang, displayLabel, String.valueOf(oldParticipants), String.valueOf(newParticipants)),
-            msg.getForLang("email.reservation.updated.contact", lang)
+            msg.getForLang("email.reservation.updated.contact", lang),
+            msg.getForLang("email.reservation.team", lang)
         );
     }
 
