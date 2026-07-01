@@ -11,6 +11,7 @@ import pl.nextsteppro.climbing.domain.reservation.GuestReservationRepository;
 import pl.nextsteppro.climbing.domain.reservation.Reservation;
 import pl.nextsteppro.climbing.domain.reservation.ReservationRepository;
 import pl.nextsteppro.climbing.domain.reservation.ReservationStatus;
+import pl.nextsteppro.climbing.domain.reservedseat.ReservedSeatRepository;
 import pl.nextsteppro.climbing.domain.timeslot.TimeSlot;
 import pl.nextsteppro.climbing.domain.timeslot.TimeSlotRepository;
 import pl.nextsteppro.climbing.domain.user.User;
@@ -44,6 +45,7 @@ class WaitlistServiceTest {
     @Mock private TimeSlotRepository timeSlotRepository;
     @Mock private ReservationRepository reservationRepository;
     @Mock private GuestReservationRepository guestReservationRepository;
+    @Mock private ReservedSeatRepository reservedSeatRepository;
     @Mock private UserRepository userRepository;
     @Mock private WaitlistMailService waitlistMailService;
     @Mock private ActivityLogService activityLogService;
@@ -55,7 +57,7 @@ class WaitlistServiceTest {
     void setUp() {
         waitlistService = new WaitlistService(
             waitlistRepository, timeSlotRepository, reservationRepository,
-            guestReservationRepository, userRepository, waitlistMailService, activityLogService, msg);
+            guestReservationRepository, reservedSeatRepository, userRepository, waitlistMailService, activityLogService, msg);
 
         // Default message returns
         lenient().when(msg.get(anyString())).thenAnswer(inv -> inv.getArgument(0));
@@ -141,6 +143,55 @@ class WaitlistServiceTest {
         when(waitlistRepository.existsByUserAndSlotAndStatuses(eq(userId), eq(slotId), any())).thenReturn(false);
         when(reservationRepository.countConfirmedByTimeSlotId(slotId)).thenReturn(3); // 3/5 — są miejsca
         when(waitlistRepository.countPendingConfirmationBySlotId(slotId)).thenReturn(0);
+        lenient().when(msg.get("waitlist.slot.has.spots")).thenReturn("Slot has spots");
+
+        // When / Then
+        assertThrows(IllegalStateException.class, () -> waitlistService.joinWaitlist(slotId, userId));
+        verify(waitlistRepository, never()).save(any());
+    }
+
+    @Test
+    void joinWaitlist_shouldJoinQueueWhenFullOnlyByReservedSeats() {
+        // Given — 3/5 potwierdzonych, ale 2 pozostałe miejsca trzymane na zaproszenie innych osób.
+        // Dla tego (niezaproszonego) widza slot jest efektywnie pełny → kolejka powinna być dostępna.
+        UUID slotId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+        TimeSlot slot = buildFutureSlot(slotId); // maxParticipants = 5
+        User user = buildUser(userId);
+
+        when(timeSlotRepository.findById(slotId)).thenReturn(Optional.of(slot));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(reservationRepository.existsByUserIdAndTimeSlotIdAndStatus(userId, slotId, ReservationStatus.CONFIRMED)).thenReturn(false);
+        when(waitlistRepository.existsByUserAndSlotAndStatuses(eq(userId), eq(slotId), any())).thenReturn(false);
+        when(reservationRepository.countConfirmedByTimeSlotId(slotId)).thenReturn(3);
+        when(waitlistRepository.countPendingConfirmationBySlotId(slotId)).thenReturn(0);
+        when(reservedSeatRepository.countPendingBySlotIdExcludingUser(slotId, userId)).thenReturn(2);
+        when(waitlistRepository.findMaxPositionForSlot(slotId)).thenReturn(0);
+        when(waitlistRepository.save(any(Waitlist.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        // When
+        WaitlistResultDto result = waitlistService.joinWaitlist(slotId, userId);
+
+        // Then
+        assertTrue(result.success());
+        verify(waitlistRepository).save(any(Waitlist.class));
+    }
+
+    @Test
+    void joinWaitlist_shouldFailWhenReservedSeatsLeaveARealSpot() {
+        // Given — 3/5 potwierdzonych, 1 trzymane na zaproszenie → wciąż 1 realnie wolne miejsce.
+        // Nie wolno zapisać do kolejki, gdy jest jeszcze miejsce do normalnej rezerwacji.
+        UUID slotId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+        TimeSlot slot = buildFutureSlot(slotId); // maxParticipants = 5
+
+        when(timeSlotRepository.findById(slotId)).thenReturn(Optional.of(slot));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(buildUser(userId)));
+        when(reservationRepository.existsByUserIdAndTimeSlotIdAndStatus(userId, slotId, ReservationStatus.CONFIRMED)).thenReturn(false);
+        when(waitlistRepository.existsByUserAndSlotAndStatuses(eq(userId), eq(slotId), any())).thenReturn(false);
+        when(reservationRepository.countConfirmedByTimeSlotId(slotId)).thenReturn(3);
+        when(waitlistRepository.countPendingConfirmationBySlotId(slotId)).thenReturn(0);
+        when(reservedSeatRepository.countPendingBySlotIdExcludingUser(slotId, userId)).thenReturn(1);
         lenient().when(msg.get("waitlist.slot.has.spots")).thenReturn("Slot has spots");
 
         // When / Then
@@ -244,6 +295,28 @@ class WaitlistServiceTest {
         verify(reservationRepository).save(any(Reservation.class));
         verify(waitlistRepository).delete(entry);
         verify(waitlistMailService).sendWaitlistReservationConfirmed(user, slot);
+    }
+
+    @Test
+    void confirmOffer_shouldFailWhenReservedSeatsFillRemainingSpots() {
+        // Given — 4/5 potwierdzonych + 1 miejsce trzymane na zaproszenie innej osoby = pełne.
+        // Potwierdzenie oferty z kolejki nie może wejść ponad limit (chroni cudze zaproszenie).
+        UUID waitlistId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+        User user = buildUser(userId);
+        TimeSlot slot = buildFutureSlot(UUID.randomUUID()); // maxParticipants = 5
+        Waitlist entry = buildPendingConfirmationEntry(waitlistId, user, slot, Instant.now().plusSeconds(3600));
+
+        when(waitlistRepository.findById(waitlistId)).thenReturn(Optional.of(entry));
+        when(timeSlotRepository.findByIdForUpdate(slot.getId())).thenReturn(Optional.of(slot));
+        when(reservationRepository.countConfirmedByTimeSlotId(slot.getId())).thenReturn(4);
+        when(reservedSeatRepository.countPendingBySlotIdExcludingUser(slot.getId(), userId)).thenReturn(1);
+        lenient().when(msg.get("waitlist.race.lost")).thenReturn("Race lost");
+
+        // When / Then
+        assertThrows(IllegalStateException.class, () -> waitlistService.confirmOffer(waitlistId, userId));
+        assertEquals(WaitlistStatus.WAITING, entry.getStatus()); // wrócił do kolejki
+        verify(reservationRepository, never()).save(any(Reservation.class));
     }
 
     @Test

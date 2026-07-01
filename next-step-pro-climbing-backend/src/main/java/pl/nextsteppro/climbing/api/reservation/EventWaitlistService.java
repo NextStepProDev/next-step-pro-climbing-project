@@ -14,6 +14,7 @@ import pl.nextsteppro.climbing.domain.reservation.Reservation;
 import pl.nextsteppro.climbing.domain.reservation.ReservationRepository;
 import pl.nextsteppro.climbing.domain.reservation.ReservationStatus;
 import pl.nextsteppro.climbing.domain.reservation.SlotParticipantCount;
+import pl.nextsteppro.climbing.domain.reservedseat.ReservedSeatRepository;
 import pl.nextsteppro.climbing.domain.timeslot.TimeSlot;
 import pl.nextsteppro.climbing.domain.timeslot.TimeSlotRepository;
 import pl.nextsteppro.climbing.domain.user.User;
@@ -45,6 +46,7 @@ public class EventWaitlistService {
     private final EventRepository eventRepository;
     private final TimeSlotRepository timeSlotRepository;
     private final ReservationRepository reservationRepository;
+    private final ReservedSeatRepository reservedSeatRepository;
     private final UserRepository userRepository;
     private final WaitlistMailService waitlistMailService;
     private final ActivityLogService activityLogService;
@@ -54,6 +56,7 @@ public class EventWaitlistService {
                                 EventRepository eventRepository,
                                 TimeSlotRepository timeSlotRepository,
                                 ReservationRepository reservationRepository,
+                                ReservedSeatRepository reservedSeatRepository,
                                 UserRepository userRepository,
                                 WaitlistMailService waitlistMailService,
                                 ActivityLogService activityLogService,
@@ -62,6 +65,7 @@ public class EventWaitlistService {
         this.eventRepository = eventRepository;
         this.timeSlotRepository = timeSlotRepository;
         this.reservationRepository = reservationRepository;
+        this.reservedSeatRepository = reservedSeatRepository;
         this.userRepository = userRepository;
         this.waitlistMailService = waitlistMailService;
         this.activityLogService = activityLogService;
@@ -101,10 +105,12 @@ public class EventWaitlistService {
             throw new IllegalStateException(msg.get("waitlist.already.waiting"));
         }
 
-        // Wydarzenie musi być efektywnie pełne
+        // Wydarzenie musi być efektywnie pełne. Miejsca trzymane na zaproszenie dla INNYCH osób
+        // też zajmują dostępność (własne zaproszenie nie blokuje — odejmujemy tylko cudze).
         int currentParticipants = computeCurrentParticipants(event, slots);
         int pendingCount = eventWaitlistRepository.countPendingConfirmationByEventId(eventId);
-        if (currentParticipants + pendingCount < event.getMaxParticipants()) {
+        int reservedForOthers = reservedSeatRepository.countPendingByEventIdExcludingUser(eventId, userId);
+        if (currentParticipants + pendingCount + reservedForOthers < event.getMaxParticipants()) {
             throw new IllegalStateException(msg.get("waitlist.slot.has.spots"));
         }
 
@@ -150,7 +156,8 @@ public class EventWaitlistService {
                 List<TimeSlot> slots = timeSlotRepository.findByEventId(eventId);
                 int confirmed = computeCurrentParticipants(event, slots);
                 int pending = eventWaitlistRepository.countPendingConfirmationByEventId(eventId);
-                if (confirmed + pending < event.getMaxParticipants()) {
+                int reserved = reservedSeatRepository.countPendingByEventId(eventId);
+                if (confirmed + pending + reserved < event.getMaxParticipants()) {
                     notifyAll(eventId);
                 }
             }
@@ -182,7 +189,10 @@ public class EventWaitlistService {
 
         List<TimeSlot> slots = timeSlotRepository.findByEventId(eventId);
         int currentParticipants = computeCurrentParticipants(event, slots);
-        if (currentParticipants >= event.getMaxParticipants()) {
+        // Trzymane miejsca innych zaproszonych osób nadal blokują — chroni przed potwierdzeniem
+        // ponad limit gdy naraz ofertowano wiele osób z kolejki, a część miejsc jest na zaproszenie.
+        int reservedForOthers = reservedSeatRepository.countPendingByEventIdExcludingUser(eventId, userId);
+        if (currentParticipants + reservedForOthers >= event.getMaxParticipants()) {
             // Ktoś inny był szybszy — resetujemy tego usera do WAITING
             entry.returnToWaiting();
             eventWaitlistRepository.save(entry);

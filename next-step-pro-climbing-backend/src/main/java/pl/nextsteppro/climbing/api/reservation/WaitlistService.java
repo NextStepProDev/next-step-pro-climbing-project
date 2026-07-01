@@ -12,6 +12,7 @@ import pl.nextsteppro.climbing.domain.reservation.GuestReservationRepository;
 import pl.nextsteppro.climbing.domain.reservation.Reservation;
 import pl.nextsteppro.climbing.domain.reservation.ReservationRepository;
 import pl.nextsteppro.climbing.domain.reservation.ReservationStatus;
+import pl.nextsteppro.climbing.domain.reservedseat.ReservedSeatRepository;
 import pl.nextsteppro.climbing.domain.timeslot.TimeSlot;
 import pl.nextsteppro.climbing.domain.timeslot.TimeSlotRepository;
 import pl.nextsteppro.climbing.domain.user.User;
@@ -41,6 +42,7 @@ public class WaitlistService {
     private final TimeSlotRepository timeSlotRepository;
     private final ReservationRepository reservationRepository;
     private final GuestReservationRepository guestReservationRepository;
+    private final ReservedSeatRepository reservedSeatRepository;
     private final UserRepository userRepository;
     private final WaitlistMailService waitlistMailService;
     private final ActivityLogService activityLogService;
@@ -50,6 +52,7 @@ public class WaitlistService {
                            TimeSlotRepository timeSlotRepository,
                            ReservationRepository reservationRepository,
                            GuestReservationRepository guestReservationRepository,
+                           ReservedSeatRepository reservedSeatRepository,
                            UserRepository userRepository,
                            WaitlistMailService waitlistMailService,
                            ActivityLogService activityLogService,
@@ -58,6 +61,7 @@ public class WaitlistService {
         this.timeSlotRepository = timeSlotRepository;
         this.reservationRepository = reservationRepository;
         this.guestReservationRepository = guestReservationRepository;
+        this.reservedSeatRepository = reservedSeatRepository;
         this.userRepository = userRepository;
         this.waitlistMailService = waitlistMailService;
         this.activityLogService = activityLogService;
@@ -92,11 +96,15 @@ public class WaitlistService {
             throw new IllegalStateException(msg.get("waitlist.already.waiting"));
         }
 
-        // Slot musi być efektywnie pełny (uwzględniamy PENDING_CONFIRMATION jako zajęte)
+        // Slot musi być efektywnie pełny (uwzględniamy PENDING_CONFIRMATION jako zajęte).
+        // Miejsca trzymane na zaproszenie dla INNYCH osób również zajmują dostępność — bez tego
+        // slot pełny tylko przez wiszące zaproszenie wyglądałby jak mający wolne miejsce i kolejka
+        // byłaby odrzucana (własne zaproszenie nie blokuje, więc odejmujemy tylko cudze).
         int confirmedCount = reservationRepository.countConfirmedByTimeSlotId(slotId)
             + guestReservationRepository.sumParticipantsByTimeSlotId(slotId);
         int pendingCount = waitlistRepository.countPendingConfirmationBySlotId(slotId);
-        int effectiveSpotsLeft = slot.getMaxParticipants() - confirmedCount - pendingCount;
+        int reservedForOthers = reservedSeatRepository.countPendingBySlotIdExcludingUser(slotId, userId);
+        int effectiveSpotsLeft = slot.getMaxParticipants() - confirmedCount - pendingCount - reservedForOthers;
         if (effectiveSpotsLeft > 0) {
             throw new IllegalStateException(msg.get("waitlist.slot.has.spots"));
         }
@@ -146,8 +154,9 @@ public class WaitlistService {
                 int confirmed = reservationRepository.countConfirmedByTimeSlotId(slotId)
                     + guestReservationRepository.sumParticipantsByTimeSlotId(slotId);
                 int pending = waitlistRepository.countPendingConfirmationBySlotId(slotId);
-                if (confirmed + pending < slot.getMaxParticipants()) {
-                    // Miejsce jest wolne i nikt się już nie ściga — powiadamiamy oczekujących
+                int reserved = reservedSeatRepository.countPendingBySlotId(slotId);
+                if (confirmed + pending + reserved < slot.getMaxParticipants()) {
+                    // Miejsce jest wolne (i nie trzymane na zaproszenie) — powiadamiamy oczekujących
                     notifyAll(slotId);
                 }
             }
@@ -181,7 +190,11 @@ public class WaitlistService {
 
         int confirmedCount = reservationRepository.countConfirmedByTimeSlotId(slotId)
             + guestReservationRepository.sumParticipantsByTimeSlotId(slotId);
-        if (confirmedCount >= slot.getMaxParticipants()) {
+        // Trzymane miejsca innych zaproszonych osób nadal blokują — inaczej dwie osoby z kolejki
+        // ofertowane naraz (np. gdy admin usunął jedno z kilku zaproszeń) mogłyby potwierdzić ponad
+        // limit. Własne zaproszenie potwierdzającego nie blokuje (może zająć swoje trzymane miejsce).
+        int reservedForOthers = reservedSeatRepository.countPendingBySlotIdExcludingUser(slotId, userId);
+        if (confirmedCount + reservedForOthers >= slot.getMaxParticipants()) {
             // Ktoś inny był szybszy — resetujemy tego użytkownika do WAITING
             entry.returnToWaiting();
             waitlistRepository.save(entry);

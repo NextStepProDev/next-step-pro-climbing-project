@@ -133,7 +133,10 @@ export function formatAvailability(event: EventSummary) {
     return { label: i18n.t('availability.closed', { ns: 'calendar' }), badgeClass: "bg-surface-700 text-surface-400" };
   }
 
-  const free = event.maxParticipants - event.currentParticipants;
+  // Miejsca trzymane na zaproszenie dla INNYCH osób nie są dla tego widza wolne — inaczej etykieta
+  // pokazywałaby „1 wolne miejsce" tam, gdzie z ulicy nie da się zarezerwować (spójnie z modalem).
+  const reservedForOthers = Math.max(0, (event.reservedSeats ?? 0) - (event.isReservedForUser ? 1 : 0));
+  const free = Math.max(0, event.maxParticipants - event.currentParticipants - reservedForOthers);
 
   if (free === 0) return { label: i18n.t('availability.noSpots', { ns: 'calendar' }), badgeClass: "bg-amber-500/10 text-amber-400" };
   if (free === 1) return { label: i18n.t('availability.oneSpot', { ns: 'calendar' }), badgeClass: "bg-primary-500/10 text-primary-400" };
