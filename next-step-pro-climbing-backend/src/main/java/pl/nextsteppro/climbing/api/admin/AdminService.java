@@ -815,13 +815,9 @@ public class AdminService {
             .toList();
 
         boolean isNewsletter = request.recipientType() == RecipientType.NEWSLETTER;
-        for (User recipient : recipients) {
-            if (isNewsletter) {
-                mailService.sendNewsletterMail(recipient, request.subject(), request.body());
-            } else {
-                mailService.sendCustomAdminMail(recipient.getEmail(), request.subject(), request.body());
-            }
-        }
+        // One background campaign task (sequential, isolated executor) instead of fanning out
+        // N async tasks onto the transactional mail queue — see MailService#sendBulk.
+        mailService.sendBulk(recipients, request.subject(), request.body(), isNewsletter);
 
         return recipients.size();
     }

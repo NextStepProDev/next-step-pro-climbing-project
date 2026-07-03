@@ -34,7 +34,7 @@ public class NewsletterMailService {
         this.siteUrl = appConfig.getSiteUrl();
     }
 
-    @Async
+    @Async("mailCampaignExecutor")
     public void sendToAll(News news, List<NewsContentBlock> blocks, List<User> subscribers, String baseUrl) {
         log.info("Sending newsletter '{}' to {} subscribers", news.getTitle(), subscribers.size());
         for (User subscriber : subscribers) {

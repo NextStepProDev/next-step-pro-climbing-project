@@ -189,12 +189,46 @@ public class MailService {
 
     @Async("mailExecutor")
     public void sendCustomAdminMail(String to, String subject, String body) {
-        String htmlBody = buildCustomAdminMailBody(subject, body, null);
-        sendEmail(to, subject, htmlBody, null);
+        doSendCustomAdminMail(to, subject, body);
     }
 
     @Async("mailExecutor")
     public void sendNewsletterMail(User recipient, String subject, String body) {
+        doSendNewsletterMail(recipient, subject, body);
+    }
+
+    /**
+     * Sends one admin broadcast/newsletter to every recipient on a single background thread,
+     * sequentially. Runs on {@code mailCampaignExecutor} (not the per-message {@code mailExecutor})
+     * so a large send stays flat in memory — one message is built, dispatched and GC'd per
+     * iteration — and never floods the transactional mail queue, which would reject tasks past its
+     * limit and starve reservation/waitlist confirmations. Retries/backoff and never-throw are
+     * handled downstream by {@link MailDispatcher}, so one bad address cannot abort the campaign.
+     *
+     * @param newsletter true → newsletter styling + per-recipient unsubscribe footer;
+     *                   false → plain custom admin mail
+     */
+    @Async("mailCampaignExecutor")
+    public void sendBulk(List<User> recipients, String subject, String body, boolean newsletter) {
+        log.info("Bulk mail campaign start: {} recipients (newsletter={})", recipients.size(), newsletter);
+        int sent = 0;
+        for (User recipient : recipients) {
+            if (newsletter) {
+                doSendNewsletterMail(recipient, subject, body);
+            } else {
+                doSendCustomAdminMail(recipient.getEmail(), subject, body);
+            }
+            sent++;
+        }
+        log.info("Bulk mail campaign done: {} messages dispatched", sent);
+    }
+
+    private void doSendCustomAdminMail(String to, String subject, String body) {
+        String htmlBody = buildCustomAdminMailBody(subject, body, null);
+        sendEmail(to, subject, htmlBody, null);
+    }
+
+    private void doSendNewsletterMail(User recipient, String subject, String body) {
         String lang = recipient.getPreferredLanguage();
         String unsubscribeToken = userService.generateNewsletterUnsubscribeToken(recipient);
         String unsubscribeUrl = siteUrl + "/api/user/unsubscribe?token=" + unsubscribeToken;
