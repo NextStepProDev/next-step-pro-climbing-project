@@ -2,7 +2,7 @@ import { useState, useRef, type DragEvent, type ChangeEvent } from 'react'
 import { Upload, X, Image as ImageIcon, Loader2 } from 'lucide-react'
 import clsx from 'clsx'
 import { Button } from './Button'
-import { compressImage } from '../../utils/imageUtils'
+import { compressImage, MAX_INPUT_SIZE_MB } from '../../utils/imageUtils'
 
 interface FileUploadProps {
   onFileSelect: (files: File[]) => void
@@ -17,7 +17,7 @@ export function FileUpload({
   onFileSelect,
   onClear,
   accept = 'image/jpeg,image/png,image/webp',
-  maxSizeMB = 10,
+  maxSizeMB = MAX_INPUT_SIZE_MB,
   multiple = false,
   previews = [],
 }: FileUploadProps) {

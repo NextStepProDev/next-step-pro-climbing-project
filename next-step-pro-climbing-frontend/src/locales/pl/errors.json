@@ -24,7 +24,7 @@
     "nameTooShort": "Imię/nazwisko musi mieć co najmniej 3 znaki"
   },
   "uploadFailed": "Nie udało się wgrać pliku. Spróbuj ponownie.",
-  "fileTooLarge": "Plik jest za duży ({{size}} MB). Maksymalny rozmiar to 10 MB.",
+  "fileTooLarge": "Plik jest za duży ({{size}} MB). Maksymalny rozmiar to 50 MB.",
   "fileInvalidType": "Niedozwolony format pliku. Dozwolone: JPG, PNG, WebP.",
   "imageLoadFailed": "Nie udało się wczytać obrazu.",
   "authServer": "Błąd serwera. Spróbuj ponownie później.",

@@ -24,7 +24,7 @@
     "nameTooShort": "El nombre debe tener al menos 3 caracteres"
   },
   "uploadFailed": "No se pudo subir el archivo. Inténtalo de nuevo.",
-  "fileTooLarge": "El archivo es demasiado grande ({{size}} MB). El tamaño máximo es 10 MB.",
+  "fileTooLarge": "El archivo es demasiado grande ({{size}} MB). El tamaño máximo es 50 MB.",
   "fileInvalidType": "Formato de archivo no permitido. Permitidos: JPG, PNG, WebP.",
   "imageLoadFailed": "No se pudo cargar la imagen.",
   "authServer": "Error del servidor. Inténtalo de nuevo más tarde.",
