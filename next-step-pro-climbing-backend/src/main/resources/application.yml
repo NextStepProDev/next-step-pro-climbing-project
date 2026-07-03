@@ -16,8 +16,13 @@ spring:
     username: ${DB_USER:nextsteppro}
     password: ${DB_PASSWORD:nextsteppro_dev}
     hikari:
-      maximum-pool-size: 20
-      minimum-idle: 5
+      # Sized for a ~1GB box shared with Postgres, not raw concurrency: each pooled connection
+      # is a Postgres backend (~a few MB + up to work_mem per sort/hash). Measured load is tiny
+      # (CPU idle, ~46ms/request, virtual threads on), so 8 connections cover the real traffic
+      # while cutting idle Postgres-side memory vs the previous 20/5. Raise only if pool
+      # saturation actually shows up in HikariCP metrics.
+      maximum-pool-size: 8
+      minimum-idle: 2
       keepalive-time: 120000
       max-lifetime: 1200000
       connection-timeout: 10000

@@ -36,6 +36,21 @@ public class MailDispatcher {
     private static final String LOGO_RESOURCE = "static/logo/logo-white.png";
     private static final String ICS_ATTACHMENT_NAME = "reservation.ics";
 
+    /**
+     * Inline logo read from the classpath once at startup, not per email. A bulk campaign of N
+     * messages would otherwise re-open and re-read the JAR entry N times; the image never changes
+     * at runtime, so a single cached copy is safe and cheaper.
+     */
+    private static final byte[] LOGO_BYTES = loadLogoBytes();
+
+    private static byte[] loadLogoBytes() {
+        try (var in = new ClassPathResource(LOGO_RESOURCE).getInputStream()) {
+            return in.readAllBytes();
+        } catch (java.io.IOException e) {
+            throw new IllegalStateException("Missing inline mail logo resource: " + LOGO_RESOURCE, e);
+        }
+    }
+
     /** Delay before each retry; length + 1 = total attempts. */
     private static final long[] DEFAULT_RETRY_DELAYS_MS = {2_000L, 5_000L};
 
@@ -69,7 +84,7 @@ public class MailDispatcher {
                 helper.setSubject(subject);
                 helper.setText(body, true);
                 helper.setFrom(appConfig.getMail().getFrom());
-                helper.addInline("logo", new ClassPathResource(LOGO_RESOURCE), "image/png");
+                helper.addInline("logo", new ByteArrayResource(LOGO_BYTES), "image/png");
                 if (icsAttachment != null) {
                     helper.addAttachment(ICS_ATTACHMENT_NAME,
                             new ByteArrayResource(icsAttachment), "text/calendar");
