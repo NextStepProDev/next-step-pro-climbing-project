@@ -615,7 +615,7 @@ class ReservationServiceTest {
 
         verify(reservationRepository, times(3)).save(any(Reservation.class));
         verify(mailService).sendEventReservationConfirmation(testUser, testEvent, 2);
-        verify(mailService).sendEventAdminNotification(testUser, testEvent, 2);
+        verify(mailService).sendEventAdminNotification(testUser, testEvent, 2, "Event comment");
         verify(activityLogService).logEventReservationCreated(testUser, testEvent, 2);
     }
 

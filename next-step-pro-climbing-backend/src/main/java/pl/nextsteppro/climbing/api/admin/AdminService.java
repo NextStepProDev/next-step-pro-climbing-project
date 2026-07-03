@@ -1375,7 +1375,7 @@ public class AdminService {
             boolean eventInPast = LocalDate.now().isAfter(event.getEndDate());
             if (!eventInPast) {
                 mailService.sendEventReservationUpdateConfirmation(user, event, currentUserParticipants, newTotal);
-                mailService.sendEventAdminNotification(user, event, newTotal);
+                mailService.sendEventAdminNotification(user, event, newTotal, sanitizedComment);
             }
             activityLogService.logEventReservationUpdated(user, event, newTotal);
         } else {
@@ -1398,7 +1398,7 @@ public class AdminService {
             boolean eventInPast = LocalDate.now().isAfter(event.getEndDate());
             if (!eventInPast) {
                 mailService.sendEventReservationConfirmation(user, event, request.participants());
-                mailService.sendEventAdminNotification(user, event, request.participants());
+                mailService.sendEventAdminNotification(user, event, request.participants(), sanitizedComment);
             }
             activityLogService.logEventReservationCreated(user, event, request.participants());
         }

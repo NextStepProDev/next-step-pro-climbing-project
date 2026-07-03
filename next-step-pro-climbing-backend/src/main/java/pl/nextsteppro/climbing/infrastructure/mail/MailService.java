@@ -109,9 +109,9 @@ public class MailService {
     }
 
     @Async("mailExecutor")
-    public void sendEventAdminNotification(User user, Event event, int participants) {
+    public void sendEventAdminNotification(User user, Event event, int participants, @Nullable String comment) {
         String subject = msg.getForLang("email.admin.event.subject", ADMIN_LANG, user.getFullName());
-        String body = buildEventAdminNotificationBody(user, event, participants);
+        String body = buildEventAdminNotificationBody(user, event, participants, comment);
         sendToAdmins(subject, body);
     }
 
@@ -635,7 +635,11 @@ public class MailService {
         );
     }
 
-    private String buildEventAdminNotificationBody(User user, Event event, int participants) {
+    private String buildEventAdminNotificationBody(User user, Event event, int participants, @Nullable String comment) {
+        // comment is already HTML-escaped by Reservation.sanitizeComment — do NOT esc() again (double-escaping)
+        String commentLine = (comment != null && !comment.isBlank())
+            ? "<p><strong>%s</strong> %s</p>".formatted(msg.getForLang("email.admin.comment", ADMIN_LANG), comment)
+            : "";
         return """
             <html>
             <body style="font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5;">
@@ -652,6 +656,7 @@ public class MailService {
                             <p><strong>%s</strong> %s</p>
                             <p><strong>%s</strong> %s - %s</p>
                             <p><strong>%s</strong> %d</p>
+                            %s
                         </div>
                     </div>
                 </div>
@@ -665,7 +670,8 @@ public class MailService {
             msg.getForLang("email.admin.phone", ADMIN_LANG), user.getPhone(),
             msg.getForLang("email.admin.event.event", ADMIN_LANG), event.getTitle(),
             msg.getForLang("email.admin.event.dates", ADMIN_LANG), event.getStartDate().format(DATE_FORMAT), event.getEndDate().format(DATE_FORMAT),
-            msg.getForLang("email.admin.participants", ADMIN_LANG), participants
+            msg.getForLang("email.admin.participants", ADMIN_LANG), participants,
+            commentLine
         );
     }
 

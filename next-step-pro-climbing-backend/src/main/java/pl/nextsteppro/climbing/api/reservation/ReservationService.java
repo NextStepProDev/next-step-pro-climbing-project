@@ -412,7 +412,7 @@ public class ReservationService {
         }
 
         mailService.sendEventReservationConfirmation(user, event, participants);
-        mailService.sendEventAdminNotification(user, event, participants);
+        mailService.sendEventAdminNotification(user, event, participants, sanitizedComment);
 
         activityLogService.logEventReservationCreated(user, event, participants);
 
