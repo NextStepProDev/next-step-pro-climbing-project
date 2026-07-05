@@ -238,6 +238,216 @@ public class MailService {
         sendEmail(recipient.getEmail(), subject, htmlBody, null);
     }
 
+    // ---- Propozycje terminów (training requests) ----
+
+    @Async("mailExecutor")
+    public void sendTrainingRequestAdminNotification(User user, java.time.LocalDate date, java.time.LocalTime startTime,
+                                                     java.time.LocalTime endTime, int participants,
+                                                     @Nullable String comment, @Nullable String courseTitle,
+                                                     boolean inWindow) {
+        String subject = msg.getForLang("email.admin.training.request.subject", ADMIN_LANG, user.getFullName());
+        String body = buildTrainingRequestAdminBody(user, date, startTime, endTime, participants, comment, courseTitle, inWindow);
+        sendToAdmins(subject, body);
+    }
+
+    @Async("mailExecutor")
+    public void sendTrainingRequestRejectedNotification(User user, java.time.LocalDate date, java.time.LocalTime startTime,
+                                                        java.time.LocalTime endTime, @Nullable String note) {
+        if (!user.isEmailNotificationsEnabled()) return;
+        String lang = user.getPreferredLanguage();
+        String subject = msg.getForLang("email.training.request.rejected.subject", lang);
+        String body = buildTrainingRequestRejectedBody(lang, user, date, startTime, endTime, note);
+        sendEmail(user.getEmail(), subject, body, null);
+    }
+
+    // ---- Zaproszenia (miejsca trzymane, wysyłka ręczna przez admina) ----
+
+    @Async("mailExecutor")
+    public void sendSlotInvitationNotification(User user, TimeSlot slot, @Nullable String displayTitle) {
+        String lang = user.getPreferredLanguage();
+        String title = displayTitle != null ? displayTitle : "Next Step Pro Climbing";
+        String googleUrl = CalendarUtils.buildGoogleCalendarUrl(title, slot.getDate(), null, slot.getStartTime(), slot.getEndTime(), null);
+        byte[] ics = CalendarUtils.buildIcsFile(title, slot.getDate(), null, slot.getStartTime(), slot.getEndTime(), null, null);
+
+        String subject = msg.getForLang("email.invitation.slot.subject", lang);
+        String bookUrl = siteUrl + "/calendar?date=" + slot.getDate() + "&slot=" + slot.getId();
+        String detailsBox = """
+                            %s
+                            <p><strong>%s</strong> %s</p>
+                            <p><strong>%s</strong> %s - %s</p>
+            """.formatted(
+            displayTitle != null
+                ? "<p><strong>%s</strong> %s</p>".formatted(msg.getForLang("email.slot.title.label", lang), displayTitle)
+                : "",
+            msg.getForLang("email.reservation.date", lang), slot.getDate().format(DATE_FORMAT),
+            msg.getForLang("email.reservation.time", lang), slot.getStartTime().format(TIME_FORMAT), slot.getEndTime().format(TIME_FORMAT)
+        );
+        String body = buildInvitationBody(lang, user, msg.getForLang("email.invitation.slot.body", lang), detailsBox, bookUrl, googleUrl);
+        sendEmail(user.getEmail(), subject, body, ics);
+    }
+
+    @Async("mailExecutor")
+    public void sendEventInvitationNotification(User user, Event event) {
+        String lang = user.getPreferredLanguage();
+        String googleUrl = CalendarUtils.buildGoogleCalendarUrl(event.getTitle(), event.getStartDate(), event.getEndDate(), event.getStartTime(), event.getEndTime(), event.getLocation());
+        byte[] ics = CalendarUtils.buildIcsFile(event.getTitle(), event.getStartDate(), event.getEndDate(), event.getStartTime(), event.getEndTime(), event.getLocation(), event.getDescription());
+
+        String subject = msg.getForLang("email.invitation.event.subject", lang);
+        String bookUrl = siteUrl + "/calendar?date=" + event.getStartDate();
+        String locationLine = event.getLocation() != null
+            ? "<p><strong>%s</strong> %s</p>".formatted(msg.getForLang("email.invitation.location", lang), event.getLocation())
+            : "";
+        String detailsBox = """
+                            <p><strong>%s</strong> %s</p>
+                            <p><strong>%s</strong> %s - %s</p>
+                            %s
+            """.formatted(
+            msg.getForLang("email.event.reservation.event", lang), event.getTitle(),
+            msg.getForLang("email.event.reservation.dates", lang), event.getStartDate().format(DATE_FORMAT), event.getEndDate().format(DATE_FORMAT),
+            locationLine
+        );
+        String body = buildInvitationBody(lang, user, msg.getForLang("email.invitation.event.body", lang), detailsBox, bookUrl, googleUrl);
+        sendEmail(user.getEmail(), subject, body, ics);
+    }
+
+    private String buildInvitationBody(String lang, User user, String intro, String detailsBox, String bookUrl, String googleCalendarUrl) {
+        return """
+            <html>
+            <body style="font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5;">
+                <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden;">
+                    <div style="background: #1a1816; padding: 20px; text-align: center;">
+                        <a href="%s" style="display: inline-block; text-decoration: none; cursor: pointer; line-height: 0; font-size: 0;"><img src="cid:logo" alt="Next Step Pro Climbing" style="height: 100px; display: block; border: 0;" /></a>
+                    </div>
+                    <div style="padding: 30px;">
+                        <h2 style="color: #312e2b; margin-top: 0;">%s</h2>
+                        <p style="color: #333;">%s</p>
+                        <div style="background: #f5f3ff; border: 1px solid #ddd6fe; padding: 20px; border-radius: 8px;">
+                            %s
+                        </div>
+                        <div style="margin-top: 20px; text-align: center;">
+                            <a href="%s" style="display: inline-block; padding: 12px 28px; background: #7c3aed; color: white; text-decoration: none; border-radius: 8px; font-size: 15px; font-weight: bold;">%s</a>
+                        </div>
+                        %s
+                        <p style="margin-top: 20px; color: #333;">%s</p>
+                        <p style="color: #666; font-size: 14px;">%s</p>
+                    </div>
+                </div>
+            </body>
+            </html>
+            """.formatted(
+            siteUrl,
+            msg.getForLang("email.invitation.greeting", lang, user.getFirstName()),
+            intro,
+            detailsBox,
+            bookUrl,
+            msg.getForLang("email.invitation.cta", lang),
+            buildCalendarSection(lang, googleCalendarUrl),
+            msg.getForLang("email.see.you", lang),
+            msg.getForLang("email.reservation.team", lang)
+        );
+    }
+
+    private String buildTrainingRequestAdminBody(User user, java.time.LocalDate date, java.time.LocalTime startTime,
+                                                 java.time.LocalTime endTime, int participants,
+                                                 @Nullable String comment, @Nullable String courseTitle, boolean inWindow) {
+        // comment jest już zescapowany przez TrainingRequest.sanitizeComment — nie escapować drugi raz
+        String commentLine = (comment != null && !comment.isBlank())
+            ? "<p><strong>%s</strong> %s</p>".formatted(msg.getForLang("email.admin.comment", ADMIN_LANG), comment)
+            : "";
+        String courseLine = courseTitle != null
+            ? "<p><strong>%s</strong> %s</p>".formatted(msg.getForLang("email.admin.training.request.course", ADMIN_LANG), esc(courseTitle))
+            : "";
+        String windowBadge = inWindow
+            ? """
+              <div style="margin-bottom: 16px; padding: 10px 14px; background: #f0fdfa; border: 1px solid #99f6e4; border-radius: 8px; color: #0f766e; font-size: 14px; font-weight: bold;">%s</div>
+              """.formatted(msg.getForLang("email.admin.training.request.window.badge", ADMIN_LANG))
+            : "";
+        return """
+            <html>
+            <body style="font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5;">
+                <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden;">
+                    <div style="background: #1a1816; padding: 20px; text-align: center;">
+                        <a href="%s" style="display: inline-block; text-decoration: none; cursor: pointer; line-height: 0; font-size: 0;"><img src="cid:logo" alt="Next Step Pro Climbing" style="height: 100px; display: block; border: 0;" /></a>
+                    </div>
+                    <div style="padding: 30px;">
+                        <h2 style="color: #312e2b; margin-top: 0;">%s</h2>
+                        %s
+                        <div style="background: #f5f5f5; padding: 20px; border-radius: 8px;">
+                            <p><strong>%s</strong> %s</p>
+                            <p><strong>%s</strong> %s</p>
+                            <p><strong>%s</strong> %s</p>
+                            <p><strong>%s</strong> %s</p>
+                            <p><strong>%s</strong> %s - %s</p>
+                            <p><strong>%s</strong> %d</p>
+                            %s
+                            %s
+                        </div>
+                        <div style="margin-top: 20px; text-align: center;">
+                            <a href="%s" style="display: inline-block; padding: 12px 28px; background: #7c3aed; color: white; text-decoration: none; border-radius: 8px; font-size: 15px; font-weight: bold;">%s</a>
+                        </div>
+                    </div>
+                </div>
+            </body>
+            </html>
+            """.formatted(
+            siteUrl,
+            msg.getForLang("email.admin.training.request.title", ADMIN_LANG),
+            windowBadge,
+            msg.getForLang("email.admin.client", ADMIN_LANG), esc(user.getFullName()),
+            msg.getForLang("email.admin.email", ADMIN_LANG), user.getEmail(),
+            msg.getForLang("email.admin.phone", ADMIN_LANG), user.getPhone(),
+            msg.getForLang("email.admin.date", ADMIN_LANG), date.format(DATE_FORMAT),
+            msg.getForLang("email.admin.time", ADMIN_LANG), startTime.format(TIME_FORMAT), endTime.format(TIME_FORMAT),
+            msg.getForLang("email.admin.participants", ADMIN_LANG), participants,
+            courseLine,
+            commentLine,
+            siteUrl + "/admin/requests",
+            msg.getForLang("email.admin.training.request.cta", ADMIN_LANG)
+        );
+    }
+
+    private String buildTrainingRequestRejectedBody(String lang, User user, java.time.LocalDate date,
+                                                    java.time.LocalTime startTime, java.time.LocalTime endTime,
+                                                    @Nullable String note) {
+        String noteSection = (note != null && !note.isBlank())
+            ? """
+              <p style="margin-top: 16px; margin-bottom: 4px; color: #333;"><strong>%s</strong></p>
+              <p style="margin: 0; color: #333;">%s</p>
+              """.formatted(msg.getForLang("email.training.request.rejected.note", lang), esc(note))
+            : "";
+        return """
+            <html>
+            <body style="font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5;">
+                <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden;">
+                    <div style="background: #1a1816; padding: 20px; text-align: center;">
+                        <a href="%s" style="display: inline-block; text-decoration: none; cursor: pointer; line-height: 0; font-size: 0;"><img src="cid:logo" alt="Next Step Pro Climbing" style="height: 100px; display: block; border: 0;" /></a>
+                    </div>
+                    <div style="padding: 30px;">
+                        <h2 style="color: #312e2b; margin-top: 0;">%s</h2>
+                        <p style="color: #333;">%s</p>
+                        <div style="background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; padding: 20px; border-radius: 8px;">
+                            <p style="margin: 0 0 8px 0;"><strong>%s</strong> %s</p>
+                            <p style="margin: 0;"><strong>%s</strong> %s - %s</p>
+                        </div>
+                        %s
+                        <p style="margin-top: 20px; color: #333;">%s</p>
+                        <p style="color: #666; font-size: 14px;">%s</p>
+                    </div>
+                </div>
+            </body>
+            </html>
+            """.formatted(
+            siteUrl,
+            msg.getForLang("email.training.request.rejected.greeting", lang, user.getFirstName()),
+            msg.getForLang("email.training.request.rejected.body", lang),
+            msg.getForLang("email.reservation.date", lang), date.format(DATE_FORMAT),
+            msg.getForLang("email.reservation.time", lang), startTime.format(TIME_FORMAT), endTime.format(TIME_FORMAT),
+            noteSection,
+            msg.getForLang("email.training.request.rejected.closing", lang),
+            msg.getForLang("email.reservation.team", lang)
+        );
+    }
+
     @Async("mailExecutor")
     public void sendAdminEventParticipantRemovedNotification(User user, Event event) {
         String lang = user.getPreferredLanguage();

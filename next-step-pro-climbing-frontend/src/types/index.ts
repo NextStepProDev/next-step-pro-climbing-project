@@ -287,6 +287,8 @@ export interface CreateTimeSlotRequest {
   eventId?: string
   isAvailabilityWindow?: boolean
   invitedUserIds?: string[]
+  // Propozycja terminu, z której powstaje slot (→ ACCEPTED + link)
+  trainingRequestId?: string
 }
 
 // Zaproszony do trzymanego miejsca (prefill formularzy admina)
@@ -294,6 +296,8 @@ export interface InvitedUser {
   userId: string
   fullName: string
   email: string
+  // Kiedy admin ręcznie wysłał mail z zaproszeniem (null = jeszcze nie)
+  notifiedAt?: string | null
 }
 
 export interface CourseEvent {
@@ -334,6 +338,65 @@ export interface CreateEventRequest {
   endTime?: string
   courseId?: string
   invitedUserIds?: string[]
+  // Propozycja terminu, z której powstaje wydarzenie (→ ACCEPTED + link)
+  trainingRequestId?: string
+}
+
+// Training requests (propozycje terminów)
+export type TrainingRequestStatus = 'PENDING' | 'ACCEPTED' | 'CONTACTED' | 'REJECTED' | 'EXPIRED'
+
+export interface CreateTrainingRequest {
+  requestedDate: string
+  startTime: string
+  endTime: string
+  participants: number
+  comment?: string
+  courseId?: string
+  windowSlotId?: string
+}
+
+export interface TrainingRequest {
+  id: string
+  requestedDate: string
+  startTime: string
+  endTime: string
+  participants: number
+  comment: string | null
+  status: TrainingRequestStatus
+  adminNote: string | null
+  courseTitle: string | null
+  createdSlotId: string | null
+  createdSlotDate: string | null
+  createdEventId: string | null
+  createdEventStartDate: string | null
+  createdAt: string
+}
+
+export interface AdminTrainingRequest {
+  id: string
+  userId: string
+  userFullName: string
+  userEmail: string
+  userPhone: string
+  requestedDate: string
+  startTime: string
+  endTime: string
+  participants: number
+  comment: string | null
+  status: TrainingRequestStatus
+  adminNote: string | null
+  courseId: string | null
+  courseTitle: string | null
+  inWindow: boolean
+  windowSlotId: string | null
+  windowStartTime: string | null
+  windowEndTime: string | null
+  createdSlotId: string | null
+  createdSlotDate: string | null
+  createdEventId: string | null
+  createdEventStartDate: string | null
+  createdAt: string
+  resolvedAt: string | null
 }
 
 // Activity Log types

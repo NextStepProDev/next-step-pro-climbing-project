@@ -22,12 +22,15 @@ interface SlotDetailModalProps {
   slot: TimeSlotDetail | null;
   isOpen: boolean;
   onClose: () => void;
+  /** Okno dostępności: otwiera formularz propozycji terminu ograniczony do ram okna. */
+  onProposeInWindow?: (w: { slotId: string; date: string; startTime: string; endTime: string }) => void;
 }
 
 export function SlotDetailModal({
   slot,
   isOpen,
   onClose,
+  onProposeInWindow,
 }: SlotDetailModalProps) {
   const { t } = useTranslation('calendar');
   const { t: ta } = useTranslation('admin');
@@ -218,7 +221,7 @@ export function SlotDetailModal({
           </div>
         )}
 
-        {/* Availability window — special info, no booking */}
+        {/* Availability window — proposal form entry (+ phone as fallback) */}
         {isAvailabilityWindow && (
           <>
             <div className="p-4 bg-teal-500/10 border border-teal-500/20 rounded-lg space-y-2">
@@ -228,6 +231,20 @@ export function SlotDetailModal({
               </div>
               <p className="text-teal-200/80 text-sm">{t('slot.availabilityWindow.body')}</p>
             </div>
+            {onProposeInWindow && !isAdmin && !isPast && (
+              <Button
+                variant="primary"
+                className="w-full"
+                onClick={() => onProposeInWindow({
+                  slotId: slot.id,
+                  date: slot.date,
+                  startTime: slot.startTime,
+                  endTime: slot.endTime,
+                })}
+              >
+                {t('slot.availabilityWindow.propose')}
+              </Button>
+            )}
             <ShareButtons
               title={slot.eventTitle || t('slot.title')}
               url={`${window.location.origin}/calendar?date=${slot.date}&slot=${slot.id}`}

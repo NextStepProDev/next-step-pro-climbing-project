@@ -16,7 +16,8 @@
     "assets": "Media library",
     "mail": "Send email",
     "storage": "Storage",
-    "site": "Homepage"
+    "site": "Homepage",
+    "requests": "Proposals"
   },
   "tabGroups": {
     "calendar": "Calendar",
@@ -625,5 +626,48 @@
     "confirmTitle": "Delete orphaned files",
     "confirmMessage": "{{count}} files ({{size}}) will be permanently deleted. This cannot be undone.",
     "deleteSuccess": "{{count}} files deleted."
+  },
+  "requests": {
+    "title": "Time proposals from clients",
+    "filterPending": "Pending",
+    "filterAll": "All",
+    "emptyPending": "No pending proposals.",
+    "emptyAll": "No proposals yet.",
+    "inWindow": "In availability window",
+    "course": "Course",
+    "conflict": "Overlaps another proposal",
+    "adminNote": "Note",
+    "submittedAt": "Submitted",
+    "createSlot": "Create slot",
+    "createEvent": "Create event",
+    "markContacted": "Contacted",
+    "reject": "Reject",
+    "reopen": "Return to pending",
+    "viewInCalendar": "View in calendar",
+    "contactedTitle": "Mark as contacted",
+    "rejectTitle": "Reject proposal",
+    "statusModalFor": "Proposal from {{name}} for {{date}}.",
+    "noteLabel": "Note (visible to the client)",
+    "rejectNoteLabel": "Rejection reason (visible to the client)",
+    "notePlaceholder": "E.g. I suggest moving it to next week...",
+    "notifyUser": "Email the client about the decision",
+    "notifyUserHint": "An email with the rejection and your note.",
+    "confirmContacted": "Save",
+    "confirmReject": "Reject proposal",
+    "cancel": "Cancel",
+    "status": {
+      "PENDING": "Pending",
+      "ACCEPTED": "Accepted",
+      "CONTACTED": "Contacted",
+      "REJECTED": "Rejected",
+      "EXPIRED": "Expired"
+    }
+  },
+  "inviteNotify": {
+    "title": "Invitation emails (manual send)",
+    "sentAt": "sent {{date}}",
+    "notSent": "not sent",
+    "send": "Send invitation emails ({{count}})",
+    "sentResult": "Sent {{count}} invitations."
   }
 }

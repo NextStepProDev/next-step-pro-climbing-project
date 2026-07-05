@@ -1,7 +1,9 @@
 import { useTranslation } from 'react-i18next'
 import { Routes, Route, Link, useLocation } from 'react-router-dom'
-import { Calendar, Users, Clock, ClipboardList, Activity, User, Image, Newspaper, BookOpen, Library, Mail, HardDrive, Video, Home, type LucideIcon } from 'lucide-react'
+import { useQuery } from '@tanstack/react-query'
+import { Calendar, CalendarPlus, Users, Clock, ClipboardList, Activity, User, Image, Newspaper, BookOpen, Library, Mail, HardDrive, Video, Home, type LucideIcon } from 'lucide-react'
 import clsx from 'clsx'
+import { adminApi } from '../api/client'
 import { AdminSlotsPanel } from './admin/AdminSlotsPanel'
 import { AdminEventsPanel } from './admin/AdminEventsPanel'
 import { AdminUsersPanel } from './admin/AdminUsersPanel'
@@ -17,6 +19,7 @@ import { AdminAssetsPanel } from './admin/AdminAssetsPanel'
 import { AdminMailPanel } from './admin/AdminMailPanel'
 import { AdminStoragePanel } from './admin/AdminStoragePanel'
 import { AdminSitePanel } from './admin/AdminSitePanel'
+import { AdminRequestsPanel } from './admin/AdminRequestsPanel'
 
 interface AdminTab {
   path: string
@@ -36,6 +39,7 @@ const adminTabGroups: AdminTabGroup[] = [
       { path: '/admin', labelKey: 'tabs.slots', icon: Clock },
       { path: '/admin/reservations', labelKey: 'tabs.reservations', icon: ClipboardList },
       { path: '/admin/events', labelKey: 'tabs.events', icon: Calendar },
+      { path: '/admin/requests', labelKey: 'tabs.requests', icon: CalendarPlus },
     ],
   },
   {
@@ -70,6 +74,15 @@ const adminTabGroups: AdminTabGroup[] = [
 export function AdminPage() {
   const { t } = useTranslation('admin')
   const location = useLocation()
+
+  // Badge z liczbą oczekujących propozycji terminów — widoczny na zakładce "Propozycje"
+  const { data: pendingRequests } = useQuery({
+    queryKey: ['admin', 'trainingRequests', 'pendingCount'],
+    queryFn: adminApi.getTrainingRequestPendingCount,
+    refetchInterval: 60_000,
+    refetchIntervalInBackground: false,
+  })
+  const pendingRequestCount = pendingRequests?.count ?? 0
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -108,6 +121,11 @@ export function AdminPage() {
                   >
                     <Icon className="w-4 h-4" />
                     {t(tab.labelKey)}
+                    {tab.path === '/admin/requests' && pendingRequestCount > 0 && (
+                      <span className="ml-0.5 min-w-5 h-5 px-1.5 inline-flex items-center justify-center rounded-full bg-rose-500 text-white text-[11px] font-bold leading-none">
+                        {pendingRequestCount}
+                      </span>
+                    )}
                   </Link>
                 )
               })}
@@ -121,6 +139,7 @@ export function AdminPage() {
         <Route index element={<AdminSlotsPanel />} />
         <Route path="reservations" element={<AdminReservationsPanel />} />
         <Route path="events" element={<AdminEventsPanel />} />
+        <Route path="requests" element={<AdminRequestsPanel />} />
         <Route path="instructors" element={<AdminInstructorsPanel />} />
         <Route path="competitors" element={<AdminCompetitorsPanel />} />
         <Route path="gallery" element={<AdminGalleryPanel />} />

@@ -7,6 +7,7 @@ import { Plus, Trash2, Eye, EyeOff, Clock, Pencil, ChevronDown, ChevronRight, Ch
 import { adminApi, adminCoursesApi } from '../../api/client'
 import { UserSearchSelect } from '../../components/ui/UserSearchSelect'
 import { InvitedUsersPicker } from '../../components/ui/InvitedUsersPicker'
+import { InviteNotifySection } from '../../components/ui/InviteNotifySection'
 import { getErrorMessage } from '../../utils/errors'
 import { useDirty } from '../../hooks/useDirty'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
@@ -955,6 +956,10 @@ function EditEventModal({
           <InvitedUsersPicker value={invited} onChange={setEditedInvited} maxSeats={form.maxParticipants} />
         )}
 
+        {form.eventType !== 'UNAVAILABLE' && !invitedDirty && event && (
+          <InviteNotifySection target={{ type: 'event', eventId: event.id }} invites={baselineInvited} />
+        )}
+
         <div className="flex gap-3 pt-4">
           <Button type="submit" loading={updateMutation.isPending} disabled={!isDirty} className="flex-1">
             {t('events.saveChanges')}
@@ -976,28 +981,43 @@ function EditEventModal({
 
 /* =============================== Create Event Modal =============================== */
 
-function CreateEventModal({
+export function CreateEventModal({
   isOpen,
   onClose,
+  initial,
 }: {
   isOpen: boolean
   onClose: () => void
+  /** Prefill z propozycji terminu: daty, godziny, miejsca, kurs, zaproszony proponujący + link do propozycji. */
+  initial?: {
+    startDate?: string
+    endDate?: string
+    startTime?: string
+    endTime?: string
+    maxParticipants?: number
+    courseId?: string
+    courseTitle?: string
+    invited?: InvitedUser[]
+    trainingRequestId?: string
+  }
 }) {
   const { t } = useTranslation('admin')
   const { t: tc } = useTranslation('common')
-  const [allDay, setAllDay] = useState(true)
-  const [courseId, setCourseId] = useState<string | undefined>(undefined)
+  const [allDay, setAllDay] = useState(!(initial?.startTime && initial?.endTime))
+  const [courseId, setCourseId] = useState<string | undefined>(initial?.courseId)
   const [form, setForm] = useState<CreateEventRequest>({
-    title: '',
+    title: initial?.courseTitle ?? '',
     description: '',
     location: '',
     eventType: 'TRAINING',
-    startDate: format(new Date(), 'yyyy-MM-dd'),
-    endDate: format(new Date(), 'yyyy-MM-dd'),
-    maxParticipants: 4,
+    startDate: initial?.startDate ?? format(new Date(), 'yyyy-MM-dd'),
+    endDate: initial?.endDate ?? initial?.startDate ?? format(new Date(), 'yyyy-MM-dd'),
+    maxParticipants: initial?.maxParticipants ?? 4,
+    startTime: initial?.startTime,
+    endTime: initial?.endTime,
   })
 
-  const [invited, setInvited] = useState<InvitedUser[]>([])
+  const [invited, setInvited] = useState<InvitedUser[]>(initial?.invited ?? [])
 
   const { data: courses } = useQuery({
     queryKey: ['admin', 'courses'],
@@ -1011,6 +1031,7 @@ function CreateEventModal({
     mutationFn: adminApi.createEvent,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'events'] })
+      queryClient.invalidateQueries({ queryKey: ['admin', 'trainingRequests'] })
       queryClient.invalidateQueries({ queryKey: ['calendar'] })
       queryClient.invalidateQueries({ queryKey: ['courseEvents'] })
       onClose()
@@ -1038,6 +1059,7 @@ function CreateEventModal({
     }
     if (courseId) payload.courseId = courseId
     payload.invitedUserIds = form.eventType === 'UNAVAILABLE' ? [] : invited.map((u) => u.userId)
+    payload.trainingRequestId = initial?.trainingRequestId
     createMutation.mutate(payload)
   }
 

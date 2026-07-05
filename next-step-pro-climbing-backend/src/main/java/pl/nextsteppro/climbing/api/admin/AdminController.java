@@ -207,6 +207,18 @@ public class AdminController {
     }
 
     @Tag(name = "Admin - Slots")
+    @Operation(
+        summary = "Wyślij maile z zaproszeniem (termin)",
+        description = "Ręczna wysyłka maili do osób z trzymanym miejscem, które jeszcze nie zarezerwowały. onlyUnnotified=true (domyślnie) pomija już powiadomionych."
+    )
+    @PostMapping("/slots/{slotId}/invites/notify")
+    public ResponseEntity<NotifyParticipantsResult> notifySlotInvites(
+            @Parameter(description = "UUID terminu") @PathVariable UUID slotId,
+            @Parameter(description = "Pomiń osoby, które już dostały zaproszenie") @RequestParam(defaultValue = "true") boolean onlyUnnotified) {
+        return ResponseEntity.ok(new NotifyParticipantsResult(adminService.notifySlotInvites(slotId, onlyUnnotified)));
+    }
+
+    @Tag(name = "Admin - Slots")
     @Operation(summary = "Zapisz zarejestrowanego użytkownika na termin", description = "Admin zapisuje wybranego użytkownika na termin — z potwierdzeniem mailowym i wpisem w 'Moje rezerwacje'")
     @PostMapping("/slots/{slotId}/participants/registered")
     public ResponseEntity<Void> addRegisteredParticipantToSlot(
@@ -383,6 +395,18 @@ public class AdminController {
     public ResponseEntity<List<InvitedUserDto>> getEventInvites(
             @Parameter(description = "UUID wydarzenia") @PathVariable UUID eventId) {
         return ResponseEntity.ok(adminService.getEventInvites(eventId));
+    }
+
+    @Tag(name = "Admin - Events")
+    @Operation(
+        summary = "Wyślij maile z zaproszeniem (wydarzenie)",
+        description = "Ręczna wysyłka maili do osób z trzymanym miejscem, które jeszcze nie zarezerwowały. onlyUnnotified=true (domyślnie) pomija już powiadomionych."
+    )
+    @PostMapping("/events/{eventId}/invites/notify")
+    public ResponseEntity<NotifyParticipantsResult> notifyEventInvites(
+            @Parameter(description = "UUID wydarzenia") @PathVariable UUID eventId,
+            @Parameter(description = "Pomiń osoby, które już dostały zaproszenie") @RequestParam(defaultValue = "true") boolean onlyUnnotified) {
+        return ResponseEntity.ok(new NotifyParticipantsResult(adminService.notifyEventInvites(eventId, onlyUnnotified)));
     }
 
     // ==================== Reservations Overview ====================

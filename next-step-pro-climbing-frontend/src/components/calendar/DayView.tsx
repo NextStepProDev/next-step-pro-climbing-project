@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { format } from "date-fns";
-import { ArrowLeft, Clock, Calendar, Users, Plus, ExternalLink, X, Phone } from "lucide-react";
+import { ArrowLeft, Clock, Calendar, CalendarPlus, Users, Plus, ExternalLink, X, Phone } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import clsx from "clsx";
 import type { TimeSlot, EventSummary } from "../../types";
@@ -18,6 +18,8 @@ interface DayViewProps {
   onEventClick?: (event: EventSummary) => void;
   onCancelEvent?: (eventId: string) => void;
   onAddSlot?: () => void;
+  /** Propozycja terminu (nie-admin): pokazywana w pustym dniu. */
+  onProposeTraining?: () => void;
 }
 
 /* ===============================
@@ -153,6 +155,7 @@ export function DayView({
   onEventClick,
   onCancelEvent,
   onAddSlot,
+  onProposeTraining,
 }: DayViewProps) {
   const { t } = useTranslation('calendar');
   const locale = useDateLocale();
@@ -228,7 +231,16 @@ export function DayView({
       <div className="p-4 space-y-6">
         {!hasAnyContent ? (
           <div className="text-center py-8 text-surface-400">
-            {t('day.noSlots')}
+            <p>{t('day.noSlots')}</p>
+            {onProposeTraining && (
+              <button
+                onClick={onProposeTraining}
+                className="inline-flex items-center gap-2 mt-4 px-4 py-2 rounded-lg bg-primary-600 hover:bg-primary-500 text-white text-sm font-medium transition-colors"
+              >
+                <CalendarPlus className="w-4 h-4" />
+                {t('day.proposeTraining')}
+              </button>
+            )}
           </div>
         ) : (
           <>

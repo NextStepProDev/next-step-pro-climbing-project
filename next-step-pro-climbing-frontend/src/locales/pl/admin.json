@@ -16,7 +16,8 @@
     "assets": "Biblioteka mediów",
     "mail": "Wyślij mail",
     "storage": "Storage",
-    "site": "Strona główna"
+    "site": "Strona główna",
+    "requests": "Propozycje"
   },
   "tabGroups": {
     "calendar": "Kalendarz",
@@ -625,5 +626,48 @@
     "confirmTitle": "Usuń osierocone pliki",
     "confirmMessage": "Zostanie trwale usuniętych {{count}} plików ({{size}}). Tej operacji nie można cofnąć.",
     "deleteSuccess": "Usunięto {{count}} plików."
+  },
+  "requests": {
+    "title": "Propozycje terminów od klientów",
+    "filterPending": "Oczekujące",
+    "filterAll": "Wszystkie",
+    "emptyPending": "Brak oczekujących propozycji.",
+    "emptyAll": "Nie ma jeszcze żadnych propozycji.",
+    "inWindow": "W oknie dostępności",
+    "course": "Kurs",
+    "conflict": "Koliduje z inną propozycją",
+    "adminNote": "Notatka",
+    "submittedAt": "Złożono",
+    "createSlot": "Utwórz slot",
+    "createEvent": "Utwórz wydarzenie",
+    "markContacted": "Skontaktowano się",
+    "reject": "Odrzuć",
+    "reopen": "Przywróć do oczekujących",
+    "viewInCalendar": "Zobacz w kalendarzu",
+    "contactedTitle": "Oznacz: skontaktowano się",
+    "rejectTitle": "Odrzuć propozycję",
+    "statusModalFor": "Propozycja od {{name}} na {{date}}.",
+    "noteLabel": "Notatka (widoczna dla klienta)",
+    "rejectNoteLabel": "Powód odrzucenia (widoczny dla klienta)",
+    "notePlaceholder": "Np. proponuję przełożyć na przyszły tydzień...",
+    "notifyUser": "Wyślij klientowi mail z decyzją",
+    "notifyUserHint": "Mail z informacją o odrzuceniu i Twoją notatką.",
+    "confirmContacted": "Zapisz",
+    "confirmReject": "Odrzuć propozycję",
+    "cancel": "Anuluj",
+    "status": {
+      "PENDING": "Oczekuje",
+      "ACCEPTED": "Zaakceptowana",
+      "CONTACTED": "Skontaktowano się",
+      "REJECTED": "Odrzucona",
+      "EXPIRED": "Wygasła"
+    }
+  },
+  "inviteNotify": {
+    "title": "Maile z zaproszeniem (wysyłka ręczna)",
+    "sentAt": "wysłano {{date}}",
+    "notSent": "nie wysłano",
+    "send": "Wyślij zaproszenia mailem ({{count}})",
+    "sentResult": "Wysłano {{count}} zaproszeń."
   }
 }

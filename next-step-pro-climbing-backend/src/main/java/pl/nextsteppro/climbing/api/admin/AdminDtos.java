@@ -24,14 +24,18 @@ record CreateTimeSlotRequest(
     @Nullable UUID eventId,
     boolean isAvailabilityWindow,
     // Użytkownicy, dla których miejsca są trzymane "na zaproszenie"
-    @Nullable List<UUID> invitedUserIds
+    @Nullable List<UUID> invitedUserIds,
+    // Propozycja terminu, z której powstaje slot (→ status ACCEPTED + link)
+    @Nullable UUID trainingRequestId
 ) {}
 
 // Trzymane miejsce + dane zaproszonej osoby (prefill formularza edycji slotu/wydarzenia)
 record InvitedUserDto(
     UUID userId,
     String fullName,
-    String email
+    String email,
+    // Kiedy admin ręcznie wysłał mail z zaproszeniem (null = jeszcze nie)
+    @Nullable Instant notifiedAt
 ) {}
 
 record TimeSlotAdminDto(
@@ -136,7 +140,9 @@ record CreateEventRequest(
     @Nullable LocalTime startTime,
     @Nullable LocalTime endTime,
     @Nullable UUID courseId,
-    @Nullable List<UUID> invitedUserIds
+    @Nullable List<UUID> invitedUserIds,
+    // Propozycja terminu, z której powstaje wydarzenie (→ status ACCEPTED + link)
+    @Nullable UUID trainingRequestId
 ) {
     @AssertTrue(message = "{validation.event.date.range}")
     boolean isDateRangeValid() {
