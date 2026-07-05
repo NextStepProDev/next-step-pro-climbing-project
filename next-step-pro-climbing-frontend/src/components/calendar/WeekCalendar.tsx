@@ -373,6 +373,41 @@ export function WeekCalendar({
                     })
                   })}
 
+                  {/* Range tint — enrollable events fill their time span behind the slots.
+                      First day from startTime → grid end, middle days full grid, last day
+                      grid start → endTime; all-day (no time) fills the whole grid. Sits under
+                      slots (z-[1] < z-10) so slots stay visible + clickable; clicking an empty
+                      part of the tint opens the event modal (same as the top bar). */}
+                  {dayEvents
+                    .filter((event) => event.eventType !== 'UNAVAILABLE' && event.eventType !== 'CONTACT_DAY')
+                    .map((event) => {
+                      const isFirst = day.date === event.startDate
+                      const isLast = day.date === event.endDate
+                      const rangeStart = event.startTime && isFirst ? timeToMin(event.startTime) : GRID_START_MIN
+                      const rangeEnd = event.endTime && isLast ? timeToMin(event.endTime) : GRID_END_MIN
+                      const from = Math.max(rangeStart, GRID_START_MIN)
+                      const to = Math.min(rangeEnd, GRID_END_MIN)
+                      if (to <= from) return null
+                      const top = (from - GRID_START_MIN) / 60 * HOUR_HEIGHT
+                      const height = (to - from) / 60 * HOUR_HEIGHT
+                      const color = eventColorMap.get(event.id) ?? getEventColorByIndex(event.id, event.eventType, event.currentParticipants >= event.maxParticipants)
+                      return (
+                        <button
+                          key={`${event.id}-tint`}
+                          onClick={() => onEventClick(event)}
+                          title={event.title}
+                          aria-label={event.title}
+                          className={clsx(
+                            'absolute left-0.5 right-0.5 z-[1] overflow-hidden rounded-sm border-l-2 cursor-pointer',
+                            color.barBorder,
+                          )}
+                          style={{ top, height }}
+                        >
+                          <span className={clsx('absolute inset-0 opacity-10', color.dot)} />
+                        </button>
+                      )
+                    })}
+
                   {/* Event bars at top area */}
                   {dayEvents.filter((event) => event.eventType !== 'UNAVAILABLE').map((event, eventIndex) => {
                     const color = eventColorMap.get(event.id) ?? getEventColorByIndex(event.id, event.eventType, event.currentParticipants >= event.maxParticipants)
