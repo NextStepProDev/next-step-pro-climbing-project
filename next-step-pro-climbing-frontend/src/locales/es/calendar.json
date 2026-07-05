@@ -48,7 +48,8 @@
     "noSlots": "No hay horarios disponibles para este día",
     "training": "Entrenamiento",
     "callToBook": "Llama para concertar",
-    "availabilityWindows": "Disponible para concertar"
+    "availabilityWindows": "Disponible para concertar",
+    "proposeTraining": "Propón un horario"
   },
   "invites": {
     "label": "Invitados — plazas reservadas solo para ellos",
@@ -81,7 +82,8 @@
     "reservedOnlyLeftGuest": "Algunas plazas están guardadas para invitados. Inicia sesión para comprobar si esta plaza está guardada para ti.",
     "availabilityWindow": {
       "title": "Este bloque de tiempo está disponible",
-      "body": "Llámanos o escríbenos para concertar una hora específica de entrenamiento en esta franja."
+      "body": "Propón abajo una hora de entrenamiento dentro de esta ventana, o llámanos o escríbenos.",
+      "propose": "Propón un horario en esta ventana"
     },
     "waitlist": {
       "join": "Unirse a la lista de espera",
@@ -171,7 +173,8 @@
   "customSlot": {
     "title": "¿No encuentras un horario adecuado?",
     "description": "Llámanos o escríbenos — estaremos encantados de acordar una sesión individual adaptada a tus posibilidades.",
-    "email": "Enviar e-mail"
+    "email": "Enviar e-mail",
+    "propose": "Propón un horario"
   },
   "contactDay": {
     "message": "Contáctenos para concertar una sesión en el rocódromo o en las rocas.",
@@ -186,5 +189,24 @@
     "oneSpot": "1 plaza libre",
     "freeSpots": "{{free}}/{{max}} libres",
     "unavailable": "No disponible"
+  },
+  "propose": {
+    "title": "Propón un horario de entrenamiento",
+    "intro": "Rellena un breve formulario — el entrenador recibirá una notificación y responderá creando un horario o contactándote.",
+    "date": "Fecha",
+    "from": "Desde",
+    "to": "Hasta",
+    "participants": "Número de personas",
+    "course": "Curso relacionado (opcional)",
+    "noCourse": "— entrenamiento individual —",
+    "comment": "Comentario (opcional)",
+    "commentPlaceholder": "P. ej. nivel de experiencia, objetivo del entrenamiento...",
+    "submit": "Enviar propuesta",
+    "cancel": "Cancelar",
+    "endAfterStart": "La hora de fin debe ser posterior a la de inicio",
+    "outsideWindow": "Las horas deben estar dentro de la ventana {{from}} – {{to}}",
+    "windowInfo": "Ventana de disponibilidad {{from}} – {{to}} — propón horas dentro de este rango.",
+    "loginRequired": "Inicia sesión para proponer un horario de entrenamiento.",
+    "loginButton": "Iniciar sesión"
   }
 }

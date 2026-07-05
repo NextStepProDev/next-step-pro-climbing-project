@@ -40,5 +40,20 @@
       "title": "Lista de espera",
       "leave": "Salir de la cola"
     }
+  },
+  "trainingRequests": {
+    "title": "Mis propuestas de horario",
+    "adminNote": "Del entrenador:",
+    "viewInCalendar": "Ver en el calendario",
+    "withdraw": "Retirar",
+    "withdrawConfirmTitle": "¿Retirar la propuesta?",
+    "withdrawConfirmMessage": "La propuesta se eliminará y el entrenador ya no la verá.",
+    "status": {
+      "PENDING": "Pendiente",
+      "ACCEPTED": "Aceptada",
+      "CONTACTED": "El entrenador te contactará",
+      "REJECTED": "Rechazada",
+      "EXPIRED": "Caducada"
+    }
   }
 }

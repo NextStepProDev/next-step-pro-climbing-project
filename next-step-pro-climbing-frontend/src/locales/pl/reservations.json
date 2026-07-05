@@ -40,5 +40,20 @@
       "title": "Lista oczekujących",
       "leave": "Opuść kolejkę"
     }
+  },
+  "trainingRequests": {
+    "title": "Moje propozycje terminów",
+    "adminNote": "Od trenera:",
+    "viewInCalendar": "Zobacz w kalendarzu",
+    "withdraw": "Wycofaj",
+    "withdrawConfirmTitle": "Wycofać propozycję?",
+    "withdrawConfirmMessage": "Propozycja zostanie usunięta i trener jej już nie zobaczy.",
+    "status": {
+      "PENDING": "Oczekuje",
+      "ACCEPTED": "Zaakceptowana",
+      "CONTACTED": "Trener się skontaktuje",
+      "REJECTED": "Odrzucona",
+      "EXPIRED": "Wygasła"
+    }
   }
 }

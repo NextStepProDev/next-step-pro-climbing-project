@@ -14,6 +14,14 @@ interface CreateSlotModalProps {
   onClose: () => void
   defaultDate: string
   onSuccess?: () => void
+  /** Prefill z propozycji terminu: godziny, miejsca, zaproszony proponujący + link do propozycji. */
+  initial?: {
+    startTime?: string
+    endTime?: string
+    maxParticipants?: number
+    invited?: InvitedUser[]
+    trainingRequestId?: string
+  }
 }
 
 export function CreateSlotModal({
@@ -21,6 +29,7 @@ export function CreateSlotModal({
   onClose,
   defaultDate,
   onSuccess,
+  initial,
 }: CreateSlotModalProps) {
   const { t } = useTranslation('calendar')
 
@@ -31,13 +40,13 @@ export function CreateSlotModal({
 
   const [form, setForm] = useState<CreateTimeSlotRequest & { title: string }>({
     date: defaultDate,
-    startTime: '10:00',
-    endTime: '11:00',
-    maxParticipants: 1,
+    startTime: initial?.startTime ?? '10:00',
+    endTime: initial?.endTime ?? '11:00',
+    maxParticipants: initial?.maxParticipants ?? 1,
     title: '',
     isAvailabilityWindow: false,
   })
-  const [invited, setInvited] = useState<InvitedUser[]>([])
+  const [invited, setInvited] = useState<InvitedUser[]>(initial?.invited ?? [])
 
   const queryClient = useQueryClient()
 
@@ -62,6 +71,7 @@ export function CreateSlotModal({
       maxParticipants: form.isAvailabilityWindow ? 1 : form.maxParticipants,
       title: title || undefined,
       invitedUserIds: form.isAvailabilityWindow ? [] : invited.map((u) => u.userId),
+      trainingRequestId: initial?.trainingRequestId,
     })
   }
 

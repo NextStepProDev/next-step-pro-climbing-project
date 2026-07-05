@@ -48,7 +48,8 @@
     "noSlots": "Brak dostępnych godzin w tym dniu",
     "training": "Trening",
     "callToBook": "Dostępny — umów godzinę",
-    "availabilityWindows": "Dostępne terminy do umówienia"
+    "availabilityWindows": "Dostępne terminy do umówienia",
+    "proposeTraining": "Zaproponuj termin"
   },
   "invites": {
     "label": "Zaproszeni — miejsca zarezerwowane tylko dla nich",
@@ -81,7 +82,8 @@
     "reservedOnlyLeftGuest": "Niektóre miejsca są trzymane dla zaproszonych gości. Zaloguj się, aby sprawdzić, czy to miejsce jest trzymane dla Ciebie.",
     "availabilityWindow": {
       "title": "Ten blok czasu jest dostępny",
-      "body": "Zadzwoń lub napisz do nas, aby ustalić konkretną godzinę treningu w tym oknie czasowym."
+      "body": "Zaproponuj poniżej godzinę treningu w tym oknie czasowym albo zadzwoń lub napisz do nas.",
+      "propose": "Zaproponuj termin w tym oknie"
     },
     "waitlist": {
       "join": "Dołącz do listy oczekujących",
@@ -171,7 +173,8 @@
   "customSlot": {
     "title": "Nie znalazłeś odpowiedniego terminu?",
     "description": "Zadzwoń lub napisz — chętnie umówimy termin indywidualnie, dopasowany do Twoich możliwości.",
-    "email": "Napisz e-mail"
+    "email": "Napisz e-mail",
+    "propose": "Zaproponuj termin"
   },
   "contactDay": {
     "message": "Skontaktuj się z nami, aby ustalić termin zajęć na ściance lub skałach.",
@@ -186,5 +189,24 @@
     "oneSpot": "1 miejsce wolne",
     "freeSpots": "{{free}}/{{max}} wolne",
     "unavailable": "Niedostępny"
+  },
+  "propose": {
+    "title": "Zaproponuj termin treningu",
+    "intro": "Wypełnij krótki formularz — trener dostanie powiadomienie i odpowie, tworząc termin albo kontaktując się z Tobą.",
+    "date": "Data",
+    "from": "Od",
+    "to": "Do",
+    "participants": "Liczba osób",
+    "course": "Dotyczy kursu (opcjonalnie)",
+    "noCourse": "— trening indywidualny —",
+    "comment": "Komentarz (opcjonalnie)",
+    "commentPlaceholder": "Np. poziom zaawansowania, cel treningu...",
+    "submit": "Wyślij propozycję",
+    "cancel": "Anuluj",
+    "endAfterStart": "Godzina zakończenia musi być późniejsza niż rozpoczęcia",
+    "outsideWindow": "Godziny muszą mieścić się w oknie {{from}} – {{to}}",
+    "windowInfo": "Okno dostępności {{from}} – {{to}} — zaproponuj godziny w tych ramach.",
+    "loginRequired": "Zaloguj się, aby zaproponować termin treningu.",
+    "loginButton": "Zaloguj się"
   }
 }

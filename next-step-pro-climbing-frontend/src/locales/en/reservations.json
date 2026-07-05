@@ -40,5 +40,20 @@
       "title": "Waitlist",
       "leave": "Leave queue"
     }
+  },
+  "trainingRequests": {
+    "title": "My time proposals",
+    "adminNote": "From the trainer:",
+    "viewInCalendar": "View in calendar",
+    "withdraw": "Withdraw",
+    "withdrawConfirmTitle": "Withdraw the proposal?",
+    "withdrawConfirmMessage": "The proposal will be deleted and the trainer will no longer see it.",
+    "status": {
+      "PENDING": "Pending",
+      "ACCEPTED": "Accepted",
+      "CONTACTED": "Trainer will contact you",
+      "REJECTED": "Rejected",
+      "EXPIRED": "Expired"
+    }
   }
 }

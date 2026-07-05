@@ -43,6 +43,11 @@ public class ReservedSeat {
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
+    // Kiedy admin ręcznie wysłał mail z zaproszeniem (null = jeszcze nie powiadomiono).
+    @Column(name = "notified_at")
+    @Nullable
+    private Instant notifiedAt;
+
     protected ReservedSeat() {}
 
     public ReservedSeat(TimeSlot timeSlot, User user) {
@@ -80,5 +85,14 @@ public class ReservedSeat {
 
     public Instant getCreatedAt() {
         return createdAt;
+    }
+
+    @Nullable
+    public Instant getNotifiedAt() {
+        return notifiedAt;
+    }
+
+    public void markNotified() {
+        this.notifiedAt = Instant.now();
     }
 }

@@ -20,6 +20,9 @@ import type {
   GuestParticipant,
   CreateTimeSlotRequest,
   CreateEventRequest,
+  CreateTrainingRequest,
+  TrainingRequest,
+  AdminTrainingRequest,
   InvitedUser,
   EventDetail,
   EventParticipants,
@@ -372,6 +375,21 @@ export const reservationApi = {
     fetchApi<EventWaitlistEntry[]>('/reservations/my/event-waitlist'),
 }
 
+// Training requests (propozycje terminów)
+export const trainingRequestApi = {
+  create: (data: CreateTrainingRequest) =>
+    fetchApi<{ id: string; message: string }>('/training-requests', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  getMy: () =>
+    fetchApi<TrainingRequest[]>('/training-requests/my'),
+
+  cancel: (requestId: string) =>
+    fetchApi<void>(`/training-requests/${requestId}`, { method: 'DELETE' }),
+}
+
 // Admin
 export const adminApi = {
   // Time Slots
@@ -389,6 +407,11 @@ export const adminApi = {
 
   getSlotInvites: (slotId: string) =>
     fetchApi<InvitedUser[]>(`/admin/slots/${slotId}/invites`),
+
+  notifySlotInvites: (slotId: string, onlyUnnotified = true) =>
+    fetchApi<{ notifiedCount: number }>(`/admin/slots/${slotId}/invites/notify?onlyUnnotified=${onlyUnnotified}`, {
+      method: 'POST',
+    }),
 
   notifySlotParticipants: (slotId: string, previousSlot?: { previousDate?: string; previousStartTime?: string; previousEndTime?: string }) =>
     fetchApi<{ notifiedCount: number }>(`/admin/slots/${slotId}/notify-participants`, {
@@ -431,6 +454,24 @@ export const adminApi = {
 
   getEventInvites: (eventId: string) =>
     fetchApi<InvitedUser[]>(`/admin/events/${eventId}/invites`),
+
+  notifyEventInvites: (eventId: string, onlyUnnotified = true) =>
+    fetchApi<{ notifiedCount: number }>(`/admin/events/${eventId}/invites/notify?onlyUnnotified=${onlyUnnotified}`, {
+      method: 'POST',
+    }),
+
+  // Training requests (propozycje terminów)
+  getTrainingRequests: () =>
+    fetchApi<AdminTrainingRequest[]>('/admin/training-requests'),
+
+  getTrainingRequestPendingCount: () =>
+    fetchApi<{ count: number }>('/admin/training-requests/pending-count'),
+
+  updateTrainingRequestStatus: (requestId: string, data: { status: 'PENDING' | 'CONTACTED' | 'REJECTED'; adminNote?: string; notifyUser?: boolean }) =>
+    fetchApi<AdminTrainingRequest>(`/admin/training-requests/${requestId}/status`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
 
   deleteEvent: (eventId: string) =>
     fetchApi<void>(`/admin/events/${eventId}`, { method: 'DELETE' }),

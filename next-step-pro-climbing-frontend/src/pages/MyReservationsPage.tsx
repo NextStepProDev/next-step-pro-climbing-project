@@ -4,8 +4,8 @@ import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { format } from 'date-fns'
 import { useDateLocale } from '../utils/dateFnsLocale'
-import { Calendar, Clock, MessageSquare, Users, X, Ban, ChevronDown, ChevronRight, ChevronLeft, Clock3, ListX, ExternalLink, Pencil, Check } from 'lucide-react'
-import { reservationApi, calendarApi } from '../api/client'
+import { Calendar, CalendarPlus, Clock, MessageSquare, Users, X, Ban, ChevronDown, ChevronRight, ChevronLeft, Clock3, ListX, ExternalLink, Pencil, Check } from 'lucide-react'
+import { reservationApi, calendarApi, trainingRequestApi } from '../api/client'
 import { getErrorMessage } from '../utils/errors'
 import { LoadingSpinner } from '../components/ui/LoadingSpinner'
 import { QueryError } from '../components/ui/QueryError'
@@ -14,7 +14,7 @@ import { ConfirmModal } from '../components/ui/ConfirmModal'
 import { SlotDetailModal } from '../components/calendar/SlotDetailModal'
 import { EventSignupModal } from '../components/calendar/EventSignupModal'
 import { AddToCalendarButton } from '../components/ui/AddToCalendarButton'
-import type { MyReservations, WaitlistEntry, EventWaitlistEntry } from '../types'
+import type { MyReservations, WaitlistEntry, EventWaitlistEntry, TrainingRequest } from '../types'
 
 export function MyReservationsPage() {
   const { t } = useTranslation('reservations')
@@ -80,6 +80,11 @@ export function MyReservationsPage() {
     queryFn: reservationApi.getMyEventWaitlist,
     refetchInterval: 30_000,
     refetchIntervalInBackground: false,
+  })
+
+  const { data: trainingRequests } = useQuery({
+    queryKey: ['trainingRequests', 'my'],
+    queryFn: trainingRequestApi.getMy,
   })
 
   const confirmOfferMutation = useMutation({
@@ -218,6 +223,11 @@ export function MyReservationsPage() {
           onSlotClick={setSelectedSlotId}
           onEventClick={setSelectedEventId}
         />
+      )}
+
+      {/* Moje propozycje terminów */}
+      {trainingRequests && trainingRequests.length > 0 && (
+        <TrainingRequestsSection requests={trainingRequests} />
       )}
 
       {cancelMutation.isError && (
@@ -1031,6 +1041,132 @@ function EventWaitlistWaitingSection({
           </div>
         </div>
       ))}
+    </div>
+  )
+}
+
+/* ===============================
+   Moje propozycje terminów
+   =============================== */
+function TrainingRequestsSection({ requests }: { requests: TrainingRequest[] }) {
+  const { t } = useTranslation('reservations')
+  const locale = useDateLocale()
+  const queryClient = useQueryClient()
+  const [confirmCancelId, setConfirmCancelId] = useState<string | null>(null)
+
+  const cancelRequestMutation = useMutation({
+    mutationFn: trainingRequestApi.cancel,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['trainingRequests'] })
+      setConfirmCancelId(null)
+    },
+  })
+
+  const statusChip = (status: TrainingRequest['status']) => {
+    const classes: Record<TrainingRequest['status'], string> = {
+      PENDING: 'bg-amber-500/15 text-amber-400',
+      ACCEPTED: 'bg-primary-500/15 text-primary-400',
+      CONTACTED: 'bg-sky-500/15 text-sky-400',
+      REJECTED: 'bg-rose-500/15 text-rose-400',
+      EXPIRED: 'bg-surface-700 text-surface-400',
+    }
+    return (
+      <span className={`px-2 py-1 rounded-full text-xs font-medium ${classes[status]}`}>
+        {t(`trainingRequests.status.${status}`)}
+      </span>
+    )
+  }
+
+  return (
+    <div className="mb-8">
+      <h2 className="flex items-center gap-2 text-lg font-semibold text-surface-100 mb-3">
+        <CalendarPlus className="w-5 h-5 text-primary-400" />
+        {t('trainingRequests.title')}
+      </h2>
+      <div className="space-y-3">
+        {requests.map((req) => {
+          const linkDate = req.createdSlotDate ?? req.createdEventStartDate
+          return (
+            <div
+              key={req.id}
+              className="bg-surface-900 rounded-xl border border-surface-800 p-4"
+            >
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-3 text-surface-200">
+                  <Calendar className="w-4 h-4 text-surface-400" />
+                  <span className="font-medium capitalize">
+                    {format(new Date(req.requestedDate), 'EEEE, d MMMM yyyy', { locale })}
+                  </span>
+                  <span className="flex items-center gap-1 text-surface-400 text-sm">
+                    <Clock className="w-4 h-4" />
+                    {req.startTime.slice(0, 5)} - {req.endTime.slice(0, 5)}
+                  </span>
+                </div>
+                {statusChip(req.status)}
+              </div>
+
+              <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-surface-400">
+                <span className="flex items-center gap-1">
+                  <Users className="w-4 h-4" />
+                  {req.participants}
+                </span>
+                {req.courseTitle && <span>{req.courseTitle}</span>}
+              </div>
+
+              {req.comment && (
+                <p className="mt-2 text-sm text-surface-400 flex items-start gap-1.5">
+                  <MessageSquare className="w-4 h-4 mt-0.5 shrink-0" />
+                  {req.comment}
+                </p>
+              )}
+
+              {req.adminNote && (
+                <div className="mt-2 p-2.5 bg-surface-800/60 rounded-lg text-sm text-surface-300">
+                  <span className="text-surface-500">{t('trainingRequests.adminNote')}</span>{' '}
+                  {req.adminNote}
+                </div>
+              )}
+
+              <div className="mt-3 flex items-center gap-4">
+                {req.status === 'ACCEPTED' && linkDate && (
+                  <Link
+                    to={`/calendar?date=${linkDate}${req.createdSlotId ? `&slot=${req.createdSlotId}` : ''}`}
+                    className="flex items-center gap-1 text-sm font-medium text-primary-400 hover:text-primary-300 transition-colors"
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                    {t('trainingRequests.viewInCalendar')}
+                  </Link>
+                )}
+                {req.status === 'PENDING' && (
+                  <button
+                    onClick={() => setConfirmCancelId(req.id)}
+                    className="flex items-center gap-1 text-sm text-rose-400 hover:text-rose-300 transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                    {t('trainingRequests.withdraw')}
+                  </button>
+                )}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
+      {cancelRequestMutation.isError && (
+        <div className="mt-3 p-3 bg-rose-500/5 border border-rose-500/15 rounded-lg text-sm text-rose-400/80">
+          {getErrorMessage(cancelRequestMutation.error)}
+        </div>
+      )}
+
+      <ConfirmModal
+        isOpen={!!confirmCancelId}
+        title={t('trainingRequests.withdrawConfirmTitle')}
+        message={t('trainingRequests.withdrawConfirmMessage')}
+        confirmText={t('trainingRequests.withdraw')}
+        variant="danger"
+        onConfirm={() => confirmCancelId && cancelRequestMutation.mutate(confirmCancelId)}
+        onClose={() => setConfirmCancelId(null)}
+      />
     </div>
   )
 }

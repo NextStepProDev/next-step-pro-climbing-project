@@ -20,6 +20,8 @@ import pl.nextsteppro.climbing.domain.reservedseat.ReservedSeat;
 import pl.nextsteppro.climbing.domain.reservedseat.ReservedSeatRepository;
 import pl.nextsteppro.climbing.domain.timeslot.TimeSlot;
 import pl.nextsteppro.climbing.domain.timeslot.TimeSlotRepository;
+import pl.nextsteppro.climbing.domain.trainingrequest.TrainingRequestRepository;
+import pl.nextsteppro.climbing.domain.trainingrequest.TrainingRequestStatus;
 import pl.nextsteppro.climbing.domain.auth.AuthTokenRepository;
 import pl.nextsteppro.climbing.domain.auth.TokenType;
 import pl.nextsteppro.climbing.domain.user.User;
@@ -73,6 +75,7 @@ public class AdminService {
     private final WaitlistService waitlistService;
     private final EventWaitlistService eventWaitlistService;
     private final ReservedSeatRepository reservedSeatRepository;
+    private final TrainingRequestRepository trainingRequestRepository;
 
     public AdminService(TimeSlotRepository timeSlotRepository,
                        EventRepository eventRepository,
@@ -90,7 +93,8 @@ public class AdminService {
                        pl.nextsteppro.climbing.infrastructure.mail.AuthMailService authMailService,
                        WaitlistService waitlistService,
                        EventWaitlistService eventWaitlistService,
-                       ReservedSeatRepository reservedSeatRepository) {
+                       ReservedSeatRepository reservedSeatRepository,
+                       TrainingRequestRepository trainingRequestRepository) {
         this.timeSlotRepository = timeSlotRepository;
         this.eventRepository = eventRepository;
         this.courseRepository = courseRepository;
@@ -108,6 +112,7 @@ public class AdminService {
         this.waitlistService = waitlistService;
         this.eventWaitlistService = eventWaitlistService;
         this.reservedSeatRepository = reservedSeatRepository;
+        this.trainingRequestRepository = trainingRequestRepository;
     }
 
     @Caching(evict = {
@@ -144,6 +149,10 @@ public class AdminService {
 
         if (request.invitedUserIds() != null) {
             syncSlotInvites(slot, request.invitedUserIds());
+        }
+
+        if (request.trainingRequestId() != null) {
+            linkTrainingRequest(request.trainingRequestId(), slot, null);
         }
 
         User admin = userRepository.findById(adminId).orElseThrow();
@@ -494,6 +503,10 @@ public class AdminService {
 
         if (request.invitedUserIds() != null) {
             syncEventInvites(event, request.invitedUserIds());
+        }
+
+        if (request.trainingRequestId() != null) {
+            linkTrainingRequest(request.trainingRequestId(), null, event);
         }
 
         User admin = userRepository.findById(adminId).orElseThrow();
@@ -891,15 +904,69 @@ public class AdminService {
     @Transactional(readOnly = true)
     public List<InvitedUserDto> getSlotInvites(UUID slotId) {
         return reservedSeatRepository.findBySlotIdWithUser(slotId).stream()
-            .map(rs -> new InvitedUserDto(rs.getUser().getId(), rs.getUser().getFullName(), rs.getUser().getEmail()))
+            .map(rs -> new InvitedUserDto(rs.getUser().getId(), rs.getUser().getFullName(), rs.getUser().getEmail(), rs.getNotifiedAt()))
             .toList();
     }
 
     @Transactional(readOnly = true)
     public List<InvitedUserDto> getEventInvites(UUID eventId) {
         return reservedSeatRepository.findByEventIdWithUser(eventId).stream()
-            .map(rs -> new InvitedUserDto(rs.getUser().getId(), rs.getUser().getFullName(), rs.getUser().getEmail()))
+            .map(rs -> new InvitedUserDto(rs.getUser().getId(), rs.getUser().getFullName(), rs.getUser().getEmail(), rs.getNotifiedAt()))
             .toList();
+    }
+
+    /**
+     * Ręczna wysyłka maili z zaproszeniem do osób z trzymanym miejscem w slocie.
+     * Wysyła tylko do "wiszących" zaproszeń (adresat nie ma jeszcze potwierdzonej rezerwacji) —
+     * kto już zarezerwował, dostał zwykłe potwierdzenie. {@code onlyUnnotified} pomija osoby,
+     * które już dostały zaproszenie (dosyłka po dodaniu nowych zaproszonych bez spamowania reszty).
+     */
+    public int notifySlotInvites(UUID slotId, boolean onlyUnnotified) {
+        TimeSlot slot = timeSlotRepository.findById(slotId)
+            .orElseThrow(() -> new IllegalArgumentException("Time slot not found"));
+        String displayTitle = slot.getDisplayTitle();
+        int sent = 0;
+        for (ReservedSeat rs : reservedSeatRepository.findBySlotIdWithUser(slotId)) {
+            if (onlyUnnotified && rs.getNotifiedAt() != null) continue;
+            if (reservationRepository.existsByUserIdAndTimeSlotIdAndStatus(
+                    rs.getUser().getId(), slotId, ReservationStatus.CONFIRMED)) continue;
+            mailService.sendSlotInvitationNotification(rs.getUser(), slot, displayTitle);
+            rs.markNotified();
+            sent++;
+        }
+        return sent;
+    }
+
+    /** Jak {@link #notifySlotInvites}, ale dla zaproszeń na wydarzenie. */
+    public int notifyEventInvites(UUID eventId, boolean onlyUnnotified) {
+        Event event = eventRepository.findById(eventId)
+            .orElseThrow(() -> new IllegalArgumentException("Event not found"));
+        List<UUID> slotIds = timeSlotRepository.findByEventId(eventId).stream().map(TimeSlot::getId).toList();
+        int sent = 0;
+        for (ReservedSeat rs : reservedSeatRepository.findByEventIdWithUser(eventId)) {
+            if (onlyUnnotified && rs.getNotifiedAt() != null) continue;
+            boolean hasConfirmed = !slotIds.isEmpty() && reservationRepository
+                .findConfirmedByTimeSlotIds(slotIds).stream()
+                .anyMatch(r -> r.getUser().getId().equals(rs.getUser().getId()));
+            if (hasConfirmed) continue;
+            mailService.sendEventInvitationNotification(rs.getUser(), event);
+            rs.markNotified();
+            sent++;
+        }
+        return sent;
+    }
+
+    /**
+     * Spina świeżo utworzony slot/wydarzenie z propozycją terminu (status ACCEPTED + link).
+     * Celowo tolerancyjne na brak propozycji (mogła zostać w międzyczasie wycofana przez
+     * użytkownika) — utworzenie slotu/wydarzenia jest ważniejsze niż aktualizacja propozycji.
+     */
+    private void linkTrainingRequest(UUID trainingRequestId, @Nullable TimeSlot slot, @Nullable Event event) {
+        trainingRequestRepository.findById(trainingRequestId).ifPresent(tr -> {
+            tr.setCreatedSlot(slot);
+            tr.setCreatedEvent(event);
+            tr.resolve(TrainingRequestStatus.ACCEPTED);
+        });
     }
 
     /** Ustawia dokładnie podany zestaw zaproszonych dla slotu (diff: dodaje/usuwa). */

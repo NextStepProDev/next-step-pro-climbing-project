@@ -12,6 +12,7 @@ import { Modal } from '../../components/ui/Modal'
 import { TimeScrollPicker } from '../../components/ui/TimeScrollPicker'
 import { UserSearchSelect } from '../../components/ui/UserSearchSelect'
 import { InvitedUsersPicker } from '../../components/ui/InvitedUsersPicker'
+import { InviteNotifySection } from '../../components/ui/InviteNotifySection'
 import { CreateSlotModal } from '../../components/calendar/CreateSlotModal'
 import { useDateLocale } from '../../utils/dateFnsLocale'
 import { useDirty } from '../../hooks/useDirty'
@@ -543,6 +544,10 @@ function EditSlotModal({
 
         {!form.isAvailabilityWindow && (
           <InvitedUsersPicker value={invited} onChange={setEditedInvited} maxSeats={form.maxParticipants} />
+        )}
+
+        {!form.isAvailabilityWindow && !invitedDirty && (
+          <InviteNotifySection target={{ type: 'slot', slotId: slot.id }} invites={baselineInvited} />
         )}
 
         <div className="flex gap-3 pt-4">

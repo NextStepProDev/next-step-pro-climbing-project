@@ -13,9 +13,10 @@ import { DayView } from "../components/calendar/DayView";
 import { SlotDetailModal } from "../components/calendar/SlotDetailModal";
 import { EventSignupModal } from "../components/calendar/EventSignupModal";
 import { CreateSlotModal } from "../components/calendar/CreateSlotModal";
+import { ProposeTrainingModal, type ProposeWindow } from "../components/calendar/ProposeTrainingModal";
 import { LoadingSpinner } from "../components/ui/LoadingSpinner";
 import { QueryError } from "../components/ui/QueryError";
-import { Phone, Mail, ExternalLink, Scissors, Copy, X, Bell } from "lucide-react";
+import { Phone, Mail, ExternalLink, Scissors, Copy, X, Bell, CalendarPlus } from "lucide-react";
 import { formatAvailability, buildEventColorMap } from "../utils/events";
 import { useCalendarPromo } from "../hooks/useCalendarPromo";
 import type { EventSummary, TimeSlot } from "../types";
@@ -49,6 +50,8 @@ export function CalendarPage() {
   );
   const [selectedEvent, setSelectedEvent] = useState<EventSummary | null>(null);
   const [showCreateSlotModal, setShowCreateSlotModal] = useState(false);
+  // Propozycja terminu: data startowa + opcjonalne okno dostępności (ogranicza godziny)
+  const [proposeContext, setProposeContext] = useState<{ date: string; window?: ProposeWindow } | null>(null);
   const [cutSlot, setCutSlot] = useState<{ id: string; date: string; startTime: string; endTime: string } | null>(null);
   const [copiedSlot, setCopiedSlot] = useState<{ id: string; date: string; startTime: string; endTime: string; title?: string; maxParticipants: number; isAvailabilityWindow: boolean } | null>(null);
   const [notifyToast, setNotifyToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
@@ -516,6 +519,7 @@ export function CalendarPage() {
           onEventClick={setSelectedEvent}
           onCancelEvent={(id) => cancelEventMutation.mutate(id)}
           onAddSlot={isAdmin ? () => setShowCreateSlotModal(true) : undefined}
+          onProposeTraining={!isAdmin ? () => setProposeContext({ date: selectedDate }) : undefined}
         />
       ) : viewMode === 'week' ? (
         weekLoading ? (
@@ -813,6 +817,10 @@ export function CalendarPage() {
         slot={slotDetail ?? null}
         isOpen={!!selectedSlotId}
         onClose={handleModalClose}
+        onProposeInWindow={(w) => {
+          handleModalClose();
+          setProposeContext({ date: w.date, window: w });
+        }}
       />
 
       <EventSignupModal
@@ -831,6 +839,16 @@ export function CalendarPage() {
         />
       )}
 
+      {proposeContext && (
+        <ProposeTrainingModal
+          key={`${proposeContext.date}-${proposeContext.window?.slotId ?? 'free'}`}
+          isOpen={!!proposeContext}
+          onClose={() => setProposeContext(null)}
+          defaultDate={proposeContext.date}
+          window={proposeContext.window}
+        />
+      )}
+
       {/* Indywidualny termin */}
       <div className="mt-6 bg-surface-900 rounded-xl border border-surface-800 p-5 flex flex-col sm:flex-row items-start sm:items-center gap-4">
         <div className="flex-1">
@@ -838,6 +856,15 @@ export function CalendarPage() {
           <p className="text-surface-400 text-sm mt-1">{t('customSlot.description')}</p>
         </div>
         <div className="flex flex-col sm:flex-row gap-3 shrink-0">
+          {!isAdmin && (
+            <button
+              onClick={() => setProposeContext({ date: selectedDate ?? format(new Date(), 'yyyy-MM-dd') })}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary-600 hover:bg-primary-500 text-white text-sm font-medium transition-colors"
+            >
+              <CalendarPlus className="w-4 h-4" />
+              {t('customSlot.propose')}
+            </button>
+          )}
           <a
             href="tel:+48535246673"
             className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary-600 hover:bg-primary-500 text-white text-sm font-medium transition-colors"

@@ -16,7 +16,8 @@
     "assets": "Biblioteca de medios",
     "mail": "Enviar email",
     "storage": "Almacenamiento",
-    "site": "Página principal"
+    "site": "Página principal",
+    "requests": "Propuestas"
   },
   "tabGroups": {
     "calendar": "Calendario",
@@ -623,5 +624,48 @@
     "confirmTitle": "Eliminar archivos huérfanos",
     "confirmMessage": "Se eliminarán permanentemente {{count}} archivos ({{size}}). Esta operación no se puede deshacer.",
     "deleteSuccess": "{{count}} archivos eliminados."
+  },
+  "requests": {
+    "title": "Propuestas de horario de los clientes",
+    "filterPending": "Pendientes",
+    "filterAll": "Todas",
+    "emptyPending": "No hay propuestas pendientes.",
+    "emptyAll": "Aún no hay propuestas.",
+    "inWindow": "En ventana de disponibilidad",
+    "course": "Curso",
+    "conflict": "Se solapa con otra propuesta",
+    "adminNote": "Nota",
+    "submittedAt": "Enviada",
+    "createSlot": "Crear horario",
+    "createEvent": "Crear evento",
+    "markContacted": "Contactado",
+    "reject": "Rechazar",
+    "reopen": "Devolver a pendientes",
+    "viewInCalendar": "Ver en el calendario",
+    "contactedTitle": "Marcar como contactado",
+    "rejectTitle": "Rechazar propuesta",
+    "statusModalFor": "Propuesta de {{name}} para el {{date}}.",
+    "noteLabel": "Nota (visible para el cliente)",
+    "rejectNoteLabel": "Motivo del rechazo (visible para el cliente)",
+    "notePlaceholder": "P. ej. propongo pasarlo a la próxima semana...",
+    "notifyUser": "Enviar al cliente un correo con la decisión",
+    "notifyUserHint": "Un correo con el rechazo y tu nota.",
+    "confirmContacted": "Guardar",
+    "confirmReject": "Rechazar propuesta",
+    "cancel": "Cancelar",
+    "status": {
+      "PENDING": "Pendiente",
+      "ACCEPTED": "Aceptada",
+      "CONTACTED": "Contactado",
+      "REJECTED": "Rechazada",
+      "EXPIRED": "Caducada"
+    }
+  },
+  "inviteNotify": {
+    "title": "Correos de invitación (envío manual)",
+    "sentAt": "enviado {{date}}",
+    "notSent": "no enviado",
+    "send": "Enviar correos de invitación ({{count}})",
+    "sentResult": "Se enviaron {{count}} invitaciones."
   }
 }

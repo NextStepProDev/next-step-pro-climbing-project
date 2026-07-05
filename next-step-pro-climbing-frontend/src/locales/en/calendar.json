@@ -48,7 +48,8 @@
     "noSlots": "No available time slots on this day",
     "training": "Training",
     "callToBook": "Call to arrange",
-    "availabilityWindows": "Available to arrange"
+    "availabilityWindows": "Available to arrange",
+    "proposeTraining": "Propose a time"
   },
   "invites": {
     "label": "Invited — seats reserved only for them",
@@ -81,7 +82,8 @@
     "reservedOnlyLeftGuest": "Some seats are held for invited guests. Log in to check whether this seat is being held for you.",
     "availabilityWindow": {
       "title": "This time block is available",
-      "body": "Call or write to us to arrange a specific training time within this window."
+      "body": "Propose a training time within this window below, or call or write to us.",
+      "propose": "Propose a time in this window"
     },
     "waitlist": {
       "join": "Join waitlist",
@@ -171,7 +173,8 @@
   "customSlot": {
     "title": "Can't find a suitable time?",
     "description": "Call or write to us — we'll be happy to arrange an individual session that fits your schedule.",
-    "email": "Send e-mail"
+    "email": "Send e-mail",
+    "propose": "Propose a time"
   },
   "contactDay": {
     "message": "Contact us to arrange a session at the climbing wall or outdoors.",
@@ -186,5 +189,24 @@
     "oneSpot": "1 spot available",
     "freeSpots": "{{free}}/{{max}} available",
     "unavailable": "Unavailable"
+  },
+  "propose": {
+    "title": "Propose a training time",
+    "intro": "Fill in a short form — the trainer will be notified and will respond by creating a slot or contacting you.",
+    "date": "Date",
+    "from": "From",
+    "to": "To",
+    "participants": "Number of people",
+    "course": "Related course (optional)",
+    "noCourse": "— individual training —",
+    "comment": "Comment (optional)",
+    "commentPlaceholder": "E.g. experience level, training goal...",
+    "submit": "Send proposal",
+    "cancel": "Cancel",
+    "endAfterStart": "End time must be after start time",
+    "outsideWindow": "Hours must fit within the window {{from}} – {{to}}",
+    "windowInfo": "Availability window {{from}} – {{to}} — propose hours within this range.",
+    "loginRequired": "Log in to propose a training time.",
+    "loginButton": "Log in"
   }
 }
