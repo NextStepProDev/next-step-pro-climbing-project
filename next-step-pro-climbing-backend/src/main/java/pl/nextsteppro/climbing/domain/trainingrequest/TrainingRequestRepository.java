@@ -1,5 +1,7 @@
 package pl.nextsteppro.climbing.domain.trainingrequest;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -31,7 +33,9 @@ public interface TrainingRequestRepository extends JpaRepository<TrainingRequest
         """)
     List<TrainingRequest> findByUserIdWithDetails(UUID userId);
 
-    @Query("""
+    // Stronicowanie: JOIN FETCH tylko po relacjach to-one, więc Hibernate stosuje LIMIT w SQL
+    // (ostrzeżenie o paginacji w pamięci dotyczy wyłącznie fetchy kolekcji).
+    @Query(value = """
         SELECT tr FROM TrainingRequest tr
         JOIN FETCH tr.user
         LEFT JOIN FETCH tr.course
@@ -39,8 +43,22 @@ public interface TrainingRequestRepository extends JpaRepository<TrainingRequest
         LEFT JOIN FETCH tr.createdSlot
         LEFT JOIN FETCH tr.createdEvent
         ORDER BY CASE WHEN tr.status = 'PENDING' THEN 0 ELSE 1 END, tr.createdAt DESC
-        """)
-    List<TrainingRequest> findAllWithDetails();
+        """,
+        countQuery = "SELECT COUNT(tr) FROM TrainingRequest tr")
+    Page<TrainingRequest> findPageWithDetails(Pageable pageable);
+
+    @Query(value = """
+        SELECT tr FROM TrainingRequest tr
+        JOIN FETCH tr.user
+        LEFT JOIN FETCH tr.course
+        LEFT JOIN FETCH tr.windowSlot
+        LEFT JOIN FETCH tr.createdSlot
+        LEFT JOIN FETCH tr.createdEvent
+        WHERE tr.status = :status
+        ORDER BY tr.createdAt DESC
+        """,
+        countQuery = "SELECT COUNT(tr) FROM TrainingRequest tr WHERE tr.status = :status")
+    Page<TrainingRequest> findPageByStatusWithDetails(TrainingRequestStatus status, Pageable pageable);
 
     int countByStatus(TrainingRequestStatus status);
 

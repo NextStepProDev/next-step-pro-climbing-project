@@ -372,6 +372,19 @@ export interface TrainingRequest {
   createdAt: string
 }
 
+// Liczniki powiadomień panelu admina (badge na zakładkach + linku Admin w navbarze)
+export interface AdminNotifications {
+  pendingRequests: number
+  newReservations: number
+}
+
+export interface AdminTrainingRequestPage {
+  content: AdminTrainingRequest[]
+  page: number
+  totalPages: number
+  totalElements: number
+}
+
 export interface AdminTrainingRequest {
   id: string
   userId: string

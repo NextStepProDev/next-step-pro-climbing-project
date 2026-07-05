@@ -49,4 +49,9 @@ record UpdateTrainingRequestStatusRequest(
     boolean notifyUser
 ) {}
 
-record PendingCountDto(int count) {}
+record AdminTrainingRequestPageDto(
+    java.util.List<AdminTrainingRequestDto> content,
+    int page,
+    int totalPages,
+    long totalElements
+) {}

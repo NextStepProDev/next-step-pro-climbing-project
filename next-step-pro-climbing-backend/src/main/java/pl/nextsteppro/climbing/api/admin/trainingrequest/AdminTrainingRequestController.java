@@ -2,7 +2,6 @@ package pl.nextsteppro.climbing.api.admin.trainingrequest;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -13,8 +12,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 import java.util.UUID;
+import pl.nextsteppro.climbing.domain.trainingrequest.TrainingRequestStatus;
 
 @RestController
 @RequestMapping("/api/admin/training-requests")
@@ -28,21 +27,21 @@ public class AdminTrainingRequestController {
         this.adminTrainingRequestService = adminTrainingRequestService;
     }
 
-    @Operation(summary = "Wszystkie propozycje", description = "Zwraca propozycje terminów (oczekujące pierwsze, potem najnowsze).")
+    @Operation(
+        summary = "Propozycje (stronicowane)",
+        description = "Bez filtra statusu: oczekujące pierwsze, potem najnowsze. Z filtrem: najnowsze pierwsze."
+    )
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Lista propozycji",
-            content = @Content(array = @ArraySchema(schema = @Schema(implementation = AdminTrainingRequestDto.class)))),
+        @ApiResponse(responseCode = "200", description = "Strona propozycji",
+            content = @Content(schema = @Schema(implementation = AdminTrainingRequestPageDto.class))),
         @ApiResponse(responseCode = "403", description = "Brak uprawnień administratora")
     })
     @GetMapping
-    public ResponseEntity<List<AdminTrainingRequestDto>> getAll() {
-        return ResponseEntity.ok(adminTrainingRequestService.getAll());
-    }
-
-    @Operation(summary = "Liczba oczekujących propozycji", description = "Licznik do badge'a w nawigacji panelu admina.")
-    @GetMapping("/pending-count")
-    public ResponseEntity<PendingCountDto> getPendingCount() {
-        return ResponseEntity.ok(new PendingCountDto(adminTrainingRequestService.getPendingCount()));
+    public ResponseEntity<AdminTrainingRequestPageDto> getPage(
+            @Parameter(description = "Filtr statusu (np. PENDING); brak = wszystkie") @RequestParam(required = false) TrainingRequestStatus status,
+            @Parameter(description = "Numer strony (od 0)") @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Rozmiar strony (max 100)") @RequestParam(defaultValue = "20") int size) {
+        return ResponseEntity.ok(adminTrainingRequestService.getPage(status, page, size));
     }
 
     @Operation(

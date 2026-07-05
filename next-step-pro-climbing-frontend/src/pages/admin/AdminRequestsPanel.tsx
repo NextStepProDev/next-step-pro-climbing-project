@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { format } from 'date-fns'
 import {
-  AlertTriangle, Calendar, CalendarPlus, Clock, ExternalLink, Mail,
+  AlertTriangle, Calendar, CalendarPlus, ChevronLeft, ChevronRight, Clock, ExternalLink, Mail,
   MessageSquare, Phone, RotateCcw, Users, X,
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
@@ -30,33 +30,48 @@ export function AdminRequestsPanel() {
   const { t } = useTranslation('admin')
   const queryClient = useQueryClient()
   const [filter, setFilter] = useState<Filter>('PENDING')
+  const [page, setPage] = useState(0)
   const [createSlotFrom, setCreateSlotFrom] = useState<AdminTrainingRequest | null>(null)
   const [createEventFrom, setCreateEventFrom] = useState<AdminTrainingRequest | null>(null)
   const [statusModal, setStatusModal] = useState<{ request: AdminTrainingRequest; action: 'CONTACTED' | 'REJECTED' } | null>(null)
 
-  const { data: requests, isLoading, isError, error, refetch } = useQuery({
-    queryKey: ['admin', 'trainingRequests'],
-    queryFn: adminApi.getTrainingRequests,
+  // Oczekujące: praktycznie wszystkie naraz (size 100 — tyle admin i tak nie obsłuży w zaległości).
+  // Wszystkie (archiwum): stronicowane po 20, żeby setki starych propozycji nie ładowały się hurtem.
+  const { data, isLoading, isError, error, refetch } = useQuery({
+    queryKey: ['admin', 'trainingRequests', filter, page],
+    queryFn: () => filter === 'PENDING'
+      ? adminApi.getTrainingRequests({ status: 'PENDING', size: 100 })
+      : adminApi.getTrainingRequests({ page, size: 20 }),
+  })
+
+  // Licznik oczekujących do chipa filtra — z tego samego cache co badge'e (navbar/zakładki)
+  const { data: notifications } = useQuery({
+    queryKey: ['admin', 'notifications'],
+    queryFn: adminApi.getNotifications,
   })
 
   const updateStatusMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: { status: 'PENDING' | 'CONTACTED' | 'REJECTED'; adminNote?: string; notifyUser?: boolean } }) =>
-      adminApi.updateTrainingRequestStatus(id, data),
+    mutationFn: ({ id, data: body }: { id: string; data: { status: 'PENDING' | 'CONTACTED' | 'REJECTED'; adminNote?: string; notifyUser?: boolean } }) =>
+      adminApi.updateTrainingRequestStatus(id, body),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'trainingRequests'] })
+      queryClient.invalidateQueries({ queryKey: ['admin', 'notifications'] })
       setStatusModal(null)
     },
   })
 
   const invalidateAfterCreate = () => {
     queryClient.invalidateQueries({ queryKey: ['admin', 'trainingRequests'] })
+    queryClient.invalidateQueries({ queryKey: ['admin', 'notifications'] })
     queryClient.invalidateQueries({ queryKey: ['admin', 'slots'] })
   }
+
+  const visible = useMemo(() => data?.content ?? [], [data])
 
   // Nakładające się oczekujące propozycje (ta sama data, wspólny przedział godzin) —
   // ostrzeżenie, żeby admin nie utworzył dwóch slotów na ten sam czas nieświadomie.
   const conflictIds = useMemo(() => {
-    const pending = (requests ?? []).filter((r) => r.status === 'PENDING')
+    const pending = visible.filter((r) => r.status === 'PENDING')
     const ids = new Set<string>()
     for (let i = 0; i < pending.length; i++) {
       for (let j = i + 1; j < pending.length; j++) {
@@ -69,7 +84,7 @@ export function AdminRequestsPanel() {
       }
     }
     return ids
-  }, [requests])
+  }, [visible])
 
   if (isLoading) {
     return (
@@ -83,9 +98,8 @@ export function AdminRequestsPanel() {
     return <QueryError error={error} onRetry={() => refetch()} />
   }
 
-  const all = requests ?? []
-  const visible = filter === 'PENDING' ? all.filter((r) => r.status === 'PENDING') : all
-  const pendingCount = all.filter((r) => r.status === 'PENDING').length
+  const pendingCount = notifications?.pendingRequests ?? (filter === 'PENDING' ? (data?.totalElements ?? 0) : 0)
+  const totalPages = data?.totalPages ?? 0
 
   return (
     <div>
@@ -95,7 +109,7 @@ export function AdminRequestsPanel() {
         </h2>
         <div className="flex gap-1 bg-surface-800 rounded-lg p-1">
           <button
-            onClick={() => setFilter('PENDING')}
+            onClick={() => { setFilter('PENDING'); setPage(0) }}
             className={clsx(
               'px-3 py-1.5 text-sm font-medium rounded-md transition-colors',
               filter === 'PENDING' ? 'bg-primary-600 text-white' : 'text-surface-400 hover:text-surface-200'
@@ -104,13 +118,13 @@ export function AdminRequestsPanel() {
             {t('requests.filterPending')} ({pendingCount})
           </button>
           <button
-            onClick={() => setFilter('ALL')}
+            onClick={() => { setFilter('ALL'); setPage(0) }}
             className={clsx(
               'px-3 py-1.5 text-sm font-medium rounded-md transition-colors',
               filter === 'ALL' ? 'bg-primary-600 text-white' : 'text-surface-400 hover:text-surface-200'
             )}
           >
-            {t('requests.filterAll')} ({all.length})
+            {t('requests.filterAll')}{filter === 'ALL' && data ? ` (${data.totalElements})` : ''}
           </button>
         </div>
       </div>
@@ -136,6 +150,31 @@ export function AdminRequestsPanel() {
               onReopen={() => updateStatusMutation.mutate({ id: req.id, data: { status: 'PENDING' } })}
             />
           ))}
+        </div>
+      )}
+
+      {/* Pager (archiwum stronicowane po 20) */}
+      {totalPages > 1 && (
+        <div className="mt-6 flex items-center justify-center gap-4">
+          <button
+            onClick={() => setPage((p) => Math.max(0, p - 1))}
+            disabled={page === 0}
+            className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium text-surface-300 hover:text-surface-100 hover:bg-surface-800 disabled:opacity-40 disabled:pointer-events-none transition-colors"
+          >
+            <ChevronLeft className="w-4 h-4" />
+            {t('requests.pagePrev')}
+          </button>
+          <span className="text-sm text-surface-400">
+            {t('requests.pageInfo', { page: page + 1, total: totalPages })}
+          </span>
+          <button
+            onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+            disabled={page >= totalPages - 1}
+            className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium text-surface-300 hover:text-surface-100 hover:bg-surface-800 disabled:opacity-40 disabled:pointer-events-none transition-colors"
+          >
+            {t('requests.pageNext')}
+            <ChevronRight className="w-4 h-4" />
+          </button>
         </div>
       )}
 

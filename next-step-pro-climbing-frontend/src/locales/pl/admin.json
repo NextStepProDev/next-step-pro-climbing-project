@@ -661,7 +661,10 @@
       "CONTACTED": "Skontaktowano się",
       "REJECTED": "Odrzucona",
       "EXPIRED": "Wygasła"
-    }
+    },
+    "pagePrev": "Poprzednia",
+    "pageNext": "Następna",
+    "pageInfo": "Strona {{page}} z {{total}}"
   },
   "inviteNotify": {
     "title": "Maile z zaproszeniem (wysyłka ręczna)",

@@ -648,4 +648,27 @@ public class AdminController {
         List<ActivityLogDto> logs = activityLogService.getRecentLogs(page, Math.min(size, 100));
         return ResponseEntity.ok(logs);
     }
+
+    // ==================== Notifications ====================
+
+    @Tag(name = "Admin - Notifications", description = "Liczniki powiadomień panelu admina")
+    @Operation(
+        summary = "Powiadomienia admina",
+        description = "Liczniki do badge'y: oczekujące propozycje terminów + nowe rezerwacje od ostatniego przeczytania."
+    )
+    @GetMapping("/notifications")
+    public ResponseEntity<AdminNotificationsDto> getNotifications(@CurrentUserId UUID adminId) {
+        return ResponseEntity.ok(adminService.getNotifications(adminId));
+    }
+
+    @Tag(name = "Admin - Notifications")
+    @Operation(
+        summary = "Oznacz rezerwacje jako przeczytane",
+        description = "Ustawia znacznik przeczytania nowych rezerwacji (wywoływane przy wejściu w zakładkę Rezerwacje)."
+    )
+    @PostMapping("/notifications/reservations-seen")
+    public ResponseEntity<Void> markReservationsSeen(@CurrentUserId UUID adminId) {
+        adminService.markReservationsSeen(adminId);
+        return ResponseEntity.noContent().build();
+    }
 }

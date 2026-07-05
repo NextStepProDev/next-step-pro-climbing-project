@@ -90,6 +90,11 @@ public class User {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
+    // Znacznik "przeczytane" powiadomień admina o nowych rezerwacjach (badge w panelu);
+    // dla zwykłych użytkowników nieużywany. Świeże konto = nic nieprzeczytanego sprzed rejestracji.
+    @Column(name = "admin_reservations_seen_at", nullable = false)
+    private Instant adminReservationsSeenAt = Instant.now();
+
     protected User() {}
 
     public User(String email, String firstName, String lastName, String phone, String nickname) {
@@ -196,6 +201,14 @@ public class User {
 
     public Instant getUpdatedAt() {
         return updatedAt;
+    }
+
+    public Instant getAdminReservationsSeenAt() {
+        return adminReservationsSeenAt;
+    }
+
+    public void markAdminReservationsSeen() {
+        this.adminReservationsSeenAt = Instant.now();
     }
 
     public boolean isAdmin() {

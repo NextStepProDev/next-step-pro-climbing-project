@@ -661,7 +661,10 @@
       "CONTACTED": "Contacted",
       "REJECTED": "Rejected",
       "EXPIRED": "Expired"
-    }
+    },
+    "pagePrev": "Previous",
+    "pageNext": "Next",
+    "pageInfo": "Page {{page}} of {{total}}"
   },
   "inviteNotify": {
     "title": "Invitation emails (manual send)",

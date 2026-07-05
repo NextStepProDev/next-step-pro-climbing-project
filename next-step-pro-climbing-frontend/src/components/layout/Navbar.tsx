@@ -2,6 +2,8 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ChevronDown, LogOut, Menu, Moon, Sun, User, X } from "lucide-react";
 import { useState, useRef, useEffect, useLayoutEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
+import { useQuery } from "@tanstack/react-query";
+import { adminApi } from "../../api/client";
 import { useAuth } from "../../context/AuthContext";
 import { useTheme } from "../../context/ThemeContext";
 import { Button } from "../ui/Button";
@@ -33,6 +35,19 @@ export function Navbar() {
   const isLinkActive = (path: string) =>
     path === "/" ? location.pathname === "/" : location.pathname.startsWith(path);
 
+  // Powiadomienia admina (oczekujące propozycje + nowe rezerwacje) — czerwona kropka na
+  // linku Admin, żeby było widać od progu, że coś czeka. Ten sam cache co panel admina.
+  const { data: adminNotifications } = useQuery({
+    queryKey: ['admin', 'notifications'],
+    queryFn: adminApi.getNotifications,
+    enabled: isAdmin,
+    refetchInterval: 60_000,
+    refetchIntervalInBackground: false,
+  });
+  const adminBadgeCount = isAdmin
+    ? (adminNotifications?.pendingRequests ?? 0) + (adminNotifications?.newReservations ?? 0)
+    : 0;
+
   const mediaLinks = [
     { to: "/galeria", label: t('nav.gallery') },
     { to: "/filmy", label: t('nav.videos') },
@@ -53,13 +68,14 @@ export function Navbar() {
     { to: "/kursy", label: t('nav.courses') },
   ];
 
-  const navLinksAfter = [
+  const navLinksAfter: { to: string; label: string; badge?: number }[] = [
     { to: "/kontakt", label: t('nav.contact') },
     { to: "/faq", label: t('nav.help') },
-    ...(isAdmin ? [{ to: "/admin", label: t('nav.admin') }] : []),
+    ...(isAdmin ? [{ to: "/admin", label: t('nav.admin'), badge: adminBadgeCount }] : []),
   ];
 
-  const mobileNavLinks = [...navLinksBefore, ...teamLinks, ...mediaLinks, ...navLinksAfter];
+  const mobileNavLinks: { to: string; label: string; badge?: number }[] =
+    [...navLinksBefore, ...teamLinks, ...mediaLinks, ...navLinksAfter];
 
   const isMediaActive = mediaLinks.some((l) => isLinkActive(l.to));
   const isTeamActive = teamLinks.some((l) => isLinkActive(l.to));
@@ -320,6 +336,11 @@ export function Navbar() {
                 )}
               >
                 {link.label}
+                {(link.badge ?? 0) > 0 && (
+                  <span className="ml-1.5 min-w-5 h-5 px-1.5 inline-flex items-center justify-center rounded-full bg-rose-500 text-white text-[11px] font-bold leading-none align-middle">
+                    {link.badge}
+                  </span>
+                )}
               </Link>
             ))}
           </div>
@@ -392,9 +413,9 @@ export function Navbar() {
             )}
           </div>
 
-          {/* Mobile menu button */}
+          {/* Mobile menu button (kropka = powiadomienia admina ukryte w zamkniętym menu) */}
           <button
-            className="md:hidden text-surface-300"
+            className="md:hidden relative text-surface-300"
             aria-label={mobileMenuOpen ? t('nav.closeMenu') : t('nav.openMenu')}
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           >
@@ -402,6 +423,9 @@ export function Navbar() {
               <X className="w-6 h-6" />
             ) : (
               <Menu className="w-6 h-6" />
+            )}
+            {!mobileMenuOpen && adminBadgeCount > 0 && (
+              <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-rose-500" />
             )}
           </button>
         </div>
@@ -424,6 +448,11 @@ export function Navbar() {
                 )}
               >
                 {link.label}
+                {(link.badge ?? 0) > 0 && (
+                  <span className="ml-2 min-w-5 h-5 px-1.5 inline-flex items-center justify-center rounded-full bg-rose-500 text-white text-[11px] font-bold leading-none align-middle">
+                    {link.badge}
+                  </span>
+                )}
               </Link>
             ))}
             <div className="pt-4 border-t border-surface-800">

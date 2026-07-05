@@ -1032,6 +1032,7 @@ export function CreateEventModal({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'events'] })
       queryClient.invalidateQueries({ queryKey: ['admin', 'trainingRequests'] })
+      queryClient.invalidateQueries({ queryKey: ['admin', 'notifications'] })
       queryClient.invalidateQueries({ queryKey: ['calendar'] })
       queryClient.invalidateQueries({ queryKey: ['courseEvents'] })
       onClose()

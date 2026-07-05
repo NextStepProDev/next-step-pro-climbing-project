@@ -75,14 +75,18 @@ export function AdminPage() {
   const { t } = useTranslation('admin')
   const location = useLocation()
 
-  // Badge z liczbą oczekujących propozycji terminów — widoczny na zakładce "Propozycje"
-  const { data: pendingRequests } = useQuery({
-    queryKey: ['admin', 'trainingRequests', 'pendingCount'],
-    queryFn: adminApi.getTrainingRequestPendingCount,
+  // Liczniki powiadomień: badge na zakładkach "Propozycje" (oczekujące) i "Rezerwacje" (nowe
+  // od ostatniego przeczytania). Ten sam endpoint zasila kropkę na linku Admin w navbarze.
+  const { data: notifications } = useQuery({
+    queryKey: ['admin', 'notifications'],
+    queryFn: adminApi.getNotifications,
     refetchInterval: 60_000,
     refetchIntervalInBackground: false,
   })
-  const pendingRequestCount = pendingRequests?.count ?? 0
+  const tabBadges: Record<string, number> = {
+    '/admin/requests': notifications?.pendingRequests ?? 0,
+    '/admin/reservations': notifications?.newReservations ?? 0,
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -121,9 +125,9 @@ export function AdminPage() {
                   >
                     <Icon className="w-4 h-4" />
                     {t(tab.labelKey)}
-                    {tab.path === '/admin/requests' && pendingRequestCount > 0 && (
+                    {(tabBadges[tab.path] ?? 0) > 0 && (
                       <span className="ml-0.5 min-w-5 h-5 px-1.5 inline-flex items-center justify-center rounded-full bg-rose-500 text-white text-[11px] font-bold leading-none">
-                        {pendingRequestCount}
+                        {tabBadges[tab.path]}
                       </span>
                     )}
                   </Link>

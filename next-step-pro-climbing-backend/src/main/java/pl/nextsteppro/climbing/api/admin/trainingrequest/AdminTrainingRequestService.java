@@ -1,6 +1,9 @@
 package pl.nextsteppro.climbing.api.admin.trainingrequest;
 
 import org.jspecify.annotations.Nullable;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pl.nextsteppro.climbing.domain.course.Course;
@@ -12,7 +15,6 @@ import pl.nextsteppro.climbing.domain.trainingrequest.TrainingRequestStatus;
 import pl.nextsteppro.climbing.infrastructure.i18n.MessageService;
 import pl.nextsteppro.climbing.infrastructure.mail.MailService;
 
-import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -31,16 +33,22 @@ public class AdminTrainingRequestService {
         this.msg = msg;
     }
 
+    /**
+     * Stronicowana lista propozycji: bez filtra — oczekujące pierwsze, potem najnowsze;
+     * z filtrem statusu — najnowsze pierwsze. Archiwum setek propozycji nie ładuje się w całości.
+     */
     @Transactional(readOnly = true)
-    public List<AdminTrainingRequestDto> getAll() {
-        return trainingRequestRepository.findAllWithDetails().stream()
-            .map(AdminTrainingRequestService::toDto)
-            .toList();
-    }
-
-    @Transactional(readOnly = true)
-    public int getPendingCount() {
-        return trainingRequestRepository.countByStatus(TrainingRequestStatus.PENDING);
+    public AdminTrainingRequestPageDto getPage(@Nullable TrainingRequestStatus status, int page, int size) {
+        Pageable pageable = PageRequest.of(Math.max(0, page), Math.min(Math.max(1, size), 100));
+        Page<TrainingRequest> result = status != null
+            ? trainingRequestRepository.findPageByStatusWithDetails(status, pageable)
+            : trainingRequestRepository.findPageWithDetails(pageable);
+        return new AdminTrainingRequestPageDto(
+            result.getContent().stream().map(AdminTrainingRequestService::toDto).toList(),
+            result.getNumber(),
+            result.getTotalPages(),
+            result.getTotalElements()
+        );
     }
 
     /**
