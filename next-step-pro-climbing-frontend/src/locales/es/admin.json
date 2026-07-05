@@ -659,7 +659,10 @@
       "CONTACTED": "Contactado",
       "REJECTED": "Rechazada",
       "EXPIRED": "Caducada"
-    }
+    },
+    "pagePrev": "Anterior",
+    "pageNext": "Siguiente",
+    "pageInfo": "Página {{page}} de {{total}}"
   },
   "inviteNotify": {
     "title": "Correos de invitación (envío manual)",

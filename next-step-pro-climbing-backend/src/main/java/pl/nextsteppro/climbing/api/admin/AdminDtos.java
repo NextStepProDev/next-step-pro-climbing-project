@@ -253,6 +253,12 @@ record SendMailRequest(
 
 record MailSendResponse(int recipientCount) {}
 
+// Powiadomienia panelu admina: badge na zakładkach (Propozycje/Rezerwacje) i linku Admin w navbarze
+record AdminNotificationsDto(
+    int pendingRequests,
+    int newReservations
+) {}
+
 record NotifyParticipantsResult(int notifiedCount) {}
 
 record NotifySlotParticipantsRequest(

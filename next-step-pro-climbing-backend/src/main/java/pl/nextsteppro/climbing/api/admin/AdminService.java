@@ -956,6 +956,26 @@ public class AdminService {
         return sent;
     }
 
+    // ---- Powiadomienia panelu admina ----
+
+    /**
+     * Liczniki do badge'y: oczekujące propozycje terminów (stan z natury — PENDING) oraz nowe
+     * rezerwacje od ostatniego "przeczytania" (per-admin znacznik {@code adminReservationsSeenAt},
+     * zerowany wejściem w zakładkę Rezerwacje przez {@link #markReservationsSeen}).
+     */
+    @Transactional(readOnly = true)
+    public AdminNotificationsDto getNotifications(UUID adminId) {
+        User admin = userRepository.findById(adminId).orElseThrow();
+        int pendingRequests = trainingRequestRepository.countByStatus(TrainingRequestStatus.PENDING);
+        int newReservations = reservationRepository.countConfirmedCreatedAfter(admin.getAdminReservationsSeenAt());
+        return new AdminNotificationsDto(pendingRequests, newReservations);
+    }
+
+    public void markReservationsSeen(UUID adminId) {
+        User admin = userRepository.findById(adminId).orElseThrow();
+        admin.markAdminReservationsSeen();
+    }
+
     /**
      * Spina świeżo utworzony slot/wydarzenie z propozycją terminu (status ACCEPTED + link).
      * Celowo tolerancyjne na brak propozycji (mogła zostać w międzyczasie wycofana przez

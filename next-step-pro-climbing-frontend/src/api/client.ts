@@ -23,6 +23,8 @@ import type {
   CreateTrainingRequest,
   TrainingRequest,
   AdminTrainingRequest,
+  AdminTrainingRequestPage,
+  AdminNotifications,
   InvitedUser,
   EventDetail,
   EventParticipants,
@@ -461,11 +463,21 @@ export const adminApi = {
     }),
 
   // Training requests (propozycje terminów)
-  getTrainingRequests: () =>
-    fetchApi<AdminTrainingRequest[]>('/admin/training-requests'),
+  getTrainingRequests: (params: { status?: 'PENDING'; page?: number; size?: number } = {}) => {
+    const query = new URLSearchParams()
+    if (params.status) query.set('status', params.status)
+    if (params.page != null) query.set('page', String(params.page))
+    if (params.size != null) query.set('size', String(params.size))
+    const qs = query.toString()
+    return fetchApi<AdminTrainingRequestPage>(`/admin/training-requests${qs ? `?${qs}` : ''}`)
+  },
 
-  getTrainingRequestPendingCount: () =>
-    fetchApi<{ count: number }>('/admin/training-requests/pending-count'),
+  // Powiadomienia panelu admina (badge: Propozycje + nowe rezerwacje)
+  getNotifications: () =>
+    fetchApi<AdminNotifications>('/admin/notifications'),
+
+  markReservationsSeen: () =>
+    fetchApi<void>('/admin/notifications/reservations-seen', { method: 'POST' }),
 
   updateTrainingRequestStatus: (requestId: string, data: { status: 'PENDING' | 'CONTACTED' | 'REJECTED'; adminNote?: string; notifyUser?: boolean }) =>
     fetchApi<AdminTrainingRequest>(`/admin/training-requests/${requestId}/status`, {

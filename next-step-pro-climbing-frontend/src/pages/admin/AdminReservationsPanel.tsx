@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { format } from 'date-fns'
@@ -80,6 +80,14 @@ function groupReservations(reservations: ReservationAdmin[]) {
 export function AdminReservationsPanel() {
   const { t } = useTranslation('admin')
   const [showArchive, setShowArchive] = useState(false)
+  const queryClientForSeen = useQueryClient()
+
+  // Wejście w zakładkę = "przeczytane": zeruje badge nowych rezerwacji (zakładka + navbar)
+  useEffect(() => {
+    adminApi.markReservationsSeen()
+      .then(() => queryClientForSeen.invalidateQueries({ queryKey: ['admin', 'notifications'] }))
+      .catch(() => { /* badge zniknie przy następnym udanym wejściu */ })
+  }, [queryClientForSeen])
 
   const { data: reservations, isLoading, isError, error, refetch } = useQuery({
     queryKey: ['admin', 'reservations', 'upcoming'],

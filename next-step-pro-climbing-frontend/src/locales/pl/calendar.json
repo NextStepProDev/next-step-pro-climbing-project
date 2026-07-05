@@ -49,7 +49,7 @@
     "training": "Trening",
     "callToBook": "Dostępny — umów godzinę",
     "availabilityWindows": "Dostępne terminy do umówienia",
-    "proposeTraining": "Zaproponuj termin"
+    "proposeTraining": "Zaproponuj termin nie do odrzucenia"
   },
   "invites": {
     "label": "Zaproszeni — miejsca zarezerwowane tylko dla nich",
@@ -174,7 +174,7 @@
     "title": "Nie znalazłeś odpowiedniego terminu?",
     "description": "Zadzwoń lub napisz — chętnie umówimy termin indywidualnie, dopasowany do Twoich możliwości.",
     "email": "Napisz e-mail",
-    "propose": "Zaproponuj termin"
+    "propose": "Zaproponuj termin nie do odrzucenia"
   },
   "contactDay": {
     "message": "Skontaktuj się z nami, aby ustalić termin zajęć na ściance lub skałach.",

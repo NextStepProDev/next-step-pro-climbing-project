@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.Collection;
@@ -68,4 +69,8 @@ public interface ReservationRepository extends JpaRepository<Reservation, UUID> 
 
     @Query("SELECT DISTINCT r.timeSlot.event.id FROM Reservation r WHERE r.user.id = :userId AND r.status = 'CONFIRMED' AND r.timeSlot.event IS NOT NULL")
     List<UUID> findConfirmedEventIdsByUserId(UUID userId);
+
+    // Powiadomienia admina: nowe rezerwacje od ostatniego "przeczytania" (badge w panelu).
+    @Query("SELECT COUNT(r) FROM Reservation r WHERE r.status = 'CONFIRMED' AND r.createdAt > :since")
+    int countConfirmedCreatedAfter(Instant since);
 }
