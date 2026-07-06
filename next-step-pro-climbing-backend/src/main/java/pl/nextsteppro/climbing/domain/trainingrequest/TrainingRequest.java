@@ -103,11 +103,15 @@ public class TrainingRequest {
         createdAt = Instant.now();
     }
 
-    /** Escapuje HTML i przycina komentarz użytkownika (ten sam wzorzec co Reservation.sanitizeComment). */
+    /**
+     * Escapuje HTML i przycina komentarz użytkownika (ten sam wzorzec co Reservation.sanitizeComment).
+     * UTF-8 escapuje tylko groźne znaki (&lt; &gt; " &amp; '); jednoargumentowy wariant zakłada
+     * ISO-8859-1 i zamieniałby diakrytyki na encje (ó → &amp;oacute;), masakrując polskie komentarze.
+     */
     @Nullable
     public static String sanitizeComment(@Nullable String comment) {
         if (comment == null || comment.isBlank()) return null;
-        String escaped = HtmlUtils.htmlEscape(comment.trim());
+        String escaped = HtmlUtils.htmlEscape(comment.trim(), java.nio.charset.StandardCharsets.UTF_8.name());
         return escaped.length() > MAX_COMMENT_LENGTH ? escaped.substring(0, MAX_COMMENT_LENGTH) : escaped;
     }
 

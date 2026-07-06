@@ -466,7 +466,10 @@ public class CalendarService {
         LocalDateTime slotDateTime = LocalDateTime.of(slot.getDate(), slot.getStartTime());
         LocalDateTime now = LocalDateTime.now(WARSAW);
         if (slot.isAvailabilityWindow()) {
-            return slotDateTime.isBefore(now) ? SlotStatus.PAST : SlotStatus.AVAILABILITY_WINDOW;
+            // Okno żyje do godziny KOŃCA (nie startu): trwające okno 9-15 o 10:00 wciąż przyjmuje
+            // propozycje terminów na pozostałe godziny — status PAST ukryłby przycisk propozycji.
+            LocalDateTime windowEnd = LocalDateTime.of(slot.getDate(), slot.getEndTime());
+            return windowEnd.isBefore(now) ? SlotStatus.PAST : SlotStatus.AVAILABILITY_WINDOW;
         }
         if (slotDateTime.isBefore(now)) {
             return SlotStatus.PAST;

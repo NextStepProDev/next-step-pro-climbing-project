@@ -376,6 +376,33 @@ class CalendarServiceTest {
         assertTrue(result.events().isEmpty());
     }
 
+    @Test
+    void shouldKeepOngoingAvailabilityWindowActiveUntilItsEnd() {
+        // Given: okno dostępności trwające dziś (start już minął, koniec przed nami) — status
+        // liczony po godzinie KOŃCA, żeby trwające okno wciąż przyjmowało propozycje terminów
+        LocalDate today = java.time.ZonedDateTime.now(java.time.ZoneId.of("Europe/Warsaw")).toLocalDate();
+        TimeSlot window = new TimeSlot(today, LocalTime.MIN, LocalTime.MAX, 1);
+        window.setAvailabilityWindow(true);
+        try {
+            var idField = TimeSlot.class.getDeclaredField("id");
+            idField.setAccessible(true);
+            idField.set(window, UUID.randomUUID());
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+        when(timeSlotRepository.findByDateSorted(eq(today))).thenReturn(List.of(window));
+        when(eventRepository.findActiveEventsOnDate(eq(today))).thenReturn(List.of());
+        when(reservationRepository.countConfirmedByTimeSlotIds(any())).thenReturn(List.of());
+
+        // When
+        DayViewDto result = calendarService.getDayView(today, null);
+
+        // Then
+        assertFalse(result.slots().isEmpty());
+        assertEquals(SlotStatus.AVAILABILITY_WINDOW, result.slots().get(0).status());
+    }
+
     // ========== EVENT SUMMARY TESTS ==========
 
     @Test

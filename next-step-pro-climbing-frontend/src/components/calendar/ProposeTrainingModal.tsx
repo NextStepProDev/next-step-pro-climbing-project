@@ -31,6 +31,23 @@ interface ProposeTrainingModalProps {
   window?: ProposeWindow
 }
 
+const toMinutes = (t: string) => parseInt(t.slice(0, 2), 10) * 60 + parseInt(t.slice(3, 5), 10)
+const toHHMM = (m: number) => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`
+
+/**
+ * Godzina startu do prefillu formularza w oknie dostępności. Dla trwającego dziś okna
+ * (start już minął) proponuje najbliższy kwadrans zamiast początku okna — prefill z przeszłą
+ * godziną kończyłby się natychmiastowym błędem walidacji po wysłaniu.
+ */
+function initialWindowStart(win: ProposeWindow): string {
+  const start = win.startTime.slice(0, 5)
+  if (win.date !== format(new Date(), 'yyyy-MM-dd')) return start
+  const now = new Date()
+  const nowMin = Math.ceil((now.getHours() * 60 + now.getMinutes()) / 15) * 15
+  if (nowMin <= toMinutes(start)) return start
+  return nowMin < toMinutes(win.endTime.slice(0, 5)) ? toHHMM(nowMin) : start
+}
+
 /**
  * Formularz propozycji terminu treningu (zalogowany użytkownik).
  * Dwa tryby: w oknie dostępności (godziny ograniczone do okna) albo swobodny
@@ -49,7 +66,7 @@ export function ProposeTrainingModal({ isOpen, onClose, defaultDate, window: pro
 
   const [form, setForm] = useState({
     date: proposeWindow?.date ?? defaultDate,
-    startTime: windowStart ?? '10:00',
+    startTime: proposeWindow ? initialWindowStart(proposeWindow) : '10:00',
     endTime: windowEnd ?? '11:00',
     participants: 1,
     courseId: '',

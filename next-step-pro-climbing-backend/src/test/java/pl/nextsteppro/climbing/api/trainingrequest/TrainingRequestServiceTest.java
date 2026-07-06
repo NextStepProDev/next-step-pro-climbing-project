@@ -191,6 +191,21 @@ class TrainingRequestServiceTest {
         assertThrows(IllegalArgumentException.class, () -> trainingRequestService.create(userId, request));
     }
 
+    @Test
+    void shouldPreserveDiacriticsAndEscapeHtmlInComment() {
+        // Given: polskie znaki muszą przetrwać (UTF-8 escape), a HTML ma być unieszkodliwiony
+        String comment = "Poproszę trening siłowy <script>alert(1)</script>";
+
+        // When
+        String sanitized = TrainingRequest.sanitizeComment(comment);
+
+        // Then
+        assertNotNull(sanitized);
+        assertTrue(sanitized.contains("Poproszę trening siłowy"));
+        assertFalse(sanitized.contains("<script>"));
+        assertTrue(sanitized.contains("&lt;script&gt;"));
+    }
+
     // ========== cancel ==========
 
     @Test

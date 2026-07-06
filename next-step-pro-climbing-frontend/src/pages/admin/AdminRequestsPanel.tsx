@@ -40,7 +40,7 @@ export function AdminRequestsPanel() {
   const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ['admin', 'trainingRequests', filter, page],
     queryFn: () => filter === 'PENDING'
-      ? adminApi.getTrainingRequests({ status: 'PENDING', size: 100 })
+      ? adminApi.getTrainingRequests({ status: 'PENDING', page, size: 100 })
       : adminApi.getTrainingRequests({ page, size: 20 }),
   })
 
