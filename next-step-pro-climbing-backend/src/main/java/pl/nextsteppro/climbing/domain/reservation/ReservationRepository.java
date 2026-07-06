@@ -71,6 +71,7 @@ public interface ReservationRepository extends JpaRepository<Reservation, UUID> 
     List<UUID> findConfirmedEventIdsByUserId(UUID userId);
 
     // Powiadomienia admina: nowe rezerwacje od ostatniego "przeczytania" (badge w panelu).
-    @Query("SELECT COUNT(r) FROM Reservation r WHERE r.status = 'CONFIRMED' AND r.createdAt > :since")
+    // Pomija rezerwacje dodane ręcznie przez admina — kropka świeci tylko dla akcji klientów.
+    @Query("SELECT COUNT(r) FROM Reservation r WHERE r.status = 'CONFIRMED' AND r.createdAt > :since AND r.createdByAdmin = false")
     int countConfirmedCreatedAfter(Instant since);
 }
