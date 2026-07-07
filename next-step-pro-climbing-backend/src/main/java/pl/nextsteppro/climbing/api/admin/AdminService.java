@@ -1353,6 +1353,7 @@ public class AdminService {
             reservation = new Reservation(user, slot);
             reservation.setParticipants(request.participants());
             reservation.setComment(sanitizedComment);
+            reservation.setCreatedByAdmin(true);
             reservation = reservationRepository.save(reservation);
         }
 
@@ -1475,6 +1476,7 @@ public class AdminService {
                     Reservation reservation = new Reservation(user, slot);
                     reservation.setParticipants(request.participants());
                     reservation.setComment(sanitizedComment);
+                    reservation.setCreatedByAdmin(true);
                     reservationRepository.save(reservation);
                 }
             }

@@ -124,11 +124,12 @@ export function MonthCalendar({ currentMonth, onMonthChange, days, events, onDay
           const dayData = dayDataMap.get(dateString)
           const dayEvents = dayEventsMap.get(dateString) || []
           const isPast = isBefore(day, startOfDay(new Date()))
-          const hasSlots = dayData && dayData.totalSlots > 0
           const hasAvailabilityWindow = dayData?.hasAvailabilityWindow ?? false
           const hasUserReservation = dayData?.hasUserReservation
           const hasEvents = dayEvents.length > 0
-          const isClickable = allDaysClickable || (!isPast && (hasSlots || hasEvents || hasAvailabilityWindow))
+          // Przyszłe dni klikalne także gdy PUSTE — otwierają widok dnia z CTA "Zaproponuj termin"
+          // (bez tego jedyne wejście propozycji z pustego dnia było w widoku tygodnia).
+          const isClickable = allDaysClickable || !isPast
 
           return (
             <button

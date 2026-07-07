@@ -170,6 +170,10 @@ export function CalendarPage() {
         setSelectedEvent(dayEvents[0]);
       } else if (dayEvents.length > 1) {
         eventsRef.current?.scrollIntoView({ behavior: "smooth" });
+      } else if (date >= format(new Date(), "yyyy-MM-dd")) {
+        // Pusty przyszły dzień: otwórz widok dnia z CTA "Zaproponuj termin"
+        setSelectedDate(date);
+        setSearchParams({ date });
       }
     },
     [monthData, setSearchParams, isAdmin],
@@ -519,7 +523,9 @@ export function CalendarPage() {
           onEventClick={setSelectedEvent}
           onCancelEvent={(id) => cancelEventMutation.mutate(id)}
           onAddSlot={isAdmin ? () => setShowCreateSlotModal(true) : undefined}
-          onProposeTraining={!isAdmin ? () => setProposeContext({ date: selectedDate }) : undefined}
+          onProposeTraining={!isAdmin && selectedDate >= format(new Date(), "yyyy-MM-dd")
+            ? () => setProposeContext({ date: selectedDate })
+            : undefined}
         />
       ) : viewMode === 'week' ? (
         weekLoading ? (

@@ -39,6 +39,11 @@ public class Reservation {
     @Nullable
     private String comment;
 
+    // Rezerwacja dodana ręcznie przez admina z panelu — badge "nowe rezerwacje" ją pomija
+    // (admin nie potrzebuje powiadomienia o własnej akcji).
+    @Column(name = "created_by_admin", nullable = false)
+    private boolean createdByAdmin = false;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -126,6 +131,14 @@ public class Reservation {
 
     public void setComment(@Nullable String comment) {
         this.comment = comment;
+    }
+
+    public boolean isCreatedByAdmin() {
+        return createdByAdmin;
+    }
+
+    public void setCreatedByAdmin(boolean createdByAdmin) {
+        this.createdByAdmin = createdByAdmin;
     }
 
     @Nullable
