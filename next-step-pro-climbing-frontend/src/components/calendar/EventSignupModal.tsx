@@ -1,7 +1,7 @@
-import { useRef, useState } from 'react'
+import { lazy, Suspense, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { format } from 'date-fns'
-import { Calendar, ExternalLink, MapPin, Users, Trash2, AlertTriangle } from 'lucide-react'
+import { Calendar, ExternalLink, MapPin, Users, Trash2, AlertTriangle, Pencil } from 'lucide-react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { Modal } from '../ui/Modal'
@@ -15,6 +15,12 @@ import { saveRedirectPath } from '../../utils/redirect'
 import { adminApi, calendarApi, reservationApi } from '../../api/client'
 import { getErrorMessage } from '../../utils/errors'
 import type { EventSummary } from '../../types'
+
+// Pełny formularz edycji wydarzenia z panelu admina (kurs, daty, zaproszenia itd.).
+// Lazy — widzi go tylko admin, więc publiczny chunk kalendarza nie ciągnie kodu panelu.
+const EditEventModal = lazy(() =>
+  import('../../pages/admin/AdminEventsPanel').then((m) => ({ default: m.EditEventModal }))
+)
 
 // Build a URL that re-opens this event modal when the user comes back from the
 // linked course detail page. Reuses the calendar `?event=<id>` deep-link so the
@@ -46,6 +52,7 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
   const [userEditParticipants, setUserEditParticipants] = useState<number | null>(null)
   const [showCompleteProfile, setShowCompleteProfile] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [showEditEvent, setShowEditEvent] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
   const pendingAction = useRef<(() => void) | null>(null)
 
@@ -152,6 +159,8 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
   if (!ev) return null
 
   const enrollmentClosed = !ev.enrollmentOpen
+  // Jak w SlotDetailModal: edycja tylko dla przyszłych/trwających terminów (ISO daty porównują się jako stringi)
+  const isPastEvent = ev.endDate < format(new Date(), 'yyyy-MM-dd')
   // Miejsca trzymane "na zaproszenie" — niedostępne dla niezaproszonych; własne zaproszenie nie blokuje.
   const reservedSeats = ev.reservedSeats ?? 0
   const reservedForOthers = Math.max(0, reservedSeats - (ev.isReservedForUser ? 1 : 0))
@@ -609,7 +618,17 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
           </>
         )}
 
-        {/* Admin delete */}
+        {/* Admin edit & delete */}
+        {isAdmin && !isPastEvent && (
+          <button
+            type="button"
+            onClick={() => setShowEditEvent(true)}
+            className="flex items-center gap-2 text-sm text-primary-400 hover:text-primary-300 transition-colors"
+          >
+            <Pencil className="w-4 h-4" />
+            {ta('events.editTitle')}
+          </button>
+        )}
         {isAdmin && (
           <button
             type="button"
@@ -664,6 +683,12 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
           pendingAction.current = null
         }}
       />
+    )}
+
+    {showEditEvent && (
+      <Suspense fallback={null}>
+        <EditEventModal event={ev} isOpen={showEditEvent} onClose={() => setShowEditEvent(false)} />
+      </Suspense>
     )}
 
     {showDeleteConfirm && deleteConfirmParticipants && (
