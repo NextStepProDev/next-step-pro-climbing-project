@@ -66,3 +66,17 @@ record MyReservationsDto(
     List<UserReservationDto> slots,
     List<UserEventReservationDto> events
 ) {}
+
+// Wiszące zaproszenie widziane od strony adresata — trzymane miejsce, którego jeszcze nie zajął.
+record MyInvitationDto(
+    String type,                  // SLOT | EVENT
+    @Nullable UUID slotId,
+    @Nullable UUID eventId,
+    @Nullable String title,
+    @Nullable String eventType,   // tylko dla wydarzeń
+    LocalDate date,               // data slotu lub początek wydarzenia
+    @Nullable LocalDate endDate,  // tylko dla wydarzeń wielodniowych
+    @Nullable LocalTime startTime,
+    @Nullable LocalTime endTime,
+    @Nullable String location
+) {}

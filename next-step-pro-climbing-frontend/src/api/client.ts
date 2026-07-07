@@ -3,6 +3,7 @@ import { compressImage, validateImageFile } from '../utils/imageUtils'
 import type {
   AssetDto,
   EventWaitlistEntry,
+  MyInvitation,
   User,
   MonthView,
   WeekView,
@@ -375,6 +376,9 @@ export const reservationApi = {
 
   getMyEventWaitlist: () =>
     fetchApi<EventWaitlistEntry[]>('/reservations/my/event-waitlist'),
+
+  getMyInvitations: () =>
+    fetchApi<MyInvitation[]>('/reservations/my/invitations'),
 }
 
 // Training requests (propozycje terminów)

@@ -126,6 +126,22 @@ public class ReservationController {
     }
 
     @Operation(
+        summary = "Moje zaproszenia",
+        description = "Zwraca wiszące zaproszenia (miejsca trzymane dla użytkownika) na nadchodzące terminy i wydarzenia."
+    )
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Lista zaproszeń",
+            content = @Content(array = @ArraySchema(schema = @Schema(implementation = MyInvitationDto.class)))),
+        @ApiResponse(responseCode = "401", description = "Użytkownik niezalogowany")
+    })
+    @GetMapping("/my/invitations")
+    public ResponseEntity<List<MyInvitationDto>> getMyInvitations(
+            @Parameter(hidden = true) @CurrentUserId UUID userId) {
+
+        return ResponseEntity.ok(reservationService.getMyInvitations(userId));
+    }
+
+    @Operation(
         summary = "Zapisz na wydarzenie",
         description = "Tworzy rezerwacje na wszystkie aktywne sloty wydarzenia. Wymaga zalogowania."
     )

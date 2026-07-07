@@ -6,6 +6,11 @@
     "message": "Nie masz żadnych nadchodzących zajęć.",
     "goToCalendar": "Przejdź do kalendarza"
   },
+  "invitations": {
+    "title": "Zaproszenia",
+    "heldForYou": "Trener trzyma dla Ciebie miejsce — zarezerwuj, zanim termin minie.",
+    "book": "Zarezerwuj miejsce"
+  },
   "events": "Wydarzenia",
   "trainings": "Treningi",
   "cancelEvent": "Anuluj",

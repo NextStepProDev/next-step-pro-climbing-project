@@ -3,6 +3,8 @@ package pl.nextsteppro.climbing.domain.reservedseat;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
@@ -61,6 +63,21 @@ public interface ReservedSeatRepository extends JpaRepository<ReservedSeat, UUID
     @Query("SELECT rs FROM ReservedSeat rs JOIN FETCH rs.user WHERE rs.timeSlot.id = :slotId ORDER BY rs.createdAt")
     List<ReservedSeat> findBySlotIdWithUser(UUID slotId);
 
+    // Zaproszenia widziane od strony adresata (sekcja "Zaproszenia" + badge w navbarze).
+    // Pokazujemy aż do godziny startu — zaproszeni omijają okno 12 h przed terminem.
+    @Query("""
+        SELECT rs FROM ReservedSeat rs
+        JOIN FETCH rs.timeSlot ts
+        LEFT JOIN FETCH ts.event
+        WHERE rs.user.id = :userId
+          AND ts.blocked = false
+          AND (ts.date > :today OR (ts.date = :today AND ts.startTime > :now))
+          AND NOT EXISTS (SELECT 1 FROM Reservation r
+                          WHERE r.user.id = :userId AND r.timeSlot.id = ts.id AND r.status = 'CONFIRMED')
+        ORDER BY ts.date, ts.startTime
+        """)
+    List<ReservedSeat> findUpcomingPendingSlotInvitesByUserId(UUID userId, LocalDate today, LocalTime now);
+
     boolean existsByTimeSlotIdAndUserId(UUID slotId, UUID userId);
 
     void deleteByTimeSlotIdAndUserId(UUID slotId, UUID userId);
@@ -111,6 +128,18 @@ public interface ReservedSeatRepository extends JpaRepository<ReservedSeat, UUID
 
     @Query("SELECT rs FROM ReservedSeat rs JOIN FETCH rs.user WHERE rs.event.id = :eventId ORDER BY rs.createdAt")
     List<ReservedSeat> findByEventIdWithUser(UUID eventId);
+
+    @Query("""
+        SELECT rs FROM ReservedSeat rs
+        JOIN FETCH rs.event e
+        WHERE rs.user.id = :userId
+          AND e.active = true
+          AND e.endDate >= :today
+          AND NOT EXISTS (SELECT 1 FROM Reservation r
+                          WHERE r.user.id = :userId AND r.timeSlot.event.id = e.id AND r.status = 'CONFIRMED')
+        ORDER BY e.startDate
+        """)
+    List<ReservedSeat> findUpcomingPendingEventInvitesByUserId(UUID userId, LocalDate today);
 
     boolean existsByEventIdAndUserId(UUID eventId, UUID userId);
 

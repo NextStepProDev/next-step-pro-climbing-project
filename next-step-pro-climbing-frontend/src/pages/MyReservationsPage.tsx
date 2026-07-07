@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { format } from 'date-fns'
 import { useDateLocale } from '../utils/dateFnsLocale'
-import { Calendar, CalendarPlus, Clock, MessageSquare, Users, X, Ban, ChevronDown, ChevronRight, ChevronLeft, Clock3, ListX, ExternalLink, Pencil, Check } from 'lucide-react'
+import { Calendar, CalendarPlus, Clock, MapPin, MessageSquare, Sparkles, Users, X, Ban, ChevronDown, ChevronRight, ChevronLeft, Clock3, ListX, ExternalLink, Pencil, Check } from 'lucide-react'
 import { reservationApi, calendarApi, trainingRequestApi } from '../api/client'
 import { getErrorMessage } from '../utils/errors'
 import { LoadingSpinner } from '../components/ui/LoadingSpinner'
@@ -14,7 +14,7 @@ import { ConfirmModal } from '../components/ui/ConfirmModal'
 import { SlotDetailModal } from '../components/calendar/SlotDetailModal'
 import { EventSignupModal } from '../components/calendar/EventSignupModal'
 import { AddToCalendarButton } from '../components/ui/AddToCalendarButton'
-import type { MyReservations, WaitlistEntry, EventWaitlistEntry, TrainingRequest } from '../types'
+import type { MyReservations, MyInvitation, WaitlistEntry, EventWaitlistEntry, TrainingRequest } from '../types'
 
 export function MyReservationsPage() {
   const { t } = useTranslation('reservations')
@@ -87,6 +87,14 @@ export function MyReservationsPage() {
     queryFn: trainingRequestApi.getMy,
   })
 
+  // Wiszące zaproszenia — ten sam cache co badge w navbarze
+  const { data: invitations } = useQuery({
+    queryKey: ['invitations', 'my'],
+    queryFn: reservationApi.getMyInvitations,
+    refetchInterval: 60_000,
+    refetchIntervalInBackground: false,
+  })
+
   const confirmOfferMutation = useMutation({
     mutationFn: reservationApi.confirmWaitlistOffer,
     onSuccess: () => {
@@ -138,7 +146,8 @@ export function MyReservationsPage() {
   const slots = data?.slots ?? []
   const events = data?.events ?? []
   const hasWaitlist = (waitlistData?.length ?? 0) > 0 || (eventWaitlistData?.length ?? 0) > 0
-  const isEmpty = slots.length === 0 && events.length === 0 && !hasWaitlist
+  const hasInvitations = (invitations?.length ?? 0) > 0
+  const isEmpty = slots.length === 0 && events.length === 0 && !hasWaitlist && !hasInvitations
 
   const pastSlots = pastData?.slots ?? []
   const pastEvents = pastData?.events ?? []
@@ -148,12 +157,14 @@ export function MyReservationsPage() {
     setSelectedSlotId(null)
     queryClient.invalidateQueries({ queryKey: ['reservations'] })
     queryClient.invalidateQueries({ queryKey: ['calendar'] })
+    queryClient.invalidateQueries({ queryKey: ['invitations'] })
   }
 
   const handleEventModalClose = () => {
     setSelectedEventId(null)
     queryClient.invalidateQueries({ queryKey: ['reservations'] })
     queryClient.invalidateQueries({ queryKey: ['calendar'] })
+    queryClient.invalidateQueries({ queryKey: ['invitations'] })
   }
 
   return (
@@ -166,6 +177,15 @@ export function MyReservationsPage() {
           {t('subtitle')}
         </p>
       </div>
+
+      {/* Zaproszenia — trzymane miejsca czekające na rezerwację */}
+      {hasInvitations && (
+        <InvitationsSection
+          invitations={invitations!}
+          onSlotClick={setSelectedSlotId}
+          onEventClick={setSelectedEventId}
+        />
+      )}
 
       {/* Sekcja PENDING_CONFIRMATION — najwyższy priorytet */}
       {waitlistData && waitlistData.some(w => w.status === 'PENDING_CONFIRMATION') && (
@@ -792,6 +812,104 @@ function PastReservations({
           </div>
         </div>
       )}
+    </div>
+  )
+}
+
+/* ===============================
+   Zaproszenia — trzymane miejsca
+   =============================== */
+function InvitationsSection({
+  invitations,
+  onSlotClick,
+  onEventClick,
+}: {
+  invitations: MyInvitation[]
+  onSlotClick: (slotId: string) => void
+  onEventClick: (eventId: string) => void
+}) {
+  const { t } = useTranslation('reservations')
+  const { t: tc } = useTranslation('common')
+  const locale = useDateLocale()
+
+  return (
+    <div className="mb-6 space-y-3">
+      <h2 className="text-sm font-semibold text-primary-400 uppercase tracking-wider flex items-center gap-2">
+        <Sparkles className="w-4 h-4" />
+        {t('invitations.title')}
+      </h2>
+      {invitations.map((inv) => {
+        const open = () => {
+          if (inv.type === 'SLOT' && inv.slotId) onSlotClick(inv.slotId)
+          else if (inv.eventId) onEventClick(inv.eventId)
+        }
+        return (
+          <div
+            key={`${inv.type}-${inv.slotId ?? inv.eventId}`}
+            className="bg-primary-500/5 rounded-xl border-2 border-primary-500/30 p-4 sm:p-5 cursor-pointer hover:border-primary-500/50 transition-colors"
+            onClick={open}
+          >
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-1 flex-wrap">
+                  <Sparkles className="w-4 h-4 text-primary-400 shrink-0" />
+                  {inv.eventType && (
+                    <span className="inline-block px-2 py-0.5 text-xs font-medium rounded bg-primary-500/20 text-primary-400">
+                      {tc(`eventTypes.${inv.eventType}`)}
+                    </span>
+                  )}
+                  <span className="font-medium text-surface-100 capitalize">
+                    {inv.type === 'SLOT'
+                      ? format(new Date(inv.date), 'EEEE, d MMMM yyyy', { locale })
+                      : inv.title}
+                  </span>
+                  {inv.type === 'SLOT' && inv.title && (
+                    <span className="text-primary-400 text-sm">· {inv.title}</span>
+                  )}
+                </div>
+                {inv.type === 'EVENT' && (
+                  <div className="flex items-center gap-2 text-surface-400 text-sm">
+                    <Calendar className="w-4 h-4" />
+                    <span>
+                      {format(new Date(inv.date), 'd MMMM', { locale })}
+                      {inv.endDate && inv.endDate !== inv.date ? (
+                        <> – {format(new Date(inv.endDate), 'd MMMM yyyy', { locale })}</>
+                      ) : (
+                        <> {format(new Date(inv.date), 'yyyy', { locale })}</>
+                      )}
+                    </span>
+                  </div>
+                )}
+                {inv.startTime && inv.endTime && (
+                  <div className="flex items-center gap-2 text-surface-400 text-sm mt-0.5">
+                    <Clock className="w-4 h-4" />
+                    <span>{inv.startTime.slice(0, 5)} - {inv.endTime.slice(0, 5)}</span>
+                  </div>
+                )}
+                {inv.location && (
+                  <div className="flex items-center gap-2 text-surface-400 text-sm mt-0.5">
+                    <MapPin className="w-4 h-4" />
+                    <span>{inv.location}</span>
+                  </div>
+                )}
+                <p className="mt-2 text-primary-300/80 text-sm">{t('invitations.heldForYou')}</p>
+              </div>
+              <div className="flex items-center">
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    open()
+                  }}
+                >
+                  {t('invitations.book')}
+                </Button>
+              </div>
+            </div>
+          </div>
+        )
+      })}
     </div>
   )
 }

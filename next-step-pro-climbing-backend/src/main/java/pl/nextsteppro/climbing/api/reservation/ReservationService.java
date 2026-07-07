@@ -14,6 +14,7 @@ import pl.nextsteppro.climbing.domain.reservation.Reservation;
 import pl.nextsteppro.climbing.domain.reservation.ReservationRepository;
 import pl.nextsteppro.climbing.domain.reservation.ReservationStatus;
 import pl.nextsteppro.climbing.domain.reservation.SlotParticipantCount;
+import pl.nextsteppro.climbing.domain.reservedseat.ReservedSeat;
 import pl.nextsteppro.climbing.domain.reservedseat.ReservedSeatRepository;
 import pl.nextsteppro.climbing.domain.timeslot.TimeSlot;
 import pl.nextsteppro.climbing.domain.timeslot.TimeSlotRepository;
@@ -276,6 +277,54 @@ public class ReservationService {
             .toList();
 
         return new MyReservationsDto(standaloneSlots, eventDtos);
+    }
+
+    /**
+     * Wiszące zaproszenia zalogowanego użytkownika na nadchodzące terminy — sekcja
+     * "Zaproszenia" w Moich rezerwacjach + badge w navbarze. Zaproszenie znika z listy
+     * samo, gdy adresat zarezerwuje miejsce (przestaje być "wiszące") albo admin je zdejmie.
+     */
+    @Transactional(readOnly = true)
+    public List<MyInvitationDto> getMyInvitations(UUID userId) {
+        LocalDate today = LocalDate.now(WARSAW);
+        List<MyInvitationDto> invitations = new ArrayList<>();
+
+        for (ReservedSeat rs : reservedSeatRepository.findUpcomingPendingSlotInvitesByUserId(userId, today, LocalTime.now(WARSAW))) {
+            TimeSlot slot = Objects.requireNonNull(rs.getTimeSlot());
+            Event event = slot.getEvent();
+            invitations.add(new MyInvitationDto(
+                "SLOT",
+                slot.getId(),
+                null,
+                slot.getDisplayTitle(),
+                null,
+                slot.getDate(),
+                null,
+                slot.getStartTime(),
+                slot.getEndTime(),
+                event != null ? event.getLocation() : null
+            ));
+        }
+
+        for (ReservedSeat rs : reservedSeatRepository.findUpcomingPendingEventInvitesByUserId(userId, today)) {
+            Event event = Objects.requireNonNull(rs.getEvent());
+            invitations.add(new MyInvitationDto(
+                "EVENT",
+                null,
+                event.getId(),
+                event.getTitle(),
+                event.getEventType().name(),
+                event.getStartDate(),
+                event.getEndDate(),
+                event.getStartTime(),
+                event.getEndTime(),
+                event.getLocation()
+            ));
+        }
+
+        invitations.sort(Comparator.comparing(MyInvitationDto::date)
+            .thenComparing(MyInvitationDto::startTime, Comparator.nullsFirst(Comparator.naturalOrder())));
+        return invitations;
     }
 
     @Transactional(readOnly = true)

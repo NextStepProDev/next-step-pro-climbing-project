@@ -160,6 +160,20 @@ export interface EventWaitlistEntry {
   position: number
 }
 
+// Wiszące zaproszenie (miejsce trzymane dla użytkownika) na nadchodzący slot/wydarzenie
+export interface MyInvitation {
+  type: 'SLOT' | 'EVENT'
+  slotId: string | null
+  eventId: string | null
+  title: string | null
+  eventType: EventType | null
+  date: string
+  endDate: string | null
+  startTime: string | null
+  endTime: string | null
+  location: string | null
+}
+
 export interface EventDetail {
   id: string
   title: string

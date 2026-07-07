@@ -6,6 +6,11 @@
     "message": "You don't have any upcoming sessions.",
     "goToCalendar": "Go to calendar"
   },
+  "invitations": {
+    "title": "Invitations",
+    "heldForYou": "The coach is holding a spot for you — book it before the date passes.",
+    "book": "Book your spot"
+  },
   "events": "Events",
   "trainings": "Training sessions",
   "cancelEvent": "Cancel",
