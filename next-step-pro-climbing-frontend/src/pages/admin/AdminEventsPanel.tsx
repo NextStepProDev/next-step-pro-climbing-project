@@ -726,12 +726,20 @@ function ConfirmDeleteEventModal({
 
 /* =============================== Edit Event Modal =============================== */
 
-function EditEventModal({
+// Minimalny kształt wydarzenia potrzebny do edycji — spełnia go zarówno EventDetail (panel
+// admina), jak i EventSummary (publiczny kalendarz, EventSignupModal).
+export type EditableEvent = Pick<
+  EventDetail,
+  | 'id' | 'title' | 'description' | 'location' | 'eventType'
+  | 'startDate' | 'endDate' | 'startTime' | 'endTime' | 'maxParticipants' | 'courseId'
+>
+
+export function EditEventModal({
   event,
   isOpen,
   onClose,
 }: {
-  event: EventDetail | null
+  event: EditableEvent | null
   isOpen: boolean
   onClose: () => void
 }) {
@@ -778,6 +786,7 @@ function EditEventModal({
       queryClient.invalidateQueries({ queryKey: ['admin', 'events'] })
       queryClient.invalidateQueries({ queryKey: ['calendar'] })
       queryClient.invalidateQueries({ queryKey: ['courseEvents'] })
+      queryClient.invalidateQueries({ queryKey: ['eventSummary', event?.id] })
       onClose()
     },
   })
