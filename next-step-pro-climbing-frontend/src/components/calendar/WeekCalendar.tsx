@@ -434,8 +434,10 @@ export function WeekCalendar({
                     const dragging = isBeingDragged(slot.id)
                     const isCut = cutSlotId === slot.id
                     const isCopied = copiedSlotId === slot.id
-                    const isPast = slot.status === 'PAST'
-                    const isDraggable = isAdmin && !isPast
+                    // Status PAST przychodzi od godziny STARTU — dla admina slot jest „zakończony"
+                    // dopiero po godzinie końca, żeby trwający slot dało się jeszcze przesunąć/edytować.
+                    const hasEnded = slot.status === 'PAST' && new Date(`${day.date}T${slot.endTime}`) < new Date()
+                    const isDraggable = isAdmin && !hasEnded
                     const isPending = pendingSlotId === slot.id
                     const isLongPressing = longPressSlotId === slot.id
                     // „Na zaproszenie" (fioletowy) tylko dla niezalogowanych — zalogowany nie-zaproszony
@@ -496,7 +498,7 @@ export function WeekCalendar({
                         </button>
 
                         {/* Admin action buttons */}
-                        {isAdmin && !isPast && (
+                        {isAdmin && !hasEnded && (
                           <div
                             data-admin-action
                             className={clsx(
