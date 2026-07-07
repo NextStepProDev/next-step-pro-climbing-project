@@ -160,6 +160,9 @@ export function SlotDetailModal({
     (slot.maxParticipants ?? 0) - (slot.currentParticipants ?? 0) - reservedForOthers;
 
   const isPast = slot.status === "PAST";
+  // Status PAST przychodzi od godziny STARTU — dla admina slot jest „zakończony" dopiero po
+  // godzinie końca (trwający slot można jeszcze edytować/usunąć, spójnie z drag w WeekCalendar).
+  const hasEnded = isPast && new Date(`${slot.date}T${slot.endTime}`) < new Date();
   const isBookingClosed = slot.status === "BOOKING_CLOSED";
   const isAvailable = slot.status === "AVAILABLE" && spotsLeft > 0;
   const isFull = slot.status === "FULL" || (slot.status === "AVAILABLE" && spotsLeft <= 0);
@@ -289,8 +292,8 @@ export function SlotDetailModal({
           </div>
         )}
 
-        {/* Past slot info */}
-        {!isAvailabilityWindow && isPast && (
+        {/* Past slot info — adminowi nie pokazujemy „minął" dla trwającego slotu (edycja wciąż aktywna) */}
+        {!isAvailabilityWindow && isPast && (!isAdmin || hasEnded) && (
           <div className="p-3 bg-surface-800 border border-surface-700 rounded-lg">
             <span className="text-surface-400 text-sm">
               {t('slot.past')}
@@ -432,7 +435,7 @@ export function SlotDetailModal({
         )}
 
         {/* Admin edit & delete */}
-        {isAdmin && !isPast && (
+        {isAdmin && !hasEnded && (
           <>
             {editMode ? (
               <div className="p-4 bg-surface-800/50 border border-surface-700 rounded-lg space-y-4">
