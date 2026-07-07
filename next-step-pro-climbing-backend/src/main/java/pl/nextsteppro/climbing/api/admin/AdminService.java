@@ -994,7 +994,12 @@ public class AdminService {
         Set<UUID> desired = new LinkedHashSet<>(desiredUserIds);
         int confirmed = reservationRepository.countConfirmedByTimeSlotId(slot.getId())
             + guestReservationRepository.sumParticipantsByTimeSlotId(slot.getId());
-        if (desired.size() + confirmed > slot.getMaxParticipants()) {
+        // Zaproszony, który już zarezerwował, siedzi w `confirmed` — do limitu liczą się
+        // tylko wiszące zaproszenia, inaczej pełny slot z wykorzystanym zaproszeniem
+        // odrzucałby każdą edycję (podwójne liczenie tej samej osoby).
+        Set<UUID> confirmedUserIds = new HashSet<>(reservationRepository.findConfirmedUserIdsByTimeSlotId(slot.getId()));
+        long pendingDesired = desired.stream().filter(id -> !confirmedUserIds.contains(id)).count();
+        if (pendingDesired + confirmed > slot.getMaxParticipants()) {
             throw new IllegalStateException(msg.get("admin.invites.too.many", String.valueOf(slot.getMaxParticipants())));
         }
 
@@ -1034,7 +1039,11 @@ public class AdminService {
             maxConfirmed = reservationRepository.countConfirmedByTimeSlotIds(slotIds)
                 .stream().mapToInt(SlotParticipantCount::countAsInt).max().orElse(0);
         }
-        if (desired.size() + maxConfirmed > event.getMaxParticipants()) {
+        // Jak w syncSlotInvites: zaproszony z potwierdzoną rezerwacją na wydarzeniu
+        // jest już liczony w maxConfirmed — do limitu liczą się tylko wiszące zaproszenia.
+        Set<UUID> confirmedUserIds = new HashSet<>(reservationRepository.findConfirmedUserIdsByEventId(event.getId()));
+        long pendingDesired = desired.stream().filter(id -> !confirmedUserIds.contains(id)).count();
+        if (pendingDesired + maxConfirmed > event.getMaxParticipants()) {
             throw new IllegalStateException(msg.get("admin.invites.too.many", String.valueOf(event.getMaxParticipants())));
         }
 
