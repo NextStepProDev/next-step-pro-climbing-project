@@ -6,6 +6,11 @@
     "message": "No tienes ninguna sesión próxima.",
     "goToCalendar": "Ir al calendario"
   },
+  "invitations": {
+    "title": "Invitaciones",
+    "heldForYou": "El entrenador guarda una plaza para ti — resérvala antes de que pase la fecha.",
+    "book": "Reserva tu plaza"
+  },
   "events": "Eventos",
   "trainings": "Entrenamientos",
   "cancelEvent": "Cancelar",

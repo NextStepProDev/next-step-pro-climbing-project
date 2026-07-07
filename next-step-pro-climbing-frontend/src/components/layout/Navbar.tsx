@@ -3,7 +3,7 @@ import { ChevronDown, LogOut, Menu, Moon, Sun, User, X } from "lucide-react";
 import { useState, useRef, useEffect, useLayoutEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
-import { adminApi } from "../../api/client";
+import { adminApi, reservationApi } from "../../api/client";
 import { useAuth } from "../../context/AuthContext";
 import { useTheme } from "../../context/ThemeContext";
 import { Button } from "../ui/Button";
@@ -48,6 +48,18 @@ export function Navbar() {
     ? (adminNotifications?.pendingRequests ?? 0) + (adminNotifications?.newReservations ?? 0)
     : 0;
 
+  // Wiszące zaproszenia klienta (miejsca trzymane "na zaproszenie") — badge na linku
+  // Moje rezerwacje. Świeci dopóki user nie zarezerwuje trzymanego miejsca. Ten sam
+  // cache co sekcja "Zaproszenia" na MyReservationsPage.
+  const { data: myInvitations } = useQuery({
+    queryKey: ['invitations', 'my'],
+    queryFn: reservationApi.getMyInvitations,
+    enabled: isAuthenticated,
+    refetchInterval: 60_000,
+    refetchIntervalInBackground: false,
+  });
+  const invitationBadgeCount = isAuthenticated ? (myInvitations?.length ?? 0) : 0;
+
   const mediaLinks = [
     { to: "/galeria", label: t('nav.gallery') },
     { to: "/filmy", label: t('nav.videos') },
@@ -58,11 +70,11 @@ export function Navbar() {
     { to: "/team/zawodnicy", label: t('team.competitors') },
   ];
 
-  const navLinksBefore = [
+  const navLinksBefore: { to: string; label: string; badge?: number }[] = [
     { to: "/", label: t('nav.home') },
     { to: "/calendar", label: t('nav.calendar') },
     ...(isAuthenticated
-      ? [{ to: "/my-reservations", label: t('nav.myReservations') }]
+      ? [{ to: "/my-reservations", label: t('nav.myReservations'), badge: invitationBadgeCount }]
       : []),
     { to: "/aktualnosci", label: t('nav.news') },
     { to: "/kursy", label: t('nav.courses') },
@@ -232,6 +244,11 @@ export function Navbar() {
                 )}
               >
                 {link.label}
+                {(link.badge ?? 0) > 0 && (
+                  <span className="ml-1.5 min-w-5 h-5 px-1.5 inline-flex items-center justify-center rounded-full bg-rose-500 text-white text-[11px] font-bold leading-none align-middle">
+                    {link.badge}
+                  </span>
+                )}
               </Link>
             ))}
 
@@ -424,7 +441,7 @@ export function Navbar() {
             ) : (
               <Menu className="w-6 h-6" />
             )}
-            {!mobileMenuOpen && adminBadgeCount > 0 && (
+            {!mobileMenuOpen && (adminBadgeCount + invitationBadgeCount) > 0 && (
               <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-rose-500" />
             )}
           </button>

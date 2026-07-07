@@ -882,6 +882,65 @@ class ReservationServiceTest {
         assertEquals(1, result.slots().size());
     }
 
+    // ========== MY INVITATIONS TESTS ==========
+
+    @Test
+    void shouldReturnEmptyInvitationsWhenUserHasNone() {
+        // Given
+        when(reservedSeatRepository.findUpcomingPendingSlotInvitesByUserId(eq(userId), any(), any()))
+            .thenReturn(List.of());
+        when(reservedSeatRepository.findUpcomingPendingEventInvitesByUserId(eq(userId), any()))
+            .thenReturn(List.of());
+
+        // When
+        List<MyInvitationDto> result = reservationService.getMyInvitations(userId);
+
+        // Then
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void shouldMapAndSortInvitationsByDateWhenUserHasSlotAndEventInvites() {
+        // Given: slot invite +2 days, event invite starting +1 day → event should come first
+        testEvent.setLocation("Kraków");
+        var slotInvite = new pl.nextsteppro.climbing.domain.reservedseat.ReservedSeat(testSlot, testUser);
+        var eventInvite = new pl.nextsteppro.climbing.domain.reservedseat.ReservedSeat(testEvent, testUser);
+        try {
+            var startField = Event.class.getDeclaredField("startDate");
+            startField.setAccessible(true);
+            startField.set(testEvent, LocalDate.now().plusDays(1));
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+        when(reservedSeatRepository.findUpcomingPendingSlotInvitesByUserId(eq(userId), any(), any()))
+            .thenReturn(List.of(slotInvite));
+        when(reservedSeatRepository.findUpcomingPendingEventInvitesByUserId(eq(userId), any()))
+            .thenReturn(List.of(eventInvite));
+
+        // When
+        List<MyInvitationDto> result = reservationService.getMyInvitations(userId);
+
+        // Then
+        assertEquals(2, result.size());
+
+        MyInvitationDto first = result.get(0);
+        assertEquals("EVENT", first.type());
+        assertEquals(eventId, first.eventId());
+        assertNull(first.slotId());
+        assertEquals("Test Course", first.title());
+        assertEquals("COURSE", first.eventType());
+        assertEquals("Kraków", first.location());
+
+        MyInvitationDto second = result.get(1);
+        assertEquals("SLOT", second.type());
+        assertEquals(slotId, second.slotId());
+        assertNull(second.eventId());
+        assertEquals(testSlot.getDate(), second.date());
+        assertEquals(testSlot.getStartTime(), second.startTime());
+        assertEquals(testSlot.getEndTime(), second.endTime());
+    }
+
     // ========== HELPER METHODS ==========
 
     private TimeSlot createEventSlot(UUID eventId, LocalDate date) {
