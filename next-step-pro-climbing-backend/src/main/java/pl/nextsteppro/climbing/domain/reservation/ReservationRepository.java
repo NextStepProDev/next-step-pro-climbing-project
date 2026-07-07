@@ -54,6 +54,14 @@ public interface ReservationRepository extends JpaRepository<Reservation, UUID> 
     @Query("SELECT r.participants FROM Reservation r WHERE r.user.id = :userId AND r.timeSlot.event.id = :eventId AND r.status = 'CONFIRMED'")
     List<Integer> findUserParticipantsForEvent(UUID userId, UUID eventId);
 
+    // Zaproszeni, którzy już zarezerwowali, są liczeni w potwierdzonych — guard limitu zaproszeń
+    // musi ich odfiltrować z listy zaproszeń, żeby nie liczyć podwójnie.
+    @Query("SELECT r.user.id FROM Reservation r WHERE r.timeSlot.id = :timeSlotId AND r.status = 'CONFIRMED'")
+    List<UUID> findConfirmedUserIdsByTimeSlotId(UUID timeSlotId);
+
+    @Query("SELECT DISTINCT r.user.id FROM Reservation r WHERE r.timeSlot.event.id = :eventId AND r.status = 'CONFIRMED'")
+    List<UUID> findConfirmedUserIdsByEventId(UUID eventId);
+
     @Modifying(clearAutomatically = true)
     @Query("DELETE FROM Reservation r WHERE r.timeSlot.id IN :slotIds")
     void deleteByTimeSlotIds(Collection<UUID> slotIds);
