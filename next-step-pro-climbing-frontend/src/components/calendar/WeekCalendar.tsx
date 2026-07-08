@@ -442,7 +442,7 @@ export function WeekCalendar({
                   {/* Slots */}
                   {day.slots.map((slot: TimeSlot) => {
                     const { top, height } = getSlotPosition(slot.startTime, slot.endTime)
-                    const isClickable = isAdmin || slot.status === 'AVAILABLE' || slot.status === 'FULL' || slot.status === 'AVAILABILITY_WINDOW' || slot.isUserRegistered
+                    const isClickable = isAdmin || slot.status === 'AVAILABLE' || slot.status === 'FULL' || slot.status === 'AVAILABILITY_WINDOW' || slot.status === 'BOOKING_CLOSED' || slot.isUserRegistered
                     const showTitle = height >= 30
                     const dragging = isBeingDragged(slot.id)
                     const isCut = cutSlotId === slot.id
