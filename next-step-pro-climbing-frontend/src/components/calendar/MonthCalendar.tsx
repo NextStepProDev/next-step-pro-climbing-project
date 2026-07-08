@@ -172,7 +172,7 @@ export function MonthCalendar({ currentMonth, onMonthChange, days, events, onDay
               })}
 
               {dayData && dayData.availableSlots > 0 && !isPast ? (
-                <div className="text-xs text-primary-400 font-medium">
+                <div className="text-xs text-green-300 font-medium">
                   {pluralizeTraining(dayData.availableSlots)}
                 </div>
               ) : dayData && dayData.totalSlots > 0 && dayData.availableSlots === 0 && dayData.hasReservedSeats && !isAuthenticated && !isPast ? (
@@ -180,7 +180,7 @@ export function MonthCalendar({ currentMonth, onMonthChange, days, events, onDay
                   {t('month.invitedOnly')}
                 </div>
               ) : dayData && dayData.totalSlots > 0 && dayData.availableSlots === 0 && !hasEvents && !isPast ? (
-                <div className="text-xs text-amber-400 font-medium">
+                <div className="text-xs text-amber-400/80 font-medium">
                   {t('noSpots')}
                 </div>
               ) : null}

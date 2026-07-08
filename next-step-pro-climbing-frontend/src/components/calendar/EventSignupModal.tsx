@@ -470,7 +470,7 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
             <span>
               {t('event.participants', { current: ev.currentParticipants, max: ev.maxParticipants })}
               {spotsLeft > 0 && (
-                <span className="text-primary-400 ml-2">{t('event.spotsFree', { count: spotsLeft })}</span>
+                <span className="text-green-300 ml-2">{t('event.spotsFree', { count: spotsLeft })}</span>
               )}
               {isFull && (
                 <span className="text-amber-400 ml-2">{t('event.full')}</span>
