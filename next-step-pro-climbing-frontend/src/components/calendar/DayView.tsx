@@ -50,7 +50,7 @@ function SlotButton({
       className={clsx(
         "w-full p-4 rounded-lg border transition-all text-left",
         slot.status === "AVAILABLE" &&
-          "border-surface-700 hover:border-primary-500 hover:bg-surface-800",
+          "border-green-500/40 hover:border-green-500 hover:bg-surface-800",
         slot.status === "FULL" && !invitedOnly &&
           "border-surface-700 hover:border-amber-500 hover:bg-surface-800",
         slot.status === "FULL" && invitedOnly &&
@@ -98,7 +98,7 @@ function SlotButton({
             </span>
           )}
           {slot.status === "AVAILABLE" && !slot.isUserRegistered && (
-            <span className="px-2 py-1 text-xs font-medium bg-primary-500/10 text-primary-400 rounded">
+            <span className="px-2 py-1 text-xs font-medium bg-green-500/15 text-green-300 rounded">
               {t('day.available')}
             </span>
           )}

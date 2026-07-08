@@ -80,9 +80,9 @@ function subtractIntervals(start: number, end: number, covers: Array<[number, nu
 function getSlotColors(status: string): string {
   switch (status) {
     case 'AVAILABLE':
-      return 'bg-primary-600/30 border-primary-500/50 text-primary-300 hover:bg-primary-600/40'
+      return 'bg-green-500/25 border-green-500/60 text-green-300 hover:bg-green-500/40'
     case 'FULL':
-      return 'bg-amber-600/30 border-amber-500/50 text-amber-300'
+      return 'bg-amber-600/15 border-amber-500/35 text-amber-300/90'
     case 'BLOCKED':
       return 'bg-surface-700/50 border-surface-600/50 text-surface-400'
     case 'BOOKING_CLOSED':
@@ -408,23 +408,36 @@ export function WeekCalendar({
                       )
                     })}
 
-                  {/* Event bars at top area */}
-                  {dayEvents.filter((event) => event.eventType !== 'UNAVAILABLE').map((event, eventIndex) => {
-                    const color = eventColorMap.get(event.id) ?? getEventColorByIndex(event.id, event.eventType, event.currentParticipants >= event.maxParticipants)
-                    return (
-                      <button
-                        key={event.id}
-                        onClick={() => onEventClick(event)}
-                        className={clsx(
-                          "absolute left-0.5 right-0.5 z-20 px-1 py-0.5 text-[11px] leading-snug font-medium rounded border truncate transition-colors cursor-pointer",
-                          color.barBg, color.barBorder, color.barText, color.barHover
-                        )}
-                        style={{ top: eventIndex * 22 }}
-                      >
-                        {event.title}
-                      </button>
-                    )
-                  })}
+                  {/* Event title bars — anchored at the event's start hour on its first day
+                      (grid top on continuation days / all-day, matching where the tint begins).
+                      Bars sharing the same anchor stack downward so they don't overlap. */}
+                  {(() => {
+                    const stackByTop = new Map<number, number>()
+                    return dayEvents.filter((event) => event.eventType !== 'UNAVAILABLE').map((event) => {
+                      const isFirst = day.date === event.startDate
+                      const anchorMin = event.startTime && isFirst
+                        ? Math.max(timeToMin(event.startTime), GRID_START_MIN)
+                        : GRID_START_MIN
+                      const baseTop = (anchorMin - GRID_START_MIN) / 60 * HOUR_HEIGHT
+                      const stackIdx = stackByTop.get(baseTop) ?? 0
+                      stackByTop.set(baseTop, stackIdx + 1)
+                      const color = eventColorMap.get(event.id) ?? getEventColorByIndex(event.id, event.eventType, event.currentParticipants >= event.maxParticipants)
+                      return (
+                        <button
+                          key={event.id}
+                          onClick={() => onEventClick(event)}
+                          title={event.title}
+                          className={clsx(
+                            "absolute left-0.5 right-0.5 z-20 px-1 py-0.5 text-[11px] leading-snug font-medium rounded border truncate transition-colors cursor-pointer",
+                            color.barBg, color.barBorder, color.barText, color.barHover
+                          )}
+                          style={{ top: baseTop + stackIdx * 22 }}
+                        >
+                          {event.title}
+                        </button>
+                      )
+                    })
+                  })()}
 
                   {/* Slots */}
                   {day.slots.map((slot: TimeSlot) => {

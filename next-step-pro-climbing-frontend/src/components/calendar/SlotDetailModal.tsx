@@ -267,7 +267,7 @@ export function SlotDetailModal({
           <span>
             {t('slot.participants', { current: slot.currentParticipants, max: slot.maxParticipants })}
             {spotsLeft > 0 && (
-              <span className="text-primary-400 ml-2">{t('slot.spotsFree', { count: spotsLeft })}</span>
+              <span className="text-green-300 ml-2">{t('slot.spotsFree', { count: spotsLeft })}</span>
             )}
             {reservedForOthers > 0 && (!isAuthenticated || slot.isReservedForUser) && (
               <span className="text-violet-300/90 ml-2">{t('slot.reservedForInvited', { count: reservedForOthers })}</span>
