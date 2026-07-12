@@ -723,7 +723,7 @@ class AuthServiceTest {
         when(jwtService.validateToken(oldRefreshToken)).thenReturn(true);
         when(jwtService.isRefreshToken(oldRefreshToken)).thenReturn(true);
         when(jwtService.hashToken(oldRefreshToken)).thenReturn(hashedOldToken);
-        when(authTokenRepository.findValidToken(eq(hashedOldToken), eq(TokenType.REFRESH_TOKEN), any(Instant.class)))
+        when(authTokenRepository.findRefreshableToken(eq(hashedOldToken), eq(TokenType.REFRESH_TOKEN), any(Instant.class), any(Instant.class)))
             .thenReturn(Optional.of(storedToken));
         when(jwtService.generateAccessToken(testUser)).thenReturn("newAccessToken");
         when(jwtService.generateRefreshToken(testUser)).thenReturn("newRefreshToken");
@@ -741,6 +741,39 @@ class AuthServiceTest {
         assertEquals(900L, response.expiresIn());
 
         verify(authTokenRepository, times(2)).save(any(AuthToken.class)); // Old token marked as used + new token saved
+    }
+
+    @Test
+    void shouldAllowConcurrentRefreshWithinGraceWindowWithoutReRotating() {
+        // Given a refresh token already used moments ago (a concurrent tab won the rotation race).
+        // Within the grace window it must still refresh instead of logging the user out.
+        String oldRefreshToken = "oldRefreshToken";
+        String hashedOldToken = "hashedOldToken";
+        AuthToken storedToken = new AuthToken(testUser, hashedOldToken, TokenType.REFRESH_TOKEN, Instant.now().plusSeconds(604800));
+        storedToken.markAsUsed(); // already rotated by a concurrent refresh, still inside the grace window
+
+        RefreshTokenRequest request = new RefreshTokenRequest(oldRefreshToken);
+
+        when(jwtService.validateToken(oldRefreshToken)).thenReturn(true);
+        when(jwtService.isRefreshToken(oldRefreshToken)).thenReturn(true);
+        when(jwtService.hashToken(oldRefreshToken)).thenReturn(hashedOldToken);
+        when(authTokenRepository.findRefreshableToken(eq(hashedOldToken), eq(TokenType.REFRESH_TOKEN), any(Instant.class), any(Instant.class)))
+            .thenReturn(Optional.of(storedToken));
+        when(jwtService.generateAccessToken(testUser)).thenReturn("newAccessToken");
+        when(jwtService.generateRefreshToken(testUser)).thenReturn("newRefreshToken");
+        when(jwtService.hashToken("newRefreshToken")).thenReturn("hashedNewRefreshToken");
+        when(jwtService.getAccessTokenExpirationSeconds()).thenReturn(900L);
+        when(jwtService.getRefreshTokenExpirationMs()).thenReturn(604800000L);
+
+        // When
+        AuthTokensResponse response = authService.refreshTokens(request);
+
+        // Then: succeeds with fresh tokens, and the already-used token is NOT re-rotated —
+        // only the new refresh token is persisted (a single save, not two).
+        assertNotNull(response);
+        assertEquals("newAccessToken", response.accessToken());
+        assertEquals("newRefreshToken", response.refreshToken());
+        verify(authTokenRepository, times(1)).save(any(AuthToken.class));
     }
 
     @Test
@@ -785,7 +818,7 @@ class AuthServiceTest {
         when(jwtService.validateToken(refreshToken)).thenReturn(true);
         when(jwtService.isRefreshToken(refreshToken)).thenReturn(true);
         when(jwtService.hashToken(refreshToken)).thenReturn(hashedToken);
-        when(authTokenRepository.findValidToken(eq(hashedToken), eq(TokenType.REFRESH_TOKEN), any(Instant.class)))
+        when(authTokenRepository.findRefreshableToken(eq(hashedToken), eq(TokenType.REFRESH_TOKEN), any(Instant.class), any(Instant.class)))
             .thenReturn(Optional.empty());
         when(msg.get("auth.refresh.revoked")).thenReturn("Token has been revoked");
 
@@ -809,7 +842,7 @@ class AuthServiceTest {
         when(jwtService.validateToken(oldRefreshToken)).thenReturn(true);
         when(jwtService.isRefreshToken(oldRefreshToken)).thenReturn(true);
         when(jwtService.hashToken(oldRefreshToken)).thenReturn(hashedOldToken);
-        when(authTokenRepository.findValidToken(eq(hashedOldToken), eq(TokenType.REFRESH_TOKEN), any(Instant.class)))
+        when(authTokenRepository.findRefreshableToken(eq(hashedOldToken), eq(TokenType.REFRESH_TOKEN), any(Instant.class), any(Instant.class)))
             .thenReturn(Optional.of(storedToken));
         when(jwtService.generateAccessToken(testUser)).thenReturn("newAccessToken");
         when(jwtService.generateRefreshToken(testUser)).thenReturn("newRefreshToken");
