@@ -1,0 +1,12 @@
+[Unit]
+Description=Restrict origin :443 to Cloudflare ranges (DOCKER-USER)
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/cf-origin-firewall.sh
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
