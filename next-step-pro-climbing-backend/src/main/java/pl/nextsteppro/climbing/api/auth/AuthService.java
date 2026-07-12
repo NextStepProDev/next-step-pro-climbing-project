@@ -34,6 +34,13 @@ public class AuthService {
     private static final Duration EMAIL_VERIFICATION_EXPIRATION = Duration.ofMinutes(15);
     private static final Duration PASSWORD_RESET_EXPIRATION = Duration.ofHours(1);
     private static final Duration RESEND_COOLDOWN = Duration.ofMinutes(1);
+    /**
+     * Grace window after a refresh token is first used, during which concurrent refreshes are
+     * still accepted. Without it, several open browser tabs whose access tokens expire at the same
+     * time race to rotate the shared refresh token: the first wins and the rest get a "revoked"
+     * error and are logged out. The window lets those concurrent refreshes all succeed.
+     */
+    private static final Duration REFRESH_ROTATION_GRACE = Duration.ofSeconds(30);
 
     private final UserRepository userRepository;
     private final AuthTokenRepository authTokenRepository;
@@ -277,16 +284,24 @@ public class AuthService {
             throw new IllegalArgumentException(msg.get("auth.refresh.invalid.type"));
         }
 
-        // Verify refresh token exists in database (not revoked)
+        // Verify refresh token exists in database and is still refreshable. A short grace window
+        // after first use (REFRESH_ROTATION_GRACE) lets concurrent refreshes — e.g. several open
+        // tabs whose access tokens expired at once — all succeed, instead of the losers of the
+        // rotation race getting "revoked" and being logged out.
         String tokenHash = jwtService.hashToken(refreshToken);
-        AuthToken storedToken = authTokenRepository.findValidToken(tokenHash, TokenType.REFRESH_TOKEN, Instant.now())
+        Instant now = Instant.now();
+        AuthToken storedToken = authTokenRepository
+            .findRefreshableToken(tokenHash, TokenType.REFRESH_TOKEN, now, now.minus(REFRESH_ROTATION_GRACE))
             .orElseThrow(() -> new IllegalArgumentException(msg.get("auth.refresh.revoked")));
 
         User user = storedToken.getUser();
 
-        // Invalidate old refresh token (rotation)
-        storedToken.markAsUsed();
-        authTokenRepository.save(storedToken);
+        // Rotate: mark used on first use only, so the grace window is measured from the first
+        // refresh (the token stops being accepted REFRESH_ROTATION_GRACE after that first use).
+        if (storedToken.getUsedAt() == null) {
+            storedToken.markAsUsed();
+            authTokenRepository.save(storedToken);
+        }
 
         log.debug("Tokens refreshed for: {}", user.getEmail());
         return generateTokens(user);
