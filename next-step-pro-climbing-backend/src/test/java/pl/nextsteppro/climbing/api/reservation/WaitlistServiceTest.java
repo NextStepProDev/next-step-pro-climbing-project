@@ -295,6 +295,7 @@ class WaitlistServiceTest {
         verify(reservationRepository).save(any(Reservation.class));
         verify(waitlistRepository).delete(entry);
         verify(waitlistMailService).sendWaitlistReservationConfirmed(user, slot);
+        verify(waitlistMailService).sendWaitlistAdminNotification(user, slot);
     }
 
     @Test

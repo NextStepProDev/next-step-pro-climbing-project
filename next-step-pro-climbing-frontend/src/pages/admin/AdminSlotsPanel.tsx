@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { format, parseISO } from 'date-fns'
-import { Plus, Lock, LockOpen, Trash2, Users, Pencil, AlertTriangle, X, UserPlus, ChevronDown, ChevronRight, ChevronLeft, Save } from 'lucide-react'
+import { Plus, Lock, LockOpen, Trash2, Users, Pencil, AlertTriangle, X, UserPlus, ChevronDown, ChevronRight, ChevronLeft, Save, Hourglass } from 'lucide-react'
 import { adminApi, adminSiteApi } from '../../api/client'
 import { getErrorMessage } from '../../utils/errors'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
@@ -14,6 +14,7 @@ import { UserSearchSelect } from '../../components/ui/UserSearchSelect'
 import { InvitedUsersPicker } from '../../components/ui/InvitedUsersPicker'
 import { InviteNotifySection } from '../../components/ui/InviteNotifySection'
 import { CreateSlotModal } from '../../components/calendar/CreateSlotModal'
+import { WaitlistEntryList } from './AdminReservationsPanel'
 import { useDateLocale } from '../../utils/dateFnsLocale'
 import { useDirty } from '../../hooks/useDirty'
 import type { InvitedUser, SlotParticipants, SlotTemplate, TimeSlotAdmin, User } from '../../types'
@@ -740,6 +741,13 @@ function ParticipantsModal({
     onSuccess: () => { invalidate(); setConfirmDeleteGuestId(null) },
   })
 
+  // Kolejka oczekujących tego terminu — sekcja pod uczestnikami, tylko gdy ktoś czeka
+  const { data: waitlist } = useQuery({
+    queryKey: ['admin', 'slotWaitlist', slotId],
+    queryFn: () => adminApi.getSlotWaitlist(slotId),
+    enabled: isOpen,
+  })
+
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={t('slots.participantsTitle')}>
       <div className="space-y-4">
@@ -999,6 +1007,17 @@ function ParticipantsModal({
                 </div>
               </form>
             )}
+          </div>
+        )}
+
+        {/* Lista rezerwowa */}
+        {waitlist && waitlist.entries.length > 0 && (
+          <div>
+            <h3 className="flex items-center gap-1.5 text-sm font-medium text-amber-400 mb-1">
+              <Hourglass className="w-3.5 h-3.5" />
+              {t('slots.waitlistSection', { count: waitlist.entries.length })}
+            </h3>
+            <WaitlistEntryList entries={waitlist.entries} />
           </div>
         )}
 

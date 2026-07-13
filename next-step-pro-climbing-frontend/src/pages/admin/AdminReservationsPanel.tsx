@@ -2,14 +2,14 @@ import { useEffect, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { format } from 'date-fns'
-import { ChevronDown, ChevronRight, ChevronLeft, Users, Mail, Phone, Trash2 } from 'lucide-react'
+import { ChevronDown, ChevronRight, ChevronLeft, Users, Mail, Phone, Trash2, Hourglass } from 'lucide-react'
 import { adminApi } from '../../api/client'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
 import { QueryError } from '../../components/ui/QueryError'
 import { ConfirmModal } from '../../components/ui/ConfirmModal'
 import { getErrorMessage } from '../../utils/errors'
 import { useDateLocale } from '../../utils/dateFnsLocale'
-import type { ReservationAdmin } from '../../types'
+import type { ReservationAdmin, WaitlistAdminEntry } from '../../types'
 
 function isMultiDayEvent(r: ReservationAdmin) {
   return r.eventStartDate && r.eventEndDate && r.eventStartDate !== r.eventEndDate
@@ -111,6 +111,9 @@ export function AdminReservationsPanel() {
 
   return (
     <div className="space-y-6">
+      {/* Listy rezerwowe — widoczne tylko gdy ktoś faktycznie czeka */}
+      <WaitlistsSection />
+
       {/* Upcoming */}
       {!hasUpcoming ? (
         <div className="bg-surface-900 rounded-lg border border-surface-800 p-8 text-center text-surface-400">
@@ -156,6 +159,103 @@ export function AdminReservationsPanel() {
           </div>
         )}
       </div>
+    </div>
+  )
+}
+
+// Wszystkie aktywne listy rezerwowe (sloty + wydarzenia) — kto i od kiedy czeka.
+// Renderuje się tylko gdy ktoś faktycznie czeka; zwykle sekcji nie widać wcale.
+function WaitlistsSection() {
+  const { t } = useTranslation('admin')
+  const locale = useDateLocale()
+
+  const { data } = useQuery({
+    queryKey: ['admin', 'waitlists'],
+    queryFn: adminApi.getAdminWaitlists,
+  })
+
+  if (!data || (data.slotWaitlists.length === 0 && data.eventWaitlists.length === 0)) {
+    return null
+  }
+
+  return (
+    <div>
+      <h3 className="flex items-center gap-2 text-sm font-semibold text-amber-400 mb-1">
+        <Hourglass className="w-4 h-4" />
+        {t('waitlists.title')}
+      </h3>
+      <p className="text-xs text-surface-500 mb-3">{t('waitlists.subtitle')}</p>
+      <div className="space-y-2">
+        {data.eventWaitlists.map((ew) => (
+          <div key={ew.eventId} className="bg-surface-900 rounded-lg border border-amber-500/20 p-4">
+            <div className="flex items-center gap-3 flex-wrap">
+              <span className="font-medium text-surface-100">{ew.title}</span>
+              <span className="text-xs bg-primary-500/10 text-primary-400 px-2 py-0.5 rounded">
+                {format(new Date(ew.startDate), 'dd.MM')} - {format(new Date(ew.endDate), 'dd.MM.yyyy')}
+              </span>
+              <span className="text-xs text-amber-400">{t('waitlists.people', { count: ew.entries.length })}</span>
+            </div>
+            <WaitlistEntryList entries={ew.entries} />
+          </div>
+        ))}
+        {data.slotWaitlists.map((sw) => (
+          <div key={sw.slotId} className="bg-surface-900 rounded-lg border border-amber-500/20 p-4">
+            <div className="flex items-center gap-3 flex-wrap">
+              <span className="font-medium text-surface-100 capitalize">
+                {format(new Date(sw.date), 'EEEE, d MMMM', { locale })}
+              </span>
+              <span className="text-surface-300 text-sm">
+                {sw.startTime.slice(0, 5)} - {sw.endTime.slice(0, 5)}
+              </span>
+              {sw.title && (
+                <span className="text-xs bg-primary-500/10 text-primary-400 px-2 py-0.5 rounded">
+                  {sw.title}
+                </span>
+              )}
+              <span className="text-xs text-amber-400">{t('waitlists.people', { count: sw.entries.length })}</span>
+            </div>
+            <WaitlistEntryList entries={sw.entries} />
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+export function WaitlistEntryList({ entries }: { entries: WaitlistAdminEntry[] }) {
+  const { t } = useTranslation('admin')
+  return (
+    <div className="mt-2 space-y-2">
+      {entries.map((entry, idx) => (
+        <div key={entry.waitlistId} className="bg-surface-800/50 rounded-lg px-3 py-2 text-sm">
+          <div className="font-medium text-surface-200">
+            {idx + 1}. {entry.fullName}
+          </div>
+          <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-surface-400 text-xs mt-0.5">
+            <span className="inline-flex items-center gap-1">
+              <Mail className="w-3 h-3" />
+              {entry.email}
+            </span>
+            {entry.phone && (
+              <span className="inline-flex items-center gap-1">
+                <Phone className="w-3 h-3" />
+                {entry.phone}
+              </span>
+            )}
+          </div>
+          <div className="text-xs mt-1">
+            {entry.status === 'PENDING_CONFIRMATION' && entry.confirmationDeadline ? (
+              <span className="text-amber-400">
+                {t('waitlists.pendingUntil', { date: format(new Date(entry.confirmationDeadline), 'dd.MM HH:mm') })}
+              </span>
+            ) : (
+              <span className="text-surface-500">
+                {t('waitlists.waitingSince', { date: format(new Date(entry.joinedAt), 'dd.MM HH:mm') })}
+              </span>
+            )}
+          </div>
+        </div>
+      ))}
     </div>
   )
 }

@@ -224,6 +224,7 @@ public class WaitlistService {
         waitlistRepository.saveAll(otherPending);
 
         waitlistMailService.sendWaitlistReservationConfirmed(user, slot);
+        waitlistMailService.sendWaitlistAdminNotification(user, slot);
         activityLogService.logReservationCreated(user, slot, 1);
 
         log.info("User {} confirmed waitlist offer for slot {} — reservation created, {} others returned to waiting",

@@ -199,6 +199,19 @@ public class AdminController {
         return ResponseEntity.ok(adminService.getSlotWaitlist(slotId));
     }
 
+    @Operation(summary = "Lista oczekujących wydarzenia", description = "Zwraca kolejkę oczekujących (WAITING + PENDING_CONFIRMATION) dla wydarzenia.")
+    @GetMapping("/events/{eventId}/waitlist")
+    public ResponseEntity<EventWaitlistAdminDto> getEventWaitlist(
+            @Parameter(description = "UUID wydarzenia") @PathVariable UUID eventId) {
+        return ResponseEntity.ok(adminService.getEventWaitlist(eventId));
+    }
+
+    @Operation(summary = "Wszystkie aktywne listy rezerwowe", description = "Nadchodzące sloty i wydarzenia, na których ktoś czeka na liście rezerwowej, pogrupowane per termin.")
+    @GetMapping("/waitlists")
+    public ResponseEntity<AdminWaitlistsDto> getAdminWaitlists() {
+        return ResponseEntity.ok(adminService.getAdminWaitlists());
+    }
+
     @Operation(summary = "Zaproszeni do terminu", description = "Zwraca użytkowników, dla których trzymane są miejsca na zaproszenie (prefill formularza edycji).")
     @GetMapping("/slots/{slotId}/invites")
     public ResponseEntity<List<InvitedUserDto>> getSlotInvites(

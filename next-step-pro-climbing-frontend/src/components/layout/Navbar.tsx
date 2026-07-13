@@ -45,7 +45,9 @@ export function Navbar() {
     refetchIntervalInBackground: false,
   });
   const adminBadgeCount = isAdmin
-    ? (adminNotifications?.pendingRequests ?? 0) + (adminNotifications?.newReservations ?? 0)
+    ? (adminNotifications?.pendingRequests ?? 0)
+      + (adminNotifications?.newReservations ?? 0)
+      + (adminNotifications?.newWaitlistEntries ?? 0)
     : 0;
 
   // Wiszące zaproszenia klienta (miejsca trzymane "na zaproszenie") — badge na linku

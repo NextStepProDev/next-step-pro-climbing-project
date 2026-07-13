@@ -1,7 +1,10 @@
 package pl.nextsteppro.climbing.infrastructure.mail;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import pl.nextsteppro.climbing.config.AdminEmailConfig;
 import pl.nextsteppro.climbing.config.AppConfig;
 import pl.nextsteppro.climbing.domain.event.Event;
 import pl.nextsteppro.climbing.domain.timeslot.TimeSlot;
@@ -11,23 +14,29 @@ import pl.nextsteppro.climbing.infrastructure.i18n.MessageService;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 
 @Service
 public class WaitlistMailService {
 
+    private static final Logger log = LoggerFactory.getLogger(WaitlistMailService.class);
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("dd.MM.yyyy");
     private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm");
     private static final DateTimeFormatter DEADLINE_FORMAT = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm");
     private static final ZoneId WARSAW = ZoneId.of("Europe/Warsaw");
+    private static final String ADMIN_LANG = "pl";
 
     private final MailDispatcher mailDispatcher;
     private final AppConfig appConfig;
+    private final AdminEmailConfig adminEmailConfig;
     private final MessageService msg;
     private final String siteUrl;
 
-    public WaitlistMailService(MailDispatcher mailDispatcher, AppConfig appConfig, MessageService msg) {
+    public WaitlistMailService(MailDispatcher mailDispatcher, AppConfig appConfig,
+                               AdminEmailConfig adminEmailConfig, MessageService msg) {
         this.mailDispatcher = mailDispatcher;
         this.appConfig = appConfig;
+        this.adminEmailConfig = adminEmailConfig;
         this.msg = msg;
         this.siteUrl = appConfig.getSiteUrl();
     }
@@ -321,6 +330,123 @@ public class WaitlistMailService {
             msg.getForLang("email.reservation.date", lang), dates,
             msg.getForLang("email.reservation.team", lang)
         );
+    }
+
+    // Powiadomienia adminowe idą przez ten serwis, nie MailService — wstrzyknięcie MailService
+    // do Waitlist/EventWaitlistService tworzyłoby cykl (MailService → UserService → WaitlistService).
+    @Async
+    public void sendWaitlistAdminNotification(User user, TimeSlot slot) {
+        String subject = msg.getForLang("email.admin.waitlist.confirmed.subject", ADMIN_LANG, user.getFullName());
+        String body = buildWaitlistAdminBody(user, slot);
+        sendToAdmins(subject, body);
+    }
+
+    @Async
+    public void sendEventWaitlistAdminNotification(User user, Event event) {
+        String subject = msg.getForLang("email.admin.event.waitlist.confirmed.subject", ADMIN_LANG, user.getFullName());
+        String body = buildEventWaitlistAdminBody(user, event);
+        sendToAdmins(subject, body);
+    }
+
+    private String buildWaitlistAdminBody(User user, TimeSlot slot) {
+        String titleLine = slot.getDisplayTitle() != null
+            ? "<p><strong>%s</strong> %s</p>".formatted(msg.getForLang("email.slot.title.label", ADMIN_LANG), slot.getDisplayTitle())
+            : "";
+        return """
+            <html>
+            <body style="font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5;">
+                <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden;">
+                    <div style="background: #1a1816; padding: 20px; text-align: center;">
+                        <a href="%s" style="display: inline-block; text-decoration: none;"><img src="cid:logo" alt="Next Step Pro Climbing" style="height: 80px; display: block;" /></a>
+                    </div>
+                    <div style="padding: 30px;">
+                        <h2 style="color: #312e2b; margin-top: 0;">%s</h2>
+                        <p style="color: #333;">%s</p>
+                        <div style="background: #f5f5f5; padding: 20px; border-radius: 8px;">
+                            <p><strong>%s</strong> %s</p>
+                            <p><strong>%s</strong> %s</p>
+                            <p><strong>%s</strong> %s</p>
+                            %s
+                            <p><strong>%s</strong> %s</p>
+                            <p><strong>%s</strong> %s - %s</p>
+                        </div>
+                    </div>
+                </div>
+            </body>
+            </html>
+            """.formatted(
+            siteUrl,
+            msg.getForLang("email.admin.waitlist.confirmed.title", ADMIN_LANG),
+            msg.getForLang("email.admin.waitlist.confirmed.body", ADMIN_LANG),
+            msg.getForLang("email.admin.client", ADMIN_LANG), esc(user.getFullName()),
+            msg.getForLang("email.admin.email", ADMIN_LANG), user.getEmail(),
+            msg.getForLang("email.admin.phone", ADMIN_LANG), user.getPhone(),
+            titleLine,
+            msg.getForLang("email.admin.date", ADMIN_LANG), slot.getDate().format(DATE_FORMAT),
+            msg.getForLang("email.admin.time", ADMIN_LANG), slot.getStartTime().format(TIME_FORMAT), slot.getEndTime().format(TIME_FORMAT)
+        );
+    }
+
+    private String buildEventWaitlistAdminBody(User user, Event event) {
+        String dates = event.getStartDate().format(DATE_FORMAT);
+        if (!event.getStartDate().equals(event.getEndDate())) {
+            dates += " - " + event.getEndDate().format(DATE_FORMAT);
+        }
+        return """
+            <html>
+            <body style="font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5;">
+                <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden;">
+                    <div style="background: #1a1816; padding: 20px; text-align: center;">
+                        <a href="%s" style="display: inline-block; text-decoration: none;"><img src="cid:logo" alt="Next Step Pro Climbing" style="height: 80px; display: block;" /></a>
+                    </div>
+                    <div style="padding: 30px;">
+                        <h2 style="color: #312e2b; margin-top: 0;">%s</h2>
+                        <p style="color: #333;">%s</p>
+                        <div style="background: #f5f5f5; padding: 20px; border-radius: 8px;">
+                            <p><strong>%s</strong> %s</p>
+                            <p><strong>%s</strong> %s</p>
+                            <p><strong>%s</strong> %s</p>
+                            <p><strong>%s</strong> %s</p>
+                            <p><strong>%s</strong> %s</p>
+                        </div>
+                    </div>
+                </div>
+            </body>
+            </html>
+            """.formatted(
+            siteUrl,
+            msg.getForLang("email.admin.event.waitlist.confirmed.title", ADMIN_LANG),
+            msg.getForLang("email.admin.waitlist.confirmed.body", ADMIN_LANG),
+            msg.getForLang("email.admin.client", ADMIN_LANG), esc(user.getFullName()),
+            msg.getForLang("email.admin.email", ADMIN_LANG), user.getEmail(),
+            msg.getForLang("email.admin.phone", ADMIN_LANG), user.getPhone(),
+            msg.getForLang("email.admin.event.event", ADMIN_LANG), esc(event.getTitle()),
+            msg.getForLang("email.admin.event.dates", ADMIN_LANG), dates
+        );
+    }
+
+    private List<String> resolveAdminEmails() {
+        var emails = adminEmailConfig.getAdminEmails();
+        if (!emails.isEmpty()) {
+            return List.copyOf(emails);
+        }
+        String fallback = appConfig.getMail().getFrom();
+        if (fallback != null && !fallback.isBlank()) {
+            log.warn("ADMIN_EMAIL is empty, falling back to MAIL_FROM: '{}'", fallback);
+            return List.of(fallback.trim());
+        }
+        log.error("Cannot send admin notification: no admin email configured (ADMIN_EMAIL and MAIL_FROM are both empty)");
+        return List.of();
+    }
+
+    private void sendToAdmins(String subject, String body) {
+        for (String adminEmail : resolveAdminEmails()) {
+            sendEmail(adminEmail, subject, body);
+        }
+    }
+
+    private static String esc(@org.jspecify.annotations.Nullable String value) {
+        return value == null ? "" : org.springframework.web.util.HtmlUtils.htmlEscape(value);
     }
 
     private String buildCalendarSection(String lang, String googleCalendarUrl) {

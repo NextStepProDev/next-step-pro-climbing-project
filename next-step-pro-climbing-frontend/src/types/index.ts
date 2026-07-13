@@ -390,6 +390,43 @@ export interface TrainingRequest {
 export interface AdminNotifications {
   pendingRequests: number
   newReservations: number
+  // Nowe zapisy na listy rezerwowe od ostatniego "przeczytania" (ten sam znacznik co newReservations)
+  newWaitlistEntries: number
+}
+
+// Wpis listy rezerwowej w widokach admina (modal uczestników + zakładka Rezerwacje)
+export interface WaitlistAdminEntry {
+  waitlistId: string
+  userId: string
+  fullName: string
+  email: string
+  phone: string
+  position: number
+  status: 'WAITING' | 'PENDING_CONFIRMATION' | 'EXPIRED'
+  confirmationDeadline: string | null
+  joinedAt: string
+}
+
+export interface SlotWaitlistAdmin {
+  slotId: string
+  date: string
+  startTime: string
+  endTime: string
+  entries: WaitlistAdminEntry[]
+}
+
+export interface EventWaitlistAdmin {
+  eventId: string
+  title: string
+  startDate: string
+  endDate: string
+  entries: WaitlistAdminEntry[]
+}
+
+// Widok globalny „Listy rezerwowe": nadchodzące terminy, na których ktoś czeka
+export interface AdminWaitlists {
+  slotWaitlists: (SlotWaitlistAdmin & { title: string | null })[]
+  eventWaitlists: EventWaitlistAdmin[]
 }
 
 export interface AdminTrainingRequestPage {

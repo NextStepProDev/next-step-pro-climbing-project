@@ -26,6 +26,9 @@ import type {
   AdminTrainingRequest,
   AdminTrainingRequestPage,
   AdminNotifications,
+  AdminWaitlists,
+  SlotWaitlistAdmin,
+  EventWaitlistAdmin,
   InvitedUser,
   EventDetail,
   EventParticipants,
@@ -438,6 +441,16 @@ export const adminApi = {
 
   getSlotParticipants: (slotId: string) =>
     fetchApi<SlotParticipants>(`/admin/slots/${slotId}/participants`),
+
+  getSlotWaitlist: (slotId: string) =>
+    fetchApi<SlotWaitlistAdmin>(`/admin/slots/${slotId}/waitlist`),
+
+  getEventWaitlist: (eventId: string) =>
+    fetchApi<EventWaitlistAdmin>(`/admin/events/${eventId}/waitlist`),
+
+  // Wszystkie aktywne listy rezerwowe (zakładka Rezerwacje)
+  getAdminWaitlists: () =>
+    fetchApi<AdminWaitlists>('/admin/waitlists'),
 
   getUpcomingSlots: (from?: string) =>
     fetchApi<TimeSlotAdmin[]>(`/admin/slots/upcoming${from ? `?from=${from}` : ''}`),

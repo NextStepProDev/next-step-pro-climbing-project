@@ -360,6 +360,7 @@
     "registeredOf": "Inscritos ({{count}}/{{max}})",
     "noRegistered": "No hay personas inscritas en esta franja horaria.",
     "noRegisteredShort": "No hay personas inscritas",
+    "waitlistSection": "Lista de espera ({{count}})",
     "blockAndCancel": "Bloquear y cancelar reservas",
     "blockSimple": "Bloquear franja horaria",
     "deleteAndCancel": "Eliminar y cancelar reservas",
@@ -408,6 +409,13 @@
     "deleteMessage": "Esta reserva archivada se eliminará permanentemente. Esta acción no se puede deshacer.",
     "deleteEventMessage": "Todas las reservas de este evento archivado se eliminarán permanentemente. Esta acción no se puede deshacer."
   },
+  "waitlists": {
+    "title": "Listas de espera",
+    "subtitle": "Personas esperando a que se libere una plaza en próximas sesiones",
+    "people": "{{count}} en espera",
+    "waitingSince": "esperando desde {{date}}",
+    "pendingUntil": "tiene una oferta — confirmar antes de {{date}}"
+  },
   "events": {
     "addEvent": "Añadir evento",
     "noUpcoming": "No hay eventos próximos",
@@ -427,6 +435,7 @@
     "participantsLabel": "Participantes",
     "loading": "Cargando...",
     "noParticipants": "No hay participantes inscritos",
+    "waitlistSection": "Lista de espera ({{count}})",
     "alreadyRegistered": "Este usuario ya está inscrito ({{count}} plazas). El número indicado se añadirá a su reserva existente.",
     "cancelParticipant": "Dar de baja del evento",
     "confirmCancelParticipant": "¿Dar de baja a este usuario del evento? Recibirá una notificación por email.",

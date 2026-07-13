@@ -362,6 +362,7 @@
     "registeredOf": "Zapisani ({{count}}/{{max}})",
     "noRegistered": "Brak zapisanych osób na ten termin.",
     "noRegisteredShort": "Brak zapisanych osób",
+    "waitlistSection": "Lista rezerwowa ({{count}})",
     "blockAndCancel": "Zablokuj i anuluj rezerwacje",
     "blockSimple": "Zablokuj termin",
     "deleteAndCancel": "Usuń i anuluj rezerwacje",
@@ -410,6 +411,13 @@
     "deleteMessage": "Ta archiwalna rezerwacja zostanie bezpowrotnie usunięta. Tej operacji nie można cofnąć.",
     "deleteEventMessage": "Wszystkie rezerwacje tego archiwalnego wydarzenia zostaną bezpowrotnie usunięte. Tej operacji nie można cofnąć."
   },
+  "waitlists": {
+    "title": "Listy rezerwowe",
+    "subtitle": "Osoby czekające na zwolnienie miejsca w nadchodzących terminach",
+    "people": "{{count}} oczekujących",
+    "waitingSince": "czeka od {{date}}",
+    "pendingUntil": "ma ofertę — potwierdzenie do {{date}}"
+  },
   "events": {
     "addEvent": "Dodaj wydarzenie",
     "noUpcoming": "Brak nadchodzących wydarzeń",
@@ -429,6 +437,7 @@
     "participantsLabel": "Uczestnicy",
     "loading": "Ładowanie...",
     "noParticipants": "Brak zapisanych uczestników",
+    "waitlistSection": "Lista rezerwowa ({{count}})",
     "alreadyRegistered": "Ten użytkownik jest już zapisany ({{count}} miejsc). Podana liczba zostanie dodana do istniejącej rezerwacji.",
     "cancelParticipant": "Usuń z wydarzenia",
     "confirmCancelParticipant": "Na pewno usunąć użytkownika z wydarzenia? Użytkownik otrzyma powiadomienie email.",
