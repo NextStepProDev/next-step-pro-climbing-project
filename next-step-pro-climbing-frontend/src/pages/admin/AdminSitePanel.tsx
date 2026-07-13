@@ -30,7 +30,7 @@ export function AdminSitePanel() {
         </p>
       </div>
 
-      {/* Hero image — osobno desktop (panorama) i mobile (pionowe zdjęcie pod telefon) */}
+      {/* Hero image — desktop (panorama) and mobile (vertical phone image) separately */}
       <HeroImageSection variant="desktop" />
       <HeroImageSection variant="mobile" />
 
@@ -38,7 +38,7 @@ export function AdminSitePanel() {
       <BadgeSection />
       <BadgeLeftSection />
 
-      {/* "Gdzie teraz szkolę" section */}
+      {/* "Where I teach now" section */}
       <LocationSection />
 
       {/* Promocja nad kalendarzem */}
@@ -48,9 +48,9 @@ export function AdminSitePanel() {
 }
 
 /**
- * Sekcja zarządzania zdjęciem hero — ta sama mechanika dla desktopu i mobile,
- * różnią się tylko endpointem, proporcjami kadru i opisami. Każda wersja ma
- * własny, niezależny stan i upload (osobne pliki na dysku).
+ * Hero image management section — the same mechanics for desktop and mobile,
+ * differing only in the endpoint, crop aspect ratio and copy. Each version has
+ * its own independent state and upload (separate files on disk).
  */
 function HeroImageSection({ variant }: { variant: 'desktop' | 'mobile' }) {
   const { t } = useTranslation('admin')
@@ -199,7 +199,7 @@ function HeroImageSection({ variant }: { variant: 'desktop' | 'mobile' }) {
   const displayUrl = localPreviewUrl ?? pendingUrl ?? savedImageUrl
   const isBusy = saveMutation.isPending || deleteMutation.isPending
 
-  // Pionowy podgląd jest węższy, żeby nie zajmował całej szerokości panelu.
+  // The vertical preview is narrower so it does not take the full panel width.
   const previewWrapClass = isMobile ? 'max-w-[220px]' : 'w-full'
 
   return (
@@ -635,7 +635,7 @@ const LOCATION_LANGS = [
   { code: 'es', label: 'ES' },
 ] as const
 
-// Tytuł nie jest edytowalny (stały, z i18n) — edytujemy tylko badge, podtytuł i miejsca.
+// The title is not editable (fixed, from i18n) — we edit only the badge, subtitle and places.
 const EMPTY_CONTENT: LocationContentDto = { badge: '', subtitle: '', locations: [] }
 
 function LocationSection() {
@@ -643,13 +643,13 @@ function LocationSection() {
   const queryClient = useQueryClient()
   const { showToast } = useToast()
 
-  // Edytor szablonu: 'new' = nowy (pusty), 'edit' = istniejący; null = zamknięty (widok listy)
+  // Template editor: 'new' = new (empty), 'edit' = existing; null = closed (list view)
   const [editor, setEditor] = useState<{ mode: 'new' } | { mode: 'edit'; preset: LocationPresetDto } | null>(null)
   const [draft, setDraft] = useState<Record<string, LocationContentDto>>({})
   const [activeLang, setActiveLang] = useState<string>('pl')
   const [saveError, setSaveError] = useState<string | null>(null)
 
-  // Modal nazwy: 'create' (nadanie nazwy nowemu szablonowi) lub 'rename' (zmiana nazwy istniejącego)
+  // Name modal: 'create' (naming a new template) or 'rename' (renaming an existing one)
   const [nameModal, setNameModal] = useState<{ mode: 'create' } | { mode: 'rename'; preset: LocationPresetDto } | null>(null)
   const [nameInput, setNameInput] = useState('')
   const [presetToDelete, setPresetToDelete] = useState<LocationPresetDto | null>(null)
@@ -748,7 +748,7 @@ function LocationSection() {
     if (editor.mode === 'edit') {
       savePresetMutation.mutate({ id: editor.preset.id, name: editor.preset.name, translations: cleanTranslations(draft) })
     } else {
-      // Nowy szablon — najpierw poproś o nazwę.
+      // New template — ask for a name first.
       setNameModal({ mode: 'create' })
       setNameInput('')
     }
@@ -797,7 +797,7 @@ function LocationSection() {
               : t('site.location.newTemplateTitle')}
           </div>
 
-          {/* Zakładki języka */}
+          {/* Language tabs */}
           <div className="flex gap-1.5">
             {LOCATION_LANGS.map(l => (
               <button key={l.code} type="button" onClick={() => setActiveLang(l.code)}
@@ -812,7 +812,7 @@ function LocationSection() {
             <p className="text-xs text-surface-500 -mt-2">{t('site.location.langFallbackHint')}</p>
           )}
 
-          {/* Pola tekstowe — badge i podtytuł (tytuł jest stały, z i18n) */}
+          {/* Text fields — badge and subtitle (the title is fixed, from i18n) */}
           <div className="space-y-3">
             <Field label={t('site.location.badgeLabel')}>
               <input type="text" value={content.badge}
@@ -824,7 +824,7 @@ function LocationSection() {
             </Field>
           </div>
 
-          {/* Lista miejsc */}
+          {/* Place list */}
           <div className="space-y-2">
             <span className="block text-sm font-medium text-surface-300">{t('site.location.locationsLabel')}</span>
             {content.locations.map((place, idx) => (
@@ -1052,7 +1052,7 @@ function CalendarPromoSection() {
   }
   const closeEditor = () => { setEditor(null); setDraft({}); setSaveError(null) }
 
-  // Title + description są obowiązkowe — co najmniej jeden język musi mieć oba.
+  // Title + description are required — at least one language must have both.
   const hasRequiredContent = (translations: Record<string, CalendarPromoContentDto>) =>
     Object.values(translations).some(c => c.title.trim() !== '' && c.description.trim() !== '')
 
@@ -1259,7 +1259,7 @@ function CalendarPromoSection() {
   )
 }
 
-/** Przycina białe znaki we wszystkich polach; pomija języki bez tytułu i opisu. */
+/** Trims whitespace in all fields; skips languages without a title and description. */
 function cleanPromoTranslations(
   translations: Record<string, CalendarPromoContentDto>,
 ): Record<string, CalendarPromoContentDto> {
@@ -1272,7 +1272,7 @@ function cleanPromoTranslations(
       ctaLabel: c.ctaLabel.trim(),
       ctaUrl: c.ctaUrl.trim(),
     }
-    // Pomijaj puste języki (bez tytułu i opisu), by nie zaśmiecać szablonu.
+    // Skip empty languages (no title and description) to keep the template clean.
     if (cleaned.title === '' && cleaned.description === '') continue
     out[lang] = cleaned
   }
@@ -1288,7 +1288,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   )
 }
 
-/** Usuwa puste nazwy miejsc z każdego języka przed zapisem. */
+/** Removes empty place names from each language before saving. */
 function cleanTranslations(
   translations: Record<string, LocationContentDto>,
 ): Record<string, LocationContentDto> {

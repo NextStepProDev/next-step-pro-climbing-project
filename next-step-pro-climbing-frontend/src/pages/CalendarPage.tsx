@@ -50,7 +50,7 @@ export function CalendarPage() {
   );
   const [selectedEvent, setSelectedEvent] = useState<EventSummary | null>(null);
   const [showCreateSlotModal, setShowCreateSlotModal] = useState(false);
-  // Propozycja terminu: data startowa + opcjonalne okno dostępności (ogranicza godziny)
+  // Training request: start date + optional availability window (constrains the times)
   const [proposeContext, setProposeContext] = useState<{ date: string; window?: ProposeWindow } | null>(null);
   const [cutSlot, setCutSlot] = useState<{ id: string; date: string; startTime: string; endTime: string } | null>(null);
   const [copiedSlot, setCopiedSlot] = useState<{ id: string; date: string; startTime: string; endTime: string; title?: string; maxParticipants: number; isAvailabilityWindow: boolean } | null>(null);
@@ -171,7 +171,7 @@ export function CalendarPage() {
       } else if (dayEvents.length > 1) {
         eventsRef.current?.scrollIntoView({ behavior: "smooth" });
       } else if (date >= format(new Date(), "yyyy-MM-dd")) {
-        // Pusty przyszły dzień: otwórz widok dnia z CTA "Zaproponuj termin"
+        // Empty future day: open the day view with the "Propose a time" CTA
         setSelectedDate(date);
         setSearchParams({ date });
       }
@@ -273,14 +273,14 @@ export function CalendarPage() {
   const handleSlotDrop = useCallback((slotId: string, newDate: string, newStartTime: string, newEndTime: string, oldDate: string, oldStartTime: string, oldEndTime: string) => {
     setPendingSlotMove(prev => {
       if (prev && prev.slotId !== slotId) {
-        // Auto-zatwierdź poprzedni pending slot przy dragowaniu innego
+        // Auto-confirm the previous pending slot when dragging another one
         lastSlotMoveRef.current.set(prev.slotId, {
           previousDate: prev.originalDate,
           previousStartTime: prev.originalStartTime,
           previousEndTime: prev.originalEndTime,
         });
       }
-      if (prev?.slotId === slotId) return prev; // re-drag tego samego — zachowaj oryginał
+      if (prev?.slotId === slotId) return prev; // re-drag of the same slot — keep the original
       return { slotId, originalDate: oldDate, originalStartTime: oldStartTime, originalEndTime: oldEndTime };
     });
     moveSlotMutation.mutate({ slotId, date: newDate, startTime: newStartTime, endTime: newEndTime });
@@ -442,7 +442,7 @@ export function CalendarPage() {
           {t('subtitle')}
         </p>
 
-        {/* PROMOCJA — edytowalna w panelu admina (Ustawienia strony → Promocja kalendarza) */}
+        {/* PROMO — editable in the admin panel (Site settings → Calendar promo) */}
         {promo.enabled && promo.title && (
           <div className="calendar-promo relative mt-4 inline-block overflow-hidden bg-amber-500/10 border border-amber-500/30 rounded-xl px-5 py-4 shadow-lg [text-shadow:_0_1px_3px_rgb(0_0_0_/_45%)]">
             {promo.badge && (
@@ -629,7 +629,7 @@ export function CalendarPage() {
                 <div className="space-y-2">
                   {weekData.events.map((event) => {
                     const { label, badgeClass } = formatAvailability(event);
-                    // Pełny także gdy resztę miejsc trzymają zaproszenia innych — wtedy lista rezerwowa.
+                    // Full also when other people's invitations hold the remaining seats — then the waitlist.
                     const reservedForOthers = Math.max(0, (event.reservedSeats ?? 0) - (event.isReservedForUser ? 1 : 0));
                     const isFull = event.currentParticipants + reservedForOthers >= event.maxParticipants;
                     const color = weekColorMap.get(event.id)!;
@@ -729,7 +729,7 @@ export function CalendarPage() {
               <div className="space-y-2">
                 {monthData.events.map((event) => {
                   const { label, badgeClass } = formatAvailability(event);
-                  // Pełny także gdy resztę miejsc trzymają zaproszenia innych — wtedy lista rezerwowa.
+                  // Full also when other people's invitations hold the remaining seats — then the waitlist.
                   const reservedForOthers = Math.max(0, (event.reservedSeats ?? 0) - (event.isReservedForUser ? 1 : 0));
                   const isFull = event.currentParticipants + reservedForOthers >= event.maxParticipants;
                   const color = monthColorMap.get(event.id)!;
@@ -855,7 +855,7 @@ export function CalendarPage() {
         />
       )}
 
-      {/* Indywidualny termin */}
+      {/* Individual training time */}
       <div className="mt-6 bg-surface-900 rounded-xl border border-surface-800 p-5 flex flex-col sm:flex-row items-start sm:items-center gap-4">
         <div className="flex-1">
           <p className="text-surface-100 font-semibold text-sm">{t('customSlot.title')}</p>

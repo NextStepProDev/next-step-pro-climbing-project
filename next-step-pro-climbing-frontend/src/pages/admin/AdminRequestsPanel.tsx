@@ -22,9 +22,9 @@ import type { AdminTrainingRequest, TrainingRequestStatus } from '../../types'
 type Filter = 'PENDING' | 'ALL'
 
 /**
- * Panel propozycji terminów od użytkowników. Admin odpowiada na propozycję:
- * tworzy slot/wydarzenie (pełny modal z prefill + proponujący zaproszony),
- * oznacza kontakt telefoniczny albo odrzuca (opcjonalny mail z decyzją).
+ * Panel for training requests from users. The admin responds to a request by:
+ * creating a slot/event (full modal with prefill + the requester invited),
+ * marking phone contact, or rejecting (optional email with the decision).
  */
 export function AdminRequestsPanel() {
   const { t } = useTranslation('admin')
@@ -35,8 +35,8 @@ export function AdminRequestsPanel() {
   const [createEventFrom, setCreateEventFrom] = useState<AdminTrainingRequest | null>(null)
   const [statusModal, setStatusModal] = useState<{ request: AdminTrainingRequest; action: 'CONTACTED' | 'REJECTED' } | null>(null)
 
-  // Oczekujące: praktycznie wszystkie naraz (size 100 — tyle admin i tak nie obsłuży w zaległości).
-  // Wszystkie (archiwum): stronicowane po 20, żeby setki starych propozycji nie ładowały się hurtem.
+  // Pending: practically all at once (size 100 — more backlog than the admin will handle anyway).
+  // All (archive): paginated by 20, so hundreds of old requests do not load in bulk.
   const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ['admin', 'trainingRequests', filter, page],
     queryFn: () => filter === 'PENDING'
@@ -44,7 +44,7 @@ export function AdminRequestsPanel() {
       : adminApi.getTrainingRequests({ page, size: 20 }),
   })
 
-  // Licznik oczekujących do chipa filtra — z tego samego cache co badge'e (navbar/zakładki)
+  // Pending counter for the filter chip — from the same cache as the badges (navbar/tabs)
   const { data: notifications } = useQuery({
     queryKey: ['admin', 'notifications'],
     queryFn: adminApi.getNotifications,
@@ -68,8 +68,8 @@ export function AdminRequestsPanel() {
 
   const visible = useMemo(() => data?.content ?? [], [data])
 
-  // Nakładające się oczekujące propozycje (ta sama data, wspólny przedział godzin) —
-  // ostrzeżenie, żeby admin nie utworzył dwóch slotów na ten sam czas nieświadomie.
+  // Overlapping pending requests (same date, shared time range) — a warning so the
+  // admin does not unknowingly create two slots for the same time.
   const conflictIds = useMemo(() => {
     const pending = visible.filter((r) => r.status === 'PENDING')
     const ids = new Set<string>()
@@ -153,7 +153,7 @@ export function AdminRequestsPanel() {
         </div>
       )}
 
-      {/* Pager (archiwum stronicowane po 20) */}
+      {/* Pager (archive paginated by 20) */}
       {totalPages > 1 && (
         <div className="mt-6 flex items-center justify-center gap-4">
           <button
@@ -277,7 +277,7 @@ function RequestCard({
   const locale = useDateLocale()
   const isPending = req.status === 'PENDING'
   const linkDate = req.createdSlotDate ?? req.createdEventStartDate
-  // Propozycja dla kursu → domyślnie wydarzenie; trening indywidualny → slot
+  // Request for a course → defaults to an event; individual training → a slot
   const preferEvent = !!req.courseId
 
   return (
@@ -287,7 +287,7 @@ function RequestCard({
         isPending ? 'border-amber-500/30' : 'border-surface-800'
       )}
     >
-      {/* Nagłówek: termin + status */}
+      {/* Header: date/time + status */}
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex flex-wrap items-center gap-3 text-surface-100">
           <span className="flex items-center gap-2 font-semibold capitalize">
@@ -308,7 +308,7 @@ function RequestCard({
         </span>
       </div>
 
-      {/* Badges: okno dostępności, kurs, konflikt */}
+      {/* Badges: availability window, course, conflict */}
       <div className="mt-2 flex flex-wrap gap-2">
         {req.inWindow && (
           <span className="px-2 py-0.5 rounded text-xs font-medium bg-teal-500/15 text-teal-300">

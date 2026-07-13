@@ -22,7 +22,7 @@ interface SlotDetailModalProps {
   slot: TimeSlotDetail | null;
   isOpen: boolean;
   onClose: () => void;
-  /** Okno dostępności: otwiera formularz propozycji terminu ograniczony do ram okna. */
+  /** Availability window: opens the training request form constrained to the window bounds. */
   onProposeInWindow?: (w: { slotId: string; date: string; startTime: string; endTime: string }) => void;
 }
 
@@ -152,26 +152,26 @@ export function SlotDetailModal({
 
   const isAvailabilityWindow = slot.isAvailabilityWindow;
   const dateObj = new Date(slot.date);
-  // Miejsca trzymane "na zaproszenie": niedostępne dla niezaproszonych. Własne zaproszenie widza
-  // nie blokuje — dlatego odejmujemy tylko zaproszenia INNYCH osób.
+  // Invitation-held seats: unavailable to non-invitees. The viewer's own invitation does not
+  // block — that is why we subtract only OTHER people's invitations.
   const reservedSeats = slot.reservedSeats ?? 0;
   const reservedForOthers = Math.max(0, reservedSeats - (slot.isReservedForUser ? 1 : 0));
   const spotsLeft =
     (slot.maxParticipants ?? 0) - (slot.currentParticipants ?? 0) - reservedForOthers;
 
   const isPast = slot.status === "PAST";
-  // Status PAST przychodzi od godziny STARTU — dla admina slot jest „zakończony" dopiero po
-  // godzinie końca (trwający slot można jeszcze edytować/usunąć, spójnie z drag w WeekCalendar).
+  // PAST status arrives from the START time — for the admin a slot is "finished" only after
+  // its end time (an ongoing slot can still be edited/deleted, consistent with drag in WeekCalendar).
   const hasEnded = isPast && new Date(`${slot.date}T${slot.endTime}`) < new Date();
   const isBookingClosed = slot.status === "BOOKING_CLOSED";
   const isAvailable = slot.status === "AVAILABLE" && spotsLeft > 0;
   const isFull = slot.status === "FULL" || (slot.status === "AVAILABLE" && spotsLeft <= 0);
-  // Niezaproszony widz, dla którego zostały już tylko miejsca trzymane
+  // A non-invited viewer for whom only held seats remain
   const blockedByReserved = isFull && reservedForOthers > 0 && !slot.isReservedForUser && !slot.isUserRegistered;
-  // Lista oczekujących ma sens gdy dla tego widza nie ma miejsca — także gdy blokują je wyłącznie
-  // miejsca trzymane na zaproszenie. Zwolnią się, gdy ktoś potwierdzony anuluje LUB admin zdejmie
-  // zaproszenie (oba wołają notifyAll), więc kolejka nie jest ślepym zaułkiem. Backend liczy trzymane
-  // cudze miejsca jako zajęte przy zapisie do kolejki, więc front i API są tu spójne.
+  // The waitlist makes sense when there is no seat for this viewer — also when only
+  // invitation-held seats block. They free up when a confirmed person cancels OR the admin
+  // removes an invitation (both call notifyAll), so the queue is not a dead end. The backend
+  // counts other people's held seats as taken when joining the queue, so frontend and API agree.
   const isWaiting = slot.userWaitlistStatus === "WAITING";
   const isPendingConfirmation = slot.userWaitlistStatus === "PENDING_CONFIRMATION";
   const canJoinWaitlist = isFull && !isWaiting && !isPendingConfirmation && !isPast && !isBookingClosed && !slot.isUserRegistered;
@@ -275,15 +275,15 @@ export function SlotDetailModal({
           </span>
         </div>}
 
-        {/* Zaproszony: miejsce trzymane dla Ciebie */}
+        {/* Invitee: seat held for you */}
         {!isAvailabilityWindow && slot.isReservedForUser && !slot.isUserRegistered && !isPast && (
           <div className="p-3 bg-violet-500/10 border border-violet-500/30 rounded-lg">
             <span className="text-violet-200 font-medium">🎟 {t('slot.reservedForYou')}</span>
           </div>
         )}
 
-        {/* Wyjaśnia pozornie wolny licznik (np. „0 / 1") gdy reszta miejsc jest trzymana na zaproszenie.
-            Niezalogowanym podpowiadamy logowanie; zalogowany nie-zaproszony dostaje zwięzły fakt + listę rezerwową. */}
+        {/* Explains a seemingly free counter (e.g. "0 / 1") when the remaining seats are invitation-held.
+            Anonymous users get a login hint; a logged-in non-invitee gets the brief fact + the waitlist. */}
         {!isAvailabilityWindow && blockedByReserved && !isPast && (
           <div className="p-3 bg-violet-500/10 border border-violet-500/20 rounded-lg">
             <span className="text-violet-200/90 text-sm">
@@ -292,7 +292,7 @@ export function SlotDetailModal({
           </div>
         )}
 
-        {/* Past slot info — adminowi nie pokazujemy „minął" dla trwającego slotu (edycja wciąż aktywna) */}
+        {/* Past slot info — the admin is not shown "ended" for an ongoing slot (editing still active) */}
         {!isAvailabilityWindow && isPast && (!isAdmin || hasEnded) && (
           <div className="p-3 bg-surface-800 border border-surface-700 rounded-lg">
             <span className="text-surface-400 text-sm">
@@ -327,7 +327,7 @@ export function SlotDetailModal({
           </div>
         )}
 
-        {/* Waitlist — PENDING_CONFIRMATION (wyścig o miejsce) */}
+        {/* Waitlist — PENDING_CONFIRMATION (race for the seat) */}
         {!isAvailabilityWindow && isPendingConfirmation && slot.waitlistEntryId && (
           <div className="p-4 bg-amber-500/10 border-2 border-amber-500/40 rounded-lg space-y-2">
             <div className="flex items-center gap-2">
@@ -346,7 +346,7 @@ export function SlotDetailModal({
           </div>
         )}
 
-        {/* Waitlist — race lost (ktoś był szybszy — wróciłeś do kolejki) */}
+        {/* Waitlist — race lost (someone was faster — you are back in the queue) */}
         {!isAvailabilityWindow && confirmOfferMutation.isError && (
           <div className="p-3 bg-rose-500/10 border border-rose-500/20 rounded-lg">
             <p className="text-rose-400 text-sm font-medium">
@@ -355,7 +355,7 @@ export function SlotDetailModal({
           </div>
         )}
 
-        {/* Waitlist — WAITING (w kolejce) */}
+        {/* Waitlist — WAITING (in the queue) */}
         {!isAvailabilityWindow && isWaiting && (
           <div className="p-3 bg-surface-800 border border-surface-700 rounded-lg">
             <span className="text-surface-300 text-sm">

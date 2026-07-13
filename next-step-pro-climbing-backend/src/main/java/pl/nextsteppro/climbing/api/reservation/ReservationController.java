@@ -17,7 +17,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/reservations")
-@Tag(name = "Reservations", description = "Zarządzanie rezerwacjami użytkownika")
+@Tag(name = "Reservations", description = "User reservation management")
 public class ReservationController {
 
     private final ReservationService reservationService;
@@ -33,19 +33,19 @@ public class ReservationController {
     }
 
     @Operation(
-        summary = "Zarezerwuj termin",
-        description = "Tworzy rezerwację na wybrany termin. Wymaga zalogowania."
+        summary = "Book a slot",
+        description = "Creates a reservation for the chosen slot. Requires login."
     )
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Rezerwacja utworzona",
+        @ApiResponse(responseCode = "200", description = "Reservation created",
             content = @Content(schema = @Schema(implementation = ReservationResultDto.class))),
-        @ApiResponse(responseCode = "401", description = "Użytkownik niezalogowany"),
-        @ApiResponse(responseCode = "400", description = "Brak wolnych miejsc lub termin zablokowany"),
-        @ApiResponse(responseCode = "409", description = "Użytkownik już ma rezerwację na ten termin")
+        @ApiResponse(responseCode = "401", description = "User not authenticated"),
+        @ApiResponse(responseCode = "400", description = "No free seats or slot blocked"),
+        @ApiResponse(responseCode = "409", description = "User already has a reservation for this slot")
     })
     @PostMapping("/slot/{slotId}")
     public ResponseEntity<ReservationResultDto> createReservation(
-            @Parameter(description = "UUID terminu") @PathVariable UUID slotId,
+            @Parameter(description = "Slot UUID") @PathVariable UUID slotId,
             @Parameter(hidden = true) @CurrentUserId UUID userId,
             @RequestBody(required = false) CreateReservationRequest body) {
 
@@ -56,18 +56,18 @@ public class ReservationController {
     }
 
     @Operation(
-        summary = "Anuluj rezerwację",
-        description = "Anuluje rezerwację użytkownika."
+        summary = "Cancel reservation",
+        description = "Cancels the user's reservation."
     )
     @ApiResponses({
-        @ApiResponse(responseCode = "204", description = "Rezerwacja anulowana"),
-        @ApiResponse(responseCode = "401", description = "Użytkownik niezalogowany"),
-        @ApiResponse(responseCode = "403", description = "Rezerwacja nie należy do użytkownika"),
-        @ApiResponse(responseCode = "404", description = "Rezerwacja nie istnieje")
+        @ApiResponse(responseCode = "204", description = "Reservation cancelled"),
+        @ApiResponse(responseCode = "401", description = "User not authenticated"),
+        @ApiResponse(responseCode = "403", description = "Reservation does not belong to the user"),
+        @ApiResponse(responseCode = "404", description = "Reservation not found")
     })
     @DeleteMapping("/{reservationId}")
     public ResponseEntity<Void> cancelReservation(
-            @Parameter(description = "UUID rezerwacji") @PathVariable UUID reservationId,
+            @Parameter(description = "Reservation UUID") @PathVariable UUID reservationId,
             @Parameter(hidden = true) @CurrentUserId UUID userId) {
 
         reservationService.cancelReservation(reservationId, userId);
@@ -75,13 +75,13 @@ public class ReservationController {
     }
 
     @Operation(
-        summary = "Moje rezerwacje",
-        description = "Zwraca wszystkie rezerwacje zalogowanego użytkownika (przeszłe i przyszłe)"
+        summary = "My reservations",
+        description = "Returns all reservations of the logged-in user (past and future)"
     )
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Lista rezerwacji",
+        @ApiResponse(responseCode = "200", description = "List of reservations",
             content = @Content(array = @ArraySchema(schema = @Schema(implementation = UserReservationDto.class)))),
-        @ApiResponse(responseCode = "401", description = "Użytkownik niezalogowany")
+        @ApiResponse(responseCode = "401", description = "User not authenticated")
     })
     @GetMapping("/my")
     public ResponseEntity<List<UserReservationDto>> getMyReservations(
@@ -92,13 +92,13 @@ public class ReservationController {
     }
 
     @Operation(
-        summary = "Moje nadchodzące rezerwacje",
-        description = "Zwraca przyszłe rezerwacje podzielone na pojedyncze terminy i wydarzenia"
+        summary = "My upcoming reservations",
+        description = "Returns future reservations split into single slots and events"
     )
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Lista nadchodzących rezerwacji",
+        @ApiResponse(responseCode = "200", description = "List of upcoming reservations",
             content = @Content(schema = @Schema(implementation = MyReservationsDto.class))),
-        @ApiResponse(responseCode = "401", description = "Użytkownik niezalogowany")
+        @ApiResponse(responseCode = "401", description = "User not authenticated")
     })
     @GetMapping("/my/upcoming")
     public ResponseEntity<MyReservationsDto> getMyUpcomingReservations(
@@ -109,13 +109,13 @@ public class ReservationController {
     }
 
     @Operation(
-        summary = "Moje minione rezerwacje",
-        description = "Zwraca przeszłe rezerwacje podzielone na pojedyncze terminy i wydarzenia"
+        summary = "My past reservations",
+        description = "Returns past reservations split into single slots and events"
     )
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Lista minionych rezerwacji",
+        @ApiResponse(responseCode = "200", description = "List of past reservations",
             content = @Content(schema = @Schema(implementation = MyReservationsDto.class))),
-        @ApiResponse(responseCode = "401", description = "Użytkownik niezalogowany")
+        @ApiResponse(responseCode = "401", description = "User not authenticated")
     })
     @GetMapping("/my/past")
     public ResponseEntity<MyReservationsDto> getMyPastReservations(
@@ -126,13 +126,13 @@ public class ReservationController {
     }
 
     @Operation(
-        summary = "Moje zaproszenia",
-        description = "Zwraca wiszące zaproszenia (miejsca trzymane dla użytkownika) na nadchodzące terminy i wydarzenia."
+        summary = "My invitations",
+        description = "Returns pending invitations (seats held for the user) for upcoming slots and events."
     )
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Lista zaproszeń",
+        @ApiResponse(responseCode = "200", description = "List of invitations",
             content = @Content(array = @ArraySchema(schema = @Schema(implementation = MyInvitationDto.class)))),
-        @ApiResponse(responseCode = "401", description = "Użytkownik niezalogowany")
+        @ApiResponse(responseCode = "401", description = "User not authenticated")
     })
     @GetMapping("/my/invitations")
     public ResponseEntity<List<MyInvitationDto>> getMyInvitations(
@@ -142,19 +142,19 @@ public class ReservationController {
     }
 
     @Operation(
-        summary = "Zapisz na wydarzenie",
-        description = "Tworzy rezerwacje na wszystkie aktywne sloty wydarzenia. Wymaga zalogowania."
+        summary = "Register for event",
+        description = "Creates reservations for all active slots of the event. Requires login."
     )
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Zapisano na wydarzenie",
+        @ApiResponse(responseCode = "200", description = "Registered for the event",
             content = @Content(schema = @Schema(implementation = EventReservationResultDto.class))),
-        @ApiResponse(responseCode = "401", description = "Użytkownik niezalogowany"),
-        @ApiResponse(responseCode = "400", description = "Brak wolnych miejsc lub wydarzenie nieaktywne"),
-        @ApiResponse(responseCode = "409", description = "Użytkownik już jest zapisany na to wydarzenie")
+        @ApiResponse(responseCode = "401", description = "User not authenticated"),
+        @ApiResponse(responseCode = "400", description = "No free seats or event inactive"),
+        @ApiResponse(responseCode = "409", description = "User is already registered for this event")
     })
     @PostMapping("/event/{eventId}")
     public ResponseEntity<EventReservationResultDto> createEventReservation(
-            @Parameter(description = "UUID wydarzenia") @PathVariable UUID eventId,
+            @Parameter(description = "Event UUID") @PathVariable UUID eventId,
             @Parameter(hidden = true) @CurrentUserId UUID userId,
             @RequestBody(required = false) CreateReservationRequest body) {
 
@@ -164,17 +164,17 @@ public class ReservationController {
     }
 
     @Operation(
-        summary = "Anuluj zapis na wydarzenie",
-        description = "Anuluje wszystkie rezerwacje użytkownika na wydarzenie."
+        summary = "Cancel event registration",
+        description = "Cancels all of the user's reservations for the event."
     )
     @ApiResponses({
-        @ApiResponse(responseCode = "204", description = "Zapis anulowany"),
-        @ApiResponse(responseCode = "401", description = "Użytkownik niezalogowany"),
-        @ApiResponse(responseCode = "404", description = "Nie znaleziono rezerwacji na to wydarzenie")
+        @ApiResponse(responseCode = "204", description = "Registration cancelled"),
+        @ApiResponse(responseCode = "401", description = "User not authenticated"),
+        @ApiResponse(responseCode = "404", description = "No reservation found for this event")
     })
     @DeleteMapping("/event/{eventId}")
     public ResponseEntity<Void> cancelEventReservation(
-            @Parameter(description = "UUID wydarzenia") @PathVariable UUID eventId,
+            @Parameter(description = "Event UUID") @PathVariable UUID eventId,
             @Parameter(hidden = true) @CurrentUserId UUID userId) {
 
         reservationService.cancelEventReservation(eventId, userId);
@@ -182,18 +182,18 @@ public class ReservationController {
     }
 
     @Operation(
-        summary = "Aktualizuj liczbę uczestników rezerwacji slotu",
-        description = "Zmienia liczbę uczestników dla istniejącej rezerwacji. Wymaga zalogowania."
+        summary = "Update slot reservation participant count",
+        description = "Changes the participant count for an existing reservation. Requires login."
     )
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Zaktualizowano",
+        @ApiResponse(responseCode = "200", description = "Updated",
             content = @Content(schema = @Schema(implementation = ReservationResultDto.class))),
-        @ApiResponse(responseCode = "401", description = "Użytkownik niezalogowany"),
-        @ApiResponse(responseCode = "400", description = "Brak wystarczającej liczby wolnych miejsc")
+        @ApiResponse(responseCode = "401", description = "User not authenticated"),
+        @ApiResponse(responseCode = "400", description = "Not enough free seats")
     })
     @PutMapping("/{reservationId}/participants")
     public ResponseEntity<ReservationResultDto> updateSlotParticipants(
-            @Parameter(description = "UUID rezerwacji") @PathVariable UUID reservationId,
+            @Parameter(description = "Reservation UUID") @PathVariable UUID reservationId,
             @Parameter(hidden = true) @CurrentUserId UUID userId,
             @RequestBody UpdateParticipantsRequest body) {
 
@@ -201,18 +201,18 @@ public class ReservationController {
     }
 
     @Operation(
-        summary = "Aktualizuj liczbę uczestników zapisu na wydarzenie",
-        description = "Zmienia liczbę uczestników dla wszystkich rezerwacji użytkownika na wydarzenie. Wymaga zalogowania."
+        summary = "Update event registration participant count",
+        description = "Changes the participant count for all of the user's reservations on an event. Requires login."
     )
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Zaktualizowano",
+        @ApiResponse(responseCode = "200", description = "Updated",
             content = @Content(schema = @Schema(implementation = EventReservationResultDto.class))),
-        @ApiResponse(responseCode = "401", description = "Użytkownik niezalogowany"),
-        @ApiResponse(responseCode = "400", description = "Brak wystarczającej liczby wolnych miejsc")
+        @ApiResponse(responseCode = "401", description = "User not authenticated"),
+        @ApiResponse(responseCode = "400", description = "Not enough free seats")
     })
     @PutMapping("/event/{eventId}/participants")
     public ResponseEntity<EventReservationResultDto> updateEventParticipants(
-            @Parameter(description = "UUID wydarzenia") @PathVariable UUID eventId,
+            @Parameter(description = "Event UUID") @PathVariable UUID eventId,
             @Parameter(hidden = true) @CurrentUserId UUID userId,
             @RequestBody UpdateParticipantsRequest body) {
 
@@ -223,7 +223,7 @@ public class ReservationController {
     // Waitlist endpoints
     // -------------------------------------------------------------------------
 
-    @Operation(summary = "Dołącz do listy oczekujących", description = "Dołącza do kolejki gdy slot jest pełny. Wymaga zalogowania.")
+    @Operation(summary = "Join waitlist", description = "Joins the queue when the slot is full. Requires login.")
     @PostMapping("/slot/{slotId}/waitlist")
     public ResponseEntity<WaitlistResultDto> joinWaitlist(
             @PathVariable UUID slotId,
@@ -232,7 +232,7 @@ public class ReservationController {
         return ResponseEntity.ok(waitlistService.joinWaitlist(slotId, userId));
     }
 
-    @Operation(summary = "Opuść listę oczekujących", description = "Usuwa użytkownika z kolejki.")
+    @Operation(summary = "Leave waitlist", description = "Removes the user from the queue.")
     @DeleteMapping("/slot/{slotId}/waitlist")
     public ResponseEntity<Void> leaveWaitlist(
             @PathVariable UUID slotId,
@@ -242,7 +242,7 @@ public class ReservationController {
         return ResponseEntity.noContent().build();
     }
 
-    @Operation(summary = "Potwierdź ofertę z listy oczekujących", description = "Potwierdza rezerwację po otrzymaniu oferty (jedno kliknięcie).")
+    @Operation(summary = "Confirm waitlist offer", description = "Confirms the reservation after receiving an offer (one click).")
     @PostMapping("/waitlist/{waitlistId}/confirm")
     public ResponseEntity<ReservationResultDto> confirmWaitlistOffer(
             @PathVariable UUID waitlistId,
@@ -251,7 +251,7 @@ public class ReservationController {
         return ResponseEntity.ok(waitlistService.confirmOffer(waitlistId, userId));
     }
 
-    @Operation(summary = "Moje wpisy na liście oczekujących", description = "Zwraca aktywne wpisy (WAITING + PENDING_CONFIRMATION) dla zalogowanego użytkownika.")
+    @Operation(summary = "My waitlist entries", description = "Returns active entries (WAITING + PENDING_CONFIRMATION) for the logged-in user.")
     @GetMapping("/my/waitlist")
     public ResponseEntity<List<WaitlistEntryDto>> getMyWaitlist(
             @Parameter(hidden = true) @CurrentUserId UUID userId) {
@@ -263,7 +263,7 @@ public class ReservationController {
     // Event waitlist endpoints
     // -------------------------------------------------------------------------
 
-    @Operation(summary = "Dołącz do listy oczekujących na wydarzenie", description = "Dołącza do kolejki gdy wydarzenie jest pełne. Wymaga zalogowania.")
+    @Operation(summary = "Join event waitlist", description = "Joins the queue when the event is full. Requires login.")
     @PostMapping("/event/{eventId}/waitlist")
     public ResponseEntity<WaitlistResultDto> joinEventWaitlist(
             @PathVariable UUID eventId,
@@ -272,7 +272,7 @@ public class ReservationController {
         return ResponseEntity.ok(eventWaitlistService.joinEventWaitlist(eventId, userId));
     }
 
-    @Operation(summary = "Opuść listę oczekujących na wydarzenie", description = "Usuwa użytkownika z kolejki na wydarzenie.")
+    @Operation(summary = "Leave event waitlist", description = "Removes the user from the event queue.")
     @DeleteMapping("/event/{eventId}/waitlist")
     public ResponseEntity<Void> leaveEventWaitlist(
             @PathVariable UUID eventId,
@@ -282,7 +282,7 @@ public class ReservationController {
         return ResponseEntity.noContent().build();
     }
 
-    @Operation(summary = "Potwierdź ofertę z listy oczekujących na wydarzenie", description = "Potwierdza zapis na wydarzenie po otrzymaniu oferty (kto pierwszy, ten lepszy).")
+    @Operation(summary = "Confirm event waitlist offer", description = "Confirms the event registration after receiving an offer (first come, first served).")
     @PostMapping("/event-waitlist/{waitlistId}/confirm")
     public ResponseEntity<EventReservationResultDto> confirmEventWaitlistOffer(
             @PathVariable UUID waitlistId,
@@ -291,7 +291,7 @@ public class ReservationController {
         return ResponseEntity.ok(eventWaitlistService.confirmEventOffer(waitlistId, userId));
     }
 
-    @Operation(summary = "Moje wpisy na listach oczekujących na wydarzenia", description = "Zwraca aktywne wpisy (WAITING + PENDING_CONFIRMATION) dla zalogowanego użytkownika.")
+    @Operation(summary = "My event waitlist entries", description = "Returns active entries (WAITING + PENDING_CONFIRMATION) for the logged-in user.")
     @GetMapping("/my/event-waitlist")
     public ResponseEntity<List<EventWaitlistEntryDto>> getMyEventWaitlist(
             @Parameter(hidden = true) @CurrentUserId UUID userId) {

@@ -8,29 +8,29 @@ function prefersReducedMotion(): boolean {
 }
 
 interface TypewriterProps {
-  /** Pełny tekst do wystukania. Zmiana tekstu (np. język) restartuje efekt. */
+  /** Full text to type out. Changing the text (e.g. language) restarts the effect. */
   text: string;
-  /** Bramka startu — typowanie rusza dopiero gdy `true` (chainowanie tytuł → akapit). */
+  /** Start gate — typing begins only when `true` (chaining title → paragraph). */
   active?: boolean;
-  /** ms na znak */
+  /** ms per character */
   speed?: number;
-  /** opóźnienie przed pierwszym znakiem (ms) */
+  /** delay before the first character (ms) */
   startDelay?: number;
-  /** czy zostawić migający kursor po zakończeniu (true dla ostatniego elementu) */
+  /** whether to keep the blinking cursor after finishing (true for the last element) */
   keepCaretWhenDone?: boolean;
-  /** wołane gdy cały tekst został wystukany */
+  /** called once the whole text has been typed out */
   onDone?: () => void;
-  /** fragment tekstu (np. słowo kluczowe) stylowany OD POCZĄTKU pisania, nie po zakończeniu */
+  /** text fragment (e.g. a keyword) styled FROM THE START of typing, not after finishing */
   highlight?: string;
-  /** klasa CSS nakładana na wyróżniony fragment */
+  /** CSS class applied to the highlighted fragment */
   highlightClassName?: string;
 }
 
 /**
- * Efekt „maszyny do pisania": tekst pojawia się znak po znaku z migającym kursorem.
- * Pełny tekst jest renderowany niewidocznie pod spodem (grid 1/1), żeby zarezerwować
- * docelową wysokość — dzięki temu treść poniżej (przyciski) nie skacze podczas pisania.
- * Style (rozmiar, kolor) dziedziczy z rodzica (h1/p) — kursor używa `currentColor`.
+ * "Typewriter" effect: text appears character by character with a blinking cursor.
+ * The full text is rendered invisibly underneath (grid 1/1) to reserve the target
+ * height — so the content below (buttons) does not jump while typing.
+ * Styles (size, color) are inherited from the parent (h1/p) — the cursor uses `currentColor`.
  */
 export function Typewriter({
   text,
@@ -74,7 +74,7 @@ export function Typewriter({
 
   const showCaret = active && !reduced && (!done || keepCaretWhenDone);
 
-  // renderuje pierwsze `upto` znaków, opakowując część należącą do `highlight` w span z klasą
+  // renders the first `upto` characters, wrapping the part belonging to `highlight` in a classed span
   const renderPortion = (upto: number) => {
     const shown = text.slice(0, upto);
     if (!highlight) return shown;

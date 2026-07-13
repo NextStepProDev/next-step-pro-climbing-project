@@ -82,11 +82,11 @@ export function AdminReservationsPanel() {
   const [showArchive, setShowArchive] = useState(false)
   const queryClientForSeen = useQueryClient()
 
-  // Wejście w zakładkę = "przeczytane": zeruje badge nowych rezerwacji (zakładka + navbar)
+  // Entering the tab = "read": resets the new-reservations badge (tab + navbar)
   useEffect(() => {
     adminApi.markReservationsSeen()
       .then(() => queryClientForSeen.invalidateQueries({ queryKey: ['admin', 'notifications'] }))
-      .catch(() => { /* badge zniknie przy następnym udanym wejściu */ })
+      .catch(() => { /* the badge will clear on the next successful visit */ })
   }, [queryClientForSeen])
 
   const { data: reservations, isLoading, isError, error, refetch } = useQuery({
@@ -111,7 +111,7 @@ export function AdminReservationsPanel() {
 
   return (
     <div className="space-y-6">
-      {/* Listy rezerwowe — widoczne tylko gdy ktoś faktycznie czeka */}
+      {/* Waitlists — visible only when someone is actually waiting */}
       <WaitlistsSection />
 
       {/* Upcoming */}
@@ -163,8 +163,8 @@ export function AdminReservationsPanel() {
   )
 }
 
-// Wszystkie aktywne listy rezerwowe (sloty + wydarzenia) — kto i od kiedy czeka.
-// Renderuje się tylko gdy ktoś faktycznie czeka; zwykle sekcji nie widać wcale.
+// All active waitlists (slots + events) — who is waiting and since when.
+// Renders only when someone is actually waiting; usually the section is not visible at all.
 function WaitlistsSection() {
   const { t } = useTranslation('admin')
   const locale = useDateLocale()

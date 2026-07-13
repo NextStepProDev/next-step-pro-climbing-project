@@ -20,7 +20,7 @@ public class WaitlistScheduler {
         this.eventWaitlistService = eventWaitlistService;
     }
 
-    // Co 5 minut expiruje przeterminowane oferty i re-powiadamia jeśli miejsce nadal wolne
+    // Every 5 minutes expires overdue offers and re-notifies if the seat is still free
     @Scheduled(fixedDelay = 5 * 60 * 1000)
     public void processExpiredOffers() {
         log.debug("WaitlistScheduler: checking for expired pending confirmations");

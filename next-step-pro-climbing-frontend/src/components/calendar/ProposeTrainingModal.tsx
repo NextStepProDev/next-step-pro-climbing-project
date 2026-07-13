@@ -14,7 +14,7 @@ import { trainingRequestApi, coursesApi } from '../../api/client'
 import { getErrorMessage } from '../../utils/errors'
 import { useDateLocale } from '../../utils/dateFnsLocale'
 
-/** Okno dostępności, w którym składana jest propozycja — ogranicza datę i godziny. */
+/** Availability window the request is submitted in — constrains the date and times. */
 export interface ProposeWindow {
   slotId: string
   date: string
@@ -25,9 +25,9 @@ export interface ProposeWindow {
 interface ProposeTrainingModalProps {
   isOpen: boolean
   onClose: () => void
-  /** Data startowa formularza (yyyy-MM-dd); w trybie okna nadpisywana datą okna. */
+  /** Initial form date (yyyy-MM-dd); overridden by the window's date in window mode. */
   defaultDate: string
-  /** Tryb okna dostępności: data zablokowana, godziny ograniczone do ram okna. */
+  /** Availability window mode: date locked, times constrained to the window bounds. */
   window?: ProposeWindow
 }
 
@@ -35,9 +35,9 @@ const toMinutes = (t: string) => parseInt(t.slice(0, 2), 10) * 60 + parseInt(t.s
 const toHHMM = (m: number) => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`
 
 /**
- * Godzina startu do prefillu formularza w oknie dostępności. Dla trwającego dziś okna
- * (start już minął) proponuje najbliższy kwadrans zamiast początku okna — prefill z przeszłą
- * godziną kończyłby się natychmiastowym błędem walidacji po wysłaniu.
+ * Start time to prefill the form within an availability window. For a window ongoing today
+ * (start already passed) it suggests the nearest quarter-hour instead of the window start —
+ * a prefill with a past time would end in an immediate validation error on submit.
  */
 function initialWindowStart(win: ProposeWindow): string {
   const start = win.startTime.slice(0, 5)
@@ -49,9 +49,9 @@ function initialWindowStart(win: ProposeWindow): string {
 }
 
 /**
- * Formularz propozycji terminu treningu (zalogowany użytkownik).
- * Dwa tryby: w oknie dostępności (godziny ograniczone do okna) albo swobodny
- * (dowolna przyszła data). Admin dostaje maila i widzi propozycję w panelu.
+ * Training time request form (logged-in user).
+ * Two modes: within an availability window (times constrained to the window) or free
+ * (any future date). The admin gets an email and sees the request in the panel.
  */
 export function ProposeTrainingModal({ isOpen, onClose, defaultDate, window: proposeWindow }: ProposeTrainingModalProps) {
   const { t, i18n } = useTranslation('calendar')

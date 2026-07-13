@@ -4,9 +4,9 @@ import clsx from 'clsx'
 interface AvatarProps {
   src?: string | null
   name?: string | null
-  /** Klasy rozmiaru/pozycji kontenera, np. "w-9 h-9". */
+  /** Container size/position classes, e.g. "w-9 h-9". */
   className?: string
-  /** Klasy tekstu inicjału (gdy brak zdjęcia). */
+  /** Initial-letter text classes (when there is no photo). */
   textClassName?: string
 }
 

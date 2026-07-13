@@ -14,13 +14,13 @@ import java.time.LocalTime;
 import java.util.UUID;
 
 /**
- * Propozycja terminu treningu złożona przez zalogowanego użytkownika.
+ * A training time request submitted by a logged-in user.
  *
- * <p>Może być złożona wewnątrz okna dostępności ({@code windowSlot}) albo swobodnie
- * (pusty dzień w kalendarzu). Admin odpowiada tworząc slot/wydarzenie z propozycji
- * (status {@link TrainingRequestStatus#ACCEPTED} + link {@code createdSlot}/{@code createdEvent},
- * proponujący dostaje miejsce "na zaproszenie"), oznaczając kontakt telefoniczny
- * ({@code CONTACTED}) albo odrzucając ({@code REJECTED}).
+ * <p>Can be submitted inside an availability window ({@code windowSlot}) or freely
+ * (an empty day in the calendar). The admin responds by creating a slot/event from the
+ * request (status {@link TrainingRequestStatus#ACCEPTED} + link {@code createdSlot}/{@code createdEvent},
+ * the requester gets an invitation-held seat), by marking phone contact
+ * ({@code CONTACTED}), or by rejecting it ({@code REJECTED}).
  */
 @Entity
 @Table(name = "training_requests")
@@ -104,9 +104,9 @@ public class TrainingRequest {
     }
 
     /**
-     * Escapuje HTML i przycina komentarz użytkownika (ten sam wzorzec co Reservation.sanitizeComment).
-     * UTF-8 escapuje tylko groźne znaki (&lt; &gt; " &amp; '); jednoargumentowy wariant zakłada
-     * ISO-8859-1 i zamieniałby diakrytyki na encje (ó → &amp;oacute;), masakrując polskie komentarze.
+     * HTML-escapes and trims the user comment (same pattern as Reservation.sanitizeComment).
+     * The UTF-8 variant escapes only dangerous characters (&lt; &gt; " &amp; '); the one-arg variant
+     * assumes ISO-8859-1 and would turn diacritics into entities (ó → &amp;oacute;), mangling Polish comments.
      */
     @Nullable
     public static String sanitizeComment(@Nullable String comment) {

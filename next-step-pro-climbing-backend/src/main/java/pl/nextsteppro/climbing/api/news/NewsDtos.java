@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Publiczne DTOs dla aktualności
+ * Public DTOs for news
  */
 public class NewsDtos {
 

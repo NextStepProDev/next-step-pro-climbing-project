@@ -12,7 +12,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/videos")
-@Tag(name = "Videos", description = "Publiczne filmy")
+@Tag(name = "Videos", description = "Public videos")
 public class VideoController {
 
     private final VideoService videoService;
@@ -21,7 +21,7 @@ public class VideoController {
         this.videoService = videoService;
     }
 
-    @Operation(summary = "Pobierz wszystkie opublikowane filmy")
+    @Operation(summary = "Get all published videos")
     @GetMapping
     public ResponseEntity<List<VideoDto>> getAll() {
         return ResponseEntity.ok(videoService.getAllPublished());

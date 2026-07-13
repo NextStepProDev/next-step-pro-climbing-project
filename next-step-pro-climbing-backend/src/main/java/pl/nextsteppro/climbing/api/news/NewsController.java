@@ -16,7 +16,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/news")
-@Tag(name = "News", description = "Publiczny dostęp do aktualności")
+@Tag(name = "News", description = "Public access to news")
 public class NewsController {
 
     private final NewsService newsService;
@@ -25,9 +25,9 @@ public class NewsController {
         this.newsService = newsService;
     }
 
-    @Operation(summary = "Pobierz listę opublikowanych aktualności")
+    @Operation(summary = "Get published news articles")
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Lista aktualności")
+        @ApiResponse(responseCode = "200", description = "List of news articles")
     })
     @GetMapping
     public ResponseEntity<NewsPageDto> getAll(
@@ -40,32 +40,32 @@ public class NewsController {
         return ResponseEntity.ok(newsService.getAllPublished(page, size, language, q, starred, userId));
     }
 
-    @Operation(summary = "Pobierz szczegóły aktualności")
+    @Operation(summary = "Get news article details")
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Szczegóły aktualności"),
-        @ApiResponse(responseCode = "400", description = "Aktualność nie znaleziona lub nieopublikowana")
+        @ApiResponse(responseCode = "200", description = "News article details"),
+        @ApiResponse(responseCode = "400", description = "News article not found or unpublished")
     })
     @GetMapping("/{id}")
     public ResponseEntity<NewsDetailDto> getById(
-            @Parameter(description = "ID aktualności") @PathVariable UUID id,
+            @Parameter(description = "News article ID") @PathVariable UUID id,
             @Nullable @CurrentUserId UUID userId) {
         return ResponseEntity.ok(newsService.getPublishedById(id, userId));
     }
 
-    @Operation(summary = "Pobierz dostępne wersje językowe artykułu")
+    @Operation(summary = "Get available language versions of the article")
     @GetMapping("/by-group/{translationGroupId}")
     public ResponseEntity<List<NewsTranslationDto>> getTranslations(@PathVariable UUID translationGroupId) {
         return ResponseEntity.ok(newsService.getAvailableTranslations(translationGroupId));
     }
 
-    @Operation(summary = "Dodaj aktualność do ulubionych")
+    @Operation(summary = "Add news article to favorites")
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Dodano do ulubionych"),
-        @ApiResponse(responseCode = "401", description = "Wymagane logowanie")
+        @ApiResponse(responseCode = "200", description = "Added to favorites"),
+        @ApiResponse(responseCode = "401", description = "Login required")
     })
     @PostMapping("/{id}/star")
     public ResponseEntity<Void> star(
-            @Parameter(description = "ID aktualności") @PathVariable UUID id,
+            @Parameter(description = "News article ID") @PathVariable UUID id,
             @Nullable @CurrentUserId UUID userId) {
         if (userId == null) {
             return ResponseEntity.status(401).build();
@@ -74,14 +74,14 @@ public class NewsController {
         return ResponseEntity.ok().build();
     }
 
-    @Operation(summary = "Usuń aktualność z ulubionych")
+    @Operation(summary = "Remove news article from favorites")
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Usunięto z ulubionych"),
-        @ApiResponse(responseCode = "401", description = "Wymagane logowanie")
+        @ApiResponse(responseCode = "200", description = "Removed from favorites"),
+        @ApiResponse(responseCode = "401", description = "Login required")
     })
     @DeleteMapping("/{id}/star")
     public ResponseEntity<Void> unstar(
-            @Parameter(description = "ID aktualności") @PathVariable UUID id,
+            @Parameter(description = "News article ID") @PathVariable UUID id,
             @Nullable @CurrentUserId UUID userId) {
         if (userId == null) {
             return ResponseEntity.status(401).build();

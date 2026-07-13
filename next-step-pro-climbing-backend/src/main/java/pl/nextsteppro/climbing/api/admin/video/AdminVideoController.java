@@ -17,7 +17,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/admin/videos")
 @PreAuthorize("hasRole('ADMIN')")
-@Tag(name = "Admin - Videos", description = "Zarządzanie filmami (tylko admin)")
+@Tag(name = "Admin - Videos", description = "Video management (admin only)")
 public class AdminVideoController {
 
     private final AdminVideoService adminVideoService;
@@ -26,21 +26,21 @@ public class AdminVideoController {
         this.adminVideoService = adminVideoService;
     }
 
-    @Operation(summary = "Pobierz wszystkie filmy (drafty + opublikowane)")
+    @Operation(summary = "Get all videos (drafts + published)")
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Lista filmów"),
-        @ApiResponse(responseCode = "403", description = "Brak uprawnień administratora")
+        @ApiResponse(responseCode = "200", description = "List of videos"),
+        @ApiResponse(responseCode = "403", description = "Admin privileges required")
     })
     @GetMapping
     public ResponseEntity<List<VideoAdminDto>> getAll() {
         return ResponseEntity.ok(adminVideoService.getAllVideos());
     }
 
-    @Operation(summary = "Pobierz szczegóły filmu")
+    @Operation(summary = "Get video details")
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Szczegóły filmu"),
-        @ApiResponse(responseCode = "400", description = "Film nie znaleziony"),
-        @ApiResponse(responseCode = "403", description = "Brak uprawnień administratora")
+        @ApiResponse(responseCode = "200", description = "Video details"),
+        @ApiResponse(responseCode = "400", description = "Video not found"),
+        @ApiResponse(responseCode = "403", description = "Admin privileges required")
     })
     @GetMapping("/{id}")
     public ResponseEntity<VideoAdminDto> getById(
@@ -48,11 +48,11 @@ public class AdminVideoController {
         return ResponseEntity.ok(adminVideoService.getVideo(id));
     }
 
-    @Operation(summary = "Utwórz nowy film (draft)")
+    @Operation(summary = "Create new video (draft)")
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Film utworzony"),
-        @ApiResponse(responseCode = "400", description = "Nieprawidłowe dane"),
-        @ApiResponse(responseCode = "403", description = "Brak uprawnień administratora")
+        @ApiResponse(responseCode = "200", description = "Video created"),
+        @ApiResponse(responseCode = "400", description = "Invalid data"),
+        @ApiResponse(responseCode = "403", description = "Admin privileges required")
     })
     @PostMapping
     public ResponseEntity<VideoAdminDto> create(
@@ -60,11 +60,11 @@ public class AdminVideoController {
         return ResponseEntity.ok(adminVideoService.createVideo(request));
     }
 
-    @Operation(summary = "Aktualizuj film")
+    @Operation(summary = "Update video")
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Film zaktualizowany"),
-        @ApiResponse(responseCode = "400", description = "Nieprawidłowe dane lub film nie znaleziony"),
-        @ApiResponse(responseCode = "403", description = "Brak uprawnień administratora")
+        @ApiResponse(responseCode = "200", description = "Video updated"),
+        @ApiResponse(responseCode = "400", description = "Invalid data or video not found"),
+        @ApiResponse(responseCode = "403", description = "Admin privileges required")
     })
     @PutMapping("/{id}")
     public ResponseEntity<VideoAdminDto> update(
@@ -73,11 +73,11 @@ public class AdminVideoController {
         return ResponseEntity.ok(adminVideoService.updateVideo(id, request));
     }
 
-    @Operation(summary = "Usuń film")
+    @Operation(summary = "Delete video")
     @ApiResponses({
-        @ApiResponse(responseCode = "204", description = "Film usunięty"),
-        @ApiResponse(responseCode = "400", description = "Film nie znaleziony"),
-        @ApiResponse(responseCode = "403", description = "Brak uprawnień administratora")
+        @ApiResponse(responseCode = "204", description = "Video deleted"),
+        @ApiResponse(responseCode = "400", description = "Video not found"),
+        @ApiResponse(responseCode = "403", description = "Admin privileges required")
     })
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(
@@ -86,28 +86,28 @@ public class AdminVideoController {
         return ResponseEntity.noContent().build();
     }
 
-    @Operation(summary = "Opublikuj film")
+    @Operation(summary = "Publish video")
     @PostMapping("/{id}/publish")
     public ResponseEntity<VideoAdminDto> publish(
             @Parameter(description = "ID filmu") @PathVariable UUID id) {
         return ResponseEntity.ok(adminVideoService.setPublished(id, true));
     }
 
-    @Operation(summary = "Cofnij publikację filmu")
+    @Operation(summary = "Unpublish video")
     @PostMapping("/{id}/unpublish")
     public ResponseEntity<VideoAdminDto> unpublish(
             @Parameter(description = "ID filmu") @PathVariable UUID id) {
         return ResponseEntity.ok(adminVideoService.setPublished(id, false));
     }
 
-    @Operation(summary = "Przesuń film w górę (mniejszy displayOrder)")
+    @Operation(summary = "Move video up (lower displayOrder)")
     @PostMapping("/{id}/move-up")
     public ResponseEntity<List<VideoAdminDto>> moveUp(
             @Parameter(description = "ID filmu") @PathVariable UUID id) {
         return ResponseEntity.ok(adminVideoService.moveUp(id));
     }
 
-    @Operation(summary = "Przesuń film w dół (większy displayOrder)")
+    @Operation(summary = "Move video down (higher displayOrder)")
     @PostMapping("/{id}/move-down")
     public ResponseEntity<List<VideoAdminDto>> moveDown(
             @Parameter(description = "ID filmu") @PathVariable UUID id) {

@@ -8,8 +8,8 @@ import java.time.ZoneId;
 public final class BookingTimeValidator {
 
     private static final int BOOKING_WINDOW_HOURS = 12;
-    // Terminy zapisywane są jako czas lokalny PL; porównujemy względem czasu polskiego, NIE strefy JVM
-    // (kontener prod działa w UTC — gołe LocalDateTime.now() dawałoby latem 2 h przesunięcia okna 12 h).
+    // Slot times are stored as Polish local time; we compare against Polish time, NOT the JVM zone
+    // (the prod container runs in UTC — a bare LocalDateTime.now() would skew the 12 h window by 2 h in summer).
     private static final ZoneId WARSAW = ZoneId.of("Europe/Warsaw");
 
     private BookingTimeValidator() {}

@@ -255,7 +255,7 @@ export function AdminCoursesPanel() {
   )
 }
 
-// ==================== Wiersz grupy tłumaczeń w liście ====================
+// ==================== Translation group row in the list ====================
 
 function TranslationGroupRow({
   groupCourses,
@@ -399,7 +399,7 @@ function TranslationGroupRow({
   )
 }
 
-// ==================== Widok edycji ====================
+// ==================== Edit view ====================
 
 function EditView({
   courseId,
@@ -530,7 +530,7 @@ function EditView({
       await adminCoursesApi.updateMeta(courseId, { title, price })
     }
 
-    // 2. Thumbnail + focal point (zawsze razem gdy nowy plik)
+    // 2. Thumbnail + focal point (always together with a new file)
     if (thumbnailFromLibrary) {
       await adminCoursesApi.setThumbnailUrl(courseId, thumbnailFromLibrary)
       await adminCoursesApi.updateThumbnailFocalPoint(courseId, focalPoint.x, focalPoint.y)
@@ -770,7 +770,7 @@ function EditView({
   // ---------- Render ----------
   return (
     <div className="pb-24 space-y-8">
-      {/* Powrót do listy */}
+      {/* Back to the list */}
       <button
         onClick={handleExit}
         className="inline-flex items-center gap-2 text-surface-300 hover:text-surface-100 transition-colors text-sm"
@@ -823,7 +823,7 @@ function EditView({
         </div>
       </section>
 
-      {/* Sekcja: Duplikuj jako tłumaczenie */}
+      {/* Section: Duplicate as translation */}
       <section className="bg-surface-800 border border-surface-700 rounded-lg p-6">
         <div className="flex items-center gap-3 mb-3">
           <Globe className="h-5 w-5 text-surface-300" />
@@ -963,11 +963,11 @@ function EditView({
         </div>
       </section>
 
-      {/* Sekcja 3: Bloki treści */}
+      {/* Section 3: Content blocks */}
       <section className="bg-surface-800 border border-surface-700 rounded-lg p-6">
         <h3 className="text-lg font-semibold text-surface-100 mb-4">{t('courses.sectionContent')}</h3>
 
-        {/* Istniejące bloki */}
+        {/* Existing blocks */}
         {detail.blocks.length > 0 || pendingBlocks.length > 0 ? (
           <div className="space-y-4 mb-6">
             {detail.blocks.map((block, index) => (
@@ -984,7 +984,7 @@ function EditView({
               />
             ))}
 
-            {/* Oczekujące nowe bloki */}
+            {/* Pending new blocks */}
             {pendingBlocks.map((pending, index) => (
               <PendingBlockItem
                 key={pending.tempId}
@@ -1136,7 +1136,7 @@ function EditView({
         </div>
       </div>
 
-      {/* Confirm: usuń blok */}
+      {/* Confirm: delete block */}
       <ConfirmModal
         isOpen={!!deleteBlockConfirmId}
         title={t('courses.deleteBlockConfirmTitle')}
@@ -1146,7 +1146,7 @@ function EditView({
         onClose={() => setDeleteBlockConfirmId(null)}
       />
 
-      {/* Confirm: wyjdź bez zapisu */}
+      {/* Confirm: leave without saving */}
       <ConfirmModal
         isOpen={showExitConfirm}
         title={t('courses.exitConfirmTitle')}
@@ -1156,7 +1156,7 @@ function EditView({
         onClose={() => setShowExitConfirm(false)}
       />
 
-      {/* Podgląd kursu */}
+      {/* Course preview */}
       <CoursePreviewModal
         isOpen={showPreview}
         onClose={() => setShowPreview(false)}
@@ -1205,7 +1205,7 @@ function EditView({
         }}
       />
 
-      {/* Confirm: usuń pojedynczą wersję językową */}
+      {/* Confirm: delete a single language version */}
       <ConfirmModal
         isOpen={deleteSingleConfirm}
         title={t('courses.deleteSingleConfirmTitle')}
@@ -1259,7 +1259,7 @@ function EditView({
   )
 }
 
-// ==================== Edytor istniejącego bloku ====================
+// ==================== Existing block editor ====================
 
 function BlockEditor({
   block,
@@ -1337,7 +1337,7 @@ function BlockEditor({
         </div>
       </div>
 
-      {/* Zawartość */}
+      {/* Content */}
       {block.blockType === 'TEXT' ? (
         <RichTextEditor
           value={editState.content ?? ''}
@@ -1365,7 +1365,7 @@ function BlockEditor({
   )
 }
 
-// ==================== Podgląd oczekującego nowego bloku ====================
+// ==================== Pending new block preview ====================
 
 function PendingBlockItem({
   block,

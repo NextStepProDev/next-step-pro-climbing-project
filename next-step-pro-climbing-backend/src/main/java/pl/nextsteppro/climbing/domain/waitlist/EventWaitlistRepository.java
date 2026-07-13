@@ -38,7 +38,7 @@ public interface EventWaitlistRepository extends JpaRepository<EventWaitlist, UU
     @Query("SELECT COUNT(w) > 0 FROM EventWaitlist w WHERE w.user.id = :userId AND w.event.id = :eventId AND w.status IN :statuses")
     boolean existsByUserAndEventAndStatuses(UUID userId, UUID eventId, List<WaitlistStatus> statuses);
 
-    // Widok admina „Listy rezerwowe": aktywne wpisy na nadchodzące/trwające wydarzenia
+    // Admin "Waitlists" view: active entries for upcoming/ongoing events
     @Query("""
         SELECT w FROM EventWaitlist w JOIN FETCH w.user JOIN FETCH w.event e
         WHERE w.status IN ('WAITING', 'PENDING_CONFIRMATION') AND e.endDate >= :fromDate
@@ -46,7 +46,7 @@ public interface EventWaitlistRepository extends JpaRepository<EventWaitlist, UU
         """)
     List<EventWaitlist> findActiveForUpcomingEvents(java.time.LocalDate fromDate);
 
-    // Badge admina: zapisy na listę rezerwową od ostatniego "przeczytania" (EXPIRED nie liczymy)
+    // Admin badge: waitlist joins since last "read" (EXPIRED not counted)
     @Query("SELECT COUNT(w) FROM EventWaitlist w WHERE w.createdAt > :since AND w.status <> 'EXPIRED'")
     int countActiveCreatedAfter(Instant since);
 

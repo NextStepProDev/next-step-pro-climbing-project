@@ -378,8 +378,8 @@ class CalendarServiceTest {
 
     @Test
     void shouldKeepOngoingAvailabilityWindowActiveUntilItsEnd() {
-        // Given: okno dostępności trwające dziś (start już minął, koniec przed nami) — status
-        // liczony po godzinie KOŃCA, żeby trwające okno wciąż przyjmowało propozycje terminów
+        // Given: an availability window ongoing today (start already passed, end ahead) — status
+        // is computed from the END time so an ongoing window still accepts training requests
         LocalDate today = java.time.ZonedDateTime.now(java.time.ZoneId.of("Europe/Warsaw")).toLocalDate();
         TimeSlot window = new TimeSlot(today, LocalTime.MIN, LocalTime.MAX, 1);
         window.setAvailabilityWindow(true);

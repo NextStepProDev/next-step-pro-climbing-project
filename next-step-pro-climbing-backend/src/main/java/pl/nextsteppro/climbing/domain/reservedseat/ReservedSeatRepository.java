@@ -10,13 +10,13 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Zaproszenia (trzymane miejsca). "Wiszące" zaproszenie = takie, którego adresat nie ma jeszcze
- * potwierdzonej rezerwacji na danym slocie/wydarzeniu — tylko takie odejmują dostępność, bo gdy
- * zaproszony już zarezerwuje, jego miejsce jest liczone w potwierdzonych (nie podwójnie).
+ * Invitations (held seats). A "pending" invitation = one whose recipient does not yet have
+ * a confirmed reservation on the given slot/event — only those reduce availability, because
+ * once the invitee books, their seat is counted among confirmed (not twice).
  */
 public interface ReservedSeatRepository extends JpaRepository<ReservedSeat, UUID> {
 
-    // ---- Sloty ----
+    // ---- Slots ----
 
     @Query("""
         SELECT new pl.nextsteppro.climbing.domain.reservedseat.ReservedSeatCount(rs.timeSlot.id, COUNT(rs))
@@ -63,8 +63,8 @@ public interface ReservedSeatRepository extends JpaRepository<ReservedSeat, UUID
     @Query("SELECT rs FROM ReservedSeat rs JOIN FETCH rs.user WHERE rs.timeSlot.id = :slotId ORDER BY rs.createdAt")
     List<ReservedSeat> findBySlotIdWithUser(UUID slotId);
 
-    // Zaproszenia widziane od strony adresata (sekcja "Zaproszenia" + badge w navbarze).
-    // Pokazujemy aż do godziny startu — zaproszeni omijają okno 12 h przed terminem.
+    // Invitations from the recipient's perspective ("Invitations" section + navbar badge).
+    // Shown until the start time — invitees bypass the 12 h pre-slot window.
     @Query("""
         SELECT rs FROM ReservedSeat rs
         JOIN FETCH rs.timeSlot ts
@@ -82,7 +82,7 @@ public interface ReservedSeatRepository extends JpaRepository<ReservedSeat, UUID
 
     void deleteByTimeSlotIdAndUserId(UUID slotId, UUID userId);
 
-    // ---- Wydarzenia ----
+    // ---- Events ----
 
     @Query("""
         SELECT new pl.nextsteppro.climbing.domain.reservedseat.ReservedSeatCount(rs.event.id, COUNT(rs))

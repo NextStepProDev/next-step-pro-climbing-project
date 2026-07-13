@@ -23,7 +23,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/admin/settings")
 @PreAuthorize("hasRole('ADMIN')")
-@Tag(name = "Admin - Site Settings", description = "Ustawienia witryny")
+@Tag(name = "Admin - Site Settings", description = "Site settings")
 public class AdminSiteSettingsController {
 
     private final AdminSiteSettingsService adminSiteSettingsService;
@@ -33,54 +33,54 @@ public class AdminSiteSettingsController {
     }
 
     @GetMapping("/hero")
-    @Operation(summary = "Pobierz aktualne zdjęcie hero strony głównej")
+    @Operation(summary = "Get the current homepage hero image")
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "URL zdjęcia lub null"),
-        @ApiResponse(responseCode = "403", description = "Brak uprawnień admina")
+        @ApiResponse(responseCode = "200", description = "Image URL or null"),
+        @ApiResponse(responseCode = "403", description = "Admin privileges required")
     })
     public ResponseEntity<HeroImageDto> getHeroImage() {
         return ResponseEntity.ok(adminSiteSettingsService.getHeroImage());
     }
 
     @PostMapping("/hero")
-    @Operation(summary = "Wgraj zdjęcie hero z dysku", description = "Upload pliku jako tło strony głównej (max 10MB, JPEG/PNG/WebP)")
+    @Operation(summary = "Upload hero image from disk", description = "Uploads a file as the homepage background (max 10MB, JPEG/PNG/WebP)")
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Zdjęcie wgrane"),
-        @ApiResponse(responseCode = "400", description = "Nieprawidłowy plik"),
-        @ApiResponse(responseCode = "403", description = "Brak uprawnień admina")
+        @ApiResponse(responseCode = "200", description = "Photo uploaded"),
+        @ApiResponse(responseCode = "400", description = "Invalid file"),
+        @ApiResponse(responseCode = "403", description = "Admin privileges required")
     })
     public ResponseEntity<HeroImageDto> uploadHeroImage(
-            @Parameter(description = "Plik zdjęcia") @RequestParam("file") MultipartFile file,
+            @Parameter(description = "Image file") @RequestParam("file") MultipartFile file,
             @RequestParam(value = "focalPointX", required = false) @Nullable Float focalPointX,
             @RequestParam(value = "focalPointY", required = false) @Nullable Float focalPointY) throws IOException {
         return ResponseEntity.ok(adminSiteSettingsService.uploadHeroImage(file, focalPointX, focalPointY));
     }
 
     @PutMapping("/hero/url")
-    @Operation(summary = "Ustaw zdjęcie hero z biblioteki mediów lub galerii")
+    @Operation(summary = "Set the hero image from the media library or gallery")
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "URL zapisany"),
-        @ApiResponse(responseCode = "403", description = "Brak uprawnień admina")
+        @ApiResponse(responseCode = "200", description = "URL saved"),
+        @ApiResponse(responseCode = "403", description = "Admin privileges required")
     })
     public ResponseEntity<HeroImageDto> setHeroImageUrl(@RequestBody SetHeroUrlRequest request) {
         return ResponseEntity.ok(adminSiteSettingsService.setHeroImageUrl(request.url(), request.focalPointX(), request.focalPointY()));
     }
 
     @PutMapping("/hero/focal-point")
-    @Operation(summary = "Zaktualizuj focal point zdjęcia hero")
+    @Operation(summary = "Update hero image focal point")
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Focal point zapisany"),
-        @ApiResponse(responseCode = "403", description = "Brak uprawnień admina")
+        @ApiResponse(responseCode = "200", description = "Focal point saved"),
+        @ApiResponse(responseCode = "403", description = "Admin privileges required")
     })
     public ResponseEntity<HeroImageDto> setFocalPoint(@RequestBody SetFocalPointRequest request) {
         return ResponseEntity.ok(adminSiteSettingsService.setFocalPoint(request.x(), request.y()));
     }
 
     @DeleteMapping("/hero")
-    @Operation(summary = "Usuń zdjęcie hero strony głównej")
+    @Operation(summary = "Delete the homepage hero image")
     @ApiResponses({
-        @ApiResponse(responseCode = "204", description = "Zdjęcie usunięte"),
-        @ApiResponse(responseCode = "403", description = "Brak uprawnień admina")
+        @ApiResponse(responseCode = "204", description = "Photo deleted"),
+        @ApiResponse(responseCode = "403", description = "Admin privileges required")
     })
     public ResponseEntity<Void> deleteHeroImage() throws IOException {
         adminSiteSettingsService.deleteHeroImage();
@@ -88,54 +88,54 @@ public class AdminSiteSettingsController {
     }
 
     @GetMapping("/hero-mobile")
-    @Operation(summary = "Pobierz aktualne zdjęcie hero (mobile) strony głównej")
+    @Operation(summary = "Get the current homepage hero image (mobile)")
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "URL zdjęcia lub null"),
-        @ApiResponse(responseCode = "403", description = "Brak uprawnień admina")
+        @ApiResponse(responseCode = "200", description = "Image URL or null"),
+        @ApiResponse(responseCode = "403", description = "Admin privileges required")
     })
     public ResponseEntity<HeroImageDto> getMobileHeroImage() {
         return ResponseEntity.ok(adminSiteSettingsService.getMobileHeroImage());
     }
 
     @PostMapping("/hero-mobile")
-    @Operation(summary = "Wgraj zdjęcie hero (mobile) z dysku", description = "Upload pionowego tła dla telefonów (max 10MB, JPEG/PNG/WebP)")
+    @Operation(summary = "Upload hero image (mobile) from disk", description = "Uploads a vertical background for phones (max 10MB, JPEG/PNG/WebP)")
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Zdjęcie wgrane"),
-        @ApiResponse(responseCode = "400", description = "Nieprawidłowy plik"),
-        @ApiResponse(responseCode = "403", description = "Brak uprawnień admina")
+        @ApiResponse(responseCode = "200", description = "Photo uploaded"),
+        @ApiResponse(responseCode = "400", description = "Invalid file"),
+        @ApiResponse(responseCode = "403", description = "Admin privileges required")
     })
     public ResponseEntity<HeroImageDto> uploadMobileHeroImage(
-            @Parameter(description = "Plik zdjęcia") @RequestParam("file") MultipartFile file,
+            @Parameter(description = "Image file") @RequestParam("file") MultipartFile file,
             @RequestParam(value = "focalPointX", required = false) @Nullable Float focalPointX,
             @RequestParam(value = "focalPointY", required = false) @Nullable Float focalPointY) throws IOException {
         return ResponseEntity.ok(adminSiteSettingsService.uploadMobileHeroImage(file, focalPointX, focalPointY));
     }
 
     @PutMapping("/hero-mobile/url")
-    @Operation(summary = "Ustaw zdjęcie hero (mobile) z biblioteki mediów lub galerii")
+    @Operation(summary = "Set the hero image (mobile) from the media library or gallery")
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "URL zapisany"),
-        @ApiResponse(responseCode = "403", description = "Brak uprawnień admina")
+        @ApiResponse(responseCode = "200", description = "URL saved"),
+        @ApiResponse(responseCode = "403", description = "Admin privileges required")
     })
     public ResponseEntity<HeroImageDto> setMobileHeroImageUrl(@RequestBody SetHeroUrlRequest request) {
         return ResponseEntity.ok(adminSiteSettingsService.setMobileHeroImageUrl(request.url(), request.focalPointX(), request.focalPointY()));
     }
 
     @PutMapping("/hero-mobile/focal-point")
-    @Operation(summary = "Zaktualizuj focal point zdjęcia hero (mobile)")
+    @Operation(summary = "Update hero image focal point (mobile)")
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Focal point zapisany"),
-        @ApiResponse(responseCode = "403", description = "Brak uprawnień admina")
+        @ApiResponse(responseCode = "200", description = "Focal point saved"),
+        @ApiResponse(responseCode = "403", description = "Admin privileges required")
     })
     public ResponseEntity<HeroImageDto> setMobileFocalPoint(@RequestBody SetFocalPointRequest request) {
         return ResponseEntity.ok(adminSiteSettingsService.setMobileFocalPoint(request.x(), request.y()));
     }
 
     @DeleteMapping("/hero-mobile")
-    @Operation(summary = "Usuń zdjęcie hero (mobile) strony głównej")
+    @Operation(summary = "Delete the homepage hero image (mobile)")
     @ApiResponses({
-        @ApiResponse(responseCode = "204", description = "Zdjęcie usunięte"),
-        @ApiResponse(responseCode = "403", description = "Brak uprawnień admina")
+        @ApiResponse(responseCode = "204", description = "Photo deleted"),
+        @ApiResponse(responseCode = "403", description = "Admin privileges required")
     })
     public ResponseEntity<Void> deleteMobileHeroImage() throws IOException {
         adminSiteSettingsService.deleteMobileHeroImage();
@@ -143,112 +143,112 @@ public class AdminSiteSettingsController {
     }
 
     @GetMapping("/badge")
-    @Operation(summary = "Pobierz aktualne logo/badge strony głównej")
+    @Operation(summary = "Get the current homepage logo/badge")
     public ResponseEntity<BadgeImageDto> getBadgeImage() {
         return ResponseEntity.ok(adminSiteSettingsService.getBadgeImage());
     }
 
     @PutMapping("/badge/url")
-    @Operation(summary = "Ustaw badge z biblioteki mediów")
+    @Operation(summary = "Set badge from the media library")
     public ResponseEntity<BadgeImageDto> setBadgeImageUrl(@RequestBody SetBadgeUrlRequest request) {
         return ResponseEntity.ok(adminSiteSettingsService.setBadgeImageUrl(request.url(), request.linkUrl()));
     }
 
     @DeleteMapping("/badge")
-    @Operation(summary = "Usuń badge ze strony głównej")
+    @Operation(summary = "Remove badge from the homepage")
     public ResponseEntity<Void> deleteBadgeImage() {
         adminSiteSettingsService.deleteBadgeImage();
         return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/badge-left")
-    @Operation(summary = "Pobierz lewe logo/badge strony głównej")
+    @Operation(summary = "Get the left homepage logo/badge")
     public ResponseEntity<BadgeImageDto> getBadgeLeftImage() {
         return ResponseEntity.ok(adminSiteSettingsService.getBadgeLeftImage());
     }
 
     @PutMapping("/badge-left/url")
-    @Operation(summary = "Ustaw lewy badge z biblioteki mediów")
+    @Operation(summary = "Set left badge from the media library")
     public ResponseEntity<BadgeImageDto> setBadgeLeftImageUrl(@RequestBody SetBadgeUrlRequest request) {
         return ResponseEntity.ok(adminSiteSettingsService.setBadgeLeftImageUrl(request.url(), request.linkUrl()));
     }
 
     @DeleteMapping("/badge-left")
-    @Operation(summary = "Usuń lewy badge ze strony głównej")
+    @Operation(summary = "Remove left badge from the homepage")
     public ResponseEntity<Void> deleteBadgeLeftImage() {
         adminSiteSettingsService.deleteBadgeLeftImage();
         return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/slot-templates")
-    @Operation(summary = "Pobierz predefiniowane szablony slotów")
+    @Operation(summary = "Get predefined slot templates")
     public ResponseEntity<List<SlotTemplateDto>> getSlotTemplates() {
         return ResponseEntity.ok(adminSiteSettingsService.getSlotTemplates());
     }
 
     @PutMapping("/slot-templates")
-    @Operation(summary = "Zapisz predefiniowane szablony slotów")
+    @Operation(summary = "Save predefined slot templates")
     public ResponseEntity<List<SlotTemplateDto>> saveSlotTemplates(@RequestBody List<SlotTemplateDto> templates) {
         return ResponseEntity.ok(adminSiteSettingsService.saveSlotTemplates(templates));
     }
 
     @GetMapping("/home-location")
-    @Operation(summary = "Pobierz, który szablon jest aktualnie na stronie (lub null)")
+    @Operation(summary = "Get which template is currently live on the page (or null)")
     public ResponseEntity<LocationActiveStateDto> getActiveState() {
         return ResponseEntity.ok(adminSiteSettingsService.getActiveState());
     }
 
     @PutMapping("/home-location")
-    @Operation(summary = "Ustaw szablon na stronie (activePresetId = null zdejmuje sekcję)")
+    @Operation(summary = "Set the live template (activePresetId = null removes the section)")
     public ResponseEntity<LocationActiveStateDto> setActivePreset(@RequestBody LocationActiveStateDto state) {
         return ResponseEntity.ok(adminSiteSettingsService.setActivePreset(state.activePresetId()));
     }
 
     @GetMapping("/home-location/presets")
-    @Operation(summary = "Pobierz zapisane szablony sekcji lokalizacji")
+    @Operation(summary = "Get saved location section templates")
     public ResponseEntity<List<LocationPresetDto>> getLocationPresets() {
         return ResponseEntity.ok(adminSiteSettingsService.getLocationPresets());
     }
 
     @PostMapping("/home-location/presets")
-    @Operation(summary = "Utwórz lub zaktualizuj preset sekcji lokalizacji")
+    @Operation(summary = "Create or update a location section preset")
     public ResponseEntity<LocationPresetDto> saveLocationPreset(@RequestBody LocationPresetDto preset) {
         return ResponseEntity.ok(adminSiteSettingsService.saveLocationPreset(preset));
     }
 
     @DeleteMapping("/home-location/presets/{id}")
-    @Operation(summary = "Usuń preset sekcji lokalizacji")
+    @Operation(summary = "Delete location section preset")
     public ResponseEntity<Void> deleteLocationPreset(@PathVariable String id) {
         adminSiteSettingsService.deleteLocationPreset(id);
         return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/calendar-promo")
-    @Operation(summary = "Pobierz, który szablon promocji jest aktualnie nad kalendarzem (lub null)")
+    @Operation(summary = "Get which promo template is currently above the calendar (or null)")
     public ResponseEntity<LocationActiveStateDto> getCalendarPromoActiveState() {
         return ResponseEntity.ok(adminSiteSettingsService.getCalendarPromoActiveState());
     }
 
     @PutMapping("/calendar-promo")
-    @Operation(summary = "Ustaw szablon promocji nad kalendarzem (activePresetId = null zdejmuje promocję)")
+    @Operation(summary = "Set the calendar promo template (activePresetId = null removes the promo)")
     public ResponseEntity<LocationActiveStateDto> setCalendarPromoActivePreset(@RequestBody LocationActiveStateDto state) {
         return ResponseEntity.ok(adminSiteSettingsService.setCalendarPromoActivePreset(state.activePresetId()));
     }
 
     @GetMapping("/calendar-promo/presets")
-    @Operation(summary = "Pobierz zapisane szablony promocji kalendarza")
+    @Operation(summary = "Get saved calendar promo templates")
     public ResponseEntity<List<CalendarPromoPresetDto>> getCalendarPromoPresets() {
         return ResponseEntity.ok(adminSiteSettingsService.getCalendarPromoPresets());
     }
 
     @PostMapping("/calendar-promo/presets")
-    @Operation(summary = "Utwórz lub zaktualizuj szablon promocji kalendarza")
+    @Operation(summary = "Create or update a calendar promo template")
     public ResponseEntity<CalendarPromoPresetDto> saveCalendarPromoPreset(@RequestBody CalendarPromoPresetDto preset) {
         return ResponseEntity.ok(adminSiteSettingsService.saveCalendarPromoPreset(preset));
     }
 
     @DeleteMapping("/calendar-promo/presets/{id}")
-    @Operation(summary = "Usuń szablon promocji kalendarza")
+    @Operation(summary = "Delete calendar promo template")
     public ResponseEntity<Void> deleteCalendarPromoPreset(@PathVariable String id) {
         adminSiteSettingsService.deleteCalendarPromoPreset(id);
         return ResponseEntity.noContent().build();

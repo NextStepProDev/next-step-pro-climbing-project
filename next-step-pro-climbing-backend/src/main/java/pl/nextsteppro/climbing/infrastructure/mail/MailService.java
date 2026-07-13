@@ -238,7 +238,7 @@ public class MailService {
         sendEmail(recipient.getEmail(), subject, htmlBody, null);
     }
 
-    // ---- Propozycje terminów (training requests) ----
+    // ---- Training requests ----
 
     @Async("mailExecutor")
     public void sendTrainingRequestAdminNotification(User user, java.time.LocalDate date, java.time.LocalTime startTime,
@@ -260,7 +260,7 @@ public class MailService {
         sendEmail(user.getEmail(), subject, body, null);
     }
 
-    // ---- Zaproszenia (miejsca trzymane, wysyłka ręczna przez admina) ----
+    // ---- Invitations (held seats, sent manually by the admin) ----
 
     @Async("mailExecutor")
     public void sendSlotInvitationNotification(User user, TimeSlot slot, @Nullable String displayTitle) {
@@ -350,7 +350,7 @@ public class MailService {
     private String buildTrainingRequestAdminBody(User user, java.time.LocalDate date, java.time.LocalTime startTime,
                                                  java.time.LocalTime endTime, int participants,
                                                  @Nullable String comment, @Nullable String courseTitle, boolean inWindow) {
-        // comment jest już zescapowany przez TrainingRequest.sanitizeComment — nie escapować drugi raz
+        // comment is already escaped by TrainingRequest.sanitizeComment — do not escape twice
         String commentLine = (comment != null && !comment.isBlank())
             ? "<p><strong>%s</strong> %s</p>".formatted(msg.getForLang("email.admin.comment", ADMIN_LANG), comment)
             : "";
@@ -590,9 +590,9 @@ public class MailService {
     }
 
     /**
-     * Escapuje wartości kontrolowane przez użytkownika (np. imię/nazwisko) przed wstawieniem
-     * do treści HTML maila — zapobiega HTML injection. UWAGA: stosować tylko w treści HTML,
-     * NIE w temacie maila (temat to plain text — encje by się nie zdekodowały, np. &oacute;).
+     * Escapes user-controlled values (e.g. first/last name) before inserting them into the
+     * HTML email body — prevents HTML injection. NOTE: use only in the HTML body,
+     * NOT in the email subject (the subject is plain text — entities would not decode, e.g. &oacute;).
      */
     private static String esc(@Nullable String value) {
         return value == null ? "" : HtmlUtils.htmlEscape(value);

@@ -31,17 +31,17 @@ public class OpenApiConfig {
                 .title("Next Step Pro Climbing API")
                 .version(appVersion)
                 .description("""
-                    System rezerwacji zajęć w szkole wspinaczkowej Next Step Pro Climbing.
+                    Booking system for the Next Step Pro Climbing school.
 
-                    ## Funkcjonalności
-                    - **Kalendarz** - przeglądanie dostępnych terminów
-                    - **Rezerwacje** - zapisywanie się na zajęcia
-                    - **Waitlist** - lista rezerwowa gdy brak miejsc
-                    - **Panel admina** - zarządzanie terminami i wydarzeniami
+                    ## Features
+                    - **Calendar** - browsing available slots
+                    - **Reservations** - signing up for classes
+                    - **Waitlist** - queue when no seats are left
+                    - **Admin panel** - managing slots and events
 
-                    ## Autoryzacja
-                    API używa OAuth2 (Google/Apple) do autoryzacji użytkowników.
-                    Endpointy kalendarza są publiczne, pozostałe wymagają zalogowania.
+                    ## Authentication
+                    The API uses OAuth2 (Google/Apple) for user authentication.
+                    Calendar endpoints are public, the rest require login.
                     """)
                 .contact(new Contact()
                     .name("Next Step Pro Climbing")
@@ -58,12 +58,12 @@ public class OpenApiConfig {
                     .url("http://localhost:8080")
                     .description("Local Development")))
             .tags(List.of(
-                new Tag().name("Calendar").description("Publiczny kalendarz z dostępnymi terminami"),
-                new Tag().name("Reservations").description("Zarządzanie rezerwacjami użytkownika"),
-                new Tag().name("User").description("Profil użytkownika"),
-                new Tag().name("Admin - Slots").description("Zarządzanie terminami (tylko admin)"),
-                new Tag().name("Admin - Events").description("Zarządzanie wydarzeniami (tylko admin)"),
-                new Tag().name("Admin - Users").description("Zarządzanie użytkownikami (tylko admin)")))
+                new Tag().name("Calendar").description("Public calendar with available slots"),
+                new Tag().name("Reservations").description("User reservation management"),
+                new Tag().name("User").description("User profile"),
+                new Tag().name("Admin - Slots").description("Slot management (admin only)"),
+                new Tag().name("Admin - Events").description("Event management (admin only)"),
+                new Tag().name("Admin - Users").description("User management (admin only)")))
             .components(new Components()
                 .addSecuritySchemes("cookieAuth", new SecurityScheme()
                     .type(SecurityScheme.Type.APIKEY)

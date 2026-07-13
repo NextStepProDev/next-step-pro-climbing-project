@@ -3,23 +3,23 @@ import { useQuery } from "@tanstack/react-query";
 import { siteSettingsApi } from "../api/client";
 
 export interface ResolvedCalendarPromo {
-  /** Czy promocja jest aktywna (wybrany szablon). */
+  /** Whether the promo is active (template selected). */
   enabled: boolean;
-  /** Plakietka — opcjonalna (puste = brak plakietki). */
+  /** Badge — optional (empty = no badge). */
   badge: string;
   title: string;
   description: string;
-  /** Etykieta przycisku CTA — opcjonalna. */
+  /** CTA button label — optional. */
   ctaLabel: string;
-  /** Link przycisku CTA — opcjonalny. */
+  /** CTA button link — optional. */
   ctaUrl: string;
 }
 
 /**
- * Treść promocji nad kalendarzem dla aktualnego języka.
- * Fallback krzyżowy między językami (bieżący → EN → PL → ES); gdy pole puste
- * we wszystkich językach — zostaje puste. Tytuł i opis są obowiązkowe (admin
- * nie zapisze szablonu bez nich), więc dla aktywnej promocji zawsze są obecne.
+ * Calendar promo content for the current language.
+ * Cross-language fallback (current → EN → PL → ES); a field empty in all
+ * languages stays empty. Title and description are required (the admin cannot
+ * save a template without them), so an active promo always has both.
  */
 export function useCalendarPromo(): ResolvedCalendarPromo {
   const { i18n } = useTranslation("calendar");

@@ -6,7 +6,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 /**
- * Publiczne DTOs dla filmów
+ * Public DTOs for videos
  */
 public class VideoDtos {
 

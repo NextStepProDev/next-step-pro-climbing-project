@@ -13,10 +13,10 @@ export function getDefaultCourseContentLanguage(uiLanguage: string): CourseConte
 }
 
 /**
- * Wybiera najlepsze dostępne tłumaczenie dla preferowanego języka.
- * Jeśli preferowany język istnieje — zwraca jego wersję. Jeśli nie —
- * fallback w kolejności: preferowany → EN → PL → ES → pierwsze dostępne.
- * Dzięki temu np. przy wyborze ES, gdy są tylko PL i EN, otwiera się EN.
+ * Picks the best available translation for the preferred language.
+ * If the preferred language exists — returns its version. If not —
+ * falls back in order: preferred → EN → PL → ES → first available.
+ * E.g. with ES selected but only PL and EN available, EN opens.
  */
 export function pickBestTranslation<T extends { language: string }>(
   translations: T[] | undefined,

@@ -10,13 +10,13 @@ import java.time.Instant;
 import java.util.UUID;
 
 /**
- * Miejsce trzymane "na zaproszenie" dla konkretnego użytkownika — w pojedynczym slocie
- * albo w wydarzeniu (dokładnie jedno z {@code timeSlot}/{@code event} jest ustawione).
+ * A seat held "by invitation" for a specific user — on a single slot or on an event
+ * (exactly one of {@code timeSlot}/{@code event} is set).
  *
- * <p>Trzymane miejsce liczy się jako zajęte dla wszystkich poza wskazaną osobą. Rekord jest
- * "wisz[ą]cym" zaproszeniem dopóki adresat nie zarezerwuje miejsca — dlatego przy liczeniu
- * dostępności pomijamy zaproszenia osób, które mają już potwierdzoną rezerwację (patrz
- * {@link ReservedSeatRepository}), zamiast usuwać rekord przy rezerwacji.
+ * <p>A held seat counts as taken for everyone except the designated person. The record is
+ * a "pending" invitation until the recipient books the seat — that is why, when counting
+ * availability, we skip invitations of people who already have a confirmed reservation (see
+ * {@link ReservedSeatRepository}) instead of deleting the record on booking.
  */
 @Entity
 @Table(name = "reserved_seats")
@@ -43,7 +43,7 @@ public class ReservedSeat {
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
-    // Kiedy admin ręcznie wysłał mail z zaproszeniem (null = jeszcze nie powiadomiono).
+    // When the admin manually sent the invitation email (null = not notified yet).
     @Column(name = "notified_at")
     @Nullable
     private Instant notifiedAt;

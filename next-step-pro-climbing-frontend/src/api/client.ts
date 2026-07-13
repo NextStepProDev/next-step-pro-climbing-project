@@ -142,7 +142,7 @@ async function fetchApi<T>(
     ...(options?.headers as Record<string, string>),
   }
 
-  // FormData ustawia własny Content-Type z boundary — nie nadpisuj go.
+  // FormData sets its own Content-Type with a boundary — do not override it.
   if (!(options?.body instanceof FormData)) {
     headers['Content-Type'] = headers['Content-Type'] ?? 'application/json'
   }
@@ -384,7 +384,7 @@ export const reservationApi = {
     fetchApi<MyInvitation[]>('/reservations/my/invitations'),
 }
 
-// Training requests (propozycje terminów)
+// Training requests
 export const trainingRequestApi = {
   create: (data: CreateTrainingRequest) =>
     fetchApi<{ id: string; message: string }>('/training-requests', {
@@ -448,7 +448,7 @@ export const adminApi = {
   getEventWaitlist: (eventId: string) =>
     fetchApi<EventWaitlistAdmin>(`/admin/events/${eventId}/waitlist`),
 
-  // Wszystkie aktywne listy rezerwowe (zakładka Rezerwacje)
+  // All active waitlists (Reservations tab)
   getAdminWaitlists: () =>
     fetchApi<AdminWaitlists>('/admin/waitlists'),
 
@@ -479,7 +479,7 @@ export const adminApi = {
       method: 'POST',
     }),
 
-  // Training requests (propozycje terminów)
+  // Training requests
   getTrainingRequests: (params: { status?: 'PENDING'; page?: number; size?: number } = {}) => {
     const query = new URLSearchParams()
     if (params.status) query.set('status', params.status)
@@ -489,7 +489,7 @@ export const adminApi = {
     return fetchApi<AdminTrainingRequestPage>(`/admin/training-requests${qs ? `?${qs}` : ''}`)
   },
 
-  // Powiadomienia panelu admina (badge: Propozycje + nowe rezerwacje)
+  // Admin panel notifications (badges: Requests + new reservations)
   getNotifications: () =>
     fetchApi<AdminNotifications>('/admin/notifications'),
 
@@ -758,7 +758,7 @@ export const adminGalleryApi = {
     }),
 }
 
-// ==================== News (publiczne) ====================
+// ==================== News (public) ====================
 export const newsApi = {
   getAll: (page = 0, size = 12, language?: string, q?: string, starred?: boolean) => {
     const params = new URLSearchParams({ page: String(page), size: String(size) })
@@ -924,7 +924,7 @@ export const adminNewsApi = {
     }),
 }
 
-// ==================== Courses (publiczne) ====================
+// ==================== Courses (public) ====================
 export const coursesApi = {
   getAll: (language?: string) =>
     fetchApi<CourseSummary[]>(`/courses${language ? `?language=${language}` : ''}`),
@@ -1193,7 +1193,7 @@ export const adminSiteApi = {
   deleteHeroImage: () =>
     fetchApi<void>('/admin/settings/hero', { method: 'DELETE' }),
 
-  // --- Hero MOBILE (osobne pionowe zdjęcie dla telefonów) ---
+  // --- Hero MOBILE (separate vertical image for phones) ---
   getHeroMobile: () => fetchApi<HeroImageDto>('/admin/settings/hero-mobile'),
 
   uploadHeroMobileImage: async (file: File, focalPointX?: number, focalPointY?: number): Promise<HeroImageDto> => {

@@ -119,8 +119,8 @@ export function LoginPage() {
           {t('oauth.google')}
         </a>
 
-        {/* Obowiązek informacyjny RODO (art. 13) w momencie pozyskania danych: logowanie Google
-            zakłada konto, więc polityka jest dostępna już tutaj, zanim user kliknie. */}
+        {/* GDPR information duty (art. 13) at the moment data is collected: Google login
+            creates an account, so the policy is available right here before the user clicks. */}
         <p className="mt-3 text-center text-xs text-surface-500 leading-relaxed">
           <Trans
             i18nKey="oauth.privacyNotice"

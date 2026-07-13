@@ -20,7 +20,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/calendar")
-@Tag(name = "Calendar", description = "Publiczny kalendarz z dostępnymi terminami zajęć")
+@Tag(name = "Calendar", description = "Public calendar with available class slots")
 public class CalendarController {
 
     private final CalendarService calendarService;
@@ -30,17 +30,17 @@ public class CalendarController {
     }
 
     @Operation(
-        summary = "Widok miesiąca",
-        description = "Zwraca podsumowanie dostępności terminów dla każdego dnia w miesiącu oraz listę wydarzeń"
+        summary = "Month view",
+        description = "Returns slot availability summary for each day of the month plus the list of events"
     )
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Dane miesiąca",
+        @ApiResponse(responseCode = "200", description = "Month data",
             content = @Content(schema = @Schema(implementation = MonthViewDto.class))),
-        @ApiResponse(responseCode = "400", description = "Nieprawidłowy format daty")
+        @ApiResponse(responseCode = "400", description = "Invalid date format")
     })
     @GetMapping("/month/{yearMonth}")
     public ResponseEntity<MonthViewDto> getMonthView(
-            @Parameter(description = "Miesiąc w formacie yyyy-MM", example = "2026-02")
+            @Parameter(description = "Month in yyyy-MM format", example = "2026-02")
             @PathVariable @DateTimeFormat(pattern = "yyyy-MM") YearMonth yearMonth,
             @Parameter(hidden = true) @CurrentUserId UUID userId) {
 
@@ -49,17 +49,17 @@ public class CalendarController {
     }
 
     @Operation(
-        summary = "Widok tygodnia",
-        description = "Zwraca listę terminów dla każdego dnia w tygodniu zaczynającym się od podanej daty (poniedziałek)"
+        summary = "Week view",
+        description = "Returns the slot list for each day of the week starting from the given date (Monday)"
     )
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Dane tygodnia",
+        @ApiResponse(responseCode = "200", description = "Week data",
             content = @Content(schema = @Schema(implementation = WeekViewDto.class))),
-        @ApiResponse(responseCode = "400", description = "Nieprawidłowy format daty")
+        @ApiResponse(responseCode = "400", description = "Invalid date format")
     })
     @GetMapping("/week/{date}")
     public ResponseEntity<WeekViewDto> getWeekView(
-            @Parameter(description = "Data poniedziałku w formacie yyyy-MM-dd", example = "2026-02-16")
+            @Parameter(description = "Monday date in yyyy-MM-dd format", example = "2026-02-16")
             @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
             @Parameter(hidden = true) @CurrentUserId UUID userId) {
 
@@ -68,17 +68,17 @@ public class CalendarController {
     }
 
     @Operation(
-        summary = "Widok dnia",
-        description = "Zwraca szczegółową listę terminów dla wybranego dnia z informacją o dostępności"
+        summary = "Day view",
+        description = "Returns a detailed slot list for the chosen day with availability info"
     )
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Dane dnia",
+        @ApiResponse(responseCode = "200", description = "Day data",
             content = @Content(schema = @Schema(implementation = DayViewDto.class))),
-        @ApiResponse(responseCode = "400", description = "Nieprawidłowy format daty")
+        @ApiResponse(responseCode = "400", description = "Invalid date format")
     })
     @GetMapping("/day/{date}")
     public ResponseEntity<DayViewDto> getDayView(
-            @Parameter(description = "Data w formacie yyyy-MM-dd", example = "2026-02-07")
+            @Parameter(description = "Date in yyyy-MM-dd format", example = "2026-02-07")
             @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
             @Parameter(hidden = true) @CurrentUserId UUID userId) {
 
@@ -87,17 +87,17 @@ public class CalendarController {
     }
 
     @Operation(
-        summary = "Szczegóły wydarzenia",
-        description = "Zwraca pełne informacje o wydarzeniu: typ, daty, liczba miejsc, status zapisu użytkownika"
+        summary = "Event details",
+        description = "Returns full event information: type, dates, seat count, user registration status"
     )
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Szczegóły wydarzenia",
+        @ApiResponse(responseCode = "200", description = "Event details",
             content = @Content(schema = @Schema(implementation = EventSummaryDto.class))),
-        @ApiResponse(responseCode = "404", description = "Wydarzenie nie istnieje")
+        @ApiResponse(responseCode = "404", description = "Event not found")
     })
     @GetMapping("/event/{eventId}")
     public ResponseEntity<EventSummaryDto> getEventSummary(
-            @Parameter(description = "UUID wydarzenia") @PathVariable UUID eventId,
+            @Parameter(description = "Event UUID") @PathVariable UUID eventId,
             @Parameter(hidden = true) @CurrentUserId UUID userId) {
 
         EventSummaryDto summary = calendarService.getEventSummary(eventId, userId);
@@ -105,17 +105,17 @@ public class CalendarController {
     }
 
     @Operation(
-        summary = "Szczegóły terminu",
-        description = "Zwraca pełne informacje o terminie: godziny, liczba miejsc, status rezerwacji użytkownika"
+        summary = "Slot details",
+        description = "Returns full slot information: times, seat count, user reservation status"
     )
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Szczegóły terminu",
+        @ApiResponse(responseCode = "200", description = "Slot details",
             content = @Content(schema = @Schema(implementation = TimeSlotDetailDto.class))),
-        @ApiResponse(responseCode = "404", description = "Termin nie istnieje")
+        @ApiResponse(responseCode = "404", description = "Slot not found")
     })
     @GetMapping("/slot/{slotId}")
     public ResponseEntity<TimeSlotDetailDto> getSlotDetails(
-            @Parameter(description = "UUID terminu") @PathVariable UUID slotId,
+            @Parameter(description = "Slot UUID") @PathVariable UUID slotId,
             @Parameter(hidden = true) @CurrentUserId UUID userId) {
 
         TimeSlotDetailDto details = calendarService.getSlotDetails(slotId, userId);
@@ -123,24 +123,24 @@ public class CalendarController {
     }
 
     @Operation(
-        summary = "Terminy kursu",
-        description = "Zwraca listę nadchodzących wydarzeń powiązanych z danym kursem"
+        summary = "Course dates",
+        description = "Returns upcoming events linked to the given course"
     )
     @GetMapping("/course/{courseId}/events")
     public ResponseEntity<List<CourseEventDto>> getCourseEvents(
-            @Parameter(description = "UUID kursu") @PathVariable UUID courseId) {
+            @Parameter(description = "Course UUID") @PathVariable UUID courseId) {
 
         List<CourseEventDto> events = calendarService.getCourseEvents(courseId);
         return ResponseEntity.ok(events);
     }
 
     @Operation(
-        summary = "Terminy grupy tłumaczeń kursu",
-        description = "Zwraca nadchodzące wydarzenia dla wszystkich wersji językowych kursu"
+        summary = "Course translation group dates",
+        description = "Returns upcoming events for all language versions of the course"
     )
     @GetMapping("/course-group/{translationGroupId}/events")
     public ResponseEntity<List<CourseEventDto>> getCourseEventsByTranslationGroup(
-            @Parameter(description = "UUID grupy tłumaczeń") @PathVariable UUID translationGroupId) {
+            @Parameter(description = "Translation group UUID") @PathVariable UUID translationGroupId) {
 
         List<CourseEventDto> events = calendarService.getCourseEventsByTranslationGroup(translationGroupId);
         return ResponseEntity.ok(events);

@@ -194,7 +194,7 @@ export function NewsDetailPage() {
 
       <hr className="border-surface-700 mb-8" />
 
-      {/* Bloki treści */}
+      {/* Content blocks */}
       <div className="space-y-6">
         {article.blocks.map((block) => {
           if (block.blockType === 'TEXT') {

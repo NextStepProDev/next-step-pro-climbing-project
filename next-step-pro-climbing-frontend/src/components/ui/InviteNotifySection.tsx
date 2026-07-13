@@ -9,15 +9,15 @@ import type { InvitedUser } from '../../types'
 
 interface InviteNotifySectionProps {
   target: { type: 'slot'; slotId: string } | { type: 'event'; eventId: string }
-  /** Baseline zaproszonych z serwera (z notifiedAt) — NIE lokalny, nieedytowany stan pickera. */
+  /** Invitee baseline from the server (with notifiedAt) — NOT the local, unedited picker state. */
   invites: InvitedUser[]
 }
 
 /**
- * Ręczna wysyłka maili z zaproszeniem do osób z trzymanym miejscem.
- * Pokazuje per-osoba, czy zaproszenie już poszło (notifiedAt), i przycisk
- * wysyłki do tych, którzy jeszcze go nie dostali. Wysyłka jest świadoma —
- * nic nie idzie automatycznie przy zapisie zaproszeń.
+ * Manual sending of invitation emails to people with a held seat.
+ * Shows per person whether the invitation already went out (notifiedAt), plus a button
+ * to send to those who have not received it yet. Sending is deliberate —
+ * nothing goes out automatically when invitations are saved.
  */
 export function InviteNotifySection({ target, invites }: InviteNotifySectionProps) {
   const { t } = useTranslation('admin')

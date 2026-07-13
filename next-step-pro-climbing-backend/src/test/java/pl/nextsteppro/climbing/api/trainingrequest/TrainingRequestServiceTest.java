@@ -193,7 +193,7 @@ class TrainingRequestServiceTest {
 
     @Test
     void shouldPreserveDiacriticsAndEscapeHtmlInComment() {
-        // Given: polskie znaki muszą przetrwać (UTF-8 escape), a HTML ma być unieszkodliwiony
+        // Given: Polish characters must survive (UTF-8 escape) while HTML gets neutralized
         String comment = "Poproszę trening siłowy <script>alert(1)</script>";
 
         // When

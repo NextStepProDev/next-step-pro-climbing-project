@@ -20,7 +20,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/admin/courses")
 @PreAuthorize("hasRole('ADMIN')")
-@Tag(name = "Admin - Courses", description = "Zarządzanie kursami (tylko admin)")
+@Tag(name = "Admin - Courses", description = "Course management (admin only)")
 public class AdminCourseController {
 
     private final AdminCourseService adminCourseService;
@@ -29,23 +29,23 @@ public class AdminCourseController {
         this.adminCourseService = adminCourseService;
     }
 
-    // ==================== Kursy ====================
+    // ==================== Courses ====================
 
-    @Operation(summary = "Pobierz wszystkie kursy (drafty + opublikowane)")
+    @Operation(summary = "Get all courses (drafts + published)")
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Lista kursów"),
-        @ApiResponse(responseCode = "403", description = "Brak uprawnień administratora")
+        @ApiResponse(responseCode = "200", description = "List of courses"),
+        @ApiResponse(responseCode = "403", description = "Admin privileges required")
     })
     @GetMapping
     public ResponseEntity<List<CourseAdminDto>> getAll() {
         return ResponseEntity.ok(adminCourseService.getAllCourses());
     }
 
-    @Operation(summary = "Pobierz szczegóły kursu z blokami")
+    @Operation(summary = "Get course details with blocks")
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Szczegóły kursu"),
-        @ApiResponse(responseCode = "400", description = "Kurs nie znaleziony"),
-        @ApiResponse(responseCode = "403", description = "Brak uprawnień administratora")
+        @ApiResponse(responseCode = "200", description = "Course details"),
+        @ApiResponse(responseCode = "400", description = "Course not found"),
+        @ApiResponse(responseCode = "403", description = "Admin privileges required")
     })
     @GetMapping("/{id}")
     public ResponseEntity<CourseDetailAdminDto> getById(
@@ -53,11 +53,11 @@ public class AdminCourseController {
         return ResponseEntity.ok(adminCourseService.getCourse(id));
     }
 
-    @Operation(summary = "Utwórz nowy kurs (draft)")
+    @Operation(summary = "Create new course (draft)")
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Kurs utworzony"),
-        @ApiResponse(responseCode = "400", description = "Nieprawidłowe dane"),
-        @ApiResponse(responseCode = "403", description = "Brak uprawnień administratora")
+        @ApiResponse(responseCode = "200", description = "Course created"),
+        @ApiResponse(responseCode = "400", description = "Invalid data"),
+        @ApiResponse(responseCode = "403", description = "Admin privileges required")
     })
     @PostMapping
     public ResponseEntity<CourseAdminDto> create(
@@ -65,11 +65,11 @@ public class AdminCourseController {
         return ResponseEntity.ok(adminCourseService.createCourse(request));
     }
 
-    @Operation(summary = "Aktualizuj tytuł i cenę kursu")
+    @Operation(summary = "Update course title and price")
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Metadane zaktualizowane"),
-        @ApiResponse(responseCode = "400", description = "Kurs nie znaleziony lub nieprawidłowe dane"),
-        @ApiResponse(responseCode = "403", description = "Brak uprawnień administratora")
+        @ApiResponse(responseCode = "200", description = "Metadata updated"),
+        @ApiResponse(responseCode = "400", description = "Course not found or invalid data"),
+        @ApiResponse(responseCode = "403", description = "Admin privileges required")
     })
     @PutMapping("/{id}/meta")
     public ResponseEntity<CourseAdminDto> updateMeta(
@@ -78,57 +78,57 @@ public class AdminCourseController {
         return ResponseEntity.ok(adminCourseService.updateCourseMeta(id, request));
     }
 
-    @Operation(summary = "Opublikuj kurs")
+    @Operation(summary = "Publish course")
     @PostMapping("/{id}/publish")
     public ResponseEntity<CourseAdminDto> publish(
             @Parameter(description = "ID kursu") @PathVariable UUID id) {
         return ResponseEntity.ok(adminCourseService.setPublished(id, true));
     }
 
-    @Operation(summary = "Cofnij publikację kursu")
+    @Operation(summary = "Unpublish course")
     @PostMapping("/{id}/unpublish")
     public ResponseEntity<CourseAdminDto> unpublish(
             @Parameter(description = "ID kursu") @PathVariable UUID id) {
         return ResponseEntity.ok(adminCourseService.setPublished(id, false));
     }
 
-    @Operation(summary = "Zmień kolejność kursów")
+    @Operation(summary = "Reorder courses")
     @PutMapping("/reorder")
     public ResponseEntity<Void> reorder(@RequestBody ReorderCoursesRequest request) {
         adminCourseService.reorderCourses(request.orderedIds());
         return ResponseEntity.noContent().build();
     }
 
-    @Operation(summary = "Duplikuj kurs jako tłumaczenie")
+    @Operation(summary = "Duplicate course as translation")
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Kurs zduplikowany jako tłumaczenie"),
-        @ApiResponse(responseCode = "400", description = "Kurs nie znaleziony lub tłumaczenie już istnieje"),
-        @ApiResponse(responseCode = "403", description = "Brak uprawnień administratora")
+        @ApiResponse(responseCode = "200", description = "Course duplicated as translation"),
+        @ApiResponse(responseCode = "400", description = "Course not found or translation already exists"),
+        @ApiResponse(responseCode = "403", description = "Admin privileges required")
     })
     @PostMapping("/{id}/duplicate-translation")
     public ResponseEntity<CourseDetailAdminDto> duplicateAsTranslation(
-            @Parameter(description = "ID kursu źródłowego") @PathVariable UUID id,
+            @Parameter(description = "Source course ID") @PathVariable UUID id,
             @Valid @RequestBody AdminCourseDtos.DuplicateAsTranslationRequest request) {
         return ResponseEntity.ok(adminCourseService.duplicateAsTranslation(id, request.targetLanguage()));
     }
 
-    @Operation(summary = "Synchronizuj bloki medialne (IMAGE) do wszystkich tłumaczeń kursu")
+    @Operation(summary = "Sync media blocks (IMAGE) to all course translations")
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Media zsynchronizowane"),
-        @ApiResponse(responseCode = "400", description = "Kurs nie znaleziony"),
-        @ApiResponse(responseCode = "403", description = "Brak uprawnień administratora")
+        @ApiResponse(responseCode = "200", description = "Media synchronized"),
+        @ApiResponse(responseCode = "400", description = "Course not found"),
+        @ApiResponse(responseCode = "403", description = "Admin privileges required")
     })
     @PostMapping("/{id}/sync-media-to-translations")
     public ResponseEntity<AdminCourseDtos.SyncMediaResultDto> syncMediaToTranslations(
-            @Parameter(description = "ID kursu źródłowego") @PathVariable UUID id) {
+            @Parameter(description = "Source course ID") @PathVariable UUID id) {
         return ResponseEntity.ok(adminCourseService.syncMediaToTranslations(id));
     }
 
-    @Operation(summary = "Usuń kurs wraz z plikami")
+    @Operation(summary = "Delete course along with its files")
     @ApiResponses({
-        @ApiResponse(responseCode = "204", description = "Kurs usunięty"),
-        @ApiResponse(responseCode = "400", description = "Kurs nie znaleziony"),
-        @ApiResponse(responseCode = "403", description = "Brak uprawnień administratora")
+        @ApiResponse(responseCode = "204", description = "Course deleted"),
+        @ApiResponse(responseCode = "400", description = "Course not found"),
+        @ApiResponse(responseCode = "403", description = "Admin privileges required")
     })
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(
@@ -137,9 +137,9 @@ public class AdminCourseController {
         return ResponseEntity.noContent().build();
     }
 
-    // ==================== Miniaturka ====================
+    // ==================== Thumbnail ====================
 
-    @Operation(summary = "Prześlij miniaturkę kursu")
+    @Operation(summary = "Upload course thumbnail")
     @PostMapping("/{id}/thumbnail")
     public ResponseEntity<CourseDetailAdminDto> uploadThumbnail(
             @Parameter(description = "ID kursu") @PathVariable UUID id,
@@ -147,7 +147,7 @@ public class AdminCourseController {
         return ResponseEntity.ok(adminCourseService.uploadThumbnail(id, file));
     }
 
-    @Operation(summary = "Ustaw miniaturkę kursu z biblioteki mediów (URL)")
+    @Operation(summary = "Set course thumbnail from the media library (URL)")
     @PutMapping("/{id}/thumbnail-url")
     public ResponseEntity<Void> setThumbnailUrl(
             @Parameter(description = "ID kursu") @PathVariable UUID id,
@@ -156,7 +156,7 @@ public class AdminCourseController {
         return ResponseEntity.noContent().build();
     }
 
-    @Operation(summary = "Usuń miniaturkę kursu")
+    @Operation(summary = "Delete course thumbnail")
     @DeleteMapping("/{id}/thumbnail")
     public ResponseEntity<Void> deleteThumbnail(
             @Parameter(description = "ID kursu") @PathVariable UUID id) throws IOException {
@@ -164,7 +164,7 @@ public class AdminCourseController {
         return ResponseEntity.noContent().build();
     }
 
-    @Operation(summary = "Ustaw focal point miniaturki kursu")
+    @Operation(summary = "Set course thumbnail focal point")
     @PutMapping("/{id}/thumbnail-focal-point")
     public ResponseEntity<Void> updateThumbnailFocalPoint(
             @Parameter(description = "ID kursu") @PathVariable UUID id,
@@ -173,9 +173,9 @@ public class AdminCourseController {
         return ResponseEntity.noContent().build();
     }
 
-    // ==================== Bloki treści ====================
+    // ==================== Content blocks ====================
 
-    @Operation(summary = "Dodaj blok tekstowy")
+    @Operation(summary = "Add text block")
     @PostMapping("/{id}/blocks/text")
     public ResponseEntity<ContentBlockAdminDto> addTextBlock(
             @Parameter(description = "ID kursu") @PathVariable UUID id,
@@ -183,7 +183,7 @@ public class AdminCourseController {
         return ResponseEntity.ok(adminCourseService.addTextBlock(id, request));
     }
 
-    @Operation(summary = "Dodaj blok obrazkowy")
+    @Operation(summary = "Add image block")
     @PostMapping("/{id}/blocks/image")
     public ResponseEntity<UploadBlockImageResponse> addImageBlock(
             @Parameter(description = "ID kursu") @PathVariable UUID id,
@@ -192,7 +192,7 @@ public class AdminCourseController {
         return ResponseEntity.ok(adminCourseService.addImageBlock(id, file, caption));
     }
 
-    @Operation(summary = "Dodaj blok obrazkowy z biblioteki mediów (URL)")
+    @Operation(summary = "Add image block from the media library (URL)")
     @PostMapping("/{id}/blocks/image-from-url")
     public ResponseEntity<ContentBlockAdminDto> addImageBlockFromUrl(
             @Parameter(description = "ID kursu") @PathVariable UUID id,
@@ -200,7 +200,7 @@ public class AdminCourseController {
         return ResponseEntity.ok(adminCourseService.addImageBlockFromUrl(id, request));
     }
 
-    @Operation(summary = "Edytuj treść bloku tekstowego")
+    @Operation(summary = "Edit text block content")
     @PutMapping("/blocks/{blockId}/text")
     public ResponseEntity<Void> updateTextBlock(
             @Parameter(description = "ID bloku") @PathVariable UUID blockId,
@@ -209,7 +209,7 @@ public class AdminCourseController {
         return ResponseEntity.noContent().build();
     }
 
-    @Operation(summary = "Edytuj caption bloku obrazkowego")
+    @Operation(summary = "Edit image block caption")
     @PutMapping("/blocks/{blockId}/image")
     public ResponseEntity<Void> updateImageBlock(
             @Parameter(description = "ID bloku") @PathVariable UUID blockId,
@@ -218,7 +218,7 @@ public class AdminCourseController {
         return ResponseEntity.noContent().build();
     }
 
-    @Operation(summary = "Przesuń blok w górę lub dół")
+    @Operation(summary = "Move block up or down")
     @PostMapping("/blocks/{blockId}/move")
     public ResponseEntity<Void> moveBlock(
             @Parameter(description = "ID bloku") @PathVariable UUID blockId,
@@ -227,7 +227,7 @@ public class AdminCourseController {
         return ResponseEntity.noContent().build();
     }
 
-    @Operation(summary = "Usuń blok treści")
+    @Operation(summary = "Delete content block")
     @DeleteMapping("/blocks/{blockId}")
     public ResponseEntity<Void> deleteBlock(
             @Parameter(description = "ID bloku") @PathVariable UUID blockId) {

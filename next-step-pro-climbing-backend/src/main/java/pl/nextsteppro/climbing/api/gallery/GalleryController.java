@@ -16,7 +16,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/gallery")
-@Tag(name = "Gallery", description = "Publiczny dostęp do galerii zdjęć")
+@Tag(name = "Gallery", description = "Public access to the photo gallery")
 public class GalleryController {
 
     private final GalleryService galleryService;
@@ -26,11 +26,11 @@ public class GalleryController {
     }
 
     @Operation(
-        summary = "Pobierz listę albumów",
-        description = "Zwraca listę wszystkich albumów z miniaturkami i liczbą zdjęć"
+        summary = "Get album list",
+        description = "Returns all albums with thumbnails and photo counts"
     )
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Lista albumów",
+        @ApiResponse(responseCode = "200", description = "List of albums",
             content = @Content(schema = @Schema(implementation = AlbumSummaryDto.class)))
     })
     @GetMapping("/albums")
@@ -40,13 +40,13 @@ public class GalleryController {
     }
 
     @Operation(
-        summary = "Pobierz szczegóły albumu",
-        description = "Zwraca szczegółowe informacje o albumie wraz ze wszystkimi zdjęciami"
+        summary = "Get album details",
+        description = "Returns detailed album information along with all its photos"
     )
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Szczegóły albumu",
+        @ApiResponse(responseCode = "200", description = "Album details",
             content = @Content(schema = @Schema(implementation = AlbumDetailDto.class))),
-        @ApiResponse(responseCode = "404", description = "Album nie znaleziony")
+        @ApiResponse(responseCode = "404", description = "Album not found")
     })
     @GetMapping("/albums/{id}")
     public ResponseEntity<AlbumDetailDto> getAlbum(

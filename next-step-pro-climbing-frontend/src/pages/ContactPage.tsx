@@ -101,7 +101,7 @@ export function ContactPage() {
                 iconColor="text-red-400"
               />
 
-              {/* Instagram — gdy będzie URL */}
+              {/* Instagram — once there is a URL */}
               {CONTACT.instagram && (
                 <SocialLink
                   href={CONTACT.instagram}
@@ -145,7 +145,7 @@ export function ContactPage() {
   )
 }
 
-// ==================== Sub-komponenty ====================
+// ==================== Sub-components ====================
 
 function ContactRow({
   icon,

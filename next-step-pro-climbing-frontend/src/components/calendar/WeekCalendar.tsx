@@ -447,14 +447,14 @@ export function WeekCalendar({
                     const dragging = isBeingDragged(slot.id)
                     const isCut = cutSlotId === slot.id
                     const isCopied = copiedSlotId === slot.id
-                    // Status PAST przychodzi od godziny STARTU — dla admina slot jest „zakończony"
-                    // dopiero po godzinie końca, żeby trwający slot dało się jeszcze przesunąć/edytować.
+                    // PAST status arrives from the START time — for the admin a slot is "finished"
+                    // only after its end time, so an ongoing slot can still be moved/edited.
                     const hasEnded = slot.status === 'PAST' && new Date(`${day.date}T${slot.endTime}`) < new Date()
                     const isDraggable = isAdmin && !hasEnded
                     const isPending = pendingSlotId === slot.id
                     const isLongPressing = longPressSlotId === slot.id
-                    // „Na zaproszenie" (fioletowy) tylko dla niezalogowanych — zalogowany nie-zaproszony
-                    // widzi zwykłe „pełne". Zaproszony i tak ma status AVAILABLE.
+                    // "By invitation" (purple) only for anonymous users — a logged-in non-invitee
+                    // sees a plain "full". An invitee gets AVAILABLE status anyway.
                     const invitedOnly = !isAuthenticated && slot.status === 'FULL' && slot.reservedSeats > 0 && !slot.isReservedForUser && !slot.isUserRegistered
 
                     return (

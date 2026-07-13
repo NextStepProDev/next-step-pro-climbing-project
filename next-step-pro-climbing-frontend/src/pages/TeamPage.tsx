@@ -205,11 +205,11 @@ export function TeamPage({ memberType }: { memberType: InstructorType }) {
   const basePath = memberType === 'INSTRUCTOR' ? '/team/instruktorzy' : '/team/zawodnicy'
   const [searchParams, setSearchParams] = useSearchParams()
 
-  // Język treści żyje w URL (?lang=...), więc PRZETRWUJE remount strony, który
-  // Layout wymusza przy każdej zmianie ścieżki (`key={location.pathname}`).
-  // Wcześniej był to lokalny useState — otwarcie członka (zmiana ścieżki) montowało
-  // stronę od nowa i resetowało wybór języka do globalnego, więc modal próbował
-  // pokazać rekord w złym języku (id jest zależne od języka) i nic się nie wyświetlało.
+  // The content language lives in the URL (?lang=...), so it SURVIVES the page remount
+  // that Layout forces on every path change (`key={location.pathname}`).
+  // It used to be local useState — opening a member (path change) remounted the page
+  // and reset the language choice to the global one, so the modal tried to show a record
+  // in the wrong language (the id is language-specific) and nothing was displayed.
   const langParam = searchParams.get('lang')
   const contentLanguage =
     langParam === 'pl' || langParam === 'en' || langParam === 'es'
@@ -226,11 +226,11 @@ export function TeamPage({ memberType }: { memberType: InstructorType }) {
       { replace: true }
     )
 
-  // Trasy zachowują wybrany język w query, żeby przetrwał remount/nawigację.
+  // Routes keep the chosen language in the query so it survives remounts/navigation.
   const memberUrl = (id: string) => `${basePath}/${id}?lang=${contentLanguage}`
   const listUrl = `${basePath}?lang=${contentLanguage}`
 
-  // Globalny przełącznik języka aktualizuje też treść zespołu.
+  // The global language switcher also updates the team content.
   useEffect(() => {
     const handler = (lng: string) => {
       const code = getDefaultCourseContentLanguage(lng)
@@ -256,9 +256,10 @@ export function TeamPage({ memberType }: { memberType: InstructorType }) {
     ? (allMembers.find(m => m.id === memberId) ?? null)
     : null
 
-  // Zmiana języka treści przy OTWARTYM członku (np. globalnym przełącznikiem)
-  // przełącza go na ten język. Każda wersja językowa to osobny rekord z innym id,
-  // więc mapujemy po translationGroupId na odpowiednik w nowym języku (jak Courses/News).
+  // Changing the content language with a member OPEN (e.g. via the global switcher)
+  // switches them to that language. Each language version is a separate record with a
+  // different id, so we map via translationGroupId to the counterpart in the new language
+  // (like Courses/News).
   const lastOpenedRef = useRef<InstructorPublic | null>(null)
   useEffect(() => {
     if (selected) lastOpenedRef.current = selected
@@ -267,15 +268,15 @@ export function TeamPage({ memberType }: { memberType: InstructorType }) {
   const prevLangRef = useRef(contentLanguage)
   useEffect(() => {
     if (prevLangRef.current === contentLanguage) return
-    if (!allMembers) return // poczekaj na listę w nowym języku przed synchronizacją
+    if (!allMembers) return // wait for the list in the new language before syncing
     prevLangRef.current = contentLanguage
-    if (!memberId) return // brak otwartego modala — nic do synchronizacji
+    if (!memberId) return // no open modal — nothing to sync
     const prev = lastOpenedRef.current
     const target = prev
       ? allMembers.find(m => m.translationGroupId === prev.translationGroupId)
       : undefined
     navigate(target ? memberUrl(target.id) : listUrl, { replace: true })
-    // memberUrl/listUrl zależą tylko od basePath+contentLanguage (już w deps)
+    // memberUrl/listUrl depend only on basePath+contentLanguage (already in deps)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [contentLanguage, allMembers, memberId, basePath, navigate])
 

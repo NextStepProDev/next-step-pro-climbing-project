@@ -141,7 +141,7 @@ class WaitlistServiceTest {
         when(userRepository.findById(userId)).thenReturn(Optional.of(buildUser(userId)));
         when(reservationRepository.existsByUserIdAndTimeSlotIdAndStatus(userId, slotId, ReservationStatus.CONFIRMED)).thenReturn(false);
         when(waitlistRepository.existsByUserAndSlotAndStatuses(eq(userId), eq(slotId), any())).thenReturn(false);
-        when(reservationRepository.countConfirmedByTimeSlotId(slotId)).thenReturn(3); // 3/5 — są miejsca
+        when(reservationRepository.countConfirmedByTimeSlotId(slotId)).thenReturn(3); // 3/5 — seats available
         when(waitlistRepository.countPendingConfirmationBySlotId(slotId)).thenReturn(0);
         lenient().when(msg.get("waitlist.slot.has.spots")).thenReturn("Slot has spots");
 
@@ -152,8 +152,8 @@ class WaitlistServiceTest {
 
     @Test
     void joinWaitlist_shouldJoinQueueWhenFullOnlyByReservedSeats() {
-        // Given — 3/5 potwierdzonych, ale 2 pozostałe miejsca trzymane na zaproszenie innych osób.
-        // Dla tego (niezaproszonego) widza slot jest efektywnie pełny → kolejka powinna być dostępna.
+        // Given — 3/5 confirmed, but the 2 remaining seats are invitation-held for other people.
+        // For this (uninvited) viewer the slot is effectively full → the queue should be available.
         UUID slotId = UUID.randomUUID();
         UUID userId = UUID.randomUUID();
         TimeSlot slot = buildFutureSlot(slotId); // maxParticipants = 5
@@ -179,8 +179,8 @@ class WaitlistServiceTest {
 
     @Test
     void joinWaitlist_shouldFailWhenReservedSeatsLeaveARealSpot() {
-        // Given — 3/5 potwierdzonych, 1 trzymane na zaproszenie → wciąż 1 realnie wolne miejsce.
-        // Nie wolno zapisać do kolejki, gdy jest jeszcze miejsce do normalnej rezerwacji.
+        // Given — 3/5 confirmed, 1 invitation-held → still 1 genuinely free seat.
+        // Joining the queue must be rejected while a normal booking is still possible.
         UUID slotId = UUID.randomUUID();
         UUID userId = UUID.randomUUID();
         TimeSlot slot = buildFutureSlot(slotId); // maxParticipants = 5
@@ -300,8 +300,8 @@ class WaitlistServiceTest {
 
     @Test
     void confirmOffer_shouldFailWhenReservedSeatsFillRemainingSpots() {
-        // Given — 4/5 potwierdzonych + 1 miejsce trzymane na zaproszenie innej osoby = pełne.
-        // Potwierdzenie oferty z kolejki nie może wejść ponad limit (chroni cudze zaproszenie).
+        // Given — 4/5 confirmed + 1 seat invitation-held for someone else = full.
+        // Confirming a queue offer must not go over the limit (protects the other person's invitation).
         UUID waitlistId = UUID.randomUUID();
         UUID userId = UUID.randomUUID();
         User user = buildUser(userId);
@@ -316,7 +316,7 @@ class WaitlistServiceTest {
 
         // When / Then
         assertThrows(IllegalStateException.class, () -> waitlistService.confirmOffer(waitlistId, userId));
-        assertEquals(WaitlistStatus.WAITING, entry.getStatus()); // wrócił do kolejki
+        assertEquals(WaitlistStatus.WAITING, entry.getStatus()); // back in the queue
         verify(reservationRepository, never()).save(any(Reservation.class));
     }
 
