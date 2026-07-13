@@ -78,7 +78,7 @@ public class WaitlistService {
         if (slot.isBlocked()) {
             throw new IllegalStateException("This time slot is blocked");
         }
-        // Okno dostępności nie podlega samoobsłudze — nie można też zapisać się na jego kolejkę.
+        // An availability window is not self-serviceable — you cannot join its queue either.
         if (slot.isAvailabilityWindow()) {
             throw new IllegalStateException(msg.get("reservation.slot.availability.window"));
         }
@@ -96,10 +96,11 @@ public class WaitlistService {
             throw new IllegalStateException(msg.get("waitlist.already.waiting"));
         }
 
-        // Slot musi być efektywnie pełny (uwzględniamy PENDING_CONFIRMATION jako zajęte).
-        // Miejsca trzymane na zaproszenie dla INNYCH osób również zajmują dostępność — bez tego
-        // slot pełny tylko przez wiszące zaproszenie wyglądałby jak mający wolne miejsce i kolejka
-        // byłaby odrzucana (własne zaproszenie nie blokuje, więc odejmujemy tylko cudze).
+        // The slot must be effectively full (PENDING_CONFIRMATION counts as taken).
+        // Seats held by invitation for OTHER people also consume availability — without this,
+        // a slot full only due to a pending invitation would look like it has a free seat and
+        // the queue join would be rejected (one's own invitation does not block, so we subtract
+        // only other people's).
         int confirmedCount = reservationRepository.countConfirmedByTimeSlotId(slotId)
             + guestReservationRepository.sumParticipantsByTimeSlotId(slotId);
         int pendingCount = waitlistRepository.countPendingConfirmationBySlotId(slotId);
@@ -127,9 +128,9 @@ public class WaitlistService {
         log.info("User {} left waitlist for slot {}", userId, slotId);
     }
 
-    // Usuwa WSZYSTKIE aktywne wpisy waitlisty użytkownika (przy usuwaniu konta).
-    // Jeśli użytkownik miał aktywną ofertę (PENDING_CONFIRMATION), zwolnione miejsce
-    // jest re-oferowane pozostałym oczekującym — ta sama logika co przy leaveWaitlist.
+    // Removes ALL of the user's active waitlist entries (on account deletion).
+    // If the user had an active offer (PENDING_CONFIRMATION), the freed seat is
+    // re-offered to the remaining waiters — same logic as leaveWaitlist.
     public void removeUserFromAllWaitlists(UUID userId) {
         List<Waitlist> entries = waitlistRepository.findActiveByUserId(userId);
         for (Waitlist entry : entries) {
@@ -146,8 +147,8 @@ public class WaitlistService {
         waitlistRepository.delete(entry);
         waitlistRepository.flush();
 
-        // Jeśli odchodzi osoba z PENDING — sprawdź czy slot nadal efektywnie pełny
-        // (mogła być ostatnią osobą "ścigającą się" po zwolnionym miejscu)
+        // If someone with PENDING leaves — check whether the slot is still effectively full
+        // (they may have been the last person "racing" for the freed seat)
         if (wasPending) {
             TimeSlot slot = timeSlotRepository.findById(slotId).orElse(null);
             if (slot != null) {
@@ -156,7 +157,7 @@ public class WaitlistService {
                 int pending = waitlistRepository.countPendingConfirmationBySlotId(slotId);
                 int reserved = reservedSeatRepository.countPendingBySlotId(slotId);
                 if (confirmed + pending + reserved < slot.getMaxParticipants()) {
-                    // Miejsce jest wolne (i nie trzymane na zaproszenie) — powiadamiamy oczekujących
+                    // The seat is free (and not held by invitation) — notify the waiters
                     notifyAll(slotId);
                 }
             }
@@ -184,18 +185,18 @@ public class WaitlistService {
 
         UUID slotId = entry.getTimeSlot().getId();
 
-        // Pesymistyczny lock na slot — zapobiega race condition przy równoczesnych potwierdzeniach
+        // Pessimistic lock on the slot — prevents race conditions on concurrent confirmations
         TimeSlot slot = timeSlotRepository.findByIdForUpdate(slotId)
             .orElseThrow(() -> new IllegalArgumentException("Time slot not found"));
 
         int confirmedCount = reservationRepository.countConfirmedByTimeSlotId(slotId)
             + guestReservationRepository.sumParticipantsByTimeSlotId(slotId);
-        // Trzymane miejsca innych zaproszonych osób nadal blokują — inaczej dwie osoby z kolejki
-        // ofertowane naraz (np. gdy admin usunął jedno z kilku zaproszeń) mogłyby potwierdzić ponad
-        // limit. Własne zaproszenie potwierdzającego nie blokuje (może zająć swoje trzymane miejsce).
+        // Seats held for other invitees still block — otherwise two queued people offered at
+        // once (e.g. when the admin removed one of several invitations) could confirm past the
+        // limit. The confirmer's own invitation does not block (they may take their held seat).
         int reservedForOthers = reservedSeatRepository.countPendingBySlotIdExcludingUser(slotId, userId);
         if (confirmedCount + reservedForOthers >= slot.getMaxParticipants()) {
-            // Ktoś inny był szybszy — resetujemy tego użytkownika do WAITING
+            // Someone else was faster — reset this user back to WAITING
             entry.returnToWaiting();
             waitlistRepository.save(entry);
             throw new IllegalStateException(msg.get("waitlist.race.lost"));
@@ -216,7 +217,7 @@ public class WaitlistService {
 
         waitlistRepository.delete(entry);
 
-        // Pozostałe PENDING osoby wracają do kolejki (wyścig zakończony dla tego miejsca)
+        // Remaining PENDING people go back to the queue (the race for this seat is over)
         List<Waitlist> otherPending = waitlistRepository.findBySlotIdAndStatusWithUser(slotId, WaitlistStatus.PENDING_CONFIRMATION);
         for (Waitlist other : otherPending) {
             other.returnToWaiting();
@@ -232,7 +233,7 @@ public class WaitlistService {
         return new ReservationResultDto(reservation.getId(), true, msg.get("reservation.confirmed"));
     }
 
-    // Wywoływane po zwolnieniu miejsca — powiadamia WSZYSTKICH oczekujących jednocześnie
+    // Called after a seat is freed — notifies ALL waiters at once
     public void notifyAll(UUID slotId) {
         log.info("WaitlistService.notifyAll called for slot {}", slotId);
         List<Waitlist> waiting = waitlistRepository.findWaitingBySlotIdOrdered(slotId);
@@ -268,13 +269,13 @@ public class WaitlistService {
         log.info("Notified {} waitlist users for slot {}, deadline: {}", waiting.size(), slotId, deadline);
     }
 
-    // Wywoływane przez scheduler co 5 minut — expiruje przeterminowane oferty i re-powiadamia jeśli miejsce nadal wolne
+    // Called by the scheduler every 5 minutes — expires overdue offers and re-notifies if the seat is still free
     public void expireAndNotify() {
         List<Waitlist> expired = waitlistRepository.findExpiredPendingConfirmations(Instant.now());
         if (expired.isEmpty()) return;
 
-        // Deadline minął i nikt nie potwierdził — wracamy do WAITING bez kolejnego powiadomienia.
-        // Następny notifyAll zostanie wywołany dopiero gdy ktoś anuluje rezerwację.
+        // The deadline passed and nobody confirmed — back to WAITING without another notification.
+        // The next notifyAll fires only when someone cancels a reservation.
         for (Waitlist entry : expired) {
             entry.returnToWaiting();
         }

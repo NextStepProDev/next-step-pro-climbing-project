@@ -14,7 +14,7 @@ interface CreateSlotModalProps {
   onClose: () => void
   defaultDate: string
   onSuccess?: () => void
-  /** Prefill z propozycji terminu: godziny, miejsca, zaproszony proponujący + link do propozycji. */
+  /** Prefill from a training request: times, seats, the requester invited + a link to the request. */
   initial?: {
     startTime?: string
     endTime?: string

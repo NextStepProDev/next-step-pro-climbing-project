@@ -24,7 +24,7 @@ record DaySummaryDto(
     int availableSlots,
     boolean hasUserReservation,
     boolean hasAvailabilityWindow,
-    // dzień bez wolnych miejsc dla publiki, ale z miejscami trzymanymi „na zaproszenie"
+    // day with no seats free for the public, but with invitation-held seats
     boolean hasReservedSeats
 ) implements CalendarDtos {}
 
@@ -44,7 +44,7 @@ record TimeSlotDto(
     boolean isUserRegistered,
     @Nullable String eventTitle,
     boolean isAvailabilityWindow,
-    // Miejsca trzymane "na zaproszenie": liczba wiszących zaproszeń + czy bieżący widz jest jednym z zaproszonych
+    // Invitation-held seats: number of pending invitations + whether the current viewer is one of the invitees
     int reservedSeats,
     boolean isReservedForUser
 ) implements CalendarDtos {}
@@ -100,14 +100,14 @@ record EventSummaryDto(
     boolean enrollmentOpen,
     @Nullable UUID courseId,
     boolean coursePublished,
-    // Waitlist — null w widokach listy, wypełnione w getEventSummary (pojedyncze wydarzenie)
+    // Waitlist — null in list views, populated in getEventSummary (single event)
     @Nullable WaitlistStatus userWaitlistStatus,
     @Nullable UUID waitlistEntryId,
     @Nullable Instant confirmationDeadline,
     int userWaitlistPosition,
-    // 0 w widokach listy, wypełnione w getEventSummary gdy użytkownik jest zapisany
+    // 0 in list views, populated in getEventSummary when the user is registered
     int userParticipants,
-    // Miejsca trzymane "na zaproszenie": liczba wiszących zaproszeń + czy bieżący widz jest zaproszony
+    // Invitation-held seats: number of pending invitations + whether the current viewer is invited
     int reservedSeats,
     boolean isReservedForUser
 ) implements CalendarDtos {}

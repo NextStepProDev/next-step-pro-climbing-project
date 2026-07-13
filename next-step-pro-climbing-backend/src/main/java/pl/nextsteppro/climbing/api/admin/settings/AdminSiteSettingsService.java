@@ -101,7 +101,7 @@ public class AdminSiteSettingsService {
         deleteHero(KEY_IMAGE_URL, KEY_IMAGE_FILENAME, KEY_FOCAL_POINT_X, KEY_FOCAL_POINT_Y);
     }
 
-    // === Hero MOBILE — osobne zdjęcie pionowe dla telefonów (te same operacje, własne klucze) ===
+    // === Hero MOBILE — separate vertical image for phones (same operations, own keys) ===
 
     @Cacheable(value = "siteSettings", key = "'heroMobile'")
     @Transactional(readOnly = true)
@@ -138,7 +138,7 @@ public class AdminSiteSettingsService {
         deleteHero(KEY_MOBILE_IMAGE_URL, KEY_MOBILE_IMAGE_FILENAME, KEY_MOBILE_FOCAL_POINT_X, KEY_MOBILE_FOCAL_POINT_Y);
     }
 
-    // === Wspólna logika hero (desktop + mobile), sparametryzowana kluczami ===
+    // === Shared hero logic (desktop + mobile), parameterized by keys ===
 
     private HeroImageDto uploadHero(MultipartFile file, @Nullable Float focalPointX, @Nullable Float focalPointY,
                                     String urlKey, String filenameKey, String focalXKey, String focalYKey) throws IOException {
@@ -248,12 +248,12 @@ public class AdminSiteSettingsService {
         return templates;
     }
 
-    // === Sekcja "Gdzie teraz szkolę" — aktywny szablon (referencja po ID) ===
+    // === "Where I teach now" section — active template (referenced by ID) ===
 
     @Cacheable(value = "siteSettings", key = "'homeLocation'")
     @Transactional(readOnly = true)
     public LocationSectionDto getLocationSection() {
-        // Sekcja pokazuje się TYLKO gdy wybrany jest istniejący szablon; inaczej enabled=false (brak sekcji).
+        // The section shows ONLY when an existing template is selected; otherwise enabled=false (no section).
         String activeId = getActiveState().activePresetId();
         if (activeId == null) return new LocationSectionDto(false, Map.of());
         return getLocationPresets().stream()
@@ -276,14 +276,14 @@ public class AdminSiteSettingsService {
         return state;
     }
 
-    // === Szablony sekcji (CRUD) ===
+    // === Section templates (CRUD) ===
 
     @Transactional(readOnly = true)
     public List<LocationPresetDto> getLocationPresets() {
         return readJson(KEY_LOCATION_PRESETS, new TypeReference<List<LocationPresetDto>>() {}, List.of());
     }
 
-    // Zapis szablonu może zmienić treść na żywo (gdy edytujemy szablon będący na stronie) → evict cache.
+    // Saving a template can change live content (when editing the template that is on the page) → evict cache.
     @CacheEvict(value = "siteSettings", allEntries = true)
     public LocationPresetDto saveLocationPreset(LocationPresetDto preset) {
         List<LocationPresetDto> presets = new ArrayList<>(getLocationPresets());
@@ -309,7 +309,7 @@ public class AdminSiteSettingsService {
         List<LocationPresetDto> presets = new ArrayList<>(getLocationPresets());
         presets.removeIf(p -> id.equals(p.id()));
         persistPresets(presets);
-        // Jeśli usunięty szablon był na stronie — zdejmij go (sekcja zniknie).
+        // If the deleted template was live on the page — take it down (the section disappears).
         if (id.equals(getActiveState().activePresetId())) {
             writeJson(KEY_LOCATION_ACTIVE, new LocationActiveStateDto(null));
         }
@@ -319,12 +319,12 @@ public class AdminSiteSettingsService {
         writeJson(KEY_LOCATION_PRESETS, presets);
     }
 
-    // === Promocja nad kalendarzem — aktywny szablon (referencja po ID) ===
+    // === Calendar promo — active template (referenced by ID) ===
 
     @Cacheable(value = "siteSettings", key = "'calendarPromo'")
     @Transactional(readOnly = true)
     public CalendarPromoSectionDto getCalendarPromoSection() {
-        // Promocja pokazuje się TYLKO gdy wybrany jest istniejący szablon; inaczej enabled=false.
+        // The promo shows ONLY when an existing template is selected; otherwise enabled=false.
         String activeId = getCalendarPromoActiveState().activePresetId();
         if (activeId == null) return new CalendarPromoSectionDto(false, Map.of());
         return getCalendarPromoPresets().stream()
@@ -377,7 +377,7 @@ public class AdminSiteSettingsService {
         List<CalendarPromoPresetDto> presets = new ArrayList<>(getCalendarPromoPresets());
         presets.removeIf(p -> id.equals(p.id()));
         writeJson(KEY_CALENDAR_PROMO_PRESETS, presets);
-        // Jeśli usunięty szablon był na stronie — zdejmij go (promocja zniknie).
+        // If the deleted template was live on the page — take it down (the promo disappears).
         if (id.equals(getCalendarPromoActiveState().activePresetId())) {
             writeJson(KEY_CALENDAR_PROMO_ACTIVE, new LocationActiveStateDto(null));
         }
@@ -390,7 +390,7 @@ public class AdminSiteSettingsService {
         return -1;
     }
 
-    // Wspólne odczyt/zapis ustawień przechowywanych jako JSON w site_settings.
+    // Shared read/write of settings stored as JSON in site_settings.
     private <T> T readJson(String key, TypeReference<T> typeRef, T defaultValue) {
         String json = siteSettingsRepository.findById(key)
                 .map(SiteSetting::getValue)

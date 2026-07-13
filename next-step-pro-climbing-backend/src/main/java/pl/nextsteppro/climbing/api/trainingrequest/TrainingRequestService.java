@@ -23,7 +23,7 @@ import java.util.UUID;
 @Transactional
 public class TrainingRequestService {
 
-    /** Limit anty-spamowy: tyle propozycji użytkownika może naraz czekać na reakcję. */
+    /** Anti-spam limit: this many of a user's requests may await a response at once. */
     static final int MAX_PENDING_PER_USER = 3;
 
     private final TrainingRequestRepository trainingRequestRepository;
@@ -106,7 +106,7 @@ public class TrainingRequestService {
             .toList();
     }
 
-    /** Użytkownik może wycofać własną propozycję, dopóki admin na nią nie zareagował. */
+    /** The user may withdraw their own request as long as the admin has not responded to it. */
     public void cancel(UUID requestId, UUID userId) {
         TrainingRequest tr = trainingRequestRepository.findById(requestId)
             .orElseThrow(() -> new IllegalArgumentException(msg.get("training.request.not.found")));
@@ -141,7 +141,7 @@ public class TrainingRequestService {
         );
     }
 
-    /** Notatka admina jest widoczna dla użytkownika tylko przy CONTACTED/REJECTED (kontekst decyzji). */
+    /** The admin's note is visible to the user only for CONTACTED/REJECTED (decision context). */
     @Nullable
     private static String visibleAdminNote(TrainingRequest tr) {
         return switch (tr.getStatus()) {

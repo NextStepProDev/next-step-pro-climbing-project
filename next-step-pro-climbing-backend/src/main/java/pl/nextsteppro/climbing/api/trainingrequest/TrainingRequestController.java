@@ -18,7 +18,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/training-requests")
-@Tag(name = "Training Requests", description = "Propozycje terminów treningów składane przez użytkowników")
+@Tag(name = "Training Requests", description = "Training time requests submitted by users")
 public class TrainingRequestController {
 
     private final TrainingRequestService trainingRequestService;
@@ -28,15 +28,15 @@ public class TrainingRequestController {
     }
 
     @Operation(
-        summary = "Zaproponuj termin treningu",
-        description = "Składa propozycję terminu (opcjonalnie w oknie dostępności lub dla kursu). Wymaga zalogowania."
+        summary = "Propose a training time",
+        description = "Submits a training time request (optionally within an availability window or for a course). Requires login."
     )
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Propozycja złożona",
+        @ApiResponse(responseCode = "200", description = "Request submitted",
             content = @Content(schema = @Schema(implementation = TrainingRequestResultDto.class))),
-        @ApiResponse(responseCode = "400", description = "Nieprawidłowe dane (termin w przeszłości, poza oknem)"),
-        @ApiResponse(responseCode = "401", description = "Użytkownik niezalogowany"),
-        @ApiResponse(responseCode = "409", description = "Limit oczekujących propozycji wyczerpany")
+        @ApiResponse(responseCode = "400", description = "Invalid data (date in the past, outside the window)"),
+        @ApiResponse(responseCode = "401", description = "User not authenticated"),
+        @ApiResponse(responseCode = "409", description = "Pending request limit reached")
     })
     @PostMapping
     public ResponseEntity<TrainingRequestResultDto> create(
@@ -45,11 +45,11 @@ public class TrainingRequestController {
         return ResponseEntity.ok(trainingRequestService.create(userId, request));
     }
 
-    @Operation(summary = "Moje propozycje terminów", description = "Zwraca propozycje zalogowanego użytkownika (najnowsze pierwsze).")
+    @Operation(summary = "My training requests", description = "Returns the logged-in user's requests (newest first).")
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Lista propozycji",
+        @ApiResponse(responseCode = "200", description = "List of requests",
             content = @Content(array = @ArraySchema(schema = @Schema(implementation = TrainingRequestDto.class)))),
-        @ApiResponse(responseCode = "401", description = "Użytkownik niezalogowany")
+        @ApiResponse(responseCode = "401", description = "User not authenticated")
     })
     @GetMapping("/my")
     public ResponseEntity<List<TrainingRequestDto>> getMy(
@@ -57,12 +57,12 @@ public class TrainingRequestController {
         return ResponseEntity.ok(trainingRequestService.getUserRequests(userId));
     }
 
-    @Operation(summary = "Wycofaj propozycję", description = "Usuwa własną propozycję, dopóki czeka na reakcję admina.")
+    @Operation(summary = "Withdraw request", description = "Deletes the user's own request while it still awaits an admin response.")
     @ApiResponses({
-        @ApiResponse(responseCode = "204", description = "Propozycja wycofana"),
-        @ApiResponse(responseCode = "401", description = "Użytkownik niezalogowany"),
-        @ApiResponse(responseCode = "404", description = "Propozycja nie istnieje"),
-        @ApiResponse(responseCode = "409", description = "Propozycja nie należy do użytkownika lub jest już rozpatrzona")
+        @ApiResponse(responseCode = "204", description = "Request withdrawn"),
+        @ApiResponse(responseCode = "401", description = "User not authenticated"),
+        @ApiResponse(responseCode = "404", description = "Request not found"),
+        @ApiResponse(responseCode = "409", description = "Request does not belong to the user or is already resolved")
     })
     @DeleteMapping("/{requestId}")
     public ResponseEntity<Void> cancel(

@@ -87,7 +87,7 @@ export function MyReservationsPage() {
     queryFn: trainingRequestApi.getMy,
   })
 
-  // Wiszące zaproszenia — ten sam cache co badge w navbarze
+  // Pending invitations — same cache as the navbar badge
   const { data: invitations } = useQuery({
     queryKey: ['invitations', 'my'],
     queryFn: reservationApi.getMyInvitations,
@@ -178,7 +178,7 @@ export function MyReservationsPage() {
         </p>
       </div>
 
-      {/* Zaproszenia — trzymane miejsca czekające na rezerwację */}
+      {/* Invitations — held seats awaiting booking */}
       {hasInvitations && (
         <InvitationsSection
           invitations={invitations!}
@@ -187,7 +187,7 @@ export function MyReservationsPage() {
         />
       )}
 
-      {/* Sekcja PENDING_CONFIRMATION — najwyższy priorytet */}
+      {/* PENDING_CONFIRMATION section — highest priority */}
       {waitlistData && waitlistData.some(w => w.status === 'PENDING_CONFIRMATION') && (
         <WaitlistPendingSection
           entries={waitlistData.filter(w => w.status === 'PENDING_CONFIRMATION')}
@@ -196,7 +196,7 @@ export function MyReservationsPage() {
         />
       )}
 
-      {/* Sekcja WAITING — lista oczekujących */}
+      {/* WAITING section — the waitlist */}
       {waitlistData && waitlistData.some(w => w.status === 'WAITING') && (
         <WaitlistWaitingSection
           entries={waitlistData.filter(w => w.status === 'WAITING')}
@@ -245,7 +245,7 @@ export function MyReservationsPage() {
         />
       )}
 
-      {/* Moje propozycje terminów */}
+      {/* My training requests */}
       {trainingRequests && trainingRequests.length > 0 && (
         <TrainingRequestsSection requests={trainingRequests} />
       )}
@@ -1164,7 +1164,7 @@ function EventWaitlistWaitingSection({
 }
 
 /* ===============================
-   Moje propozycje terminów
+   My training requests
    =============================== */
 function TrainingRequestsSection({ requests }: { requests: TrainingRequest[] }) {
   const { t } = useTranslation('reservations')

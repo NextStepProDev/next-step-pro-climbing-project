@@ -18,9 +18,9 @@ public class SiteSettingsDtos {
     public record BadgeImageDto(@Nullable String imageUrl, @Nullable String linkUrl) {}
 
     /**
-     * Treść sekcji "Gdzie teraz szkolę" dla jednego języka.
-     * Tytuł NIE jest tu trzymany — jest stały i tłumaczony we froncie (i18n).
-     * Edytowalne: badge (np. "Obecnie w Andaluzji..."), podtytuł i lista miejsc.
+     * Content of the "Where I teach now" section for a single language.
+     * The title is NOT stored here — it is fixed and translated on the frontend (i18n).
+     * Editable: badge (e.g. "Currently in Andalusia..."), subtitle and place list.
      */
     public record LocationContentDto(
             String badge,
@@ -28,28 +28,28 @@ public class SiteSettingsDtos {
             List<String> locations
     ) {}
 
-    /** Aktywna (wyświetlana) konfiguracja sekcji: widoczność + treść per język (pl/en/es). */
+    /** Active (displayed) section configuration: visibility + content per language (pl/en/es). */
     public record LocationSectionDto(
             boolean enabled,
             Map<String, LocationContentDto> translations
     ) {}
 
-    /** Zapisany szablon całej konfiguracji (wszystkie języki), do ponownego użycia. */
+    /** Saved template of the whole configuration (all languages), for reuse. */
     public record LocationPresetDto(
             @Nullable String id,
             String name,
             Map<String, LocationContentDto> translations
     ) {}
 
-    /** Który szablon jest aktualnie na stronie (null = sekcja niepokazywana). */
+    /** Which template is currently live on the page (null = section hidden). */
     public record LocationActiveStateDto(
             @Nullable String activePresetId
     ) {}
 
     /**
-     * Treść promocji nad kalendarzem dla jednego języka.
-     * Obowiązkowe: title + description. Opcjonalne: badge (plakietka u góry)
-     * oraz przycisk CTA (ctaLabel + ctaUrl) — gdy oba puste, przycisku nie ma.
+     * Calendar promo content for a single language.
+     * Required: title + description. Optional: badge (small tag at the top)
+     * and a CTA button (ctaLabel + ctaUrl) — when both are empty, there is no button.
      */
     public record CalendarPromoContentDto(
             String badge,
@@ -59,13 +59,13 @@ public class SiteSettingsDtos {
             String ctaUrl
     ) {}
 
-    /** Aktywna (wyświetlana) promocja kalendarza: widoczność + treść per język. */
+    /** Active (displayed) calendar promo: visibility + content per language. */
     public record CalendarPromoSectionDto(
             boolean enabled,
             Map<String, CalendarPromoContentDto> translations
     ) {}
 
-    /** Zapisany szablon promocji kalendarza (wszystkie języki), do ponownego użycia. */
+    /** Saved calendar promo template (all languages), for reuse. */
     public record CalendarPromoPresetDto(
             @Nullable String id,
             String name,

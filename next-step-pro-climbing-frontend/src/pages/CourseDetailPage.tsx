@@ -50,8 +50,8 @@ export function CourseDetailPage() {
     placeholderData: undefined,
   })
 
-  // Zmiana języka globalnego (pasek górny) przełącza otwarty kurs na ten język;
-  // jeśli brak tłumaczenia w tym języku — fallback do dostępnego (EN → PL → ES).
+  // Changing the global language (top bar) switches the open course to that language;
+  // if there is no translation in that language — fall back to an available one (EN → PL → ES).
   const currentContentLang = getDefaultCourseContentLanguage(i18n.language)
   const prevLangRef = useRef(currentContentLang)
   useEffect(() => {
@@ -161,7 +161,7 @@ export function CourseDetailPage() {
 
       {course.thumbnailUrl && (
         <div className="relative mb-6 rounded-lg overflow-hidden bg-surface-800 h-64 sm:h-80 lg:h-[400px]">
-          {/* Rozmyte tło z TEGO SAMEGO zdjęcia — wypełnia puste miejsca zamiast czarnego pasa */}
+          {/* Blurred background from the SAME image — fills the empty space instead of a black bar */}
           <img
             src={course.thumbnailUrl}
             alt=""
@@ -172,7 +172,7 @@ export function CourseDetailPage() {
               : undefined
             }
           />
-          {/* Pełne zdjęcie, wyśrodkowane */}
+          {/* Full image, centered */}
           <img
             src={course.thumbnailUrl}
             alt={course.title}

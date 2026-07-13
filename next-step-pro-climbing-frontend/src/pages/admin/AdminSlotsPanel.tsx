@@ -439,8 +439,8 @@ function EditSlotModal({
     isAvailabilityWindow: slot?.isAvailabilityWindow ?? false,
   })
 
-  // Zaproszenia: baseline z serwera, lokalny override dopiero gdy admin coś zmieni
-  // (override-pattern zamiast setState w useEffect — unika kaskadowych renderów).
+  // Invitations: server baseline, a local override only once the admin changes something
+  // (override pattern instead of setState in useEffect — avoids cascading renders).
   const [editedInvited, setEditedInvited] = useState<InvitedUser[] | null>(null)
   const { data: invitesData } = useQuery({
     queryKey: ['admin', 'slotInvites', slot?.id],
@@ -741,7 +741,7 @@ function ParticipantsModal({
     onSuccess: () => { invalidate(); setConfirmDeleteGuestId(null) },
   })
 
-  // Kolejka oczekujących tego terminu — sekcja pod uczestnikami, tylko gdy ktoś czeka
+  // This slot's waiting queue — a section below the participants, only when someone is waiting
   const { data: waitlist } = useQuery({
     queryKey: ['admin', 'slotWaitlist', slotId],
     queryFn: () => adminApi.getSlotWaitlist(slotId),
@@ -1010,7 +1010,7 @@ function ParticipantsModal({
           </div>
         )}
 
-        {/* Lista rezerwowa */}
+        {/* Waitlist */}
         {waitlist && waitlist.entries.length > 0 && (
           <div>
             <h3 className="flex items-center gap-1.5 text-sm font-medium text-amber-400 mb-1">

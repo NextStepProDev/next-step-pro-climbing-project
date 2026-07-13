@@ -35,7 +35,7 @@ import java.util.stream.Collectors;
 @Transactional
 public class ReservationService {
 
-    // Czas polski (kontener prod = UTC) — spójnie z BookingTimeValidator/CalendarService.
+    // Polish local time (prod container = UTC) — consistent with BookingTimeValidator/CalendarService.
     private static final ZoneId WARSAW = ZoneId.of("Europe/Warsaw");
 
     private final ReservationRepository reservationRepository;
@@ -90,7 +90,7 @@ public class ReservationService {
         if (BookingTimeValidator.isPast(slot.getDate(), slot.getStartTime())) {
             throw new IllegalArgumentException(msg.get("reservation.slot.past"));
         }
-        // Zaproszeni omijają okno 12 h — trzymane miejsce mogą zająć do ostatniej chwili.
+        // Invitees bypass the 12 h window — they can take their held seat until the last moment.
         boolean isInvited = reservedSeatRepository.existsPendingBySlotIdAndUserId(slotId, userId);
         if (!isInvited && !BookingTimeValidator.isWithinBookingWindow(slot.getDate(), slot.getStartTime())) {
             throw new IllegalStateException(msg.get("reservation.booking.window"));
@@ -103,8 +103,8 @@ public class ReservationService {
             throw new IllegalStateException("This time slot is blocked");
         }
 
-        // Okno dostępności to blok informacyjny ("zadzwoń i ustal termin") — klient nie może
-        // zarezerwować go samodzielnie. Front nie pokazuje przycisku, ale strzeżemy też API.
+        // An availability window is an informational block ("call to arrange a time") — clients
+        // cannot book it themselves. The frontend hides the button, but we guard the API too.
         if (slot.isAvailabilityWindow()) {
             throw new IllegalStateException(msg.get("reservation.slot.availability.window"));
         }
@@ -115,8 +115,8 @@ public class ReservationService {
 
         int currentCount = reservationRepository.countConfirmedByTimeSlotId(slotId)
             + guestReservationRepository.sumParticipantsByTimeSlotId(slotId);
-        // Miejsca trzymane dla INNYCH zaproszonych osób są dla tego użytkownika niedostępne;
-        // jego własne zaproszenie (jeśli ma) nie jest odejmowane, więc może zająć trzymane miejsce.
+        // Seats held for OTHER invitees are unavailable to this user; their own invitation
+        // (if any) is not subtracted, so they can take their held seat.
         int reservedForOthers = reservedSeatRepository.countPendingBySlotIdExcludingUser(slotId, userId);
         int spotsLeft = slot.getMaxParticipants() - currentCount - reservedForOthers;
         if (spotsLeft <= 0) {
@@ -190,7 +190,7 @@ public class ReservationService {
 
         activityLogService.logReservationCancelled(reservation.getUser(), slot, reservation.getParticipants());
 
-        // Jeśli ktoś czeka na liście oczekujących, powiadamiamy wszystkich jednocześnie
+        // If anyone is waiting on the waitlist, notify everyone at once
         waitlistService.notifyAll(slot.getId());
         if (slot.belongsToEvent()) {
             eventWaitlistService.notifyAll(slot.getEvent().getId());
@@ -280,9 +280,9 @@ public class ReservationService {
     }
 
     /**
-     * Wiszące zaproszenia zalogowanego użytkownika na nadchodzące terminy — sekcja
-     * "Zaproszenia" w Moich rezerwacjach + badge w navbarze. Zaproszenie znika z listy
-     * samo, gdy adresat zarezerwuje miejsce (przestaje być "wiszące") albo admin je zdejmie.
+     * The logged-in user's pending invitations for upcoming slots — the "Invitations"
+     * section in My Reservations + the navbar badge. An invitation disappears from the list
+     * on its own once the recipient books the seat (no longer "pending") or the admin removes it.
      */
     @Transactional(readOnly = true)
     public List<MyInvitationDto> getMyInvitations(UUID userId) {
@@ -392,7 +392,7 @@ public class ReservationService {
         }
 
         LocalTime eventStartTime = event.getStartTime() != null ? event.getStartTime() : LocalTime.of(0, 0);
-        // Zaproszeni omijają okno 12 h — trzymane miejsce mogą zająć do ostatniej chwili.
+        // Invitees bypass the 12 h window — they can take their held seat until the last moment.
         boolean isInvited = reservedSeatRepository.existsPendingByEventIdAndUserId(eventId, userId);
         if (!isInvited && !BookingTimeValidator.isWithinBookingWindow(event.getStartDate(), eventStartTime)) {
             throw new IllegalStateException(msg.get("reservation.event.booking.window"));
@@ -511,7 +511,7 @@ public class ReservationService {
 
         activityLogService.logEventReservationCancelled(user, event);
 
-        // Jeśli ktoś czeka na liście oczekujących, powiadamiamy wszystkich jednocześnie
+        // If anyone is waiting on the waitlist, notify everyone at once
         eventWaitlistService.notifyAll(eventId);
         for (UUID slotId : cancelledSlotIds) {
             waitlistService.notifyAll(slotId);
@@ -562,8 +562,8 @@ public class ReservationService {
         mailService.sendReservationUpdateConfirmation(user, slot, oldParticipants, participants);
         activityLogService.logReservationUpdated(user, slot, participants);
 
-        // Zmniejszenie liczby osób zwalnia miejsce — powiadamiamy oczekujących (spójnie z anulowaniem
-        // i z odpowiednikiem po stronie admina w AdminService.updateReservationParticipants).
+        // Lowering the participant count frees a seat — notify the waitlist (consistent with cancelling
+        // and with the admin-side counterpart in AdminService.updateReservationParticipants).
         if (participants < oldParticipants) {
             waitlistService.notifyAll(slot.getId());
             if (slot.belongsToEvent()) {
@@ -630,8 +630,8 @@ public class ReservationService {
         mailService.sendEventReservationUpdateConfirmation(user, event, currentUserParticipants, participants);
         activityLogService.logEventReservationUpdated(user, event, participants);
 
-        // Zmniejszenie liczby osób zwalnia miejsce — powiadamiamy oczekujących (spójnie z rezygnacją
-        // i z odpowiednikiem po stronie admina w AdminService.updateEventReservationParticipants).
+        // Lowering the participant count frees a seat — notify the waitlist (consistent with leaving
+        // and with the admin-side counterpart in AdminService.updateEventReservationParticipants).
         if (participants < currentUserParticipants) {
             eventWaitlistService.notifyAll(eventId);
             for (TimeSlot slot : slots) {

@@ -1,5 +1,5 @@
-// Wypala wykadrowany fragment zdjęcia w kwadratowy obraz JPEG (output OUTPUT_SIZE×OUTPUT_SIZE),
-// dzięki czemu zapisany avatar to dokładnie to, co użytkownik skadrował w kółku.
+// Bakes the cropped image fragment into a square JPEG (output OUTPUT_SIZE×OUTPUT_SIZE),
+// so the saved avatar is exactly what the user framed in the circle.
 
 export interface PixelCrop {
   x: number
@@ -29,7 +29,7 @@ export async function getCroppedBlob(imageSrc: string, crop: PixelCrop): Promise
   const ctx = canvas.getContext('2d')
   if (!ctx) throw new Error('Brak kontekstu canvas')
 
-  // Tło na wypadek przezroczystości (JPEG nie ma kanału alfa).
+  // Background in case of transparency (JPEG has no alpha channel).
   ctx.fillStyle = '#1a1a1a'
   ctx.fillRect(0, 0, OUTPUT_SIZE, OUTPUT_SIZE)
   ctx.imageSmoothingQuality = 'high'

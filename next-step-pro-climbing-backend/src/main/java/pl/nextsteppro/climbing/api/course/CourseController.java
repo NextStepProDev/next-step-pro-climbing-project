@@ -14,7 +14,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/courses")
-@Tag(name = "Courses", description = "Publiczny dostęp do kursów")
+@Tag(name = "Courses", description = "Public access to courses")
 public class CourseController {
 
     private final CourseService courseService;
@@ -23,21 +23,21 @@ public class CourseController {
         this.courseService = courseService;
     }
 
-    @Operation(summary = "Pobierz listę opublikowanych kursów")
+    @Operation(summary = "Get published courses")
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Lista kursów")
+        @ApiResponse(responseCode = "200", description = "List of courses")
     })
     @GetMapping
     public ResponseEntity<List<CourseSummaryDto>> getAll(
-            @Parameter(description = "Język treści kursu (pl, en, es)")
+            @Parameter(description = "Course content language (pl, en, es)")
             @RequestParam(defaultValue = "pl") String language) {
         return ResponseEntity.ok(courseService.getAllPublished(language));
     }
 
-    @Operation(summary = "Pobierz szczegóły kursu z blokami treści")
+    @Operation(summary = "Get course details with content blocks")
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Szczegóły kursu"),
-        @ApiResponse(responseCode = "400", description = "Kurs nie znaleziony lub nieopublikowany")
+        @ApiResponse(responseCode = "200", description = "Course details"),
+        @ApiResponse(responseCode = "400", description = "Course not found or unpublished")
     })
     @GetMapping("/{id}")
     public ResponseEntity<CourseDetailDto> getById(
@@ -45,10 +45,10 @@ public class CourseController {
         return ResponseEntity.ok(courseService.getPublishedById(id));
     }
 
-    @Operation(summary = "Pobierz dostępne wersje językowe kursu")
+    @Operation(summary = "Get available language versions of the course")
     @GetMapping("/by-group/{translationGroupId}")
     public ResponseEntity<List<CourseTranslationDto>> getTranslations(
-            @Parameter(description = "ID grupy tłumaczeń") @PathVariable UUID translationGroupId) {
+            @Parameter(description = "Translation group ID") @PathVariable UUID translationGroupId) {
         return ResponseEntity.ok(courseService.getAvailableTranslations(translationGroupId));
     }
 }

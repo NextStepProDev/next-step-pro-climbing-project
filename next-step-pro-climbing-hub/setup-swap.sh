@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
 #
-# setup-swap.sh — konfiguracja 2 GB swap dla serwera produkcyjnego.
+# setup-swap.sh — 2 GB swap setup for the production server.
 #
-# Krytyczne dla maszyny produkcyjnej o ograniczonej pamięci: bez swapu backend
-# (Java/Spring) + PostgreSQL laduja OOM. Tworzy /swapfile, ustawia swappiness 10
-# i utrwala obie rzeczy na reboot (fstab + sysctl).
+# Critical for a memory-constrained production machine: without swap the backend
+# (Java/Spring) + PostgreSQL end up OOM. Creates /swapfile, sets swappiness 10
+# and persists both across reboots (fstab + sysctl).
 #
-# Uzycie (raz, przy pierwszym deploy):
+# Usage (once, on first deploy):
 #   sudo bash setup-swap.sh
 #
-# Skrypt jest idempotentny — mozna go bezpiecznie uruchomic ponownie.
+# The script is idempotent — it is safe to run again.
 
 set -euo pipefail
 
@@ -19,51 +19,51 @@ SWAPPINESS=10
 SYSCTL_FILE="/etc/sysctl.d/99-swappiness.conf"
 
 if [[ "${EUID}" -ne 0 ]]; then
-  echo "Ten skrypt wymaga uprawnien root. Uruchom: sudo bash setup-swap.sh" >&2
+  echo "This script requires root privileges. Run: sudo bash setup-swap.sh" >&2
   exit 1
 fi
 
-echo "==> Konfiguracja swap (${SWAP_SIZE} @ ${SWAPFILE}, swappiness ${SWAPPINESS})"
+echo "==> Swap setup (${SWAP_SIZE} @ ${SWAPFILE}, swappiness ${SWAPPINESS})"
 
-# 1. Utworzenie pliku swap (jesli jeszcze nie istnieje)
+# 1. Create the swap file (if it does not exist yet)
 if [[ -f "${SWAPFILE}" ]]; then
-  echo "    ${SWAPFILE} juz istnieje — pomijam tworzenie."
+  echo "    ${SWAPFILE} already exists — skipping creation."
 else
-  echo "    Tworze ${SWAPFILE} (${SWAP_SIZE})..."
+  echo "    Creating ${SWAPFILE} (${SWAP_SIZE})..."
   if ! fallocate -l "${SWAP_SIZE}" "${SWAPFILE}" 2>/dev/null; then
-    # fallocate moze zawiesc na niektorych FS (np. ext bez wsparcia) — fallback na dd
-    echo "    fallocate niedostepny, uzywam dd..."
+    # fallocate can fail on some filesystems (e.g. ext without support) — fall back to dd
+    echo "    fallocate unavailable, using dd..."
     dd if=/dev/zero of="${SWAPFILE}" bs=1M count=2048 status=progress
   fi
   chmod 600 "${SWAPFILE}"
   mkswap "${SWAPFILE}"
 fi
 
-# 2. Uprawnienia (na wszelki wypadek, gdyby plik istnial z luznymi prawami)
+# 2. Permissions (just in case the file existed with loose permissions)
 chmod 600 "${SWAPFILE}"
 
-# 3. Wlaczenie swap (jesli nie jest aktywny)
+# 3. Enable swap (if not active)
 if swapon --show=NAME --noheadings | grep -qx "${SWAPFILE}"; then
-  echo "    Swap juz aktywny."
+  echo "    Swap already active."
 else
-  echo "    Wlaczam swap..."
+  echo "    Enabling swap..."
   swapon "${SWAPFILE}"
 fi
 
-# 4. Utrwalenie w /etc/fstab (przetrwa reboot)
+# 4. Persist in /etc/fstab (survives reboot)
 if grep -qE "^[[:space:]]*${SWAPFILE}[[:space:]]" /etc/fstab; then
-  echo "    Wpis w /etc/fstab juz istnieje."
+  echo "    /etc/fstab entry already exists."
 else
-  echo "    Dodaje wpis do /etc/fstab..."
+  echo "    Adding entry to /etc/fstab..."
   echo "${SWAPFILE} none swap sw 0 0" >> /etc/fstab
 fi
 
-# 5. Swappiness — utrwalone przez sysctl.d + zastosowane od razu
-echo "    Ustawiam vm.swappiness=${SWAPPINESS}..."
+# 5. Swappiness — persisted via sysctl.d + applied immediately
+echo "    Setting vm.swappiness=${SWAPPINESS}..."
 echo "vm.swappiness=${SWAPPINESS}" > "${SYSCTL_FILE}"
 sysctl -w vm.swappiness="${SWAPPINESS}" >/dev/null
 
-echo "==> Gotowe. Aktualny stan:"
+echo "==> Done. Current state:"
 swapon --show
 echo "    vm.swappiness = $(cat /proc/sys/vm/swappiness)"
 free -h

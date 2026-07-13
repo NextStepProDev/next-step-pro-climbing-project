@@ -279,8 +279,8 @@ class EventWaitlistServiceTest {
 
     @Test
     void shouldJoinWaitlistWhenEventFullOnlyByReservedSeats() {
-        // Given — 8/10 potwierdzonych + 2 miejsca trzymane na zaproszenie innych = efektywnie pełne.
-        // Niezaproszony widz nie ma jak się zapisać normalnie → kolejka musi być dostępna.
+        // Given — 8/10 confirmed + 2 seats invitation-held for others = effectively full.
+        // An uninvited viewer has no way to book normally → the queue must be available.
         TimeSlot slot = createSlot(testEvent);
         when(eventRepository.findById(eventId)).thenReturn(Optional.of(testEvent));
         when(userRepository.findById(userId)).thenReturn(Optional.of(testUser));
@@ -306,8 +306,8 @@ class EventWaitlistServiceTest {
 
     @Test
     void shouldFailConfirmOfferWhenReservedSeatsFillRemainingSpots() {
-        // Given — 9/10 potwierdzonych + 1 miejsce trzymane na zaproszenie innej osoby = pełne.
-        // Potwierdzenie oferty z kolejki nie może wejść ponad limit.
+        // Given — 9/10 confirmed + 1 seat invitation-held for someone else = full.
+        // Confirming a queue offer must not go over the limit.
         TimeSlot slot = createSlot(testEvent);
         UUID waitlistId = UUID.randomUUID();
         EventWaitlist entry = new EventWaitlist(testUser, testEvent, 1);

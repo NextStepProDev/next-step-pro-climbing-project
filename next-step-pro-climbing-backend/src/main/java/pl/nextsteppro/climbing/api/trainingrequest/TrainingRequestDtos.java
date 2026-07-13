@@ -16,9 +16,9 @@ record CreateTrainingRequestRequest(
     @NotNull LocalTime endTime,
     @Min(1) @Max(20) int participants,
     @Nullable String comment,
-    // Kurs, którego dotyczy propozycja (opcjonalnie)
+    // Course the request refers to (optional)
     @Nullable UUID courseId,
-    // Okno dostępności, w którym złożono propozycję (opcjonalnie)
+    // Availability window the request was submitted in (optional)
     @Nullable UUID windowSlotId
 ) {}
 
@@ -32,7 +32,7 @@ record TrainingRequestDto(
     String status,
     @Nullable String adminNote,
     @Nullable String courseTitle,
-    // Co powstało z propozycji — do linku "zobacz w kalendarzu"
+    // What was created from the request — for the "see in calendar" link
     @Nullable UUID createdSlotId,
     @Nullable LocalDate createdSlotDate,
     @Nullable UUID createdEventId,

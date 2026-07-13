@@ -90,8 +90,8 @@ public class User {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
-    // Znacznik "przeczytane" powiadomień admina o nowych rezerwacjach (badge w panelu);
-    // dla zwykłych użytkowników nieużywany. Świeże konto = nic nieprzeczytanego sprzed rejestracji.
+    // "Read" marker for admin notifications about new reservations (panel badge);
+    // unused for regular users. A fresh account = nothing unread from before registration.
     @Column(name = "admin_reservations_seen_at", nullable = false)
     private Instant adminReservationsSeenAt = Instant.now();
 

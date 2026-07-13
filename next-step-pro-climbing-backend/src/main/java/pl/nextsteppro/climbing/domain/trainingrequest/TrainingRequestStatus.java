@@ -1,14 +1,14 @@
 package pl.nextsteppro.climbing.domain.trainingrequest;
 
 public enum TrainingRequestStatus {
-    /** Czeka na reakcję admina. */
+    /** Awaiting an admin response. */
     PENDING,
-    /** Admin utworzył slot/wydarzenie z tej propozycji (proponujący zaproszony). */
+    /** Admin created a slot/event from this request (requester invited). */
     ACCEPTED,
-    /** Admin oznaczył: skontaktował się w celu ustalenia innego terminu. */
+    /** Admin marked: contacted the user to arrange a different time. */
     CONTACTED,
-    /** Admin odrzucił propozycję. */
+    /** Admin rejected the request. */
     REJECTED,
-    /** Proponowana data minęła bez reakcji (scheduler). */
+    /** The proposed date passed without a response (scheduler). */
     EXPIRED
 }

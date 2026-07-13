@@ -7,7 +7,7 @@ import { Button } from './Button'
 import { getCroppedBlob } from '../../utils/cropImage'
 
 interface AvatarCropperProps {
-  /** Object URL wybranego pliku (źródło do kadrowania). */
+  /** Object URL of the selected file (crop source). */
   imageSrc: string
   onCancel: () => void
   onSave: (blob: Blob) => Promise<void> | void

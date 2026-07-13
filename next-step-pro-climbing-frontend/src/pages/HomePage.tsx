@@ -67,12 +67,12 @@ export function HomePage() {
   const [heroRevealTimedOut, setHeroRevealTimedOut] = useState(false);
   const { ref: stepsRef, inView: stepsInView } = useInView<HTMLDivElement>();
 
-  // typewriter: tytuł wystukuje się pierwszy, akapit dopiero po nim.
-  // reset przy zmianie języka (tekst tytułu się zmienia → efekt rusza od nowa)
-  // — pattern „reset state during render" z docs React, bez efektu.
+  // typewriter: the title types out first, the paragraph only after it.
+  // reset on language change (the title text changes → the effect restarts)
+  // — the "reset state during render" pattern from the React docs, no effect needed.
   const heroTagline = t("hero.tagline");
-  // słowo kluczowe (wspinaczce/climbing/escalada) podświetlamy gradientem dopiero PO
-  // wystukaniu nagłówka — wtedy się „zapala". Rozbijamy tagline na część przed/po słowie.
+  // the keyword (wspinaczce/climbing/escalada) gets its gradient highlight only AFTER
+  // the heading is typed out — then it "lights up". We split the tagline around the word.
   const heroKeyword = t("hero.taglineHighlight");
   const [titleTyped, setTitleTyped] = useState(false);
   const [prevTagline, setPrevTagline] = useState(heroTagline);
@@ -87,15 +87,16 @@ export function HomePage() {
     staleTime: 30 * 60 * 1000,
   });
 
-  // Admin może wgrać własne hero (imageUrl ustawiony) albo go nie mieć — wtedy pokazujemy
-  // hardcodowany domyślny obraz z bundla. Domyślny jest natychmiast (leci równolegle z JS,
-  // bez round-tripu do /api/settings/home ani osobnego fetcha pliku z dysku serwera), więc
-  // nie ma już opóźnienia. Własne zdjęcie admina nadpisuje domyślne, gdy ustawienia dojadą.
+  // The admin can upload a custom hero (imageUrl set) or have none — then we show the
+  // hardcoded default image from the bundle. The default is instant (loads in parallel with
+  // the JS, no round-trip to /api/settings/home and no separate file fetch from the server
+  // disk), so there is no delay anymore. The admin's custom photo overrides the default once
+  // the settings arrive.
   const customHeroUrl = homeSettings?.hero.imageUrl ?? null;
   const isDefaultHero = !customHeroUrl;
   const heroImageUrl = customHeroUrl ?? heroDefault;
-  // Mobile ma własne, niezależne zdjęcie (pionowe). Admin może je nadpisać; gdy go nie ma,
-  // pokazujemy wbudowany pionowy default wykadrowany tak samo jak dotychczas (54% 30%).
+  // Mobile has its own independent (vertical) photo. The admin can override it; when there is
+  // none, we show the built-in vertical default cropped the same as before (54% 30%).
   const customMobileHeroUrl = homeSettings?.heroMobile?.imageUrl ?? null;
   const isDefaultMobileHero = !customMobileHeroUrl;
   const mobileHeroImageUrl = customMobileHeroUrl ?? heroDefaultMobile;
@@ -104,10 +105,10 @@ export function HomePage() {
 
   usePreloadImage(heroImageUrl);
 
-  // Nagłówek (typewriter) startuje dopiero gdy widoczne zdjęcie hero się załaduje — tekst i
-  // obraz odsłaniają się razem, zamiast tekst-pierwszy-zdjęcie-później. Domyślny obraz ładuje
-  // się błyskawicznie, więc start jest natychmiastowy; bezpiecznik 1.5 s gdyby zdjęcie (własne
-  // admina) leciało wolno. W czasie czekania gra hero-loading-glow.
+  // The heading (typewriter) starts only once the visible hero image has loaded — text and
+  // image reveal together instead of text-first-image-later. The default image loads
+  // instantly, so the start is immediate; a 1.5 s failsafe in case the (admin's custom) photo
+  // is slow. While waiting, hero-loading-glow plays.
   useEffect(() => {
     if (heroImgLoaded) return;
     const timer = setTimeout(() => setHeroRevealTimedOut(true), 1500);
@@ -117,13 +118,13 @@ export function HomePage() {
   const heroReady = heroImgLoaded || heroRevealTimedOut;
 
   const objectPosition = isDefaultHero
-    ? '52% 20%' // kadr: więcej skały nad climberem (climber niżej → odstęp od logo) + lekko w lewo
+    ? '52% 20%' // crop: more rock above the climber (climber lower → gap from the logo) + slightly left
     : homeSettings?.hero.focalPointX != null
       ? `${(homeSettings.hero.focalPointX * 100).toFixed(1)}% ${((homeSettings.hero.focalPointY ?? 0.5) * 100).toFixed(1)}%`
       : 'center center';
 
   const mobileObjectPosition = isDefaultMobileHero
-    ? '54% 30%' // kadr wbudowanego pionowego defaultu (climber wyżej)
+    ? '54% 30%' // crop of the built-in vertical default (climber higher)
     : homeSettings?.heroMobile?.focalPointX != null
       ? `${(homeSettings.heroMobile.focalPointX * 100).toFixed(1)}% ${((homeSettings.heroMobile.focalPointY ?? 0.5) * 100).toFixed(1)}%`
       : 'center center';
@@ -155,16 +156,16 @@ export function HomePage() {
         {/* Base gradient — always rendered as placeholder/fallback */}
         <div className="absolute inset-0 bg-gradient-to-br from-primary-900/20 via-surface-950 to-surface-950" />
 
-        {/* Reflektor ładowania — czekanie na zdjęcie z dysku ubrane w rozgrzewające
-            się światło sceny; znika gdy zdjęcie wejdzie i je przejmie */}
+        {/* Loading spotlight — waiting for the photo from disk dressed up as stage light
+            warming up; disappears once the photo comes in and takes over */}
         {heroImageUrl && !heroImgLoaded && (
           <div className="hero-loading-glow absolute inset-0 z-[1] pointer-events-none" />
         )}
 
         {heroImageUrl && (
           <>
-            {/* Mobile: osobne PIONOWE zdjęcie wypełniające cały ekran telefonu (object-cover).
-                Desktop ma własne, niezależne zdjęcie poniżej — wersja desktopowa nietknięta. */}
+            {/* Mobile: a separate VERTICAL photo filling the whole phone screen (object-cover).
+                Desktop has its own independent photo below — the desktop version untouched. */}
             <img
               src={mobileHeroImageUrl}
               alt=""
@@ -174,7 +175,7 @@ export function HomePage() {
               className={`sm:hidden absolute inset-0 w-full h-full object-cover ${heroImgLoaded ? 'hero-cinematic' : 'opacity-0'}`}
               style={{ objectPosition: mobileObjectPosition }}
             />
-            {/* Desktop: dotychczasowe tło sekcji (custom admina albo poziomy default) — bez zmian. */}
+            {/* Desktop: the existing section background (admin's custom or the horizontal default) — unchanged. */}
             <img
               src={heroImageUrl}
               alt=""
@@ -184,12 +185,12 @@ export function HomePage() {
               className={`hidden sm:block absolute inset-0 w-full h-full object-cover ${heroImgLoaded ? 'hero-cinematic' : 'opacity-0'}`}
               style={{ objectPosition }}
             />
-            {/* Gradient pod treść: na mobile mocniejszy u dołu (sadza dolną kartę glass),
-                na desktopie subtelny — żeby brzegi zdjęcia zostały jasne. */}
+            {/* Gradient under the content: stronger at the bottom on mobile (seats the lower glass
+                card), subtle on desktop — so the photo edges stay bright. */}
             <div className={`absolute inset-0 bg-gradient-to-b from-surface-950/30 via-transparent to-surface-950 sm:from-transparent sm:via-surface-950/4 transition-opacity duration-700 ${heroImgLoaded ? 'opacity-100' : 'opacity-0'}`} />
-            {/* Desktop: stały, delikatny ciemny podkład pod treścią (oba motywy) — głównie pod logo,
-                żeby jasny napis/logo były czytelne na każdym zdjęciu; zanika do przezroczystości, więc
-                brzegi zdjęcia zostają jasne. Sam tekst dostaje dodatkowo halo (.hero-over-photo). */}
+            {/* Desktop: a constant, gentle dark underlay beneath the content (both themes) — mainly under
+                the logo, so the light text/logo stay readable on any photo; fades to transparency, so
+                the photo edges stay bright. The text itself also gets a halo (.hero-over-photo). */}
             <div className="hidden sm:block absolute inset-0 z-[1] pointer-events-none bg-[radial-gradient(ellipse_75%_70%_at_50%_50%,rgba(0,0,0,0.18),rgba(0,0,0,0.04)_60%,transparent_80%)]" />
           </>
         )}
@@ -207,16 +208,16 @@ export function HomePage() {
             className="absolute top-20 right-3 sm:top-24 sm:right-36 z-20 w-[52px] h-[52px] sm:w-24 sm:h-24"
           />
         )}
-        {/* Mobile: stały pasek zdjęcia u góry (karta nigdy nie wchodzi pod plakietki PZA)
-            + elastyczny odstęp, który spycha kartę do dołu na wysokich ekranach, a na niskich
-            kolapsuje (zamiast wypychać treść pod navbar — to powodowało „rozjechanie"). */}
+        {/* Mobile: a fixed photo strip at the top (the card never slides under the PZA badges)
+            + a flexible gap that pushes the card down on tall screens and collapses on short
+            ones (instead of pushing content under the navbar — that used to break the layout). */}
         <div aria-hidden="true" className="sm:hidden shrink-0 h-16" />
         <div aria-hidden="true" className="sm:hidden flex-1" />
         <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-6 sm:py-8">
-          {/* Mobile: treść w dolnej karcie glass (czytelność tekstu na każdym zdjęciu).
-              Desktop (sm:): karta zanika do przezroczystości — wygląd jak dotychczas. */}
+          {/* Mobile: content in the lower glass card (text readability on any photo).
+              Desktop (sm:): the card fades to transparency — same look as before. */}
           <div className="text-center max-w-3xl mx-auto rounded-2xl border border-white/12 bg-surface-950/30 backdrop-blur-[2px] shadow-2xl shadow-black/40 px-5 py-6 sm:rounded-none sm:border-0 sm:bg-transparent sm:backdrop-blur-none sm:shadow-none sm:p-0">
-            {/* === ANDALUSIA BADGE — pokazywana gdy sekcja aktywna i plakietka niepusta === */}
+            {/* === ANDALUSIA BADGE — shown when the section is active and the badge is non-empty === */}
             {locationEnabled && locationBadge && (
               <div className="location-badge inline-flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2 bg-amber-500/15 backdrop-blur-md border border-amber-400/40 rounded-full text-amber-400 text-sm sm:text-base font-medium mb-4 sm:mb-6 shadow-lg">
                 <span className="location-badge-pin">📍</span>
@@ -224,8 +225,8 @@ export function HomePage() {
               </div>
             )}
             {/* === END BADGE === */}
-            {/* Logo zawsze białe — leży na zdjęciu (desktop) / na ciemnej karcie glass (mobile).
-                „Wskakuje" (hero-logo-in) jako FINAŁ — dopiero po wystukaniu nagłówka (titleTyped). */}
+            {/* The logo is always white — it sits on the photo (desktop) / on the dark glass card (mobile).
+                It "pops in" (hero-logo-in) as the FINALE — only after the heading is typed out (titleTyped). */}
             <img
               src={logoWhite}
               alt="Next Step Pro Climbing"
@@ -243,17 +244,17 @@ export function HomePage() {
                 onDone={() => setTitleTyped(true)}
               />
             </h1>
-            {/* akapit pojawia się (hero-rise) dopiero gdy nagłówek został wystukany;
-                do tego czasu opacity-0 rezerwuje wysokość → przyciski poniżej nie skaczą */}
-            {/* Mobile: krótki, mocny podtytuł (cały kafelek glass musi zmieścić się na 1 ekranie). */}
+            {/* the paragraph appears (hero-rise) only once the heading has been typed out;
+                until then opacity-0 reserves the height → the buttons below do not jump */}
+            {/* Mobile: a short, punchy subtitle (the whole glass card must fit on 1 screen). */}
             <p style={{ '--hero-delay': '120ms' } as CSSProperties} className={`sm:hidden text-[15px] leading-snug mb-6 max-w-md mx-auto text-white/95 ${titleTyped ? 'hero-rise' : 'opacity-0'}`}>
               {t("hero.subtitleMobile")}
             </p>
-            {/* Desktop: pełny opis (nietknięty). */}
+            {/* Desktop: the full description (untouched). */}
             <p style={{ '--hero-delay': '120ms' } as CSSProperties} className={`hidden sm:block text-lg mb-6 max-w-2xl mx-auto text-white/90 hero-over-photo ${titleTyped ? 'hero-rise' : 'opacity-0'}`}>
               {t("hero.subtitle")}
             </p>
-            {/* przyciski wjeżdżają zaraz po akapicie — kaskada od góry, dopiero po wystukaniu nagłówka */}
+            {/* the buttons slide in right after the paragraph — a top-down cascade, only after the heading is typed */}
             <div style={{ '--hero-delay': '320ms' } as CSSProperties} className={`flex flex-col sm:flex-row gap-4 justify-center ${titleTyped ? 'hero-rise' : 'opacity-0'}`}>
               <Link to="/calendar">
                 <Button size="lg" className="w-full sm:w-auto btn-glow">
@@ -278,7 +279,7 @@ export function HomePage() {
         </div>
       </section>
 
-      {/* === WHERE I AM NOW — zakomentuj <CurrentLocationSection /> aby usunąć całą sekcję === */}
+      {/* === WHERE I AM NOW — comment out <CurrentLocationSection /> to remove the whole section === */}
       <CurrentLocationSection />
       {/* === END WHERE I AM NOW === */}
 

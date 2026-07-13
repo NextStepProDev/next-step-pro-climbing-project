@@ -31,80 +31,80 @@ public class FileController {
         this.fileStorageService = fileStorageService;
     }
 
-    @Operation(summary = "Pobierz zdjęcie instruktora")
+    @Operation(summary = "Get instructor photo")
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Plik znaleziony"),
-        @ApiResponse(responseCode = "404", description = "Plik nie istnieje")
+        @ApiResponse(responseCode = "200", description = "File found"),
+        @ApiResponse(responseCode = "404", description = "File not found")
     })
     @GetMapping("/instructors/{filename}")
     public ResponseEntity<Resource> getInstructorPhoto(
-            @Parameter(description = "Nazwa pliku") @PathVariable String filename) throws IOException {
+            @Parameter(description = "File name") @PathVariable String filename) throws IOException {
         return serveFile(filename, "instructors");
     }
 
-    @Operation(summary = "Pobierz zdjęcie z galerii")
+    @Operation(summary = "Get gallery photo")
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Plik znaleziony"),
-        @ApiResponse(responseCode = "404", description = "Plik nie istnieje")
+        @ApiResponse(responseCode = "200", description = "File found"),
+        @ApiResponse(responseCode = "404", description = "File not found")
     })
     @GetMapping("/gallery/{filename}")
     public ResponseEntity<Resource> getGalleryPhoto(
-            @Parameter(description = "Nazwa pliku") @PathVariable String filename) throws IOException {
+            @Parameter(description = "File name") @PathVariable String filename) throws IOException {
         return serveFile(filename, "gallery");
     }
 
-    @Operation(summary = "Pobierz plik aktualności (miniaturka lub zdjęcie w treści)")
+    @Operation(summary = "Get a news file (thumbnail or in-content image)")
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Plik znaleziony"),
-        @ApiResponse(responseCode = "404", description = "Plik nie istnieje")
+        @ApiResponse(responseCode = "200", description = "File found"),
+        @ApiResponse(responseCode = "404", description = "File not found")
     })
     @GetMapping("/news/{filename}")
     public ResponseEntity<Resource> getNewsFile(
-            @Parameter(description = "Nazwa pliku") @PathVariable String filename) throws IOException {
+            @Parameter(description = "File name") @PathVariable String filename) throws IOException {
         return serveFile(filename, "news");
     }
 
-    @Operation(summary = "Pobierz plik kursu (miniaturka lub zdjęcie w treści)")
+    @Operation(summary = "Get a course file (thumbnail or in-content image)")
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Plik znaleziony"),
-        @ApiResponse(responseCode = "404", description = "Plik nie istnieje")
+        @ApiResponse(responseCode = "200", description = "File found"),
+        @ApiResponse(responseCode = "404", description = "File not found")
     })
     @GetMapping("/courses/{filename}")
     public ResponseEntity<Resource> getCourseFile(
-            @Parameter(description = "Nazwa pliku") @PathVariable String filename) throws IOException {
+            @Parameter(description = "File name") @PathVariable String filename) throws IOException {
         return serveFile(filename, "courses");
     }
 
-    @Operation(summary = "Pobierz plik z biblioteki mediów (shared assets)")
+    @Operation(summary = "Get a file from the media library (shared assets)")
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Plik znaleziony"),
-        @ApiResponse(responseCode = "404", description = "Plik nie istnieje")
+        @ApiResponse(responseCode = "200", description = "File found"),
+        @ApiResponse(responseCode = "404", description = "File not found")
     })
     @GetMapping("/assets/{filename}")
     public ResponseEntity<Resource> getAssetFile(
-            @Parameter(description = "Nazwa pliku") @PathVariable String filename) throws IOException {
+            @Parameter(description = "File name") @PathVariable String filename) throws IOException {
         return serveFile(filename, "assets");
     }
 
-    @Operation(summary = "Pobierz plik ustawień witryny (np. zdjęcie hero strony głównej)")
+    @Operation(summary = "Get a site settings file (e.g. homepage hero image)")
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Plik znaleziony"),
-        @ApiResponse(responseCode = "404", description = "Plik nie istnieje")
+        @ApiResponse(responseCode = "200", description = "File found"),
+        @ApiResponse(responseCode = "404", description = "File not found")
     })
     @GetMapping("/site/{filename}")
     public ResponseEntity<Resource> getSiteFile(
-            @Parameter(description = "Nazwa pliku") @PathVariable String filename) throws IOException {
+            @Parameter(description = "File name") @PathVariable String filename) throws IOException {
         return serveFile(filename, "site");
     }
 
-    @Operation(summary = "Pobierz avatar użytkownika")
+    @Operation(summary = "Get user avatar")
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Plik znaleziony"),
-        @ApiResponse(responseCode = "404", description = "Plik nie istnieje")
+        @ApiResponse(responseCode = "200", description = "File found"),
+        @ApiResponse(responseCode = "404", description = "File not found")
     })
     @GetMapping("/avatars/{filename}")
     public ResponseEntity<Resource> getAvatarFile(
-            @Parameter(description = "Nazwa pliku") @PathVariable String filename) throws IOException {
+            @Parameter(description = "File name") @PathVariable String filename) throws IOException {
         return serveFile(filename, "avatars");
     }
 

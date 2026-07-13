@@ -210,7 +210,7 @@ class ReservationServiceTest {
 
     @Test
     void shouldAllowInvitedUserToBookInsideBookingWindow() {
-        // Given — slot za 6 h (w oknie 12 h), ale użytkownik jest zaproszony → okno go nie ogranicza
+        // Given — slot in 6 h (inside the 12 h window), but the user is invited → the window does not apply
         LocalDateTime targetDateTime = LocalDateTime.now().plusHours(6);
         TimeSlot soonSlot = new TimeSlot(targetDateTime.toLocalDate(), targetDateTime.toLocalTime(),
             targetDateTime.toLocalTime().plusHours(1), 10);
@@ -290,7 +290,7 @@ class ReservationServiceTest {
 
     @Test
     void shouldThrowReservedMessageWhenOnlyReservedSeatsRemainForSlot() {
-        // Given — 2 fizyczne miejsca wolne, ale oba trzymane dla INNYCH zaproszonych osób
+        // Given — 2 physical seats free, but both held for OTHER invitees
         when(timeSlotRepository.findByIdForUpdate(slotId)).thenReturn(Optional.of(testSlot));
         when(userRepository.findById(userId)).thenReturn(Optional.of(testUser));
         when(reservationRepository.existsByUserIdAndTimeSlotIdAndStatus(userId, slotId, ReservationStatus.CONFIRMED))
@@ -309,7 +309,7 @@ class ReservationServiceTest {
 
     @Test
     void shouldAllowInvitedUserToBookHeldSeat() {
-        // Given — 2 fizyczne miejsca wolne; 1 trzymane dla innej osoby, drugie dla NASZEGO usera
+        // Given — 2 physical seats free; 1 held for someone else, the other for OUR user
         when(timeSlotRepository.findByIdForUpdate(slotId)).thenReturn(Optional.of(testSlot));
         when(userRepository.findById(userId)).thenReturn(Optional.of(testUser));
         when(reservationRepository.existsByUserIdAndTimeSlotIdAndStatus(userId, slotId, ReservationStatus.CONFIRMED))

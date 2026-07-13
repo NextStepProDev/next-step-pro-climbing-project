@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Admin DTOs dla zarządzania aktualnościami
+ * Admin DTOs for news management
  */
 public class AdminNewsDtos {
 
@@ -53,7 +53,7 @@ public class AdminNewsDtos {
             int displayOrder
     ) {}
 
-    // --- Requesty ---
+    // --- Requests ---
 
     public record CreateNewsRequest(
             @NotBlank @Size(max = 500) String title,

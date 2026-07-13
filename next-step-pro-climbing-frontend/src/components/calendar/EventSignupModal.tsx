@@ -16,8 +16,8 @@ import { adminApi, calendarApi, reservationApi } from '../../api/client'
 import { getErrorMessage } from '../../utils/errors'
 import type { EventSummary } from '../../types'
 
-// Pełny formularz edycji wydarzenia z panelu admina (kurs, daty, zaproszenia itd.).
-// Lazy — widzi go tylko admin, więc publiczny chunk kalendarza nie ciągnie kodu panelu.
+// Full event edit form from the admin panel (course, dates, invitations etc.).
+// Lazy — only the admin sees it, so the public calendar chunk does not pull in panel code.
 const EditEventModal = lazy(() =>
   import('../../pages/admin/AdminEventsPanel').then((m) => ({ default: m.EditEventModal }))
 )
@@ -159,18 +159,18 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
   if (!ev) return null
 
   const enrollmentClosed = !ev.enrollmentOpen
-  // Jak w SlotDetailModal: edycja tylko dla przyszłych/trwających terminów (ISO daty porównują się jako stringi)
+  // As in SlotDetailModal: editing only for future/ongoing dates (ISO dates compare as strings)
   const isPastEvent = ev.endDate < format(new Date(), 'yyyy-MM-dd')
-  // Miejsca trzymane "na zaproszenie" — niedostępne dla niezaproszonych; własne zaproszenie nie blokuje.
+  // Invitation-held seats — unavailable to non-invitees; one's own invitation does not block.
   const reservedSeats = ev.reservedSeats ?? 0
   const reservedForOthers = Math.max(0, reservedSeats - (ev.isReservedForUser ? 1 : 0))
   const spotsLeft = ev.maxParticipants - ev.currentParticipants - reservedForOthers
   const isFull = spotsLeft <= 0
   const blockedByReserved = isFull && reservedForOthers > 0 && !ev.isReservedForUser && !ev.isUserRegistered
-  // Pełny dla tego widza (`isFull`) = można dołączyć do kolejki, także gdy blokują wyłącznie miejsca
-  // trzymane na zaproszenie. Zwolnią się przy anulowaniu potwierdzonej rezerwacji LUB zdjęciu
-  // zaproszenia przez admina (oba wołają notifyAll), więc kolejka nie jest ślepym zaułkiem. Backend
-  // liczy cudze trzymane miejsca jako zajęte przy zapisie do kolejki — front i API są spójne.
+  // Full for this viewer (`isFull`) = can join the queue, also when only invitation-held seats
+  // block. They free up when a confirmed reservation is cancelled OR the admin removes an
+  // invitation (both call notifyAll), so the queue is not a dead end. The backend counts other
+  // people's held seats as taken when joining the queue — frontend and API are consistent.
   const waitlistStatus = ev.userWaitlistStatus
   const waitlistEntryId = ev.waitlistEntryId
   const confirmationDeadline = ev.confirmationDeadline
@@ -184,7 +184,7 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
     if (!isFull || ev.isUserRegistered || enrollmentClosed) return null
 
     if (!isAuthenticated) {
-      // Przy blockedByReserved fioletowy box wyżej już tłumaczy sytuację — nie dublujemy.
+      // With blockedByReserved the purple box above already explains the situation — no duplication.
       if (blockedByReserved) return null
       return (
         <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-lg">
@@ -240,7 +240,7 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
     }
 
     // Authenticated, full, not yet on waitlist — hint shown above the button.
-    // Przy blockedByReserved fioletowy box wyżej już tłumaczy pełność — nie dublujemy komunikatu.
+    // With blockedByReserved the purple box above already explains the fullness — no duplicate message.
     if (blockedByReserved) return null
     return (
       <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg">
@@ -482,14 +482,14 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
           </div>
         )}
 
-        {/* Zaproszony: miejsce trzymane dla Ciebie */}
+        {/* Invitee: seat held for you */}
         {ev.eventType !== 'UNAVAILABLE' && ev.isReservedForUser && !ev.isUserRegistered && !enrollmentClosed && (
           <div className="p-3 bg-violet-500/10 border border-violet-500/30 rounded-lg">
             <span className="text-violet-200 font-medium">🎟 {t('event.reservedForYou')}</span>
           </div>
         )}
 
-        {/* Niezalogowanym podpowiadamy logowanie; zalogowany nie-zaproszony dostaje zwięzły fakt + listę rezerwową. */}
+        {/* Anonymous users get a login hint; a logged-in non-invitee gets the brief fact + the waitlist. */}
         {ev.eventType !== 'UNAVAILABLE' && blockedByReserved && !enrollmentClosed && (
           <div className="p-3 bg-violet-500/10 border border-violet-500/20 rounded-lg">
             <span className="text-violet-200/90 text-sm">

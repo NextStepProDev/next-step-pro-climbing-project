@@ -14,13 +14,13 @@ import java.util.UUID;
 public interface TrainingRequestRepository extends JpaRepository<TrainingRequest, UUID> {
 
     /**
-     * Propozycja z dociągniętym userem — do ścieżek, które przekazują usera do asynchronicznych
-     * maili (lazy proxy zainicjalizowałby się dopiero na wątku mailowym, poza sesją Hibernate).
+     * Request with the user eagerly fetched — for paths that pass the user to asynchronous
+     * emails (a lazy proxy would initialize only on the mail thread, outside the Hibernate session).
      */
     @Query("SELECT tr FROM TrainingRequest tr JOIN FETCH tr.user WHERE tr.id = :id")
     Optional<TrainingRequest> findByIdWithUser(UUID id);
 
-    /** Limit anty-spamowy: ile propozycji użytkownika czeka na reakcję. */
+    /** Anti-spam limit: how many of the user's requests are awaiting a response. */
     int countByUserIdAndStatus(UUID userId, TrainingRequestStatus status);
 
     @Query("""
@@ -33,8 +33,8 @@ public interface TrainingRequestRepository extends JpaRepository<TrainingRequest
         """)
     List<TrainingRequest> findByUserIdWithDetails(UUID userId);
 
-    // Stronicowanie: JOIN FETCH tylko po relacjach to-one, więc Hibernate stosuje LIMIT w SQL
-    // (ostrzeżenie o paginacji w pamięci dotyczy wyłącznie fetchy kolekcji).
+    // Pagination: JOIN FETCH only on to-one relations, so Hibernate applies LIMIT in SQL
+    // (the in-memory pagination warning applies only to collection fetches).
     @Query(value = """
         SELECT tr FROM TrainingRequest tr
         JOIN FETCH tr.user
@@ -62,7 +62,7 @@ public interface TrainingRequestRepository extends JpaRepository<TrainingRequest
 
     int countByStatus(TrainingRequestStatus status);
 
-    /** Scheduler: propozycje PENDING, których data już minęła → EXPIRED. */
+    /** Scheduler: PENDING requests whose date has already passed → EXPIRED. */
     @Modifying
     @Query("""
         UPDATE TrainingRequest tr SET tr.status = 'EXPIRED'

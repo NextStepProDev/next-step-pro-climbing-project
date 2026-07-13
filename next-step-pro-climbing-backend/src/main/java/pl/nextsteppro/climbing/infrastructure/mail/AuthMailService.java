@@ -69,8 +69,8 @@ public class AuthMailService {
         sendEmail(user.getEmail(), subject, body);
     }
 
-    // Powiadomienie do ADMINA, gdy użytkownik SAM usunął swoje konto.
-    // affectedReservations = liczba anulowanych potwierdzonych rezerwacji (zwolnione miejsca).
+    // Notification to the ADMIN when a user deleted their own account.
+    // affectedReservations = number of cancelled confirmed reservations (freed seats).
     @Async
     public void sendAccountSelfDeletedAdminNotification(User user, int affectedReservations) {
         String subject = msg.getForLang("email.admin.account.deleted.subject", ADMIN_LANG, user.getFullName());

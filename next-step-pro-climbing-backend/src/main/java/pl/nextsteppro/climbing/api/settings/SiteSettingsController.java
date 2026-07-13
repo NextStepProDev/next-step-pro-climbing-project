@@ -15,7 +15,7 @@ import pl.nextsteppro.climbing.api.settings.SiteSettingsDtos.HomeSettingsDto;
 
 @RestController
 @RequestMapping("/api/settings")
-@Tag(name = "Site Settings", description = "Publiczne ustawienia witryny")
+@Tag(name = "Site Settings", description = "Public site settings")
 public class SiteSettingsController {
 
     private final AdminSiteSettingsService adminSiteSettingsService;
@@ -25,7 +25,7 @@ public class SiteSettingsController {
     }
 
     @GetMapping("/home")
-    @Operation(summary = "Pobierz wszystkie ustawienia strony głównej (hero + badges) jednym zapytaniem")
+    @Operation(summary = "Get all homepage settings (hero + badges) in one request")
     @ApiResponse(responseCode = "200", description = "Hero image + badges")
     public ResponseEntity<HomeSettingsDto> getHomeSettings() {
         return ResponseEntity.ok(new HomeSettingsDto(
@@ -38,36 +38,36 @@ public class SiteSettingsController {
     }
 
     @GetMapping("/hero")
-    @Operation(summary = "Pobierz zdjęcie tła strony głównej (desktop)")
-    @ApiResponse(responseCode = "200", description = "URL zdjęcia hero lub null gdy brak")
+    @Operation(summary = "Get the homepage background image (desktop)")
+    @ApiResponse(responseCode = "200", description = "Hero image URL or null if none")
     public ResponseEntity<HeroImageDto> getHeroImage() {
         return ResponseEntity.ok(adminSiteSettingsService.getHeroImage());
     }
 
     @GetMapping("/hero-mobile")
-    @Operation(summary = "Pobierz zdjęcie tła strony głównej (mobile)")
-    @ApiResponse(responseCode = "200", description = "URL zdjęcia hero mobile lub null gdy brak")
+    @Operation(summary = "Get the homepage background image (mobile)")
+    @ApiResponse(responseCode = "200", description = "Mobile hero image URL or null if none")
     public ResponseEntity<HeroImageDto> getMobileHeroImage() {
         return ResponseEntity.ok(adminSiteSettingsService.getMobileHeroImage());
     }
 
     @GetMapping("/badge")
-    @Operation(summary = "Pobierz prawy badge/logo strony głównej")
-    @ApiResponse(responseCode = "200", description = "URL badge lub null gdy brak")
+    @Operation(summary = "Get the right homepage badge/logo")
+    @ApiResponse(responseCode = "200", description = "Badge URL or null if none")
     public ResponseEntity<BadgeImageDto> getBadgeImage() {
         return ResponseEntity.ok(adminSiteSettingsService.getBadgeImage());
     }
 
     @GetMapping("/badge-left")
-    @Operation(summary = "Pobierz lewy badge/logo strony głównej")
-    @ApiResponse(responseCode = "200", description = "URL badge lub null gdy brak")
+    @Operation(summary = "Get the left homepage badge/logo")
+    @ApiResponse(responseCode = "200", description = "Badge URL or null if none")
     public ResponseEntity<BadgeImageDto> getBadgeLeftImage() {
         return ResponseEntity.ok(adminSiteSettingsService.getBadgeLeftImage());
     }
 
     @GetMapping("/calendar-promo")
-    @Operation(summary = "Pobierz aktywną promocję nad kalendarzem (enabled=false gdy brak)")
-    @ApiResponse(responseCode = "200", description = "Treść promocji per język lub enabled=false")
+    @Operation(summary = "Get the active calendar promo (enabled=false if none)")
+    @ApiResponse(responseCode = "200", description = "Promo content per language or enabled=false")
     public ResponseEntity<CalendarPromoSectionDto> getCalendarPromo() {
         return ResponseEntity.ok(adminSiteSettingsService.getCalendarPromoSection());
     }

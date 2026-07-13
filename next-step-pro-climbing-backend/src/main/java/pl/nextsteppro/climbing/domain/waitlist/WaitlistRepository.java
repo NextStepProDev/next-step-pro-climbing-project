@@ -39,7 +39,7 @@ public interface WaitlistRepository extends JpaRepository<Waitlist, UUID> {
     @Query("SELECT COUNT(w) > 0 FROM Waitlist w WHERE w.user.id = :userId AND w.timeSlot.id = :slotId AND w.status IN :statuses")
     boolean existsByUserAndSlotAndStatuses(UUID userId, UUID slotId, List<WaitlistStatus> statuses);
 
-    // Widok admina „Listy rezerwowe": aktywne wpisy na nadchodzące sloty, pogrupowane po terminie
+    // Admin "Waitlists" view: active entries for upcoming slots, grouped by slot
     @Query("""
         SELECT w FROM Waitlist w JOIN FETCH w.user JOIN FETCH w.timeSlot s
         WHERE w.status IN ('WAITING', 'PENDING_CONFIRMATION') AND s.date >= :fromDate
@@ -47,7 +47,7 @@ public interface WaitlistRepository extends JpaRepository<Waitlist, UUID> {
         """)
     List<Waitlist> findActiveForUpcomingSlots(java.time.LocalDate fromDate);
 
-    // Badge admina: zapisy na listę rezerwową od ostatniego "przeczytania" (EXPIRED nie liczymy)
+    // Admin badge: waitlist joins since last "read" (EXPIRED not counted)
     @Query("SELECT COUNT(w) FROM Waitlist w WHERE w.createdAt > :since AND w.status <> 'EXPIRED'")
     int countActiveCreatedAfter(Instant since);
 

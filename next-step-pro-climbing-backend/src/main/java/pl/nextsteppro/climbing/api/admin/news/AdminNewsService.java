@@ -51,7 +51,7 @@ public class AdminNewsService {
         this.baseUrl = baseUrl;
     }
 
-    // --- Artykuły ---
+    // --- Articles ---
 
     @Transactional(readOnly = true)
     public AdminNewsPageDto getAllNews(int page, int size) {
@@ -204,7 +204,7 @@ public class AdminNewsService {
         return toDetailAdminDto(copy, copyBlocks);
     }
 
-    // --- Miniaturka (z synchronizacją na rodzeństwo w grupie tłumaczeń) ---
+    // --- Thumbnail (with sync to siblings in the translation group) ---
 
     @CacheEvict(value = {"newsList", "newsDetail"}, allEntries = true)
     public NewsDetailAdminDto uploadThumbnail(UUID id, MultipartFile file) throws IOException {
@@ -257,7 +257,7 @@ public class AdminNewsService {
         }
     }
 
-    // --- Bloki treści ---
+    // --- Content blocks ---
 
     @CacheEvict(value = "newsDetail", allEntries = true)
     public ContentBlockAdminDto addTextBlock(UUID newsId, AddTextBlockRequest request) {
@@ -432,7 +432,7 @@ public class AdminNewsService {
         }
     }
 
-    // --- Synchronizacja mediów do tłumaczeń ---
+    // --- Media sync to translations ---
 
     @CacheEvict(value = {"newsList", "newsDetail"}, allEntries = true)
     public SyncMediaResultDto syncMediaToTranslations(UUID sourceNewsId) {
@@ -513,7 +513,7 @@ public class AdminNewsService {
         return new NewsletterSentDto(subscribers.size());
     }
 
-    // --- Helpery ---
+    // --- Helpers ---
 
     private void syncThumbnailToSiblings(News source) {
         for (News sibling : newsRepository.findByTranslationGroupId(source.getTranslationGroupId())) {

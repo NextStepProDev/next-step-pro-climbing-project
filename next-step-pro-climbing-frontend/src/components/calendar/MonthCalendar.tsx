@@ -127,8 +127,8 @@ export function MonthCalendar({ currentMonth, onMonthChange, days, events, onDay
           const hasAvailabilityWindow = dayData?.hasAvailabilityWindow ?? false
           const hasUserReservation = dayData?.hasUserReservation
           const hasEvents = dayEvents.length > 0
-          // Przyszłe dni klikalne także gdy PUSTE — otwierają widok dnia z CTA "Zaproponuj termin"
-          // (bez tego jedyne wejście propozycji z pustego dnia było w widoku tygodnia).
+          // Future days are clickable even when EMPTY — they open the day view with the "Propose a time"
+          // CTA (without this, the only request entry point from an empty day was the week view).
           const isClickable = allDaysClickable || !isPast
 
           return (

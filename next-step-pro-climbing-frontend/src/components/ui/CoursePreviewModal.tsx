@@ -42,14 +42,14 @@ export function CoursePreviewModal({
         {/* Thumbnail */}
         {thumbnailUrl ? (
           <div className="relative w-full rounded-lg overflow-hidden mb-6 bg-surface-800 aspect-video">
-            {/* Rozmyte tło z tego samego zdjęcia — wypełnia puste miejsca zamiast czarnego pasa */}
+            {/* Blurred background from the same image — fills the empty space instead of a black bar */}
             <img
               src={thumbnailUrl}
               alt=""
               aria-hidden="true"
               className="absolute inset-0 w-full h-full object-cover scale-110 blur-2xl"
             />
-            {/* Pełne zdjęcie, wyśrodkowane */}
+            {/* Full image, centered */}
             <img
               src={thumbnailUrl}
               alt={title}

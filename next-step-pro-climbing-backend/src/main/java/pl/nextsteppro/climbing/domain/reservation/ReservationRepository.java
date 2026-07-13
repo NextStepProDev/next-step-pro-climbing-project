@@ -54,8 +54,8 @@ public interface ReservationRepository extends JpaRepository<Reservation, UUID> 
     @Query("SELECT r.participants FROM Reservation r WHERE r.user.id = :userId AND r.timeSlot.event.id = :eventId AND r.status = 'CONFIRMED'")
     List<Integer> findUserParticipantsForEvent(UUID userId, UUID eventId);
 
-    // Zaproszeni, którzy już zarezerwowali, są liczeni w potwierdzonych — guard limitu zaproszeń
-    // musi ich odfiltrować z listy zaproszeń, żeby nie liczyć podwójnie.
+    // Invitees who already booked are counted among confirmed — the invitation limit guard
+    // must filter them out of the invitation list to avoid double-counting.
     @Query("SELECT r.user.id FROM Reservation r WHERE r.timeSlot.id = :timeSlotId AND r.status = 'CONFIRMED'")
     List<UUID> findConfirmedUserIdsByTimeSlotId(UUID timeSlotId);
 
@@ -70,16 +70,16 @@ public interface ReservationRepository extends JpaRepository<Reservation, UUID> 
     @Query("UPDATE Reservation r SET r.status = 'CANCELLED' WHERE r.user.id = :userId AND r.status = 'CONFIRMED'")
     void cancelConfirmedByUserId(UUID userId);
 
-    // Projekcje (nie ładują encji Reservation do sesji) — używane przy usuwaniu konta,
-    // by zebrać dotknięte sloty/wydarzenia ZANIM rezerwacje zostaną anulowane/usunięte kaskadą.
+    // Projections (do not load Reservation entities into the session) — used during account
+    // deletion to collect affected slots/events BEFORE reservations are cancelled/cascade-deleted.
     @Query("SELECT r.timeSlot.id FROM Reservation r WHERE r.user.id = :userId AND r.status = 'CONFIRMED'")
     List<UUID> findConfirmedSlotIdsByUserId(UUID userId);
 
     @Query("SELECT DISTINCT r.timeSlot.event.id FROM Reservation r WHERE r.user.id = :userId AND r.status = 'CONFIRMED' AND r.timeSlot.event IS NOT NULL")
     List<UUID> findConfirmedEventIdsByUserId(UUID userId);
 
-    // Powiadomienia admina: nowe rezerwacje od ostatniego "przeczytania" (badge w panelu).
-    // Pomija rezerwacje dodane ręcznie przez admina — kropka świeci tylko dla akcji klientów.
+    // Admin notifications: new reservations since last "read" (panel badge).
+    // Skips reservations added manually by the admin — the dot lights up only for client actions.
     @Query("SELECT COUNT(r) FROM Reservation r WHERE r.status = 'CONFIRMED' AND r.createdAt > :since AND r.createdByAdmin = false")
     int countConfirmedCreatedAfter(Instant since);
 }
