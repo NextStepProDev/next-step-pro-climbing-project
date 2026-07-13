@@ -419,6 +419,7 @@ class EventWaitlistServiceTest {
         verify(reservationRepository).save(any(Reservation.class));
         verify(eventWaitlistRepository).delete(entry);
         verify(waitlistMailService).sendEventWaitlistReservationConfirmed(testUser, testEvent);
+        verify(waitlistMailService).sendEventWaitlistAdminNotification(testUser, testEvent);
         verify(activityLogService).logEventReservationCreated(testUser, testEvent, 1);
     }
 

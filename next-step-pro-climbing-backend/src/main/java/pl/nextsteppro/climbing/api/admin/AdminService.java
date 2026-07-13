@@ -34,6 +34,7 @@ import pl.nextsteppro.climbing.infrastructure.security.JwtAuthenticationFilter;
 import pl.nextsteppro.climbing.api.activitylog.ActivityLogService;
 import pl.nextsteppro.climbing.api.reservation.EventWaitlistService;
 import pl.nextsteppro.climbing.api.reservation.WaitlistService;
+import pl.nextsteppro.climbing.domain.waitlist.EventWaitlist;
 import pl.nextsteppro.climbing.domain.waitlist.EventWaitlistRepository;
 import pl.nextsteppro.climbing.domain.waitlist.Waitlist;
 import pl.nextsteppro.climbing.domain.waitlist.WaitlistRepository;
@@ -472,6 +473,68 @@ public class AdminService {
             w.getConfirmationDeadline(),
             w.getCreatedAt()
         );
+    }
+
+    /** Lustro {@link #getSlotWaitlist} dla wydarzeń — osoby z aktywną ofertą (PENDING) najpierw. */
+    @Transactional(readOnly = true)
+    public EventWaitlistAdminDto getEventWaitlist(UUID eventId) {
+        Event event = eventRepository.findById(eventId)
+            .orElseThrow(() -> new IllegalArgumentException("Event not found"));
+
+        List<EventWaitlist> pending = eventWaitlistRepository.findByEventIdAndStatusWithUser(eventId, WaitlistStatus.PENDING_CONFIRMATION);
+        List<EventWaitlist> waiting = eventWaitlistRepository.findByEventIdAndStatusWithUser(eventId, WaitlistStatus.WAITING);
+
+        List<WaitlistAdminEntryDto> all = new ArrayList<>();
+        for (EventWaitlist w : pending) {
+            all.add(toEventWaitlistAdminEntryDto(w));
+        }
+        for (EventWaitlist w : waiting) {
+            all.add(toEventWaitlistAdminEntryDto(w));
+        }
+
+        return new EventWaitlistAdminDto(eventId, event.getTitle(), event.getStartDate(), event.getEndDate(), all);
+    }
+
+    private WaitlistAdminEntryDto toEventWaitlistAdminEntryDto(EventWaitlist w) {
+        return new WaitlistAdminEntryDto(
+            w.getId(),
+            w.getUser().getId(),
+            w.getUser().getFullName(),
+            w.getUser().getEmail(),
+            w.getUser().getPhone(),
+            w.getPosition(),
+            w.getStatus().name(),
+            w.getConfirmationDeadline(),
+            w.getCreatedAt()
+        );
+    }
+
+    /**
+     * Widok globalny „Listy rezerwowe" (zakładka Rezerwacje): wszystkie nadchodzące terminy,
+     * na których ktoś aktualnie czeka. Wpisy na miniona terminy są pomijane (nie ma po nich
+     * czego backfillować, a WAITING na przeszłych slotach potrafi wisieć w bazie).
+     */
+    @Transactional(readOnly = true)
+    public AdminWaitlistsDto getAdminWaitlists() {
+        LocalDate today = LocalDate.now(java.time.ZoneId.of("Europe/Warsaw"));
+
+        Map<UUID, SlotWaitlistGroupDto> slotGroups = new LinkedHashMap<>();
+        for (Waitlist w : waitlistRepository.findActiveForUpcomingSlots(today)) {
+            TimeSlot slot = w.getTimeSlot();
+            slotGroups.computeIfAbsent(slot.getId(), id -> new SlotWaitlistGroupDto(
+                id, slot.getDate(), slot.getStartTime(), slot.getEndTime(), slot.getDisplayTitle(), new ArrayList<>()
+            )).entries().add(toWaitlistAdminEntryDto(w));
+        }
+
+        Map<UUID, EventWaitlistAdminDto> eventGroups = new LinkedHashMap<>();
+        for (EventWaitlist w : eventWaitlistRepository.findActiveForUpcomingEvents(today)) {
+            Event event = w.getEvent();
+            eventGroups.computeIfAbsent(event.getId(), id -> new EventWaitlistAdminDto(
+                id, event.getTitle(), event.getStartDate(), event.getEndDate(), new ArrayList<>()
+            )).entries().add(toEventWaitlistAdminEntryDto(w));
+        }
+
+        return new AdminWaitlistsDto(List.copyOf(slotGroups.values()), List.copyOf(eventGroups.values()));
     }
 
     @Caching(evict = {
@@ -968,7 +1031,9 @@ public class AdminService {
         User admin = userRepository.findById(adminId).orElseThrow();
         int pendingRequests = trainingRequestRepository.countByStatus(TrainingRequestStatus.PENDING);
         int newReservations = reservationRepository.countConfirmedCreatedAfter(admin.getAdminReservationsSeenAt());
-        return new AdminNotificationsDto(pendingRequests, newReservations);
+        int newWaitlistEntries = waitlistRepository.countActiveCreatedAfter(admin.getAdminReservationsSeenAt())
+            + eventWaitlistRepository.countActiveCreatedAfter(admin.getAdminReservationsSeenAt());
+        return new AdminNotificationsDto(pendingRequests, newReservations, newWaitlistEntries);
     }
 
     public void markReservationsSeen(UUID adminId) {

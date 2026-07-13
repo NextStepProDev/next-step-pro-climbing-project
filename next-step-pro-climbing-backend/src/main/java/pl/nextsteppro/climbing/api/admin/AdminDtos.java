@@ -111,6 +111,30 @@ record WaitlistAdminEntryDto(
     Instant joinedAt
 ) {}
 
+record EventWaitlistAdminDto(
+    UUID eventId,
+    String title,
+    LocalDate startDate,
+    LocalDate endDate,
+    List<WaitlistAdminEntryDto> entries
+) {}
+
+// Widok globalny „Listy rezerwowe" w zakładce Rezerwacje — wszystkie nadchodzące terminy,
+// na których ktoś aktualnie czeka (WAITING/PENDING_CONFIRMATION), pogrupowane per termin
+record AdminWaitlistsDto(
+    List<SlotWaitlistGroupDto> slotWaitlists,
+    List<EventWaitlistAdminDto> eventWaitlists
+) {}
+
+record SlotWaitlistGroupDto(
+    UUID slotId,
+    LocalDate date,
+    LocalTime startTime,
+    LocalTime endTime,
+    @Nullable String title,
+    List<WaitlistAdminEntryDto> entries
+) {}
+
 record UpdateTimeSlotRequest(
     @Nullable LocalDate date,
     @Nullable LocalTime startTime,
@@ -256,7 +280,10 @@ record MailSendResponse(int recipientCount) {}
 // Powiadomienia panelu admina: badge na zakładkach (Propozycje/Rezerwacje) i linku Admin w navbarze
 record AdminNotificationsDto(
     int pendingRequests,
-    int newReservations
+    int newReservations,
+    // Nowe zapisy na listy rezerwowe (sloty + wydarzenia) od ostatniego "przeczytania" —
+    // ten sam znacznik co newReservations, wejście w zakładkę Rezerwacje zeruje oba
+    int newWaitlistEntries
 ) {}
 
 record NotifyParticipantsResult(int notifiedCount) {}

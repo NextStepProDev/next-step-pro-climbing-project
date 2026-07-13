@@ -362,6 +362,7 @@
     "registeredOf": "Registered ({{count}}/{{max}})",
     "noRegistered": "No one is registered for this slot.",
     "noRegisteredShort": "No registered participants",
+    "waitlistSection": "Waitlist ({{count}})",
     "blockAndCancel": "Block and cancel reservations",
     "blockSimple": "Block slot",
     "deleteAndCancel": "Delete and cancel reservations",
@@ -410,6 +411,13 @@
     "deleteMessage": "This archived reservation will be permanently deleted. This action cannot be undone.",
     "deleteEventMessage": "All reservations for this archived event will be permanently deleted. This action cannot be undone."
   },
+  "waitlists": {
+    "title": "Waitlists",
+    "subtitle": "People waiting for a spot to free up in upcoming sessions",
+    "people": "{{count}} waiting",
+    "waitingSince": "waiting since {{date}}",
+    "pendingUntil": "has an offer — confirm by {{date}}"
+  },
   "events": {
     "addEvent": "Add event",
     "noUpcoming": "No upcoming events",
@@ -429,6 +437,7 @@
     "participantsLabel": "Participants",
     "loading": "Loading...",
     "noParticipants": "No registered participants",
+    "waitlistSection": "Waitlist ({{count}})",
     "alreadyRegistered": "This user is already registered ({{count}} spots). The entered number will be added to their existing reservation.",
     "cancelParticipant": "Remove from event",
     "confirmCancelParticipant": "Remove this user from the event? They will receive an email notification.",

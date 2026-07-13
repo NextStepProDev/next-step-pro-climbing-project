@@ -3,11 +3,12 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { format } from 'date-fns'
-import { Plus, Trash2, Eye, EyeOff, Clock, Pencil, ChevronDown, ChevronRight, ChevronLeft, MapPin, Users, Mail, Phone, AlertTriangle, BookOpen, UserPlus } from 'lucide-react'
+import { Plus, Trash2, Eye, EyeOff, Clock, Pencil, ChevronDown, ChevronRight, ChevronLeft, MapPin, Users, Mail, Phone, AlertTriangle, BookOpen, UserPlus, Hourglass } from 'lucide-react'
 import { adminApi, adminCoursesApi } from '../../api/client'
 import { UserSearchSelect } from '../../components/ui/UserSearchSelect'
 import { InvitedUsersPicker } from '../../components/ui/InvitedUsersPicker'
 import { InviteNotifySection } from '../../components/ui/InviteNotifySection'
+import { WaitlistEntryList } from './AdminReservationsPanel'
 import { getErrorMessage } from '../../utils/errors'
 import { useDirty } from '../../hooks/useDirty'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
@@ -262,6 +263,13 @@ function EventCard({
   const deleteGuestMutation = useMutation({
     mutationFn: (guestId: string) => adminApi.deleteGuestParticipantFromEvent(event.id, guestId),
     onSuccess: () => { invalidateParticipants(); setConfirmDeleteGuestId(null) },
+  })
+
+  // Kolejka oczekujących wydarzenia — sekcja pod uczestnikami, tylko gdy ktoś czeka
+  const { data: waitlist } = useQuery({
+    queryKey: ['admin', 'eventWaitlist', event.id],
+    queryFn: () => adminApi.getEventWaitlist(event.id),
+    enabled: showParticipants,
   })
 
   return (
@@ -622,6 +630,17 @@ function EventCard({
                   </div>
                 </div>
               )}
+            </div>
+          )}
+
+          {/* Lista rezerwowa */}
+          {waitlist && waitlist.entries.length > 0 && (
+            <div className="pt-1">
+              <h4 className="flex items-center gap-1.5 text-sm font-medium text-amber-400">
+                <Hourglass className="w-3.5 h-3.5" />
+                {t('events.waitlistSection', { count: waitlist.entries.length })}
+              </h4>
+              <WaitlistEntryList entries={waitlist.entries} />
             </div>
           )}
         </div>

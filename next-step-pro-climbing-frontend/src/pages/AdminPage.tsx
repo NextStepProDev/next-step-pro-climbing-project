@@ -85,7 +85,9 @@ export function AdminPage() {
   })
   const tabBadges: Record<string, number> = {
     '/admin/requests': notifications?.pendingRequests ?? 0,
-    '/admin/reservations': notifications?.newReservations ?? 0,
+    // Zapisy na listy rezerwowe liczą się razem z nowymi rezerwacjami — oba widoki
+    // (sekcja "Listy rezerwowe" i lista rezerwacji) żyją w tej zakładce, oba czyści wejście
+    '/admin/reservations': (notifications?.newReservations ?? 0) + (notifications?.newWaitlistEntries ?? 0),
   }
 
   return (

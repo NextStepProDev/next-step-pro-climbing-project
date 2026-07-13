@@ -230,6 +230,7 @@ public class EventWaitlistService {
         eventWaitlistRepository.saveAll(otherPending);
 
         waitlistMailService.sendEventWaitlistReservationConfirmed(user, event);
+        waitlistMailService.sendEventWaitlistAdminNotification(user, event);
         activityLogService.logEventReservationCreated(user, event, 1);
 
         log.info("User {} confirmed event waitlist offer for event {} — {} slots reserved, {} others returned to waiting",
