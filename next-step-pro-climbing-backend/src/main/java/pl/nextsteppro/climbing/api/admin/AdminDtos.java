@@ -23,18 +23,18 @@ record CreateTimeSlotRequest(
     @Nullable String title,
     @Nullable UUID eventId,
     boolean isAvailabilityWindow,
-    // Użytkownicy, dla których miejsca są trzymane "na zaproszenie"
+    // Users for whom seats are held "by invitation"
     @Nullable List<UUID> invitedUserIds,
-    // Propozycja terminu, z której powstaje slot (→ status ACCEPTED + link)
+    // Training request this slot is created from (→ status ACCEPTED + link)
     @Nullable UUID trainingRequestId
 ) {}
 
-// Trzymane miejsce + dane zaproszonej osoby (prefill formularza edycji slotu/wydarzenia)
+// Held seat + invited person data (prefill for the slot/event edit form)
 record InvitedUserDto(
     UUID userId,
     String fullName,
     String email,
-    // Kiedy admin ręcznie wysłał mail z zaproszeniem (null = jeszcze nie)
+    // When the admin manually sent the invitation email (null = not yet)
     @Nullable Instant notifiedAt
 ) {}
 
@@ -119,8 +119,8 @@ record EventWaitlistAdminDto(
     List<WaitlistAdminEntryDto> entries
 ) {}
 
-// Widok globalny „Listy rezerwowe" w zakładce Rezerwacje — wszystkie nadchodzące terminy,
-// na których ktoś aktualnie czeka (WAITING/PENDING_CONFIRMATION), pogrupowane per termin
+// Global "Waitlists" view in the Reservations tab — all upcoming slots/events someone is
+// currently waiting for (WAITING/PENDING_CONFIRMATION), grouped per slot/event
 record AdminWaitlistsDto(
     List<SlotWaitlistGroupDto> slotWaitlists,
     List<EventWaitlistAdminDto> eventWaitlists
@@ -143,7 +143,7 @@ record UpdateTimeSlotRequest(
     @Nullable String title,
     @Nullable Boolean isAvailabilityWindow,
     @Nullable Boolean sendNotifications,
-    // null = nie zmieniaj zaproszeń; lista (także pusta) = ustaw dokładnie ten zestaw zaproszonych
+    // null = leave invitations unchanged; a list (even empty) = set exactly this set of invitees
     @Nullable List<UUID> invitedUserIds
 ) {}
 
@@ -165,7 +165,7 @@ record CreateEventRequest(
     @Nullable LocalTime endTime,
     @Nullable UUID courseId,
     @Nullable List<UUID> invitedUserIds,
-    // Propozycja terminu, z której powstaje wydarzenie (→ status ACCEPTED + link)
+    // Training request this event is created from (→ status ACCEPTED + link)
     @Nullable UUID trainingRequestId
 ) {
     @AssertTrue(message = "{validation.event.date.range}")
@@ -187,7 +187,7 @@ record UpdateEventRequest(
     @Nullable LocalTime endTime,
     @Nullable UUID courseId,
     @Nullable Boolean removeCourse,
-    // null = nie zmieniaj zaproszeń; lista (także pusta) = ustaw dokładnie ten zestaw zaproszonych
+    // null = leave invitations unchanged; a list (even empty) = set exactly this set of invitees
     @Nullable List<UUID> invitedUserIds
 ) {}
 
@@ -277,12 +277,12 @@ record SendMailRequest(
 
 record MailSendResponse(int recipientCount) {}
 
-// Powiadomienia panelu admina: badge na zakładkach (Propozycje/Rezerwacje) i linku Admin w navbarze
+// Admin panel notifications: badges on the tabs (Requests/Reservations) and on the Admin navbar link
 record AdminNotificationsDto(
     int pendingRequests,
     int newReservations,
-    // Nowe zapisy na listy rezerwowe (sloty + wydarzenia) od ostatniego "przeczytania" —
-    // ten sam znacznik co newReservations, wejście w zakładkę Rezerwacje zeruje oba
+    // New waitlist joins (slots + events) since last "read" —
+    // same marker as newReservations; entering the Reservations tab resets both
     int newWaitlistEntries
 ) {}
 

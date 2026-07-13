@@ -21,7 +21,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/user")
-@Tag(name = "User", description = "Profil użytkownika")
+@Tag(name = "User", description = "User profile")
 public class UserController {
 
     private final UserService userService;
@@ -33,13 +33,13 @@ public class UserController {
     }
 
     @Operation(
-        summary = "Pobierz profil",
-        description = "Zwraca dane profilu zalogowanego użytkownika"
+        summary = "Get profile",
+        description = "Returns the logged-in user's profile data"
     )
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Dane profilu",
+        @ApiResponse(responseCode = "200", description = "Profile data",
             content = @Content(schema = @Schema(implementation = UserProfileDto.class))),
-        @ApiResponse(responseCode = "401", description = "Użytkownik niezalogowany")
+        @ApiResponse(responseCode = "401", description = "User not authenticated")
     })
     @GetMapping("/me")
     public ResponseEntity<UserProfileDto> getCurrentUser(
@@ -49,14 +49,14 @@ public class UserController {
     }
 
     @Operation(
-        summary = "Aktualizuj profil",
-        description = "Aktualizuje dane profilu użytkownika (telefon, nick)"
+        summary = "Update profile",
+        description = "Updates the user's profile data (phone, nickname)"
     )
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Profil zaktualizowany",
+        @ApiResponse(responseCode = "200", description = "Profile updated",
             content = @Content(schema = @Schema(implementation = UserProfileDto.class))),
-        @ApiResponse(responseCode = "401", description = "Użytkownik niezalogowany"),
-        @ApiResponse(responseCode = "400", description = "Nieprawidłowe dane")
+        @ApiResponse(responseCode = "401", description = "User not authenticated"),
+        @ApiResponse(responseCode = "400", description = "Invalid data")
     })
     @PutMapping("/me")
     public ResponseEntity<UserProfileDto> updateProfile(
@@ -68,11 +68,11 @@ public class UserController {
         ));
     }
 
-    @Operation(summary = "Zmień hasło", description = "Zmienia hasło zalogowanego użytkownika")
+    @Operation(summary = "Change password", description = "Changes the logged-in user's password")
     @ApiResponses({
-        @ApiResponse(responseCode = "204", description = "Hasło zmienione"),
-        @ApiResponse(responseCode = "401", description = "Użytkownik niezalogowany"),
-        @ApiResponse(responseCode = "400", description = "Nieprawidłowe dane")
+        @ApiResponse(responseCode = "204", description = "Password changed"),
+        @ApiResponse(responseCode = "401", description = "User not authenticated"),
+        @ApiResponse(responseCode = "400", description = "Invalid data")
     })
     @PutMapping("/me/password")
     public ResponseEntity<Void> changePassword(
@@ -83,11 +83,11 @@ public class UserController {
         return ResponseEntity.noContent().build();
     }
 
-    @Operation(summary = "Usuń konto", description = "Trwale usuwa konto użytkownika i anuluje wszystkie rezerwacje")
+    @Operation(summary = "Delete account", description = "Permanently deletes the user account and cancels all reservations")
     @ApiResponses({
-        @ApiResponse(responseCode = "204", description = "Konto usunięte"),
-        @ApiResponse(responseCode = "401", description = "Użytkownik niezalogowany"),
-        @ApiResponse(responseCode = "400", description = "Nieprawidłowe hasło")
+        @ApiResponse(responseCode = "204", description = "Account deleted"),
+        @ApiResponse(responseCode = "401", description = "User not authenticated"),
+        @ApiResponse(responseCode = "400", description = "Invalid password")
     })
     @DeleteMapping("/me")
     public ResponseEntity<Void> deleteAccount(
@@ -98,11 +98,11 @@ public class UserController {
         return ResponseEntity.noContent().build();
     }
 
-    @Operation(summary = "Wyloguj ze wszystkich urządzeń",
-        description = "Unieważnia wszystkie refresh tokeny użytkownika — wylogowuje go ze wszystkich urządzeń (w ciągu ≤15 min)")
+    @Operation(summary = "Log out of all devices",
+        description = "Invalidates all of the user's refresh tokens — logs them out of all devices (within ≤15 min)")
     @ApiResponses({
-        @ApiResponse(responseCode = "204", description = "Sesje unieważnione"),
-        @ApiResponse(responseCode = "401", description = "Użytkownik niezalogowany")
+        @ApiResponse(responseCode = "204", description = "Sessions invalidated"),
+        @ApiResponse(responseCode = "401", description = "User not authenticated")
     })
     @PostMapping("/me/logout-all")
     public ResponseEntity<Void> logoutAllDevices(
@@ -112,10 +112,10 @@ public class UserController {
         return ResponseEntity.noContent().build();
     }
 
-    @Operation(summary = "Ustawienia powiadomień", description = "Włącza lub wyłącza powiadomienia email")
+    @Operation(summary = "Notification settings", description = "Enables or disables email notifications")
     @ApiResponses({
-        @ApiResponse(responseCode = "204", description = "Preferencje zaktualizowane"),
-        @ApiResponse(responseCode = "401", description = "Użytkownik niezalogowany")
+        @ApiResponse(responseCode = "204", description = "Preferences updated"),
+        @ApiResponse(responseCode = "401", description = "User not authenticated")
     })
     @PutMapping("/me/notifications")
     public ResponseEntity<Void> updateNotifications(
@@ -126,12 +126,12 @@ public class UserController {
         return ResponseEntity.noContent().build();
     }
 
-    @Operation(summary = "Ustaw avatar", description = "Wgrywa zdjęcie profilowe użytkownika (zastępuje poprzednie)")
+    @Operation(summary = "Set avatar", description = "Uploads the user's profile photo (replaces the previous one)")
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Avatar zapisany",
+        @ApiResponse(responseCode = "200", description = "Avatar saved",
             content = @Content(schema = @Schema(implementation = UserProfileDto.class))),
-        @ApiResponse(responseCode = "401", description = "Użytkownik niezalogowany"),
-        @ApiResponse(responseCode = "400", description = "Nieprawidłowy plik")
+        @ApiResponse(responseCode = "401", description = "User not authenticated"),
+        @ApiResponse(responseCode = "400", description = "Invalid file")
     })
     @PostMapping(value = "/me/avatar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<UserProfileDto> uploadAvatar(
@@ -141,11 +141,11 @@ public class UserController {
         return ResponseEntity.ok(toProfileDto(userService.uploadAvatar(userId, file)));
     }
 
-    @Operation(summary = "Usuń avatar", description = "Usuwa zdjęcie profilowe użytkownika")
+    @Operation(summary = "Delete avatar", description = "Deletes the user's profile photo")
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Avatar usunięty",
+        @ApiResponse(responseCode = "200", description = "Avatar deleted",
             content = @Content(schema = @Schema(implementation = UserProfileDto.class))),
-        @ApiResponse(responseCode = "401", description = "Użytkownik niezalogowany")
+        @ApiResponse(responseCode = "401", description = "User not authenticated")
     })
     @DeleteMapping("/me/avatar")
     public ResponseEntity<UserProfileDto> deleteAvatar(
@@ -154,10 +154,10 @@ public class UserController {
         return ResponseEntity.ok(toProfileDto(userService.deleteAvatar(userId)));
     }
 
-    @Operation(summary = "Zmień język", description = "Ustawia preferowany język użytkownika")
+    @Operation(summary = "Change language", description = "Sets the user's preferred language")
     @ApiResponses({
-        @ApiResponse(responseCode = "204", description = "Język zmieniony"),
-        @ApiResponse(responseCode = "401", description = "Użytkownik niezalogowany")
+        @ApiResponse(responseCode = "204", description = "Language changed"),
+        @ApiResponse(responseCode = "401", description = "User not authenticated")
     })
     @PutMapping("/me/language")
     public ResponseEntity<Void> updateLanguage(
@@ -168,10 +168,10 @@ public class UserController {
         return ResponseEntity.noContent().build();
     }
 
-    @Operation(summary = "Wypisz z newslettera", description = "Wypisuje użytkownika z newslettera bez logowania (link z maila)")
+    @Operation(summary = "Unsubscribe from newsletter", description = "Unsubscribes the user from the newsletter without login (link from the email)")
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Wypisano pomyślnie"),
-        @ApiResponse(responseCode = "400", description = "Nieprawidłowy token")
+        @ApiResponse(responseCode = "200", description = "Unsubscribed successfully"),
+        @ApiResponse(responseCode = "400", description = "Invalid token")
     })
     @GetMapping("/unsubscribe")
     public ResponseEntity<String> unsubscribe(@RequestParam String token) {
@@ -197,10 +197,10 @@ public class UserController {
         }
     }
 
-    @Operation(summary = "Subskrypcja newslettera", description = "Włącza lub wyłącza newsletter")
+    @Operation(summary = "Newsletter subscription", description = "Enables or disables the newsletter")
     @ApiResponses({
-        @ApiResponse(responseCode = "204", description = "Preferencja zaktualizowana"),
-        @ApiResponse(responseCode = "401", description = "Użytkownik niezalogowany")
+        @ApiResponse(responseCode = "204", description = "Preference updated"),
+        @ApiResponse(responseCode = "401", description = "User not authenticated")
     })
     @PutMapping("/me/newsletter")
     public ResponseEntity<Void> updateNewsletter(
@@ -235,72 +235,72 @@ public class UserController {
     }
 }
 
-@Schema(description = "Profil użytkownika")
+@Schema(description = "User profile")
 record UserProfileDto(
-    @Schema(description = "UUID użytkownika") UUID id,
-    @Schema(description = "Adres email") String email,
-    @Schema(description = "Imię") String firstName,
-    @Schema(description = "Nazwisko") String lastName,
-    @Schema(description = "Numer telefonu") String phone,
-    @Schema(description = "Nick/pseudonim") String nickname,
-    @Schema(description = "Rola: USER lub ADMIN") String role,
-    @Schema(description = "Czy użytkownik jest adminem") boolean isAdmin,
-    @Schema(description = "Czy powiadomienia email są włączone") boolean emailNotificationsEnabled,
-    @Schema(description = "Preferowany język (pl, en, es)") String preferredLanguage,
-    @Schema(description = "Czy subskrybuje newsletter") boolean newsletterSubscribed,
-    @Schema(description = "Czy podjął decyzję ws. newslettera") boolean newsletterChoiceMade,
-    @Schema(description = "Czy konto ma hasło (false = tylko OAuth)") boolean hasPassword,
-    @Schema(description = "URL avatara (null gdy brak)") @org.jspecify.annotations.Nullable String avatarUrl,
-    @Schema(description = "Data utworzenia konta") java.time.Instant createdAt
+    @Schema(description = "User UUID") UUID id,
+    @Schema(description = "Email address") String email,
+    @Schema(description = "First name") String firstName,
+    @Schema(description = "Last name") String lastName,
+    @Schema(description = "Phone number") String phone,
+    @Schema(description = "Nickname") String nickname,
+    @Schema(description = "Role: USER or ADMIN") String role,
+    @Schema(description = "Whether the user is an admin") boolean isAdmin,
+    @Schema(description = "Whether email notifications are enabled") boolean emailNotificationsEnabled,
+    @Schema(description = "Preferred language (pl, en, es)") String preferredLanguage,
+    @Schema(description = "Whether subscribed to the newsletter") boolean newsletterSubscribed,
+    @Schema(description = "Whether the user has made a newsletter choice") boolean newsletterChoiceMade,
+    @Schema(description = "Whether the account has a password (false = OAuth only)") boolean hasPassword,
+    @Schema(description = "Avatar URL (null if none)") @org.jspecify.annotations.Nullable String avatarUrl,
+    @Schema(description = "Account creation date") java.time.Instant createdAt
 ) {}
 
-@Schema(description = "Dane do aktualizacji profilu")
+@Schema(description = "Profile update data")
 record UpdateProfileRequest(
-    @Schema(description = "Imię", example = "Jan")
+    @Schema(description = "First name", example = "Jan")
     @jakarta.validation.constraints.Size(min = 3, max = 100, message = "{validation.firstname.size}")
     @jakarta.validation.constraints.Pattern(regexp = "^[\\p{L} .'-]+$", message = "{validation.name.invalid}")
     String firstName,
-    @Schema(description = "Nazwisko", example = "Kowalski")
+    @Schema(description = "Last name", example = "Kowalski")
     @jakarta.validation.constraints.Size(min = 3, max = 100, message = "{validation.lastname.size}")
     @jakarta.validation.constraints.Pattern(regexp = "^[\\p{L} .'-]+$", message = "{validation.name.invalid}")
     String lastName,
-    @Schema(description = "Numer telefonu", example = "+48123456789")
+    @Schema(description = "Phone number", example = "+48123456789")
     @jakarta.validation.constraints.Pattern(regexp = "^\\+[0-9]{1,4}[0-9]{9}$", message = "{validation.phone.invalid}")
     String phone,
-    @Schema(description = "Nick/pseudonim", example = "Climber123")
+    @Schema(description = "Nickname", example = "Climber123")
     @jakarta.validation.constraints.Size(min = 3, max = 50, message = "{validation.nickname.size}")
     @jakarta.validation.constraints.Pattern(regexp = "^[\\p{L}\\p{N} ._-]+$", message = "{validation.nickname.invalid}")
     String nickname
 ) {}
 
-@Schema(description = "Zmiana hasła")
+@Schema(description = "Password change")
 record ChangePasswordRequest(
-    @Schema(description = "Aktualne hasło")
+    @Schema(description = "Current password")
     @jakarta.validation.constraints.NotBlank(message = "{validation.password.required}")
     String currentPassword,
 
-    @Schema(description = "Nowe hasło")
+    @Schema(description = "New password")
     @jakarta.validation.constraints.NotBlank(message = "{validation.password.required}")
     @jakarta.validation.constraints.Size(min = 10, max = 100, message = "{validation.password.size}")
     String newPassword
 ) {}
 
-@Schema(description = "Usunięcie konta")
+@Schema(description = "Account deletion")
 record DeleteAccountRequest(
-    @Schema(description = "Hasło do potwierdzenia") String password
+    @Schema(description = "Password for confirmation") String password
 ) {}
 
-@Schema(description = "Ustawienia powiadomień")
+@Schema(description = "Notification settings")
 record UpdateNotificationsRequest(
-    @Schema(description = "Czy włączyć powiadomienia email") boolean enabled
+    @Schema(description = "Whether to enable email notifications") boolean enabled
 ) {}
 
-@Schema(description = "Zmiana języka")
+@Schema(description = "Language change")
 record UpdateLanguageRequest(
-    @Schema(description = "Kod języka (pl, en, es)", example = "pl") String language
+    @Schema(description = "Language code (pl, en, es)", example = "pl") String language
 ) {}
 
-@Schema(description = "Subskrypcja newslettera")
+@Schema(description = "Newsletter subscription")
 record UpdateNewsletterRequest(
-    @Schema(description = "Czy subskrybować newsletter") boolean subscribed
+    @Schema(description = "Whether to subscribe to the newsletter") boolean subscribed
 ) {}

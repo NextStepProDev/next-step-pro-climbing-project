@@ -16,7 +16,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/instructors")
-@Tag(name = "Instructors", description = "Publiczny dostep do informacji o instruktorach")
+@Tag(name = "Instructors", description = "Public access to instructor information")
 public class InstructorController {
 
     private final InstructorService instructorService;
@@ -26,29 +26,29 @@ public class InstructorController {
     }
 
     @Operation(
-        summary = "Pobierz liste aktywnych instruktorow",
-        description = "Zwraca liste wszystkich aktywnych instruktorow w danym jezyku, posortowana wedlug kolejnosci wyswietlania"
+        summary = "Get active instructors",
+        description = "Returns all active instructors in the given language, sorted by display order"
     )
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Lista instruktorow",
+        @ApiResponse(responseCode = "200", description = "List of instructors",
             content = @Content(schema = @Schema(implementation = InstructorPublicDto.class)))
     })
     @GetMapping
     public ResponseEntity<List<InstructorPublicDto>> getAllInstructors(
-            @Parameter(description = "Jezyk tresci (pl, en, es)")
+            @Parameter(description = "Content language (pl, en, es)")
             @RequestParam(defaultValue = "pl") String language) {
         List<InstructorPublicDto> instructors = instructorService.getAllActiveInstructors(language);
         return ResponseEntity.ok(instructors);
     }
 
     @Operation(
-        summary = "Pobierz szczegoly instruktora",
-        description = "Zwraca szczegolowe informacje o konkretnym instruktorze"
+        summary = "Get instructor details",
+        description = "Returns detailed information about a specific instructor"
     )
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Szczegoly instruktora",
+        @ApiResponse(responseCode = "200", description = "Instructor details",
             content = @Content(schema = @Schema(implementation = InstructorPublicDto.class))),
-        @ApiResponse(responseCode = "404", description = "Instruktor nie znaleziony")
+        @ApiResponse(responseCode = "404", description = "Instructor not found")
     })
     @GetMapping("/{id}")
     public ResponseEntity<InstructorPublicDto> getInstructor(

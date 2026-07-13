@@ -24,8 +24,8 @@ public class TrainingRequestScheduler {
     }
 
     /**
-     * Wygasza oczekujące propozycje, których proponowana data już minęła (co godzinę o :10 —
-     * przesunięcie względem TokenCleanupScheduler, żeby joby nie startowały jednocześnie).
+     * Expires pending requests whose proposed date has already passed (hourly at :10 —
+     * offset from TokenCleanupScheduler so the jobs do not start at the same time).
      */
     @Scheduled(cron = "0 10 * * * *")
     @Transactional

@@ -189,7 +189,7 @@ public class CalendarService {
         int currentParticipants = eventData.participantsMap().getOrDefault(event.getId(), 0);
         boolean isUserRegistered = eventData.userRegisteredEventIds().contains(event.getId());
 
-        // Waitlist status dla zalogowanego usera
+        // Waitlist status for the logged-in user
         @Nullable WaitlistStatus userWaitlistStatus = null;
         @Nullable UUID waitlistEntryId = null;
         @Nullable Instant confirmationDeadline = null;
@@ -212,7 +212,7 @@ public class CalendarService {
             event.getStartDate(),
             event.getStartTime() != null ? event.getStartTime() : LocalTime.of(0, 0)
         );
-        // Okno 12 h NIE dotyczy zaproszonych — mogą potwierdzić swoje miejsce do ostatniej chwili.
+        // The 12 h window does NOT apply to invitees — they can confirm their seat until the last moment.
         boolean enrollmentOpen = !event.getEventType().blocksEnrollment()
             && (isReservedForUser || eventStart.isAfter(LocalDateTime.now(WARSAW).plusHours(BOOKING_CUTOFF_HOURS)));
 
@@ -259,7 +259,7 @@ public class CalendarService {
         int confirmedCount = reservationRepository.countConfirmedByTimeSlotId(slotId)
             + guestReservationRepository.sumParticipantsByTimeSlotId(slotId);
         int pendingWaitlistCount = waitlistRepository.countPendingConfirmationBySlotId(slotId);
-        // Efektywna liczba zajętych miejsc uwzględnia PENDING_CONFIRMATION z waitlisty
+        // The effective taken-seat count includes PENDING_CONFIRMATION from the waitlist
         int effectiveCount = confirmedCount + pendingWaitlistCount;
 
         int reservedSeats = reservedSeatRepository.countPendingBySlotId(slotId);
@@ -420,14 +420,14 @@ public class CalendarService {
             LocalDateTime slotDateTime = LocalDateTime.of(slot.getDate(), slot.getStartTime());
             if (!slot.isBlocked() && slotDateTime.isAfter(cutoff)) {
                 int confirmed = countMap.getOrDefault(slot.getId(), 0);
-                // Miejsca trzymane dla zaproszonych liczą się jako zajęte; własne zaproszenie widza nie.
+                // Seats held for invitees count as taken; the viewer's own invitation does not.
                 int reservedForOthers = inviteMap.getOrDefault(slot.getId(), 0)
                     - (userInvitedSlotIds.contains(slot.getId()) ? 1 : 0);
                 if (confirmed + reservedForOthers < slot.getMaxParticipants()) {
                     availableSlots++;
                 } else if (reservedForOthers > 0) {
-                    // Pełny dla tego widza, ale tylko przez miejsca trzymane na zaproszenie —
-                    // sygnał dla frontu, by zachęcić zaproszonych do zalogowania zamiast „brak miejsc".
+                    // Full for this viewer, but only due to invitation-held seats —
+                    // a signal for the frontend to nudge invitees to log in instead of showing "no seats".
                     hasReservedSeats = true;
                 }
             }
@@ -459,15 +459,15 @@ public class CalendarService {
     }
 
     private static final int BOOKING_CUTOFF_HOURS = 12;
-    // Czas polski (kontener prod = UTC). Patrz BookingTimeValidator — ta sama korekta dla widoków kalendarza.
+    // Polish local time (prod container = UTC). See BookingTimeValidator — same correction for calendar views.
     private static final java.time.ZoneId WARSAW = java.time.ZoneId.of("Europe/Warsaw");
 
     private SlotStatus determineSlotStatus(TimeSlot slot, int confirmedCount, int reservedSeats, boolean isReservedForUser) {
         LocalDateTime slotDateTime = LocalDateTime.of(slot.getDate(), slot.getStartTime());
         LocalDateTime now = LocalDateTime.now(WARSAW);
         if (slot.isAvailabilityWindow()) {
-            // Okno żyje do godziny KOŃCA (nie startu): trwające okno 9-15 o 10:00 wciąż przyjmuje
-            // propozycje terminów na pozostałe godziny — status PAST ukryłby przycisk propozycji.
+            // The window lives until its END time (not start): an ongoing 9-15 window at 10:00 still
+            // accepts training requests for the remaining hours — a PAST status would hide the request button.
             LocalDateTime windowEnd = LocalDateTime.of(slot.getDate(), slot.getEndTime());
             return windowEnd.isBefore(now) ? SlotStatus.PAST : SlotStatus.AVAILABILITY_WINDOW;
         }
@@ -477,13 +477,13 @@ public class CalendarService {
         if (slot.isBlocked()) {
             return SlotStatus.BLOCKED;
         }
-        // Trzymane miejsca innych zaproszonych są dla tego widza niedostępne (FULL z reservedSeats>0 →
-        // front pokaże "zarezerwowane dla zaproszonych"). Własne zaproszenie widza nie blokuje.
+        // Seats held for other invitees are unavailable to this viewer (FULL with reservedSeats>0 →
+        // the frontend shows "reserved for invitees"). The viewer's own invitation does not block.
         int reservedForOthers = reservedSeats - (isReservedForUser ? 1 : 0);
         if (confirmedCount + reservedForOthers >= slot.getMaxParticipants()) {
             return SlotStatus.FULL;
         }
-        // Okno 12 h NIE dotyczy zaproszonych — ich trzymane miejsce można zająć do ostatniej chwili.
+        // The 12 h window does NOT apply to invitees — their held seat can be taken until the last moment.
         if (!isReservedForUser && slotDateTime.isBefore(now.plusHours(BOOKING_CUTOFF_HOURS))) {
             return SlotStatus.BOOKING_CLOSED;
         }
@@ -496,7 +496,7 @@ public class CalendarService {
             event.getStartDate(),
             event.getStartTime() != null ? event.getStartTime() : LocalTime.of(0, 0)
         );
-        // Okno 12 h NIE dotyczy zaproszonych — mogą potwierdzić swoje miejsce do ostatniej chwili.
+        // The 12 h window does NOT apply to invitees — they can confirm their seat until the last moment.
         boolean enrollmentOpen = !event.getEventType().blocksEnrollment()
             && (isReservedForUser || eventStart.isAfter(LocalDateTime.now(WARSAW).plusHours(BOOKING_CUTOFF_HOURS)));
         Course course = event.getCourse();
@@ -535,7 +535,7 @@ public class CalendarService {
                 participantsMap.merge(eventId, confirmed, Math::max);
             }
         }
-        // Dodaj gości zapisanych bezpośrednio na event (nie na slot)
+        // Add guests registered directly on the event (not on a slot)
         guestReservationRepository.sumParticipantsByEventIds(eventIds)
             .forEach(g -> participantsMap.merge(g.slotId(), g.countAsInt(), Integer::sum));
 

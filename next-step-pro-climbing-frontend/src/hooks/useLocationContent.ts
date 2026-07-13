@@ -3,23 +3,23 @@ import { useQuery } from "@tanstack/react-query";
 import { siteSettingsApi } from "../api/client";
 
 export interface ResolvedLocationContent {
-  /** Czy sekcja jest na stronie (wybrany szablon). */
+  /** Whether the section is live on the page (template selected). */
   enabled: boolean;
-  /** Plakietka — opcjonalna (puste = brak plakietki). */
+  /** Badge — optional (empty = no badge). */
   badge: string;
   title: string;
-  /** Podtytuł — opcjonalny (puste = brak linijki). */
+  /** Subtitle — optional (empty = no line). */
   subtitle: string;
-  /** Lista miejsc — opcjonalna (puste = brak listy). */
+  /** Place list — optional (empty = no list). */
   places: string[];
 }
 
 /**
- * Treść sekcji lokalizacji dla aktualnego języka.
- * Tytuł jest stały (i18n). Badge, podtytuł i lista miejsc są opcjonalne:
- * fallback krzyżowy między językami (bieżący → EN → PL → ES), a gdy puste
- * we wszystkich — pole zostaje puste (NIE pokazujemy zakodowanego domyślnego tekstu).
- * Współdzielona przez plakietkę hero (HomePage) i blok CurrentLocationSection.
+ * Location section content for the current language.
+ * The title is fixed (i18n). Badge, subtitle and place list are optional:
+ * cross-language fallback (current → EN → PL → ES); when empty in all
+ * languages — the field stays empty (we do NOT show a hardcoded default text).
+ * Shared by the hero badge (HomePage) and the CurrentLocationSection block.
  */
 export function useLocationContent(): ResolvedLocationContent {
   const { t, i18n } = useTranslation("home");
@@ -54,7 +54,7 @@ export function useLocationContent(): ResolvedLocationContent {
   return {
     enabled: location?.enabled === true,
     badge: pick("badge"),
-    // Tytuł jest STAŁY — zawsze z i18n, admin go nie zmienia.
+    // The title is FIXED — always from i18n, the admin does not change it.
     title: t("location.title"),
     subtitle: pick("subtitle"),
     places: pickPlaces(),

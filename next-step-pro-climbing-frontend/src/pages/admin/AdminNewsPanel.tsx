@@ -72,7 +72,7 @@ type PendingVideoBlock = {
 
 type PendingBlock = PendingTextBlock | PendingImageBlock | PendingVideoBlock
 
-// Normalizuje surowy URL (YouTube/Instagram) do embed URL — identyczna logika jak backend
+// Normalizes a raw URL (YouTube/Instagram) to an embed URL — identical logic to the backend
 function normalizeVideoUrlForPreview(url: string): string | undefined {
   const s = url.trim()
   let m = s.match(/(?:youtube\.com\/watch\?(?:.*&)?v=|youtu\.be\/)([\w-]{11})/)
@@ -287,7 +287,7 @@ export function AdminNewsPanel() {
   )
 }
 
-// ==================== Wiersz grupy tłumaczeń w liście ====================
+// ==================== Translation group row in the list ====================
 
 const LANG_ORDER = ['pl', 'en', 'es'] as const
 
@@ -417,7 +417,7 @@ function TranslationGroupRow({
   )
 }
 
-// ==================== Widok edycji ====================
+// ==================== Edit view ====================
 
 function EditView({
   newsId,
@@ -490,7 +490,7 @@ function EditView({
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null)
   const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null)
   const [thumbnailFromLibrary, setThumbnailFromLibrary] = useState<string | null>(null)
-  // null = tryb "pełne zdjęcie z rozmytym tłem", {x,y} = tryb kadrowania (object-cover)
+  // null = "full image with blurred background" mode, {x,y} = crop mode (object-cover)
   const [focalPoint, setFocalPoint] = useState<{ x: number; y: number } | null>(
     detail.thumbnailFocalPointX != null
       ? { x: detail.thumbnailFocalPointX, y: detail.thumbnailFocalPointY ?? 0.5 }
@@ -813,7 +813,7 @@ function EditView({
   // ---------- Render ----------
   return (
     <div className="pb-24 space-y-8">
-      {/* Powrót do listy */}
+      {/* Back to the list */}
       <button
         onClick={handleExit}
         className="inline-flex items-center gap-2 text-surface-300 hover:text-surface-100 transition-colors text-sm"
@@ -822,7 +822,7 @@ function EditView({
         {t('news.backToList')}
       </button>
 
-      {/* Sekcja 1: Metadane */}
+      {/* Section 1: Metadata */}
       <section className="bg-surface-800 border border-surface-700 rounded-lg p-6">
         <div className="flex items-center gap-3 mb-4">
           <h3 className="text-lg font-semibold text-surface-100">{t('news.sectionMeta')}</h3>
@@ -886,7 +886,7 @@ function EditView({
         </div>
       </section>
 
-      {/* Sekcja: Tłumaczenia */}
+      {/* Section: Translations */}
       <section className="bg-surface-800 border border-surface-700 rounded-lg p-6">
         <h3 className="text-lg font-semibold text-surface-100 mb-3">{t('news.duplicateAsTranslation')}</h3>
         {availableTargetLanguages.length === 0 ? (
@@ -924,7 +924,7 @@ function EditView({
         )}
       </section>
 
-      {/* Sekcja 2: Miniaturka */}
+      {/* Section 2: Thumbnail */}
       <section className="bg-surface-800 border border-surface-700 rounded-lg p-6">
         <h3 className="text-lg font-semibold text-surface-100 mb-4">{t('news.sectionThumbnail')}</h3>
 
@@ -1041,11 +1041,11 @@ function EditView({
         </div>
       </section>
 
-      {/* Sekcja 3: Bloki treści */}
+      {/* Section 3: Content blocks */}
       <section className="bg-surface-800 border border-surface-700 rounded-lg p-6">
         <h3 className="text-lg font-semibold text-surface-100 mb-4">{t('news.sectionContent')}</h3>
 
-        {/* Istniejące bloki */}
+        {/* Existing blocks */}
         {detail.blocks.length > 0 || pendingBlocks.length > 0 ? (
           <div className="space-y-4 mb-6">
             {detail.blocks.map((block, index) => (
@@ -1062,7 +1062,7 @@ function EditView({
               />
             ))}
 
-            {/* Oczekujące nowe bloki */}
+            {/* Pending new blocks */}
             {pendingBlocks.map((pending, index) => (
               <PendingBlockItem
                 key={pending.tempId}
@@ -1229,7 +1229,7 @@ function EditView({
         </div>
       </div>
 
-      {/* Confirm: usuń blok */}
+      {/* Confirm: delete block */}
       <ConfirmModal
         isOpen={!!deleteBlockConfirmId}
         title={t('news.deleteBlockConfirmTitle')}
@@ -1239,7 +1239,7 @@ function EditView({
         onClose={() => setDeleteBlockConfirmId(null)}
       />
 
-      {/* Confirm: wyjdź bez zapisu */}
+      {/* Confirm: leave without saving */}
       <ConfirmModal
         isOpen={showExitConfirm}
         title={t('news.exitConfirmTitle')}
@@ -1249,7 +1249,7 @@ function EditView({
         onClose={() => setShowExitConfirm(false)}
       />
 
-      {/* Confirm: usuń pojedynczą wersję językową */}
+      {/* Confirm: delete a single language version */}
       <ConfirmModal
         isOpen={deleteSingleConfirm}
         title={t('news.deleteSingleConfirmTitle')}
@@ -1259,7 +1259,7 @@ function EditView({
         onClose={() => setDeleteSingleConfirm(false)}
       />
 
-      {/* Modal: synchronizacja mediów do tłumaczeń */}
+      {/* Modal: media sync to translations */}
       <Modal
         isOpen={showSyncMediaModal}
         onClose={() => { setShowSyncMediaModal(false); setPendingSyncAction(null) }}
@@ -1299,7 +1299,7 @@ function EditView({
         </div>
       </Modal>
 
-      {/* Podgląd artykułu */}
+      {/* Article preview */}
       <NewsPreviewModal
         isOpen={showPreview}
         onClose={() => setShowPreview(false)}
@@ -1352,7 +1352,7 @@ function EditView({
   )
 }
 
-// ==================== Edytor istniejącego bloku ====================
+// ==================== Existing block editor ====================
 
 function BlockEditor({
   block,
@@ -1385,7 +1385,7 @@ function BlockEditor({
       'border rounded-lg p-4',
       isModified ? 'border-amber-500/50' : 'border-surface-600'
     )}>
-      {/* Header bloku */}
+      {/* Block header */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <span className={clsx(
@@ -1434,7 +1434,7 @@ function BlockEditor({
         </div>
       </div>
 
-      {/* Zawartość */}
+      {/* Content */}
       {block.blockType === 'TEXT' ? (
         <RichTextEditor
           value={editState.content ?? ''}
@@ -1475,7 +1475,7 @@ function BlockEditor({
   )
 }
 
-// ==================== Podgląd oczekującego nowego bloku ====================
+// ==================== Pending new block preview ====================
 
 function PendingBlockItem({
   block,

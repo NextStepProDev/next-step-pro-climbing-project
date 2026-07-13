@@ -75,8 +75,8 @@ export function AdminPage() {
   const { t } = useTranslation('admin')
   const location = useLocation()
 
-  // Liczniki powiadomień: badge na zakładkach "Propozycje" (oczekujące) i "Rezerwacje" (nowe
-  // od ostatniego przeczytania). Ten sam endpoint zasila kropkę na linku Admin w navbarze.
+  // Notification counters: badges on the "Requests" tab (pending) and the "Reservations" tab
+  // (new since last read). The same endpoint feeds the dot on the Admin navbar link.
   const { data: notifications } = useQuery({
     queryKey: ['admin', 'notifications'],
     queryFn: adminApi.getNotifications,
@@ -85,8 +85,8 @@ export function AdminPage() {
   })
   const tabBadges: Record<string, number> = {
     '/admin/requests': notifications?.pendingRequests ?? 0,
-    // Zapisy na listy rezerwowe liczą się razem z nowymi rezerwacjami — oba widoki
-    // (sekcja "Listy rezerwowe" i lista rezerwacji) żyją w tej zakładce, oba czyści wejście
+    // Waitlist joins count together with new reservations — both views (the "Waitlists"
+    // section and the reservation list) live in this tab, and entering it clears both
     '/admin/reservations': (notifications?.newReservations ?? 0) + (notifications?.newWaitlistEntries ?? 0),
   }
 

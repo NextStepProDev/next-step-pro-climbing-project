@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Publiczne DTOs dla kursów
+ * Public DTOs for courses
  */
 public class CourseDtos {
 

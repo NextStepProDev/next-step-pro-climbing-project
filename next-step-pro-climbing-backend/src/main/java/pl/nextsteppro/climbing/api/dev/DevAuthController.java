@@ -23,7 +23,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/dev")
 @Profile("dev")
-@Tag(name = "Dev Auth", description = "Autoryzacja deweloperska (tylko profil dev)")
+@Tag(name = "Dev Auth", description = "Developer authentication (dev profile only)")
 public class DevAuthController {
 
     private final UserRepository userRepository;
@@ -33,8 +33,8 @@ public class DevAuthController {
     }
 
     @Operation(
-        summary = "Zaloguj jako testowy użytkownik",
-        description = "Tworzy sesję dla testowego użytkownika. Użyj tego do testowania endpointów wymagających logowania."
+        summary = "Log in as a test user",
+        description = "Creates a session for a test user. Use this to test endpoints that require login."
     )
     @PostMapping("/login")
     public ResponseEntity<Map<String, Object>> devLogin(
@@ -62,8 +62,8 @@ public class DevAuthController {
     }
 
     @Operation(
-        summary = "Wyloguj",
-        description = "Kończy sesję deweloperską"
+        summary = "Log out",
+        description = "Ends the developer session"
     )
     @PostMapping("/logout")
     public ResponseEntity<Map<String, String>> devLogout(HttpSession session) {
@@ -72,8 +72,8 @@ public class DevAuthController {
     }
 
     @Operation(
-        summary = "Sprawdź sesję",
-        description = "Sprawdza czy jesteś zalogowany i jako kto"
+        summary = "Check session",
+        description = "Checks whether you are logged in and as whom"
     )
     @GetMapping("/session")
     public ResponseEntity<Map<String, Object>> checkSession(HttpSession session) {
@@ -82,7 +82,7 @@ public class DevAuthController {
         if (userId == null) {
             Map<String, Object> response = new HashMap<>();
             response.put("authenticated", false);
-            response.put("message", "Nie jesteś zalogowany. Użyj POST /api/dev/login");
+            response.put("message", "You are not logged in. Use POST /api/dev/login");
             return ResponseEntity.ok(response);
         }
 
@@ -101,14 +101,14 @@ public class DevAuthController {
             .orElseGet(() -> {
                 Map<String, Object> response = new HashMap<>();
                 response.put("authenticated", false);
-                response.put("message", "Użytkownik nie istnieje");
+                response.put("message", "User not found");
                 return ResponseEntity.ok(response);
             });
     }
 
     @Operation(
-        summary = "Lista testowych użytkowników",
-        description = "Zwraca listę użytkowników do szybkiego logowania"
+        summary = "List of test users",
+        description = "Returns a list of users for quick login"
     )
     @GetMapping("/users")
     public ResponseEntity<?> listDevUsers() {

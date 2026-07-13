@@ -35,8 +35,8 @@ export function Navbar() {
   const isLinkActive = (path: string) =>
     path === "/" ? location.pathname === "/" : location.pathname.startsWith(path);
 
-  // Powiadomienia admina (oczekujące propozycje + nowe rezerwacje) — czerwona kropka na
-  // linku Admin, żeby było widać od progu, że coś czeka. Ten sam cache co panel admina.
+  // Admin notifications (pending requests + new reservations) — a red dot on the Admin
+  // link so it is visible right away that something is waiting. Same cache as the admin panel.
   const { data: adminNotifications } = useQuery({
     queryKey: ['admin', 'notifications'],
     queryFn: adminApi.getNotifications,
@@ -50,9 +50,9 @@ export function Navbar() {
       + (adminNotifications?.newWaitlistEntries ?? 0)
     : 0;
 
-  // Wiszące zaproszenia klienta (miejsca trzymane "na zaproszenie") — badge na linku
-  // Moje rezerwacje. Świeci dopóki user nie zarezerwuje trzymanego miejsca. Ten sam
-  // cache co sekcja "Zaproszenia" na MyReservationsPage.
+  // The client's pending invitations (invitation-held seats) — a badge on the
+  // My Reservations link. Lit until the user books the held seat. Same cache
+  // as the "Invitations" section on MyReservationsPage.
   const { data: myInvitations } = useQuery({
     queryKey: ['invitations', 'my'],
     queryFn: reservationApi.getMyInvitations,
@@ -189,9 +189,9 @@ export function Navbar() {
     updateIndicator();
   }, [location.pathname, updateIndicator]);
 
-  // Na stronie głównej u góry navbar „leży" na zdjęciu hero jako szkło (frosted),
-  // żeby było widać zdjęcie za logo/hamburgerem. Po zescrollowaniu, przy otwartym
-  // menu oraz na desktopie (md:) wraca do normalnego ciemnego tła.
+  // At the top of the homepage the navbar "sits" on the hero image as frosted glass,
+  // so the photo shows through behind the logo/hamburger. After scrolling, with the menu
+  // open, and on desktop (md:) it returns to the normal dark background.
   const heroOverlay = location.pathname === "/" && atTop && !mobileMenuOpen;
 
   return (
@@ -205,8 +205,8 @@ export function Navbar() {
         : "bg-surface-900/80 backdrop-blur-sm border-b border-surface-800",
     )}>
       <div className={clsx("max-w-7xl mx-auto px-4 sm:px-6 lg:px-8", heroOverlay && "py-2")}>
-        {/* W trybie glass (home u góry) navbar staje się pływającą kapsułą (pill) z owalnymi
-            końcami, odsuniętą od krawędzi. W zwykłym trybie to pełny pasek (h-18). */}
+        {/* In glass mode (top of home) the navbar becomes a floating pill with rounded
+            ends, offset from the edges. In normal mode it is a full bar (h-18). */}
         <div className={clsx(
           "flex items-center justify-between",
           heroOverlay
@@ -432,7 +432,7 @@ export function Navbar() {
             )}
           </div>
 
-          {/* Mobile menu button (kropka = powiadomienia admina ukryte w zamkniętym menu) */}
+          {/* Mobile menu button (dot = admin notifications hidden in the closed menu) */}
           <button
             className="md:hidden relative text-surface-300"
             aria-label={mobileMenuOpen ? t('nav.closeMenu') : t('nav.openMenu')}

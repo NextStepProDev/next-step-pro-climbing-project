@@ -34,8 +34,8 @@ public class AdminTrainingRequestService {
     }
 
     /**
-     * Stronicowana lista propozycji: bez filtra — oczekujące pierwsze, potem najnowsze;
-     * z filtrem statusu — najnowsze pierwsze. Archiwum setek propozycji nie ładuje się w całości.
+     * Paginated request list: without a filter — pending first, then newest;
+     * with a status filter — newest first. An archive of hundreds of requests never loads whole.
      */
     @Transactional(readOnly = true)
     public AdminTrainingRequestPageDto getPage(@Nullable TrainingRequestStatus status, int page, int size) {
@@ -52,12 +52,12 @@ public class AdminTrainingRequestService {
     }
 
     /**
-     * Zmiana statusu: CONTACTED / REJECTED / PENDING (przywrócenie do oczekujących).
-     * ACCEPTED powstaje wyłącznie przez utworzenie slotu/wydarzenia z {@code trainingRequestId}
-     * (patrz AdminService) — tu jest odrzucane, żeby nie powstał ACCEPTED bez linku.
+     * Status change: CONTACTED / REJECTED / PENDING (restore to pending).
+     * ACCEPTED is only created by creating a slot/event with {@code trainingRequestId}
+     * (see AdminService) — it is rejected here so no ACCEPTED without a link can appear.
      */
     public AdminTrainingRequestDto updateStatus(UUID requestId, UpdateTrainingRequestStatusRequest request) {
-        // JOIN FETCH user — mail o odrzuceniu idzie asynchronicznie i czyta usera poza sesją
+        // JOIN FETCH user — the rejection email is sent asynchronously and reads the user outside the session
         TrainingRequest tr = trainingRequestRepository.findByIdWithUser(requestId)
             .orElseThrow(() -> new IllegalArgumentException(msg.get("training.request.not.found")));
 

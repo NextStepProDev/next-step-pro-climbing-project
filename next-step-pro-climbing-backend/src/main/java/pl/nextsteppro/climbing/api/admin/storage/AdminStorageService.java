@@ -36,7 +36,7 @@ public class AdminStorageService {
             "news", "Aktualności",
             "courses", "Kursy",
             "instructors", "Instruktorzy",
-            "assets", "Biblioteka mediów"
+            "assets", "Media library"
     );
 
     private final Path rootPath;

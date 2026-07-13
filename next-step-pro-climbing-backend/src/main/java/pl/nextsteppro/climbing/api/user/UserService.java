@@ -166,18 +166,18 @@ public class UserService {
             }
         }
 
-        // 1. Zbierz dotknięte sloty/wydarzenia ZANIM anulujemy rezerwacje (projekcje — nie ładują encji do sesji).
+        // 1. Collect affected slots/events BEFORE cancelling reservations (projections — no entities loaded into the session).
         List<UUID> affectedSlotIds = reservationRepository.findConfirmedSlotIdsByUserId(userId);
         List<UUID> affectedEventIds = reservationRepository.findConfirmedEventIdsByUserId(userId);
         int cancelledReservations = affectedSlotIds.size();
 
-        // 2. Anuluj wszystkie potwierdzone rezerwacje (bulk UPDATE → CANCELLED).
-        //    Bulk zamiast ładowania encji — unika konfliktu sesji Hibernate z usuwanym rodzicem (user).
-        //    Po tym kroku miejsca są w bazie zwolnione (status != CONFIRMED).
+        // 2. Cancel all confirmed reservations (bulk UPDATE → CANCELLED).
+        //    Bulk update instead of loading entities — avoids a Hibernate session conflict with the parent (user) being deleted.
+        //    After this step the seats are freed in the database (status != CONFIRMED).
         reservationRepository.cancelConfirmedByUserId(userId);
 
-        // 3. Powiadom listy oczekujących o zwolnionych miejscach (najpierw sloty, potem wydarzenia).
-        //    notifyAll liczy wolne miejsca świeżym zapytaniem agregującym, więc widzi już anulowane rezerwacje.
+        // 3. Notify waitlists about the freed seats (slots first, then events).
+        //    notifyAll counts free seats with a fresh aggregate query, so it already sees the cancelled reservations.
         for (UUID slotId : affectedSlotIds) {
             waitlistService.notifyAll(slotId);
         }
@@ -185,29 +185,29 @@ public class UserService {
             eventWaitlistService.notifyAll(eventId);
         }
 
-        // 4. Usuń użytkownika z list oczekujących, na których SAM czekał.
-        //    Jeśli miał aktywną ofertę (PENDING), zwolnione miejsce trafia do pozostałych oczekujących.
+        // 4. Remove the user from waitlists THEY were waiting on.
+        //    If they had an active offer (PENDING), the freed seat goes to the remaining waiters.
         waitlistService.removeUserFromAllWaitlists(userId);
         eventWaitlistService.removeUserFromAllWaitlists(userId);
 
-        // 5. Powiadom administratora o usunięciu konta (async, nie blokuje transakcji).
+        // 5. Notify the admin about the account deletion (async, does not block the transaction).
         authMailService.sendAccountSelfDeletedAdminNotification(user, cancelledReservations);
 
-        // 6. Usuń plik avatara z dysku (jeśli był) — encja kaskaduje, ale plik nie.
+        // 6. Delete the avatar file from disk (if any) — the entity cascades, the file does not.
         if (user.getAvatarFilename() != null) {
             deleteAvatarFileQuietly(user.getAvatarFilename());
         }
 
-        // 7. Usuń tokeny (bulk DELETE) i samego użytkownika.
-        //    DB kaskaduje (ON DELETE CASCADE): anulowane rezerwacje, wpisy waitlisty, logi, gwiazdki.
+        // 7. Delete tokens (bulk DELETE) and the user themselves.
+        //    The DB cascades (ON DELETE CASCADE): cancelled reservations, waitlist entries, logs, stars.
         authTokenRepository.deleteAllByUserId(userId);
         userRepository.delete(user);
     }
 
     /**
-     * Wylogowuje użytkownika ze wszystkich urządzeń — usuwa wszystkie jego refresh tokeny.
-     * Access tokeny (15 min) pozostają ważne do wygaśnięcia (bezstanowy JWT), ale po nim
-     * żadne urządzenie nie odświeży sesji → realne wylogowanie wszędzie w ciągu ≤15 min.
+     * Logs the user out of all devices — deletes all their refresh tokens.
+     * Access tokens (15 min) stay valid until expiry (stateless JWT), but afterwards
+     * no device can refresh the session → real logout everywhere within ≤15 min.
      */
     public void logoutAllDevices(UUID userId) {
         authTokenRepository.deleteByUserIdAndTokenType(userId, TokenType.REFRESH_TOKEN);

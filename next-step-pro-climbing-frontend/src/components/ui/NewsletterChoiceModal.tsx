@@ -58,9 +58,9 @@ export function NewsletterChoiceModal({ onDone }: Props) {
           </button>
         </div>
 
-        {/* Obowiązek informacyjny RODO (art. 13): polityka prywatności pokazana w momencie
-            zakładania konta — to informacja, nie zgoda, więc bez checkboxa. Newsletter powyżej
-            to odrębna, dobrowolna zgoda (opt-in). */}
+        {/* GDPR information duty (art. 13): the privacy policy is shown at account creation
+            time — it is information, not consent, hence no checkbox. The newsletter above
+            is a separate, voluntary consent (opt-in). */}
         <p className="mt-5 pt-4 border-t border-surface-800 text-xs text-surface-500 text-center leading-relaxed">
           <Trans
             i18nKey="newsletter.privacyNotice"

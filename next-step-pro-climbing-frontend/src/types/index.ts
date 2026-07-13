@@ -41,7 +41,7 @@ export interface DaySummary {
   availableSlots: number
   hasUserReservation: boolean
   hasAvailabilityWindow: boolean
-  // dzień bez wolnych miejsc dla publiki, ale z miejscami „na zaproszenie"
+  // day with no seats free for the public, but with invitation-held seats
   hasReservedSeats: boolean
 }
 
@@ -73,7 +73,7 @@ export interface TimeSlot {
   isUserRegistered: boolean
   eventTitle: string | null
   isAvailabilityWindow: boolean
-  // Miejsca trzymane "na zaproszenie"
+  // Invitation-held seats
   reservedSeats: number
   isReservedForUser: boolean
 }
@@ -98,7 +98,7 @@ export interface TimeSlotDetail {
   userWaitlistPosition: number
   isAvailabilityWindow: boolean
   title: string | null
-  // Miejsca trzymane "na zaproszenie"
+  // Invitation-held seats
   reservedSeats: number
   isReservedForUser: boolean
 }
@@ -144,7 +144,7 @@ export interface EventSummary {
   userWaitlistPosition: number
   // 0 in list views, populated in getEventSummary when user is registered
   userParticipants: number
-  // Miejsca trzymane "na zaproszenie"
+  // Invitation-held seats
   reservedSeats: number
   isReservedForUser: boolean
 }
@@ -160,7 +160,7 @@ export interface EventWaitlistEntry {
   position: number
 }
 
-// Wiszące zaproszenie (miejsce trzymane dla użytkownika) na nadchodzący slot/wydarzenie
+// Pending invitation (seat held for the user) for an upcoming slot/event
 export interface MyInvitation {
   type: 'SLOT' | 'EVENT'
   slotId: string | null
@@ -301,16 +301,16 @@ export interface CreateTimeSlotRequest {
   eventId?: string
   isAvailabilityWindow?: boolean
   invitedUserIds?: string[]
-  // Propozycja terminu, z której powstaje slot (→ ACCEPTED + link)
+  // Training request this slot is created from (→ ACCEPTED + link)
   trainingRequestId?: string
 }
 
-// Zaproszony do trzymanego miejsca (prefill formularzy admina)
+// Invitee of a held seat (prefill for admin forms)
 export interface InvitedUser {
   userId: string
   fullName: string
   email: string
-  // Kiedy admin ręcznie wysłał mail z zaproszeniem (null = jeszcze nie)
+  // When the admin manually sent the invitation email (null = not yet)
   notifiedAt?: string | null
 }
 
@@ -352,11 +352,11 @@ export interface CreateEventRequest {
   endTime?: string
   courseId?: string
   invitedUserIds?: string[]
-  // Propozycja terminu, z której powstaje wydarzenie (→ ACCEPTED + link)
+  // Training request this event is created from (→ ACCEPTED + link)
   trainingRequestId?: string
 }
 
-// Training requests (propozycje terminów)
+// Training requests
 export type TrainingRequestStatus = 'PENDING' | 'ACCEPTED' | 'CONTACTED' | 'REJECTED' | 'EXPIRED'
 
 export interface CreateTrainingRequest {
@@ -386,15 +386,15 @@ export interface TrainingRequest {
   createdAt: string
 }
 
-// Liczniki powiadomień panelu admina (badge na zakładkach + linku Admin w navbarze)
+// Admin panel notification counters (badges on tabs + the Admin navbar link)
 export interface AdminNotifications {
   pendingRequests: number
   newReservations: number
-  // Nowe zapisy na listy rezerwowe od ostatniego "przeczytania" (ten sam znacznik co newReservations)
+  // New waitlist joins since last "read" (same marker as newReservations)
   newWaitlistEntries: number
 }
 
-// Wpis listy rezerwowej w widokach admina (modal uczestników + zakładka Rezerwacje)
+// Waitlist entry in admin views (participants modal + Reservations tab)
 export interface WaitlistAdminEntry {
   waitlistId: string
   userId: string
@@ -423,7 +423,7 @@ export interface EventWaitlistAdmin {
   entries: WaitlistAdminEntry[]
 }
 
-// Widok globalny „Listy rezerwowe": nadchodzące terminy, na których ktoś czeka
+// Global "Waitlists" view: upcoming slots/events someone is waiting for
 export interface AdminWaitlists {
   slotWaitlists: (SlotWaitlistAdmin & { title: string | null })[]
   eventWaitlists: EventWaitlistAdmin[]
@@ -962,7 +962,7 @@ export interface SlotTemplate {
   maxParticipants: number
 }
 
-// "Gdzie teraz szkolę" — editable location section.
+// "Where I teach now" — editable location section.
 // The title is fixed (translated via i18n). Badge, subtitle and the list of
 // places are editable per language.
 export interface LocationContentDto {
@@ -982,12 +982,12 @@ export interface LocationPresetDto {
   translations: Record<string, LocationContentDto>
 }
 
-// Który szablon jest aktualnie na stronie (null = sekcja niepokazywana)
+// Which template is currently live on the page (null = section hidden)
 export interface LocationActiveStateDto {
   activePresetId: string | null
 }
 
-// Promocja nad kalendarzem. Obowiązkowe: title + description.
+// Calendar promo. Required: title + description.
 // Opcjonalne: badge (plakietka) i przycisk CTA (ctaLabel + ctaUrl).
 export interface CalendarPromoContentDto {
   badge: string

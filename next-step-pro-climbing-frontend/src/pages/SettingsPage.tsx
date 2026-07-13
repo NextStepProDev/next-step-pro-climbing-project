@@ -70,7 +70,7 @@ function AvatarSection({
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    e.target.value = '' // pozwól wybrać ten sam plik ponownie
+    e.target.value = '' // allow picking the same file again
     if (!file) return
     if (!file.type.startsWith('image/')) {
       showToast(t('avatar.invalidType'), 'error')

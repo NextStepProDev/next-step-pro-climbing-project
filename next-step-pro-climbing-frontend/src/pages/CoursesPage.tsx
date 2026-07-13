@@ -143,7 +143,7 @@ function CourseAccordionItem({ course, defaultOpen = false }: { course: CourseSu
           )}
         </div>
 
-        {/* Tytuł + cena */}
+        {/* Title + price */}
         <div className="flex-1 min-w-0">
           <p className="font-semibold text-surface-100 text-lg leading-snug">{course.title}</p>
           {course.price && (
@@ -160,7 +160,7 @@ function CourseAccordionItem({ course, defaultOpen = false }: { course: CourseSu
         />
       </button>
 
-      {/* Rozwinięta treść */}
+      {/* Expanded content */}
       {isOpen && (
         <div className="border-t border-surface-700 px-6 py-6 space-y-8">
           {isLoading ? (

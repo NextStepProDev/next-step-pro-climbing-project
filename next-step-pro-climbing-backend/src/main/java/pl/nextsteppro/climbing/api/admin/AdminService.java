@@ -475,7 +475,7 @@ public class AdminService {
         );
     }
 
-    /** Lustro {@link #getSlotWaitlist} dla wydarzeń — osoby z aktywną ofertą (PENDING) najpierw. */
+    /** Mirror of {@link #getSlotWaitlist} for events — people with an active offer (PENDING) first. */
     @Transactional(readOnly = true)
     public EventWaitlistAdminDto getEventWaitlist(UUID eventId) {
         Event event = eventRepository.findById(eventId)
@@ -510,9 +510,9 @@ public class AdminService {
     }
 
     /**
-     * Widok globalny „Listy rezerwowe" (zakładka Rezerwacje): wszystkie nadchodzące terminy,
-     * na których ktoś aktualnie czeka. Wpisy na miniona terminy są pomijane (nie ma po nich
-     * czego backfillować, a WAITING na przeszłych slotach potrafi wisieć w bazie).
+     * Global "Waitlists" view (Reservations tab): all upcoming slots/events someone is
+     * currently waiting for. Entries for past dates are skipped (there is nothing left to
+     * backfill, and WAITING entries on past slots can linger in the database).
      */
     @Transactional(readOnly = true)
     public AdminWaitlistsDto getAdminWaitlists() {
@@ -899,8 +899,8 @@ public class AdminService {
     }
 
     /**
-     * Wymusza wylogowanie użytkownika ze wszystkich urządzeń (np. przejęte konto).
-     * Usuwa wszystkie refresh tokeny — access tokeny (15 min) wygasną same.
+     * Forces the user to be logged out of all devices (e.g. compromised account).
+     * Deletes all refresh tokens — access tokens (15 min) expire on their own.
      */
     public void forceLogout(UUID adminId, UUID userId) {
         User user = userRepository.findById(userId)
@@ -962,7 +962,7 @@ public class AdminService {
             .collect(Collectors.toMap(SlotParticipantCount::slotId, SlotParticipantCount::countAsInt));
     }
 
-    // ---- Zaproszenia (trzymane miejsca) ----
+    // ---- Invitations (held seats) ----
 
     @Transactional(readOnly = true)
     public List<InvitedUserDto> getSlotInvites(UUID slotId) {
@@ -979,10 +979,10 @@ public class AdminService {
     }
 
     /**
-     * Ręczna wysyłka maili z zaproszeniem do osób z trzymanym miejscem w slocie.
-     * Wysyła tylko do "wiszących" zaproszeń (adresat nie ma jeszcze potwierdzonej rezerwacji) —
-     * kto już zarezerwował, dostał zwykłe potwierdzenie. {@code onlyUnnotified} pomija osoby,
-     * które już dostały zaproszenie (dosyłka po dodaniu nowych zaproszonych bez spamowania reszty).
+     * Manual sending of invitation emails to people with a held seat in the slot.
+     * Sends only to "pending" invitations (recipient has no confirmed reservation yet) —
+     * whoever already booked got a regular confirmation. {@code onlyUnnotified} skips people
+     * already invited (re-send after adding new invitees without spamming the rest).
      */
     public int notifySlotInvites(UUID slotId, boolean onlyUnnotified) {
         TimeSlot slot = timeSlotRepository.findById(slotId)
@@ -1000,7 +1000,7 @@ public class AdminService {
         return sent;
     }
 
-    /** Jak {@link #notifySlotInvites}, ale dla zaproszeń na wydarzenie. */
+    /** Like {@link #notifySlotInvites}, but for event invitations. */
     public int notifyEventInvites(UUID eventId, boolean onlyUnnotified) {
         Event event = eventRepository.findById(eventId)
             .orElseThrow(() -> new IllegalArgumentException("Event not found"));
@@ -1019,12 +1019,12 @@ public class AdminService {
         return sent;
     }
 
-    // ---- Powiadomienia panelu admina ----
+    // ---- Admin panel notifications ----
 
     /**
-     * Liczniki do badge'y: oczekujące propozycje terminów (stan z natury — PENDING) oraz nowe
-     * rezerwacje od ostatniego "przeczytania" (per-admin znacznik {@code adminReservationsSeenAt},
-     * zerowany wejściem w zakładkę Rezerwacje przez {@link #markReservationsSeen}).
+     * Badge counters: pending training requests (inherent state — PENDING) plus new
+     * reservations since last "read" (per-admin marker {@code adminReservationsSeenAt},
+     * reset by entering the Reservations tab via {@link #markReservationsSeen}).
      */
     @Transactional(readOnly = true)
     public AdminNotificationsDto getNotifications(UUID adminId) {
@@ -1042,9 +1042,9 @@ public class AdminService {
     }
 
     /**
-     * Spina świeżo utworzony slot/wydarzenie z propozycją terminu (status ACCEPTED + link).
-     * Celowo tolerancyjne na brak propozycji (mogła zostać w międzyczasie wycofana przez
-     * użytkownika) — utworzenie slotu/wydarzenia jest ważniejsze niż aktualizacja propozycji.
+     * Links a freshly created slot/event with a training request (status ACCEPTED + link).
+     * Deliberately tolerant of a missing request (it may have been withdrawn by the user
+     * in the meantime) — creating the slot/event matters more than updating the request.
      */
     private void linkTrainingRequest(UUID trainingRequestId, @Nullable TimeSlot slot, @Nullable Event event) {
         trainingRequestRepository.findById(trainingRequestId).ifPresent(tr -> {
@@ -1054,14 +1054,14 @@ public class AdminService {
         });
     }
 
-    /** Ustawia dokładnie podany zestaw zaproszonych dla slotu (diff: dodaje/usuwa). */
+    /** Sets exactly the given set of invitees for the slot (diff: adds/removes). */
     private void syncSlotInvites(TimeSlot slot, List<UUID> desiredUserIds) {
         Set<UUID> desired = new LinkedHashSet<>(desiredUserIds);
         int confirmed = reservationRepository.countConfirmedByTimeSlotId(slot.getId())
             + guestReservationRepository.sumParticipantsByTimeSlotId(slot.getId());
-        // Zaproszony, który już zarezerwował, siedzi w `confirmed` — do limitu liczą się
-        // tylko wiszące zaproszenia, inaczej pełny slot z wykorzystanym zaproszeniem
-        // odrzucałby każdą edycję (podwójne liczenie tej samej osoby).
+        // An invitee who already booked is counted in `confirmed` — only pending
+        // invitations count towards the limit, otherwise a full slot with a used
+        // invitation would reject every edit (double-counting the same person).
         Set<UUID> confirmedUserIds = new HashSet<>(reservationRepository.findConfirmedUserIdsByTimeSlotId(slot.getId()));
         long pendingDesired = desired.stream().filter(id -> !confirmedUserIds.contains(id)).count();
         if (pendingDesired + confirmed > slot.getMaxParticipants()) {
@@ -1085,7 +1085,7 @@ public class AdminService {
                 reservedSeatRepository.save(new ReservedSeat(slot, user));
             }
         }
-        // Usunięcie zaproszenia zwalnia miejsce dla wszystkich — powiadamiamy oczekujących.
+        // Removing an invitation frees the seat for everyone — notify the waitlist.
         if (removedAny) {
             waitlistService.notifyAll(slot.getId());
             if (slot.belongsToEvent()) {
@@ -1094,7 +1094,7 @@ public class AdminService {
         }
     }
 
-    /** Ustawia dokładnie podany zestaw zaproszonych dla wydarzenia (diff: dodaje/usuwa). */
+    /** Sets exactly the given set of invitees for the event (diff: adds/removes). */
     private void syncEventInvites(Event event, List<UUID> desiredUserIds) {
         Set<UUID> desired = new LinkedHashSet<>(desiredUserIds);
         List<TimeSlot> eventSlots = timeSlotRepository.findByEventId(event.getId());
@@ -1104,8 +1104,8 @@ public class AdminService {
             maxConfirmed = reservationRepository.countConfirmedByTimeSlotIds(slotIds)
                 .stream().mapToInt(SlotParticipantCount::countAsInt).max().orElse(0);
         }
-        // Jak w syncSlotInvites: zaproszony z potwierdzoną rezerwacją na wydarzeniu
-        // jest już liczony w maxConfirmed — do limitu liczą się tylko wiszące zaproszenia.
+        // As in syncSlotInvites: an invitee with a confirmed event reservation is already
+        // counted in maxConfirmed — only pending invitations count towards the limit.
         Set<UUID> confirmedUserIds = new HashSet<>(reservationRepository.findConfirmedUserIdsByEventId(event.getId()));
         long pendingDesired = desired.stream().filter(id -> !confirmedUserIds.contains(id)).count();
         if (pendingDesired + maxConfirmed > event.getMaxParticipants()) {
@@ -1203,10 +1203,10 @@ public class AdminService {
     }
 
     /**
-     * Trwale (hard delete) usuwa pojedynczą archiwalną rezerwację — czyszczenie archiwum.
-     * W przeciwieństwie do {@link #cancelReservationByAdmin} NIE powiadamia użytkownika ani listy
-     * oczekujących i nie loguje anulowania — to porządkowanie minionych wpisów, nie anulacja.
-     * Dozwolone tylko dla slotów z przeszłości (UI wystawia akcję wyłącznie w archiwum).
+     * Permanently (hard) deletes a single archived reservation — archive cleanup.
+     * Unlike {@link #cancelReservationByAdmin} it does NOT notify the user or the waitlist
+     * and does not log a cancellation — this is tidying up past entries, not cancelling.
+     * Allowed only for past slots (the UI exposes the action only in the archive).
      */
     @Caching(evict = {
         @CacheEvict(value = "calendarMonth", allEntries = true),
@@ -1224,9 +1224,9 @@ public class AdminService {
     }
 
     /**
-     * Trwale usuwa wszystkie rezerwacje archiwalnego wydarzenia (czyszczenie archiwum grupy).
-     * Samo wydarzenie pozostaje — kasowane są tylko zapisy na jego slotach. Dozwolone tylko gdy
-     * wydarzenie jest już zakończone.
+     * Permanently deletes all reservations of an archived event (group archive cleanup).
+     * The event itself remains — only registrations on its slots are deleted. Allowed only
+     * once the event has finished.
      */
     @Caching(evict = {
         @CacheEvict(value = "calendarMonth", allEntries = true),

@@ -44,7 +44,7 @@ public class AdminCourseService {
         this.baseUrl = baseUrl;
     }
 
-    // --- Kursy ---
+    // --- Courses ---
 
     @Transactional(readOnly = true)
     public List<CourseAdminDto> getAllCourses() {
@@ -218,7 +218,7 @@ public class AdminCourseService {
         courseRepository.delete(course);
     }
 
-    // --- Miniaturka ---
+    // --- Thumbnail ---
 
     @CacheEvict(value = {"courseList", "courseDetail"}, allEntries = true)
     public CourseDetailAdminDto uploadThumbnail(UUID id, MultipartFile file) throws IOException {
@@ -302,7 +302,7 @@ public class AdminCourseService {
         }
     }
 
-    // --- Bloki treści ---
+    // --- Content blocks ---
 
     @CacheEvict(value = "courseDetail", allEntries = true)
     public ContentBlockAdminDto addTextBlock(UUID courseId, AddTextBlockRequest request) {
@@ -430,7 +430,7 @@ public class AdminCourseService {
         }
     }
 
-    // --- Synchronizacja miniaturki do rodzeństwa ---
+    // --- Thumbnail sync to siblings ---
 
     private void syncThumbnailToSiblings(Course source) {
         for (Course sibling : courseRepository.findByTranslationGroupId(source.getTranslationGroupId())) {
@@ -456,7 +456,7 @@ public class AdminCourseService {
         }
     }
 
-    // --- Synchronizacja mediów do tłumaczeń ---
+    // --- Media sync to translations ---
 
     @CacheEvict(value = {"courseList", "courseDetail"}, allEntries = true)
     public SyncMediaResultDto syncMediaToTranslations(UUID sourceCourseId) {
@@ -517,7 +517,7 @@ public class AdminCourseService {
         return false;
     }
 
-    // --- Helpery ---
+    // --- Helpers ---
 
     private Course findCourse(UUID id) {
         return courseRepository.findById(id)

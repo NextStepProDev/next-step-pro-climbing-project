@@ -8,7 +8,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 /**
- * Admin DTOs dla zarządzania filmami
+ * Admin DTOs for video management
  */
 public class AdminVideoDtos {
 

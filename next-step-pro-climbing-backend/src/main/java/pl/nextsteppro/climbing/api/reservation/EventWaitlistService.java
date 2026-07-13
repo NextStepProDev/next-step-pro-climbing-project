@@ -105,8 +105,8 @@ public class EventWaitlistService {
             throw new IllegalStateException(msg.get("waitlist.already.waiting"));
         }
 
-        // Wydarzenie musi być efektywnie pełne. Miejsca trzymane na zaproszenie dla INNYCH osób
-        // też zajmują dostępność (własne zaproszenie nie blokuje — odejmujemy tylko cudze).
+        // The event must be effectively full. Seats held by invitation for OTHER people also
+        // consume availability (one's own invitation does not block — we subtract only others').
         int currentParticipants = computeCurrentParticipants(event, slots);
         int pendingCount = eventWaitlistRepository.countPendingConfirmationByEventId(eventId);
         int reservedForOthers = reservedSeatRepository.countPendingByEventIdExcludingUser(eventId, userId);
@@ -132,7 +132,7 @@ public class EventWaitlistService {
         log.info("User {} left event waitlist for event {}", userId, eventId);
     }
 
-    // Usuwa WSZYSTKIE aktywne wpisy waitlisty wydarzeń użytkownika (przy usuwaniu konta).
+    // Removes ALL of the user's active event waitlist entries (on account deletion).
     // Analogicznie do removeUserFromAllWaitlists w WaitlistService.
     public void removeUserFromAllWaitlists(UUID userId) {
         List<EventWaitlist> entries = eventWaitlistRepository.findActiveByUserId(userId);
@@ -189,17 +189,17 @@ public class EventWaitlistService {
 
         List<TimeSlot> slots = timeSlotRepository.findByEventId(eventId);
         int currentParticipants = computeCurrentParticipants(event, slots);
-        // Trzymane miejsca innych zaproszonych osób nadal blokują — chroni przed potwierdzeniem
-        // ponad limit gdy naraz ofertowano wiele osób z kolejki, a część miejsc jest na zaproszenie.
+        // Seats held for other invitees still block — protects against confirming past the
+        // limit when several queued people were offered at once and some seats are invitation-held.
         int reservedForOthers = reservedSeatRepository.countPendingByEventIdExcludingUser(eventId, userId);
         if (currentParticipants + reservedForOthers >= event.getMaxParticipants()) {
-            // Ktoś inny był szybszy — resetujemy tego usera do WAITING
+            // Someone else was faster — reset this user back to WAITING
             entry.returnToWaiting();
             eventWaitlistRepository.save(entry);
             throw new IllegalStateException(msg.get("waitlist.race.lost"));
         }
 
-        // Tworzymy rezerwacje na wszystkie aktywne sloty (z pominięciem booking window)
+        // Create reservations for all active slots (bypassing the booking window)
         List<TimeSlot> activeSlots = slots.stream()
             .filter(slot -> !slot.isBlocked())
             .filter(slot -> !LocalDateTime.of(slot.getDate(), slot.getStartTime()).isBefore(LocalDateTime.now(WARSAW)))
@@ -222,7 +222,7 @@ public class EventWaitlistService {
 
         eventWaitlistRepository.delete(entry);
 
-        // Pozostałe PENDING osoby wracają do kolejki
+        // Remaining PENDING people go back to the queue
         List<EventWaitlist> otherPending = eventWaitlistRepository.findByEventIdAndStatusWithUser(eventId, WaitlistStatus.PENDING_CONFIRMATION);
         for (EventWaitlist other : otherPending) {
             other.returnToWaiting();
@@ -278,8 +278,8 @@ public class EventWaitlistService {
         List<EventWaitlist> expired = eventWaitlistRepository.findExpiredPendingConfirmations(Instant.now());
         if (expired.isEmpty()) return;
 
-        // Deadline minął i nikt nie potwierdził — wracamy do WAITING bez kolejnego powiadomienia.
-        // Następny notifyAll zostanie wywołany dopiero gdy ktoś anuluje rezerwację.
+        // The deadline passed and nobody confirmed — back to WAITING without another notification.
+        // The next notifyAll fires only when someone cancels a reservation.
         for (EventWaitlist entry : expired) {
             entry.returnToWaiting();
         }

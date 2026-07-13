@@ -133,8 +133,8 @@ export function formatAvailability(event: EventSummary) {
     return { label: i18n.t('availability.closed', { ns: 'calendar' }), badgeClass: "bg-surface-700 text-surface-400" };
   }
 
-  // Miejsca trzymane na zaproszenie dla INNYCH osób nie są dla tego widza wolne — inaczej etykieta
-  // pokazywałaby „1 wolne miejsce" tam, gdzie z ulicy nie da się zarezerwować (spójnie z modalem).
+  // Seats invitation-held for OTHER people are not free for this viewer — otherwise the label
+  // would show "1 free seat" where a walk-in cannot book (consistent with the modal).
   const reservedForOthers = Math.max(0, (event.reservedSeats ?? 0) - (event.isReservedForUser ? 1 : 0));
   const free = Math.max(0, event.maxParticipants - event.currentParticipants - reservedForOthers);
 

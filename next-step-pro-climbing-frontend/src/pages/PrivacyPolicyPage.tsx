@@ -44,7 +44,7 @@ function PrivacyPolicyPl({ logo }: { logo: string }) {
       {/* Content */}
       <div className="max-w-4xl mx-auto px-4 py-12 sm:py-16 space-y-6">
 
-        {/* Wstęp */}
+        {/* Intro */}
         <div className="bg-surface-900 border border-surface-800 rounded-2xl p-6 sm:p-8">
           <p className="text-surface-300 leading-relaxed">
             Bardzo dbam o Twoje dane osobowe i zawsze będę dokładał wszelkich starań, aby należycie je chronić.
@@ -154,7 +154,7 @@ function PrivacyPolicyPl({ logo }: { logo: string }) {
           </p>
         </Section>
 
-        {/* 4. Jak długo przechowujemy dane */}
+        {/* 4. How long we keep the data */}
         <Section title="4. Jak długo przechowujemy dane">
           <div className="space-y-3 text-surface-300 leading-relaxed">
             <p>
@@ -185,7 +185,7 @@ function PrivacyPolicyPl({ logo }: { logo: string }) {
           </div>
         </Section>
 
-        {/* 5. Komu udostępniamy dane */}
+        {/* 5. Who we share the data with */}
         <Section title="5. Komu powierzamy dane">
           <p className="text-surface-300 leading-relaxed font-medium text-lg mb-4">
             Nie sprzedajemy ani nie udostępniamy Twoich danych w celach komercyjnych.
@@ -242,7 +242,7 @@ function PrivacyPolicyPl({ logo }: { logo: string }) {
           </p>
         </Section>
 
-        {/* 7. Bezpieczeństwo danych */}
+        {/* 7. Data security */}
         <Section title="7. Bezpieczeństwo danych">
           <p className="text-surface-400 leading-relaxed mb-4">
             Stosuję wielowarstwowe zabezpieczenia techniczne, aby chronić Twoje dane:
@@ -542,7 +542,7 @@ function PrivacyPolicyEn({ logo }: { logo: string }) {
   )
 }
 
-// ==================== Sub-komponenty ====================
+// ==================== Sub-components ====================
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (

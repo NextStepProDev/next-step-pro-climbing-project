@@ -7,7 +7,7 @@ export function CurrentLocationSection() {
   const { t } = useTranslation("home");
   const { enabled, title, subtitle, places } = useLocationContent();
 
-  // Sekcja ukryta przez admina
+  // Section hidden by the admin
   if (!enabled) return null;
 
   return (

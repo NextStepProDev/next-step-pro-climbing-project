@@ -18,7 +18,7 @@ interface DayViewProps {
   onEventClick?: (event: EventSummary) => void;
   onCancelEvent?: (eventId: string) => void;
   onAddSlot?: () => void;
-  /** Propozycja terminu (nie-admin): pokazywana w pustym dniu. */
+  /** Training request (non-admin): shown on an empty day. */
   onProposeTraining?: () => void;
 }
 
@@ -39,8 +39,8 @@ function SlotButton({
 
   const isAvailabilityWindow = slot.status === "AVAILABILITY_WINDOW";
   const isDisabled = !isAdmin && (slot.status === "BLOCKED" || slot.status === "PAST");
-  // „Na zaproszenie" pokazujemy TYLKO niezalogowanym — bo wśród nich może być nierozpoznany
-  // zaproszony. Zalogowany nie-zaproszony widzi zwykłe „pełne" (nie musi wiedzieć o zaproszeniach).
+  // "By invitation" is shown ONLY to anonymous users — an unrecognized invitee may be among them.
+  // A logged-in non-invitee sees a plain "full" (no need to know about invitations).
   const invitedOnly = !isAuthenticated && slot.status === "FULL" && slot.reservedSeats > 0 && !slot.isReservedForUser && !slot.isUserRegistered;
 
   return (
@@ -298,8 +298,8 @@ export function DayView({
 
               /* Event WITH time slots */
               if (eventSlots && eventSlots.length > 0) {
-                // Pełny dla widza także gdy resztę miejsc trzymają zaproszenia innych osób
-                // (spójnie z EventSignupModal — wtedy dostępna jest lista rezerwowa, nie zapis).
+                // Full for the viewer also when the remaining seats are held by other people's
+                // invitations (consistent with EventSignupModal — then the waitlist is available, not booking).
                 const reservedForOthers = Math.max(0, (event.reservedSeats ?? 0) - (event.isReservedForUser ? 1 : 0));
                 const isFull = event.currentParticipants + reservedForOthers >= event.maxParticipants;
                 return (
@@ -383,8 +383,8 @@ export function DayView({
 
               /* Event WITHOUT slots on this day → show availability from EventSummary */
               {
-                // Pełny dla widza także gdy resztę miejsc trzymają zaproszenia innych osób
-                // (spójnie z EventSignupModal — wtedy dostępna jest lista rezerwowa, nie zapis).
+                // Full for the viewer also when the remaining seats are held by other people's
+                // invitations (consistent with EventSignupModal — then the waitlist is available, not booking).
                 const reservedForOthers = Math.max(0, (event.reservedSeats ?? 0) - (event.isReservedForUser ? 1 : 0));
                 const isFull = event.currentParticipants + reservedForOthers >= event.maxParticipants;
                 return (

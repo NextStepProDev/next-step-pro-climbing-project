@@ -265,7 +265,7 @@ function EventCard({
     onSuccess: () => { invalidateParticipants(); setConfirmDeleteGuestId(null) },
   })
 
-  // Kolejka oczekujących wydarzenia — sekcja pod uczestnikami, tylko gdy ktoś czeka
+  // The event's waiting queue — a section below the participants, only when someone is waiting
   const { data: waitlist } = useQuery({
     queryKey: ['admin', 'eventWaitlist', event.id],
     queryFn: () => adminApi.getEventWaitlist(event.id),
@@ -745,8 +745,8 @@ function ConfirmDeleteEventModal({
 
 /* =============================== Edit Event Modal =============================== */
 
-// Minimalny kształt wydarzenia potrzebny do edycji — spełnia go zarówno EventDetail (panel
-// admina), jak i EventSummary (publiczny kalendarz, EventSignupModal).
+// The minimal event shape needed for editing — satisfied both by EventDetail (admin
+// panel) and EventSummary (public calendar, EventSignupModal).
 export type EditableEvent = Pick<
   EventDetail,
   | 'id' | 'title' | 'description' | 'location' | 'eventType'
@@ -784,7 +784,7 @@ export function EditEventModal({
     staleTime: 5 * 60 * 1000,
   })
 
-  // Zaproszenia: baseline z serwera, lokalny override dopiero gdy admin coś zmieni
+  // Invitations: server baseline, a local override only once the admin changes something
   const [editedInvited, setEditedInvited] = useState<InvitedUser[] | null>(null)
   const { data: invitesData } = useQuery({
     queryKey: ['admin', 'eventInvites', event?.id],
@@ -1016,7 +1016,7 @@ export function CreateEventModal({
 }: {
   isOpen: boolean
   onClose: () => void
-  /** Prefill z propozycji terminu: daty, godziny, miejsca, kurs, zaproszony proponujący + link do propozycji. */
+  /** Prefill from a training request: dates, times, seats, course, the requester invited + a link to the request. */
   initial?: {
     startDate?: string
     endDate?: string

@@ -39,8 +39,8 @@ public class Reservation {
     @Nullable
     private String comment;
 
-    // Rezerwacja dodana ręcznie przez admina z panelu — badge "nowe rezerwacje" ją pomija
-    // (admin nie potrzebuje powiadomienia o własnej akcji).
+    // Reservation added manually by the admin from the panel — the "new reservations" badge skips it
+    // (the admin does not need a notification about their own action).
     @Column(name = "created_by_admin", nullable = false)
     private boolean createdByAdmin = false;
 

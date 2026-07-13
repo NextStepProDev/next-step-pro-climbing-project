@@ -67,15 +67,15 @@ record MyReservationsDto(
     List<UserEventReservationDto> events
 ) {}
 
-// Wiszące zaproszenie widziane od strony adresata — trzymane miejsce, którego jeszcze nie zajął.
+// A pending invitation from the recipient's perspective — a held seat they have not taken yet.
 record MyInvitationDto(
     String type,                  // SLOT | EVENT
     @Nullable UUID slotId,
     @Nullable UUID eventId,
     @Nullable String title,
-    @Nullable String eventType,   // tylko dla wydarzeń
-    LocalDate date,               // data slotu lub początek wydarzenia
-    @Nullable LocalDate endDate,  // tylko dla wydarzeń wielodniowych
+    @Nullable String eventType,   // events only
+    LocalDate date,               // slot date or event start
+    @Nullable LocalDate endDate,  // multi-day events only
     @Nullable LocalTime startTime,
     @Nullable LocalTime endTime,
     @Nullable String location

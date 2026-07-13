@@ -19,7 +19,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/admin/news")
 @PreAuthorize("hasRole('ADMIN')")
-@Tag(name = "Admin - News", description = "Zarządzanie aktualnościami (tylko admin)")
+@Tag(name = "Admin - News", description = "News management (admin only)")
 public class AdminNewsController {
 
     private final AdminNewsService adminNewsService;
@@ -28,12 +28,12 @@ public class AdminNewsController {
         this.adminNewsService = adminNewsService;
     }
 
-    // ==================== Artykuły ====================
+    // ==================== Articles ====================
 
-    @Operation(summary = "Pobierz wszystkie aktualności (drafty + opublikowane)")
+    @Operation(summary = "Get all news articles (drafts + published)")
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Lista aktualności"),
-        @ApiResponse(responseCode = "403", description = "Brak uprawnień administratora")
+        @ApiResponse(responseCode = "200", description = "List of news articles"),
+        @ApiResponse(responseCode = "403", description = "Admin privileges required")
     })
     @GetMapping
     public ResponseEntity<AdminNewsPageDto> getAll(
@@ -42,23 +42,23 @@ public class AdminNewsController {
         return ResponseEntity.ok(adminNewsService.getAllNews(page, size));
     }
 
-    @Operation(summary = "Pobierz szczegóły aktualności z blokami")
+    @Operation(summary = "Get news article details with blocks")
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Szczegóły aktualności"),
-        @ApiResponse(responseCode = "400", description = "Aktualność nie znaleziona"),
-        @ApiResponse(responseCode = "403", description = "Brak uprawnień administratora")
+        @ApiResponse(responseCode = "200", description = "News article details"),
+        @ApiResponse(responseCode = "400", description = "News article not found"),
+        @ApiResponse(responseCode = "403", description = "Admin privileges required")
     })
     @GetMapping("/{id}")
     public ResponseEntity<NewsDetailAdminDto> getById(
-            @Parameter(description = "ID aktualności") @PathVariable UUID id) {
+            @Parameter(description = "News article ID") @PathVariable UUID id) {
         return ResponseEntity.ok(adminNewsService.getNews(id));
     }
 
-    @Operation(summary = "Utwórz nową aktualność (draft)")
+    @Operation(summary = "Create new news article (draft)")
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Aktualność utworzona"),
-        @ApiResponse(responseCode = "400", description = "Nieprawidłowe dane"),
-        @ApiResponse(responseCode = "403", description = "Brak uprawnień administratora")
+        @ApiResponse(responseCode = "200", description = "News article created"),
+        @ApiResponse(responseCode = "400", description = "Invalid data"),
+        @ApiResponse(responseCode = "403", description = "Admin privileges required")
     })
     @PostMapping
     public ResponseEntity<NewsAdminDto> create(
@@ -66,155 +66,155 @@ public class AdminNewsController {
         return ResponseEntity.ok(adminNewsService.createNews(request));
     }
 
-    @Operation(summary = "Aktualizuj tytuł i excerpt aktualności")
+    @Operation(summary = "Update news article title and excerpt")
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Metadane zaktualizowane"),
-        @ApiResponse(responseCode = "400", description = "Aktualność nie znaleziona lub nieprawidłowe dane"),
-        @ApiResponse(responseCode = "403", description = "Brak uprawnień administratora")
+        @ApiResponse(responseCode = "200", description = "Metadata updated"),
+        @ApiResponse(responseCode = "400", description = "News article not found or invalid data"),
+        @ApiResponse(responseCode = "403", description = "Admin privileges required")
     })
     @PutMapping("/{id}/meta")
     public ResponseEntity<NewsAdminDto> updateMeta(
-            @Parameter(description = "ID aktualności") @PathVariable UUID id,
+            @Parameter(description = "News article ID") @PathVariable UUID id,
             @Valid @RequestBody UpdateNewsMetaRequest request) {
         return ResponseEntity.ok(adminNewsService.updateNewsMeta(id, request));
     }
 
-    @Operation(summary = "Opublikuj aktualność")
+    @Operation(summary = "Publish news article")
     @PostMapping("/{id}/publish")
     public ResponseEntity<NewsAdminDto> publish(
-            @Parameter(description = "ID aktualności") @PathVariable UUID id) {
+            @Parameter(description = "News article ID") @PathVariable UUID id) {
         return ResponseEntity.ok(adminNewsService.setPublished(id, true));
     }
 
-    @Operation(summary = "Cofnij publikację aktualności")
+    @Operation(summary = "Unpublish news article")
     @PostMapping("/{id}/unpublish")
     public ResponseEntity<NewsAdminDto> unpublish(
-            @Parameter(description = "ID aktualności") @PathVariable UUID id) {
+            @Parameter(description = "News article ID") @PathVariable UUID id) {
         return ResponseEntity.ok(adminNewsService.setPublished(id, false));
     }
 
-    @Operation(summary = "Zmień datę publikacji aktualności")
+    @Operation(summary = "Change news article publication date")
     @PutMapping("/{id}/published-at")
     public ResponseEntity<NewsAdminDto> updatePublishedAt(
-            @Parameter(description = "ID aktualności") @PathVariable UUID id,
+            @Parameter(description = "News article ID") @PathVariable UUID id,
             @Valid @RequestBody AdminNewsDtos.UpdatePublishedAtRequest request) {
         return ResponseEntity.ok(adminNewsService.updatePublishedAt(id, request.publishedAt()));
     }
 
-    @Operation(summary = "Wyślij newsletter z treścią aktualności do subskrybentów")
+    @Operation(summary = "Send the news article as a newsletter to subscribers")
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Newsletter wysłany (liczba odbiorców)"),
-        @ApiResponse(responseCode = "400", description = "Aktualność nie jest opublikowana"),
-        @ApiResponse(responseCode = "403", description = "Brak uprawnień administratora")
+        @ApiResponse(responseCode = "200", description = "Newsletter sent (recipient count)"),
+        @ApiResponse(responseCode = "400", description = "News article is not published"),
+        @ApiResponse(responseCode = "403", description = "Admin privileges required")
     })
     @PostMapping("/{id}/send-newsletter")
     public ResponseEntity<AdminNewsDtos.NewsletterSentDto> sendNewsletter(
-            @Parameter(description = "ID aktualności") @PathVariable UUID id) {
+            @Parameter(description = "News article ID") @PathVariable UUID id) {
         return ResponseEntity.ok(adminNewsService.sendNewsNewsletter(id));
     }
 
-    @Operation(summary = "Duplikuj aktualność jako tłumaczenie")
+    @Operation(summary = "Duplicate news article as translation")
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Aktualność zduplikowana jako tłumaczenie"),
-        @ApiResponse(responseCode = "400", description = "Nieprawidłowe dane lub tłumaczenie już istnieje"),
-        @ApiResponse(responseCode = "403", description = "Brak uprawnień administratora")
+        @ApiResponse(responseCode = "200", description = "News article duplicated as translation"),
+        @ApiResponse(responseCode = "400", description = "Invalid data or translation already exists"),
+        @ApiResponse(responseCode = "403", description = "Admin privileges required")
     })
     @PostMapping("/{id}/duplicate-translation")
     public ResponseEntity<NewsDetailAdminDto> duplicateAsTranslation(
-            @Parameter(description = "ID aktualności") @PathVariable UUID id,
+            @Parameter(description = "News article ID") @PathVariable UUID id,
             @Valid @RequestBody AdminNewsDtos.DuplicateAsTranslationRequest request) {
         return ResponseEntity.ok(adminNewsService.duplicateAsTranslation(id, request.targetLanguage()));
     }
 
-    @Operation(summary = "Synchronizuj bloki medialne (IMAGE/VIDEO) do wszystkich tłumaczeń")
+    @Operation(summary = "Sync media blocks (IMAGE/VIDEO) to all translations")
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Media zsynchronizowane"),
-        @ApiResponse(responseCode = "400", description = "Aktualność nie znaleziona"),
-        @ApiResponse(responseCode = "403", description = "Brak uprawnień administratora")
+        @ApiResponse(responseCode = "200", description = "Media synchronized"),
+        @ApiResponse(responseCode = "400", description = "News article not found"),
+        @ApiResponse(responseCode = "403", description = "Admin privileges required")
     })
     @PostMapping("/{id}/sync-media-to-translations")
     public ResponseEntity<AdminNewsDtos.SyncMediaResultDto> syncMediaToTranslations(
-            @Parameter(description = "ID aktualności źródłowej") @PathVariable UUID id) {
+            @Parameter(description = "Source news article ID") @PathVariable UUID id) {
         return ResponseEntity.ok(adminNewsService.syncMediaToTranslations(id));
     }
 
-    @Operation(summary = "Usuń aktualność wraz z plikami")
+    @Operation(summary = "Delete news article along with its files")
     @ApiResponses({
-        @ApiResponse(responseCode = "204", description = "Aktualność usunięta"),
-        @ApiResponse(responseCode = "400", description = "Aktualność nie znaleziona"),
-        @ApiResponse(responseCode = "403", description = "Brak uprawnień administratora")
+        @ApiResponse(responseCode = "204", description = "News article deleted"),
+        @ApiResponse(responseCode = "400", description = "News article not found"),
+        @ApiResponse(responseCode = "403", description = "Admin privileges required")
     })
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(
-            @Parameter(description = "ID aktualności") @PathVariable UUID id) {
+            @Parameter(description = "News article ID") @PathVariable UUID id) {
         adminNewsService.deleteNews(id);
         return ResponseEntity.noContent().build();
     }
 
-    // ==================== Miniaturka ====================
+    // ==================== Thumbnail ====================
 
-    @Operation(summary = "Prześlij miniaturkę aktualności")
+    @Operation(summary = "Upload news article thumbnail")
     @PostMapping("/{id}/thumbnail")
     public ResponseEntity<NewsDetailAdminDto> uploadThumbnail(
-            @Parameter(description = "ID aktualności") @PathVariable UUID id,
+            @Parameter(description = "News article ID") @PathVariable UUID id,
             @RequestParam("file") MultipartFile file) throws IOException {
         return ResponseEntity.ok(adminNewsService.uploadThumbnail(id, file));
     }
 
-    @Operation(summary = "Ustaw focal point miniaturki aktualności")
+    @Operation(summary = "Set news article thumbnail focal point")
     @PutMapping("/{id}/thumbnail-focal-point")
     public ResponseEntity<Void> updateThumbnailFocalPoint(
-            @Parameter(description = "ID aktualności") @PathVariable UUID id,
+            @Parameter(description = "News article ID") @PathVariable UUID id,
             @RequestBody UpdateThumbnailFocalPointRequest request) {
         adminNewsService.updateThumbnailFocalPoint(id, request);
         return ResponseEntity.noContent().build();
     }
 
-    @Operation(summary = "Ustaw miniaturkę aktualności z biblioteki mediów (URL)")
+    @Operation(summary = "Set news article thumbnail from the media library (URL)")
     @PutMapping("/{id}/thumbnail-url")
     public ResponseEntity<Void> setThumbnailUrl(
-            @Parameter(description = "ID aktualności") @PathVariable UUID id,
+            @Parameter(description = "News article ID") @PathVariable UUID id,
             @RequestBody AdminNewsDtos.SetThumbnailUrlRequest request) {
         adminNewsService.setThumbnailUrl(id, request);
         return ResponseEntity.noContent().build();
     }
 
-    @Operation(summary = "Usuń miniaturkę aktualności")
+    @Operation(summary = "Delete news article thumbnail")
     @DeleteMapping("/{id}/thumbnail")
     public ResponseEntity<Void> deleteThumbnail(
-            @Parameter(description = "ID aktualności") @PathVariable UUID id) throws IOException {
+            @Parameter(description = "News article ID") @PathVariable UUID id) throws IOException {
         adminNewsService.deleteThumbnail(id);
         return ResponseEntity.noContent().build();
     }
 
-    // ==================== Bloki treści ====================
+    // ==================== Content blocks ====================
 
-    @Operation(summary = "Dodaj blok tekstowy")
+    @Operation(summary = "Add text block")
     @PostMapping("/{id}/blocks/text")
     public ResponseEntity<ContentBlockAdminDto> addTextBlock(
-            @Parameter(description = "ID aktualności") @PathVariable UUID id,
+            @Parameter(description = "News article ID") @PathVariable UUID id,
             @Valid @RequestBody AddTextBlockRequest request) {
         return ResponseEntity.ok(adminNewsService.addTextBlock(id, request));
     }
 
-    @Operation(summary = "Dodaj blok obrazkowy")
+    @Operation(summary = "Add image block")
     @PostMapping("/{id}/blocks/image")
     public ResponseEntity<UploadBlockImageResponse> addImageBlock(
-            @Parameter(description = "ID aktualności") @PathVariable UUID id,
+            @Parameter(description = "News article ID") @PathVariable UUID id,
             @RequestParam("file") MultipartFile file,
             @RequestParam(value = "caption", required = false) @Nullable String caption) throws IOException {
         return ResponseEntity.ok(adminNewsService.addImageBlock(id, file, caption));
     }
 
-    @Operation(summary = "Dodaj blok wideo (YouTube / Instagram embed)")
+    @Operation(summary = "Add video block (YouTube / Instagram embed)")
     @PostMapping("/{id}/blocks/video")
     public ResponseEntity<ContentBlockAdminDto> addVideoEmbedBlock(
-            @Parameter(description = "ID aktualności") @PathVariable UUID id,
+            @Parameter(description = "News article ID") @PathVariable UUID id,
             @Valid @RequestBody AdminNewsDtos.AddVideoEmbedBlockRequest request) {
         return ResponseEntity.ok(adminNewsService.addVideoEmbedBlock(id, request));
     }
 
-    @Operation(summary = "Edytuj URL bloku wideo")
+    @Operation(summary = "Edit video block URL")
     @PutMapping("/blocks/{blockId}/video")
     public ResponseEntity<Void> updateVideoEmbedBlock(
             @Parameter(description = "ID bloku") @PathVariable UUID blockId,
@@ -223,15 +223,15 @@ public class AdminNewsController {
         return ResponseEntity.noContent().build();
     }
 
-    @Operation(summary = "Dodaj blok obrazkowy z biblioteki mediów (URL)")
+    @Operation(summary = "Add image block from the media library (URL)")
     @PostMapping("/{id}/blocks/image-from-url")
     public ResponseEntity<AdminNewsDtos.ContentBlockAdminDto> addImageBlockFromUrl(
-            @Parameter(description = "ID aktualności") @PathVariable UUID id,
+            @Parameter(description = "News article ID") @PathVariable UUID id,
             @RequestBody AdminNewsDtos.AddImageBlockFromUrlRequest request) {
         return ResponseEntity.ok(adminNewsService.addImageBlockFromUrl(id, request));
     }
 
-    @Operation(summary = "Edytuj treść bloku tekstowego")
+    @Operation(summary = "Edit text block content")
     @PutMapping("/blocks/{blockId}/text")
     public ResponseEntity<Void> updateTextBlock(
             @Parameter(description = "ID bloku") @PathVariable UUID blockId,
@@ -240,7 +240,7 @@ public class AdminNewsController {
         return ResponseEntity.noContent().build();
     }
 
-    @Operation(summary = "Edytuj caption bloku obrazkowego")
+    @Operation(summary = "Edit image block caption")
     @PutMapping("/blocks/{blockId}/image")
     public ResponseEntity<Void> updateImageBlock(
             @Parameter(description = "ID bloku") @PathVariable UUID blockId,
@@ -249,7 +249,7 @@ public class AdminNewsController {
         return ResponseEntity.noContent().build();
     }
 
-    @Operation(summary = "Przesuń blok w górę lub dół")
+    @Operation(summary = "Move block up or down")
     @PostMapping("/blocks/{blockId}/move")
     public ResponseEntity<Void> moveBlock(
             @Parameter(description = "ID bloku") @PathVariable UUID blockId,
@@ -258,7 +258,7 @@ public class AdminNewsController {
         return ResponseEntity.noContent().build();
     }
 
-    @Operation(summary = "Usuń blok treści")
+    @Operation(summary = "Delete content block")
     @DeleteMapping("/blocks/{blockId}")
     public ResponseEntity<Void> deleteBlock(
             @Parameter(description = "ID bloku") @PathVariable UUID blockId) {

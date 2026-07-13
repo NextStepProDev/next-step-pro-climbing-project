@@ -8,13 +8,13 @@ import type { InvitedUser, User } from '../../types'
 interface InvitedUsersPickerProps {
   value: InvitedUser[]
   onChange: (users: InvitedUser[]) => void
-  /** Limit miejsc (np. maxParticipants) — pokazuje ostrzeżenie po jego przekroczeniu. */
+  /** Seat limit (e.g. maxParticipants) — shows a warning once exceeded. */
   maxSeats?: number
 }
 
 /**
- * Picker zaproszonych użytkowników (miejsca trzymane "na zaproszenie").
- * Wyszukuje po imieniu/nazwisku/e-mailu wśród zarejestrowanych kont; wybrane pokazuje jako chipy.
+ * Invited users picker (invitation-held seats).
+ * Searches registered accounts by first/last name/email; shows selections as chips.
  */
 export function InvitedUsersPicker({ value, onChange, maxSeats }: InvitedUsersPickerProps) {
   const { t } = useTranslation('calendar')

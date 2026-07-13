@@ -332,8 +332,8 @@ public class WaitlistMailService {
         );
     }
 
-    // Powiadomienia adminowe idą przez ten serwis, nie MailService — wstrzyknięcie MailService
-    // do Waitlist/EventWaitlistService tworzyłoby cykl (MailService → UserService → WaitlistService).
+    // Admin notifications go through this service, not MailService — injecting MailService
+    // into Waitlist/EventWaitlistService would create a cycle (MailService → UserService → WaitlistService).
     @Async
     public void sendWaitlistAdminNotification(User user, TimeSlot slot) {
         String subject = msg.getForLang("email.admin.waitlist.confirmed.subject", ADMIN_LANG, user.getFullName());

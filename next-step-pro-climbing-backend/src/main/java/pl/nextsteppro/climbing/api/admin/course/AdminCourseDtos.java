@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Admin DTOs dla zarządzania kursami
+ * Admin DTOs for course management
  */
 public class AdminCourseDtos {
 
@@ -54,7 +54,7 @@ public class AdminCourseDtos {
             int displayOrder
     ) {}
 
-    // --- Requesty ---
+    // --- Requests ---
 
     public record CreateCourseRequest(
             @NotBlank @Size(max = 500) String title,
