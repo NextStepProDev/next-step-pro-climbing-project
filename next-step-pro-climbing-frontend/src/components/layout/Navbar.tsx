@@ -3,7 +3,7 @@ import { ChevronDown, LogOut, Menu, Moon, Sun, User, X } from "lucide-react";
 import { useState, useRef, useEffect, useLayoutEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
-import { adminApi, reservationApi } from "../../api/client";
+import { adminApi, reservationApi, trainingCalendarApi } from "../../api/client";
 import { useAuth } from "../../context/AuthContext";
 import { useTheme } from "../../context/ThemeContext";
 import { Button } from "../ui/Button";
@@ -48,6 +48,7 @@ export function Navbar() {
     ? (adminNotifications?.pendingRequests ?? 0)
       + (adminNotifications?.newReservations ?? 0)
       + (adminNotifications?.newWaitlistEntries ?? 0)
+      + (adminNotifications?.athleteActivity ?? 0)
     : 0;
 
   // The client's pending invitations (invitation-held seats) — a badge on the
@@ -61,6 +62,17 @@ export function Navbar() {
     refetchIntervalInBackground: false,
   });
   const invitationBadgeCount = isAuthenticated ? (myInvitations?.length ?? 0) : 0;
+
+  // Athlete's personal training calendar: new coach activity (trainings/comments) —
+  // adds to the My Reservations badge. Cache shared with the tab badge on that page.
+  const { data: trainingNotifications } = useQuery({
+    queryKey: ['trainingCalendar', 'notifications'],
+    queryFn: trainingCalendarApi.getNotifications,
+    enabled: isAuthenticated && !!user?.isAthlete,
+    refetchInterval: 60_000,
+    refetchIntervalInBackground: false,
+  });
+  const trainingBadgeCount = user?.isAthlete ? (trainingNotifications?.newCount ?? 0) : 0;
 
   const mediaLinks = [
     { to: "/galeria", label: t('nav.gallery') },
@@ -76,7 +88,7 @@ export function Navbar() {
     { to: "/", label: t('nav.home') },
     { to: "/calendar", label: t('nav.calendar') },
     ...(isAuthenticated
-      ? [{ to: "/my-reservations", label: t('nav.myReservations'), badge: invitationBadgeCount }]
+      ? [{ to: "/my-reservations", label: t('nav.myReservations'), badge: invitationBadgeCount + trainingBadgeCount }]
       : []),
     { to: "/aktualnosci", label: t('nav.news') },
     { to: "/kursy", label: t('nav.courses') },
@@ -443,7 +455,7 @@ export function Navbar() {
             ) : (
               <Menu className="w-6 h-6" />
             )}
-            {!mobileMenuOpen && (adminBadgeCount + invitationBadgeCount) > 0 && (
+            {!mobileMenuOpen && (adminBadgeCount + invitationBadgeCount + trainingBadgeCount) > 0 && (
               <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-rose-500" />
             )}
           </button>

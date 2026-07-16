@@ -17,7 +17,8 @@
     "mail": "Wyślij mail",
     "storage": "Storage",
     "site": "Strona główna",
-    "requests": "Propozycje"
+    "requests": "Propozycje",
+    "trainingCalendars": "Kalendarze treningowe"
   },
   "tabGroups": {
     "calendar": "Kalendarz",
@@ -507,7 +508,9 @@
     "confirmDelete": "Tak, usuń",
     "forceLogoutTitle": "Wyloguj ze wszystkich urządzeń",
     "forceLogoutMessage": "Czy na pewno chcesz wylogować użytkownika {{name}} ze wszystkich urządzeń? Sesje wygasną w ciągu ≤15 min i będzie musiał zalogować się ponownie.",
-    "confirmForceLogout": "Tak, wyloguj"
+    "confirmForceLogout": "Tak, wyloguj",
+    "setAthlete": "Oznacz jako zawodnika (kalendarz treningowy)",
+    "unsetAthlete": "Odznacz zawodnika (ukryj kalendarz treningowy)"
   },
   "activity": {
     "title": "Aktywność (auto-odświeżanie co 30s)",
@@ -534,7 +537,11 @@
       "ADMIN_USER_MAKE_ADMIN": "Nadano uprawnienia admina",
       "ADMIN_USER_ADMIN_REMOVED": "Odebrano uprawnienia admina",
       "ADMIN_USER_DELETED": "Użytkownik usunięty",
-      "ADMIN_USER_FORCE_LOGOUT": "Wylogowano ze wszystkich urządzeń"
+      "ADMIN_USER_FORCE_LOGOUT": "Wylogowano ze wszystkich urządzeń",
+      "ADMIN_USER_ATHLETE_TOGGLED": "Zmieniono status zawodnika",
+      "ADMIN_TRAINING_CREATED": "Dodano trening zawodnikowi",
+      "ADMIN_TRAINING_UPDATED": "Edytowano trening zawodnika",
+      "ADMIN_TRAINING_DELETED": "Usunięto trening zawodnika"
     },
     "persons": "({{count}} os.)"
   },
@@ -681,5 +688,12 @@
     "notSent": "nie wysłano",
     "send": "Wyślij zaproszenia mailem ({{count}})",
     "sentResult": "Wysłano {{count}} zaproszeń."
+  },
+  "trainingCalendars": {
+    "emptyTitle": "Brak oznaczonych zawodników",
+    "emptyHint": "Oznacz użytkownika ikoną hantli w zakładce Użytkownicy, aby dostał osobisty kalendarz treningowy.",
+    "lastActivity": "Ostatnia aktywność: {{date}}",
+    "noActivity": "Brak aktywności",
+    "back": "Wróć do listy zawodników"
   }
 }

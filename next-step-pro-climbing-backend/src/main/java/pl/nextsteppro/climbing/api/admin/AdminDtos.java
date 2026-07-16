@@ -261,8 +261,11 @@ record UserAdminDto(
     String phone,
     String role,
     Instant createdAt,
-    boolean newsletterSubscribed
+    boolean newsletterSubscribed,
+    boolean isAthlete
 ) {}
+
+record SetAthleteRequest(boolean isAthlete) {}
 
 // Mail DTOs
 
@@ -283,7 +286,10 @@ record AdminNotificationsDto(
     int newReservations,
     // New waitlist joins (slots + events) since last "read" —
     // same marker as newReservations; entering the Reservations tab resets both
-    int newWaitlistEntries
+    int newWaitlistEntries,
+    // Athlete training-calendar activity (new trainings/completions/comments)
+    // across all athletes, per this admin's read markers (training_calendar_reads)
+    long athleteActivity
 ) {}
 
 record NotifyParticipantsResult(int notifiedCount) {}

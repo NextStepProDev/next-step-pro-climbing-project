@@ -15,4 +15,7 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     boolean existsByEmail(String email);
 
     List<User> findAllByNewsletterSubscribedTrue();
+
+    /** Coach's roster: users flagged as athletes (personal training calendar). */
+    List<User> findAllByAthleteTrueOrderByFirstNameAscLastNameAsc();
 }

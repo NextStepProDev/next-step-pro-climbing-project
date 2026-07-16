@@ -71,6 +71,7 @@ class AdminServiceInviteSyncTest {
     @Mock private EventWaitlistService eventWaitlistService;
     @Mock private ReservedSeatRepository reservedSeatRepository;
     @Mock private TrainingRequestRepository trainingRequestRepository;
+    @Mock private pl.nextsteppro.climbing.api.trainingcalendar.TrainingCalendarService trainingCalendarService;
 
     private AdminService adminService;
 
@@ -102,7 +103,8 @@ class AdminServiceInviteSyncTest {
             waitlistService,
             eventWaitlistService,
             reservedSeatRepository,
-            trainingRequestRepository
+            trainingRequestRepository,
+            trainingCalendarService
         );
 
         adminId = UUID.randomUUID();

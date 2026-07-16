@@ -95,6 +95,11 @@ public class User {
     @Column(name = "admin_reservations_seen_at", nullable = false)
     private Instant adminReservationsSeenAt = Instant.now();
 
+    // Coach-designated athlete: unlocks the personal training calendar.
+    // Toggled by admin; switching off hides the calendar but keeps its data.
+    @Column(name = "is_athlete", nullable = false)
+    private boolean athlete = false;
+
     protected User() {}
 
     public User(String email, String firstName, String lastName, String phone, String nickname) {
@@ -213,6 +218,14 @@ public class User {
 
     public boolean isAdmin() {
         return role == UserRole.ADMIN;
+    }
+
+    public boolean isAthlete() {
+        return athlete;
+    }
+
+    public void setAthlete(boolean athlete) {
+        this.athlete = athlete;
     }
 
     @Nullable

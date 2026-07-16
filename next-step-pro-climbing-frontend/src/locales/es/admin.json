@@ -17,7 +17,8 @@
     "mail": "Enviar email",
     "storage": "Almacenamiento",
     "site": "Página principal",
-    "requests": "Propuestas"
+    "requests": "Propuestas",
+    "trainingCalendars": "Calendarios de entrenamiento"
   },
   "tabGroups": {
     "calendar": "Calendario",
@@ -505,7 +506,9 @@
     "confirmDelete": "Sí, eliminar",
     "forceLogoutTitle": "Cerrar sesión en todos los dispositivos",
     "forceLogoutMessage": "¿Estás seguro/a de que quieres cerrar la sesión del usuario {{name}} en todos los dispositivos? Las sesiones expirarán en ≤15 min y deberá iniciar sesión de nuevo.",
-    "confirmForceLogout": "Sí, cerrar sesión"
+    "confirmForceLogout": "Sí, cerrar sesión",
+    "setAthlete": "Marcar como atleta (calendario de entrenamiento)",
+    "unsetAthlete": "Desmarcar atleta (ocultar calendario de entrenamiento)"
   },
   "activity": {
     "title": "Registro de actividad (actualización automática cada 30s)",
@@ -532,7 +535,11 @@
       "ADMIN_USER_MAKE_ADMIN": "Rol de admin concedido",
       "ADMIN_USER_ADMIN_REMOVED": "Rol de admin revocado",
       "ADMIN_USER_DELETED": "Usuario eliminado",
-      "ADMIN_USER_FORCE_LOGOUT": "Sesión cerrada en todos los dispositivos"
+      "ADMIN_USER_FORCE_LOGOUT": "Sesión cerrada en todos los dispositivos",
+      "ADMIN_USER_ATHLETE_TOGGLED": "Estado de atleta cambiado",
+      "ADMIN_TRAINING_CREATED": "Entrenamiento añadido para el atleta",
+      "ADMIN_TRAINING_UPDATED": "Entrenamiento del atleta editado",
+      "ADMIN_TRAINING_DELETED": "Entrenamiento del atleta eliminado"
     },
     "persons": "({{count}} pers.)"
   },
@@ -679,5 +686,12 @@
     "notSent": "no enviado",
     "send": "Enviar correos de invitación ({{count}})",
     "sentResult": "Se enviaron {{count}} invitaciones."
+  },
+  "trainingCalendars": {
+    "emptyTitle": "No hay atletas designados",
+    "emptyHint": "Marca a un usuario con el icono de mancuerna en la pestaña Usuarios para darle un calendario de entrenamiento personal.",
+    "lastActivity": "Última actividad: {{date}}",
+    "noActivity": "Sin actividad",
+    "back": "Volver a la lista de atletas"
   }
 }

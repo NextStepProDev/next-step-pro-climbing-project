@@ -1,0 +1,90 @@
+{
+  "tabs": {
+    "reservations": "Rezerwacje",
+    "calendar": "Kalendarz treningowy"
+  },
+  "views": {
+    "month": "Miesiąc",
+    "week": "Tydzień"
+  },
+  "nav": {
+    "today": "Dziś",
+    "prevWeek": "Poprzedni tydzień",
+    "nextWeek": "Następny tydzień",
+    "prevMonth": "Poprzedni miesiąc",
+    "nextMonth": "Następny miesiąc"
+  },
+  "status": {
+    "planned": "Zaplanowany",
+    "completed": "Wykonany",
+    "missed": "Pominięty"
+  },
+  "addTraining": "Dodaj trening",
+  "form": {
+    "addTitle": "Nowy trening",
+    "editTitle": "Edytuj trening",
+    "date": "Data",
+    "startTime": "Początek",
+    "endTime": "Koniec",
+    "title": "Tytuł",
+    "titlePlaceholder": "np. Trening siłowy, bouldering...",
+    "description": "Opis (opcjonalnie)",
+    "descriptionPlaceholder": "Plan treningu, cele, uwagi...",
+    "save": "Zapisz",
+    "cancel": "Anuluj",
+    "endAfterStart": "Godzina zakończenia musi być po godzinie rozpoczęcia",
+    "titleRequired": "Podaj tytuł treningu",
+    "markDoneNow": "Trening już wykonany — odhacz od razu"
+  },
+  "detail": {
+    "addedByCoach": "Dodany przez trenera",
+    "addedByAthlete": "Dodany przez zawodnika",
+    "edit": "Edytuj",
+    "delete": "Usuń",
+    "deleteConfirmTitle": "Usunąć trening?",
+    "deleteConfirmMessage": "Tego nie można cofnąć. Komentarze do treningu też znikną.",
+    "close": "Zamknij"
+  },
+  "completion": {
+    "markDone": "Oznacz jako wykonany",
+    "feedback": "Jak poszło? (opcjonalnie)",
+    "feedbackPlaceholder": "Krótki opis: co poszło dobrze, co było trudne...",
+    "rpe": "Zmęczenie (RPE)",
+    "rpeHint": "1 = bardzo lekko, 10 = maksymalny wysiłek",
+    "save": "Zapisz wykonanie",
+    "edit": "Edytuj wykonanie",
+    "undo": "Cofnij wykonanie",
+    "completedAt": "Wykonano",
+    "athleteFeedback": "Feedback zawodnika",
+    "noFeedback": "Zawodnik nie zostawił feedbacku",
+    "availableAfterStart": "Odhaczanie będzie dostępne po rozpoczęciu treningu"
+  },
+  "comments": {
+    "title": "Komentarze",
+    "empty": "Brak komentarzy. Napisz pierwszy!",
+    "placeholder": "Napisz komentarz...",
+    "send": "Wyślij",
+    "coach": "Trener"
+  },
+  "overlay": {
+    "reservation": "Rezerwacja",
+    "readonlyHint": "To Twoja rezerwacja z kalendarza ogólnego — zarządzaj nią w zakładce Rezerwacje.",
+    "invitation": "Zaproszenie — zarezerwuj!",
+    "viewDetails": "Zobacz szczegóły"
+  },
+  "badge": {
+    "new": "nowe"
+  },
+  "clamp": {
+    "startsEarlier": "zaczyna się wcześniej",
+    "endsLater": "kończy się później"
+  },
+  "empty": {
+    "title": "Brak treningów w tym okresie",
+    "hint": "Dodaj trening przyciskiem powyżej albo kliknij dzień w kalendarzu."
+  },
+  "deletions": {
+    "titleAthlete": "Trener usunął z Twojego planu:",
+    "titleCoach": "Zawodnik usunął ze swojego planu:"
+  }
+}

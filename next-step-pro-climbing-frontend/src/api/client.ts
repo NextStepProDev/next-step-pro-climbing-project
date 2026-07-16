@@ -23,6 +23,12 @@ import type {
   CreateEventRequest,
   CreateTrainingRequest,
   TrainingRequest,
+  CreatePersonalTraining,
+  PersonalTraining,
+  TrainingCalendarRange,
+  TrainingCommentItem,
+  TrainingCalendarNotifications,
+  AthleteSummary,
   AdminTrainingRequest,
   AdminTrainingRequestPage,
   AdminNotifications,
@@ -399,6 +405,89 @@ export const trainingRequestApi = {
     fetchApi<void>(`/training-requests/${requestId}`, { method: 'DELETE' }),
 }
 
+// Personal training calendar (athlete side; requires the coach-set athlete flag)
+export const trainingCalendarApi = {
+  getRange: (from: string, to: string) =>
+    fetchApi<TrainingCalendarRange>(`/training-calendar?from=${from}&to=${to}`),
+
+  createTraining: (data: CreatePersonalTraining) =>
+    fetchApi<PersonalTraining>('/training-calendar/trainings', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  updateTraining: (trainingId: string, data: CreatePersonalTraining) =>
+    fetchApi<PersonalTraining>(`/training-calendar/trainings/${trainingId}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+
+  deleteTraining: (trainingId: string) =>
+    fetchApi<void>(`/training-calendar/trainings/${trainingId}`, { method: 'DELETE' }),
+
+  complete: (trainingId: string, data: { feedback?: string; rpe?: number }) =>
+    fetchApi<PersonalTraining>(`/training-calendar/trainings/${trainingId}/complete`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  uncomplete: (trainingId: string) =>
+    fetchApi<PersonalTraining>(`/training-calendar/trainings/${trainingId}/uncomplete`, {
+      method: 'POST',
+    }),
+
+  getComments: (trainingId: string) =>
+    fetchApi<TrainingCommentItem[]>(`/training-calendar/trainings/${trainingId}/comments`),
+
+  addComment: (trainingId: string, body: string) =>
+    fetchApi<TrainingCommentItem>(`/training-calendar/trainings/${trainingId}/comments`, {
+      method: 'POST',
+      body: JSON.stringify({ body }),
+    }),
+
+  getNotifications: () =>
+    fetchApi<TrainingCalendarNotifications>('/training-calendar/notifications'),
+
+  markSeen: () =>
+    fetchApi<void>('/training-calendar/notifications/seen', { method: 'POST' }),
+}
+
+// Personal training calendar (coach side)
+export const adminTrainingCalendarApi = {
+  getAthletes: () =>
+    fetchApi<AthleteSummary[]>('/admin/training-calendar/athletes'),
+
+  getRange: (athleteId: string, from: string, to: string) =>
+    fetchApi<TrainingCalendarRange>(`/admin/training-calendar/athletes/${athleteId}?from=${from}&to=${to}`),
+
+  createTraining: (athleteId: string, data: CreatePersonalTraining) =>
+    fetchApi<PersonalTraining>(`/admin/training-calendar/athletes/${athleteId}/trainings`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  updateTraining: (trainingId: string, data: CreatePersonalTraining) =>
+    fetchApi<PersonalTraining>(`/admin/training-calendar/trainings/${trainingId}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+
+  deleteTraining: (trainingId: string) =>
+    fetchApi<void>(`/admin/training-calendar/trainings/${trainingId}`, { method: 'DELETE' }),
+
+  getComments: (trainingId: string) =>
+    fetchApi<TrainingCommentItem[]>(`/admin/training-calendar/trainings/${trainingId}/comments`),
+
+  addComment: (trainingId: string, body: string) =>
+    fetchApi<TrainingCommentItem>(`/admin/training-calendar/trainings/${trainingId}/comments`, {
+      method: 'POST',
+      body: JSON.stringify({ body }),
+    }),
+
+  markSeen: (athleteId: string) =>
+    fetchApi<void>(`/admin/training-calendar/athletes/${athleteId}/seen`, { method: 'POST' }),
+}
+
 // Admin
 export const adminApi = {
   // Time Slots
@@ -581,6 +670,12 @@ export const adminApi = {
 
   removeAdmin: (userId: string) =>
     fetchApi<void>(`/admin/users/${userId}/remove-admin`, { method: 'POST' }),
+
+  setAthlete: (userId: string, isAthlete: boolean) =>
+    fetchApi<void>(`/admin/users/${userId}/set-athlete`, {
+      method: 'POST',
+      body: JSON.stringify({ isAthlete }),
+    }),
 
   deleteUser: (userId: string) =>
     fetchApi<void>(`/admin/users/${userId}`, { method: 'DELETE' }),
