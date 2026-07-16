@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next'
 import { Routes, Route, Link, useLocation } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { Calendar, CalendarPlus, Users, Clock, ClipboardList, Activity, User, Image, Newspaper, BookOpen, Library, Mail, HardDrive, Video, Home, type LucideIcon } from 'lucide-react'
+import { Calendar, CalendarPlus, Users, Clock, ClipboardList, Activity, User, Image, Newspaper, BookOpen, Library, Mail, HardDrive, Video, Home, Dumbbell, type LucideIcon } from 'lucide-react'
 import clsx from 'clsx'
 import { adminApi } from '../api/client'
 import { AdminSlotsPanel } from './admin/AdminSlotsPanel'
@@ -20,6 +20,8 @@ import { AdminMailPanel } from './admin/AdminMailPanel'
 import { AdminStoragePanel } from './admin/AdminStoragePanel'
 import { AdminSitePanel } from './admin/AdminSitePanel'
 import { AdminRequestsPanel } from './admin/AdminRequestsPanel'
+import { AdminTrainingCalendarsPanel } from './admin/AdminTrainingCalendarsPanel'
+import { AdminAthleteCalendarPanel } from './admin/AdminAthleteCalendarPanel'
 
 interface AdminTab {
   path: string
@@ -40,6 +42,7 @@ const adminTabGroups: AdminTabGroup[] = [
       { path: '/admin/reservations', labelKey: 'tabs.reservations', icon: ClipboardList },
       { path: '/admin/events', labelKey: 'tabs.events', icon: Calendar },
       { path: '/admin/requests', labelKey: 'tabs.requests', icon: CalendarPlus },
+      { path: '/admin/training-calendars', labelKey: 'tabs.trainingCalendars', icon: Dumbbell },
     ],
   },
   {
@@ -88,6 +91,8 @@ export function AdminPage() {
     // Waitlist joins count together with new reservations — both views (the "Waitlists"
     // section and the reservation list) live in this tab, and entering it clears both
     '/admin/reservations': (notifications?.newReservations ?? 0) + (notifications?.newWaitlistEntries ?? 0),
+    // Unread athlete activity (new trainings/completions/comments) across all athletes
+    '/admin/training-calendars': notifications?.athleteActivity ?? 0,
   }
 
   return (
@@ -146,6 +151,8 @@ export function AdminPage() {
         <Route path="reservations" element={<AdminReservationsPanel />} />
         <Route path="events" element={<AdminEventsPanel />} />
         <Route path="requests" element={<AdminRequestsPanel />} />
+        <Route path="training-calendars" element={<AdminTrainingCalendarsPanel />} />
+        <Route path="training-calendars/:athleteId" element={<AdminAthleteCalendarPanel />} />
         <Route path="instructors" element={<AdminInstructorsPanel />} />
         <Route path="competitors" element={<AdminCompetitorsPanel />} />
         <Route path="gallery" element={<AdminGalleryPanel />} />

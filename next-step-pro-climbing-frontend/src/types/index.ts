@@ -19,6 +19,8 @@ export interface User {
   nickname: string
   role: 'USER' | 'ADMIN'
   isAdmin: boolean
+  // Coach-designated athlete: unlocks the personal training calendar tab
+  isAthlete: boolean
   emailNotificationsEnabled: boolean
   preferredLanguage: string
   newsletterSubscribed: boolean
@@ -392,6 +394,8 @@ export interface AdminNotifications {
   newReservations: number
   // New waitlist joins since last "read" (same marker as newReservations)
   newWaitlistEntries: number
+  // Unread athlete activity in training calendars (per this admin's read markers)
+  athleteActivity: number
 }
 
 // Waitlist entry in admin views (participants modal + Reservations tab)
@@ -485,6 +489,10 @@ export type ActivityActionType =
   | 'ADMIN_USER_ADMIN_REMOVED'
   | 'ADMIN_USER_DELETED'
   | 'ADMIN_USER_FORCE_LOGOUT'
+  | 'ADMIN_USER_ATHLETE_TOGGLED'
+  | 'ADMIN_TRAINING_CREATED'
+  | 'ADMIN_TRAINING_UPDATED'
+  | 'ADMIN_TRAINING_DELETED'
 
 export interface ActivityLog {
   id: string
@@ -1006,4 +1014,98 @@ export interface CalendarPromoPresetDto {
   id: string | null
   name: string
   translations: Record<string, CalendarPromoContentDto>
+}
+
+// ===== Personal training calendar (TrainingPeaks-style) =====
+
+// MISSED is derived server-side: planned + end time in the past, never stored
+export type PersonalTrainingStatus = 'PLANNED' | 'COMPLETED' | 'MISSED'
+
+export interface CreatePersonalTraining {
+  date: string
+  startTime: string
+  endTime: string
+  title: string
+  description?: string
+}
+
+export interface PersonalTraining {
+  id: string
+  date: string
+  startTime: string
+  endTime: string
+  title: string
+  description: string | null
+  createdByAdmin: boolean
+  status: PersonalTrainingStatus
+  completedAt: string | null
+  feedback: string | null
+  rpe: number | null
+  // Unread activity from the other side (viewer-dependent)
+  hasUnreadActivity: boolean
+  createdAt: string
+}
+
+// Read-only overlay: athlete's confirmed booking from the public reservation system
+export interface ReservationOverlayItem {
+  id: string
+  // Slot behind the booking — used to open the full slot-detail modal in place
+  slotId: string
+  date: string
+  startTime: string
+  endTime: string
+  title: string | null
+}
+
+// A future training removed by the other side since the viewer's last visit
+export interface TrainingDeletionItem {
+  date: string
+  startTime: string
+  endTime: string
+  title: string
+  deletedByAdmin: boolean
+  deletedAt: string
+}
+
+// Held seat awaiting booking — a call-to-action, deliberately NOT styled like a reservation
+export interface InvitationOverlayItem {
+  slotId: string | null
+  eventId: string | null
+  date: string
+  startTime: string | null
+  endTime: string | null
+  title: string | null
+}
+
+export interface TrainingCalendarRange {
+  trainings: PersonalTraining[]
+  reservations: ReservationOverlayItem[]
+  invitations: InvitationOverlayItem[]
+  deletions: TrainingDeletionItem[]
+}
+
+export interface TrainingCommentItem {
+  id: string
+  body: string
+  authorIsAdmin: boolean
+  authorName: string
+  authorAvatarUrl: string | null
+  createdAt: string
+  // Whether the viewer wrote this message (chat alignment)
+  mine: boolean
+}
+
+export interface TrainingCalendarNotifications {
+  newCount: number
+}
+
+// Coach's roster entry (admin panel)
+export interface AthleteSummary {
+  id: string
+  firstName: string
+  lastName: string
+  nickname: string
+  avatarUrl: string | null
+  newCount: number
+  lastActivityAt: string | null
 }

@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { format } from 'date-fns'
-import { Shield, ShieldOff, Trash2, Search, ChevronLeft, ChevronRight, Mail, ArrowUp, ArrowDown, ArrowUpDown, LogOut } from 'lucide-react'
+import { Shield, ShieldOff, Trash2, Search, ChevronLeft, ChevronRight, Mail, ArrowUp, ArrowDown, ArrowUpDown, LogOut, Dumbbell } from 'lucide-react'
 import { adminApi } from '../../api/client'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
 import { QueryError } from '../../components/ui/QueryError'
@@ -57,6 +57,18 @@ export function AdminUsersPanel() {
   const forceLogoutMutation = useMutation({
     mutationFn: adminApi.forceLogout,
     onSuccess: () => setActionError(null),
+    onError: (err) => setActionError(getErrorMessage(err)),
+  })
+
+  // Athlete flag toggle (personal training calendar access) — reversible, no confirm needed
+  const setAthleteMutation = useMutation({
+    mutationFn: ({ userId, isAthlete }: { userId: string; isAthlete: boolean }) =>
+      adminApi.setAthlete(userId, isAthlete),
+    onSuccess: () => {
+      setActionError(null)
+      queryClient.invalidateQueries({ queryKey: ['admin', 'users'] })
+      queryClient.invalidateQueries({ queryKey: ['admin', 'trainingCalendar', 'athletes'] })
+    },
     onError: (err) => setActionError(getErrorMessage(err)),
   })
 
@@ -239,6 +251,17 @@ export function AdminUsersPanel() {
                       {format(new Date(user.createdAt), 'dd.MM.yyyy')}
                     </td>
                     <td className="px-4 py-3 flex gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setAthleteMutation.mutate({ userId: user.id, isAthlete: !user.isAthlete })}
+                        title={user.isAthlete ? t('users.unsetAthlete') : t('users.setAthlete')}
+                        className={user.isAthlete
+                          ? '!text-indigo-400 hover:bg-indigo-500/10'
+                          : 'text-surface-500 hover:text-indigo-300'}
+                      >
+                        <Dumbbell className="w-4 h-4" />
+                      </Button>
                       {user.role === 'ADMIN' ? (
                         <>
                           <Button

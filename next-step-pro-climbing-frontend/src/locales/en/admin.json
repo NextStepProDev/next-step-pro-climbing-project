@@ -17,7 +17,8 @@
     "mail": "Send email",
     "storage": "Storage",
     "site": "Homepage",
-    "requests": "Proposals"
+    "requests": "Proposals",
+    "trainingCalendars": "Training calendars"
   },
   "tabGroups": {
     "calendar": "Calendar",
@@ -507,7 +508,9 @@
     "confirmDelete": "Yes, delete",
     "forceLogoutTitle": "Sign out from all devices",
     "forceLogoutMessage": "Are you sure you want to sign out {{name}} from all devices? Sessions will expire within ≤15 min and they will need to sign in again.",
-    "confirmForceLogout": "Yes, sign out"
+    "confirmForceLogout": "Yes, sign out",
+    "setAthlete": "Mark as athlete (training calendar)",
+    "unsetAthlete": "Unmark athlete (hide training calendar)"
   },
   "activity": {
     "title": "Activity log (auto-refresh every 30s)",
@@ -534,7 +537,11 @@
       "ADMIN_USER_MAKE_ADMIN": "Admin role granted",
       "ADMIN_USER_ADMIN_REMOVED": "Admin role revoked",
       "ADMIN_USER_DELETED": "User deleted",
-      "ADMIN_USER_FORCE_LOGOUT": "Signed out from all devices"
+      "ADMIN_USER_FORCE_LOGOUT": "Signed out from all devices",
+      "ADMIN_USER_ATHLETE_TOGGLED": "Athlete status changed",
+      "ADMIN_TRAINING_CREATED": "Training added for athlete",
+      "ADMIN_TRAINING_UPDATED": "Athlete training edited",
+      "ADMIN_TRAINING_DELETED": "Athlete training deleted"
     },
     "persons": "({{count}} pers.)"
   },
@@ -681,5 +688,12 @@
     "notSent": "not sent",
     "send": "Send invitation emails ({{count}})",
     "sentResult": "Sent {{count}} invitations."
+  },
+  "trainingCalendars": {
+    "emptyTitle": "No designated athletes",
+    "emptyHint": "Flag a user with the dumbbell icon in the Users tab to give them a personal training calendar.",
+    "lastActivity": "Last activity: {{date}}",
+    "noActivity": "No activity",
+    "back": "Back to athlete list"
   }
 }

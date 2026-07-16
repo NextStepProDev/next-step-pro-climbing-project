@@ -17,6 +17,17 @@ public interface ReservationRepository extends JpaRepository<Reservation, UUID> 
     @Query("SELECT r FROM Reservation r JOIN FETCH r.timeSlot WHERE r.user.id = :userId")
     List<Reservation> findByUserId(UUID userId);
 
+    /** Personal training calendar: read-only overlay of the user's booked sessions in a date range.
+     * Event fetched for the display title (slot title -> event title). */
+    @Query("""
+        SELECT r FROM Reservation r
+        JOIN FETCH r.timeSlot ts
+        LEFT JOIN FETCH ts.event
+        WHERE r.user.id = :userId AND r.status = 'CONFIRMED' AND ts.date BETWEEN :from AND :to
+        ORDER BY ts.date, ts.startTime
+        """)
+    List<Reservation> findConfirmedByUserIdInRange(UUID userId, LocalDate from, LocalDate to);
+
     List<Reservation> findByTimeSlotId(UUID timeSlotId);
 
     @Query("SELECT r FROM Reservation r WHERE r.timeSlot.id = :timeSlotId AND r.status = 'CONFIRMED'")

@@ -1,0 +1,90 @@
+{
+  "tabs": {
+    "reservations": "Reservations",
+    "calendar": "Training calendar"
+  },
+  "views": {
+    "month": "Month",
+    "week": "Week"
+  },
+  "nav": {
+    "today": "Today",
+    "prevWeek": "Previous week",
+    "nextWeek": "Next week",
+    "prevMonth": "Previous month",
+    "nextMonth": "Next month"
+  },
+  "status": {
+    "planned": "Planned",
+    "completed": "Completed",
+    "missed": "Missed"
+  },
+  "addTraining": "Add training",
+  "form": {
+    "addTitle": "New training",
+    "editTitle": "Edit training",
+    "date": "Date",
+    "startTime": "Start",
+    "endTime": "End",
+    "title": "Title",
+    "titlePlaceholder": "e.g. Strength session, bouldering...",
+    "description": "Description (optional)",
+    "descriptionPlaceholder": "Training plan, goals, notes...",
+    "save": "Save",
+    "cancel": "Cancel",
+    "endAfterStart": "End time must be after start time",
+    "titleRequired": "Enter a training title",
+    "markDoneNow": "Training already done — mark it completed right away"
+  },
+  "detail": {
+    "addedByCoach": "Added by coach",
+    "addedByAthlete": "Added by athlete",
+    "edit": "Edit",
+    "delete": "Delete",
+    "deleteConfirmTitle": "Delete training?",
+    "deleteConfirmMessage": "This cannot be undone. The training's comments will be gone too.",
+    "close": "Close"
+  },
+  "completion": {
+    "markDone": "Mark as completed",
+    "feedback": "How did it go? (optional)",
+    "feedbackPlaceholder": "Short note: what went well, what was hard...",
+    "rpe": "Effort (RPE)",
+    "rpeHint": "1 = very easy, 10 = maximum effort",
+    "save": "Save completion",
+    "edit": "Edit completion",
+    "undo": "Undo completion",
+    "completedAt": "Completed",
+    "athleteFeedback": "Athlete's feedback",
+    "noFeedback": "The athlete left no feedback",
+    "availableAfterStart": "Completion becomes available once the training has started"
+  },
+  "comments": {
+    "title": "Comments",
+    "empty": "No comments yet. Write the first one!",
+    "placeholder": "Write a comment...",
+    "send": "Send",
+    "coach": "Coach"
+  },
+  "overlay": {
+    "reservation": "Reservation",
+    "readonlyHint": "This is your booking from the main calendar — manage it in the Reservations tab.",
+    "invitation": "Invitation — book now!",
+    "viewDetails": "View details"
+  },
+  "badge": {
+    "new": "new"
+  },
+  "clamp": {
+    "startsEarlier": "starts earlier",
+    "endsLater": "ends later"
+  },
+  "empty": {
+    "title": "No trainings in this period",
+    "hint": "Add a training with the button above or click a day in the calendar."
+  },
+  "deletions": {
+    "titleAthlete": "The coach removed from your plan:",
+    "titleCoach": "The athlete removed from their plan:"
+  }
+}

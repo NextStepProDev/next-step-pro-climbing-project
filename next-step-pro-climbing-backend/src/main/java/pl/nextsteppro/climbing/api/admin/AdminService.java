@@ -77,6 +77,7 @@ public class AdminService {
     private final EventWaitlistService eventWaitlistService;
     private final ReservedSeatRepository reservedSeatRepository;
     private final TrainingRequestRepository trainingRequestRepository;
+    private final pl.nextsteppro.climbing.api.trainingcalendar.TrainingCalendarService trainingCalendarService;
 
     public AdminService(TimeSlotRepository timeSlotRepository,
                        EventRepository eventRepository,
@@ -95,7 +96,8 @@ public class AdminService {
                        WaitlistService waitlistService,
                        EventWaitlistService eventWaitlistService,
                        ReservedSeatRepository reservedSeatRepository,
-                       TrainingRequestRepository trainingRequestRepository) {
+                       TrainingRequestRepository trainingRequestRepository,
+                       pl.nextsteppro.climbing.api.trainingcalendar.TrainingCalendarService trainingCalendarService) {
         this.timeSlotRepository = timeSlotRepository;
         this.eventRepository = eventRepository;
         this.courseRepository = courseRepository;
@@ -114,6 +116,7 @@ public class AdminService {
         this.eventWaitlistService = eventWaitlistService;
         this.reservedSeatRepository = reservedSeatRepository;
         this.trainingRequestRepository = trainingRequestRepository;
+        this.trainingCalendarService = trainingCalendarService;
     }
 
     @Caching(evict = {
@@ -840,7 +843,8 @@ public class AdminService {
                 u.getPhone(),
                 u.getRole().name(),
                 u.getCreatedAt(),
-                u.isNewsletterSubscribed()
+                u.isNewsletterSubscribed(),
+                u.isAthlete()
             ))
             .toList();
     }
@@ -871,6 +875,19 @@ public class AdminService {
 
         User admin = userRepository.findById(adminId).orElseThrow();
         activityLogService.logAdminUserAdminRemoved(admin, user.getFullName() + " (" + user.getEmail() + ")");
+    }
+
+    /** Toggles the coach-designated athlete flag (personal training calendar access). Data is kept on un-flag. */
+    public void setAthlete(UUID adminId, UUID userId, boolean isAthlete) {
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        user.setAthlete(isAthlete);
+        userRepository.save(user);
+
+        User admin = userRepository.findById(adminId).orElseThrow();
+        activityLogService.logAdminUserAthleteToggled(admin,
+            user.getFullName() + " (" + user.getEmail() + ") -> " + (isAthlete ? "athlete" : "not athlete"));
     }
 
     public int sendMailToUsers(SendMailRequest request) {
@@ -1033,7 +1050,8 @@ public class AdminService {
         int newReservations = reservationRepository.countConfirmedCreatedAfter(admin.getAdminReservationsSeenAt());
         int newWaitlistEntries = waitlistRepository.countActiveCreatedAfter(admin.getAdminReservationsSeenAt())
             + eventWaitlistRepository.countActiveCreatedAfter(admin.getAdminReservationsSeenAt());
-        return new AdminNotificationsDto(pendingRequests, newReservations, newWaitlistEntries);
+        long athleteActivity = trainingCalendarService.getTotalAthleteActivity(adminId);
+        return new AdminNotificationsDto(pendingRequests, newReservations, newWaitlistEntries, athleteActivity);
     }
 
     public void markReservationsSeen(UUID adminId) {

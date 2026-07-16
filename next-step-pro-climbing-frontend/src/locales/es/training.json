@@ -1,0 +1,90 @@
+{
+  "tabs": {
+    "reservations": "Reservas",
+    "calendar": "Calendario de entrenamiento"
+  },
+  "views": {
+    "month": "Mes",
+    "week": "Semana"
+  },
+  "nav": {
+    "today": "Hoy",
+    "prevWeek": "Semana anterior",
+    "nextWeek": "Semana siguiente",
+    "prevMonth": "Mes anterior",
+    "nextMonth": "Mes siguiente"
+  },
+  "status": {
+    "planned": "Planificado",
+    "completed": "Completado",
+    "missed": "Omitido"
+  },
+  "addTraining": "Añadir entrenamiento",
+  "form": {
+    "addTitle": "Nuevo entrenamiento",
+    "editTitle": "Editar entrenamiento",
+    "date": "Fecha",
+    "startTime": "Inicio",
+    "endTime": "Fin",
+    "title": "Título",
+    "titlePlaceholder": "p. ej. Sesión de fuerza, búlder...",
+    "description": "Descripción (opcional)",
+    "descriptionPlaceholder": "Plan de entrenamiento, objetivos, notas...",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "endAfterStart": "La hora de fin debe ser posterior a la de inicio",
+    "titleRequired": "Introduce un título del entrenamiento",
+    "markDoneNow": "Entrenamiento ya realizado — márcalo como completado ahora"
+  },
+  "detail": {
+    "addedByCoach": "Añadido por el entrenador",
+    "addedByAthlete": "Añadido por el atleta",
+    "edit": "Editar",
+    "delete": "Eliminar",
+    "deleteConfirmTitle": "¿Eliminar el entrenamiento?",
+    "deleteConfirmMessage": "Esto no se puede deshacer. Los comentarios del entrenamiento también desaparecerán.",
+    "close": "Cerrar"
+  },
+  "completion": {
+    "markDone": "Marcar como completado",
+    "feedback": "¿Cómo fue? (opcional)",
+    "feedbackPlaceholder": "Nota breve: qué salió bien, qué fue difícil...",
+    "rpe": "Esfuerzo (RPE)",
+    "rpeHint": "1 = muy fácil, 10 = esfuerzo máximo",
+    "save": "Guardar",
+    "edit": "Editar",
+    "undo": "Deshacer",
+    "completedAt": "Completado",
+    "athleteFeedback": "Feedback del atleta",
+    "noFeedback": "El atleta no dejó feedback",
+    "availableAfterStart": "Podrás marcarlo como completado cuando el entrenamiento haya comenzado"
+  },
+  "comments": {
+    "title": "Comentarios",
+    "empty": "Aún no hay comentarios. ¡Escribe el primero!",
+    "placeholder": "Escribe un comentario...",
+    "send": "Enviar",
+    "coach": "Entrenador"
+  },
+  "overlay": {
+    "reservation": "Reserva",
+    "readonlyHint": "Esta es tu reserva del calendario general — gestiónala en la pestaña Reservas.",
+    "invitation": "Invitación — ¡reserva ya!",
+    "viewDetails": "Ver detalles"
+  },
+  "badge": {
+    "new": "nuevo"
+  },
+  "clamp": {
+    "startsEarlier": "empieza antes",
+    "endsLater": "termina después"
+  },
+  "empty": {
+    "title": "No hay entrenamientos en este período",
+    "hint": "Añade un entrenamiento con el botón de arriba o haz clic en un día del calendario."
+  },
+  "deletions": {
+    "titleAthlete": "El entrenador eliminó de tu plan:",
+    "titleCoach": "El atleta eliminó de su plan:"
+  }
+}

@@ -103,6 +103,23 @@ public class ActivityLogService {
         save(admin, ActivityActionType.ADMIN_USER_FORCE_LOGOUT, null, null, null, description);
     }
 
+    public void logAdminUserAthleteToggled(User admin, String description) {
+        save(admin, ActivityActionType.ADMIN_USER_ATHLETE_TOGGLED, null, null, null, description);
+    }
+
+    // Personal training calendar: no slot/event FK on ActivityLog — context goes into description
+    public void logAdminTrainingCreated(User admin, String description) {
+        save(admin, ActivityActionType.ADMIN_TRAINING_CREATED, null, null, null, description);
+    }
+
+    public void logAdminTrainingUpdated(User admin, String description) {
+        save(admin, ActivityActionType.ADMIN_TRAINING_UPDATED, null, null, null, description);
+    }
+
+    public void logAdminTrainingDeleted(User admin, String description) {
+        save(admin, ActivityActionType.ADMIN_TRAINING_DELETED, null, null, null, description);
+    }
+
     @Transactional(readOnly = true)
     public List<ActivityLogDto> getRecentLogs(int page, int size) {
         List<ActivityLog> logs = activityLogRepository.findRecentWithDetails(PageRequest.of(page, size));

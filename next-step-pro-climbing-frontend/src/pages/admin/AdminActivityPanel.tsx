@@ -130,6 +130,26 @@ const ACTION_CONFIG: Record<
     color: 'text-orange-400',
     bgColor: 'bg-orange-500/10',
   },
+  ADMIN_USER_ATHLETE_TOGGLED: {
+    icon: UserCheck,
+    color: 'text-indigo-400',
+    bgColor: 'bg-indigo-500/10',
+  },
+  ADMIN_TRAINING_CREATED: {
+    icon: CalendarPlus,
+    color: 'text-indigo-400',
+    bgColor: 'bg-indigo-500/10',
+  },
+  ADMIN_TRAINING_UPDATED: {
+    icon: Settings,
+    color: 'text-indigo-400',
+    bgColor: 'bg-indigo-500/10',
+  },
+  ADMIN_TRAINING_DELETED: {
+    icon: Trash2,
+    color: 'text-indigo-400',
+    bgColor: 'bg-indigo-500/10',
+  },
 }
 
 export function AdminActivityPanel() {

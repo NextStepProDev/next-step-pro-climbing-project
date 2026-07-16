@@ -591,6 +591,25 @@ public class AdminController {
 
     @Tag(name = "Admin - Users")
     @Operation(
+        summary = "Toggle athlete flag",
+        description = "Marks/unmarks the user as a coach-designated athlete (personal training calendar). Un-flagging keeps the calendar data."
+    )
+    @ApiResponses({
+        @ApiResponse(responseCode = "204", description = "Flag updated"),
+        @ApiResponse(responseCode = "404", description = "User not found"),
+        @ApiResponse(responseCode = "403", description = "Admin privileges required")
+    })
+    @PostMapping("/users/{userId}/set-athlete")
+    public ResponseEntity<Void> setAthlete(
+            @CurrentUserId UUID adminId,
+            @Parameter(description = "User UUID") @PathVariable UUID userId,
+            @Valid @RequestBody SetAthleteRequest request) {
+        adminService.setAthlete(adminId, userId, request.isAthlete());
+        return ResponseEntity.noContent().build();
+    }
+
+    @Tag(name = "Admin - Users")
+    @Operation(
         summary = "Delete user",
         description = "Deletes a user along with all their reservations and waitlist entries. Administrators cannot be deleted."
     )

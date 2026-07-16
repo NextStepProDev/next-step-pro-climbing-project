@@ -1,0 +1,123 @@
+package pl.nextsteppro.climbing.api.trainingcalendar;
+
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+import org.jspecify.annotations.Nullable;
+import pl.nextsteppro.climbing.domain.personaltraining.PersonalTraining;
+import pl.nextsteppro.climbing.domain.personaltraining.TrainingComment;
+
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.util.List;
+import java.util.UUID;
+
+// Shared by the athlete controller AND the admin (coach) slice — the admin controller/service
+// live in this same package (deviation from the api/admin/* layout) so these records can stay
+// package-private per project convention instead of being duplicated.
+
+record CreatePersonalTrainingRequest(
+    @NotNull LocalDate date,
+    @NotNull LocalTime startTime,
+    @NotNull LocalTime endTime,
+    @NotBlank @Size(max = PersonalTraining.MAX_TITLE_LENGTH) String title,
+    @Nullable @Size(max = PersonalTraining.MAX_DESCRIPTION_LENGTH) String description
+) {}
+
+record CompleteTrainingRequest(
+    @Nullable @Size(max = PersonalTraining.MAX_FEEDBACK_LENGTH) String feedback,
+    @Nullable @Min(1) @Max(10) Integer rpe
+) {}
+
+record CreateTrainingCommentRequest(
+    @NotBlank @Size(max = TrainingComment.MAX_BODY_LENGTH) String body
+) {}
+
+record PersonalTrainingDto(
+    UUID id,
+    LocalDate date,
+    LocalTime startTime,
+    LocalTime endTime,
+    String title,
+    @Nullable String description,
+    boolean createdByAdmin,
+    // PLANNED | COMPLETED | MISSED (missed is derived, never stored)
+    String status,
+    @Nullable Instant completedAt,
+    @Nullable String feedback,
+    @Nullable Integer rpe,
+    // Unread activity from the OTHER side (viewer-dependent): new/edited entry or new comments
+    boolean hasUnreadActivity,
+    Instant createdAt
+) {}
+
+/** Read-only overlay: the athlete's confirmed booking from the public reservation system. */
+record ReservationOverlayDto(
+    UUID id,
+    // Slot behind the booking — lets the UI open the full slot-detail modal in place
+    UUID slotId,
+    LocalDate date,
+    LocalTime startTime,
+    LocalTime endTime,
+    @Nullable String title
+) {}
+
+/** A future training removed by the OTHER side since the viewer's last visit ("deleted" strip). */
+record TrainingDeletionDto(
+    LocalDate date,
+    LocalTime startTime,
+    LocalTime endTime,
+    String title,
+    boolean deletedByAdmin,
+    Instant deletedAt
+) {}
+
+/**
+ * Pending invitation (a seat held for the athlete who has NOT booked yet) — rendered
+ * loudly (amber, "book now!") so it cannot be mistaken for a confirmed reservation.
+ * Exactly one of slotId/eventId is set; multi-day events emit one entry per day.
+ */
+record InvitationOverlayDto(
+    @Nullable UUID slotId,
+    @Nullable UUID eventId,
+    LocalDate date,
+    @Nullable LocalTime startTime,
+    @Nullable LocalTime endTime,
+    @Nullable String title
+) {}
+
+record CalendarRangeDto(
+    List<PersonalTrainingDto> trainings,
+    List<ReservationOverlayDto> reservations,
+    // Held seats awaiting booking — visually distinct call-to-action, not a reservation
+    List<InvitationOverlayDto> invitations,
+    // Unseen deletions of FUTURE trainings made by the other side (any date, newest first)
+    List<TrainingDeletionDto> deletions
+) {}
+
+record TrainingCommentDto(
+    UUID id,
+    String body,
+    boolean authorIsAdmin,
+    String authorName,
+    @Nullable String authorAvatarUrl,
+    Instant createdAt,
+    // Whether the viewer wrote this message (chat alignment left/right)
+    boolean mine
+) {}
+
+record TrainingNotificationsDto(long newCount) {}
+
+/** Coach's roster entry: one flagged athlete with unread-activity badge data. */
+record AthleteSummaryDto(
+    UUID id,
+    String firstName,
+    String lastName,
+    String nickname,
+    @Nullable String avatarUrl,
+    long newCount,
+    @Nullable Instant lastActivityAt
+) {}
