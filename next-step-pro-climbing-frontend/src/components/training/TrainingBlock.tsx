@@ -116,10 +116,13 @@ export function ReservationBlock({ reservation, label, onClick, style, compact }
       className={clsx(
         'border border-dashed rounded-md text-left transition-colors overflow-hidden',
         'bg-surface-700/40 border-surface-500/60 text-surface-300 hover:bg-surface-700/60',
-        compact ? 'w-full px-1.5 py-0.5 text-[11px] truncate block' : 'absolute px-1.5 py-1 text-xs',
+        compact ? 'relative w-full px-1.5 py-0.5 text-[11px] truncate block' : 'absolute px-1.5 py-1 text-xs',
       )}
       title={title}
     >
+      {reservation.isNew && (
+        <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-rose-500" />
+      )}
       <span className="flex items-center gap-1 min-w-0">
         <Lock className="w-3 h-3 shrink-0" />
         <span className="font-medium truncate">{title}</span>

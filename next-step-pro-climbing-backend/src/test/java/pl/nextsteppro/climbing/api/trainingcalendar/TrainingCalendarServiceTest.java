@@ -15,6 +15,7 @@ import pl.nextsteppro.climbing.domain.personaltraining.TrainingComment;
 import pl.nextsteppro.climbing.domain.personaltraining.TrainingCommentRepository;
 import pl.nextsteppro.climbing.domain.personaltraining.TrainingDeletion;
 import pl.nextsteppro.climbing.domain.personaltraining.TrainingDeletionRepository;
+import pl.nextsteppro.climbing.domain.reservation.Reservation;
 import pl.nextsteppro.climbing.domain.reservation.ReservationRepository;
 import pl.nextsteppro.climbing.domain.reservedseat.ReservedSeat;
 import pl.nextsteppro.climbing.domain.reservedseat.ReservedSeatRepository;
@@ -325,7 +326,70 @@ class TrainingCalendarServiceTest {
         assertNull(range.invitations().get(0).eventId());
     }
 
+    // ========== reservation overlay "new" flag ==========
+
+    @Test
+    void shouldFlagFreshAthleteBookingAsNewOnlyInCoachView() {
+        // Given: coach last looked a week ago; since then the athlete booked a slot,
+        // an admin added a manual booking, and one booking predates the visit
+        UUID adminId = UUID.randomUUID();
+        Instant seen = Instant.now().minusSeconds(7 * 24 * 3600);
+        when(readRepository.findByUserIdAndAthleteId(adminId, athleteId))
+            .thenReturn(Optional.of(readWithSeenAt(seen)));
+
+        LocalDate from = LocalDate.now();
+        LocalDate to = from.plusDays(6);
+        TimeSlot slot = new TimeSlot(from.plusDays(2), LocalTime.of(10, 0), LocalTime.of(12, 0), 4);
+        setField(slot, "id", UUID.randomUUID());
+
+        Reservation byAthlete = reservationWithCreatedAt(slot, Instant.now().minusSeconds(24 * 3600));
+        Reservation byAdmin = reservationWithCreatedAt(slot, Instant.now().minusSeconds(24 * 3600));
+        byAdmin.setCreatedByAdmin(true);
+        Reservation oldBooking = reservationWithCreatedAt(slot, seen.minusSeconds(3600));
+        when(reservationRepository.findConfirmedByUserIdInRange(athleteId, from, to))
+            .thenReturn(List.of(byAthlete, byAdmin, oldBooking));
+
+        // When
+        CalendarRangeDto range = service.getRangeForAthlete(adminId, athleteId, from, to);
+
+        // Then — only the athlete's fresh booking carries the unread dot
+        assertEquals(3, range.reservations().size());
+        assertTrue(range.reservations().get(0).isNew(), "fresh athlete booking must be marked new");
+        assertFalse(range.reservations().get(1).isNew(), "coach's own manual booking is never new");
+        assertFalse(range.reservations().get(2).isNew(), "booking made before the last visit is not new");
+    }
+
+    @Test
+    void shouldNeverFlagReservationAsNewForAthleteViewer() {
+        // Given: athlete never opened the calendar (seen = EPOCH, everything counts as after)
+        when(readRepository.findByUserIdAndAthleteId(athleteId, athleteId)).thenReturn(Optional.empty());
+
+        LocalDate from = LocalDate.now();
+        LocalDate to = from.plusDays(6);
+        TimeSlot slot = new TimeSlot(from.plusDays(1), LocalTime.of(10, 0), LocalTime.of(12, 0), 4);
+        setField(slot, "id", UUID.randomUUID());
+        when(reservationRepository.findConfirmedByUserIdInRange(athleteId, from, to))
+            .thenReturn(List.of(reservationWithCreatedAt(slot, Instant.now())));
+
+        // When
+        CalendarRangeDto range = service.getMyRange(athleteId, from, to);
+
+        // Then — the athlete made the booking themself; no dot in their own view
+        assertEquals(1, range.reservations().size());
+        assertFalse(range.reservations().get(0).isNew());
+    }
+
     // ========== coach totals ==========
+
+    @Test
+    void shouldIncludeNewReservationsInTotalActivity() {
+        UUID adminId = UUID.randomUUID();
+        when(userRepository.findAllByAthleteTrueOrderByFirstNameAscLastNameAsc()).thenReturn(List.of(athlete));
+        when(reservationRepository.countNewReservationsPerAthlete(adminId))
+            .thenReturn(List.of(new AthleteActivityCount(athleteId, 2)));
+
+        assertEquals(2L, service.getTotalAthleteActivity(adminId));
+    }
 
     @Test
     void shouldCountOnlyFlaggedAthletesInTotalActivity() {
@@ -558,6 +622,12 @@ class TrainingCalendarServiceTest {
         setField(training, "createdAt", Instant.now());
         setField(training, "updatedAt", Instant.now());
         return training;
+    }
+
+    private Reservation reservationWithCreatedAt(TimeSlot slot, Instant createdAt) {
+        Reservation reservation = new Reservation(athlete, slot);
+        setField(reservation, "createdAt", createdAt);
+        return reservation;
     }
 
     private static TrainingCalendarRead readWithSeenAt(Instant seenAt) {

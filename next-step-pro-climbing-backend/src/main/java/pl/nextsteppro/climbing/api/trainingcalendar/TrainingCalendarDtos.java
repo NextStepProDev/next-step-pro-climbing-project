@@ -62,7 +62,10 @@ record ReservationOverlayDto(
     LocalDate date,
     LocalTime startTime,
     LocalTime endTime,
-    @Nullable String title
+    @Nullable String title,
+    // Coach viewer only: the athlete booked this after the coach's last visit (unread dot);
+    // always false for the athlete (own action) and for bookings made by an admin
+    boolean isNew
 ) {}
 
 /** A future training removed by the OTHER side since the viewer's last visit ("deleted" strip). */

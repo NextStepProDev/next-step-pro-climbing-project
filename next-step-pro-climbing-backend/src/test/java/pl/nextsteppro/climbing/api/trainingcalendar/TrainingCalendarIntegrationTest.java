@@ -161,6 +161,35 @@ class TrainingCalendarIntegrationTest extends BaseIntegrationTest {
         range = trainingCalendarService.getMyRange(athlete.getId(), date, date);
         assertTrue(range.invitations().isEmpty(), "booked invite must stop shouting");
         assertEquals(1, range.reservations().size());
+        assertFalse(range.reservations().get(0).isNew(), "own booking is never 'new' to the athlete");
+
+        // The fresh booking lights the coach's roster badge and gets the unread dot in the coach view
+        assertEquals(1L, adminTrainingCalendarService.getAthleteSummaries(coach.getId()).get(0).newCount());
+        CalendarRangeDto coachRange = trainingCalendarService.getRangeForAthlete(
+            coach.getId(), athlete.getId(), date, date);
+        assertTrue(coachRange.reservations().get(0).isNew(), "coach must see the booking as new");
+
+        // Coach opens the calendar (mark seen) -> badge and dot both clear
+        adminTrainingCalendarService.markSeen(coach.getId(), athlete.getId());
+        assertEquals(0L, adminTrainingCalendarService.getAthleteSummaries(coach.getId()).get(0).newCount());
+        coachRange = trainingCalendarService.getRangeForAthlete(coach.getId(), athlete.getId(), date, date);
+        assertFalse(coachRange.reservations().get(0).isNew(), "seen booking must lose the dot");
+    }
+
+    @Test
+    void shouldNotAlertCoachAboutAdminMadeBooking() {
+        // A booking the admin added by hand is the coach's own action: no badge, no dot
+        LocalDate date = LocalDate.now().plusDays(2);
+        TimeSlot slot = timeSlotRepository.save(new TimeSlot(date, LocalTime.of(10, 0), LocalTime.of(12, 0), 4));
+        Reservation manual = new Reservation(athlete, slot);
+        manual.setCreatedByAdmin(true);
+        reservationRepository.save(manual);
+
+        assertEquals(0L, adminTrainingCalendarService.getAthleteSummaries(coach.getId()).get(0).newCount());
+        CalendarRangeDto coachRange = trainingCalendarService.getRangeForAthlete(
+            coach.getId(), athlete.getId(), date, date);
+        assertEquals(1, coachRange.reservations().size());
+        assertFalse(coachRange.reservations().get(0).isNew());
     }
 
     @Test

@@ -1055,6 +1055,8 @@ export interface ReservationOverlayItem {
   startTime: string
   endTime: string
   title: string | null
+  // Coach view only: booked by the athlete since the coach's last visit (unread dot)
+  isNew: boolean
 }
 
 // A future training removed by the other side since the viewer's last visit
