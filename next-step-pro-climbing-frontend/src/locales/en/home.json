@@ -6,7 +6,8 @@
     "subtitle": "Professional support on the path to your mastery starts with choosing the right coach or instructor. I'm here to help you achieve your climbing goals and grow in this exciting discipline. Together, we can create a training plan tailored to your needs and abilities, helping you reach your goals. See you at training! Thank you for your trust!",
     "subtitleMobile": "Tailored training and coaching — reach your climbing goals.",
     "viewCalendar": "View calendar",
-    "seeOffer": "See our offer"
+    "seeOffer": "See our offer",
+    "athleteZone": "Athlete zone"
   },
   "steps": {
     "title": "How it works",
@@ -64,5 +65,30 @@
     "title": "Where I am now",
     "ctaCalendar": "Check available dates",
     "ctaCourses": "Browse courses"
+  },
+  "athleteZone": {
+    "badge": "For regular trainees",
+    "title": "Athlete zone — your training plan in one place",
+    "subtitle": "Training regularly? Get your own training calendar run together with the coach — plan, check off sessions and stay in touch.",
+    "feat1": {
+      "title": "Your own calendar",
+      "description": "Your trainings, bookings and invitations in week and month views."
+    },
+    "feat2": {
+      "title": "Plan & execution",
+      "description": "The coach builds the plan, you check off sessions with an RPE rating and feedback."
+    },
+    "feat3": {
+      "title": "Chat on every session",
+      "description": "Coach comments and tips attached to each training — no emails or texts."
+    },
+    "feat4": {
+      "title": "Never miss a thing",
+      "description": "Notifications for new trainings, comments and plan changes."
+    },
+    "ctaAthlete": "Enter your zone",
+    "ctaAskCoach": "Ask the coach for access",
+    "ctaGuest": "Create an account",
+    "accessNote": "Access to the Athlete zone is activated by the coach for regular trainees."
   }
 }

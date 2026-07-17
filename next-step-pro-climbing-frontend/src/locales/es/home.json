@@ -6,7 +6,8 @@
     "subtitle": "El apoyo profesional en el camino hacia tu maestría comienza con la elección del entrenador o instructor adecuado. Estoy aquí para ayudarte a alcanzar tus metas en la escalada y crecer en esta apasionante disciplina. Juntos podemos crear un plan de entrenamiento adaptado a tus necesidades y capacidades, gracias al cual alcanzarás tus objetivos. ¡Nos vemos en el entrenamiento! ¡Gracias por tu confianza!",
     "subtitleMobile": "Entrenamiento y coaching a medida — alcanza tus objetivos de escalada.",
     "viewCalendar": "Ver calendario",
-    "seeOffer": "Conoce nuestra oferta"
+    "seeOffer": "Conoce nuestra oferta",
+    "athleteZone": "Zona del atleta"
   },
   "steps": {
     "title": "Cómo funciona",
@@ -64,5 +65,30 @@
     "title": "Dónde estoy ahora",
     "ctaCalendar": "Ver fechas disponibles",
     "ctaCourses": "Ver cursos disponibles"
+  },
+  "athleteZone": {
+    "badge": "Para quienes entrenan",
+    "title": "Zona del atleta — tu plan de entrenamiento en un solo lugar",
+    "subtitle": "¿Entrenas con regularidad? Ten tu propio calendario de entrenamiento junto con el entrenador: planifica, marca sesiones y mantente en contacto.",
+    "feat1": {
+      "title": "Tu propio calendario",
+      "description": "Tus entrenamientos, reservas e invitaciones en vista semanal y mensual."
+    },
+    "feat2": {
+      "title": "Plan y ejecución",
+      "description": "El entrenador crea el plan y tú marcas las sesiones con valoración RPE y feedback."
+    },
+    "feat3": {
+      "title": "Chat en cada sesión",
+      "description": "Comentarios y consejos del entrenador en cada entrenamiento — sin correos ni SMS."
+    },
+    "feat4": {
+      "title": "No te pierdas nada",
+      "description": "Notificaciones de nuevos entrenamientos, comentarios y cambios del plan."
+    },
+    "ctaAthlete": "Entra en tu zona",
+    "ctaAskCoach": "Pide acceso al entrenador",
+    "ctaGuest": "Crea una cuenta",
+    "accessNote": "El acceso a la Zona del atleta lo activa el entrenador para quienes entrenan con regularidad."
   }
 }

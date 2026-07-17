@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Plus, Lock, Trash2 } from 'lucide-react'
 import { format, startOfWeek, startOfMonth, endOfMonth, addDays } from 'date-fns'
@@ -32,6 +32,7 @@ export function TrainingCalendarSection({ api, scopeKey, isCoachView }: Training
   const { t } = useTranslation('training')
   const queryClient = useQueryClient()
   const navigate = useNavigate()
+  const location = useLocation()
   const [searchParams, setSearchParams] = useSearchParams()
 
   const view = searchParams.get('cal') === 'month' ? 'month' : 'week'
@@ -200,10 +201,13 @@ export function TrainingCalendarSection({ api, scopeKey, isCoachView }: Training
   const deletions = rangeQuery.data?.deletions ?? []
 
   // A held seat is booked in the PUBLIC calendar — deep-link straight into the
-  // slot/event modal there, so "click the amber block" ends in an actual booking
+  // slot/event modal there, so "click the amber block" ends in an actual booking.
+  // Coach view: carry a returnTo so closing that modal comes back to this athlete's
+  // calendar instead of stranding the admin on the public one (CalendarPage reads it).
   const openInvitation = (inv: InvitationOverlayItem) => {
     const target = inv.slotId ? `slot=${inv.slotId}` : `event=${inv.eventId}`
-    navigate(`/calendar?date=${inv.date}&${target}`)
+    const returnTo = isCoachView ? location.pathname + location.search : undefined
+    navigate(`/calendar?date=${inv.date}&${target}`, returnTo ? { state: { returnTo } } : undefined)
   }
 
   return (

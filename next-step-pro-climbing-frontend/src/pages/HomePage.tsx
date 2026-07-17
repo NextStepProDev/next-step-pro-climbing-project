@@ -11,8 +11,14 @@ import {
   Search,
   CalendarCheck,
   UserPlus,
+  Dumbbell,
+  MessageSquare,
+  CheckCircle2,
+  Bell,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "../context/AuthContext";
+import { trainingCalendarApi } from "../api/client";
 import { Button } from "../components/ui/Button";
 import { AnimatedCounter } from "../components/ui/AnimatedCounter";
 import { ShareButtons } from "../components/ui/ShareButtons";
@@ -62,6 +68,18 @@ function BadgeImg({ src, href, className }: { src: string; href?: string | null;
 
 export function HomePage() {
   const { t } = useTranslation("home");
+  const { isAuthenticated, user } = useAuth();
+  const isAthlete = !!user?.isAthlete;
+
+  // Unread badge on the hero "Athlete zone" button — same cache as the navbar poll
+  const { data: trainingNotifications } = useQuery({
+    queryKey: ["trainingCalendar", "notifications"],
+    queryFn: trainingCalendarApi.getNotifications,
+    enabled: isAthlete,
+    refetchInterval: 60_000,
+    refetchIntervalInBackground: false,
+  });
+  const athleteBadge = trainingNotifications?.newCount ?? 0;
   const { enabled: locationEnabled, badge: locationBadge } = useLocationContent();
   const [heroImgLoaded, setHeroImgLoaded] = useState(false);
   const [heroRevealTimedOut, setHeroRevealTimedOut] = useState(false);
@@ -271,6 +289,25 @@ export function HomePage() {
                   {t("hero.seeOffer")}
                 </Button>
               </Link>
+              {/* Quick entry for coach-designated athletes — named "Strefa zawodnika"
+                  so it never clashes with the public "Kalendarz" button */}
+              {isAthlete && (
+                <Link to="/my-reservations?tab=calendar" className="relative">
+                  <Button
+                    variant="secondary"
+                    size="lg"
+                    className="w-full sm:w-auto btn-glow !border-amber-500/60 !text-amber-300 hover:!bg-amber-500/10"
+                  >
+                    <Dumbbell className="w-5 h-5 mr-2" />
+                    {t("hero.athleteZone")}
+                  </Button>
+                  {athleteBadge > 0 && (
+                    <span className="absolute -top-2 -right-2 min-w-5 h-5 px-1 flex items-center justify-center text-[11px] font-semibold text-white bg-rose-500 rounded-full">
+                      {athleteBadge}
+                    </span>
+                  )}
+                </Link>
+              )}
             </div>
           </div>
         </div>
@@ -439,6 +476,83 @@ export function HomePage() {
                 </li>
               </ul>
             </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* Athlete Zone — personal training calendar pitch. CTA adapts to the viewer:
+          athlete -> straight into their calendar, logged-in -> "coach unlocks it",
+          guest -> create an account first */}
+      <section className="py-16 sm:py-24">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="card-glass rounded-2xl border border-amber-500/25 p-8 sm:p-12 relative overflow-hidden">
+            <Dumbbell
+              aria-hidden="true"
+              className="absolute -right-8 -bottom-8 w-48 h-48 text-amber-500/5 rotate-12 pointer-events-none"
+            />
+            <div className="text-center mb-10">
+              <span className="inline-flex items-center gap-2 px-3 py-1 mb-4 text-xs font-semibold uppercase tracking-wider text-amber-300 bg-amber-500/10 border border-amber-500/30 rounded-full">
+                <Dumbbell className="w-3.5 h-3.5" />
+                {t("athleteZone.badge")}
+              </span>
+              <h2 className="text-3xl font-bold text-surface-100 mb-3">
+                {t("athleteZone.title")}
+              </h2>
+              <p className="text-surface-400 max-w-2xl mx-auto">
+                {t("athleteZone.subtitle")}
+              </p>
+            </div>
+
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+              {[
+                { icon: Calendar, key: "feat1" },
+                { icon: CheckCircle2, key: "feat2" },
+                { icon: MessageSquare, key: "feat3" },
+                { icon: Bell, key: "feat4" },
+              ].map(({ icon: Icon, key }) => (
+                <div key={key} className="text-center">
+                  <div className="w-11 h-11 mx-auto bg-amber-500/10 rounded-lg flex items-center justify-center mb-3">
+                    <Icon className="w-5 h-5 text-amber-400" />
+                  </div>
+                  <h3 className="text-sm font-semibold text-surface-100 mb-1">
+                    {t(`athleteZone.${key}.title`)}
+                  </h3>
+                  <p className="text-xs text-surface-400">
+                    {t(`athleteZone.${key}.description`)}
+                  </p>
+                </div>
+              ))}
+            </div>
+
+            <div className="text-center">
+              {isAthlete ? (
+                <Link to="/my-reservations?tab=calendar">
+                  <Button size="lg" className="btn-glow">
+                    <Dumbbell className="w-5 h-5 mr-2" />
+                    {t("athleteZone.ctaAthlete")}
+                  </Button>
+                </Link>
+              ) : isAuthenticated ? (
+                <>
+                  <p className="text-sm text-surface-400 mb-4">{t("athleteZone.accessNote")}</p>
+                  <Link to="/kontakt">
+                    <Button variant="secondary" size="lg">
+                      {t("athleteZone.ctaAskCoach")}
+                    </Button>
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <p className="text-sm text-surface-400 mb-4">{t("athleteZone.accessNote")}</p>
+                  <Link to="/register">
+                    <Button size="lg" className="btn-glow">
+                      {t("athleteZone.ctaGuest")}
+                      <ArrowRight className="w-5 h-5 ml-2" />
+                    </Button>
+                  </Link>
+                </>
+              )}
+            </div>
           </div>
         </div>
       </section>

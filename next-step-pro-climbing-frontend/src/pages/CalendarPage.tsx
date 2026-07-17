@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useSearchParams, useLocation, Link } from "react-router-dom";
+import { useSearchParams, useLocation, useNavigate, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { PageHead } from "../components/ui/PageHead";
 import { format, startOfWeek, addWeeks, subWeeks } from "date-fns";
@@ -28,8 +28,15 @@ export function CalendarPage() {
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
   const location = useLocation();
+  const navigate = useNavigate();
   // Back-link target so CourseDetailPage returns to the calendar instead of the course list.
   const courseReturnTo = location.pathname + location.search;
+  // Set when we were deep-linked here (e.g. from the admin athlete calendar's
+  // invitation overlay) — closing that specific slot/event modal goes back there
+  // instead of stranding the visitor on the public calendar.
+  const deepLinkReturnTo = (location.state as { returnTo?: string } | null)?.returnTo;
+  const deepLinkSlotIdRef = useRef(searchParams.get("slot"));
+  const deepLinkEventIdRef = useRef(searchParams.get("event"));
   const [viewMode, setViewMode] = useState<'month' | 'week'>(() => {
     return searchParams.get("view") === 'month' ? 'month' : 'week';
   });
@@ -220,24 +227,34 @@ export function CalendarPage() {
   }, [viewMode, setSearchParams]);
 
   const handleModalClose = useCallback(() => {
+    const goBack = !!deepLinkReturnTo && selectedSlotId === deepLinkSlotIdRef.current;
     setSelectedSlotId(null);
+    if (goBack) {
+      navigate(deepLinkReturnTo!, { replace: true });
+      return;
+    }
     setSearchParams(prev => {
       if (!prev.has('slot')) return prev;
       const next = new URLSearchParams(prev);
       next.delete('slot');
       return next;
     });
-  }, [setSearchParams]);
+  }, [setSearchParams, navigate, deepLinkReturnTo, selectedSlotId]);
 
   const handleEventModalClose = useCallback(() => {
+    const goBack = !!deepLinkReturnTo && selectedEvent?.id === deepLinkEventIdRef.current;
     setSelectedEvent(null);
+    if (goBack) {
+      navigate(deepLinkReturnTo!, { replace: true });
+      return;
+    }
     setSearchParams(prev => {
       if (!prev.has('event')) return prev;
       const next = new URLSearchParams(prev);
       next.delete('event');
       return next;
     });
-  }, [setSearchParams]);
+  }, [setSearchParams, navigate, deepLinkReturnTo, selectedEvent]);
 
   const moveSlotMutation = useMutation({
     mutationFn: ({ slotId, date, startTime, endTime }: { slotId: string; date: string; startTime: string; endTime: string }) =>
