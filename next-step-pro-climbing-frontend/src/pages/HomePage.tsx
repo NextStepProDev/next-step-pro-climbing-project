@@ -358,6 +358,30 @@ export function HomePage() {
         </div>
       </section>
 
+      {/* CTA Section */}
+      <section className="py-16 sm:py-24 relative overflow-hidden bg-gradient-to-b from-transparent via-primary-950/10 to-transparent">
+        <img
+          src={logoBlack}
+          alt=""
+          aria-hidden="true"
+          className="absolute -right-20 top-1/2 -translate-y-1/2 w-[300px] sm:w-[400px] opacity-[0.03] pointer-events-none select-none rotate-12"
+        />
+        <div className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h2 className="text-3xl font-bold text-surface-100 mb-4">
+            {t("cta.title")}
+          </h2>
+          <p className="text-surface-400 mb-8">
+            {t("cta.subtitle")}
+          </p>
+          <Link to="/calendar">
+            <Button size="lg">
+              {t("cta.button")}
+              <ArrowRight className="w-5 h-5 ml-2" />
+            </Button>
+          </Link>
+        </div>
+      </section>
+
       {/* Stats Section */}
       <section className="py-16 sm:py-20 bg-surface-900/50">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -554,30 +578,6 @@ export function HomePage() {
               )}
             </div>
           </div>
-        </div>
-      </section>
-
-      {/* CTA Section */}
-      <section className="py-16 sm:py-24 relative overflow-hidden bg-gradient-to-b from-transparent via-primary-950/10 to-transparent">
-        <img
-          src={logoBlack}
-          alt=""
-          aria-hidden="true"
-          className="absolute -right-20 top-1/2 -translate-y-1/2 w-[300px] sm:w-[400px] opacity-[0.03] pointer-events-none select-none rotate-12"
-        />
-        <div className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl font-bold text-surface-100 mb-4">
-            {t("cta.title")}
-          </h2>
-          <p className="text-surface-400 mb-8">
-            {t("cta.subtitle")}
-          </p>
-          <Link to="/calendar">
-            <Button size="lg">
-              {t("cta.button")}
-              <ArrowRight className="w-5 h-5 ml-2" />
-            </Button>
-          </Link>
         </div>
       </section>
     </div>
