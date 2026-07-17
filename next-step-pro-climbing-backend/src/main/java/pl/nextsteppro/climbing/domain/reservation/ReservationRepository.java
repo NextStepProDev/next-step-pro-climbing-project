@@ -4,6 +4,7 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import pl.nextsteppro.climbing.domain.personaltraining.AthleteActivityCount;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -27,6 +28,19 @@ public interface ReservationRepository extends JpaRepository<Reservation, UUID> 
         ORDER BY ts.date, ts.startTime
         """)
     List<Reservation> findConfirmedByUserIdInRange(UUID userId, LocalDate from, LocalDate to);
+
+    /** Coach's per-athlete badge: athletes' own confirmed bookings the admin hasn't seen yet.
+     * Manual admin bookings are excluded — no alerts for the coach's own actions. LEFT JOIN on
+     * the read-marker entity like the PersonalTraining counters; no row = never seen = count all. */
+    @Query("""
+        SELECT new pl.nextsteppro.climbing.domain.personaltraining.AthleteActivityCount(r.user.id, COUNT(r))
+        FROM Reservation r
+        LEFT JOIN TrainingCalendarRead m ON m.userId = :adminId AND m.athleteId = r.user.id
+        WHERE r.status = 'CONFIRMED' AND r.createdByAdmin = false AND r.user.athlete = true
+          AND (m.seenAt IS NULL OR r.createdAt > m.seenAt)
+        GROUP BY r.user.id
+        """)
+    List<AthleteActivityCount> countNewReservationsPerAthlete(UUID adminId);
 
     List<Reservation> findByTimeSlotId(UUID timeSlotId);
 

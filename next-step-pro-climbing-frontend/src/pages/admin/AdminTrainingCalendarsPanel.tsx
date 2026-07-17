@@ -10,7 +10,7 @@ import { Avatar } from '../../components/ui/Avatar'
 
 /**
  * Coach's roster: flagged athletes with per-athlete unread badges (new trainings,
- * completions, comments since this admin last opened that athlete's calendar).
+ * completions, comments, bookings since this admin last opened that athlete's calendar).
  * Sorted server-side: unread first, then most recent activity.
  */
 export function AdminTrainingCalendarsPanel() {

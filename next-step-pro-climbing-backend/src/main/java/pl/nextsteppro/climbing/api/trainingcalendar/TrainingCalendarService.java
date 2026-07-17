@@ -181,7 +181,8 @@ public class TrainingCalendarService {
             trainingRepository.countNewAthleteTrainingsPerAthlete(adminId),
             trainingRepository.countNewCompletionsPerAthlete(adminId),
             commentRepository.countNewAthleteCommentsPerAthlete(adminId),
-            deletionRepository.countNewAthleteDeletionsPerAthlete(adminId));
+            deletionRepository.countNewAthleteDeletionsPerAthlete(adminId),
+            reservationRepository.countNewReservationsPerAthlete(adminId));
         Map<UUID, Instant> lastActivity = mergeLastActivity(
             trainingRepository.findLastTrainingActivityPerAthlete(),
             commentRepository.findLastCommentActivityPerAthlete());
@@ -209,7 +210,8 @@ public class TrainingCalendarService {
             trainingRepository.countNewAthleteTrainingsPerAthlete(adminId),
             trainingRepository.countNewCompletionsPerAthlete(adminId),
             commentRepository.countNewAthleteCommentsPerAthlete(adminId),
-            deletionRepository.countNewAthleteDeletionsPerAthlete(adminId));
+            deletionRepository.countNewAthleteDeletionsPerAthlete(adminId),
+            reservationRepository.countNewReservationsPerAthlete(adminId));
         return counts.entrySet().stream()
             .filter(e -> flagged.contains(e.getKey()))
             .mapToLong(Map.Entry::getValue)
@@ -327,7 +329,7 @@ public class TrainingCalendarService {
 
         List<ReservationOverlayDto> overlay = reservationRepository
             .findConfirmedByUserIdInRange(athleteId, from, to).stream()
-            .map(TrainingCalendarService::toOverlayDto)
+            .map(r -> toOverlayDto(r, viewerIsAdmin && isNewForCoach(r, seen)))
             .toList();
 
         List<InvitationOverlayDto> invitations = buildInvitationOverlay(athleteId, from, to);
@@ -483,10 +485,17 @@ public class TrainingCalendarService {
         return end.isBefore(nowWarsaw) ? "MISSED" : "PLANNED";
     }
 
-    private static ReservationOverlayDto toOverlayDto(Reservation r) {
+    /** "New" is a coach-side concept: the athlete booked after the coach's last visit.
+     * Bookings an admin made by hand are the coach's own action — never new. */
+    private static boolean isNewForCoach(Reservation r, Instant seen) {
+        return !r.isCreatedByAdmin() && r.getCreatedAt().isAfter(seen);
+    }
+
+    private static ReservationOverlayDto toOverlayDto(Reservation r, boolean isNew) {
         TimeSlot slot = r.getTimeSlot();
         return new ReservationOverlayDto(
-            r.getId(), slot.getId(), slot.getDate(), slot.getStartTime(), slot.getEndTime(), slot.getDisplayTitle());
+            r.getId(), slot.getId(), slot.getDate(), slot.getStartTime(), slot.getEndTime(), slot.getDisplayTitle(),
+            isNew);
     }
 
     @Nullable
