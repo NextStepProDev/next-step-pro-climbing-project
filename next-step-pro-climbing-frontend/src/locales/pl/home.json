@@ -6,7 +6,8 @@
     "subtitle": "Profesjonalne wsparcie w drodze do Twojego mistrzostwa zaczyna się od wyboru trenera lub instruktora. Jestem tu, aby pomóc Ci osiągnąć Twoje wspinaczkowe cele i rozwijać się w tej pasjonującej dyscyplinie. Razem możemy stworzyć plan treningowy dopasowany do Twoich potrzeb i możliwości, dzięki któremu osiągniesz swoje cele. Do zobaczenia na treningu! Dziękuję za zaufanie!",
     "subtitleMobile": "Trening i coaching szyty na miarę — sięgnij po swoje wspinaczkowe cele.",
     "viewCalendar": "Zobacz kalendarz",
-    "seeOffer": "Poznaj ofertę"
+    "seeOffer": "Poznaj ofertę",
+    "athleteZone": "Strefa zawodnika"
   },
   "steps": {
     "title": "Jak to działa",
@@ -64,5 +65,30 @@
     "title": "Gdzie teraz szkolę",
     "ctaCalendar": "Sprawdź dostępne terminy",
     "ctaCourses": "Sprawdź dostępne kursy"
+  },
+  "athleteZone": {
+    "badge": "Dla trenujących",
+    "title": "Strefa zawodnika — Twój plan treningowy w jednym miejscu",
+    "subtitle": "Trenujesz regularnie? Dostań własny kalendarz treningowy prowadzony wspólnie z trenerem — planuj, odhaczaj wykonanie i bądź w stałym kontakcie.",
+    "feat1": {
+      "title": "Własny kalendarz",
+      "description": "Twoje treningi, rezerwacje i zaproszenia w widoku tygodnia i miesiąca."
+    },
+    "feat2": {
+      "title": "Plan i wykonanie",
+      "description": "Trener układa plan, Ty odhaczasz treningi z oceną zmęczenia (RPE) i feedbackiem."
+    },
+    "feat3": {
+      "title": "Czat przy treningu",
+      "description": "Komentarze i wskazówki trenera przy każdym treningu — bez maili i SMS-ów."
+    },
+    "feat4": {
+      "title": "Nic Cię nie ominie",
+      "description": "Powiadomienia o nowych treningach, komentarzach i zmianach w planie."
+    },
+    "ctaAthlete": "Wejdź do swojej strefy",
+    "ctaAskCoach": "Zapytaj trenera o dostęp",
+    "ctaGuest": "Załóż konto i zacznij",
+    "accessNote": "Dostęp do Strefy zawodnika aktywuje trener dla osób trenujących regularnie."
   }
 }
