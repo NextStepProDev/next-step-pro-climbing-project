@@ -28,9 +28,12 @@ import java.util.UUID;
 public class TrainingCalendarController {
 
     private final TrainingCalendarService trainingCalendarService;
+    private final TrainingStatsService trainingStatsService;
 
-    public TrainingCalendarController(TrainingCalendarService trainingCalendarService) {
+    public TrainingCalendarController(TrainingCalendarService trainingCalendarService,
+                                      TrainingStatsService trainingStatsService) {
         this.trainingCalendarService = trainingCalendarService;
+        this.trainingStatsService = trainingStatsService;
     }
 
     @Operation(summary = "Calendar range", description = "Trainings + read-only reservation overlay for a date range (max 62 days).")
@@ -47,6 +50,19 @@ public class TrainingCalendarController {
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
         return ResponseEntity.ok(trainingCalendarService.getMyRange(userId, from, to));
+    }
+
+    @Operation(summary = "Athlete statistics", description = "Live-derived stats (totals, streaks, heatmap, RPE...) over completed trainings + attended reservations.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Statistics",
+            content = @Content(schema = @Schema(implementation = AthleteStatsDto.class))),
+        @ApiResponse(responseCode = "401", description = "User not authenticated"),
+        @ApiResponse(responseCode = "409", description = "User is not a designated athlete")
+    })
+    @GetMapping("/stats")
+    public ResponseEntity<AthleteStatsDto> getStats(
+            @Parameter(hidden = true) @CurrentUserId UUID userId) {
+        return ResponseEntity.ok(trainingStatsService.getMyStats(userId));
     }
 
     @Operation(summary = "Add training", description = "Creates a training in the athlete's own calendar.")

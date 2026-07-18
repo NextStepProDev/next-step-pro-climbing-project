@@ -48,6 +48,13 @@ public class AdminTrainingCalendarController {
         return ResponseEntity.ok(adminTrainingCalendarService.getRangeForAthlete(adminId, athleteId, from, to));
     }
 
+    @Operation(summary = "Athlete statistics", description = "Same live-derived stats the athlete sees under their own calendar.")
+    @GetMapping("/athletes/{athleteId}/stats")
+    public ResponseEntity<AthleteStatsDto> getStats(
+            @PathVariable UUID athleteId) {
+        return ResponseEntity.ok(adminTrainingCalendarService.getStatsForAthlete(athleteId));
+    }
+
     @Operation(summary = "Add training for athlete")
     @PostMapping("/athletes/{athleteId}/trainings")
     public ResponseEntity<PersonalTrainingDto> create(

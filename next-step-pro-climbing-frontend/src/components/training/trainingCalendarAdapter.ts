@@ -1,5 +1,6 @@
 import { trainingCalendarApi, adminTrainingCalendarApi } from '../../api/client'
 import type {
+  AthleteStats,
   CreatePersonalTraining,
   PersonalTraining,
   TrainingCalendarRange,
@@ -19,6 +20,7 @@ export interface TrainingCalendarAdapter {
   getComments: (trainingId: string) => Promise<TrainingCommentItem[]>
   addComment: (trainingId: string, body: string) => Promise<TrainingCommentItem>
   markSeen: () => Promise<void>
+  getStats: () => Promise<AthleteStats>
 }
 
 export const athleteAdapter: TrainingCalendarAdapter = {
@@ -29,6 +31,7 @@ export const athleteAdapter: TrainingCalendarAdapter = {
   getComments: trainingCalendarApi.getComments,
   addComment: trainingCalendarApi.addComment,
   markSeen: trainingCalendarApi.markSeen,
+  getStats: trainingCalendarApi.getStats,
 }
 
 export function coachAdapter(athleteId: string): TrainingCalendarAdapter {
@@ -40,5 +43,6 @@ export function coachAdapter(athleteId: string): TrainingCalendarAdapter {
     getComments: adminTrainingCalendarApi.getComments,
     addComment: adminTrainingCalendarApi.addComment,
     markSeen: () => adminTrainingCalendarApi.markSeen(athleteId),
+    getStats: () => adminTrainingCalendarApi.getStats(athleteId),
   }
 }
