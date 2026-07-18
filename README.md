@@ -11,6 +11,12 @@ Users can browse a public calendar, reserve time slots and sign up for events. A
 - **Concurrent-safe reservations** — pessimistic locking with timeouts prevents double-booking under load
 - **Dual-track waitlist** — automatic promotion with 24-hour confirmation windows for both time slots and events
 
+### Athlete Zone (Personal Training Calendar)
+- **TrainingPeaks-style shared plan** — coach-designated athletes get a personal training calendar co-managed with the coach (both sides create, edit, and comment on trainings)
+- **Completion tracking** — athletes check off trainings with feedback and an RPE (1-10) effort rating; "missed" status is derived, never stored
+- **Training statistics** — live-derived stats under the calendar: monthly counts with trend, week streaks, a GitHub-style 12-month activity heatmap, training-type breakdown, attendance rate, average RPE, and milestone badges — always computed from current data, never cached
+- **Unread counters both ways** — per-viewer read markers drive "new from coach" / "new from athlete" badges, including alerts for deleted future trainings
+
 ### Content Management (CMS)
 - **Block-based editor** for news articles and courses — TEXT, IMAGE, and VIDEO_EMBED blocks with drag & drop reordering
 - **Draft / publish workflow** with scheduled publication dates
@@ -38,7 +44,7 @@ Users can browse a public calendar, reserve time slots and sign up for events. A
 - **Java 25** + **Spring Boot 4.1.0**
 - Spring Security + JWT + OAuth2 (Google)
 - Spring Data JPA + **PostgreSQL 17**
-- **Flyway** (56 migrations)
+- **Flyway** (66 migrations)
 - SpringDoc OpenAPI (Swagger UI)
 - Caffeine Cache (multi-tier TTL)
 - Spring Boot Starter Mail
@@ -69,7 +75,7 @@ next-step-pro-climbing-project/
 ├── next-step-pro-climbing-frontend/   # React SPA
 ├── next-step-pro-climbing-hub/        # Docker Compose (dev/prod), .env
 ├── .github/workflows/                 # CI/CD pipelines
-├── VERSION                            # Application version (4.8.x)
+├── VERSION                            # Application version (4.10.x)
 └── CLAUDE.md                          # AI context
 ```
 
