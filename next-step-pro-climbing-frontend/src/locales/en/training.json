@@ -122,12 +122,12 @@
       "title": "Top locations"
     },
     "badges": {
-      "total_one": "{{count}} training",
-      "total_other": "{{count}} trainings",
+      "total_one": "{{count}} activity",
+      "total_other": "{{count}} activities",
       "streak_one": "{{count}} week in a row",
       "streak_other": "{{count}} weeks in a row",
       "oneYear": "One year of training",
-      "nextGoal": "Next goal: {{current}}/{{target}}"
+      "nextGoal": "Next badge at {{target}} activities: {{current}}/{{target}}"
     }
   }
 }
