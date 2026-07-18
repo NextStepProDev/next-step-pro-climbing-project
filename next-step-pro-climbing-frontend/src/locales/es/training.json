@@ -104,12 +104,10 @@
     "avgRpeOverall": "total: {{value}}",
     "heatmap": {
       "title": "Actividad — últimos 12 meses",
-      "less": "Menos",
-      "more": "Más",
-      "tooltip_one": "{{count}} entrenamiento — {{date}}",
-      "tooltip_many": "{{count}} entrenamientos — {{date}}",
-      "tooltip_other": "{{count}} entrenamientos — {{date}}",
-      "tooltipEmpty": "Sin entrenamientos — {{date}}"
+      "tooltip_one": "{{count}} actividad — {{date}}",
+      "tooltip_many": "{{count}} actividades — {{date}}",
+      "tooltip_other": "{{count}} actividades — {{date}}",
+      "tooltipEmpty": "Sin actividad — {{date}}"
     },
     "byType": {
       "title": "Tipos de entrenamiento",

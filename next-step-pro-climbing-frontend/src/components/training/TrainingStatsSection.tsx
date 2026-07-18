@@ -201,10 +201,8 @@ const CELL = 'w-[11px] h-[11px] rounded-[2px]'
 
 function levelClass(count: number): string {
   if (count <= 0) return 'bg-surface-800'
-  if (count === 1) return 'bg-green-500/25'
-  if (count === 2) return 'bg-green-500/45'
-  if (count === 3) return 'bg-green-500/70'
-  return 'bg-green-500'
+  if (count === 1) return 'bg-green-500'
+  return 'bg-green-300'
 }
 
 function ActivityHeatmap({ heatmap }: { heatmap: Record<string, number> }) {
@@ -297,12 +295,13 @@ function ActivityHeatmap({ heatmap }: { heatmap: Record<string, number> }) {
           </div>
         </div>
       </div>
-      <div className="flex items-center justify-end gap-1.5 mt-2 text-[10px] text-surface-500">
-        {t('stats.heatmap.less')}
-        {[0, 1, 2, 3, 4].map((lvl) => (
-          <div key={lvl} className={clsx(CELL, levelClass(lvl))} />
+      <div className="flex items-center justify-end gap-3 mt-2 text-[10px] text-surface-500">
+        {([[0, '0'], [1, '1'], [2, '2+']] as const).map(([lvl, label]) => (
+          <span key={label} className="inline-flex items-center gap-1">
+            <span className={clsx(CELL, levelClass(lvl), 'inline-block')} />
+            {label}
+          </span>
         ))}
-        {t('stats.heatmap.more')}
       </div>
     </div>
   )
