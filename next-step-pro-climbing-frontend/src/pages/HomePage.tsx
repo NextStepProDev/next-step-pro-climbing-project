@@ -358,27 +358,80 @@ export function HomePage() {
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="py-16 sm:py-24 relative overflow-hidden bg-gradient-to-b from-transparent via-primary-950/10 to-transparent">
-        <img
-          src={logoBlack}
-          alt=""
-          aria-hidden="true"
-          className="absolute -right-20 top-1/2 -translate-y-1/2 w-[300px] sm:w-[400px] opacity-[0.03] pointer-events-none select-none rotate-12"
-        />
-        <div className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl font-bold text-surface-100 mb-4">
-            {t("cta.title")}
-          </h2>
-          <p className="text-surface-400 mb-8">
-            {t("cta.subtitle")}
-          </p>
-          <Link to="/calendar">
-            <Button size="lg">
-              {t("cta.button")}
-              <ArrowRight className="w-5 h-5 ml-2" />
-            </Button>
-          </Link>
+      {/* Athlete Zone — personal training calendar pitch. CTA adapts to the viewer:
+          athlete -> straight into their calendar, logged-in -> "coach unlocks it",
+          guest -> create an account first */}
+      <section className="py-16 sm:py-24">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="card-glass rounded-2xl border border-amber-500/25 p-8 sm:p-12 relative overflow-hidden">
+            <Dumbbell
+              aria-hidden="true"
+              className="absolute -right-8 -bottom-8 w-48 h-48 text-amber-500/5 rotate-12 pointer-events-none"
+            />
+            <div className="text-center mb-10">
+              <span className="inline-flex items-center gap-2 px-3 py-1 mb-4 text-xs font-semibold uppercase tracking-wider text-amber-300 bg-amber-500/10 border border-amber-500/30 rounded-full">
+                <Dumbbell className="w-3.5 h-3.5" />
+                {t("athleteZone.badge")}
+              </span>
+              <h2 className="text-3xl font-bold text-surface-100 mb-3">
+                {t("athleteZone.title")}
+              </h2>
+              <p className="text-surface-400 max-w-2xl mx-auto">
+                {t("athleteZone.subtitle")}
+              </p>
+            </div>
+
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+              {[
+                { icon: Calendar, key: "feat1" },
+                { icon: CheckCircle2, key: "feat2" },
+                { icon: MessageSquare, key: "feat3" },
+                { icon: Bell, key: "feat4" },
+              ].map(({ icon: Icon, key }) => (
+                <div key={key} className="text-center">
+                  <div className="w-11 h-11 mx-auto bg-amber-500/10 rounded-lg flex items-center justify-center mb-3">
+                    <Icon className="w-5 h-5 text-amber-400" />
+                  </div>
+                  <h3 className="text-sm font-semibold text-surface-100 mb-1">
+                    {t(`athleteZone.${key}.title`)}
+                  </h3>
+                  <p className="text-xs text-surface-400">
+                    {t(`athleteZone.${key}.description`)}
+                  </p>
+                </div>
+              ))}
+            </div>
+
+            <div className="text-center">
+              {isAthlete ? (
+                <Link to="/my-reservations?tab=calendar">
+                  <Button size="lg" className="btn-glow">
+                    <Dumbbell className="w-5 h-5 mr-2" />
+                    {t("athleteZone.ctaAthlete")}
+                  </Button>
+                </Link>
+              ) : isAuthenticated ? (
+                <>
+                  <p className="text-sm text-surface-400 mb-4">{t("athleteZone.accessNote")}</p>
+                  <Link to="/kontakt">
+                    <Button variant="secondary" size="lg">
+                      {t("athleteZone.ctaAskCoach")}
+                    </Button>
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <p className="text-sm text-surface-400 mb-4">{t("athleteZone.accessNote")}</p>
+                  <Link to="/register">
+                    <Button size="lg" className="btn-glow">
+                      {t("athleteZone.ctaGuest")}
+                      <ArrowRight className="w-5 h-5 ml-2" />
+                    </Button>
+                  </Link>
+                </>
+              )}
+            </div>
+          </div>
         </div>
       </section>
 
@@ -504,80 +557,27 @@ export function HomePage() {
         </div>
       </section>
 
-      {/* Athlete Zone — personal training calendar pitch. CTA adapts to the viewer:
-          athlete -> straight into their calendar, logged-in -> "coach unlocks it",
-          guest -> create an account first */}
-      <section className="py-16 sm:py-24">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="card-glass rounded-2xl border border-amber-500/25 p-8 sm:p-12 relative overflow-hidden">
-            <Dumbbell
-              aria-hidden="true"
-              className="absolute -right-8 -bottom-8 w-48 h-48 text-amber-500/5 rotate-12 pointer-events-none"
-            />
-            <div className="text-center mb-10">
-              <span className="inline-flex items-center gap-2 px-3 py-1 mb-4 text-xs font-semibold uppercase tracking-wider text-amber-300 bg-amber-500/10 border border-amber-500/30 rounded-full">
-                <Dumbbell className="w-3.5 h-3.5" />
-                {t("athleteZone.badge")}
-              </span>
-              <h2 className="text-3xl font-bold text-surface-100 mb-3">
-                {t("athleteZone.title")}
-              </h2>
-              <p className="text-surface-400 max-w-2xl mx-auto">
-                {t("athleteZone.subtitle")}
-              </p>
-            </div>
-
-            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-              {[
-                { icon: Calendar, key: "feat1" },
-                { icon: CheckCircle2, key: "feat2" },
-                { icon: MessageSquare, key: "feat3" },
-                { icon: Bell, key: "feat4" },
-              ].map(({ icon: Icon, key }) => (
-                <div key={key} className="text-center">
-                  <div className="w-11 h-11 mx-auto bg-amber-500/10 rounded-lg flex items-center justify-center mb-3">
-                    <Icon className="w-5 h-5 text-amber-400" />
-                  </div>
-                  <h3 className="text-sm font-semibold text-surface-100 mb-1">
-                    {t(`athleteZone.${key}.title`)}
-                  </h3>
-                  <p className="text-xs text-surface-400">
-                    {t(`athleteZone.${key}.description`)}
-                  </p>
-                </div>
-              ))}
-            </div>
-
-            <div className="text-center">
-              {isAthlete ? (
-                <Link to="/my-reservations?tab=calendar">
-                  <Button size="lg" className="btn-glow">
-                    <Dumbbell className="w-5 h-5 mr-2" />
-                    {t("athleteZone.ctaAthlete")}
-                  </Button>
-                </Link>
-              ) : isAuthenticated ? (
-                <>
-                  <p className="text-sm text-surface-400 mb-4">{t("athleteZone.accessNote")}</p>
-                  <Link to="/kontakt">
-                    <Button variant="secondary" size="lg">
-                      {t("athleteZone.ctaAskCoach")}
-                    </Button>
-                  </Link>
-                </>
-              ) : (
-                <>
-                  <p className="text-sm text-surface-400 mb-4">{t("athleteZone.accessNote")}</p>
-                  <Link to="/register">
-                    <Button size="lg" className="btn-glow">
-                      {t("athleteZone.ctaGuest")}
-                      <ArrowRight className="w-5 h-5 ml-2" />
-                    </Button>
-                  </Link>
-                </>
-              )}
-            </div>
-          </div>
+      {/* CTA Section */}
+      <section className="py-16 sm:py-24 relative overflow-hidden bg-gradient-to-b from-transparent via-primary-950/10 to-transparent">
+        <img
+          src={logoBlack}
+          alt=""
+          aria-hidden="true"
+          className="absolute -right-20 top-1/2 -translate-y-1/2 w-[300px] sm:w-[400px] opacity-[0.03] pointer-events-none select-none rotate-12"
+        />
+        <div className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h2 className="text-3xl font-bold text-surface-100 mb-4">
+            {t("cta.title")}
+          </h2>
+          <p className="text-surface-400 mb-8">
+            {t("cta.subtitle")}
+          </p>
+          <Link to="/calendar">
+            <Button size="lg">
+              {t("cta.button")}
+              <ArrowRight className="w-5 h-5 ml-2" />
+            </Button>
+          </Link>
         </div>
       </section>
     </div>
