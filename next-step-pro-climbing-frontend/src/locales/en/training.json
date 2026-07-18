@@ -104,11 +104,9 @@
     "avgRpeOverall": "overall: {{value}}",
     "heatmap": {
       "title": "Activity — last 12 months",
-      "less": "Less",
-      "more": "More",
-      "tooltip_one": "{{count}} training — {{date}}",
-      "tooltip_other": "{{count}} trainings — {{date}}",
-      "tooltipEmpty": "No trainings — {{date}}"
+      "tooltip_one": "{{count}} activity — {{date}}",
+      "tooltip_other": "{{count}} activities — {{date}}",
+      "tooltipEmpty": "No activity — {{date}}"
     },
     "byType": {
       "title": "Training types",

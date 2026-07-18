@@ -104,13 +104,11 @@
     "avgRpeOverall": "całość: {{value}}",
     "heatmap": {
       "title": "Aktywność — ostatnie 12 miesięcy",
-      "less": "Mniej",
-      "more": "Więcej",
-      "tooltip_one": "{{count}} trening — {{date}}",
-      "tooltip_few": "{{count}} treningi — {{date}}",
-      "tooltip_many": "{{count}} treningów — {{date}}",
-      "tooltip_other": "{{count}} treningów — {{date}}",
-      "tooltipEmpty": "Brak treningów — {{date}}"
+      "tooltip_one": "{{count}} aktywność — {{date}}",
+      "tooltip_few": "{{count}} aktywności — {{date}}",
+      "tooltip_many": "{{count}} aktywności — {{date}}",
+      "tooltip_other": "{{count}} aktywności — {{date}}",
+      "tooltipEmpty": "Brak aktywności — {{date}}"
     },
     "byType": {
       "title": "Rodzaje treningów",
