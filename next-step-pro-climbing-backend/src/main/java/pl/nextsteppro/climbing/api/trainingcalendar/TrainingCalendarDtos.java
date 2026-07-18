@@ -13,6 +13,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 // Shared by the athlete controller AND the admin (coach) slice — the admin controller/service
@@ -124,3 +125,36 @@ record AthleteSummaryDto(
     long newCount,
     @Nullable Instant lastActivityAt
 ) {}
+
+/**
+ * Live-derived athlete statistics — never cached, never stored: every request recomputes
+ * from the current DB state, so uncompleting/cancelling/deleting past entries is reflected
+ * instantly. An "activity" = completed personal training OR attended reservation
+ * (confirmed, slot already over). Nullable fields mean "no data — hide the tile".
+ */
+record AthleteStatsDto(
+    int thisMonthCount,
+    int prevMonthCount,
+    long totalCount,
+    @Nullable LocalDate firstActivityDate,
+    // Consecutive ISO weeks (Mon-Sun) with >=1 activity; an empty current week does not
+    // break the streak while it is still in progress (grace period)
+    int currentStreakWeeks,
+    int bestStreakWeeks,
+    // Average over the last 6 FULL months (shortened to the first-activity month);
+    // null until one full month of history exists
+    @Nullable Double avgPerMonth,
+    // Last 365 days, non-zero days only; keys serialize as yyyy-MM-dd
+    Map<LocalDate, Integer> heatmap,
+    TypeBreakdownDto byType,
+    // Personal trainings only: completed / (completed + missed). Reservations are excluded
+    // on purpose — a cancelled booking is a choice, not a no-show
+    @Nullable Integer attendanceRatePercent,
+    @Nullable Double avgRpeOverall,
+    @Nullable Double avgRpeLast30Days,
+    List<LocationCountDto> topLocations
+) {}
+
+record TypeBreakdownDto(long personal, long individualSlot, long course, long training, long workshop) {}
+
+record LocationCountDto(String name, long count) {}

@@ -86,5 +86,48 @@
   "deletions": {
     "titleAthlete": "The coach removed from your plan:",
     "titleCoach": "The athlete removed from their plan:"
+  },
+  "stats": {
+    "title": "Statistics",
+    "empty": "Stats will appear after the first training.",
+    "thisMonth": "This month",
+    "vsPrevMonth": "vs previous month",
+    "total": "Total trainings",
+    "streak": "Week streak",
+    "bestStreak": "Best: {{count}} wks",
+    "trainingSince": "Training since",
+    "avgPerMonth": "Average per month",
+    "attendance": "Attendance",
+    "attendanceHint": "completed vs missed",
+    "avgRpe": "Avg RPE",
+    "avgRpe30": "Avg RPE (30 days)",
+    "avgRpeOverall": "overall: {{value}}",
+    "heatmap": {
+      "title": "Activity — last 12 months",
+      "less": "Less",
+      "more": "More",
+      "tooltip_one": "{{count}} training — {{date}}",
+      "tooltip_other": "{{count}} trainings — {{date}}",
+      "tooltipEmpty": "No trainings — {{date}}"
+    },
+    "byType": {
+      "title": "Training types",
+      "personal": "Own training",
+      "individualSlot": "Individual session",
+      "course": "Course",
+      "training": "Group training",
+      "workshop": "Workshop"
+    },
+    "locations": {
+      "title": "Top locations"
+    },
+    "badges": {
+      "total_one": "{{count}} training",
+      "total_other": "{{count}} trainings",
+      "streak_one": "{{count}} week in a row",
+      "streak_other": "{{count}} weeks in a row",
+      "oneYear": "One year of training",
+      "nextGoal": "Next goal: {{current}}/{{target}}"
+    }
   }
 }

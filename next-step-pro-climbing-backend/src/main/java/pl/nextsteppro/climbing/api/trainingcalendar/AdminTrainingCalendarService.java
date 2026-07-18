@@ -21,13 +21,16 @@ import java.util.UUID;
 public class AdminTrainingCalendarService {
 
     private final TrainingCalendarService core;
+    private final TrainingStatsService statsService;
     private final ActivityLogService activityLogService;
     private final UserRepository userRepository;
 
     public AdminTrainingCalendarService(TrainingCalendarService core,
+                                        TrainingStatsService statsService,
                                         ActivityLogService activityLogService,
                                         UserRepository userRepository) {
         this.core = core;
+        this.statsService = statsService;
         this.activityLogService = activityLogService;
         this.userRepository = userRepository;
     }
@@ -40,6 +43,11 @@ public class AdminTrainingCalendarService {
     @Transactional(readOnly = true)
     public CalendarRangeDto getRangeForAthlete(UUID adminId, UUID athleteId, LocalDate from, LocalDate to) {
         return core.getRangeForAthlete(adminId, athleteId, from, to);
+    }
+
+    @Transactional(readOnly = true)
+    public AthleteStatsDto getStatsForAthlete(UUID athleteId) {
+        return statsService.getStatsForAthlete(athleteId);
     }
 
     public PersonalTrainingDto createForAthlete(UUID adminId, UUID athleteId, CreatePersonalTrainingRequest request) {

@@ -29,6 +29,7 @@ import type {
   TrainingCommentItem,
   TrainingCalendarNotifications,
   AthleteSummary,
+  AthleteStats,
   AdminTrainingRequest,
   AdminTrainingRequestPage,
   AdminNotifications,
@@ -450,6 +451,9 @@ export const trainingCalendarApi = {
 
   markSeen: () =>
     fetchApi<void>('/training-calendar/notifications/seen', { method: 'POST' }),
+
+  getStats: () =>
+    fetchApi<AthleteStats>('/training-calendar/stats'),
 }
 
 // Personal training calendar (coach side)
@@ -486,6 +490,9 @@ export const adminTrainingCalendarApi = {
 
   markSeen: (athleteId: string) =>
     fetchApi<void>(`/admin/training-calendar/athletes/${athleteId}/seen`, { method: 'POST' }),
+
+  getStats: (athleteId: string) =>
+    fetchApi<AthleteStats>(`/admin/training-calendar/athletes/${athleteId}/stats`),
 }
 
 // Admin

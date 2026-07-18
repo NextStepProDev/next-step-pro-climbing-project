@@ -28,6 +28,7 @@ import static org.mockito.Mockito.*;
 class AdminTrainingCalendarServiceTest {
 
     @Mock private TrainingCalendarService core;
+    @Mock private TrainingStatsService statsService;
     @Mock private ActivityLogService activityLogService;
     @Mock private UserRepository userRepository;
 
@@ -40,7 +41,7 @@ class AdminTrainingCalendarServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new AdminTrainingCalendarService(core, activityLogService, userRepository);
+        service = new AdminTrainingCalendarService(core, statsService, activityLogService, userRepository);
 
         adminId = UUID.randomUUID();
         admin = new User("coach@example.com", "Trener", "Główny", "+48111111111", "coach");

@@ -1101,6 +1101,37 @@ export interface TrainingCalendarNotifications {
   newCount: number
 }
 
+export interface TrainingTypeBreakdown {
+  personal: number
+  individualSlot: number
+  course: number
+  training: number
+  workshop: number
+}
+
+export interface LocationCount {
+  name: string
+  count: number
+}
+
+// Live-derived stats under the training calendar; null fields mean "no data — hide the tile"
+export interface AthleteStats {
+  thisMonthCount: number
+  prevMonthCount: number
+  totalCount: number
+  firstActivityDate: string | null
+  currentStreakWeeks: number
+  bestStreakWeeks: number
+  avgPerMonth: number | null
+  // yyyy-MM-dd -> activity count, last 365 days, non-zero days only
+  heatmap: Record<string, number>
+  byType: TrainingTypeBreakdown
+  attendanceRatePercent: number | null
+  avgRpeOverall: number | null
+  avgRpeLast30Days: number | null
+  topLocations: LocationCount[]
+}
+
 // Coach's roster entry (admin panel)
 export interface AthleteSummary {
   id: string

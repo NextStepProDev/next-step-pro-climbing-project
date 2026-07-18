@@ -68,6 +68,18 @@ public interface ReservationRepository extends JpaRepository<Reservation, UUID> 
     @Query("SELECT r FROM Reservation r WHERE r.user.id = :userId AND (r.timeSlot.date < :today OR (r.timeSlot.date = :today AND r.timeSlot.endTime <= :now)) AND r.status IN ('CONFIRMED', 'CANCELLED', 'CANCELLED_BY_ADMIN') ORDER BY r.timeSlot.date DESC, r.timeSlot.startTime DESC")
     List<Reservation> findPastByUserId(UUID userId, LocalDate today, LocalTime now);
 
+    /** Athlete statistics: attended reservations (confirmed + slot already over) reduced to
+     * (date, eventType, location). Same past-predicate as {@link #findPastByUserId}. */
+    @Query("""
+        SELECT new pl.nextsteppro.climbing.domain.reservation.ReservationStatsRow(ts.date, e.eventType, e.location)
+        FROM Reservation r
+        JOIN r.timeSlot ts
+        LEFT JOIN ts.event e
+        WHERE r.user.id = :userId AND r.status = 'CONFIRMED'
+          AND (ts.date < :today OR (ts.date = :today AND ts.endTime <= :now))
+        """)
+    List<ReservationStatsRow> findPastConfirmedStatsRows(UUID userId, LocalDate today, LocalTime now);
+
     boolean existsByUserIdAndTimeSlotIdAndStatus(UUID userId, UUID timeSlotId, ReservationStatus status);
 
     @Query("SELECT r.timeSlot.id FROM Reservation r WHERE r.user.id = :userId AND r.timeSlot.id IN :slotIds AND r.status = 'CONFIRMED'")

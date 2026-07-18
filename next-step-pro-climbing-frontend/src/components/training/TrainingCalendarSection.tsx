@@ -12,6 +12,7 @@ import { QueryError } from '../ui/QueryError'
 import { SlotDetailModal } from '../calendar/SlotDetailModal'
 import { TrainingWeekCalendar } from './TrainingWeekCalendar'
 import { TrainingMonthCalendar } from './TrainingMonthCalendar'
+import { TrainingStatsSection } from './TrainingStatsSection'
 import { TrainingFormModal, type InstantCompletion } from './TrainingFormModal'
 import { TrainingDetailModal } from './TrainingDetailModal'
 import { trainingCalendarApi, calendarApi } from '../../api/client'
@@ -135,6 +136,8 @@ export function TrainingCalendarSection({ api, scopeKey, isCoachView }: Training
   // ---------- mutations ----------
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: ['trainingCalendar', 'range', scopeKey] })
+    // Completing/uncompleting/deleting changes the live-derived stats under the calendar
+    queryClient.invalidateQueries({ queryKey: ['trainingCalendar', 'stats', scopeKey] })
     if (isCoachView) {
       queryClient.invalidateQueries({ queryKey: ['admin', 'trainingCalendar', 'athletes'] })
     }
@@ -296,6 +299,9 @@ export function TrainingCalendarSection({ api, scopeKey, isCoachView }: Training
         </div>
       )}
 
+      {/* Live-derived statistics over completed trainings + attended reservations */}
+      <TrainingStatsSection api={api} scopeKey={scopeKey} />
+
       {/* Add / edit */}
       <TrainingFormModal
         isOpen={formOpen}
@@ -369,8 +375,9 @@ export function TrainingCalendarSection({ api, scopeKey, isCoachView }: Training
         isOpen={!!officialSlotId}
         onClose={() => {
           setOfficialSlotId(null)
-          // Cancelling/updating the booking inside the modal changes the overlay
+          // Cancelling/updating the booking inside the modal changes the overlay and the stats
           queryClient.invalidateQueries({ queryKey: ['trainingCalendar', 'range', scopeKey] })
+          queryClient.invalidateQueries({ queryKey: ['trainingCalendar', 'stats', scopeKey] })
           queryClient.invalidateQueries({ queryKey: ['reservations'] })
           queryClient.invalidateQueries({ queryKey: ['calendar'] })
         }}

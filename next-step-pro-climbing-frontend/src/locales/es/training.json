@@ -86,5 +86,51 @@
   "deletions": {
     "titleAthlete": "El entrenador eliminó de tu plan:",
     "titleCoach": "El atleta eliminó de su plan:"
+  },
+  "stats": {
+    "title": "Estadísticas",
+    "empty": "Las estadísticas aparecerán después del primer entrenamiento.",
+    "thisMonth": "Este mes",
+    "vsPrevMonth": "vs mes anterior",
+    "total": "Entrenamientos en total",
+    "streak": "Racha de semanas",
+    "bestStreak": "Récord: {{count}} sem.",
+    "trainingSince": "Entrena desde",
+    "avgPerMonth": "Promedio mensual",
+    "attendance": "Asistencia",
+    "attendanceHint": "completados vs omitidos",
+    "avgRpe": "RPE medio",
+    "avgRpe30": "RPE medio (30 días)",
+    "avgRpeOverall": "total: {{value}}",
+    "heatmap": {
+      "title": "Actividad — últimos 12 meses",
+      "less": "Menos",
+      "more": "Más",
+      "tooltip_one": "{{count}} entrenamiento — {{date}}",
+      "tooltip_many": "{{count}} entrenamientos — {{date}}",
+      "tooltip_other": "{{count}} entrenamientos — {{date}}",
+      "tooltipEmpty": "Sin entrenamientos — {{date}}"
+    },
+    "byType": {
+      "title": "Tipos de entrenamiento",
+      "personal": "Entrenamiento propio",
+      "individualSlot": "Sesión individual",
+      "course": "Curso",
+      "training": "Entrenamiento grupal",
+      "workshop": "Taller"
+    },
+    "locations": {
+      "title": "Lugares más frecuentes"
+    },
+    "badges": {
+      "total_one": "{{count}} entrenamiento",
+      "total_many": "{{count}} entrenamientos",
+      "total_other": "{{count}} entrenamientos",
+      "streak_one": "{{count}} semana seguida",
+      "streak_many": "{{count}} semanas seguidas",
+      "streak_other": "{{count}} semanas seguidas",
+      "oneYear": "Un año entrenando",
+      "nextGoal": "Próxima meta: {{current}}/{{target}}"
+    }
   }
 }
