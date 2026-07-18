@@ -124,16 +124,16 @@
       "title": "Najczęstsze miejsca"
     },
     "badges": {
-      "total_one": "{{count}} trening",
-      "total_few": "{{count}} treningi",
-      "total_many": "{{count}} treningów",
-      "total_other": "{{count}} treningów",
+      "total_one": "{{count}} aktywność",
+      "total_few": "{{count}} aktywności",
+      "total_many": "{{count}} aktywności",
+      "total_other": "{{count}} aktywności",
       "streak_one": "{{count}} tydzień z rzędu",
       "streak_few": "{{count}} tygodnie z rzędu",
       "streak_many": "{{count}} tygodni z rzędu",
       "streak_other": "{{count}} tygodni z rzędu",
       "oneYear": "Rok treningów",
-      "nextGoal": "Następny cel: {{current}}/{{target}}"
+      "nextGoal": "Następna odznaka za {{target}} aktywności: {{current}}/{{target}}"
     }
   }
 }

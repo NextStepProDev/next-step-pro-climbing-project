@@ -123,14 +123,14 @@
       "title": "Lugares más frecuentes"
     },
     "badges": {
-      "total_one": "{{count}} entrenamiento",
-      "total_many": "{{count}} entrenamientos",
-      "total_other": "{{count}} entrenamientos",
+      "total_one": "{{count}} actividad",
+      "total_many": "{{count}} actividades",
+      "total_other": "{{count}} actividades",
       "streak_one": "{{count}} semana seguida",
       "streak_many": "{{count}} semanas seguidas",
       "streak_other": "{{count}} semanas seguidas",
       "oneYear": "Un año entrenando",
-      "nextGoal": "Próxima meta: {{current}}/{{target}}"
+      "nextGoal": "Próxima insignia a las {{target}} actividades: {{current}}/{{target}}"
     }
   }
 }
