@@ -47,6 +47,42 @@
     "deleteConfirmMessage": "Esto no se puede deshacer. Los comentarios del entrenamiento también desaparecerán.",
     "close": "Cerrar"
   },
+  "goals": {
+    "title": "Objetivos",
+    "horizon": {
+      "short": "Objetivo a corto plazo",
+      "medium": "Objetivo a medio plazo",
+      "long": "Objetivo a largo plazo"
+    },
+    "targetDate": "Fecha límite",
+    "daysLeft_one": "queda {{count}} día",
+    "daysLeft_many": "quedan {{count}} días",
+    "daysLeft_other": "quedan {{count}} días",
+    "today": "¡hoy!",
+    "overdue": "fecha límite pasada",
+    "achieved": "¡Logrado! 🎉",
+    "add": "Añadir objetivo",
+    "edit": "Editar objetivo",
+    "delete": "Eliminar objetivo",
+    "deleteConfirmTitle": "¿Eliminar el objetivo?",
+    "deleteConfirmMessage": "El objetivo activo se eliminará de forma permanente.",
+    "markAchieved": "Marcar como logrado",
+    "achieveConfirmTitle": "¿Objetivo logrado?",
+    "achieveConfirmMessage": "El objetivo pasará al cofre de trofeos para siempre — ya no se podrá editar ni eliminar.",
+    "form": {
+      "addTitle": "Nuevo objetivo",
+      "editTitle": "Editar objetivo",
+      "horizon": "Horizonte",
+      "content": "Objetivo",
+      "contentPlaceholder": "p. ej. Encadenar un 7a...",
+      "contentRequired": "Introduce el objetivo",
+      "targetDate": "Fecha límite"
+    },
+    "trophies": "Cofre de trofeos",
+    "trophiesTitle": "Cofre de trofeos — {{count}}",
+    "trophiesEmpty": "El cofre aún está vacío. ¡Tu primer objetivo logrado aparecerá aquí!",
+    "achievedOn": "logrado el {{date}}"
+  },
   "clipboard": {
     "copy": "Copiar entrenamiento",
     "cut": "Cortar entrenamiento",

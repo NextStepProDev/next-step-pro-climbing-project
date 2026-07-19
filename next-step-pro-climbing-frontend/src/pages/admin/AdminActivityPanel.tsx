@@ -17,6 +17,8 @@ import {
   UserX,
   UserMinus,
   LogOut,
+  Target,
+  Trophy,
 } from 'lucide-react'
 import { adminApi } from '../../api/client'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
@@ -149,6 +151,26 @@ const ACTION_CONFIG: Record<
     icon: Trash2,
     color: 'text-indigo-400',
     bgColor: 'bg-indigo-500/10',
+  },
+  ADMIN_GOAL_CREATED: {
+    icon: Target,
+    color: 'text-amber-400',
+    bgColor: 'bg-amber-500/10',
+  },
+  ADMIN_GOAL_UPDATED: {
+    icon: Target,
+    color: 'text-amber-400',
+    bgColor: 'bg-amber-500/10',
+  },
+  ADMIN_GOAL_DELETED: {
+    icon: Trash2,
+    color: 'text-amber-400',
+    bgColor: 'bg-amber-500/10',
+  },
+  ADMIN_GOAL_ACHIEVED: {
+    icon: Trophy,
+    color: 'text-amber-400',
+    bgColor: 'bg-amber-500/10',
   },
 }
 

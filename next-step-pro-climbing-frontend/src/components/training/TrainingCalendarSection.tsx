@@ -10,6 +10,7 @@ import { Button } from '../ui/Button'
 import { LoadingSpinner } from '../ui/LoadingSpinner'
 import { QueryError } from '../ui/QueryError'
 import { SlotDetailModal } from '../calendar/SlotDetailModal'
+import { GoalsBanner } from './GoalsBanner'
 import { TrainingWeekCalendar } from './TrainingWeekCalendar'
 import { TrainingMonthCalendar } from './TrainingMonthCalendar'
 import { TrainingStatsSection } from './TrainingStatsSection'
@@ -334,6 +335,9 @@ export function TrainingCalendarSection({ api, scopeKey, isCoachView }: Training
 
   return (
     <div className="space-y-4">
+      {/* Personal goals (short/medium/long-term) + trophy chest — coach edits, athlete reads */}
+      <GoalsBanner api={api} scopeKey={scopeKey} isCoachView={isCoachView} />
+
       {/* Future trainings removed by the other side since the last visit —
           without this, the badge would point at a calendar with nothing visibly new */}
       {deletions.length > 0 && (

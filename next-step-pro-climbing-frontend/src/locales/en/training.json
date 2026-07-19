@@ -47,6 +47,41 @@
     "deleteConfirmMessage": "This cannot be undone. The training's comments will be gone too.",
     "close": "Close"
   },
+  "goals": {
+    "title": "Goals",
+    "horizon": {
+      "short": "Short-term goal",
+      "medium": "Medium-term goal",
+      "long": "Long-term goal"
+    },
+    "targetDate": "Target",
+    "daysLeft_one": "{{count}} day left",
+    "daysLeft_other": "{{count}} days left",
+    "today": "today!",
+    "overdue": "target date passed",
+    "achieved": "Achieved! 🎉",
+    "add": "Add goal",
+    "edit": "Edit goal",
+    "delete": "Delete goal",
+    "deleteConfirmTitle": "Delete goal?",
+    "deleteConfirmMessage": "The active goal will be deleted permanently.",
+    "markAchieved": "Mark as achieved",
+    "achieveConfirmTitle": "Goal achieved?",
+    "achieveConfirmMessage": "The goal moves to the trophy chest forever — it can no longer be edited or deleted.",
+    "form": {
+      "addTitle": "New goal",
+      "editTitle": "Edit goal",
+      "horizon": "Horizon",
+      "content": "Goal",
+      "contentPlaceholder": "e.g. Climb a 7a on lead...",
+      "contentRequired": "Enter the goal",
+      "targetDate": "Target date"
+    },
+    "trophies": "Trophy chest",
+    "trophiesTitle": "Trophy chest — {{count}}",
+    "trophiesEmpty": "The chest is still empty. Your first achieved goal will land here!",
+    "achievedOn": "achieved {{date}}"
+  },
   "clipboard": {
     "copy": "Copy training",
     "cut": "Cut training",

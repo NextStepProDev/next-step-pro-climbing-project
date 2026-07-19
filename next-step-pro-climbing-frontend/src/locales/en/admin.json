@@ -541,7 +541,11 @@
       "ADMIN_USER_ATHLETE_TOGGLED": "Athlete status changed",
       "ADMIN_TRAINING_CREATED": "Training added for athlete",
       "ADMIN_TRAINING_UPDATED": "Athlete training edited",
-      "ADMIN_TRAINING_DELETED": "Athlete training deleted"
+      "ADMIN_TRAINING_DELETED": "Athlete training deleted",
+      "ADMIN_GOAL_CREATED": "Athlete goal set",
+      "ADMIN_GOAL_UPDATED": "Athlete goal edited",
+      "ADMIN_GOAL_DELETED": "Athlete goal deleted",
+      "ADMIN_GOAL_ACHIEVED": "Athlete goal marked as achieved"
     },
     "persons": "({{count}} pers.)"
   },

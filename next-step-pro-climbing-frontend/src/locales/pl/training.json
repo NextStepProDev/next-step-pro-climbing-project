@@ -47,6 +47,43 @@
     "deleteConfirmMessage": "Tego nie można cofnąć. Komentarze do treningu też znikną.",
     "close": "Zamknij"
   },
+  "goals": {
+    "title": "Cele",
+    "horizon": {
+      "short": "Cel krótkoterminowy",
+      "medium": "Cel średnioterminowy",
+      "long": "Cel długoterminowy"
+    },
+    "targetDate": "Termin",
+    "daysLeft_one": "za {{count}} dzień",
+    "daysLeft_few": "za {{count}} dni",
+    "daysLeft_many": "za {{count}} dni",
+    "daysLeft_other": "za {{count}} dni",
+    "today": "dziś!",
+    "overdue": "termin minął",
+    "achieved": "Osiągnięty! 🎉",
+    "add": "Dodaj cel",
+    "edit": "Edytuj cel",
+    "delete": "Usuń cel",
+    "deleteConfirmTitle": "Usunąć cel?",
+    "deleteConfirmMessage": "Aktywny cel zostanie usunięty bezpowrotnie.",
+    "markAchieved": "Oznacz jako osiągnięty",
+    "achieveConfirmTitle": "Cel osiągnięty?",
+    "achieveConfirmMessage": "Cel trafi do skrzyni trofeów na zawsze — nie będzie można go już edytować ani usunąć.",
+    "form": {
+      "addTitle": "Nowy cel",
+      "editTitle": "Edytuj cel",
+      "horizon": "Horyzont",
+      "content": "Treść celu",
+      "contentPlaceholder": "np. Przejść 7a na wędkę...",
+      "contentRequired": "Podaj treść celu",
+      "targetDate": "Termin realizacji"
+    },
+    "trophies": "Skrzynia trofeów",
+    "trophiesTitle": "Skrzynia trofeów — {{count}}",
+    "trophiesEmpty": "Skrzynia jest jeszcze pusta. Pierwszy osiągnięty cel wyląduje tutaj!",
+    "achievedOn": "osiągnięto {{date}}"
+  },
   "clipboard": {
     "copy": "Kopiuj trening",
     "cut": "Wytnij trening",

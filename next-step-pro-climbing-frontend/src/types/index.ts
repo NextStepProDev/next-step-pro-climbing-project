@@ -493,6 +493,10 @@ export type ActivityActionType =
   | 'ADMIN_TRAINING_CREATED'
   | 'ADMIN_TRAINING_UPDATED'
   | 'ADMIN_TRAINING_DELETED'
+  | 'ADMIN_GOAL_CREATED'
+  | 'ADMIN_GOAL_UPDATED'
+  | 'ADMIN_GOAL_DELETED'
+  | 'ADMIN_GOAL_ACHIEVED'
 
 export interface ActivityLog {
   id: string
@@ -1112,6 +1116,30 @@ export interface TrainingTypeBreakdown {
 export interface LocationCount {
   name: string
   count: number
+}
+
+// SHORT/MEDIUM/LONG-term goal set by the coach; also picks the trophy size in the chest
+export type GoalHorizon = 'SHORT' | 'MEDIUM' | 'LONG'
+
+export interface AthleteGoal {
+  id: string
+  horizon: GoalHorizon
+  content: string
+  targetDate: string
+  achievedAt: string | null
+  createdAt: string
+}
+
+// Banner cards (active, one per horizon) + trophy chest (achieved, newest first)
+export interface AthleteGoals {
+  active: AthleteGoal[]
+  achieved: AthleteGoal[]
+}
+
+export interface SaveGoal {
+  horizon: GoalHorizon
+  content: string
+  targetDate: string
 }
 
 // Live-derived stats under the training calendar; null fields mean "no data — hide the tile"
