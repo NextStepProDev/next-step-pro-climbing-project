@@ -61,6 +61,7 @@
     "overdue": "target date passed",
     "achieved": "Achieved! 🎉",
     "add": "Add goal",
+    "setNext": "Set a new goal",
     "edit": "Edit goal",
     "delete": "Delete goal",
     "deleteConfirmTitle": "Delete goal?",

@@ -63,6 +63,7 @@
     "overdue": "termin minął",
     "achieved": "Osiągnięty! 🎉",
     "add": "Dodaj cel",
+    "setNext": "Ustaw nowy cel",
     "edit": "Edytuj cel",
     "delete": "Usuń cel",
     "deleteConfirmTitle": "Usunąć cel?",
