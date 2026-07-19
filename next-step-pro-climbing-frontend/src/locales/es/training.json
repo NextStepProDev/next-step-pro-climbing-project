@@ -83,7 +83,13 @@
     "trophies": "Cofre de trofeos",
     "trophiesTitle": "Cofre de trofeos — {{count}}",
     "trophiesEmpty": "El cofre aún está vacío. ¡Tu primer objetivo logrado aparecerá aquí!",
-    "achievedOn": "logrado el {{date}}"
+    "achievedOn": "logrado el {{date}}",
+    "chest": {
+      "short": "A corto plazo",
+      "medium": "A medio plazo",
+      "long": "A largo plazo",
+      "emptyColumn": "Aún no hay trofeos en esta categoría"
+    }
   },
   "clipboard": {
     "copy": "Copiar entrenamiento",

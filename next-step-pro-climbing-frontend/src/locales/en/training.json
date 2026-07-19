@@ -82,7 +82,13 @@
     "trophies": "Trophy chest",
     "trophiesTitle": "Trophy chest — {{count}}",
     "trophiesEmpty": "The chest is still empty. Your first achieved goal will land here!",
-    "achievedOn": "achieved {{date}}"
+    "achievedOn": "achieved {{date}}",
+    "chest": {
+      "short": "Short-term",
+      "medium": "Medium-term",
+      "long": "Long-term",
+      "emptyColumn": "No trophies in this category yet"
+    }
   },
   "clipboard": {
     "copy": "Copy training",
