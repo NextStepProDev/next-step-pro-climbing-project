@@ -15,14 +15,13 @@ import pl.nextsteppro.climbing.domain.news.*;
 import pl.nextsteppro.climbing.domain.user.User;
 import pl.nextsteppro.climbing.domain.user.UserRepository;
 import pl.nextsteppro.climbing.infrastructure.mail.NewsletterMailService;
+import pl.nextsteppro.climbing.infrastructure.media.VideoEmbedUrls;
 import pl.nextsteppro.climbing.infrastructure.storage.FileStorageService;
 
 import java.io.IOException;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 @Service
 @Transactional
@@ -635,35 +634,11 @@ public class AdminNewsService {
     }
 
     private String normalizeVideoEmbedUrl(String inputUrl) {
-        String url = inputUrl.trim();
-
-        Matcher m = Pattern.compile("(?:youtube\\.com/watch\\?|youtube\\.com/watch\\?.*&)v=([a-zA-Z0-9_-]{11})")
-                .matcher(url);
-        if (m.find()) {
-            return "https://www.youtube.com/embed/" + m.group(1);
+        String embed = VideoEmbedUrls.toEmbedUrlOrNull(inputUrl);
+        if (embed == null) {
+            throw new IllegalArgumentException(
+                    "Nieobsługiwany URL wideo. Użyj linku z YouTube lub Instagram.");
         }
-
-        m = Pattern.compile("youtu\\.be/([a-zA-Z0-9_-]{11})").matcher(url);
-        if (m.find()) {
-            return "https://www.youtube.com/embed/" + m.group(1);
-        }
-
-        m = Pattern.compile("youtube\\.com/shorts/([a-zA-Z0-9_-]{11})").matcher(url);
-        if (m.find()) {
-            return "https://www.youtube.com/embed/" + m.group(1);
-        }
-
-        m = Pattern.compile("instagram\\.com/reel/([a-zA-Z0-9_-]+)").matcher(url);
-        if (m.find()) {
-            return "https://www.instagram.com/reel/" + m.group(1) + "/embed/";
-        }
-
-        m = Pattern.compile("instagram\\.com/p/([a-zA-Z0-9_-]+)").matcher(url);
-        if (m.find()) {
-            return "https://www.instagram.com/p/" + m.group(1) + "/embed/";
-        }
-
-        throw new IllegalArgumentException(
-                "Nieobsługiwany URL wideo. Użyj linku z YouTube lub Instagram.");
+        return embed;
     }
 }

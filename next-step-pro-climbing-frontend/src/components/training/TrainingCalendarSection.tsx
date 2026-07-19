@@ -20,7 +20,7 @@ import { trainingCalendarApi, calendarApi } from '../../api/client'
 import { getErrorMessage } from '../../utils/errors'
 import { decodeHtmlEntities } from '../../utils/htmlEntities'
 import type { TrainingCalendarAdapter } from './trainingCalendarAdapter'
-import type { CreatePersonalTraining, InvitationOverlayItem, PersonalTraining, ReservationOverlayItem } from '../../types'
+import type { AttachmentInput, CreatePersonalTraining, InvitationOverlayItem, PersonalTraining, ReservationOverlayItem } from '../../types'
 
 interface TrainingCalendarSectionProps {
   api: TrainingCalendarAdapter
@@ -41,6 +41,16 @@ interface TrainingClipboard {
   title: string
   description?: string
   durationMin: number
+  // Carried so a copy→paste recreates the source's materials (cut/move keeps them via null)
+  attachments: AttachmentInput[]
+}
+
+// Source attachments → API input (label decoded so the backend doesn't double-escape it)
+function toAttachmentInputs(tr: PersonalTraining): AttachmentInput[] {
+  return tr.attachments.map((a) => ({
+    url: a.url,
+    label: a.label ? decodeHtmlEntities(a.label) : undefined,
+  }))
 }
 
 function timeToMin(time: string): number {
@@ -227,6 +237,7 @@ export function TrainingCalendarSection({ api, scopeKey, isCoachView }: Training
       description: tr.description ? decodeHtmlEntities(tr.description) : undefined,
       startTime: tr.startTime.slice(0, 5),
       endTime: tr.endTime.slice(0, 5),
+      attachments: toAttachmentInputs(tr),
     })
     setPrefillDate(format(addDays(new Date(tr.date), 7), 'yyyy-MM-dd'))
     setPrefillTime(undefined)
@@ -253,6 +264,7 @@ export function TrainingCalendarSection({ api, scopeKey, isCoachView }: Training
       title: decodeHtmlEntities(tr.title),
       description: tr.description ? decodeHtmlEntities(tr.description) : undefined,
       durationMin: timeToMin(tr.endTime.slice(0, 5)) - timeToMin(tr.startTime.slice(0, 5)),
+      attachments: toAttachmentInputs(tr),
     })
   }
 
@@ -264,6 +276,8 @@ export function TrainingCalendarSection({ api, scopeKey, isCoachView }: Training
         endTime: minToTime(Math.min(timeToMin(time) + clip.durationMin, 23 * 60 + 59)),
         title: clip.title,
         description: clip.description,
+        // Copy recreates the materials; cut/move omits them so the backend keeps the originals
+        attachments: clip.mode === 'copy' ? clip.attachments : undefined,
       }
       // Cut = move the existing training (keeps id, comments, completion);
       // copy = a fresh one, clipboard stays armed for repeated pastes

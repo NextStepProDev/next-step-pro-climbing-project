@@ -7,12 +7,15 @@ import pl.nextsteppro.climbing.domain.personaltraining.AthleteActivityCount;
 import pl.nextsteppro.climbing.domain.personaltraining.AthleteLastActivity;
 import pl.nextsteppro.climbing.domain.personaltraining.PersonalTraining;
 import pl.nextsteppro.climbing.domain.personaltraining.PersonalTrainingRepository;
+import pl.nextsteppro.climbing.domain.personaltraining.TrainingAttachment;
+import pl.nextsteppro.climbing.domain.personaltraining.TrainingAttachmentRepository;
 import pl.nextsteppro.climbing.domain.personaltraining.TrainingCalendarRead;
 import pl.nextsteppro.climbing.domain.personaltraining.TrainingCalendarReadRepository;
 import pl.nextsteppro.climbing.domain.personaltraining.TrainingComment;
 import pl.nextsteppro.climbing.domain.personaltraining.TrainingCommentRepository;
 import pl.nextsteppro.climbing.domain.personaltraining.TrainingDeletion;
 import pl.nextsteppro.climbing.domain.personaltraining.TrainingDeletionRepository;
+import pl.nextsteppro.climbing.infrastructure.media.VideoEmbedUrls;
 import pl.nextsteppro.climbing.domain.event.Event;
 import pl.nextsteppro.climbing.domain.reservation.Reservation;
 import pl.nextsteppro.climbing.domain.reservation.ReservationRepository;
@@ -65,6 +68,7 @@ public class TrainingCalendarService {
     private final TrainingCommentRepository commentRepository;
     private final TrainingCalendarReadRepository readRepository;
     private final TrainingDeletionRepository deletionRepository;
+    private final TrainingAttachmentRepository attachmentRepository;
     private final ReservationRepository reservationRepository;
     private final ReservedSeatRepository reservedSeatRepository;
     private final UserRepository userRepository;
@@ -74,6 +78,7 @@ public class TrainingCalendarService {
                                    TrainingCommentRepository commentRepository,
                                    TrainingCalendarReadRepository readRepository,
                                    TrainingDeletionRepository deletionRepository,
+                                   TrainingAttachmentRepository attachmentRepository,
                                    ReservationRepository reservationRepository,
                                    ReservedSeatRepository reservedSeatRepository,
                                    UserRepository userRepository,
@@ -82,6 +87,7 @@ public class TrainingCalendarService {
         this.commentRepository = commentRepository;
         this.readRepository = readRepository;
         this.deletionRepository = deletionRepository;
+        this.attachmentRepository = attachmentRepository;
         this.reservationRepository = reservationRepository;
         this.reservedSeatRepository = reservedSeatRepository;
         this.userRepository = userRepository;
@@ -98,14 +104,14 @@ public class TrainingCalendarService {
 
     public PersonalTrainingDto createMy(UUID userId, CreatePersonalTrainingRequest request) {
         User athlete = requireAthlete(userId);
-        return toDto(createTraining(athlete, false, request), false, nowWarsaw());
+        return toDtoWithAttachments(createTraining(athlete, false, request), false, nowWarsaw());
     }
 
     public PersonalTrainingDto updateMy(UUID userId, UUID trainingId, CreatePersonalTrainingRequest request) {
         requireAthlete(userId);
         PersonalTraining training = requireOwnTraining(trainingId, userId);
         applyUpdate(training, false, request);
-        return toDto(training, false, nowWarsaw());
+        return toDtoWithAttachments(training, false, nowWarsaw());
     }
 
     public void deleteMy(UUID userId, UUID trainingId) {
@@ -134,14 +140,14 @@ public class TrainingCalendarService {
         training.complete(
             PersonalTraining.sanitizeText(request.feedback(), PersonalTraining.MAX_FEEDBACK_LENGTH),
             request.rpe());
-        return toDto(training, false, nowWarsaw());
+        return toDtoWithAttachments(training, false, nowWarsaw());
     }
 
     public PersonalTrainingDto uncomplete(UUID userId, UUID trainingId) {
         requireAthlete(userId);
         PersonalTraining training = requireOwnTraining(trainingId, userId);
         training.uncomplete();
-        return toDto(training, false, nowWarsaw());
+        return toDtoWithAttachments(training, false, nowWarsaw());
     }
 
     @Transactional(readOnly = true)
@@ -226,13 +232,13 @@ public class TrainingCalendarService {
 
     public PersonalTrainingDto createForAthlete(UUID athleteId, CreatePersonalTrainingRequest request) {
         User athlete = requireFlaggedAthlete(athleteId);
-        return toDto(createTraining(athlete, true, request), false, nowWarsaw());
+        return toDtoWithAttachments(createTraining(athlete, true, request), false, nowWarsaw());
     }
 
     public PersonalTrainingDto updateAsAdmin(UUID trainingId, CreatePersonalTrainingRequest request) {
         PersonalTraining training = requireTraining(trainingId);
         applyUpdate(training, true, request);
-        return toDto(training, false, nowWarsaw());
+        return toDtoWithAttachments(training, false, nowWarsaw());
     }
 
     public void deleteAsAdmin(UUID trainingId) {
@@ -281,21 +287,62 @@ public class TrainingCalendarService {
 
     private PersonalTraining createTraining(User athlete, boolean byAdmin, CreatePersonalTrainingRequest request) {
         validateTimes(request);
+        validateAttachments(request.attachments());
         PersonalTraining training = new PersonalTraining(
             athlete, request.date(), request.startTime(), request.endTime(),
             requireSanitizedTitle(request.title()),
             PersonalTraining.sanitizeText(request.description(), PersonalTraining.MAX_DESCRIPTION_LENGTH),
             byAdmin);
-        return trainingRepository.save(training);
+        trainingRepository.save(training);
+        // On create, null attachments simply means "none"
+        if (request.attachments() != null) {
+            persistAttachments(training, request.attachments());
+        }
+        return training;
     }
 
     private void applyUpdate(PersonalTraining training, boolean byAdmin, CreatePersonalTrainingRequest request) {
         validateTimes(request);
+        validateAttachments(request.attachments());
         training.update(
             request.date(), request.startTime(), request.endTime(),
             requireSanitizedTitle(request.title()),
             PersonalTraining.sanitizeText(request.description(), PersonalTraining.MAX_DESCRIPTION_LENGTH),
             byAdmin);
+        // null = leave attachments untouched (a move/drag PUT omits them); a list (incl. []) replaces
+        if (request.attachments() != null) {
+            attachmentRepository.deleteByTrainingId(training.getId());
+            persistAttachments(training, request.attachments());
+        }
+    }
+
+    private void persistAttachments(PersonalTraining training, List<AttachmentRequest> requests) {
+        int position = 0;
+        for (AttachmentRequest req : requests) {
+            attachmentRepository.save(new TrainingAttachment(
+                training, req.url().trim(), TrainingAttachment.sanitizeLabel(req.label()), position++));
+        }
+    }
+
+    private void validateAttachments(@Nullable List<AttachmentRequest> requests) {
+        if (requests == null) return;
+        if (requests.size() > TrainingAttachment.MAX_PER_TRAINING) {
+            throw new IllegalArgumentException(msg.get("training.attachment.too.many"));
+        }
+        for (AttachmentRequest req : requests) {
+            String url = req.url().trim();
+            try {
+                java.net.URI uri = java.net.URI.create(url);
+                String scheme = uri.getScheme();
+                if (uri.getHost() == null || scheme == null
+                        || !(scheme.equalsIgnoreCase("http") || scheme.equalsIgnoreCase("https"))) {
+                    throw new IllegalArgumentException(msg.get("training.attachment.url.invalid"));
+                }
+            } catch (IllegalArgumentException e) {
+                // URI.create throws IllegalArgumentException on malformed input — normalise the message
+                throw new IllegalArgumentException(msg.get("training.attachment.url.invalid"));
+            }
+        }
     }
 
     private TrainingCommentDto addComment(PersonalTraining training, User author, boolean authorIsAdmin,
@@ -323,8 +370,19 @@ public class TrainingCalendarService {
             commentRepository.findTrainingIdsWithNewComments(athleteId, !viewerIsAdmin, seen));
 
         LocalDateTime nowWarsaw = nowWarsaw();
+        // Batch-load attachments for all trainings in range (no N+1), grouped by training id
+        Map<UUID, List<TrainingAttachmentDto>> attachmentsByTraining = new HashMap<>();
+        List<UUID> trainingIds = trainings.stream().map(PersonalTraining::getId).toList();
+        if (!trainingIds.isEmpty()) {
+            for (TrainingAttachment a : attachmentRepository.findByTrainingIdInOrderByPositionAsc(trainingIds)) {
+                attachmentsByTraining
+                    .computeIfAbsent(a.trainingId(), k -> new ArrayList<>())
+                    .add(toAttachmentDto(a));
+            }
+        }
         List<PersonalTrainingDto> trainingDtos = trainings.stream()
-            .map(t -> toDto(t, hasUnread(t, viewerIsAdmin, seen, withNewComments), nowWarsaw))
+            .map(t -> toDto(t, hasUnread(t, viewerIsAdmin, seen, withNewComments), nowWarsaw,
+                attachmentsByTraining.getOrDefault(t.getId(), List.of())))
             .toList();
 
         List<ReservationOverlayDto> overlay = reservationRepository
@@ -461,7 +519,17 @@ public class TrainingCalendarService {
         );
     }
 
-    static PersonalTrainingDto toDto(PersonalTraining t, boolean hasUnreadActivity, LocalDateTime nowWarsaw) {
+    /** Single-training DTO with its attachments loaded (create/update/complete paths). */
+    private PersonalTrainingDto toDtoWithAttachments(PersonalTraining t, boolean hasUnreadActivity, LocalDateTime nowWarsaw) {
+        List<TrainingAttachmentDto> attachments = attachmentRepository
+            .findByTrainingIdOrderByPositionAsc(t.getId()).stream()
+            .map(TrainingCalendarService::toAttachmentDto)
+            .toList();
+        return toDto(t, hasUnreadActivity, nowWarsaw, attachments);
+    }
+
+    static PersonalTrainingDto toDto(PersonalTraining t, boolean hasUnreadActivity, LocalDateTime nowWarsaw,
+                                     List<TrainingAttachmentDto> attachments) {
         return new PersonalTrainingDto(
             t.getId(),
             t.getTrainingDate(),
@@ -475,8 +543,14 @@ public class TrainingCalendarService {
             t.getFeedback(),
             t.getRpe(),
             hasUnreadActivity,
-            t.getCreatedAt()
+            t.getCreatedAt(),
+            attachments
         );
+    }
+
+    static TrainingAttachmentDto toAttachmentDto(TrainingAttachment a) {
+        return new TrainingAttachmentDto(a.getId(), a.getUrl(), a.getLabel(),
+            VideoEmbedUrls.toEmbedUrlOrNull(a.getUrl()));
     }
 
     /** MISSED is derived, never stored: planned training whose end already passed (Warsaw time). */

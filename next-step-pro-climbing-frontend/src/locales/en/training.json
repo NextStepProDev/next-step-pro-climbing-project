@@ -35,11 +35,19 @@
     "cancel": "Cancel",
     "endAfterStart": "End time must be after start time",
     "titleRequired": "Enter a training title",
-    "markDoneNow": "Training already done — mark it completed right away"
+    "markDoneNow": "Training already done — mark it completed right away",
+    "attachments": "Materials (links)",
+    "attachmentsHint": "Up to 3 links — YouTube and Instagram show as an inline player, others as a clickable link.",
+    "attachmentLabelPlaceholder": "Label (optional, e.g. Warm-up video)",
+    "attachmentUrlPlaceholder": "https://...",
+    "attachmentAdd": "Add link",
+    "attachmentRemove": "Remove link",
+    "attachmentUrlInvalid": "The link must start with http:// or https://"
   },
   "detail": {
     "addedByCoach": "Added by coach",
     "addedByAthlete": "Added by athlete",
+    "materials": "Materials",
     "edit": "Edit",
     "duplicate": "Duplicate",
     "delete": "Delete",

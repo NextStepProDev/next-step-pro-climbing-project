@@ -6,8 +6,9 @@ import { Modal } from '../ui/Modal'
 import { Button } from '../ui/Button'
 import { TimeScrollPicker } from '../ui/TimeScrollPicker'
 import { RpePicker } from './RpePicker'
+import { AttachmentEditor } from './AttachmentEditor'
 import { decodeHtmlEntities } from '../../utils/htmlEntities'
-import type { CreatePersonalTraining, PersonalTraining } from '../../types'
+import type { AttachmentInput, CreatePersonalTraining, PersonalTraining } from '../../types'
 
 export interface InstantCompletion {
   feedback?: string
@@ -21,6 +22,8 @@ export interface TrainingPrefill {
   description?: string
   startTime: string
   endTime: string
+  // Duplicate carries the source's materials (url + decoded label)
+  attachments?: AttachmentInput[]
 }
 
 interface TrainingFormModalProps {
@@ -98,6 +101,10 @@ function TrainingForm({ training, initialDate, initialTime, prefill, onClose, on
   const [title, setTitle] = useState(training ? decodeHtmlEntities(training.title) : prefill?.title ?? '')
   const [description, setDescription] = useState(
     training?.description ? decodeHtmlEntities(training.description) : prefill?.description ?? '')
+  const [attachments, setAttachments] = useState<AttachmentInput[]>(
+    training
+      ? training.attachments.map((a) => ({ url: a.url, label: a.label ? decodeHtmlEntities(a.label) : '' }))
+      : prefill?.attachments ?? [])
   const [markDone, setMarkDone] = useState(false)
   const [feedback, setFeedback] = useState('')
   const [rpe, setRpe] = useState<number | null>(null)
@@ -123,6 +130,14 @@ function TrainingForm({ training, initialDate, initialTime, prefill, onClose, on
       setError(t('form.endAfterStart'))
       return
     }
+    // Drop blank rows; every remaining material must be an http(s) link
+    const cleanedAttachments = attachments
+      .map((a) => ({ url: a.url.trim(), label: a.label?.trim() || undefined }))
+      .filter((a) => a.url.length > 0)
+    if (cleanedAttachments.some((a) => !/^https?:\/\//i.test(a.url))) {
+      setError(t('form.attachmentUrlInvalid'))
+      return
+    }
     setError(null)
     const completion = instantCompleteAvailable && markDone
       ? { feedback: feedback.trim() || undefined, rpe: rpe ?? undefined }
@@ -133,6 +148,8 @@ function TrainingForm({ training, initialDate, initialTime, prefill, onClose, on
       endTime,
       title: title.trim(),
       description: description.trim() || undefined,
+      // Form always sends the explicit list (replace on edit, set on create)
+      attachments: cleanedAttachments,
     }, completion)
   }
 
@@ -178,6 +195,8 @@ function TrainingForm({ training, initialDate, initialTime, prefill, onClose, on
           className="w-full bg-surface-800 border border-surface-700 rounded-lg px-4 py-2 text-surface-100 resize-none"
         />
       </div>
+
+      <AttachmentEditor value={attachments} onChange={setAttachments} />
 
       {instantCompleteAvailable && (
         <div className="p-3 bg-surface-800/60 border border-surface-700 rounded-lg space-y-3">
