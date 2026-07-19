@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Check, CopyPlus, Pencil, Trash2, RotateCcw, UserCog, User as UserIcon, X } from 'lucide-react'
+import { Check, CopyPlus, ExternalLink, Paperclip, Pencil, Trash2, RotateCcw, UserCog, User as UserIcon, X } from 'lucide-react'
 import { format } from 'date-fns'
 import clsx from 'clsx'
 import { Modal } from '../ui/Modal'
@@ -98,6 +98,19 @@ export function TrainingDetailModal({
 
         {training.description && (
           <p className="text-sm text-surface-300 whitespace-pre-wrap">{decodeHtmlEntities(training.description)}</p>
+        )}
+
+        {/* Materials: embedded YouTube/Instagram players + plain link cards */}
+        {training.attachments.length > 0 && (
+          <div className="space-y-2">
+            <div className="flex items-center gap-1.5 text-sm font-medium text-surface-300">
+              <Paperclip className="w-4 h-4 text-surface-400" />
+              {t('detail.materials')}
+            </div>
+            {training.attachments.map((att) => (
+              <MaterialItem key={att.id} url={att.url} label={att.label} embedUrl={att.embedUrl} />
+            ))}
+          </div>
         )}
 
         {/* Completion */}
@@ -212,5 +225,47 @@ export function TrainingDetailModal({
         variant="danger"
       />
     </Modal>
+  )
+}
+
+// One material: an embedded YouTube/Instagram player, or a plain clickable link card.
+function MaterialItem({ url, label, embedUrl }: { url: string; label: string | null; embedUrl: string | null }) {
+  const text = label ? decodeHtmlEntities(label) : url
+
+  if (embedUrl) {
+    const instagram = embedUrl.includes('instagram.com')
+    return (
+      <figure className="space-y-1">
+        {label && <figcaption className="text-xs text-surface-400">{decodeHtmlEntities(label)}</figcaption>}
+        <div
+          className={clsx('w-full', instagram ? 'max-w-[400px] mx-auto' : '')}
+          style={instagram ? { height: 560 } : { aspectRatio: '16 / 9' }}
+        >
+          <iframe
+            src={embedUrl}
+            title={text}
+            className="w-full h-full rounded-lg border border-surface-800"
+            allowFullScreen
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            loading="lazy"
+          />
+        </div>
+      </figure>
+    )
+  }
+
+  return (
+    <a
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="flex items-center gap-2.5 p-2.5 rounded-lg border border-surface-700 bg-surface-800/60 hover:bg-surface-800 hover:border-surface-600 transition-colors group"
+    >
+      <ExternalLink className="w-4 h-4 shrink-0 text-primary-400" />
+      <span className="min-w-0 flex-1">
+        <span className="block text-sm font-medium text-surface-100 truncate">{text}</span>
+        {label && <span className="block text-xs text-surface-500 truncate">{url}</span>}
+      </span>
+    </a>
   )
 }

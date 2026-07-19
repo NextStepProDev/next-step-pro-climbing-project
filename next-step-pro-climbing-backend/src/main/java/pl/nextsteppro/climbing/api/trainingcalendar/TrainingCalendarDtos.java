@@ -1,5 +1,6 @@
 package pl.nextsteppro.climbing.api.trainingcalendar;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -9,6 +10,7 @@ import org.jspecify.annotations.Nullable;
 import pl.nextsteppro.climbing.domain.athletegoal.AthleteGoal;
 import pl.nextsteppro.climbing.domain.athletegoal.GoalHorizon;
 import pl.nextsteppro.climbing.domain.personaltraining.PersonalTraining;
+import pl.nextsteppro.climbing.domain.personaltraining.TrainingAttachment;
 import pl.nextsteppro.climbing.domain.personaltraining.TrainingComment;
 
 import java.time.Instant;
@@ -27,7 +29,30 @@ record CreatePersonalTrainingRequest(
     @NotNull LocalTime startTime,
     @NotNull LocalTime endTime,
     @NotBlank @Size(max = PersonalTraining.MAX_TITLE_LENGTH) String title,
-    @Nullable @Size(max = PersonalTraining.MAX_DESCRIPTION_LENGTH) String description
+    @Nullable @Size(max = PersonalTraining.MAX_DESCRIPTION_LENGTH) String description,
+    // null = leave attachments untouched (so a move/drag PUT keeps them);
+    // [] = clear; a list = replace. Max 3.
+    @Nullable @Size(max = TrainingAttachment.MAX_PER_TRAINING) List<@Valid AttachmentRequest> attachments
+) {
+    // Convenience for callers that don't touch attachments (null = leave untouched)
+    CreatePersonalTrainingRequest(LocalDate date, LocalTime startTime, LocalTime endTime,
+                                  String title, @Nullable String description) {
+        this(date, startTime, endTime, title, description, null);
+    }
+}
+
+/** One material on a training. This PR: links only (label optional). */
+record AttachmentRequest(
+    @NotBlank @Size(max = TrainingAttachment.MAX_URL_LENGTH) String url,
+    @Nullable @Size(max = TrainingAttachment.MAX_LABEL_LENGTH) String label
+) {}
+
+/** embedUrl is non-null for supported YouTube/Instagram links → the UI renders an iframe. */
+record TrainingAttachmentDto(
+    UUID id,
+    String url,
+    @Nullable String label,
+    @Nullable String embedUrl
 ) {}
 
 record CompleteTrainingRequest(
@@ -54,7 +79,8 @@ record PersonalTrainingDto(
     @Nullable Integer rpe,
     // Unread activity from the OTHER side (viewer-dependent): new/edited entry or new comments
     boolean hasUnreadActivity,
-    Instant createdAt
+    Instant createdAt,
+    List<TrainingAttachmentDto> attachments
 ) {}
 
 /** Read-only overlay: the athlete's confirmed booking from the public reservation system. */

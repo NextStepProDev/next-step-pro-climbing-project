@@ -35,11 +35,19 @@
     "cancel": "Anuluj",
     "endAfterStart": "Godzina zakończenia musi być po godzinie rozpoczęcia",
     "titleRequired": "Podaj tytuł treningu",
-    "markDoneNow": "Trening już wykonany — odhacz od razu"
+    "markDoneNow": "Trening już wykonany — odhacz od razu",
+    "attachments": "Materiały (linki)",
+    "attachmentsHint": "Do 3 linków — YouTube i Instagram wyświetlą się jako podgląd, reszta jako klikalny link.",
+    "attachmentLabelPlaceholder": "Etykieta (opcjonalnie, np. Rozgrzewka wideo)",
+    "attachmentUrlPlaceholder": "https://...",
+    "attachmentAdd": "Dodaj link",
+    "attachmentRemove": "Usuń link",
+    "attachmentUrlInvalid": "Link musi zaczynać się od http:// lub https://"
   },
   "detail": {
     "addedByCoach": "Dodany przez trenera",
     "addedByAthlete": "Dodany przez zawodnika",
+    "materials": "Materiały",
     "edit": "Edytuj",
     "duplicate": "Duplikuj",
     "delete": "Usuń",

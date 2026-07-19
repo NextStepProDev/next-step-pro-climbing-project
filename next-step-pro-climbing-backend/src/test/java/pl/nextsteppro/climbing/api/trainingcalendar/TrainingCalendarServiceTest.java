@@ -9,6 +9,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import pl.nextsteppro.climbing.domain.personaltraining.AthleteActivityCount;
 import pl.nextsteppro.climbing.domain.personaltraining.PersonalTraining;
 import pl.nextsteppro.climbing.domain.personaltraining.PersonalTrainingRepository;
+import pl.nextsteppro.climbing.domain.personaltraining.TrainingAttachment;
+import pl.nextsteppro.climbing.domain.personaltraining.TrainingAttachmentRepository;
 import pl.nextsteppro.climbing.domain.personaltraining.TrainingCalendarRead;
 import pl.nextsteppro.climbing.domain.personaltraining.TrainingCalendarReadRepository;
 import pl.nextsteppro.climbing.domain.personaltraining.TrainingComment;
@@ -49,6 +51,7 @@ class TrainingCalendarServiceTest {
     @Mock private TrainingCommentRepository commentRepository;
     @Mock private TrainingCalendarReadRepository readRepository;
     @Mock private TrainingDeletionRepository deletionRepository;
+    @Mock private TrainingAttachmentRepository attachmentRepository;
     @Mock private ReservationRepository reservationRepository;
     @Mock private ReservedSeatRepository reservedSeatRepository;
     @Mock private UserRepository userRepository;
@@ -63,10 +66,12 @@ class TrainingCalendarServiceTest {
     void setUp() {
         service = new TrainingCalendarService(
             trainingRepository, commentRepository, readRepository, deletionRepository,
-            reservationRepository, reservedSeatRepository, userRepository, msg);
+            attachmentRepository, reservationRepository, reservedSeatRepository, userRepository, msg);
 
         lenient().when(msg.get(anyString())).thenAnswer(inv -> inv.getArgument(0));
         lenient().when(msg.get(anyString(), any())).thenAnswer(inv -> inv.getArgument(0));
+        // Single-training DTO paths load attachments; default to none
+        lenient().when(attachmentRepository.findByTrainingIdOrderByPositionAsc(any())).thenReturn(java.util.List.of());
 
         athleteId = UUID.randomUUID();
         athlete = buildAthlete(athleteId);
@@ -599,6 +604,161 @@ class TrainingCalendarServiceTest {
         assertEquals(PersonalTraining.MAX_TITLE_LENGTH, sanitized.length());
         // Polish diacritics must survive the UTF-8 escape variant
         assertEquals("zwisy na chwytach ąęółż", PersonalTraining.sanitizeText("zwisy na chwytach ąęółż", 100));
+    }
+
+    // ========== attachments (links) ==========
+
+    @Test
+    void shouldPersistAttachmentsInOrderWhenCreating() {
+        // Given
+        when(trainingRepository.save(any())).thenAnswer(inv -> {
+            PersonalTraining t = inv.getArgument(0);
+            setField(t, "createdAt", Instant.now());
+            return t;
+        });
+        CreatePersonalTrainingRequest request = new CreatePersonalTrainingRequest(
+            LocalDate.now().plusDays(2), LocalTime.of(18, 0), LocalTime.of(19, 30), "T", null,
+            List.of(new AttachmentRequest("https://youtu.be/dQw4w9WgXcQ", "Wideo"),
+                    new AttachmentRequest("https://docs.google.com/plan", "Plan")));
+
+        // When
+        service.createMy(athleteId, request);
+
+        // Then
+        ArgumentCaptor<TrainingAttachment> cap = ArgumentCaptor.forClass(TrainingAttachment.class);
+        verify(attachmentRepository, times(2)).save(cap.capture());
+        List<TrainingAttachment> saved = cap.getAllValues();
+        assertEquals(0, saved.get(0).getPosition());
+        assertEquals(1, saved.get(1).getPosition());
+        assertEquals("Wideo", saved.get(0).getLabel());
+    }
+
+    @Test
+    void shouldRejectWhenMoreThanThreeAttachments() {
+        // Given
+        CreatePersonalTrainingRequest request = new CreatePersonalTrainingRequest(
+            LocalDate.now().plusDays(2), LocalTime.of(18, 0), LocalTime.of(19, 30), "T", null,
+            List.of(link("https://a.com"), link("https://b.com"), link("https://c.com"), link("https://d.com")));
+
+        // When / Then
+        IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
+            () -> service.createMy(athleteId, request));
+        assertEquals("training.attachment.too.many", e.getMessage());
+        verify(trainingRepository, never()).save(any());
+    }
+
+    @Test
+    void shouldRejectAttachmentWithNonHttpUrl() {
+        // Given: javascript: scheme (host null) must be rejected
+        CreatePersonalTrainingRequest request = new CreatePersonalTrainingRequest(
+            LocalDate.now().plusDays(2), LocalTime.of(18, 0), LocalTime.of(19, 30), "T", null,
+            List.of(new AttachmentRequest("javascript:alert(1)", null)));
+
+        // When / Then
+        IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
+            () -> service.createMy(athleteId, request));
+        assertEquals("training.attachment.url.invalid", e.getMessage());
+    }
+
+    @Test
+    void shouldSanitizeAttachmentLabelWhenPersisting() {
+        // Given
+        when(trainingRepository.save(any())).thenAnswer(inv -> {
+            PersonalTraining t = inv.getArgument(0);
+            setField(t, "createdAt", Instant.now());
+            return t;
+        });
+        CreatePersonalTrainingRequest request = new CreatePersonalTrainingRequest(
+            LocalDate.now().plusDays(2), LocalTime.of(18, 0), LocalTime.of(19, 30), "T", null,
+            List.of(new AttachmentRequest("https://a.com", "<b>Plan</b>")));
+
+        // When
+        service.createMy(athleteId, request);
+
+        // Then
+        ArgumentCaptor<TrainingAttachment> cap = ArgumentCaptor.forClass(TrainingAttachment.class);
+        verify(attachmentRepository).save(cap.capture());
+        assertEquals("&lt;b&gt;Plan&lt;/b&gt;", cap.getValue().getLabel());
+    }
+
+    @Test
+    void shouldReplaceAttachmentsWhenUpdatePassesList() {
+        // Given
+        UUID trainingId = UUID.randomUUID();
+        PersonalTraining training = buildTraining(athlete, false);
+        setField(training, "id", trainingId);
+        when(trainingRepository.findById(trainingId)).thenReturn(Optional.of(training));
+        CreatePersonalTrainingRequest request = new CreatePersonalTrainingRequest(
+            LocalDate.now().plusDays(2), LocalTime.of(18, 0), LocalTime.of(19, 30), "T", null,
+            List.of(link("https://a.com")));
+
+        // When
+        service.updateMy(athleteId, trainingId, request);
+
+        // Then: replace-all = wipe then reinsert
+        verify(attachmentRepository).deleteByTrainingId(trainingId);
+        verify(attachmentRepository).save(any());
+    }
+
+    @Test
+    void shouldKeepAttachmentsWhenUpdateOmitsThem() {
+        // Given: 5-arg request → attachments null → move/drag must NOT touch links
+        UUID trainingId = UUID.randomUUID();
+        PersonalTraining training = buildTraining(athlete, false);
+        setField(training, "id", trainingId);
+        when(trainingRepository.findById(trainingId)).thenReturn(Optional.of(training));
+        CreatePersonalTrainingRequest request = new CreatePersonalTrainingRequest(
+            LocalDate.now().plusDays(2), LocalTime.of(18, 0), LocalTime.of(19, 30), "T", null);
+
+        // When
+        service.updateMy(athleteId, trainingId, request);
+
+        // Then
+        verify(attachmentRepository, never()).deleteByTrainingId(any());
+        verify(attachmentRepository, never()).save(any());
+    }
+
+    @Test
+    void shouldClearAttachmentsWhenUpdatePassesEmptyList() {
+        // Given
+        UUID trainingId = UUID.randomUUID();
+        PersonalTraining training = buildTraining(athlete, false);
+        setField(training, "id", trainingId);
+        when(trainingRepository.findById(trainingId)).thenReturn(Optional.of(training));
+        CreatePersonalTrainingRequest request = new CreatePersonalTrainingRequest(
+            LocalDate.now().plusDays(2), LocalTime.of(18, 0), LocalTime.of(19, 30), "T", null,
+            List.of());
+
+        // When
+        service.updateMy(athleteId, trainingId, request);
+
+        // Then: wipe, but nothing reinserted
+        verify(attachmentRepository).deleteByTrainingId(trainingId);
+        verify(attachmentRepository, never()).save(any());
+    }
+
+    @Test
+    void shouldExposeEmbedUrlForYoutubeAttachment() {
+        // Given
+        TrainingAttachment a = new TrainingAttachment(
+            buildTraining(athlete, false), "https://youtu.be/dQw4w9WgXcQ", "V", 0);
+
+        // When
+        TrainingAttachmentDto dto = TrainingCalendarService.toAttachmentDto(a);
+
+        // Then
+        assertEquals("https://www.youtube.com/embed/dQw4w9WgXcQ", dto.embedUrl());
+    }
+
+    @Test
+    void shouldExposeNullEmbedUrlForPlainLink() {
+        TrainingAttachment a = new TrainingAttachment(
+            buildTraining(athlete, false), "https://docs.google.com/plan", "Plan", 0);
+        assertNull(TrainingCalendarService.toAttachmentDto(a).embedUrl());
+    }
+
+    private static AttachmentRequest link(String url) {
+        return new AttachmentRequest(url, null);
     }
 
     // ========== helpers ==========

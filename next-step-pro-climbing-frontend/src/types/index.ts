@@ -1025,12 +1025,29 @@ export interface CalendarPromoPresetDto {
 // MISSED is derived server-side: planned + end time in the past, never stored
 export type PersonalTrainingStatus = 'PLANNED' | 'COMPLETED' | 'MISSED'
 
+// A material attached to a training. This release: links only (label optional).
+// embedUrl is non-null for supported YouTube/Instagram links → render an iframe.
+export interface TrainingAttachment {
+  id: string
+  url: string
+  label: string | null
+  embedUrl: string | null
+}
+
+// url + optional label, as sent to the API
+export interface AttachmentInput {
+  url: string
+  label?: string
+}
+
 export interface CreatePersonalTraining {
   date: string
   startTime: string
   endTime: string
   title: string
   description?: string
+  // undefined = leave attachments untouched (move/drag); [] = clear; a list = replace
+  attachments?: AttachmentInput[]
 }
 
 export interface PersonalTraining {
@@ -1048,6 +1065,7 @@ export interface PersonalTraining {
   // Unread activity from the other side (viewer-dependent)
   hasUnreadActivity: boolean
   createdAt: string
+  attachments: TrainingAttachment[]
 }
 
 // Read-only overlay: athlete's confirmed booking from the public reservation system

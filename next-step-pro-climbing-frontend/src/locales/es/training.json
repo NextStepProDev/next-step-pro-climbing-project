@@ -35,11 +35,19 @@
     "cancel": "Cancelar",
     "endAfterStart": "La hora de fin debe ser posterior a la de inicio",
     "titleRequired": "Introduce un título del entrenamiento",
-    "markDoneNow": "Entrenamiento ya realizado — márcalo como completado ahora"
+    "markDoneNow": "Entrenamiento ya realizado — márcalo como completado ahora",
+    "attachments": "Materiales (enlaces)",
+    "attachmentsHint": "Hasta 3 enlaces — YouTube e Instagram se muestran como reproductor; el resto como enlace.",
+    "attachmentLabelPlaceholder": "Etiqueta (opcional, p. ej. Vídeo de calentamiento)",
+    "attachmentUrlPlaceholder": "https://...",
+    "attachmentAdd": "Añadir enlace",
+    "attachmentRemove": "Eliminar enlace",
+    "attachmentUrlInvalid": "El enlace debe empezar por http:// o https://"
   },
   "detail": {
     "addedByCoach": "Añadido por el entrenador",
     "addedByAthlete": "Añadido por el atleta",
+    "materials": "Materiales",
     "edit": "Editar",
     "duplicate": "Duplicar",
     "delete": "Eliminar",
