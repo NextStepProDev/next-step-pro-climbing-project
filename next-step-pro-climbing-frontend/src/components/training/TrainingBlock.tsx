@@ -106,26 +106,31 @@ export function TrainingBlock({
       {(onCopy || onCut) && (
         <div
           data-admin-action
-          className="absolute top-0.5 right-0.5 flex gap-0.5 z-20 opacity-0 group-hover:opacity-100 transition-opacity"
+          // Always visible on touch (no hover there); hover-reveal only on pointer:fine devices
+          // so mouse users keep a clean calendar. Solid chips with a real tap area — the old
+          // 10px hover-only icons were easy to miss (click landed on the body → detail opened)
+          className="absolute top-1 right-1 flex gap-1 z-20 opacity-100 transition-opacity [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100"
         >
           {onCopy && (
             <button
               data-admin-action
               onClick={(e) => { e.stopPropagation(); onCopy() }}
-              className="p-0.5 rounded bg-surface-900/70 text-surface-300 hover:text-primary-300 transition-colors"
+              className="p-1 rounded-md bg-surface-950/90 border border-surface-600 text-surface-200 shadow-sm hover:text-primary-300 hover:border-primary-400 transition-colors"
               title={t('clipboard.copy')}
+              aria-label={t('clipboard.copy')}
             >
-              <Copy className="w-2.5 h-2.5" />
+              <Copy className="w-3.5 h-3.5" />
             </button>
           )}
           {onCut && (
             <button
               data-admin-action
               onClick={(e) => { e.stopPropagation(); onCut() }}
-              className="p-0.5 rounded bg-surface-900/70 text-surface-300 hover:text-amber-300 transition-colors"
+              className="p-1 rounded-md bg-surface-950/90 border border-surface-600 text-surface-200 shadow-sm hover:text-amber-300 hover:border-amber-400 transition-colors"
               title={t('clipboard.cut')}
+              aria-label={t('clipboard.cut')}
             >
-              <Scissors className="w-2.5 h-2.5" />
+              <Scissors className="w-3.5 h-3.5" />
             </button>
           )}
         </div>
