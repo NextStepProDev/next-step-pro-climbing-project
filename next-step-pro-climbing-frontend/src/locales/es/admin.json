@@ -539,7 +539,11 @@
       "ADMIN_USER_ATHLETE_TOGGLED": "Estado de atleta cambiado",
       "ADMIN_TRAINING_CREATED": "Entrenamiento añadido para el atleta",
       "ADMIN_TRAINING_UPDATED": "Entrenamiento del atleta editado",
-      "ADMIN_TRAINING_DELETED": "Entrenamiento del atleta eliminado"
+      "ADMIN_TRAINING_DELETED": "Entrenamiento del atleta eliminado",
+      "ADMIN_GOAL_CREATED": "Objetivo del atleta establecido",
+      "ADMIN_GOAL_UPDATED": "Objetivo del atleta editado",
+      "ADMIN_GOAL_DELETED": "Objetivo del atleta eliminado",
+      "ADMIN_GOAL_ACHIEVED": "Objetivo del atleta marcado como logrado"
     },
     "persons": "({{count}} pers.)"
   },

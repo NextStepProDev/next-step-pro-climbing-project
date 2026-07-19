@@ -541,7 +541,11 @@
       "ADMIN_USER_ATHLETE_TOGGLED": "Zmieniono status zawodnika",
       "ADMIN_TRAINING_CREATED": "Dodano trening zawodnikowi",
       "ADMIN_TRAINING_UPDATED": "Edytowano trening zawodnika",
-      "ADMIN_TRAINING_DELETED": "Usunięto trening zawodnika"
+      "ADMIN_TRAINING_DELETED": "Usunięto trening zawodnika",
+      "ADMIN_GOAL_CREATED": "Ustawiono cel zawodnikowi",
+      "ADMIN_GOAL_UPDATED": "Edytowano cel zawodnika",
+      "ADMIN_GOAL_DELETED": "Usunięto cel zawodnika",
+      "ADMIN_GOAL_ACHIEVED": "Oznaczono cel zawodnika jako osiągnięty"
     },
     "persons": "({{count}} os.)"
   },

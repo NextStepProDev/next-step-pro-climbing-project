@@ -409,7 +409,8 @@ public class TrainingCalendarService {
         return sanitized;
     }
 
-    private User requireAthlete(UUID userId) {
+    // Package-private: AthleteGoalService reuses the exact same athlete-flag guards
+    User requireAthlete(UUID userId) {
         User user = userRepository.findById(userId)
             .orElseThrow(() -> new IllegalArgumentException("User not found"));
         if (!user.isAthlete()) {
@@ -418,7 +419,7 @@ public class TrainingCalendarService {
         return user;
     }
 
-    private User requireFlaggedAthlete(UUID athleteId) {
+    User requireFlaggedAthlete(UUID athleteId) {
         return userRepository.findById(athleteId)
             .filter(User::isAthlete)
             .orElseThrow(() -> new IllegalArgumentException(msg.get("training.calendar.athlete.not.found")));

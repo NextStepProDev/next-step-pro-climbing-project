@@ -30,6 +30,9 @@ import type {
   TrainingCalendarNotifications,
   AthleteSummary,
   AthleteStats,
+  AthleteGoal,
+  AthleteGoals,
+  SaveGoal,
   AdminTrainingRequest,
   AdminTrainingRequestPage,
   AdminNotifications,
@@ -454,6 +457,9 @@ export const trainingCalendarApi = {
 
   getStats: () =>
     fetchApi<AthleteStats>('/training-calendar/stats'),
+
+  getGoals: () =>
+    fetchApi<AthleteGoals>('/training-calendar/goals'),
 }
 
 // Personal training calendar (coach side)
@@ -493,6 +499,27 @@ export const adminTrainingCalendarApi = {
 
   getStats: (athleteId: string) =>
     fetchApi<AthleteStats>(`/admin/training-calendar/athletes/${athleteId}/stats`),
+
+  getGoals: (athleteId: string) =>
+    fetchApi<AthleteGoals>(`/admin/training-calendar/athletes/${athleteId}/goals`),
+
+  createGoal: (athleteId: string, data: SaveGoal) =>
+    fetchApi<AthleteGoal>(`/admin/training-calendar/athletes/${athleteId}/goals`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  updateGoal: (goalId: string, data: SaveGoal) =>
+    fetchApi<AthleteGoal>(`/admin/training-calendar/goals/${goalId}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+
+  deleteGoal: (goalId: string) =>
+    fetchApi<void>(`/admin/training-calendar/goals/${goalId}`, { method: 'DELETE' }),
+
+  achieveGoal: (goalId: string) =>
+    fetchApi<AthleteGoal>(`/admin/training-calendar/goals/${goalId}/achieve`, { method: 'POST' }),
 }
 
 // Admin

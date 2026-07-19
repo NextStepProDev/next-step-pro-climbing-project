@@ -6,6 +6,8 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import org.jspecify.annotations.Nullable;
+import pl.nextsteppro.climbing.domain.athletegoal.AthleteGoal;
+import pl.nextsteppro.climbing.domain.athletegoal.GoalHorizon;
 import pl.nextsteppro.climbing.domain.personaltraining.PersonalTraining;
 import pl.nextsteppro.climbing.domain.personaltraining.TrainingComment;
 
@@ -158,3 +160,29 @@ record AthleteStatsDto(
 record TypeBreakdownDto(long personal, long individualSlot, long course, long training, long workshop) {}
 
 record LocationCountDto(String name, long count) {}
+
+/**
+ * Coach creates/edits an athlete's goal. On update the horizon is IGNORED — an active
+ * goal's horizon is fixed (replacing the horizon means deleting + creating a new goal).
+ */
+record SaveGoalRequest(
+    @NotNull GoalHorizon horizon,
+    @NotBlank @Size(max = AthleteGoal.MAX_CONTENT_LENGTH) String content,
+    @NotNull LocalDate targetDate
+) {}
+
+record AthleteGoalDto(
+    UUID id,
+    // SHORT | MEDIUM | LONG — also picks the trophy size in the trophy chest
+    String horizon,
+    String content,
+    LocalDate targetDate,
+    @Nullable Instant achievedAt,
+    Instant createdAt
+) {}
+
+/** Banner cards (active, sorted short → medium → long) + trophy chest (achieved, newest first). */
+record GoalsDto(
+    List<AthleteGoalDto> active,
+    List<AthleteGoalDto> achieved
+) {}

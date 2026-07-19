@@ -1,11 +1,22 @@
 import { trainingCalendarApi, adminTrainingCalendarApi } from '../../api/client'
 import type {
+  AthleteGoal,
+  AthleteGoals,
   AthleteStats,
   CreatePersonalTraining,
   PersonalTraining,
+  SaveGoal,
   TrainingCalendarRange,
   TrainingCommentItem,
 } from '../../types'
+
+/** Goal mutations exist only on the coach adapter — the athlete's banner is read-only. */
+export interface GoalMutations {
+  create: (data: SaveGoal) => Promise<AthleteGoal>
+  update: (goalId: string, data: SaveGoal) => Promise<AthleteGoal>
+  remove: (goalId: string) => Promise<void>
+  achieve: (goalId: string) => Promise<AthleteGoal>
+}
 
 /**
  * One calendar codebase, two consumers: the athlete tab talks to /api/training-calendar,
@@ -21,6 +32,8 @@ export interface TrainingCalendarAdapter {
   addComment: (trainingId: string, body: string) => Promise<TrainingCommentItem>
   markSeen: () => Promise<void>
   getStats: () => Promise<AthleteStats>
+  getGoals: () => Promise<AthleteGoals>
+  goalMutations?: GoalMutations
 }
 
 export const athleteAdapter: TrainingCalendarAdapter = {
@@ -32,6 +45,7 @@ export const athleteAdapter: TrainingCalendarAdapter = {
   addComment: trainingCalendarApi.addComment,
   markSeen: trainingCalendarApi.markSeen,
   getStats: trainingCalendarApi.getStats,
+  getGoals: trainingCalendarApi.getGoals,
 }
 
 export function coachAdapter(athleteId: string): TrainingCalendarAdapter {
@@ -44,5 +58,12 @@ export function coachAdapter(athleteId: string): TrainingCalendarAdapter {
     addComment: adminTrainingCalendarApi.addComment,
     markSeen: () => adminTrainingCalendarApi.markSeen(athleteId),
     getStats: () => adminTrainingCalendarApi.getStats(athleteId),
+    getGoals: () => adminTrainingCalendarApi.getGoals(athleteId),
+    goalMutations: {
+      create: (data) => adminTrainingCalendarApi.createGoal(athleteId, data),
+      update: adminTrainingCalendarApi.updateGoal,
+      remove: adminTrainingCalendarApi.deleteGoal,
+      achieve: adminTrainingCalendarApi.achieveGoal,
+    },
   }
 }

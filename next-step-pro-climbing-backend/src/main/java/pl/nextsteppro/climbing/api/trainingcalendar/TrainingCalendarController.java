@@ -29,11 +29,14 @@ public class TrainingCalendarController {
 
     private final TrainingCalendarService trainingCalendarService;
     private final TrainingStatsService trainingStatsService;
+    private final AthleteGoalService athleteGoalService;
 
     public TrainingCalendarController(TrainingCalendarService trainingCalendarService,
-                                      TrainingStatsService trainingStatsService) {
+                                      TrainingStatsService trainingStatsService,
+                                      AthleteGoalService athleteGoalService) {
         this.trainingCalendarService = trainingCalendarService;
         this.trainingStatsService = trainingStatsService;
+        this.athleteGoalService = athleteGoalService;
     }
 
     @Operation(summary = "Calendar range", description = "Trainings + read-only reservation overlay for a date range (max 62 days).")
@@ -63,6 +66,19 @@ public class TrainingCalendarController {
     public ResponseEntity<AthleteStatsDto> getStats(
             @Parameter(hidden = true) @CurrentUserId UUID userId) {
         return ResponseEntity.ok(trainingStatsService.getMyStats(userId));
+    }
+
+    @Operation(summary = "My goals", description = "Active goals (banner cards, one per horizon) + achieved goals (trophy chest). Read-only — the coach manages goals.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Goals",
+            content = @Content(schema = @Schema(implementation = GoalsDto.class))),
+        @ApiResponse(responseCode = "401", description = "User not authenticated"),
+        @ApiResponse(responseCode = "409", description = "User is not a designated athlete")
+    })
+    @GetMapping("/goals")
+    public ResponseEntity<GoalsDto> getGoals(
+            @Parameter(hidden = true) @CurrentUserId UUID userId) {
+        return ResponseEntity.ok(athleteGoalService.getMyGoals(userId));
     }
 
     @Operation(summary = "Add training", description = "Creates a training in the athlete's own calendar.")

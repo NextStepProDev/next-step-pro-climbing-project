@@ -29,6 +29,7 @@ class AdminTrainingCalendarServiceTest {
 
     @Mock private TrainingCalendarService core;
     @Mock private TrainingStatsService statsService;
+    @Mock private AthleteGoalService goalService;
     @Mock private ActivityLogService activityLogService;
     @Mock private UserRepository userRepository;
 
@@ -41,7 +42,7 @@ class AdminTrainingCalendarServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new AdminTrainingCalendarService(core, statsService, activityLogService, userRepository);
+        service = new AdminTrainingCalendarService(core, statsService, goalService, activityLogService, userRepository);
 
         adminId = UUID.randomUUID();
         admin = new User("coach@example.com", "Trener", "Główny", "+48111111111", "coach");
@@ -100,6 +101,58 @@ class AdminTrainingCalendarServiceTest {
 
         // Then
         verifyNoInteractions(activityLogService);
+    }
+
+    @Test
+    void shouldLogActivityWhenCoachCreatesGoal() {
+        // Given
+        SaveGoalRequest request = new SaveGoalRequest(
+            pl.nextsteppro.climbing.domain.athletegoal.GoalHorizon.SHORT, "Przejść 7a", LocalDate.of(2026, 9, 15));
+        AthleteGoalDto dto = new AthleteGoalDto(
+            UUID.randomUUID(), "SHORT", "Przejść 7a", LocalDate.of(2026, 9, 15), null, Instant.now());
+        when(goalService.createGoal(athleteId, request)).thenReturn(dto);
+
+        // When
+        service.createGoal(adminId, athleteId, request);
+
+        // Then
+        verify(activityLogService).logAdminGoalCreated(eq(admin), contains("Przejść 7a"));
+    }
+
+    @Test
+    void shouldLogActivityWhenCoachAchievesGoal() {
+        // Given
+        UUID goalId = UUID.randomUUID();
+        var goal = new pl.nextsteppro.climbing.domain.athletegoal.AthleteGoal(
+            athlete, pl.nextsteppro.climbing.domain.athletegoal.GoalHorizon.LONG, "7c przed 30-tką",
+            LocalDate.of(2027, 3, 1));
+        AthleteGoalDto dto = new AthleteGoalDto(
+            goalId, "LONG", "7c przed 30-tką", LocalDate.of(2027, 3, 1), Instant.now(), Instant.now());
+        when(goalService.requireGoal(goalId)).thenReturn(goal);
+        when(goalService.achieveGoal(goalId)).thenReturn(dto);
+
+        // When
+        service.achieveGoal(adminId, goalId);
+
+        // Then
+        verify(activityLogService).logAdminGoalAchieved(eq(admin), contains("Anna Wspinaczka"));
+    }
+
+    @Test
+    void shouldLogActivityWithGoalContextWhenCoachDeletesGoal() {
+        // Given
+        UUID goalId = UUID.randomUUID();
+        var goal = new pl.nextsteppro.climbing.domain.athletegoal.AthleteGoal(
+            athlete, pl.nextsteppro.climbing.domain.athletegoal.GoalHorizon.MEDIUM, "Zawody PP",
+            LocalDate.of(2026, 12, 20));
+        when(goalService.requireGoal(goalId)).thenReturn(goal);
+
+        // When
+        service.deleteGoal(adminId, goalId);
+
+        // Then
+        verify(goalService).deleteGoal(goalId);
+        verify(activityLogService).logAdminGoalDeleted(eq(admin), contains("Zawody PP"));
     }
 
     private PersonalTrainingDto dtoFor(CreatePersonalTrainingRequest request) {

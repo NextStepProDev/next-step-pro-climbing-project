@@ -22,15 +22,18 @@ public class AdminTrainingCalendarService {
 
     private final TrainingCalendarService core;
     private final TrainingStatsService statsService;
+    private final AthleteGoalService goalService;
     private final ActivityLogService activityLogService;
     private final UserRepository userRepository;
 
     public AdminTrainingCalendarService(TrainingCalendarService core,
                                         TrainingStatsService statsService,
+                                        AthleteGoalService goalService,
                                         ActivityLogService activityLogService,
                                         UserRepository userRepository) {
         this.core = core;
         this.statsService = statsService;
+        this.goalService = goalService;
         this.activityLogService = activityLogService;
         this.userRepository = userRepository;
     }
@@ -82,6 +85,44 @@ public class AdminTrainingCalendarService {
 
     public void markSeen(UUID adminId, UUID athleteId) {
         core.markCoachSeen(adminId, athleteId);
+    }
+
+    // ---------- athlete goals ----------
+
+    @Transactional(readOnly = true)
+    public GoalsDto getGoals(UUID athleteId) {
+        return goalService.getGoalsForAthlete(athleteId);
+    }
+
+    public AthleteGoalDto createGoal(UUID adminId, UUID athleteId, SaveGoalRequest request) {
+        AthleteGoalDto dto = goalService.createGoal(athleteId, request);
+        activityLogService.logAdminGoalCreated(admin(adminId), describeGoal(athleteId, dto));
+        return dto;
+    }
+
+    public AthleteGoalDto updateGoal(UUID adminId, UUID goalId, SaveGoalRequest request) {
+        UUID athleteId = goalService.requireGoal(goalId).getAthlete().getId();
+        AthleteGoalDto dto = goalService.updateGoal(goalId, request);
+        activityLogService.logAdminGoalUpdated(admin(adminId), describeGoal(athleteId, dto));
+        return dto;
+    }
+
+    public void deleteGoal(UUID adminId, UUID goalId) {
+        var goal = goalService.requireGoal(goalId);
+        String description = describe(goal.getAthlete().getId(), goal.getContent(), goal.getTargetDate());
+        goalService.deleteGoal(goalId);
+        activityLogService.logAdminGoalDeleted(admin(adminId), description);
+    }
+
+    public AthleteGoalDto achieveGoal(UUID adminId, UUID goalId) {
+        UUID athleteId = goalService.requireGoal(goalId).getAthlete().getId();
+        AthleteGoalDto dto = goalService.achieveGoal(goalId);
+        activityLogService.logAdminGoalAchieved(admin(adminId), describeGoal(athleteId, dto));
+        return dto;
+    }
+
+    private String describeGoal(UUID athleteId, AthleteGoalDto dto) {
+        return describe(athleteId, dto.content(), dto.targetDate());
     }
 
     private User admin(UUID adminId) {

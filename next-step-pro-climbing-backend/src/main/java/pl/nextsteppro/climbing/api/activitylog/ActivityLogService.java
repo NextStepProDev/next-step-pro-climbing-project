@@ -120,6 +120,23 @@ public class ActivityLogService {
         save(admin, ActivityActionType.ADMIN_TRAINING_DELETED, null, null, null, description);
     }
 
+    // Athlete goals (banner above the training calendar): context goes into description
+    public void logAdminGoalCreated(User admin, String description) {
+        save(admin, ActivityActionType.ADMIN_GOAL_CREATED, null, null, null, description);
+    }
+
+    public void logAdminGoalUpdated(User admin, String description) {
+        save(admin, ActivityActionType.ADMIN_GOAL_UPDATED, null, null, null, description);
+    }
+
+    public void logAdminGoalDeleted(User admin, String description) {
+        save(admin, ActivityActionType.ADMIN_GOAL_DELETED, null, null, null, description);
+    }
+
+    public void logAdminGoalAchieved(User admin, String description) {
+        save(admin, ActivityActionType.ADMIN_GOAL_ACHIEVED, null, null, null, description);
+    }
+
     @Transactional(readOnly = true)
     public List<ActivityLogDto> getRecentLogs(int page, int size) {
         List<ActivityLog> logs = activityLogRepository.findRecentWithDetails(PageRequest.of(page, size));

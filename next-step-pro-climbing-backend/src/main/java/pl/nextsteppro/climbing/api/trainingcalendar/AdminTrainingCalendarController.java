@@ -107,4 +107,48 @@ public class AdminTrainingCalendarController {
         adminTrainingCalendarService.markSeen(adminId, athleteId);
         return ResponseEntity.noContent().build();
     }
+
+    // ---------- athlete goals (banner above the calendar + trophy chest) ----------
+
+    @Operation(summary = "Athlete's goals", description = "Active (one per horizon) + achieved (trophy chest), same shape the athlete sees.")
+    @GetMapping("/athletes/{athleteId}/goals")
+    public ResponseEntity<GoalsDto> getGoals(
+            @PathVariable UUID athleteId) {
+        return ResponseEntity.ok(adminTrainingCalendarService.getGoals(athleteId));
+    }
+
+    @Operation(summary = "Set a goal", description = "One active goal per horizon; a taken horizon returns 409.")
+    @PostMapping("/athletes/{athleteId}/goals")
+    public ResponseEntity<AthleteGoalDto> createGoal(
+            @Parameter(hidden = true) @CurrentUserId UUID adminId,
+            @PathVariable UUID athleteId,
+            @Valid @RequestBody SaveGoalRequest request) {
+        return ResponseEntity.ok(adminTrainingCalendarService.createGoal(adminId, athleteId, request));
+    }
+
+    @Operation(summary = "Edit an active goal", description = "Horizon is fixed; achieved goals are immutable (409).")
+    @PutMapping("/goals/{goalId}")
+    public ResponseEntity<AthleteGoalDto> updateGoal(
+            @Parameter(hidden = true) @CurrentUserId UUID adminId,
+            @PathVariable UUID goalId,
+            @Valid @RequestBody SaveGoalRequest request) {
+        return ResponseEntity.ok(adminTrainingCalendarService.updateGoal(adminId, goalId, request));
+    }
+
+    @Operation(summary = "Delete an active goal", description = "Achieved goals cannot be deleted — they stay in the trophy chest (409).")
+    @DeleteMapping("/goals/{goalId}")
+    public ResponseEntity<Void> deleteGoal(
+            @Parameter(hidden = true) @CurrentUserId UUID adminId,
+            @PathVariable UUID goalId) {
+        adminTrainingCalendarService.deleteGoal(adminId, goalId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @Operation(summary = "Mark goal achieved", description = "Moves the goal to the trophy chest; irreversible, frees its horizon slot.")
+    @PostMapping("/goals/{goalId}/achieve")
+    public ResponseEntity<AthleteGoalDto> achieveGoal(
+            @Parameter(hidden = true) @CurrentUserId UUID adminId,
+            @PathVariable UUID goalId) {
+        return ResponseEntity.ok(adminTrainingCalendarService.achieveGoal(adminId, goalId));
+    }
 }
