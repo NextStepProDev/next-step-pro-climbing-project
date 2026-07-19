@@ -129,10 +129,10 @@ class AdminTrainingCalendarServiceTest {
         AthleteGoalDto dto = new AthleteGoalDto(
             goalId, "LONG", "7c przed 30-tką", LocalDate.of(2027, 3, 1), Instant.now(), Instant.now());
         when(goalService.requireGoal(goalId)).thenReturn(goal);
-        when(goalService.achieveGoal(goalId)).thenReturn(dto);
+        when(goalService.achieveGoal(eq(goalId), any())).thenReturn(dto);
 
         // When
-        service.achieveGoal(adminId, goalId);
+        service.achieveGoal(adminId, goalId, new AchieveGoalRequest(null));
 
         // Then
         verify(activityLogService).logAdminGoalAchieved(eq(admin), contains("Anna Wspinaczka"));

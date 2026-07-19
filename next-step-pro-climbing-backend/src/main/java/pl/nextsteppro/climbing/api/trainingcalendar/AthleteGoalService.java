@@ -1,5 +1,6 @@
 package pl.nextsteppro.climbing.api.trainingcalendar;
 
+import org.jspecify.annotations.Nullable;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -8,6 +9,9 @@ import pl.nextsteppro.climbing.domain.athletegoal.AthleteGoalRepository;
 import pl.nextsteppro.climbing.domain.user.User;
 import pl.nextsteppro.climbing.infrastructure.i18n.MessageService;
 
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
@@ -22,6 +26,9 @@ import java.util.UUID;
 @Service
 @Transactional
 public class AthleteGoalService {
+
+    // Same explicit zone as the rest of the training calendar (container runs UTC)
+    private static final ZoneId WARSAW = ZoneId.of("Europe/Warsaw");
 
     private final AthleteGoalRepository goalRepository;
     private final TrainingCalendarService calendarService;
@@ -74,9 +81,17 @@ public class AthleteGoalService {
         goalRepository.delete(requireActiveGoal(goalId));
     }
 
-    public AthleteGoalDto achieveGoal(UUID goalId) {
+    /** Achievement date is backdatable (null = now); a future date makes no sense → 400. */
+    public AthleteGoalDto achieveGoal(UUID goalId, @Nullable LocalDate achievedDate) {
         AthleteGoal goal = requireActiveGoal(goalId);
-        goal.markAchieved();
+        Instant when = Instant.now();
+        if (achievedDate != null) {
+            if (achievedDate.isAfter(LocalDate.now(WARSAW))) {
+                throw new IllegalArgumentException(msg.get("training.goal.achieved.future"));
+            }
+            when = achievedDate.atStartOfDay(WARSAW).toInstant();
+        }
+        goal.markAchieved(when);
         return toDto(goal);
     }
 

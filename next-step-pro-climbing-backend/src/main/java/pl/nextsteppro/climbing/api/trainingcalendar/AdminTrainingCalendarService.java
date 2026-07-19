@@ -114,9 +114,9 @@ public class AdminTrainingCalendarService {
         activityLogService.logAdminGoalDeleted(admin(adminId), description);
     }
 
-    public AthleteGoalDto achieveGoal(UUID adminId, UUID goalId) {
+    public AthleteGoalDto achieveGoal(UUID adminId, UUID goalId, AchieveGoalRequest request) {
         UUID athleteId = goalService.requireGoal(goalId).getAthlete().getId();
-        AthleteGoalDto dto = goalService.achieveGoal(goalId);
+        AthleteGoalDto dto = goalService.achieveGoal(goalId, request.achievedDate());
         activityLogService.logAdminGoalAchieved(admin(adminId), describeGoal(athleteId, dto));
         return dto;
     }

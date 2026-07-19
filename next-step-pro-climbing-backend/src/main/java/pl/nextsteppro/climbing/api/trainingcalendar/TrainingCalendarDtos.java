@@ -171,6 +171,14 @@ record SaveGoalRequest(
     @NotNull LocalDate targetDate
 ) {}
 
+/**
+ * Marking a goal achieved: the coach may backdate the achievement (a goal usually falls
+ * days before the coach sits at the panel). Null = now; future dates are rejected.
+ */
+record AchieveGoalRequest(
+    @Nullable LocalDate achievedDate
+) {}
+
 record AthleteGoalDto(
     UUID id,
     // SHORT | MEDIUM | LONG — also picks the trophy size in the trophy chest

@@ -68,6 +68,7 @@
     "deleteConfirmTitle": "Usunąć cel?",
     "deleteConfirmMessage": "Aktywny cel zostanie usunięty bezpowrotnie.",
     "markAchieved": "Oznacz jako osiągnięty",
+    "achievedDate": "Data osiągnięcia",
     "achieveConfirmTitle": "Cel osiągnięty?",
     "achieveConfirmMessage": "Cel trafi do skrzyni trofeów na zawsze — nie będzie można go już edytować ani usunąć.",
     "form": {

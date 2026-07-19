@@ -66,6 +66,7 @@
     "deleteConfirmTitle": "Delete goal?",
     "deleteConfirmMessage": "The active goal will be deleted permanently.",
     "markAchieved": "Mark as achieved",
+    "achievedDate": "Achievement date",
     "achieveConfirmTitle": "Goal achieved?",
     "achieveConfirmMessage": "The goal moves to the trophy chest forever — it can no longer be edited or deleted.",
     "form": {

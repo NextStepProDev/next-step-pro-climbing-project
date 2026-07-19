@@ -203,19 +203,62 @@ class AthleteGoalServiceTest {
     }
 
     @Test
-    void shouldMarkAchievedAndKeepRow() {
+    void shouldMarkAchievedNowWhenNoDateGiven() {
         // Given
         UUID goalId = UUID.randomUUID();
         AthleteGoal goal = new AthleteGoal(athlete, GoalHorizon.LONG, "7c przed 30-tką", LocalDate.of(2027, 3, 1));
         when(goalRepository.findById(goalId)).thenReturn(Optional.of(goal));
 
         // When
-        AthleteGoalDto dto = service.achieveGoal(goalId);
+        AthleteGoalDto dto = service.achieveGoal(goalId, null);
 
         // Then: the trophy stays in the table forever — never deleted
         assertNotNull(dto.achievedAt());
         assertTrue(goal.isAchieved());
         verify(goalRepository, never()).delete(any(AthleteGoal.class));
+    }
+
+    @Test
+    void shouldBackdateAchievementWhenPastDateGiven() {
+        // Given
+        UUID goalId = UUID.randomUUID();
+        AthleteGoal goal = new AthleteGoal(athlete, GoalHorizon.SHORT, "Boulder 7B", LocalDate.of(2026, 8, 1));
+        when(goalRepository.findById(goalId)).thenReturn(Optional.of(goal));
+
+        // When: coach records the achievement a few days late
+        AthleteGoalDto dto = service.achieveGoal(goalId, LocalDate.of(2026, 7, 10));
+
+        // Then: achievedAt lands on that day's start in Warsaw time
+        Instant expected = LocalDate.of(2026, 7, 10).atStartOfDay(java.time.ZoneId.of("Europe/Warsaw")).toInstant();
+        assertEquals(expected, dto.achievedAt());
+    }
+
+    @Test
+    void shouldAcceptTodayAsAchievementDate() {
+        // Given
+        UUID goalId = UUID.randomUUID();
+        AthleteGoal goal = new AthleteGoal(athlete, GoalHorizon.MEDIUM, "Cel", LocalDate.of(2026, 12, 1));
+        when(goalRepository.findById(goalId)).thenReturn(Optional.of(goal));
+        LocalDate today = LocalDate.now(java.time.ZoneId.of("Europe/Warsaw"));
+
+        // When / Then: today is allowed (boundary), no exception
+        AthleteGoalDto dto = service.achieveGoal(goalId, today);
+        assertNotNull(dto.achievedAt());
+    }
+
+    @Test
+    void shouldRejectFutureAchievementDate() {
+        // Given
+        UUID goalId = UUID.randomUUID();
+        AthleteGoal goal = new AthleteGoal(athlete, GoalHorizon.SHORT, "Cel", LocalDate.of(2026, 8, 1));
+        when(goalRepository.findById(goalId)).thenReturn(Optional.of(goal));
+        LocalDate tomorrow = LocalDate.now(java.time.ZoneId.of("Europe/Warsaw")).plusDays(1);
+
+        // When / Then
+        IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
+            () -> service.achieveGoal(goalId, tomorrow));
+        assertEquals("training.goal.achieved.future", e.getMessage());
+        assertFalse(goal.isAchieved());
     }
 
     @Test
@@ -225,7 +268,7 @@ class AthleteGoalServiceTest {
         when(goalRepository.findById(goalId)).thenReturn(Optional.of(achievedGoal()));
 
         // When / Then
-        assertThrows(IllegalStateException.class, () -> service.achieveGoal(goalId));
+        assertThrows(IllegalStateException.class, () -> service.achieveGoal(goalId, null));
     }
 
     @Test
@@ -236,7 +279,7 @@ class AthleteGoalServiceTest {
 
         // When / Then
         IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
-            () -> service.achieveGoal(goalId));
+            () -> service.achieveGoal(goalId, null));
         assertEquals("training.goal.not.found", e.getMessage());
     }
 

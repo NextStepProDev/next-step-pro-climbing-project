@@ -144,11 +144,13 @@ public class AdminTrainingCalendarController {
         return ResponseEntity.noContent().build();
     }
 
-    @Operation(summary = "Mark goal achieved", description = "Moves the goal to the trophy chest; irreversible, frees its horizon slot.")
+    @Operation(summary = "Mark goal achieved", description = "Moves the goal to the trophy chest; irreversible, frees its horizon slot. The achievement date is backdatable (null = today); a future date is rejected.")
     @PostMapping("/goals/{goalId}/achieve")
     public ResponseEntity<AthleteGoalDto> achieveGoal(
             @Parameter(hidden = true) @CurrentUserId UUID adminId,
-            @PathVariable UUID goalId) {
-        return ResponseEntity.ok(adminTrainingCalendarService.achieveGoal(adminId, goalId));
+            @PathVariable UUID goalId,
+            @Valid @RequestBody(required = false) AchieveGoalRequest request) {
+        AchieveGoalRequest body = request != null ? request : new AchieveGoalRequest(null);
+        return ResponseEntity.ok(adminTrainingCalendarService.achieveGoal(adminId, goalId, body));
     }
 }
