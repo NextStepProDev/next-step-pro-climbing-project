@@ -84,7 +84,13 @@
     "trophies": "Skrzynia trofeów",
     "trophiesTitle": "Skrzynia trofeów — {{count}}",
     "trophiesEmpty": "Skrzynia jest jeszcze pusta. Pierwszy osiągnięty cel wyląduje tutaj!",
-    "achievedOn": "osiągnięto {{date}}"
+    "achievedOn": "osiągnięto {{date}}",
+    "chest": {
+      "short": "Krótkoterminowe",
+      "medium": "Średnioterminowe",
+      "long": "Długoterminowe",
+      "emptyColumn": "Brak trofeów w tej kategorii"
+    }
   },
   "clipboard": {
     "copy": "Kopiuj trening",
