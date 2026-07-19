@@ -185,6 +185,17 @@ export function GoalsBanner({ api, scopeKey, isCoachView }: GoalsBannerProps) {
                 </div>
                 <p className="text-sm font-medium text-green-200">{decodeHtmlEntities(celebrated.content)}</p>
                 <p className="text-xs text-green-300/80 font-medium">{t('goals.achieved')}</p>
+                {/* The slot is already free in the DB — let the coach set the next goal now
+                    instead of waiting out the 7-day celebration window */}
+                {isCoachView && (
+                  <button
+                    onClick={() => { setEditedGoal(null); setFormHorizon(horizon) }}
+                    className="inline-flex items-center gap-1 text-xs font-medium text-green-300 hover:text-green-200 transition-colors"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    {t('goals.setNext')}
+                  </button>
+                )}
               </div>
             )
           }

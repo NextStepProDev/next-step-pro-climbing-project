@@ -62,6 +62,7 @@
     "overdue": "fecha límite pasada",
     "achieved": "¡Logrado! 🎉",
     "add": "Añadir objetivo",
+    "setNext": "Establecer un nuevo objetivo",
     "edit": "Editar objetivo",
     "delete": "Eliminar objetivo",
     "deleteConfirmTitle": "¿Eliminar el objetivo?",
