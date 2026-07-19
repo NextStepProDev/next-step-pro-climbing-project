@@ -6,6 +6,7 @@ import { differenceInCalendarDays, format } from 'date-fns'
 import clsx from 'clsx'
 import { ConfirmModal } from '../ui/ConfirmModal'
 import { GoalFormModal } from './GoalFormModal'
+import { AchieveGoalModal } from './AchieveGoalModal'
 import { TrophyChestModal } from './TrophyChestModal'
 import { getErrorMessage } from '../../utils/errors'
 import { decodeHtmlEntities } from '../../utils/htmlEntities'
@@ -60,9 +61,10 @@ export function GoalsBanner({ api, scopeKey, isCoachView }: GoalsBannerProps) {
     },
   })
   const achieveMutation = useMutation({
-    mutationFn: (goalId: string) => mutations!.achieve(goalId),
-    onSuccess: () => { setActionError(null); invalidate() },
-    onError: (err) => setActionError(getErrorMessage(err)),
+    mutationFn: ({ goalId, achievedDate }: { goalId: string; achievedDate: string }) =>
+      mutations!.achieve(goalId, achievedDate),
+    // Error stays inline in the modal (submitError); the modal remains open to retry
+    onSuccess: () => { setConfirmAchieve(null); invalidate() },
   })
   const deleteMutation = useMutation({
     mutationFn: (goalId: string) => mutations!.remove(goalId),
@@ -226,15 +228,15 @@ export function GoalsBanner({ api, scopeKey, isCoachView }: GoalsBannerProps) {
         achieved={goals.achieved}
       />
 
-      <ConfirmModal
+      <AchieveGoalModal
         isOpen={confirmAchieve !== null}
-        onClose={() => setConfirmAchieve(null)}
-        onConfirm={() => {
-          if (confirmAchieve) achieveMutation.mutate(confirmAchieve.id)
-          setConfirmAchieve(null)
+        onClose={() => { setConfirmAchieve(null); setActionError(null); achieveMutation.reset() }}
+        goal={confirmAchieve}
+        onConfirm={(achievedDate) => {
+          if (confirmAchieve) achieveMutation.mutate({ goalId: confirmAchieve.id, achievedDate })
         }}
-        title={t('goals.achieveConfirmTitle')}
-        message={t('goals.achieveConfirmMessage')}
+        saving={achieveMutation.isPending}
+        submitError={achieveMutation.isError ? getErrorMessage(achieveMutation.error) : null}
       />
 
       <ConfirmModal

@@ -15,7 +15,8 @@ export interface GoalMutations {
   create: (data: SaveGoal) => Promise<AthleteGoal>
   update: (goalId: string, data: SaveGoal) => Promise<AthleteGoal>
   remove: (goalId: string) => Promise<void>
-  achieve: (goalId: string) => Promise<AthleteGoal>
+  // achievedDate is backdatable (omit = today); the backend rejects future dates
+  achieve: (goalId: string, achievedDate?: string) => Promise<AthleteGoal>
 }
 
 /**

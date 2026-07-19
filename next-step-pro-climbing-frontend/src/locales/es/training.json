@@ -67,6 +67,7 @@
     "deleteConfirmTitle": "¿Eliminar el objetivo?",
     "deleteConfirmMessage": "El objetivo activo se eliminará de forma permanente.",
     "markAchieved": "Marcar como logrado",
+    "achievedDate": "Fecha de logro",
     "achieveConfirmTitle": "¿Objetivo logrado?",
     "achieveConfirmMessage": "El objetivo pasará al cofre de trofeos para siempre — ya no se podrá editar ni eliminar.",
     "form": {

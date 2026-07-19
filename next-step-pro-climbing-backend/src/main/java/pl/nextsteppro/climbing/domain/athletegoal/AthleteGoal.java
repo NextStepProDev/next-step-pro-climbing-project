@@ -84,8 +84,9 @@ public class AthleteGoal {
         this.targetDate = targetDate;
     }
 
-    public void markAchieved() {
-        this.achievedAt = Instant.now();
+    /** The coach may backdate the achievement (goals often fall days before the visit). */
+    public void markAchieved(Instant achievedAt) {
+        this.achievedAt = achievedAt;
     }
 
     public boolean isAchieved() {

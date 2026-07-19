@@ -518,8 +518,12 @@ export const adminTrainingCalendarApi = {
   deleteGoal: (goalId: string) =>
     fetchApi<void>(`/admin/training-calendar/goals/${goalId}`, { method: 'DELETE' }),
 
-  achieveGoal: (goalId: string) =>
-    fetchApi<AthleteGoal>(`/admin/training-calendar/goals/${goalId}/achieve`, { method: 'POST' }),
+  achieveGoal: (goalId: string, achievedDate?: string) =>
+    fetchApi<AthleteGoal>(`/admin/training-calendar/goals/${goalId}/achieve`, {
+      method: 'POST',
+      // Backdatable: null/omitted = today; the backend rejects future dates
+      body: JSON.stringify({ achievedDate: achievedDate ?? null }),
+    }),
 }
 
 // Admin
