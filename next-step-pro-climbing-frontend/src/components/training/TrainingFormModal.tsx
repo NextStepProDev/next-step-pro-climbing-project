@@ -14,6 +14,15 @@ export interface InstantCompletion {
   rpe?: number
 }
 
+// Duplicate flow: create-mode form pre-seeded from an existing training
+// (values arrive already decoded — the section decodes before seeding)
+export interface TrainingPrefill {
+  title: string
+  description?: string
+  startTime: string
+  endTime: string
+}
+
 interface TrainingFormModalProps {
   isOpen: boolean
   onClose: () => void
@@ -21,6 +30,8 @@ interface TrainingFormModalProps {
   training?: PersonalTraining | null
   initialDate?: string
   initialTime?: string
+  // Duplicate: seeds a create-mode form with another training's content
+  prefill?: TrainingPrefill | null
   // completion set = retroactive logging: create and immediately mark completed
   onSubmit: (data: CreatePersonalTraining, completion?: InstantCompletion | null) => void
   saving: boolean
@@ -30,17 +41,22 @@ interface TrainingFormModalProps {
   submitError?: string | null
 }
 
-export function TrainingFormModal({ isOpen, onClose, training, initialDate, initialTime, onSubmit, saving, allowInstantComplete, submitError }: TrainingFormModalProps) {
+export function TrainingFormModal({ isOpen, onClose, training, initialDate, initialTime, prefill, onSubmit, saving, allowInstantComplete, submitError }: TrainingFormModalProps) {
   const { t } = useTranslation('training')
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={training ? t('form.editTitle') : t('form.addTitle')}>
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={training ? t('form.editTitle') : prefill ? t('form.duplicateTitle') : t('form.addTitle')}
+    >
       {/* Mounted only while open — form state resets naturally on every open */}
       {isOpen && (
         <TrainingForm
           training={training}
           initialDate={initialDate}
           initialTime={initialTime}
+          prefill={prefill}
           onClose={onClose}
           onSubmit={onSubmit}
           saving={saving}
@@ -61,10 +77,11 @@ function addMinutes(time: string, minutes: number): string {
   return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`
 }
 
-function TrainingForm({ training, initialDate, initialTime, onClose, onSubmit, saving, allowInstantComplete, submitError }: {
+function TrainingForm({ training, initialDate, initialTime, prefill, onClose, onSubmit, saving, allowInstantComplete, submitError }: {
   training?: PersonalTraining | null
   initialDate?: string
   initialTime?: string
+  prefill?: TrainingPrefill | null
   onClose: () => void
   onSubmit: (data: CreatePersonalTraining, completion?: InstantCompletion | null) => void
   saving: boolean
@@ -73,13 +90,14 @@ function TrainingForm({ training, initialDate, initialTime, onClose, onSubmit, s
 }) {
   const { t } = useTranslation('training')
 
-  const defaultStart = initialTime ?? DEFAULT_START
+  const defaultStart = initialTime ?? prefill?.startTime ?? DEFAULT_START
   const [date, setDate] = useState(training?.date ?? initialDate ?? '')
   const [startTime, setStartTime] = useState(training ? training.startTime.slice(0, 5) : defaultStart)
   const [endTime, setEndTime] = useState(
-    training ? training.endTime.slice(0, 5) : addMinutes(defaultStart, DEFAULT_DURATION_MIN))
-  const [title, setTitle] = useState(training ? decodeHtmlEntities(training.title) : '')
-  const [description, setDescription] = useState(training?.description ? decodeHtmlEntities(training.description) : '')
+    training ? training.endTime.slice(0, 5) : prefill?.endTime ?? addMinutes(defaultStart, DEFAULT_DURATION_MIN))
+  const [title, setTitle] = useState(training ? decodeHtmlEntities(training.title) : prefill?.title ?? '')
+  const [description, setDescription] = useState(
+    training?.description ? decodeHtmlEntities(training.description) : prefill?.description ?? '')
   const [markDone, setMarkDone] = useState(false)
   const [feedback, setFeedback] = useState('')
   const [rpe, setRpe] = useState<number | null>(null)

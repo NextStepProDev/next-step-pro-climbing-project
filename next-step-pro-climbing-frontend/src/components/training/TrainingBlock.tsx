@@ -1,4 +1,5 @@
-import { Check, Lock, Star } from 'lucide-react'
+import { Check, Copy, Lock, Scissors, Star } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import clsx from 'clsx'
 import type { InvitationOverlayItem, PersonalTraining, ReservationOverlayItem } from '../../types'
 
@@ -22,22 +23,25 @@ interface TrainingBlockProps {
   compact?: boolean
   clampedTop?: boolean
   clampedBottom?: boolean
+  // Week-view clipboard + drag&drop (both roles); all optional so the month view stays untouched
+  onCopy?: () => void
+  onCut?: () => void
+  isCut?: boolean
+  isCopied?: boolean
+  onPointerDown?: (e: React.PointerEvent<HTMLElement>) => void
+  onResizePointerDown?: (e: React.PointerEvent<HTMLElement>) => void
+  isDragging?: boolean
+  isLongPressing?: boolean
 }
 
-export function TrainingBlock({ training, onClick, style, compact, clampedTop, clampedBottom }: TrainingBlockProps) {
-  return (
-    <button
-      onClick={onClick}
-      style={style}
-      className={clsx(
-        // 'relative' (needed by the unread dot) must NOT coexist with 'absolute' —
-        // whichever wins in the stylesheet breaks week-grid positioning
-        'border rounded-md text-left transition-colors overflow-hidden',
-        trainingColors(training.status),
-        compact ? 'relative w-full px-1.5 py-0.5 text-[11px] truncate block' : 'absolute px-1.5 py-1 text-xs',
-      )}
-      title={training.title}
-    >
+export function TrainingBlock({
+  training, onClick, style, compact, clampedTop, clampedBottom,
+  onCopy, onCut, isCut, isCopied, onPointerDown, onResizePointerDown, isDragging, isLongPressing,
+}: TrainingBlockProps) {
+  const { t } = useTranslation('training')
+
+  const content = (
+    <>
       {training.hasUnreadActivity && (
         <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-rose-500" />
       )}
@@ -52,7 +56,90 @@ export function TrainingBlock({ training, onClick, style, compact, clampedTop, c
           {clampedBottom && ' ↓'}
         </span>
       )}
-    </button>
+    </>
+  )
+
+  if (compact) {
+    return (
+      <button
+        onClick={onClick}
+        style={style}
+        className={clsx(
+          // 'relative' (needed by the unread dot) must NOT coexist with 'absolute' —
+          // whichever wins in the stylesheet breaks week-grid positioning
+          'border rounded-md text-left transition-colors overflow-hidden',
+          trainingColors(training.status),
+          'relative w-full px-1.5 py-0.5 text-[11px] truncate block',
+        )}
+        title={training.title}
+      >
+        {content}
+      </button>
+    )
+  }
+
+  // Week variant: wrapper div carries the grid position so the inner button can share
+  // the block with hover actions and the resize handle (same layout as the admin calendar)
+  const draggable = !!onPointerDown
+  return (
+    <div
+      style={style}
+      onPointerDown={onPointerDown}
+      className={clsx(
+        'group absolute border rounded-md transition-colors overflow-hidden',
+        trainingColors(training.status),
+        draggable && !isDragging && 'cursor-grab',
+        isDragging && 'opacity-40 cursor-grabbing',
+        isCut && 'ring-2 ring-dashed ring-amber-400 opacity-60',
+        isCopied && 'ring-2 ring-dashed ring-primary-400',
+        isLongPressing && !isDragging && 'ring-2 ring-primary-400/60 z-30',
+      )}
+    >
+      <button
+        onClick={onClick}
+        className={clsx('w-full h-full px-1.5 py-1 text-xs text-left', draggable && 'select-none')}
+        title={training.title}
+      >
+        {content}
+      </button>
+
+      {(onCopy || onCut) && (
+        <div
+          data-admin-action
+          className="absolute top-0.5 right-0.5 flex gap-0.5 z-20 opacity-0 group-hover:opacity-100 transition-opacity"
+        >
+          {onCopy && (
+            <button
+              data-admin-action
+              onClick={(e) => { e.stopPropagation(); onCopy() }}
+              className="p-0.5 rounded bg-surface-900/70 text-surface-300 hover:text-primary-300 transition-colors"
+              title={t('clipboard.copy')}
+            >
+              <Copy className="w-2.5 h-2.5" />
+            </button>
+          )}
+          {onCut && (
+            <button
+              data-admin-action
+              onClick={(e) => { e.stopPropagation(); onCut() }}
+              className="p-0.5 rounded bg-surface-900/70 text-surface-300 hover:text-amber-300 transition-colors"
+              title={t('clipboard.cut')}
+            >
+              <Scissors className="w-2.5 h-2.5" />
+            </button>
+          )}
+        </div>
+      )}
+
+      {onResizePointerDown && (
+        <div
+          data-admin-action
+          className="absolute bottom-0 left-0 right-0 h-2 cursor-ns-resize z-20"
+          style={{ touchAction: 'none' }}
+          onPointerDown={onResizePointerDown}
+        />
+      )}
+    </div>
   )
 }
 

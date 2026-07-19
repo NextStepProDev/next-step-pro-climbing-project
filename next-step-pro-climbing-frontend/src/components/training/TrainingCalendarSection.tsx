@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Plus, Lock, Trash2 } from 'lucide-react'
+import { Plus, Lock, Trash2, X } from 'lucide-react'
 import { format, startOfWeek, startOfMonth, endOfMonth, addDays } from 'date-fns'
 import clsx from 'clsx'
 import { Modal } from '../ui/Modal'
@@ -13,7 +13,7 @@ import { SlotDetailModal } from '../calendar/SlotDetailModal'
 import { TrainingWeekCalendar } from './TrainingWeekCalendar'
 import { TrainingMonthCalendar } from './TrainingMonthCalendar'
 import { TrainingStatsSection } from './TrainingStatsSection'
-import { TrainingFormModal, type InstantCompletion } from './TrainingFormModal'
+import { TrainingFormModal, type InstantCompletion, type TrainingPrefill } from './TrainingFormModal'
 import { TrainingDetailModal } from './TrainingDetailModal'
 import { trainingCalendarApi, calendarApi } from '../../api/client'
 import { getErrorMessage } from '../../utils/errors'
@@ -27,6 +27,28 @@ interface TrainingCalendarSectionProps {
   scopeKey: string
   // Coach view: completion read-only, different invalidations on mark-seen
   isCoachView?: boolean
+}
+
+// Copy/cut clipboard for week-view paste. Content is snapshotted (already decoded)
+// at copy time, so pasting keeps working after the source scrolls out of the fetched
+// range. Lives here (not in the week component) to survive week navigation; the coach
+// panel remounts the whole section per athlete (key={athleteId}), which clears it —
+// cross-athlete paste is impossible by construction.
+interface TrainingClipboard {
+  mode: 'copy' | 'cut'
+  trainingId: string
+  title: string
+  description?: string
+  durationMin: number
+}
+
+function timeToMin(time: string): number {
+  const [h, m] = time.split(':').map(Number)
+  return h * 60 + m
+}
+
+function minToTime(total: number): string {
+  return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`
 }
 
 export function TrainingCalendarSection({ api, scopeKey, isCoachView }: TrainingCalendarSectionProps) {
@@ -115,6 +137,8 @@ export function TrainingCalendarSection({ api, scopeKey, isCoachView }: Training
   const [editedTraining, setEditedTraining] = useState<PersonalTraining | null>(null)
   const [prefillDate, setPrefillDate] = useState<string | undefined>(undefined)
   const [prefillTime, setPrefillTime] = useState<string | undefined>(undefined)
+  // Duplicate flow: create-mode form seeded from an existing training
+  const [duplicatePrefill, setDuplicatePrefill] = useState<TrainingPrefill | null>(null)
   const [detailId, setDetailId] = useState<string | null>(null)
   const [reservationHint, setReservationHint] = useState<ReservationOverlayItem | null>(null)
   // Full official-slot preview opened from the hint modal ("Zobacz szczegóły")
@@ -180,6 +204,7 @@ export function TrainingCalendarSection({ api, scopeKey, isCoachView }: Training
 
   const openCreate = (date?: string, time?: string) => {
     setEditedTraining(null)
+    setDuplicatePrefill(null)
     setPrefillDate(date)
     setPrefillTime(time)
     setFormOpen(true)
@@ -187,7 +212,101 @@ export function TrainingCalendarSection({ api, scopeKey, isCoachView }: Training
 
   const openEdit = (training: PersonalTraining) => {
     setEditedTraining(training)
+    setDuplicatePrefill(null)
     setFormOpen(true)
+  }
+
+  // Duplicate: create-mode form seeded with the source content, date defaults to +7 days
+  // ("same training next week"); everything stays editable before saving
+  const openDuplicate = (tr: PersonalTraining) => {
+    setDetailId(null)
+    setEditedTraining(null)
+    setDuplicatePrefill({
+      title: decodeHtmlEntities(tr.title),
+      description: tr.description ? decodeHtmlEntities(tr.description) : undefined,
+      startTime: tr.startTime.slice(0, 5),
+      endTime: tr.endTime.slice(0, 5),
+    })
+    setPrefillDate(format(addDays(new Date(tr.date), 7), 'yyyy-MM-dd'))
+    setPrefillTime(undefined)
+    setFormOpen(true)
+  }
+
+  // ---------- clipboard (copy/cut/paste) + drag&drop, week view only ----------
+  const [clipboard, setClipboard] = useState<TrainingClipboard | null>(null)
+  const [actionError, setActionError] = useState<string | null>(null)
+
+  // Escape cancels an armed clipboard (same interaction as the admin calendar)
+  useEffect(() => {
+    if (!clipboard) return
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setClipboard(null) }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [clipboard])
+
+  const armClipboard = (mode: 'copy' | 'cut') => (tr: PersonalTraining) => {
+    setActionError(null)
+    setClipboard({
+      mode,
+      trainingId: tr.id,
+      title: decodeHtmlEntities(tr.title),
+      description: tr.description ? decodeHtmlEntities(tr.description) : undefined,
+      durationMin: timeToMin(tr.endTime.slice(0, 5)) - timeToMin(tr.startTime.slice(0, 5)),
+    })
+  }
+
+  const pasteMutation = useMutation({
+    mutationFn: ({ clip, date, time }: { clip: TrainingClipboard; date: string; time: string }) => {
+      const data: CreatePersonalTraining = {
+        date,
+        startTime: time,
+        endTime: minToTime(Math.min(timeToMin(time) + clip.durationMin, 23 * 60 + 59)),
+        title: clip.title,
+        description: clip.description,
+      }
+      // Cut = move the existing training (keeps id, comments, completion);
+      // copy = a fresh one, clipboard stays armed for repeated pastes
+      return clip.mode === 'cut' ? api.updateTraining(clip.trainingId, data) : api.createTraining(data)
+    },
+    onSuccess: (_, { clip }) => {
+      if (clip.mode === 'cut') setClipboard(null)
+      invalidate()
+    },
+    onError: (err) => {
+      // Source deleted meanwhile (or flag revoked) — disarm and say why
+      setClipboard(null)
+      setActionError(getErrorMessage(err))
+    },
+  })
+
+  const handlePasteAt = (date: string, time: string) => {
+    if (!clipboard || pasteMutation.isPending) return
+    pasteMutation.mutate({ clip: clipboard, date, time })
+  }
+
+  const moveMutation = useMutation({
+    mutationFn: ({ training, date, startTime, endTime }: {
+      training: PersonalTraining; date: string; startTime: string; endTime: string
+    }) =>
+      // Title/description must round-trip decoded, or the server would re-escape entities
+      api.updateTraining(training.id, {
+        date,
+        startTime,
+        endTime,
+        title: decodeHtmlEntities(training.title),
+        description: training.description ? decodeHtmlEntities(training.description) : undefined,
+      }),
+    onSuccess: () => {
+      setActionError(null)
+      invalidate()
+    },
+    onError: (err) => setActionError(getErrorMessage(err)),
+  })
+
+  const handleTrainingMove = (trainingId: string, date: string, startTime: string, endTime: string) => {
+    const tr = rangeQuery.data?.trainings.find((x) => x.id === trainingId)
+    if (!tr || moveMutation.isPending) return
+    moveMutation.mutate({ training: tr, date, startTime, endTime })
   }
 
   // ---------- render ----------
@@ -234,6 +353,42 @@ export function TrainingCalendarSection({ api, scopeKey, isCoachView }: Training
           </ul>
         </div>
       )}
+      {/* Armed clipboard: instruction banner (amber = cut/move, primary = copy) */}
+      {clipboard && (
+        <div
+          className={clsx(
+            'flex items-center justify-between gap-3 p-3 border rounded-lg',
+            clipboard.mode === 'cut'
+              ? 'bg-amber-500/10 border-amber-500/30 text-amber-300'
+              : 'bg-primary-500/10 border-primary-500/30 text-primary-300',
+          )}
+        >
+          <span className="text-sm">
+            {t(clipboard.mode === 'cut' ? 'clipboard.cutBanner' : 'clipboard.copiedBanner', { title: clipboard.title })}
+          </span>
+          <button
+            onClick={() => setClipboard(null)}
+            className="p-1 rounded hover:bg-surface-800 transition-colors shrink-0"
+            title={t('clipboard.cancel')}
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
+      {/* Rejected move/paste (e.g. source deleted meanwhile) */}
+      {actionError && (
+        <div className="flex items-center justify-between gap-3 p-3 bg-rose-500/10 border border-rose-500/30 rounded-lg">
+          <span className="text-sm text-rose-300">{actionError}</span>
+          <button
+            onClick={() => setActionError(null)}
+            className="p-1 rounded hover:bg-surface-800 transition-colors shrink-0 text-rose-300"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
       {/* Toolbar: view toggle + add button */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div className="flex rounded-lg border border-surface-700 overflow-hidden">
@@ -276,6 +431,13 @@ export function TrainingCalendarSection({ api, scopeKey, isCoachView }: Training
           onReservationClick={setReservationHint}
           onInvitationClick={openInvitation}
           onDayClick={openCreate}
+          onTrainingMove={handleTrainingMove}
+          onTrainingCopy={armClipboard('copy')}
+          onTrainingCut={armClipboard('cut')}
+          cutTrainingId={clipboard?.mode === 'cut' ? clipboard.trainingId : null}
+          copiedTrainingId={clipboard?.mode === 'copy' ? clipboard.trainingId : null}
+          pasteActive={!!clipboard}
+          onPasteAt={handlePasteAt}
         />
       ) : (
         <TrainingMonthCalendar
@@ -305,10 +467,11 @@ export function TrainingCalendarSection({ api, scopeKey, isCoachView }: Training
       {/* Add / edit */}
       <TrainingFormModal
         isOpen={formOpen}
-        onClose={() => { setFormOpen(false); setEditedTraining(null); saveMutation.reset() }}
+        onClose={() => { setFormOpen(false); setEditedTraining(null); setDuplicatePrefill(null); saveMutation.reset() }}
         training={editedTraining}
         initialDate={prefillDate}
         initialTime={prefillTime}
+        prefill={duplicatePrefill}
         onSubmit={(data, completion) => saveMutation.mutate({ data, completion })}
         saving={saveMutation.isPending}
         allowInstantComplete={!isCoachView}
@@ -322,6 +485,7 @@ export function TrainingCalendarSection({ api, scopeKey, isCoachView }: Training
         api={api}
         isCoachView={isCoachView}
         onEdit={(tr) => { setDetailId(null); openEdit(tr) }}
+        onDuplicate={openDuplicate}
         onDelete={(tr) => deleteMutation.mutate(tr.id)}
         onComplete={(tr, data) => completeMutation.mutate({ trainingId: tr.id, data })}
         onUncomplete={(tr) => uncompleteMutation.mutate(tr.id)}

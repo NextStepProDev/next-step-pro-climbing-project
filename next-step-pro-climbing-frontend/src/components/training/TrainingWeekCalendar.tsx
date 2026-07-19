@@ -4,6 +4,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { format, isToday, addDays } from 'date-fns'
 import clsx from 'clsx'
 import { TrainingBlock, ReservationBlock, InvitationBlock } from './TrainingBlock'
+import { useSlotDrag } from '../../hooks/useSlotDrag'
 import { useDateLocale } from '../../utils/dateFnsLocale'
 import type { InvitationOverlayItem, PersonalTraining, ReservationOverlayItem } from '../../types'
 
@@ -30,6 +31,15 @@ interface TrainingWeekCalendarProps {
   // Click on an empty area of a day column -> add-training prefilled with that date
   // and the clicked hour (snapped to 30 min)
   onDayClick: (date: string, time?: string) => void
+  // Drag&drop / resize: PUT with the new date+times (id keeps comments & completion)
+  onTrainingMove?: (trainingId: string, date: string, startTime: string, endTime: string) => void
+  // Clipboard (copy/cut/paste) — state lives in TrainingCalendarSection so it survives week navigation
+  onTrainingCopy?: (training: PersonalTraining) => void
+  onTrainingCut?: (training: PersonalTraining) => void
+  cutTrainingId?: string | null
+  copiedTrainingId?: string | null
+  pasteActive?: boolean
+  onPasteAt?: (date: string, time: string) => void
 }
 
 function timeToMin(time: string): number {
@@ -110,15 +120,32 @@ export function TrainingWeekCalendar({
   startDate, trainings, reservations, invitations, invitationLabel,
   onPrevWeek, onNextWeek, onToday,
   onTrainingClick, onReservationClick, onInvitationClick, onDayClick,
+  onTrainingMove, onTrainingCopy, onTrainingCut,
+  cutTrainingId, copiedTrainingId, pasteActive, onPasteAt,
 }: TrainingWeekCalendarProps) {
   const { t } = useTranslation('training')
   const locale = useDateLocale()
   const scrollRef = useRef<HTMLDivElement>(null)
+  const dayColumnRefs = useRef<(HTMLDivElement | null)[]>([])
 
   const days = useMemo(() => {
     const start = new Date(startDate)
     return Array.from({ length: 7 }, (_, i) => format(addDays(start, i), 'yyyy-MM-dd'))
   }, [startDate])
+
+  const dayObjs = useMemo(() => days.map((date) => ({ date })), [days])
+
+  const { dragState, isBeingDragged, wasJustDragged, didJustDrag, onSlotPointerDown, onResizePointerDown, longPressSlotId } =
+    useSlotDrag({
+      days: dayObjs,
+      dayColumnRefs,
+      snapMinutes: 30,
+      enabled: !!onTrainingMove,
+      onDrop: (trainingId, newDate, newStart, newEnd, oldDate, oldStart, oldEnd) => {
+        if (newDate === oldDate && newStart === oldStart && newEnd === oldEnd) return
+        onTrainingMove?.(trainingId, newDate, newStart, newEnd)
+      },
+    })
 
   const hours = useMemo(() => Array.from({ length: TOTAL_HOURS }, (_, i) => START_HOUR + i), [])
 
@@ -224,18 +251,35 @@ export function TrainingWeekCalendar({
             </div>
 
             {/* Day columns */}
-            {days.map((date) => {
+            {days.map((date, dayIndex) => {
               const today = isToday(new Date(date))
               const items = byDay.get(date) ?? []
               return (
                 <div
                   key={date}
-                  className={clsx('relative border-l border-surface-800 cursor-pointer', today && 'bg-primary-500/5')}
+                  ref={(el) => { dayColumnRefs.current[dayIndex] = el }}
+                  className={clsx(
+                    'relative border-l border-surface-800',
+                    pasteActive ? 'cursor-crosshair' : 'cursor-pointer',
+                    today && 'bg-primary-500/5',
+                  )}
                   style={{ height: TOTAL_HOURS * HOUR_HEIGHT }}
                   onClick={(e) => {
-                    if ((e.target as HTMLElement).closest('button')) return
+                    // A drop/resize ends with a click on the column (mousedown/mouseup
+                    // common ancestor) — without this guard every drag would also open
+                    // the add-training form
+                    if (didJustDrag()) return
+                    // Blocks and their hover actions (incl. the non-button resize handle)
+                    // must not read as an empty-space click
+                    const target = e.target as HTMLElement
+                    if (target.closest('button') || target.closest('[data-admin-action]')) return
                     const rect = e.currentTarget.getBoundingClientRect()
-                    onDayClick(date, clickToTime(e.clientY - rect.top))
+                    const time = clickToTime(e.clientY - rect.top)
+                    if (pasteActive && onPasteAt) {
+                      onPasteAt(date, time)
+                      return
+                    }
+                    onDayClick(date, time)
                   }}
                 >
                   {/* Hour grid lines */}
@@ -265,16 +309,38 @@ export function TrainingWeekCalendar({
                       width: `calc(${width}% - 4px)`,
                       zIndex: 10,
                     }
-                    return item.training ? (
-                      <TrainingBlock
-                        key={item.key}
-                        training={item.training}
-                        onClick={() => onTrainingClick(item.training!)}
-                        style={style}
-                        clampedTop={item.clampedTop}
-                        clampedBottom={item.clampedBottom}
-                      />
-                    ) : item.invitation ? (
+                    if (item.training) {
+                      const tr = item.training
+                      // COMPLETED entries are history: copy allowed (re-plan it forward),
+                      // but no move/cut/resize — the record must stay where it happened
+                      const movable = !!onTrainingMove && tr.status !== 'COMPLETED'
+                      return (
+                        <TrainingBlock
+                          key={item.key}
+                          training={tr}
+                          onClick={() => {
+                            if (wasJustDragged(tr.id)) return
+                            onTrainingClick(tr)
+                          }}
+                          style={style}
+                          clampedTop={item.clampedTop}
+                          clampedBottom={item.clampedBottom}
+                          onCopy={onTrainingCopy ? () => onTrainingCopy(tr) : undefined}
+                          onCut={onTrainingCut && tr.status !== 'COMPLETED' ? () => onTrainingCut(tr) : undefined}
+                          isCut={cutTrainingId === tr.id}
+                          isCopied={copiedTrainingId === tr.id}
+                          onPointerDown={movable
+                            ? (e) => onSlotPointerDown(tr.id, date, tr.startTime.slice(0, 5), tr.endTime.slice(0, 5), e)
+                            : undefined}
+                          onResizePointerDown={movable
+                            ? (e) => onResizePointerDown(tr.id, date, tr.startTime.slice(0, 5), tr.endTime.slice(0, 5), e)
+                            : undefined}
+                          isDragging={isBeingDragged(tr.id)}
+                          isLongPressing={longPressSlotId === tr.id}
+                        />
+                      )
+                    }
+                    return item.invitation ? (
                       <InvitationBlock
                         key={item.key}
                         invitation={item.invitation}
@@ -298,6 +364,19 @@ export function TrainingWeekCalendar({
           </div>
         </div>
       </div>
+
+      {/* Drag ghost — indigo to match training blocks (admin calendar uses primary) */}
+      {dragState?.ghost && (
+        <div
+          className="fixed z-50 pointer-events-none rounded border-2 border-indigo-400 bg-indigo-500/25"
+          style={{
+            left: dragState.ghost.left,
+            top: dragState.ghost.top,
+            width: dragState.ghost.width,
+            height: dragState.ghost.height,
+          }}
+        />
+      )}
     </div>
   )
 }

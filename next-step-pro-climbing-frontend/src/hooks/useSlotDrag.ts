@@ -9,8 +9,8 @@ const DRAG_THRESHOLD_PX = 5
 const LONG_PRESS_MS = 350
 const LONG_PRESS_TOLERANCE_PX = 10
 
-function snapMinutes(minutes: number): number {
-  return Math.round(minutes / SNAP_MINUTES) * SNAP_MINUTES
+function snapTo(minutes: number, step: number): number {
+  return Math.round(minutes / step) * step
 }
 
 function minutesToTime(totalMinutes: number): string {
@@ -55,9 +55,12 @@ interface UseSlotDragOptions {
   dayColumnRefs: React.MutableRefObject<(HTMLDivElement | null)[]>
   onDrop: (slotId: string, newDate: string, newStartTime: string, newEndTime: string, oldDate: string, oldStartTime: string, oldEndTime: string) => void
   enabled: boolean
+  // Grid snap step in minutes; the admin calendar keeps the 15-min default,
+  // the training calendar passes 30 to match its coarser click-to-create grid
+  snapMinutes?: number
 }
 
-export function useSlotDrag({ days, dayColumnRefs, onDrop, enabled }: UseSlotDragOptions) {
+export function useSlotDrag({ days, dayColumnRefs, onDrop, enabled, snapMinutes = SNAP_MINUTES }: UseSlotDragOptions) {
   const gestureRef = useRef<GestureState | null>(null)
   const livePosRef = useRef<LiveDragState | null>(null)
   const hasMoved = useRef(false)
@@ -136,7 +139,7 @@ export function useSlotDrag({ days, dayColumnRefs, onDrop, enabled }: UseSlotDra
         const rawTopPx = e.clientY - columnTop - (gesture.grabOffsetMinutes / 60 * HOUR_HEIGHT)
         const rawMin = rawTopPx / HOUR_HEIGHT * 60
         const maxStartMin = (END_HOUR - START_HOUR) * 60 - gesture.durationMinutes
-        const snapped = snapMinutes(Math.max(0, Math.min(rawMin, maxStartMin)))
+        const snapped = snapTo(Math.max(0, Math.min(rawMin, maxStartMin)), snapMinutes)
         const topPx = snapped / 60 * HOUR_HEIGHT
         const heightPx = gesture.durationMinutes / 60 * HOUR_HEIGHT
         newPos = {
@@ -154,7 +157,7 @@ export function useSlotDrag({ days, dayColumnRefs, onDrop, enabled }: UseSlotDra
         const rawBottomPx = e.clientY - columnTop
         const rawEndMin = rawBottomPx / HOUR_HEIGHT * 60
         const minEndMin = (gesture.originalStartAbsMinutes - START_HOUR * 60) + MIN_DURATION_MINUTES
-        const snapped = snapMinutes(Math.max(minEndMin, Math.min(rawEndMin, (END_HOUR - START_HOUR) * 60)))
+        const snapped = snapTo(Math.max(minEndMin, Math.min(rawEndMin, (END_HOUR - START_HOUR) * 60)), snapMinutes)
         const heightPx = (snapped - (gesture.originalStartAbsMinutes - START_HOUR * 60)) / 60 * HOUR_HEIGHT
         newPos = {
           slotId: gesture.slotId,
@@ -185,7 +188,7 @@ export function useSlotDrag({ days, dayColumnRefs, onDrop, enabled }: UseSlotDra
           const newDate = daysRef.current[livePos.dayIndex]?.date
           if (newDate) {
             const startAbsMin = START_HOUR * 60 + Math.round(livePos.topPx / HOUR_HEIGHT * 60)
-            const snapped = snapMinutes(startAbsMin)
+            const snapped = snapTo(startAbsMin, snapMinutes)
             onDropRef.current(
               gesture.slotId,
               newDate,
@@ -199,7 +202,7 @@ export function useSlotDrag({ days, dayColumnRefs, onDrop, enabled }: UseSlotDra
         } else {
           const startTopPx = (gesture.originalStartAbsMinutes - START_HOUR * 60) / 60 * HOUR_HEIGHT
           const endAbsMin = START_HOUR * 60 + Math.round((startTopPx + livePos.heightPx) / HOUR_HEIGHT * 60)
-          const snapped = snapMinutes(endAbsMin)
+          const snapped = snapTo(endAbsMin, snapMinutes)
           if (snapped > gesture.originalStartAbsMinutes) {
             onDropRef.current(
               gesture.slotId,
@@ -257,7 +260,7 @@ export function useSlotDrag({ days, dayColumnRefs, onDrop, enabled }: UseSlotDra
       document.removeEventListener('touchend', handleTouchEnd)
       if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current)
     }
-  }, [enabled, getDayIndex, getColumnTop, buildGhostRect, cancelLongPress])
+  }, [enabled, snapMinutes, getDayIndex, getColumnTop, buildGhostRect, cancelLongPress])
 
   const onSlotPointerDown = useCallback((
     slotId: string,
@@ -373,10 +376,18 @@ export function useSlotDrag({ days, dayColumnRefs, onDrop, enabled }: UseSlotDra
     return lastDragSlotRef.current === slotId
   }, [])
 
+  // Any-drag variant for empty-space click handlers: after a drop/resize the browser
+  // fires a click on the mousedown/mouseup common ancestor (the day column), which is
+  // NOT the dragged element — the per-slot guard above cannot catch it there
+  const didJustDrag = useCallback((): boolean => {
+    return lastDragSlotRef.current !== null
+  }, [])
+
   return {
     dragState,
     isBeingDragged,
     wasJustDragged,
+    didJustDrag,
     onSlotPointerDown,
     onResizePointerDown,
     longPressSlotId,
