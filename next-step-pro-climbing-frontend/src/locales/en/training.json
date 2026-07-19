@@ -23,6 +23,7 @@
   "form": {
     "addTitle": "New training",
     "editTitle": "Edit training",
+    "duplicateTitle": "Duplicate training",
     "date": "Date",
     "startTime": "Start",
     "endTime": "End",
@@ -40,10 +41,18 @@
     "addedByCoach": "Added by coach",
     "addedByAthlete": "Added by athlete",
     "edit": "Edit",
+    "duplicate": "Duplicate",
     "delete": "Delete",
     "deleteConfirmTitle": "Delete training?",
     "deleteConfirmMessage": "This cannot be undone. The training's comments will be gone too.",
     "close": "Close"
+  },
+  "clipboard": {
+    "copy": "Copy training",
+    "cut": "Cut training",
+    "copiedBanner": "Copied \"{{title}}\" — click an empty spot in the week view to paste a copy (Esc cancels)",
+    "cutBanner": "Cut \"{{title}}\" — click an empty spot in the week view to move it (Esc cancels)",
+    "cancel": "Cancel"
   },
   "completion": {
     "markDone": "Mark as completed",

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Check, Pencil, Trash2, RotateCcw, UserCog, User as UserIcon, X } from 'lucide-react'
+import { Check, CopyPlus, Pencil, Trash2, RotateCcw, UserCog, User as UserIcon, X } from 'lucide-react'
 import { format } from 'date-fns'
 import clsx from 'clsx'
 import { Modal } from '../ui/Modal'
@@ -20,6 +20,7 @@ interface TrainingDetailModalProps {
   // Coach view: completion is read-only (athlete's feedback), provenance badge inverted
   isCoachView?: boolean
   onEdit: (training: PersonalTraining) => void
+  onDuplicate: (training: PersonalTraining) => void
   onDelete: (training: PersonalTraining) => void
   onComplete?: (training: PersonalTraining, data: { feedback?: string; rpe?: number }) => void
   onUncomplete?: (training: PersonalTraining) => void
@@ -46,7 +47,7 @@ function statusChip(status: PersonalTrainingStatus): string {
 }
 
 export function TrainingDetailModal({
-  training, onClose, api, isCoachView, onEdit, onDelete,
+  training, onClose, api, isCoachView, onEdit, onDuplicate, onDelete,
   onComplete, onUncomplete, mutating, onCommentPosted, errorMessage,
 }: TrainingDetailModalProps) {
   const { t } = useTranslation('training')
@@ -183,6 +184,10 @@ export function TrainingDetailModal({
           <Button variant="ghost" size="sm" onClick={onClose}>
             <X className="w-3.5 h-3.5 mr-1" />
             {t('detail.close')}
+          </Button>
+          <Button variant="secondary" size="sm" onClick={() => onDuplicate(training)}>
+            <CopyPlus className="w-3.5 h-3.5 mr-1" />
+            {t('detail.duplicate')}
           </Button>
           <Button variant="secondary" size="sm" onClick={() => onEdit(training)}>
             <Pencil className="w-3.5 h-3.5 mr-1" />

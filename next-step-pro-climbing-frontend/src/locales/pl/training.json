@@ -23,6 +23,7 @@
   "form": {
     "addTitle": "Nowy trening",
     "editTitle": "Edytuj trening",
+    "duplicateTitle": "Duplikuj trening",
     "date": "Data",
     "startTime": "Początek",
     "endTime": "Koniec",
@@ -40,10 +41,18 @@
     "addedByCoach": "Dodany przez trenera",
     "addedByAthlete": "Dodany przez zawodnika",
     "edit": "Edytuj",
+    "duplicate": "Duplikuj",
     "delete": "Usuń",
     "deleteConfirmTitle": "Usunąć trening?",
     "deleteConfirmMessage": "Tego nie można cofnąć. Komentarze do treningu też znikną.",
     "close": "Zamknij"
+  },
+  "clipboard": {
+    "copy": "Kopiuj trening",
+    "cut": "Wytnij trening",
+    "copiedBanner": "Skopiowano „{{title}}\" — kliknij wolne miejsce w widoku tygodnia, aby wkleić kopię (Esc anuluje)",
+    "cutBanner": "Wycięto „{{title}}\" — kliknij wolne miejsce w widoku tygodnia, aby przenieść (Esc anuluje)",
+    "cancel": "Anuluj"
   },
   "completion": {
     "markDone": "Oznacz jako wykonany",
