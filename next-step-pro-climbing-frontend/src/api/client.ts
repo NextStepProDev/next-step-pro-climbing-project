@@ -34,6 +34,9 @@ import type {
   AthleteGoals,
   AttachmentUpload,
   SaveGoal,
+  SaveTrainingTemplate,
+  TrainingMaterial,
+  TrainingTemplate,
   AdminTrainingRequest,
   AdminTrainingRequestPage,
   AdminNotifications,
@@ -537,6 +540,30 @@ export const adminTrainingCalendarApi = {
     formData.append('file', file, file.name)
     return fetchApi<AttachmentUpload>('/admin/training-calendar/attachments/upload', { method: 'POST', body: formData })
   },
+
+  getTemplates: () =>
+    fetchApi<TrainingTemplate[]>('/admin/training-calendar/templates'),
+
+  createTemplate: (data: SaveTrainingTemplate) =>
+    fetchApi<TrainingTemplate>('/admin/training-calendar/templates', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  updateTemplate: (templateId: string, data: SaveTrainingTemplate) =>
+    fetchApi<TrainingTemplate>(`/admin/training-calendar/templates/${templateId}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+
+  deleteTemplate: (templateId: string) =>
+    fetchApi<void>(`/admin/training-calendar/templates/${templateId}`, { method: 'DELETE' }),
+
+  getMaterials: () =>
+    fetchApi<TrainingMaterial[]>('/admin/training-calendar/materials'),
+
+  deleteMaterial: (attachmentId: string) =>
+    fetchApi<void>(`/admin/training-calendar/materials/${attachmentId}`, { method: 'DELETE' }),
 }
 
 // Admin

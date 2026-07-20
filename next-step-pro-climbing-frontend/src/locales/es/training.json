@@ -192,5 +192,33 @@
       "oneYear": "Un año entrenando",
       "nextGoal": "Próxima insignia a las {{target}} actividades: {{current}}/{{target}}"
     }
+  },
+  "templates": {
+    "manage": "Plantillas",
+    "title": "Plantillas de entrenamiento",
+    "use": "Usar una plantilla",
+    "usePlaceholder": "— elige una plantilla —",
+    "empty": "Aún no hay plantillas. Añade una para planificar más rápido.",
+    "add": "Nueva plantilla",
+    "edit": "Editar plantilla",
+    "delete": "Eliminar plantilla",
+    "deleteConfirmTitle": "¿Eliminar la plantilla?",
+    "deleteConfirmMessage": "Los entrenamientos ya creados con ella no cambian.",
+    "titleRequired": "Introduce un título de plantilla",
+    "durationRange": "La duración debe estar entre 15 y 720 minutos",
+    "form": {
+      "title": "Título",
+      "titlePlaceholder": "p. ej. Sesión de fuerza A",
+      "duration": "Duración predeterminada (minutos)"
+    }
+  },
+  "materials": {
+    "manage": "Materiales",
+    "title": "Materiales de entrenamiento",
+    "empty": "No hay archivos subidos.",
+    "summary": "{{count}} archivos · {{size}} en total",
+    "delete": "Eliminar archivo",
+    "deleteConfirmTitle": "¿Eliminar el archivo?",
+    "deleteConfirmMessage": "El archivo se eliminará de su entrenamiento/plantilla y del disco. No se puede deshacer."
   }
 }

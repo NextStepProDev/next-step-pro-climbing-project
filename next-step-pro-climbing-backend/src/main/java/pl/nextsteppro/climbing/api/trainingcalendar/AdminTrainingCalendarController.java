@@ -27,9 +27,12 @@ import java.util.UUID;
 public class AdminTrainingCalendarController {
 
     private final AdminTrainingCalendarService adminTrainingCalendarService;
+    private final TrainingTemplateService templateService;
 
-    public AdminTrainingCalendarController(AdminTrainingCalendarService adminTrainingCalendarService) {
+    public AdminTrainingCalendarController(AdminTrainingCalendarService adminTrainingCalendarService,
+                                           TrainingTemplateService templateService) {
         this.adminTrainingCalendarService = adminTrainingCalendarService;
+        this.templateService = templateService;
     }
 
     @Operation(summary = "Athlete roster", description = "Flagged athletes with per-athlete unread badges, unread-first.")
@@ -160,5 +163,49 @@ public class AdminTrainingCalendarController {
             @Valid @RequestBody(required = false) AchieveGoalRequest request) {
         AchieveGoalRequest body = request != null ? request : new AchieveGoalRequest(null);
         return ResponseEntity.ok(adminTrainingCalendarService.achieveGoal(adminId, goalId, body));
+    }
+
+    // ---------- training templates (coach library) ----------
+
+    @Operation(summary = "List training templates", description = "Coach's reusable template library (shared across athletes).")
+    @GetMapping("/templates")
+    public ResponseEntity<List<TrainingTemplateDto>> listTemplates() {
+        return ResponseEntity.ok(templateService.list());
+    }
+
+    @Operation(summary = "Create a training template")
+    @PostMapping("/templates")
+    public ResponseEntity<TrainingTemplateDto> createTemplate(@Valid @RequestBody SaveTemplateRequest request) {
+        return ResponseEntity.ok(templateService.create(request));
+    }
+
+    @Operation(summary = "Edit a training template", description = "Does not affect trainings already created from it.")
+    @PutMapping("/templates/{templateId}")
+    public ResponseEntity<TrainingTemplateDto> updateTemplate(
+            @PathVariable UUID templateId,
+            @Valid @RequestBody SaveTemplateRequest request) {
+        return ResponseEntity.ok(templateService.update(templateId, request));
+    }
+
+    @Operation(summary = "Delete a training template")
+    @DeleteMapping("/templates/{templateId}")
+    public ResponseEntity<Void> deleteTemplate(@PathVariable UUID templateId) {
+        templateService.delete(templateId);
+        return ResponseEntity.noContent().build();
+    }
+
+    // ---------- materials management (central cleanup view) ----------
+
+    @Operation(summary = "List uploaded materials", description = "All uploaded files across trainings and templates, newest first — a central place to free disk space.")
+    @GetMapping("/materials")
+    public ResponseEntity<List<MaterialDto>> listMaterials() {
+        return ResponseEntity.ok(adminTrainingCalendarService.listMaterials());
+    }
+
+    @Operation(summary = "Delete an uploaded material", description = "Removes the attachment and the file from disk (if no other attachment references it).")
+    @DeleteMapping("/materials/{attachmentId}")
+    public ResponseEntity<Void> deleteMaterial(@PathVariable UUID attachmentId) {
+        adminTrainingCalendarService.deleteMaterial(attachmentId);
+        return ResponseEntity.noContent().build();
     }
 }

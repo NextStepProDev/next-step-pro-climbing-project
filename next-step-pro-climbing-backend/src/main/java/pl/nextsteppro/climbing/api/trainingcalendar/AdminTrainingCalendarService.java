@@ -23,19 +23,33 @@ public class AdminTrainingCalendarService {
     private final TrainingCalendarService core;
     private final TrainingStatsService statsService;
     private final AthleteGoalService goalService;
+    private final AttachmentSupport attachments;
     private final ActivityLogService activityLogService;
     private final UserRepository userRepository;
 
     public AdminTrainingCalendarService(TrainingCalendarService core,
                                         TrainingStatsService statsService,
                                         AthleteGoalService goalService,
+                                        AttachmentSupport attachments,
                                         ActivityLogService activityLogService,
                                         UserRepository userRepository) {
         this.core = core;
         this.statsService = statsService;
         this.goalService = goalService;
+        this.attachments = attachments;
         this.activityLogService = activityLogService;
         this.userRepository = userRepository;
+    }
+
+    // ---------- materials management (central cleanup view) ----------
+
+    @Transactional(readOnly = true)
+    public List<MaterialDto> listMaterials() {
+        return attachments.listMaterials();
+    }
+
+    public void deleteMaterial(UUID attachmentId) {
+        attachments.deleteMaterial(attachmentId);
     }
 
     @Transactional(readOnly = true)

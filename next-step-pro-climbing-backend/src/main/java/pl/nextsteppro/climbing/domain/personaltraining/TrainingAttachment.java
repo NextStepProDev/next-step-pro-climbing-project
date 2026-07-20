@@ -3,6 +3,7 @@ package pl.nextsteppro.climbing.domain.personaltraining;
 import jakarta.persistence.*;
 import org.jspecify.annotations.Nullable;
 import org.springframework.web.util.HtmlUtils;
+import pl.nextsteppro.climbing.domain.trainingtemplate.TrainingTemplate;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -29,9 +30,16 @@ public class TrainingAttachment {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "training_id", nullable = false)
+    // Exactly one owner is set (DB CHECK): a training or a template.
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "training_id")
+    @Nullable
     private PersonalTraining training;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "template_id")
+    @Nullable
+    private TrainingTemplate template;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 10)
@@ -70,27 +78,52 @@ public class TrainingAttachment {
 
     protected TrainingAttachment() {}
 
-    private TrainingAttachment(PersonalTraining training, AttachmentKind kind, int position, @Nullable String label) {
-        this.training = training;
+    private TrainingAttachment(AttachmentKind kind, int position, @Nullable String label) {
         this.kind = kind;
         this.position = position;
         this.label = label;
     }
 
+    private void asLink(String url) {
+        this.url = url;
+    }
+
+    private void asFile(String filename, @Nullable String originalName, @Nullable String mimeType, @Nullable Long sizeBytes) {
+        this.filename = filename;
+        this.originalName = originalName;
+        this.mimeType = mimeType;
+        this.sizeBytes = sizeBytes;
+    }
+
     public static TrainingAttachment link(PersonalTraining training, String url, @Nullable String label, int position) {
-        TrainingAttachment a = new TrainingAttachment(training, AttachmentKind.LINK, position, label);
-        a.url = url;
+        TrainingAttachment a = new TrainingAttachment(AttachmentKind.LINK, position, label);
+        a.training = training;
+        a.asLink(url);
         return a;
     }
 
     public static TrainingAttachment file(PersonalTraining training, String filename, @Nullable String originalName,
                                           @Nullable String mimeType, @Nullable Long sizeBytes,
                                           @Nullable String label, int position) {
-        TrainingAttachment a = new TrainingAttachment(training, AttachmentKind.FILE, position, label);
-        a.filename = filename;
-        a.originalName = originalName;
-        a.mimeType = mimeType;
-        a.sizeBytes = sizeBytes;
+        TrainingAttachment a = new TrainingAttachment(AttachmentKind.FILE, position, label);
+        a.training = training;
+        a.asFile(filename, originalName, mimeType, sizeBytes);
+        return a;
+    }
+
+    public static TrainingAttachment link(TrainingTemplate template, String url, @Nullable String label, int position) {
+        TrainingAttachment a = new TrainingAttachment(AttachmentKind.LINK, position, label);
+        a.template = template;
+        a.asLink(url);
+        return a;
+    }
+
+    public static TrainingAttachment file(TrainingTemplate template, String filename, @Nullable String originalName,
+                                          @Nullable String mimeType, @Nullable Long sizeBytes,
+                                          @Nullable String label, int position) {
+        TrainingAttachment a = new TrainingAttachment(AttachmentKind.FILE, position, label);
+        a.template = template;
+        a.asFile(filename, originalName, mimeType, sizeBytes);
         return a;
     }
 
@@ -113,9 +146,14 @@ public class TrainingAttachment {
 
     /** FK access without initialising the lazy proxy. NOT named getTrainingId() on purpose —
      * a "trainingId" bean property makes Spring Data derive findByTrainingId as the invalid
-     * path a.trainingId instead of a.training.id. */
+     * path a.trainingId instead of a.training.id. Only valid for training-owned rows. */
     public UUID trainingId() {
-        return training.getId();
+        return java.util.Objects.requireNonNull(training).getId();
+    }
+
+    /** FK access for template-owned rows (see {@link #trainingId()} for the naming rationale). */
+    public UUID templateId() {
+        return java.util.Objects.requireNonNull(template).getId();
     }
 
     public AttachmentKind getKind() {
@@ -154,5 +192,20 @@ public class TrainingAttachment {
 
     public int getPosition() {
         return position;
+    }
+
+    // Real owner accessors (safe as bean getters — the fake "trainingId" property was the problem)
+    @Nullable
+    public PersonalTraining getTraining() {
+        return training;
+    }
+
+    @Nullable
+    public TrainingTemplate getTemplate() {
+        return template;
+    }
+
+    public Instant getCreatedAt() {
+        return createdAt;
     }
 }

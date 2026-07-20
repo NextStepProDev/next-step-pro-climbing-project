@@ -1182,6 +1182,35 @@ export interface SaveGoal {
   targetDate: string
 }
 
+// Reusable coach training template (shared library). Materials reuse TrainingAttachment.
+export interface TrainingTemplate {
+  id: string
+  title: string
+  description: string | null
+  defaultDurationMinutes: number
+  attachments: TrainingAttachment[]
+  updatedAt: string
+}
+
+export interface SaveTrainingTemplate {
+  title: string
+  description?: string
+  defaultDurationMinutes: number
+  attachments?: AttachmentInput[]
+}
+
+// One uploaded file in the central materials-management list
+export interface TrainingMaterial {
+  id: string
+  fileName: string | null
+  mimeType: string | null
+  sizeBytes: number | null
+  url: string
+  ownerType: 'TRAINING' | 'TEMPLATE'
+  ownerLabel: string
+  createdAt: string
+}
+
 // Live-derived stats under the training calendar; null fields mean "no data — hide the tile"
 export interface AthleteStats {
   thisMonthCount: number

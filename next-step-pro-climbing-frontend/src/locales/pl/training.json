@@ -196,5 +196,33 @@
       "oneYear": "Rok treningów",
       "nextGoal": "Następna odznaka za {{target}} aktywności: {{current}}/{{target}}"
     }
+  },
+  "templates": {
+    "manage": "Szablony",
+    "title": "Szablony treningów",
+    "use": "Użyj szablonu",
+    "usePlaceholder": "— wybierz szablon —",
+    "empty": "Brak szablonów. Dodaj pierwszy, aby szybciej planować treningi.",
+    "add": "Nowy szablon",
+    "edit": "Edytuj szablon",
+    "delete": "Usuń szablon",
+    "deleteConfirmTitle": "Usunąć szablon?",
+    "deleteConfirmMessage": "Treningi utworzone z tego szablonu pozostaną bez zmian.",
+    "titleRequired": "Podaj tytuł szablonu",
+    "durationRange": "Czas trwania musi być w zakresie 15–720 minut",
+    "form": {
+      "title": "Tytuł",
+      "titlePlaceholder": "np. Trening siłowy A",
+      "duration": "Domyślny czas trwania (minuty)"
+    }
+  },
+  "materials": {
+    "manage": "Materiały",
+    "title": "Materiały treningowe",
+    "empty": "Brak wgranych plików.",
+    "summary": "{{count}} plików · {{size}} łącznie",
+    "delete": "Usuń plik",
+    "deleteConfirmTitle": "Usunąć plik?",
+    "deleteConfirmMessage": "Plik zostanie usunięty z treningu/szablonu i z dysku. Tego nie można cofnąć."
   }
 }
