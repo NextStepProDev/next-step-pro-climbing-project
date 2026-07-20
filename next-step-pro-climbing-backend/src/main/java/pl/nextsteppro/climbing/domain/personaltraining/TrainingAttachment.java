@@ -8,12 +8,14 @@ import java.time.Instant;
 import java.util.UUID;
 
 /**
- * A material attached to a training — currently a link (URL + optional label). YouTube/Instagram
- * links are rendered as an embedded player in the UI (the embed URL is computed in the DTO, never
- * stored). A follow-up adds uploaded files (PDF/images) on the same table.
+ * A material attached to a training — either a pasted link ({@link AttachmentKind#LINK}) or an
+ * uploaded file ({@link AttachmentKind#FILE}, PDF/image stored under the {@code training/} folder).
+ * YouTube/Instagram links are rendered as an embedded player (the embed URL is computed in the DTO,
+ * never stored).
  *
- * <p>Orchestrated by the service (no JPA collection on {@link PersonalTraining}), mirroring how
- * comments and deletions are handled.
+ * <p>Orchestrated by the service (no JPA collection on {@link PersonalTraining}), mirroring comments
+ * and deletions. Files stored on disk are cleaned up by the service on delete/replace (the DB CASCADE
+ * only removes the rows).
  */
 @Entity
 @Table(name = "training_attachments")
@@ -31,8 +33,30 @@ public class TrainingAttachment {
     @JoinColumn(name = "training_id", nullable = false)
     private PersonalTraining training;
 
-    @Column(nullable = false, length = MAX_URL_LENGTH)
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 10)
+    private AttachmentKind kind;
+
+    // LINK: the pasted URL
+    @Column(length = MAX_URL_LENGTH)
+    @Nullable
     private String url;
+
+    // FILE: stored filename (UUID.ext) + display metadata
+    @Nullable
+    private String filename;
+
+    @Column(name = "original_name")
+    @Nullable
+    private String originalName;
+
+    @Column(name = "mime_type")
+    @Nullable
+    private String mimeType;
+
+    @Column(name = "size_bytes")
+    @Nullable
+    private Long sizeBytes;
 
     @Column(length = MAX_LABEL_LENGTH)
     @Nullable
@@ -46,11 +70,28 @@ public class TrainingAttachment {
 
     protected TrainingAttachment() {}
 
-    public TrainingAttachment(PersonalTraining training, String url, @Nullable String label, int position) {
+    private TrainingAttachment(PersonalTraining training, AttachmentKind kind, int position, @Nullable String label) {
         this.training = training;
-        this.url = url;
-        this.label = label;
+        this.kind = kind;
         this.position = position;
+        this.label = label;
+    }
+
+    public static TrainingAttachment link(PersonalTraining training, String url, @Nullable String label, int position) {
+        TrainingAttachment a = new TrainingAttachment(training, AttachmentKind.LINK, position, label);
+        a.url = url;
+        return a;
+    }
+
+    public static TrainingAttachment file(PersonalTraining training, String filename, @Nullable String originalName,
+                                          @Nullable String mimeType, @Nullable Long sizeBytes,
+                                          @Nullable String label, int position) {
+        TrainingAttachment a = new TrainingAttachment(training, AttachmentKind.FILE, position, label);
+        a.filename = filename;
+        a.originalName = originalName;
+        a.mimeType = mimeType;
+        a.sizeBytes = sizeBytes;
+        return a;
     }
 
     @PrePersist
@@ -77,8 +118,33 @@ public class TrainingAttachment {
         return training.getId();
     }
 
+    public AttachmentKind getKind() {
+        return kind;
+    }
+
+    @Nullable
     public String getUrl() {
         return url;
+    }
+
+    @Nullable
+    public String getFilename() {
+        return filename;
+    }
+
+    @Nullable
+    public String getOriginalName() {
+        return originalName;
+    }
+
+    @Nullable
+    public String getMimeType() {
+        return mimeType;
+    }
+
+    @Nullable
+    public Long getSizeBytes() {
+        return sizeBytes;
     }
 
     @Nullable

@@ -3,6 +3,7 @@ import type {
   AthleteGoal,
   AthleteGoals,
   AthleteStats,
+  AttachmentUpload,
   CreatePersonalTraining,
   PersonalTraining,
   SaveGoal,
@@ -34,6 +35,7 @@ export interface TrainingCalendarAdapter {
   markSeen: () => Promise<void>
   getStats: () => Promise<AthleteStats>
   getGoals: () => Promise<AthleteGoals>
+  uploadAttachment: (file: File) => Promise<AttachmentUpload>
   goalMutations?: GoalMutations
 }
 
@@ -47,6 +49,7 @@ export const athleteAdapter: TrainingCalendarAdapter = {
   markSeen: trainingCalendarApi.markSeen,
   getStats: trainingCalendarApi.getStats,
   getGoals: trainingCalendarApi.getGoals,
+  uploadAttachment: trainingCalendarApi.uploadAttachment,
 }
 
 export function coachAdapter(athleteId: string): TrainingCalendarAdapter {
@@ -60,6 +63,7 @@ export function coachAdapter(athleteId: string): TrainingCalendarAdapter {
     markSeen: () => adminTrainingCalendarApi.markSeen(athleteId),
     getStats: () => adminTrainingCalendarApi.getStats(athleteId),
     getGoals: () => adminTrainingCalendarApi.getGoals(athleteId),
+    uploadAttachment: adminTrainingCalendarApi.uploadAttachment,
     goalMutations: {
       create: (data) => adminTrainingCalendarApi.createGoal(athleteId, data),
       update: adminTrainingCalendarApi.updateGoal,

@@ -108,6 +108,17 @@ public class FileController {
         return serveFile(filename, "avatars");
     }
 
+    @Operation(summary = "Get a training material file (uploaded PDF/image)")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "File found"),
+        @ApiResponse(responseCode = "404", description = "File not found")
+    })
+    @GetMapping("/training/{filename}")
+    public ResponseEntity<Resource> getTrainingFile(
+            @Parameter(description = "File name") @PathVariable String filename) throws IOException {
+        return serveFile(filename, "training");
+    }
+
     private ResponseEntity<Resource> serveFile(String filename, String folder) throws IOException {
         if (!fileStorageService.exists(filename, folder)) {
             return ResponseEntity.notFound().build();
@@ -132,6 +143,8 @@ public class FileController {
             return MediaType.IMAGE_PNG;
         } else if (lowerFilename.endsWith(".webp")) {
             return MediaType.parseMediaType("image/webp");
+        } else if (lowerFilename.endsWith(".pdf")) {
+            return MediaType.APPLICATION_PDF;
         }
         return MediaType.APPLICATION_OCTET_STREAM;
     }

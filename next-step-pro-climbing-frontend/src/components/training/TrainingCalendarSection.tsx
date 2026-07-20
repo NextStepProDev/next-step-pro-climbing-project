@@ -45,12 +45,22 @@ interface TrainingClipboard {
   attachments: AttachmentInput[]
 }
 
-// Source attachments → API input (label decoded so the backend doesn't double-escape it)
+// Source attachments → API input (label decoded so the backend doesn't double-escape it).
+// FILE attachments are re-referenced by their stored filename; a copy/duplicate shares the file.
 function toAttachmentInputs(tr: PersonalTraining): AttachmentInput[] {
-  return tr.attachments.map((a) => ({
-    url: a.url,
-    label: a.label ? decodeHtmlEntities(a.label) : undefined,
-  }))
+  return tr.attachments.map((a): AttachmentInput => {
+    const label = a.label ? decodeHtmlEntities(a.label) : undefined
+    return a.kind === 'FILE'
+      ? {
+          kind: 'FILE',
+          filename: a.filename ?? undefined,
+          originalName: a.fileName ?? undefined,
+          mimeType: a.mimeType ?? undefined,
+          sizeBytes: a.sizeBytes ?? undefined,
+          label,
+        }
+      : { kind: 'LINK', url: a.url ?? undefined, label }
+  })
 }
 
 function timeToMin(time: string): number {
@@ -493,6 +503,7 @@ export function TrainingCalendarSection({ api, scopeKey, isCoachView }: Training
         onSubmit={(data, completion) => saveMutation.mutate({ data, completion })}
         saving={saveMutation.isPending}
         allowInstantComplete={!isCoachView}
+        onUpload={api.uploadAttachment}
         submitError={saveMutation.isError ? getErrorMessage(saveMutation.error) : null}
       />
 

@@ -36,13 +36,14 @@
     "endAfterStart": "La hora de fin debe ser posterior a la de inicio",
     "titleRequired": "Introduce un título del entrenamiento",
     "markDoneNow": "Entrenamiento ya realizado — márcalo como completado ahora",
-    "attachments": "Materiales (enlaces)",
-    "attachmentsHint": "Hasta 3 enlaces — YouTube e Instagram se muestran como reproductor; el resto como enlace.",
+    "attachments": "Materiales",
+    "attachmentsHint": "Hasta 3 materiales — enlaces (YouTube/Instagram se reproducen) o archivos PDF/imagen subidos.",
     "attachmentLabelPlaceholder": "Etiqueta (opcional, p. ej. Vídeo de calentamiento)",
     "attachmentUrlPlaceholder": "https://...",
     "attachmentAdd": "Añadir enlace",
     "attachmentRemove": "Eliminar enlace",
-    "attachmentUrlInvalid": "El enlace debe empezar por http:// o https://"
+    "attachmentUrlInvalid": "El enlace debe empezar por http:// o https://",
+    "attachmentUpload": "Subir archivo (PDF/imagen)"
   },
   "detail": {
     "addedByCoach": "Añadido por el entrenador",

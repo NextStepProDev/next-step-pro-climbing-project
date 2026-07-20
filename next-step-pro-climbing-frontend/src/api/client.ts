@@ -32,6 +32,7 @@ import type {
   AthleteStats,
   AthleteGoal,
   AthleteGoals,
+  AttachmentUpload,
   SaveGoal,
   AdminTrainingRequest,
   AdminTrainingRequestPage,
@@ -460,6 +461,12 @@ export const trainingCalendarApi = {
 
   getGoals: () =>
     fetchApi<AthleteGoals>('/training-calendar/goals'),
+
+  uploadAttachment: (file: File) => {
+    const formData = new FormData()
+    formData.append('file', file, file.name)
+    return fetchApi<AttachmentUpload>('/training-calendar/attachments/upload', { method: 'POST', body: formData })
+  },
 }
 
 // Personal training calendar (coach side)
@@ -524,6 +531,12 @@ export const adminTrainingCalendarApi = {
       // Backdatable: null/omitted = today; the backend rejects future dates
       body: JSON.stringify({ achievedDate: achievedDate ?? null }),
     }),
+
+  uploadAttachment: (file: File) => {
+    const formData = new FormData()
+    formData.append('file', file, file.name)
+    return fetchApi<AttachmentUpload>('/admin/training-calendar/attachments/upload', { method: 'POST', body: formData })
+  },
 }
 
 // Admin

@@ -28,11 +28,19 @@ public class LocalFileStorageService implements FileStorageService {
             "image/png",
             "image/webp"
     );
+    private static final String PDF_CONTENT_TYPE = "application/pdf";
+    // Documents (training materials): images + PDF
+    private static final List<String> ALLOWED_DOCUMENT_TYPES = List.of(
+            "image/jpeg",
+            "image/png",
+            "image/webp",
+            PDF_CONTENT_TYPE
+    );
 
-    // Strict filename validation: UUID + allowed image extension
+    // Strict filename validation: UUID + allowed extension (images + pdf for documents).
     // Prevents path traversal attacks by enforcing expected format
     private static final Pattern VALID_FILENAME_PATTERN = Pattern.compile(
-            "^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}\\.(jpg|jpeg|png|webp)$",
+            "^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}\\.(jpg|jpeg|png|webp|pdf)$",
             Pattern.CASE_INSENSITIVE
     );
 
@@ -90,6 +98,35 @@ public class LocalFileStorageService implements FileStorageService {
         Files.copy(optimized.inputStream(), targetPath, StandardCopyOption.REPLACE_EXISTING);
 
         logger.info("Stored file: {} in folder: {}", filename, folder);
+        return filename;
+    }
+
+    @Override
+    public String storeDocument(MultipartFile file, @Nullable String folder) throws IOException {
+        validateDocument(file);
+        validateFolderName(folder);
+
+        String contentType = file.getContentType();
+        String filename;
+        InputStream toWrite;
+        if (contentType != null && contentType.equalsIgnoreCase(PDF_CONTENT_TYPE)) {
+            // PDFs are stored as-is — the image optimizer only understands images
+            filename = UUID.randomUUID() + ".pdf";
+            toWrite = file.getInputStream();
+        } else {
+            String extension = getFileExtension(file.getOriginalFilename());
+            var optimized = imageOptimizer.optimize(file.getInputStream(), extension);
+            filename = UUID.randomUUID() + optimized.extension();
+            toWrite = optimized.inputStream();
+        }
+
+        Path targetPath = folder != null
+                ? rootPath.resolve(folder).resolve(filename)
+                : rootPath.resolve(filename);
+        Files.createDirectories(targetPath.getParent());
+        Files.copy(toWrite, targetPath, StandardCopyOption.REPLACE_EXISTING);
+
+        logger.info("Stored document: {} in folder: {}", filename, folder);
         return filename;
     }
 
@@ -154,6 +191,27 @@ public class LocalFileStorageService implements FileStorageService {
         String contentType = file.getContentType();
         if (contentType == null || !ALLOWED_CONTENT_TYPES.contains(contentType.toLowerCase())) {
             throw new IllegalArgumentException("Invalid file type. Only JPEG, PNG, and WebP are allowed");
+        }
+    }
+
+    private void validateDocument(MultipartFile file) {
+        if (file.isEmpty()) {
+            throw new IllegalArgumentException("File is empty");
+        }
+        if (file.getSize() > MAX_FILE_SIZE) {
+            throw new IllegalArgumentException("File size exceeds maximum allowed size (10MB)");
+        }
+        String contentType = file.getContentType();
+        if (contentType == null || !ALLOWED_DOCUMENT_TYPES.contains(contentType.toLowerCase())) {
+            throw new IllegalArgumentException("Invalid file type. Only PDF, JPEG, PNG, and WebP are allowed");
+        }
+    }
+
+    private void validateFolderName(@Nullable String folder) {
+        if (folder != null && (folder.isBlank() || !VALID_FOLDER_PATTERN.matcher(folder).matches())) {
+            throw new IllegalArgumentException(
+                    "Invalid folder name. Expected: lowercase letters only (e.g., instructors, gallery)"
+            );
         }
     }
 

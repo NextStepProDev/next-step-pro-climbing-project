@@ -36,13 +36,14 @@
     "endAfterStart": "End time must be after start time",
     "titleRequired": "Enter a training title",
     "markDoneNow": "Training already done — mark it completed right away",
-    "attachments": "Materials (links)",
-    "attachmentsHint": "Up to 3 links — YouTube and Instagram show as an inline player, others as a clickable link.",
+    "attachments": "Materials",
+    "attachmentsHint": "Up to 3 materials — links (YouTube/Instagram play inline) or uploaded PDF/image files.",
     "attachmentLabelPlaceholder": "Label (optional, e.g. Warm-up video)",
     "attachmentUrlPlaceholder": "https://...",
     "attachmentAdd": "Add link",
     "attachmentRemove": "Remove link",
-    "attachmentUrlInvalid": "The link must start with http:// or https://"
+    "attachmentUrlInvalid": "The link must start with http:// or https://",
+    "attachmentUpload": "Upload file (PDF/image)"
   },
   "detail": {
     "addedByCoach": "Added by coach",

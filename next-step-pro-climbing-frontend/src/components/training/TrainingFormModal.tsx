@@ -40,11 +40,13 @@ interface TrainingFormModalProps {
   saving: boolean
   // Athlete only — the coach cannot complete trainings
   allowInstantComplete?: boolean
+  // Uploads a picked material file (athlete vs coach endpoint)
+  onUpload: (file: File) => Promise<{ filename: string; originalName: string; mimeType: string; sizeBytes: number }>
   // Backend rejection (e.g. athlete flag revoked mid-session) — shown above the buttons
   submitError?: string | null
 }
 
-export function TrainingFormModal({ isOpen, onClose, training, initialDate, initialTime, prefill, onSubmit, saving, allowInstantComplete, submitError }: TrainingFormModalProps) {
+export function TrainingFormModal({ isOpen, onClose, training, initialDate, initialTime, prefill, onSubmit, saving, allowInstantComplete, onUpload, submitError }: TrainingFormModalProps) {
   const { t } = useTranslation('training')
 
   return (
@@ -64,6 +66,7 @@ export function TrainingFormModal({ isOpen, onClose, training, initialDate, init
           onSubmit={onSubmit}
           saving={saving}
           allowInstantComplete={allowInstantComplete}
+          onUpload={onUpload}
           submitError={submitError}
         />
       )}
@@ -80,7 +83,7 @@ function addMinutes(time: string, minutes: number): string {
   return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`
 }
 
-function TrainingForm({ training, initialDate, initialTime, prefill, onClose, onSubmit, saving, allowInstantComplete, submitError }: {
+function TrainingForm({ training, initialDate, initialTime, prefill, onClose, onSubmit, saving, allowInstantComplete, onUpload, submitError }: {
   training?: PersonalTraining | null
   initialDate?: string
   initialTime?: string
@@ -89,6 +92,7 @@ function TrainingForm({ training, initialDate, initialTime, prefill, onClose, on
   onSubmit: (data: CreatePersonalTraining, completion?: InstantCompletion | null) => void
   saving: boolean
   allowInstantComplete?: boolean
+  onUpload: (file: File) => Promise<{ filename: string; originalName: string; mimeType: string; sizeBytes: number }>
   submitError?: string | null
 }) {
   const { t } = useTranslation('training')
@@ -103,7 +107,16 @@ function TrainingForm({ training, initialDate, initialTime, prefill, onClose, on
     training?.description ? decodeHtmlEntities(training.description) : prefill?.description ?? '')
   const [attachments, setAttachments] = useState<AttachmentInput[]>(
     training
-      ? training.attachments.map((a) => ({ url: a.url, label: a.label ? decodeHtmlEntities(a.label) : '' }))
+      ? training.attachments.map((a): AttachmentInput => a.kind === 'FILE'
+          ? {
+              kind: 'FILE',
+              filename: a.filename ?? undefined,
+              originalName: a.fileName ?? undefined,
+              mimeType: a.mimeType ?? undefined,
+              sizeBytes: a.sizeBytes ?? undefined,
+              label: a.label ? decodeHtmlEntities(a.label) : '',
+            }
+          : { kind: 'LINK', url: a.url ?? '', label: a.label ? decodeHtmlEntities(a.label) : '' })
       : prefill?.attachments ?? [])
   const [markDone, setMarkDone] = useState(false)
   const [feedback, setFeedback] = useState('')
@@ -130,11 +143,13 @@ function TrainingForm({ training, initialDate, initialTime, prefill, onClose, on
       setError(t('form.endAfterStart'))
       return
     }
-    // Drop blank rows; every remaining material must be an http(s) link
-    const cleanedAttachments = attachments
-      .map((a) => ({ url: a.url.trim(), label: a.label?.trim() || undefined }))
-      .filter((a) => a.url.length > 0)
-    if (cleanedAttachments.some((a) => !/^https?:\/\//i.test(a.url))) {
+    // Files pass through as-is; link rows drop blanks and must be http(s)
+    const cleanedAttachments: AttachmentInput[] = attachments
+      .filter((a) => a.kind === 'FILE' || (a.url ?? '').trim().length > 0)
+      .map((a) => a.kind === 'FILE'
+        ? { ...a, label: a.label?.trim() || undefined }
+        : { kind: 'LINK' as const, url: (a.url ?? '').trim(), label: a.label?.trim() || undefined })
+    if (cleanedAttachments.some((a) => a.kind === 'LINK' && !/^https?:\/\//i.test(a.url ?? ''))) {
       setError(t('form.attachmentUrlInvalid'))
       return
     }
@@ -196,7 +211,7 @@ function TrainingForm({ training, initialDate, initialTime, prefill, onClose, on
         />
       </div>
 
-      <AttachmentEditor value={attachments} onChange={setAttachments} />
+      <AttachmentEditor value={attachments} onChange={setAttachments} onUpload={onUpload} />
 
       {instantCompleteAvailable && (
         <div className="p-3 bg-surface-800/60 border border-surface-700 rounded-lg space-y-3">

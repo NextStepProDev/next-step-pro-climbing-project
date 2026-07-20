@@ -18,6 +18,13 @@ public interface FileStorageService {
     String store(MultipartFile file, @Nullable String folder) throws IOException;
 
     /**
+     * Store a document (PDF or image). Unlike {@link #store}, PDFs are written as-is (no image
+     * optimization) and the PDF content type is accepted. Images are still optimized.
+     * @return the generated filename (UUID + extension)
+     */
+    String storeDocument(MultipartFile file, @Nullable String folder) throws IOException;
+
+    /**
      * Delete a file from the specified folder
      * @param filename the filename to delete
      * @param folder optional subfolder
