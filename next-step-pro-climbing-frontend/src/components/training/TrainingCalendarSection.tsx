@@ -504,6 +504,7 @@ export function TrainingCalendarSection({ api, scopeKey, isCoachView }: Training
         saving={saveMutation.isPending}
         allowInstantComplete={!isCoachView}
         onUpload={api.uploadAttachment}
+        templatesEnabled={isCoachView}
         submitError={saveMutation.isError ? getErrorMessage(saveMutation.error) : null}
       />
 

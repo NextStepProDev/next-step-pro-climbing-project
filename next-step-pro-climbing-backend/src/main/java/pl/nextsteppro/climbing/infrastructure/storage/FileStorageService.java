@@ -56,4 +56,10 @@ public interface FileStorageService {
      * @return file size in bytes, or -1 if file doesn't exist
      */
     long getFileSize(String filename, @Nullable String folder);
+
+    /** List filenames of regular files in a folder (empty if the folder does not exist). */
+    java.util.List<String> listFilenames(@Nullable String folder);
+
+    /** Last-modified time in epoch millis, or -1 if the file does not exist. */
+    long getLastModifiedMillis(String filename, @Nullable String folder);
 }

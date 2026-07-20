@@ -179,6 +179,33 @@ public class LocalFileStorageService implements FileStorageService {
         }
     }
 
+    @Override
+    public List<String> listFilenames(@Nullable String folder) {
+        validateFolderName(folder);
+        Path folderPath = folder != null ? rootPath.resolve(folder) : rootPath;
+        if (!Files.isDirectory(folderPath)) {
+            return List.of();
+        }
+        try (var stream = Files.list(folderPath)) {
+            return stream.filter(Files::isRegularFile)
+                    .map(p -> p.getFileName().toString())
+                    .toList();
+        } catch (IOException e) {
+            logger.warn("Failed to list files in folder {}", folder, e);
+            return List.of();
+        }
+    }
+
+    @Override
+    public long getLastModifiedMillis(String filename, @Nullable String folder) {
+        Path filePath = getFilePath(filename, folder);
+        try {
+            return Files.getLastModifiedTime(filePath).toMillis();
+        } catch (IOException e) {
+            return -1;
+        }
+    }
+
     private void validateFile(MultipartFile file) {
         if (file.isEmpty()) {
             throw new IllegalArgumentException("File is empty");

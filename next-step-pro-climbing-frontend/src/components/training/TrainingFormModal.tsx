@@ -1,14 +1,32 @@
 import { useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { format } from 'date-fns'
-import { Check } from 'lucide-react'
+import { Check, LayoutTemplate } from 'lucide-react'
 import { Modal } from '../ui/Modal'
 import { Button } from '../ui/Button'
 import { TimeScrollPicker } from '../ui/TimeScrollPicker'
 import { RpePicker } from './RpePicker'
 import { AttachmentEditor } from './AttachmentEditor'
+import { adminTrainingCalendarApi } from '../../api/client'
 import { decodeHtmlEntities } from '../../utils/htmlEntities'
-import type { AttachmentInput, CreatePersonalTraining, PersonalTraining } from '../../types'
+import type { AttachmentInput, CreatePersonalTraining, PersonalTraining, TrainingTemplate } from '../../types'
+
+function addMinutesTo(time: string, minutes: number): string {
+  const [h, m] = time.split(':').map(Number)
+  const total = Math.min(h * 60 + m + minutes, 23 * 60 + 59)
+  return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`
+}
+
+function templateToInputs(tpl: TrainingTemplate): AttachmentInput[] {
+  return tpl.attachments.map((a): AttachmentInput => {
+    const label = a.label ? decodeHtmlEntities(a.label) : ''
+    return a.kind === 'FILE'
+      ? { kind: 'FILE', filename: a.filename ?? undefined, originalName: a.fileName ?? undefined,
+          mimeType: a.mimeType ?? undefined, sizeBytes: a.sizeBytes ?? undefined, label }
+      : { kind: 'LINK', url: a.url ?? '', label }
+  })
+}
 
 export interface InstantCompletion {
   feedback?: string
@@ -42,11 +60,13 @@ interface TrainingFormModalProps {
   allowInstantComplete?: boolean
   // Uploads a picked material file (athlete vs coach endpoint)
   onUpload: (file: File) => Promise<{ filename: string; originalName: string; mimeType: string; sizeBytes: number }>
+  // Coach-only: offer a "Use template" picker (create mode only)
+  templatesEnabled?: boolean
   // Backend rejection (e.g. athlete flag revoked mid-session) — shown above the buttons
   submitError?: string | null
 }
 
-export function TrainingFormModal({ isOpen, onClose, training, initialDate, initialTime, prefill, onSubmit, saving, allowInstantComplete, onUpload, submitError }: TrainingFormModalProps) {
+export function TrainingFormModal({ isOpen, onClose, training, initialDate, initialTime, prefill, onSubmit, saving, allowInstantComplete, onUpload, templatesEnabled, submitError }: TrainingFormModalProps) {
   const { t } = useTranslation('training')
 
   return (
@@ -67,6 +87,7 @@ export function TrainingFormModal({ isOpen, onClose, training, initialDate, init
           saving={saving}
           allowInstantComplete={allowInstantComplete}
           onUpload={onUpload}
+          templatesEnabled={templatesEnabled}
           submitError={submitError}
         />
       )}
@@ -83,7 +104,7 @@ function addMinutes(time: string, minutes: number): string {
   return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`
 }
 
-function TrainingForm({ training, initialDate, initialTime, prefill, onClose, onSubmit, saving, allowInstantComplete, onUpload, submitError }: {
+function TrainingForm({ training, initialDate, initialTime, prefill, onClose, onSubmit, saving, allowInstantComplete, onUpload, templatesEnabled, submitError }: {
   training?: PersonalTraining | null
   initialDate?: string
   initialTime?: string
@@ -93,6 +114,7 @@ function TrainingForm({ training, initialDate, initialTime, prefill, onClose, on
   saving: boolean
   allowInstantComplete?: boolean
   onUpload: (file: File) => Promise<{ filename: string; originalName: string; mimeType: string; sizeBytes: number }>
+  templatesEnabled?: boolean
   submitError?: string | null
 }) {
   const { t } = useTranslation('training')
@@ -122,6 +144,22 @@ function TrainingForm({ training, initialDate, initialTime, prefill, onClose, on
   const [feedback, setFeedback] = useState('')
   const [rpe, setRpe] = useState<number | null>(null)
   const [error, setError] = useState<string | null>(null)
+
+  // Coach create-mode: fill the form from a reusable template (content is copied)
+  const showTemplates = !!templatesEnabled && !training
+  const templatesQuery = useQuery({
+    queryKey: ['admin', 'trainingTemplates'],
+    queryFn: adminTrainingCalendarApi.getTemplates,
+    enabled: showTemplates,
+  })
+  const applyTemplate = (id: string) => {
+    const tpl = templatesQuery.data?.find((x) => x.id === id)
+    if (!tpl) return
+    setTitle(decodeHtmlEntities(tpl.title))
+    setDescription(tpl.description ? decodeHtmlEntities(tpl.description) : '')
+    setEndTime(addMinutesTo(startTime, tpl.defaultDurationMinutes))
+    setAttachments(templateToInputs(tpl))
+  }
 
   // Retroactive logging (adding a training after the fact — often days later):
   // offer "mark as completed right away" instead of forcing a second visit to the
@@ -170,6 +208,27 @@ function TrainingForm({ training, initialDate, initialTime, prefill, onClose, on
 
   return (
     <form onSubmit={submit} className="space-y-4">
+      {showTemplates && (templatesQuery.data?.length ?? 0) > 0 && (
+        <div>
+          <label className="flex items-center gap-1.5 text-sm text-surface-400 mb-1">
+            <LayoutTemplate className="w-3.5 h-3.5" />
+            {t('templates.use')}
+          </label>
+          <select
+            defaultValue=""
+            onChange={(e) => { if (e.target.value) applyTemplate(e.target.value) }}
+            className="w-full bg-surface-800 border border-surface-700 rounded-lg px-4 py-2 text-surface-100"
+          >
+            <option value="">{t('templates.usePlaceholder')}</option>
+            {templatesQuery.data!.map((tpl) => (
+              <option key={tpl.id} value={tpl.id}>
+                {decodeHtmlEntities(tpl.title)} · {tpl.defaultDurationMinutes} min
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
       <div>
         <label className="block text-sm text-surface-400 mb-1">{t('form.date')}</label>
         <input

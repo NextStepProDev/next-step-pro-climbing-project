@@ -18,4 +18,28 @@ public interface TrainingAttachmentRepository extends JpaRepository<TrainingAtta
 
     @Modifying
     void deleteByTrainingId(UUID trainingId);
+
+    // ---- templates (attachments owned by a template instead of a training) ----
+
+    List<TrainingAttachment> findByTemplateIdOrderByPositionAsc(UUID templateId);
+
+    @Query("SELECT a FROM TrainingAttachment a WHERE a.template.id IN :templateIds ORDER BY a.position ASC")
+    List<TrainingAttachment> findByTemplateIdInOrderByPositionAsc(Collection<UUID> templateIds);
+
+    @Modifying
+    void deleteByTemplateId(UUID templateId);
+
+    /** Reference count of a stored file across ALL attachments (training + template) —
+     * a physical file must not be deleted from disk while another row still points at it. */
+    long countByFilename(String filename);
+
+    /** All uploaded files with their owner (training or template) — admin materials management. */
+    @Query("""
+        SELECT a FROM TrainingAttachment a
+        LEFT JOIN FETCH a.training t
+        LEFT JOIN FETCH a.template tpl
+        WHERE a.kind = pl.nextsteppro.climbing.domain.personaltraining.AttachmentKind.FILE
+        ORDER BY a.createdAt DESC
+        """)
+    List<TrainingAttachment> findAllFilesWithOwner();
 }

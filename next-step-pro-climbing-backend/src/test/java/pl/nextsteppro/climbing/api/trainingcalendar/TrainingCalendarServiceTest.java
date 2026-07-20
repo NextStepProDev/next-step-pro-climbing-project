@@ -66,10 +66,11 @@ class TrainingCalendarServiceTest {
 
     @BeforeEach
     void setUp() {
+        AttachmentSupport attachmentSupport = new AttachmentSupport(attachmentRepository, fileStorageService, msg);
         service = new TrainingCalendarService(
             trainingRepository, commentRepository, readRepository, deletionRepository,
-            attachmentRepository, reservationRepository, reservedSeatRepository, userRepository,
-            fileStorageService, msg);
+            reservationRepository, reservedSeatRepository, userRepository,
+            attachmentSupport, msg);
 
         lenient().when(msg.get(anyString())).thenAnswer(inv -> inv.getArgument(0));
         lenient().when(msg.get(anyString(), any())).thenAnswer(inv -> inv.getArgument(0));
@@ -747,7 +748,7 @@ class TrainingCalendarServiceTest {
             buildTraining(athlete, false), "https://youtu.be/dQw4w9WgXcQ", "V", 0);
 
         // When
-        TrainingAttachmentDto dto = TrainingCalendarService.toAttachmentDto(a);
+        TrainingAttachmentDto dto = AttachmentSupport.toDto(a);
 
         // Then
         assertEquals("LINK", dto.kind());
@@ -758,7 +759,7 @@ class TrainingCalendarServiceTest {
     void shouldExposeNullEmbedUrlForPlainLink() {
         TrainingAttachment a = TrainingAttachment.link(
             buildTraining(athlete, false), "https://docs.google.com/plan", "Plan", 0);
-        assertNull(TrainingCalendarService.toAttachmentDto(a).embedUrl());
+        assertNull(AttachmentSupport.toDto(a).embedUrl());
     }
 
     // ========== attachments (uploaded files) ==========
@@ -808,7 +809,7 @@ class TrainingCalendarServiceTest {
         TrainingAttachment a = TrainingAttachment.file(
             buildTraining(athlete, false), "33333333-3333-3333-3333-333333333333.pdf", "Plan.pdf",
             "application/pdf", 1024L, "Plan", 0);
-        TrainingAttachmentDto dto = TrainingCalendarService.toAttachmentDto(a);
+        TrainingAttachmentDto dto = AttachmentSupport.toDto(a);
         assertEquals("FILE", dto.kind());
         assertEquals("/api/files/training/33333333-3333-3333-3333-333333333333.pdf", dto.url());
         assertEquals("Plan.pdf", dto.fileName());

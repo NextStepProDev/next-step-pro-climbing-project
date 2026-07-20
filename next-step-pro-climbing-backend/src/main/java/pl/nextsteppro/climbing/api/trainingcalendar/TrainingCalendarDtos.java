@@ -13,6 +13,7 @@ import pl.nextsteppro.climbing.domain.personaltraining.AttachmentKind;
 import pl.nextsteppro.climbing.domain.personaltraining.PersonalTraining;
 import pl.nextsteppro.climbing.domain.personaltraining.TrainingAttachment;
 import pl.nextsteppro.climbing.domain.personaltraining.TrainingComment;
+import pl.nextsteppro.climbing.domain.trainingtemplate.TrainingTemplate;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -91,6 +92,39 @@ record AttachmentUploadResponse(
     String mimeType,
     long sizeBytes,
     String url
+) {}
+
+/** Coach creates/edits a reusable training template. */
+record SaveTemplateRequest(
+    @NotBlank @Size(max = TrainingTemplate.MAX_TITLE_LENGTH) String title,
+    @Nullable @Size(max = TrainingTemplate.MAX_DESCRIPTION_LENGTH) String description,
+    @NotNull @Min(TrainingTemplate.MIN_DURATION_MINUTES) @Max(TrainingTemplate.MAX_DURATION_MINUTES)
+    Integer defaultDurationMinutes,
+    @Nullable @Size(max = TrainingAttachment.MAX_PER_TRAINING) List<@Valid AttachmentRequest> attachments
+) {}
+
+record TrainingTemplateDto(
+    UUID id,
+    String title,
+    @Nullable String description,
+    int defaultDurationMinutes,
+    List<TrainingAttachmentDto> attachments,
+    Instant updatedAt
+) {}
+
+/** One uploaded file for the admin materials-management list (central cleanup view). */
+record MaterialDto(
+    // Attachment id (used to delete this specific material)
+    UUID id,
+    @Nullable String fileName,
+    @Nullable String mimeType,
+    @Nullable Long sizeBytes,
+    String url,
+    // "TRAINING" | "TEMPLATE"
+    String ownerType,
+    // e.g. "16.07.2026 — Trening siłowy" or a template title (HTML-escaped; UI decodes)
+    String ownerLabel,
+    Instant createdAt
 ) {}
 
 record CompleteTrainingRequest(

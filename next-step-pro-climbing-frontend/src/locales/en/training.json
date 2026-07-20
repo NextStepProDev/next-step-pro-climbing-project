@@ -188,5 +188,33 @@
       "oneYear": "One year of training",
       "nextGoal": "Next badge at {{target}} activities: {{current}}/{{target}}"
     }
+  },
+  "templates": {
+    "manage": "Templates",
+    "title": "Training templates",
+    "use": "Use a template",
+    "usePlaceholder": "— pick a template —",
+    "empty": "No templates yet. Add one to plan trainings faster.",
+    "add": "New template",
+    "edit": "Edit template",
+    "delete": "Delete template",
+    "deleteConfirmTitle": "Delete template?",
+    "deleteConfirmMessage": "Trainings already created from it stay unchanged.",
+    "titleRequired": "Enter a template title",
+    "durationRange": "Duration must be between 15 and 720 minutes",
+    "form": {
+      "title": "Title",
+      "titlePlaceholder": "e.g. Strength session A",
+      "duration": "Default duration (minutes)"
+    }
+  },
+  "materials": {
+    "manage": "Materials",
+    "title": "Training materials",
+    "empty": "No uploaded files.",
+    "summary": "{{count}} files · {{size}} total",
+    "delete": "Delete file",
+    "deleteConfirmTitle": "Delete file?",
+    "deleteConfirmMessage": "The file will be removed from its training/template and from disk. This cannot be undone."
   }
 }
