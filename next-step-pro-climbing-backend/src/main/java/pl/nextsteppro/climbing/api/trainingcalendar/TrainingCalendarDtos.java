@@ -9,6 +9,7 @@ import jakarta.validation.constraints.Size;
 import org.jspecify.annotations.Nullable;
 import pl.nextsteppro.climbing.domain.athletegoal.AthleteGoal;
 import pl.nextsteppro.climbing.domain.athletegoal.GoalHorizon;
+import pl.nextsteppro.climbing.domain.personaltraining.AttachmentKind;
 import pl.nextsteppro.climbing.domain.personaltraining.PersonalTraining;
 import pl.nextsteppro.climbing.domain.personaltraining.TrainingAttachment;
 import pl.nextsteppro.climbing.domain.personaltraining.TrainingComment;
@@ -41,18 +42,55 @@ record CreatePersonalTrainingRequest(
     }
 }
 
-/** One material on a training. This PR: links only (label optional). */
+/**
+ * One material on a training: a LINK (url) or a FILE (previously uploaded filename + metadata).
+ * kind == null is treated as LINK for backward compatibility. Per-kind fields are validated
+ * in the service.
+ */
 record AttachmentRequest(
-    @NotBlank @Size(max = TrainingAttachment.MAX_URL_LENGTH) String url,
+    @Nullable AttachmentKind kind,
+    @Nullable @Size(max = TrainingAttachment.MAX_URL_LENGTH) String url,
+    @Nullable @Size(max = 255) String filename,
+    @Nullable @Size(max = 255) String originalName,
+    @Nullable @Size(max = 100) String mimeType,
+    @Nullable Long sizeBytes,
     @Nullable @Size(max = TrainingAttachment.MAX_LABEL_LENGTH) String label
-) {}
+) {
+    // Link convenience (used by tests and any client sending only url+label)
+    AttachmentRequest(String url, String label) {
+        this(AttachmentKind.LINK, url, null, null, null, null, label);
+    }
 
-/** embedUrl is non-null for supported YouTube/Instagram links → the UI renders an iframe. */
+    boolean isFile() {
+        return kind == AttachmentKind.FILE;
+    }
+}
+
+/**
+ * embedUrl is non-null for supported YouTube/Instagram LINKs → the UI renders an iframe.
+ * For FILEs, url points at /api/files/training/{filename}; fileName/mimeType drive the card.
+ */
 record TrainingAttachmentDto(
     UUID id,
-    String url,
+    // "LINK" | "FILE"
+    String kind,
+    @Nullable String url,
     @Nullable String label,
-    @Nullable String embedUrl
+    @Nullable String embedUrl,
+    // FILE only: stored filename (re-sent on edit to keep the file), display name, type, size
+    @Nullable String filename,
+    @Nullable String fileName,
+    @Nullable String mimeType,
+    @Nullable Long sizeBytes
+) {}
+
+/** Returned by the file-upload endpoint; the client echoes these fields back as a FILE attachment. */
+record AttachmentUploadResponse(
+    String filename,
+    String originalName,
+    String mimeType,
+    long sizeBytes,
+    String url
 ) {}
 
 record CompleteTrainingRequest(

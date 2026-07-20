@@ -12,6 +12,7 @@ import jakarta.validation.Valid;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import pl.nextsteppro.climbing.config.CurrentUserId;
 
 import java.time.LocalDate;
@@ -79,6 +80,14 @@ public class TrainingCalendarController {
     public ResponseEntity<GoalsDto> getGoals(
             @Parameter(hidden = true) @CurrentUserId UUID userId) {
         return ResponseEntity.ok(athleteGoalService.getMyGoals(userId));
+    }
+
+    @Operation(summary = "Upload a material file", description = "Stores a PDF/image; reference the returned filename as a FILE attachment when saving the training.")
+    @PostMapping(value = "/attachments/upload", consumes = "multipart/form-data")
+    public ResponseEntity<AttachmentUploadResponse> uploadAttachment(
+            @Parameter(hidden = true) @CurrentUserId UUID userId,
+            @RequestParam("file") MultipartFile file) {
+        return ResponseEntity.ok(trainingCalendarService.uploadMyAttachment(userId, file));
     }
 
     @Operation(summary = "Add training", description = "Creates a training in the athlete's own calendar.")

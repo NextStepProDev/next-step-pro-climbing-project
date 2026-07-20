@@ -1,10 +1,15 @@
 package pl.nextsteppro.climbing.api.trainingcalendar;
 
 import org.jspecify.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.util.HtmlUtils;
 import pl.nextsteppro.climbing.domain.personaltraining.AthleteActivityCount;
 import pl.nextsteppro.climbing.domain.personaltraining.AthleteLastActivity;
+import pl.nextsteppro.climbing.domain.personaltraining.AttachmentKind;
 import pl.nextsteppro.climbing.domain.personaltraining.PersonalTraining;
 import pl.nextsteppro.climbing.domain.personaltraining.PersonalTrainingRepository;
 import pl.nextsteppro.climbing.domain.personaltraining.TrainingAttachment;
@@ -25,7 +30,10 @@ import pl.nextsteppro.climbing.domain.timeslot.TimeSlot;
 import pl.nextsteppro.climbing.domain.user.User;
 import pl.nextsteppro.climbing.domain.user.UserRepository;
 import pl.nextsteppro.climbing.infrastructure.i18n.MessageService;
+import pl.nextsteppro.climbing.infrastructure.storage.FileStorageService;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -54,6 +62,8 @@ import java.util.UUID;
 @Transactional
 public class TrainingCalendarService {
 
+    private static final Logger logger = LoggerFactory.getLogger(TrainingCalendarService.class);
+
     /** Range endpoint guard: a month view needs ~42 days; anything beyond 62 is a client bug. */
     static final int MAX_RANGE_DAYS = 62;
 
@@ -64,6 +74,9 @@ public class TrainingCalendarService {
     // Deletion log only survives until read; prune anything older on the next write
     private static final Duration DELETION_LOG_RETENTION = Duration.ofDays(60);
 
+    // Uploaded training materials live here (see FileController /training/{filename})
+    static final String ATTACHMENT_FOLDER = "training";
+
     private final PersonalTrainingRepository trainingRepository;
     private final TrainingCommentRepository commentRepository;
     private final TrainingCalendarReadRepository readRepository;
@@ -72,6 +85,7 @@ public class TrainingCalendarService {
     private final ReservationRepository reservationRepository;
     private final ReservedSeatRepository reservedSeatRepository;
     private final UserRepository userRepository;
+    private final FileStorageService fileStorageService;
     private final MessageService msg;
 
     public TrainingCalendarService(PersonalTrainingRepository trainingRepository,
@@ -82,6 +96,7 @@ public class TrainingCalendarService {
                                    ReservationRepository reservationRepository,
                                    ReservedSeatRepository reservedSeatRepository,
                                    UserRepository userRepository,
+                                   FileStorageService fileStorageService,
                                    MessageService msg) {
         this.trainingRepository = trainingRepository;
         this.commentRepository = commentRepository;
@@ -91,6 +106,7 @@ public class TrainingCalendarService {
         this.reservationRepository = reservationRepository;
         this.reservedSeatRepository = reservedSeatRepository;
         this.userRepository = userRepository;
+        this.fileStorageService = fileStorageService;
         this.msg = msg;
     }
 
@@ -118,7 +134,9 @@ public class TrainingCalendarService {
         requireAthlete(userId);
         PersonalTraining training = requireOwnTraining(trainingId, userId);
         recordDeletionIfFuture(training, false);
+        List<String> files = attachmentFilenames(trainingId);
         trainingRepository.delete(training);
+        deleteFilesQuietly(files);
     }
 
     /**
@@ -244,7 +262,9 @@ public class TrainingCalendarService {
     public void deleteAsAdmin(UUID trainingId) {
         PersonalTraining training = requireTraining(trainingId);
         recordDeletionIfFuture(training, true);
+        List<String> files = attachmentFilenames(trainingId);
         trainingRepository.delete(training);
+        deleteFilesQuietly(files);
     }
 
     /**
@@ -311,16 +331,29 @@ public class TrainingCalendarService {
             byAdmin);
         // null = leave attachments untouched (a move/drag PUT omits them); a list (incl. []) replaces
         if (request.attachments() != null) {
+            // Uploaded files no longer referenced after the replace must be removed from disk
+            Set<String> keptFiles = request.attachments().stream()
+                .filter(AttachmentRequest::isFile).map(AttachmentRequest::filename).collect(java.util.stream.Collectors.toSet());
+            List<String> orphaned = attachmentRepository.findByTrainingIdOrderByPositionAsc(training.getId()).stream()
+                .filter(a -> a.getKind() == AttachmentKind.FILE)
+                .map(TrainingAttachment::getFilename)
+                .filter(f -> f != null && !keptFiles.contains(f))
+                .toList();
             attachmentRepository.deleteByTrainingId(training.getId());
             persistAttachments(training, request.attachments());
+            deleteFilesQuietly(orphaned);
         }
     }
 
     private void persistAttachments(PersonalTraining training, List<AttachmentRequest> requests) {
         int position = 0;
         for (AttachmentRequest req : requests) {
-            attachmentRepository.save(new TrainingAttachment(
-                training, req.url().trim(), TrainingAttachment.sanitizeLabel(req.label()), position++));
+            String label = TrainingAttachment.sanitizeLabel(req.label());
+            TrainingAttachment attachment = req.isFile()
+                ? TrainingAttachment.file(training, req.filename(), sanitizeName(req.originalName()),
+                    req.mimeType(), req.sizeBytes(), label, position++)
+                : TrainingAttachment.link(training, req.url().trim(), label, position++);
+            attachmentRepository.save(attachment);
         }
     }
 
@@ -330,19 +363,99 @@ public class TrainingCalendarService {
             throw new IllegalArgumentException(msg.get("training.attachment.too.many"));
         }
         for (AttachmentRequest req : requests) {
-            String url = req.url().trim();
-            try {
-                java.net.URI uri = java.net.URI.create(url);
-                String scheme = uri.getScheme();
-                if (uri.getHost() == null || scheme == null
-                        || !(scheme.equalsIgnoreCase("http") || scheme.equalsIgnoreCase("https"))) {
-                    throw new IllegalArgumentException(msg.get("training.attachment.url.invalid"));
-                }
-            } catch (IllegalArgumentException e) {
-                // URI.create throws IllegalArgumentException on malformed input — normalise the message
-                throw new IllegalArgumentException(msg.get("training.attachment.url.invalid"));
+            if (req.isFile()) {
+                validateFileAttachment(req);
+            } else {
+                validateLinkUrl(req.url());
             }
         }
+    }
+
+    private void validateLinkUrl(@Nullable String rawUrl) {
+        if (rawUrl == null || rawUrl.isBlank()) {
+            throw new IllegalArgumentException(msg.get("training.attachment.url.invalid"));
+        }
+        try {
+            java.net.URI uri = java.net.URI.create(rawUrl.trim());
+            String scheme = uri.getScheme();
+            if (uri.getHost() == null || scheme == null
+                    || !(scheme.equalsIgnoreCase("http") || scheme.equalsIgnoreCase("https"))) {
+                throw new IllegalArgumentException(msg.get("training.attachment.url.invalid"));
+            }
+        } catch (IllegalArgumentException e) {
+            // URI.create throws IllegalArgumentException on malformed input — normalise the message
+            throw new IllegalArgumentException(msg.get("training.attachment.url.invalid"));
+        }
+    }
+
+    /** A FILE attachment must reference a file already uploaded to the training folder. */
+    private void validateFileAttachment(AttachmentRequest req) {
+        String filename = req.filename();
+        boolean ok;
+        try {
+            // exists() also enforces the strict UUID.ext format (rejects path traversal)
+            ok = filename != null && fileStorageService.exists(filename, ATTACHMENT_FOLDER);
+        } catch (IllegalArgumentException e) {
+            ok = false;
+        }
+        if (!ok) {
+            throw new IllegalArgumentException(msg.get("training.attachment.file.invalid"));
+        }
+    }
+
+    /**
+     * Stores an uploaded document (PDF/image) in the training folder and returns its metadata.
+     * The file is linked to a training only when the training is saved with a FILE attachment
+     * referencing this filename.
+     */
+    public AttachmentUploadResponse uploadMyAttachment(UUID userId, MultipartFile file) {
+        requireAthlete(userId);
+        return storeAttachment(file);
+    }
+
+    public AttachmentUploadResponse uploadAttachmentAsAdmin(MultipartFile file) {
+        return storeAttachment(file);
+    }
+
+    private AttachmentUploadResponse storeAttachment(MultipartFile file) {
+        try {
+            String filename = fileStorageService.storeDocument(file, ATTACHMENT_FOLDER);
+            return new AttachmentUploadResponse(
+                filename,
+                sanitizeName(file.getOriginalFilename()),
+                file.getContentType(),
+                file.getSize(),
+                "/api/files/" + ATTACHMENT_FOLDER + "/" + filename);
+        } catch (IOException e) {
+            throw new IllegalStateException(msg.get("training.attachment.upload.failed"));
+        }
+    }
+
+    @Nullable
+    private static String sanitizeName(@Nullable String name) {
+        if (name == null || name.isBlank()) return null;
+        String escaped = HtmlUtils.htmlEscape(name.trim(), StandardCharsets.UTF_8.name());
+        return escaped.length() > 255 ? escaped.substring(0, 255) : escaped;
+    }
+
+    /** Best-effort disk cleanup — never fails the surrounding business transaction. */
+    private void deleteFilesQuietly(List<String> filenames) {
+        for (String filename : filenames) {
+            try {
+                fileStorageService.delete(filename, ATTACHMENT_FOLDER);
+            } catch (Exception e) {
+                logger.warn("Failed to delete orphaned training attachment file {}", filename, e);
+            }
+        }
+    }
+
+    /** File attachments of a training, for disk cleanup before the DB CASCADE removes the rows. */
+    private List<String> attachmentFilenames(UUID trainingId) {
+        return attachmentRepository.findByTrainingIdOrderByPositionAsc(trainingId).stream()
+            .filter(a -> a.getKind() == AttachmentKind.FILE)
+            .map(TrainingAttachment::getFilename)
+            .filter(Objects::nonNull)
+            .toList();
     }
 
     private TrainingCommentDto addComment(PersonalTraining training, User author, boolean authorIsAdmin,
@@ -549,8 +662,13 @@ public class TrainingCalendarService {
     }
 
     static TrainingAttachmentDto toAttachmentDto(TrainingAttachment a) {
-        return new TrainingAttachmentDto(a.getId(), a.getUrl(), a.getLabel(),
-            VideoEmbedUrls.toEmbedUrlOrNull(a.getUrl()));
+        if (a.getKind() == AttachmentKind.FILE) {
+            String serveUrl = "/api/files/" + ATTACHMENT_FOLDER + "/" + a.getFilename();
+            return new TrainingAttachmentDto(a.getId(), "FILE", serveUrl, a.getLabel(),
+                null, a.getFilename(), a.getOriginalName(), a.getMimeType(), a.getSizeBytes());
+        }
+        return new TrainingAttachmentDto(a.getId(), "LINK", a.getUrl(), a.getLabel(),
+            a.getUrl() != null ? VideoEmbedUrls.toEmbedUrlOrNull(a.getUrl()) : null, null, null, null, null);
     }
 
     /** MISSED is derived, never stored: planned training whose end already passed (Warsaw time). */

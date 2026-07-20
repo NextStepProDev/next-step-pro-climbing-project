@@ -294,4 +294,45 @@ class LocalFileStorageServiceTest {
             assertTrue(service.exists(filename, "gallery"));
         }
     }
+
+    // ========== storeDocument (PDF + images) ==========
+
+    @Test
+    void shouldStorePdfDocumentWithoutOptimization() throws IOException {
+        // Given
+        MultipartFile file = new MockMultipartFile(
+                "file", "plan.pdf", "application/pdf", "%PDF-1.4 fake".getBytes());
+
+        // When
+        String filename = service.storeDocument(file, "training");
+
+        // Then: stored as .pdf, retrievable and deletable through the strict-format guards
+        assertTrue(filename.endsWith(".pdf"));
+        assertTrue(service.exists(filename, "training"));
+        assertTrue(service.getFileSize(filename, "training") > 0);
+        service.delete(filename, "training");
+        assertFalse(service.exists(filename, "training"));
+    }
+
+    @Test
+    void shouldStoreImageDocument() throws IOException {
+        MultipartFile file = new MockMultipartFile(
+                "file", "photo.png", "image/png", "fake image".getBytes());
+        String filename = service.storeDocument(file, "training");
+        assertTrue(service.exists(filename, "training"));
+    }
+
+    @Test
+    void shouldRejectDocumentWithDisallowedType() {
+        MultipartFile file = new MockMultipartFile(
+                "file", "notes.txt", "text/plain", "hello".getBytes());
+        assertThrows(IllegalArgumentException.class, () -> service.storeDocument(file, "training"));
+    }
+
+    @Test
+    void shouldRejectDocumentExceedingMaxSize() {
+        byte[] tooBig = new byte[11 * 1024 * 1024];
+        MultipartFile file = new MockMultipartFile("file", "big.pdf", "application/pdf", tooBig);
+        assertThrows(IllegalArgumentException.class, () -> service.storeDocument(file, "training"));
+    }
 }

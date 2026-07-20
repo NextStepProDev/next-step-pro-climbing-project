@@ -8,6 +8,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import pl.nextsteppro.climbing.config.CurrentUserId;
 
 import java.time.LocalDate;
@@ -53,6 +54,13 @@ public class AdminTrainingCalendarController {
     public ResponseEntity<AthleteStatsDto> getStats(
             @PathVariable UUID athleteId) {
         return ResponseEntity.ok(adminTrainingCalendarService.getStatsForAthlete(athleteId));
+    }
+
+    @Operation(summary = "Upload a material file", description = "Stores a PDF/image; reference the returned filename as a FILE attachment when saving the training.")
+    @PostMapping(value = "/attachments/upload", consumes = "multipart/form-data")
+    public ResponseEntity<AttachmentUploadResponse> uploadAttachment(
+            @RequestParam("file") MultipartFile file) {
+        return ResponseEntity.ok(adminTrainingCalendarService.uploadAttachment(file));
     }
 
     @Operation(summary = "Add training for athlete")

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Check, CopyPlus, ExternalLink, Paperclip, Pencil, Trash2, RotateCcw, UserCog, User as UserIcon, X } from 'lucide-react'
+import { Check, CopyPlus, ExternalLink, FileText, Paperclip, Pencil, Trash2, RotateCcw, UserCog, User as UserIcon, X } from 'lucide-react'
 import { format } from 'date-fns'
 import clsx from 'clsx'
 import { Modal } from '../ui/Modal'
@@ -11,7 +11,7 @@ import { CommentThread } from './CommentThread'
 import { decodeHtmlEntities } from '../../utils/htmlEntities'
 import { useDateLocale } from '../../utils/dateFnsLocale'
 import type { TrainingCalendarAdapter } from './trainingCalendarAdapter'
-import type { PersonalTraining, PersonalTrainingStatus } from '../../types'
+import type { PersonalTraining, PersonalTrainingStatus, TrainingAttachment } from '../../types'
 
 interface TrainingDetailModalProps {
   training: PersonalTraining | null
@@ -108,7 +108,7 @@ export function TrainingDetailModal({
               {t('detail.materials')}
             </div>
             {training.attachments.map((att) => (
-              <MaterialItem key={att.id} url={att.url} label={att.label} embedUrl={att.embedUrl} />
+              <MaterialItem key={att.id} attachment={att} />
             ))}
           </div>
         )}
@@ -228,22 +228,24 @@ export function TrainingDetailModal({
   )
 }
 
-// One material: an embedded YouTube/Instagram player, or a plain clickable link card.
-function MaterialItem({ url, label, embedUrl }: { url: string; label: string | null; embedUrl: string | null }) {
-  const text = label ? decodeHtmlEntities(label) : url
+// One material: an embedded YouTube/Instagram player, an inline image, a PDF/file card, or a link card.
+function MaterialItem({ attachment }: { attachment: TrainingAttachment }) {
+  const { url, label, embedUrl, kind, mimeType, fileName } = attachment
+  const decodedLabel = label ? decodeHtmlEntities(label) : null
 
-  if (embedUrl) {
+  // LINK → embedded YouTube/Instagram player
+  if (kind === 'LINK' && embedUrl) {
     const instagram = embedUrl.includes('instagram.com')
     return (
       <figure className="space-y-1">
-        {label && <figcaption className="text-xs text-surface-400">{decodeHtmlEntities(label)}</figcaption>}
+        {decodedLabel && <figcaption className="text-xs text-surface-400">{decodedLabel}</figcaption>}
         <div
           className={clsx('w-full', instagram ? 'max-w-[400px] mx-auto' : '')}
           style={instagram ? { height: 560 } : { aspectRatio: '16 / 9' }}
         >
           <iframe
             src={embedUrl}
-            title={text}
+            title={decodedLabel ?? url ?? 'video'}
             className="w-full h-full rounded-lg border border-surface-800"
             allowFullScreen
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
@@ -254,17 +256,35 @@ function MaterialItem({ url, label, embedUrl }: { url: string; label: string | n
     )
   }
 
+  // FILE image → inline preview
+  if (kind === 'FILE' && mimeType?.startsWith('image/') && url) {
+    return (
+      <figure className="space-y-1">
+        {decodedLabel && <figcaption className="text-xs text-surface-400">{decodedLabel}</figcaption>}
+        <a href={url} target="_blank" rel="noopener noreferrer">
+          <img src={url} alt={decodedLabel ?? fileName ?? 'image'} className="max-h-80 rounded-lg border border-surface-800" />
+        </a>
+      </figure>
+    )
+  }
+
+  // FILE (pdf/other) or plain LINK → clickable card
+  const isFile = kind === 'FILE'
+  const primary = decodedLabel ?? (isFile ? fileName : url) ?? ''
+  const secondary = decodedLabel ? (isFile ? fileName : url) : (isFile ? null : null)
+  const Icon = isFile ? FileText : ExternalLink
+
   return (
     <a
-      href={url}
+      href={url ?? '#'}
       target="_blank"
       rel="noopener noreferrer"
-      className="flex items-center gap-2.5 p-2.5 rounded-lg border border-surface-700 bg-surface-800/60 hover:bg-surface-800 hover:border-surface-600 transition-colors group"
+      className="flex items-center gap-2.5 p-2.5 rounded-lg border border-surface-700 bg-surface-800/60 hover:bg-surface-800 hover:border-surface-600 transition-colors"
     >
-      <ExternalLink className="w-4 h-4 shrink-0 text-primary-400" />
+      <Icon className={clsx('w-4 h-4 shrink-0', isFile ? 'text-rose-300' : 'text-primary-400')} />
       <span className="min-w-0 flex-1">
-        <span className="block text-sm font-medium text-surface-100 truncate">{text}</span>
-        {label && <span className="block text-xs text-surface-500 truncate">{url}</span>}
+        <span className="block text-sm font-medium text-surface-100 truncate">{primary}</span>
+        {secondary && <span className="block text-xs text-surface-500 truncate">{secondary}</span>}
       </span>
     </a>
   )

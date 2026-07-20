@@ -8,6 +8,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import pl.nextsteppro.climbing.domain.personaltraining.AthleteActivityCount;
 import pl.nextsteppro.climbing.domain.personaltraining.PersonalTraining;
+import pl.nextsteppro.climbing.domain.personaltraining.AttachmentKind;
 import pl.nextsteppro.climbing.domain.personaltraining.PersonalTrainingRepository;
 import pl.nextsteppro.climbing.domain.personaltraining.TrainingAttachment;
 import pl.nextsteppro.climbing.domain.personaltraining.TrainingAttachmentRepository;
@@ -55,6 +56,7 @@ class TrainingCalendarServiceTest {
     @Mock private ReservationRepository reservationRepository;
     @Mock private ReservedSeatRepository reservedSeatRepository;
     @Mock private UserRepository userRepository;
+    @Mock private pl.nextsteppro.climbing.infrastructure.storage.FileStorageService fileStorageService;
     @Mock private MessageService msg;
 
     private TrainingCalendarService service;
@@ -66,7 +68,8 @@ class TrainingCalendarServiceTest {
     void setUp() {
         service = new TrainingCalendarService(
             trainingRepository, commentRepository, readRepository, deletionRepository,
-            attachmentRepository, reservationRepository, reservedSeatRepository, userRepository, msg);
+            attachmentRepository, reservationRepository, reservedSeatRepository, userRepository,
+            fileStorageService, msg);
 
         lenient().when(msg.get(anyString())).thenAnswer(inv -> inv.getArgument(0));
         lenient().when(msg.get(anyString(), any())).thenAnswer(inv -> inv.getArgument(0));
@@ -740,25 +743,138 @@ class TrainingCalendarServiceTest {
     @Test
     void shouldExposeEmbedUrlForYoutubeAttachment() {
         // Given
-        TrainingAttachment a = new TrainingAttachment(
+        TrainingAttachment a = TrainingAttachment.link(
             buildTraining(athlete, false), "https://youtu.be/dQw4w9WgXcQ", "V", 0);
 
         // When
         TrainingAttachmentDto dto = TrainingCalendarService.toAttachmentDto(a);
 
         // Then
+        assertEquals("LINK", dto.kind());
         assertEquals("https://www.youtube.com/embed/dQw4w9WgXcQ", dto.embedUrl());
     }
 
     @Test
     void shouldExposeNullEmbedUrlForPlainLink() {
-        TrainingAttachment a = new TrainingAttachment(
+        TrainingAttachment a = TrainingAttachment.link(
             buildTraining(athlete, false), "https://docs.google.com/plan", "Plan", 0);
         assertNull(TrainingCalendarService.toAttachmentDto(a).embedUrl());
     }
 
+    // ========== attachments (uploaded files) ==========
+
+    @Test
+    void shouldPersistFileAttachmentWhenFileExists() {
+        // Given: the referenced file was uploaded earlier
+        when(trainingRepository.save(any())).thenAnswer(inv -> {
+            PersonalTraining t = inv.getArgument(0);
+            setField(t, "createdAt", Instant.now());
+            return t;
+        });
+        when(fileStorageService.exists(anyString(), eq("training"))).thenReturn(true);
+        CreatePersonalTrainingRequest request = new CreatePersonalTrainingRequest(
+            LocalDate.now().plusDays(2), LocalTime.of(18, 0), LocalTime.of(19, 30), "T", null,
+            List.of(fileAttachment("11111111-1111-1111-1111-111111111111.pdf", "Plan.pdf", "application/pdf")));
+
+        // When
+        service.createMy(athleteId, request);
+
+        // Then
+        ArgumentCaptor<TrainingAttachment> cap = ArgumentCaptor.forClass(TrainingAttachment.class);
+        verify(attachmentRepository).save(cap.capture());
+        TrainingAttachment saved = cap.getValue();
+        assertEquals(AttachmentKind.FILE, saved.getKind());
+        assertEquals("11111111-1111-1111-1111-111111111111.pdf", saved.getFilename());
+        assertEquals("Plan.pdf", saved.getOriginalName());
+    }
+
+    @Test
+    void shouldRejectFileAttachmentWhenFileMissing() {
+        // Given: no such uploaded file
+        when(fileStorageService.exists(anyString(), eq("training"))).thenReturn(false);
+        CreatePersonalTrainingRequest request = new CreatePersonalTrainingRequest(
+            LocalDate.now().plusDays(2), LocalTime.of(18, 0), LocalTime.of(19, 30), "T", null,
+            List.of(fileAttachment("22222222-2222-2222-2222-222222222222.pdf", "x.pdf", "application/pdf")));
+
+        // When / Then
+        IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
+            () -> service.createMy(athleteId, request));
+        assertEquals("training.attachment.file.invalid", e.getMessage());
+        verify(trainingRepository, never()).save(any());
+    }
+
+    @Test
+    void shouldExposeServeUrlForFileAttachment() {
+        TrainingAttachment a = TrainingAttachment.file(
+            buildTraining(athlete, false), "33333333-3333-3333-3333-333333333333.pdf", "Plan.pdf",
+            "application/pdf", 1024L, "Plan", 0);
+        TrainingAttachmentDto dto = TrainingCalendarService.toAttachmentDto(a);
+        assertEquals("FILE", dto.kind());
+        assertEquals("/api/files/training/33333333-3333-3333-3333-333333333333.pdf", dto.url());
+        assertEquals("Plan.pdf", dto.fileName());
+        assertNull(dto.embedUrl());
+    }
+
+    @Test
+    void shouldDeleteFilesFromDiskWhenTrainingDeleted() throws Exception {
+        // Given
+        UUID trainingId = UUID.randomUUID();
+        PersonalTraining training = buildTraining(athlete, false);
+        setField(training, "id", trainingId);
+        when(trainingRepository.findById(trainingId)).thenReturn(Optional.of(training));
+        when(attachmentRepository.findByTrainingIdOrderByPositionAsc(trainingId)).thenReturn(List.of(
+            TrainingAttachment.file(training, "44444444-4444-4444-4444-444444444444.pdf", "a.pdf", "application/pdf", 1L, null, 0)));
+
+        // When
+        service.deleteMy(athleteId, trainingId);
+
+        // Then: DB cascade removes rows; the physical file must be deleted too
+        verify(fileStorageService).delete("44444444-4444-4444-4444-444444444444.pdf", "training");
+    }
+
+    @Test
+    void shouldDeleteOrphanedFileOnUpdateReplace() throws Exception {
+        // Given: existing file attachment replaced by a link → old file must be removed from disk
+        UUID trainingId = UUID.randomUUID();
+        PersonalTraining training = buildTraining(athlete, false);
+        setField(training, "id", trainingId);
+        when(trainingRepository.findById(trainingId)).thenReturn(Optional.of(training));
+        when(attachmentRepository.findByTrainingIdOrderByPositionAsc(trainingId)).thenReturn(List.of(
+            TrainingAttachment.file(training, "55555555-5555-5555-5555-555555555555.pdf", "old.pdf", "application/pdf", 1L, null, 0)));
+        CreatePersonalTrainingRequest request = new CreatePersonalTrainingRequest(
+            LocalDate.now().plusDays(2), LocalTime.of(18, 0), LocalTime.of(19, 30), "T", null,
+            List.of(link("https://a.com")));
+
+        // When
+        service.updateMy(athleteId, trainingId, request);
+
+        // Then
+        verify(fileStorageService).delete("55555555-5555-5555-5555-555555555555.pdf", "training");
+    }
+
+    @Test
+    void shouldUploadDocumentAndReturnMetadata() throws Exception {
+        // Given
+        when(fileStorageService.storeDocument(any(), eq("training")))
+            .thenReturn("66666666-6666-6666-6666-666666666666.pdf");
+        org.springframework.mock.web.MockMultipartFile file = new org.springframework.mock.web.MockMultipartFile(
+            "file", "Plan.pdf", "application/pdf", new byte[]{1, 2, 3});
+
+        // When
+        AttachmentUploadResponse res = service.uploadMyAttachment(athleteId, file);
+
+        // Then
+        assertEquals("66666666-6666-6666-6666-666666666666.pdf", res.filename());
+        assertEquals("Plan.pdf", res.originalName());
+        assertEquals("/api/files/training/66666666-6666-6666-6666-666666666666.pdf", res.url());
+    }
+
     private static AttachmentRequest link(String url) {
         return new AttachmentRequest(url, null);
+    }
+
+    private static AttachmentRequest fileAttachment(String filename, String originalName, String mimeType) {
+        return new AttachmentRequest(AttachmentKind.FILE, null, filename, originalName, mimeType, 1024L, null);
     }
 
     // ========== helpers ==========

@@ -87,6 +87,10 @@ public class AdminTrainingCalendarService {
         core.markCoachSeen(adminId, athleteId);
     }
 
+    public AttachmentUploadResponse uploadAttachment(org.springframework.web.multipart.MultipartFile file) {
+        return core.uploadAttachmentAsAdmin(file);
+    }
+
     // ---------- athlete goals ----------
 
     @Transactional(readOnly = true)

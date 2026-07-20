@@ -1025,19 +1025,41 @@ export interface CalendarPromoPresetDto {
 // MISSED is derived server-side: planned + end time in the past, never stored
 export type PersonalTrainingStatus = 'PLANNED' | 'COMPLETED' | 'MISSED'
 
-// A material attached to a training. This release: links only (label optional).
-// embedUrl is non-null for supported YouTube/Instagram links → render an iframe.
+export type AttachmentKind = 'LINK' | 'FILE'
+
+// A material attached to a training: a LINK (embedUrl set for YouTube/Instagram → iframe) or
+// an uploaded FILE (url points at the serve endpoint; fileName/mimeType drive the card).
 export interface TrainingAttachment {
   id: string
-  url: string
+  kind: AttachmentKind
+  url: string | null
   label: string | null
   embedUrl: string | null
+  // FILE only
+  filename: string | null
+  fileName: string | null
+  mimeType: string | null
+  sizeBytes: number | null
 }
 
-// url + optional label, as sent to the API
+// One material as sent to the API: either a link (url) or a file (uploaded filename + metadata)
 export interface AttachmentInput {
-  url: string
+  kind: AttachmentKind
+  url?: string
+  filename?: string
+  originalName?: string
+  mimeType?: string
+  sizeBytes?: number
   label?: string
+}
+
+// Response from the file-upload endpoint; echoed back as a FILE attachment on save
+export interface AttachmentUpload {
+  filename: string
+  originalName: string
+  mimeType: string
+  sizeBytes: number
+  url: string
 }
 
 export interface CreatePersonalTraining {
