@@ -40,6 +40,7 @@ interface TrainingWeekCalendarProps {
   copiedTrainingId?: string | null
   pasteActive?: boolean
   onPasteAt?: (date: string, time: string) => void
+  isCoachView?: boolean
 }
 
 function timeToMin(time: string): number {
@@ -121,7 +122,7 @@ export function TrainingWeekCalendar({
   onPrevWeek, onNextWeek, onToday,
   onTrainingClick, onReservationClick, onInvitationClick, onDayClick,
   onTrainingMove, onTrainingCopy, onTrainingCut,
-  cutTrainingId, copiedTrainingId, pasteActive, onPasteAt,
+  cutTrainingId, copiedTrainingId, pasteActive, onPasteAt, isCoachView,
 }: TrainingWeekCalendarProps) {
   const { t } = useTranslation('training')
   const locale = useDateLocale()
@@ -355,6 +356,7 @@ export function TrainingWeekCalendar({
                         label={t('overlay.reservation')}
                         onClick={() => onReservationClick(item.reservation!)}
                         style={style}
+                        isCoachView={isCoachView}
                       />
                     )
                   })}

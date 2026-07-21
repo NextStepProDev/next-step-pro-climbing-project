@@ -5,6 +5,7 @@ import { format, addDays, startOfWeek, subDays } from 'date-fns'
 import clsx from 'clsx'
 import {
   Activity,
+  AlertTriangle,
   Award,
   BarChart3,
   CalendarCheck,
@@ -25,12 +26,14 @@ interface TrainingStatsSectionProps {
   api: TrainingCalendarAdapter
   // 'me' for the athlete's own tab, athleteId in the coach panel
   scopeKey: string
+  // Coach view: the "unrated" nudge is athlete-only; the warning wording differs
+  isCoachView?: boolean
 }
 
 const TOTAL_MILESTONES = [10, 25, 50, 100, 250]
 const STREAK_MILESTONES = [4, 8, 12]
 
-export function TrainingStatsSection({ api, scopeKey }: TrainingStatsSectionProps) {
+export function TrainingStatsSection({ api, scopeKey, isCoachView }: TrainingStatsSectionProps) {
   const { t, i18n } = useTranslation('training')
 
   const statsQuery = useQuery({
@@ -75,10 +78,54 @@ export function TrainingStatsSection({ api, scopeKey }: TrainingStatsSectionProp
         {t('stats.title')}
       </h3>
 
+      {!isCoachView && stats.unratedActivitiesCount > 0 && (
+        <div className="flex items-center gap-2 p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/25 text-sm text-amber-300">
+          <Gauge className="w-4 h-4 shrink-0" />
+          {t('rpe.unrated', { count: stats.unratedActivitiesCount })}
+        </div>
+      )}
+
       <KpiTiles stats={stats} fmt={fmt} />
       <ActivityHeatmap heatmap={stats.heatmap} />
+      <RpeDistributionCard stats={stats} isCoachView={isCoachView} />
       <BreakdownCards stats={stats} fmt={fmt} />
       <BadgeRow stats={stats} fmt={fmt} />
+    </div>
+  )
+}
+
+// Intensity balance (90 days): light / medium / hard sessions as a stacked bar. A balance, not a
+// score — with an amber hint when the recent ratings are consistently maxed out.
+function RpeDistributionCard({ stats, isCoachView }: { stats: AthleteStats; isCoachView?: boolean }) {
+  const { t } = useTranslation('training')
+  const d = stats.rpeDistribution
+  const total = d.light + d.medium + d.hard
+  if (total === 0) return null
+  const pct = (n: number) => `${(100 * n) / total}%`
+
+  return (
+    <div className="bg-surface-900 rounded-xl border border-surface-800 p-4 space-y-2">
+      <div className="flex items-center gap-2 text-sm font-medium text-surface-300">
+        <Gauge className="w-4 h-4 text-surface-400" />
+        {t('stats.rpeDist.title')}
+      </div>
+      <div className="flex h-3 rounded-full overflow-hidden bg-surface-800">
+        {d.light > 0 && <div className="bg-green-500/70" style={{ width: pct(d.light) }} />}
+        {d.medium > 0 && <div className="bg-amber-500/70" style={{ width: pct(d.medium) }} />}
+        {d.hard > 0 && <div className="bg-rose-500/70" style={{ width: pct(d.hard) }} />}
+      </div>
+      <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-surface-400">
+        <span className="inline-flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-green-500/70" />{t('stats.rpeDist.light', { count: d.light })}</span>
+        <span className="inline-flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-amber-500/70" />{t('stats.rpeDist.medium', { count: d.medium })}</span>
+        <span className="inline-flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-rose-500/70" />{t('stats.rpeDist.hard', { count: d.hard })}</span>
+      </div>
+      <p className="text-xs text-surface-500">{t('stats.rpeDist.balanceHint')}</p>
+      {stats.sustainedHighRpe && (
+        <p className="text-xs text-amber-400/90 flex items-start gap-1.5">
+          <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+          {t(isCoachView ? 'stats.rpeWarning.coach' : 'stats.rpeWarning.athlete')}
+        </p>
+      )}
     </div>
   )
 }

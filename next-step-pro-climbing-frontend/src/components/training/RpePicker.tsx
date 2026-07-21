@@ -44,6 +44,7 @@ export function RpePicker({ value, onChange }: RpePickerProps) {
         ))}
       </div>
       <p className="text-xs text-surface-500 mt-1">{t('completion.rpeHint')}</p>
+      <p className="text-xs text-surface-500 mt-0.5 italic">{t('completion.rpeHonesty')}</p>
     </div>
   )
 }

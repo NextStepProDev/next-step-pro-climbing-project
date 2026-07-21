@@ -54,6 +54,7 @@ class TrainingCalendarServiceTest {
     @Mock private TrainingDeletionRepository deletionRepository;
     @Mock private TrainingAttachmentRepository attachmentRepository;
     @Mock private ReservationRepository reservationRepository;
+    @Mock private pl.nextsteppro.climbing.domain.reservation.ReservationRpeRepository reservationRpeRepository;
     @Mock private ReservedSeatRepository reservedSeatRepository;
     @Mock private UserRepository userRepository;
     @Mock private pl.nextsteppro.climbing.infrastructure.storage.FileStorageService fileStorageService;
@@ -69,7 +70,7 @@ class TrainingCalendarServiceTest {
         AttachmentSupport attachmentSupport = new AttachmentSupport(attachmentRepository, fileStorageService, msg);
         service = new TrainingCalendarService(
             trainingRepository, commentRepository, readRepository, deletionRepository,
-            reservationRepository, reservedSeatRepository, userRepository,
+            reservationRepository, reservationRpeRepository, reservedSeatRepository, userRepository,
             attachmentSupport, msg);
 
         lenient().when(msg.get(anyString())).thenAnswer(inv -> inv.getArgument(0));
@@ -876,6 +877,100 @@ class TrainingCalendarServiceTest {
 
     private static AttachmentRequest fileAttachment(String filename, String originalName, String mimeType) {
         return new AttachmentRequest(AttachmentKind.FILE, null, filename, originalName, mimeType, 1024L, null);
+    }
+
+    // ========== reservation RPE + required completion RPE ==========
+
+    @Test
+    void shouldRateOwnPastConfirmedReservation() {
+        // Given: the athlete's own confirmed booking that already finished
+        UUID reservationId = UUID.randomUUID();
+        TimeSlot slot = new TimeSlot(LocalDate.now().minusDays(1), LocalTime.of(10, 0), LocalTime.of(11, 0), 4);
+        Reservation r = reservationWithCreatedAt(slot, Instant.now());
+        setField(r, "id", reservationId);
+        when(reservationRepository.findById(reservationId)).thenReturn(Optional.of(r));
+        when(reservationRpeRepository.findByReservationId(reservationId)).thenReturn(Optional.empty());
+
+        // When
+        service.rateReservation(athleteId, reservationId, new RateReservationRequest(7, "Ciężko"));
+
+        // Then
+        ArgumentCaptor<pl.nextsteppro.climbing.domain.reservation.ReservationRpe> cap =
+            ArgumentCaptor.forClass(pl.nextsteppro.climbing.domain.reservation.ReservationRpe.class);
+        verify(reservationRpeRepository).save(cap.capture());
+        assertEquals(7, cap.getValue().getRpe());
+    }
+
+    @Test
+    void shouldUpsertExistingRating() {
+        // Given: already rated → editing updates in place, no insert
+        UUID reservationId = UUID.randomUUID();
+        TimeSlot slot = new TimeSlot(LocalDate.now().minusDays(1), LocalTime.of(10, 0), LocalTime.of(11, 0), 4);
+        Reservation r = reservationWithCreatedAt(slot, Instant.now());
+        setField(r, "id", reservationId);
+        var existing = new pl.nextsteppro.climbing.domain.reservation.ReservationRpe(r, 3, null);
+        when(reservationRepository.findById(reservationId)).thenReturn(Optional.of(r));
+        when(reservationRpeRepository.findByReservationId(reservationId)).thenReturn(Optional.of(existing));
+
+        // When
+        service.rateReservation(athleteId, reservationId, new RateReservationRequest(9, null));
+
+        // Then
+        assertEquals(9, existing.getRpe());
+        verify(reservationRpeRepository, never()).save(any());
+    }
+
+    @Test
+    void shouldRejectRatingWhenReservationNotOwn() {
+        UUID reservationId = UUID.randomUUID();
+        TimeSlot slot = new TimeSlot(LocalDate.now().minusDays(1), LocalTime.of(10, 0), LocalTime.of(11, 0), 4);
+        Reservation foreign = new Reservation(buildAthlete(UUID.randomUUID()), slot);
+        setField(foreign, "id", reservationId);
+        when(reservationRepository.findById(reservationId)).thenReturn(Optional.of(foreign));
+
+        IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
+            () -> service.rateReservation(athleteId, reservationId, new RateReservationRequest(5, null)));
+        assertEquals("training.reservation.not.found", e.getMessage());
+    }
+
+    @Test
+    void shouldRejectRatingWhenReservationInFuture() {
+        UUID reservationId = UUID.randomUUID();
+        TimeSlot slot = new TimeSlot(LocalDate.now().plusDays(1), LocalTime.of(10, 0), LocalTime.of(11, 0), 4);
+        Reservation r = reservationWithCreatedAt(slot, Instant.now());
+        setField(r, "id", reservationId);
+        when(reservationRepository.findById(reservationId)).thenReturn(Optional.of(r));
+
+        IllegalStateException e = assertThrows(IllegalStateException.class,
+            () -> service.rateReservation(athleteId, reservationId, new RateReservationRequest(5, null)));
+        assertEquals("training.reservation.rpe.future", e.getMessage());
+    }
+
+    @Test
+    void shouldRejectRatingWhenNotConfirmed() {
+        UUID reservationId = UUID.randomUUID();
+        TimeSlot slot = new TimeSlot(LocalDate.now().minusDays(1), LocalTime.of(10, 0), LocalTime.of(11, 0), 4);
+        Reservation r = reservationWithCreatedAt(slot, Instant.now());
+        setField(r, "id", reservationId);
+        setField(r, "status", pl.nextsteppro.climbing.domain.reservation.ReservationStatus.CANCELLED);
+        when(reservationRepository.findById(reservationId)).thenReturn(Optional.of(r));
+
+        IllegalStateException e = assertThrows(IllegalStateException.class,
+            () -> service.rateReservation(athleteId, reservationId, new RateReservationRequest(5, null)));
+        assertEquals("training.reservation.rpe.not.attended", e.getMessage());
+    }
+
+    @Test
+    void shouldRejectCompletionWithoutRpe() {
+        // Given: started training, completion request with null rpe
+        UUID trainingId = UUID.randomUUID();
+        PersonalTraining training = buildTraining(athlete, false); // yesterday → started
+        when(trainingRepository.findById(trainingId)).thenReturn(Optional.of(training));
+
+        // When / Then
+        IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
+            () -> service.complete(athleteId, trainingId, new CompleteTrainingRequest("feedback", null)));
+        assertEquals("training.calendar.rpe.required", e.getMessage());
     }
 
     // ========== helpers ==========

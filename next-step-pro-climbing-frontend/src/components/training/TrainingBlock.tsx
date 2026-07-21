@@ -1,4 +1,4 @@
-import { Check, Copy, Lock, Scissors, Star } from 'lucide-react'
+import { Check, Copy, Gauge, Lock, Scissors, Star } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import clsx from 'clsx'
 import type { InvitationOverlayItem, PersonalTraining, ReservationOverlayItem } from '../../types'
@@ -154,6 +154,8 @@ interface ReservationBlockProps {
   onClick: () => void
   style?: React.CSSProperties
   compact?: boolean
+  // Coach view hides the "rate" CTA (only the athlete rates)
+  isCoachView?: boolean
 }
 
 interface InvitationBlockProps {
@@ -199,8 +201,12 @@ export function InvitationBlock({ invitation, label, onClick, style, compact }: 
 }
 
 // Read-only overlay of a confirmed booking from the public reservation system.
-export function ReservationBlock({ reservation, label, onClick, style, compact }: ReservationBlockProps) {
+export function ReservationBlock({ reservation, label, onClick, style, compact, isCoachView }: ReservationBlockProps) {
+  const { t } = useTranslation('training')
   const title = reservation.title || label
+  // Rated → show the value; past & unrated & athlete → prompt to rate
+  const rated = reservation.rpe != null
+  const showRateCta = !isCoachView && !rated && reservation.canRate
   return (
     <button
       onClick={onClick}
@@ -222,6 +228,16 @@ export function ReservationBlock({ reservation, label, onClick, style, compact }
       {!compact && (
         <span className="block text-[10px] opacity-80">
           {reservation.startTime.slice(0, 5)} - {reservation.endTime.slice(0, 5)}
+        </span>
+      )}
+      {rated && (
+        <span className="inline-flex items-center gap-0.5 mt-0.5 px-1 py-px rounded bg-surface-600/70 text-[9px] font-medium text-surface-200">
+          <Gauge className="w-2.5 h-2.5" />RPE {reservation.rpe}
+        </span>
+      )}
+      {showRateCta && (
+        <span className="inline-flex items-center gap-0.5 mt-0.5 px-1 py-px rounded bg-amber-500/20 text-[9px] font-medium text-amber-300">
+          <Gauge className="w-2.5 h-2.5" />{t('rpe.rateShort')}
         </span>
       )}
     </button>

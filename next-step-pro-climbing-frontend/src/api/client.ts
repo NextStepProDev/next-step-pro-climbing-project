@@ -470,6 +470,12 @@ export const trainingCalendarApi = {
     formData.append('file', file, file.name)
     return fetchApi<AttachmentUpload>('/training-calendar/attachments/upload', { method: 'POST', body: formData })
   },
+
+  rateReservation: (reservationId: string, rpe: number, note?: string) =>
+    fetchApi<void>(`/training-calendar/reservations/${reservationId}/rpe`, {
+      method: 'PUT',
+      body: JSON.stringify({ rpe, note: note ?? null }),
+    }),
 }
 
 // Personal training calendar (coach side)

@@ -47,6 +47,9 @@ public class TrainingStatsService {
     private static final int HEATMAP_DAYS = 365;
     private static final int AVG_WINDOW_MONTHS = 6;
     private static final int RPE_WINDOW_DAYS = 30;
+    private static final int RPE_DISTRIBUTION_DAYS = 90;
+    private static final int SUSTAINED_HIGH_SAMPLE = 5;
+    private static final int SUSTAINED_HIGH_THRESHOLD = 9;
     private static final int TOP_LOCATIONS = 3;
 
     private final PersonalTrainingRepository trainingRepository;
@@ -102,6 +105,18 @@ public class TrainingStatsService {
 
         int[] streaks = computeStreaks(countsByDate, today);
 
+        // All RPE ratings across both sources: (date, rpe), for averages/distribution/sustained-high
+        List<RatedActivity> rated = new ArrayList<>();
+        for (TrainingStatsRow t : trainings) {
+            if (t.isCompleted() && t.rpe() != null) rated.add(new RatedActivity(t.date(), t.rpe()));
+        }
+        for (ReservationStatsRow r : reservations) {
+            if (r.rpe() != null) rated.add(new RatedActivity(r.date(), r.rpe()));
+        }
+        // Past attended reservations the athlete hasn't rated yet (personal trainings are handled
+        // by the required-RPE completion flow, so they're excluded from the nudge)
+        int unratedReservations = (int) reservations.stream().filter(r -> r.rpe() == null).count();
+
         return new AthleteStatsDto(
             thisMonthCount,
             prevMonthCount,
@@ -113,11 +128,17 @@ public class TrainingStatsService {
             heatmap(countsByDate, today),
             typeBreakdown(trainings, reservations),
             attendanceRate(trainings, nowWarsaw),
-            avgRpe(trainings, null),
-            avgRpe(trainings, today.minusDays(RPE_WINDOW_DAYS - 1)),
-            topLocations(reservations)
+            avgRpe(rated, null),
+            avgRpe(rated, today.minusDays(RPE_WINDOW_DAYS - 1)),
+            topLocations(reservations),
+            rpeDistribution(rated, today.minusDays(RPE_DISTRIBUTION_DAYS - 1)),
+            sustainedHigh(rated),
+            unratedReservations
         );
     }
+
+    /** A single RPE rating with its activity date; source-agnostic. */
+    private record RatedActivity(LocalDate date, int rpe) {}
 
     private static int countInMonth(TreeMap<LocalDate, Integer> countsByDate, YearMonth month) {
         return countsByDate.subMap(month.atDay(1), true, month.atEndOfMonth(), true)
@@ -211,18 +232,49 @@ public class TrainingStatsService {
         return ended == 0 ? null : (int) Math.round(100.0 * completed / ended);
     }
 
-    /** Mean RPE of completed trainings that have one; {@code from} null = all-time. */
+    /** Mean RPE across both sources (completed trainings + rated reservations); {@code from} null = all-time. */
     @Nullable
-    private static Double avgRpe(List<TrainingStatsRow> trainings, @Nullable LocalDate from) {
+    private static Double avgRpe(List<RatedActivity> rated, @Nullable LocalDate from) {
         double sum = 0;
         int count = 0;
-        for (TrainingStatsRow t : trainings) {
-            if (!t.isCompleted() || t.rpe() == null) continue;
-            if (from != null && t.date().isBefore(from)) continue;
-            sum += t.rpe();
+        for (RatedActivity a : rated) {
+            if (from != null && a.date().isBefore(from)) continue;
+            sum += a.rpe();
             count++;
         }
         return count == 0 ? null : Math.round(10.0 * sum / count) / 10.0;
+    }
+
+    /**
+     * Intensity balance over the last {@value RPE_DISTRIBUTION_DAYS} days: session counts by band
+     * (light 1-4, medium 5-7, hard 8-10). Presented as a balance, not a score.
+     */
+    private static RpeDistributionDto rpeDistribution(List<RatedActivity> rated, LocalDate from) {
+        int light = 0;
+        int medium = 0;
+        int hard = 0;
+        for (RatedActivity a : rated) {
+            if (a.date().isBefore(from)) continue;
+            if (a.rpe() <= 4) light++;
+            else if (a.rpe() <= 7) medium++;
+            else hard++;
+        }
+        return new RpeDistributionDto(light, medium, hard);
+    }
+
+    /**
+     * True when the last {@value SUSTAINED_HIGH_SAMPLE} ratings (both sources, newest first) are all
+     * >= {@value SUSTAINED_HIGH_THRESHOLD} — a hint of overtraining or inflated scoring. Fewer than
+     * the sample size of ratings never flags.
+     */
+    private static boolean sustainedHigh(List<RatedActivity> rated) {
+        if (rated.size() < SUSTAINED_HIGH_SAMPLE) return false;
+        // Ties within a day are arbitrary (no start time on stats rows) — acceptable
+        List<RatedActivity> recent = rated.stream()
+            .sorted(Comparator.comparing(RatedActivity::date).reversed())
+            .limit(SUSTAINED_HIGH_SAMPLE)
+            .toList();
+        return recent.stream().allMatch(a -> a.rpe() >= SUSTAINED_HIGH_THRESHOLD);
     }
 
     private static List<LocationCountDto> topLocations(List<ReservationStatsRow> reservations) {

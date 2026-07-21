@@ -120,7 +120,9 @@
     "completedAt": "Wykonano",
     "athleteFeedback": "Feedback zawodnika",
     "noFeedback": "Zawodnik nie zostawił feedbacku",
-    "availableAfterStart": "Odhaczanie będzie dostępne po rozpoczęciu treningu"
+    "availableAfterStart": "Odhaczanie będzie dostępne po rozpoczęciu treningu",
+    "rpeHonesty": "Oceniaj szczerze — RPE służy planowaniu obciążeń, nie rywalizacji.",
+    "rpeRequired": "Wybierz ocenę RPE, aby zapisać wykonanie."
   },
   "comments": {
     "title": "Komentarze",
@@ -195,6 +197,26 @@
       "streak_other": "{{count}} tygodni z rzędu",
       "oneYear": "Rok treningów",
       "nextGoal": "Następna odznaka za {{target}} aktywności: {{current}}/{{target}}"
+    },
+    "rpeDist": {
+      "title": "Rozkład intensywności (90 dni)",
+      "light_one": "Lekkie {{count}}",
+      "light_few": "Lekkie {{count}}",
+      "light_many": "Lekkie {{count}}",
+      "light_other": "Lekkie {{count}}",
+      "medium_one": "Średnie {{count}}",
+      "medium_few": "Średnie {{count}}",
+      "medium_many": "Średnie {{count}}",
+      "medium_other": "Średnie {{count}}",
+      "hard_one": "Ciężkie {{count}}",
+      "hard_few": "Ciężkie {{count}}",
+      "hard_many": "Ciężkie {{count}}",
+      "hard_other": "Ciężkie {{count}}",
+      "balanceHint": "Zdrowy trening to mieszanka lekkich, średnich i ciężkich sesji."
+    },
+    "rpeWarning": {
+      "athlete": "Twoje ostatnie oceny to same 9-10 — sprawdź, czy nie przesadzasz z obciążeniem.",
+      "coach": "Ostatnie oceny zawodnika to same 9-10 — możliwe przetrenowanie lub zawyżanie ocen."
     }
   },
   "templates": {
@@ -224,5 +246,17 @@
     "delete": "Usuń plik",
     "deleteConfirmTitle": "Usunąć plik?",
     "deleteConfirmMessage": "Plik zostanie usunięty z treningu/szablonu i z dysku. Tego nie można cofnąć."
+  },
+  "rpe": {
+    "rate": "Oceń trening (RPE)",
+    "rateShort": "Oceń (RPE)",
+    "rated": "RPE {{value}}/10",
+    "note": "Notatka (opcjonalnie)",
+    "notePlaceholder": "Jak się czułeś na treningu?",
+    "save": "Zapisz ocenę",
+    "unrated_one": "{{count}} aktywność bez oceny",
+    "unrated_few": "{{count}} aktywności bez oceny",
+    "unrated_many": "{{count}} aktywności bez oceny",
+    "unrated_other": "{{count}} aktywności bez oceny"
   }
 }

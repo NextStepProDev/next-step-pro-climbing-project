@@ -19,13 +19,14 @@ interface TrainingMonthCalendarProps {
   onInvitationClick: (invitation: InvitationOverlayItem) => void
   // Click on a day cell -> add-training prefilled with that date
   onDayClick: (date: string) => void
+  isCoachView?: boolean
 }
 
 const MAX_CHIPS = 3
 
 export function TrainingMonthCalendar({
   currentMonth, onMonthChange, trainings, reservations, invitations, invitationLabel,
-  onTrainingClick, onReservationClick, onInvitationClick, onDayClick,
+  onTrainingClick, onReservationClick, onInvitationClick, onDayClick, isCoachView,
 }: TrainingMonthCalendarProps) {
   const { t } = useTranslation('training')
   const { t: tCal } = useTranslation('calendar')
@@ -175,6 +176,7 @@ export function TrainingMonthCalendar({
                       label={t('overlay.reservation')}
                       onClick={() => onReservationClick(chip.reservation!)}
                       compact
+                      isCoachView={isCoachView}
                     />
                   ),
                 )}

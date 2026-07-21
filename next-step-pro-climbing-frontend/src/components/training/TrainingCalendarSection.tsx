@@ -11,6 +11,7 @@ import { LoadingSpinner } from '../ui/LoadingSpinner'
 import { QueryError } from '../ui/QueryError'
 import { SlotDetailModal } from '../calendar/SlotDetailModal'
 import { GoalsBanner } from './GoalsBanner'
+import { ReservationRatingSection } from './ReservationRatingSection'
 import { TrainingWeekCalendar } from './TrainingWeekCalendar'
 import { TrainingMonthCalendar } from './TrainingMonthCalendar'
 import { TrainingStatsSection } from './TrainingStatsSection'
@@ -466,6 +467,7 @@ export function TrainingCalendarSection({ api, scopeKey, isCoachView }: Training
           copiedTrainingId={clipboard?.mode === 'copy' ? clipboard.trainingId : null}
           pasteActive={!!clipboard}
           onPasteAt={handlePasteAt}
+          isCoachView={isCoachView}
         />
       ) : (
         <TrainingMonthCalendar
@@ -479,6 +481,7 @@ export function TrainingCalendarSection({ api, scopeKey, isCoachView }: Training
           onReservationClick={setReservationHint}
           onInvitationClick={openInvitation}
           onDayClick={openCreate}
+          isCoachView={isCoachView}
         />
       )}
 
@@ -490,7 +493,7 @@ export function TrainingCalendarSection({ api, scopeKey, isCoachView }: Training
       )}
 
       {/* Live-derived statistics over completed trainings + attended reservations */}
-      <TrainingStatsSection api={api} scopeKey={scopeKey} />
+      <TrainingStatsSection api={api} scopeKey={scopeKey} isCoachView={isCoachView} />
 
       {/* Add / edit */}
       <TrainingFormModal
@@ -549,6 +552,20 @@ export function TrainingCalendarSection({ api, scopeKey, isCoachView }: Training
             <p className="text-sm text-surface-400">{t('overlay.readonlyHint')}</p>
           </div>
         </div>
+
+        {/* Athlete rates an attended booking; the coach only reads it */}
+        {reservationHint && !isCoachView && reservationHint.canRate && (
+          <ReservationRatingSection
+            key={reservationHint.id}
+            reservation={reservationHint}
+            onRated={() => {
+              queryClient.invalidateQueries({ queryKey: ['trainingCalendar', 'range', scopeKey] })
+              queryClient.invalidateQueries({ queryKey: ['trainingCalendar', 'stats', scopeKey] })
+              setReservationHint(null)
+            }}
+          />
+        )}
+
         <div className="flex justify-end mt-4">
           <Button
             variant="primary"
