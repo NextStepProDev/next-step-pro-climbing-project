@@ -17,6 +17,9 @@ import pl.nextsteppro.climbing.domain.personaltraining.TrainingDeletionRepositor
 import pl.nextsteppro.climbing.domain.event.Event;
 import pl.nextsteppro.climbing.domain.reservation.Reservation;
 import pl.nextsteppro.climbing.domain.reservation.ReservationRepository;
+import pl.nextsteppro.climbing.domain.reservation.ReservationRpe;
+import pl.nextsteppro.climbing.domain.reservation.ReservationRpeRepository;
+import pl.nextsteppro.climbing.domain.reservation.ReservationStatus;
 import pl.nextsteppro.climbing.domain.reservedseat.ReservedSeat;
 import pl.nextsteppro.climbing.domain.reservedseat.ReservedSeatRepository;
 import pl.nextsteppro.climbing.domain.timeslot.TimeSlot;
@@ -67,6 +70,7 @@ public class TrainingCalendarService {
     private final TrainingCalendarReadRepository readRepository;
     private final TrainingDeletionRepository deletionRepository;
     private final ReservationRepository reservationRepository;
+    private final ReservationRpeRepository reservationRpeRepository;
     private final ReservedSeatRepository reservedSeatRepository;
     private final UserRepository userRepository;
     private final AttachmentSupport attachments;
@@ -77,6 +81,7 @@ public class TrainingCalendarService {
                                    TrainingCalendarReadRepository readRepository,
                                    TrainingDeletionRepository deletionRepository,
                                    ReservationRepository reservationRepository,
+                                   ReservationRpeRepository reservationRpeRepository,
                                    ReservedSeatRepository reservedSeatRepository,
                                    UserRepository userRepository,
                                    AttachmentSupport attachments,
@@ -86,6 +91,7 @@ public class TrainingCalendarService {
         this.readRepository = readRepository;
         this.deletionRepository = deletionRepository;
         this.reservationRepository = reservationRepository;
+        this.reservationRpeRepository = reservationRpeRepository;
         this.reservedSeatRepository = reservedSeatRepository;
         this.userRepository = userRepository;
         this.attachments = attachments;
@@ -131,9 +137,11 @@ public class TrainingCalendarService {
         if (LocalDateTime.of(training.getTrainingDate(), training.getStartTime()).isAfter(nowWarsaw())) {
             throw new IllegalStateException(msg.get("training.calendar.complete.future"));
         }
-        // Defense in depth: @Min/@Max fire only via controller @Valid; without this a bad
-        // value would surface as an ugly 500 from the DB CHECK constraint
-        if (request.rpe() != null && (request.rpe() < 1 || request.rpe() > 10)) {
+        // Defense in depth: @NotNull/@Min/@Max fire only via controller @Valid.
+        if (request.rpe() == null) {
+            throw new IllegalArgumentException(msg.get("training.calendar.rpe.required"));
+        }
+        if (request.rpe() < 1 || request.rpe() > 10) {
             throw new IllegalArgumentException(msg.get("training.calendar.rpe.invalid"));
         }
         training.complete(
@@ -147,6 +155,34 @@ public class TrainingCalendarService {
         PersonalTraining training = requireOwnTraining(trainingId, userId);
         training.uncomplete();
         return toDtoWithAttachments(training, false, nowWarsaw());
+    }
+
+    /**
+     * Rate an attended reservation (idempotent upsert). The booking must be the athlete's own,
+     * CONFIRMED, and already over (same Warsaw past-predicate the stats use). A foreign reservation
+     * yields the same not-found error as a missing one — no id probing.
+     */
+    public void rateReservation(UUID userId, UUID reservationId, RateReservationRequest request) {
+        requireAthlete(userId);
+        Reservation reservation = reservationRepository.findById(reservationId)
+            .filter(r -> r.getUser().getId().equals(userId))
+            .orElseThrow(() -> new IllegalArgumentException(msg.get("training.reservation.not.found")));
+        if (reservation.getStatus() != ReservationStatus.CONFIRMED) {
+            throw new IllegalStateException(msg.get("training.reservation.rpe.not.attended"));
+        }
+        TimeSlot slot = reservation.getTimeSlot();
+        LocalDate today = LocalDate.now(WARSAW);
+        LocalTime now = LocalTime.now(WARSAW);
+        boolean past = slot.getDate().isBefore(today)
+            || (slot.getDate().equals(today) && !slot.getEndTime().isAfter(now));
+        if (!past) {
+            throw new IllegalStateException(msg.get("training.reservation.rpe.future"));
+        }
+        String note = ReservationRpe.sanitizeNote(request.note());
+        reservationRpeRepository.findByReservationId(reservationId)
+            .ifPresentOrElse(
+                existing -> existing.update(request.rpe(), note),
+                () -> reservationRpeRepository.save(new ReservationRpe(reservation, request.rpe(), note)));
     }
 
     @Transactional(readOnly = true)
@@ -357,9 +393,18 @@ public class TrainingCalendarService {
                 attachmentsByTraining.getOrDefault(t.getId(), List.of())))
             .toList();
 
-        List<ReservationOverlayDto> overlay = reservationRepository
-            .findConfirmedByUserIdInRange(athleteId, from, to).stream()
-            .map(r -> toOverlayDto(r, viewerIsAdmin && isNewForCoach(r, seen)))
+        List<Reservation> confirmed = reservationRepository.findConfirmedByUserIdInRange(athleteId, from, to);
+        // Batch-load RPE ratings for the overlaid bookings (no N+1)
+        Map<UUID, ReservationRpe> rpeByReservation = new HashMap<>();
+        List<UUID> reservationIds = confirmed.stream().map(Reservation::getId).toList();
+        if (!reservationIds.isEmpty()) {
+            for (ReservationRpe rr : reservationRpeRepository.findByReservationIdIn(reservationIds)) {
+                rpeByReservation.put(rr.reservationId(), rr);
+            }
+        }
+        List<ReservationOverlayDto> overlay = confirmed.stream()
+            .map(r -> toOverlayDto(r, viewerIsAdmin && isNewForCoach(r, seen),
+                rpeByReservation.get(r.getId()), nowWarsaw))
             .toList();
 
         List<InvitationOverlayDto> invitations = buildInvitationOverlay(athleteId, from, to);
@@ -529,11 +574,18 @@ public class TrainingCalendarService {
         return !r.isCreatedByAdmin() && r.getCreatedAt().isAfter(seen);
     }
 
-    private static ReservationOverlayDto toOverlayDto(Reservation r, boolean isNew) {
+    private static ReservationOverlayDto toOverlayDto(Reservation r, boolean isNew,
+                                                      @Nullable ReservationRpe rpe, LocalDateTime nowWarsaw) {
         TimeSlot slot = r.getTimeSlot();
+        // Ratable once the booking is over (same past-predicate as the stats/rate guard)
+        boolean past = slot.getDate().isBefore(nowWarsaw.toLocalDate())
+            || (slot.getDate().equals(nowWarsaw.toLocalDate()) && !slot.getEndTime().isAfter(nowWarsaw.toLocalTime()));
         return new ReservationOverlayDto(
             r.getId(), slot.getId(), slot.getDate(), slot.getStartTime(), slot.getEndTime(), slot.getDisplayTitle(),
-            isNew);
+            isNew,
+            rpe != null ? rpe.getRpe() : null,
+            rpe != null ? rpe.getNote() : null,
+            past);
     }
 
     @Nullable

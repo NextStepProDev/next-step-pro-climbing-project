@@ -118,7 +118,9 @@
     "completedAt": "Completed",
     "athleteFeedback": "Athlete's feedback",
     "noFeedback": "The athlete left no feedback",
-    "availableAfterStart": "Completion becomes available once the training has started"
+    "availableAfterStart": "Completion becomes available once the training has started",
+    "rpeHonesty": "Rate honestly — RPE is for planning load, not for competition.",
+    "rpeRequired": "Pick an RPE rating to save the completion."
   },
   "comments": {
     "title": "Comments",
@@ -187,6 +189,20 @@
       "streak_other": "{{count}} weeks in a row",
       "oneYear": "One year of training",
       "nextGoal": "Next badge at {{target}} activities: {{current}}/{{target}}"
+    },
+    "rpeDist": {
+      "title": "Intensity balance (90 days)",
+      "light_one": "Light {{count}}",
+      "light_other": "Light {{count}}",
+      "medium_one": "Medium {{count}}",
+      "medium_other": "Medium {{count}}",
+      "hard_one": "Hard {{count}}",
+      "hard_other": "Hard {{count}}",
+      "balanceHint": "Healthy training is a mix of light, medium and hard sessions."
+    },
+    "rpeWarning": {
+      "athlete": "Your last ratings are all 9-10 — check you're not overdoing the load.",
+      "coach": "The athlete's last ratings are all 9-10 — possible overtraining or inflated scoring."
     }
   },
   "templates": {
@@ -216,5 +232,15 @@
     "delete": "Delete file",
     "deleteConfirmTitle": "Delete file?",
     "deleteConfirmMessage": "The file will be removed from its training/template and from disk. This cannot be undone."
+  },
+  "rpe": {
+    "rate": "Rate the session (RPE)",
+    "rateShort": "Rate (RPE)",
+    "rated": "RPE {{value}}/10",
+    "note": "Note (optional)",
+    "notePlaceholder": "How did the session feel?",
+    "save": "Save rating",
+    "unrated_one": "{{count}} activity without a rating",
+    "unrated_other": "{{count}} activities without a rating"
   }
 }

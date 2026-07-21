@@ -191,6 +191,11 @@ function TrainingForm({ training, initialDate, initialTime, prefill, onClose, on
       setError(t('form.attachmentUrlInvalid'))
       return
     }
+    // Completing (instant log) requires an RPE
+    if (instantCompleteAvailable && markDone && rpe == null) {
+      setError(t('completion.rpeRequired'))
+      return
+    }
     setError(null)
     const completion = instantCompleteAvailable && markDone
       ? { feedback: feedback.trim() || undefined, rpe: rpe ?? undefined }

@@ -129,7 +129,14 @@ record MaterialDto(
 
 record CompleteTrainingRequest(
     @Nullable @Size(max = PersonalTraining.MAX_FEEDBACK_LENGTH) String feedback,
-    @Nullable @Min(1) @Max(10) Integer rpe
+    // RPE is required on completion (older completions with a null value are left untouched)
+    @NotNull @Min(1) @Max(10) Integer rpe
+) {}
+
+/** Athlete rates an attended reservation (idempotent upsert). */
+record RateReservationRequest(
+    @NotNull @Min(1) @Max(10) Integer rpe,
+    @Nullable @Size(max = 500) String note
 ) {}
 
 record CreateTrainingCommentRequest(
@@ -166,7 +173,11 @@ record ReservationOverlayDto(
     @Nullable String title,
     // Coach viewer only: the athlete booked this after the coach's last visit (unread dot);
     // always false for the athlete (own action) and for bookings made by an admin
-    boolean isNew
+    boolean isNew,
+    // Athlete RPE rating for this attended booking (null = not rated); canRate = booking is past
+    @Nullable Integer rpe,
+    @Nullable String rpeNote,
+    boolean canRate
 ) {}
 
 /** A future training removed by the OTHER side since the viewer's last visit ("deleted" strip). */
@@ -250,10 +261,20 @@ record AthleteStatsDto(
     // Personal trainings only: completed / (completed + missed). Reservations are excluded
     // on purpose — a cancelled booking is a choice, not a no-show
     @Nullable Integer attendanceRatePercent,
+    // Average RPE now merges completed trainings AND rated reservations
     @Nullable Double avgRpeOverall,
     @Nullable Double avgRpeLast30Days,
-    List<LocationCountDto> topLocations
+    List<LocationCountDto> topLocations,
+    // Intensity balance over the last 90 days across both sources (session counts per band)
+    RpeDistributionDto rpeDistribution,
+    // Last 5 ratings (both sources) all >= 9 → possible overtraining / inflated scoring
+    boolean sustainedHighRpe,
+    // Past attended reservations with no RPE yet (nudge to rate; personal trainings excluded)
+    int unratedActivitiesCount
 ) {}
+
+/** Session counts by RPE band over the last 90 days: light 1-4, medium 5-7, hard 8-10. */
+record RpeDistributionDto(int light, int medium, int hard) {}
 
 record TypeBreakdownDto(long personal, long individualSlot, long course, long training, long workshop) {}
 

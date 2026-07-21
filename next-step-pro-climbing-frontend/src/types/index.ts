@@ -1101,6 +1101,11 @@ export interface ReservationOverlayItem {
   title: string | null
   // Coach view only: booked by the athlete since the coach's last visit (unread dot)
   isNew: boolean
+  // Athlete RPE rating for this attended booking (null = not rated)
+  rpe: number | null
+  rpeNote: string | null
+  // The booking is over → the athlete may rate it (UI also gates on !coach view)
+  canRate: boolean
 }
 
 // A future training removed by the other side since the viewer's last visit
@@ -1227,6 +1232,18 @@ export interface AthleteStats {
   avgRpeOverall: number | null
   avgRpeLast30Days: number | null
   topLocations: LocationCount[]
+  // Session counts per intensity band over the last 90 days (both sources)
+  rpeDistribution: RpeDistribution
+  // Last 5 ratings all >= 9 → overtraining/inflation hint
+  sustainedHighRpe: boolean
+  // Past attended reservations not yet rated (athlete nudge)
+  unratedActivitiesCount: number
+}
+
+export interface RpeDistribution {
+  light: number
+  medium: number
+  hard: number
 }
 
 // Coach's roster entry (admin panel)

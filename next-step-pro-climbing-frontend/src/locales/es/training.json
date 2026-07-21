@@ -119,7 +119,9 @@
     "completedAt": "Completado",
     "athleteFeedback": "Feedback del atleta",
     "noFeedback": "El atleta no dejó feedback",
-    "availableAfterStart": "Podrás marcarlo como completado cuando el entrenamiento haya comenzado"
+    "availableAfterStart": "Podrás marcarlo como completado cuando el entrenamiento haya comenzado",
+    "rpeHonesty": "Valora con sinceridad — el RPE sirve para planificar la carga, no para competir.",
+    "rpeRequired": "Elige una valoración RPE para guardar."
   },
   "comments": {
     "title": "Comentarios",
@@ -191,6 +193,23 @@
       "streak_other": "{{count}} semanas seguidas",
       "oneYear": "Un año entrenando",
       "nextGoal": "Próxima insignia a las {{target}} actividades: {{current}}/{{target}}"
+    },
+    "rpeDist": {
+      "title": "Equilibrio de intensidad (90 días)",
+      "light_one": "Suaves {{count}}",
+      "light_many": "Suaves {{count}}",
+      "light_other": "Suaves {{count}}",
+      "medium_one": "Medias {{count}}",
+      "medium_many": "Medias {{count}}",
+      "medium_other": "Medias {{count}}",
+      "hard_one": "Duras {{count}}",
+      "hard_many": "Duras {{count}}",
+      "hard_other": "Duras {{count}}",
+      "balanceHint": "Un entrenamiento sano combina sesiones suaves, medias y duras."
+    },
+    "rpeWarning": {
+      "athlete": "Tus últimas valoraciones son todas 9-10 — revisa que no te estés pasando con la carga.",
+      "coach": "Las últimas valoraciones del atleta son todas 9-10 — posible sobreentrenamiento o inflar las notas."
     }
   },
   "templates": {
@@ -220,5 +239,16 @@
     "delete": "Eliminar archivo",
     "deleteConfirmTitle": "¿Eliminar el archivo?",
     "deleteConfirmMessage": "El archivo se eliminará de su entrenamiento/plantilla y del disco. No se puede deshacer."
+  },
+  "rpe": {
+    "rate": "Valora la sesión (RPE)",
+    "rateShort": "Valorar (RPE)",
+    "rated": "RPE {{value}}/10",
+    "note": "Nota (opcional)",
+    "notePlaceholder": "¿Cómo te sentiste en la sesión?",
+    "save": "Guardar valoración",
+    "unrated_one": "{{count}} actividad sin valorar",
+    "unrated_many": "{{count}} actividades sin valorar",
+    "unrated_other": "{{count}} actividades sin valorar"
   }
 }

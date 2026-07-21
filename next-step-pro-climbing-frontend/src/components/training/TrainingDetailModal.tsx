@@ -164,11 +164,12 @@ export function TrainingDetailModal({
                 />
               </div>
               <RpePicker value={rpe} onChange={setRpe} />
+              {rpe == null && <p className="text-xs text-amber-400/80">{t('completion.rpeRequired')}</p>}
               <div className="flex justify-end gap-2">
                 <Button size="sm" variant="secondary" onClick={() => setCompletionOpen(false)}>
                   {t('form.cancel')}
                 </Button>
-                <Button size="sm" variant="primary" onClick={saveCompletion} loading={mutating}>
+                <Button size="sm" variant="primary" onClick={saveCompletion} loading={mutating} disabled={rpe == null}>
                   {t('completion.save')}
                 </Button>
               </div>

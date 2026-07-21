@@ -90,6 +90,16 @@ public class TrainingCalendarController {
         return ResponseEntity.ok(trainingCalendarService.uploadMyAttachment(userId, file));
     }
 
+    @Operation(summary = "Rate an attended reservation", description = "Idempotent upsert of the athlete's RPE (1-10) for a confirmed, already-finished booking.")
+    @PutMapping("/reservations/{reservationId}/rpe")
+    public ResponseEntity<Void> rateReservation(
+            @Parameter(hidden = true) @CurrentUserId UUID userId,
+            @PathVariable UUID reservationId,
+            @Valid @RequestBody RateReservationRequest request) {
+        trainingCalendarService.rateReservation(userId, reservationId, request);
+        return ResponseEntity.noContent().build();
+    }
+
     @Operation(summary = "Add training", description = "Creates a training in the athlete's own calendar.")
     @PostMapping("/trainings")
     public ResponseEntity<PersonalTrainingDto> create(

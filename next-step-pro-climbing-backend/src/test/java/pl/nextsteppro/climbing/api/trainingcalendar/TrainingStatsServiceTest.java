@@ -328,6 +328,73 @@ class TrainingStatsServiceTest {
         assertEquals(7.0, stats.avgRpeLast30Days());
     }
 
+    @Test
+    void shouldAverageRpeFromBothSources() {
+        // Given: one rated training (8) + one rated reservation (6) inside the window
+        givenTrainings(completedRpe(d(2026, 7, 10), 8));
+        givenReservations(ratedReservation(d(2026, 7, 12), 6));
+
+        AthleteStatsDto stats = service.buildStats(athleteId, NOW);
+
+        assertEquals(7.0, stats.avgRpeOverall());
+    }
+
+    @Test
+    void shouldBucketRpeDistributionOverLast90Days() {
+        // Given: light (3), medium (6), hard (9,10) within 90 days; an old one (10) outside
+        givenTrainings(
+            completedRpe(d(2026, 7, 10), 3),
+            completedRpe(d(2026, 7, 9), 6),
+            completedRpe(d(2026, 6, 20), 9),
+            completedRpe(d(2026, 1, 1), 10)); // > 90 days before NOW → excluded
+        givenReservations(ratedReservation(d(2026, 7, 8), 10));
+
+        AthleteStatsDto stats = service.buildStats(athleteId, NOW);
+
+        assertEquals(1, stats.rpeDistribution().light());
+        assertEquals(1, stats.rpeDistribution().medium());
+        assertEquals(2, stats.rpeDistribution().hard());
+    }
+
+    @Test
+    void shouldFlagSustainedHighWhenLastFiveAllNineOrMore() {
+        givenTrainings(
+            completedRpe(d(2026, 7, 14), 9), completedRpe(d(2026, 7, 12), 10),
+            completedRpe(d(2026, 7, 10), 9), completedRpe(d(2026, 7, 8), 9),
+            completedRpe(d(2026, 7, 6), 10), completedRpe(d(2026, 7, 1), 3)); // older, ignored
+        givenReservations();
+
+        assertTrue(service.buildStats(athleteId, NOW).sustainedHighRpe());
+    }
+
+    @Test
+    void shouldNotFlagSustainedHighWithFewerThanFiveRatings() {
+        givenTrainings(completedRpe(d(2026, 7, 14), 10), completedRpe(d(2026, 7, 12), 10));
+        givenReservations();
+
+        assertFalse(service.buildStats(athleteId, NOW).sustainedHighRpe());
+    }
+
+    @Test
+    void shouldNotFlagSustainedHighWhenOneRecentBelowNine() {
+        givenTrainings(
+            completedRpe(d(2026, 7, 14), 9), completedRpe(d(2026, 7, 12), 10),
+            completedRpe(d(2026, 7, 10), 7), completedRpe(d(2026, 7, 8), 9),
+            completedRpe(d(2026, 7, 6), 10));
+        givenReservations();
+
+        assertFalse(service.buildStats(athleteId, NOW).sustainedHighRpe());
+    }
+
+    @Test
+    void shouldCountUnratedPastReservations() {
+        // Rated reservations and personal trainings do NOT count toward the nudge
+        givenTrainings(completed(d(2026, 7, 10)));
+        givenReservations(reservation(d(2026, 7, 12)), ratedReservation(d(2026, 7, 11), 5), reservation(d(2026, 7, 9)));
+
+        assertEquals(2, service.buildStats(athleteId, NOW).unratedActivitiesCount());
+    }
+
     // ========== locations ==========
 
     @Test
@@ -432,11 +499,15 @@ class TrainingStatsServiceTest {
     }
 
     private static ReservationStatsRow reservation(LocalDate date) {
-        return new ReservationStatsRow(date, null, null);
+        return new ReservationStatsRow(date, null, null, null);
     }
 
     private static ReservationStatsRow reservation(LocalDate date, EventType type, String location) {
-        return new ReservationStatsRow(date, type, location);
+        return new ReservationStatsRow(date, type, location, null);
+    }
+
+    private static ReservationStatsRow ratedReservation(LocalDate date, int rpe) {
+        return new ReservationStatsRow(date, null, null, rpe);
     }
 
     private static void setField(Object target, String fieldName, Object value) {
