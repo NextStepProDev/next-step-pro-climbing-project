@@ -1,6 +1,7 @@
 package pl.nextsteppro.climbing.domain.personaltraining;
 
 import jakarta.persistence.*;
+import org.jspecify.annotations.Nullable;
 import pl.nextsteppro.climbing.domain.user.User;
 
 import java.time.Instant;
@@ -32,10 +33,13 @@ public class TrainingDeletion {
     @Column(name = "training_date", nullable = false)
     private LocalDate trainingDate;
 
-    @Column(name = "start_time", nullable = false)
+    // Null when the deleted training was untimed ("all-day").
+    @Column(name = "start_time")
+    @Nullable
     private LocalTime startTime;
 
-    @Column(name = "end_time", nullable = false)
+    @Column(name = "end_time")
+    @Nullable
     private LocalTime endTime;
 
     @Column(name = "deleted_by_admin", nullable = false)
@@ -76,10 +80,12 @@ public class TrainingDeletion {
         return trainingDate;
     }
 
+    @Nullable
     public LocalTime getStartTime() {
         return startTime;
     }
 
+    @Nullable
     public LocalTime getEndTime() {
         return endTime;
     }

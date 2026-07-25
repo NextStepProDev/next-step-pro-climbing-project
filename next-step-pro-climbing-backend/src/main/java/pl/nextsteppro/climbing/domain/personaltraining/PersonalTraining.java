@@ -40,10 +40,13 @@ public class PersonalTraining {
     @Column(name = "training_date", nullable = false)
     private LocalDate trainingDate;
 
-    @Column(name = "start_time", nullable = false)
+    // Untimed ("all-day") training: both null. Otherwise both set. Never exactly one (service-enforced).
+    @Column(name = "start_time")
+    @Nullable
     private LocalTime startTime;
 
-    @Column(name = "end_time", nullable = false)
+    @Column(name = "end_time")
+    @Nullable
     private LocalTime endTime;
 
     @Column(nullable = false, length = MAX_TITLE_LENGTH)
@@ -78,7 +81,7 @@ public class PersonalTraining {
 
     protected PersonalTraining() {}
 
-    public PersonalTraining(User athlete, LocalDate trainingDate, LocalTime startTime, LocalTime endTime,
+    public PersonalTraining(User athlete, LocalDate trainingDate, @Nullable LocalTime startTime, @Nullable LocalTime endTime,
                             String title, @Nullable String description, boolean createdByAdmin) {
         this.athlete = athlete;
         this.trainingDate = trainingDate;
@@ -113,7 +116,7 @@ public class PersonalTraining {
         return escaped.length() > maxLength ? escaped.substring(0, maxLength) : escaped;
     }
 
-    public void update(LocalDate trainingDate, LocalTime startTime, LocalTime endTime,
+    public void update(LocalDate trainingDate, @Nullable LocalTime startTime, @Nullable LocalTime endTime,
                        String title, @Nullable String description, boolean modifiedByAdmin) {
         this.trainingDate = trainingDate;
         this.startTime = startTime;
@@ -156,10 +159,12 @@ public class PersonalTraining {
         return trainingDate;
     }
 
+    @Nullable
     public LocalTime getStartTime() {
         return startTime;
     }
 
+    @Nullable
     public LocalTime getEndTime() {
         return endTime;
     }

@@ -32,6 +32,8 @@ interface TrainingDetailModalProps {
 
 // Completion is only possible once the training has started (backend enforces the same rule)
 function hasStarted(training: PersonalTraining): boolean {
+  // Untimed ("all-day") training counts as started from the beginning of its day
+  if (training.startTime == null) return training.date <= format(new Date(), 'yyyy-MM-dd')
   return new Date(`${training.date}T${training.startTime}`) <= new Date()
 }
 
@@ -87,9 +89,13 @@ export function TrainingDetailModal({
           <span className="text-sm text-surface-300 capitalize">
             {format(new Date(training.date), 'EEEE, d MMMM yyyy', { locale })}
           </span>
-          <span className="text-sm text-surface-400">
-            {training.startTime.slice(0, 5)} - {training.endTime.slice(0, 5)}
-          </span>
+          {training.startTime && training.endTime ? (
+            <span className="text-sm text-surface-400">
+              {training.startTime.slice(0, 5)} - {training.endTime.slice(0, 5)}
+            </span>
+          ) : (
+            <span className="text-sm text-surface-400">{t('detail.allDay')}</span>
+          )}
           <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] text-surface-400 bg-surface-800 border border-surface-700 rounded-full">
             {training.createdByAdmin ? <UserCog className="w-3 h-3" /> : <UserIcon className="w-3 h-3" />}
             {training.createdByAdmin ? t('detail.addedByCoach') : t('detail.addedByAthlete')}

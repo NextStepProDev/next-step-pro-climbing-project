@@ -25,6 +25,7 @@
     "editTitle": "Edytuj trening",
     "duplicateTitle": "Duplikuj trening",
     "date": "Data",
+    "allDay": "Cały dzień (bez godziny)",
     "startTime": "Początek",
     "endTime": "Koniec",
     "title": "Tytuł",
@@ -46,6 +47,7 @@
     "attachmentUpload": "Wgraj plik (PDF/zdjęcie)"
   },
   "detail": {
+    "allDay": "Cały dzień",
     "addedByCoach": "Dodany przez trenera",
     "addedByAthlete": "Dodany przez zawodnika",
     "materials": "Materiały",

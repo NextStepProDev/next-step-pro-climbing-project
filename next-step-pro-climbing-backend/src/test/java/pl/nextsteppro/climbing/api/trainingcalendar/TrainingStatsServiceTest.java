@@ -225,6 +225,20 @@ class TrainingStatsServiceTest {
     }
 
     @Test
+    void shouldCountUntimedTrainingsInAttendanceViaEndOfDay() {
+        // Given: untimed (null endTime) rows — missed derivation must use end-of-day, not NPE.
+        // 1 completed (past) + 1 missed (past, uncompleted) + 1 today untimed still planned (not missed yet)
+        givenTrainings(untimedCompleted(d(2026, 7, 10)), untimedPlanned(d(2026, 7, 12)), untimedPlanned(d(2026, 7, 15)));
+        givenReservations();
+
+        // When
+        AthleteStatsDto stats = service.buildStats(athleteId, NOW);
+
+        // Then: today's untimed is excluded (end-of-day > NOW) → 1/2 = 50%
+        assertEquals(50, stats.attendanceRatePercent());
+    }
+
+    @Test
     void shouldReturnNullAttendanceWhenNoPersonalTrainingEnded() {
         // Given: only future plans; attended reservations must not fill in for attendance
         givenTrainings(planned(d(2026, 7, 20)));
@@ -496,6 +510,15 @@ class TrainingStatsServiceTest {
 
     private static TrainingStatsRow planned(LocalDate date) {
         return new TrainingStatsRow(date, LocalTime.of(19, 0), null, null);
+    }
+
+    // Untimed ("all-day"): null endTime → missed derivation falls back to end-of-day
+    private static TrainingStatsRow untimedCompleted(LocalDate date) {
+        return new TrainingStatsRow(date, null, DONE, null);
+    }
+
+    private static TrainingStatsRow untimedPlanned(LocalDate date) {
+        return new TrainingStatsRow(date, null, null, null);
     }
 
     private static ReservationStatsRow reservation(LocalDate date) {

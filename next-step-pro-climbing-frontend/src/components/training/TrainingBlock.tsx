@@ -49,7 +49,7 @@ export function TrainingBlock({
         {training.status === 'COMPLETED' && <Check className="w-3 h-3 shrink-0" />}
         <span className="font-medium truncate">{training.title}</span>
       </span>
-      {!compact && (
+      {!compact && training.startTime && training.endTime && (
         <span className="block text-[10px] opacity-80">
           {clampedTop && '↑ '}
           {training.startTime.slice(0, 5)} - {training.endTime.slice(0, 5)}

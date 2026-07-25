@@ -25,6 +25,7 @@
     "editTitle": "Edit training",
     "duplicateTitle": "Duplicate training",
     "date": "Date",
+    "allDay": "All day (no time)",
     "startTime": "Start",
     "endTime": "End",
     "title": "Title",
@@ -46,6 +47,7 @@
     "attachmentUpload": "Upload file (PDF/image)"
   },
   "detail": {
+    "allDay": "All day",
     "addedByCoach": "Added by coach",
     "addedByAthlete": "Added by athlete",
     "materials": "Materials",

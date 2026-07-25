@@ -246,8 +246,9 @@ export function TrainingCalendarSection({ api, scopeKey, isCoachView }: Training
     setDuplicatePrefill({
       title: decodeHtmlEntities(tr.title),
       description: tr.description ? decodeHtmlEntities(tr.description) : undefined,
-      startTime: tr.startTime.slice(0, 5),
-      endTime: tr.endTime.slice(0, 5),
+      // Untimed source duplicates as untimed (null times → form defaults to all-day)
+      startTime: tr.startTime ? tr.startTime.slice(0, 5) : null,
+      endTime: tr.endTime ? tr.endTime.slice(0, 5) : null,
       attachments: toAttachmentInputs(tr),
     })
     setPrefillDate(format(addDays(new Date(tr.date), 7), 'yyyy-MM-dd'))
@@ -274,7 +275,10 @@ export function TrainingCalendarSection({ api, scopeKey, isCoachView }: Training
       trainingId: tr.id,
       title: decodeHtmlEntities(tr.title),
       description: tr.description ? decodeHtmlEntities(tr.description) : undefined,
-      durationMin: timeToMin(tr.endTime.slice(0, 5)) - timeToMin(tr.startTime.slice(0, 5)),
+      // Clipboard is armed only from timed grid blocks; guard defensively against null times
+      durationMin: tr.startTime && tr.endTime
+        ? timeToMin(tr.endTime.slice(0, 5)) - timeToMin(tr.startTime.slice(0, 5))
+        : 90,
       attachments: toAttachmentInputs(tr),
     })
   }
@@ -375,7 +379,7 @@ export function TrainingCalendarSection({ api, scopeKey, isCoachView }: Training
             {deletions.map((d, i) => (
               <li key={i} className="text-sm text-surface-300">
                 {format(new Date(d.date), 'dd.MM.yyyy')}{' '}
-                {d.startTime.slice(0, 5)} - {d.endTime.slice(0, 5)} —{' '}
+                {d.startTime && d.endTime ? `${d.startTime.slice(0, 5)} - ${d.endTime.slice(0, 5)} — ` : '— '}
                 <span className="font-medium">{decodeHtmlEntities(d.title)}</span>
               </li>
             ))}

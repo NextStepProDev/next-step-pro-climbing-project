@@ -28,8 +28,9 @@ import java.util.UUID;
 
 record CreatePersonalTrainingRequest(
     @NotNull LocalDate date,
-    @NotNull LocalTime startTime,
-    @NotNull LocalTime endTime,
+    // Untimed ("all-day") training: both null. Otherwise both set (validated in the service).
+    @Nullable LocalTime startTime,
+    @Nullable LocalTime endTime,
     @NotBlank @Size(max = PersonalTraining.MAX_TITLE_LENGTH) String title,
     @Nullable @Size(max = PersonalTraining.MAX_DESCRIPTION_LENGTH) String description,
     // null = leave attachments untouched (so a move/drag PUT keeps them);
@@ -37,7 +38,7 @@ record CreatePersonalTrainingRequest(
     @Nullable @Size(max = TrainingAttachment.MAX_PER_TRAINING) List<@Valid AttachmentRequest> attachments
 ) {
     // Convenience for callers that don't touch attachments (null = leave untouched)
-    CreatePersonalTrainingRequest(LocalDate date, LocalTime startTime, LocalTime endTime,
+    CreatePersonalTrainingRequest(LocalDate date, @Nullable LocalTime startTime, @Nullable LocalTime endTime,
                                   String title, @Nullable String description) {
         this(date, startTime, endTime, title, description, null);
     }
@@ -146,8 +147,9 @@ record CreateTrainingCommentRequest(
 record PersonalTrainingDto(
     UUID id,
     LocalDate date,
-    LocalTime startTime,
-    LocalTime endTime,
+    // Null for untimed ("all-day") trainings.
+    @Nullable LocalTime startTime,
+    @Nullable LocalTime endTime,
     String title,
     @Nullable String description,
     boolean createdByAdmin,
@@ -183,8 +185,9 @@ record ReservationOverlayDto(
 /** A future training removed by the OTHER side since the viewer's last visit ("deleted" strip). */
 record TrainingDeletionDto(
     LocalDate date,
-    LocalTime startTime,
-    LocalTime endTime,
+    // Null when the deleted training was untimed ("all-day").
+    @Nullable LocalTime startTime,
+    @Nullable LocalTime endTime,
     String title,
     boolean deletedByAdmin,
     Instant deletedAt

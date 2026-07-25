@@ -1064,8 +1064,9 @@ export interface AttachmentUpload {
 
 export interface CreatePersonalTraining {
   date: string
-  startTime: string
-  endTime: string
+  // Untimed ("all-day") training: omit/null both. Otherwise both set.
+  startTime?: string | null
+  endTime?: string | null
   title: string
   description?: string
   // undefined = leave attachments untouched (move/drag); [] = clear; a list = replace
@@ -1075,8 +1076,9 @@ export interface CreatePersonalTraining {
 export interface PersonalTraining {
   id: string
   date: string
-  startTime: string
-  endTime: string
+  // Null for untimed ("all-day") trainings
+  startTime: string | null
+  endTime: string | null
   title: string
   description: string | null
   createdByAdmin: boolean
@@ -1111,8 +1113,9 @@ export interface ReservationOverlayItem {
 // A future training removed by the other side since the viewer's last visit
 export interface TrainingDeletionItem {
   date: string
-  startTime: string
-  endTime: string
+  // Null when the deleted training was untimed ("all-day")
+  startTime: string | null
+  endTime: string | null
   title: string
   deletedByAdmin: boolean
   deletedAt: string
