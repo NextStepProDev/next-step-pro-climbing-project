@@ -39,6 +39,12 @@
   "confirm": "Confirm",
   "cancel": "Cancel",
   "close": "Close",
+  "unsaved": {
+    "title": "Discard changes?",
+    "message": "You have unsaved changes. If you close now, they will be lost.",
+    "discard": "Discard changes",
+    "keep": "Back to editing"
+  },
   "save": "Save",
   "delete": "Delete",
   "edit": "Edit",

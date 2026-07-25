@@ -164,6 +164,7 @@ export function AdminEventsPanel() {
       )}
 
       <CreateEventModal
+        key={showCreateModal ? 'open' : 'closed'}
         isOpen={showCreateModal}
         onClose={() => setShowCreateModal(false)}
       />
@@ -831,7 +832,7 @@ export function EditEventModal({
   }
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={t('events.editTitle')}>
+    <Modal isOpen={isOpen} onClose={onClose} title={t('events.editTitle')} confirmClose={isDirty}>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className="block text-sm text-surface-400 mb-1">{t('events.selectCourse')}</label>
@@ -935,8 +936,9 @@ export function EditEventModal({
         </div>
 
         <div>
-          <label className="flex items-center gap-2 cursor-pointer mb-2">
+          <div className="flex items-center gap-2 mb-2">
             <input
+              id="edit-event-all-day"
               type="checkbox"
               checked={allDay}
               onChange={(e) => {
@@ -949,8 +951,10 @@ export function EditEventModal({
               }}
               className="w-4 h-4 rounded border-surface-700 bg-surface-800 text-primary-500 focus:ring-primary-500"
             />
-            <span className="text-sm text-surface-300">{t('events.allDayCheckbox')}</span>
-          </label>
+            <label htmlFor="edit-event-all-day" className="text-sm text-surface-300 cursor-pointer select-none">
+              {t('events.allDayCheckbox')}
+            </label>
+          </div>
 
           {!allDay && (
             <div className="grid grid-cols-2 gap-4">
@@ -1079,6 +1083,8 @@ export function CreateEventModal({
     },
   })
 
+  const isDirty = useDirty({ form, courseId, allDay, invited })
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     const payload: CreateEventRequest = { ...form }
@@ -1093,7 +1099,7 @@ export function CreateEventModal({
   }
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={t('events.addTitle')}>
+    <Modal isOpen={isOpen} onClose={onClose} title={t('events.addTitle')} confirmClose={isDirty}>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className="block text-sm text-surface-400 mb-1">{t('events.selectCourse')}</label>
@@ -1199,8 +1205,9 @@ export function CreateEventModal({
         </div>
 
         <div>
-          <label className="flex items-center gap-2 cursor-pointer mb-2">
+          <div className="flex items-center gap-2 mb-2">
             <input
+              id="create-event-all-day"
               type="checkbox"
               checked={allDay}
               onChange={(e) => {
@@ -1213,8 +1220,10 @@ export function CreateEventModal({
               }}
               className="w-4 h-4 rounded border-surface-700 bg-surface-800 text-primary-500 focus:ring-primary-500"
             />
-            <span className="text-sm text-surface-300">{t('events.allDayCheckbox')}</span>
-          </label>
+            <label htmlFor="create-event-all-day" className="text-sm text-surface-300 cursor-pointer select-none">
+              {t('events.allDayCheckbox')}
+            </label>
+          </div>
 
           {!allDay && (
             <div className="grid grid-cols-2 gap-4">

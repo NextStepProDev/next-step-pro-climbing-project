@@ -39,6 +39,12 @@
   "confirm": "Potwierdź",
   "cancel": "Anuluj",
   "close": "Zamknij",
+  "unsaved": {
+    "title": "Odrzucić zmiany?",
+    "message": "Masz niezapisane zmiany. Jeśli teraz zamkniesz, przepadną.",
+    "discard": "Odrzuć zmiany",
+    "keep": "Wróć do edycji"
+  },
   "save": "Zapisz",
   "delete": "Usuń",
   "edit": "Edytuj",
