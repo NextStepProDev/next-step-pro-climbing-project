@@ -69,12 +69,13 @@ interface PositionedItem {
 }
 
 // Greedy lane assignment so overlapping blocks render side by side instead of stacking.
+// Callers pass only timed entries (untimed trainings live in the all-day lane).
 function layoutDay(trainings: PersonalTraining[], reservations: ReservationOverlayItem[],
                    invitations: InvitationOverlayItem[]): PositionedItem[] {
   const items: PositionedItem[] = [
-    ...trainings.map((t) => baseItem(`t-${t.id}`, t.startTime, t.endTime, { training: t })),
+    ...trainings.map((t) => baseItem(`t-${t.id}`, t.startTime ?? '07:00', t.endTime ?? '08:00', { training: t })),
     ...reservations.map((r) => baseItem(`r-${r.id}`, r.startTime, r.endTime, { reservation: r })),
-    // All-day event invites (no times) pin near the grid top so they stay in sight
+    // Only timed invites reach the grid; all-day invites are filtered out into the all-day lane.
     ...invitations.map((inv, i) => baseItem(`i-${i}-${inv.slotId ?? inv.eventId}`,
       inv.startTime ?? '07:00', inv.endTime ?? '08:00', { invitation: inv })),
   ].sort((a, b) => a.startMin - b.startMin || a.endMin - b.endMin)
@@ -155,17 +156,30 @@ export function TrainingWeekCalendar({
     [days, locale],
   )
 
+  // Only timed entries land in the hour grid; untimed trainings and all-day invitations
+  // (event invites with no times) go to the all-day lane above it.
   const byDay = useMemo(() => {
     const map = new Map<string, PositionedItem[]>()
     for (const date of days) {
       map.set(date, layoutDay(
-        trainings.filter((tr) => tr.date === date),
+        trainings.filter((tr) => tr.date === date && tr.startTime != null),
         reservations.filter((r) => r.date === date),
-        invitations.filter((inv) => inv.date === date),
+        invitations.filter((inv) => inv.date === date && inv.startTime != null),
       ))
     }
     return map
   }, [days, trainings, reservations, invitations])
+
+  const allDayByDay = useMemo(() => {
+    const map = new Map<string, { trainings: PersonalTraining[]; invitations: InvitationOverlayItem[] }>()
+    for (const date of days) {
+      map.set(date, {
+        trainings: trainings.filter((tr) => tr.date === date && tr.startTime == null),
+        invitations: invitations.filter((inv) => inv.date === date && inv.startTime == null),
+      })
+    }
+    return map
+  }, [days, trainings, invitations])
 
   // Auto-scroll to today's column on mobile (same behavior as the public week view)
   useEffect(() => {
@@ -231,6 +245,49 @@ export function TrainingWeekCalendar({
                   <div className={clsx('text-sm font-semibold', today ? 'text-primary-400' : 'text-surface-200')}>
                     {format(d, 'd')}
                   </div>
+                </div>
+              )
+            })}
+          </div>
+
+          {/* All-day lane: untimed trainings + all-day invitations, pinned above the hour grid */}
+          <div className="grid border-b border-surface-800" style={{ gridTemplateColumns: '60px repeat(7, 1fr)' }}>
+            <div className="flex items-start justify-end pr-2 pt-1 text-[10px] text-surface-500">
+              {t('form.allDay')}
+            </div>
+            {days.map((date) => {
+              const today = isToday(new Date(date))
+              const allDay = allDayByDay.get(date)
+              return (
+                <div
+                  key={date}
+                  className={clsx(
+                    'relative min-h-8 p-1 space-y-0.5 border-l border-surface-800 cursor-pointer transition-colors hover:bg-surface-800/40',
+                    today && 'bg-primary-500/5',
+                  )}
+                  onClick={(e) => {
+                    if ((e.target as HTMLElement).closest('button')) return
+                    // All-day cell → add an untimed training (no time passed)
+                    onDayClick(date)
+                  }}
+                >
+                  {allDay?.trainings.map((tr) => (
+                    <TrainingBlock
+                      key={tr.id}
+                      training={tr}
+                      onClick={() => onTrainingClick(tr)}
+                      compact
+                    />
+                  ))}
+                  {allDay?.invitations.map((inv, i) => (
+                    <InvitationBlock
+                      key={`inv-${i}-${inv.slotId ?? inv.eventId}`}
+                      invitation={inv}
+                      label={invitationLabel}
+                      onClick={() => onInvitationClick(inv)}
+                      compact
+                    />
+                  ))}
                 </div>
               )
             })}
@@ -331,10 +388,10 @@ export function TrainingWeekCalendar({
                           isCut={cutTrainingId === tr.id}
                           isCopied={copiedTrainingId === tr.id}
                           onPointerDown={movable
-                            ? (e) => onSlotPointerDown(tr.id, date, tr.startTime.slice(0, 5), tr.endTime.slice(0, 5), e)
+                            ? (e) => onSlotPointerDown(tr.id, date, tr.startTime!.slice(0, 5), tr.endTime!.slice(0, 5), e)
                             : undefined}
                           onResizePointerDown={movable
-                            ? (e) => onResizePointerDown(tr.id, date, tr.startTime.slice(0, 5), tr.endTime.slice(0, 5), e)
+                            ? (e) => onResizePointerDown(tr.id, date, tr.startTime!.slice(0, 5), tr.endTime!.slice(0, 5), e)
                             : undefined}
                           isDragging={isBeingDragged(tr.id)}
                           isLongPressing={longPressSlotId === tr.id}

@@ -226,7 +226,8 @@ public class TrainingStatsService {
         long missed = 0;
         for (TrainingStatsRow t : trainings) {
             if (t.isCompleted()) completed++;
-            else if (LocalDateTime.of(t.date(), t.endTime()).isBefore(nowWarsaw)) missed++;
+            // Untimed ("all-day") rows have a null endTime → treated as end-of-day, same as deriveStatus.
+            else if (TrainingCalendarService.trainingEnd(t.date(), t.endTime()).isBefore(nowWarsaw)) missed++;
         }
         long ended = completed + missed;
         return ended == 0 ? null : (int) Math.round(100.0 * completed / ended);

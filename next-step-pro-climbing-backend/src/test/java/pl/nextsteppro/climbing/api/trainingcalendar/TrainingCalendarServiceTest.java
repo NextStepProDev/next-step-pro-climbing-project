@@ -220,6 +220,71 @@ class TrainingCalendarServiceTest {
         assertEquals("COMPLETED", TrainingCalendarService.deriveStatus(missed, now));
     }
 
+    // ========== untimed ("all-day") ==========
+
+    @Test
+    void shouldCreateUntimedTrainingWhenBothTimesNull() {
+        when(trainingRepository.save(any())).thenAnswer(inv -> {
+            PersonalTraining t = inv.getArgument(0);
+            setField(t, "createdAt", Instant.now());
+            return t;
+        });
+        CreatePersonalTrainingRequest request = new CreatePersonalTrainingRequest(
+            LocalDate.now().plusDays(2), null, null, "Cały dzień", null);
+
+        PersonalTrainingDto dto = service.createMy(athleteId, request);
+
+        ArgumentCaptor<PersonalTraining> captor = ArgumentCaptor.forClass(PersonalTraining.class);
+        verify(trainingRepository).save(captor.capture());
+        assertNull(captor.getValue().getStartTime());
+        assertNull(captor.getValue().getEndTime());
+        assertNull(dto.startTime());
+        assertNull(dto.endTime());
+        assertEquals("PLANNED", dto.status());
+    }
+
+    @Test
+    void shouldRejectCreateWhenOnlyOneTimeProvided() {
+        CreatePersonalTrainingRequest startOnly = new CreatePersonalTrainingRequest(
+            LocalDate.now().plusDays(2), LocalTime.of(18, 0), null, "Trening", null);
+        assertThrows(IllegalArgumentException.class, () -> service.createMy(athleteId, startOnly));
+
+        CreatePersonalTrainingRequest endOnly = new CreatePersonalTrainingRequest(
+            LocalDate.now().plusDays(2), null, LocalTime.of(19, 0), "Trening", null);
+        assertThrows(IllegalArgumentException.class, () -> service.createMy(athleteId, endOnly));
+
+        verify(trainingRepository, never()).save(any());
+    }
+
+    @Test
+    void shouldDeriveUntimedStatusFromEndOfDay() {
+        LocalDateTime now = LocalDateTime.of(2026, 7, 15, 12, 0);
+
+        // Untimed today: still planned at noon (end-of-day not reached yet)
+        PersonalTraining today = untimed(LocalDate.of(2026, 7, 15));
+        assertEquals("PLANNED", TrainingCalendarService.deriveStatus(today, now));
+
+        // Untimed yesterday: end-of-day already passed → missed
+        PersonalTraining yesterday = untimed(LocalDate.of(2026, 7, 14));
+        assertEquals("MISSED", TrainingCalendarService.deriveStatus(yesterday, now));
+    }
+
+    @Test
+    void shouldAllowCompletingUntimedTrainingDatedTodayButRejectFutureDay() {
+        UUID todayId = UUID.randomUUID();
+        PersonalTraining today = untimed(LocalDate.now());
+        when(trainingRepository.findById(todayId)).thenReturn(Optional.of(today));
+        // Untimed → completable from the start of its day
+        PersonalTrainingDto dto = service.complete(athleteId, todayId, new CompleteTrainingRequest("ok", 6));
+        assertEquals("COMPLETED", dto.status());
+
+        UUID futureId = UUID.randomUUID();
+        PersonalTraining future = untimed(LocalDate.now().plusDays(1));
+        when(trainingRepository.findById(futureId)).thenReturn(Optional.of(future));
+        assertThrows(IllegalStateException.class,
+            () -> service.complete(athleteId, futureId, new CompleteTrainingRequest("ok", 6)));
+    }
+
     // ========== notifications ==========
 
     @Test
@@ -991,6 +1056,14 @@ class TrainingCalendarServiceTest {
         PersonalTraining training = new PersonalTraining(
             athlete, date, LocalTime.of(18, 0), LocalTime.of(19, 30),
             "Trening", null, byAdmin);
+        setField(training, "createdAt", Instant.now());
+        setField(training, "updatedAt", Instant.now());
+        return training;
+    }
+
+    // Untimed ("all-day"): both times null on the given date
+    private PersonalTraining untimed(LocalDate date) {
+        PersonalTraining training = new PersonalTraining(athlete, date, null, null, "Cały dzień", null, false);
         setField(training, "createdAt", Instant.now());
         setField(training, "updatedAt", Instant.now());
         return training;

@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { format } from 'date-fns'
-import { Check, LayoutTemplate } from 'lucide-react'
+import { CalendarDays, Check, LayoutTemplate } from 'lucide-react'
 import { Modal } from '../ui/Modal'
 import { Button } from '../ui/Button'
 import { TimeScrollPicker } from '../ui/TimeScrollPicker'
@@ -38,8 +38,9 @@ export interface InstantCompletion {
 export interface TrainingPrefill {
   title: string
   description?: string
-  startTime: string
-  endTime: string
+  // Null/undefined for an untimed ("all-day") source
+  startTime?: string | null
+  endTime?: string | null
   // Duplicate carries the source's materials (url + decoded label)
   attachments?: AttachmentInput[]
 }
@@ -119,11 +120,21 @@ function TrainingForm({ training, initialDate, initialTime, prefill, onClose, on
 }) {
   const { t } = useTranslation('training')
 
+  // "All-day" (untimed) is the default for a fresh create; a grid-hour click, a timed source
+  // or editing a timed training turns it off. Editing/duplicating an untimed source keeps it on.
+  const initialAllDay = training
+    ? training.startTime == null
+    : prefill
+      ? prefill.startTime == null
+      : !initialTime
+  const [allDay, setAllDay] = useState(initialAllDay)
+
   const defaultStart = initialTime ?? prefill?.startTime ?? DEFAULT_START
   const [date, setDate] = useState(training?.date ?? initialDate ?? '')
-  const [startTime, setStartTime] = useState(training ? training.startTime.slice(0, 5) : defaultStart)
+  // Pickers stay populated even in all-day mode so toggling to timed has sensible values.
+  const [startTime, setStartTime] = useState(training?.startTime ? training.startTime.slice(0, 5) : defaultStart)
   const [endTime, setEndTime] = useState(
-    training ? training.endTime.slice(0, 5) : prefill?.endTime ?? addMinutes(defaultStart, DEFAULT_DURATION_MIN))
+    training?.endTime ? training.endTime.slice(0, 5) : prefill?.endTime ?? addMinutes(defaultStart, DEFAULT_DURATION_MIN))
   const [title, setTitle] = useState(training ? decodeHtmlEntities(training.title) : prefill?.title ?? '')
   const [description, setDescription] = useState(
     training?.description ? decodeHtmlEntities(training.description) : prefill?.description ?? '')
@@ -169,7 +180,7 @@ function TrainingForm({ training, initialDate, initialTime, prefill, onClose, on
   const today = format(now, 'yyyy-MM-dd')
   const currentTime = format(now, 'HH:mm')
   const instantCompleteAvailable = !!allowInstantComplete && !training && !!date
-    && (date < today || (date === today && startTime <= currentTime))
+    && (date < today || (date === today && (allDay || startTime <= currentTime)))
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -177,7 +188,7 @@ function TrainingForm({ training, initialDate, initialTime, prefill, onClose, on
       setError(t('form.titleRequired'))
       return
     }
-    if (endTime <= startTime) {
+    if (!allDay && endTime <= startTime) {
       setError(t('form.endAfterStart'))
       return
     }
@@ -202,8 +213,9 @@ function TrainingForm({ training, initialDate, initialTime, prefill, onClose, on
       : null
     onSubmit({
       date,
-      startTime,
-      endTime,
+      // All-day training carries no times
+      startTime: allDay ? undefined : startTime,
+      endTime: allDay ? undefined : endTime,
       title: title.trim(),
       description: description.trim() || undefined,
       // Form always sends the explicit list (replace on edit, set on create)
@@ -245,10 +257,25 @@ function TrainingForm({ training, initialDate, initialTime, prefill, onClose, on
         />
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <TimeScrollPicker label={t('form.startTime')} value={startTime} onChange={setStartTime} />
-        <TimeScrollPicker label={t('form.endTime')} value={endTime} onChange={setEndTime} />
-      </div>
+      <label className="flex items-center gap-2 cursor-pointer select-none">
+        <input
+          type="checkbox"
+          checked={allDay}
+          onChange={(e) => setAllDay(e.target.checked)}
+          className="w-4 h-4 accent-primary-500"
+        />
+        <span className="flex items-center gap-1.5 text-sm font-medium text-surface-200">
+          <CalendarDays className="w-4 h-4 text-surface-400" />
+          {t('form.allDay')}
+        </span>
+      </label>
+
+      {!allDay && (
+        <div className="grid grid-cols-2 gap-4">
+          <TimeScrollPicker label={t('form.startTime')} value={startTime} onChange={setStartTime} />
+          <TimeScrollPicker label={t('form.endTime')} value={endTime} onChange={setEndTime} />
+        </div>
+      )}
 
       <div>
         <label className="block text-sm text-surface-400 mb-1">{t('form.title')}</label>

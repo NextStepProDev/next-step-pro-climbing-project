@@ -134,7 +134,8 @@ public class TrainingCalendarService {
     public PersonalTrainingDto complete(UUID userId, UUID trainingId, CompleteTrainingRequest request) {
         requireAthlete(userId);
         PersonalTraining training = requireOwnTraining(trainingId, userId);
-        if (LocalDateTime.of(training.getTrainingDate(), training.getStartTime()).isAfter(nowWarsaw())) {
+        // Untimed ("all-day") training may be logged from the start of its day (00:00).
+        if (trainingStart(training).isAfter(nowWarsaw())) {
             throw new IllegalStateException(msg.get("training.calendar.complete.future"));
         }
         // Defense in depth: @NotNull/@Min/@Max fire only via controller @Valid.
@@ -288,8 +289,8 @@ public class TrainingCalendarService {
      * removing past entries is just tidying the journal — no alert.
      */
     private void recordDeletionIfFuture(PersonalTraining training, boolean byAdmin) {
-        LocalDateTime start = LocalDateTime.of(training.getTrainingDate(), training.getStartTime());
-        if (!start.isAfter(nowWarsaw())) return;
+        // Untimed ("all-day"): "future" until the day itself begins (00:00).
+        if (!trainingStart(training).isAfter(nowWarsaw())) return;
         deletionRepository.pruneOldForAthlete(training.getAthlete().getId(),
             Instant.now().minus(DELETION_LOG_RETENTION));
         deletionRepository.save(new TrainingDeletion(training, byAdmin));
@@ -471,6 +472,16 @@ public class TrainingCalendarService {
     }
 
     private void validateTimes(CreatePersonalTrainingRequest request) {
+        boolean hasStart = request.startTime() != null;
+        boolean hasEnd = request.endTime() != null;
+        // Untimed ("all-day"): both null is allowed.
+        if (!hasStart && !hasEnd) {
+            return;
+        }
+        // Never exactly one — a training is either fully timed or fully untimed.
+        if (hasStart != hasEnd) {
+            throw new IllegalArgumentException(msg.get("training.calendar.time.partial"));
+        }
         if (!request.endTime().isAfter(request.startTime())) {
             throw new IllegalArgumentException(msg.get("admin.slot.end.after.start"));
         }
@@ -564,8 +575,18 @@ public class TrainingCalendarService {
     /** MISSED is derived, never stored: planned training whose end already passed (Warsaw time). */
     static String deriveStatus(PersonalTraining t, LocalDateTime nowWarsaw) {
         if (t.isCompleted()) return "COMPLETED";
-        LocalDateTime end = LocalDateTime.of(t.getTrainingDate(), t.getEndTime());
-        return end.isBefore(nowWarsaw) ? "MISSED" : "PLANNED";
+        return trainingEnd(t.getTrainingDate(), t.getEndTime()).isBefore(nowWarsaw) ? "MISSED" : "PLANNED";
+    }
+
+    /** Effective start: the training's time, or the start of its day when untimed ("all-day"). */
+    private static LocalDateTime trainingStart(PersonalTraining t) {
+        LocalTime start = t.getStartTime();
+        return start != null ? LocalDateTime.of(t.getTrainingDate(), start) : t.getTrainingDate().atStartOfDay();
+    }
+
+    /** Effective end: the training's time, or the end of its day (23:59:59.999...) when untimed. */
+    static LocalDateTime trainingEnd(LocalDate date, @Nullable LocalTime endTime) {
+        return LocalDateTime.of(date, endTime != null ? endTime : LocalTime.MAX);
     }
 
     /** "New" is a coach-side concept: the athlete booked after the coach's last visit.
