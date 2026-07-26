@@ -32,6 +32,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -47,6 +48,11 @@ import static org.mockito.Mockito.*;
  */
 @ExtendWith(MockitoExtension.class)
 class TrainingCalendarServiceTest {
+
+    // The service derives "today" in Europe/Warsaw; the CI container runs in UTC.
+    // Compute the athlete-facing "today" in the same zone so day-boundary guards
+    // (untimed completion cutoff) don't flake around midnight UTC.
+    private static final ZoneId WARSAW = ZoneId.of("Europe/Warsaw");
 
     @Mock private PersonalTrainingRepository trainingRepository;
     @Mock private TrainingCommentRepository commentRepository;
@@ -272,14 +278,14 @@ class TrainingCalendarServiceTest {
     @Test
     void shouldAllowCompletingUntimedTrainingDatedTodayButRejectFutureDay() {
         UUID todayId = UUID.randomUUID();
-        PersonalTraining today = untimed(LocalDate.now());
+        PersonalTraining today = untimed(LocalDate.now(WARSAW));
         when(trainingRepository.findById(todayId)).thenReturn(Optional.of(today));
         // Untimed → completable from the start of its day
         PersonalTrainingDto dto = service.complete(athleteId, todayId, new CompleteTrainingRequest("ok", 6));
         assertEquals("COMPLETED", dto.status());
 
         UUID futureId = UUID.randomUUID();
-        PersonalTraining future = untimed(LocalDate.now().plusDays(1));
+        PersonalTraining future = untimed(LocalDate.now(WARSAW).plusDays(1));
         when(trainingRepository.findById(futureId)).thenReturn(Optional.of(future));
         assertThrows(IllegalStateException.class,
             () -> service.complete(athleteId, futureId, new CompleteTrainingRequest("ok", 6)));
