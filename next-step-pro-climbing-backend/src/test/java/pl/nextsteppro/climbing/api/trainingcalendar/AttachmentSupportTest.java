@@ -3,8 +3,12 @@ package pl.nextsteppro.climbing.api.trainingcalendar;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import pl.nextsteppro.climbing.domain.personaltraining.AttachmentKind;
+import pl.nextsteppro.climbing.domain.personaltraining.PersonalTraining;
+import pl.nextsteppro.climbing.domain.personaltraining.TrainingAttachment;
 import pl.nextsteppro.climbing.domain.personaltraining.TrainingAttachmentRepository;
 import pl.nextsteppro.climbing.infrastructure.i18n.MessageService;
 import pl.nextsteppro.climbing.infrastructure.storage.FileStorageService;
@@ -71,6 +75,25 @@ class AttachmentSupportTest {
 
         assertEquals(0, deleted);
         verify(fileStorageService, never()).delete(anyString(), anyString());
+    }
+
+    @Test
+    void persistForTrainingDerivesFileMetadataServerSideIgnoringClientClaims() {
+        PersonalTraining training = mock(PersonalTraining.class);
+        String filename = "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee.pdf";
+        when(fileStorageService.getFileSize(filename, "training")).thenReturn(4242L);
+        // Client echoes back a bogus size (999999) and a mismatched type (image/png) for a .pdf
+        AttachmentRequest req = new AttachmentRequest(
+            AttachmentKind.FILE, null, filename, "plan.pdf", "image/png", 999_999L, "Plan");
+
+        support.persistForTraining(training, List.of(req));
+
+        ArgumentCaptor<TrainingAttachment> captor = ArgumentCaptor.forClass(TrainingAttachment.class);
+        verify(attachmentRepository).save(captor.capture());
+        TrainingAttachment saved = captor.getValue();
+        assertEquals("application/pdf", saved.getMimeType(), "type derived from filename, not client");
+        assertEquals(4242L, saved.getSizeBytes(), "real disk size, not client-claimed");
+        assertEquals("plan.pdf", saved.getOriginalName(), "display name kept from client");
     }
 
     @Test

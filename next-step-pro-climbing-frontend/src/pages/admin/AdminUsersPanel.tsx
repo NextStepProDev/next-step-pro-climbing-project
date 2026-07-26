@@ -24,7 +24,7 @@ export function AdminUsersPanel() {
   const [sortDir, setSortDir] = useState<SortDir>('desc')
   const [page, setPage] = useState(1)
   const [confirmAction, setConfirmAction] = useState<{
-    type: 'makeAdmin' | 'removeAdmin' | 'delete' | 'forceLogout'
+    type: 'makeAdmin' | 'removeAdmin' | 'delete' | 'forceLogout' | 'unsetAthlete'
     userId: string
     userName: string
   } | null>(null)
@@ -60,7 +60,9 @@ export function AdminUsersPanel() {
     onError: (err) => setActionError(getErrorMessage(err)),
   })
 
-  // Athlete flag toggle (personal training calendar access) — reversible, no confirm needed
+  // Athlete flag toggle (personal training calendar access). Turning it ON is harmless; turning it
+  // OFF hides the whole calendar from the athlete AND drops them from the coach roster (data is
+  // kept, not deleted) — so that direction goes through a confirm.
   const setAthleteMutation = useMutation({
     mutationFn: ({ userId, isAthlete }: { userId: string; isAthlete: boolean }) =>
       adminApi.setAthlete(userId, isAthlete),
@@ -254,7 +256,11 @@ export function AdminUsersPanel() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => setAthleteMutation.mutate({ userId: user.id, isAthlete: !user.isAthlete })}
+                        onClick={() =>
+                          user.isAthlete
+                            ? setConfirmAction({ type: 'unsetAthlete', userId: user.id, userName: `${user.firstName} ${user.lastName}` })
+                            : setAthleteMutation.mutate({ userId: user.id, isAthlete: true })
+                        }
                         title={user.isAthlete ? t('users.unsetAthlete') : t('users.setAthlete')}
                         className={user.isAthlete
                           ? '!text-indigo-400 hover:bg-indigo-500/10'
@@ -376,6 +382,8 @@ export function AdminUsersPanel() {
             removeAdminMutation.mutate(confirmAction.userId)
           } else if (confirmAction.type === 'forceLogout') {
             forceLogoutMutation.mutate(confirmAction.userId)
+          } else if (confirmAction.type === 'unsetAthlete') {
+            setAthleteMutation.mutate({ userId: confirmAction.userId, isAthlete: false })
           } else {
             deleteUserMutation.mutate(confirmAction.userId)
           }
@@ -387,7 +395,9 @@ export function AdminUsersPanel() {
               ? t('users.revokeAdminTitle')
               : confirmAction?.type === 'forceLogout'
                 ? t('users.forceLogoutTitle')
-                : t('users.deleteUserTitle')
+                : confirmAction?.type === 'unsetAthlete'
+                  ? t('users.unsetAthleteTitle')
+                  : t('users.deleteUserTitle')
         }
         message={
           confirmAction?.type === 'makeAdmin'
@@ -396,7 +406,9 @@ export function AdminUsersPanel() {
               ? t('users.revokeAdminMessage', { name: confirmAction?.userName })
               : confirmAction?.type === 'forceLogout'
                 ? t('users.forceLogoutMessage', { name: confirmAction?.userName })
-                : t('users.deleteUserMessage', { name: confirmAction?.userName })
+                : confirmAction?.type === 'unsetAthlete'
+                  ? t('users.unsetAthleteMessage', { name: confirmAction?.userName })
+                  : t('users.deleteUserMessage', { name: confirmAction?.userName })
         }
         confirmText={
           confirmAction?.type === 'makeAdmin'
@@ -405,7 +417,9 @@ export function AdminUsersPanel() {
               ? t('users.confirmRevoke')
               : confirmAction?.type === 'forceLogout'
                 ? t('users.confirmForceLogout')
-                : t('users.confirmDelete')
+                : confirmAction?.type === 'unsetAthlete'
+                  ? t('users.confirmUnsetAthlete')
+                  : t('users.confirmDelete')
         }
         variant={confirmAction?.type === 'makeAdmin' || confirmAction?.type === 'forceLogout' ? 'primary' : 'danger'}
       />

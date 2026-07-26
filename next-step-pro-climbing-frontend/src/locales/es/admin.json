@@ -508,7 +508,10 @@
     "forceLogoutMessage": "¿Estás seguro/a de que quieres cerrar la sesión del usuario {{name}} en todos los dispositivos? Las sesiones expirarán en ≤15 min y deberá iniciar sesión de nuevo.",
     "confirmForceLogout": "Sí, cerrar sesión",
     "setAthlete": "Marcar como atleta (calendario de entrenamiento)",
-    "unsetAthlete": "Desmarcar atleta (ocultar calendario de entrenamiento)"
+    "unsetAthlete": "Desmarcar atleta (ocultar calendario de entrenamiento)",
+    "unsetAthleteTitle": "¿Desmarcar atleta?",
+    "unsetAthleteMessage": "El calendario de entrenamiento desaparecerá para {{name}} y será eliminado de la lista de atletas del entrenador. Sus datos (entrenamientos, objetivos, comentarios, estadísticas) NO se eliminarán — volverán en cuanto se le vuelva a marcar como atleta.",
+    "confirmUnsetAthlete": "Sí, desmarcar"
   },
   "activity": {
     "title": "Registro de actividad (actualización automática cada 30s)",

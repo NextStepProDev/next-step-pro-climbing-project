@@ -48,6 +48,9 @@ public class TrainingStatsService {
     private static final int AVG_WINDOW_MONTHS = 6;
     private static final int RPE_WINDOW_DAYS = 30;
     private static final int RPE_DISTRIBUTION_DAYS = 90;
+    // Attendance is a "recent adherence" signal — a rolling window so one old missed session does
+    // not drag the percentage down forever.
+    private static final int ATTENDANCE_WINDOW_DAYS = 90;
     private static final int SUSTAINED_HIGH_SAMPLE = 5;
     private static final int SUSTAINED_HIGH_THRESHOLD = 9;
     private static final int TOP_LOCATIONS = 3;
@@ -219,12 +222,18 @@ public class TrainingStatsService {
         return new TypeBreakdownDto(personal, individualSlot, course, training, workshop);
     }
 
-    /** Personal trainings only: completed / (completed + missed); missed derived like deriveStatus. */
+    /**
+     * Personal trainings only, over the last {@value ATTENDANCE_WINDOW_DAYS} days:
+     * completed / (completed + missed); missed derived like deriveStatus. Reservations are excluded
+     * on purpose — a cancelled booking is a choice, not a no-show.
+     */
     @Nullable
     private static Integer attendanceRate(List<TrainingStatsRow> trainings, LocalDateTime nowWarsaw) {
+        LocalDate from = nowWarsaw.toLocalDate().minusDays(ATTENDANCE_WINDOW_DAYS - 1L);
         long completed = 0;
         long missed = 0;
         for (TrainingStatsRow t : trainings) {
+            if (t.date().isBefore(from)) continue;
             if (t.isCompleted()) completed++;
             // Untimed ("all-day") rows have a null endTime → treated as end-of-day, same as deriveStatus.
             else if (TrainingCalendarService.trainingEnd(t.date(), t.endTime()).isBefore(nowWarsaw)) missed++;

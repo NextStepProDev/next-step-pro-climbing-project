@@ -21,8 +21,9 @@ public class TrainingAttachmentCleanupScheduler {
 
     private static final Logger log = LoggerFactory.getLogger(TrainingAttachmentCleanupScheduler.class);
 
-    // A file uploaded but not attached within this window is considered abandoned
-    private static final Duration GRACE = Duration.ofHours(24);
+    // A file uploaded but not attached within this window is considered abandoned. Kept short (and
+    // paired with the 6-hourly schedule below) so an upload flood cannot sit on disk for a full day.
+    private static final Duration GRACE = Duration.ofHours(6);
 
     private final AttachmentSupport attachmentSupport;
 
@@ -30,8 +31,8 @@ public class TrainingAttachmentCleanupScheduler {
         this.attachmentSupport = attachmentSupport;
     }
 
-    /** Daily at 03:20 (Warsaw = container UTC + offset; exact hour is not important for cleanup). */
-    @Scheduled(cron = "0 20 3 * * *")
+    /** Every 6 hours at :20 (exact hour is not important for cleanup; pairs with the 6h grace). */
+    @Scheduled(cron = "0 20 */6 * * *")
     @Transactional
     public void sweepAbandonedUploads() {
         int deleted = attachmentSupport.sweepOrphanUploads(GRACE);

@@ -510,7 +510,10 @@
     "forceLogoutMessage": "Czy na pewno chcesz wylogować użytkownika {{name}} ze wszystkich urządzeń? Sesje wygasną w ciągu ≤15 min i będzie musiał zalogować się ponownie.",
     "confirmForceLogout": "Tak, wyloguj",
     "setAthlete": "Oznacz jako zawodnika (kalendarz treningowy)",
-    "unsetAthlete": "Odznacz zawodnika (ukryj kalendarz treningowy)"
+    "unsetAthlete": "Odznacz zawodnika (ukryj kalendarz treningowy)",
+    "unsetAthleteTitle": "Odznaczyć zawodnika?",
+    "unsetAthleteMessage": "Kalendarz treningowy zniknie użytkownikowi {{name}} i zniknie on z listy podopiecznych trenera. Dane (treningi, cele, komentarze, statystyki) NIE zostaną usunięte — wrócą po ponownym oznaczeniu jako zawodnik.",
+    "confirmUnsetAthlete": "Tak, odznacz"
   },
   "activity": {
     "title": "Aktywność (auto-odświeżanie co 30s)",

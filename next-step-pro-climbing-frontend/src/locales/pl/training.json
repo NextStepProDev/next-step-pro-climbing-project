@@ -165,7 +165,7 @@
     "trainingSince": "Trenuje od",
     "avgPerMonth": "Średnio na miesiąc",
     "attendance": "Frekwencja",
-    "attendanceHint": "wykonane vs pominięte",
+    "attendanceHint": "wykonane vs pominięte (90 dni)",
     "avgRpe": "Śr. RPE",
     "avgRpe30": "Śr. RPE (30 dni)",
     "avgRpeOverall": "całość: {{value}}",

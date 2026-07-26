@@ -163,7 +163,7 @@
     "trainingSince": "Training since",
     "avgPerMonth": "Average per month",
     "attendance": "Attendance",
-    "attendanceHint": "completed vs missed",
+    "attendanceHint": "completed vs missed (90 days)",
     "avgRpe": "Avg RPE",
     "avgRpe30": "Avg RPE (30 days)",
     "avgRpeOverall": "overall: {{value}}",
