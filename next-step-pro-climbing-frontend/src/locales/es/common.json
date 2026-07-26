@@ -39,6 +39,12 @@
   "confirm": "Confirmar",
   "cancel": "Cancelar",
   "close": "Cerrar",
+  "unsaved": {
+    "title": "¿Descartar cambios?",
+    "message": "Tienes cambios sin guardar. Si cierras ahora, se perderán.",
+    "discard": "Descartar cambios",
+    "keep": "Volver a editar"
+  },
   "save": "Guardar",
   "delete": "Eliminar",
   "edit": "Editar",
