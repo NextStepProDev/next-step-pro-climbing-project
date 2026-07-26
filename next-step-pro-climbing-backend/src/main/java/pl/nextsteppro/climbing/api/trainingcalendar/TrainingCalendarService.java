@@ -172,6 +172,11 @@ public class TrainingCalendarService {
             throw new IllegalStateException(msg.get("training.reservation.rpe.not.attended"));
         }
         TimeSlot slot = reservation.getTimeSlot();
+        // Event reservations carry no time slot — they never surface a "rate" chip (the overlay is
+        // slot-only), but the endpoint is reachable by id, so guard against the NPE with a clear 409.
+        if (slot == null) {
+            throw new IllegalStateException(msg.get("training.reservation.rpe.not.attended"));
+        }
         LocalDate today = LocalDate.now(WARSAW);
         LocalTime now = LocalTime.now(WARSAW);
         boolean past = slot.getDate().isBefore(today)
@@ -340,6 +345,13 @@ public class TrainingCalendarService {
 
     private void applyUpdate(PersonalTraining training, boolean byAdmin, CreatePersonalTrainingRequest request) {
         validateTimes(request);
+        // Defense in depth (the UI already blocks dragging completed sessions): a completed training
+        // must stay in the past. Moving it into the future would leave a COMPLETED entry dated ahead
+        // of "now" and skew the date-keyed stats/heatmap. Uncomplete first to reschedule.
+        if (training.isCompleted()
+                && trainingEnd(request.date(), request.endTime()).isAfter(nowWarsaw())) {
+            throw new IllegalStateException(msg.get("training.calendar.completed.future"));
+        }
         attachments.validate(request.attachments());
         training.update(
             request.date(), request.startTime(), request.endTime(),

@@ -164,7 +164,7 @@
     "trainingSince": "Entrena desde",
     "avgPerMonth": "Promedio mensual",
     "attendance": "Asistencia",
-    "attendanceHint": "completados vs omitidos",
+    "attendanceHint": "completados vs omitidos (90 días)",
     "avgRpe": "RPE medio",
     "avgRpe30": "RPE medio (30 días)",
     "avgRpeOverall": "total: {{value}}",

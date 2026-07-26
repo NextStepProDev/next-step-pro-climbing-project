@@ -33,6 +33,14 @@ public class RateLimitFilter extends OncePerRequestFilter {
     private static final int RESERVATION_LIMIT = 20;
     private static final int USER_LIMIT = 20;
     private static final int ADMIN_LIMIT = 60;
+    private static final int TRAINING_LIMIT = 40;
+    // Material uploads store a 10MB file on disk each; the endpoint is otherwise unthrottled, so a
+    // tight per-IP cap bounds a disk-fill flood (orphans are also swept by the cleanup scheduler).
+    private static final int UPLOAD_LIMIT = 12;
+
+    // Uploads live under both /api/training-calendar/** and /api/admin/training-calendar/** — match
+    // the shared suffix so the tighter cap covers both, and check it before the broader buckets.
+    private static final String UPLOAD_PATH_SUFFIX = "/attachments/upload";
 
     private final Cache<String, AtomicInteger> requestCounts = Caffeine.newBuilder()
         .expireAfterWrite(Duration.ofMinutes(1))
@@ -77,18 +85,22 @@ public class RateLimitFilter extends OncePerRequestFilter {
     }
 
     private int resolveLimit(String path) {
+        if (path.contains(UPLOAD_PATH_SUFFIX)) return UPLOAD_LIMIT;
         if (path.startsWith("/api/auth/")) return AUTH_LIMIT;
         if (path.startsWith("/api/reservations/")) return RESERVATION_LIMIT;
         if (path.startsWith("/api/user/")) return USER_LIMIT;
         if (path.startsWith("/api/admin/")) return ADMIN_LIMIT;
+        if (path.startsWith("/api/training-calendar/")) return TRAINING_LIMIT;
         return 0;
     }
 
     private String resolveBucket(String path) {
+        if (path.contains(UPLOAD_PATH_SUFFIX)) return "upload";
         if (path.startsWith("/api/auth/")) return "auth";
         if (path.startsWith("/api/reservations/")) return "reservations";
         if (path.startsWith("/api/user/")) return "user";
         if (path.startsWith("/api/admin/")) return "admin";
+        if (path.startsWith("/api/training-calendar/")) return "training";
         return "default";
     }
 

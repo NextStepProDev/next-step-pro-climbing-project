@@ -48,6 +48,13 @@ public class AttachmentSupport {
 
     // ---------- validation ----------
 
+    // A FILE attachment only has to reference a file that exists in the training folder — NOT one the
+    // caller uploaded. That looks like an IDOR, but it is inherent to the feature set: duplicate
+    // (+7 days), copy/paste and "use template" all deliberately share one physical file by name
+    // (reference-counted) and travel through this same save path, so there is no server-side way to
+    // tell a legitimate copy from a foreign reference. The only real exposure was reading the file via
+    // its public URL, which is closed off by serving the training folder no-store/private (see
+    // FileController); the UUID filename remains the secret.
     void validate(@Nullable List<AttachmentRequest> requests) {
         if (requests == null) return;
         if (requests.size() > TrainingAttachment.MAX_PER_TRAINING) {
@@ -99,7 +106,7 @@ public class AttachmentSupport {
             String label = TrainingAttachment.sanitizeLabel(req.label());
             attachmentRepository.save(req.isFile()
                 ? TrainingAttachment.file(training, req.filename(), sanitizeName(req.originalName()),
-                    req.mimeType(), req.sizeBytes(), label, position++)
+                    mimeTypeForFilename(req.filename()), realSizeBytes(req.filename()), label, position++)
                 : TrainingAttachment.link(training, req.url().trim(), label, position++));
         }
     }
@@ -110,9 +117,33 @@ public class AttachmentSupport {
             String label = TrainingAttachment.sanitizeLabel(req.label());
             attachmentRepository.save(req.isFile()
                 ? TrainingAttachment.file(template, req.filename(), sanitizeName(req.originalName()),
-                    req.mimeType(), req.sizeBytes(), label, position++)
+                    mimeTypeForFilename(req.filename()), realSizeBytes(req.filename()), label, position++)
                 : TrainingAttachment.link(template, req.url().trim(), label, position++));
         }
+    }
+
+    /**
+     * MIME type and size are derived server-side from the actual stored file, never trusted from the
+     * client request: the save call echoes the upload response back, but a crafted request could claim
+     * an arbitrary size/type. Only {@code originalName} stays client-provided (it cannot be recovered
+     * from the UUID filename; it is HTML-escaped and length-capped, display-only).
+     */
+    @Nullable
+    private static String mimeTypeForFilename(@Nullable String filename) {
+        if (filename == null) return null;
+        String lower = filename.toLowerCase();
+        if (lower.endsWith(".jpg") || lower.endsWith(".jpeg")) return "image/jpeg";
+        if (lower.endsWith(".png")) return "image/png";
+        if (lower.endsWith(".webp")) return "image/webp";
+        if (lower.endsWith(".pdf")) return "application/pdf";
+        return null;
+    }
+
+    @Nullable
+    private Long realSizeBytes(@Nullable String filename) {
+        if (filename == null) return null;
+        long size = fileStorageService.getFileSize(filename, FOLDER);
+        return size >= 0 ? size : null;
     }
 
     /** Replace-all for a training: wipe old rows, persist new, drop now-unreferenced files. */

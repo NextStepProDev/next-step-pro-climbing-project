@@ -225,6 +225,20 @@ class TrainingStatsServiceTest {
     }
 
     @Test
+    void shouldExcludeMissedTrainingsOlderThanWindowFromAttendance() {
+        // Given: 1 recent completed (in window) + 1 very old missed (2026-03-01, outside the 90-day
+        // window that ends at NOW=2026-07-15). The old miss must not drag attendance down forever.
+        givenTrainings(completed(d(2026, 7, 10)), planned(d(2026, 3, 1)));
+        givenReservations();
+
+        // When
+        AthleteStatsDto stats = service.buildStats(athleteId, NOW);
+
+        // Then: only the in-window completed one counts → 100%, not 50%
+        assertEquals(100, stats.attendanceRatePercent());
+    }
+
+    @Test
     void shouldCountUntimedTrainingsInAttendanceViaEndOfDay() {
         // Given: untimed (null endTime) rows — missed derivation must use end-of-day, not NPE.
         // 1 completed (past) + 1 missed (past, uncompleted) + 1 today untimed still planned (not missed yet)

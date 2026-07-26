@@ -510,7 +510,10 @@
     "forceLogoutMessage": "Are you sure you want to sign out {{name}} from all devices? Sessions will expire within ≤15 min and they will need to sign in again.",
     "confirmForceLogout": "Yes, sign out",
     "setAthlete": "Mark as athlete (training calendar)",
-    "unsetAthlete": "Unmark athlete (hide training calendar)"
+    "unsetAthlete": "Unmark athlete (hide training calendar)",
+    "unsetAthleteTitle": "Unmark athlete?",
+    "unsetAthleteMessage": "The training calendar will disappear for {{name}} and they will be removed from the coach's athlete roster. Their data (trainings, goals, comments, stats) will NOT be deleted — it returns as soon as they are marked as an athlete again.",
+    "confirmUnsetAthlete": "Yes, unmark"
   },
   "activity": {
     "title": "Activity log (auto-refresh every 30s)",

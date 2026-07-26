@@ -130,9 +130,22 @@ public class FileController {
         return ResponseEntity.ok()
                 .contentType(getMediaType(filename))
                 .contentLength(fileSize)
-                .cacheControl(CacheControl.maxAge(FILE_CACHE_DAYS, TimeUnit.DAYS).cachePublic())
+                .cacheControl(cacheControlFor(folder))
                 .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + filename + "\"")
                 .body(new InputStreamResource(inputStream));
+    }
+
+    /**
+     * Public media (gallery, news, courses, avatars...) is safe to sit in shared caches/CDN for
+     * a week. Training materials are private to a coach↔athlete pair — the endpoint stays public
+     * (browser-native &lt;img&gt;/&lt;iframe&gt;/PDF requests carry no JWT), but the file must never
+     * be stored by Cloudflare/proxies. Its only protection is the unguessable UUID filename, so we
+     * keep it out of any shared cache.
+     */
+    private CacheControl cacheControlFor(String folder) {
+        return "training".equals(folder)
+                ? CacheControl.noStore().cachePrivate()
+                : CacheControl.maxAge(FILE_CACHE_DAYS, TimeUnit.DAYS).cachePublic();
     }
 
     private MediaType getMediaType(String filename) {

@@ -79,6 +79,12 @@ public class PersonalTraining {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
+    // Optimistic lock: the calendar is a shared plan (athlete + coach edit the same row), so a
+    // concurrent edit must fail loudly (409) instead of silently overwriting. See V73.
+    @Version
+    @Column(nullable = false)
+    private long version;
+
     protected PersonalTraining() {}
 
     public PersonalTraining(User athlete, LocalDate trainingDate, @Nullable LocalTime startTime, @Nullable LocalTime endTime,

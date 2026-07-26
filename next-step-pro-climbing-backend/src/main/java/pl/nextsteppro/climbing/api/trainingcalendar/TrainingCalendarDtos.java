@@ -261,8 +261,8 @@ record AthleteStatsDto(
     // Last 365 days, non-zero days only; keys serialize as yyyy-MM-dd
     Map<LocalDate, Integer> heatmap,
     TypeBreakdownDto byType,
-    // Personal trainings only: completed / (completed + missed). Reservations are excluded
-    // on purpose — a cancelled booking is a choice, not a no-show
+    // Personal trainings only, last 90 days: completed / (completed + missed). Reservations are
+    // excluded on purpose — a cancelled booking is a choice, not a no-show
     @Nullable Integer attendanceRatePercent,
     // Average RPE now merges completed trainings AND rated reservations
     @Nullable Double avgRpeOverall,
