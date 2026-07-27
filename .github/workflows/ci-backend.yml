@@ -96,3 +96,22 @@ jobs:
           build-args: APP_VERSION=${{ steps.version.outputs.version }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      # Skan CVE w warstwie systemowej obrazu (czego gradle dependency-check nie widzi).
+      # Informacyjnie na razie (exit-code 0 = nie blokuje deployu). ignore-unfixed
+      # ucina szum z podatności bez łatki; zostają te naprawialne bumpem bazy.
+      # Gdy wyniki będą czyste, ustaw exit-code na 1, by high/critical wywalały build.
+      # Skanuje manifest amd64 (warstwa OS wspólna dla obu arch).
+      - name: Trivy image scan (high+)
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          # Nazwa obrazu musi być lowercase (owner NextStepProDev ma wielkie litery,
+          # a OCI reference wymaga małych — metadata-action lowercase'uje sam przy pushu).
+          image-ref: ghcr.io/nextstepprodev/nextsteppro-backend:${{ steps.version.outputs.version }}
+          format: table
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: '0'
+        env:
+          TRIVY_USERNAME: ${{ github.actor }}
+          TRIVY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
