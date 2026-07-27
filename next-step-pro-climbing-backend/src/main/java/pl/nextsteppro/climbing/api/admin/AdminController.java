@@ -208,8 +208,8 @@ public class AdminController {
 
     @Operation(summary = "All active waitlists", description = "Upcoming slots and events with someone on the waitlist, grouped per slot/event.")
     @GetMapping("/waitlists")
-    public ResponseEntity<AdminWaitlistsDto> getAdminWaitlists() {
-        return ResponseEntity.ok(adminService.getAdminWaitlists());
+    public ResponseEntity<AdminWaitlistsDto> getAdminWaitlists(@CurrentUserId UUID adminId) {
+        return ResponseEntity.ok(adminService.getAdminWaitlists(adminId));
     }
 
     @Operation(summary = "Slot invitees", description = "Returns users with invitation-held seats (prefill for the edit form).")
@@ -435,8 +435,8 @@ public class AdminController {
         @ApiResponse(responseCode = "403", description = "Admin privileges required")
     })
     @GetMapping("/reservations/upcoming")
-    public ResponseEntity<List<ReservationAdminDto>> getAllUpcomingReservations() {
-        List<ReservationAdminDto> reservations = adminService.getAllUpcomingReservations();
+    public ResponseEntity<List<ReservationAdminDto>> getAllUpcomingReservations(@CurrentUserId UUID adminId) {
+        List<ReservationAdminDto> reservations = adminService.getAllUpcomingReservations(adminId);
         return ResponseEntity.ok(reservations);
     }
 

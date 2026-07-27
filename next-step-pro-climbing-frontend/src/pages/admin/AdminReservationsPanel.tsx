@@ -9,7 +9,7 @@ import { QueryError } from '../../components/ui/QueryError'
 import { ConfirmModal } from '../../components/ui/ConfirmModal'
 import { getErrorMessage } from '../../utils/errors'
 import { useDateLocale } from '../../utils/dateFnsLocale'
-import type { ReservationAdmin, WaitlistAdminEntry } from '../../types'
+import type { AdminWaitlists, ReservationAdmin, WaitlistAdminEntry } from '../../types'
 
 function isMultiDayEvent(r: ReservationAdmin) {
   return r.eventStartDate && r.eventEndDate && r.eventStartDate !== r.eventEndDate
@@ -80,19 +80,36 @@ function groupReservations(reservations: ReservationAdmin[]) {
 export function AdminReservationsPanel() {
   const { t } = useTranslation('admin')
   const [showArchive, setShowArchive] = useState(false)
-  const queryClientForSeen = useQueryClient()
+  const queryClient = useQueryClient()
 
-  // Entering the tab = "read": resets the new-reservations badge (tab + navbar)
-  useEffect(() => {
-    adminApi.markReservationsSeen()
-      .then(() => queryClientForSeen.invalidateQueries({ queryKey: ['admin', 'notifications'] }))
-      .catch(() => { /* the badge will clear on the next successful visit */ })
-  }, [queryClientForSeen])
-
-  const { data: reservations, isLoading, isError, error, refetch } = useQuery({
+  // Both the reservation list and the waitlists view flag their "new since last read" rows
+  // against the same per-admin marker. Refetch once per visit and never on window focus, so
+  // the highlights stay put while the admin is looking.
+  const upcoming = useQuery({
     queryKey: ['admin', 'reservations', 'upcoming'],
     queryFn: () => adminApi.getUpcomingReservations(),
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: false,
   })
+  const waitlists = useQuery({
+    queryKey: ['admin', 'waitlists'],
+    queryFn: adminApi.getAdminWaitlists,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: false,
+  })
+
+  // Advance the read marker only after BOTH views have loaded (post-mount) against the old
+  // marker — otherwise resetting it would blank out the other view's "new" flags mid-fetch.
+  // Then refresh the badges (tab + navbar).
+  const bothLoaded = upcoming.isFetchedAfterMount && waitlists.isFetchedAfterMount
+  useEffect(() => {
+    if (!bothLoaded) return
+    adminApi.markReservationsSeen()
+      .then(() => queryClient.invalidateQueries({ queryKey: ['admin', 'notifications'] }))
+      .catch(() => { /* the badge clears on the next successful visit */ })
+  }, [bothLoaded, queryClient])
+
+  const { data: reservations, isLoading, isError, error, refetch } = upcoming
 
   const { data: pastReservations, isLoading: pastLoading, isError: pastError, error: pastErrorObj } = useQuery({
     queryKey: ['admin', 'reservations', 'past'],
@@ -112,7 +129,7 @@ export function AdminReservationsPanel() {
   return (
     <div className="space-y-6">
       {/* Waitlists — visible only when someone is actually waiting */}
-      <WaitlistsSection />
+      <WaitlistsSection data={waitlists.data} />
 
       {/* Upcoming */}
       {!hasUpcoming ? (
@@ -165,14 +182,10 @@ export function AdminReservationsPanel() {
 
 // All active waitlists (slots + events) — who is waiting and since when.
 // Renders only when someone is actually waiting; usually the section is not visible at all.
-function WaitlistsSection() {
+// The query lives in the parent so the "mark seen" reset can wait for it too.
+function WaitlistsSection({ data }: { data?: AdminWaitlists }) {
   const { t } = useTranslation('admin')
   const locale = useDateLocale()
-
-  const { data } = useQuery({
-    queryKey: ['admin', 'waitlists'],
-    queryFn: adminApi.getAdminWaitlists,
-  })
 
   if (!data || (data.slotWaitlists.length === 0 && data.eventWaitlists.length === 0)) {
     return null
@@ -186,37 +199,45 @@ function WaitlistsSection() {
       </h3>
       <p className="text-xs text-surface-500 mb-3">{t('waitlists.subtitle')}</p>
       <div className="space-y-2">
-        {data.eventWaitlists.map((ew) => (
-          <div key={ew.eventId} className="bg-surface-900 rounded-lg border border-amber-500/20 p-4">
-            <div className="flex items-center gap-3 flex-wrap">
-              <span className="font-medium text-surface-100">{ew.title}</span>
-              <span className="text-xs bg-primary-500/10 text-primary-400 px-2 py-0.5 rounded">
-                {format(new Date(ew.startDate), 'dd.MM')} - {format(new Date(ew.endDate), 'dd.MM.yyyy')}
-              </span>
-              <span className="text-xs text-amber-400">{t('waitlists.people', { count: ew.entries.length })}</span>
-            </div>
-            <WaitlistEntryList entries={ew.entries} />
-          </div>
-        ))}
-        {data.slotWaitlists.map((sw) => (
-          <div key={sw.slotId} className="bg-surface-900 rounded-lg border border-amber-500/20 p-4">
-            <div className="flex items-center gap-3 flex-wrap">
-              <span className="font-medium text-surface-100 capitalize">
-                {format(new Date(sw.date), 'EEEE, d MMMM', { locale })}
-              </span>
-              <span className="text-surface-300 text-sm">
-                {sw.startTime.slice(0, 5)} - {sw.endTime.slice(0, 5)}
-              </span>
-              {sw.title && (
+        {data.eventWaitlists.map((ew) => {
+          const newCount = ew.entries.filter((e) => e.isNew).length
+          return (
+            <div key={ew.eventId} className={`bg-surface-900 rounded-lg border p-4 ${newCount > 0 ? 'border-rose-500/40' : 'border-amber-500/20'}`}>
+              <div className="flex items-center gap-3 flex-wrap">
+                <span className="font-medium text-surface-100">{ew.title}</span>
                 <span className="text-xs bg-primary-500/10 text-primary-400 px-2 py-0.5 rounded">
-                  {sw.title}
+                  {format(new Date(ew.startDate), 'dd.MM')} - {format(new Date(ew.endDate), 'dd.MM.yyyy')}
                 </span>
-              )}
-              <span className="text-xs text-amber-400">{t('waitlists.people', { count: sw.entries.length })}</span>
+                <span className="text-xs text-amber-400">{t('waitlists.people', { count: ew.entries.length })}</span>
+                {newCount > 0 && <NewBadge label={t('reservations.newCount', { count: newCount })} />}
+              </div>
+              <WaitlistEntryList entries={ew.entries} />
             </div>
-            <WaitlistEntryList entries={sw.entries} />
-          </div>
-        ))}
+          )
+        })}
+        {data.slotWaitlists.map((sw) => {
+          const newCount = sw.entries.filter((e) => e.isNew).length
+          return (
+            <div key={sw.slotId} className={`bg-surface-900 rounded-lg border p-4 ${newCount > 0 ? 'border-rose-500/40' : 'border-amber-500/20'}`}>
+              <div className="flex items-center gap-3 flex-wrap">
+                <span className="font-medium text-surface-100 capitalize">
+                  {format(new Date(sw.date), 'EEEE, d MMMM', { locale })}
+                </span>
+                <span className="text-surface-300 text-sm">
+                  {sw.startTime.slice(0, 5)} - {sw.endTime.slice(0, 5)}
+                </span>
+                {sw.title && (
+                  <span className="text-xs bg-primary-500/10 text-primary-400 px-2 py-0.5 rounded">
+                    {sw.title}
+                  </span>
+                )}
+                <span className="text-xs text-amber-400">{t('waitlists.people', { count: sw.entries.length })}</span>
+                {newCount > 0 && <NewBadge label={t('reservations.newCount', { count: newCount })} />}
+              </div>
+              <WaitlistEntryList entries={sw.entries} />
+            </div>
+          )
+        })}
       </div>
     </div>
   )
@@ -227,9 +248,10 @@ export function WaitlistEntryList({ entries }: { entries: WaitlistAdminEntry[] }
   return (
     <div className="mt-2 space-y-2">
       {entries.map((entry, idx) => (
-        <div key={entry.waitlistId} className="bg-surface-800/50 rounded-lg px-3 py-2 text-sm">
-          <div className="font-medium text-surface-200">
-            {idx + 1}. {entry.fullName}
+        <div key={entry.waitlistId} className={`rounded-lg px-3 py-2 text-sm ${entry.isNew ? 'bg-rose-500/10 ring-1 ring-rose-500/30' : 'bg-surface-800/50'}`}>
+          <div className="flex items-center gap-2 flex-wrap font-medium text-surface-200">
+            <span>{idx + 1}. {entry.fullName}</span>
+            {entry.isNew && <NewBadge label={t('reservations.new')} />}
           </div>
           <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-surface-400 text-xs mt-0.5">
             <span className="inline-flex items-center gap-1">
@@ -376,20 +398,33 @@ function ReservationList({
   )
 }
 
+// "New since last read" pill — same rose accent as the navbar/tab alert badge, so it's
+// visually clear these are the reservations the alert was pointing at.
+function NewBadge({ label }: { label: string }) {
+  return (
+    <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-rose-300 bg-rose-500/15 px-1.5 py-0.5 rounded">
+      <span className="w-1.5 h-1.5 rounded-full bg-rose-400" />
+      {label}
+    </span>
+  )
+}
+
 function EventReservationCard({ group, onDelete }: { group: EventGroup; onDelete?: (eventId: string) => void }) {
   const { t } = useTranslation('admin')
-  const [expanded, setExpanded] = useState(false)
+  const newCount = group.reservations.filter((r) => r.isNew).length
+  const [expanded, setExpanded] = useState(newCount > 0)
   const [confirmOpen, setConfirmOpen] = useState(false)
   const canDelete = onDelete && group.eventId
 
   return (
-    <div className="bg-surface-900 rounded-lg border border-surface-800 p-4">
+    <div className={`bg-surface-900 rounded-lg border p-4 ${newCount > 0 ? 'border-rose-500/40' : 'border-surface-800'}`}>
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3 flex-wrap min-w-0">
           <span className="font-medium text-surface-100">{group.title}</span>
           <span className="text-xs bg-primary-500/10 text-primary-400 px-2 py-0.5 rounded">
             {format(new Date(group.eventStartDate), 'dd.MM')} - {format(new Date(group.eventEndDate), 'dd.MM.yyyy')}
           </span>
+          {newCount > 0 && <NewBadge label={t('reservations.newCount', { count: newCount })} />}
         </div>
         {canDelete && (
           <button
@@ -414,8 +449,11 @@ function EventReservationCard({ group, onDelete }: { group: EventGroup; onDelete
       {expanded && (
         <div className="mt-2 ml-1 space-y-2">
           {group.reservations.map((r) => (
-            <div key={r.id} className="bg-surface-800/50 rounded-lg px-3 py-2 text-sm">
-              <div className="font-medium text-surface-200">{r.userFullName}</div>
+            <div key={r.id} className={`rounded-lg px-3 py-2 text-sm ${r.isNew ? 'bg-rose-500/10 ring-1 ring-rose-500/30' : 'bg-surface-800/50'}`}>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="font-medium text-surface-200">{r.userFullName}</span>
+                {r.isNew && <NewBadge label={t('reservations.new')} />}
+              </div>
               <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-surface-400 text-xs mt-0.5">
                 <span className="inline-flex items-center gap-1">
                   <Mail className="w-3 h-3" />
@@ -458,10 +496,11 @@ function SlotReservationCard({ r, onDelete }: { r: ReservationAdmin; onDelete?: 
   const { t } = useTranslation('admin')
   const [confirmOpen, setConfirmOpen] = useState(false)
   return (
-    <div className="bg-surface-900 rounded-lg border border-surface-800 p-4 flex items-start justify-between gap-4">
+    <div className={`bg-surface-900 rounded-lg border p-4 flex items-start justify-between gap-4 ${r.isNew ? 'border-rose-500/40' : 'border-surface-800'}`}>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-3 flex-wrap">
           <span className="font-medium text-surface-100">{r.userFullName}</span>
+          {r.isNew && <NewBadge label={t('reservations.new')} />}
           {r.title && (
             <span className="text-xs bg-primary-500/10 text-primary-400 px-2 py-0.5 rounded">
               {r.title}

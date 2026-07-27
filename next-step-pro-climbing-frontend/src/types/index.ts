@@ -340,6 +340,7 @@ export interface ReservationAdmin {
   eventStartDate: string | null
   eventEndDate: string | null
   eventId: string | null
+  isNew: boolean
 }
 
 export interface CreateEventRequest {
@@ -409,6 +410,7 @@ export interface WaitlistAdminEntry {
   status: 'WAITING' | 'PENDING_CONFIRMATION' | 'EXPIRED'
   confirmationDeadline: string | null
   joinedAt: string
+  isNew: boolean
 }
 
 export interface SlotWaitlistAdmin {

@@ -406,6 +406,8 @@
     "pageInfo": "strona {{page}}/{{total}} ({{count}} na tej stronie)",
     "totalItems": "{{count}} pozycji",
     "participants": "Uczestnicy ({{count}})",
+    "new": "Nowa",
+    "newCount": "{{count}} nowe",
     "spots": "{{count}} miejsca",
     "deleteTitle": "Usunąć trwale?",
     "deletePermanent": "Usuń trwale",

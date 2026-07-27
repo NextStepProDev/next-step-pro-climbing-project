@@ -40,6 +40,7 @@ import pl.nextsteppro.climbing.domain.waitlist.Waitlist;
 import pl.nextsteppro.climbing.domain.waitlist.WaitlistRepository;
 import pl.nextsteppro.climbing.domain.waitlist.WaitlistStatus;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -455,16 +456,16 @@ public class AdminService {
 
         List<WaitlistAdminEntryDto> all = new java.util.ArrayList<>();
         for (Waitlist w : pending) {
-            all.add(toWaitlistAdminEntryDto(w));
+            all.add(toWaitlistAdminEntryDto(w, null));
         }
         for (Waitlist w : entries) {
-            all.add(toWaitlistAdminEntryDto(w));
+            all.add(toWaitlistAdminEntryDto(w, null));
         }
 
         return new SlotWaitlistDto(slotId, slot.getDate(), slot.getStartTime(), slot.getEndTime(), all);
     }
 
-    private WaitlistAdminEntryDto toWaitlistAdminEntryDto(Waitlist w) {
+    private WaitlistAdminEntryDto toWaitlistAdminEntryDto(Waitlist w, @Nullable Instant newSince) {
         return new WaitlistAdminEntryDto(
             w.getId(),
             w.getUser().getId(),
@@ -474,7 +475,8 @@ public class AdminService {
             w.getPosition(),
             w.getStatus().name(),
             w.getConfirmationDeadline(),
-            w.getCreatedAt()
+            w.getCreatedAt(),
+            newSince != null && w.getCreatedAt() != null && w.getCreatedAt().isAfter(newSince)
         );
     }
 
@@ -489,16 +491,16 @@ public class AdminService {
 
         List<WaitlistAdminEntryDto> all = new ArrayList<>();
         for (EventWaitlist w : pending) {
-            all.add(toEventWaitlistAdminEntryDto(w));
+            all.add(toEventWaitlistAdminEntryDto(w, null));
         }
         for (EventWaitlist w : waiting) {
-            all.add(toEventWaitlistAdminEntryDto(w));
+            all.add(toEventWaitlistAdminEntryDto(w, null));
         }
 
         return new EventWaitlistAdminDto(eventId, event.getTitle(), event.getStartDate(), event.getEndDate(), all);
     }
 
-    private WaitlistAdminEntryDto toEventWaitlistAdminEntryDto(EventWaitlist w) {
+    private WaitlistAdminEntryDto toEventWaitlistAdminEntryDto(EventWaitlist w, @Nullable Instant newSince) {
         return new WaitlistAdminEntryDto(
             w.getId(),
             w.getUser().getId(),
@@ -508,7 +510,8 @@ public class AdminService {
             w.getPosition(),
             w.getStatus().name(),
             w.getConfirmationDeadline(),
-            w.getCreatedAt()
+            w.getCreatedAt(),
+            newSince != null && w.getCreatedAt() != null && w.getCreatedAt().isAfter(newSince)
         );
     }
 
@@ -518,15 +521,16 @@ public class AdminService {
      * backfill, and WAITING entries on past slots can linger in the database).
      */
     @Transactional(readOnly = true)
-    public AdminWaitlistsDto getAdminWaitlists() {
+    public AdminWaitlistsDto getAdminWaitlists(UUID adminId) {
         LocalDate today = LocalDate.now(java.time.ZoneId.of("Europe/Warsaw"));
+        Instant newSince = userRepository.findById(adminId).orElseThrow().getAdminReservationsSeenAt();
 
         Map<UUID, SlotWaitlistGroupDto> slotGroups = new LinkedHashMap<>();
         for (Waitlist w : waitlistRepository.findActiveForUpcomingSlots(today)) {
             TimeSlot slot = w.getTimeSlot();
             slotGroups.computeIfAbsent(slot.getId(), id -> new SlotWaitlistGroupDto(
                 id, slot.getDate(), slot.getStartTime(), slot.getEndTime(), slot.getDisplayTitle(), new ArrayList<>()
-            )).entries().add(toWaitlistAdminEntryDto(w));
+            )).entries().add(toWaitlistAdminEntryDto(w, newSince));
         }
 
         Map<UUID, EventWaitlistAdminDto> eventGroups = new LinkedHashMap<>();
@@ -534,7 +538,7 @@ public class AdminService {
             Event event = w.getEvent();
             eventGroups.computeIfAbsent(event.getId(), id -> new EventWaitlistAdminDto(
                 id, event.getTitle(), event.getStartDate(), event.getEndDate(), new ArrayList<>()
-            )).entries().add(toEventWaitlistAdminEntryDto(w));
+            )).entries().add(toEventWaitlistAdminEntryDto(w, newSince));
         }
 
         return new AdminWaitlistsDto(List.copyOf(slotGroups.values()), List.copyOf(eventGroups.values()));
@@ -782,25 +786,39 @@ public class AdminService {
         );
     }
 
+    /**
+     * Upcoming reservations for the panel, each row flagged {@code isNew} when created since
+     * this admin's previous read (the reservations the badge was alerting about). The read
+     * marker is NOT advanced here — the client resets it via {@link #markReservationsSeen}
+     * once both this list and the waitlists view have loaded, so both can be flagged against
+     * the same pre-visit marker without racing over it.
+     */
     @Transactional(readOnly = true)
-    public List<ReservationAdminDto> getAllUpcomingReservations() {
+    public List<ReservationAdminDto> getAllUpcomingReservations(UUID adminId) {
+        User admin = userRepository.findById(adminId).orElseThrow();
+        Instant newSince = admin.getAdminReservationsSeenAt();
         List<TimeSlot> slots = timeSlotRepository.findByDateRangeOrdered(LocalDate.now(), LocalDate.now().plusYears(1));
-        return buildReservationAdminDtos(slots);
+        return buildReservationAdminDtos(slots, newSince);
     }
 
     @Transactional(readOnly = true)
     public List<ReservationAdminDto> getAllPastReservations() {
         List<TimeSlot> slots = timeSlotRepository.findPastOrdered(LocalDate.now(), LocalTime.now());
-        return buildReservationAdminDtos(slots);
+        return buildReservationAdminDtos(slots, null);
     }
 
     @Transactional(readOnly = true)
     public List<ReservationAdminDto> getReservationsByDate(LocalDate date) {
         List<TimeSlot> slots = timeSlotRepository.findByDateSorted(date);
-        return buildReservationAdminDtos(slots);
+        return buildReservationAdminDtos(slots, null);
     }
 
-    private List<ReservationAdminDto> buildReservationAdminDtos(List<TimeSlot> slots) {
+    /**
+     * @param newSince marker for the "new" flag: reservations created after it (and not
+     *                 created by an admin) are flagged {@code isNew}; pass {@code null} to
+     *                 flag nothing (past / by-date listings).
+     */
+    private List<ReservationAdminDto> buildReservationAdminDtos(List<TimeSlot> slots, @Nullable Instant newSince) {
         if (slots.isEmpty()) return List.of();
 
         List<UUID> slotIds = slots.stream().map(TimeSlot::getId).toList();
@@ -813,6 +831,10 @@ public class AdminService {
             .map(r -> {
                 TimeSlot slot = slotMap.get(r.getTimeSlot().getId());
                 Event event = slot.belongsToEvent() ? slot.getEvent() : null;
+                boolean isNew = newSince != null
+                    && !r.isCreatedByAdmin()
+                    && r.getCreatedAt() != null
+                    && r.getCreatedAt().isAfter(newSince);
                 return new ReservationAdminDto(
                     r.getId(),
                     r.getUser().getFullName(),
@@ -826,7 +848,8 @@ public class AdminService {
                     r.getParticipants(),
                     event != null ? event.getStartDate() : null,
                     event != null ? event.getEndDate() : null,
-                    event != null ? event.getId() : null
+                    event != null ? event.getId() : null,
+                    isNew
                 );
             })
             .toList();
@@ -1040,8 +1063,9 @@ public class AdminService {
 
     /**
      * Badge counters: pending training requests (inherent state — PENDING) plus new
-     * reservations since last "read" (per-admin marker {@code adminReservationsSeenAt},
-     * reset by entering the Reservations tab via {@link #markReservationsSeen}).
+     * reservations and waitlist joins since last "read" (per-admin marker
+     * {@code adminReservationsSeenAt}, reset by entering the Reservations tab via
+     * {@link #markReservationsSeen}).
      */
     @Transactional(readOnly = true)
     public AdminNotificationsDto getNotifications(UUID adminId) {
