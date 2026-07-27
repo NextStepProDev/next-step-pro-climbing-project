@@ -85,6 +85,12 @@ export function AdminPage() {
     queryFn: adminApi.getNotifications,
     refetchInterval: 60_000,
     refetchIntervalInBackground: false,
+    // The read markers are server-side and per-admin, so clearing alerts on one
+    // device must show up on another. Treat the count as always stale and refetch
+    // on mount/focus so returning to this device re-checks the server immediately
+    // instead of showing the cached (pre-clear) count until the next 60s poll.
+    staleTime: 0,
+    refetchOnWindowFocus: true,
   })
   const tabBadges: Record<string, number> = {
     '/admin/requests': notifications?.pendingRequests ?? 0,
