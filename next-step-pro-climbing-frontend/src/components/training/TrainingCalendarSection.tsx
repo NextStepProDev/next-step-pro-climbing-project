@@ -524,7 +524,7 @@ export function TrainingCalendarSection({ api, scopeKey, isCoachView }: Training
         onEdit={(tr) => { setDetailId(null); openEdit(tr) }}
         onDuplicate={openDuplicate}
         onDelete={(tr) => deleteMutation.mutate(tr.id)}
-        onComplete={(tr, data) => completeMutation.mutate({ trainingId: tr.id, data })}
+        onComplete={(tr, data) => completeMutation.mutateAsync({ trainingId: tr.id, data })}
         onUncomplete={(tr) => uncompleteMutation.mutate(tr.id)}
         mutating={completeMutation.isPending || uncompleteMutation.isPending || deleteMutation.isPending}
         errorMessage={

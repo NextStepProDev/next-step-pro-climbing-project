@@ -22,7 +22,8 @@ interface TrainingDetailModalProps {
   onEdit: (training: PersonalTraining) => void
   onDuplicate: (training: PersonalTraining) => void
   onDelete: (training: PersonalTraining) => void
-  onComplete?: (training: PersonalTraining, data: { feedback?: string; rpe?: number }) => void
+  // Returns a promise so the completion form can stay open (and surface the error) on failure.
+  onComplete?: (training: PersonalTraining, data: { feedback?: string; rpe?: number }) => void | Promise<unknown>
   onUncomplete?: (training: PersonalTraining) => void
   mutating?: boolean
   onCommentPosted?: () => void
@@ -70,12 +71,19 @@ export function TrainingDetailModal({
     setCompletionOpen(true)
   }
 
-  const saveCompletion = () => {
-    onComplete?.(training, {
-      feedback: feedback.trim() || undefined,
-      rpe: rpe ?? undefined,
-    })
-    setCompletionOpen(false)
+  const saveCompletion = async () => {
+    try {
+      // Wait for the backend to confirm the write before collapsing the form. On failure
+      // the form stays open with the error next to Save, so a failed save can't be mistaken
+      // for a successful one (the training also stays visibly not-completed).
+      await onComplete?.(training, {
+        feedback: feedback.trim() || undefined,
+        rpe: rpe ?? undefined,
+      })
+      setCompletionOpen(false)
+    } catch {
+      // Error is surfaced via the errorMessage prop; keep the form open for a retry.
+    }
   }
 
   return (
@@ -171,6 +179,12 @@ export function TrainingDetailModal({
               </div>
               <RpePicker value={rpe} onChange={setRpe} />
               {rpe == null && <p className="text-xs text-amber-400/80">{t('completion.rpeRequired')}</p>}
+              {/* Prominent, right where the eye is when clicking Save — a failed save must not slip past unnoticed */}
+              {errorMessage && (
+                <p className="text-sm text-rose-300 bg-rose-500/10 border border-rose-500/40 rounded-lg px-3 py-2">
+                  {errorMessage}
+                </p>
+              )}
               <div className="flex justify-end gap-2">
                 <Button size="sm" variant="secondary" onClick={() => setCompletionOpen(false)}>
                   {t('form.cancel')}
@@ -195,7 +209,8 @@ export function TrainingDetailModal({
         {/* Comment thread */}
         <CommentThread trainingId={training.id} api={api} onPosted={onCommentPosted} />
 
-        {errorMessage && (
+        {/* Delete/uncomplete errors (no form open); the completion form renders its own error inline */}
+        {errorMessage && !completionOpen && (
           <p className="text-sm text-rose-400/80">{errorMessage}</p>
         )}
 
