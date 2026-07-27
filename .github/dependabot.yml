@@ -1,0 +1,48 @@
+version: 2
+# Miesięczny rytm + mocne grupowanie, żeby pierwszy run nie zasypał lawiną PR-ów.
+# Drobne (minor/patch) lecą zgrupowane w jeden PR na ekosystem; majory osobno,
+# żeby dało się odrzucić te niekompatybilne (np. przypięte przez framework).
+updates:
+  # Frontend (npm)
+  - package-ecosystem: npm
+    directory: /next-step-pro-climbing-frontend
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 5
+    groups:
+      minor-and-patch:
+        update-types:
+          - minor
+          - patch
+
+  # Backend (Java / Gradle)
+  - package-ecosystem: gradle
+    directory: /next-step-pro-climbing-backend
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 5
+    groups:
+      minor-and-patch:
+        update-types:
+          - minor
+          - patch
+
+  # Akcje GitHub w workflowach CI/CD
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+
+  # Obrazy bazowe w Dockerfile'ach
+  - package-ecosystem: docker
+    directory: /next-step-pro-climbing-frontend
+    schedule:
+      interval: monthly
+  - package-ecosystem: docker
+    directory: /next-step-pro-climbing-backend
+    schedule:
+      interval: monthly
