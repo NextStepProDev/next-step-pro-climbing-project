@@ -52,6 +52,11 @@ export function MyReservationsPage() {
     enabled: isAthlete,
     refetchInterval: 60_000,
     refetchIntervalInBackground: false,
+    // Server-side per-account read marker: reading on one device must clear the
+    // badge on another. Re-check on focus/mount instead of serving the cached
+    // (pre-read) count until the next 60s poll.
+    staleTime: 0,
+    refetchOnWindowFocus: true,
   })
   const calendarBadge = trainingNotifications?.newCount ?? 0
   const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null)
@@ -127,6 +132,9 @@ export function MyReservationsPage() {
     queryFn: reservationApi.getMyInvitations,
     refetchInterval: 60_000,
     refetchIntervalInBackground: false,
+    // Reflect state across devices on focus/mount, not just on the next poll.
+    staleTime: 0,
+    refetchOnWindowFocus: true,
   })
 
   const confirmOfferMutation = useMutation({
