@@ -406,6 +406,8 @@
     "pageInfo": "page {{page}}/{{total}} ({{count}} on this page)",
     "totalItems": "{{count}} items",
     "participants": "Participants ({{count}})",
+    "new": "New",
+    "newCount": "{{count}} new",
     "spots": "{{count}} spots",
     "deleteTitle": "Delete permanently?",
     "deletePermanent": "Delete permanently",

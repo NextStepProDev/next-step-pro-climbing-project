@@ -108,7 +108,11 @@ record WaitlistAdminEntryDto(
     int position,
     String status,
     @Nullable Instant confirmationDeadline,
-    Instant joinedAt
+    Instant joinedAt,
+    // True in the global "Waitlists" view when this entry joined after the admin's previous
+    // read (one of the joins the reservations-tab badge was alerting about). Always false in
+    // the per-slot / per-event waitlist views.
+    boolean isNew
 ) {}
 
 record EventWaitlistAdminDto(
@@ -248,7 +252,11 @@ record ReservationAdminDto(
     int participants,
     @Nullable LocalDate eventStartDate,
     @Nullable LocalDate eventEndDate,
-    @Nullable UUID eventId
+    @Nullable UUID eventId,
+    // True when this reservation was created after the admin's previous "read" marker
+    // (i.e. it is one of the reservations the navbar/tab badge was alerting about).
+    // Always false for past / by-date listings and for admin-created reservations.
+    boolean isNew
 ) {}
 
 // User DTOs

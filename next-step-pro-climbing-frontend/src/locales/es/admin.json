@@ -404,6 +404,8 @@
     "pageInfo": "página {{page}}/{{total}} ({{count}} en esta página)",
     "totalItems": "{{count}} elementos",
     "participants": "Participantes ({{count}})",
+    "new": "Nueva",
+    "newCount": "{{count}} nuevas",
     "spots": "{{count}} plazas",
     "deleteTitle": "¿Eliminar permanentemente?",
     "deletePermanent": "Eliminar permanentemente",
