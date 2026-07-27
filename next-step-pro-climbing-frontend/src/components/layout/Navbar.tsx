@@ -43,6 +43,11 @@ export function Navbar() {
     enabled: isAdmin,
     refetchInterval: 60_000,
     refetchIntervalInBackground: false,
+    // Server-side per-admin read markers: clearing on one device must reflect on
+    // another. Always stale + refetch on focus so switching back to a device shows
+    // the current count immediately, not the cached one until the next poll.
+    staleTime: 0,
+    refetchOnWindowFocus: true,
   });
   const adminBadgeCount = isAdmin
     ? (adminNotifications?.pendingRequests ?? 0)
@@ -60,6 +65,9 @@ export function Navbar() {
     enabled: isAuthenticated,
     refetchInterval: 60_000,
     refetchIntervalInBackground: false,
+    // Same cross-device freshness as the admin badge: reflect state on focus/mount.
+    staleTime: 0,
+    refetchOnWindowFocus: true,
   });
   const invitationBadgeCount = isAuthenticated ? (myInvitations?.length ?? 0) : 0;
 
@@ -71,6 +79,9 @@ export function Navbar() {
     enabled: isAuthenticated && !!user?.isAthlete,
     refetchInterval: 60_000,
     refetchIntervalInBackground: false,
+    // Same cross-device freshness as the admin badge: reflect state on focus/mount.
+    staleTime: 0,
+    refetchOnWindowFocus: true,
   });
   const trainingBadgeCount = user?.isAthlete ? (trainingNotifications?.newCount ?? 0) : 0;
 
