@@ -18,6 +18,7 @@ import {
   Trophy,
 } from 'lucide-react'
 import { QueryError } from '../ui/QueryError'
+import { HEATMAP_LEGEND, levelClass } from './heatmapScale'
 import { useDateLocale } from '../../utils/dateFnsLocale'
 import type { TrainingCalendarAdapter } from './trainingCalendarAdapter'
 import type { AthleteStats } from '../../types'
@@ -246,12 +247,6 @@ function StatTile({
 const HEATMAP_DAYS = 365
 const CELL = 'w-[11px] h-[11px] rounded-[2px]'
 
-function levelClass(count: number): string {
-  if (count <= 0) return 'bg-surface-800'
-  if (count === 1) return 'bg-green-500'
-  return 'bg-green-300'
-}
-
 function ActivityHeatmap({ heatmap }: { heatmap: Record<string, number> }) {
   const { t } = useTranslation('training')
   const locale = useDateLocale()
@@ -343,7 +338,7 @@ function ActivityHeatmap({ heatmap }: { heatmap: Record<string, number> }) {
         </div>
       </div>
       <div className="flex items-center justify-end gap-3 mt-2 text-[10px] text-surface-500">
-        {([[0, '0'], [1, '1'], [2, '2+']] as const).map(([lvl, label]) => (
+        {HEATMAP_LEGEND.map(([lvl, label]) => (
           <span key={label} className="inline-flex items-center gap-1">
             <span className={clsx(CELL, levelClass(lvl), 'inline-block')} />
             {label}

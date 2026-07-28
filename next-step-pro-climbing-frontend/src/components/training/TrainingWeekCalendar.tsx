@@ -6,14 +6,12 @@ import clsx from 'clsx'
 import { TrainingBlock, ReservationBlock, InvitationBlock } from './TrainingBlock'
 import { useSlotDrag } from '../../hooks/useSlotDrag'
 import { useDateLocale } from '../../utils/dateFnsLocale'
+import {
+  HOUR_HEIGHT, START_HOUR, TOTAL_HOURS,
+  clickToTime, splitDay,
+  type DayEntries,
+} from './weekLayout'
 import type { InvitationOverlayItem, PersonalTraining, ReservationOverlayItem } from '../../types'
-
-// Same grid math as the public WeekCalendar (components/calendar/WeekCalendar.tsx) —
-// copied constants, not the component: that one is welded to booking logic.
-const HOUR_HEIGHT = 40
-const START_HOUR = 7
-const END_HOUR = 23
-const TOTAL_HOURS = END_HOUR - START_HOUR
 
 interface TrainingWeekCalendarProps {
   // Monday of the displayed week, yyyy-MM-dd
@@ -41,81 +39,6 @@ interface TrainingWeekCalendarProps {
   pasteActive?: boolean
   onPasteAt?: (date: string, time: string) => void
   isCoachView?: boolean
-}
-
-function timeToMin(time: string): number {
-  const [h, m] = time.split(':').map(Number)
-  return h * 60 + m
-}
-
-/** Click position in a day column -> "HH:mm" snapped to 30 min, clamped to the grid. */
-function clickToTime(relY: number): string {
-  const raw = Math.round(((relY / HOUR_HEIGHT) * 60) / 30) * 30
-  const abs = START_HOUR * 60 + Math.max(0, Math.min(raw, TOTAL_HOURS * 60 - 30))
-  return `${String(Math.floor(abs / 60)).padStart(2, '0')}:${String(abs % 60).padStart(2, '0')}`
-}
-
-interface PositionedItem {
-  key: string
-  startMin: number
-  endMin: number
-  lane: number
-  lanes: number
-  clampedTop: boolean
-  clampedBottom: boolean
-  training?: PersonalTraining
-  reservation?: ReservationOverlayItem
-  invitation?: InvitationOverlayItem
-}
-
-// Greedy lane assignment so overlapping blocks render side by side instead of stacking.
-// Callers pass only timed entries (untimed trainings live in the all-day lane).
-function layoutDay(trainings: PersonalTraining[], reservations: ReservationOverlayItem[],
-                   invitations: InvitationOverlayItem[]): PositionedItem[] {
-  const items: PositionedItem[] = [
-    ...trainings.map((t) => baseItem(`t-${t.id}`, t.startTime ?? '07:00', t.endTime ?? '08:00', { training: t })),
-    ...reservations.map((r) => baseItem(`r-${r.id}`, r.startTime, r.endTime, { reservation: r })),
-    // Only timed invites reach the grid; all-day invites are filtered out into the all-day lane.
-    ...invitations.map((inv, i) => baseItem(`i-${i}-${inv.slotId ?? inv.eventId}`,
-      inv.startTime ?? '07:00', inv.endTime ?? '08:00', { invitation: inv })),
-  ].sort((a, b) => a.startMin - b.startMin || a.endMin - b.endMin)
-
-  const laneEnds: number[] = []
-  for (const item of items) {
-    let lane = laneEnds.findIndex((end) => end <= item.startMin)
-    if (lane === -1) {
-      lane = laneEnds.length
-      laneEnds.push(0)
-    }
-    laneEnds[lane] = item.endMin
-    item.lane = lane
-  }
-  // Every overlapping cluster shares the max lane count for a stable side-by-side split
-  const lanes = laneEnds.length
-  items.forEach((i) => { i.lanes = lanes })
-  return items
-}
-
-function baseItem(key: string, startTime: string, endTime: string,
-                  refs: { training?: PersonalTraining; reservation?: ReservationOverlayItem; invitation?: InvitationOverlayItem }): PositionedItem {
-  const GRID_START = START_HOUR * 60
-  const GRID_END = END_HOUR * 60
-  const rawStart = timeToMin(startTime)
-  const rawEnd = timeToMin(endTime)
-  // Clamp fully inside the grid with a minimum 30-min visible height — an entry entirely
-  // outside 7:00-23:00 pins to the nearest edge with a clamp arrow instead of overflowing
-  const startMin = Math.min(Math.max(rawStart, GRID_START), GRID_END - 30)
-  const endMin = Math.min(Math.max(rawEnd, startMin + 30), GRID_END)
-  return {
-    key,
-    startMin,
-    endMin,
-    lane: 0,
-    lanes: 1,
-    clampedTop: rawStart < startMin,
-    clampedBottom: rawEnd > endMin,
-    ...refs,
-  }
 }
 
 export function TrainingWeekCalendar({
@@ -159,27 +82,12 @@ export function TrainingWeekCalendar({
   // Only timed entries land in the hour grid; untimed trainings and all-day invitations
   // (event invites with no times) go to the all-day lane above it.
   const byDay = useMemo(() => {
-    const map = new Map<string, PositionedItem[]>()
+    const map = new Map<string, DayEntries>()
     for (const date of days) {
-      map.set(date, layoutDay(
-        trainings.filter((tr) => tr.date === date && tr.startTime != null),
-        reservations.filter((r) => r.date === date),
-        invitations.filter((inv) => inv.date === date && inv.startTime != null),
-      ))
+      map.set(date, splitDay(date, trainings, reservations, invitations))
     }
     return map
   }, [days, trainings, reservations, invitations])
-
-  const allDayByDay = useMemo(() => {
-    const map = new Map<string, { trainings: PersonalTraining[]; invitations: InvitationOverlayItem[] }>()
-    for (const date of days) {
-      map.set(date, {
-        trainings: trainings.filter((tr) => tr.date === date && tr.startTime == null),
-        invitations: invitations.filter((inv) => inv.date === date && inv.startTime == null),
-      })
-    }
-    return map
-  }, [days, trainings, invitations])
 
   // Auto-scroll to today's column on mobile (same behavior as the public week view)
   useEffect(() => {
@@ -257,7 +165,7 @@ export function TrainingWeekCalendar({
             </div>
             {days.map((date) => {
               const today = isToday(new Date(date))
-              const allDay = allDayByDay.get(date)
+              const allDay = byDay.get(date)
               return (
                 <div
                   key={date}
@@ -271,7 +179,7 @@ export function TrainingWeekCalendar({
                     onDayClick(date)
                   }}
                 >
-                  {allDay?.trainings.map((tr) => (
+                  {allDay?.allDayTrainings.map((tr) => (
                     <TrainingBlock
                       key={tr.id}
                       training={tr}
@@ -279,7 +187,7 @@ export function TrainingWeekCalendar({
                       compact
                     />
                   ))}
-                  {allDay?.invitations.map((inv, i) => (
+                  {allDay?.allDayInvitations.map((inv, i) => (
                     <InvitationBlock
                       key={`inv-${i}-${inv.slotId ?? inv.eventId}`}
                       invitation={inv}
@@ -311,7 +219,7 @@ export function TrainingWeekCalendar({
             {/* Day columns */}
             {days.map((date, dayIndex) => {
               const today = isToday(new Date(date))
-              const items = byDay.get(date) ?? []
+              const items = byDay.get(date)?.timed ?? []
               return (
                 <div
                   key={date}
