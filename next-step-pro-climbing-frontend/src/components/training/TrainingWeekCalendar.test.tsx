@@ -181,7 +181,7 @@ describe('TrainingWeekCalendar — clicking empty space', () => {
     const { onDayClick } = renderWeek()
 
     // The all-day cells are the only clickable day cells outside the hour grid
-    fireEvent.click(screen.getByText('form.allDay').nextElementSibling!)
+    fireEvent.click(screen.getByText('detail.allDay').nextElementSibling!)
 
     expect(onDayClick).toHaveBeenCalledWith(MONDAY)
   })
