@@ -158,10 +158,13 @@ export function TrainingWeekCalendar({
             })}
           </div>
 
-          {/* All-day lane: untimed trainings + all-day invitations, pinned above the hour grid */}
+          {/* All-day lane: untimed trainings + all-day invitations, pinned above the hour grid.
+              Untimed is common here, so the lane is sized for two chips without growing, and the
+              gutter uses the SHORT label with bottom clearance — the first hour label ("7:00")
+              is shifted 8px up into this row, and the long form wording collided with it. */}
           <div className="grid border-b border-surface-800" style={{ gridTemplateColumns: '60px repeat(7, 1fr)' }}>
-            <div className="flex items-start justify-end pr-2 pt-1 text-[10px] text-surface-500">
-              {t('form.allDay')}
+            <div className="flex items-start justify-end pr-2 pt-1.5 pb-3 text-[10px] leading-tight text-surface-500">
+              {t('detail.allDay')}
             </div>
             {days.map((date) => {
               const today = isToday(new Date(date))
@@ -170,7 +173,7 @@ export function TrainingWeekCalendar({
                 <div
                   key={date}
                   className={clsx(
-                    'relative min-h-8 p-1 space-y-0.5 border-l border-surface-800 cursor-pointer transition-colors hover:bg-surface-800/40',
+                    'relative min-h-14 p-1 pb-3 space-y-0.5 border-l border-surface-800 cursor-pointer transition-colors hover:bg-surface-800/40',
                     today && 'bg-primary-500/5',
                   )}
                   onClick={(e) => {
