@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { Award, Medal, RotateCcw, Scale, Trophy } from 'lucide-react'
+import { Award, Medal, RotateCcw, Scale, Trash2, Trophy } from 'lucide-react'
 import { format } from 'date-fns'
 import clsx from 'clsx'
 import { Modal } from '../ui/Modal'
@@ -65,14 +65,17 @@ interface TrophyChestModalProps {
   isCoachView?: boolean
   // Coach only, and only for goals a weigh-in closed. Undefined leaves the chest read-only.
   onReopen?: (goal: AthleteGoal) => void
+  // Coach only: bin a trophy awarded by mistake. Undefined leaves the chest read-only.
+  onDelete?: (goal: AthleteGoal) => void
 }
 
 /**
  * The trophy chest: every achieved goal, forever. Three prestige columns (bronze/silver/gold
- * = short/medium/long-term), each a scrollable shelf of trophies newest-first. The read-only
- * motivational centrepiece of the athlete zone — seen by athlete and coach alike.
+ * = short/medium/long-term), each a scrollable shelf of trophies newest-first. The
+ * motivational centrepiece of the athlete zone — the athlete only ever reads it; the coach
+ * can undo an automatic closure and bin a trophy that should not have been awarded.
  */
-export function TrophyChestModal({ isOpen, onClose, achieved, isCoachView, onReopen }: TrophyChestModalProps) {
+export function TrophyChestModal({ isOpen, onClose, achieved, isCoachView, onReopen, onDelete }: TrophyChestModalProps) {
   const { t, i18n } = useTranslation('training')
   const locale = useDateLocale()
 
@@ -142,17 +145,33 @@ export function TrophyChestModal({ isOpen, onClose, achieved, isCoachView, onReo
                             {t('goals.achievedOn', { date: format(new Date(goal.achievedAt), 'd MMM yyyy', { locale }) })}
                           </p>
                         )}
-                        {/* No time limit: a phantom weigh-in is often spotted weeks later, and
-                            the server never cared about the age of the closure either */}
-                        {isCoachView && onReopen && goal.achievedAutomatically && (
-                          <button
-                            type="button"
-                            onClick={() => onReopen(goal)}
-                            className="inline-flex items-center gap-1 text-[11px] font-medium text-surface-400 hover:text-surface-200 transition-colors mt-1"
-                          >
-                            <RotateCcw className="w-3 h-3" />
-                            {t('goals.reopen')}
-                          </button>
+                        {isCoachView && (onReopen || onDelete) && (
+                          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1">
+                            {/* No time limit: a phantom weigh-in is often spotted weeks later, and
+                                the server never cared about the age of the closure either */}
+                            {onReopen && goal.achievedAutomatically && (
+                              <button
+                                type="button"
+                                onClick={() => onReopen(goal)}
+                                className="inline-flex items-center gap-1 text-[11px] font-medium text-surface-400 hover:text-surface-200 transition-colors"
+                              >
+                                <RotateCcw className="w-3 h-3" />
+                                {t('goals.reopen')}
+                              </button>
+                            )}
+                            {/* Reopen puts a goal back in play; this throws the trophy away —
+                                the only way out for one ticked off by mistake or while testing */}
+                            {onDelete && (
+                              <button
+                                type="button"
+                                onClick={() => onDelete(goal)}
+                                className="inline-flex items-center gap-1 text-[11px] font-medium text-surface-500 hover:text-rose-300 transition-colors"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                                {t('goals.deleteTrophy')}
+                              </button>
+                            )}
+                          </div>
                         )}
                       </div>
                     </div>
