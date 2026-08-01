@@ -27,7 +27,7 @@ function makeSeries(overrides: Partial<WeightSeries> = {}): WeightSeries {
     rapidLoss: false,
     latestWeightKg: 70.6,
     latestMeasuredOn: '2026-08-01',
-    historyDays: 120,
+    backfillDays: 120,
     ...overrides,
   }
 }
@@ -164,7 +164,7 @@ describe('WeightPanel', () => {
   })
 
   it('bounds the picker to the past and to what the chart can show', async () => {
-    renderPanel(makeApi(makeSeries({ historyDays: 30 })))
+    renderPanel(makeApi(makeSeries({ backfillDays: 30 })))
 
     const date = await screen.findByLabelText('weight.dateLabel')
     expect(date).toHaveAttribute('max', today)
@@ -196,6 +196,62 @@ describe('WeightPanel', () => {
 
     expect(await screen.findByText('weight.futureDate')).toBeInTheDocument()
     expect(saveWeight).not.toHaveBeenCalled()
+  })
+
+  // ---------- ranges ----------
+
+  it('asks the server for the default range and nothing wider', async () => {
+    const getWeights = vi.fn().mockResolvedValue(makeSeries())
+    renderPanel({ getWeights, weightMutations: { save: saveWeight, remove: deleteWeight } } as unknown as TrainingCalendarAdapter)
+
+    await screen.findByText('weight.title')
+    expect(getWeights).toHaveBeenCalledWith('RECENT')
+  })
+
+  it('refetches from the server when the range changes instead of filtering locally', async () => {
+    // A local filter would mean we had already downloaded the wider history anyway
+    const getWeights = vi.fn().mockResolvedValue(makeSeries())
+    renderPanel({ getWeights, weightMutations: { save: saveWeight, remove: deleteWeight } } as unknown as TrainingCalendarAdapter)
+
+    await userEvent.click(await screen.findByText('weight.range.year'))
+
+    await waitFor(() => expect(getWeights).toHaveBeenCalledWith('YEAR'))
+    expect(getWeights.mock.calls.map((c) => c[0])).toEqual(['RECENT', 'YEAR'])
+  })
+
+  it('does not show older readings until a wider range is picked', async () => {
+    // The server trims; the panel simply shows what came back for the range it asked for
+    const older = format(subDays(new Date(), 200), 'yyyy-MM-dd')
+    const getWeights = vi.fn().mockImplementation((range: string) =>
+      Promise.resolve(
+        range === 'RECENT'
+          ? makeSeries({ entries: [] })
+          : makeSeries({ entries: [{ measuredOn: older, weightKg: 74, trendKg: 74 }] }),
+      ),
+    )
+    renderPanel({ getWeights, weightMutations: { save: saveWeight, remove: deleteWeight } } as unknown as TrainingCalendarAdapter)
+
+    expect(await screen.findByText('weight.emptyAthlete')).toBeInTheDocument()
+
+    await userEvent.click(screen.getByText('weight.range.all'))
+
+    await waitFor(() => expect(getWeights).toHaveBeenCalledWith('ALL'))
+    await userEvent.click(await screen.findByText('weight.showTable'))
+    expect(screen.getByRole('table')).toHaveTextContent('74,0')
+  })
+
+  it('keeps the backfill bound fixed when a wider range is being viewed', async () => {
+    // Widening the CHART must not widen what the date picker offers
+    const getWeights = vi.fn().mockResolvedValue(makeSeries({ backfillDays: 120 }))
+    renderPanel({ getWeights, weightMutations: { save: saveWeight, remove: deleteWeight } } as unknown as TrainingCalendarAdapter)
+
+    await userEvent.click(await screen.findByText('weight.range.all'))
+
+    await waitFor(() => expect(getWeights).toHaveBeenCalledWith('ALL'))
+    expect(await screen.findByLabelText('weight.dateLabel')).toHaveAttribute(
+      'min',
+      format(subDays(new Date(), 119), 'yyyy-MM-dd'),
+    )
   })
 
   // ---------- deleting a phantom reading ----------

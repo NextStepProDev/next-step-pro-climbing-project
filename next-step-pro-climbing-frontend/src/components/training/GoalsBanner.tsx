@@ -55,10 +55,11 @@ export function GoalsBanner({ api, scopeKey, isCoachView }: GoalsBannerProps) {
     queryFn: api.getGoals,
   })
 
-  // Same key as WeightPanel, so react-query serves both from one request
+  // Only the current trend is needed here, and that is computed on today's window whatever
+  // range is charted — so pin to the default range and share WeightPanel's cache entry
   const weightQuery = useQuery({
-    queryKey: ['trainingCalendar', 'weight', scopeKey],
-    queryFn: api.getWeights,
+    queryKey: ['trainingCalendar', 'weight', scopeKey, 'RECENT'],
+    queryFn: () => api.getWeights('RECENT'),
   })
 
   const [formSlot, setFormSlot] = useState<{ kind: GoalKind; horizon: GoalHorizon } | null>(null)

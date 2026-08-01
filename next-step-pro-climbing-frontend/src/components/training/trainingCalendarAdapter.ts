@@ -10,6 +10,7 @@ import type {
   SaveWeight,
   TrainingCalendarRange,
   TrainingCommentItem,
+  WeightRange,
   WeightSeries,
 } from '../../types'
 
@@ -48,7 +49,7 @@ export interface TrainingCalendarAdapter {
   markSeen: () => Promise<void>
   getStats: () => Promise<AthleteStats>
   getGoals: () => Promise<AthleteGoals>
-  getWeights: () => Promise<WeightSeries>
+  getWeights: (range?: WeightRange) => Promise<WeightSeries>
   uploadAttachment: (file: File) => Promise<AttachmentUpload>
   goalMutations?: GoalMutations
   weightMutations?: WeightMutations
@@ -83,7 +84,7 @@ export function coachAdapter(athleteId: string): TrainingCalendarAdapter {
     markSeen: () => adminTrainingCalendarApi.markSeen(athleteId),
     getStats: () => adminTrainingCalendarApi.getStats(athleteId),
     getGoals: () => adminTrainingCalendarApi.getGoals(athleteId),
-    getWeights: () => adminTrainingCalendarApi.getWeights(athleteId),
+    getWeights: (range) => adminTrainingCalendarApi.getWeights(athleteId, range),
     uploadAttachment: adminTrainingCalendarApi.uploadAttachment,
     goalMutations: {
       create: (data) => adminTrainingCalendarApi.createGoal(athleteId, data),

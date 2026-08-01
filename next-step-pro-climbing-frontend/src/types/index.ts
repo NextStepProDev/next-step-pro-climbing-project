@@ -1225,10 +1225,14 @@ export interface WeightSeries {
   rapidLoss: boolean
   latestWeightKg: number | null
   latestMeasuredOn: string | null
-  // Chart width in days, and equally how far back a reading may be backfilled — the date
+  // How far back a reading may be backfilled. Fixed policy, NOT the selected range — the date
   // picker derives its `min` from this so it cannot drift from what the server accepts
-  historyDays: number
+  backfillDays: number
 }
+
+// Closed set of named windows. Keeping this an enum (rather than a day count) means no
+// client can ask the API for an unbounded history.
+export type WeightRange = 'RECENT' | 'YEAR' | 'ALL'
 
 export interface SaveWeight {
   measuredOn: string

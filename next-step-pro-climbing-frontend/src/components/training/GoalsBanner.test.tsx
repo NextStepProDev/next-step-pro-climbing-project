@@ -34,7 +34,7 @@ const weightSeries: WeightSeries = {
   rapidLoss: false,
   latestWeightKg: 69.4,
   latestMeasuredOn: '2026-08-01',
-  historyDays: 120,
+  backfillDays: 120,
 }
 
 const reopen = vi.fn().mockResolvedValue(undefined)

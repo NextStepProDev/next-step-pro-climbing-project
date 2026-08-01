@@ -286,6 +286,15 @@
     "dayAlreadyHasEntry": "This day already has an entry: {{value}} kg. Saving will correct it.",
     "deleteEntry": "Delete reading",
     "deleteConfirmTitle": "Delete this reading?",
-    "deleteConfirmMessage": "The reading from {{date}} will be removed. If it already closed a weight goal, that goal stays achieved — the coach can undo it separately."
+    "deleteConfirmMessage": "The reading from {{date}} will be removed. If it already closed a weight goal, that goal stays achieved — the coach can undo it separately.",
+    "rangeLabel": "Chart range",
+    "range": {
+      "recent": "4 months",
+      "year": "Year",
+      "all": "All"
+    },
+    "emptyRange": "No readings in this range. Try a wider one.",
+    "emptyCoach": "This person has not recorded any reading in this range yet.",
+    "dailyHiddenHint": "over a range this long the individual readings would smear together — only the trend line is shown"
   }
 }

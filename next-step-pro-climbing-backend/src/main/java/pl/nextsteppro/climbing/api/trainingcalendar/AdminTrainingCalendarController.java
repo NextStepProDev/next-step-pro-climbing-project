@@ -10,6 +10,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import pl.nextsteppro.climbing.config.CurrentUserId;
+import pl.nextsteppro.climbing.domain.athleteweight.WeightRange;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -184,8 +185,8 @@ public class AdminTrainingCalendarController {
     @GetMapping("/athletes/{athleteId}/weights")
     public ResponseEntity<AthleteWeightSeriesDto> getWeights(
             @PathVariable UUID athleteId,
-            @RequestParam(required = false) Integer days) {
-        return ResponseEntity.ok(athleteWeightService.getSeriesForAthlete(athleteId, days));
+            @RequestParam(required = false) WeightRange range) {
+        return ResponseEntity.ok(athleteWeightService.getSeriesForAthlete(athleteId, range));
     }
 
     // ---------- training templates (coach library) ----------

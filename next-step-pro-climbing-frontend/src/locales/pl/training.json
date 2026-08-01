@@ -306,6 +306,15 @@
     "dayAlreadyHasEntry": "Ten dzień ma już wpis: {{value}} kg. Zapis go poprawi.",
     "deleteEntry": "Usuń pomiar",
     "deleteConfirmTitle": "Usunąć pomiar?",
-    "deleteConfirmMessage": "Pomiar z {{date}} zostanie usunięty. Jeśli zamknął już cel wagowy, cel zostanie osiągnięty — trener może go cofnąć osobno."
+    "deleteConfirmMessage": "Pomiar z {{date}} zostanie usunięty. Jeśli zamknął już cel wagowy, cel zostanie osiągnięty — trener może go cofnąć osobno.",
+    "rangeLabel": "Zakres wykresu",
+    "range": {
+      "recent": "4 miesiące",
+      "year": "Rok",
+      "all": "Wszystko"
+    },
+    "emptyRange": "Brak pomiarów w tym zakresie. Spróbuj szerszego.",
+    "emptyCoach": "Ta osoba nie zapisała jeszcze żadnego pomiaru w tym zakresie.",
+    "dailyHiddenHint": "przy tak długim zakresie pojedyncze pomiary zlewałyby się — widać samą linię trendu"
   }
 }
