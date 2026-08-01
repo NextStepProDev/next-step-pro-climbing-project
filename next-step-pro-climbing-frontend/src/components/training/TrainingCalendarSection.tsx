@@ -368,11 +368,6 @@ export function TrainingCalendarSection({ api, scopeKey, isCoachView }: Training
       {/* Personal goals (short/medium/long-term) + trophy chest — coach edits, athlete reads */}
       <GoalsBanner api={api} scopeKey={scopeKey} isCoachView={isCoachView} />
 
-      {/* Right under the goals on purpose: the weight-goal cards and the chart that justifies
-          them should read in one glance, and a daily 5-second entry must not require
-          scrolling past the whole calendar */}
-      <WeightPanel api={api} scopeKey={scopeKey} isCoachView={isCoachView} />
-
       {/* Future trainings removed by the other side since the last visit —
           without this, the badge would point at a calendar with nothing visibly new */}
       {deletions.length > 0 && (
@@ -501,6 +496,12 @@ export function TrainingCalendarSection({ api, scopeKey, isCoachView }: Training
           <p className="text-sm text-surface-500 mt-1">{t('empty.hint')}</p>
         </div>
       )}
+
+      {/* Weight sits below the calendar with the other numbers: the plan is what both sides open
+          this tab for, and the daily weigh-in is a quick detour on the way to the statistics —
+          not something that should push the week down the screen. The weight-goal cards stay up
+          in the banner with the rest of the goals. */}
+      <WeightPanel api={api} scopeKey={scopeKey} isCoachView={isCoachView} />
 
       {/* Live-derived statistics over completed trainings + attended reservations */}
       <TrainingStatsSection api={api} scopeKey={scopeKey} isCoachView={isCoachView} />
