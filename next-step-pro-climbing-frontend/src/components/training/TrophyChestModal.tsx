@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { Award, Medal, Trophy } from 'lucide-react'
+import { Award, Medal, Scale, Trophy } from 'lucide-react'
 import { format } from 'date-fns'
 import clsx from 'clsx'
 import { Modal } from '../ui/Modal'
@@ -70,7 +70,7 @@ interface TrophyChestModalProps {
  * motivational centrepiece of the athlete zone — seen by athlete and coach alike.
  */
 export function TrophyChestModal({ isOpen, onClose, achieved }: TrophyChestModalProps) {
-  const { t } = useTranslation('training')
+  const { t, i18n } = useTranslation('training')
   const locale = useDateLocale()
 
   // Achieved goals arrive newest-first; keep that order within each column
@@ -124,6 +124,16 @@ export function TrophyChestModal({ isOpen, onClose, achieved }: TrophyChestModal
                         <p className="text-sm font-medium text-surface-100 break-words">
                           {decodeHtmlEntities(goal.content)}
                         </p>
+                        {/* A weight trophy without its number reads as an anecdote */}
+                        {goal.kind === 'WEIGHT' && goal.targetWeightKg != null && (
+                          <p className="inline-flex items-center gap-1 text-[11px] text-surface-300 mt-0.5 tabular-nums">
+                            <Scale className="w-3 h-3" />
+                            {goal.targetWeightKg.toLocaleString(i18n.language, {
+                              minimumFractionDigits: 1,
+                              maximumFractionDigits: 1,
+                            })} kg
+                          </p>
+                        )}
                         {goal.achievedAt && (
                           <p className="text-[11px] text-surface-400 mt-0.5">
                             {t('goals.achievedOn', { date: format(new Date(goal.achievedAt), 'd MMM yyyy', { locale }) })}

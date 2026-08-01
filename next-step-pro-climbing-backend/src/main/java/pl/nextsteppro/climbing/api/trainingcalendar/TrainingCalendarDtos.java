@@ -1,6 +1,8 @@
 package pl.nextsteppro.climbing.api.trainingcalendar;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.DecimalMax;
+import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -9,12 +11,14 @@ import jakarta.validation.constraints.Size;
 import org.jspecify.annotations.Nullable;
 import pl.nextsteppro.climbing.domain.athletegoal.AthleteGoal;
 import pl.nextsteppro.climbing.domain.athletegoal.GoalHorizon;
+import pl.nextsteppro.climbing.domain.athletegoal.GoalKind;
 import pl.nextsteppro.climbing.domain.personaltraining.AttachmentKind;
 import pl.nextsteppro.climbing.domain.personaltraining.PersonalTraining;
 import pl.nextsteppro.climbing.domain.personaltraining.TrainingAttachment;
 import pl.nextsteppro.climbing.domain.personaltraining.TrainingComment;
 import pl.nextsteppro.climbing.domain.trainingtemplate.TrainingTemplate;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -284,13 +288,18 @@ record TypeBreakdownDto(long personal, long individualSlot, long course, long tr
 record LocationCountDto(String name, long count) {}
 
 /**
- * Coach creates/edits an athlete's goal. On update the horizon is IGNORED — an active
- * goal's horizon is fixed (replacing the horizon means deleting + creating a new goal).
+ * Coach creates/edits an athlete's goal. On update the horizon and the kind are IGNORED —
+ * both are fixed for an active goal (changing either means deleting + creating a new goal).
+ *
+ * <p>{@code kind} is nullable so an omitted field still means a training goal;
+ * {@code targetWeightKg} is required for (and only allowed on) WEIGHT goals.
  */
 record SaveGoalRequest(
+    @Nullable GoalKind kind,
     @NotNull GoalHorizon horizon,
     @NotBlank @Size(max = AthleteGoal.MAX_CONTENT_LENGTH) String content,
-    @NotNull LocalDate targetDate
+    @NotNull LocalDate targetDate,
+    @Nullable @DecimalMin("20.0") @DecimalMax("300.0") BigDecimal targetWeightKg
 ) {}
 
 /**
@@ -303,12 +312,61 @@ record AchieveGoalRequest(
 
 record AthleteGoalDto(
     UUID id,
+    // GENERAL | WEIGHT — picks the banner row
+    String kind,
     // SHORT | MEDIUM | LONG — also picks the trophy size in the trophy chest
     String horizon,
     String content,
     LocalDate targetDate,
+    // WEIGHT only: the target, and the trend snapshot the progress bar starts from
+    @Nullable BigDecimal targetWeightKg,
+    @Nullable BigDecimal startWeightKg,
+    // Closed by a weigh-in rather than by the coach — the only case that may be reopened
+    boolean achievedAutomatically,
     @Nullable Instant achievedAt,
     Instant createdAt
+) {}
+
+/**
+ * One morning reading on the chart, with the trend as of that day so the frontend draws the
+ * line without re-implementing the arithmetic. Never null — a reading is always in its own
+ * trailing window.
+ */
+record AthleteWeightEntryDto(
+    LocalDate measuredOn,
+    BigDecimal weightKg,
+    BigDecimal trendKg
+) {}
+
+/**
+ * The weight panel in one payload: raw readings for the dots, plus everything derived so the
+ * frontend never re-implements the trend arithmetic.
+ */
+record AthleteWeightSeriesDto(
+    // Ascending by date
+    List<AthleteWeightEntryDto> entries,
+    // Trailing 7-day average ending today; shown from the very first reading
+    @Nullable BigDecimal currentTrendKg,
+    // How many readings back that average (0-7) — drives the "will not close goals" hint
+    int trendSampleCount,
+    boolean trendConfirmed,
+    @Nullable BigDecimal weeklyChangePercent,
+    // Losing faster than 1%/week. Always present; the frontend shows it to the coach only
+    boolean rapidLoss,
+    @Nullable BigDecimal latestWeightKg,
+    @Nullable LocalDate latestMeasuredOn,
+    // Width of the chart window in days. Doubles as how far back a reading may be backfilled:
+    // anything older would save and never render, so the server refuses it
+    int historyDays
+) {}
+
+/**
+ * Athlete records (or corrects) a morning weight. Same date twice is an upsert — weighing
+ * again is a correction, not a second data point.
+ */
+record SaveWeightRequest(
+    @NotNull LocalDate measuredOn,
+    @NotNull @DecimalMin("20.0") @DecimalMax("300.0") BigDecimal weightKg
 ) {}
 
 /** Banner cards (active, sorted short → medium → long) + trophy chest (achieved, newest first). */

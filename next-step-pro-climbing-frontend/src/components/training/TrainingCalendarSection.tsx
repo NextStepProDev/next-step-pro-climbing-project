@@ -11,6 +11,7 @@ import { LoadingSpinner } from '../ui/LoadingSpinner'
 import { QueryError } from '../ui/QueryError'
 import { SlotDetailModal } from '../calendar/SlotDetailModal'
 import { GoalsBanner } from './GoalsBanner'
+import { WeightPanel } from './WeightPanel'
 import { ReservationRatingSection } from './ReservationRatingSection'
 import { TrainingWeekCalendar } from './TrainingWeekCalendar'
 import { TrainingMonthCalendar } from './TrainingMonthCalendar'
@@ -366,6 +367,11 @@ export function TrainingCalendarSection({ api, scopeKey, isCoachView }: Training
     <div className="space-y-4">
       {/* Personal goals (short/medium/long-term) + trophy chest — coach edits, athlete reads */}
       <GoalsBanner api={api} scopeKey={scopeKey} isCoachView={isCoachView} />
+
+      {/* Right under the goals on purpose: the weight-goal cards and the chart that justifies
+          them should read in one glance, and a daily 5-second entry must not require
+          scrolling past the whole calendar */}
+      <WeightPanel api={api} scopeKey={scopeKey} isCoachView={isCoachView} />
 
       {/* Future trainings removed by the other side since the last visit —
           without this, the badge would point at a calendar with nothing visibly new */}

@@ -3,21 +3,34 @@ import { useTranslation } from 'react-i18next'
 import { Modal } from '../ui/Modal'
 import { Button } from '../ui/Button'
 import { decodeHtmlEntities } from '../../utils/htmlEntities'
-import type { AthleteGoal, GoalHorizon, SaveGoal } from '../../types'
+import type { AthleteGoal, GoalHorizon, GoalKind, SaveGoal } from '../../types'
 
 interface GoalFormModalProps {
   isOpen: boolean
   onClose: () => void
-  // The slot the coach clicked; fixed for the goal's lifetime (edit keeps it too)
+  // The slot the coach clicked; both are fixed for the goal's lifetime (edit keeps them too)
+  kind: GoalKind
   horizon: GoalHorizon
   // Editing an existing active goal, or creating (null)
   goal?: AthleteGoal | null
+  // WEIGHT only: shown as a hint, and the value the server will snapshot as the start weight
+  currentTrendKg?: number | null
   onSubmit: (data: SaveGoal) => void
   saving: boolean
   submitError?: string | null
 }
 
-export function GoalFormModal({ isOpen, onClose, horizon, goal, onSubmit, saving, submitError }: GoalFormModalProps) {
+export function GoalFormModal({
+  isOpen,
+  onClose,
+  kind,
+  horizon,
+  goal,
+  currentTrendKg,
+  onSubmit,
+  saving,
+  submitError,
+}: GoalFormModalProps) {
   const { t } = useTranslation('training')
 
   return (
@@ -25,8 +38,10 @@ export function GoalFormModal({ isOpen, onClose, horizon, goal, onSubmit, saving
       {/* Mounted only while open — form state resets naturally on every open */}
       {isOpen && (
         <GoalForm
+          kind={kind}
           horizon={horizon}
           goal={goal}
+          currentTrendKg={currentTrendKg}
           onClose={onClose}
           onSubmit={onSubmit}
           saving={saving}
@@ -37,19 +52,25 @@ export function GoalFormModal({ isOpen, onClose, horizon, goal, onSubmit, saving
   )
 }
 
-function GoalForm({ horizon, goal, onClose, onSubmit, saving, submitError }: {
+function GoalForm({ kind, horizon, goal, currentTrendKg, onClose, onSubmit, saving, submitError }: {
+  kind: GoalKind
   horizon: GoalHorizon
   goal?: AthleteGoal | null
+  currentTrendKg?: number | null
   onClose: () => void
   onSubmit: (data: SaveGoal) => void
   saving: boolean
   submitError?: string | null
 }) {
-  const { t } = useTranslation('training')
+  const { t, i18n } = useTranslation('training')
 
   const [content, setContent] = useState(goal ? decodeHtmlEntities(goal.content) : '')
   const [targetDate, setTargetDate] = useState(goal?.targetDate ?? '')
+  const [targetWeight, setTargetWeight] = useState(goal?.targetWeightKg != null ? String(goal.targetWeightKg) : '')
   const [error, setError] = useState<string | null>(null)
+
+  const isWeight = kind === 'WEIGHT'
+  const hasTrend = currentTrendKg != null
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -57,8 +78,17 @@ function GoalForm({ horizon, goal, onClose, onSubmit, saving, submitError }: {
       setError(t('goals.form.contentRequired'))
       return
     }
+    let parsedWeight: number | null = null
+    if (isWeight) {
+      // Polish keyboards produce a comma
+      parsedWeight = Number.parseFloat(targetWeight.replace(',', '.'))
+      if (Number.isNaN(parsedWeight) || parsedWeight < 20 || parsedWeight > 300) {
+        setError(t('goals.form.targetWeightInvalid'))
+        return
+      }
+    }
     setError(null)
-    onSubmit({ horizon, content: content.trim(), targetDate })
+    onSubmit({ kind, horizon, content: content.trim(), targetDate, targetWeightKg: parsedWeight })
   }
 
   return (
@@ -77,11 +107,42 @@ function GoalForm({ horizon, goal, onClose, onSubmit, saving, submitError }: {
           onChange={(e) => setContent(e.target.value)}
           maxLength={500}
           rows={3}
-          placeholder={t('goals.form.contentPlaceholder')}
+          placeholder={isWeight ? t('goals.form.contentPlaceholderWeight') : t('goals.form.contentPlaceholder')}
           required
           className="w-full bg-surface-800 border border-surface-700 rounded-lg px-4 py-2 text-surface-100 resize-none"
         />
       </div>
+
+      {isWeight && (
+        <div>
+          <label htmlFor="goal-target-weight" className="block text-sm text-surface-400 mb-1">
+            {t('goals.form.targetWeight')}
+          </label>
+          <input
+            id="goal-target-weight"
+            inputMode="decimal"
+            value={targetWeight}
+            onChange={(e) => setTargetWeight(e.target.value)}
+            placeholder="67,0"
+            required
+            // The start weight is never typed — the server snapshots the measured trend
+            disabled={goal != null}
+            className="w-32 bg-surface-800 border border-surface-700 rounded-lg px-4 py-2 text-surface-100 tabular-nums disabled:opacity-50"
+          />
+          <p className="text-xs text-surface-500 mt-1">
+            {goal != null
+              ? t('goals.form.targetWeightLocked')
+              : hasTrend
+                ? t('goals.form.weightAutoHint', {
+                    value: currentTrendKg.toLocaleString(i18n.language, {
+                      minimumFractionDigits: 1,
+                      maximumFractionDigits: 1,
+                    }),
+                  })
+                : t('goals.form.weightNeedsStart')}
+          </p>
+        </div>
+      )}
 
       <div>
         <label className="block text-sm text-surface-400 mb-1">{t('goals.form.targetDate')}</label>

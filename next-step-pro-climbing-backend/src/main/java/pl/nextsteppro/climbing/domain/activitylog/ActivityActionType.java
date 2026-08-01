@@ -28,5 +28,7 @@ public enum ActivityActionType {
     ADMIN_GOAL_CREATED,
     ADMIN_GOAL_UPDATED,
     ADMIN_GOAL_DELETED,
-    ADMIN_GOAL_ACHIEVED
+    ADMIN_GOAL_ACHIEVED,
+    // Undo of an AUTOMATIC weight-goal closure (mistyped weigh-in); manual closures are final
+    ADMIN_GOAL_REOPENED
 }

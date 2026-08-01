@@ -90,7 +90,13 @@
       "content": "Treść celu",
       "contentPlaceholder": "np. Przejść 7a na wędkę...",
       "contentRequired": "Podaj treść celu",
-      "targetDate": "Termin realizacji"
+      "targetDate": "Termin realizacji",
+      "contentPlaceholderWeight": "np. Zejść do wagi startowej przed zawodami...",
+      "targetWeight": "Waga docelowa (kg)",
+      "targetWeightInvalid": "Podaj wagę docelową między 20 a 300 kg",
+      "targetWeightLocked": "Wagi docelowej nie da się zmienić — usuń cel i ustaw nowy.",
+      "weightAutoHint": "Aktualny trend: {{value}} kg — od niego liczony będzie postęp. Cel zamknie się sam, gdy trend 7-dniowy (min. 3 pomiary) go osiągnie.",
+      "weightNeedsStart": "Zawodnik nie wpisał jeszcze żadnej wagi — bez tego nie da się ustawić celu wagowego."
     },
     "trophies": "Skrzynia trofeów",
     "trophiesTitle": "Skrzynia trofeów — {{count}}",
@@ -101,6 +107,20 @@
       "medium": "Średnioterminowe",
       "long": "Długoterminowe",
       "emptyColumn": "Brak trofeów w tej kategorii"
+    },
+    "section": {
+      "general": "Cele treningowe",
+      "weight": "Cele wagowe"
+    },
+    "reopen": "Cofnij osiągnięcie",
+    "reopenConfirmTitle": "Cofnąć osiągnięcie?",
+    "reopenConfirmMessage": "Cel wróci na listę aktywnych. Cofnąć można tylko cel, który zamknął się sam po wpisaniu wagi — np. gdy pomiar był literówką.",
+    "weight": {
+      "remaining": "zostało {{value}} kg",
+      "trendUnconfirmed_one": "trend z {{count}} pomiaru — cel nie zamknie się automatycznie",
+      "trendUnconfirmed_few": "trend z {{count}} pomiarów — cel nie zamknie się automatycznie",
+      "trendUnconfirmed_many": "trend z {{count}} pomiarów — cel nie zamknie się automatycznie",
+      "trendUnconfirmed_other": "trend z {{count}} pomiarów — cel nie zamknie się automatycznie"
     }
   },
   "clipboard": {
@@ -260,5 +280,29 @@
     "unrated_few": "{{count}} aktywności bez oceny",
     "unrated_many": "{{count}} aktywności bez oceny",
     "unrated_other": "{{count}} aktywności bez oceny"
+  },
+  "weight": {
+    "title": "Waga",
+    "todayLabel": "Waga rano (kg)",
+    "save": "Zapisz",
+    "invalid": "Podaj wagę liczbą, np. 71,2",
+    "perWeek": "/tydz.",
+    "legendTrend": "trend 7 dni",
+    "legendDaily": "pomiar dzienny",
+    "chartLabel": "Wykres wagi z trendem 7-dniowym",
+    "showTable": "Pokaż tabelę",
+    "hideTable": "Ukryj tabelę",
+    "tableDate": "Data",
+    "tableWeight": "Waga (kg)",
+    "noiseHint": "Dzień do dnia waga skacze przez wodę i sól — patrz na linię trendu, nie na pojedynczy pomiar.",
+    "emptyAthlete": "Brak pomiarów. Wpisz wagę rano, po przebudzeniu — zawsze o tej samej porze.",
+    "rapidLoss": "Waga spada szybciej niż 1% tygodniowo. Warto sprawdzić, czy zejście jest kontrolowane.",
+    "trendUnconfirmed_one": "Trend liczony z {{count}} pomiaru — cele wagowe zamykają się dopiero przy 3 z ostatnich 7 dni.",
+    "trendUnconfirmed_few": "Trend liczony z {{count}} pomiarów — cele wagowe zamykają się dopiero przy 3 z ostatnich 7 dni.",
+    "trendUnconfirmed_many": "Trend liczony z {{count}} pomiarów — cele wagowe zamykają się dopiero przy 3 z ostatnich 7 dni.",
+    "trendUnconfirmed_other": "Trend liczony z {{count}} pomiarów — cele wagowe zamykają się dopiero przy 3 z ostatnich 7 dni.",
+    "dateLabel": "Dzień pomiaru",
+    "futureDate": "Nie można wpisać wagi z przyszłej daty",
+    "dayAlreadyHasEntry": "Ten dzień ma już wpis: {{value}} kg. Zapis go poprawi."
   }
 }

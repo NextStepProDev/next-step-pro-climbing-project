@@ -550,7 +550,8 @@
       "ADMIN_GOAL_CREATED": "Ustawiono cel zawodnikowi",
       "ADMIN_GOAL_UPDATED": "Edytowano cel zawodnika",
       "ADMIN_GOAL_DELETED": "Usunięto cel zawodnika",
-      "ADMIN_GOAL_ACHIEVED": "Oznaczono cel zawodnika jako osiągnięty"
+      "ADMIN_GOAL_ACHIEVED": "Oznaczono cel zawodnika jako osiągnięty",
+      "ADMIN_GOAL_REOPENED": "Cofnięto osiągnięcie celu wagowego"
     },
     "persons": "({{count}} os.)"
   },

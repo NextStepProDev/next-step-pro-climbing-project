@@ -34,6 +34,8 @@ import type {
   AthleteGoals,
   AttachmentUpload,
   SaveGoal,
+  SaveWeight,
+  WeightSeries,
   SaveTrainingTemplate,
   TrainingMaterial,
   TrainingTemplate,
@@ -465,6 +467,19 @@ export const trainingCalendarApi = {
   getGoals: () =>
     fetchApi<AthleteGoals>('/training-calendar/goals'),
 
+  getWeights: () =>
+    fetchApi<WeightSeries>('/training-calendar/weights'),
+
+  /** Upsert: weighing twice in a day is a correction, not a second reading. */
+  saveWeight: (data: SaveWeight) =>
+    fetchApi<WeightSeries>('/training-calendar/weights', {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+
+  deleteWeight: (measuredOn: string) =>
+    fetchApi<WeightSeries>(`/training-calendar/weights/${measuredOn}`, { method: 'DELETE' }),
+
   uploadAttachment: (file: File) => {
     const formData = new FormData()
     formData.append('file', file, file.name)
@@ -519,6 +534,10 @@ export const adminTrainingCalendarApi = {
   getGoals: (athleteId: string) =>
     fetchApi<AthleteGoals>(`/admin/training-calendar/athletes/${athleteId}/goals`),
 
+  /** Read-only on purpose: only the athlete records their own weight. */
+  getWeights: (athleteId: string) =>
+    fetchApi<WeightSeries>(`/admin/training-calendar/athletes/${athleteId}/weights`),
+
   createGoal: (athleteId: string, data: SaveGoal) =>
     fetchApi<AthleteGoal>(`/admin/training-calendar/athletes/${athleteId}/goals`, {
       method: 'POST',
@@ -540,6 +559,10 @@ export const adminTrainingCalendarApi = {
       // Backdatable: null/omitted = today; the backend rejects future dates
       body: JSON.stringify({ achievedDate: achievedDate ?? null }),
     }),
+
+  /** Undo for a weight goal closed by a mistyped weigh-in; manual closures are refused (409). */
+  reopenGoal: (goalId: string) =>
+    fetchApi<AthleteGoal>(`/admin/training-calendar/goals/${goalId}/reopen`, { method: 'POST' }),
 
   uploadAttachment: (file: File) => {
     const formData = new FormData()
