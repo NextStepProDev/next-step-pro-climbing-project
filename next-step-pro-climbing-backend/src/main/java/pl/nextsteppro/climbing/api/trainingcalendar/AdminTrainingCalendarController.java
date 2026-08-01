@@ -150,7 +150,7 @@ public class AdminTrainingCalendarController {
         return ResponseEntity.ok(adminTrainingCalendarService.updateGoal(adminId, goalId, request));
     }
 
-    @Operation(summary = "Delete an active goal", description = "Achieved goals cannot be deleted — they stay in the trophy chest (409).")
+    @Operation(summary = "Delete a goal", description = "Works for an active goal and for an achieved one — deleting a trophy removes it from the chest for good (e.g. one ticked off by mistake).")
     @DeleteMapping("/goals/{goalId}")
     public ResponseEntity<Void> deleteGoal(
             @Parameter(hidden = true) @CurrentUserId UUID adminId,
@@ -159,7 +159,7 @@ public class AdminTrainingCalendarController {
         return ResponseEntity.noContent().build();
     }
 
-    @Operation(summary = "Mark goal achieved", description = "Moves the goal to the trophy chest; irreversible, frees its horizon slot. The achievement date is backdatable (null = today); a future date is rejected.")
+    @Operation(summary = "Mark goal achieved", description = "Moves the goal to the trophy chest; cannot be undone (only deleted), frees its horizon slot. The achievement date is backdatable (null = today); a future date is rejected.")
     @PostMapping("/goals/{goalId}/achieve")
     public ResponseEntity<AthleteGoalDto> achieveGoal(
             @Parameter(hidden = true) @CurrentUserId UUID adminId,

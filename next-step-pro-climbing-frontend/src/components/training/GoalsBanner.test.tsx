@@ -38,6 +38,7 @@ const weightSeries: WeightSeries = {
 }
 
 const reopen = vi.fn().mockResolvedValue(undefined)
+const remove = vi.fn().mockResolvedValue(undefined)
 
 function makeApi(active: AthleteGoal[], achieved: AthleteGoal[] = [], isCoach = false): TrainingCalendarAdapter {
   return {
@@ -48,7 +49,7 @@ function makeApi(active: AthleteGoal[], achieved: AthleteGoal[] = [], isCoach = 
           goalMutations: {
             create: vi.fn(),
             update: vi.fn(),
-            remove: vi.fn(),
+            remove,
             achieve: vi.fn(),
             reopen,
           },
@@ -70,6 +71,7 @@ describe('GoalsBanner', () => {
   // Goal ids repeat across cases (kind-horizon), so a stale call could green a test falsely
   beforeEach(() => {
     reopen.mockClear()
+    remove.mockClear()
   })
 
   it('renders both a training goal and a weight goal on the same horizon', async () => {
@@ -187,6 +189,43 @@ describe('GoalsBanner', () => {
     await userEvent.click(await screen.findByText(/goals.trophies/))
     expect(await screen.findByText('Zejść do 67 kg')).toBeInTheDocument()
     expect(screen.queryByText('goals.reopen')).not.toBeInTheDocument()
+    expect(screen.queryByText('goals.deleteTrophy')).not.toBeInTheDocument()
+  })
+
+  it('lets the coach bin a trophy he closed by hand, undo or not', async () => {
+    // Undo is off the table for a manual closure, so deleting is the ONLY way out of a
+    // goal ticked off by mistake — otherwise the chest keeps it forever
+    const handClosed = makeGoal({
+      kind: 'GENERAL',
+      horizon: 'SHORT',
+      content: '7a zrobione',
+      achievedAutomatically: false,
+      achievedAt: '2026-01-15T10:00:00Z',
+    })
+
+    renderBanner(makeApi([], [handClosed], true), true)
+
+    await userEvent.click(await screen.findByText(/goals.trophies/))
+    await userEvent.click(await screen.findByText('goals.deleteTrophy'))
+    await userEvent.click(screen.getByRole('button', { name: /confirm|potwierd|tak/i }))
+
+    await waitFor(() => expect(remove).toHaveBeenCalledWith(handClosed.id))
+  })
+
+  it('offers the bin on the celebration card too, where a wrong trophy is spotted', async () => {
+    const freshlyClosed = makeGoal({
+      kind: 'GENERAL',
+      horizon: 'MEDIUM',
+      content: '7a zrobione',
+      achievedAt: new Date().toISOString(),
+    })
+
+    renderBanner(makeApi([], [freshlyClosed], true), true)
+
+    await userEvent.click(await screen.findByText('goals.deleteTrophy'))
+    await userEvent.click(screen.getByRole('button', { name: /confirm|potwierd|tak/i }))
+
+    await waitFor(() => expect(remove).toHaveBeenCalledWith(freshlyClosed.id))
   })
 
   it('never offers the undo for a goal the coach closed by hand', async () => {

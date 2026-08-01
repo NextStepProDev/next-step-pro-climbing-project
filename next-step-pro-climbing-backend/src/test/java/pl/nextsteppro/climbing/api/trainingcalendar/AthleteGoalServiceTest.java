@@ -192,15 +192,19 @@ class AthleteGoalServiceTest {
         assertEquals("training.goal.achieved.immutable", e.getMessage());
     }
 
+    /** A trophy cannot be rewritten, but the coach may bin one awarded by mistake. */
     @Test
-    void shouldRejectDeleteWhenGoalAchieved() {
+    void shouldDeleteAchievedGoal() {
         // Given
         UUID goalId = UUID.randomUUID();
-        when(goalRepository.findById(goalId)).thenReturn(Optional.of(achievedGoal()));
+        AthleteGoal goal = achievedGoal();
+        when(goalRepository.findById(goalId)).thenReturn(Optional.of(goal));
 
-        // When / Then
-        assertThrows(IllegalStateException.class, () -> service.deleteGoal(goalId));
-        verify(goalRepository, never()).delete(any(AthleteGoal.class));
+        // When
+        service.deleteGoal(goalId);
+
+        // Then
+        verify(goalRepository).delete(goal);
     }
 
     @Test
@@ -227,7 +231,7 @@ class AthleteGoalServiceTest {
         // When
         AthleteGoalDto dto = service.achieveGoal(goalId, null);
 
-        // Then: the trophy stays in the table forever — never deleted
+        // Then: achieving moves the row to the chest, it never removes it
         assertNotNull(dto.achievedAt());
         assertTrue(goal.isAchieved());
         verify(goalRepository, never()).delete(any(AthleteGoal.class));

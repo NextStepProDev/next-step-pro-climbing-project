@@ -208,6 +208,10 @@ export function GoalsBanner({ api, scopeKey, isCoachView }: GoalsBannerProps) {
           setChestOpen(false)
           setConfirmReopen(goal)
         } : undefined}
+        onDelete={mutations ? (goal) => {
+          setChestOpen(false)
+          setConfirmDelete(goal)
+        } : undefined}
       />
 
       <AchieveGoalModal
@@ -228,8 +232,10 @@ export function GoalsBanner({ api, scopeKey, isCoachView }: GoalsBannerProps) {
           if (confirmDelete) deleteMutation.mutate(confirmDelete.id)
           setConfirmDelete(null)
         }}
-        title={t('goals.deleteConfirmTitle')}
-        message={t('goals.deleteConfirmMessage')}
+        // Binning a trophy is a different act from dropping an active goal — say so, or the
+        // coach reads the active-goal wording and assumes the achievement merely reopens
+        title={confirmDelete?.achievedAt ? t('goals.deleteTrophyConfirmTitle') : t('goals.deleteConfirmTitle')}
+        message={confirmDelete?.achievedAt ? t('goals.deleteTrophyConfirmMessage') : t('goals.deleteConfirmMessage')}
         variant="danger"
       />
 
@@ -419,6 +425,15 @@ function GoalSlot({
                 {t('goals.reopen')}
               </button>
             )}
+            {/* A trophy awarded by mistake is spotted right here, on the celebration card —
+                make the coach open the chest for it and it just stays */}
+            <button
+              onClick={() => onDelete(celebrated)}
+              className="inline-flex items-center gap-1 text-xs font-medium text-surface-500 hover:text-rose-300 transition-colors"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              {t('goals.deleteTrophy')}
+            </button>
           </div>
         )}
       </div>

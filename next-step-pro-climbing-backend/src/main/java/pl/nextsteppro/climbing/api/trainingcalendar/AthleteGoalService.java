@@ -31,7 +31,9 @@ import java.util.UUID;
  *
  * <p><b>Two ways a goal closes.</b> The coach marks a GENERAL goal achieved by hand, and that
  * is permanent. A WEIGHT goal closes itself when a weigh-in brings the confirmed 7-day trend
- * to its target; because no human decided that, it — and only it — can be reopened.
+ * to its target; because no human decided that, it — and only it — can be reopened. Either way
+ * the coach can delete the resulting trophy — permanence is about not rewriting it, not about
+ * being stuck with one that should never have been awarded.
  */
 @Service
 @Transactional
@@ -120,8 +122,14 @@ public class AthleteGoalService {
         return toDto(goal);
     }
 
+    /**
+     * Deletes a goal — active or achieved. A trophy is not editable and cannot be un-achieved,
+     * but the coach may throw it away: a goal ticked off by mistake (or while testing) would
+     * otherwise sit in the chest forever, and a chest full of noise is worth less than an
+     * empty one. Athletes never reach this — every goal mutation goes through the admin API.
+     */
     public void deleteGoal(UUID goalId) {
-        goalRepository.delete(requireActiveGoal(goalId));
+        goalRepository.delete(requireGoal(goalId));
     }
 
     /** Achievement date is backdatable (null = now); a future date makes no sense → 400. */
@@ -199,7 +207,7 @@ public class AthleteGoalService {
             .orElseThrow(() -> new IllegalArgumentException(msg.get("training.goal.not.found")));
     }
 
-    /** Achieved goals are trophies: no edit, no delete, no re-achieve — ever. */
+    /** Achieved goals are trophies: no edit, no re-achieve. Deleting one is allowed (see above). */
     private AthleteGoal requireActiveGoal(UUID goalId) {
         AthleteGoal goal = requireGoal(goalId);
         if (goal.isAchieved()) {
