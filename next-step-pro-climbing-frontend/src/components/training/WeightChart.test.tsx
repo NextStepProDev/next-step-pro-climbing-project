@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
+import { addDays, format } from 'date-fns'
 import userEvent from '@testing-library/user-event'
 import { WeightChart } from './WeightChart'
 import type { WeightEntry } from '../../types'
@@ -57,6 +58,47 @@ describe('WeightChart', () => {
 
     // 1 Jul -> 15 Jul is 14 days, 15 Jul -> 1 Aug is 17: the second gap must be wider
     expect(xs[2] - xs[1]).toBeGreaterThan(xs[1] - xs[0])
+  })
+
+  it('drops the daily dots once they would be denser than one per two pixels', () => {
+    // 586px of plot / 2px = 293 marks; past that they stop being dots and become a smear
+    const dense: WeightEntry[] = Array.from({ length: 350 }, (_, i) => ({
+      measuredOn: format(addDays(new Date(2026, 0, 1), i), 'yyyy-MM-dd'),
+      weightKg: 70 + (i % 2) * 0.4,
+      trendKg: 70.2,
+    }))
+
+    const { container } = render(<WeightChart entries={dense} />)
+
+    // Only the single emphasised current-trend dot survives
+    expect(container.querySelectorAll('circle')).toHaveLength(1)
+    expect(container.querySelector('path')).toBeInTheDocument()
+  })
+
+  it('stops naming the daily mark in the legend once it is not drawn', () => {
+    const dense: WeightEntry[] = Array.from({ length: 350 }, (_, i) => ({
+      measuredOn: format(addDays(new Date(2026, 0, 1), i), 'yyyy-MM-dd'),
+      weightKg: 70,
+      trendKg: 70,
+    }))
+
+    render(<WeightChart entries={dense} />)
+
+    expect(screen.getByText('weight.legendTrend')).toBeInTheDocument()
+    expect(screen.queryByText('weight.legendDaily')).not.toBeInTheDocument()
+    expect(screen.getByText('weight.dailyHiddenHint')).toBeInTheDocument()
+  })
+
+  it('keeps the table complete even when the dots are hidden', () => {
+    // The a11y path must not depend on the density decision
+    const dense: WeightEntry[] = Array.from({ length: 350 }, (_, i) => ({
+      measuredOn: format(addDays(new Date(2026, 0, 1), i), 'yyyy-MM-dd'),
+      weightKg: 70,
+      trendKg: 70,
+    }))
+
+    render(<WeightChart entries={dense} />)
+    expect(screen.getByText('weight.showTable')).toBeInTheDocument()
   })
 
   it('renders nothing without readings', () => {

@@ -36,6 +36,7 @@ import type {
   SaveGoal,
   SaveWeight,
   WeightSeries,
+  WeightRange,
   SaveTrainingTemplate,
   TrainingMaterial,
   TrainingTemplate,
@@ -467,8 +468,8 @@ export const trainingCalendarApi = {
   getGoals: () =>
     fetchApi<AthleteGoals>('/training-calendar/goals'),
 
-  getWeights: () =>
-    fetchApi<WeightSeries>('/training-calendar/weights'),
+  getWeights: (range?: WeightRange) =>
+    fetchApi<WeightSeries>(`/training-calendar/weights${range ? `?range=${range}` : ''}`),
 
   /** Upsert: weighing twice in a day is a correction, not a second reading. */
   saveWeight: (data: SaveWeight) =>
@@ -535,8 +536,10 @@ export const adminTrainingCalendarApi = {
     fetchApi<AthleteGoals>(`/admin/training-calendar/athletes/${athleteId}/goals`),
 
   /** Read-only on purpose: only the athlete records their own weight. */
-  getWeights: (athleteId: string) =>
-    fetchApi<WeightSeries>(`/admin/training-calendar/athletes/${athleteId}/weights`),
+  getWeights: (athleteId: string, range?: WeightRange) =>
+    fetchApi<WeightSeries>(
+      `/admin/training-calendar/athletes/${athleteId}/weights${range ? `?range=${range}` : ''}`,
+    ),
 
   createGoal: (athleteId: string, data: SaveGoal) =>
     fetchApi<AthleteGoal>(`/admin/training-calendar/athletes/${athleteId}/goals`, {

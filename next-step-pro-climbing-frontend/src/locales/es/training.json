@@ -294,6 +294,15 @@
     "dayAlreadyHasEntry": "Este día ya tiene una entrada: {{value}} kg. Guardar la corregirá.",
     "deleteEntry": "Eliminar medición",
     "deleteConfirmTitle": "¿Eliminar la medición?",
-    "deleteConfirmMessage": "Se eliminará la medición del {{date}}. Si ya cerró un objetivo de peso, ese objetivo sigue logrado — el entrenador puede deshacerlo por separado."
+    "deleteConfirmMessage": "Se eliminará la medición del {{date}}. Si ya cerró un objetivo de peso, ese objetivo sigue logrado — el entrenador puede deshacerlo por separado.",
+    "rangeLabel": "Rango del gráfico",
+    "range": {
+      "recent": "4 meses",
+      "year": "Año",
+      "all": "Todo"
+    },
+    "emptyRange": "No hay mediciones en este rango. Prueba con uno más amplio.",
+    "emptyCoach": "Esta persona aún no ha registrado ninguna medición en este rango.",
+    "dailyHiddenHint": "en un rango tan largo las mediciones individuales se solaparían — solo se muestra la línea de tendencia"
   }
 }

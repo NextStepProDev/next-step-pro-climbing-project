@@ -14,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import pl.nextsteppro.climbing.config.CurrentUserId;
+import pl.nextsteppro.climbing.domain.athleteweight.WeightRange;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -73,7 +74,7 @@ public class TrainingCalendarController {
     }
 
     @Operation(summary = "My weight series",
-        description = "Morning readings + trailing 7-day trend + week-over-week change. trendSampleCount says how many readings back the trend; below 3 it is shown but cannot close a weight goal.")
+        description = "Morning readings + trailing 7-day trend + week-over-week change. The range is a closed set of named windows (RECENT = 120 days, default), so no request can ask for an unbounded history. trendSampleCount says how many readings back the trend; below 3 it is shown but cannot close a weight goal.")
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "Weight series",
             content = @Content(schema = @Schema(implementation = AthleteWeightSeriesDto.class))),
@@ -83,8 +84,8 @@ public class TrainingCalendarController {
     @GetMapping("/weights")
     public ResponseEntity<AthleteWeightSeriesDto> getWeights(
             @Parameter(hidden = true) @CurrentUserId UUID userId,
-            @RequestParam(required = false) Integer days) {
-        return ResponseEntity.ok(athleteWeightService.getMySeries(userId, days));
+            @RequestParam(required = false) WeightRange range) {
+        return ResponseEntity.ok(athleteWeightService.getMySeries(userId, range));
     }
 
     @Operation(summary = "Record my morning weight",

@@ -25,6 +25,14 @@ const PAD = { top: 12, right: 14, bottom: 22, left: 40 }
 const PLOT_W = W - PAD.left - PAD.right
 const PLOT_H = H - PAD.top - PAD.bottom
 
+/**
+ * Below one dot per two pixels the daily readings stop being separate marks and turn into a
+ * grey smear behind the line — noise pretending to be data. Past that density we draw the
+ * trend alone, and the legend stops naming a mark that is not on screen.
+ */
+const MIN_PX_PER_DOT = 2
+const MAX_DOTS = Math.floor(PLOT_W / MIN_PX_PER_DOT)
+
 interface WeightChartProps {
   entries: WeightEntry[]
   isStale?: boolean
@@ -93,6 +101,8 @@ export function WeightChart({ entries, isStale, onDelete }: WeightChartProps) {
   }
 
   const hoveredEntry = hovered != null ? entries[hovered] : null
+  // Too many points to render as distinct marks — show the trend line alone
+  const showDots = entries.length <= MAX_DOTS
 
   return (
     <div className="space-y-2">
@@ -155,17 +165,18 @@ export function WeightChart({ entries, isStale, onDelete }: WeightChartProps) {
             />
           )}
 
-          {/* Daily readings: quiet on purpose */}
-          {entries.map((entry) => (
-            <circle
-              key={entry.measuredOn}
-              cx={x(entry.measuredOn)}
-              cy={y(entry.weightKg)}
-              r="2"
-              className="fill-surface-500"
-              opacity="0.65"
-            />
-          ))}
+          {/* Daily readings: quiet on purpose, and dropped entirely once they would smear */}
+          {showDots &&
+            entries.map((entry) => (
+              <circle
+                key={entry.measuredOn}
+                cx={x(entry.measuredOn)}
+                cy={y(entry.weightKg)}
+                r="2"
+                className="fill-surface-500"
+                opacity="0.65"
+              />
+            ))}
 
           {/* The trend — the line that actually means something */}
           {entries.length > 1 && (
@@ -219,10 +230,14 @@ export function WeightChart({ entries, isStale, onDelete }: WeightChartProps) {
             <span className="w-4 h-0.5 rounded" style={{ backgroundColor: TREND_STROKE }} />
             {t('weight.legendTrend')}
           </span>
-          <span className="inline-flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-surface-500" />
-            {t('weight.legendDaily')}
-          </span>
+          {/* The legend names only what is actually drawn */}
+          {showDots && (
+            <span className="inline-flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-surface-500" />
+              {t('weight.legendDaily')}
+            </span>
+          )}
+          {!showDots && <span>{t('weight.dailyHiddenHint')}</span>}
         </div>
         <button
           onClick={() => setTableOpen((open) => !open)}

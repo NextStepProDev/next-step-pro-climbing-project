@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { format, parseISO, subDays } from 'date-fns'
+import clsx from 'clsx'
 import { Scale, TrendingDown, TrendingUp, TriangleAlert } from 'lucide-react'
 import { Button } from '../ui/Button'
 import { ConfirmModal } from '../ui/ConfirmModal'
@@ -9,6 +10,9 @@ import { QueryError } from '../ui/QueryError'
 import { WeightChart } from './WeightChart'
 import { getErrorMessage } from '../../utils/errors'
 import type { TrainingCalendarAdapter } from './trainingCalendarAdapter'
+import type { WeightRange } from '../../types'
+
+const RANGES: WeightRange[] = ['RECENT', 'YEAR', 'ALL']
 
 interface WeightPanelProps {
   api: TrainingCalendarAdapter
@@ -30,12 +34,20 @@ export function WeightPanel({ api, scopeKey, isCoachView }: WeightPanelProps) {
   const { t, i18n } = useTranslation('training')
   const queryClient = useQueryClient()
 
-  const queryKey = ['trainingCalendar', 'weight', scopeKey]
+  // Default kept at RECENT so nobody's chart changes, or grows, without them asking
+  const [range, setRange] = useState<WeightRange>('RECENT')
+
+  // The range is PART OF THE KEY: without it, switching would show the previous range's data
+  // from cache while the new request is still in flight
+  const queryKey = ['trainingCalendar', 'weight', scopeKey, range]
   const weightQuery = useQuery({
     queryKey,
-    queryFn: api.getWeights,
+    // Trimming happens server-side; the client never receives more than it displays
+    queryFn: () => api.getWeights(range),
     // Weight only ever changes from this panel, so no polling — but a remount must be fresh
     refetchOnMount: 'always',
+    // Keeps the old chart on screen while the new range loads instead of flashing a skeleton
+    placeholderData: (previous) => previous,
   })
 
   const today = format(new Date(), 'yyyy-MM-dd')
@@ -45,30 +57,36 @@ export function WeightPanel({ api, scopeKey, isCoachView }: WeightPanelProps) {
   const [error, setError] = useState<string | null>(null)
 
   const mutations = api.weightMutations
+
+  /**
+     * Refetch every cached range rather than writing the mutation's response into the current
+     * key. The write endpoints always answer with the DEFAULT range, so dropping that payload
+     * into a YEAR or ALL cache would quietly replace a year of history with four months.
+     */
+  const refreshAfterWrite = () => {
+    queryClient.invalidateQueries({ queryKey: ['trainingCalendar', 'weight', scopeKey] })
+    // A weigh-in can close a weight goal, and deleting moves the trend the cards measure from
+    queryClient.invalidateQueries({ queryKey: ['trainingCalendar', 'goals', scopeKey] })
+  }
+
   const saveMutation = useMutation({
     mutationFn: (weightKg: number) => mutations!.save({ measuredOn, weightKg }),
-    onSuccess: (series) => {
+    onSuccess: () => {
       setDraft('')
       // Back to today on purpose: catching up is the exception, and a date left on last
       // Tuesday would overwrite the wrong day at the next morning's weigh-in
       setMeasuredOn(today)
       setError(null)
-      // The response IS the recomputed series — no second round-trip
-      queryClient.setQueryData(queryKey, series)
-      // A weigh-in can close a weight goal, so the banner above must catch up
-      queryClient.invalidateQueries({ queryKey: ['trainingCalendar', 'goals', scopeKey] })
+      refreshAfterWrite()
     },
     onError: (err) => setError(getErrorMessage(err)),
   })
 
   const deleteMutation = useMutation({
     mutationFn: (day: string) => mutations!.remove(day),
-    onSuccess: (series) => {
+    onSuccess: () => {
       setError(null)
-      queryClient.setQueryData(queryKey, series)
-      // Deleting never re-opens a closed goal (that is the server's rule), but the trend the
-      // goal cards draw their progress from has moved
-      queryClient.invalidateQueries({ queryKey: ['trainingCalendar', 'goals', scopeKey] })
+      refreshAfterWrite()
     },
     onError: (err) => setError(getErrorMessage(err)),
   })
@@ -96,16 +114,21 @@ export function WeightPanel({ api, scopeKey, isCoachView }: WeightPanelProps) {
   const data = weightQuery.data
   if (!data) return null
 
-  // An empty widget on every athlete card would just be clutter for the coach; for the
-  // athlete the empty state IS the call to action
-  if (isCoachView && data.entries.length === 0) return null
+  // The panel used to hide itself from the coach when empty. That was a trap: an athlete whose
+  // only readings predate the default range left the coach with nothing to click, and so no way
+  // to widen the range and find them. One athlete is open at a time, so the panel is not clutter.
+  const emptyMessage = isCoachView
+    ? 'weight.emptyCoach'
+    : range === 'RECENT'
+      ? 'weight.emptyAthlete'
+      : 'weight.emptyRange'
 
   const fmt = (n: number) =>
     n.toLocaleString(i18n.language, { minimumFractionDigits: 1, maximumFractionDigits: 1 })
 
   // Derived from the server's own window width, so the picker can never offer a day the
   // server would refuse (or hide one it would accept)
-  const oldestRecordable = format(subDays(new Date(), data.historyDays - 1), 'yyyy-MM-dd')
+  const oldestRecordable = format(subDays(new Date(), data.backfillDays - 1), 'yyyy-MM-dd')
   const existingForDay = data.entries.find((entry) => entry.measuredOn === measuredOn)
 
   const change = data.weeklyChangePercent
@@ -148,8 +171,28 @@ export function WeightPanel({ api, scopeKey, isCoachView }: WeightPanelProps) {
         </div>
       )}
 
+      {/* Named windows, not a free date span: the API has no unbounded request shape */}
+      <div className="flex gap-1" role="group" aria-label={t('weight.rangeLabel')}>
+        {RANGES.map((option) => (
+          <button
+            key={option}
+            type="button"
+            onClick={() => setRange(option)}
+            aria-pressed={range === option}
+            className={clsx(
+              'px-2.5 py-1 text-xs font-medium rounded-lg border transition-colors',
+              range === option
+                ? 'bg-surface-800 border-surface-600 text-surface-100'
+                : 'bg-transparent border-surface-800 text-surface-400 hover:text-surface-200',
+            )}
+          >
+            {t(`weight.range.${option.toLowerCase()}`)}
+          </button>
+        ))}
+      </div>
+
       {data.entries.length === 0 ? (
-        <p className="text-sm text-surface-500">{t('weight.emptyAthlete')}</p>
+        <p className="text-sm text-surface-500">{t(emptyMessage)}</p>
       ) : (
         <>
           <WeightChart

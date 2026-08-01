@@ -355,9 +355,9 @@ record AthleteWeightSeriesDto(
     boolean rapidLoss,
     @Nullable BigDecimal latestWeightKg,
     @Nullable LocalDate latestMeasuredOn,
-    // Width of the chart window in days. Doubles as how far back a reading may be backfilled:
-    // anything older would save and never render, so the server refuses it
-    int historyDays
+    // How far back a reading may be backfilled. A FIXED policy, independent of the selected
+    // range: viewing a year must not let the date picker offer days the server would refuse
+    int backfillDays
 ) {}
 
 /**

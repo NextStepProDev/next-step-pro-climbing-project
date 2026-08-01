@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pl.nextsteppro.climbing.domain.athleteweight.AthleteWeight;
 import pl.nextsteppro.climbing.domain.athleteweight.AthleteWeightRepository;
+import pl.nextsteppro.climbing.domain.athleteweight.WeightRange;
 import pl.nextsteppro.climbing.domain.athleteweight.WeightTrendCalculator;
 import pl.nextsteppro.climbing.domain.athleteweight.WeightTrendCalculator.TrendPoint;
 import pl.nextsteppro.climbing.domain.user.User;
@@ -35,10 +36,12 @@ public class AthleteWeightService {
     // Container runs UTC; "today" for a Polish athlete weighing in at 7am must be Warsaw's
     private static final ZoneId WARSAW = ZoneId.of("Europe/Warsaw");
 
-    /** Chart window. Long enough to show a season's trend, short enough to stay one payload. */
-    static final int DEFAULT_HISTORY_DAYS = 120;
-    private static final int MIN_HISTORY_DAYS = 7;
-    private static final int MAX_HISTORY_DAYS = 365;
+    /**
+     * How far back a reading may be backfilled. Deliberately a FIXED policy, not the range the
+     * athlete happens to be looking at: switching the chart to a year must not silently widen
+     * what the date picker will accept (the server would then reject what the picker offered).
+     */
+    static final int BACKFILL_DAYS = WeightRange.RECENT.days();
 
     private final AthleteWeightRepository weightRepository;
     private final AthleteGoalService goalService;
@@ -56,15 +59,15 @@ public class AthleteWeightService {
     }
 
     @Transactional(readOnly = true)
-    public AthleteWeightSeriesDto getMySeries(UUID userId, @Nullable Integer days) {
+    public AthleteWeightSeriesDto getMySeries(UUID userId, @Nullable WeightRange range) {
         calendarService.requireAthlete(userId);
-        return buildSeries(userId, days);
+        return buildSeries(userId, range);
     }
 
     @Transactional(readOnly = true)
-    public AthleteWeightSeriesDto getSeriesForAthlete(UUID athleteId, @Nullable Integer days) {
+    public AthleteWeightSeriesDto getSeriesForAthlete(UUID athleteId, @Nullable WeightRange range) {
         calendarService.requireFlaggedAthlete(athleteId);
-        return buildSeries(athleteId, days);
+        return buildSeries(athleteId, range);
     }
 
     /**
@@ -80,7 +83,7 @@ public class AthleteWeightService {
         // Older than the chart window would save and then never appear anywhere — a silent
         // black hole is worse for the athlete than a plain refusal
         if (request.measuredOn().isBefore(oldestRecordableDay(today))) {
-            throw new IllegalArgumentException(msg.get("training.weight.too.old", DEFAULT_HISTORY_DAYS));
+            throw new IllegalArgumentException(msg.get("training.weight.too.old", BACKFILL_DAYS));
         }
         BigDecimal weight = AthleteWeight.normalize(request.weightKg());
         if (weight.compareTo(AthleteWeight.MIN_KG) < 0 || weight.compareTo(AthleteWeight.MAX_KG) > 0) {
@@ -94,9 +97,9 @@ public class AthleteWeightService {
         // The evaluation below reads the window back, so the new row must already be visible
         weightRepository.flush();
 
-        NavigableMap<LocalDate, BigDecimal> byDate = loadWindow(userId, today, DEFAULT_HISTORY_DAYS);
+        NavigableMap<LocalDate, BigDecimal> byDate = loadWindow(userId, today, WeightRange.DEFAULT.days());
         goalService.evaluateWeightGoals(userId, WeightTrendCalculator.confirmedTrendOn(byDate, today));
-        return buildSeries(byDate, today, DEFAULT_HISTORY_DAYS);
+        return buildSeries(byDate, today, WeightRange.DEFAULT.days());
     }
 
     /**
@@ -111,21 +114,20 @@ public class AthleteWeightService {
         return buildSeries(userId, null);
     }
 
-    private AthleteWeightSeriesDto buildSeries(UUID athleteId, @Nullable Integer requestedDays) {
-        int days = clampDays(requestedDays);
+    private AthleteWeightSeriesDto buildSeries(UUID athleteId, @Nullable WeightRange requested) {
+        WeightRange range = requested != null ? requested : WeightRange.DEFAULT;
         LocalDate today = LocalDate.now(WARSAW);
-        return buildSeries(loadWindow(athleteId, today, days), today, days);
+        return buildSeries(loadWindow(athleteId, today, range.days()), today, range.days());
     }
 
     private AthleteWeightSeriesDto buildSeries(NavigableMap<LocalDate, BigDecimal> byDate,
                                                LocalDate today, int days) {
-        // The loaded window may reach further back than asked (see loadWindow) so the
-        // week-over-week trend still has a comparison point; the CHART shows only what was asked
+        // loadWindow reads further back than the chart starts; only the asked-for range is sent
         LocalDate chartFrom = today.minusDays(days - 1L);
         List<AthleteWeightEntryDto> entries = byDate.tailMap(chartFrom, true).entrySet().stream()
-            // The trend of the earliest chart points still draws on readings from before
-            // chartFrom (loadWindow deliberately reaches further back), so the line does not
-            // start with an artificial dip
+            // The trailing average of the FIRST chart point still averages readings from before
+            // chartFrom — otherwise the left edge would show each point averaged against a
+            // window that is mostly missing, bending the line for no reason
             .map(e -> new AthleteWeightEntryDto(e.getKey(), e.getValue(), trendAt(byDate, e.getKey())))
             .toList();
 
@@ -142,17 +144,17 @@ public class AthleteWeightService {
             WeightTrendCalculator.isRapidLoss(weeklyChange),
             latestDay != null ? byDate.get(latestDay) : null,
             latestDay,
-            days
+            BACKFILL_DAYS
         );
     }
 
     /**
-     * Earliest day a reading may still be backfilled for: the left edge of the chart the
-     * frontend renders. Kept in one place and shipped in the DTO as {@code historyDays} so
-     * the date picker's lower bound cannot drift away from what the server accepts.
+     * Earliest day a reading may still be backfilled for. Shipped in the DTO as
+     * {@code backfillDays} — NOT the selected chart range, so widening the view never widens
+     * what the picker offers, and the picker's lower bound cannot drift from what is accepted.
      */
     private static LocalDate oldestRecordableDay(LocalDate today) {
-        return today.minusDays(DEFAULT_HISTORY_DAYS - 1L);
+        return today.minusDays(BACKFILL_DAYS - 1L);
     }
 
     /** Trend on a day that is itself a reading, so the average always exists. */
@@ -162,16 +164,22 @@ public class AthleteWeightService {
     }
 
     /**
-     * The window always reaches back far enough for the week-over-week comparison, even when
-     * the caller asked for a short chart — otherwise the percentage would vanish at days=7.
+     * Reads further back than the chart shows, for two independent reasons:
+     *
+     * <ul>
+     *   <li>the trailing average of the FIRST charted day needs the {@code WINDOW_DAYS - 1}
+     *       days before it, or the left edge of the line is computed from a window that is
+     *       mostly missing and bends downward for no real reason;</li>
+     *   <li>the week-over-week percentage compares today's trend with the trend a week ago,
+     *       so at least {@code 2 * WINDOW_DAYS} days must be on hand however short the chart.</li>
+     * </ul>
+     *
+     * The extra days are read but never sent — {@code buildSeries} trims to the range.
      */
     private NavigableMap<LocalDate, BigDecimal> loadWindow(UUID athleteId, LocalDate today, int days) {
-        LocalDate from = today.minusDays(Math.max(days, 2L * WeightTrendCalculator.WINDOW_DAYS) - 1L);
+        long lookback = Math.max(days + WeightTrendCalculator.WINDOW_DAYS - 1L,
+                                 2L * WeightTrendCalculator.WINDOW_DAYS);
+        LocalDate from = today.minusDays(lookback - 1L);
         return WeightTrendCalculator.index(weightRepository.findRange(athleteId, from, today));
-    }
-
-    private static int clampDays(@Nullable Integer requestedDays) {
-        if (requestedDays == null) return DEFAULT_HISTORY_DAYS;
-        return Math.clamp(requestedDays, MIN_HISTORY_DAYS, MAX_HISTORY_DAYS);
     }
 }
