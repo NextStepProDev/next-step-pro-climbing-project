@@ -499,6 +499,7 @@ export type ActivityActionType =
   | 'ADMIN_GOAL_UPDATED'
   | 'ADMIN_GOAL_DELETED'
   | 'ADMIN_GOAL_ACHIEVED'
+  | 'ADMIN_GOAL_REOPENED'
 
 export interface ActivityLog {
   id: string
@@ -1171,25 +1172,67 @@ export interface LocationCount {
 // SHORT/MEDIUM/LONG-term goal set by the coach; also picks the trophy size in the chest
 export type GoalHorizon = 'SHORT' | 'MEDIUM' | 'LONG'
 
+// Which banner row the goal belongs to. WEIGHT goals close themselves on a weigh-in.
+export type GoalKind = 'GENERAL' | 'WEIGHT'
+
 export interface AthleteGoal {
   id: string
+  kind: GoalKind
   horizon: GoalHorizon
   content: string
   targetDate: string
+  // WEIGHT only: the target, and the trend snapshot the progress bar starts from
+  targetWeightKg: number | null
+  startWeightKg: number | null
+  // Closed by a weigh-in rather than by the coach — the only case that may be reopened
+  achievedAutomatically: boolean
   achievedAt: string | null
   createdAt: string
 }
 
-// Banner cards (active, one per horizon) + trophy chest (achieved, newest first)
+// Banner cards (active, one per kind + horizon) + trophy chest (achieved, newest first)
 export interface AthleteGoals {
   active: AthleteGoal[]
   achieved: AthleteGoal[]
 }
 
 export interface SaveGoal {
+  kind?: GoalKind
   horizon: GoalHorizon
   content: string
   targetDate: string
+  targetWeightKg?: number | null
+}
+
+// ---------- body weight ----------
+
+export interface WeightEntry {
+  measuredOn: string
+  weightKg: number
+  // Trailing 7-day average as of that day — computed server-side so there is one implementation
+  trendKg: number
+}
+
+// Everything the weight panel draws, derived server-side so the trend has one implementation
+export interface WeightSeries {
+  entries: WeightEntry[]
+  currentTrendKg: number | null
+  // How many readings back the trend (0-7); below 3 it is shown but cannot close a goal
+  trendSampleCount: number
+  trendConfirmed: boolean
+  weeklyChangePercent: number | null
+  // Losing faster than 1%/week — surfaced to the coach only
+  rapidLoss: boolean
+  latestWeightKg: number | null
+  latestMeasuredOn: string | null
+  // Chart width in days, and equally how far back a reading may be backfilled — the date
+  // picker derives its `min` from this so it cannot drift from what the server accepts
+  historyDays: number
+}
+
+export interface SaveWeight {
+  measuredOn: string
+  weightKg: number
 }
 
 // Reusable coach training template (shared library). Materials reuse TrainingAttachment.

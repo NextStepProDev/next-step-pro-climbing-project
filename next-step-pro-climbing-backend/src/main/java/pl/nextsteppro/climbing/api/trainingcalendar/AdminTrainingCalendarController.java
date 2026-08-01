@@ -28,11 +28,14 @@ public class AdminTrainingCalendarController {
 
     private final AdminTrainingCalendarService adminTrainingCalendarService;
     private final TrainingTemplateService templateService;
+    private final AthleteWeightService athleteWeightService;
 
     public AdminTrainingCalendarController(AdminTrainingCalendarService adminTrainingCalendarService,
-                                           TrainingTemplateService templateService) {
+                                           TrainingTemplateService templateService,
+                                           AthleteWeightService athleteWeightService) {
         this.adminTrainingCalendarService = adminTrainingCalendarService;
         this.templateService = templateService;
+        this.athleteWeightService = athleteWeightService;
     }
 
     @Operation(summary = "Athlete roster", description = "Flagged athletes with per-athlete unread badges, unread-first.")
@@ -121,14 +124,14 @@ public class AdminTrainingCalendarController {
 
     // ---------- athlete goals (banner above the calendar + trophy chest) ----------
 
-    @Operation(summary = "Athlete's goals", description = "Active (one per horizon) + achieved (trophy chest), same shape the athlete sees.")
+    @Operation(summary = "Athlete's goals", description = "Active (one per kind + horizon) + achieved (trophy chest), same shape the athlete sees.")
     @GetMapping("/athletes/{athleteId}/goals")
     public ResponseEntity<GoalsDto> getGoals(
             @PathVariable UUID athleteId) {
         return ResponseEntity.ok(adminTrainingCalendarService.getGoals(athleteId));
     }
 
-    @Operation(summary = "Set a goal", description = "One active goal per horizon; a taken horizon returns 409.")
+    @Operation(summary = "Set a goal", description = "One active goal per kind + horizon; a taken slot returns 409. A WEIGHT goal needs targetWeightKg and at least one weigh-in to snapshot the start from.")
     @PostMapping("/athletes/{athleteId}/goals")
     public ResponseEntity<AthleteGoalDto> createGoal(
             @Parameter(hidden = true) @CurrentUserId UUID adminId,
@@ -163,6 +166,26 @@ public class AdminTrainingCalendarController {
             @Valid @RequestBody(required = false) AchieveGoalRequest request) {
         AchieveGoalRequest body = request != null ? request : new AchieveGoalRequest(null);
         return ResponseEntity.ok(adminTrainingCalendarService.achieveGoal(adminId, goalId, body));
+    }
+
+    @Operation(summary = "Reopen an automatically achieved goal",
+        description = "Undo for a weight goal closed by a mistyped weigh-in. Only goals closed AUTOMATICALLY can be reopened — a goal the coach marked achieved by hand stays in the trophy chest (409). Also 409 if a new active goal already took the freed slot.")
+    @PostMapping("/goals/{goalId}/reopen")
+    public ResponseEntity<AthleteGoalDto> reopenGoal(
+            @Parameter(hidden = true) @CurrentUserId UUID adminId,
+            @PathVariable UUID goalId) {
+        return ResponseEntity.ok(adminTrainingCalendarService.reopenGoal(adminId, goalId));
+    }
+
+    // ---------- body weight (read-only: only the athlete records their own weight) ----------
+
+    @Operation(summary = "Athlete's weight series",
+        description = "Readings + 7-day trend + weekly change. Includes the rapid-loss flag, which the athlete's own endpoint also returns but the athlete UI does not surface. There is deliberately no write endpoint here.")
+    @GetMapping("/athletes/{athleteId}/weights")
+    public ResponseEntity<AthleteWeightSeriesDto> getWeights(
+            @PathVariable UUID athleteId,
+            @RequestParam(required = false) Integer days) {
+        return ResponseEntity.ok(athleteWeightService.getSeriesForAthlete(athleteId, days));
     }
 
     // ---------- training templates (coach library) ----------

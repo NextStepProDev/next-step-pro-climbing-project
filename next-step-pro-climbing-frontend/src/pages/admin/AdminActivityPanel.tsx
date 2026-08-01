@@ -19,6 +19,7 @@ import {
   LogOut,
   Target,
   Trophy,
+  RotateCcw,
 } from 'lucide-react'
 import { adminApi } from '../../api/client'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
@@ -169,6 +170,11 @@ const ACTION_CONFIG: Record<
   },
   ADMIN_GOAL_ACHIEVED: {
     icon: Trophy,
+    color: 'text-amber-400',
+    bgColor: 'bg-amber-500/10',
+  },
+  ADMIN_GOAL_REOPENED: {
+    icon: RotateCcw,
     color: 'text-amber-400',
     bgColor: 'bg-amber-500/10',
   },

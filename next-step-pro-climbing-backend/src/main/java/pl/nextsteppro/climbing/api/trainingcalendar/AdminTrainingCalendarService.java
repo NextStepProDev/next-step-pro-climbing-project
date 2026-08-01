@@ -139,6 +139,20 @@ public class AdminTrainingCalendarService {
         return dto;
     }
 
+    /**
+     * Undo of an AUTOMATIC weight-goal closure. Only this one is logged — the closures
+     * themselves have no human actor, so the audit trail for those is the goal's own
+     * achievedAutomatically flag rather than an activity entry.
+     */
+    public AthleteGoalDto reopenGoal(UUID adminId, UUID goalId) {
+        // Read the athlete BEFORE the mutation — the goal is detached from nothing, but the
+        // description must reflect the same athlete either way
+        UUID athleteId = goalService.requireGoal(goalId).getAthlete().getId();
+        AthleteGoalDto dto = goalService.reopenGoal(goalId);
+        activityLogService.logAdminGoalReopened(admin(adminId), describeGoal(athleteId, dto));
+        return dto;
+    }
+
     private String describeGoal(UUID athleteId, AthleteGoalDto dto) {
         return describe(athleteId, dto.content(), dto.targetDate());
     }

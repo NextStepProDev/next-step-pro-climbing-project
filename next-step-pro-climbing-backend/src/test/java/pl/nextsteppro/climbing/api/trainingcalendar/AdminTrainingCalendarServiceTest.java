@@ -108,9 +108,11 @@ class AdminTrainingCalendarServiceTest {
     void shouldLogActivityWhenCoachCreatesGoal() {
         // Given
         SaveGoalRequest request = new SaveGoalRequest(
-            pl.nextsteppro.climbing.domain.athletegoal.GoalHorizon.SHORT, "Przejść 7a", LocalDate.of(2026, 9, 15));
+            null, pl.nextsteppro.climbing.domain.athletegoal.GoalHorizon.SHORT, "Przejść 7a",
+            LocalDate.of(2026, 9, 15), null);
         AthleteGoalDto dto = new AthleteGoalDto(
-            UUID.randomUUID(), "SHORT", "Przejść 7a", LocalDate.of(2026, 9, 15), null, Instant.now());
+            UUID.randomUUID(), "GENERAL", "SHORT", "Przejść 7a", LocalDate.of(2026, 9, 15),
+            null, null, false, null, Instant.now());
         when(goalService.createGoal(athleteId, request)).thenReturn(dto);
 
         // When
@@ -128,7 +130,8 @@ class AdminTrainingCalendarServiceTest {
             athlete, pl.nextsteppro.climbing.domain.athletegoal.GoalHorizon.LONG, "7c przed 30-tką",
             LocalDate.of(2027, 3, 1));
         AthleteGoalDto dto = new AthleteGoalDto(
-            goalId, "LONG", "7c przed 30-tką", LocalDate.of(2027, 3, 1), Instant.now(), Instant.now());
+            goalId, "GENERAL", "LONG", "7c przed 30-tką", LocalDate.of(2027, 3, 1),
+            null, null, false, Instant.now(), Instant.now());
         when(goalService.requireGoal(goalId)).thenReturn(goal);
         when(goalService.achieveGoal(eq(goalId), any())).thenReturn(dto);
 

@@ -88,7 +88,13 @@
       "content": "Goal",
       "contentPlaceholder": "e.g. Climb a 7a on lead...",
       "contentRequired": "Enter the goal",
-      "targetDate": "Target date"
+      "targetDate": "Target date",
+      "contentPlaceholderWeight": "e.g. Get down to competition weight...",
+      "targetWeight": "Target weight (kg)",
+      "targetWeightInvalid": "Enter a target weight between 20 and 300 kg",
+      "targetWeightLocked": "The target weight cannot be changed — delete the goal and set a new one.",
+      "weightAutoHint": "Current trend: {{value}} kg — progress is measured from there. The goal closes itself once the 7-day trend (min. 3 readings) reaches it.",
+      "weightNeedsStart": "The athlete has not recorded a weight yet — a weight goal needs one first."
     },
     "trophies": "Trophy chest",
     "trophiesTitle": "Trophy chest — {{count}}",
@@ -99,6 +105,18 @@
       "medium": "Medium-term",
       "long": "Long-term",
       "emptyColumn": "No trophies in this category yet"
+    },
+    "section": {
+      "general": "Training goals",
+      "weight": "Weight goals"
+    },
+    "reopen": "Undo achievement",
+    "reopenConfirmTitle": "Undo the achievement?",
+    "reopenConfirmMessage": "The goal goes back to the active list. Only a goal that closed itself after a weigh-in can be undone — for example when the reading was a typo.",
+    "weight": {
+      "remaining": "{{value}} kg to go",
+      "trendUnconfirmed_one": "trend from {{count}} reading — the goal will not close on its own",
+      "trendUnconfirmed_other": "trend from {{count}} readings — the goal will not close on its own"
     }
   },
   "clipboard": {
@@ -244,5 +262,27 @@
     "save": "Save rating",
     "unrated_one": "{{count}} activity without a rating",
     "unrated_other": "{{count}} activities without a rating"
+  },
+  "weight": {
+    "title": "Weight",
+    "todayLabel": "Morning weight (kg)",
+    "save": "Save",
+    "invalid": "Enter the weight as a number, e.g. 71.2",
+    "perWeek": "/week",
+    "legendTrend": "7-day trend",
+    "legendDaily": "daily reading",
+    "chartLabel": "Weight chart with the 7-day trend",
+    "showTable": "Show table",
+    "hideTable": "Hide table",
+    "tableDate": "Date",
+    "tableWeight": "Weight (kg)",
+    "noiseHint": "Day to day, weight swings on water and salt — read the trend line, not a single reading.",
+    "emptyAthlete": "No readings yet. Weigh yourself in the morning, right after waking up — always at the same time.",
+    "rapidLoss": "Weight is dropping faster than 1% per week. Worth checking whether the cut is controlled.",
+    "trendUnconfirmed_one": "Trend from {{count}} reading — weight goals only close with 3 from the last 7 days.",
+    "trendUnconfirmed_other": "Trend from {{count}} readings — weight goals only close with 3 from the last 7 days.",
+    "dateLabel": "Measurement day",
+    "futureDate": "You cannot record a weight for a future date",
+    "dayAlreadyHasEntry": "This day already has an entry: {{value}} kg. Saving will correct it."
   }
 }

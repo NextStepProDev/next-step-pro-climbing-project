@@ -180,7 +180,7 @@ describe('adapter capabilities per role', () => {
   it('should give the coach goal mutations', () => {
     const coach = coachAdapter(ATHLETE_ID)
     expect(coach.goalMutations).toBeDefined()
-    expect(Object.keys(coach.goalMutations!).sort()).toEqual(['achieve', 'create', 'remove', 'update'])
+    expect(Object.keys(coach.goalMutations!).sort()).toEqual(['achieve', 'create', 'remove', 'reopen', 'update'])
   })
 
   it('should leave the athlete goal banner read-only', () => {
@@ -215,8 +215,17 @@ describe('adapter capabilities per role', () => {
     expect(JSON.parse(lastRequest().body as string)).toEqual({ achievedDate: null })
   })
 
+  it('should leave weight recording to the athlete alone', () => {
+    // Reading somebody else's weight is fine; writing it is not the coach's call
+    expect(athleteAdapter.weightMutations).toBeDefined()
+    expect(coachAdapter(ATHLETE_ID).weightMutations).toBeUndefined()
+  })
+
   it('should expose the same method surface for both roles', () => {
-    const coachKeys = Object.keys(coachAdapter(ATHLETE_ID)).filter((k) => k !== 'goalMutations').sort()
-    expect(Object.keys(athleteAdapter).sort()).toEqual(coachKeys)
+    // The two mutation bags are the deliberate asymmetries: goals are coach-only,
+    // weight entry is athlete-only. Everything else must match.
+    const roleSpecific = ['goalMutations', 'weightMutations']
+    const keysOf = (adapter: object) => Object.keys(adapter).filter((k) => !roleSpecific.includes(k)).sort()
+    expect(keysOf(athleteAdapter)).toEqual(keysOf(coachAdapter(ATHLETE_ID)))
   })
 })

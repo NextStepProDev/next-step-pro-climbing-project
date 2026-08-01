@@ -89,7 +89,13 @@
       "content": "Objetivo",
       "contentPlaceholder": "p. ej. Encadenar un 7a...",
       "contentRequired": "Introduce el objetivo",
-      "targetDate": "Fecha límite"
+      "targetDate": "Fecha límite",
+      "contentPlaceholderWeight": "p. ej. Bajar al peso de competición...",
+      "targetWeight": "Peso objetivo (kg)",
+      "targetWeightInvalid": "Introduce un peso objetivo entre 20 y 300 kg",
+      "targetWeightLocked": "El peso objetivo no se puede cambiar — elimina el objetivo y crea uno nuevo.",
+      "weightAutoHint": "Tendencia actual: {{value}} kg — el progreso se mide desde ahí. El objetivo se cierra solo cuando la tendencia de 7 días (mín. 3 mediciones) lo alcanza.",
+      "weightNeedsStart": "El atleta aún no ha registrado ningún peso — un objetivo de peso lo necesita primero."
     },
     "trophies": "Cofre de trofeos",
     "trophiesTitle": "Cofre de trofeos — {{count}}",
@@ -100,6 +106,18 @@
       "medium": "A medio plazo",
       "long": "A largo plazo",
       "emptyColumn": "Aún no hay trofeos en esta categoría"
+    },
+    "section": {
+      "general": "Objetivos de entrenamiento",
+      "weight": "Objetivos de peso"
+    },
+    "reopen": "Deshacer logro",
+    "reopenConfirmTitle": "¿Deshacer el logro?",
+    "reopenConfirmMessage": "El objetivo vuelve a la lista de activos. Solo se puede deshacer un objetivo que se cerró solo tras un pesaje — por ejemplo cuando la medición fue un error de tecleo.",
+    "weight": {
+      "remaining": "faltan {{value}} kg",
+      "trendUnconfirmed_one": "tendencia de {{count}} medición — el objetivo no se cerrará solo",
+      "trendUnconfirmed_other": "tendencia de {{count}} mediciones — el objetivo no se cerrará solo"
     }
   },
   "clipboard": {
@@ -252,5 +270,27 @@
     "unrated_one": "{{count}} actividad sin valorar",
     "unrated_many": "{{count}} actividades sin valorar",
     "unrated_other": "{{count}} actividades sin valorar"
+  },
+  "weight": {
+    "title": "Peso",
+    "todayLabel": "Peso por la mañana (kg)",
+    "save": "Guardar",
+    "invalid": "Introduce el peso como número, p. ej. 71,2",
+    "perWeek": "/sem.",
+    "legendTrend": "tendencia 7 días",
+    "legendDaily": "medición diaria",
+    "chartLabel": "Gráfico de peso con la tendencia de 7 días",
+    "showTable": "Mostrar tabla",
+    "hideTable": "Ocultar tabla",
+    "tableDate": "Fecha",
+    "tableWeight": "Peso (kg)",
+    "noiseHint": "De un día para otro el peso oscila por el agua y la sal — mira la línea de tendencia, no una medición suelta.",
+    "emptyAthlete": "Aún no hay mediciones. Pésate por la mañana, nada más despertar — siempre a la misma hora.",
+    "rapidLoss": "El peso baja más rápido de un 1% por semana. Conviene comprobar si la bajada es controlada.",
+    "trendUnconfirmed_one": "Tendencia de {{count}} medición — los objetivos de peso solo se cierran con 3 de los últimos 7 días.",
+    "trendUnconfirmed_other": "Tendencia de {{count}} mediciones — los objetivos de peso solo se cierran con 3 de los últimos 7 días.",
+    "dateLabel": "Día de la medición",
+    "futureDate": "No puedes registrar un peso con fecha futura",
+    "dayAlreadyHasEntry": "Este día ya tiene una entrada: {{value}} kg. Guardar la corregirá."
   }
 }

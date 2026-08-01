@@ -7,8 +7,10 @@ import type {
   CreatePersonalTraining,
   PersonalTraining,
   SaveGoal,
+  SaveWeight,
   TrainingCalendarRange,
   TrainingCommentItem,
+  WeightSeries,
 } from '../../types'
 
 /** Goal mutations exist only on the coach adapter — the athlete's banner is read-only. */
@@ -18,6 +20,17 @@ export interface GoalMutations {
   remove: (goalId: string) => Promise<void>
   // achievedDate is backdatable (omit = today); the backend rejects future dates
   achieve: (goalId: string, achievedDate?: string) => Promise<AthleteGoal>
+  // Only a goal a weigh-in closed can be reopened; a manual closure is refused (409)
+  reopen: (goalId: string) => Promise<AthleteGoal>
+}
+
+/**
+ * Recording weight exists only on the athlete adapter. The coach reads the series (and is the
+ * only one shown the rapid-loss flag) but never writes somebody else's body weight.
+ */
+export interface WeightMutations {
+  save: (data: SaveWeight) => Promise<WeightSeries>
+  remove: (measuredOn: string) => Promise<WeightSeries>
 }
 
 /**
@@ -35,8 +48,10 @@ export interface TrainingCalendarAdapter {
   markSeen: () => Promise<void>
   getStats: () => Promise<AthleteStats>
   getGoals: () => Promise<AthleteGoals>
+  getWeights: () => Promise<WeightSeries>
   uploadAttachment: (file: File) => Promise<AttachmentUpload>
   goalMutations?: GoalMutations
+  weightMutations?: WeightMutations
 }
 
 export const athleteAdapter: TrainingCalendarAdapter = {
@@ -49,7 +64,12 @@ export const athleteAdapter: TrainingCalendarAdapter = {
   markSeen: trainingCalendarApi.markSeen,
   getStats: trainingCalendarApi.getStats,
   getGoals: trainingCalendarApi.getGoals,
+  getWeights: trainingCalendarApi.getWeights,
   uploadAttachment: trainingCalendarApi.uploadAttachment,
+  weightMutations: {
+    save: trainingCalendarApi.saveWeight,
+    remove: trainingCalendarApi.deleteWeight,
+  },
 }
 
 export function coachAdapter(athleteId: string): TrainingCalendarAdapter {
@@ -63,12 +83,15 @@ export function coachAdapter(athleteId: string): TrainingCalendarAdapter {
     markSeen: () => adminTrainingCalendarApi.markSeen(athleteId),
     getStats: () => adminTrainingCalendarApi.getStats(athleteId),
     getGoals: () => adminTrainingCalendarApi.getGoals(athleteId),
+    getWeights: () => adminTrainingCalendarApi.getWeights(athleteId),
     uploadAttachment: adminTrainingCalendarApi.uploadAttachment,
     goalMutations: {
       create: (data) => adminTrainingCalendarApi.createGoal(athleteId, data),
       update: adminTrainingCalendarApi.updateGoal,
       remove: adminTrainingCalendarApi.deleteGoal,
       achieve: adminTrainingCalendarApi.achieveGoal,
+      reopen: adminTrainingCalendarApi.reopenGoal,
     },
+    // No weightMutations: the coach reads the series, never writes it
   }
 }

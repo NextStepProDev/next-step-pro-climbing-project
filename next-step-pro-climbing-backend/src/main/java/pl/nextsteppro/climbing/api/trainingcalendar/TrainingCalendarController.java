@@ -31,13 +31,16 @@ public class TrainingCalendarController {
     private final TrainingCalendarService trainingCalendarService;
     private final TrainingStatsService trainingStatsService;
     private final AthleteGoalService athleteGoalService;
+    private final AthleteWeightService athleteWeightService;
 
     public TrainingCalendarController(TrainingCalendarService trainingCalendarService,
                                       TrainingStatsService trainingStatsService,
-                                      AthleteGoalService athleteGoalService) {
+                                      AthleteGoalService athleteGoalService,
+                                      AthleteWeightService athleteWeightService) {
         this.trainingCalendarService = trainingCalendarService;
         this.trainingStatsService = trainingStatsService;
         this.athleteGoalService = athleteGoalService;
+        this.athleteWeightService = athleteWeightService;
     }
 
     @Operation(summary = "Calendar range", description = "Trainings + read-only reservation overlay for a date range (max 62 days).")
@@ -69,7 +72,46 @@ public class TrainingCalendarController {
         return ResponseEntity.ok(trainingStatsService.getMyStats(userId));
     }
 
-    @Operation(summary = "My goals", description = "Active goals (banner cards, one per horizon) + achieved goals (trophy chest). Read-only — the coach manages goals.")
+    @Operation(summary = "My weight series",
+        description = "Morning readings + trailing 7-day trend + week-over-week change. trendSampleCount says how many readings back the trend; below 3 it is shown but cannot close a weight goal.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Weight series",
+            content = @Content(schema = @Schema(implementation = AthleteWeightSeriesDto.class))),
+        @ApiResponse(responseCode = "401", description = "User not authenticated"),
+        @ApiResponse(responseCode = "409", description = "User is not a designated athlete")
+    })
+    @GetMapping("/weights")
+    public ResponseEntity<AthleteWeightSeriesDto> getWeights(
+            @Parameter(hidden = true) @CurrentUserId UUID userId,
+            @RequestParam(required = false) Integer days) {
+        return ResponseEntity.ok(athleteWeightService.getMySeries(userId, days));
+    }
+
+    @Operation(summary = "Record my morning weight",
+        description = "Upsert on the measurement date — weighing again the same day is a correction, not a second reading. Also closes any weight goal the new confirmed trend has reached. Returns the recomputed series.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Recomputed series",
+            content = @Content(schema = @Schema(implementation = AthleteWeightSeriesDto.class))),
+        @ApiResponse(responseCode = "400", description = "Future date or weight outside 20-300 kg"),
+        @ApiResponse(responseCode = "409", description = "User is not a designated athlete")
+    })
+    @PutMapping("/weights")
+    public ResponseEntity<AthleteWeightSeriesDto> recordWeight(
+            @Parameter(hidden = true) @CurrentUserId UUID userId,
+            @Valid @RequestBody SaveWeightRequest request) {
+        return ResponseEntity.ok(athleteWeightService.recordMyWeight(userId, request));
+    }
+
+    @Operation(summary = "Delete one of my readings",
+        description = "Idempotent. Never re-opens an achieved weight goal — removing data must not take a trophy away.")
+    @DeleteMapping("/weights/{measuredOn}")
+    public ResponseEntity<AthleteWeightSeriesDto> deleteWeight(
+            @Parameter(hidden = true) @CurrentUserId UUID userId,
+            @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate measuredOn) {
+        return ResponseEntity.ok(athleteWeightService.deleteMyWeight(userId, measuredOn));
+    }
+
+    @Operation(summary = "My goals", description = "Active goals (banner cards, one per kind + horizon) + achieved goals (trophy chest). Read-only — the coach manages goals.")
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "Goals",
             content = @Content(schema = @Schema(implementation = GoalsDto.class))),
