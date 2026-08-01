@@ -499,6 +499,17 @@ export function CalendarPage() {
           </div>
         )}
 
+        {/* Motto nad kalendarzem — celowo ciche: cienka kreska + kursywa, bez ramki i tła,
+            żeby nie konkurowało z plakietką promocji ani z samym kalendarzem. */}
+        <figure className="calendar-quote mt-5 max-w-xl border-l-2 border-surface-700 pl-4">
+          <blockquote className="text-surface-400 text-sm italic leading-relaxed whitespace-pre-line">
+            {t('quote.text')}
+          </blockquote>
+          <figcaption className="mt-1.5 text-surface-500 text-xs">
+            — {t('quote.author')}
+          </figcaption>
+        </figure>
+
         {/* View mode toggle */}
         {!selectedDate && (
           <div className="mt-4 flex gap-1 bg-surface-800 rounded-lg p-1 w-fit">

@@ -317,6 +317,20 @@ h1, h2, h3, h4, h5, h6, .font-display {
 .calendar-promo-desc  { animation-delay: 0.68s; }
 .calendar-promo-cta   { animation-delay: 0.82s; }
 
+/* === Motto nad kalendarzem — wchodzi cicho, jako ostatnie w nagłówku === */
+@keyframes calendar-quote-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.calendar-quote {
+  opacity: 0;
+  animation: calendar-quote-in 0.9s ease-out 0.5s both;
+}
+/* Bez ruchu: cytat po prostu jest (inaczej zostałby niewidoczny — opacity: 0). */
+@media (prefers-reduced-motion: reduce) {
+  .calendar-quote { opacity: 1; animation: none; }
+}
+
 .btn-glow {
   transition: box-shadow 0.3s ease;
 }
