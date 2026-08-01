@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { Award, Medal, Scale, Trophy } from 'lucide-react'
+import { Award, Medal, RotateCcw, Scale, Trophy } from 'lucide-react'
 import { format } from 'date-fns'
 import clsx from 'clsx'
 import { Modal } from '../ui/Modal'
@@ -62,6 +62,9 @@ interface TrophyChestModalProps {
   isOpen: boolean
   onClose: () => void
   achieved: AthleteGoal[]
+  isCoachView?: boolean
+  // Coach only, and only for goals a weigh-in closed. Undefined leaves the chest read-only.
+  onReopen?: (goal: AthleteGoal) => void
 }
 
 /**
@@ -69,7 +72,7 @@ interface TrophyChestModalProps {
  * = short/medium/long-term), each a scrollable shelf of trophies newest-first. The read-only
  * motivational centrepiece of the athlete zone — seen by athlete and coach alike.
  */
-export function TrophyChestModal({ isOpen, onClose, achieved }: TrophyChestModalProps) {
+export function TrophyChestModal({ isOpen, onClose, achieved, isCoachView, onReopen }: TrophyChestModalProps) {
   const { t, i18n } = useTranslation('training')
   const locale = useDateLocale()
 
@@ -138,6 +141,18 @@ export function TrophyChestModal({ isOpen, onClose, achieved }: TrophyChestModal
                           <p className="text-[11px] text-surface-400 mt-0.5">
                             {t('goals.achievedOn', { date: format(new Date(goal.achievedAt), 'd MMM yyyy', { locale }) })}
                           </p>
+                        )}
+                        {/* No time limit: a phantom weigh-in is often spotted weeks later, and
+                            the server never cared about the age of the closure either */}
+                        {isCoachView && onReopen && goal.achievedAutomatically && (
+                          <button
+                            type="button"
+                            onClick={() => onReopen(goal)}
+                            className="inline-flex items-center gap-1 text-[11px] font-medium text-surface-400 hover:text-surface-200 transition-colors mt-1"
+                          >
+                            <RotateCcw className="w-3 h-3" />
+                            {t('goals.reopen')}
+                          </button>
                         )}
                       </div>
                     </div>

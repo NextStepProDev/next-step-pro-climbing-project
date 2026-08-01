@@ -303,6 +303,9 @@
     "trendUnconfirmed_other": "Trend liczony z {{count}} pomiarów — cele wagowe zamykają się dopiero przy 3 z ostatnich 7 dni.",
     "dateLabel": "Dzień pomiaru",
     "futureDate": "Nie można wpisać wagi z przyszłej daty",
-    "dayAlreadyHasEntry": "Ten dzień ma już wpis: {{value}} kg. Zapis go poprawi."
+    "dayAlreadyHasEntry": "Ten dzień ma już wpis: {{value}} kg. Zapis go poprawi.",
+    "deleteEntry": "Usuń pomiar",
+    "deleteConfirmTitle": "Usunąć pomiar?",
+    "deleteConfirmMessage": "Pomiar z {{date}} zostanie usunięty. Jeśli zamknął już cel wagowy, cel zostanie osiągnięty — trener może go cofnąć osobno."
   }
 }

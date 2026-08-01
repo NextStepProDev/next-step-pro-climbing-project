@@ -283,6 +283,9 @@
     "trendUnconfirmed_other": "Trend from {{count}} readings — weight goals only close with 3 from the last 7 days.",
     "dateLabel": "Measurement day",
     "futureDate": "You cannot record a weight for a future date",
-    "dayAlreadyHasEntry": "This day already has an entry: {{value}} kg. Saving will correct it."
+    "dayAlreadyHasEntry": "This day already has an entry: {{value}} kg. Saving will correct it.",
+    "deleteEntry": "Delete reading",
+    "deleteConfirmTitle": "Delete this reading?",
+    "deleteConfirmMessage": "The reading from {{date}} will be removed. If it already closed a weight goal, that goal stays achieved — the coach can undo it separately."
   }
 }

@@ -201,6 +201,12 @@ export function GoalsBanner({ api, scopeKey, isCoachView }: GoalsBannerProps) {
         isOpen={chestOpen}
         onClose={() => setChestOpen(false)}
         achieved={goals.achieved}
+        isCoachView={isCoachView}
+        onReopen={mutations ? (goal) => {
+          // Close the chest rather than stacking modals — the goal is about to leave it anyway
+          setChestOpen(false)
+          setConfirmReopen(goal)
+        } : undefined}
       />
 
       <AchieveGoalModal

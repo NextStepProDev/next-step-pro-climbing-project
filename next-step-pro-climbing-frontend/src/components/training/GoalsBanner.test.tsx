@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
@@ -67,6 +67,11 @@ function renderBanner(api: TrainingCalendarAdapter, isCoachView = false) {
 }
 
 describe('GoalsBanner', () => {
+  // Goal ids repeat across cases (kind-horizon), so a stale call could green a test falsely
+  beforeEach(() => {
+    reopen.mockClear()
+  })
+
   it('renders both a training goal and a weight goal on the same horizon', async () => {
     // Regression: keying the card map by horizon alone silently dropped one of the two
     const api = makeApi([
@@ -140,6 +145,48 @@ describe('GoalsBanner', () => {
     await userEvent.click(screen.getByRole('button', { name: /confirm|potwierd|tak/i }))
 
     await waitFor(() => expect(reopen).toHaveBeenCalledWith(autoClosed.id))
+  })
+
+  it('still offers the undo from the trophy chest long after the celebration ends', async () => {
+    // The 7-day celebration window is where the card lives, not a deadline on undoing:
+    // a phantom weigh-in is usually spotted weeks later, and the server never time-limited it
+    const oldAutoClosed = makeGoal({
+      kind: 'WEIGHT',
+      horizon: 'SHORT',
+      content: 'Zejść do 67 kg',
+      targetWeightKg: 67,
+      startWeightKg: 70,
+      achievedAutomatically: true,
+      achievedAt: '2026-01-15T10:00:00Z',
+    })
+
+    renderBanner(makeApi([], [oldAutoClosed], true), true)
+
+    // No celebration card this old — the only way in is the chest
+    expect(screen.queryByText('goals.reopen')).not.toBeInTheDocument()
+    await userEvent.click(await screen.findByText(/goals.trophies/))
+    await userEvent.click(await screen.findByText('goals.reopen'))
+    await userEvent.click(screen.getByRole('button', { name: /confirm|potwierd|tak/i }))
+
+    await waitFor(() => expect(reopen).toHaveBeenCalledWith(oldAutoClosed.id))
+  })
+
+  it('leaves the chest read-only for the athlete', async () => {
+    const oldAutoClosed = makeGoal({
+      kind: 'WEIGHT',
+      horizon: 'SHORT',
+      content: 'Zejść do 67 kg',
+      targetWeightKg: 67,
+      startWeightKg: 70,
+      achievedAutomatically: true,
+      achievedAt: '2026-01-15T10:00:00Z',
+    })
+
+    renderBanner(makeApi([], [oldAutoClosed]))
+
+    await userEvent.click(await screen.findByText(/goals.trophies/))
+    expect(await screen.findByText('Zejść do 67 kg')).toBeInTheDocument()
+    expect(screen.queryByText('goals.reopen')).not.toBeInTheDocument()
   })
 
   it('never offers the undo for a goal the coach closed by hand', async () => {

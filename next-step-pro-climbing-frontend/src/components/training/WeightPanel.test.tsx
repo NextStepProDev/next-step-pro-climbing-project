@@ -36,12 +36,13 @@ const today = format(new Date(), 'yyyy-MM-dd')
 const missedDay = format(subDays(new Date(), 3), 'yyyy-MM-dd')
 
 const saveWeight = vi.fn()
+const deleteWeight = vi.fn()
 
 function makeApi(series: WeightSeries, withMutations = true): TrainingCalendarAdapter {
   return {
     getWeights: vi.fn().mockResolvedValue(series),
     ...(withMutations
-      ? { weightMutations: { save: saveWeight, remove: vi.fn() } }
+      ? { weightMutations: { save: saveWeight, remove: deleteWeight } }
       : {}),
   } as unknown as TrainingCalendarAdapter
 }
@@ -59,6 +60,8 @@ describe('WeightPanel', () => {
   beforeEach(() => {
     saveWeight.mockReset()
     saveWeight.mockResolvedValue(makeSeries())
+    deleteWeight.mockReset()
+    deleteWeight.mockResolvedValue(makeSeries({ entries: [] }))
   })
 
   it('lets the athlete record a weight', async () => {
@@ -193,6 +196,41 @@ describe('WeightPanel', () => {
 
     expect(await screen.findByText('weight.futureDate')).toBeInTheDocument()
     expect(saveWeight).not.toHaveBeenCalled()
+  })
+
+  // ---------- deleting a phantom reading ----------
+
+  it('lets the athlete delete a reading from the table', async () => {
+    // The fix for a wrong DATE: an overwrite cannot help, because there is no real weight
+    // for that day to overwrite it with
+    renderPanel(makeApi(makeSeries()))
+
+    await userEvent.click(await screen.findByText('weight.showTable'))
+    const rows = screen.getAllByTitle('weight.deleteEntry')
+    expect(rows).toHaveLength(3)
+
+    await userEvent.click(rows[0])
+    await userEvent.click(screen.getByRole('button', { name: /confirm|potwierd|usu|tak/i }))
+
+    await waitFor(() => expect(deleteWeight).toHaveBeenCalledTimes(1))
+    // Table renders newest first, so the first bin is the newest reading
+    expect(deleteWeight).toHaveBeenCalledWith('2026-08-01')
+  })
+
+  it('asks before deleting rather than removing on the first click', async () => {
+    renderPanel(makeApi(makeSeries()))
+
+    await userEvent.click(await screen.findByText('weight.showTable'))
+    await userEvent.click(screen.getAllByTitle('weight.deleteEntry')[0])
+
+    expect(deleteWeight).not.toHaveBeenCalled()
+  })
+
+  it('never offers the coach a delete button', async () => {
+    renderPanel(makeApi(makeSeries(), false), true)
+
+    await userEvent.click(await screen.findByText('weight.showTable'))
+    expect(screen.queryByTitle('weight.deleteEntry')).not.toBeInTheDocument()
   })
 
   it('warns that the chosen day already has a reading, so overwriting is deliberate', async () => {

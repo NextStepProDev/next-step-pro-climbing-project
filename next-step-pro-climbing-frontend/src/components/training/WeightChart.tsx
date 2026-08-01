@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { differenceInCalendarDays, format, parseISO } from 'date-fns'
 import clsx from 'clsx'
+import { Trash2 } from 'lucide-react'
 import { useDateLocale } from '../../utils/dateFnsLocale'
 import type { WeightEntry } from '../../types'
 
@@ -27,9 +28,11 @@ const PLOT_H = H - PAD.top - PAD.bottom
 interface WeightChartProps {
   entries: WeightEntry[]
   isStale?: boolean
+  // Athlete only — omitted for the coach, who never edits somebody else's readings
+  onDelete?: (measuredOn: string) => void
 }
 
-export function WeightChart({ entries, isStale }: WeightChartProps) {
+export function WeightChart({ entries, isStale, onDelete }: WeightChartProps) {
   const { t, i18n } = useTranslation('training')
   const locale = useDateLocale()
   const [tableOpen, setTableOpen] = useState(false)
@@ -238,6 +241,7 @@ export function WeightChart({ entries, isStale }: WeightChartProps) {
                 <th className="text-left font-medium px-3 py-1.5">{t('weight.tableDate')}</th>
                 <th className="text-right font-medium px-3 py-1.5">{t('weight.tableWeight')}</th>
                 <th className="text-right font-medium px-3 py-1.5">{t('weight.legendTrend')}</th>
+                {onDelete && <th className="w-10" aria-label={t('weight.deleteEntry')} />}
               </tr>
             </thead>
             <tbody>
@@ -252,6 +256,21 @@ export function WeightChart({ entries, isStale }: WeightChartProps) {
                     <td className="px-3 py-1.5 text-right text-surface-400 tabular-nums">
                       {fmt(entry.trendKg)}
                     </td>
+                    {/* Correcting a wrong number is an overwrite; only a reading on a day the
+                        athlete never weighed in needs removing, and nothing can overwrite that */}
+                    {onDelete && (
+                      <td className="px-2 py-1.5 text-right">
+                        <button
+                          type="button"
+                          onClick={() => onDelete(entry.measuredOn)}
+                          title={t('weight.deleteEntry')}
+                          aria-label={`${t('weight.deleteEntry')} ${format(parseISO(entry.measuredOn), 'dd.MM.yyyy')}`}
+                          className="p-1 rounded text-surface-500 hover:text-rose-300 hover:bg-surface-800 transition-colors"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </td>
+                    )}
                   </tr>
               ))}
             </tbody>

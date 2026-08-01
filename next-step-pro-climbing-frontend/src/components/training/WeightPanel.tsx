@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { format, subDays } from 'date-fns'
+import { format, parseISO, subDays } from 'date-fns'
 import { Scale, TrendingDown, TrendingUp, TriangleAlert } from 'lucide-react'
 import { Button } from '../ui/Button'
+import { ConfirmModal } from '../ui/ConfirmModal'
 import { QueryError } from '../ui/QueryError'
 import { WeightChart } from './WeightChart'
 import { getErrorMessage } from '../../utils/errors'
@@ -40,6 +41,7 @@ export function WeightPanel({ api, scopeKey, isCoachView }: WeightPanelProps) {
   const today = format(new Date(), 'yyyy-MM-dd')
   const [draft, setDraft] = useState('')
   const [measuredOn, setMeasuredOn] = useState(today)
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   const mutations = api.weightMutations
@@ -54,6 +56,18 @@ export function WeightPanel({ api, scopeKey, isCoachView }: WeightPanelProps) {
       // The response IS the recomputed series — no second round-trip
       queryClient.setQueryData(queryKey, series)
       // A weigh-in can close a weight goal, so the banner above must catch up
+      queryClient.invalidateQueries({ queryKey: ['trainingCalendar', 'goals', scopeKey] })
+    },
+    onError: (err) => setError(getErrorMessage(err)),
+  })
+
+  const deleteMutation = useMutation({
+    mutationFn: (day: string) => mutations!.remove(day),
+    onSuccess: (series) => {
+      setError(null)
+      queryClient.setQueryData(queryKey, series)
+      // Deleting never re-opens a closed goal (that is the server's rule), but the trend the
+      // goal cards draw their progress from has moved
       queryClient.invalidateQueries({ queryKey: ['trainingCalendar', 'goals', scopeKey] })
     },
     onError: (err) => setError(getErrorMessage(err)),
@@ -138,7 +152,11 @@ export function WeightPanel({ api, scopeKey, isCoachView }: WeightPanelProps) {
         <p className="text-sm text-surface-500">{t('weight.emptyAthlete')}</p>
       ) : (
         <>
-          <WeightChart entries={data.entries} isStale={weightQuery.isFetching} />
+          <WeightChart
+            entries={data.entries}
+            isStale={weightQuery.isFetching}
+            onDelete={!isCoachView && mutations ? setConfirmDelete : undefined}
+          />
           {/* Explains why a met target may not have closed its goal yet */}
           {data.currentTrendKg != null && !data.trendConfirmed && (
             <p className="text-xs text-surface-500">
@@ -197,6 +215,20 @@ export function WeightPanel({ api, scopeKey, isCoachView }: WeightPanelProps) {
       {error && <p className="text-sm text-rose-400/80">{error}</p>}
 
       {data.entries.length > 0 && <p className="text-xs text-surface-500">{t('weight.noiseHint')}</p>}
+
+      <ConfirmModal
+        isOpen={confirmDelete !== null}
+        onClose={() => setConfirmDelete(null)}
+        onConfirm={() => {
+          if (confirmDelete) deleteMutation.mutate(confirmDelete)
+          setConfirmDelete(null)
+        }}
+        title={t('weight.deleteConfirmTitle')}
+        message={t('weight.deleteConfirmMessage', {
+          date: confirmDelete ? format(parseISO(confirmDelete), 'dd.MM.yyyy') : '',
+        })}
+        variant="danger"
+      />
     </div>
   )
 }

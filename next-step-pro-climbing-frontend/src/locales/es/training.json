@@ -291,6 +291,9 @@
     "trendUnconfirmed_other": "Tendencia de {{count}} mediciones — los objetivos de peso solo se cierran con 3 de los últimos 7 días.",
     "dateLabel": "Día de la medición",
     "futureDate": "No puedes registrar un peso con fecha futura",
-    "dayAlreadyHasEntry": "Este día ya tiene una entrada: {{value}} kg. Guardar la corregirá."
+    "dayAlreadyHasEntry": "Este día ya tiene una entrada: {{value}} kg. Guardar la corregirá.",
+    "deleteEntry": "Eliminar medición",
+    "deleteConfirmTitle": "¿Eliminar la medición?",
+    "deleteConfirmMessage": "Se eliminará la medición del {{date}}. Si ya cerró un objetivo de peso, ese objetivo sigue logrado — el entrenador puede deshacerlo por separado."
   }
 }
