@@ -2,6 +2,10 @@
   "title": "Kalendarz",
   "metaDescription": "Kalendarz zajęć wspinaczkowych — sprawdź dostępne terminy i zarezerwuj miejsce.",
   "subtitle": "Wybierz dzień, aby zobaczyć dostępne godziny i zapisać się na zajęcia.",
+  "quote": {
+    "text": "Gdy zmądrzeć chcesz, przez błądzeń brnij udrękę,\nGdy chcesz się stać, na własną stań się rękę!",
+    "author": "Johann Wolfgang von Goethe, „Faust”, część druga"
+  },
   "viewMode": {
     "month": "Miesiąc",
     "week": "Tydzień"

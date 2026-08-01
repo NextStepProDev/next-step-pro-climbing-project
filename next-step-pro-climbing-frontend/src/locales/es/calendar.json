@@ -2,6 +2,10 @@
   "title": "Calendario",
   "metaDescription": "Horario de clases de escalada — consulta fechas disponibles y reserva tu plaza.",
   "subtitle": "Selecciona un día para ver los horarios disponibles e inscribirte en las sesiones.",
+  "quote": {
+    "text": "Si no te equivocas, nunca llegarás a comprender.\nSi quieres nacer, hazlo por ti mismo.",
+    "author": "Johann Wolfgang von Goethe, «Fausto», segunda parte"
+  },
   "viewMode": {
     "month": "Mes",
     "week": "Semana"

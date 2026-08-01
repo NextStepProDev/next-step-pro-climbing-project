@@ -2,6 +2,10 @@
   "title": "Calendar",
   "metaDescription": "Climbing class schedule — check available dates and book your spot.",
   "subtitle": "Select a day to see available time slots and sign up for sessions.",
+  "quote": {
+    "text": "Unless thou errest, thou wilt ne’er have sense;\nWouldst thou exist, thyself the work commence!",
+    "author": "Johann Wolfgang von Goethe, “Faust”, Part Two (trans. Bayard Taylor)"
+  },
   "viewMode": {
     "month": "Month",
     "week": "Week"
