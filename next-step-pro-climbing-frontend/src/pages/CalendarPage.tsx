@@ -470,7 +470,7 @@ export function CalendarPage() {
             <p className="calendar-promo-title text-amber-400 font-bold text-base sm:text-lg">
               {promo.title}
             </p>
-            <p className="calendar-promo-desc text-amber-300/85 text-xs sm:text-sm mt-1">
+            <p className="calendar-promo-desc text-amber-300/85 text-xs sm:text-sm mt-1 whitespace-pre-wrap">
               {promo.description}
             </p>
             {promo.ctaLabel && promo.ctaUrl && (
