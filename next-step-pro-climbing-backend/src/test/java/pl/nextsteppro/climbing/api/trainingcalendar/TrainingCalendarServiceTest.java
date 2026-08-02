@@ -1090,11 +1090,87 @@ class TrainingCalendarServiceTest {
         assertEquals("training.calendar.rpe.required", e.getMessage());
     }
 
+    // ========== GDPR art. 9 consent gate ==========
+
+    @Test
+    void shouldRejectCalendarAccessWhenConsentMissing() {
+        // Given: a flagged athlete who has not passed the consent screen (the state every
+        // athlete predating V76 starts in — the column is backfilled with nothing)
+        User unconsented = buildAthlete(UUID.randomUUID());
+        setField(unconsented, "trainingConsentAt", null);
+        when(userRepository.findById(unconsented.getId())).thenReturn(Optional.of(unconsented));
+
+        // When / Then
+        IllegalStateException e = assertThrows(IllegalStateException.class,
+            () -> service.getMyRange(unconsented.getId(), LocalDate.now(), LocalDate.now().plusDays(6)));
+        assertEquals("training.calendar.consent.required", e.getMessage());
+    }
+
+    @Test
+    void shouldAllowCalendarAccessAfterConsentGranted() {
+        User unconsented = buildAthlete(UUID.randomUUID());
+        setField(unconsented, "trainingConsentAt", null);
+        UUID id = unconsented.getId();
+        LocalDate from = LocalDate.now();
+        LocalDate to = from.plusDays(6);
+        when(userRepository.findById(id)).thenReturn(Optional.of(unconsented));
+        when(readRepository.findByUserIdAndAthleteId(id, id)).thenReturn(Optional.empty());
+        when(trainingRepository.findByAthleteIdAndTrainingDateBetweenOrderByTrainingDateAscStartTimeAsc(id, from, to))
+            .thenReturn(List.of());
+        when(reservationRepository.findConfirmedByUserIdInRange(id, from, to)).thenReturn(List.of());
+
+        service.grantConsent(id);
+
+        assertTrue(unconsented.hasTrainingConsent());
+        assertDoesNotThrow(() -> service.getMyRange(id, from, to));
+    }
+
+    @Test
+    void shouldKeepOriginalTimestampWhenConsentGrantedTwice() {
+        // Re-accepting must not rewrite the proof-of-consent timestamp
+        service.grantConsent(athleteId);
+        Instant first = athlete.getTrainingConsentAt();
+
+        service.grantConsent(athleteId);
+
+        assertEquals(first, athlete.getTrainingConsentAt());
+    }
+
+    @Test
+    void shouldServeUnreadCounterWithoutConsent() {
+        // The badge is polled from every page and carries no calendar content — gating it
+        // would spam the athlete with errors while the consent screen is still pending.
+        User unconsented = buildAthlete(UUID.randomUUID());
+        setField(unconsented, "trainingConsentAt", null);
+        UUID id = unconsented.getId();
+        when(userRepository.findById(id)).thenReturn(Optional.of(unconsented));
+        when(readRepository.findByUserIdAndAthleteId(id, id)).thenReturn(Optional.empty());
+        when(trainingRepository.countCoachChangesSince(eq(id), any())).thenReturn(2L);
+        when(commentRepository.countCoachCommentsSince(eq(id), any())).thenReturn(0L);
+        when(deletionRepository.countAdminDeletionsSince(eq(id), any())).thenReturn(1L);
+
+        TrainingNotificationsDto dto = service.getAthleteNotifications(id);
+
+        assertEquals(3, dto.newCount());
+    }
+
+    @Test
+    void shouldDropConsentWhenAthleteStatusRemoved() {
+        // Coming back to the calendar after a break must be a fresh decision
+        assertTrue(athlete.hasTrainingConsent());
+
+        athlete.setAthlete(false);
+
+        assertFalse(athlete.hasTrainingConsent());
+    }
+
     // ========== helpers ==========
 
     private static User buildAthlete(UUID id) {
         User user = new User("athlete@example.com", "Anna", "Wspinaczka", "+48123456789", "anna");
         user.setAthlete(true);
+        // Athlete-side endpoints sit behind the GDPR art. 9 consent gate (V76)
+        user.grantTrainingConsent();
         setField(user, "id", id);
         return user;
     }

@@ -100,6 +100,13 @@ public class User {
     @Column(name = "is_athlete", nullable = false)
     private boolean athlete = false;
 
+    // Explicit consent to processing training-calendar data (GDPR art. 9(2)(a)): weigh-ins,
+    // weight goals, RPE and post-session feedback. NULL = not given; the timestamp itself is
+    // the required proof of consent. Cleared when the athlete flag is switched off.
+    @Column(name = "training_consent_at")
+    @Nullable
+    private Instant trainingConsentAt;
+
     protected User() {}
 
     public User(String email, String firstName, String lastName, String phone, String nickname) {
@@ -226,6 +233,27 @@ public class User {
 
     public void setAthlete(boolean athlete) {
         this.athlete = athlete;
+        // Losing the athlete status also drops the consent: coming back to the calendar months
+        // later must be a fresh, conscious decision, not one inherited from a past arrangement.
+        if (!athlete) {
+            this.trainingConsentAt = null;
+        }
+    }
+
+    @Nullable
+    public Instant getTrainingConsentAt() {
+        return trainingConsentAt;
+    }
+
+    public boolean hasTrainingConsent() {
+        return trainingConsentAt != null;
+    }
+
+    /** Idempotent: re-confirming keeps the original proof-of-consent timestamp. */
+    public void grantTrainingConsent() {
+        if (trainingConsentAt == null) {
+            trainingConsentAt = Instant.now();
+        }
     }
 
     @Nullable

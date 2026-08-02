@@ -55,6 +55,8 @@ class TrainingCalendarIntegrationTest extends BaseIntegrationTest {
         athlete.setRole(UserRole.USER);
         athlete.setEmailVerified(true);
         athlete.setAthlete(true);
+        // Athlete-side endpoints sit behind the GDPR art. 9 consent gate (V76)
+        athlete.grantTrainingConsent();
         athlete = userRepository.save(athlete);
 
         coach = new User("coach@example.com", "Trener", "Główny", "+48111111111", "coach");
@@ -333,6 +335,8 @@ class TrainingCalendarIntegrationTest extends BaseIntegrationTest {
         otherAthlete.setRole(UserRole.USER);
         otherAthlete.setEmailVerified(true);
         otherAthlete.setAthlete(true);
+        // Athlete-side endpoints sit behind the GDPR art. 9 consent gate (V76)
+        otherAthlete.grantTrainingConsent();
         otherAthlete = userRepository.save(otherAthlete);
 
         LocalDate date = LocalDate.now().plusDays(1);

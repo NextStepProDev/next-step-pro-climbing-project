@@ -456,6 +456,10 @@ export const trainingCalendarApi = {
       body: JSON.stringify({ body }),
     }),
 
+  /** One-time explicit consent to training-data processing; everything else here 409s without it. */
+  acceptConsent: () =>
+    fetchApi<void>('/training-calendar/consent', { method: 'POST' }),
+
   getNotifications: () =>
     fetchApi<TrainingCalendarNotifications>('/training-calendar/notifications'),
 

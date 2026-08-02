@@ -319,5 +319,22 @@
     "emptyRange": "Brak pomiarów w tym zakresie. Spróbuj szerszego.",
     "emptyCoach": "Ta osoba nie zapisała jeszcze żadnego pomiaru w tym zakresie.",
     "dailyHiddenHint": "przy tak długim zakresie pojedyncze pomiary zlewałyby się — widać samą linię trendu"
+  },
+  "consent": {
+    "title": "Zanim wejdziesz do kalendarza",
+    "intro": "Kalendarz treningowy zbiera więcej niż reszta serwisu — także dane o Twoim ciele. Zanim zaczniemy, potrzebuję Twojej wyraźnej zgody.",
+    "itemsTitle": "Co jest zapisywane",
+    "items": [
+      "Plan treningów: tytuł, opis, termin oraz odhaczenie wykonania",
+      "Ocena zmęczenia RPE (1–10) i Twój opisowy feedback po treningu",
+      "Pomiary porannej wagi wraz z datami oraz wyliczany z nich trend",
+      "Cele treningowe i wagowe (waga startowa i docelowa) zakładane przez trenera",
+      "Komentarze w rozmowie z trenerem oraz materiały: linki i pliki"
+    ],
+    "coachAccess": "Wszystko powyżej widzi Twój trener — to jest sens wspólnego planu. Trenerowi pokazywany jest też sygnał, gdy waga spada szybciej niż 1% tygodniowo. Nikt poza Tobą i trenerem nie ma do tych danych dostępu.",
+    "readPolicy": "Przeczytaj politykę prywatności (sekcja o kalendarzu)",
+    "checkbox": "Zapoznałem/-am się z <1>polityką prywatności</1> i wyrażam zgodę na przetwarzanie moich danych treningowych, w tym pomiarów wagi i ocen RPE, w celu prowadzenia mojego planu treningowego.",
+    "accept": "Akceptuję i przechodzę do kalendarza",
+    "withdrawNote": "Zgodę możesz wycofać w każdej chwili, pisząc na mateusz.nawratek@outlook.com — usunę wtedy dane treningowe i wagowe. Bez zgody kalendarz pozostaje zamknięty, reszta konta i rezerwacje działają normalnie."
   }
 }

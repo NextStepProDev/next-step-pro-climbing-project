@@ -8,6 +8,7 @@ import { Calendar, CalendarPlus, Clock, MapPin, MessageSquare, Sparkles, Users, 
 import { reservationApi, calendarApi, trainingRequestApi, trainingCalendarApi } from '../api/client'
 import { useAuth } from '../context/AuthContext'
 import { athleteAdapter } from '../components/training/trainingCalendarAdapter'
+import { TrainingConsentGate } from '../components/training/TrainingConsentGate'
 import { getErrorMessage } from '../utils/errors'
 import { LoadingSpinner } from '../components/ui/LoadingSpinner'
 import { QueryError } from '../components/ui/QueryError'
@@ -25,13 +26,15 @@ const TrainingCalendarSection = lazy(() =>
 export function MyReservationsPage() {
   const { t } = useTranslation('reservations')
   const { t: tTraining } = useTranslation('training')
-  const { user } = useAuth()
+  const { user, refreshUser } = useAuth()
   const queryClient = useQueryClient()
   const [searchParams, setSearchParams] = useSearchParams()
   const [showArchive, setShowArchive] = useState(false)
 
   // Athlete-only second tab: the personal training calendar (TrainingPeaks-style)
   const isAthlete = !!user?.isAthlete
+  // GDPR art. 9 gate — one-time, and also for athletes who had the calendar before it existed
+  const needsTrainingConsent = isAthlete && !user?.trainingConsentGiven
   const activeTab = isAthlete && searchParams.get('tab') === 'calendar' ? 'calendar' : 'reservations'
 
   const switchTab = (tab: 'reservations' | 'calendar') => {
@@ -254,9 +257,15 @@ export function MyReservationsPage() {
       )}
 
       {activeTab === 'calendar' ? (
-        <Suspense fallback={<div className="py-16 flex justify-center"><LoadingSpinner /></div>}>
-          <TrainingCalendarSection api={athleteAdapter} scopeKey="me" />
-        </Suspense>
+        // Consent first: the calendar must not even fetch before it (the API 409s), and
+        // athletes who predate the consent screen pass through it once, here.
+        needsTrainingConsent ? (
+          <TrainingConsentGate onAccepted={refreshUser} />
+        ) : (
+          <Suspense fallback={<div className="py-16 flex justify-center"><LoadingSpinner /></div>}>
+            <TrainingCalendarSection api={athleteAdapter} scopeKey="me" />
+          </Suspense>
+        )
       ) : (
       <>
       {/* Invitations — held seats awaiting booking */}

@@ -21,6 +21,9 @@ export interface User {
   isAdmin: boolean
   // Coach-designated athlete: unlocks the personal training calendar tab
   isAthlete: boolean
+  // Explicit consent (GDPR art. 9) to training-calendar data processing. False for every
+  // athlete until they pass the one-time consent screen — the calendar API 409s without it.
+  trainingConsentGiven: boolean
   emailNotificationsEnabled: boolean
   preferredLanguage: string
   newsletterSubscribed: boolean
