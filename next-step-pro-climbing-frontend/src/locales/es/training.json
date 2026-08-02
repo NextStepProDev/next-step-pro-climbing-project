@@ -307,5 +307,22 @@
     "emptyRange": "No hay mediciones en este rango. Prueba con uno más amplio.",
     "emptyCoach": "Esta persona aún no ha registrado ninguna medición en este rango.",
     "dailyHiddenHint": "en un rango tan largo las mediciones individuales se solaparían — solo se muestra la línea de tendencia"
+  },
+  "consent": {
+    "title": "Antes de entrar en el calendario",
+    "intro": "El calendario de entrenamiento recoge más datos que el resto del sitio, incluidos datos sobre tu cuerpo. Antes de empezar, necesito tu consentimiento explícito.",
+    "itemsTitle": "Qué se guarda",
+    "items": [
+      "Plan de entrenamiento: título, descripción, fecha y la marca de realizado",
+      "Valoración del esfuerzo percibido RPE (1–10) y tu comentario posterior a la sesión",
+      "Pesajes matutinos con sus fechas y la tendencia calculada a partir de ellos",
+      "Objetivos de entrenamiento y de peso (peso inicial y objetivo) fijados por el entrenador",
+      "Mensajes en la conversación con el entrenador y materiales: enlaces y archivos"
+    ],
+    "coachAccess": "Tu entrenador ve todo lo anterior: ese es el sentido de un plan compartido. Al entrenador también se le muestra un aviso cuando el peso baja más de un 1% por semana. Nadie más que tú y tu entrenador tiene acceso a estos datos.",
+    "readPolicy": "Lee la política de privacidad (sección del calendario)",
+    "checkbox": "He leído la <1>política de privacidad</1> y consiento el tratamiento de mis datos de entrenamiento, incluidos los pesajes y las valoraciones RPE, con el fin de gestionar mi plan de entrenamiento.",
+    "accept": "Acepto y abro el calendario",
+    "withdrawNote": "Puedes retirar este consentimiento en cualquier momento escribiendo a mateusz.nawratek@outlook.com; entonces eliminaré tus datos de entrenamiento y de peso. Sin consentimiento el calendario permanece cerrado; el resto de tu cuenta y tus reservas funcionan con normalidad."
   }
 }

@@ -207,6 +207,16 @@ public class TrainingCalendarController {
         return ResponseEntity.ok(trainingCalendarService.addMyComment(userId, trainingId, request.body()));
     }
 
+    @Operation(summary = "Grant data-processing consent",
+        description = "Records the athlete's explicit consent (GDPR art. 9(2)(a)) to processing training-calendar data "
+            + "— weigh-ins, weight goals, RPE and feedback. Every other endpoint here returns 409 until it is given. Idempotent.")
+    @PostMapping("/consent")
+    public ResponseEntity<Void> grantConsent(
+            @Parameter(hidden = true) @CurrentUserId UUID userId) {
+        trainingCalendarService.grantConsent(userId);
+        return ResponseEntity.noContent().build();
+    }
+
     @Operation(summary = "Unread counter", description = "New coach activity (trainings/edits/comments) since the athlete's last visit. Drives the navbar badge.")
     @GetMapping("/notifications")
     public ResponseEntity<TrainingNotificationsDto> getNotifications(

@@ -303,11 +303,16 @@ public class TrainingStatsService {
         return top;
     }
 
+    // Stats are built from completions, RPE and weigh-ins, so they sit behind the same
+    // consent gate as the calendar itself (TrainingCalendarService.requireAthlete).
     private void requireAthlete(UUID userId) {
         User user = userRepository.findById(userId)
             .orElseThrow(() -> new IllegalArgumentException("User not found"));
         if (!user.isAthlete()) {
             throw new IllegalStateException(msg.get("training.calendar.not.athlete"));
+        }
+        if (!user.hasTrainingConsent()) {
+            throw new IllegalStateException(msg.get("training.calendar.consent.required"));
         }
     }
 

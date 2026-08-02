@@ -61,6 +61,8 @@ class AthleteGoalServiceTest {
         athleteId = UUID.randomUUID();
         athlete = new User("athlete@example.com", "Anna", "Wspinaczka", "+48123456789", "anna");
         athlete.setAthlete(true);
+        // Athlete-side endpoints sit behind the GDPR art. 9 consent gate (V76)
+        athlete.grantTrainingConsent();
         setField(athlete, "id", athleteId);
 
         lenient().when(msg.get(anyString())).thenAnswer(inv -> inv.getArgument(0));

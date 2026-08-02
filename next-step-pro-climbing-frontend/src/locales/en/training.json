@@ -299,5 +299,22 @@
     "emptyRange": "No readings in this range. Try a wider one.",
     "emptyCoach": "This person has not recorded any reading in this range yet.",
     "dailyHiddenHint": "over a range this long the individual readings would smear together — only the trend line is shown"
+  },
+  "consent": {
+    "title": "Before you open the calendar",
+    "intro": "The training calendar collects more than the rest of the site — including data about your body. Before we start, I need your explicit consent.",
+    "itemsTitle": "What gets stored",
+    "items": [
+      "Training plan: title, description, date and the completion tick",
+      "Perceived exertion rating RPE (1–10) and your written post-session feedback",
+      "Morning weigh-ins with their dates, and the trend calculated from them",
+      "Training and weight goals (starting and target weight) set by your coach",
+      "Messages in the thread with your coach, plus materials: links and files"
+    ],
+    "coachAccess": "Your coach sees all of the above — that is the point of a shared plan. The coach is also shown a signal when weight drops faster than 1% per week. Nobody other than you and your coach has access to this data.",
+    "readPolicy": "Read the privacy policy (training calendar section)",
+    "checkbox": "I have read the <1>privacy policy</1> and I consent to the processing of my training data, including weigh-ins and RPE ratings, for the purpose of running my training plan.",
+    "accept": "I agree — open the calendar",
+    "withdrawNote": "You can withdraw this consent at any time by writing to mateusz.nawratek@outlook.com — I will then delete your training and weight data. Without consent the calendar stays closed; the rest of your account and your bookings work as usual."
   }
 }

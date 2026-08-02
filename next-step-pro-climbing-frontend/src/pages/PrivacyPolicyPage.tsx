@@ -1,17 +1,43 @@
+import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useLocation } from 'react-router-dom'
 import { useTheme } from '../context/ThemeContext'
 import logoWhite from '../assets/logo/logo-white.png'
 import logoBlack from '../assets/logo/logo-black.png'
 import { CONTACT } from '../constants/contact'
 
-const LAST_UPDATED_PL = '21 czerwca 2026'
-const LAST_UPDATED_EN = '21 June 2026'
+const LAST_UPDATED_PL = '2 sierpnia 2026'
+const LAST_UPDATED_EN = '2 August 2026'
 
 export function PrivacyPolicyPage() {
   const { i18n } = useTranslation()
   const { theme } = useTheme()
+  const { hash } = useLocation()
   const isPl = i18n.language.startsWith('pl')
   const logo = theme === 'dark' ? logoWhite : logoBlack
+
+  // The training-calendar consent screen links straight at #kalendarz-treningowy: someone
+  // about to tick a consent box must land on the paragraph describing what they consent to,
+  // not on the top of a long page. React Router does not scroll to hashes on its own.
+  //
+  // Deferred by two frames on purpose: on a fresh load the Navbar nudges the window to
+  // (0,1) and back to (0,0) across two rAFs (sticky-position workaround), which cancels a
+  // smooth scroll started earlier. Ours must be the last scroll of the mount.
+  useEffect(() => {
+    if (!hash) return
+    // Both language variants render the same ids, but only after this render commits
+    const id = hash.slice(1)
+    let inner = 0
+    const outer = requestAnimationFrame(() => {
+      inner = requestAnimationFrame(() => {
+        document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      })
+    })
+    return () => {
+      cancelAnimationFrame(outer)
+      cancelAnimationFrame(inner)
+    }
+  }, [hash, isPl])
 
   if (!isPl) return <PrivacyPolicyEn logo={logo} />
   return <PrivacyPolicyPl logo={logo} />
@@ -54,8 +80,10 @@ function PrivacyPolicyPl({ logo }: { logo: string }) {
           </p>
           <p className="text-surface-300 leading-relaxed mt-4">
             Ta Polityka ma charakter informacyjny. Korzystając z konta, potwierdzasz, że znasz zasady przetwarzania
-            Twoich danych. Dane konta przetwarzam na podstawie umowy (art. 6 ust. 1 lit. b RODO), a zgody na newsletter
-            są dobrowolne i możesz je w każdej chwili wycofać.
+            Twoich danych. Dane konta przetwarzam na podstawie umowy (art. 6 ust. 1 lit. b RODO), a zgody — na
+            newsletter oraz na dane kalendarza treningowego — są dobrowolne i możesz je w każdej chwili wycofać.
+            Jeśli trener wyznaczył Cię jako podopiecznego, zacznij od sekcji 4: opisuje ona dane, które zbiera
+            kalendarz treningowy, i zgodę, o którą proszę przed jego pierwszym otwarciem.
           </p>
           <p className="text-surface-500 text-sm mt-4">
             Ostatnia aktualizacja: {LAST_UPDATED_PL}
@@ -118,6 +146,24 @@ function PrivacyPolicyPl({ logo }: { logo: string }) {
             ]} />
           </SubSection>
 
+          <SubSection title="Kalendarz treningowy (tylko podopieczni)">
+            <p className="text-surface-400 text-sm leading-relaxed mb-3">
+              Jeśli trener wyznaczy Cię jako podopiecznego, dostajesz osobisty kalendarz treningowy. Zbiera on
+              dane, których reszta serwisu nie zbiera — dlatego przed pierwszym wejściem prosimy o osobną,
+              wyraźną zgodę. Szczegóły opisuje sekcja 4.
+            </p>
+            <DataList items={[
+              'Plan treningów — tytuł, opis, termin, oznaczenie wykonania lub jego cofnięcie',
+              'Ocena zmęczenia RPE (skala 1–10) po treningu oraz Twój opisowy feedback',
+              'Ocena RPE i notatka do odbytych rezerwacji z kalendarza zajęć',
+              'Pomiary porannej wagi wraz z datami (jeden pomiar na dzień) oraz wyliczany z nich trend',
+              'Cele treningowe i wagowe zakładane przez trenera — w tym waga startowa i docelowa oraz data osiągnięcia',
+              'Komentarze w rozmowie z trenerem przy każdym treningu',
+              'Materiały treningowe — linki oraz przesłane pliki (PDF, obrazy)',
+              'Rejestr usunięć zaplanowanych treningów (tytuł i termin usuniętego wpisu) — służy wyłącznie do powiadomienia drugiej strony',
+            ]} />
+          </SubSection>
+
           <p className="text-surface-500 text-sm mt-4">
             Nie korzystamy z plików cookies śledzących, Google Analytics, Facebook Pixel ani żadnych innych narzędzi analitycznych.
           </p>
@@ -142,20 +188,82 @@ function PrivacyPolicyPl({ logo }: { logo: string }) {
               purpose="Weryfikacja konta e-mail i odzyskiwanie hasła"
               basis="Art. 6 ust. 1 lit. b RODO — wykonanie umowy"
             />
+            <LegalBasis
+              purpose="Prowadzenie planu treningowego podopiecznego (treningi, komentarze, materiały)"
+              basis="Art. 6 ust. 1 lit. b RODO — wykonanie umowy o prowadzenie treningu"
+            />
+            <LegalBasis
+              purpose="Pomiary wagi, trend wagowy, cele wagowe oraz oceny RPE i feedback po treningu"
+              basis="Art. 9 ust. 2 lit. a RODO — wyraźna zgoda na przetwarzanie danych dotyczących zdrowia. Zgodę wyrażasz jednorazowo przed pierwszym wejściem do kalendarza i możesz ją wycofać w każdej chwili (patrz sekcja 4)"
+            />
           </div>
           <p className="text-surface-400 text-sm mt-6 leading-relaxed">
             Podanie danych jest dobrowolne, ale niezbędne do założenia konta i korzystania z systemu rezerwacji —
             bez nich nie jesteśmy w stanie wyświadczyć usługi. Zgoda na newsletter jest w pełni dobrowolna i nie
-            wpływa na możliwość korzystania z serwisu.
+            wpływa na możliwość korzystania z serwisu. Zgoda na dane kalendarza treningowego jest równie
+            dobrowolna — jej brak zamyka wyłącznie kalendarz, reszta konta i rezerwacje działają normalnie.
           </p>
           <p className="text-surface-400 text-sm mt-3 leading-relaxed">
             Twoje dane <span className="text-surface-200 font-medium">nie są wykorzystywane do zautomatyzowanego
-            podejmowania decyzji ani profilowania</span> w rozumieniu art. 22 RODO.
+            podejmowania decyzji ani profilowania</span> w rozumieniu art. 22 RODO. W kalendarzu treningowym
+            działają dwa automaty, ale żaden nie podejmuje decyzji wywołującej wobec Ciebie skutki prawne ani
+            podobnie istotne: cel wagowy zamyka się sam, gdy trend osiągnie zadaną wartość, a trenerowi
+            wyświetlany jest sygnał, gdy Twoja waga spada szybciej niż 1% tygodniowo.
           </p>
         </Section>
 
-        {/* 4. How long we keep the data */}
-        <Section title="4. Jak długo przechowujemy dane">
+        {/* 4. Training calendar — the consent screen links straight here */}
+        <Section id="kalendarz-treningowy" title="4. Kalendarz treningowy podopiecznego">
+          <p className="text-surface-300 leading-relaxed mb-4">
+            Kalendarz treningowy to jedyna część serwisu, w której zbieram dane o Twoim ciele: pomiary wagi,
+            trend wagowy, ocenę zmęczenia po treningu i Twój opis samopoczucia. W tym kontekście traktuję je
+            jako <span className="text-surface-200 font-medium">dane dotyczące zdrowia</span> — czyli kategorię,
+            którą RODO chroni najmocniej. Dlatego nie wystarcza tu sama umowa: proszę Cię o odrębną, wyraźną zgodę,
+            zanim po raz pierwszy otworzysz kalendarz.
+          </p>
+
+          <SubSection title="Kto ma dostęp">
+            <p className="text-surface-400 text-sm leading-relaxed">
+              Do danych Twojego kalendarza mam dostęp wyłącznie ja jako trener oraz Ty. Plan treningowy jest
+              wspólny — trener widzi Twoje wykonania, oceny RPE, feedback, pomiary wagi i wykres trendu, bo bez
+              tego nie da się prowadzić treningu. Dodatkowo trenerowi (i tylko jemu) wyświetlany jest sygnał,
+              gdy waga spada szybciej niż 1% tygodniowo. Dane kalendarza nie są nikomu udostępniane, nie są
+              publikowane ani wykorzystywane do marketingu. Inni użytkownicy serwisu nie widzą ich w żadnym zakresie.
+            </p>
+          </SubSection>
+
+          <SubSection title="Zgoda i jej wycofanie">
+            <p className="text-surface-400 text-sm leading-relaxed">
+              Zgodę wyrażasz świadomym kliknięciem przed pierwszym wejściem do kalendarza — nie wynika ona z
+              samego korzystania z serwisu ani z akceptacji regulaminu. Zapisuję datę i godzinę jej udzielenia
+              jako wymagany przez RODO dowód. Zgodę możesz wycofać w każdej chwili, pisząc na adres podany w
+              sekcji 1 lub 10 — wtedy usuwam Twoje dane treningowe i wagowe, a kalendarz przestaje być dostępny.
+              Wycofanie nie wpływa na zgodność z prawem przetwarzania sprzed wycofania i nie ma żadnego wpływu
+              na Twoje konto ani rezerwacje. Jeśli trener odbierze Ci status podopiecznego, zgoda wygasa
+              automatycznie i ponowne włączenie kalendarza wymaga jej udzielenia od nowa.
+            </p>
+          </SubSection>
+
+          <SubSection title="Wagę wpisujesz tylko Ty">
+            <p className="text-surface-400 text-sm leading-relaxed">
+              Nie istnieje możliwość, by trener wpisał lub zmienił Twoją wagę — to nie jest przeoczenie, tylko
+              świadoma decyzja. Trener ma wyłącznie podgląd. Każdy pomiar możesz poprawić lub usunąć samodzielnie,
+              w dowolnym momencie. Usunięcie pomiaru nigdy nie odbiera już osiągniętego celu.
+            </p>
+          </SubSection>
+
+          <SubSection title="Podopieczni niepełnoletni">
+            <p className="text-surface-400 text-sm leading-relaxed">
+              Dane dotyczące zdrowia osoby, która nie ukończyła 16 lat, przetwarzam wyłącznie za zgodą rodzica
+              lub opiekuna prawnego. Jeśli podopieczny jest niepełnoletni, zgodę odbieram od opiekuna przed
+              włączeniem kalendarza — kontaktowo, poza serwisem. Opiekun może ją wycofać na tych samych zasadach,
+              co osoba pełnoletnia, pisząc na adres kontaktowy.
+            </p>
+          </SubSection>
+        </Section>
+
+        {/* 5. How long we keep the data */}
+        <Section title="5. Jak długo przechowujemy dane">
           <div className="space-y-3 text-surface-300 leading-relaxed">
             <p>
               <span className="text-surface-200 font-medium">Dane konta</span> — przechowywane przez cały czas istnienia konta.
@@ -182,11 +290,18 @@ function PrivacyPolicyPl({ logo }: { logo: string }) {
               <span className="text-surface-200 font-medium">Zdjęcie profilowe (awatar)</span> — przechowywane do momentu jego
               usunięcia przez Ciebie lub usunięcia konta; trwale usuwane razem z kontem.
             </p>
+            <p>
+              <span className="text-surface-200 font-medium">Dane kalendarza treningowego</span> — przechowywane przez czas
+              trwania współpracy trenerskiej. Po jej zakończeniu lub po wycofaniu zgody usuwam dane treningowe
+              i wagowe najpóźniej w ciągu 30 dni. Poszczególne wpisy — treningi, pomiary wagi, materiały —
+              możesz usuwać samodzielnie w każdej chwili. Rejestr usunięć zaplanowanych treningów kasuje się
+              sam po 60 dniach. Przesłane pliki znikają z serwera razem z wpisem, do którego były dołączone.
+            </p>
           </div>
         </Section>
 
-        {/* 5. Who we share the data with */}
-        <Section title="5. Komu powierzamy dane">
+        {/* 6. Who we share the data with */}
+        <Section title="6. Komu powierzamy dane">
           <p className="text-surface-300 leading-relaxed font-medium text-lg mb-4">
             Nie sprzedajemy ani nie udostępniamy Twoich danych w celach komercyjnych.
           </p>
@@ -215,6 +330,8 @@ function PrivacyPolicyPl({ logo }: { logo: string }) {
             <p className="text-surface-500 text-sm leading-relaxed">
               Serwer i baza danych pozostają w EOG. W zakresie usług Google (logowanie przez Google oraz kopie
               zapasowe na Google Drive) — dostawcy z siedzibą w USA — niektóre dane mogą być przetwarzane poza EOG.
+              Kopia zapasowa obejmuje całą bazę, a więc również dane kalendarza treningowego; jest zaszyfrowana
+              przed wysłaniem i trafia na prywatny, niepubliczny dysk.
               Transfer odbywa się na podstawie programu EU‑US Data Privacy Framework (Google jest certyfikowany)
               oraz standardowych klauzul umownych zatwierdzonych przez Komisję Europejską (SCC), które zapewniają
               odpowiedni poziom ochrony. Kopię stosowanych zabezpieczeń możesz uzyskać, kontaktując się ze mną.
@@ -222,8 +339,8 @@ function PrivacyPolicyPl({ logo }: { logo: string }) {
           </div>
         </Section>
 
-        {/* 6. Twoje prawa */}
-        <Section title="6. Twoje prawa">
+        {/* 7. Twoje prawa */}
+        <Section title="7. Twoje prawa">
           <p className="text-surface-400 leading-relaxed mb-4">
             Na podstawie RODO przysługują Ci następujące prawa:
           </p>
@@ -235,6 +352,7 @@ function PrivacyPolicyPl({ logo }: { logo: string }) {
             <Right title="Prawo do przenoszalności" description="Możesz zażądać przekazania Twoich danych w ustrukturyzowanym, powszechnie używanym formacie." />
             <Right title="Prawo sprzeciwu" description="Możesz wnieść sprzeciw wobec przetwarzania danych opartego na uzasadnionym interesie." />
             <Right title="Cofnięcie zgody na newsletter" description="Możesz zrezygnować z newslettera w każdej chwili — przez link wypisania w każdym mailu lub w ustawieniach konta. Cofnięcie zgody nie wpływa na zgodność z prawem przetwarzania sprzed cofnięcia." />
+            <Right title="Cofnięcie zgody na dane kalendarza treningowego" description="Możesz ją wycofać w każdej chwili, pisząc na adres kontaktowy — usuwam wtedy dane treningowe i wagowe, a kalendarz przestaje być dostępny. Twoje konto i rezerwacje pozostają nienaruszone." />
           </div>
           <p className="text-surface-400 text-sm mt-6 leading-relaxed">
             Przysługuje Ci również prawo wniesienia skargi do organu nadzorczego — Prezesa Urzędu Ochrony Danych Osobowych
@@ -242,8 +360,8 @@ function PrivacyPolicyPl({ logo }: { logo: string }) {
           </p>
         </Section>
 
-        {/* 7. Data security */}
-        <Section title="7. Bezpieczeństwo danych">
+        {/* 8. Data security */}
+        <Section title="8. Bezpieczeństwo danych">
           <p className="text-surface-400 leading-relaxed mb-4">
             Stosuję wielowarstwowe zabezpieczenia techniczne, aby chronić Twoje dane:
           </p>
@@ -258,8 +376,8 @@ function PrivacyPolicyPl({ logo }: { logo: string }) {
           ]} />
         </Section>
 
-        {/* 8. Zmiany polityki */}
-        <Section title="8. Zmiany polityki prywatności">
+        {/* 9. Zmiany polityki */}
+        <Section title="9. Zmiany polityki prywatności">
           <p className="text-surface-400 leading-relaxed">
             W przypadku istotnych zmian w polityce prywatności poinformuję Cię o tym z wyprzedzeniem —
             przez e-mail lub komunikat w serwisie. Data ostatniej aktualizacji jest zawsze widoczna na górze tej strony.
@@ -267,8 +385,8 @@ function PrivacyPolicyPl({ logo }: { logo: string }) {
           </p>
         </Section>
 
-        {/* 9. Kontakt */}
-        <Section title="9. Kontakt w sprawach danych osobowych">
+        {/* 10. Kontakt */}
+        <Section title="10. Kontakt w sprawach danych osobowych">
           <p className="text-surface-400 leading-relaxed">
             Jeśli masz pytania dotyczące przetwarzania Twoich danych osobowych, chcesz skorzystać z przysługujących
             Ci praw lub masz jakiekolwiek wątpliwości — napisz do mnie. Potraktuję każde zgłoszenie poważnie
@@ -321,7 +439,9 @@ function PrivacyPolicyEn({ logo }: { logo: string }) {
           <p className="text-surface-300 leading-relaxed mt-4">
             This Policy is informational in nature. By using your account, you confirm that you are aware of how
             your data is processed. I process account data on the basis of a contract (Art. 6(1)(b) GDPR), while
-            consents for the newsletter are voluntary and can be withdrawn at any time.
+            consents — for the newsletter and for training-calendar data — are voluntary and can be withdrawn at
+            any time. If your coach has designated you as an athlete, start with section 4: it describes the data
+            the training calendar collects and the consent I ask for before you first open it.
           </p>
           <p className="text-surface-500 text-sm mt-4">Last updated: {LAST_UPDATED_EN}</p>
         </div>
@@ -376,6 +496,23 @@ function PrivacyPolicyEn({ logo }: { logo: string }) {
               'Profile picture (avatar) — optional; if you add one, it is cropped to a circle in your browser and stored on the server within the EEA. You can change or remove it at any time in account settings',
             ]} />
           </SubSection>
+          <SubSection title="Training calendar (athletes only)">
+            <p className="text-surface-400 text-sm leading-relaxed mb-3">
+              If your coach designates you as an athlete, you get a personal training calendar. It collects data
+              the rest of the site does not — which is why I ask for separate, explicit consent before you first
+              open it. Section 4 covers the details.
+            </p>
+            <DataList items={[
+              'Training plan — title, description, date, and marking a session done or undone',
+              'Perceived exertion rating RPE (1–10) after a session and your written feedback',
+              'RPE rating and note for attended bookings from the class calendar',
+              'Morning weigh-ins with their dates (one reading per day) and the trend calculated from them',
+              'Training and weight goals set by your coach — including starting weight, target weight and the date achieved',
+              'Messages in the thread with your coach on each training session',
+              'Training materials — links and uploaded files (PDF, images)',
+              'A register of deleted upcoming sessions (title and date of the removed entry) — used solely to notify the other side',
+            ]} />
+          </SubSection>
           <p className="text-surface-500 text-sm mt-4">
             We do not use tracking cookies, Google Analytics, Facebook Pixel, or any other analytics tools.
           </p>
@@ -400,20 +537,82 @@ function PrivacyPolicyEn({ logo }: { logo: string }) {
               purpose="E-mail verification and password recovery"
               basis="Art. 6(1)(b) GDPR — performance of a contract"
             />
+            <LegalBasis
+              purpose="Running an athlete's training plan (sessions, comments, materials)"
+              basis="Art. 6(1)(b) GDPR — performance of the coaching agreement"
+            />
+            <LegalBasis
+              purpose="Weigh-ins, weight trend, weight goals, RPE ratings and post-session feedback"
+              basis="Art. 9(2)(a) GDPR — explicit consent to processing data concerning health. You give it once, before first opening the calendar, and may withdraw it at any time (see section 4)"
+            />
           </div>
           <p className="text-surface-400 text-sm mt-6 leading-relaxed">
             Providing your data is voluntary but necessary to create an account and use the booking system —
             without it we cannot provide the service. Newsletter consent is entirely voluntary and does not
-            affect your ability to use the service.
+            affect your ability to use the service. Consent to training-calendar data is equally voluntary —
+            withholding it closes the calendar only; the rest of your account and your bookings work as usual.
           </p>
           <p className="text-surface-400 text-sm mt-3 leading-relaxed">
             Your data is <span className="text-surface-200 font-medium">not used for automated
-            decision-making or profiling</span> within the meaning of Art. 22 GDPR.
+            decision-making or profiling</span> within the meaning of Art. 22 GDPR. Two automatic mechanisms do
+            run in the training calendar, but neither makes a decision producing legal or similarly significant
+            effects for you: a weight goal closes itself once the trend reaches the target, and the coach is
+            shown a signal when your weight drops faster than 1% per week.
           </p>
         </Section>
 
-        {/* 4 */}
-        <Section title="4. How Long We Store Your Data">
+        {/* 4 — the consent screen links straight here */}
+        <Section id="kalendarz-treningowy" title="4. The Athlete's Training Calendar">
+          <p className="text-surface-300 leading-relaxed mb-4">
+            The training calendar is the only part of the service where I collect data about your body: weigh-ins,
+            weight trend, perceived exertion after a session and your description of how you felt. In this context
+            I treat it as <span className="text-surface-200 font-medium">data concerning health</span> — the
+            category GDPR protects most strictly. A contract is therefore not enough here: I ask you for separate,
+            explicit consent before you open the calendar for the first time.
+          </p>
+
+          <SubSection title="Who has access">
+            <p className="text-surface-400 text-sm leading-relaxed">
+              Only you and I, as your coach, have access to your calendar data. The training plan is shared — the
+              coach sees your completed sessions, RPE ratings, feedback, weigh-ins and trend chart, because
+              coaching is impossible without them. The coach (and only the coach) is additionally shown a signal
+              when weight drops faster than 1% per week. Calendar data is never shared with anyone, published, or
+              used for marketing. Other users of the service cannot see any of it.
+            </p>
+          </SubSection>
+
+          <SubSection title="Consent and its withdrawal">
+            <p className="text-surface-400 text-sm leading-relaxed">
+              You give consent by a deliberate click before first opening the calendar — it never follows from
+              merely using the service or accepting the terms. I store the date and time it was given as the proof
+              GDPR requires. You may withdraw it at any time by writing to the address in section 1 or 10 — I then
+              delete your training and weight data and the calendar becomes unavailable. Withdrawal does not affect
+              the lawfulness of processing prior to it and has no effect on your account or bookings. If the coach
+              removes your athlete status, the consent expires automatically, and switching the calendar back on
+              requires giving it again.
+            </p>
+          </SubSection>
+
+          <SubSection title="Only you record your weight">
+            <p className="text-surface-400 text-sm leading-relaxed">
+              There is no way for the coach to enter or change your weight — that is a deliberate decision, not an
+              oversight. The coach has read access only. You can correct or delete any reading yourself, at any
+              time. Deleting a reading never takes away a goal you have already achieved.
+            </p>
+          </SubSection>
+
+          <SubSection title="Athletes under 16">
+            <p className="text-surface-400 text-sm leading-relaxed">
+              I process health data of a person under 16 only with the consent of a parent or legal guardian. If
+              the athlete is a minor, I obtain that consent from the guardian before enabling the calendar —
+              directly, outside the service. The guardian may withdraw it on the same terms as an adult, by
+              writing to the contact address.
+            </p>
+          </SubSection>
+        </Section>
+
+        {/* 5 */}
+        <Section title="5. How Long We Store Your Data">
           <div className="space-y-3 text-surface-300 leading-relaxed">
             <p>
               <span className="text-surface-200 font-medium">Account data</span> — stored for the entire duration of the account.
@@ -440,11 +639,18 @@ function PrivacyPolicyEn({ logo }: { logo: string }) {
               <span className="text-surface-200 font-medium">Profile picture (avatar)</span> — stored until you remove it or
               delete your account; permanently deleted together with the account.
             </p>
+            <p>
+              <span className="text-surface-200 font-medium">Training calendar data</span> — stored for the duration of the
+              coaching arrangement. Once it ends, or once consent is withdrawn, I delete the training and weight
+              data within 30 days at the latest. Individual entries — sessions, weigh-ins, materials — can be
+              deleted by you at any time. The register of deleted upcoming sessions clears itself after 60 days.
+              Uploaded files are removed from the server together with the entry they were attached to.
+            </p>
           </div>
         </Section>
 
-        {/* 5 */}
-        <Section title="5. Who We Entrust Your Data To">
+        {/* 6 */}
+        <Section title="6. Who We Entrust Your Data To">
           <p className="text-surface-300 leading-relaxed font-medium text-lg mb-4">
             We do not sell or share your data for commercial purposes.
           </p>
@@ -472,7 +678,9 @@ function PrivacyPolicyEn({ logo }: { logo: string }) {
             <p className="text-surface-200 font-medium text-sm mb-1">Transfers outside the EEA</p>
             <p className="text-surface-500 text-sm leading-relaxed">
               The server and database remain within the EEA. For Google services (Google sign-in and backups on
-              Google Drive) — a provider based in the USA — some data may be processed outside the EEA. Such
+              Google Drive) — a provider based in the USA — some data may be processed outside the EEA. The backup
+              covers the whole database, and therefore training-calendar data as well; it is encrypted before
+              upload and kept on a private, non-public drive. Such
               transfers rely on the EU‑US Data Privacy Framework (Google is certified) and the Standard
               Contractual Clauses approved by the European Commission (SCC), which ensure an adequate level of
               protection. You can obtain a copy of the safeguards in place by contacting me.
@@ -480,8 +688,8 @@ function PrivacyPolicyEn({ logo }: { logo: string }) {
           </div>
         </Section>
 
-        {/* 6 */}
-        <Section title="6. Your Rights">
+        {/* 7 */}
+        <Section title="7. Your Rights">
           <p className="text-surface-400 leading-relaxed mb-4">Under GDPR, you have the following rights:</p>
           <div className="space-y-3">
             <Right title="Right of access" description="You may ask at any time what data we hold about you." />
@@ -491,14 +699,15 @@ function PrivacyPolicyEn({ logo }: { logo: string }) {
             <Right title="Right to data portability" description="You may request that your data be provided in a structured, commonly used format." />
             <Right title="Right to object" description="You may object to processing based on legitimate interest." />
             <Right title="Withdrawal of newsletter consent" description="You may unsubscribe at any time — via the unsubscribe link in any email or in account settings. Withdrawal does not affect the lawfulness of processing prior to withdrawal." />
+            <Right title="Withdrawal of training-calendar consent" description="You may withdraw it at any time by writing to the contact address — I then delete your training and weight data and the calendar becomes unavailable. Your account and bookings remain untouched." />
           </div>
           <p className="text-surface-400 text-sm mt-6 leading-relaxed">
             You also have the right to lodge a complaint with a supervisory authority. In Poland: Prezes Urzędu Ochrony Danych Osobowych (PUODO), ul. Stawki 2, 00-193 Warsaw. In your country of residence, you may contact your local data protection authority.
           </p>
         </Section>
 
-        {/* 7 */}
-        <Section title="7. Data Security">
+        {/* 8 */}
+        <Section title="8. Data Security">
           <p className="text-surface-400 leading-relaxed mb-4">
             I apply multi-layered technical safeguards to protect your data:
           </p>
@@ -513,8 +722,8 @@ function PrivacyPolicyEn({ logo }: { logo: string }) {
           ]} />
         </Section>
 
-        {/* 8 */}
-        <Section title="8. Changes to This Privacy Policy">
+        {/* 9 */}
+        <Section title="9. Changes to This Privacy Policy">
           <p className="text-surface-400 leading-relaxed">
             In the event of significant changes to this privacy policy, I will notify you in advance —
             by e-mail or via a notice on the site. The date of the last update is always visible at the
@@ -522,8 +731,8 @@ function PrivacyPolicyEn({ logo }: { logo: string }) {
           </p>
         </Section>
 
-        {/* 9 */}
-        <Section title="9. Contact Regarding Personal Data">
+        {/* 10 */}
+        <Section title="10. Contact Regarding Personal Data">
           <p className="text-surface-400 leading-relaxed">
             If you have any questions about how your personal data is processed, wish to exercise your rights,
             or have any concerns — please write to me. I will treat every request seriously and respond as
@@ -544,9 +753,10 @@ function PrivacyPolicyEn({ logo }: { logo: string }) {
 
 // ==================== Sub-components ====================
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({ id, title, children }: { id?: string; title: string; children: React.ReactNode }) {
   return (
-    <div className="bg-surface-900 border border-surface-800 rounded-2xl p-6 sm:p-8">
+    // scroll-mt keeps the heading clear of the fixed navbar when linked to by #hash
+    <div id={id} className="scroll-mt-24 bg-surface-900 border border-surface-800 rounded-2xl p-6 sm:p-8">
       <h2 className="text-xl font-semibold text-surface-100 mb-5">{title}</h2>
       {children}
     </div>

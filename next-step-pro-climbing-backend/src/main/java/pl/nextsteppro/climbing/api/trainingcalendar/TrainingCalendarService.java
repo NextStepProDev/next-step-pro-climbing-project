@@ -206,7 +206,7 @@ public class TrainingCalendarService {
 
     @Transactional(readOnly = true)
     public TrainingNotificationsDto getAthleteNotifications(UUID userId) {
-        requireAthlete(userId);
+        requireAthleteIgnoringConsent(userId);
         Instant seen = seenAt(userId, userId);
         long count = trainingRepository.countCoachChangesSince(userId, seen)
             + commentRepository.countCoachCommentsSince(userId, seen)
@@ -215,7 +215,7 @@ public class TrainingCalendarService {
     }
 
     public void markAthleteSeen(UUID userId) {
-        requireAthlete(userId);
+        requireAthleteIgnoringConsent(userId);
         upsertSeen(userId, userId);
     }
 
@@ -507,14 +507,38 @@ public class TrainingCalendarService {
         return sanitized;
     }
 
-    // Package-private: AthleteGoalService reuses the exact same athlete-flag guards
+    /**
+     * The athlete-side gate: coach-set flag AND the athlete's own explicit consent to
+     * training-calendar data processing (GDPR art. 9(2)(a) — see V76). Consent is checked here
+     * rather than per endpoint so that anything added later is gated by default; the two
+     * notification methods deliberately opt out via {@link #requireAthleteIgnoringConsent}.
+     * Package-private: AthleteGoalService/AthleteWeightService reuse the exact same guards.
+     */
     User requireAthlete(UUID userId) {
+        User user = requireAthleteIgnoringConsent(userId);
+        if (!user.hasTrainingConsent()) {
+            throw new IllegalStateException(msg.get("training.calendar.consent.required"));
+        }
+        return user;
+    }
+
+    /**
+     * Flag only, no consent check. For the unread-badge endpoints: they return a bare counter
+     * (no calendar content), and they are polled from every page — gating them would spam the
+     * athlete's browser with 409s while the consent screen is still on their table.
+     */
+    User requireAthleteIgnoringConsent(UUID userId) {
         User user = userRepository.findById(userId)
             .orElseThrow(() -> new IllegalArgumentException("User not found"));
         if (!user.isAthlete()) {
             throw new IllegalStateException(msg.get("training.calendar.not.athlete"));
         }
         return user;
+    }
+
+    /** Records the athlete's explicit consent (idempotent — re-accepting keeps the first timestamp). */
+    public void grantConsent(UUID userId) {
+        requireAthleteIgnoringConsent(userId).grantTrainingConsent();
     }
 
     User requireFlaggedAthlete(UUID athleteId) {
