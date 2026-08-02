@@ -279,6 +279,11 @@ function PrivacyPolicyPl({ logo }: { logo: string }) {
               (kaskadowe usunięcie na poziomie bazy danych). Nie ma możliwości ich odzyskania po usunięciu konta.
             </p>
             <p>
+              <span className="text-surface-200 font-medium">Kopie zapasowe</span> — przechowywane w cyklu 7-dniowym
+              i nadpisywane, więc dane usunięte z bazy znikają z kopii najpóźniej po 7 dniach. Kopie służą wyłącznie
+              odtworzeniu serwisu po awarii i nie są przeszukiwane w żadnym innym celu.
+            </p>
+            <p>
               <span className="text-surface-200 font-medium">Tokeny bezpieczeństwa</span> (weryfikacja e-mail: 15 min, reset hasła: 1h,
               sesja: 7 dni) — usuwane automatycznie po wygaśnięciu przez wbudowany mechanizm czyszczenia.
             </p>
@@ -626,6 +631,11 @@ function PrivacyPolicyEn({ logo }: { logo: string }) {
             <p>
               <span className="text-surface-200 font-medium">Activity logs</span> — automatically deleted together with your account
               (cascading deletion at database level). They cannot be recovered after account deletion.
+            </p>
+            <p>
+              <span className="text-surface-200 font-medium">Backups</span> — kept on a rolling 7-day cycle and
+              overwritten, so data deleted from the database disappears from the backups within 7 days at the latest.
+              Backups exist solely to restore the service after a failure and are not searched for any other purpose.
             </p>
             <p>
               <span className="text-surface-200 font-medium">Security tokens</span> (email verification: 15 min, password reset: 1h,

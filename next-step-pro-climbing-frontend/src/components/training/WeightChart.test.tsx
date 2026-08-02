@@ -101,6 +101,27 @@ describe('WeightChart', () => {
     expect(screen.getByText('weight.showTable')).toBeInTheDocument()
   })
 
+  it('keeps the current-trend label inside the chart on the very first reading', () => {
+    // One reading collapses the date span, so its dot sits at the LEFT edge of the plot. An
+    // end-anchored label there would start at a negative x and be clipped by the viewBox —
+    // the athlete's first weigh-in showed a cut-off number.
+    const { container } = render(
+      <WeightChart entries={[{ measuredOn: '2026-08-01', weightKg: 100.4, trendKg: 100.4 }]} />,
+    )
+
+    const label = [...container.querySelectorAll('text')].find((t) => t.textContent?.includes('kg'))
+    expect(label).toBeDefined()
+    expect(label!.getAttribute('text-anchor')).toBe('start')
+    expect(Number(label!.getAttribute('x'))).toBeGreaterThanOrEqual(0)
+  })
+
+  it('keeps labelling the current trend from the left once the series has room', () => {
+    const { container } = render(<WeightChart entries={entries} />)
+
+    const label = [...container.querySelectorAll('text')].find((t) => t.textContent?.includes('kg'))
+    expect(label!.getAttribute('text-anchor')).toBe('end')
+  })
+
   it('renders nothing without readings', () => {
     const { container } = render(<WeightChart entries={[]} />)
     expect(container).toBeEmptyDOMElement()

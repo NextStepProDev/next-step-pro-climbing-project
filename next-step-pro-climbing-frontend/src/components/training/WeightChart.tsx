@@ -80,6 +80,13 @@ export function WeightChart({ entries, isStale, onDelete }: WeightChartProps) {
 
   const lastEntry = entries[entries.length - 1]
 
+  // Roughly the width of "100,0 kg" at 10px semibold. The current-trend label is normally
+  // end-anchored to the LEFT of its dot, which works because the last reading sits at the right
+  // edge of the plot. A single reading is the exception: it sits at the LEFT edge (span collapses
+  // to one day), and an end-anchored label there runs past x=0 and gets clipped by the viewBox.
+  const LABEL_W = 46
+  const labelFitsLeft = !lastEntry || x(lastEntry.measuredOn) - PAD.left >= LABEL_W
+
   // Three gridlines is enough to read a value off; more just adds noise behind the data
   const gridValues = [lo, (lo + hi) / 2, hi]
 
@@ -195,9 +202,9 @@ export function WeightChart({ entries, isStale, onDelete }: WeightChartProps) {
                 strokeWidth="2"
               />
               <text
-                x={x(lastEntry.measuredOn) - 10}
+                x={x(lastEntry.measuredOn) + (labelFitsLeft ? -10 : 10)}
                 y={y(lastEntry.trendKg) - 8}
-                textAnchor="end"
+                textAnchor={labelFitsLeft ? 'end' : 'start'}
                 fill={TREND_STROKE}
                 style={{ fontSize: 10, fontWeight: 600 }}
               >
