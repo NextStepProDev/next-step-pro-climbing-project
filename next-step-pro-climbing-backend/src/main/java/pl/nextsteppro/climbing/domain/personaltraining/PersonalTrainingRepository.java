@@ -57,10 +57,10 @@ public interface PersonalTrainingRepository extends JpaRepository<PersonalTraini
         """)
     List<AthleteLastActivity> findLastTrainingActivityPerAthlete();
 
-    /** Athlete statistics: full history of one athlete reduced to (date, endTime, completedAt, rpe). */
+    /** Athlete statistics: full history of one athlete reduced to (kind, date, endTime, completedAt, rpe). */
     @Query("""
         SELECT new pl.nextsteppro.climbing.domain.personaltraining.TrainingStatsRow(
-            t.trainingDate, t.endTime, t.completedAt, t.rpe)
+            t.kind, t.trainingDate, t.endTime, t.completedAt, t.rpe)
         FROM PersonalTraining t
         WHERE t.athlete.id = :athleteId
         """)

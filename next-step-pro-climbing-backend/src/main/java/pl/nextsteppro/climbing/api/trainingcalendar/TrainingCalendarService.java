@@ -14,6 +14,7 @@ import pl.nextsteppro.climbing.domain.personaltraining.TrainingComment;
 import pl.nextsteppro.climbing.domain.personaltraining.TrainingCommentRepository;
 import pl.nextsteppro.climbing.domain.personaltraining.TrainingDeletion;
 import pl.nextsteppro.climbing.domain.personaltraining.TrainingDeletionRepository;
+import pl.nextsteppro.climbing.domain.personaltraining.TrainingKind;
 import pl.nextsteppro.climbing.domain.event.Event;
 import pl.nextsteppro.climbing.domain.reservation.Reservation;
 import pl.nextsteppro.climbing.domain.reservation.ReservationRepository;
@@ -138,12 +139,22 @@ public class TrainingCalendarService {
         if (trainingStart(training).isAfter(nowWarsaw())) {
             throw new IllegalStateException(msg.get("training.calendar.complete.future"));
         }
-        // Defense in depth: @NotNull/@Min/@Max fire only via controller @Valid.
-        if (request.rpe() == null) {
-            throw new IllegalArgumentException(msg.get("training.calendar.rpe.required"));
-        }
-        if (request.rpe() < 1 || request.rpe() > 10) {
-            throw new IllegalArgumentException(msg.get("training.calendar.rpe.invalid"));
+        // A task is ticked off, never rated: perceived effort is a question about a session, and an
+        // answer here would land in the RPE averages, which read every rated entry there is. The
+        // database enforces the same thing (V77), so this is the readable error before the 409.
+        if (training.isTask()) {
+            if (request.rpe() != null) {
+                throw new IllegalArgumentException(msg.get("training.calendar.task.no.rpe"));
+            }
+        } else {
+            // Defense in depth: @Min/@Max fire only via controller @Valid, and the kind-dependent
+            // requirement cannot be expressed as a bean-validation annotation at all.
+            if (request.rpe() == null) {
+                throw new IllegalArgumentException(msg.get("training.calendar.rpe.required"));
+            }
+            if (request.rpe() < 1 || request.rpe() > 10) {
+                throw new IllegalArgumentException(msg.get("training.calendar.rpe.invalid"));
+            }
         }
         training.complete(
             PersonalTraining.sanitizeText(request.feedback(), PersonalTraining.MAX_FEEDBACK_LENGTH),
@@ -344,12 +355,15 @@ public class TrainingCalendarService {
     // ---------- shared internals ----------
 
     private PersonalTraining createTraining(User athlete, boolean byAdmin, CreatePersonalTrainingRequest request) {
-        validateTimes(request);
+        TrainingKind kind = request.kind() != null ? request.kind() : TrainingKind.TRAINING;
+        validateTimes(request, kind);
+        validateTargetCalories(request, kind);
         attachments.validate(request.attachments());
         PersonalTraining training = new PersonalTraining(
-            athlete, request.date(), request.startTime(), request.endTime(),
+            athlete, kind, request.date(), request.startTime(), request.endTime(),
             requireSanitizedTitle(request.title()),
             PersonalTraining.sanitizeText(request.description(), PersonalTraining.MAX_DESCRIPTION_LENGTH),
+            kind == TrainingKind.TASK ? request.targetCalories() : null,
             byAdmin);
         trainingRepository.save(training);
         // On create, null attachments simply means "none"
@@ -360,7 +374,11 @@ public class TrainingCalendarService {
     }
 
     private void applyUpdate(PersonalTraining training, boolean byAdmin, CreatePersonalTrainingRequest request) {
-        validateTimes(request);
+        // The kind on the request is ignored: it is fixed at creation. Validate against the kind the
+        // row actually has, so a task cannot be given hours by editing it.
+        TrainingKind kind = training.getKind();
+        validateTimes(request, kind);
+        validateTargetCalories(request, kind);
         // Defense in depth (the UI already blocks dragging completed sessions): a completed training
         // must stay in the past. Moving it into the future would leave a COMPLETED entry dated ahead
         // of "now" and skew the date-keyed stats/heatmap. Uncomplete first to reschedule.
@@ -373,6 +391,7 @@ public class TrainingCalendarService {
             request.date(), request.startTime(), request.endTime(),
             requireSanitizedTitle(request.title()),
             PersonalTraining.sanitizeText(request.description(), PersonalTraining.MAX_DESCRIPTION_LENGTH),
+            kind == TrainingKind.TASK ? request.targetCalories() : null,
             byAdmin);
         // null = leave attachments untouched (a move/drag PUT omits them); a list (incl. []) replaces
         if (request.attachments() != null) {
@@ -499,9 +518,14 @@ public class TrainingCalendarService {
         return newFromCoach || editedByCoach;
     }
 
-    private void validateTimes(CreatePersonalTrainingRequest request) {
+    private void validateTimes(CreatePersonalTrainingRequest request, TrainingKind kind) {
         boolean hasStart = request.startTime() != null;
         boolean hasEnd = request.endTime() != null;
+        // A commitment held across a whole day has no hour, and an hour would place it on the week
+        // view's grid at a position that claims something it does not have.
+        if (kind == TrainingKind.TASK && (hasStart || hasEnd)) {
+            throw new IllegalArgumentException(msg.get("training.calendar.task.untimed"));
+        }
         // Untimed ("all-day"): both null is allowed.
         if (!hasStart && !hasEnd) {
             return;
@@ -512,6 +536,23 @@ public class TrainingCalendarService {
         }
         if (!request.endTime().isAfter(request.startTime())) {
             throw new IllegalArgumentException(msg.get("admin.slot.end.after.start"));
+        }
+    }
+
+    /**
+     * A calorie ceiling belongs to a task. Silently dropping it from a training would hide a
+     * frontend bug; the bounds catch a slipped digit the way the weight range does.
+     */
+    private void validateTargetCalories(CreatePersonalTrainingRequest request, TrainingKind kind) {
+        Integer target = request.targetCalories();
+        if (target == null) {
+            return;
+        }
+        if (kind != TrainingKind.TASK) {
+            throw new IllegalArgumentException(msg.get("training.calendar.calories.task.only"));
+        }
+        if (target < PersonalTraining.MIN_TARGET_CALORIES || target > PersonalTraining.MAX_TARGET_CALORIES) {
+            throw new IllegalArgumentException(msg.get("training.calendar.calories.range"));
         }
     }
 
@@ -608,11 +649,13 @@ public class TrainingCalendarService {
                                      List<TrainingAttachmentDto> attachments) {
         return new PersonalTrainingDto(
             t.getId(),
+            t.getKind(),
             t.getTrainingDate(),
             t.getStartTime(),
             t.getEndTime(),
             t.getTitle(),
             t.getDescription(),
+            t.getTargetCalories(),
             t.isCreatedByAdmin(),
             deriveStatus(t, nowWarsaw),
             t.getCompletedAt(),

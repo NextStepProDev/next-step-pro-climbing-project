@@ -1069,24 +1069,39 @@ export interface AttachmentUpload {
 }
 
 export interface CreatePersonalTraining {
+  // Omitted means TRAINING. Ignored by the server on update — an entry is a training or a task
+  // from birth, so the edit form never sends it.
+  kind?: TrainingKind
   date: string
-  // Untimed ("all-day") training: omit/null both. Otherwise both set.
+  // Untimed ("all-day") training: omit/null both. Otherwise both set. A task must omit both.
   startTime?: string | null
   endTime?: string | null
   title: string
   description?: string
+  // Task only; the server rejects it on a training rather than dropping it silently
+  targetCalories?: number | null
   // undefined = leave attachments untouched (move/drag); [] = clear; a list = replace
   attachments?: AttachmentInput[]
 }
 
+/**
+ * What an entry on the plan is. A TASK ("stay under 2200 kcal today", "drink 3 litres of water")
+ * is a separate entry from the training it shares a day with, so the session and the commitment
+ * are ticked off — and fail — independently. Fixed at creation; no endpoint changes it.
+ */
+export type TrainingKind = 'TRAINING' | 'TASK'
+
 export interface PersonalTraining {
   id: string
+  kind: TrainingKind
   date: string
-  // Null for untimed ("all-day") trainings
+  // Null for untimed ("all-day") trainings, and always null for a task
   startTime: string | null
   endTime: string | null
   title: string
   description: string | null
+  // Task only, and optional there too — "drink 3 litres" carries its number in the title
+  targetCalories: number | null
   createdByAdmin: boolean
   status: PersonalTrainingStatus
   completedAt: string | null
@@ -1293,6 +1308,23 @@ export interface AthleteStats {
   sustainedHighRpe: boolean
   // Past attended reservations not yet rated (athlete nudge)
   unratedActivitiesCount: number
+  // Tasks, counted apart from every training number above
+  tasks: TaskStats
+}
+
+/**
+ * Every count ships the denominator it belongs to: "3 done" cannot tell three-of-three from
+ * three-of-twelve, and a bare 0 cannot tell a month of blown ceilings from a month where none
+ * were set.
+ */
+export interface TaskStats {
+  thisMonthDone: number
+  thisMonthDue: number
+  // Rolling 30 days
+  windowDone: number
+  windowDue: number
+  // null until something has come due — 0% would claim a failure that never happened
+  completionPercent: number | null
 }
 
 export interface RpeDistribution {

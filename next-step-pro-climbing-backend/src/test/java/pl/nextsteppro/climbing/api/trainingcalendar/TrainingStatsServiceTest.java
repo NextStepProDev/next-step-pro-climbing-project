@@ -7,6 +7,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import pl.nextsteppro.climbing.domain.event.EventType;
 import pl.nextsteppro.climbing.domain.personaltraining.PersonalTrainingRepository;
+import pl.nextsteppro.climbing.domain.personaltraining.TrainingKind;
 import pl.nextsteppro.climbing.domain.personaltraining.TrainingStatsRow;
 import pl.nextsteppro.climbing.domain.reservation.ReservationRepository;
 import pl.nextsteppro.climbing.domain.reservation.ReservationStatsRow;
@@ -48,6 +49,96 @@ class TrainingStatsServiceTest {
     void setUp() {
         service = new TrainingStatsService(trainingRepository, reservationRepository, calendarService);
         athleteId = UUID.randomUUID();
+    }
+
+    // ========== tasks are counted apart from every training number (V77) ==========
+
+    @Test
+    void shouldKeepTasksOutOfTheTrainingNumbers() {
+        // A month of held calorie ceilings must not read as a month of training
+        givenTrainings(completed(d(2026, 7, 14)), taskDone(d(2026, 7, 13)), taskDone(d(2026, 7, 10)));
+        givenReservations();
+
+        AthleteStatsDto stats = service.buildStats(athleteId, NOW);
+
+        assertEquals(1, stats.thisMonthCount(), "only the training counts as an activity");
+        assertEquals(1, stats.totalCount());
+        assertEquals(1, stats.heatmap().size(), "tasks never light up the heatmap");
+    }
+
+    @Test
+    void shouldKeepTasksOutOfAttendance() {
+        // Attendance answers "did the sessions happen"; a missed ceiling is a different question
+        givenTrainings(completed(d(2026, 7, 10)), taskOpen(d(2026, 7, 1)), taskOpen(d(2026, 7, 2)));
+        givenReservations();
+
+        AthleteStatsDto stats = service.buildStats(athleteId, NOW);
+
+        assertEquals(100, stats.attendanceRatePercent(), "two blown ceilings are not two no-shows");
+    }
+
+    @Test
+    void shouldCountTasksWithTheirDenominator() {
+        // "3 done" cannot tell three-of-three from three-of-twelve
+        givenTrainings(taskDone(d(2026, 7, 1)), taskDone(d(2026, 7, 2)), taskOpen(d(2026, 7, 3)),
+            taskOpen(d(2026, 7, 4)));
+        givenReservations();
+
+        AthleteStatsDto stats = service.buildStats(athleteId, NOW);
+
+        assertEquals(2, stats.tasks().thisMonthDone());
+        assertEquals(4, stats.tasks().thisMonthDue());
+        assertEquals(50, stats.tasks().completionPercent());
+    }
+
+    @Test
+    void shouldNotCountTodaysTaskAsDueYet() {
+        // A task owns the whole day. Counting today as elapsed greets someone opening the plan
+        // over breakfast with a failure they still have all day to avoid.
+        givenTrainings(taskOpen(TODAY));
+        givenReservations();
+
+        AthleteStatsDto stats = service.buildStats(athleteId, NOW);
+
+        assertEquals(0, stats.tasks().thisMonthDue());
+        assertNull(stats.tasks().completionPercent());
+    }
+
+    @Test
+    void shouldCountTodaysTaskOnceItIsTicked() {
+        givenTrainings(taskDone(TODAY));
+        givenReservations();
+
+        AthleteStatsDto stats = service.buildStats(athleteId, NOW);
+
+        assertEquals(1, stats.tasks().thisMonthDone());
+        assertEquals(1, stats.tasks().thisMonthDue());
+        assertEquals(100, stats.tasks().completionPercent());
+    }
+
+    @Test
+    void shouldReportNoPercentWhenNoTaskHasComeDue() {
+        // 0% would claim a failure nobody had — the frontend shows an em dash instead
+        givenTrainings(completed(d(2026, 7, 14)));
+        givenReservations();
+
+        AthleteStatsDto stats = service.buildStats(athleteId, NOW);
+
+        assertNull(stats.tasks().completionPercent());
+        assertEquals(0, stats.tasks().thisMonthDue());
+    }
+
+    @Test
+    void shouldLimitTheTaskWindowToThirtyDays() {
+        // A ceiling from ten weeks ago says nothing about how this week is going
+        givenTrainings(taskDone(d(2026, 7, 10)), taskOpen(d(2026, 5, 1)), taskOpen(d(2026, 5, 2)));
+        givenReservations();
+
+        AthleteStatsDto stats = service.buildStats(athleteId, NOW);
+
+        assertEquals(1, stats.tasks().windowDone());
+        assertEquals(1, stats.tasks().windowDue(), "May is outside the rolling 30 days");
+        assertEquals(100, stats.tasks().completionPercent());
     }
 
     // ========== streaks ==========
@@ -513,24 +604,33 @@ class TrainingStatsServiceTest {
     }
 
     private static TrainingStatsRow completed(LocalDate date) {
-        return new TrainingStatsRow(date, LocalTime.of(19, 0), DONE, null);
+        return new TrainingStatsRow(TrainingKind.TRAINING, date, LocalTime.of(19, 0), DONE, null);
     }
 
     private static TrainingStatsRow completedRpe(LocalDate date, int rpe) {
-        return new TrainingStatsRow(date, LocalTime.of(19, 0), DONE, rpe);
+        return new TrainingStatsRow(TrainingKind.TRAINING, date, LocalTime.of(19, 0), DONE, rpe);
     }
 
     private static TrainingStatsRow planned(LocalDate date) {
-        return new TrainingStatsRow(date, LocalTime.of(19, 0), null, null);
+        return new TrainingStatsRow(TrainingKind.TRAINING, date, LocalTime.of(19, 0), null, null);
     }
 
     // Untimed ("all-day"): null endTime → missed derivation falls back to end-of-day
     private static TrainingStatsRow untimedCompleted(LocalDate date) {
-        return new TrainingStatsRow(date, null, DONE, null);
+        return new TrainingStatsRow(TrainingKind.TRAINING, date, null, DONE, null);
     }
 
     private static TrainingStatsRow untimedPlanned(LocalDate date) {
-        return new TrainingStatsRow(date, null, null, null);
+        return new TrainingStatsRow(TrainingKind.TRAINING, date, null, null, null);
+    }
+
+    // Tasks are always untimed (V77), so end-of-day drives when they come due
+    private static TrainingStatsRow taskDone(LocalDate date) {
+        return new TrainingStatsRow(TrainingKind.TASK, date, null, DONE, null);
+    }
+
+    private static TrainingStatsRow taskOpen(LocalDate date) {
+        return new TrainingStatsRow(TrainingKind.TASK, date, null, null, null);
     }
 
     private static ReservationStatsRow reservation(LocalDate date) {

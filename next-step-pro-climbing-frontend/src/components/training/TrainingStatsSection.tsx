@@ -10,6 +10,7 @@ import {
   BarChart3,
   CalendarCheck,
   CalendarDays,
+  ClipboardList,
   Dumbbell,
   Flame,
   Gauge,
@@ -63,7 +64,10 @@ export function TrainingStatsSection({ api, scopeKey, isCoachView }: TrainingSta
 
   const fmt = (n: number) => n.toLocaleString(i18n.language)
 
-  if (stats.totalCount === 0) {
+  // Tasks are activity too, even though they are counted apart from every training number.
+  // Gating only on totalCount told an athlete who had held a month of calorie ceilings that
+  // their stats would appear after their first training — with the numbers already computed.
+  if (stats.totalCount === 0 && !hasAnyTask(stats)) {
     return (
       <div className="bg-surface-900 rounded-xl border border-surface-800 p-6 text-center">
         <BarChart3 className="w-6 h-6 text-surface-600 mx-auto mb-2" />
@@ -132,6 +136,12 @@ function RpeDistributionCard({ stats, isCoachView }: { stats: AthleteStats; isCo
 }
 
 // ---------- KPI tiles ----------
+
+// Has anything ever been set as a task? Three empty tiles would tell someone who has never
+// been given one that they failed it. Shared with the empty-state gate above.
+function hasAnyTask(stats: AthleteStats): boolean {
+  return stats.tasks.thisMonthDue > 0 || stats.tasks.windowDue > 0
+}
 
 function KpiTiles({ stats, fmt }: { stats: AthleteStats; fmt: (n: number) => string }) {
   const { t } = useTranslation('training')
@@ -210,6 +220,30 @@ function KpiTiles({ stats, fmt }: { stats: AthleteStats; fmt: (n: number) => str
               sub={rpeSub}
             />
           )}
+        </div>
+      )}
+
+      {/* Tasks, counted apart from every training number above */}
+      {hasAnyTask(stats) && (
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+          <StatTile
+            icon={<ClipboardList className="w-4 h-4 text-sky-400" />}
+            // Always with its denominator: "3" cannot tell three-of-three from three-of-twelve
+            value={`${stats.tasks.thisMonthDone} / ${stats.tasks.thisMonthDue}`}
+            label={t('stats.tasksThisMonth')}
+          />
+          <StatTile
+            icon={<ClipboardList className="w-4 h-4 text-sky-400" />}
+            value={`${stats.tasks.windowDone} / ${stats.tasks.windowDue}`}
+            label={t('stats.tasksWindow')}
+          />
+          <StatTile
+            icon={<Activity className="w-4 h-4 text-sky-400" />}
+            // An em dash rather than 0%: nothing has come due, so there is no failure to report
+            value={stats.tasks.completionPercent != null ? `${stats.tasks.completionPercent}%` : '—'}
+            label={t('stats.tasksRate')}
+            sub={t('stats.tasksRateHint')}
+          />
         </div>
       )}
     </>

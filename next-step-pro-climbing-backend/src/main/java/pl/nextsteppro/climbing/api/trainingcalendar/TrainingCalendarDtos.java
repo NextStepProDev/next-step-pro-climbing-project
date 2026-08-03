@@ -16,6 +16,7 @@ import pl.nextsteppro.climbing.domain.personaltraining.AttachmentKind;
 import pl.nextsteppro.climbing.domain.personaltraining.PersonalTraining;
 import pl.nextsteppro.climbing.domain.personaltraining.TrainingAttachment;
 import pl.nextsteppro.climbing.domain.personaltraining.TrainingComment;
+import pl.nextsteppro.climbing.domain.personaltraining.TrainingKind;
 import pl.nextsteppro.climbing.domain.trainingtemplate.TrainingTemplate;
 
 import java.math.BigDecimal;
@@ -31,12 +32,20 @@ import java.util.UUID;
 // package-private per project convention instead of being duplicated.
 
 record CreatePersonalTrainingRequest(
+    // null = TRAINING. IGNORED on update: an entry is a training or a task from birth (see
+    // TrainingKind), so a PUT carrying a different kind changes nothing rather than erroring —
+    // the frontend never sends one.
+    @Nullable TrainingKind kind,
     @NotNull LocalDate date,
     // Untimed ("all-day") training: both null. Otherwise both set (validated in the service).
+    // A TASK must leave both null — a commitment held across a day has no hour.
     @Nullable LocalTime startTime,
     @Nullable LocalTime endTime,
     @NotBlank @Size(max = PersonalTraining.MAX_TITLE_LENGTH) String title,
     @Nullable @Size(max = PersonalTraining.MAX_DESCRIPTION_LENGTH) String description,
+    // TASK only, and optional there too: "drink 3 litres" carries its number in the title.
+    @Nullable @Min(PersonalTraining.MIN_TARGET_CALORIES) @Max(PersonalTraining.MAX_TARGET_CALORIES)
+    Integer targetCalories,
     // null = leave attachments untouched (so a move/drag PUT keeps them);
     // [] = clear; a list = replace. Max 3.
     @Nullable @Size(max = TrainingAttachment.MAX_PER_TRAINING) List<@Valid AttachmentRequest> attachments
@@ -45,6 +54,13 @@ record CreatePersonalTrainingRequest(
     CreatePersonalTrainingRequest(LocalDate date, @Nullable LocalTime startTime, @Nullable LocalTime endTime,
                                   String title, @Nullable String description) {
         this(date, startTime, endTime, title, description, null);
+    }
+
+    // Convenience for the ordinary TRAINING case, which is everything except the task form
+    CreatePersonalTrainingRequest(LocalDate date, @Nullable LocalTime startTime, @Nullable LocalTime endTime,
+                                  String title, @Nullable String description,
+                                  @Nullable List<AttachmentRequest> attachments) {
+        this(null, date, startTime, endTime, title, description, null, attachments);
     }
 }
 
@@ -134,8 +150,11 @@ record MaterialDto(
 
 record CompleteTrainingRequest(
     @Nullable @Size(max = PersonalTraining.MAX_FEEDBACK_LENGTH) String feedback,
-    // RPE is required on completion (older completions with a null value are left untouched)
-    @NotNull @Min(1) @Max(10) Integer rpe
+    // Required when completing a TRAINING, rejected when completing a TASK — "how hard was staying
+    // under 2200 kcal, 1-10" is a question about nothing, and an answer would poison the RPE
+    // averages. Nullable here because bean validation cannot see the kind; the service decides.
+    // (Older completions with a null value are left untouched.)
+    @Nullable @Min(1) @Max(10) Integer rpe
 ) {}
 
 /** Athlete rates an attended reservation (idempotent upsert). */
@@ -150,12 +169,16 @@ record CreateTrainingCommentRequest(
 
 record PersonalTrainingDto(
     UUID id,
+    // TRAINING | TASK — fixed at creation
+    TrainingKind kind,
     LocalDate date,
-    // Null for untimed ("all-day") trainings.
+    // Null for untimed ("all-day") trainings, and always null for a task.
     @Nullable LocalTime startTime,
     @Nullable LocalTime endTime,
     String title,
     @Nullable String description,
+    // Task only, and optional there too
+    @Nullable Integer targetCalories,
     boolean createdByAdmin,
     // PLANNED | COMPLETED | MISSED (missed is derived, never stored)
     String status,
@@ -277,7 +300,25 @@ record AthleteStatsDto(
     // Last 5 ratings (both sources) all >= 9 → possible overtraining / inflated scoring
     boolean sustainedHighRpe,
     // Past attended reservations with no RPE yet (nudge to rate; personal trainings excluded)
-    int unratedActivitiesCount
+    int unratedActivitiesCount,
+    // Tasks, counted apart from every training number above
+    TaskStatsDto tasks
+) {}
+
+/**
+ * Tasks held vs tasks that came due. Every count ships the denominator it belongs to, because
+ * "3 done" cannot tell three-of-three from three-of-twelve, and a bare 0 cannot tell a month of
+ * blown ceilings from a month where none were set.
+ */
+record TaskStatsDto(
+    int thisMonthDone,
+    int thisMonthDue,
+    // Rolling 30 days
+    int windowDone,
+    int windowDue,
+    // Over the rolling window; null until something has come due — 0% would claim a failure
+    // that never happened
+    @Nullable Integer completionPercent
 ) {}
 
 /** Session counts by RPE band over the last 90 days: light 1-4, medium 5-7, hard 8-10. */

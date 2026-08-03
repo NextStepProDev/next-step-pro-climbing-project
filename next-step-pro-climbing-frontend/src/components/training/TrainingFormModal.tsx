@@ -2,7 +2,8 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { format } from 'date-fns'
-import { CalendarDays, Check, LayoutTemplate } from 'lucide-react'
+import clsx from 'clsx'
+import { CalendarDays, Check, ClipboardList, Dumbbell, LayoutTemplate } from 'lucide-react'
 import { Modal } from '../ui/Modal'
 import { Button } from '../ui/Button'
 import { TimeScrollPicker } from '../ui/TimeScrollPicker'
@@ -10,7 +11,11 @@ import { RpePicker } from './RpePicker'
 import { AttachmentEditor } from './AttachmentEditor'
 import { adminTrainingCalendarApi } from '../../api/client'
 import { decodeHtmlEntities } from '../../utils/htmlEntities'
-import type { AttachmentInput, CreatePersonalTraining, PersonalTraining, TrainingTemplate } from '../../types'
+import type { AttachmentInput, CreatePersonalTraining, PersonalTraining, TrainingKind, TrainingTemplate } from '../../types'
+
+// Mirrors the CHECK in V77: below 500 and above 10000 is a slipped digit, not a diet.
+const MIN_CALORIES = 500
+const MAX_CALORIES = 10000
 
 function addMinutesTo(time: string, minutes: number): string {
   const [h, m] = time.split(':').map(Number)
@@ -36,6 +41,8 @@ export interface InstantCompletion {
 // Duplicate flow: create-mode form pre-seeded from an existing training
 // (values arrive already decoded — the section decodes before seeding)
 export interface TrainingPrefill {
+  // Duplicating a task must produce a task, not a training
+  kind?: TrainingKind
   title: string
   description?: string
   // Null/undefined for an untimed ("all-day") source
@@ -156,6 +163,13 @@ function TrainingForm({ training, initialDate, initialTime, prefill, onClose, on
   const [rpe, setRpe] = useState<number | null>(null)
   const [error, setError] = useState<string | null>(null)
 
+  // An entry is a training or a task from birth, so the switch only exists while creating one.
+  // Changing it later would have to throw a completed training's RPE away.
+  const [kind, setKind] = useState<TrainingKind>(training?.kind ?? prefill?.kind ?? 'TRAINING')
+  const isTask = kind === 'TASK'
+  const [calories, setCalories] = useState(
+    training?.targetCalories != null ? String(training.targetCalories) : '')
+
   // Coach create-mode: fill the form from a reusable template (content is copied)
   const showTemplates = !!templatesEnabled && !training
   const templatesQuery = useQuery({
@@ -180,7 +194,7 @@ function TrainingForm({ training, initialDate, initialTime, prefill, onClose, on
   const today = format(now, 'yyyy-MM-dd')
   const currentTime = format(now, 'HH:mm')
   const instantCompleteAvailable = !!allowInstantComplete && !training && !!date
-    && (date < today || (date === today && (allDay || startTime <= currentTime)))
+    && (date < today || (date === today && (isTask || allDay || startTime <= currentTime)))
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -188,8 +202,16 @@ function TrainingForm({ training, initialDate, initialTime, prefill, onClose, on
       setError(t('form.titleRequired'))
       return
     }
-    if (!allDay && endTime <= startTime) {
+    // A task holds for the whole day, so it never reaches the time pickers at all
+    if (!isTask && !allDay && endTime <= startTime) {
       setError(t('form.endAfterStart'))
+      return
+    }
+    const trimmedCalories = calories.trim()
+    const parsedCalories = isTask && trimmedCalories ? Number(trimmedCalories) : null
+    if (parsedCalories != null
+        && (!Number.isInteger(parsedCalories) || parsedCalories < MIN_CALORIES || parsedCalories > MAX_CALORIES)) {
+      setError(t('form.caloriesRange', { min: MIN_CALORIES, max: MAX_CALORIES }))
       return
     }
     // Files pass through as-is; link rows drop blanks and must be http(s)
@@ -203,21 +225,24 @@ function TrainingForm({ training, initialDate, initialTime, prefill, onClose, on
       return
     }
     // Completing (instant log) requires an RPE
-    if (instantCompleteAvailable && markDone && rpe == null) {
+    if (instantCompleteAvailable && markDone && !isTask && rpe == null) {
       setError(t('completion.rpeRequired'))
       return
     }
     setError(null)
     const completion = instantCompleteAvailable && markDone
-      ? { feedback: feedback.trim() || undefined, rpe: rpe ?? undefined }
+      ? { feedback: feedback.trim() || undefined, rpe: isTask ? undefined : (rpe ?? undefined) }
       : null
     onSubmit({
+      // Only on create: the server ignores it on update, and sending it would imply it can change
+      ...(training ? {} : { kind }),
       date,
-      // All-day training carries no times
-      startTime: allDay ? undefined : startTime,
-      endTime: allDay ? undefined : endTime,
+      // A task and an all-day training both carry no times
+      startTime: isTask || allDay ? undefined : startTime,
+      endTime: isTask || allDay ? undefined : endTime,
       title: title.trim(),
       description: description.trim() || undefined,
+      targetCalories: parsedCalories,
       // Form always sends the explicit list (replace on edit, set on create)
       attachments: cleanedAttachments,
     }, completion)
@@ -246,6 +271,35 @@ function TrainingForm({ training, initialDate, initialTime, prefill, onClose, on
         </div>
       )}
 
+      {/* Create only: an entry is a training or a task from birth (see TrainingKind) */}
+      {!training && (
+        <div>
+          <span className="block text-sm text-surface-400 mb-1">{t('form.kindLabel')}</span>
+          <div className="flex gap-1" role="group" aria-label={t('form.kindLabel')}>
+            {(['TRAINING', 'TASK'] as const).map((option) => (
+              <button
+                key={option}
+                type="button"
+                aria-pressed={kind === option}
+                onClick={() => setKind(option)}
+                className={clsx(
+                  'flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg border transition-colors',
+                  kind === option
+                    ? 'bg-primary-600 border-primary-500 text-white'
+                    : 'bg-surface-800 border-surface-700 text-surface-400 hover:text-surface-200',
+                )}
+              >
+                {option === 'TASK' ? <ClipboardList className="w-4 h-4" /> : <Dumbbell className="w-4 h-4" />}
+                {t(`form.kind.${option}`)}
+              </button>
+            ))}
+          </div>
+          <p className="mt-1 text-xs text-surface-500">
+            {t(isTask ? 'form.kindTaskHint' : 'form.kindTrainingHint')}
+          </p>
+        </div>
+      )}
+
       <div>
         <label className="block text-sm text-surface-400 mb-1">{t('form.date')}</label>
         <input
@@ -257,23 +311,48 @@ function TrainingForm({ training, initialDate, initialTime, prefill, onClose, on
         />
       </div>
 
-      <label className="flex items-center gap-2 cursor-pointer select-none">
-        <input
-          type="checkbox"
-          checked={allDay}
-          onChange={(e) => setAllDay(e.target.checked)}
-          className="w-4 h-4 accent-primary-500"
-        />
-        <span className="flex items-center gap-1.5 text-sm font-medium text-surface-200">
-          <CalendarDays className="w-4 h-4 text-surface-400" />
-          {t('form.allDay')}
-        </span>
-      </label>
+      {/* A task holds for the whole day, so it has no time controls at all — an hour would put it
+          on the week grid at a position claiming something it does not have. */}
+      {!isTask && (
+        <>
+          <label className="flex items-center gap-2 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={allDay}
+              onChange={(e) => setAllDay(e.target.checked)}
+              className="w-4 h-4 accent-primary-500"
+            />
+            <span className="flex items-center gap-1.5 text-sm font-medium text-surface-200">
+              <CalendarDays className="w-4 h-4 text-surface-400" />
+              {t('form.allDay')}
+            </span>
+          </label>
 
-      {!allDay && (
-        <div className="grid grid-cols-2 gap-4">
-          <TimeScrollPicker label={t('form.startTime')} value={startTime} onChange={setStartTime} />
-          <TimeScrollPicker label={t('form.endTime')} value={endTime} onChange={setEndTime} />
+          {!allDay && (
+            <div className="grid grid-cols-2 gap-4">
+              <TimeScrollPicker label={t('form.startTime')} value={startTime} onChange={setStartTime} />
+              <TimeScrollPicker label={t('form.endTime')} value={endTime} onChange={setEndTime} />
+            </div>
+          )}
+        </>
+      )}
+
+      {isTask && (
+        <div>
+          <label htmlFor="training-calories" className="block text-sm text-surface-400 mb-1">
+            {t('form.calories')}
+          </label>
+          <input
+            id="training-calories"
+            type="number"
+            inputMode="numeric"
+            min={MIN_CALORIES}
+            max={MAX_CALORIES}
+            value={calories}
+            onChange={(e) => setCalories(e.target.value)}
+            className="w-full bg-surface-800 border border-surface-700 rounded-lg px-4 py-2 text-surface-100"
+          />
+          <p className="mt-1 text-xs text-surface-500">{t('form.caloriesHint')}</p>
         </div>
       )}
 
@@ -332,7 +411,9 @@ function TrainingForm({ training, initialDate, initialTime, prefill, onClose, on
                   className="w-full bg-surface-800 border border-surface-700 rounded-lg px-3 py-2 text-sm text-surface-100 resize-none"
                 />
               </div>
-              <RpePicker value={rpe} onChange={setRpe} />
+              {/* A task is ticked off, never rated: perceived effort is a question about a
+                  session, and an answer here would land in the RPE averages. */}
+              {!isTask && <RpePicker value={rpe} onChange={setRpe} />}
             </>
           )}
         </div>

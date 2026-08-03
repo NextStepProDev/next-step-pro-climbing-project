@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { ReservationBlock, TrainingBlock } from './TrainingBlock'
-import { makeReservation, makeTraining } from '../../test/factories'
+import { makeAttachment, makeReservation, makeTask, makeTraining } from '../../test/factories'
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (key: string) => key, i18n: { language: 'pl' } }),
@@ -89,11 +89,145 @@ describe('TrainingBlock — copy/cut actions on touch (#89)', () => {
     expect(screen.queryByLabelText('clipboard.cut')).not.toBeInTheDocument()
   })
 
-  it('should render no clipboard actions in the month view', () => {
-    render(<TrainingBlock training={training} onClick={vi.fn()} compact />)
+  it('should render no clipboard actions in the all-day chip', () => {
+    render(<TrainingBlock training={training} onClick={vi.fn()} density="chip" />)
 
     expect(screen.queryByLabelText('clipboard.copy')).not.toBeInTheDocument()
     expect(screen.queryByLabelText('clipboard.cut')).not.toBeInTheDocument()
+  })
+
+  it('should render no clipboard actions on a month tile', () => {
+    // 42 cells x 4 tiles x 2 buttons would be a wall of chrome. Arming the clipboard
+    // happens from the detail modal, the week view or the day sheet instead.
+    render(<TrainingBlock training={training} onClick={vi.fn()} density="tile" />)
+
+    expect(screen.queryByLabelText('clipboard.copy')).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('clipboard.cut')).not.toBeInTheDocument()
+  })
+})
+
+describe('TrainingBlock — month tile', () => {
+  it('should render the start time for a timed training', () => {
+    render(<TrainingBlock training={makeTraining({ startTime: '17:00', endTime: '18:30' })} onClick={vi.fn()} density="tile" />)
+
+    expect(screen.getByText('17:00')).toBeInTheDocument()
+  })
+
+  it('should render nothing at all in place of the time for an untimed training', () => {
+    // Both times NULL is the DEFAULT case in this domain ("do it on Wednesday"), so a
+    // dash or an "all day" label on every tile would be pure noise.
+    const { container } = render(
+      <TrainingBlock training={makeTraining({ startTime: null, endTime: null, title: 'Mobility' })} onClick={vi.fn()} density="tile" />,
+    )
+
+    expect(container.textContent).toBe('Mobility')
+  })
+
+  it('should carry the status on the left border rather than washing the tile', () => {
+    const { container } = render(
+      <TrainingBlock training={makeTraining({ status: 'COMPLETED' })} onClick={vi.fn()} density="tile" />,
+    )
+    const tile = container.firstElementChild!
+
+    expect(tile.className).toContain('border-l-green-500')
+    expect(tile.className).not.toMatch(/\bbg-green-/)
+  })
+
+  it('should give the tile at least a 24px tap target', () => {
+    const { container } = render(<TrainingBlock training={makeTraining()} onClick={vi.fn()} density="tile" />)
+
+    expect(container.firstElementChild!.className).toContain('min-h-6')
+  })
+
+  it('should flag a training that carries materials', () => {
+    render(
+      <TrainingBlock
+        training={makeTraining({ attachments: [makeAttachment()] })}
+        onClick={vi.fn()}
+        density="tile"
+      />,
+    )
+
+    expect(screen.getByLabelText('detail.materials')).toBeInTheDocument()
+  })
+
+  it('should show the RPE once the training has been rated', () => {
+    render(<TrainingBlock training={makeTraining({ status: 'COMPLETED', rpe: 8 })} onClick={vi.fn()} density="tile" />)
+
+    expect(screen.getByLabelText('RPE 8')).toBeInTheDocument()
+  })
+})
+
+describe('TrainingBlock — a task is its own kind of entry', () => {
+  it('should mark a task with its own icon', () => {
+    render(<TrainingBlock training={makeTask()} onClick={vi.fn()} density="tile" />)
+
+    expect(screen.getByLabelText('form.kind.TASK')).toBeInTheDocument()
+  })
+
+  it('should carry the kind on the border style, leaving colour to the status', () => {
+    // Two orthogonal signals: neither has to give up its channel to the other
+    const { container } = render(
+      <TrainingBlock training={makeTask({ status: 'COMPLETED' })} onClick={vi.fn()} density="tile" />,
+    )
+
+    expect(container.firstElementChild!.className).toContain('border-dashed')
+    expect(container.firstElementChild!.className).toContain('border-l-green-500')
+  })
+
+  it('should show a calorie ceiling when the task carries one', () => {
+    render(<TrainingBlock training={makeTask({ targetCalories: 2200 })} onClick={vi.fn()} density="tile" />)
+
+    // The badge, not the title: a number typed into a heading is exactly what the column avoids
+    expect(screen.getByTitle('form.calories')).toHaveTextContent('2200')
+  })
+
+  it('should show no number for a task that has none', () => {
+    // "Drink 3 litres" carries its number in the title and needs no field
+    const { container } = render(
+      <TrainingBlock training={makeTask({ title: 'Drink 3 litres', targetCalories: null })} onClick={vi.fn()} density="tile" />,
+    )
+
+    expect(container.textContent).toBe('Drink 3 litres')
+  })
+
+  it('should leave a training undashed', () => {
+    const { container } = render(<TrainingBlock training={makeTraining()} onClick={vi.fn()} density="tile" />)
+
+    expect(container.firstElementChild!.className).not.toContain('border-dashed')
+    expect(screen.queryByLabelText('form.kind.TASK')).not.toBeInTheDocument()
+  })
+})
+
+describe('TrainingBlock — armed clipboard (Fire Academy 129f7a7)', () => {
+  it('should be a button that opens the detail while the clipboard is idle', async () => {
+    const onClick = vi.fn()
+    render(<TrainingBlock training={makeTraining()} onClick={onClick} density="tile" />)
+
+    await userEvent.click(screen.getByRole('button'))
+
+    expect(onClick).toHaveBeenCalledTimes(1)
+  })
+
+  it('should stop being a control while the clipboard is armed', () => {
+    // Not a DISABLED button — a disabled control swallows the click and the tap does
+    // nothing. It has to leave the keyboard path entirely so the click reaches the day
+    // cell underneath, which is the paste target.
+    render(<TrainingBlock training={makeTraining()} onClick={vi.fn()} density="tile" pasteActive />)
+
+    expect(screen.queryByRole('button')).not.toBeInTheDocument()
+  })
+
+  it('should not open the detail when the armed tile is clicked', async () => {
+    const onClick = vi.fn()
+    const { container } = render(
+      <TrainingBlock training={makeTraining({ title: 'Strength' })} onClick={onClick} density="tile" pasteActive />,
+    )
+
+    await userEvent.click(screen.getByText('Strength'))
+
+    expect(onClick).not.toHaveBeenCalled()
+    expect(container.firstElementChild!.tagName).toBe('DIV')
   })
 })
 
@@ -117,9 +251,17 @@ describe('ReservationBlock — unread dot for new athlete bookings (#79)', () =>
     expect(unreadDot(container)).toBeNull()
   })
 
-  it('should render the dot in the compact month variant too', () => {
+  it('should render the dot in the all-day chip too', () => {
     const { container } = render(
-      <ReservationBlock reservation={makeReservation({ isNew: true })} label="overlay.reservation" onClick={vi.fn()} compact />,
+      <ReservationBlock reservation={makeReservation({ isNew: true })} label="overlay.reservation" onClick={vi.fn()} density="chip" />,
+    )
+
+    expect(unreadDot(container)).not.toBeNull()
+  })
+
+  it('should render the dot on a month tile too', () => {
+    const { container } = render(
+      <ReservationBlock reservation={makeReservation({ isNew: true })} label="overlay.reservation" onClick={vi.fn()} density="tile" />,
     )
 
     expect(unreadDot(container)).not.toBeNull()

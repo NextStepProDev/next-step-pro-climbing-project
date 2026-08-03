@@ -7,6 +7,18 @@
     "month": "Miesiąc",
     "week": "Tydzień"
   },
+  "month": {
+    "more": "+{{count}}",
+    "moreAria_one": "Pokaż jeszcze {{count}} wpis",
+    "moreAria_few": "Pokaż jeszcze {{count}} wpisy",
+    "moreAria_many": "Pokaż jeszcze {{count}} wpisów",
+    "moreAria_other": "Pokaż jeszcze {{count}} wpisu",
+    "showDay": "Pokaż dzień {{date}}",
+    "addOnDay": "Dodaj wpis",
+    "emptyDay": "Nic zaplanowanego na ten dzień",
+    "addOnDate": "Dodaj wpis w dniu {{date}}",
+    "pasteHere": "Wklej tutaj"
+  },
   "nav": {
     "today": "Dziś",
     "prevWeek": "Poprzedni tydzień",
@@ -19,11 +31,11 @@
     "completed": "Wykonany",
     "missed": "Pominięty"
   },
-  "addTraining": "Dodaj trening",
+  "addTraining": "Dodaj wpis",
   "form": {
-    "addTitle": "Nowy trening",
-    "editTitle": "Edytuj trening",
-    "duplicateTitle": "Duplikuj trening",
+    "addTitle": "Nowy wpis",
+    "editTitle": "Edytuj wpis",
+    "duplicateTitle": "Duplikuj wpis",
     "date": "Data",
     "allDay": "Cały dzień (bez godziny)",
     "startTime": "Początek",
@@ -44,7 +56,17 @@
     "attachmentAdd": "Dodaj link",
     "attachmentRemove": "Usuń link",
     "attachmentUrlInvalid": "Link musi zaczynać się od http:// lub https://",
-    "attachmentUpload": "Wgraj plik (PDF/zdjęcie)"
+    "attachmentUpload": "Wgraj plik (PDF/zdjęcie)",
+    "kindLabel": "Rodzaj wpisu",
+    "kind": {
+      "TRAINING": "Trening",
+      "TASK": "Zadanie"
+    },
+    "kindTrainingHint": "Sesja treningowa — odhaczasz ją z oceną ciężkości (RPE).",
+    "kindTaskHint": "Zobowiązanie na cały dzień — limit kalorii, woda, sen. Odhaczasz je, nie oceniasz.",
+    "calories": "Limit kalorii (opcjonalnie)",
+    "caloriesHint": "Zostaw puste, jeśli zadanie nie ma liczby — np. „Wypij 3 litry wody”.",
+    "caloriesRange": "Limit kalorii musi mieścić się w zakresie {{min}}–{{max}} kcal"
   },
   "detail": {
     "allDay": "Cały dzień",
@@ -129,8 +151,8 @@
   "clipboard": {
     "copy": "Kopiuj trening",
     "cut": "Wytnij trening",
-    "copiedBanner": "Skopiowano „{{title}}\" — kliknij wolne miejsce w widoku tygodnia, aby wkleić kopię (Esc anuluje)",
-    "cutBanner": "Wycięto „{{title}}\" — kliknij wolne miejsce w widoku tygodnia, aby przenieść (Esc anuluje)",
+    "copiedBanner": "Skopiowano „{{title}}\" — kliknij wolne miejsce w kalendarzu, aby wkleić kopię (Esc anuluje)",
+    "cutBanner": "Wycięto „{{title}}\" — kliknij wolne miejsce w kalendarzu, aby przenieść (Esc anuluje)",
     "cancel": "Anuluj"
   },
   "completion": {
@@ -242,7 +264,11 @@
     "rpeWarning": {
       "athlete": "Twoje ostatnie oceny to same 9-10 — sprawdź, czy nie przesadzasz z obciążeniem.",
       "coach": "Ostatnie oceny zawodnika to same 9-10 — możliwe przetrenowanie lub zawyżanie ocen."
-    }
+    },
+    "tasksThisMonth": "Zadania w tym miesiącu",
+    "tasksWindow": "Zadania — ostatnie 30 dni",
+    "tasksRate": "Skuteczność zadań",
+    "tasksRateHint": "Z ostatnich 30 dni; liczone dopiero, gdy dzień zadania minie"
   },
   "templates": {
     "manage": "Szablony",
