@@ -10,17 +10,12 @@ import pl.nextsteppro.climbing.domain.personaltraining.PersonalTrainingRepositor
 import pl.nextsteppro.climbing.domain.personaltraining.TrainingStatsRow;
 import pl.nextsteppro.climbing.domain.reservation.ReservationRepository;
 import pl.nextsteppro.climbing.domain.reservation.ReservationStatsRow;
-import pl.nextsteppro.climbing.domain.user.User;
-import pl.nextsteppro.climbing.domain.user.UserRepository;
-import pl.nextsteppro.climbing.infrastructure.i18n.MessageService;
 
-import java.lang.reflect.Field;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -43,8 +38,7 @@ class TrainingStatsServiceTest {
 
     @Mock private PersonalTrainingRepository trainingRepository;
     @Mock private ReservationRepository reservationRepository;
-    @Mock private UserRepository userRepository;
-    @Mock private MessageService msg;
+    @Mock private TrainingCalendarService calendarService;
 
     private TrainingStatsService service;
 
@@ -52,9 +46,8 @@ class TrainingStatsServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new TrainingStatsService(trainingRepository, reservationRepository, userRepository, msg);
+        service = new TrainingStatsService(trainingRepository, reservationRepository, calendarService);
         athleteId = UUID.randomUUID();
-        lenient().when(msg.get(anyString())).thenAnswer(inv -> inv.getArgument(0));
     }
 
     // ========== streaks ==========
@@ -477,26 +470,31 @@ class TrainingStatsServiceTest {
 
     // ========== guards ==========
 
+    // The gate itself lives in TrainingCalendarService (flag + GDPR consent) and is tested there.
+    // What matters here is that stats go THROUGH it rather than carrying their own copy.
+
     @Test
-    void shouldThrowWhenUserIsNotAthlete() {
-        // Given
+    void shouldRefuseMyStatsWhenCalendarGateRejectsTheUser() {
+        // Given: the shared gate refuses (not an athlete, or consent not granted)
         UUID userId = UUID.randomUUID();
-        User user = new User("user@example.com", "Jan", "Kowalski", "+48123456789", "jan");
-        setField(user, "id", userId);
-        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(calendarService.requireAthlete(userId))
+            .thenThrow(new IllegalStateException("training.calendar.not.athlete"));
 
         // When / Then
         assertThrows(IllegalStateException.class, () -> service.getMyStats(userId));
+        verify(trainingRepository, never()).findStatsRowsByAthleteId(any());
     }
 
     @Test
-    void shouldThrowWhenAthleteNotFoundForCoach() {
+    void shouldRefuseCoachStatsWhenAthleteIsNotFlagged() {
         // Given
         UUID unknownId = UUID.randomUUID();
-        when(userRepository.findById(unknownId)).thenReturn(Optional.empty());
+        when(calendarService.requireFlaggedAthlete(unknownId))
+            .thenThrow(new IllegalArgumentException("training.calendar.athlete.not.found"));
 
         // When / Then
         assertThrows(IllegalArgumentException.class, () -> service.getStatsForAthlete(unknownId));
+        verify(trainingRepository, never()).findStatsRowsByAthleteId(any());
     }
 
     // ========== helpers ==========
@@ -545,15 +543,5 @@ class TrainingStatsServiceTest {
 
     private static ReservationStatsRow ratedReservation(LocalDate date, int rpe) {
         return new ReservationStatsRow(date, null, null, rpe);
-    }
-
-    private static void setField(Object target, String fieldName, Object value) {
-        try {
-            Field field = target.getClass().getDeclaredField(fieldName);
-            field.setAccessible(true);
-            field.set(target, value);
-        } catch (ReflectiveOperationException e) {
-            throw new RuntimeException(e);
-        }
     }
 }

@@ -3,6 +3,7 @@ package pl.nextsteppro.climbing.api;
 import io.jsonwebtoken.JwtException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
@@ -39,6 +40,19 @@ public class GlobalExceptionHandler {
         log.warn("Conflict: {}", ex.getMessage());
         return ResponseEntity.status(HttpStatus.CONFLICT)
             .body(new ErrorResponse("CONFLICT", ex.getMessage(), Instant.now()));
+    }
+
+    /**
+     * A losing race on a unique index is a CONFLICT, not a server fault: two tabs writing the
+     * same weigh-in day used to surface as a 500. Kept at log level ERROR on purpose — a
+     * violation that is NOT a benign race (a broken FK, a missing NOT NULL) still has to be
+     * loud in the logs, only the status code was wrong.
+     */
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ErrorResponse> handleDataIntegrity(DataIntegrityViolationException ex) {
+        log.error("Data integrity violation", ex);
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+            .body(new ErrorResponse("CONFLICT", messageService.get("error.conflict"), Instant.now()));
     }
 
     @ExceptionHandler(ObjectOptimisticLockingFailureException.class)

@@ -135,6 +135,56 @@ class RateLimitFilterTest {
         }
     }
 
+    /**
+     * The calendar RANGE endpoint is mapped on the bare base path, so its URI has no trailing
+     * slash. A prefix test of "/api/training-calendar/" missed it entirely, leaving the heaviest
+     * query of the whole feature unthrottled.
+     */
+    @Test
+    void shouldRateLimitTheTrainingCalendarRangeOnTheBarePath() throws Exception {
+        for (int i = 0; i < 40; i++) {
+            MockHttpServletResponse response = new MockHttpServletResponse();
+            filter.doFilterInternal(trainingRangeRequest(), response, new MockFilterChain());
+            assertEquals(200, response.getStatus());
+        }
+        MockHttpServletResponse blocked = new MockHttpServletResponse();
+        filter.doFilterInternal(trainingRangeRequest(), blocked, new MockFilterChain());
+        assertEquals(429, blocked.getStatus(), "the bare /api/training-calendar path must be throttled too");
+    }
+
+    @Test
+    void shouldCountTheBarePathAndSubPathsIntoTheSameTrainingBucket() throws Exception {
+        // 40 on the bare range path, then one on a sub-path: same bucket -> already exhausted
+        for (int i = 0; i < 40; i++) {
+            filter.doFilterInternal(trainingRangeRequest(), new MockHttpServletResponse(), new MockFilterChain());
+        }
+        MockHttpServletRequest subPath = new MockHttpServletRequest("GET", "/api/training-calendar/stats");
+        subPath.setRemoteAddr("192.168.1.50");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        filter.doFilterInternal(subPath, response, new MockFilterChain());
+        assertEquals(429, response.getStatus());
+    }
+
+    /** A path that merely starts with the same characters is a different resource. */
+    @Test
+    void shouldNotTreatALongerSiblingPathAsTheTrainingCalendar() throws Exception {
+        for (int i = 0; i < 45; i++) {
+            MockHttpServletRequest request =
+                new MockHttpServletRequest("GET", "/api/training-calendars-export");
+            request.setRemoteAddr("192.168.1.51");
+            MockHttpServletResponse response = new MockHttpServletResponse();
+            filter.doFilterInternal(request, response, new MockFilterChain());
+            assertEquals(200, response.getStatus());
+        }
+    }
+
+    private MockHttpServletRequest trainingRangeRequest() {
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/training-calendar");
+        request.setQueryString("from=2026-08-03&to=2026-08-09");
+        request.setRemoteAddr("192.168.1.50");
+        return request;
+    }
+
     private MockHttpServletRequest cfRequest(String cfConnectingIp, String spoofedXff) {
         MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api/auth/login");
         request.setRemoteAddr("10.0.0.1");

@@ -185,10 +185,9 @@ public class TrainingCalendarService {
             throw new IllegalStateException(msg.get("training.reservation.rpe.future"));
         }
         String note = ReservationRpe.sanitizeNote(request.note());
-        reservationRpeRepository.findByReservationId(reservationId)
-            .ifPresentOrElse(
-                existing -> existing.update(request.rpe(), note),
-                () -> reservationRpeRepository.save(new ReservationRpe(reservation, request.rpe(), note)));
+        // Single statement rather than read-then-save: a double-submitted rating raced on the
+        // reservation_id unique index. Overwriting is the intended semantics — this is an upsert.
+        reservationRpeRepository.upsertRating(reservationId, request.rpe(), note, Instant.now());
     }
 
     @Transactional(readOnly = true)
@@ -246,22 +245,22 @@ public class TrainingCalendarService {
             .toList();
     }
 
-    /** Global admin badge: total unread athlete activity across all currently flagged athletes. */
+    /**
+     * Global admin badge: total unread athlete activity across all currently flagged athletes.
+     * Polled every 60s from the navbar, so it does no more work than the number it returns —
+     * the flag filter lives in the queries, which also removes the roster read this used to do
+     * just to discard rows afterwards.
+     */
     @Transactional(readOnly = true)
     public long getTotalAthleteActivity(UUID adminId) {
-        Set<UUID> flagged = new HashSet<>();
-        userRepository.findAllByAthleteTrueOrderByFirstNameAscLastNameAsc()
-            .forEach(u -> flagged.add(u.getId()));
-        if (flagged.isEmpty()) return 0;
-        Map<UUID, Long> counts = mergeCounts(
+        return mergeCounts(
             trainingRepository.countNewAthleteTrainingsPerAthlete(adminId),
             trainingRepository.countNewCompletionsPerAthlete(adminId),
             commentRepository.countNewAthleteCommentsPerAthlete(adminId),
             deletionRepository.countNewAthleteDeletionsPerAthlete(adminId),
-            reservationRepository.countNewReservationsPerAthlete(adminId));
-        return counts.entrySet().stream()
-            .filter(e -> flagged.contains(e.getKey()))
-            .mapToLong(Map.Entry::getValue)
+            reservationRepository.countNewReservationsPerAthlete(adminId))
+            .values().stream()
+            .mapToLong(Long::longValue)
             .sum();
     }
 
@@ -277,13 +276,13 @@ public class TrainingCalendarService {
     }
 
     public PersonalTrainingDto updateAsAdmin(UUID trainingId, CreatePersonalTrainingRequest request) {
-        PersonalTraining training = requireTraining(trainingId);
+        PersonalTraining training = requireTrainingOfFlaggedAthlete(trainingId);
         applyUpdate(training, true, request);
         return toDtoWithAttachments(training, false, nowWarsaw());
     }
 
     public void deleteAsAdmin(UUID trainingId) {
-        PersonalTraining training = requireTraining(trainingId);
+        PersonalTraining training = requireTrainingOfFlaggedAthlete(trainingId);
         recordDeletionIfFuture(training, true);
         attachments.purgeTrainingAttachments(trainingId);
         trainingRepository.delete(training);
@@ -303,12 +302,12 @@ public class TrainingCalendarService {
 
     @Transactional(readOnly = true)
     public List<TrainingCommentDto> getCommentsAsAdmin(UUID adminId, UUID trainingId) {
-        requireTraining(trainingId);
+        requireTrainingOfFlaggedAthlete(trainingId);
         return toCommentDtos(commentRepository.findThread(trainingId), adminId);
     }
 
     public TrainingCommentDto addCommentAsAdmin(UUID adminId, UUID trainingId, String body) {
-        PersonalTraining training = requireTraining(trainingId);
+        PersonalTraining training = requireTrainingOfFlaggedAthlete(trainingId);
         User admin = userRepository.findById(adminId)
             .orElseThrow(() -> new IllegalArgumentException("User not found"));
         return addComment(training, admin, true, body, adminId);
@@ -323,6 +322,23 @@ public class TrainingCalendarService {
     PersonalTraining requireTraining(UUID trainingId) {
         return trainingRepository.findById(trainingId)
             .orElseThrow(() -> new IllegalArgumentException(msg.get("training.calendar.not.found")));
+    }
+
+    /**
+     * Coach path, addressing a training by ITS id rather than by athlete: the athlete flag must
+     * still be checked here, or the guard is only as good as the route taken. Un-flagging clears
+     * the athlete's consent ({@link User#setAthlete}), so without this an ex-athlete's calendar —
+     * feedback and RPE included — stayed writable through the by-id routes while the by-athlete
+     * ones correctly refused.
+     *
+     * <p>Reads the flag off the already-loaded association instead of a second findById.
+     */
+    PersonalTraining requireTrainingOfFlaggedAthlete(UUID trainingId) {
+        PersonalTraining training = requireTraining(trainingId);
+        if (!training.getAthlete().isAthlete()) {
+            throw new IllegalArgumentException(msg.get("training.calendar.athlete.not.found"));
+        }
+        return training;
     }
 
     // ---------- shared internals ----------

@@ -201,10 +201,23 @@ public class AthleteGoalService {
         return WeightTrendCalculator.trendOn(WeightTrendCalculator.index(window), today);
     }
 
-    // Package-private for AdminTrainingCalendarService (activity-log descriptions).
+    /**
+     * Every goal mutation is addressed by GOAL id, so the athlete flag has to be checked here —
+     * the by-athlete entry points ({@link #createGoal}, {@link #getGoalsForAthlete}) already do
+     * it, and a guard only one route respects is not a guard. Un-flagging clears the athlete's
+     * consent, and a weight goal is health data, so an ex-athlete's goals must stop being
+     * editable at the same moment their calendar does.
+     *
+     * <p>Package-private: AdminTrainingCalendarService needs it for activity-log descriptions.
+     */
     AthleteGoal requireGoal(UUID goalId) {
-        return goalRepository.findById(goalId)
+        AthleteGoal goal = goalRepository.findById(goalId)
             .orElseThrow(() -> new IllegalArgumentException(msg.get("training.goal.not.found")));
+        if (!goal.getAthlete().isAthlete()) {
+            // Same message as not-found: an un-flagged athlete's goal ids are not worth probing
+            throw new IllegalArgumentException(msg.get("training.goal.not.found"));
+        }
+        return goal;
     }
 
     /** Achieved goals are trophies: no edit, no re-achieve. Deleting one is allowed (see above). */

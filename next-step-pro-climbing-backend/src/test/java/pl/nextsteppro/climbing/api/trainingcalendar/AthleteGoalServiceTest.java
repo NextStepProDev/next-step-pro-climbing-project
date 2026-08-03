@@ -337,6 +337,46 @@ class AthleteGoalServiceTest {
         assertThrows(IllegalStateException.class, () -> service.getMyGoals(regularId));
     }
 
+    /**
+     * Every goal mutation is addressed by GOAL id, so the flag has to be checked on that route
+     * too — createGoal already went through requireFlaggedAthlete while edit/delete/achieve did
+     * not. Un-flagging clears the athlete's consent, and a weight goal is health data.
+     */
+    @Test
+    void shouldRefuseEditingAGoalOfAnUnflaggedAthlete() {
+        // Given: the coach removed the athlete flag after the goal was set
+        UUID goalId = UUID.randomUUID();
+        athlete.setAthlete(false);
+        when(goalRepository.findById(goalId)).thenReturn(Optional.of(
+            new AthleteGoal(athlete, GoalHorizon.SHORT, "Stary cel", LocalDate.of(2026, 9, 15))));
+
+        // When / Then: indistinguishable from a goal that never existed
+        IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
+            () -> service.updateGoal(goalId, generalGoalRequest(GoalHorizon.SHORT, "Nowa treść", LocalDate.of(2026, 9, 15))));
+        assertEquals("training.goal.not.found", e.getMessage());
+    }
+
+    @Test
+    void shouldRefuseDeletingAGoalOfAnUnflaggedAthlete() {
+        UUID goalId = UUID.randomUUID();
+        athlete.setAthlete(false);
+        when(goalRepository.findById(goalId)).thenReturn(Optional.of(
+            new AthleteGoal(athlete, GoalHorizon.SHORT, "Stary cel", LocalDate.of(2026, 9, 15))));
+
+        assertThrows(IllegalArgumentException.class, () -> service.deleteGoal(goalId));
+        verify(goalRepository, never()).delete(any());
+    }
+
+    @Test
+    void shouldRefuseAchievingAGoalOfAnUnflaggedAthlete() {
+        UUID goalId = UUID.randomUUID();
+        athlete.setAthlete(false);
+        when(goalRepository.findById(goalId)).thenReturn(Optional.of(
+            new AthleteGoal(athlete, GoalHorizon.SHORT, "Stary cel", LocalDate.of(2026, 9, 15))));
+
+        assertThrows(IllegalArgumentException.class, () -> service.achieveGoal(goalId, null));
+    }
+
     // ---------- weight goals ----------
 
     @Test

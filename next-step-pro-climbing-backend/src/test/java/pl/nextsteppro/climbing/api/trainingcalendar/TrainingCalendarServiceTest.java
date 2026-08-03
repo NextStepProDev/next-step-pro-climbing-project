@@ -465,7 +465,6 @@ class TrainingCalendarServiceTest {
     @Test
     void shouldIncludeNewReservationsInTotalActivity() {
         UUID adminId = UUID.randomUUID();
-        when(userRepository.findAllByAthleteTrueOrderByFirstNameAscLastNameAsc()).thenReturn(List.of(athlete));
         when(reservationRepository.countNewReservationsPerAthlete(adminId))
             .thenReturn(List.of(new AthleteActivityCount(athleteId, 2)));
 
@@ -473,20 +472,32 @@ class TrainingCalendarServiceTest {
     }
 
     @Test
-    void shouldCountOnlyFlaggedAthletesInTotalActivity() {
-        // Given: two users with activity, only one still flagged
+    void shouldSumEveryActivitySourceIntoTheBadge() {
+        // Given: the same athlete has unread activity of three different kinds
         UUID adminId = UUID.randomUUID();
-        UUID unflaggedId = UUID.randomUUID();
-        when(userRepository.findAllByAthleteTrueOrderByFirstNameAscLastNameAsc()).thenReturn(List.of(athlete));
-        setField(athlete, "id", athleteId);
         when(trainingRepository.countNewAthleteTrainingsPerAthlete(adminId))
-            .thenReturn(List.of(new AthleteActivityCount(athleteId, 2), new AthleteActivityCount(unflaggedId, 5)));
+            .thenReturn(List.of(new AthleteActivityCount(athleteId, 2)));
         when(trainingRepository.countNewCompletionsPerAthlete(adminId))
             .thenReturn(List.of(new AthleteActivityCount(athleteId, 1)));
         when(commentRepository.countNewAthleteCommentsPerAthlete(adminId)).thenReturn(List.of());
 
-        // When / Then — unflagged athlete's 5 must not leak into the badge
+        // When / Then
         assertEquals(3L, service.getTotalAthleteActivity(adminId));
+    }
+
+    /**
+     * The flag filter moved INTO the queries (they all carry `athlete.athlete = true`), so the
+     * badge no longer reads the roster only to discard rows in Java — it is polled every 60s.
+     */
+    @Test
+    void shouldNotReadTheRosterJustToComputeTheBadge() {
+        UUID adminId = UUID.randomUUID();
+        when(trainingRepository.countNewAthleteTrainingsPerAthlete(adminId))
+            .thenReturn(List.of(new AthleteActivityCount(athleteId, 2)));
+
+        service.getTotalAthleteActivity(adminId);
+
+        verify(userRepository, never()).findAllByAthleteTrueOrderByFirstNameAscLastNameAsc();
     }
 
     // ========== rpe & completion flag hygiene ==========
@@ -960,34 +971,33 @@ class TrainingCalendarServiceTest {
         Reservation r = reservationWithCreatedAt(slot, Instant.now());
         setField(r, "id", reservationId);
         when(reservationRepository.findById(reservationId)).thenReturn(Optional.of(r));
-        when(reservationRpeRepository.findByReservationId(reservationId)).thenReturn(Optional.empty());
 
         // When
         service.rateReservation(athleteId, reservationId, new RateReservationRequest(7, "Ciężko"));
 
         // Then
-        ArgumentCaptor<pl.nextsteppro.climbing.domain.reservation.ReservationRpe> cap =
-            ArgumentCaptor.forClass(pl.nextsteppro.climbing.domain.reservation.ReservationRpe.class);
-        verify(reservationRpeRepository).save(cap.capture());
-        assertEquals(7, cap.getValue().getRpe());
+        verify(reservationRpeRepository).upsertRating(eq(reservationId), eq(7), eq("Ciężko"), any());
     }
 
+    /**
+     * Rating is idempotent by contract, so an existing row is not a branch — one statement covers
+     * both, which is also what stops a double-submitted rating racing on reservation_id UNIQUE.
+     */
     @Test
     void shouldUpsertExistingRating() {
-        // Given: already rated → editing updates in place, no insert
+        // Given: already rated → editing overwrites, never inserts a second row
         UUID reservationId = UUID.randomUUID();
         TimeSlot slot = new TimeSlot(LocalDate.now().minusDays(1), LocalTime.of(10, 0), LocalTime.of(11, 0), 4);
         Reservation r = reservationWithCreatedAt(slot, Instant.now());
         setField(r, "id", reservationId);
-        var existing = new pl.nextsteppro.climbing.domain.reservation.ReservationRpe(r, 3, null);
         when(reservationRepository.findById(reservationId)).thenReturn(Optional.of(r));
-        when(reservationRpeRepository.findByReservationId(reservationId)).thenReturn(Optional.of(existing));
 
         // When
         service.rateReservation(athleteId, reservationId, new RateReservationRequest(9, null));
 
         // Then
-        assertEquals(9, existing.getRpe());
+        verify(reservationRpeRepository).upsertRating(eq(reservationId), eq(9), isNull(), any());
+        verify(reservationRpeRepository, never()).findByReservationId(any());
         verify(reservationRpeRepository, never()).save(any());
     }
 
@@ -1162,6 +1172,56 @@ class TrainingCalendarServiceTest {
         athlete.setAthlete(false);
 
         assertFalse(athlete.hasTrainingConsent());
+    }
+
+    /**
+     * Un-flagging clears the consent, so the coach's by-TRAINING-id routes have to refuse from
+     * the same moment the by-athlete-id ones do. They used to look the training up by id alone,
+     * which left an ex-athlete's plan (feedback and RPE included) editable through the back road.
+     */
+    @Test
+    void shouldRefuseCoachEditWhenAthleteIsNoLongerFlagged() {
+        UUID trainingId = UUID.randomUUID();
+        athlete.setAthlete(false);
+        PersonalTraining training = buildTraining(athlete, true);
+        when(trainingRepository.findById(trainingId)).thenReturn(Optional.of(training));
+
+        assertThrows(IllegalArgumentException.class,
+            () -> service.updateAsAdmin(trainingId, new CreatePersonalTrainingRequest(
+                LocalDate.now().plusDays(1), LocalTime.of(18, 0), LocalTime.of(19, 0), "Zmiana", null)));
+    }
+
+    @Test
+    void shouldRefuseCoachDeleteWhenAthleteIsNoLongerFlagged() {
+        UUID trainingId = UUID.randomUUID();
+        athlete.setAthlete(false);
+        when(trainingRepository.findById(trainingId)).thenReturn(Optional.of(buildTraining(athlete, true)));
+
+        assertThrows(IllegalArgumentException.class, () -> service.deleteAsAdmin(trainingId));
+        verify(trainingRepository, never()).delete(any());
+    }
+
+    @Test
+    void shouldRefuseCoachCommentWhenAthleteIsNoLongerFlagged() {
+        UUID trainingId = UUID.randomUUID();
+        athlete.setAthlete(false);
+        when(trainingRepository.findById(trainingId)).thenReturn(Optional.of(buildTraining(athlete, true)));
+
+        assertThrows(IllegalArgumentException.class,
+            () -> service.addCommentAsAdmin(UUID.randomUUID(), trainingId, "Cześć"));
+        verify(commentRepository, never()).save(any());
+    }
+
+    @Test
+    void shouldStillAllowCoachEditWhileTheAthleteIsFlagged() {
+        UUID trainingId = UUID.randomUUID();
+        PersonalTraining training = buildTraining(athlete, true);
+        when(trainingRepository.findById(trainingId)).thenReturn(Optional.of(training));
+
+        PersonalTrainingDto dto = service.updateAsAdmin(trainingId, new CreatePersonalTrainingRequest(
+            LocalDate.now().plusDays(1), LocalTime.of(18, 0), LocalTime.of(19, 0), "Zmiana", null));
+
+        assertEquals("Zmiana", dto.title());
     }
 
     // ========== helpers ==========

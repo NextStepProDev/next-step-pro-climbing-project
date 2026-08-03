@@ -42,6 +42,8 @@ public class RateLimitFilter extends OncePerRequestFilter {
     // the shared suffix so the tighter cap covers both, and check it before the broader buckets.
     private static final String UPLOAD_PATH_SUFFIX = "/attachments/upload";
 
+    private static final String TRAINING_CALENDAR_PATH = "/api/training-calendar";
+
     private final Cache<String, AtomicInteger> requestCounts = Caffeine.newBuilder()
         .expireAfterWrite(Duration.ofMinutes(1))
         .maximumSize(10_000)
@@ -84,13 +86,15 @@ public class RateLimitFilter extends OncePerRequestFilter {
         filterChain.doFilter(request, response);
     }
 
+    // The two resolvers MUST test the same prefixes in the same order, or a request could be
+    // capped by one bucket's limit while counting into another bucket's counter.
     private int resolveLimit(String path) {
         if (path.contains(UPLOAD_PATH_SUFFIX)) return UPLOAD_LIMIT;
         if (path.startsWith("/api/auth/")) return AUTH_LIMIT;
         if (path.startsWith("/api/reservations/")) return RESERVATION_LIMIT;
         if (path.startsWith("/api/user/")) return USER_LIMIT;
         if (path.startsWith("/api/admin/")) return ADMIN_LIMIT;
-        if (path.startsWith("/api/training-calendar/")) return TRAINING_LIMIT;
+        if (isTrainingCalendar(path)) return TRAINING_LIMIT;
         return 0;
     }
 
@@ -100,8 +104,17 @@ public class RateLimitFilter extends OncePerRequestFilter {
         if (path.startsWith("/api/reservations/")) return "reservations";
         if (path.startsWith("/api/user/")) return "user";
         if (path.startsWith("/api/admin/")) return "admin";
-        if (path.startsWith("/api/training-calendar/")) return "training";
+        if (isTrainingCalendar(path)) return "training";
         return "default";
+    }
+
+    /**
+     * The calendar RANGE endpoint is mapped on the bare base path, so its URI carries no trailing
+     * slash — a plain {@code startsWith(base + "/")} let the heaviest query of the whole feature
+     * (trainings + attachments + reservations + RPE + held seats + deletion log) through unthrottled.
+     */
+    private static boolean isTrainingCalendar(String path) {
+        return path.equals(TRAINING_CALENDAR_PATH) || path.startsWith(TRAINING_CALENDAR_PATH + "/");
     }
 
     private Locale resolveLocale(HttpServletRequest request) {
