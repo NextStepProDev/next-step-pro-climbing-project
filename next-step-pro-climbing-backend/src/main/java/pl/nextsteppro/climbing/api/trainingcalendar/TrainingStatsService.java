@@ -8,9 +8,6 @@ import pl.nextsteppro.climbing.domain.personaltraining.PersonalTrainingRepositor
 import pl.nextsteppro.climbing.domain.personaltraining.TrainingStatsRow;
 import pl.nextsteppro.climbing.domain.reservation.ReservationRepository;
 import pl.nextsteppro.climbing.domain.reservation.ReservationStatsRow;
-import pl.nextsteppro.climbing.domain.user.User;
-import pl.nextsteppro.climbing.domain.user.UserRepository;
-import pl.nextsteppro.climbing.infrastructure.i18n.MessageService;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
@@ -57,27 +54,27 @@ public class TrainingStatsService {
 
     private final PersonalTrainingRepository trainingRepository;
     private final ReservationRepository reservationRepository;
-    private final UserRepository userRepository;
-    private final MessageService msg;
+    private final TrainingCalendarService calendarService;
 
     public TrainingStatsService(PersonalTrainingRepository trainingRepository,
                                 ReservationRepository reservationRepository,
-                                UserRepository userRepository,
-                                MessageService msg) {
+                                TrainingCalendarService calendarService) {
         this.trainingRepository = trainingRepository;
         this.reservationRepository = reservationRepository;
-        this.userRepository = userRepository;
-        this.msg = msg;
+        this.calendarService = calendarService;
     }
 
     public AthleteStatsDto getMyStats(UUID userId) {
-        requireAthlete(userId);
+        // Stats are built from completions, RPE and weigh-ins, so they sit behind the same
+        // consent gate as the calendar. Delegated, never re-implemented: a second copy of the
+        // gate is a second thing to forget when the rules change (this class used to hold one).
+        calendarService.requireAthlete(userId);
         LocalDateTime now = LocalDateTime.now(WARSAW);
         return buildStats(userId, now);
     }
 
     public AthleteStatsDto getStatsForAthlete(UUID athleteId) {
-        requireFlaggedAthlete(athleteId);
+        calendarService.requireFlaggedAthlete(athleteId);
         LocalDateTime now = LocalDateTime.now(WARSAW);
         return buildStats(athleteId, now);
     }
@@ -301,24 +298,5 @@ public class TrainingStatsService {
             .limit(TOP_LOCATIONS)
             .forEach(e -> top.add(new LocationCountDto(e.getKey(), e.getValue())));
         return top;
-    }
-
-    // Stats are built from completions, RPE and weigh-ins, so they sit behind the same
-    // consent gate as the calendar itself (TrainingCalendarService.requireAthlete).
-    private void requireAthlete(UUID userId) {
-        User user = userRepository.findById(userId)
-            .orElseThrow(() -> new IllegalArgumentException("User not found"));
-        if (!user.isAthlete()) {
-            throw new IllegalStateException(msg.get("training.calendar.not.athlete"));
-        }
-        if (!user.hasTrainingConsent()) {
-            throw new IllegalStateException(msg.get("training.calendar.consent.required"));
-        }
-    }
-
-    private void requireFlaggedAthlete(UUID athleteId) {
-        userRepository.findById(athleteId)
-            .filter(User::isAthlete)
-            .orElseThrow(() -> new IllegalArgumentException(msg.get("training.calendar.athlete.not.found")));
     }
 }

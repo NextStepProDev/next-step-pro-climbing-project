@@ -22,7 +22,8 @@ public interface TrainingDeletionRepository extends JpaRepository<TrainingDeleti
         SELECT new pl.nextsteppro.climbing.domain.personaltraining.AthleteActivityCount(d.athlete.id, COUNT(d))
         FROM TrainingDeletion d
         LEFT JOIN TrainingCalendarRead r ON r.userId = :adminId AND r.athleteId = d.athlete.id
-        WHERE d.deletedByAdmin = false AND (r.seenAt IS NULL OR d.createdAt > r.seenAt)
+        WHERE d.athlete.athlete = true
+          AND d.deletedByAdmin = false AND (r.seenAt IS NULL OR d.createdAt > r.seenAt)
         GROUP BY d.athlete.id
         """)
     List<AthleteActivityCount> countNewAthleteDeletionsPerAthlete(UUID adminId);

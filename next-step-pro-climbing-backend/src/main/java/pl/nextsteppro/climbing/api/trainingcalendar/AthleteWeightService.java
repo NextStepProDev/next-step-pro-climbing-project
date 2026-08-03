@@ -8,10 +8,10 @@ import pl.nextsteppro.climbing.domain.athleteweight.AthleteWeightRepository;
 import pl.nextsteppro.climbing.domain.athleteweight.WeightRange;
 import pl.nextsteppro.climbing.domain.athleteweight.WeightTrendCalculator;
 import pl.nextsteppro.climbing.domain.athleteweight.WeightTrendCalculator.TrendPoint;
-import pl.nextsteppro.climbing.domain.user.User;
 import pl.nextsteppro.climbing.infrastructure.i18n.MessageService;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.List;
@@ -75,7 +75,7 @@ public class AthleteWeightService {
      * Returns the whole recomputed series so the panel refreshes from this response alone.
      */
     public AthleteWeightSeriesDto recordMyWeight(UUID userId, SaveWeightRequest request) {
-        User athlete = calendarService.requireAthlete(userId);
+        calendarService.requireAthlete(userId);
         LocalDate today = LocalDate.now(WARSAW);
         if (request.measuredOn().isAfter(today)) {
             throw new IllegalArgumentException(msg.get("training.weight.future"));
@@ -90,12 +90,9 @@ public class AthleteWeightService {
             throw new IllegalArgumentException(msg.get("training.weight.range"));
         }
 
-        weightRepository.findByAthleteIdAndMeasuredOn(userId, request.measuredOn())
-            .ifPresentOrElse(
-                existing -> existing.correctTo(weight),
-                () -> weightRepository.save(new AthleteWeight(athlete, request.measuredOn(), weight)));
-        // The evaluation below reads the window back, so the new row must already be visible
-        weightRepository.flush();
+        // Single statement rather than read-then-save: two weigh-ins racing on the same day
+        // (double tap, second tab) must both succeed, with the later one winning as a correction
+        weightRepository.upsertReading(userId, request.measuredOn(), weight, Instant.now());
 
         NavigableMap<LocalDate, BigDecimal> byDate = loadWindow(userId, today, WeightRange.DEFAULT.days());
         goalService.evaluateWeightGoals(userId, WeightTrendCalculator.confirmedTrendOn(byDate, today));

@@ -99,47 +99,50 @@ class AthleteWeightServiceTest {
 
     // ---------- upsert ----------
 
+    /**
+     * The day already having a reading is NOT a branch the service takes — a single upsert
+     * covers both cases. That is the whole point: read-then-save let two concurrent weigh-ins
+     * (double tap, second tab) collide on uq_athlete_weights_day and surface as a 500.
+     */
     @Test
     void shouldCorrectTheExistingReadingWhenWeighingTwiceOnTheSameDay() {
         // Given: today already has a reading
         AthleteWeight existing = new AthleteWeight(athlete, today(), new BigDecimal("70.00"));
-        when(weightRepository.findByAthleteIdAndMeasuredOn(athleteId, today())).thenReturn(Optional.of(existing));
         when(weightRepository.findRange(eq(athleteId), any(), any())).thenReturn(List.of(existing));
 
         // When
         service.recordMyWeight(athleteId, weighIn("71.5"));
 
-        // Then: corrected in place, never a second row
-        assertEquals(0, new BigDecimal("71.50").compareTo(existing.getWeightKg()));
+        // Then: one statement settles it, and it never reads the day first
+        verify(weightRepository).upsertReading(eq(athleteId), eq(today()), eq(new BigDecimal("71.50")), any());
+        verify(weightRepository, never()).findByAthleteIdAndMeasuredOn(any(), any());
         verify(weightRepository, never()).save(any());
     }
 
     @Test
     void shouldCreateAReadingWhenTheDayIsStillEmpty() {
         // Given
-        when(weightRepository.findByAthleteIdAndMeasuredOn(athleteId, today())).thenReturn(Optional.empty());
         when(weightRepository.findRange(eq(athleteId), any(), any())).thenReturn(List.of());
 
         // When
         service.recordMyWeight(athleteId, weighIn("70.0"));
 
         // Then
-        verify(weightRepository).save(any(AthleteWeight.class));
+        verify(weightRepository).upsertReading(eq(athleteId), eq(today()), eq(new BigDecimal("70.00")), any());
     }
 
     @Test
     void shouldRoundToTwoDecimalsInsteadOfRejectingAThirdOne() {
         // Given: the column is NUMERIC(5,2) — 70.333 must not be a 400
-        when(weightRepository.findByAthleteIdAndMeasuredOn(athleteId, today())).thenReturn(Optional.empty());
         when(weightRepository.findRange(eq(athleteId), any(), any())).thenReturn(List.of());
-        ArgumentCaptor<AthleteWeight> saved = ArgumentCaptor.forClass(AthleteWeight.class);
+        ArgumentCaptor<BigDecimal> saved = ArgumentCaptor.forClass(BigDecimal.class);
 
         // When
         service.recordMyWeight(athleteId, weighIn("70.333"));
 
         // Then
-        verify(weightRepository).save(saved.capture());
-        assertEquals("70.33", saved.getValue().getWeightKg().toPlainString());
+        verify(weightRepository).upsertReading(eq(athleteId), eq(today()), saved.capture(), any());
+        assertEquals("70.33", saved.getValue().toPlainString());
     }
 
     // ---------- guards ----------
@@ -153,30 +156,26 @@ class AthleteWeightServiceTest {
         IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
             () -> service.recordMyWeight(athleteId, request));
         assertEquals("training.weight.future", e.getMessage());
-        verify(weightRepository, never()).save(any());
+        verify(weightRepository, never()).upsertReading(any(), any(), any(), any());
     }
 
     @Test
     void shouldAcceptAReadingBackfilledForAnEarlierDay() {
         // Given: the athlete forgot to weigh in on Tuesday and catches up today
         LocalDate missedDay = today().minusDays(3);
-        when(weightRepository.findByAthleteIdAndMeasuredOn(athleteId, missedDay)).thenReturn(Optional.empty());
         when(weightRepository.findRange(eq(athleteId), any(), any())).thenReturn(List.of());
-        ArgumentCaptor<AthleteWeight> saved = ArgumentCaptor.forClass(AthleteWeight.class);
 
         // When
         service.recordMyWeight(athleteId, new SaveWeightRequest(missedDay, new BigDecimal("70.0")));
 
         // Then: stored against the day it was measured, not the day it was typed
-        verify(weightRepository).save(saved.capture());
-        assertEquals(missedDay, saved.getValue().getMeasuredOn());
+        verify(weightRepository).upsertReading(eq(athleteId), eq(missedDay), any(), any());
     }
 
     @Test
     void shouldLetABackfilledReadingCountTowardsTodaysTrend() {
         // Given: two readings, and the athlete backfills a third from two days ago
         LocalDate missedDay = today().minusDays(2);
-        when(weightRepository.findByAthleteIdAndMeasuredOn(athleteId, missedDay)).thenReturn(Optional.empty());
         when(weightRepository.findRange(eq(athleteId), any(), any()))
             .thenReturn(recentReadings("70.0", "69.0", "68.0"));
         ArgumentCaptor<ConfirmedTrend> trend = ArgumentCaptor.forClass(ConfirmedTrend.class);
@@ -199,21 +198,20 @@ class AthleteWeightServiceTest {
         IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
             () -> service.recordMyWeight(athleteId, request));
         assertEquals("training.weight.too.old", e.getMessage());
-        verify(weightRepository, never()).save(any());
+        verify(weightRepository, never()).upsertReading(any(), any(), any(), any());
     }
 
     @Test
     void shouldAcceptAReadingOnTheOldestDayTheChartStillShows() {
         // Given: the exact left edge of the window must remain reachable
         LocalDate oldest = today().minusDays(AthleteWeightService.BACKFILL_DAYS - 1L);
-        when(weightRepository.findByAthleteIdAndMeasuredOn(athleteId, oldest)).thenReturn(Optional.empty());
         when(weightRepository.findRange(eq(athleteId), any(), any())).thenReturn(List.of());
 
         // When
         service.recordMyWeight(athleteId, new SaveWeightRequest(oldest, new BigDecimal("70.0")));
 
         // Then
-        verify(weightRepository).save(any(AthleteWeight.class));
+        verify(weightRepository).upsertReading(eq(athleteId), eq(oldest), any(), any());
     }
 
     // ---------- ranges + the trailing-average edge ----------
@@ -342,8 +340,6 @@ class AthleteWeightServiceTest {
     void shouldNotCloseGoalsWhenTheTrendRestsOnTwoReadings() {
         // Given: only two readings in the window, even though the latest is well under target
         List<AthleteWeight> readings = recentReadings("70.0", "69.0");
-        when(weightRepository.findByAthleteIdAndMeasuredOn(athleteId, today()))
-            .thenReturn(Optional.of(readings.get(readings.size() - 1)));
         when(weightRepository.findRange(eq(athleteId), any(), any())).thenReturn(readings);
 
         // When
@@ -357,8 +353,6 @@ class AthleteWeightServiceTest {
     void shouldCloseGoalsOnceTheThirdReadingConfirmsTheTrend() {
         // Given: three readings in the window
         List<AthleteWeight> readings = recentReadings("70.0", "69.0", "68.0");
-        when(weightRepository.findByAthleteIdAndMeasuredOn(athleteId, today()))
-            .thenReturn(Optional.of(readings.get(readings.size() - 1)));
         when(weightRepository.findRange(eq(athleteId), any(), any())).thenReturn(readings);
         ArgumentCaptor<ConfirmedTrend> trend = ArgumentCaptor.forClass(ConfirmedTrend.class);
 

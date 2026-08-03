@@ -38,7 +38,8 @@ public interface TrainingCommentRepository extends JpaRepository<TrainingComment
         SELECT new pl.nextsteppro.climbing.domain.personaltraining.AthleteActivityCount(c.training.athlete.id, COUNT(c))
         FROM TrainingComment c
         LEFT JOIN TrainingCalendarRead r ON r.userId = :adminId AND r.athleteId = c.training.athlete.id
-        WHERE c.authorIsAdmin = false AND (r.seenAt IS NULL OR c.createdAt > r.seenAt)
+        WHERE c.training.athlete.athlete = true
+          AND c.authorIsAdmin = false AND (r.seenAt IS NULL OR c.createdAt > r.seenAt)
         GROUP BY c.training.athlete.id
         """)
     List<AthleteActivityCount> countNewAthleteCommentsPerAthlete(UUID adminId);
@@ -47,6 +48,7 @@ public interface TrainingCommentRepository extends JpaRepository<TrainingComment
     @Query("""
         SELECT new pl.nextsteppro.climbing.domain.personaltraining.AthleteLastActivity(c.training.athlete.id, MAX(c.createdAt))
         FROM TrainingComment c
+        WHERE c.training.athlete.athlete = true
         GROUP BY c.training.athlete.id
         """)
     List<AthleteLastActivity> findLastCommentActivityPerAthlete();
