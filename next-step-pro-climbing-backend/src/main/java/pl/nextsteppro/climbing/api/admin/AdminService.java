@@ -60,6 +60,10 @@ import java.util.stream.Collectors;
 @Transactional
 public class AdminService {
 
+    // Schedules are stored as local Poland time while the container runs UTC — see CLAUDE.md.
+    // Notification decisions must not flip around midnight, so they read "now" through this zone.
+    private static final java.time.ZoneId WARSAW = java.time.ZoneId.of("Europe/Warsaw");
+
     private final TimeSlotRepository timeSlotRepository;
     private final EventRepository eventRepository;
     private final CourseRepository courseRepository;
@@ -217,7 +221,12 @@ public class AdminService {
             }
         }
 
-        boolean shouldNotify = !Boolean.FALSE.equals(request.sendNotifications());
+        // A slot that is over — before AND after the edit — must not mail its participants.
+        boolean isNews = EditNotificationPolicy.slotEditIsNews(
+            LocalDateTime.of(oldDate, oldEnd),
+            LocalDateTime.of(slot.getDate(), slot.getEndTime()),
+            LocalDateTime.now(WARSAW));
+        boolean shouldNotify = isNews && !Boolean.FALSE.equals(request.sendNotifications());
         if (shouldNotify) {
             var tf = DateTimeFormatter.ofPattern("HH:mm");
             var df = DateTimeFormatter.ofPattern("yyyy-MM-dd");
@@ -522,7 +531,7 @@ public class AdminService {
      */
     @Transactional(readOnly = true)
     public AdminWaitlistsDto getAdminWaitlists(UUID adminId) {
-        LocalDate today = LocalDate.now(java.time.ZoneId.of("Europe/Warsaw"));
+        LocalDate today = LocalDate.now(WARSAW);
         Instant newSince = userRepository.findById(adminId).orElseThrow().getAdminReservationsSeenAt();
 
         Map<UUID, SlotWaitlistGroupDto> slotGroups = new LinkedHashMap<>();
@@ -668,7 +677,11 @@ public class AdminService {
                 ? event.getStartTime().format(tf) + " – " + event.getEndTime().format(tf) : "–";
             changes.add(new MailService.FieldChange("email.change.time", oldTime, newTime));
         }
-        if (!changes.isEmpty()) {
+        // An event that is over — before AND after the edit — must not mail its participants.
+        // Tidying up a past event's location (which the athlete stats group by) is bookkeeping,
+        // not news; moving a finished event to a future date still is.
+        boolean isNews = EditNotificationPolicy.eventEditIsNews(oldEndDate, event.getEndDate(), LocalDate.now(WARSAW));
+        if (!changes.isEmpty() && isNews) {
             List<TimeSlot> slots = timeSlotRepository.findByEventId(eventId);
             if (!slots.isEmpty()) {
                 List<UUID> slotIds = slots.stream().map(TimeSlot::getId).toList();
