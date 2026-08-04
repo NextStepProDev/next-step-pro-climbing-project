@@ -69,9 +69,9 @@ public interface ReservationRepository extends JpaRepository<Reservation, UUID> 
     List<Reservation> findPastByUserId(UUID userId, LocalDate today, LocalTime now);
 
     /** Athlete statistics: attended reservations (confirmed + slot already over) reduced to
-     * (date, eventType, location). Same past-predicate as {@link #findPastByUserId}. */
+     * (date, eventId, eventType, location). Same past-predicate as {@link #findPastByUserId}. */
     @Query("""
-        SELECT new pl.nextsteppro.climbing.domain.reservation.ReservationStatsRow(ts.date, e.eventType, e.location, rr.rpe)
+        SELECT new pl.nextsteppro.climbing.domain.reservation.ReservationStatsRow(ts.date, e.id, e.eventType, e.location, rr.rpe)
         FROM Reservation r
         JOIN r.timeSlot ts
         LEFT JOIN ts.event e
