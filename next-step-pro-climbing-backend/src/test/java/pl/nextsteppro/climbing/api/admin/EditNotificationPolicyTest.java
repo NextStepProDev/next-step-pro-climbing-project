@@ -28,9 +28,15 @@ class EditNotificationPolicyTest {
     }
 
     @Test
-    void shouldStaySilentWhenTheEventEndedToday() {
-        // deleteEvent already treats an event ending today as past; editing must agree
-        assertFalse(EditNotificationPolicy.eventEditIsNews(TODAY, TODAY, TODAY));
+    void shouldNotifyWhenTheEventEndsToday() {
+        // An event ending today has not happened yet — the people going today are exactly the
+        // ones a change concerns. (Earlier this counted as over, inherited from deleteEvent.)
+        assertTrue(EditNotificationPolicy.eventEditIsNews(TODAY, TODAY, TODAY));
+    }
+
+    @Test
+    void shouldStaySilentWhenTheEventEndedYesterday() {
+        assertFalse(EditNotificationPolicy.eventEditIsNews(TODAY.minusDays(1), TODAY.minusDays(1), TODAY));
     }
 
     @Test
@@ -74,9 +80,20 @@ class EditNotificationPolicyTest {
     }
 
     @Test
-    void shouldTreatASlotEndingExactlyNowAsOver() {
-        // Boundary: end == now means the session is done, nothing left to announce
-        assertFalse(EditNotificationPolicy.slotEditIsNews(NOW, NOW, NOW));
+    void shouldNotifyWhileTheSlotIsStillRunning() {
+        // Started at 11:00, ends at 14:00, it is 12:00 — someone may be on their way or on site
+        assertTrue(EditNotificationPolicy.slotEditIsNews(
+            LocalDateTime.of(2026, 8, 5, 14, 0),
+            LocalDateTime.of(2026, 8, 5, 14, 0),
+            NOW));
+    }
+
+    @Test
+    void shouldNotifyForASlotEndingExactlyNow() {
+        // Boundary follows BookingTimeValidator, the app-wide definition: "past" is strict, so the
+        // closing minute has not passed yet. Erring towards one more mail at that single instant is
+        // the safe side — the alternative is silence towards someone who is still on site.
+        assertTrue(EditNotificationPolicy.slotEditIsNews(NOW, NOW, NOW));
     }
 
     private static LocalDate d(int year, int month, int day) {
