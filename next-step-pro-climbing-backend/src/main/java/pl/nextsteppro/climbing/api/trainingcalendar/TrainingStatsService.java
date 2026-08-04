@@ -19,8 +19,10 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.UUID;
@@ -54,7 +56,7 @@ public class TrainingStatsService {
     private static final int TASK_WINDOW_DAYS = 30;
     private static final int SUSTAINED_HIGH_SAMPLE = 5;
     private static final int SUSTAINED_HIGH_THRESHOLD = 9;
-    private static final int TOP_LOCATIONS = 3;
+    private static final int TOP_LOCATIONS = 5;
 
     private final PersonalTrainingRepository trainingRepository;
     private final ReservationRepository reservationRepository;
@@ -333,19 +335,34 @@ public class TrainingStatsService {
         return recent.stream().allMatch(a -> a.rpe() >= SUSTAINED_HIGH_THRESHOLD);
     }
 
+    /**
+     * Where the athlete actually goes, most-visited first.
+     *
+     * <p><b>One event = one visit, not one row per day.</b> A multi-day trip books a reservation per
+     * slot, so counting rows made a single three-day course outrank a place the athlete returns to
+     * every other weekend — the number read as "days spent" while the card promises "visits".
+     *
+     * <p>Ties break on the <b>most recent</b> visit, not alphabetically. With a handful of
+     * one-visit places, an alphabetical tie-break silently hands the last slots to whatever sorts
+     * first, so late-alphabet places fall off a list they belong on.
+     */
     private static List<LocationCountDto> topLocations(List<ReservationStatsRow> reservations) {
-        Map<String, Long> counts = new HashMap<>();
+        Map<String, Set<UUID>> visits = new HashMap<>();
+        Map<String, LocalDate> lastVisit = new HashMap<>();
         for (ReservationStatsRow r : reservations) {
-            if (r.location() != null && !r.location().isBlank()) {
-                counts.merge(r.location().trim(), 1L, Long::sum);
-            }
+            // eventId is null exactly when location is (standalone slot); guarded for the set key
+            if (r.location() == null || r.location().isBlank() || r.eventId() == null) continue;
+            String name = r.location().trim();
+            visits.computeIfAbsent(name, k -> new HashSet<>()).add(r.eventId());
+            lastVisit.merge(name, r.date(), (a, b) -> a.isAfter(b) ? a : b);
         }
         List<LocationCountDto> top = new ArrayList<>();
-        counts.entrySet().stream()
-            .sorted(Comparator.comparingLong(Map.Entry<String, Long>::getValue).reversed()
+        visits.entrySet().stream()
+            .sorted(Comparator.comparingInt((Map.Entry<String, Set<UUID>> e) -> e.getValue().size()).reversed()
+                .thenComparing(e -> lastVisit.get(e.getKey()), Comparator.reverseOrder())
                 .thenComparing(Map.Entry::getKey))
             .limit(TOP_LOCATIONS)
-            .forEach(e -> top.add(new LocationCountDto(e.getKey(), e.getValue())));
+            .forEach(e -> top.add(new LocationCountDto(e.getKey(), e.getValue().size())));
         return top;
     }
 }

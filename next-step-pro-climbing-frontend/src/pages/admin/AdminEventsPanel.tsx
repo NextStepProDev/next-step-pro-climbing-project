@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useId, useMemo, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
@@ -744,6 +744,67 @@ function ConfirmDeleteEventModal({
   )
 }
 
+/* =============================== Location field =============================== */
+
+/**
+ * Free-text location with suggestions from events already created.
+ *
+ * <p>The athlete's "top locations" card groups by the exact string, so the same crag typed two
+ * ways ("Podlesice" and "Podlesice / Kołoczek") ranks as two places with one visit each and can
+ * fall off the list entirely. Nothing here merges them after the fact — that would be guessing
+ * which sector was climbed — so the fix is making the second entry a click instead of a retype.
+ */
+function LocationField({
+  value,
+  onChange,
+  enabled,
+}: {
+  value: string
+  onChange: (value: string) => void
+  enabled: boolean
+}) {
+  const { t } = useTranslation('admin')
+  const listId = useId()
+  const { data: events } = useQuery({
+    queryKey: ['admin', 'events'],
+    queryFn: adminApi.getAllEvents,
+    staleTime: 5 * 60 * 1000,
+    enabled,
+  })
+
+  // Case-insensitive dedupe keeping the first spelling seen — the list is a shortcut, not a ruling
+  // on which capitalisation is right.
+  const suggestions = useMemo(() => {
+    const byKey = new Map<string, string>()
+    for (const event of events ?? []) {
+      const name = event.location?.trim()
+      if (!name) continue
+      const key = name.toLowerCase()
+      if (!byKey.has(key)) byKey.set(key, name)
+    }
+    return [...byKey.values()].sort((a, b) => a.localeCompare(b, 'pl'))
+  }, [events])
+
+  return (
+    <div>
+      <label className="block text-sm text-surface-400 mb-1">{t('events.locationLabel')}</label>
+      <input
+        type="text"
+        list={listId}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={t('events.locationPlaceholder')}
+        className="w-full bg-surface-800 border border-surface-700 rounded-lg px-4 py-2 text-surface-100"
+      />
+      <datalist id={listId}>
+        {suggestions.map((name) => (
+          <option key={name} value={name} />
+        ))}
+      </datalist>
+    </div>
+  )
+}
+
 /* =============================== Edit Event Modal =============================== */
 
 // The minimal event shape needed for editing — satisfied both by EventDetail (admin
@@ -895,16 +956,11 @@ export function EditEventModal({
           />
         </div>
 
-        <div>
-          <label className="block text-sm text-surface-400 mb-1">{t('events.locationLabel')}</label>
-          <input
-            type="text"
-            value={form.location}
-            onChange={(e) => setForm({ ...form, location: e.target.value })}
-            placeholder={t('events.locationPlaceholder')}
-            className="w-full bg-surface-800 border border-surface-700 rounded-lg px-4 py-2 text-surface-100"
-          />
-        </div>
+        <LocationField
+          value={form.location ?? ''}
+          onChange={(location) => setForm({ ...form, location })}
+          enabled={isOpen}
+        />
 
         <div className="grid grid-cols-2 gap-4">
           <div>
@@ -1164,16 +1220,11 @@ export function CreateEventModal({
           />
         </div>
 
-        <div>
-          <label className="block text-sm text-surface-400 mb-1">{t('events.locationLabel')}</label>
-          <input
-            type="text"
-            value={form.location}
-            onChange={(e) => setForm({ ...form, location: e.target.value })}
-            placeholder={t('events.locationPlaceholder')}
-            className="w-full bg-surface-800 border border-surface-700 rounded-lg px-4 py-2 text-surface-100"
-          />
-        </div>
+        <LocationField
+          value={form.location ?? ''}
+          onChange={(location) => setForm({ ...form, location })}
+          enabled={isOpen}
+        />
 
         <div className="grid grid-cols-2 gap-4">
           <div>
