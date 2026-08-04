@@ -37,7 +37,8 @@ interface TrainingWeekCalendarProps {
   cutTrainingId?: string | null
   copiedTrainingId?: string | null
   pasteActive?: boolean
-  onPasteAt?: (date: string, time: string) => void
+  // null = drop into the all-day lane (no hour); a string = drop onto that hour on the grid
+  onPasteAt?: (date: string, time: string | null) => void
   isCoachView?: boolean
 }
 
@@ -173,11 +174,20 @@ export function TrainingWeekCalendar({
                 <div
                   key={date}
                   className={clsx(
-                    'relative min-h-14 p-1 pb-3 space-y-0.5 border-l border-surface-800 cursor-pointer transition-colors hover:bg-surface-800/40',
+                    'relative min-h-14 p-1 pb-3 space-y-0.5 border-l border-surface-800 transition-colors',
                     today && 'bg-primary-500/5',
+                    pasteActive ? 'cursor-copy hover:bg-primary-500/10' : 'cursor-pointer hover:bg-surface-800/40',
                   )}
                   onClick={(e) => {
                     if ((e.target as HTMLElement).closest('button')) return
+                    // An armed clipboard makes this a drop target, not an add target — without
+                    // it, the one place an untimed entry (and every task) can land was the one
+                    // place that opened the create form instead of pasting.
+                    // Explicit null: dropping here means "no hour", not "keep the source's".
+                    if (pasteActive && onPasteAt) {
+                      onPasteAt(date, null)
+                      return
+                    }
                     // All-day cell → add an untimed training (no time passed)
                     onDayClick(date)
                   }}
@@ -187,7 +197,7 @@ export function TrainingWeekCalendar({
                       key={tr.id}
                       training={tr}
                       onClick={() => onTrainingClick(tr)}
-                      compact
+                      density="chip"
                     />
                   ))}
                   {allDay?.allDayInvitations.map((inv, i) => (
@@ -196,7 +206,7 @@ export function TrainingWeekCalendar({
                       invitation={inv}
                       label={invitationLabel}
                       onClick={() => onInvitationClick(inv)}
-                      compact
+                      density="chip"
                     />
                   ))}
                 </div>

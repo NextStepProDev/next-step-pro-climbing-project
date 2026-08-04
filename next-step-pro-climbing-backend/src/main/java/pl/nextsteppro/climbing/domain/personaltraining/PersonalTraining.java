@@ -28,6 +28,9 @@ public class PersonalTraining {
     public static final int MAX_TITLE_LENGTH = 150;
     public static final int MAX_DESCRIPTION_LENGTH = 2000;
     public static final int MAX_FEEDBACK_LENGTH = 2000;
+    // Mirrors the CHECK in V77: below 500 and above 10000 is a slipped digit, not a diet.
+    public static final int MIN_TARGET_CALORIES = 500;
+    public static final int MAX_TARGET_CALORIES = 10000;
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -36,6 +39,17 @@ public class PersonalTraining {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "athlete_id", nullable = false)
     private User athlete;
+
+    // Set once, at construction. There is deliberately no setter and no path through update():
+    // see TrainingKind.
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private TrainingKind kind = TrainingKind.TRAINING;
+
+    // TASK only, and optional there — a task can be "drink 3 litres" with no number at all.
+    @Column(name = "target_calories")
+    @Nullable
+    private Integer targetCalories;
 
     @Column(name = "training_date", nullable = false)
     private LocalDate trainingDate;
@@ -89,12 +103,21 @@ public class PersonalTraining {
 
     public PersonalTraining(User athlete, LocalDate trainingDate, @Nullable LocalTime startTime, @Nullable LocalTime endTime,
                             String title, @Nullable String description, boolean createdByAdmin) {
+        this(athlete, TrainingKind.TRAINING, trainingDate, startTime, endTime, title, description, null, createdByAdmin);
+    }
+
+    public PersonalTraining(User athlete, TrainingKind kind, LocalDate trainingDate,
+                            @Nullable LocalTime startTime, @Nullable LocalTime endTime,
+                            String title, @Nullable String description, @Nullable Integer targetCalories,
+                            boolean createdByAdmin) {
         this.athlete = athlete;
+        this.kind = kind;
         this.trainingDate = trainingDate;
         this.startTime = startTime;
         this.endTime = endTime;
         this.title = title;
         this.description = description;
+        this.targetCalories = targetCalories;
         this.createdByAdmin = createdByAdmin;
         this.lastModifiedByAdmin = createdByAdmin;
     }
@@ -122,14 +145,22 @@ public class PersonalTraining {
         return escaped.length() > maxLength ? escaped.substring(0, maxLength) : escaped;
     }
 
+    // No `kind` parameter, on purpose: an entry is a training or a task from birth. Everything else
+    // about it, including a task's calorie target, stays editable.
     public void update(LocalDate trainingDate, @Nullable LocalTime startTime, @Nullable LocalTime endTime,
-                       String title, @Nullable String description, boolean modifiedByAdmin) {
+                       String title, @Nullable String description, @Nullable Integer targetCalories,
+                       boolean modifiedByAdmin) {
         this.trainingDate = trainingDate;
         this.startTime = startTime;
         this.endTime = endTime;
         this.title = title;
         this.description = description;
+        this.targetCalories = targetCalories;
         this.lastModifiedByAdmin = modifiedByAdmin;
+    }
+
+    public boolean isTask() {
+        return kind == TrainingKind.TASK;
     }
 
     // Completion is an athlete-only action. It must also clear lastModifiedByAdmin:
@@ -159,6 +190,15 @@ public class PersonalTraining {
 
     public User getAthlete() {
         return athlete;
+    }
+
+    public TrainingKind getKind() {
+        return kind;
+    }
+
+    @Nullable
+    public Integer getTargetCalories() {
+        return targetCalories;
     }
 
     public LocalDate getTrainingDate() {

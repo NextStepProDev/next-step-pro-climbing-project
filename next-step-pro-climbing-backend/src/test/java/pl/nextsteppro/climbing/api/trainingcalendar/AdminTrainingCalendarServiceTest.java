@@ -1,5 +1,7 @@
 package pl.nextsteppro.climbing.api.trainingcalendar;
 
+import pl.nextsteppro.climbing.domain.personaltraining.TrainingKind;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -163,8 +165,8 @@ class AdminTrainingCalendarServiceTest {
 
     private PersonalTrainingDto dtoFor(CreatePersonalTrainingRequest request) {
         return new PersonalTrainingDto(
-            UUID.randomUUID(), request.date(), request.startTime(), request.endTime(),
-            request.title(), request.description(), true, "PLANNED",
+            UUID.randomUUID(), TrainingKind.TRAINING, request.date(), request.startTime(), request.endTime(),
+            request.title(), request.description(), null, true, "PLANNED",
             null, null, null, false, Instant.now(), java.util.List.of());
     }
 

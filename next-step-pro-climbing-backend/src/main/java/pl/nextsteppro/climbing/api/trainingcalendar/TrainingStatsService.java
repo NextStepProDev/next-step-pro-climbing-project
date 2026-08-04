@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pl.nextsteppro.climbing.domain.event.EventType;
 import pl.nextsteppro.climbing.domain.personaltraining.PersonalTrainingRepository;
+import pl.nextsteppro.climbing.domain.personaltraining.TrainingKind;
 import pl.nextsteppro.climbing.domain.personaltraining.TrainingStatsRow;
 import pl.nextsteppro.climbing.domain.reservation.ReservationRepository;
 import pl.nextsteppro.climbing.domain.reservation.ReservationStatsRow;
@@ -48,6 +49,9 @@ public class TrainingStatsService {
     // Attendance is a "recent adherence" signal — a rolling window so one old missed session does
     // not drag the percentage down forever.
     private static final int ATTENDANCE_WINDOW_DAYS = 90;
+    // Tasks are day-sized commitments, so their rolling window is shorter than attendance's: a
+    // calorie ceiling from ten weeks ago says nothing about how this week is going.
+    private static final int TASK_WINDOW_DAYS = 30;
     private static final int SUSTAINED_HIGH_SAMPLE = 5;
     private static final int SUSTAINED_HIGH_THRESHOLD = 9;
     private static final int TOP_LOCATIONS = 3;
@@ -82,7 +86,16 @@ public class TrainingStatsService {
     // Package-private with "now" as a parameter so tests are deterministic.
     AthleteStatsDto buildStats(UUID athleteId, LocalDateTime nowWarsaw) {
         LocalDate today = nowWarsaw.toLocalDate();
-        List<TrainingStatsRow> trainings = trainingRepository.findStatsRowsByAthleteId(athleteId);
+        List<TrainingStatsRow> planEntries = trainingRepository.findStatsRowsByAthleteId(athleteId);
+        // Tasks are counted apart from every training number below. Letting them in would mix
+        // "held the calorie ceiling" into attendance, streaks, the heatmap and the RPE bands —
+        // and a month of held ceilings would read as a month of training.
+        List<TrainingStatsRow> trainings = planEntries.stream()
+            .filter(r -> r.kind() == TrainingKind.TRAINING)
+            .toList();
+        List<TrainingStatsRow> tasks = planEntries.stream()
+            .filter(r -> r.kind() == TrainingKind.TASK)
+            .toList();
         List<ReservationStatsRow> reservations =
             reservationRepository.findPastConfirmedStatsRows(athleteId, today, nowWarsaw.toLocalTime());
 
@@ -133,8 +146,44 @@ public class TrainingStatsService {
             topLocations(reservations),
             rpeDistribution(rated, today.minusDays(RPE_DISTRIBUTION_DAYS - 1)),
             sustainedHigh(rated),
-            unratedReservations
+            unratedReservations,
+            taskStats(tasks, nowWarsaw)
         );
+    }
+
+    /**
+     * Tasks held vs tasks that came due, each count shipped with its denominator.
+     *
+     * <p>A bare "3 done this month" cannot tell three-of-three from three-of-twelve, and a bare 0
+     * cannot tell a month of blown ceilings from a month where nobody set one. The percentage stays
+     * null until something has actually come due — 0% would report a failure nobody had.
+     */
+    private static TaskStatsDto taskStats(List<TrainingStatsRow> tasks, LocalDateTime nowWarsaw) {
+        LocalDate today = nowWarsaw.toLocalDate();
+        YearMonth thisMonth = YearMonth.from(today);
+        LocalDate windowStart = today.minusDays(TASK_WINDOW_DAYS - 1L);
+
+        int monthDone = 0;
+        int monthDue = 0;
+        int windowDone = 0;
+        int windowDue = 0;
+        for (TrainingStatsRow t : tasks) {
+            boolean done = t.isCompleted();
+            // A task owns the whole day, so it only comes due once that day is over. Counting today
+            // as elapsed is the mistake that greets someone opening the plan over breakfast with a
+            // failure they still have all day to avoid.
+            boolean due = done || TrainingCalendarService.trainingEnd(t.date(), t.endTime()).isBefore(nowWarsaw);
+            if (YearMonth.from(t.date()).equals(thisMonth)) {
+                if (due) monthDue++;
+                if (done) monthDone++;
+            }
+            if (!t.date().isBefore(windowStart) && !t.date().isAfter(today)) {
+                if (due) windowDue++;
+                if (done) windowDone++;
+            }
+        }
+        Integer percent = windowDue == 0 ? null : Math.round(100f * windowDone / windowDue);
+        return new TaskStatsDto(monthDone, monthDue, windowDone, windowDue, percent);
     }
 
     /** A single RPE rating with its activity date; source-agnostic. */

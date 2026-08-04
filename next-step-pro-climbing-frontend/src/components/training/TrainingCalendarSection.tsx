@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Plus, Lock, Trash2, X } from 'lucide-react'
-import { format, startOfWeek, startOfMonth, endOfMonth, addDays } from 'date-fns'
+import { format, startOfWeek, addDays } from 'date-fns'
 import clsx from 'clsx'
 import { Modal } from '../ui/Modal'
 import { Button } from '../ui/Button'
@@ -15,14 +15,19 @@ import { WeightPanel } from './WeightPanel'
 import { ReservationRatingSection } from './ReservationRatingSection'
 import { TrainingWeekCalendar } from './TrainingWeekCalendar'
 import { TrainingMonthCalendar } from './TrainingMonthCalendar'
+import { TrainingMonthDots } from './TrainingMonthDots'
+import { TrainingDaySheet } from './TrainingDaySheet'
 import { TrainingStatsSection } from './TrainingStatsSection'
 import { TrainingFormModal, type InstantCompletion, type TrainingPrefill } from './TrainingFormModal'
 import { TrainingDetailModal } from './TrainingDetailModal'
+import { monthGridRange, resolveInitialView } from './monthGrid'
+import { useCompactViewport } from '../../hooks/useCompactViewport'
 import { trainingCalendarApi, calendarApi } from '../../api/client'
 import { getErrorMessage } from '../../utils/errors'
 import { decodeHtmlEntities } from '../../utils/htmlEntities'
+import { keepWithinEntity } from '../../utils/queryEntity'
 import type { TrainingCalendarAdapter } from './trainingCalendarAdapter'
-import type { AttachmentInput, CreatePersonalTraining, InvitationOverlayItem, PersonalTraining, ReservationOverlayItem } from '../../types'
+import type { AttachmentInput, CreatePersonalTraining, InvitationOverlayItem, PersonalTraining, ReservationOverlayItem, TrainingKind } from '../../types'
 
 interface TrainingCalendarSectionProps {
   api: TrainingCalendarAdapter
@@ -40,8 +45,15 @@ interface TrainingCalendarSectionProps {
 interface TrainingClipboard {
   mode: 'copy' | 'cut'
   trainingId: string
+  // Carried so a copied task pastes back as a task; a paste with no kind creates a training
+  kind: TrainingKind
+  targetCalories?: number | null
   title: string
   description?: string
+  // The source's own hour, used when a paste lands somewhere with no hour axis (the month
+  // grid, the day sheet). null = the source was untimed, and the paste stays untimed —
+  // inventing an hour would turn "do it on Wednesday" into an appointment.
+  startTime: string | null
   durationMin: number
   // Carried so a copy→paste recreates the source's materials (cut/move keeps them via null)
   attachments: AttachmentInput[]
@@ -81,7 +93,14 @@ export function TrainingCalendarSection({ api, scopeKey, isCoachView }: Training
   const location = useLocation()
   const [searchParams, setSearchParams] = useSearchParams()
 
-  const view = searchParams.get('cal') === 'month' ? 'month' : 'week'
+  // Reactive: decides WHICH month component renders, so it must follow a resize.
+  const compactViewport = useCompactViewport()
+  // Frozen at first render: the DEFAULT view must not follow a resize. Reading the live
+  // value here would flip the calendar under someone rotating their phone. Keep these two
+  // reads apart — collapsing them into one restores exactly that bug. (State rather than a
+  // ref because this IS read during render, and a ref read there is a lint error.)
+  const [initialCompact] = useState(compactViewport)
+  const view = resolveInitialView(searchParams.get('cal'), initialCompact)
   const anchorParam = searchParams.get('calDate')
   const anchor = useMemo(() => {
     const d = anchorParam ? new Date(anchorParam) : new Date()
@@ -100,7 +119,8 @@ export function TrainingCalendarSection({ api, scopeKey, isCoachView }: Training
     setSearchParams(params, { replace: true })
   }
 
-  // Range for the current view: week = Mon..Sun, month = 1st..last day
+  // Range for the current view: week = Mon..Sun, month = the whole 42-day grid including
+  // the greyed padding days (42 < the backend's 62-day cap)
   const { from, to, weekStart } = useMemo(() => {
     if (view === 'week') {
       const start = startOfWeek(anchor, { weekStartsOn: 1 })
@@ -110,15 +130,16 @@ export function TrainingCalendarSection({ api, scopeKey, isCoachView }: Training
         weekStart: format(start, 'yyyy-MM-dd'),
       }
     }
-    return {
-      from: format(startOfMonth(anchor), 'yyyy-MM-dd'),
-      to: format(endOfMonth(anchor), 'yyyy-MM-dd'),
-      weekStart: '',
-    }
+    return { ...monthGridRange(anchor), weekStart: '' }
   }, [view, anchor])
 
+  const rangeKey = useMemo(
+    () => ['trainingCalendar', 'range', scopeKey, from, to] as const,
+    [scopeKey, from, to],
+  )
+
   const rangeQuery = useQuery({
-    queryKey: ['trainingCalendar', 'range', scopeKey, from, to],
+    queryKey: rangeKey,
     queryFn: () => api.getRange(from, to),
     // Coach comments/trainings show up without a manual refresh while the tab stays open
     refetchInterval: 60_000,
@@ -126,6 +147,11 @@ export function TrainingCalendarSection({ api, scopeKey, isCoachView }: Training
     // Entering the calendar must always show the latest state (new trainings/comments) —
     // the global 5-min staleTime would otherwise serve a stale week from cache
     refetchOnMount: 'always',
+    // Paging months should keep the grid on screen instead of collapsing it to a spinner,
+    // but the global keepPreviousData would also keep it across a change of athlete. Fence
+    // it to the trailing from/to: same person, different page.
+    placeholderData: (previous, previousQuery) =>
+      keepWithinEntity(previous, previousQuery, rangeKey, 2),
   })
 
   // Opening the calendar counts as "read": clears the navbar/roster badges.
@@ -166,6 +192,8 @@ export function TrainingCalendarSection({ api, scopeKey, isCoachView }: Training
   const [reservationHint, setReservationHint] = useState<ReservationOverlayItem | null>(null)
   // Full official-slot preview opened from the hint modal ("Zobacz szczegóły")
   const [officialSlotId, setOfficialSlotId] = useState<string | null>(null)
+  // One day's entries: the phone's only way into a day, and the desktop's way past "+N"
+  const [daySheetDate, setDaySheetDate] = useState<string | null>(null)
 
   const { data: officialSlot } = useQuery({
     queryKey: ['slot', officialSlotId],
@@ -245,6 +273,7 @@ export function TrainingCalendarSection({ api, scopeKey, isCoachView }: Training
     setDetailId(null)
     setEditedTraining(null)
     setDuplicatePrefill({
+      kind: tr.kind,
       title: decodeHtmlEntities(tr.title),
       description: tr.description ? decodeHtmlEntities(tr.description) : undefined,
       // Untimed source duplicates as untimed (null times → form defaults to all-day)
@@ -271,25 +300,34 @@ export function TrainingCalendarSection({ api, scopeKey, isCoachView }: Training
 
   const armClipboard = (mode: 'copy' | 'cut') => (tr: PersonalTraining) => {
     setActionError(null)
+    const timed = !!(tr.startTime && tr.endTime)
     setClipboard({
       mode,
       trainingId: tr.id,
+      kind: tr.kind,
+      targetCalories: tr.targetCalories,
       title: decodeHtmlEntities(tr.title),
       description: tr.description ? decodeHtmlEntities(tr.description) : undefined,
-      // Clipboard is armed only from timed grid blocks; guard defensively against null times
-      durationMin: tr.startTime && tr.endTime
-        ? timeToMin(tr.endTime.slice(0, 5)) - timeToMin(tr.startTime.slice(0, 5))
+      startTime: timed ? tr.startTime!.slice(0, 5) : null,
+      durationMin: timed
+        ? timeToMin(tr.endTime!.slice(0, 5)) - timeToMin(tr.startTime!.slice(0, 5))
         : 90,
       attachments: toAttachmentInputs(tr),
     })
   }
 
   const pasteMutation = useMutation({
-    mutationFn: ({ clip, date, time }: { clip: TrainingClipboard; date: string; time: string }) => {
+    mutationFn: ({ clip, date, time }: { clip: TrainingClipboard; date: string; time: string | null }) => {
       const data: CreatePersonalTraining = {
+        // Ignored by the server on a cut (which is an update); decisive on a copy
+        kind: clip.kind,
+        targetCalories: clip.targetCalories,
         date,
-        startTime: time,
-        endTime: minToTime(Math.min(timeToMin(time) + clip.durationMin, 23 * 60 + 59)),
+        // Both omitted = untimed, which is a legal training here and the default case
+        startTime: time ?? undefined,
+        endTime: time
+          ? minToTime(Math.min(timeToMin(time) + clip.durationMin, 23 * 60 + 59))
+          : undefined,
         title: clip.title,
         description: clip.description,
         // Copy recreates the materials; cut/move omits them so the backend keeps the originals
@@ -310,9 +348,20 @@ export function TrainingCalendarSection({ api, scopeKey, isCoachView }: Training
     },
   })
 
-  const handlePasteAt = (date: string, time: string) => {
+  /**
+   * Three callers, three meanings for the hour:
+   * - the week grid passes one (drop onto 17:00),
+   * - the week's all-day lane passes an explicit null (drop into "no hour"),
+   * - the month and dot grids pass nothing, and the paste keeps the source's own hour.
+   *
+   * A task overrides all of it: it holds for the whole day, so an hour is meaningless for one
+   * and the API rejects it outright. Without this, copying a task from the day sheet and
+   * pasting it on the week grid answered with a red error strip.
+   */
+  const handlePasteAt = (date: string, time?: string | null) => {
     if (!clipboard || pasteMutation.isPending) return
-    pasteMutation.mutate({ clip: clipboard, date, time })
+    const at = clipboard.kind === 'TASK' ? null : (time !== undefined ? time : clipboard.startTime)
+    pasteMutation.mutate({ clip: clipboard, date, time: at })
   }
 
   const moveMutation = useMutation({
@@ -326,6 +375,10 @@ export function TrainingCalendarSection({ api, scopeKey, isCoachView }: Training
         endTime,
         title: decodeHtmlEntities(training.title),
         description: training.description ? decodeHtmlEntities(training.description) : undefined,
+        // Re-sent for the same reason as the title: a PUT REPLACES it, so omitting it clears a
+        // task's ceiling. (Only `attachments` has leave-untouched semantics — an Integer has no
+        // empty value to distinguish "unchanged" from "cleared".)
+        targetCalories: training.targetCalories,
       }),
     onSuccess: () => {
       setActionError(null)
@@ -474,6 +527,20 @@ export function TrainingCalendarSection({ api, scopeKey, isCoachView }: Training
           onPasteAt={handlePasteAt}
           isCoachView={isCoachView}
         />
+      ) : compactViewport ? (
+        /* Below sm a day cell is ~45px: it can say that something is planned, never what.
+           A different component with different interactions, not a restyle — rendering
+           both trees and hiding one would leave the hidden half on the keyboard path. */
+        <TrainingMonthDots
+          currentMonth={anchor}
+          onMonthChange={setAnchor}
+          trainings={trainings}
+          reservations={reservations}
+          invitations={invitations}
+          onDayExpand={setDaySheetDate}
+          pasteActive={!!clipboard}
+          onPasteAt={handlePasteAt}
+        />
       ) : (
         <TrainingMonthCalendar
           currentMonth={anchor}
@@ -486,6 +553,29 @@ export function TrainingCalendarSection({ api, scopeKey, isCoachView }: Training
           onReservationClick={setReservationHint}
           onInvitationClick={openInvitation}
           onDayClick={openCreate}
+          onDayExpand={setDaySheetDate}
+          pasteActive={!!clipboard}
+          onPasteAt={handlePasteAt}
+          cutTrainingId={clipboard?.mode === 'cut' ? clipboard.trainingId : null}
+          copiedTrainingId={clipboard?.mode === 'copy' ? clipboard.trainingId : null}
+          isCoachView={isCoachView}
+        />
+      )}
+
+      {daySheetDate && (
+        <TrainingDaySheet
+          date={daySheetDate}
+          trainings={trainings.filter((tr) => tr.date === daySheetDate)}
+          reservations={reservations.filter((r) => r.date === daySheetDate)}
+          invitations={invitations.filter((inv) => inv.date === daySheetDate)}
+          invitationLabel={t('overlay.invitation')}
+          onClose={() => setDaySheetDate(null)}
+          onTrainingClick={(tr) => setDetailId(tr.id)}
+          onReservationClick={setReservationHint}
+          onInvitationClick={openInvitation}
+          onAdd={openCreate}
+          onTrainingCopy={armClipboard('copy')}
+          onTrainingCut={armClipboard('cut')}
           isCoachView={isCoachView}
         />
       )}

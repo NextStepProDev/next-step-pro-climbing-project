@@ -18,6 +18,8 @@ import pl.nextsteppro.climbing.domain.personaltraining.TrainingComment;
 import pl.nextsteppro.climbing.domain.personaltraining.TrainingCommentRepository;
 import pl.nextsteppro.climbing.domain.personaltraining.TrainingDeletion;
 import pl.nextsteppro.climbing.domain.personaltraining.TrainingDeletionRepository;
+import org.jspecify.annotations.Nullable;
+import pl.nextsteppro.climbing.domain.personaltraining.TrainingKind;
 import pl.nextsteppro.climbing.domain.reservation.Reservation;
 import pl.nextsteppro.climbing.domain.reservation.ReservationRepository;
 import pl.nextsteppro.climbing.domain.reservedseat.ReservedSeat;
@@ -1100,6 +1102,169 @@ class TrainingCalendarServiceTest {
         assertEquals("training.calendar.rpe.required", e.getMessage());
     }
 
+    // ========== tasks (V77): a second kind of entry on the plan ==========
+
+    @Test
+    void shouldCreateTaskWithCalorieTargetWhenValid() {
+        // Given
+        when(trainingRepository.save(any())).thenAnswer(inv -> {
+            PersonalTraining t = inv.getArgument(0);
+            setField(t, "createdAt", Instant.now());
+            return t;
+        });
+        CreatePersonalTrainingRequest request = new CreatePersonalTrainingRequest(
+            TrainingKind.TASK, LocalDate.now().plusDays(1), null, null,
+            "Limit kalorii", null, 2200, null);
+
+        // When
+        PersonalTrainingDto dto = service.createMy(athleteId, request);
+
+        // Then
+        assertEquals(TrainingKind.TASK, dto.kind());
+        assertEquals(2200, dto.targetCalories());
+    }
+
+    @Test
+    void shouldCreateTaskWithoutAnyNumberWhenNoneGiven() {
+        // "Wypij 3 litry wody" carries its number in the title and needs no column
+        when(trainingRepository.save(any())).thenAnswer(inv -> {
+            PersonalTraining t = inv.getArgument(0);
+            setField(t, "createdAt", Instant.now());
+            return t;
+        });
+        CreatePersonalTrainingRequest request = new CreatePersonalTrainingRequest(
+            TrainingKind.TASK, LocalDate.now().plusDays(1), null, null,
+            "Wypij 3 litry wody", null, null, null);
+
+        PersonalTrainingDto dto = service.createMy(athleteId, request);
+
+        assertEquals(TrainingKind.TASK, dto.kind());
+        assertNull(dto.targetCalories());
+    }
+
+    @Test
+    void shouldDefaultToTrainingWhenKindOmitted() {
+        // Every existing client sends no kind at all; they must keep creating trainings
+        when(trainingRepository.save(any())).thenAnswer(inv -> {
+            PersonalTraining t = inv.getArgument(0);
+            setField(t, "createdAt", Instant.now());
+            return t;
+        });
+        CreatePersonalTrainingRequest request = new CreatePersonalTrainingRequest(
+            LocalDate.now().plusDays(1), LocalTime.of(18, 0), LocalTime.of(19, 30), "Trening", null);
+
+        assertEquals(TrainingKind.TRAINING, service.createMy(athleteId, request).kind());
+    }
+
+    @Test
+    void shouldRejectTaskWithHours() {
+        // A commitment held across a whole day has no hour, and an hour would place it on the
+        // week grid at a position claiming something the entry does not have
+        CreatePersonalTrainingRequest request = new CreatePersonalTrainingRequest(
+            TrainingKind.TASK, LocalDate.now().plusDays(1), LocalTime.of(18, 0), LocalTime.of(19, 0),
+            "Limit kalorii", null, null, null);
+
+        IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
+            () -> service.createMy(athleteId, request));
+        assertEquals("training.calendar.task.untimed", e.getMessage());
+    }
+
+    @Test
+    void shouldRejectCalorieTargetOnATraining() {
+        // Silently dropping it would hide a frontend bug
+        CreatePersonalTrainingRequest request = new CreatePersonalTrainingRequest(
+            TrainingKind.TRAINING, LocalDate.now().plusDays(1), null, null,
+            "Trening", null, 2200, null);
+
+        IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
+            () -> service.createMy(athleteId, request));
+        assertEquals("training.calendar.calories.task.only", e.getMessage());
+    }
+
+    @Test
+    void shouldRejectCalorieTargetOutsideTheSaneRange() {
+        // 220 is a slipped digit, the same failure the weight CHECK catches
+        CreatePersonalTrainingRequest request = new CreatePersonalTrainingRequest(
+            TrainingKind.TASK, LocalDate.now().plusDays(1), null, null,
+            "Limit kalorii", null, 220, null);
+
+        IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
+            () -> service.createMy(athleteId, request));
+        assertEquals("training.calendar.calories.range", e.getMessage());
+    }
+
+    @Test
+    void shouldIgnoreKindOnUpdateSoATaskStaysATask() {
+        // An entry is a training or a task from birth: flipping a completed training into a task
+        // would have to throw its RPE away to satisfy the database
+        UUID trainingId = UUID.randomUUID();
+        PersonalTraining task = buildTask(LocalDate.now().plusDays(1), null);
+        when(trainingRepository.findById(trainingId)).thenReturn(Optional.of(task));
+
+        service.updateMy(athleteId, trainingId, new CreatePersonalTrainingRequest(
+            TrainingKind.TRAINING, LocalDate.now().plusDays(2), null, null,
+            "Nadal zadanie", null, 1800, null));
+
+        assertEquals(TrainingKind.TASK, task.getKind());
+        assertEquals(1800, task.getTargetCalories(), "a task's calorie target stays editable");
+    }
+
+    @Test
+    void shouldRejectGivingATaskHoursByEditingIt() {
+        UUID trainingId = UUID.randomUUID();
+        PersonalTraining task = buildTask(LocalDate.now().plusDays(1), null);
+        when(trainingRepository.findById(trainingId)).thenReturn(Optional.of(task));
+
+        IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
+            () -> service.updateMy(athleteId, trainingId, new CreatePersonalTrainingRequest(
+                TrainingKind.TASK, LocalDate.now().plusDays(1), LocalTime.of(18, 0), LocalTime.of(19, 0),
+                "Zadanie", null, null, null)));
+        assertEquals("training.calendar.task.untimed", e.getMessage());
+    }
+
+    @Test
+    void shouldReplaceTheCalorieTargetOnUpdateRatherThanLeavingItAlone() {
+        // A PUT REPLACES the ceiling, exactly like the title. An Integer has no empty value that
+        // could distinguish "unchanged" from "cleared", so leave-untouched semantics are not
+        // available here — only `attachments` has them. Every caller that is not the form must
+        // therefore re-send it; the drag/move PUT does.
+        UUID trainingId = UUID.randomUUID();
+        PersonalTraining task = buildTask(LocalDate.now().plusDays(1), 2000);
+        when(trainingRepository.findById(trainingId)).thenReturn(Optional.of(task));
+
+        service.updateMy(athleteId, trainingId, new CreatePersonalTrainingRequest(
+            null, LocalDate.now().plusDays(2), null, null, "Limit kalorii", null, null, null));
+
+        assertNull(task.getTargetCalories(), "omitting it clears it — callers must re-send it");
+    }
+
+    @Test
+    void shouldCompleteATaskWithoutAnyRpe() {
+        // A task is ticked off, never rated
+        UUID trainingId = UUID.randomUUID();
+        PersonalTraining task = buildTask(LocalDate.now().minusDays(1), null);
+        when(trainingRepository.findById(trainingId)).thenReturn(Optional.of(task));
+
+        PersonalTrainingDto dto = service.complete(athleteId, trainingId,
+            new CompleteTrainingRequest("poszło", null));
+
+        assertEquals("COMPLETED", dto.status());
+        assertNull(dto.rpe());
+    }
+
+    @Test
+    void shouldRejectRatingATask() {
+        // "How hard was staying under 2200 kcal, 1-10" is a question about nothing, and an answer
+        // would land in the RPE averages, which read every rated entry there is
+        UUID trainingId = UUID.randomUUID();
+        PersonalTraining task = buildTask(LocalDate.now().minusDays(1), 2200);
+        when(trainingRepository.findById(trainingId)).thenReturn(Optional.of(task));
+
+        IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
+            () -> service.complete(athleteId, trainingId, new CompleteTrainingRequest(null, 7)));
+        assertEquals("training.calendar.task.no.rpe", e.getMessage());
+    }
+
     // ========== GDPR art. 9 consent gate ==========
 
     @Test
@@ -1247,6 +1412,15 @@ class TrainingCalendarServiceTest {
         setField(training, "createdAt", Instant.now());
         setField(training, "updatedAt", Instant.now());
         return training;
+    }
+
+    // A TASK is always untimed (V77 CHECK), so it never takes times
+    private PersonalTraining buildTask(LocalDate date, @Nullable Integer targetCalories) {
+        PersonalTraining task = new PersonalTraining(
+            athlete, TrainingKind.TASK, date, null, null, "Limit kalorii", null, targetCalories, false);
+        setField(task, "createdAt", Instant.now());
+        setField(task, "updatedAt", Instant.now());
+        return task;
     }
 
     // Untimed ("all-day"): both times null on the given date

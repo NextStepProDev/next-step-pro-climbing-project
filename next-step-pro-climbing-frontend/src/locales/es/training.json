@@ -7,6 +7,16 @@
     "month": "Mes",
     "week": "Semana"
   },
+  "month": {
+    "more": "+{{count}}",
+    "moreAria_one": "Mostrar {{count}} entrada más",
+    "moreAria_other": "Mostrar {{count}} entradas más",
+    "showDay": "Mostrar el día {{date}}",
+    "addOnDay": "Añadir una entrada",
+    "emptyDay": "Nada planificado para este día",
+    "addOnDate": "Añadir una entrada el {{date}}",
+    "pasteHere": "Pegar aquí"
+  },
   "nav": {
     "today": "Hoy",
     "prevWeek": "Semana anterior",
@@ -19,11 +29,11 @@
     "completed": "Completado",
     "missed": "Omitido"
   },
-  "addTraining": "Añadir entrenamiento",
+  "addTraining": "Añadir entrada",
   "form": {
-    "addTitle": "Nuevo entrenamiento",
-    "editTitle": "Editar entrenamiento",
-    "duplicateTitle": "Duplicar entrenamiento",
+    "addTitle": "Nueva entrada",
+    "editTitle": "Editar entrada",
+    "duplicateTitle": "Duplicar entrada",
     "date": "Fecha",
     "allDay": "Todo el día (sin hora)",
     "startTime": "Inicio",
@@ -44,7 +54,17 @@
     "attachmentAdd": "Añadir enlace",
     "attachmentRemove": "Eliminar enlace",
     "attachmentUrlInvalid": "El enlace debe empezar por http:// o https://",
-    "attachmentUpload": "Subir archivo (PDF/imagen)"
+    "attachmentUpload": "Subir archivo (PDF/imagen)",
+    "kindLabel": "Tipo de entrada",
+    "kind": {
+      "TRAINING": "Entrenamiento",
+      "TASK": "Tarea"
+    },
+    "kindTrainingHint": "Una sesión — la marcas con una valoración del esfuerzo (RPE).",
+    "kindTaskHint": "Un compromiso de todo el día: límite de calorías, agua, sueño. Se marca, no se valora.",
+    "calories": "Límite de calorías (opcional)",
+    "caloriesHint": "Déjalo vacío si la tarea no lleva número, p. ej. «Bebe 3 litros de agua».",
+    "caloriesRange": "El límite de calorías debe estar entre {{min}} y {{max}} kcal"
   },
   "detail": {
     "allDay": "Todo el día",
@@ -126,8 +146,8 @@
   "clipboard": {
     "copy": "Copiar entrenamiento",
     "cut": "Cortar entrenamiento",
-    "copiedBanner": "Copiado \"{{title}}\" — haz clic en un hueco libre de la vista semanal para pegar una copia (Esc cancela)",
-    "cutBanner": "Cortado \"{{title}}\" — haz clic en un hueco libre de la vista semanal para moverlo (Esc cancela)",
+    "copiedBanner": "Copiado \"{{title}}\" — haz clic en un hueco libre del calendario para pegar una copia (Esc cancela)",
+    "cutBanner": "Cortado \"{{title}}\" — haz clic en un hueco libre del calendario para moverlo (Esc cancela)",
     "cancel": "Cancelar"
   },
   "completion": {
@@ -233,7 +253,11 @@
     "rpeWarning": {
       "athlete": "Tus últimas valoraciones son todas 9-10 — revisa que no te estés pasando con la carga.",
       "coach": "Las últimas valoraciones del atleta son todas 9-10 — posible sobreentrenamiento o inflar las notas."
-    }
+    },
+    "tasksThisMonth": "Tareas este mes",
+    "tasksWindow": "Tareas — últimos 30 días",
+    "tasksRate": "Cumplimiento de tareas",
+    "tasksRateHint": "En los últimos 30 días; solo cuenta cuando el día de la tarea ha pasado"
   },
   "templates": {
     "manage": "Plantillas",

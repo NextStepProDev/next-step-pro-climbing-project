@@ -64,6 +64,9 @@ export function TrainingDetailModal({
   if (!training) return null
 
   const statusLabel = t(`status.${training.status.toLowerCase()}`)
+  // A task is ticked off, never rated: "how hard was staying under 2200 kcal" is a question
+  // about nothing, and an answer would land in the RPE averages. The backend rejects one too.
+  const isTask = training.kind === 'TASK'
 
   const openCompletionForm = () => {
     setFeedback(training.feedback ? decodeHtmlEntities(training.feedback) : '')
@@ -78,7 +81,7 @@ export function TrainingDetailModal({
       // for a successful one (the training also stays visibly not-completed).
       await onComplete?.(training, {
         feedback: feedback.trim() || undefined,
-        rpe: rpe ?? undefined,
+        rpe: isTask ? undefined : (rpe ?? undefined),
       })
       setCompletionOpen(false)
     } catch {
@@ -177,8 +180,12 @@ export function TrainingDetailModal({
                   className="w-full bg-surface-800 border border-surface-700 rounded-lg px-3 py-2 text-sm text-surface-100 resize-none"
                 />
               </div>
-              <RpePicker value={rpe} onChange={setRpe} />
-              {rpe == null && <p className="text-xs text-amber-400/80">{t('completion.rpeRequired')}</p>}
+              {!isTask && (
+                <>
+                  <RpePicker value={rpe} onChange={setRpe} />
+                  {rpe == null && <p className="text-xs text-amber-400/80">{t('completion.rpeRequired')}</p>}
+                </>
+              )}
               {/* Prominent, right where the eye is when clicking Save — a failed save must not slip past unnoticed */}
               {errorMessage && (
                 <p className="text-sm text-rose-300 bg-rose-500/10 border border-rose-500/40 rounded-lg px-3 py-2">
@@ -189,7 +196,7 @@ export function TrainingDetailModal({
                 <Button size="sm" variant="secondary" onClick={() => setCompletionOpen(false)}>
                   {t('form.cancel')}
                 </Button>
-                <Button size="sm" variant="primary" onClick={saveCompletion} loading={mutating} disabled={rpe == null}>
+                <Button size="sm" variant="primary" onClick={saveCompletion} loading={mutating} disabled={!isTask && rpe == null}>
                   {t('completion.save')}
                 </Button>
               </div>

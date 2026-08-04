@@ -1,10 +1,11 @@
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isToday } from 'date-fns'
+import { format, isSameMonth, isToday } from 'date-fns'
+import { Plus } from 'lucide-react'
 import clsx from 'clsx'
 import { TrainingBlock, ReservationBlock, InvitationBlock } from './TrainingBlock'
-import { useDateLocale } from '../../utils/dateFnsLocale'
+import { MonthNavHeader } from './MonthNavHeader'
+import { monthGridDays } from './monthGrid'
 import type { InvitationOverlayItem, PersonalTraining, ReservationOverlayItem } from '../../types'
 
 interface TrainingMonthCalendarProps {
@@ -19,32 +20,36 @@ interface TrainingMonthCalendarProps {
   onInvitationClick: (invitation: InvitationOverlayItem) => void
   // Click on a day cell -> add-training prefilled with that date
   onDayClick: (date: string) => void
+  // "+N" -> the day sheet, the only way to reach what the cell could not show
+  onDayExpand: (date: string) => void
+  // Clipboard: while armed every cell is a paste target instead of an add target
+  pasteActive?: boolean
+  onPasteAt?: (date: string) => void
+  cutTrainingId?: string | null
+  copiedTrainingId?: string | null
   isCoachView?: boolean
 }
 
-const MAX_CHIPS = 3
+/**
+ * Four is where a cell stops being scannable. Beyond it the tiles are shorter than the
+ * day number and "+N" says more than a fifth sliver would.
+ */
+const MAX_TILES = 4
 
 export function TrainingMonthCalendar({
   currentMonth, onMonthChange, trainings, reservations, invitations, invitationLabel,
-  onTrainingClick, onReservationClick, onInvitationClick, onDayClick, isCoachView,
+  onTrainingClick, onReservationClick, onInvitationClick, onDayClick, onDayExpand,
+  pasteActive, onPasteAt, cutTrainingId, copiedTrainingId, isCoachView,
 }: TrainingMonthCalendarProps) {
   const { t } = useTranslation('training')
   const { t: tCal } = useTranslation('calendar')
-  const locale = useDateLocale()
 
   const weekdays = [
     tCal('weekdays.mon'), tCal('weekdays.tue'), tCal('weekdays.wed'),
     tCal('weekdays.thu'), tCal('weekdays.fri'), tCal('weekdays.sat'), tCal('weekdays.sun'),
   ]
 
-  const calendarDays = useMemo(() => {
-    const start = startOfMonth(currentMonth)
-    const end = endOfMonth(currentMonth)
-    const daysInMonth = eachDayOfInterval({ start, end })
-    let startDayOfWeek = start.getDay()
-    startDayOfWeek = startDayOfWeek === 0 ? 6 : startDayOfWeek - 1
-    return [...Array(startDayOfWeek).fill(null) as null[], ...daysInMonth]
-  }, [currentMonth])
+  const calendarDays = useMemo(() => monthGridDays(currentMonth), [currentMonth])
 
   const trainingsByDay = useMemo(() => {
     const map = new Map<string, PersonalTraining[]>()
@@ -76,36 +81,11 @@ export function TrainingMonthCalendar({
     return map
   }, [invitations])
 
-  const changeMonth = (delta: number) => {
-    const d = new Date(currentMonth)
-    d.setMonth(d.getMonth() + delta)
-    onMonthChange(d)
-  }
-
   return (
     <div className="bg-surface-900 rounded-xl border border-surface-800 overflow-hidden">
-      {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-surface-800">
-        <button
-          aria-label={t('nav.prevMonth')}
-          onClick={() => changeMonth(-1)}
-          className="p-2 text-surface-400 hover:text-surface-100 hover:bg-surface-800 rounded-lg transition-colors"
-        >
-          <ChevronLeft className="w-5 h-5" />
-        </button>
-        <h2 className="text-lg font-semibold text-surface-100 capitalize">
-          {format(currentMonth, 'LLLL yyyy', { locale })}
-        </h2>
-        <button
-          aria-label={t('nav.nextMonth')}
-          onClick={() => changeMonth(1)}
-          className="p-2 text-surface-400 hover:text-surface-100 hover:bg-surface-800 rounded-lg transition-colors"
-        >
-          <ChevronRight className="w-5 h-5" />
-        </button>
-      </div>
+      <MonthNavHeader currentMonth={currentMonth} onMonthChange={onMonthChange} />
 
-      {/* Weekday headers */}
+      {/* Weekday headers: once above the grid, not repeated in 42 cells */}
       <div className="grid grid-cols-7 border-b border-surface-800">
         {weekdays.map((day) => (
           <div key={day} className="py-2 text-center text-sm font-medium text-surface-500">
@@ -114,36 +94,42 @@ export function TrainingMonthCalendar({
         ))}
       </div>
 
-      {/* Calendar grid */}
+      {/* Calendar grid: always six rows of seven, so its height never changes as you page */}
       <div className="grid grid-cols-7">
-        {calendarDays.map((day, index) => {
-          if (!day) {
-            return <div key={`empty-${index}`} className="min-h-20 bg-surface-950/50 border-b border-l border-surface-800/50" />
-          }
+        {calendarDays.map((day) => {
           const dateStr = format(day, 'yyyy-MM-dd')
           const today = isToday(day)
+          // Padding days stay live — reaching 31 July from the August grid is the point
+          const outside = !isSameMonth(day, currentMonth)
           const dayTrainings = trainingsByDay.get(dateStr) ?? []
           const dayReservations = reservationsByDay.get(dateStr) ?? []
           const dayInvitations = invitationsByDay.get(dateStr) ?? []
-          type Chip = { training?: PersonalTraining; reservation?: ReservationOverlayItem; invitation?: InvitationOverlayItem }
+          type Entry = { training?: PersonalTraining; reservation?: ReservationOverlayItem; invitation?: InvitationOverlayItem }
           // Invitations first — the action-needed item must never hide behind "+N"
-          const chips: Chip[] = [
+          const entries: Entry[] = [
             ...dayInvitations.map((inv) => ({ invitation: inv })),
             ...dayTrainings.map((tr) => ({ training: tr })),
             ...dayReservations.map((r) => ({ reservation: r })),
           ]
-          const overflow = chips.length - MAX_CHIPS
+          const overflow = entries.length - MAX_TILES
 
           return (
             <div
               key={dateStr}
               onClick={(e) => {
+                // A real control inside the cell handles its own click. While the clipboard
+                // is armed the tiles are not controls, so the click reaches this handler.
                 if ((e.target as HTMLElement).closest('button')) return
-                onDayClick(dateStr)
+                if (pasteActive) onPasteAt?.(dateStr)
+                else onDayClick(dateStr)
               }}
               className={clsx(
-                'min-h-20 p-1 border-b border-l border-surface-800/50 cursor-pointer transition-colors hover:bg-surface-800/40',
+                'group flex flex-col min-h-32 min-w-0 p-1 border-b border-l border-surface-800/50 transition-colors',
+                outside && 'opacity-40',
                 today && 'bg-primary-500/10',
+                pasteActive
+                  ? 'cursor-copy ring-1 ring-inset ring-primary-500/40 hover:bg-primary-500/10'
+                  : 'cursor-pointer hover:bg-surface-800/40',
               )}
             >
               <div className={clsx(
@@ -153,37 +139,79 @@ export function TrainingMonthCalendar({
                 {format(day, 'd')}
               </div>
               <div className="space-y-0.5">
-                {chips.slice(0, MAX_CHIPS).map((chip, ci) =>
-                  chip.training ? (
+                {entries.slice(0, MAX_TILES).map((entry, ei) =>
+                  entry.training ? (
                     <TrainingBlock
-                      key={chip.training.id}
-                      training={chip.training}
-                      onClick={() => onTrainingClick(chip.training!)}
-                      compact
+                      key={entry.training.id}
+                      training={entry.training}
+                      onClick={() => onTrainingClick(entry.training!)}
+                      density="tile"
+                      pasteActive={pasteActive}
+                      isCut={cutTrainingId === entry.training.id}
+                      isCopied={copiedTrainingId === entry.training.id}
                     />
-                  ) : chip.invitation ? (
+                  ) : entry.invitation ? (
                     <InvitationBlock
-                      key={`inv-${ci}`}
-                      invitation={chip.invitation}
+                      key={`inv-${ei}`}
+                      invitation={entry.invitation}
                       label={invitationLabel}
-                      onClick={() => onInvitationClick(chip.invitation!)}
-                      compact
+                      onClick={() => onInvitationClick(entry.invitation!)}
+                      density="tile"
+                      pasteActive={pasteActive}
                     />
                   ) : (
                     <ReservationBlock
-                      key={chip.reservation!.id}
-                      reservation={chip.reservation!}
+                      key={entry.reservation!.id}
+                      reservation={entry.reservation!}
                       label={t('overlay.reservation')}
-                      onClick={() => onReservationClick(chip.reservation!)}
-                      compact
+                      onClick={() => onReservationClick(entry.reservation!)}
+                      density="tile"
+                      pasteActive={pasteActive}
                       isCoachView={isCoachView}
                     />
                   ),
                 )}
                 {overflow > 0 && (
-                  <div className="px-1.5 text-[10px] text-surface-500">+{overflow}</div>
+                  <button
+                    // A real control, not the dead text it used to be: without it the
+                    // hidden entries were unreachable. While armed it pastes like the rest
+                    // of the cell, because a button would otherwise block the cell handler.
+                    onClick={() => (pasteActive ? onPasteAt?.(dateStr) : onDayExpand(dateStr))}
+                    aria-label={pasteActive ? undefined : t('month.moreAria', { count: overflow })}
+                    className="w-full px-1.5 py-0.5 text-left text-[10px] text-surface-400 hover:text-primary-300 transition-colors"
+                  >
+                    {t('month.more', { count: overflow })}
+                  </button>
                 )}
               </div>
+
+              {pasteActive ? (
+                <span className="mt-auto px-1 py-1 text-center text-[10px] text-primary-300 border border-dashed border-primary-500/50 rounded">
+                  {t('month.pasteHere')}
+                </span>
+              ) : (
+                <button
+                  onClick={() => onDayClick(dateStr)}
+                  aria-label={t('month.addOnDate', { date: dateStr })}
+                  className={clsx(
+                    'mt-auto flex items-center justify-center h-6 rounded border border-dashed border-surface-700',
+                    // One `transition` for colour and opacity alike: two transition-* utilities
+                    // fight over the same property and the winner depends on stylesheet order
+                    // rather than on the order written here.
+                    'text-surface-500 transition hover:border-primary-500/50 hover:text-primary-400',
+                    // Faded out only where a pointer can bring it back. The base state has to be
+                    // gated on the input device, not on hover: `hover:` alone leaves the hidden
+                    // base state standing on a touch screen, where nothing can reveal it again.
+                    // Opacity rather than display so the slot keeps its height — 42 cells must not
+                    // twitch as the cursor crosses them — and so the button stays tabbable, which
+                    // group-focus-within then reveals.
+                    'pointer-fine:opacity-0',
+                    'pointer-fine:group-hover:opacity-100 pointer-fine:group-focus-within:opacity-100',
+                  )}
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                </button>
+              )}
             </div>
           )
         })}

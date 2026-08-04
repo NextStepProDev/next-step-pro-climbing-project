@@ -7,6 +7,16 @@
     "month": "Month",
     "week": "Week"
   },
+  "month": {
+    "more": "+{{count}}",
+    "moreAria_one": "Show {{count}} more entry",
+    "moreAria_other": "Show {{count}} more entries",
+    "showDay": "Show day {{date}}",
+    "addOnDay": "Add an entry",
+    "emptyDay": "Nothing planned for this day",
+    "addOnDate": "Add an entry on {{date}}",
+    "pasteHere": "Paste here"
+  },
   "nav": {
     "today": "Today",
     "prevWeek": "Previous week",
@@ -19,11 +29,11 @@
     "completed": "Completed",
     "missed": "Missed"
   },
-  "addTraining": "Add training",
+  "addTraining": "Add entry",
   "form": {
-    "addTitle": "New training",
-    "editTitle": "Edit training",
-    "duplicateTitle": "Duplicate training",
+    "addTitle": "New entry",
+    "editTitle": "Edit entry",
+    "duplicateTitle": "Duplicate entry",
     "date": "Date",
     "allDay": "All day (no time)",
     "startTime": "Start",
@@ -44,7 +54,17 @@
     "attachmentAdd": "Add link",
     "attachmentRemove": "Remove link",
     "attachmentUrlInvalid": "The link must start with http:// or https://",
-    "attachmentUpload": "Upload file (PDF/image)"
+    "attachmentUpload": "Upload file (PDF/image)",
+    "kindLabel": "Entry type",
+    "kind": {
+      "TRAINING": "Training",
+      "TASK": "Task"
+    },
+    "kindTrainingHint": "A session — you tick it off with a perceived-effort rating (RPE).",
+    "kindTaskHint": "A whole-day commitment — a calorie ceiling, water, sleep. Ticked off, never rated.",
+    "calories": "Calorie ceiling (optional)",
+    "caloriesHint": "Leave empty if the task has no number — e.g. “Drink 3 litres of water”.",
+    "caloriesRange": "A calorie ceiling must be between {{min}} and {{max}} kcal"
   },
   "detail": {
     "allDay": "All day",
@@ -125,8 +145,8 @@
   "clipboard": {
     "copy": "Copy training",
     "cut": "Cut training",
-    "copiedBanner": "Copied \"{{title}}\" — click an empty spot in the week view to paste a copy (Esc cancels)",
-    "cutBanner": "Cut \"{{title}}\" — click an empty spot in the week view to move it (Esc cancels)",
+    "copiedBanner": "Copied \"{{title}}\" — click an empty spot in the calendar to paste a copy (Esc cancels)",
+    "cutBanner": "Cut \"{{title}}\" — click an empty spot in the calendar to move it (Esc cancels)",
     "cancel": "Cancel"
   },
   "completion": {
@@ -226,7 +246,11 @@
     "rpeWarning": {
       "athlete": "Your last ratings are all 9-10 — check you're not overdoing the load.",
       "coach": "The athlete's last ratings are all 9-10 — possible overtraining or inflated scoring."
-    }
+    },
+    "tasksThisMonth": "Tasks this month",
+    "tasksWindow": "Tasks — last 30 days",
+    "tasksRate": "Task completion",
+    "tasksRateHint": "Over the last 30 days; counted only once a task's day is over"
   },
   "templates": {
     "manage": "Templates",

@@ -185,6 +185,19 @@ describe('TrainingWeekCalendar — clicking empty space', () => {
 
     expect(onDayClick).toHaveBeenCalledWith(MONDAY)
   })
+
+  it('should paste into the all-day lane instead of opening the create form', () => {
+    // This lane is the only place an untimed entry — and every task — can land, so while the
+    // clipboard is armed it has to be a drop target, not an add target
+    const onPasteAt = vi.fn()
+    const { onDayClick } = renderWeek({ pasteActive: true, onPasteAt })
+
+    fireEvent.click(screen.getByText('detail.allDay').nextElementSibling!)
+
+    // Explicit null, not undefined: dropping here means "no hour", not "keep the source's hour"
+    expect(onPasteAt).toHaveBeenCalledWith(MONDAY, null)
+    expect(onDayClick).not.toHaveBeenCalled()
+  })
 })
 
 describe('TrainingWeekCalendar — untimed vs timed placement (V72)', () => {
