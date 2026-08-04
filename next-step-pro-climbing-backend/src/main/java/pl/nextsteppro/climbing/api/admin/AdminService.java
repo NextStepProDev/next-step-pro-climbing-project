@@ -5,6 +5,7 @@ import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import pl.nextsteppro.climbing.domain.BookingTimeValidator;
 import pl.nextsteppro.climbing.domain.course.Course;
 import pl.nextsteppro.climbing.domain.course.CourseRepository;
 import pl.nextsteppro.climbing.domain.event.Event;
@@ -273,11 +274,15 @@ public class AdminService {
         TimeSlot slot = timeSlotRepository.findById(slotId)
             .orElseThrow(() -> new IllegalArgumentException("Time slot not found"));
 
+        // Blocking an archived slot is tidying up, not a cancellation anyone needs to hear about.
+        boolean slotIsOver = BookingTimeValidator.isPast(slot.getDate(), slot.getEndTime());
         List<Reservation> confirmed = reservationRepository.findConfirmedByTimeSlotId(slotId);
         for (Reservation reservation : confirmed) {
             reservation.cancelByAdmin();
             reservationRepository.save(reservation);
-            mailService.sendAdminCancellationNotification(reservation);
+            if (!slotIsOver) {
+                mailService.sendAdminCancellationNotification(reservation);
+            }
             activityLogService.logCancelledByAdmin(reservation.getUser(), slot, reservation.getParticipants());
         }
 
@@ -314,11 +319,8 @@ public class AdminService {
             .orElseThrow(() -> new IllegalArgumentException("Time slot not found"));
 
         // "Past" = slot fully ended (same definition as the archive query findPastOrdered):
-        // a slot that already ended earlier *today* is archived, so deleting it must NOT notify
-        // — keeps slot deletion consistent with deleteEvent (which already treats today as past).
-        LocalDate today = LocalDate.now();
-        boolean isPast = slot.getDate().isBefore(today)
-            || (slot.getDate().isEqual(today) && !slot.getEndTime().isAfter(LocalTime.now()));
+        // a slot that already ended earlier *today* is archived, so deleting it must NOT notify.
+        boolean isPast = BookingTimeValidator.isPast(slot.getDate(), slot.getEndTime());
 
         // Capture slot description before deletion (FK will be SET NULL after delete)
         var tf = DateTimeFormatter.ofPattern("HH:mm");
@@ -708,7 +710,8 @@ public class AdminService {
         Event event = eventRepository.findById(eventId)
             .orElseThrow(() -> new IllegalArgumentException("Event not found"));
 
-        boolean isPast = !event.getEndDate().isAfter(LocalDate.now());
+        // An event ending TODAY is not over yet — cancelling it is exactly the mail people need.
+        boolean isPast = BookingTimeValidator.dayHasPassed(event.getEndDate());
 
         // Capture event description before deletion (FK will be SET NULL after delete)
         var df2 = DateTimeFormatter.ofPattern("yyyy-MM-dd");
@@ -1246,8 +1249,9 @@ public class AdminService {
         int participants = reservation.getParticipants();
         reservation.cancelByAdmin();
         reservationRepository.save(reservation);
-        boolean slotInPast = LocalDateTime.now().isAfter(slot.getDate().atTime(slot.getStartTime()));
-        if (!slotInPast) {
+        // Over = the slot has ENDED. Keyed off the start time, a cancellation sent while the
+        // session was still running went silent — to someone who may well be on their way to it.
+        if (!BookingTimeValidator.isPast(slot.getDate(), slot.getEndTime())) {
             mailService.sendAdminCancellationNotification(reservation);
         }
         activityLogService.logCancelledByAdmin(user, slot, participants);
@@ -1272,7 +1276,7 @@ public class AdminService {
         Reservation reservation = reservationRepository.findById(reservationId)
             .orElseThrow(() -> new IllegalArgumentException("Reservation not found"));
         TimeSlot slot = reservation.getTimeSlot();
-        if (slot.getDate().atTime(slot.getEndTime()).isAfter(LocalDateTime.now())) {
+        if (!BookingTimeValidator.isPast(slot.getDate(), slot.getEndTime())) {
             throw new IllegalStateException("Only past reservations can be permanently deleted");
         }
         reservationRepository.delete(reservation);
@@ -1291,7 +1295,7 @@ public class AdminService {
     public void deletePastEventReservations(UUID eventId) {
         Event event = eventRepository.findById(eventId)
             .orElseThrow(() -> new IllegalArgumentException("Event not found"));
-        if (!LocalDate.now().isAfter(event.getEndDate())) {
+        if (!BookingTimeValidator.dayHasPassed(event.getEndDate())) {
             throw new IllegalStateException("Only past events can have their reservations permanently deleted");
         }
         List<TimeSlot> slots = timeSlotRepository.findByEventId(eventId);
@@ -1321,8 +1325,7 @@ public class AdminService {
             reservationRepository.save(reservation);
             activityLogService.logCancelledByAdmin(user, reservation.getTimeSlot(), participants);
         }
-        boolean eventInPast = LocalDate.now().isAfter(event.getEndDate());
-        if (!eventInPast) {
+        if (!BookingTimeValidator.dayHasPassed(event.getEndDate())) {
             mailService.sendAdminEventParticipantRemovedNotification(user, event);
         }
         eventWaitlistService.notifyAll(eventId);
@@ -1354,7 +1357,9 @@ public class AdminService {
         reservationRepository.save(reservation);
         User user = userRepository.findById(reservation.getUser().getId())
             .orElseThrow(() -> new IllegalStateException("User not found"));
-        mailService.sendAdminParticipantReductionNotification(user, slot, oldParticipants, newParticipants);
+        if (!BookingTimeValidator.isPast(slot.getDate(), slot.getEndTime())) {
+            mailService.sendAdminParticipantReductionNotification(user, slot, oldParticipants, newParticipants);
+        }
         if (newParticipants < oldParticipants) {
             waitlistService.notifyAll(slot.getId());
             if (slot.belongsToEvent()) {
@@ -1394,7 +1399,9 @@ public class AdminService {
             reservation.setParticipants(newParticipants);
             reservationRepository.save(reservation);
         }
-        mailService.sendAdminEventParticipantReductionNotification(user, event, oldParticipants, newParticipants);
+        if (!BookingTimeValidator.dayHasPassed(event.getEndDate())) {
+            mailService.sendAdminEventParticipantReductionNotification(user, event, oldParticipants, newParticipants);
+        }
         activityLogService.logEventReservationUpdated(user, event, newParticipants);
         if (newParticipants < oldParticipants) {
             eventWaitlistService.notifyAll(eventId);
@@ -1487,8 +1494,7 @@ public class AdminService {
         }
 
         String displayTitle = slot.getDisplayTitle();
-        boolean slotInPast = LocalDateTime.now().isAfter(slot.getDate().atTime(slot.getStartTime()));
-        if (!slotInPast) {
+        if (!BookingTimeValidator.isPast(slot.getDate(), slot.getEndTime())) {
             mailService.sendReservationConfirmation(reservation, displayTitle);
             mailService.sendAdminNotification(reservation, displayTitle);
         }
@@ -1585,8 +1591,7 @@ public class AdminService {
                 if (request.comment() != null) reservation.setComment(sanitizedComment);
                 reservationRepository.save(reservation);
             }
-            boolean eventInPast = LocalDate.now().isAfter(event.getEndDate());
-            if (!eventInPast) {
+            if (!BookingTimeValidator.dayHasPassed(event.getEndDate())) {
                 mailService.sendEventReservationUpdateConfirmation(user, event, currentUserParticipants, newTotal);
                 mailService.sendEventAdminNotification(user, event, newTotal, sanitizedComment);
             }
@@ -1609,8 +1614,7 @@ public class AdminService {
                     reservationRepository.save(reservation);
                 }
             }
-            boolean eventInPast = LocalDate.now().isAfter(event.getEndDate());
-            if (!eventInPast) {
+            if (!BookingTimeValidator.dayHasPassed(event.getEndDate())) {
                 mailService.sendEventReservationConfirmation(user, event, request.participants());
                 mailService.sendEventAdminNotification(user, event, request.participants(), sanitizedComment);
             }
