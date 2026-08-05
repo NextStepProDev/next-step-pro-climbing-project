@@ -78,7 +78,8 @@
     "delete": "Usuń",
     "deleteConfirmTitle": "Usunąć trening?",
     "deleteConfirmMessage": "Tego nie można cofnąć. Komentarze do treningu też znikną.",
-    "close": "Zamknij"
+    "close": "Zamknij",
+    "saveAsTemplate": "Do szablonów"
   },
   "goals": {
     "title": "Cele",
@@ -153,7 +154,9 @@
     "cut": "Wytnij trening",
     "copiedBanner": "Skopiowano „{{title}}\" — kliknij wolne miejsce w kalendarzu, aby wkleić kopię (Esc anuluje)",
     "cutBanner": "Wycięto „{{title}}\" — kliknij wolne miejsce w kalendarzu, aby przenieść (Esc anuluje)",
-    "cancel": "Anuluj"
+    "cancel": "Anuluj",
+    "fromAthlete": "z kalendarza: {{name}}",
+    "fromOwnCalendar": "z Twojego kalendarza"
   },
   "completion": {
     "markDone": "Oznacz jako wykonany",
@@ -286,8 +289,11 @@
     "form": {
       "title": "Tytuł",
       "titlePlaceholder": "np. Trening siłowy A",
-      "duration": "Domyślny czas trwania (minuty)"
-    }
+      "duration": "Domyślny czas trwania (minuty)",
+      "titlePlaceholderTask": "np. Limit 2200 kcal"
+    },
+    "saveAs": "Zapisz jako szablon",
+    "savedAsTemplate": "Szablon zapisany w bibliotece"
   },
   "materials": {
     "manage": "Materiały",

@@ -9,6 +9,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import pl.nextsteppro.climbing.domain.personaltraining.AttachmentKind;
 import pl.nextsteppro.climbing.domain.personaltraining.TrainingAttachment;
 import pl.nextsteppro.climbing.domain.personaltraining.TrainingAttachmentRepository;
+import pl.nextsteppro.climbing.domain.personaltraining.TrainingKind;
 import pl.nextsteppro.climbing.domain.trainingtemplate.TrainingTemplate;
 import pl.nextsteppro.climbing.domain.trainingtemplate.TrainingTemplateRepository;
 import pl.nextsteppro.climbing.infrastructure.i18n.MessageService;
@@ -50,7 +51,7 @@ class TrainingTemplateServiceTest {
         // Given
         when(templateRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
         SaveTemplateRequest request = new SaveTemplateRequest(
-            "Rozgrzewka <b>palców</b>", "Opis", 90,
+            TrainingKind.TRAINING, "Rozgrzewka <b>palców</b>", "Opis", 90, null,
             List.of(new AttachmentRequest("https://youtu.be/dQw4w9WgXcQ", "Wideo")));
 
         // When
@@ -64,7 +65,7 @@ class TrainingTemplateServiceTest {
 
     @Test
     void shouldRejectCreateWhenTitleBlank() {
-        SaveTemplateRequest request = new SaveTemplateRequest("   ", null, 60, null);
+        SaveTemplateRequest request = new SaveTemplateRequest(TrainingKind.TRAINING, "   ", null, 60, null, null);
         IllegalArgumentException e = assertThrows(IllegalArgumentException.class, () -> service.create(request));
         assertEquals("training.template.title.empty", e.getMessage());
         verify(templateRepository, never()).save(any());
@@ -72,7 +73,7 @@ class TrainingTemplateServiceTest {
 
     @Test
     void shouldRejectWhenMoreThanThreeAttachments() {
-        SaveTemplateRequest request = new SaveTemplateRequest("T", null, 60, List.of(
+        SaveTemplateRequest request = new SaveTemplateRequest(TrainingKind.TRAINING, "T", null, 60, null, List.of(
             new AttachmentRequest("https://a.com", null), new AttachmentRequest("https://b.com", null),
             new AttachmentRequest("https://c.com", null), new AttachmentRequest("https://d.com", null)));
         assertThrows(IllegalArgumentException.class, () -> service.create(request));
@@ -81,8 +82,8 @@ class TrainingTemplateServiceTest {
 
     @Test
     void shouldListTemplatesSortedByTitle() {
-        TrainingTemplate a = new TrainingTemplate("A", null, 60);
-        TrainingTemplate b = new TrainingTemplate("B", null, 90);
+        TrainingTemplate a = new TrainingTemplate(TrainingKind.TRAINING, "A", null, 60, null);
+        TrainingTemplate b = new TrainingTemplate(TrainingKind.TRAINING, "B", null, 90, null);
         when(templateRepository.findAllByOrderByTitleAsc()).thenReturn(List.of(a, b));
 
         List<TrainingTemplateDto> list = service.list();
@@ -94,10 +95,10 @@ class TrainingTemplateServiceTest {
     @Test
     void shouldReplaceAttachmentsOnUpdate() {
         UUID templateId = UUID.randomUUID();
-        TrainingTemplate template = new TrainingTemplate("T", null, 60);
+        TrainingTemplate template = new TrainingTemplate(TrainingKind.TRAINING, "T", null, 60, null);
         setField(template, "id", templateId);
         when(templateRepository.findById(templateId)).thenReturn(Optional.of(template));
-        SaveTemplateRequest request = new SaveTemplateRequest("T2", null, 75,
+        SaveTemplateRequest request = new SaveTemplateRequest(TrainingKind.TRAINING, "T2", null, 75, null,
             List.of(new AttachmentRequest("https://a.com", null)));
 
         service.update(templateId, request);
@@ -109,7 +110,7 @@ class TrainingTemplateServiceTest {
     @Test
     void shouldDeleteTemplateAndUnreferencedFiles() throws Exception {
         UUID templateId = UUID.randomUUID();
-        TrainingTemplate template = new TrainingTemplate("T", null, 60);
+        TrainingTemplate template = new TrainingTemplate(TrainingKind.TRAINING, "T", null, 60, null);
         setField(template, "id", templateId);
         when(templateRepository.findById(templateId)).thenReturn(Optional.of(template));
         when(attachmentRepository.findByTemplateIdOrderByPositionAsc(templateId)).thenReturn(List.of(
@@ -126,7 +127,7 @@ class TrainingTemplateServiceTest {
     @Test
     void shouldKeepFileOnDiskWhenStillReferencedElsewhere() throws Exception {
         UUID templateId = UUID.randomUUID();
-        TrainingTemplate template = new TrainingTemplate("T", null, 60);
+        TrainingTemplate template = new TrainingTemplate(TrainingKind.TRAINING, "T", null, 60, null);
         setField(template, "id", templateId);
         when(templateRepository.findById(templateId)).thenReturn(Optional.of(template));
         when(attachmentRepository.findByTemplateIdOrderByPositionAsc(templateId)).thenReturn(List.of(
@@ -137,6 +138,80 @@ class TrainingTemplateServiceTest {
         service.delete(templateId);
 
         verify(fileStorageService, never()).delete(anyString(), anyString());
+    }
+
+    @Test
+    void shouldCreateTaskTemplateWithCalorieTargetAndNoDuration() {
+        // Given — the shape that made this feature worth building: the one entry that repeats
+        // verbatim across every athlete ("max 2200 kcal") finally lives in the shared library
+        when(templateRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        SaveTemplateRequest request = new SaveTemplateRequest(
+            TrainingKind.TASK, "Limit 2200 kcal", null, null, 2200, null);
+
+        // When
+        TrainingTemplateDto dto = service.create(request);
+
+        // Then
+        assertEquals(TrainingKind.TASK, dto.kind());
+        assertEquals(2200, dto.targetCalories());
+        assertNull(dto.defaultDurationMinutes());
+    }
+
+    @Test
+    void shouldDefaultToTrainingWhenKindOmitted() {
+        when(templateRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        TrainingTemplateDto dto = service.create(new SaveTemplateRequest(null, "T", null, 60, null, null));
+
+        assertEquals(TrainingKind.TRAINING, dto.kind());
+    }
+
+    @Test
+    void shouldRejectTaskTemplateWithDuration() {
+        // A commitment held across a whole day has no span to prefill
+        SaveTemplateRequest request = new SaveTemplateRequest(TrainingKind.TASK, "Woda", null, 60, null, null);
+
+        IllegalArgumentException e = assertThrows(IllegalArgumentException.class, () -> service.create(request));
+
+        assertEquals("training.template.task.duration", e.getMessage());
+        verify(templateRepository, never()).save(any());
+    }
+
+    @Test
+    void shouldRejectTrainingTemplateWithoutDuration() {
+        SaveTemplateRequest request = new SaveTemplateRequest(TrainingKind.TRAINING, "Siła", null, null, null, null);
+
+        IllegalArgumentException e = assertThrows(IllegalArgumentException.class, () -> service.create(request));
+
+        assertEquals("training.template.duration.required", e.getMessage());
+        verify(templateRepository, never()).save(any());
+    }
+
+    @Test
+    void shouldRejectTrainingTemplateWithCalorieTarget() {
+        // Calories belong to a task; on a training they would reach an entry the CHECK forbids
+        SaveTemplateRequest request = new SaveTemplateRequest(TrainingKind.TRAINING, "Siła", null, 60, 2200, null);
+
+        IllegalArgumentException e = assertThrows(IllegalArgumentException.class, () -> service.create(request));
+
+        assertEquals("training.template.calories.task.only", e.getMessage());
+        verify(templateRepository, never()).save(any());
+    }
+
+    @Test
+    void shouldSwitchKindOnUpdate() {
+        // Unlike an entry's kind, a template's is editable: there is no completion or RPE to lose
+        UUID templateId = UUID.randomUUID();
+        TrainingTemplate template = new TrainingTemplate(TrainingKind.TRAINING, "T", null, 60, null);
+        setField(template, "id", templateId);
+        when(templateRepository.findById(templateId)).thenReturn(Optional.of(template));
+
+        TrainingTemplateDto dto = service.update(templateId,
+            new SaveTemplateRequest(TrainingKind.TASK, "Limit 1800 kcal", null, null, 1800, null));
+
+        assertEquals(TrainingKind.TASK, dto.kind());
+        assertNull(dto.defaultDurationMinutes());
+        assertEquals(1800, dto.targetCalories());
     }
 
     @Test

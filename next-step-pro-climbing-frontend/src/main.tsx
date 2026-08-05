@@ -7,6 +7,7 @@ import { HelmetProvider } from 'react-helmet-async'
 import { AuthProvider } from './context/AuthContext'
 import { ThemeProvider } from './context/ThemeContext'
 import { ToastProvider } from './context/ToastContext'
+import { TrainingClipboardProvider } from './context/TrainingClipboardContext'
 import App from './App'
 import './index.css'
 
@@ -34,7 +35,11 @@ createRoot(document.getElementById('root')!).render(
           <BrowserRouter>
             <AuthProvider>
               <ToastProvider>
-                <App />
+                {/* Above the router on purpose: an armed copy has to survive walking from one
+                    athlete's calendar to another's, which is what makes cross-athlete paste work */}
+                <TrainingClipboardProvider>
+                  <App />
+                </TrainingClipboardProvider>
               </ToastProvider>
             </AuthProvider>
           </BrowserRouter>
