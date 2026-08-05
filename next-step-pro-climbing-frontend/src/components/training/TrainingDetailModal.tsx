@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Check, CopyPlus, ExternalLink, FileText, Paperclip, Pencil, Trash2, RotateCcw, UserCog, User as UserIcon, X } from 'lucide-react'
+import { Check, CopyPlus, ExternalLink, FileText, LayoutTemplate, Paperclip, Pencil, Trash2, RotateCcw, UserCog, User as UserIcon, X } from 'lucide-react'
 import { format } from 'date-fns'
 import clsx from 'clsx'
 import { Modal } from '../ui/Modal'
@@ -21,6 +21,8 @@ interface TrainingDetailModalProps {
   isCoachView?: boolean
   onEdit: (training: PersonalTraining) => void
   onDuplicate: (training: PersonalTraining) => void
+  // Coach only: the template library is theirs, so the athlete is never offered this
+  onSaveAsTemplate?: (training: PersonalTraining) => void
   onDelete: (training: PersonalTraining) => void
   // Returns a promise so the completion form can stay open (and surface the error) on failure.
   onComplete?: (training: PersonalTraining, data: { feedback?: string; rpe?: number }) => void | Promise<unknown>
@@ -50,7 +52,7 @@ function statusChip(status: PersonalTrainingStatus): string {
 }
 
 export function TrainingDetailModal({
-  training, onClose, api, isCoachView, onEdit, onDuplicate, onDelete,
+  training, onClose, api, isCoachView, onEdit, onDuplicate, onSaveAsTemplate, onDelete,
   onComplete, onUncomplete, mutating, onCommentPosted, errorMessage,
 }: TrainingDetailModalProps) {
   const { t } = useTranslation('training')
@@ -231,6 +233,12 @@ export function TrainingDetailModal({
             <CopyPlus className="w-3.5 h-3.5 mr-1" />
             {t('detail.duplicate')}
           </Button>
+          {onSaveAsTemplate && (
+            <Button variant="secondary" size="sm" onClick={() => onSaveAsTemplate(training)}>
+              <LayoutTemplate className="w-3.5 h-3.5 mr-1" />
+              {t('detail.saveAsTemplate')}
+            </Button>
+          )}
           <Button variant="secondary" size="sm" onClick={() => onEdit(training)}>
             <Pencil className="w-3.5 h-3.5 mr-1" />
             {t('detail.edit')}

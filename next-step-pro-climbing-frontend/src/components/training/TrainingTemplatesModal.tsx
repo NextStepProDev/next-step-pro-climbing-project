@@ -1,16 +1,15 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { Clock, Paperclip, Pencil, Plus, Trash2 } from 'lucide-react'
+import { ClipboardList, Clock, Flame, Paperclip, Pencil, Plus, Trash2 } from 'lucide-react'
 import { Modal } from '../ui/Modal'
 import { Button } from '../ui/Button'
 import { ConfirmModal } from '../ui/ConfirmModal'
 import { LoadingSpinner } from '../ui/LoadingSpinner'
-import { AttachmentEditor } from './AttachmentEditor'
+import { TrainingTemplateForm } from './TrainingTemplateForm'
 import { adminTrainingCalendarApi } from '../../api/client'
-import { getErrorMessage } from '../../utils/errors'
 import { decodeHtmlEntities } from '../../utils/htmlEntities'
-import type { AttachmentInput, SaveTrainingTemplate, TrainingTemplate } from '../../types'
+import type { TrainingTemplate } from '../../types'
 
 const TEMPLATES_KEY = ['admin', 'trainingTemplates']
 
@@ -50,7 +49,7 @@ export function TrainingTemplatesModal({ isOpen, onClose }: TrainingTemplatesMod
       size="lg"
     >
       {editing ? (
-        <TemplateForm
+        <TrainingTemplateForm
           template={editing === 'new' ? null : editing}
           onDone={() => { setEditing(null); invalidate() }}
           onCancel={() => setEditing(null)}
@@ -73,9 +72,24 @@ export function TrainingTemplatesModal({ isOpen, onClose }: TrainingTemplatesMod
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-medium text-surface-100 truncate">{decodeHtmlEntities(tpl.title)}</p>
                     <p className="text-xs text-surface-500 flex items-center gap-3 mt-0.5">
-                      <span className="inline-flex items-center gap-1">
-                        <Clock className="w-3 h-3" />{tpl.defaultDurationMinutes} min
-                      </span>
+                      {/* A task template has no duration to show, so it shows what it does have:
+                          that it is a task, and its ceiling when one is set. */}
+                      {tpl.kind === 'TASK' ? (
+                        <>
+                          <span className="inline-flex items-center gap-1">
+                            <ClipboardList className="w-3 h-3" />{t('form.kind.TASK')}
+                          </span>
+                          {tpl.targetCalories != null && (
+                            <span className="inline-flex items-center gap-1">
+                              <Flame className="w-3 h-3" />{tpl.targetCalories} kcal
+                            </span>
+                          )}
+                        </>
+                      ) : (
+                        <span className="inline-flex items-center gap-1">
+                          <Clock className="w-3 h-3" />{tpl.defaultDurationMinutes} min
+                        </span>
+                      )}
                       {tpl.attachments.length > 0 && (
                         <span className="inline-flex items-center gap-1">
                           <Paperclip className="w-3 h-3" />{tpl.attachments.length}
@@ -113,110 +127,5 @@ export function TrainingTemplatesModal({ isOpen, onClose }: TrainingTemplatesMod
         variant="danger"
       />
     </Modal>
-  )
-}
-
-const DEFAULT_DURATION = 90
-
-function templateToInputs(tpl: TrainingTemplate): AttachmentInput[] {
-  return tpl.attachments.map((a): AttachmentInput => {
-    const label = a.label ? decodeHtmlEntities(a.label) : ''
-    return a.kind === 'FILE'
-      ? {
-          kind: 'FILE',
-          filename: a.filename ?? undefined,
-          originalName: a.fileName ?? undefined,
-          mimeType: a.mimeType ?? undefined,
-          sizeBytes: a.sizeBytes ?? undefined,
-          label,
-        }
-      : { kind: 'LINK', url: a.url ?? '', label }
-  })
-}
-
-function TemplateForm({ template, onDone, onCancel }: {
-  template: TrainingTemplate | null
-  onDone: () => void
-  onCancel: () => void
-}) {
-  const { t } = useTranslation('training')
-  const [title, setTitle] = useState(template ? decodeHtmlEntities(template.title) : '')
-  const [description, setDescription] = useState(template?.description ? decodeHtmlEntities(template.description) : '')
-  const [duration, setDuration] = useState(template?.defaultDurationMinutes ?? DEFAULT_DURATION)
-  const [attachments, setAttachments] = useState<AttachmentInput[]>(template ? templateToInputs(template) : [])
-  const [error, setError] = useState<string | null>(null)
-
-  const saveMutation = useMutation({
-    mutationFn: (data: SaveTrainingTemplate) =>
-      template ? adminTrainingCalendarApi.updateTemplate(template.id, data) : adminTrainingCalendarApi.createTemplate(data),
-    onSuccess: onDone,
-    onError: (err) => setError(getErrorMessage(err)),
-  })
-
-  const submit = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!title.trim()) { setError(t('templates.titleRequired')); return }
-    if (duration < 15 || duration > 720) { setError(t('templates.durationRange')); return }
-    const cleaned: AttachmentInput[] = attachments
-      .filter((a) => a.kind === 'FILE' || (a.url ?? '').trim().length > 0)
-      .map((a) => a.kind === 'FILE'
-        ? { ...a, label: a.label?.trim() || undefined }
-        : { kind: 'LINK' as const, url: (a.url ?? '').trim(), label: a.label?.trim() || undefined })
-    if (cleaned.some((a) => a.kind === 'LINK' && !/^https?:\/\//i.test(a.url ?? ''))) {
-      setError(t('form.attachmentUrlInvalid')); return
-    }
-    setError(null)
-    saveMutation.mutate({ title: title.trim(), description: description.trim() || undefined, defaultDurationMinutes: duration, attachments: cleaned })
-  }
-
-  return (
-    <form onSubmit={submit} className="space-y-4">
-      <div>
-        <label className="block text-sm text-surface-400 mb-1">{t('templates.form.title')}</label>
-        <input
-          type="text"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          maxLength={150}
-          placeholder={t('templates.form.titlePlaceholder')}
-          required
-          className="w-full bg-surface-800 border border-surface-700 rounded-lg px-4 py-2 text-surface-100"
-        />
-      </div>
-
-      <div>
-        <label className="block text-sm text-surface-400 mb-1">{t('templates.form.duration')}</label>
-        <input
-          type="number"
-          value={duration}
-          onChange={(e) => setDuration(Number(e.target.value))}
-          min={15}
-          max={720}
-          step={5}
-          className="w-32 bg-surface-800 border border-surface-700 rounded-lg px-4 py-2 text-surface-100"
-        />
-      </div>
-
-      <div>
-        <label className="block text-sm text-surface-400 mb-1">{t('form.description')}</label>
-        <textarea
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          maxLength={2000}
-          rows={3}
-          placeholder={t('form.descriptionPlaceholder')}
-          className="w-full bg-surface-800 border border-surface-700 rounded-lg px-4 py-2 text-surface-100 resize-none"
-        />
-      </div>
-
-      <AttachmentEditor value={attachments} onChange={setAttachments} onUpload={adminTrainingCalendarApi.uploadAttachment} />
-
-      {error && <p className="text-sm text-rose-400/80">{error}</p>}
-
-      <div className="flex justify-end gap-3 pt-2">
-        <Button type="button" variant="secondary" onClick={onCancel}>{t('form.cancel')}</Button>
-        <Button type="submit" variant="primary" loading={saveMutation.isPending}>{t('form.save')}</Button>
-      </div>
-    </form>
   )
 }

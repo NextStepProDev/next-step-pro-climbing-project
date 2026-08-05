@@ -182,8 +182,17 @@ function TrainingForm({ training, initialDate, initialTime, prefill, onClose, on
     if (!tpl) return
     setTitle(decodeHtmlEntities(tpl.title))
     setDescription(tpl.description ? decodeHtmlEntities(tpl.description) : '')
-    setEndTime(addMinutesTo(startTime, tpl.defaultDurationMinutes))
     setAttachments(templateToInputs(tpl))
+    // The kind comes with the template: applying "max 2200 kcal" has to produce a task, or the
+    // form would hand the backend a training carrying a calorie ceiling and get a 400 back.
+    setKind(tpl.kind)
+    if (tpl.kind === 'TASK') {
+      setCalories(tpl.targetCalories != null ? String(tpl.targetCalories) : '')
+      return
+    }
+    setCalories('')
+    // Only a training has a span to prefill; a task never reaches the time pickers
+    if (tpl.defaultDurationMinutes != null) setEndTime(addMinutesTo(startTime, tpl.defaultDurationMinutes))
   }
 
   // Retroactive logging (adding a training after the fact — often days later):
@@ -264,7 +273,10 @@ function TrainingForm({ training, initialDate, initialTime, prefill, onClose, on
             <option value="">{t('templates.usePlaceholder')}</option>
             {templatesQuery.data!.map((tpl) => (
               <option key={tpl.id} value={tpl.id}>
-                {decodeHtmlEntities(tpl.title)} · {tpl.defaultDurationMinutes} min
+                {decodeHtmlEntities(tpl.title)}
+                {tpl.kind === 'TASK'
+                  ? ` · ${t('form.kind.TASK')}`
+                  : ` · ${tpl.defaultDurationMinutes} min`}
               </option>
             ))}
           </select>

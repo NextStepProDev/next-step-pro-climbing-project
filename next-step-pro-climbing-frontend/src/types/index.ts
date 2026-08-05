@@ -1260,17 +1260,25 @@ export interface SaveWeight {
 // Reusable coach training template (shared library). Materials reuse TrainingAttachment.
 export interface TrainingTemplate {
   id: string
+  // What applying this template creates. Editable here, unlike an entry's own kind:
+  // a template holds no completion or rating to lose.
+  kind: TrainingKind
   title: string
   description: string | null
-  defaultDurationMinutes: number
+  // Set for a TRAINING, null for a TASK (a whole-day commitment has no span to prefill)
+  defaultDurationMinutes: number | null
+  targetCalories: number | null
   attachments: TrainingAttachment[]
   updatedAt: string
 }
 
 export interface SaveTrainingTemplate {
+  kind: TrainingKind
   title: string
   description?: string
-  defaultDurationMinutes: number
+  // Exactly one of the two, matching the kind — the backend rejects the mismatch
+  defaultDurationMinutes?: number | null
+  targetCalories?: number | null
   attachments?: AttachmentInput[]
 }
 

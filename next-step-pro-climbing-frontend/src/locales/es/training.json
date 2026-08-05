@@ -76,7 +76,8 @@
     "delete": "Eliminar",
     "deleteConfirmTitle": "¿Eliminar el entrenamiento?",
     "deleteConfirmMessage": "Esto no se puede deshacer. Los comentarios del entrenamiento también desaparecerán.",
-    "close": "Cerrar"
+    "close": "Cerrar",
+    "saveAsTemplate": "A plantillas"
   },
   "goals": {
     "title": "Objetivos",
@@ -148,7 +149,9 @@
     "cut": "Cortar entrenamiento",
     "copiedBanner": "Copiado \"{{title}}\" — haz clic en un hueco libre del calendario para pegar una copia (Esc cancela)",
     "cutBanner": "Cortado \"{{title}}\" — haz clic en un hueco libre del calendario para moverlo (Esc cancela)",
-    "cancel": "Cancelar"
+    "cancel": "Cancelar",
+    "fromAthlete": "del calendario de {{name}}",
+    "fromOwnCalendar": "de tu propio calendario"
   },
   "completion": {
     "markDone": "Marcar como completado",
@@ -275,8 +278,11 @@
     "form": {
       "title": "Título",
       "titlePlaceholder": "p. ej. Sesión de fuerza A",
-      "duration": "Duración predeterminada (minutos)"
-    }
+      "duration": "Duración predeterminada (minutos)",
+      "titlePlaceholderTask": "p. ej. Máximo 2200 kcal"
+    },
+    "saveAs": "Guardar como plantilla",
+    "savedAsTemplate": "Plantilla guardada en la biblioteca"
   },
   "materials": {
     "manage": "Materiales",

@@ -76,7 +76,8 @@
     "delete": "Delete",
     "deleteConfirmTitle": "Delete training?",
     "deleteConfirmMessage": "This cannot be undone. The training's comments will be gone too.",
-    "close": "Close"
+    "close": "Close",
+    "saveAsTemplate": "To templates"
   },
   "goals": {
     "title": "Goals",
@@ -147,7 +148,9 @@
     "cut": "Cut training",
     "copiedBanner": "Copied \"{{title}}\" — click an empty spot in the calendar to paste a copy (Esc cancels)",
     "cutBanner": "Cut \"{{title}}\" — click an empty spot in the calendar to move it (Esc cancels)",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "fromAthlete": "from {{name}}'s calendar",
+    "fromOwnCalendar": "from your own calendar"
   },
   "completion": {
     "markDone": "Mark as completed",
@@ -268,8 +271,11 @@
     "form": {
       "title": "Title",
       "titlePlaceholder": "e.g. Strength session A",
-      "duration": "Default duration (minutes)"
-    }
+      "duration": "Default duration (minutes)",
+      "titlePlaceholderTask": "e.g. Stay under 2200 kcal"
+    },
+    "saveAs": "Save as template",
+    "savedAsTemplate": "Template saved to the library"
   },
   "materials": {
     "manage": "Materials",

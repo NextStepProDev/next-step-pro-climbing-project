@@ -48,8 +48,15 @@ export function AdminAthleteCalendarPanel() {
         )}
       </div>
 
-      {/* key: switching athletes must remount the section (fresh mark-seen effect per athlete) */}
-      <TrainingCalendarSection key={athleteId} api={adapter} scopeKey={athleteId} isCoachView />
+      {/* key: switching athletes must remount the section (fresh mark-seen effect per athlete).
+          The clipboard deliberately sits above this remount so a copy can travel between athletes. */}
+      <TrainingCalendarSection
+        key={athleteId}
+        api={adapter}
+        scopeKey={athleteId}
+        scopeLabel={athlete ? `${athlete.firstName} ${athlete.lastName}` : undefined}
+        isCoachView
+      />
     </div>
   )
 }

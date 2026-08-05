@@ -20,43 +20,27 @@ import { TrainingDaySheet } from './TrainingDaySheet'
 import { TrainingStatsSection } from './TrainingStatsSection'
 import { TrainingFormModal, type InstantCompletion, type TrainingPrefill } from './TrainingFormModal'
 import { TrainingDetailModal } from './TrainingDetailModal'
+import { SaveAsTemplateModal } from './SaveAsTemplateModal'
+import type { TemplateDraft } from './TrainingTemplateForm'
 import { monthGridRange, resolveInitialView } from './monthGrid'
 import { useCompactViewport } from '../../hooks/useCompactViewport'
 import { trainingCalendarApi, calendarApi } from '../../api/client'
+import { useTrainingClipboard, type TrainingClipboardEntry } from '../../context/TrainingClipboardContext'
 import { getErrorMessage } from '../../utils/errors'
 import { decodeHtmlEntities } from '../../utils/htmlEntities'
 import { keepWithinEntity } from '../../utils/queryEntity'
 import type { TrainingCalendarAdapter } from './trainingCalendarAdapter'
-import type { AttachmentInput, CreatePersonalTraining, InvitationOverlayItem, PersonalTraining, ReservationOverlayItem, TrainingKind } from '../../types'
+import type { AttachmentInput, CreatePersonalTraining, InvitationOverlayItem, PersonalTraining, ReservationOverlayItem } from '../../types'
 
 interface TrainingCalendarSectionProps {
   api: TrainingCalendarAdapter
   // 'me' for the athlete's own tab, athleteId in the coach panel
   scopeKey: string
+  // Whose calendar this is, for the clipboard banner after a copy travels here from
+  // somewhere else. Omitted on the athlete's own tab.
+  scopeLabel?: string
   // Coach view: completion read-only, different invalidations on mark-seen
   isCoachView?: boolean
-}
-
-// Copy/cut clipboard for week-view paste. Content is snapshotted (already decoded)
-// at copy time, so pasting keeps working after the source scrolls out of the fetched
-// range. Lives here (not in the week component) to survive week navigation; the coach
-// panel remounts the whole section per athlete (key={athleteId}), which clears it —
-// cross-athlete paste is impossible by construction.
-interface TrainingClipboard {
-  mode: 'copy' | 'cut'
-  trainingId: string
-  // Carried so a copied task pastes back as a task; a paste with no kind creates a training
-  kind: TrainingKind
-  targetCalories?: number | null
-  title: string
-  description?: string
-  // The source's own hour, used when a paste lands somewhere with no hour axis (the month
-  // grid, the day sheet). null = the source was untimed, and the paste stays untimed —
-  // inventing an hour would turn "do it on Wednesday" into an appointment.
-  startTime: string | null
-  durationMin: number
-  // Carried so a copy→paste recreates the source's materials (cut/move keeps them via null)
-  attachments: AttachmentInput[]
 }
 
 // Source attachments → API input (label decoded so the backend doesn't double-escape it).
@@ -86,7 +70,7 @@ function minToTime(total: number): string {
   return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`
 }
 
-export function TrainingCalendarSection({ api, scopeKey, isCoachView }: TrainingCalendarSectionProps) {
+export function TrainingCalendarSection({ api, scopeKey, scopeLabel, isCoachView }: TrainingCalendarSectionProps) {
   const { t } = useTranslation('training')
   const queryClient = useQueryClient()
   const navigate = useNavigate()
@@ -188,6 +172,8 @@ export function TrainingCalendarSection({ api, scopeKey, isCoachView }: Training
   const [prefillTime, setPrefillTime] = useState<string | undefined>(undefined)
   // Duplicate flow: create-mode form seeded from an existing training
   const [duplicatePrefill, setDuplicatePrefill] = useState<TrainingPrefill | null>(null)
+  // "Save as template" flow: library form seeded from an existing entry (coach only)
+  const [templateDraft, setTemplateDraft] = useState<TemplateDraft | null>(null)
   const [detailId, setDetailId] = useState<string | null>(null)
   const [reservationHint, setReservationHint] = useState<ReservationOverlayItem | null>(null)
   // Full official-slot preview opened from the hint modal ("Zobacz szczegóły")
@@ -267,6 +253,23 @@ export function TrainingCalendarSection({ api, scopeKey, isCoachView }: Training
     setFormOpen(true)
   }
 
+  // "Save as template": the library form seeded from this entry. A task keeps its ceiling and
+  // brings no duration — the one entry that repeats verbatim across every athlete ("max 2200
+  // kcal") is exactly the one worth having in the library.
+  const openSaveAsTemplate = (tr: PersonalTraining) => {
+    const timed = !!(tr.startTime && tr.endTime)
+    setTemplateDraft({
+      kind: tr.kind,
+      title: decodeHtmlEntities(tr.title),
+      description: tr.description ? decodeHtmlEntities(tr.description) : undefined,
+      defaultDurationMinutes: tr.kind === 'TASK'
+        ? null
+        : (timed ? timeToMin(tr.endTime!.slice(0, 5)) - timeToMin(tr.startTime!.slice(0, 5)) : null),
+      targetCalories: tr.targetCalories,
+      attachments: toAttachmentInputs(tr),
+    })
+  }
+
   // Duplicate: create-mode form seeded with the source content, date defaults to +7 days
   // ("same training next week"); everything stays editable before saving
   const openDuplicate = (tr: PersonalTraining) => {
@@ -287,22 +290,46 @@ export function TrainingCalendarSection({ api, scopeKey, isCoachView }: Training
   }
 
   // ---------- clipboard (copy/cut/paste) + drag&drop, week view only ----------
-  const [clipboard, setClipboard] = useState<TrainingClipboard | null>(null)
+  // State lives above the router (TrainingClipboardProvider) so a copy survives the remount
+  // the coach panel does per athlete — that survival IS cross-athlete paste.
+  const { clipboard, setClipboard } = useTrainingClipboard()
   const [actionError, setActionError] = useState<string | null>(null)
+
+  /**
+   * The clipboard as THIS calendar sees it.
+   *
+   * A copy travels between athletes — that is the point of hoisting the state. A cut does not:
+   * it is a MOVE of an existing row, and moving one athlete's training into another's would drag
+   * its comment thread and its completion ("legs were dead today") into somebody else's plan.
+   * Deriving it in one place rather than checking the scope at each use means there is no render
+   * in which a foreign cut still looks armed.
+   */
+  const armed = clipboard && (clipboard.mode === 'copy' || clipboard.scopeKey === scopeKey)
+    ? clipboard
+    : null
+  const fromAnotherCalendar = !!armed && armed.scopeKey !== scopeKey
+
+  // ...and the foreign cut is dropped rather than parked: walking back to its own calendar and
+  // finding a cut you had given up on silently re-armed is worse than losing it on the way out.
+  useEffect(() => {
+    if (clipboard && clipboard.mode === 'cut' && clipboard.scopeKey !== scopeKey) setClipboard(null)
+  }, [clipboard, scopeKey, setClipboard])
 
   // Escape cancels an armed clipboard (same interaction as the admin calendar)
   useEffect(() => {
-    if (!clipboard) return
+    if (!armed) return
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setClipboard(null) }
     document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)
-  }, [clipboard])
+  }, [armed, setClipboard])
 
   const armClipboard = (mode: 'copy' | 'cut') => (tr: PersonalTraining) => {
     setActionError(null)
     const timed = !!(tr.startTime && tr.endTime)
     setClipboard({
       mode,
+      scopeKey,
+      scopeLabel,
       trainingId: tr.id,
       kind: tr.kind,
       targetCalories: tr.targetCalories,
@@ -317,7 +344,7 @@ export function TrainingCalendarSection({ api, scopeKey, isCoachView }: Training
   }
 
   const pasteMutation = useMutation({
-    mutationFn: ({ clip, date, time }: { clip: TrainingClipboard; date: string; time: string | null }) => {
+    mutationFn: ({ clip, date, time }: { clip: TrainingClipboardEntry; date: string; time: string | null }) => {
       const data: CreatePersonalTraining = {
         // Ignored by the server on a cut (which is an update); decisive on a copy
         kind: clip.kind,
@@ -359,9 +386,9 @@ export function TrainingCalendarSection({ api, scopeKey, isCoachView }: Training
    * pasting it on the week grid answered with a red error strip.
    */
   const handlePasteAt = (date: string, time?: string | null) => {
-    if (!clipboard || pasteMutation.isPending) return
-    const at = clipboard.kind === 'TASK' ? null : (time !== undefined ? time : clipboard.startTime)
-    pasteMutation.mutate({ clip: clipboard, date, time: at })
+    if (!armed || pasteMutation.isPending) return
+    const at = armed.kind === 'TASK' ? null : (time !== undefined ? time : armed.startTime)
+    pasteMutation.mutate({ clip: armed, date, time: at })
   }
 
   const moveMutation = useMutation({
@@ -441,17 +468,26 @@ export function TrainingCalendarSection({ api, scopeKey, isCoachView }: Training
         </div>
       )}
       {/* Armed clipboard: instruction banner (amber = cut/move, primary = copy) */}
-      {clipboard && (
+      {armed && (
         <div
           className={clsx(
             'flex items-center justify-between gap-3 p-3 border rounded-lg',
-            clipboard.mode === 'cut'
+            armed.mode === 'cut'
               ? 'bg-amber-500/10 border-amber-500/30 text-amber-300'
               : 'bg-primary-500/10 border-primary-500/30 text-primary-300',
           )}
         >
           <span className="text-sm">
-            {t(clipboard.mode === 'cut' ? 'clipboard.cutBanner' : 'clipboard.copiedBanner', { title: clipboard.title })}
+            {t(armed.mode === 'cut' ? 'clipboard.cutBanner' : 'clipboard.copiedBanner', { title: armed.title })}
+            {/* Arrived from another calendar: say whose, or a paste into the wrong person's plan
+                looks exactly like a paste into the right one */}
+            {fromAnotherCalendar && (
+              <span className="block text-xs opacity-80">
+                {armed.scopeLabel
+                  ? t('clipboard.fromAthlete', { name: armed.scopeLabel })
+                  : t('clipboard.fromOwnCalendar')}
+              </span>
+            )}
           </span>
           <button
             onClick={() => setClipboard(null)}
@@ -521,9 +557,9 @@ export function TrainingCalendarSection({ api, scopeKey, isCoachView }: Training
           onTrainingMove={handleTrainingMove}
           onTrainingCopy={armClipboard('copy')}
           onTrainingCut={armClipboard('cut')}
-          cutTrainingId={clipboard?.mode === 'cut' ? clipboard.trainingId : null}
-          copiedTrainingId={clipboard?.mode === 'copy' ? clipboard.trainingId : null}
-          pasteActive={!!clipboard}
+          cutTrainingId={armed?.mode === 'cut' ? armed.trainingId : null}
+          copiedTrainingId={armed?.mode === 'copy' ? armed.trainingId : null}
+          pasteActive={!!armed}
           onPasteAt={handlePasteAt}
           isCoachView={isCoachView}
         />
@@ -538,7 +574,7 @@ export function TrainingCalendarSection({ api, scopeKey, isCoachView }: Training
           reservations={reservations}
           invitations={invitations}
           onDayExpand={setDaySheetDate}
-          pasteActive={!!clipboard}
+          pasteActive={!!armed}
           onPasteAt={handlePasteAt}
         />
       ) : (
@@ -554,10 +590,10 @@ export function TrainingCalendarSection({ api, scopeKey, isCoachView }: Training
           onInvitationClick={openInvitation}
           onDayClick={openCreate}
           onDayExpand={setDaySheetDate}
-          pasteActive={!!clipboard}
+          pasteActive={!!armed}
           onPasteAt={handlePasteAt}
-          cutTrainingId={clipboard?.mode === 'cut' ? clipboard.trainingId : null}
-          copiedTrainingId={clipboard?.mode === 'copy' ? clipboard.trainingId : null}
+          cutTrainingId={armed?.mode === 'cut' ? armed.trainingId : null}
+          copiedTrainingId={armed?.mode === 'copy' ? armed.trainingId : null}
           isCoachView={isCoachView}
         />
       )}
@@ -620,6 +656,8 @@ export function TrainingCalendarSection({ api, scopeKey, isCoachView }: Training
         isCoachView={isCoachView}
         onEdit={(tr) => { setDetailId(null); openEdit(tr) }}
         onDuplicate={openDuplicate}
+        // The library belongs to the coach; the athlete never sees templates at all
+        onSaveAsTemplate={isCoachView ? openSaveAsTemplate : undefined}
         onDelete={(tr) => deleteMutation.mutate(tr.id)}
         onComplete={(tr, data) => completeMutation.mutateAsync({ trainingId: tr.id, data })}
         onUncomplete={(tr) => uncompleteMutation.mutate(tr.id)}
@@ -634,6 +672,9 @@ export function TrainingCalendarSection({ api, scopeKey, isCoachView }: Training
           ? () => queryClient.invalidateQueries({ queryKey: ['admin', 'trainingCalendar', 'athletes'] })
           : undefined}
       />
+
+      {/* Library form seeded from the entry above — stays open over the detail modal it came from */}
+      <SaveAsTemplateModal draft={templateDraft} onClose={() => setTemplateDraft(null)} />
 
       {/* Read-only reservation hint + gateway to the full official-slot preview */}
       <Modal

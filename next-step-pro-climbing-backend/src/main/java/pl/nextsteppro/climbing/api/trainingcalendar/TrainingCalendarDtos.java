@@ -117,18 +117,29 @@ record AttachmentUploadResponse(
 
 /** Coach creates/edits a reusable training template. */
 record SaveTemplateRequest(
+    // null = TRAINING, so a request that predates tasks still makes what it always made. Unlike a
+    // training's kind this one IS honoured on update — a template has no completion to invalidate.
+    @Nullable TrainingKind kind,
     @NotBlank @Size(max = TrainingTemplate.MAX_TITLE_LENGTH) String title,
     @Nullable @Size(max = TrainingTemplate.MAX_DESCRIPTION_LENGTH) String description,
-    @NotNull @Min(TrainingTemplate.MIN_DURATION_MINUTES) @Max(TrainingTemplate.MAX_DURATION_MINUTES)
+    // Required for a TRAINING, rejected for a TASK — a cross-field rule these annotations cannot
+    // state, so the service decides and they only keep an out-of-range number from reaching it.
+    @Nullable @Min(TrainingTemplate.MIN_DURATION_MINUTES) @Max(TrainingTemplate.MAX_DURATION_MINUTES)
     Integer defaultDurationMinutes,
+    // TASK only, and optional there too — same rule, same bounds as an entry's own target.
+    @Nullable @Min(PersonalTraining.MIN_TARGET_CALORIES) @Max(PersonalTraining.MAX_TARGET_CALORIES)
+    Integer targetCalories,
     @Nullable @Size(max = TrainingAttachment.MAX_PER_TRAINING) List<@Valid AttachmentRequest> attachments
 ) {}
 
 record TrainingTemplateDto(
     UUID id,
+    TrainingKind kind,
     String title,
     @Nullable String description,
-    int defaultDurationMinutes,
+    // Set for a TRAINING, null for a TASK
+    @Nullable Integer defaultDurationMinutes,
+    @Nullable Integer targetCalories,
     List<TrainingAttachmentDto> attachments,
     Instant updatedAt
 ) {}
