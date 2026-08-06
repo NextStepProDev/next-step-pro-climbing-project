@@ -226,9 +226,6 @@
       "training": "Entrenamiento grupal",
       "workshop": "Taller"
     },
-    "locations": {
-      "title": "Lugares más frecuentes"
-    },
     "badges": {
       "total_one": "{{count}} actividad",
       "total_many": "{{count}} actividades",

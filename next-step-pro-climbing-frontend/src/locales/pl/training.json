@@ -232,9 +232,6 @@
       "training": "Trening grupowy",
       "workshop": "Warsztaty"
     },
-    "locations": {
-      "title": "Najczęstsze miejsca"
-    },
     "badges": {
       "total_one": "{{count}} aktywność",
       "total_few": "{{count}} aktywności",

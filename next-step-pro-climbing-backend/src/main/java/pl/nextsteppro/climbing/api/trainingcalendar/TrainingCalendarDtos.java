@@ -305,7 +305,6 @@ record AthleteStatsDto(
     // Average RPE now merges completed trainings AND rated reservations
     @Nullable Double avgRpeOverall,
     @Nullable Double avgRpeLast30Days,
-    List<LocationCountDto> topLocations,
     // Intensity balance over the last 90 days across both sources (session counts per band)
     RpeDistributionDto rpeDistribution,
     // Last 5 ratings (both sources) all >= 9 → possible overtraining / inflated scoring
@@ -337,7 +336,6 @@ record RpeDistributionDto(int light, int medium, int hard) {}
 
 record TypeBreakdownDto(long personal, long individualSlot, long course, long training, long workshop) {}
 
-record LocationCountDto(String name, long count) {}
 
 /**
  * Coach creates/edits an athlete's goal. On update the horizon and the kind are IGNORED —
