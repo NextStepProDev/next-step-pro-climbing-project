@@ -41,6 +41,11 @@ public class TimeSlot {
     @Column(name = "is_availability_window", nullable = false)
     private boolean availabilityWindow = false;
 
+    // Instructor absence — created closed, never bookable. Distinct from `blocked`, which
+    // closes a slot that already exists (and cancels + mails whoever was signed up).
+    @Column(name = "is_unavailable", nullable = false)
+    private boolean unavailable = false;
+
     @Column(name = "is_blocked", nullable = false)
     private boolean blocked = false;
 
@@ -130,6 +135,26 @@ public class TimeSlot {
 
     public void setAvailabilityWindow(boolean availabilityWindow) {
         this.availabilityWindow = availabilityWindow;
+        if (availabilityWindow) {
+            this.unavailable = false;
+        }
+    }
+
+    public boolean isUnavailable() {
+        return unavailable;
+    }
+
+    /**
+     * Marking a slot unavailable zeroes its capacity — that single fact is what makes it
+     * unbookable in the status, the reservation guards and the day counters at once
+     * (DB CHECK time_slots_unavailable_has_no_seats keeps the pair honest).
+     */
+    public void setUnavailable(boolean unavailable) {
+        this.unavailable = unavailable;
+        if (unavailable) {
+            this.availabilityWindow = false;
+            this.maxParticipants = 0;
+        }
     }
 
     public boolean isBlocked() {

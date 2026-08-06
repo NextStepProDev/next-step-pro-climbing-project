@@ -1,13 +1,15 @@
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { format } from "date-fns";
-import { Clock, Users, Calendar, Clock3, Phone, Trash2, AlertTriangle, Pencil } from "lucide-react";
+import { Clock, Users, Calendar, Clock3, Phone, Trash2, AlertTriangle, Pencil, Ban } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { Modal } from "../ui/Modal";
 import { Button } from "../ui/Button";
 import { SuccessCheckmark } from "../ui/SuccessCheckmark";
 import { ShareButtons } from "../ui/ShareButtons";
+import { SlotKindPicker } from "./SlotKindPicker";
+import { slotKindOf, slotKindFlags, type SlotKind } from "../../utils/slotKind";
 import { AddToCalendarButton } from "../ui/AddToCalendarButton";
 import { CompleteProfileModal } from "../ui/CompleteProfileModal";
 import { TimeScrollPicker } from "../ui/TimeScrollPicker";
@@ -50,7 +52,7 @@ export function SlotDetailModal({
     startTime: '',
     endTime: '',
     maxParticipants: 1,
-    isAvailabilityWindow: false,
+    kind: 'REGULAR' as SlotKind,
   });
   const pendingAction = useRef<(() => void) | null>(null);
 
@@ -138,7 +140,7 @@ export function SlotDetailModal({
   });
 
   const editSlotMutation = useMutation({
-    mutationFn: (data: { startTime: string; endTime: string; maxParticipants: number; title: string; isAvailabilityWindow: boolean }) =>
+    mutationFn: (data: { startTime: string; endTime: string; maxParticipants?: number; title: string; isAvailabilityWindow: boolean; isUnavailable: boolean }) =>
       adminApi.updateTimeSlot(slot!.id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["calendar"] });
@@ -151,6 +153,10 @@ export function SlotDetailModal({
   if (!slot) return null;
 
   const isAvailabilityWindow = slot.isAvailabilityWindow;
+  const isUnavailable = slot.isUnavailable;
+  // Neither kind can be booked, so every seat/waitlist/reservation block hangs off this one flag
+  // instead of each of them remembering both shapes.
+  const isBookable = !isAvailabilityWindow && !isUnavailable;
   const dateObj = new Date(slot.date);
   // Invitation-held seats: unavailable to non-invitees. The viewer's own invitation does not
   // block — that is why we subtract only OTHER people's invitations.
@@ -183,7 +189,7 @@ export function SlotDetailModal({
     startTime: slot.startTime.slice(0, 5),
     endTime: slot.endTime.slice(0, 5),
     maxParticipants: slot.maxParticipants,
-    isAvailabilityWindow: slot.isAvailabilityWindow,
+    kind: slotKindOf(slot),
   };
   const editTimeError = editForm.endTime <= editForm.startTime;
   const editDirty = JSON.stringify(editForm) !== JSON.stringify(editBaseline);
@@ -258,8 +264,19 @@ export function SlotDetailModal({
           </>
         )}
 
+        {/* Unavailable — instructor absence, nothing to book here */}
+        {isUnavailable && (
+          <div className="p-4 bg-slate-500/10 border border-slate-500/25 rounded-lg space-y-2">
+            <div className="flex items-center gap-2">
+              <Ban className="w-5 h-5 text-slate-400 shrink-0" />
+              <span className="text-slate-200 font-semibold">{t('slot.unavailable.title')}</span>
+            </div>
+            <p className="text-slate-300/80 text-sm">{t('slot.unavailable.body')}</p>
+          </div>
+        )}
+
         {/* Capacity */}
-        {!isAvailabilityWindow && <div className="flex items-center gap-2 text-surface-300">
+        {isBookable && <div className="flex items-center gap-2 text-surface-300">
           <Users className="w-5 h-5" />
           <span>
             {t('slot.participants', { current: slot.currentParticipants, max: slot.maxParticipants })}
@@ -273,7 +290,7 @@ export function SlotDetailModal({
         </div>}
 
         {/* Invitee: seat held for you */}
-        {!isAvailabilityWindow && slot.isReservedForUser && !slot.isUserRegistered && !isPast && (
+        {isBookable && slot.isReservedForUser && !slot.isUserRegistered && !isPast && (
           <div className="p-3 bg-violet-500/10 border border-violet-500/30 rounded-lg">
             <span className="text-violet-200 font-medium">🎟 {t('slot.reservedForYou')}</span>
           </div>
@@ -281,7 +298,7 @@ export function SlotDetailModal({
 
         {/* Explains a seemingly free counter (e.g. "0 / 1") when the remaining seats are invitation-held.
             Anonymous users get a login hint; a logged-in non-invitee gets the brief fact + the waitlist. */}
-        {!isAvailabilityWindow && blockedByReserved && !isPast && (
+        {isBookable && blockedByReserved && !isPast && (
           <div className="p-3 bg-violet-500/10 border border-violet-500/20 rounded-lg">
             <span className="text-violet-200/90 text-sm">
               {isAuthenticated ? t('slot.reservedOnlyLeft') : t('slot.reservedOnlyLeftGuest')}
@@ -290,7 +307,7 @@ export function SlotDetailModal({
         )}
 
         {/* Past slot info — the admin is not shown "ended" for an ongoing slot (editing still active) */}
-        {!isAvailabilityWindow && isPast && (!isAdmin || hasEnded) && (
+        {isBookable && isPast && (!isAdmin || hasEnded) && (
           <div className="p-3 bg-surface-800 border border-surface-700 rounded-lg">
             <span className="text-surface-400 text-sm">
               {t('slot.past')}
@@ -299,7 +316,7 @@ export function SlotDetailModal({
         )}
 
         {/* Booking closed info */}
-        {!isAvailabilityWindow && isBookingClosed && !slot.isUserRegistered && (
+        {isBookable && isBookingClosed && !slot.isUserRegistered && (
           <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg">
             <span className="text-amber-400 text-sm">
               {t('slot.bookingClosed')}
@@ -308,7 +325,7 @@ export function SlotDetailModal({
         )}
 
         {/* User status */}
-        {!isAvailabilityWindow && slot.isUserRegistered && (
+        {isBookable && slot.isUserRegistered && (
           <div className="space-y-3">
             <div className="p-3 bg-primary-500/10 border border-primary-500/20 rounded-lg">
               <span className="text-primary-400 font-medium">
@@ -325,7 +342,7 @@ export function SlotDetailModal({
         )}
 
         {/* Waitlist — PENDING_CONFIRMATION (race for the seat) */}
-        {!isAvailabilityWindow && isPendingConfirmation && slot.waitlistEntryId && (
+        {isBookable && isPendingConfirmation && slot.waitlistEntryId && (
           <div className="p-4 bg-amber-500/10 border-2 border-amber-500/40 rounded-lg space-y-2">
             <div className="flex items-center gap-2">
               <Clock3 className="w-5 h-5 text-amber-400 shrink-0" />
@@ -344,7 +361,7 @@ export function SlotDetailModal({
         )}
 
         {/* Waitlist — race lost (someone was faster — you are back in the queue) */}
-        {!isAvailabilityWindow && confirmOfferMutation.isError && (
+        {isBookable && confirmOfferMutation.isError && (
           <div className="p-3 bg-rose-500/10 border border-rose-500/20 rounded-lg">
             <p className="text-rose-400 text-sm font-medium">
               {getErrorMessage(confirmOfferMutation.error)}
@@ -353,7 +370,7 @@ export function SlotDetailModal({
         )}
 
         {/* Waitlist — WAITING (in the queue) */}
-        {!isAvailabilityWindow && isWaiting && (
+        {isBookable && isWaiting && (
           <div className="p-3 bg-surface-800 border border-surface-700 rounded-lg">
             <span className="text-surface-300 text-sm">
               {t('slot.waitlist.waiting')}
@@ -362,7 +379,7 @@ export function SlotDetailModal({
         )}
 
         {/* Participants & Comment for reservation */}
-        {!isAvailabilityWindow && isAuthenticated && isAvailable && !slot.isUserRegistered && (
+        {isBookable && isAuthenticated && isAvailable && !slot.isUserRegistered && (
           <>
             {spotsLeft > 1 && !showParticipants && (
               <button
@@ -423,7 +440,7 @@ export function SlotDetailModal({
         )}
 
         {/* Share */}
-        {!isAvailabilityWindow && (
+        {isBookable && (
           <ShareButtons
             title={slot.eventTitle || t('slot.title')}
             url={`${window.location.origin}/calendar?date=${slot.date}&slot=${slot.id}`}
@@ -463,19 +480,8 @@ export function SlotDetailModal({
                 {editForm.endTime <= editForm.startTime && (
                   <p className="text-sm text-rose-400/80">{ta('slots.endAfterStart')}</p>
                 )}
-                <label className="flex items-start gap-3 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={editForm.isAvailabilityWindow}
-                    onChange={(e) => setEditForm({ ...editForm, isAvailabilityWindow: e.target.checked })}
-                    className="mt-0.5 accent-teal-500"
-                  />
-                  <div>
-                    <span className="text-sm font-medium text-teal-300">{ta('slots.availabilityWindow')}</span>
-                    <p className="text-xs text-surface-400 mt-0.5">{ta('slots.availabilityWindowHint')}</p>
-                  </div>
-                </label>
-                {!editForm.isAvailabilityWindow && (
+                <SlotKindPicker value={editForm.kind} onChange={(kind) => setEditForm({ ...editForm, kind })} />
+                {editForm.kind === 'REGULAR' && (
                   <div>
                     <label className="block text-sm text-surface-400 mb-1">{ta('slots.maxParticipants')}</label>
                     <input
@@ -497,9 +503,13 @@ export function SlotDetailModal({
                       editSlotMutation.mutate({
                         startTime: editForm.startTime,
                         endTime: editForm.endTime,
-                        maxParticipants: editForm.isAvailabilityWindow ? 1 : editForm.maxParticipants,
+                        // Capacity is omitted for an absence: a slot that still has people
+                        // booked must fail as "cannot mark unavailable", not as a capacity error.
+                        ...(editForm.kind === 'UNAVAILABLE'
+                          ? {}
+                          : { maxParticipants: editForm.kind === 'WINDOW' ? 1 : editForm.maxParticipants }),
                         title: editForm.title || '',
-                        isAvailabilityWindow: editForm.isAvailabilityWindow,
+                        ...slotKindFlags(editForm.kind),
                       });
                     }}
                   >
@@ -522,7 +532,7 @@ export function SlotDetailModal({
                     startTime: slot.startTime.slice(0, 5),
                     endTime: slot.endTime.slice(0, 5),
                     maxParticipants: slot.maxParticipants,
-                    isAvailabilityWindow: slot.isAvailabilityWindow,
+                    kind: slotKindOf(slot),
                   });
                   setEditMode(true);
                 }}
@@ -546,7 +556,7 @@ export function SlotDetailModal({
         )}
 
         {/* Actions */}
-        {!isAvailabilityWindow && <div className="flex gap-3 pt-4 border-t border-surface-800">
+        {isBookable && <div className="flex gap-3 pt-4 border-t border-surface-800">
           {!isAuthenticated ? (
             <Button
               variant="primary"
@@ -631,17 +641,17 @@ export function SlotDetailModal({
         </div>}
 
         {/* Error messages */}
-        {!isAvailabilityWindow && reservationMutation.isError && (
+        {isBookable && reservationMutation.isError && (
           <p className="text-sm text-rose-400/80">
             {getErrorMessage(reservationMutation.error)}
           </p>
         )}
-        {!isAvailabilityWindow && cancelMutation.isError && (
+        {isBookable && cancelMutation.isError && (
           <p className="text-sm text-rose-400/80">
             {getErrorMessage(cancelMutation.error)}
           </p>
         )}
-        {!isAvailabilityWindow && joinWaitlistMutation.isError && (
+        {isBookable && joinWaitlistMutation.isError && (
           <p className="text-sm text-rose-400/80">
             {getErrorMessage(joinWaitlistMutation.error)}
           </p>

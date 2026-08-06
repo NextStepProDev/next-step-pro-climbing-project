@@ -84,7 +84,8 @@ function getSlotColors(status: string): string {
     case 'FULL':
       return 'bg-amber-600/15 border-amber-500/35 text-amber-300/90'
     case 'BLOCKED':
-      return 'bg-surface-700/50 border-surface-600/50 text-surface-400'
+    case 'UNAVAILABLE':
+      return 'bg-slate-600/25 border-slate-500/40 text-slate-300'
     case 'BOOKING_CLOSED':
       return 'bg-surface-700/40 border-surface-600/40 text-surface-400'
     case 'PAST':
@@ -103,7 +104,10 @@ function getStatusLabel(status: string, t: (key: string) => string): string {
     case 'FULL':
       return t('day.full')
     case 'BLOCKED':
-      return t('day.blocked')
+    case 'UNAVAILABLE':
+      // Blocked and unavailable are different admin actions, but to a client they mean the
+      // same thing — one word, so the calendar does not explain the back office.
+      return t('day.unavailable')
     case 'BOOKING_CLOSED':
       return t('day.bookingClosed')
     case 'PAST':

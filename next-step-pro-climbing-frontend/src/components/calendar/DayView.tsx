@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { format } from "date-fns";
-import { ArrowLeft, Clock, Calendar, CalendarPlus, Users, Plus, ExternalLink, X, Phone } from "lucide-react";
+import { ArrowLeft, Clock, Calendar, CalendarPlus, Users, Plus, ExternalLink, X, Phone, Ban } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import clsx from "clsx";
 import type { TimeSlot, EventSummary } from "../../types";
@@ -38,7 +38,8 @@ function SlotButton({
   const { isAdmin, isAuthenticated } = useAuth();
 
   const isAvailabilityWindow = slot.status === "AVAILABILITY_WINDOW";
-  const isDisabled = !isAdmin && (slot.status === "BLOCKED" || slot.status === "PAST");
+  const isUnavailable = slot.status === "UNAVAILABLE";
+  const isDisabled = !isAdmin && (slot.status === "BLOCKED" || slot.status === "UNAVAILABLE" || slot.status === "PAST");
   // "By invitation" is shown ONLY to anonymous users — an unrecognized invitee may be among them.
   // A logged-in non-invitee sees a plain "full" (no need to know about invitations).
   const invitedOnly = !isAuthenticated && slot.status === "FULL" && slot.reservedSeats > 0 && !slot.isReservedForUser && !slot.isUserRegistered;
@@ -59,6 +60,10 @@ function SlotButton({
           "border-surface-800 bg-surface-900/50 cursor-not-allowed opacity-60",
         slot.status === "BLOCKED" && isAdmin &&
           "border-surface-800 bg-surface-900/50 opacity-60 hover:opacity-80 hover:border-rose-500/50",
+        isUnavailable && !isAdmin &&
+          "border-slate-500/40 bg-slate-600/15 cursor-not-allowed",
+        isUnavailable && isAdmin &&
+          "border-slate-500/40 bg-slate-600/15 hover:border-slate-400",
         slot.status === "PAST" && !isAdmin &&
           "border-surface-800 bg-surface-900/50 cursor-not-allowed opacity-50",
         slot.status === "PAST" && isAdmin &&
@@ -74,10 +79,12 @@ function SlotButton({
         <div className="flex items-center gap-3">
           {isAvailabilityWindow
             ? <Phone className="w-5 h-5 text-teal-400" />
+            : isUnavailable
+            ? <Ban className="w-5 h-5 text-slate-400" />
             : <Clock className="w-5 h-5 text-surface-400" />
           }
           <div>
-            <span className={clsx("font-medium", isAvailabilityWindow ? "text-teal-300" : "text-surface-100")}>
+            <span className={clsx("font-medium", isAvailabilityWindow ? "text-teal-300" : isUnavailable ? "text-slate-300" : "text-surface-100")}>
               {slot.startTime.slice(0, 5)} - {slot.endTime.slice(0, 5)}
             </span>
             {showTitle && slot.eventTitle && (
@@ -122,9 +129,9 @@ function SlotButton({
               </span>
             </div>
           )}
-          {slot.status === "BLOCKED" && (
-            <span className="px-2 py-1 text-xs font-medium bg-surface-700 text-surface-400 rounded">
-              {t('day.blocked')}
+          {(slot.status === "BLOCKED" || isUnavailable) && (
+            <span className="px-2 py-1 text-xs font-medium bg-slate-500/20 text-slate-300 rounded">
+              {t('day.unavailable')}
             </span>
           )}
           {slot.status === "BOOKING_CLOSED" && !slot.isUserRegistered && (

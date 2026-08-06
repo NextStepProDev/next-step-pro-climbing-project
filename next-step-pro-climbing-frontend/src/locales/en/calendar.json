@@ -45,7 +45,7 @@
     "waitlistHint": "Join waitlist →",
     "invitedOnly": "🎟 For invited guests",
     "invitedLoginHint": "Log in to check →",
-    "blocked": "Reserved",
+    "unavailable": "Unavailable",
     "bookingClosed": "Call",
     "past": "Finished",
     "yourReservation": "Your reservation",
@@ -97,6 +97,10 @@
       "deadline": "Confirm by:",
       "confirm": "Confirm spot",
       "decline": "Decline"
+    },
+    "unavailable": {
+      "title": "Slot unavailable",
+      "body": "We are not running any sessions in these hours. Check the other slots in the calendar."
     }
   },
   "event": {
@@ -165,8 +169,6 @@
     "to": "To",
     "maxParticipants": "Max. participants",
     "endAfterStart": "End time must be later than start time",
-    "availabilityWindow": "Availability window (call to arrange)",
-    "availabilityWindowHint": "Clients will see this block as available and know they can call — no self-service booking.",
     "templateLabel": "Template",
     "templatePlaceholder": "— custom name —",
     "submit": "Create slot",

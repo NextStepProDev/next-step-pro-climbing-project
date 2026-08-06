@@ -202,6 +202,7 @@ public class EventWaitlistService {
         // Create reservations for all active slots (bypassing the booking window)
         List<TimeSlot> activeSlots = slots.stream()
             .filter(slot -> !slot.isBlocked())
+            .filter(slot -> !slot.isUnavailable())
             .filter(slot -> !LocalDateTime.of(slot.getDate(), slot.getStartTime()).isBefore(LocalDateTime.now(WARSAW)))
             .toList();
 

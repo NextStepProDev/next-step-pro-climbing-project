@@ -611,7 +611,7 @@ export const adminApi = {
       body: JSON.stringify(data),
     }),
 
-  updateTimeSlot: (slotId: string, data: { date?: string; startTime?: string; endTime?: string; maxParticipants?: number; title?: string; isAvailabilityWindow?: boolean; sendNotifications?: boolean; invitedUserIds?: string[] }) =>
+  updateTimeSlot: (slotId: string, data: { date?: string; startTime?: string; endTime?: string; maxParticipants?: number; title?: string; isAvailabilityWindow?: boolean; isUnavailable?: boolean; sendNotifications?: boolean; invitedUserIds?: string[] }) =>
     fetchApi<TimeSlotAdmin>(`/admin/slots/${slotId}`, {
       method: 'PUT',
       body: JSON.stringify(data),

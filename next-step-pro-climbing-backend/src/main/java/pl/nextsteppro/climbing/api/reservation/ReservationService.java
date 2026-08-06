@@ -109,6 +109,12 @@ public class ReservationService {
             throw new IllegalStateException(msg.get("reservation.slot.availability.window"));
         }
 
+        // Zero capacity already rejects this below, but the seat-count error would read as
+        // "no free seats" — an absence is not a full slot.
+        if (slot.isUnavailable()) {
+            throw new IllegalStateException(msg.get("reservation.slot.unavailable"));
+        }
+
         if (reservationRepository.existsByUserIdAndTimeSlotIdAndStatus(userId, slotId, ReservationStatus.CONFIRMED)) {
             throw new IllegalStateException(msg.get("reservation.already.exists"));
         }
@@ -409,6 +415,7 @@ public class ReservationService {
 
         List<TimeSlot> activeSlots = allSlots.stream()
             .filter(slot -> !slot.isBlocked())
+            .filter(slot -> !slot.isUnavailable())
             .filter(slot -> !LocalDateTime.of(slot.getDate(), slot.getStartTime()).isBefore(LocalDateTime.now(WARSAW)))
             .toList();
 

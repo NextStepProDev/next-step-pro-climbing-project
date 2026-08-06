@@ -145,7 +145,9 @@ public class AdminService {
             request.date(),
             request.startTime(),
             request.endTime(),
-            request.maxParticipants()
+            // An unavailable slot carries no seats — setUnavailable zeroes them, this keeps
+            // the constructor from writing a capacity the DB CHECK would then reject.
+            request.isUnavailable() ? 0 : request.maxParticipants()
         );
         if (request.title() != null && !request.title().isBlank()) {
             slot.setTitle(request.title());
@@ -154,10 +156,12 @@ public class AdminService {
             slot.setEvent(event);
         }
         slot.setAvailabilityWindow(request.isAvailabilityWindow());
+        slot.setUnavailable(request.isUnavailable());
 
         slot = timeSlotRepository.save(slot);
 
-        if (request.invitedUserIds() != null) {
+        // Nobody is invited to an absence — the picker is hidden, and this makes the API agree.
+        if (request.invitedUserIds() != null && !slot.isUnavailable()) {
             syncSlotInvites(slot, request.invitedUserIds());
         }
 
@@ -199,6 +203,20 @@ public class AdminService {
         }
         if (request.title() != null) slot.setTitle(request.title().isBlank() ? null : request.title());
         if (request.isAvailabilityWindow() != null) slot.setAvailabilityWindow(request.isAvailabilityWindow());
+        if (request.isUnavailable() != null) {
+            // Turning a slot into an absence drops its capacity to zero, so people already
+            // holding a seat would silently lose it — refuse instead of cancelling behind
+            // the admin's back (blocking the slot is the deliberate way to do that).
+            if (request.isUnavailable()) {
+                int confirmed = reservationRepository.countConfirmedByTimeSlotId(slotId)
+                    + guestReservationRepository.sumParticipantsByTimeSlotId(slotId);
+                if (confirmed > 0) {
+                    throw new IllegalStateException(
+                        msg.get("admin.slot.unavailable.has.reservations", String.valueOf(confirmed)));
+                }
+            }
+            slot.setUnavailable(request.isUnavailable());
+        }
 
         LocalTime start = slot.getStartTime();
         LocalTime end = slot.getEndTime();
@@ -208,7 +226,10 @@ public class AdminService {
 
         slot = timeSlotRepository.save(slot);
 
-        if (request.invitedUserIds() != null) {
+        // An absence keeps no held seats; anything the admin had invited is released here.
+        if (slot.isUnavailable()) {
+            syncSlotInvites(slot, List.of());
+        } else if (request.invitedUserIds() != null) {
             syncSlotInvites(slot, request.invitedUserIds());
         }
 
@@ -1007,7 +1028,8 @@ public class AdminService {
             slot.getBlockReason(),
             slot.getDisplayTitle(),
             slot.belongsToEvent() ? slot.getEvent().getId() : null,
-            slot.isAvailabilityWindow()
+            slot.isAvailabilityWindow(),
+            slot.isUnavailable()
         );
     }
 

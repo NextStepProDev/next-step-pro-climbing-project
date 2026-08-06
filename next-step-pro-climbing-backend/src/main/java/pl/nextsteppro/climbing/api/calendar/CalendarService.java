@@ -310,6 +310,7 @@ public class CalendarService {
             confirmationDeadline,
             userWaitlistPosition,
             slot.isAvailabilityWindow(),
+            slot.isUnavailable(),
             slot.getTitle(),
             reservedSeats,
             isReservedForUser
@@ -406,8 +407,14 @@ public class CalendarService {
         boolean hasAvailabilityWindow = standaloneSlots.stream()
             .anyMatch(TimeSlot::isAvailabilityWindow);
 
+        boolean hasUnavailableSlots = standaloneSlots.stream()
+            .anyMatch(TimeSlot::isUnavailable);
+
+        // Unavailable slots are not "0 of N free" — counting them would report a day off
+        // as a day of full slots. They are announced by their own flag instead.
         List<TimeSlot> bookableSlots = standaloneSlots.stream()
             .filter(slot -> !slot.isAvailabilityWindow())
+            .filter(slot -> !slot.isUnavailable())
             .toList();
 
         int totalSlots = bookableSlots.size();
@@ -436,7 +443,8 @@ public class CalendarService {
             }
         }
 
-        return new DaySummaryDto(date, totalSlots, availableSlots, hasUserReservation, hasAvailabilityWindow, hasReservedSeats);
+        return new DaySummaryDto(date, totalSlots, availableSlots, hasUserReservation, hasAvailabilityWindow,
+            hasReservedSeats, hasUnavailableSlots);
     }
 
     private TimeSlotDto toTimeSlotDto(TimeSlot slot, int confirmedCount, boolean isUserRegistered,
@@ -453,6 +461,7 @@ public class CalendarService {
             isUserRegistered,
             slot.getDisplayTitle(),
             slot.isAvailabilityWindow(),
+            slot.isUnavailable(),
             reservedSeats,
             isReservedForUser
         );
@@ -473,6 +482,9 @@ public class CalendarService {
         }
         if (slotDateTime.isBefore(now)) {
             return SlotStatus.PAST;
+        }
+        if (slot.isUnavailable()) {
+            return SlotStatus.UNAVAILABLE;
         }
         if (slot.isBlocked()) {
             return SlotStatus.BLOCKED;

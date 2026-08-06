@@ -150,5 +150,14 @@
   "calendarAction": {
     "addToCalendar": "Dodaj do kalendarza",
     "downloadIcs": "Pobierz plik .ics"
+  },
+  "slotKind": {
+    "label": "Rodzaj terminu",
+    "REGULAR": "Zwykły termin",
+    "WINDOW": "Okno dostępności",
+    "UNAVAILABLE": "Niedostępność",
+    "REGULARHint": "Klienci rezerwują miejsca w tych godzinach.",
+    "WINDOWHint": "Klienci nie rezerwują — proponują termin w tych godzinach.",
+    "UNAVAILABLEHint": "Godziny zamknięte: bez miejsc, bez zapisów i listy rezerwowej."
   }
 }

@@ -126,7 +126,7 @@ class AdminServiceInviteSyncTest {
     }
 
     private UpdateTimeSlotRequest slotRequestWithInvites(List<UUID> invitedUserIds) {
-        return new UpdateTimeSlotRequest(null, null, null, null, null, null, false, invitedUserIds);
+        return new UpdateTimeSlotRequest(null, null, null, null, null, null, null, false, invitedUserIds);
     }
 
     private UpdateEventRequest eventRequestWithInvites(List<UUID> invitedUserIds) {

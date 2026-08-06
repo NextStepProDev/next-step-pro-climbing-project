@@ -25,7 +25,10 @@ record DaySummaryDto(
     boolean hasUserReservation,
     boolean hasAvailabilityWindow,
     // day with no seats free for the public, but with invitation-held seats
-    boolean hasReservedSeats
+    boolean hasReservedSeats,
+    // day carrying at least one "unavailable" slot — the month cell greys out the same way
+    // it does for an UNAVAILABLE event, instead of reading as an empty day
+    boolean hasUnavailableSlots
 ) implements CalendarDtos {}
 
 record DayViewDto(
@@ -44,6 +47,7 @@ record TimeSlotDto(
     boolean isUserRegistered,
     @Nullable String eventTitle,
     boolean isAvailabilityWindow,
+    boolean isUnavailable,
     // Invitation-held seats: number of pending invitations + whether the current viewer is one of the invitees
     int reservedSeats,
     boolean isReservedForUser
@@ -68,6 +72,7 @@ record TimeSlotDetailDto(
     @Nullable Instant confirmationDeadline,
     int userWaitlistPosition,
     boolean isAvailabilityWindow,
+    boolean isUnavailable,
     @Nullable String title,
     int reservedSeats,
     boolean isReservedForUser
@@ -130,5 +135,7 @@ enum SlotStatus {
     BLOCKED,
     PAST,
     BOOKING_CLOSED,
-    AVAILABILITY_WINDOW
+    AVAILABILITY_WINDOW,
+    // Instructor absence — nothing to book, and nothing was ever booked here
+    UNAVAILABLE
 }

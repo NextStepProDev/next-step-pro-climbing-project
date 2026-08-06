@@ -45,7 +45,7 @@
     "waitlistHint": "Unirse a la lista →",
     "invitedOnly": "🎟 Para invitados",
     "invitedLoginHint": "Inicia sesión para comprobar →",
-    "blocked": "Reservado",
+    "unavailable": "No disponible",
     "bookingClosed": "Llamar",
     "past": "Finalizado",
     "yourReservation": "Tu reserva",
@@ -97,6 +97,10 @@
       "deadline": "Confirma antes de:",
       "confirm": "Confirmar plaza",
       "decline": "Rechazar"
+    },
+    "unavailable": {
+      "title": "Horario no disponible",
+      "body": "No impartimos clases en estas horas. Consulta los demás horarios del calendario."
     }
   },
   "event": {
@@ -165,8 +169,6 @@
     "to": "Hasta",
     "maxParticipants": "Máx. participantes",
     "endAfterStart": "La hora de fin debe ser posterior a la de inicio",
-    "availabilityWindow": "Ventana de disponibilidad (llamar para concertar)",
-    "availabilityWindowHint": "Los clientes verán este bloque como disponible y sabrán que pueden llamar, sin posibilidad de reservar por su cuenta.",
     "templateLabel": "Plantilla",
     "templatePlaceholder": "— nombre personalizado —",
     "submit": "Crear franja horaria",
