@@ -223,8 +223,11 @@ export function TrainingDetailModal({
           <p className="text-sm text-rose-400/80">{errorMessage}</p>
         )}
 
-        {/* Footer: close / edit / delete */}
-        <div className="flex justify-end gap-2 pt-2 border-t border-surface-800">
+        {/* Footer: close / reuse / edit / delete.
+            flex-wrap is load-bearing, not tidiness: with justify-end an overflowing row spills
+            past the START edge, which no scrollbar can reach — five buttons on a phone left
+            "Duplikuj" sliced down to "plikuj" with no way to see or tap the rest. */}
+        <div className="flex flex-wrap justify-end gap-2 pt-2 border-t border-surface-800">
           <Button variant="ghost" size="sm" onClick={onClose}>
             <X className="w-3.5 h-3.5 mr-1" />
             {t('detail.close')}
