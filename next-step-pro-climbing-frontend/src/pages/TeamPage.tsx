@@ -111,11 +111,16 @@ function MemberModal({
     >
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
 
+      {/* Two boxes, not one: the dialog frame positions the close button, the box inside it does
+          the scrolling. They used to be the same element, so the button — absolutely positioned
+          against the scroller — travelled up with the photo and left no way out of a scrolled
+          card. The dialog role and the focus trap stay on the outer one, so the button remains
+          inside the trap and reachable by keyboard. */}
       <div
         ref={trapRef}
         role="dialog"
         aria-modal="true"
-        className="relative z-10 w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl bg-surface-900 border border-surface-700 shadow-2xl"
+        className="relative z-10 w-full max-w-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <button
@@ -125,6 +130,8 @@ function MemberModal({
         >
           <X className="w-5 h-5" />
         </button>
+
+        <div className="max-h-[90vh] overflow-y-auto rounded-2xl bg-surface-900 border border-surface-700 shadow-2xl">
 
         <div className="relative h-[28rem] md:h-[32rem] w-full overflow-hidden rounded-t-2xl bg-surface-800">
           {member.photoUrl ? (
@@ -191,6 +198,7 @@ function MemberModal({
               <div className="text-surface-200">{renderBio(member.bio)}</div>
             </div>
           )}
+        </div>
         </div>
       </div>
     </div>

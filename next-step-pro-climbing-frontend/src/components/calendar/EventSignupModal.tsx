@@ -252,15 +252,10 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
   }
 
   const renderActions = () => {
-    if (enrollmentClosed && !ev.isUserRegistered) {
-      return (
-        <>
-          <Button variant="ghost" className="flex-1" onClick={onClose}>
-            {t('event.close')}
-          </Button>
-        </>
-      )
-    }
+    // Enrolment is over and this person is not on the list: there is nothing to do here but
+    // read. null rather than an empty fragment, so the caller drops the whole row — a bordered
+    // strip with no buttons in it reads as something that failed to load.
+    if (enrollmentClosed && !ev.isUserRegistered) return null
 
     if (!isAuthenticated) {
       return (
@@ -272,7 +267,6 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
           >
             {isFull ? t('event.waitlist.loginToJoin') : t('event.loginToBook')}
           </Button>
-          <Button variant="ghost" onClick={onClose}>{t('event.close')}</Button>
         </>
       )
     }
@@ -315,14 +309,15 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
       }
       return (
         <>
+          {/* Full width now that it stands alone, matching every other single-action state */}
           <Button
             variant="danger"
+            className="flex-1"
             loading={cancelMutation.isPending}
             onClick={() => cancelMutation.mutate(ev.id)}
           >
             {t('event.cancelSignup')}
           </Button>
-          <Button variant="ghost" onClick={onClose}>{t('event.close')}</Button>
         </>
       )
     }
@@ -361,7 +356,6 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
             >
               {t('event.waitlist.leave')}
             </Button>
-            <Button variant="ghost" onClick={onClose}>{t('event.close')}</Button>
           </>
         )
       }
@@ -377,7 +371,6 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
           >
             {t('event.waitlist.join')}
           </Button>
-          <Button variant="ghost" onClick={onClose}>{t('event.close')}</Button>
         </>
       )
     }
@@ -397,9 +390,20 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
         >
           {participants > 1 ? t('event.bookMultiple', { count: participants }) : t('event.bookSingle')}
         </Button>
-        <Button variant="ghost" onClick={onClose}>{t('event.close')}</Button>
       </>
     )
+  }
+
+  /**
+   * The row and its contents decided together, so "are there any actions" cannot drift from
+   * "which actions". Kept as a function called from JSX rather than a value computed up here:
+   * hoisting the call makes everything inside it render-phase code to the linter, and these
+   * handlers legitimately reach for a ref (requireProfile) on click.
+   */
+  const renderActionRow = () => {
+    const actions = renderActions()
+    if (!actions) return null
+    return <div className="flex gap-3 pt-4 border-t border-surface-800">{actions}</div>
   }
 
   return (
@@ -647,10 +651,8 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
           description={`${format(new Date(ev.startDate), 'dd.MM.yyyy')}${ev.isMultiDay ? ' - ' + format(new Date(ev.endDate), 'dd.MM.yyyy') : ''}${ev.location ? ' | ' + ev.location : ''}`}
         />
 
-        {/* Actions */}
-        <div className="flex gap-3 pt-4 border-t border-surface-800">
-          {renderActions()}
-        </div>
+        {/* Actions — absent entirely in states that have none (see renderActions) */}
+        {renderActionRow()}
 
         {/* Error messages */}
         {reservationMutation.isError && (

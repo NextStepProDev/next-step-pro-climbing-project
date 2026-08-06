@@ -253,11 +253,8 @@ export function SlotDetailModal({
               url={`${window.location.origin}/calendar?date=${slot.date}&slot=${slot.id}`}
               description={`${format(dateObj, "EEEE, d MMMM", { locale })} ${slot.startTime.slice(0, 5)} - ${slot.endTime.slice(0, 5)}`}
             />
-            <div className="flex gap-3 pt-4 border-t border-surface-800">
-              <Button variant="ghost" className="flex-1" onClick={onClose}>
-                {t('slot.close')}
-              </Button>
-            </div>
+            {/* No action row here: an availability window has nothing to do but read and
+                (for a client) propose a time. Dismissing lives in the pinned header. */}
           </>
         )}
 
@@ -631,10 +628,6 @@ export function SlotDetailModal({
               {t('slot.noSpots')}
             </Button>
           )}
-
-          <Button variant="ghost" onClick={onClose}>
-            {t('slot.close')}
-          </Button>
         </div>}
 
         {/* Error messages */}

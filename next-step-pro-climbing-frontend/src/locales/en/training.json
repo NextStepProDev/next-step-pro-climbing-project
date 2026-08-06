@@ -76,7 +76,6 @@
     "delete": "Delete",
     "deleteConfirmTitle": "Delete training?",
     "deleteConfirmMessage": "This cannot be undone. The training's comments will be gone too.",
-    "close": "Close",
     "saveAsTemplate": "To templates"
   },
   "goals": {
