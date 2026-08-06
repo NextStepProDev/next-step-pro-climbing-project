@@ -1188,11 +1188,6 @@ export interface TrainingTypeBreakdown {
   workshop: number
 }
 
-export interface LocationCount {
-  name: string
-  count: number
-}
-
 // SHORT/MEDIUM/LONG-term goal set by the coach; also picks the trophy size in the chest
 export type GoalHorizon = 'SHORT' | 'MEDIUM' | 'LONG'
 
@@ -1315,7 +1310,6 @@ export interface AthleteStats {
   attendanceRatePercent: number | null
   avgRpeOverall: number | null
   avgRpeLast30Days: number | null
-  topLocations: LocationCount[]
   // Session counts per intensity band over the last 90 days (both sources)
   rpeDistribution: RpeDistribution
   // Last 5 ratings all >= 9 → overtraining/inflation hint

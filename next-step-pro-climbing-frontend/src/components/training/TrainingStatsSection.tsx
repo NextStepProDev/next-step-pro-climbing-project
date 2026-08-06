@@ -14,7 +14,6 @@ import {
   Dumbbell,
   Flame,
   Gauge,
-  MapPin,
   TrendingUp,
   Trophy,
 } from 'lucide-react'
@@ -383,7 +382,7 @@ function ActivityHeatmap({ heatmap }: { heatmap: Record<string, number> }) {
   )
 }
 
-// ---------- type breakdown + top locations ----------
+// ---------- type breakdown ----------
 
 function BreakdownCards({ stats, fmt }: { stats: AthleteStats; fmt: (n: number) => string }) {
   const { t } = useTranslation('training')
@@ -398,29 +397,15 @@ function BreakdownCards({ stats, fmt }: { stats: AthleteStats; fmt: (n: number) 
     ] as const
   ).filter(([, count]) => count > 0)
 
-  const hasTypes = typeRows.length > 0
-  const hasLocations = stats.topLocations.length > 0
-  if (!hasTypes && !hasLocations) return null
+  if (typeRows.length === 0) return null
 
   return (
-    <div className={clsx('grid gap-3', hasTypes && hasLocations && 'md:grid-cols-2')}>
-      {hasTypes && (
-        <BreakdownCard
-          icon={<Dumbbell className="w-4 h-4 text-surface-400" />}
-          title={t('stats.byType.title')}
-          rows={typeRows.map(([key, count]) => ({ label: t(`stats.byType.${key}`), count }))}
-          fmt={fmt}
-        />
-      )}
-      {hasLocations && (
-        <BreakdownCard
-          icon={<MapPin className="w-4 h-4 text-surface-400" />}
-          title={t('stats.locations.title')}
-          rows={stats.topLocations.map((l) => ({ label: l.name, count: l.count }))}
-          fmt={fmt}
-        />
-      )}
-    </div>
+    <BreakdownCard
+      icon={<Dumbbell className="w-4 h-4 text-surface-400" />}
+      title={t('stats.byType.title')}
+      rows={typeRows.map(([key, count]) => ({ label: t(`stats.byType.${key}`), count }))}
+      fmt={fmt}
+    />
   )
 }
 

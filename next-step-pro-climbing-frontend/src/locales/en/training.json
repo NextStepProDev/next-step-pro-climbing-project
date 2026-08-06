@@ -224,9 +224,6 @@
       "training": "Group training",
       "workshop": "Workshop"
     },
-    "locations": {
-      "title": "Top locations"
-    },
     "badges": {
       "total_one": "{{count}} activity",
       "total_other": "{{count}} activities",

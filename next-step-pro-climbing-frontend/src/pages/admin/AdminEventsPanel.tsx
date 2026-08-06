@@ -749,10 +749,9 @@ function ConfirmDeleteEventModal({
 /**
  * Free-text location with suggestions from events already created.
  *
- * <p>The athlete's "top locations" card groups by the exact string, so the same crag typed two
- * ways ("Podlesice" and "Podlesice / Kołoczek") ranks as two places with one visit each and can
- * fall off the list entirely. Nothing here merges them after the fact — that would be guessing
- * which sector was climbed — so the fix is making the second entry a click instead of a retype.
+ * <p>The suggestions are for consistency in what clients read, not for any counting: the same crag
+ * typed two ways shows up as two different places across the calendar, the event page and the
+ * booking mail. Picking the earlier spelling is one click; retyping it is a coin flip.
  */
 function LocationField({
   value,

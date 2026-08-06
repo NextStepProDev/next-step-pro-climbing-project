@@ -16,10 +16,8 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -29,7 +27,7 @@ import static org.mockito.Mockito.*;
  * Unit tests for TrainingStatsService.
  * Verifies: streak semantics (grace week, gaps, year boundary), month trend and average
  * windows, derived missed/attendance, both-sources totals and heatmap, type buckets,
- * RPE windows, location ranking, empty state, athlete guard.
+ * RPE windows, empty state, athlete guard.
  */
 @ExtendWith(MockitoExtension.class)
 class TrainingStatsServiceTest {
@@ -407,9 +405,9 @@ class TrainingStatsServiceTest {
         givenTrainings(completed(d(2026, 7, 10)));
         givenReservations(
             reservation(d(2026, 7, 1)),
-            reservation(d(2026, 7, 2), EventType.COURSE, null),
-            reservation(d(2026, 7, 3), EventType.TRAINING, null),
-            reservation(d(2026, 7, 6), EventType.WORKSHOP, null));
+            reservation(d(2026, 7, 2), EventType.COURSE),
+            reservation(d(2026, 7, 3), EventType.TRAINING),
+            reservation(d(2026, 7, 6), EventType.WORKSHOP));
 
         // When
         TypeBreakdownDto byType = service.buildStats(athleteId, NOW).byType();
@@ -509,90 +507,6 @@ class TrainingStatsServiceTest {
         assertEquals(2, service.buildStats(athleteId, NOW).unratedActivitiesCount());
     }
 
-    // ========== locations ==========
-
-    @Test
-    void shouldRankTopFiveLocationsIgnoringNulls() {
-        // Given: B x3, C x2, A x1, D x1, E x1, F x1, two without location
-        givenTrainings();
-        givenReservations(
-            reservation(d(2026, 7, 1), EventType.TRAINING, "B"),
-            reservation(d(2026, 7, 2), EventType.TRAINING, "B"),
-            reservation(d(2026, 7, 3), EventType.TRAINING, "B"),
-            reservation(d(2026, 6, 1), EventType.COURSE, "C"),
-            reservation(d(2026, 6, 2), EventType.COURSE, "C"),
-            reservation(d(2026, 5, 1), EventType.WORKSHOP, "A"),
-            reservation(d(2026, 5, 2), EventType.WORKSHOP, "D"),
-            reservation(d(2026, 5, 3), EventType.WORKSHOP, "E"),
-            reservation(d(2026, 5, 4), EventType.WORKSHOP, "F"),
-            reservation(d(2026, 4, 1)),
-            reservation(d(2026, 4, 2)));
-
-        // When
-        List<LocationCountDto> top = service.buildStats(athleteId, NOW).topLocations();
-
-        // Then: by visit count, then most recent visit (F/E/D before A, which is the oldest)
-        assertEquals(5, top.size());
-        assertEquals(new LocationCountDto("B", 3), top.get(0));
-        assertEquals(new LocationCountDto("C", 2), top.get(1));
-        assertEquals(new LocationCountDto("F", 1), top.get(2));
-        assertEquals(new LocationCountDto("E", 1), top.get(3));
-        assertEquals(new LocationCountDto("D", 1), top.get(4));
-    }
-
-    @Test
-    void shouldCountAMultiDayEventAsOneVisit() {
-        // Given: one 3-day course at "El Chorro" (a reservation per slot) vs two one-day trips to "Jura".
-        // Counting reservation rows would rank El Chorro 3 against Jura 2 — days, not visits.
-        givenTrainings();
-        givenReservations(concat(
-            multiDayEvent(EventType.COURSE, "El Chorro", d(2026, 5, 10), d(2026, 5, 11), d(2026, 5, 12)),
-            new ReservationStatsRow[] {
-                reservation(d(2026, 7, 4), EventType.TRAINING, "Jura"),
-                reservation(d(2026, 7, 11), EventType.TRAINING, "Jura"),
-            }));
-
-        // When
-        List<LocationCountDto> top = service.buildStats(athleteId, NOW).topLocations();
-
-        // Then
-        assertEquals(2, top.size());
-        assertEquals(new LocationCountDto("Jura", 2), top.get(0), "two trips beat one three-day course");
-        assertEquals(new LocationCountDto("El Chorro", 1), top.get(1));
-    }
-
-    @Test
-    void shouldBreakLocationTiesOnTheMostRecentVisit() {
-        // Given: three places visited once each — alphabetical order would hide the newest one
-        givenTrainings();
-        givenReservations(
-            reservation(d(2026, 5, 2), EventType.TRAINING, "Dolinki"),
-            reservation(d(2026, 7, 4), EventType.TRAINING, "Jura"),
-            reservation(d(2026, 7, 12), EventType.TRAINING, "Podlesice"));
-
-        // When
-        List<LocationCountDto> top = service.buildStats(athleteId, NOW).topLocations();
-
-        // Then: newest first, alphabet never enters the ranking
-        assertEquals(List.of("Podlesice", "Jura", "Dolinki"), top.stream().map(LocationCountDto::name).toList());
-    }
-
-    @Test
-    void shouldRankTheSamePlaceSpelledTwoWaysSeparately() {
-        // Given: the coach typed the crag two ways. They are two rows on purpose — merging them
-        // would be guesswork about which sector the athlete actually climbed.
-        givenTrainings();
-        givenReservations(
-            reservation(d(2026, 7, 12), EventType.TRAINING, "Podlesice"),
-            reservation(d(2026, 6, 28), EventType.TRAINING, "Podlesice / Kołoczek"));
-
-        // When
-        List<LocationCountDto> top = service.buildStats(athleteId, NOW).topLocations();
-
-        // Then: both survive the cut (they used to fall off a three-slot list)
-        assertEquals(List.of(new LocationCountDto("Podlesice", 1), new LocationCountDto("Podlesice / Kołoczek", 1)), top);
-    }
-
     // ========== empty state ==========
 
     @Test
@@ -615,7 +529,6 @@ class TrainingStatsServiceTest {
         assertNull(stats.avgRpeOverall());
         assertNull(stats.avgRpeLast30Days());
         assertTrue(stats.heatmap().isEmpty());
-        assertTrue(stats.topLocations().isEmpty());
     }
 
     // ========== guards ==========
@@ -692,29 +605,16 @@ class TrainingStatsServiceTest {
         return new TrainingStatsRow(TrainingKind.TASK, date, null, null, null);
     }
 
-    // Standalone slot: no event behind it, so no id, type or location
+    // Standalone slot: no event behind it, so no type
     private static ReservationStatsRow reservation(LocalDate date) {
-        return new ReservationStatsRow(date, null, null, null, null);
+        return new ReservationStatsRow(date, null, null);
     }
 
-    /** A one-day event: its own id, so every call is a separate visit. */
-    private static ReservationStatsRow reservation(LocalDate date, EventType type, String location) {
-        return new ReservationStatsRow(date, UUID.randomUUID(), type, location, null);
-    }
-
-    /** One event spanning several days — one row per slot, all sharing the event id. */
-    private static ReservationStatsRow[] multiDayEvent(EventType type, String location, LocalDate... dates) {
-        UUID eventId = UUID.randomUUID();
-        return Arrays.stream(dates)
-            .map(date -> new ReservationStatsRow(date, eventId, type, location, null))
-            .toArray(ReservationStatsRow[]::new);
-    }
-
-    private static ReservationStatsRow[] concat(ReservationStatsRow[] a, ReservationStatsRow[] b) {
-        return Stream.concat(Arrays.stream(a), Arrays.stream(b)).toArray(ReservationStatsRow[]::new);
+    private static ReservationStatsRow reservation(LocalDate date, EventType type) {
+        return new ReservationStatsRow(date, type, null);
     }
 
     private static ReservationStatsRow ratedReservation(LocalDate date, int rpe) {
-        return new ReservationStatsRow(date, null, null, null, rpe);
+        return new ReservationStatsRow(date, null, rpe);
     }
 }
