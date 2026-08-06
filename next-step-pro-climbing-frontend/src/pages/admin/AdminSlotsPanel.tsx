@@ -14,6 +14,8 @@ import { UserSearchSelect } from '../../components/ui/UserSearchSelect'
 import { InvitedUsersPicker } from '../../components/ui/InvitedUsersPicker'
 import { InviteNotifySection } from '../../components/ui/InviteNotifySection'
 import { CreateSlotModal } from '../../components/calendar/CreateSlotModal'
+import { SlotKindPicker } from '../../components/calendar/SlotKindPicker'
+import { slotKindOf, slotKindFlags, type SlotKind } from '../../utils/slotKind'
 import { WaitlistEntryList } from './AdminReservationsPanel'
 import { useDateLocale } from '../../utils/dateFnsLocale'
 import { useDirty } from '../../hooks/useDirty'
@@ -351,6 +353,10 @@ function SlotRow({
             <span className="text-xs text-teal-400 bg-teal-500/10 px-2 py-0.5 rounded-full">
               {t('slots.availabilityWindow')}
             </span>
+          ) : slot.isUnavailable ? (
+            <span className="text-xs text-slate-300 bg-slate-500/15 px-2 py-0.5 rounded-full">
+              {t('slots.statusUnavailable')}
+            </span>
           ) : (
             <span className="text-sm text-surface-400">
               {slot.currentParticipants}/{slot.maxParticipants}
@@ -365,14 +371,17 @@ function SlotRow({
       </div>
 
       <div className="flex items-center gap-2">
-        <Button
-          variant="ghost"
-          size="sm"
-          aria-label={t('slots.showParticipants')}
-          onClick={onShowParticipants}
-        >
-          <Users className="w-4 h-4" />
-        </Button>
+        {/* Nobody can be signed up for an absence — the list would always be empty. */}
+        {!slot.isUnavailable && (
+          <Button
+            variant="ghost"
+            size="sm"
+            aria-label={t('slots.showParticipants')}
+            onClick={onShowParticipants}
+          >
+            <Users className="w-4 h-4" />
+          </Button>
+        )}
 
         <Button
           variant="ghost"
@@ -383,7 +392,7 @@ function SlotRow({
           <Pencil className="w-4 h-4" />
         </Button>
 
-        {slot.blocked ? (
+        {slot.isUnavailable ? null : slot.blocked ? (
           <Button
             variant="ghost"
             size="sm"
@@ -436,7 +445,7 @@ function EditSlotModal({
     endTime: slot?.endTime.slice(0, 5) ?? '',
     maxParticipants: slot?.maxParticipants ?? 1,
     title: slot?.title ?? '',
-    isAvailabilityWindow: slot?.isAvailabilityWindow ?? false,
+    kind: slotKindOf(slot ?? {}) as SlotKind,
   })
 
   // Invitations: server baseline, a local override only once the admin changes something
@@ -453,7 +462,7 @@ function EditSlotModal({
   const invitedDirty = invitedKey(invited) !== invitedKey(baselineInvited)
 
   const updateMutation = useMutation({
-    mutationFn: (data: { startTime?: string; endTime?: string; maxParticipants?: number; title?: string; isAvailabilityWindow?: boolean; invitedUserIds?: string[] }) =>
+    mutationFn: (data: { startTime?: string; endTime?: string; maxParticipants?: number; title?: string; isAvailabilityWindow?: boolean; isUnavailable?: boolean; invitedUserIds?: string[] }) =>
       adminApi.updateTimeSlot(slot!.id, data),
     onSuccess: () => {
       onSuccess()
@@ -468,6 +477,8 @@ function EditSlotModal({
   const timeError = form.endTime <= form.startTime
     ? t('slots.endAfterStart')
     : null
+  const isRegular = form.kind === 'REGULAR'
+  const isUnavailable = form.kind === 'UNAVAILABLE'
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={t('slots.editTitle')}>
@@ -478,10 +489,12 @@ function EditSlotModal({
           updateMutation.mutate({
             startTime: form.startTime,
             endTime: form.endTime,
-            maxParticipants: form.isAvailabilityWindow ? 1 : form.maxParticipants,
+            // Capacity is left out for an absence so a slot that still has people booked
+            // fails with "cannot mark unavailable", not with a capacity error.
+            ...(isUnavailable ? {} : { maxParticipants: isRegular ? form.maxParticipants : 1 }),
             title: form.title || '',
-            isAvailabilityWindow: form.isAvailabilityWindow,
-            invitedUserIds: form.isAvailabilityWindow ? [] : invited.map((u) => u.userId),
+            ...slotKindFlags(form.kind),
+            invitedUserIds: isRegular ? invited.map((u) => u.userId) : [],
           })
         }}
         className="space-y-4"
@@ -516,21 +529,9 @@ function EditSlotModal({
           )}
         </div>
 
-        {/* Availability window toggle */}
-        <label className="flex items-start gap-3 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={form.isAvailabilityWindow}
-            onChange={(e) => setForm({ ...form, isAvailabilityWindow: e.target.checked })}
-            className="mt-0.5 accent-teal-500"
-          />
-          <div>
-            <span className="text-sm font-medium text-teal-300">{t('slots.availabilityWindow')}</span>
-            <p className="text-xs text-surface-400 mt-0.5">{t('slots.availabilityWindowHint')}</p>
-          </div>
-        </label>
+        <SlotKindPicker value={form.kind} onChange={(kind) => setForm({ ...form, kind })} />
 
-        {!form.isAvailabilityWindow && (
+        {isRegular && (
           <div>
             <label className="block text-sm text-surface-400 mb-1">{t('slots.maxParticipants')}</label>
             <input
@@ -543,11 +544,11 @@ function EditSlotModal({
           </div>
         )}
 
-        {!form.isAvailabilityWindow && (
+        {isRegular && (
           <InvitedUsersPicker value={invited} onChange={setEditedInvited} maxSeats={form.maxParticipants} />
         )}
 
-        {!form.isAvailabilityWindow && !invitedDirty && (
+        {isRegular && !invitedDirty && (
           <InviteNotifySection target={{ type: 'slot', slotId: slot.id }} invites={baselineInvited} />
         )}
 

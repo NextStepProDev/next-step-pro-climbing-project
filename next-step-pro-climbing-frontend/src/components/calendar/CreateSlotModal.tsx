@@ -7,6 +7,8 @@ import { Button } from '../ui/Button'
 import { Modal } from '../ui/Modal'
 import { TimeScrollPicker } from '../ui/TimeScrollPicker'
 import { InvitedUsersPicker } from '../ui/InvitedUsersPicker'
+import { SlotKindPicker } from './SlotKindPicker'
+import { slotKindFlags, type SlotKind } from '../../utils/slotKind'
 import type { CreateTimeSlotRequest, InvitedUser } from '../../types'
 
 interface CreateSlotModalProps {
@@ -44,8 +46,10 @@ export function CreateSlotModal({
     endTime: initial?.endTime ?? '11:00',
     maxParticipants: initial?.maxParticipants ?? 1,
     title: '',
-    isAvailabilityWindow: false,
   })
+  // The kind lives outside `form`: it is one choice, and the request carries it as two booleans
+  // that must never disagree (see slotKindFlags).
+  const [kind, setKind] = useState<SlotKind>('REGULAR')
   const [invited, setInvited] = useState<InvitedUser[]>(initial?.invited ?? [])
 
   const queryClient = useQueryClient()
@@ -63,14 +67,18 @@ export function CreateSlotModal({
     ? t('createSlot.endAfterStart')
     : null
 
+  const isRegular = kind === 'REGULAR'
+
   const submitForm = () => {
     if (timeError) return
     const { title, ...rest } = form
     createMutation.mutate({
       ...rest,
-      maxParticipants: form.isAvailabilityWindow ? 1 : form.maxParticipants,
+      ...slotKindFlags(kind),
+      // Only a regular slot carries seats; the backend zeroes an unavailable one anyway.
+      maxParticipants: isRegular ? form.maxParticipants : 1,
       title: title || undefined,
-      invitedUserIds: form.isAvailabilityWindow ? [] : invited.map((u) => u.userId),
+      invitedUserIds: isRegular ? invited.map((u) => u.userId) : [],
       trainingRequestId: initial?.trainingRequestId,
     })
   }
@@ -145,21 +153,9 @@ export function CreateSlotModal({
           )}
         </div>
 
-        {/* Availability window toggle */}
-        <label className="flex items-start gap-3 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={!!form.isAvailabilityWindow}
-            onChange={(e) => setForm({ ...form, isAvailabilityWindow: e.target.checked })}
-            className="mt-0.5 accent-teal-500"
-          />
-          <div>
-            <span className="text-sm font-medium text-teal-300">{t('createSlot.availabilityWindow')}</span>
-            <p className="text-xs text-surface-400 mt-0.5">{t('createSlot.availabilityWindowHint')}</p>
-          </div>
-        </label>
+        <SlotKindPicker value={kind} onChange={setKind} />
 
-        {!form.isAvailabilityWindow && (
+        {isRegular && (
           <div>
             <label className="block text-sm text-surface-400 mb-1">{t('createSlot.maxParticipants')}</label>
             <input
@@ -172,7 +168,7 @@ export function CreateSlotModal({
           </div>
         )}
 
-        {!form.isAvailabilityWindow && (
+        {isRegular && (
           <InvitedUsersPicker value={invited} onChange={setInvited} maxSeats={form.maxParticipants} />
         )}
 

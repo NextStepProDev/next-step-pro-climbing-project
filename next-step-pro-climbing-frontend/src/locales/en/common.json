@@ -150,5 +150,14 @@
   "calendarAction": {
     "addToCalendar": "Add to calendar",
     "downloadIcs": "Download .ics file"
+  },
+  "slotKind": {
+    "label": "Slot kind",
+    "REGULAR": "Regular slot",
+    "WINDOW": "Availability window",
+    "UNAVAILABLE": "Unavailable",
+    "REGULARHint": "Clients book seats in these hours.",
+    "WINDOWHint": "Clients do not book — they propose a time inside these hours.",
+    "UNAVAILABLEHint": "Hours closed off: no seats, no sign-ups, no waitlist."
   }
 }

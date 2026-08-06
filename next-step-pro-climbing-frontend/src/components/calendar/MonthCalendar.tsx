@@ -125,6 +125,7 @@ export function MonthCalendar({ currentMonth, onMonthChange, days, events, onDay
           const dayEvents = dayEventsMap.get(dateString) || []
           const isPast = isBefore(day, startOfDay(new Date()))
           const hasAvailabilityWindow = dayData?.hasAvailabilityWindow ?? false
+          const hasUnavailableSlots = dayData?.hasUnavailableSlots ?? false
           const hasUserReservation = dayData?.hasUserReservation
           const hasEvents = dayEvents.length > 0
           // Future days are clickable even when EMPTY — they open the day view with the "Propose a time"
@@ -146,7 +147,10 @@ export function MonthCalendar({ currentMonth, onMonthChange, days, events, onDay
                   dayEvents.every(e => e.eventType === 'UNAVAILABLE') ? 'bg-slate-500/10'
                     : dayEvents.every(e => e.eventType === 'CONTACT_DAY') ? 'bg-indigo-500/10'
                       : 'bg-primary-500/10'
-                )
+                ),
+                // An unavailable slot leaves the day counters at zero, so without its own tint
+                // a day off would render exactly like a day with nothing in it.
+                !hasEvents && hasUnavailableSlots && !isPast && 'bg-slate-500/10'
               )}
             >
               <div
@@ -188,6 +192,12 @@ export function MonthCalendar({ currentMonth, onMonthChange, days, events, onDay
               {hasAvailabilityWindow && !isPast && (
                 <div className="text-[10px] text-teal-400 font-medium leading-tight">
                   {t('day.callToBook')}
+                </div>
+              )}
+
+              {hasUnavailableSlots && !isPast && (
+                <div className="text-[10px] text-slate-400 font-medium leading-tight">
+                  {t('day.unavailable')}
                 </div>
               )}
 

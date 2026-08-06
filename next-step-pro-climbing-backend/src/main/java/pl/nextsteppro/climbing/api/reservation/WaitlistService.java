@@ -78,6 +78,11 @@ public class WaitlistService {
         if (slot.isBlocked()) {
             throw new IllegalStateException("This time slot is blocked");
         }
+
+        // No queue for an absence — the seat it would wait for does not exist.
+        if (slot.isUnavailable()) {
+            throw new IllegalStateException(msg.get("reservation.slot.unavailable"));
+        }
         // An availability window is not self-serviceable — you cannot join its queue either.
         if (slot.isAvailabilityWindow()) {
             throw new IllegalStateException(msg.get("reservation.slot.availability.window"));

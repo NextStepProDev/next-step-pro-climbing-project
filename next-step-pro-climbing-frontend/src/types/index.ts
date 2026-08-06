@@ -48,6 +48,8 @@ export interface DaySummary {
   hasAvailabilityWindow: boolean
   // day with no seats free for the public, but with invitation-held seats
   hasReservedSeats: boolean
+  // day carrying at least one "unavailable" slot (instructor absence)
+  hasUnavailableSlots: boolean
 }
 
 export interface DayView {
@@ -78,6 +80,7 @@ export interface TimeSlot {
   isUserRegistered: boolean
   eventTitle: string | null
   isAvailabilityWindow: boolean
+  isUnavailable: boolean
   // Invitation-held seats
   reservedSeats: number
   isReservedForUser: boolean
@@ -102,13 +105,14 @@ export interface TimeSlotDetail {
   confirmationDeadline: string | null
   userWaitlistPosition: number
   isAvailabilityWindow: boolean
+  isUnavailable: boolean
   title: string | null
   // Invitation-held seats
   reservedSeats: number
   isReservedForUser: boolean
 }
 
-export type SlotStatus = 'AVAILABLE' | 'FULL' | 'BLOCKED' | 'PAST' | 'BOOKING_CLOSED' | 'AVAILABILITY_WINDOW'
+export type SlotStatus = 'AVAILABLE' | 'FULL' | 'BLOCKED' | 'PAST' | 'BOOKING_CLOSED' | 'AVAILABILITY_WINDOW' | 'UNAVAILABLE'
 
 export type WaitlistStatus = 'WAITING' | 'PENDING_CONFIRMATION'
 
@@ -260,6 +264,7 @@ export interface TimeSlotAdmin {
   title: string | null
   eventId: string | null
   isAvailabilityWindow: boolean
+  isUnavailable: boolean
 }
 
 export interface SlotParticipants {
@@ -305,6 +310,7 @@ export interface CreateTimeSlotRequest {
   title?: string
   eventId?: string
   isAvailabilityWindow?: boolean
+  isUnavailable?: boolean
   invitedUserIds?: string[]
   // Training request this slot is created from (→ ACCEPTED + link)
   trainingRequestId?: string

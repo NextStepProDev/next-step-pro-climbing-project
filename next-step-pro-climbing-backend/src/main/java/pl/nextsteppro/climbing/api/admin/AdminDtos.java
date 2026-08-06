@@ -23,6 +23,8 @@ record CreateTimeSlotRequest(
     @Nullable String title,
     @Nullable UUID eventId,
     boolean isAvailabilityWindow,
+    // Instructor absence — created closed: no seats, no invitations, no waitlist
+    boolean isUnavailable,
     // Users for whom seats are held "by invitation"
     @Nullable List<UUID> invitedUserIds,
     // Training request this slot is created from (→ status ACCEPTED + link)
@@ -49,7 +51,8 @@ record TimeSlotAdminDto(
     @Nullable String blockReason,
     @Nullable String title,
     @Nullable UUID eventId,
-    boolean isAvailabilityWindow
+    boolean isAvailabilityWindow,
+    boolean isUnavailable
 ) {}
 
 record SlotParticipantsDto(
@@ -146,6 +149,7 @@ record UpdateTimeSlotRequest(
     @Nullable @Min(0) @Max(100) Integer maxParticipants,
     @Nullable String title,
     @Nullable Boolean isAvailabilityWindow,
+    @Nullable Boolean isUnavailable,
     @Nullable Boolean sendNotifications,
     // null = leave invitations unchanged; a list (even empty) = set exactly this set of invitees
     @Nullable List<UUID> invitedUserIds

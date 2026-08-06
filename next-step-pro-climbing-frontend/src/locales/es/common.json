@@ -150,5 +150,14 @@
   "calendarAction": {
     "addToCalendar": "Añadir al calendario",
     "downloadIcs": "Descargar archivo .ics"
+  },
+  "slotKind": {
+    "label": "Tipo de horario",
+    "REGULAR": "Horario normal",
+    "WINDOW": "Horario de disponibilidad",
+    "UNAVAILABLE": "No disponible",
+    "REGULARHint": "Los clientes reservan plazas en estas horas.",
+    "WINDOWHint": "Los clientes no reservan — proponen una hora dentro de estas horas.",
+    "UNAVAILABLEHint": "Horas cerradas: sin plazas, sin inscripciones ni lista de espera."
   }
 }

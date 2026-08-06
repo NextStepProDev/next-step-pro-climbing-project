@@ -76,4 +76,38 @@ class TimeSlotTest {
         assertTrue(slot.isBlocked());
         assertNull(slot.getBlockReason());
     }
+
+    @Test
+    @DisplayName("should drop capacity to zero when marked unavailable")
+    void shouldDropCapacityToZeroWhenMarkedUnavailable() {
+        TimeSlot slot = new TimeSlot(
+            LocalDate.of(2026, 2, 14),
+            LocalTime.of(10, 0),
+            LocalTime.of(12, 0),
+            4
+        );
+
+        slot.setUnavailable(true);
+
+        assertTrue(slot.isUnavailable());
+        assertEquals(0, slot.getMaxParticipants());
+    }
+
+    @Test
+    @DisplayName("should keep slot kinds mutually exclusive")
+    void shouldKeepSlotKindsMutuallyExclusive() {
+        TimeSlot slot = new TimeSlot(
+            LocalDate.of(2026, 2, 14),
+            LocalTime.of(10, 0),
+            LocalTime.of(12, 0),
+            4
+        );
+        slot.setAvailabilityWindow(true);
+
+        slot.setUnavailable(true);
+        assertFalse(slot.isAvailabilityWindow());
+
+        slot.setAvailabilityWindow(true);
+        assertFalse(slot.isUnavailable());
+    }
 }

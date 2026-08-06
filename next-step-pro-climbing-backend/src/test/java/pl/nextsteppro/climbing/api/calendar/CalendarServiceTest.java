@@ -548,6 +548,52 @@ class CalendarServiceTest {
     }
 
     @Test
+    void shouldDetermineStatusAsUnavailable() {
+        // Given
+        testSlot.setUnavailable(true);
+
+        SlotParticipantCount mockCount = mock(SlotParticipantCount.class);
+        when(mockCount.slotId()).thenReturn(testSlot.getId());
+        when(mockCount.countAsInt()).thenReturn(0);
+
+        when(timeSlotRepository.findByDateSorted(any())).thenReturn(List.of(testSlot));
+        when(eventRepository.findActiveEventsOnDate(any())).thenReturn(List.of());
+        when(reservationRepository.countConfirmedByTimeSlotIds(any()))
+                .thenReturn(List.of(mockCount));
+
+        // When
+        DayViewDto result = calendarService.getDayView(testSlot.getDate(), null);
+
+        // Then — zero capacity would otherwise read as FULL; an absence is not a full slot
+        TimeSlotDto slot = result.slots().get(0);
+        assertEquals(SlotStatus.UNAVAILABLE, slot.status());
+        assertTrue(slot.isUnavailable());
+    }
+
+    @Test
+    void shouldKeepUnavailableSlotsOutOfTheDayCounters() {
+        // Given
+        YearMonth yearMonth = YearMonth.from(testSlot.getDate());
+        testSlot.setUnavailable(true);
+
+        when(timeSlotRepository.findByDateRangeOrdered(any(), any())).thenReturn(List.of(testSlot));
+        when(eventRepository.findActiveEventsBetween(any(), any())).thenReturn(List.of());
+        when(reservationRepository.countConfirmedByTimeSlotIds(any())).thenReturn(List.of());
+
+        // When
+        MonthViewDto result = calendarService.getMonthView(yearMonth, null);
+
+        // Then — a day off must not report as "0 of 1 free"
+        DaySummaryDto day = result.days().stream()
+                .filter(d -> d.date().equals(testSlot.getDate()))
+                .findFirst()
+                .orElseThrow();
+        assertEquals(0, day.totalSlots());
+        assertEquals(0, day.availableSlots());
+        assertTrue(day.hasUnavailableSlots());
+    }
+
+    @Test
     void shouldDetermineStatusAsFull() {
         // Given
         SlotParticipantCount mockCount = mock(SlotParticipantCount.class);

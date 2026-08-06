@@ -45,7 +45,7 @@
     "waitlistHint": "Dołącz do listy rezerwowej →",
     "invitedOnly": "🎟 Dla zaproszonych",
     "invitedLoginHint": "Zaloguj się i sprawdź →",
-    "blocked": "Zarezerwowane",
+    "unavailable": "Niedostępne",
     "bookingClosed": "Zadzwoń",
     "past": "Zakończone",
     "yourReservation": "Twoja rezerwacja",
@@ -97,6 +97,10 @@
       "deadline": "Potwierdź do:",
       "confirm": "Potwierdź miejsce",
       "decline": "Zrezygnuj"
+    },
+    "unavailable": {
+      "title": "Termin niedostępny",
+      "body": "W tych godzinach nie prowadzimy zajęć. Sprawdź pozostałe terminy w kalendarzu."
     }
   },
   "event": {
@@ -165,8 +169,6 @@
     "to": "Do",
     "maxParticipants": "Maks. uczestników",
     "endAfterStart": "Godzina zakończenia musi być późniejsza niż rozpoczęcia",
-    "availabilityWindow": "Okno dostępności (zadzwoń i ustal termin)",
-    "availabilityWindowHint": "Klienci zobaczą ten blok jako dostępny i będą wiedzieć, że mogą zadzwonić — bez możliwości samodzielnej rezerwacji.",
     "templateLabel": "Szablon",
     "templatePlaceholder": "— własna nazwa —",
     "submit": "Utwórz termin",
