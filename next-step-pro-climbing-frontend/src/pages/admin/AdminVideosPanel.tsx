@@ -9,6 +9,7 @@ import { ConfirmModal } from '../../components/ui/ConfirmModal'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
 import { QueryError } from '../../components/ui/QueryError'
 import { RichTextEditor } from '../../components/ui/RichTextEditor'
+import { useUnsavedChangesWarning } from '../../hooks/useUnsavedChangesWarning'
 import clsx from 'clsx'
 
 type View = 'list' | 'edit'
@@ -32,6 +33,10 @@ export function AdminVideosPanel() {
     formContent !== (editingVideo.content ?? '') ||
     formYoutubeUrl !== editingVideo.youtubeUrl
   )
+  const [showExitConfirm, setShowExitConfirm] = useState(false)
+  // Covers the exits the confirmation above cannot see: a refresh, a closed tab
+  useUnsavedChangesWarning(isDirty)
+
   const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; video: VideoAdmin | null }>({
     open: false,
     video: null,
@@ -106,9 +111,17 @@ export function AdminVideosPanel() {
     setView('edit')
   }
 
-  function handleBackToList() {
+  function leaveEditor() {
     setView('list')
     setEditingVideo(null)
+    setShowExitConfirm(false)
+  }
+
+  // Leaving with edits in the form asks first — the same bargain the article and course
+  // editors already make. A pristine form still leaves instantly.
+  function handleBackToList() {
+    if (isDirty) setShowExitConfirm(true)
+    else leaveEditor()
   }
 
   async function saveFormData(): Promise<VideoAdmin | null> {
@@ -423,6 +436,16 @@ export function AdminVideosPanel() {
           ))}
         </div>
       )}
+
+      {/* Confirm: leave without saving — same wording as the article and course editors */}
+      <ConfirmModal
+        isOpen={showExitConfirm}
+        onClose={() => setShowExitConfirm(false)}
+        onConfirm={leaveEditor}
+        title={t('videos.exitConfirmTitle')}
+        message={t('videos.exitConfirmMessage')}
+        confirmText={t('videos.exitConfirm')}
+      />
 
       <ConfirmModal
         isOpen={deleteConfirm.open}

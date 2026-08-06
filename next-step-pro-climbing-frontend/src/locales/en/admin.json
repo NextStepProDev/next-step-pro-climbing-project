@@ -628,7 +628,10 @@
     "deleteConfirmMessage": "Are you sure you want to delete this video? This action cannot be undone.",
     "moveUp": "Move up",
     "moveDown": "Move down",
-    "newVideoDefaultTitle": "New video"
+    "newVideoDefaultTitle": "New video",
+    "exitConfirmTitle": "Unsaved changes",
+    "exitConfirmMessage": "You have unsaved changes. Leave without saving?",
+    "exitConfirm": "Leave without saving"
   },
   "storage": {
     "title": "Storage audit",

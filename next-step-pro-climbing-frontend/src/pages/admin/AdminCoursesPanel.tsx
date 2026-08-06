@@ -39,6 +39,7 @@ import { QueryError } from '../../components/ui/QueryError'
 import { RichTextEditor } from '../../components/ui/RichTextEditor'
 import { COURSE_CONTENT_LANGUAGES } from '../../constants/courseLanguages'
 import clsx from 'clsx'
+import { useUnsavedChangesWarning } from '../../hooks/useUnsavedChangesWarning'
 
 type View = 'list' | 'edit'
 
@@ -499,6 +500,9 @@ function EditView({
     return false
   })
   const isDirty = metaDirty || thumbnailDirty || focalPointDirty || blockEditsDirty || pendingBlocks.length > 0
+
+  // The editor's own "back to list" already confirms; this covers a refresh or a closed tab
+  useUnsavedChangesWarning(isDirty)
 
   // ---------- Preview ----------
   const [showPreview, setShowPreview] = useState(false)

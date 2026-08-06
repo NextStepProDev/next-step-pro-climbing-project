@@ -626,7 +626,10 @@
     "deleteConfirmMessage": "¿Estás seguro de que quieres eliminar este vídeo? Esta acción no se puede deshacer.",
     "moveUp": "Subir",
     "moveDown": "Bajar",
-    "newVideoDefaultTitle": "Nuevo vídeo"
+    "newVideoDefaultTitle": "Nuevo vídeo",
+    "exitConfirmTitle": "Cambios sin guardar",
+    "exitConfirmMessage": "Tienes cambios sin guardar. ¿Salir sin guardar?",
+    "exitConfirm": "Salir sin guardar"
   },
   "storage": {
     "title": "Auditoría de almacenamiento",
