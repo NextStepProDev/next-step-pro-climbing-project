@@ -76,7 +76,6 @@
     "delete": "Eliminar",
     "deleteConfirmTitle": "¿Eliminar el entrenamiento?",
     "deleteConfirmMessage": "Esto no se puede deshacer. Los comentarios del entrenamiento también desaparecerán.",
-    "close": "Cerrar",
     "saveAsTemplate": "A plantillas"
   },
   "goals": {

@@ -78,7 +78,6 @@
     "delete": "Usuń",
     "deleteConfirmTitle": "Usunąć trening?",
     "deleteConfirmMessage": "Tego nie można cofnąć. Komentarze do treningu też znikną.",
-    "close": "Zamknij",
     "saveAsTemplate": "Do szablonów"
   },
   "goals": {

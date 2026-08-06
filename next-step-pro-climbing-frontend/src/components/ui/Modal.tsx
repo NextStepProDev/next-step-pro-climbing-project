@@ -81,8 +81,18 @@ export function Modal({ isOpen, onClose, title, children, size = 'md', confirmCl
         aria-labelledby="modal-title"
         className={`relative bg-surface-900 rounded-xl border border-surface-800 shadow-xl w-full mx-4 max-h-[90vh] overflow-y-auto ${size === 'xl' ? 'max-w-4xl' : size === 'lg' ? 'max-w-3xl' : 'max-w-lg'}`}
       >
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-surface-800">
+        {/* Header. Pinned, because the scroll container is the box around it: in a long modal
+            (materials, a comment thread) the close button used to scroll away, and on a phone
+            there is no Escape to fall back on — the only way out was scrolling back to the top.
+
+            z-40 rather than a token z-10: content inside modals reaches z-30 (a training block
+            lifts itself while being long-pressed in the day sheet) and would paint over the
+            header. Still below the z-50 the modal root sits at.
+
+            The background is explicit and not inherited: content scrolls UNDER a pinned header,
+            so without its own fill it would show through. Inert in modals short enough not to
+            scroll — there, this changes nothing. */}
+        <div className="sticky top-0 z-40 bg-surface-900 flex items-center justify-between p-4 border-b border-surface-800">
           <h2 id="modal-title" className="text-lg font-semibold text-surface-100">{title}</h2>
           <button
             onClick={requestClose}

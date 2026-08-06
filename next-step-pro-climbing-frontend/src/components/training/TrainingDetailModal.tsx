@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Check, CopyPlus, ExternalLink, FileText, LayoutTemplate, Paperclip, Pencil, Trash2, RotateCcw, UserCog, User as UserIcon, X } from 'lucide-react'
+import { Check, CopyPlus, ExternalLink, FileText, LayoutTemplate, Paperclip, Pencil, Trash2, RotateCcw, UserCog, User as UserIcon } from 'lucide-react'
 import { format } from 'date-fns'
 import clsx from 'clsx'
 import { Modal } from '../ui/Modal'
@@ -223,15 +223,12 @@ export function TrainingDetailModal({
           <p className="text-sm text-rose-400/80">{errorMessage}</p>
         )}
 
-        {/* Footer: close / reuse / edit / delete.
+        {/* Footer: reuse / edit / delete. Dismissing lives in the header, which stays pinned
+            while this scrolls — a second close down here would just be the same door twice.
             flex-wrap is load-bearing, not tidiness: with justify-end an overflowing row spills
-            past the START edge, which no scrollbar can reach — five buttons on a phone left
-            "Duplikuj" sliced down to "plikuj" with no way to see or tap the rest. */}
+            past the START edge, which no scrollbar can reach — buttons on a phone ended up
+            sliced with no way to see or tap the rest. */}
         <div className="flex flex-wrap justify-end gap-2 pt-2 border-t border-surface-800">
-          <Button variant="ghost" size="sm" onClick={onClose}>
-            <X className="w-3.5 h-3.5 mr-1" />
-            {t('detail.close')}
-          </Button>
           <Button variant="secondary" size="sm" onClick={() => onDuplicate(training)}>
             <CopyPlus className="w-3.5 h-3.5 mr-1" />
             {t('detail.duplicate')}
