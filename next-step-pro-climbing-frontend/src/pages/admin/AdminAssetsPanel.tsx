@@ -9,6 +9,7 @@ import { ConfirmModal } from '../../components/ui/ConfirmModal'
 import { FileUpload } from '../../components/ui/FileUpload'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
 import { QueryError } from '../../components/ui/QueryError'
+import { getErrorMessage } from '../../utils/errors'
 import type { AssetDto } from '../../types'
 
 function formatBytes(bytes: number): string {
@@ -174,7 +175,7 @@ export function AdminAssetsPanel() {
 
           {uploadMutation.isError && (
             <p className="text-sm text-red-400">
-              {uploadMutation.error instanceof Error ? uploadMutation.error.message : 'Błąd uploadu'}
+              {getErrorMessage(uploadMutation.error)}
             </p>
           )}
 

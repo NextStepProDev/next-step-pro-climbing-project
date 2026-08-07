@@ -47,10 +47,6 @@ public class TrainingCalendarRead {
         return userId;
     }
 
-    public UUID getAthleteId() {
-        return athleteId;
-    }
-
     public Instant getSeenAt() {
         return seenAt;
     }

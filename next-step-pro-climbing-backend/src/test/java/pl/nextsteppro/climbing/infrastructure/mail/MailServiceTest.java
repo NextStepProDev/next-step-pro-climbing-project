@@ -19,6 +19,7 @@ import pl.nextsteppro.climbing.infrastructure.i18n.MessageService;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.List;
 import java.util.Set;
 
 import static org.mockito.ArgumentMatchers.*;
@@ -193,7 +194,7 @@ class MailServiceTest {
     }
 
     // ============================================================
-    // sendNewsletterMail
+    // sendBulk — newsletter styling
     // ============================================================
 
     @Test
@@ -205,7 +206,7 @@ class MailServiceTest {
         // When
         User subscriber = createUser("subscriber@example.com", true);
         subscriber.setPreferredLanguage("pl");
-        mailService.sendNewsletterMail(subscriber, "Newsletter Subject", "<p>Content</p>");
+        mailService.sendBulk(List.of(subscriber), "Newsletter Subject", "<p>Content</p>", true);
 
         // Then
         verify(mailSender).send(any(MimeMessage.class));
@@ -220,20 +221,21 @@ class MailServiceTest {
         // When
         User subscriber = createUser("subscriber@example.com", true);
         subscriber.setPreferredLanguage("en");
-        mailService.sendNewsletterMail(subscriber, "Newsletter", "<p>Content</p>");
+        mailService.sendBulk(List.of(subscriber), "Newsletter", "<p>Content</p>", true);
 
         // Then
         verify(mailSender).send(any(MimeMessage.class));
     }
 
     // ============================================================
-    // sendCustomAdminMail
+    // sendBulk — plain custom admin mail
     // ============================================================
 
     @Test
     void shouldSendCustomAdminMail() {
         // When
-        mailService.sendCustomAdminMail("recipient@example.com", "Custom Subject", "<p>HTML body</p>");
+        User recipient = createUser("recipient@example.com", true);
+        mailService.sendBulk(List.of(recipient), "Custom Subject", "<p>HTML body</p>", false);
 
         // Then
         verify(mailSender).send(any(MimeMessage.class));

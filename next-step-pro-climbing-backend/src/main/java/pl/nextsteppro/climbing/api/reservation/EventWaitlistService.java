@@ -9,7 +9,6 @@ import org.springframework.transaction.annotation.Transactional;
 import pl.nextsteppro.climbing.api.activitylog.ActivityLogService;
 import pl.nextsteppro.climbing.domain.event.Event;
 import pl.nextsteppro.climbing.domain.event.EventRepository;
-import pl.nextsteppro.climbing.domain.event.EventType;
 import pl.nextsteppro.climbing.domain.reservation.Reservation;
 import pl.nextsteppro.climbing.domain.reservation.ReservationRepository;
 import pl.nextsteppro.climbing.domain.reservation.ReservationStatus;
@@ -183,8 +182,11 @@ public class EventWaitlistService {
             throw new IllegalStateException(msg.get("waitlist.offer.expired"));
         }
 
-        Event event = entry.getEvent();
-        UUID eventId = event.getId();
+        UUID eventId = entry.getEvent().getId();
+        // Lock the event before reading capacity, mirroring the slot path in WaitlistService.
+        // Two people confirming at once would otherwise both pass the guard below.
+        Event event = eventRepository.findByIdForUpdate(eventId)
+            .orElseThrow(() -> new IllegalArgumentException("Event not found"));
         User user = entry.getUser();
 
         List<TimeSlot> slots = timeSlotRepository.findByEventId(eventId);

@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next'
 import { Modal } from './Modal'
 import { Button } from './Button'
 import { getCroppedBlob } from '../../utils/cropImage'
+import { getErrorMessage } from '../../utils/errors'
 
 interface AvatarCropperProps {
   /** Object URL of the selected file (crop source). */
@@ -36,7 +37,7 @@ export function AvatarCropper({ imageSrc, onCancel, onSave }: AvatarCropperProps
       const blob = await getCroppedBlob(imageSrc, croppedAreaPixels)
       await onSave(blob)
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err))
+      setError(getErrorMessage(err))
       setSaving(false)
     }
   }

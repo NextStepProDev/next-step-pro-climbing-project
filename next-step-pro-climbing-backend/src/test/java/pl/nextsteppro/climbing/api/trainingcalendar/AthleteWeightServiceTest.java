@@ -114,8 +114,8 @@ class AthleteWeightServiceTest {
         service.recordMyWeight(athleteId, weighIn("71.5"));
 
         // Then: one statement settles it, and it never reads the day first
+        // (the repository has no find-by-day method at all — that is the guard)
         verify(weightRepository).upsertReading(eq(athleteId), eq(today()), eq(new BigDecimal("71.50")), any());
-        verify(weightRepository, never()).findByAthleteIdAndMeasuredOn(any(), any());
         verify(weightRepository, never()).save(any());
     }
 

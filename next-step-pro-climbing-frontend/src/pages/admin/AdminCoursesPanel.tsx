@@ -989,7 +989,7 @@ function EditView({
             ))}
 
             {/* Pending new blocks */}
-            {pendingBlocks.map((pending, index) => (
+            {pendingBlocks.map((pending) => (
               <PendingBlockItem
                 key={pending.tempId}
                 block={pending}
@@ -1002,8 +1002,6 @@ function EditView({
                   if (pending.type === 'IMAGE' && pending.source === 'file' && pending.preview) URL.revokeObjectURL(pending.preview)
                   setPendingBlocks((prev) => prev.filter((b) => b.tempId !== pending.tempId))
                 }}
-                isOnlyPending={pendingBlocks.length === 1}
-                pendingIndex={index}
               />
             ))}
           </div>
@@ -1379,8 +1377,6 @@ function PendingBlockItem({
   block: PendingBlock
   onChange: (updated: Partial<PendingBlock>) => void
   onDelete: () => void
-  isOnlyPending: boolean
-  pendingIndex: number
 }) {
   const { t } = useTranslation('admin')
 

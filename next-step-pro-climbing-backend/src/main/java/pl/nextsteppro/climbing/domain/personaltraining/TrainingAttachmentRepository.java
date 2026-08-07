@@ -23,9 +23,6 @@ public interface TrainingAttachmentRepository extends JpaRepository<TrainingAtta
 
     List<TrainingAttachment> findByTemplateIdOrderByPositionAsc(UUID templateId);
 
-    @Query("SELECT a FROM TrainingAttachment a WHERE a.template.id IN :templateIds ORDER BY a.position ASC")
-    List<TrainingAttachment> findByTemplateIdInOrderByPositionAsc(Collection<UUID> templateIds);
-
     @Modifying
     void deleteByTemplateId(UUID templateId);
 

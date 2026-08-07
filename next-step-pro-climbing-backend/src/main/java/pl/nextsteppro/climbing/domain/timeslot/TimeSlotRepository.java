@@ -21,17 +21,10 @@ public interface TimeSlotRepository extends JpaRepository<TimeSlot, UUID> {
     @Query("SELECT ts FROM TimeSlot ts WHERE ts.id = :id")
     Optional<TimeSlot> findByIdForUpdate(UUID id);
 
-    List<TimeSlot> findByDate(LocalDate date);
-
     @Query("SELECT ts FROM TimeSlot ts WHERE ts.date = :date ORDER BY ts.startTime ASC")
     List<TimeSlot> findByDateSorted(LocalDate date);
 
-    List<TimeSlot> findByDateBetween(LocalDate startDate, LocalDate endDate);
-
     List<TimeSlot> findByEventId(UUID eventId);
-
-    @Query("SELECT ts FROM TimeSlot ts WHERE ts.date = :date AND ts.blocked = false")
-    List<TimeSlot> findAvailableByDate(LocalDate date);
 
     @Query("SELECT ts FROM TimeSlot ts WHERE ts.date BETWEEN :startDate AND :endDate ORDER BY ts.date, ts.startTime")
     List<TimeSlot> findByDateRangeOrdered(LocalDate startDate, LocalDate endDate);

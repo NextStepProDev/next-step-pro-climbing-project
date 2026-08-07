@@ -314,6 +314,7 @@ class EventWaitlistServiceTest {
         setFieldViaReflection(entry, EventWaitlist.class, "id", waitlistId);
         entry.offerSpot(Instant.now().plusSeconds(3600)); // → PENDING_CONFIRMATION
         when(eventWaitlistRepository.findById(waitlistId)).thenReturn(Optional.of(entry));
+        when(eventRepository.findByIdForUpdate(eventId)).thenReturn(Optional.of(testEvent));
         when(timeSlotRepository.findByEventId(eventId)).thenReturn(List.of(slot));
         when(reservationRepository.countConfirmedByTimeSlotIds(anyList()))
             .thenReturn(List.of(new SlotParticipantCount(slot.getId(), 9L)));
@@ -399,6 +400,7 @@ class EventWaitlistServiceTest {
         TimeSlot slot = createSlot(testEvent);
 
         when(eventWaitlistRepository.findById(waitlistId)).thenReturn(Optional.of(entry));
+        when(eventRepository.findByIdForUpdate(eventId)).thenReturn(Optional.of(testEvent));
         when(timeSlotRepository.findByEventId(eventId)).thenReturn(List.of(slot));
         when(reservationRepository.countConfirmedByTimeSlotIds(anyList()))
             .thenReturn(List.of(new SlotParticipantCount(slot.getId(), 9L))); // 9/10 spots taken
@@ -491,6 +493,7 @@ class EventWaitlistServiceTest {
         TimeSlot slot = createSlot(testEvent);
 
         when(eventWaitlistRepository.findById(waitlistId)).thenReturn(Optional.of(entry));
+        when(eventRepository.findByIdForUpdate(eventId)).thenReturn(Optional.of(testEvent));
         when(timeSlotRepository.findByEventId(eventId)).thenReturn(List.of(slot));
         when(reservationRepository.countConfirmedByTimeSlotIds(anyList()))
             .thenReturn(List.of(new SlotParticipantCount(slot.getId(), 10L))); // Full!
@@ -521,6 +524,7 @@ class EventWaitlistServiceTest {
         cancelledReservation.cancel();
 
         when(eventWaitlistRepository.findById(waitlistId)).thenReturn(Optional.of(entry));
+        when(eventRepository.findByIdForUpdate(eventId)).thenReturn(Optional.of(testEvent));
         when(timeSlotRepository.findByEventId(eventId)).thenReturn(List.of(slot));
         when(reservationRepository.countConfirmedByTimeSlotIds(anyList()))
             .thenReturn(List.of(new SlotParticipantCount(slot.getId(), 9L)));
@@ -556,6 +560,7 @@ class EventWaitlistServiceTest {
         TimeSlot slot = createSlot(testEvent);
 
         when(eventWaitlistRepository.findById(waitlistId)).thenReturn(Optional.of(entry));
+        when(eventRepository.findByIdForUpdate(eventId)).thenReturn(Optional.of(testEvent));
         when(timeSlotRepository.findByEventId(eventId)).thenReturn(List.of(slot));
         when(reservationRepository.countConfirmedByTimeSlotIds(anyList()))
             .thenReturn(List.of(new SlotParticipantCount(slot.getId(), 9L)));

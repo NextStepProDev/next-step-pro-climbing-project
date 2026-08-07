@@ -90,7 +90,6 @@ public class Waitlist {
     public TimeSlot getTimeSlot() { return timeSlot; }
     public int getPosition() { return position; }
     public WaitlistStatus getStatus() { return status; }
-    @Nullable public Instant getOfferedAt() { return offeredAt; }
     @Nullable public Instant getConfirmationDeadline() { return confirmationDeadline; }
     public Instant getCreatedAt() { return createdAt; }
 }

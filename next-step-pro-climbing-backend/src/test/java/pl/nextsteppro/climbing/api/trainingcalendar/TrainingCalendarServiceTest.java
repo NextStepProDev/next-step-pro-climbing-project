@@ -998,8 +998,8 @@ class TrainingCalendarServiceTest {
         service.rateReservation(athleteId, reservationId, new RateReservationRequest(9, null));
 
         // Then
+        // (the repository has no find-by-reservation method at all — that is the guard)
         verify(reservationRpeRepository).upsertRating(eq(reservationId), eq(9), isNull(), any());
-        verify(reservationRpeRepository, never()).findByReservationId(any());
         verify(reservationRpeRepository, never()).save(any());
     }
 
