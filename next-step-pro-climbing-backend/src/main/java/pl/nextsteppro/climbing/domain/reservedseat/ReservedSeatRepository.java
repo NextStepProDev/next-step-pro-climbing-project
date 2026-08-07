@@ -78,10 +78,6 @@ public interface ReservedSeatRepository extends JpaRepository<ReservedSeat, UUID
         """)
     List<ReservedSeat> findUpcomingPendingSlotInvitesByUserId(UUID userId, LocalDate today, LocalTime now);
 
-    boolean existsByTimeSlotIdAndUserId(UUID slotId, UUID userId);
-
-    void deleteByTimeSlotIdAndUserId(UUID slotId, UUID userId);
-
     // ---- Events ----
 
     @Query("""
@@ -140,8 +136,4 @@ public interface ReservedSeatRepository extends JpaRepository<ReservedSeat, UUID
         ORDER BY e.startDate
         """)
     List<ReservedSeat> findUpcomingPendingEventInvitesByUserId(UUID userId, LocalDate today);
-
-    boolean existsByEventIdAndUserId(UUID eventId, UUID userId);
-
-    void deleteByEventIdAndUserId(UUID eventId, UUID userId);
 }

@@ -91,14 +91,6 @@ public class Photo {
     }
 
     // Setters
-    public void setAlbum(Album album) {
-        this.album = album;
-    }
-
-    public void setFilename(String filename) {
-        this.filename = filename;
-    }
-
     public void setCaption(@Nullable String caption) {
         this.caption = caption;
     }

@@ -11,7 +11,6 @@ import type {
   TimeSlotDetail,
   CourseEvent,
   EventSummary,
-  UserReservation,
   MyReservations,
   ReservationResult,
   EventReservationResult,
@@ -342,9 +341,6 @@ export const reservationApi = {
 
   cancel: (reservationId: string) =>
     fetchApi<void>(`/reservations/${reservationId}`, { method: 'DELETE' }),
-
-  getMyReservations: () =>
-    fetchApi<UserReservation[]>('/reservations/my'),
 
   getMyUpcoming: () =>
     fetchApi<MyReservations>('/reservations/my/upcoming'),
@@ -812,7 +808,6 @@ export const adminApi = {
 // Instructors (public)
 export const instructorApi = {
   getAll: (language?: string) => fetchApi<InstructorPublic[]>(`/instructors${language ? `?language=${language}` : ''}`),
-  getById: (id: string) => fetchApi<InstructorPublic>(`/instructors/${id}`),
 }
 
 // Gallery (public)
@@ -824,7 +819,6 @@ export const galleryApi = {
 // Admin Instructors
 export const adminInstructorApi = {
   getAll: () => fetchApi<InstructorAdmin[]>('/admin/instructors'),
-  getById: (id: string) => fetchApi<InstructorAdmin>(`/admin/instructors/${id}`),
   create: (data: CreateInstructorRequest) =>
     fetchApi<InstructorAdmin>('/admin/instructors', {
       method: 'POST',
@@ -1324,7 +1318,6 @@ export const videoApi = {
 
 export const adminVideoApi = {
   getAll: () => fetchApi<VideoAdmin[]>('/admin/videos'),
-  getById: (id: string) => fetchApi<VideoAdmin>(`/admin/videos/${id}`),
   create: (data: CreateVideoRequest) =>
     fetchApi<VideoAdmin>('/admin/videos', {
       method: 'POST',
@@ -1350,10 +1343,6 @@ export const adminVideoApi = {
 // Site Settings (public)
 export const siteSettingsApi = {
   getHome: () => fetchApi<HomeSettingsDto>('/settings/home'),
-  getHero: () => fetchApi<HeroImageDto>('/settings/hero'),
-  getHeroMobile: () => fetchApi<HeroImageDto>('/settings/hero-mobile'),
-  getBadge: () => fetchApi<BadgeImageDto>('/settings/badge'),
-  getBadgeLeft: () => fetchApi<BadgeImageDto>('/settings/badge-left'),
   getCalendarPromo: () => fetchApi<CalendarPromoSectionDto>('/settings/calendar-promo'),
 }
 

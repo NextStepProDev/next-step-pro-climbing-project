@@ -27,6 +27,7 @@ export function CoursePreviewModal({
   title,
   price,
   thumbnailUrl,
+  focalPoint,
   blocks,
 }: CoursePreviewModalProps) {
   const { t } = useTranslation('admin')
@@ -42,19 +43,31 @@ export function CoursePreviewModal({
         {/* Thumbnail */}
         {thumbnailUrl ? (
           <div className="relative w-full rounded-lg overflow-hidden mb-6 bg-surface-800 aspect-video">
-            {/* Blurred background from the same image — fills the empty space instead of a black bar */}
-            <img
-              src={thumbnailUrl}
-              alt=""
-              aria-hidden="true"
-              className="absolute inset-0 w-full h-full object-cover scale-110 blur-2xl"
-            />
-            {/* Full image, centered */}
-            <img
-              src={thumbnailUrl}
-              alt={title}
-              className="relative w-full h-full object-contain"
-            />
+            {focalPoint ? (
+              /* Focal point set — crop to it, so the preview matches the public course page */
+              <img
+                src={thumbnailUrl}
+                alt={title}
+                className="w-full h-full object-cover"
+                style={{ objectPosition: `${focalPoint.x * 100}% ${focalPoint.y * 100}%` }}
+              />
+            ) : (
+              <>
+                {/* Blurred background from the same image — fills the empty space instead of a black bar */}
+                <img
+                  src={thumbnailUrl}
+                  alt=""
+                  aria-hidden="true"
+                  className="absolute inset-0 w-full h-full object-cover scale-110 blur-2xl"
+                />
+                {/* Full image, centered */}
+                <img
+                  src={thumbnailUrl}
+                  alt={title}
+                  className="relative w-full h-full object-contain"
+                />
+              </>
+            )}
           </div>
         ) : (
           <div className="w-full h-40 bg-surface-800 rounded-lg flex items-center justify-center mb-6">

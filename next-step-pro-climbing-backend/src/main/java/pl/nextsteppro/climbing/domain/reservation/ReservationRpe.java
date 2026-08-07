@@ -76,7 +76,7 @@ public class ReservationRpe {
     }
 
     /** FK access without initialising the lazy proxy. NOT named getReservationId() — a
-     * "reservationId" bean property would break the derived findByReservationId query. */
+     * "reservationId" bean property would break the derived findByReservationIdIn query. */
     public UUID reservationId() {
         return reservation.getId();
     }

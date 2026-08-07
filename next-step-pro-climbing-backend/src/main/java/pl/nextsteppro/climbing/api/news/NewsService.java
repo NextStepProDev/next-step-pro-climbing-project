@@ -18,8 +18,6 @@ import java.util.UUID;
 @Transactional(readOnly = true)
 public class NewsService {
 
-    static final int DEFAULT_PAGE_SIZE = 12;
-
     private final NewsRepository newsRepository;
     private final NewsContentBlockRepository blockRepository;
     private final NewsStarRepository newsStarRepository;

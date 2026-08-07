@@ -70,17 +70,9 @@ public class AuthToken {
         return expiresAt;
     }
 
-    public boolean isExpired() {
-        return Instant.now().isAfter(expiresAt);
-    }
-
     @Nullable
     public Instant getUsedAt() {
         return usedAt;
-    }
-
-    public boolean isUsed() {
-        return usedAt != null;
     }
 
     public void markAsUsed() {

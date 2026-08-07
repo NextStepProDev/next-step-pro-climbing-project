@@ -10,8 +10,6 @@ import java.util.UUID;
 
 public interface AuthTokenRepository extends JpaRepository<AuthToken, UUID> {
 
-    Optional<AuthToken> findByTokenHashAndTokenType(String tokenHash, TokenType tokenType);
-
     @Query("SELECT t FROM AuthToken t WHERE t.tokenHash = :tokenHash AND t.tokenType = :tokenType " +
            "AND t.expiresAt > :now AND t.usedAt IS NULL")
     Optional<AuthToken> findValidToken(String tokenHash, TokenType tokenType, Instant now);

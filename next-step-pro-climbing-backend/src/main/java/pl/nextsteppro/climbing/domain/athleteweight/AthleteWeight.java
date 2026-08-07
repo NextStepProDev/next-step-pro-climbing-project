@@ -75,14 +75,6 @@ public class AthleteWeight {
         return weightKg.setScale(SCALE, RoundingMode.HALF_UP);
     }
 
-    /**
-     * The only mutation: re-weighing on a day already recorded is a correction. Neither the
-     * date nor the athlete can change — that would be a different reading entirely.
-     */
-    public void correctTo(BigDecimal weightKg) {
-        this.weightKg = normalize(weightKg);
-    }
-
     public UUID getId() {
         return id;
     }

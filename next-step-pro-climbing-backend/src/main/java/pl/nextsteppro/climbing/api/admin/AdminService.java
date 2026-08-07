@@ -1644,11 +1644,8 @@ public class AdminService {
         }
     }
 
-    @Caching(evict = {
-        @CacheEvict(value = "calendarMonth", allEntries = true),
-        @CacheEvict(value = "calendarWeek", allEntries = true),
-        @CacheEvict(value = "calendarDay", allEntries = true)
-    })
+    /* No @CacheEvict here: this is private, so proxy-based AOP never sees the call.
+     * Its only caller (addRegisteredParticipantToEvent) evicts for it. */
     private List<TimeSlot> createDefaultSlotsForEvent(Event event) {
         List<TimeSlot> slots = new ArrayList<>();
         LocalTime slotStart = event.getStartTime() != null ? event.getStartTime() : LocalTime.of(0, 0);
@@ -1662,6 +1659,11 @@ public class AdminService {
         return slots;
     }
 
+    @Caching(evict = {
+        @CacheEvict(value = "calendarMonth", allEntries = true),
+        @CacheEvict(value = "calendarWeek", allEntries = true),
+        @CacheEvict(value = "calendarDay", allEntries = true)
+    })
     public GuestParticipantDto addGuestParticipantToEvent(UUID eventId, AddGuestParticipantRequest request) {
         Event event = eventRepository.findById(eventId)
             .orElseThrow(() -> new IllegalArgumentException("Event not found"));

@@ -104,10 +104,6 @@ public class Reservation {
         return status == ReservationStatus.CANCELLED || status == ReservationStatus.CANCELLED_BY_ADMIN;
     }
 
-    public boolean isCancelledByAdmin() {
-        return status == ReservationStatus.CANCELLED_BY_ADMIN;
-    }
-
     public Instant getCreatedAt() {
         return createdAt;
     }

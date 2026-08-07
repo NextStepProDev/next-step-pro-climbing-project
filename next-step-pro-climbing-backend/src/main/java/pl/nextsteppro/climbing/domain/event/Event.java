@@ -192,10 +192,6 @@ public class Event {
         return course != null;
     }
 
-    public boolean isAllDay() {
-        return startTime == null || endTime == null;
-    }
-
     public boolean isMultiDay() {
         return !startDate.equals(endDate);
     }

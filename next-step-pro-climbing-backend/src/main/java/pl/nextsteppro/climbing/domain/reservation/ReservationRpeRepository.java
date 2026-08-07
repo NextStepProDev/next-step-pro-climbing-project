@@ -14,8 +14,6 @@ import java.util.UUID;
 
 public interface ReservationRpeRepository extends JpaRepository<ReservationRpe, UUID> {
 
-    Optional<ReservationRpe> findByReservationId(UUID reservationId);
-
     /** Batch load for the calendar overlay: rpe rows for the given reservations. */
     List<ReservationRpe> findByReservationIdIn(Collection<UUID> reservationIds);
 

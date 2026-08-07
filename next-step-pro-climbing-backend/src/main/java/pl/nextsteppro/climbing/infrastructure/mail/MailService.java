@@ -187,16 +187,6 @@ public class MailService {
         }
     }
 
-    @Async("mailExecutor")
-    public void sendCustomAdminMail(String to, String subject, String body) {
-        doSendCustomAdminMail(to, subject, body);
-    }
-
-    @Async("mailExecutor")
-    public void sendNewsletterMail(User recipient, String subject, String body) {
-        doSendNewsletterMail(recipient, subject, body);
-    }
-
     /**
      * Sends one admin broadcast/newsletter to every recipient on a single background thread,
      * sequentially. Runs on {@code mailCampaignExecutor} (not the per-message {@code mailExecutor})

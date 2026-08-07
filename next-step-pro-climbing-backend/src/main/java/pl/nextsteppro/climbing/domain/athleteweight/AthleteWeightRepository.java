@@ -51,6 +51,4 @@ public interface AthleteWeightRepository extends JpaRepository<AthleteWeight, UU
                                   @Param("to") LocalDate to);
 
     void deleteByAthleteIdAndMeasuredOn(UUID athleteId, LocalDate measuredOn);
-
-    boolean existsByAthleteId(UUID athleteId);
 }
