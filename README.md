@@ -2,7 +2,7 @@
 
 A booking and management system for climbing courses, trainings, and workshops.
 
-Users can browse a public calendar, reserve time slots and sign up for events. Administrators get a full management panel for slots, events, reservations, and users.
+Users can browse a public calendar, reserve time slots and sign up for events. Administrators get a full management panel for slots, events, reservations, users, and site content. Athletes training one-on-one get a personal training calendar co-managed with their coach.
 
 ## Key Features
 
@@ -10,33 +10,63 @@ Users can browse a public calendar, reserve time slots and sign up for events. A
 - **Interactive calendar** with month, week, and day views — privacy-aware (other users' reservations shown only as "reserved")
 - **Concurrent-safe reservations** — pessimistic locking with timeouts prevents double-booking under load
 - **Dual-track waitlist** — automatic promotion with 24-hour confirmation windows for both time slots and events
+- **Invitation-only seats** — the coach holds named seats for registered users; availability is computed *per viewer*, so an invitee sees a free seat where everyone else sees "by invitation", and an invitee may book past the cutoff that applies to everyone else. Invitation emails are always a deliberate click, never a side effect of saving
+- **Time proposals** — a logged-in user proposes a slot, either inside an availability window or freely; the coach turns a proposal into a real slot or event, which is the only way a proposal becomes accepted
+- **Two ways to close a date** — an *unavailability* opens with zero seats and never accepts bookings, while *blocking* cancels an existing date and emails everyone who held a seat. Clients see one word for both; the back office keeps them apart
 
 ### Athlete Zone (Personal Training Calendar)
-- **TrainingPeaks-style shared plan** — coach-designated athletes get a personal training calendar co-managed with the coach (both sides create, edit, and comment on trainings)
-- **Completion tracking** — athletes check off trainings with feedback and an RPE (1-10) effort rating; "missed" status is derived, never stored
-- **Training statistics** — live-derived stats under the calendar: monthly counts with trend, week streaks, a GitHub-style 12-month activity heatmap, training-type breakdown, attendance rate, average RPE, and milestone badges — always computed from current data, never cached
+- **Explicit GDPR consent gate** — weight, RPE, and training feedback are health data under GDPR Art. 9, so an athlete passes a one-time consent screen before the calendar exists for them. The gate is enforced by the backend, not the UI, and revoking athlete status revokes the consent with it
+- **TrainingPeaks-style shared plan** — coach-designated athletes get a personal training calendar co-managed with the coach (both sides create, edit, and comment on trainings), in month, month-tile, and week views, with a dedicated dot grid on phones
+- **Two kinds of entry** — a *training* is a session; a *task* is a commitment held all day (a calorie ceiling, water, sleep). Separate rows on purpose: you can nail the session and blow the diet on the same day, and one checkbox cannot say both. Tasks are checked off, never rated; trainings may be scheduled to the hour or left untimed for the whole day
+- **Completion tracking** — athletes check off trainings with feedback and a mandatory RPE (1-10) effort rating; "missed" status is derived, never stored
+- **Goals and a trophy chest** — training and weight goals across three horizons, at most one active per slot. A weight goal closes *itself* from the measured trend, and only a self-closed goal can be reopened by the coach — a manually awarded trophy can be removed from the chest, but never quietly un-awarded
+- **Body weight tracking** — morning readings with an application-side trend (the database keeps raw measurements only), a rapid-loss flag visible to the coach alone, and backfill for a forgotten weigh-in. Only the athlete can write a reading; deleting one never takes back an earned goal
+- **Training materials & template library** — up to three links or uploaded files per entry, with YouTube/Instagram embedded inline; files are reference-counted, so duplicating an entry or applying a template shares one file on disk. The coach's template library carries both kinds of entry and copies content at the point of use
+- **Duplicate, drag & drop, and a calendar clipboard** — copy/cut/paste that survives navigation and can paste into *another athlete's* calendar. A copy travels; a cut does not, because moving a row would drag its comment thread and completion into someone else's plan
+- **Training statistics** — live-derived stats under the calendar: monthly counts with trend, week streaks, a GitHub-style 12-month activity heatmap, type breakdown, attendance rate, average RPE with an intensity distribution, and milestone badges. Tasks are counted apart from every training number, and every task count ships its denominator. Always computed from current data, never cached
 - **Unread counters both ways** — per-viewer read markers drive "new from coach" / "new from athlete" badges, including alerts for deleted future trainings
 
 ### Content Management (CMS)
-- **Block-based editor** for news articles and courses — TEXT, IMAGE, and VIDEO_EMBED blocks with drag & drop reordering
+- **Block-based editor** for news articles and courses — TEXT and IMAGE blocks, plus VIDEO_EMBED in news, reordered block by block
+- **Six managed modules** — news, courses, instructors, gallery albums, videos, and site settings (hero, badges, location section, calendar promo)
 - **Draft / publish workflow** with scheduled publication dates
-- **Multilingual content** — translation groups across PL / EN / ES with one-click duplication as a new translation
+- **Multilingual content** — translation groups across PL / EN / ES with one-click duplication as a new translation (which starts as a draft)
+- **Reference-counted media** — an image leaves the disk only once no language version still points at it
 - **Image focal points** — stored X/Y coordinates for intelligent responsive cropping on thumbnails and photos
+- **Unsaved-work protection** — full-page editors confirm before discarding an in-progress article, course, or video
 
 ### Authentication & Security
-- **Email / password + Google OAuth2** with automatic account provisioning and linking
-- **Per-endpoint rate limiting** — separate Caffeine-backed IP buckets for auth, reservations, and admin routes
+- **Email / password + Google OAuth2** — an existing account is linked only when the provider asserts a verified email
+- **Strong-password policy** at every entry point (registration, reset, change) — length rules, rejection of passwords containing the user's own personal data, and a Have I Been Pwned breach check that fails open, so an unreachable third party can never block a signup. The frontend strength meter is a hint; the backend decides
+- **Per-endpoint rate limiting** — separate Caffeine-backed IP buckets for auth, reservations, user, admin, training-calendar, and upload routes
 - **Account lockout** after repeated failed login attempts (brute-force protection)
 - **Zero-copy file streaming** — `InputStreamResource` serving (0 MB RAM), UUID filenames, strict regex to block path traversal
 
 ### Newsletter & Communication
 - **GDPR-compliant newsletter** — opt-in consent logging, tokenized one-click unsubscribe (no login required), full audit trail
-- **Templated multi-language emails** — verification, password reset, waitlist notifications, and admin mass-mail
-- **Activity audit log** — 23 action types tracking reservations, admin operations, and user lifecycle events
+- **Templated multi-language emails** — verification, password reset, waitlist notifications, and admin mass-mail. Delivery retries and never throws: a dead SMTP server cannot roll back the booking that triggered the message
+- **Isolated mail campaigns** — mass mail runs as a single sequential job on its own executor, so a 100-recipient campaign cannot starve transactional mail
+- **A single "already happened" predicate** — no email is ever sent about a date that is over, and every mail decision in the admin panel asks the same question in the same timezone
+- **Activity audit log** — tracks reservations, admin operations, athlete-plan changes, and user lifecycle events
+- **Admin notification badges** — per-admin "seen" markers drive the pending-proposal and new-reservation counters; seats the admin booked themselves never light the dot
 
 ### Performance
 - **Multi-tier Caffeine cache** — 2 min TTL for real-time calendar data up to 60 min for content details, with targeted eviction on mutations
 - **Optimized queries** — N+1 fixes via SQL projections, batch loading of reservation counts and user state
+
+### SEO
+- **Pre-rendered public routes** at build time, so a crawler gets HTML instead of an empty SPA shell
+- **Open Graph stubs** served to social scrapers only — search engines are deliberately excluded from that rule, because a JS-rendering crawler would follow the stub's refresh straight back into it
+- **Sitemap endpoint** plus a post-deploy SEO smoke test that fails the deploy if crawler routing or `robots.txt` regresses
+
+## Testing & Quality Gates
+
+- **Backend** — unit tests plus integration tests on Testcontainers (real PostgreSQL), covering booking concurrency, waitlist promotion, mail decisions, and the athlete calendar's authorization
+- **Frontend** — Vitest unit tests (densest around the training calendar) with TypeScript and ESLint required to be clean
+- **End-to-end** — Playwright golden path in CI; it drives the frontend alone, so it needs neither a database nor an API
+- **Architecture gates** — tests that read the source tree and fail the build on whole classes of mistake rather than single bugs: a bare `now()` outside the project timezone, an admin endpoint without `@PreAuthorize`, `@Transactional` or `@CacheEvict` on a non-public method (which silently does nothing while looking like it works), an activity type the admin panel cannot render, a translation key present in one language and missing in another, a raw `fetch` bypassing the API client, or a cache invalidation aimed at a key nobody queries.
+
+  These exist because an audit is sampling, not a scan — each of these had already survived at least one review before its gate was written.
 
 ## Tech Stack
 
@@ -44,7 +74,7 @@ Users can browse a public calendar, reserve time slots and sign up for events. A
 - **Java 25** + **Spring Boot 4.1.0**
 - Spring Security + JWT + OAuth2 (Google)
 - Spring Data JPA + **PostgreSQL 17**
-- **Flyway** (66 migrations)
+- **Flyway** (versioned migrations)
 - SpringDoc OpenAPI (Swagger UI)
 - Caffeine Cache (multi-tier TTL)
 - Spring Boot Starter Mail
@@ -59,6 +89,7 @@ Users can browse a public calendar, reserve time slots and sign up for events. A
 - React Router 7
 - react-i18next (internationalization)
 - date-fns, lucide-react, clsx
+- Vitest + Testing Library, Playwright (E2E)
 
 ### Infrastructure
 - Docker + Docker Compose
@@ -73,16 +104,17 @@ Users can browse a public calendar, reserve time slots and sign up for events. A
 next-step-pro-climbing-project/
 ├── next-step-pro-climbing-backend/    # Spring Boot API
 ├── next-step-pro-climbing-frontend/   # React SPA
-├── next-step-pro-climbing-hub/        # Docker Compose (dev/prod), .env
+├── next-step-pro-climbing-hub/        # Docker Compose (dev/prod), .env, provisioning, load tests
 ├── .github/workflows/                 # CI/CD pipelines
-├── VERSION                            # Application version (4.10.x)
-└── CLAUDE.md                          # AI context
+├── docs/                              # Working notes (git workflow)
+├── AUDIT.md                           # Audit coverage ledger — where the next review starts
+└── VERSION                            # Application version
 ```
 
 ## Prerequisites
 
 - Java 25 (JDK)
-- Node.js 22+
+- Node.js 24+
 - Docker + Docker Compose
 - PostgreSQL 17 (via Docker)
 
@@ -124,7 +156,7 @@ Frontend starts at `http://localhost:5173`.
 The application supports **3 languages**: Polish, English, and Spanish.
 
 - **Detection:** browser language is detected automatically via `i18next-browser-languagedetector` (fallback: English)
-- **Frontend:** react-i18next with 9 namespaces and bundled JSON locale files (`src/locales/{pl,en,es}/`)
+- **Frontend:** react-i18next with per-feature namespaces and bundled JSON locale files (`src/locales/{pl,en,es}/`)
 - **Backend:** Spring `MessageSource` with `AcceptHeaderLocaleResolver` — API errors and validation messages are returned in the language from the `Accept-Language` header
 - **Registration:** the detected browser language is sent to the backend and stored as the user's initial preference
 - **Emails:** sent in the user's preferred language (stored in DB as `preferred_language`)
