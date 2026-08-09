@@ -194,6 +194,21 @@ public class WaitlistService {
         TimeSlot slot = timeSlotRepository.findByIdForUpdate(slotId)
             .orElseThrow(() -> new IllegalArgumentException("Time slot not found"));
 
+        // An offer outlives the slot state it was made under. blockTimeSlot cancels the confirmed
+        // reservations but leaves PENDING_CONFIRMATION offers alive, so the seats it frees make the
+        // capacity check below pass — the queued user would be handed a reservation on a cancelled
+        // term. joinWaitlist guards all three of these; confirming has to as well.
+        if (slot.isBlocked()) {
+            // Same literal as joinWaitlist and createReservation — no message key exists for this one.
+            throw new IllegalStateException("This time slot is blocked");
+        }
+        if (slot.isUnavailable()) {
+            throw new IllegalStateException(msg.get("reservation.slot.unavailable"));
+        }
+        if (BookingTimeValidator.isPast(slot.getDate(), slot.getEndTime())) {
+            throw new IllegalStateException(msg.get("reservation.slot.past"));
+        }
+
         int confirmedCount = reservationRepository.countConfirmedByTimeSlotId(slotId)
             + guestReservationRepository.sumParticipantsByTimeSlotId(slotId);
         // Seats held for other invitees still block — otherwise two queued people offered at

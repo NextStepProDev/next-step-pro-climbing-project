@@ -142,7 +142,9 @@ public class AdminCourseService {
 
     @Caching(evict = {
         @CacheEvict(value = {"courseList", "courseDetail"}, allEntries = true),
-        @CacheEvict(value = {"calendarMonth", "calendarWeek"}, allEntries = true)
+        // calendarDay too: getDayView embeds the course title via toEventSummary just like the
+        // month and week views, so leaving it out left the old title showing in the day view.
+        @CacheEvict(value = {"calendarMonth", "calendarWeek", "calendarDay"}, allEntries = true)
     })
     public CourseAdminDto updateCourseMeta(UUID id, UpdateCourseMetaRequest request) {
         Course course = findCourse(id);
@@ -158,7 +160,12 @@ public class AdminCourseService {
         return toAdminDto(course);
     }
 
-    @CacheEvict(value = {"courseList", "courseDetail"}, allEntries = true)
+    @Caching(evict = {
+        @CacheEvict(value = {"courseList", "courseDetail"}, allEntries = true),
+        // EventSummaryDto.coursePublished is derived from the course and baked into the calendar
+        // caches, so unpublishing left the calendar linking event tiles to a now-404 course page.
+        @CacheEvict(value = {"calendarMonth", "calendarWeek", "calendarDay"}, allEntries = true)
+    })
     public CourseAdminDto setPublished(UUID id, boolean publish) {
         Course course = findCourse(id);
 
@@ -181,7 +188,12 @@ public class AdminCourseService {
         return toAdminDto(course);
     }
 
-    @CacheEvict(value = {"courseList", "courseDetail"}, allEntries = true)
+    @Caching(evict = {
+        @CacheEvict(value = {"courseList", "courseDetail"}, allEntries = true),
+        // Deleting unlinks every event from the course, changing title/courseId/coursePublished
+        // in the cached calendar DTOs — without this the deleted course's title lingered on them.
+        @CacheEvict(value = {"calendarMonth", "calendarWeek", "calendarDay"}, allEntries = true)
+    })
     public void deleteCourse(UUID id) {
         Course course = findCourse(id);
 

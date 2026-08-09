@@ -119,6 +119,19 @@ async function ensureValidToken(): Promise<string | null> {
 
   if (!isAccessTokenExpired()) return accessToken
 
+  return refreshOnce()
+}
+
+/**
+ * Refresh, sharing any attempt already in flight.
+ *
+ * Used both when the local clock says the token expired and when the server answers 401 on a
+ * token we still believed valid (revoked server-side, clock skew). The 401 path used to call
+ * doRefresh() directly and so skipped this dedupe: a page firing several requests at once burned
+ * one refresh round-trip per request. The backend's REFRESH_ROTATION_GRACE meant nobody was
+ * logged out by it, but the traffic was pure waste.
+ */
+async function refreshOnce(): Promise<string | null> {
   if (refreshPromise) return refreshPromise
 
   refreshPromise = doRefresh()
@@ -198,9 +211,10 @@ async function fetchApi<T>(
     }
   }
 
-  // If 401, try one refresh and retry
+  // If 401, try one refresh and retry. Goes through ensureValidToken rather than doRefresh so
+  // several requests 401-ing at once share one in-flight refresh instead of each firing their own.
   if (response.status === 401 && token) {
-    const newToken = await doRefresh()
+    const newToken = await refreshOnce()
     if (newToken) {
       headers['Authorization'] = `Bearer ${newToken}`
       try {
@@ -262,6 +276,19 @@ async function fetchApi<T>(
   }
 
   return response.json()
+}
+
+
+/**
+ * Multipart upload routed through {@link fetchApi}.
+ *
+ * Every upload used to hand-roll its own fetch(), and so had none of what fetchApi provides:
+ * no 401 refresh (an upload attempted after the access token expired just failed), no 5xx retry
+ * across a redeploy, no 30 s timeout, and no shared error normalisation. fetchApi deliberately
+ * leaves FormData alone so the browser sets its own multipart boundary.
+ */
+async function uploadApi<T>(endpoint: string, formData: FormData): Promise<T> {
+  return fetchApi<T>(endpoint, { method: 'POST', body: formData })
 }
 
 // Auth
@@ -835,27 +862,9 @@ export const adminInstructorApi = {
     const error = validateImageFile(file)
     if (error) throw new Error(error)
     const compressed = await compressImage(file)
-    const token = await ensureValidToken()
     const formData = new FormData()
     formData.append('file', compressed)
-
-    const headers: Record<string, string> = {
-      'Accept-Language': i18n.language,
-    }
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`
-    }
-
-    const response = await fetch(`${API_BASE}/admin/instructors/${id}/photo`, {
-      method: 'POST',
-      headers,
-      body: formData,
-    })
-
-    if (!response.ok) {
-      const body = await response.json().catch(() => null)
-      throw new Error(body?.message || i18n.t('uploadFailed', { ns: 'errors' }))
-    }
+    await uploadApi<void>(`/admin/instructors/${id}/photo`, formData)
   },
   deletePhoto: (id: string) =>
     fetchApi<void>(`/admin/instructors/${id}/photo`, { method: 'DELETE' }),
@@ -920,32 +929,12 @@ export const adminGalleryApi = {
     const error = validateImageFile(file)
     if (error) throw new Error(error)
     const compressed = await compressImage(file)
-    const token = await ensureValidToken()
     const formData = new FormData()
     formData.append('file', compressed)
     if (caption) {
       formData.append('caption', caption)
     }
-
-    const headers: Record<string, string> = {
-      'Accept-Language': i18n.language,
-    }
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`
-    }
-
-    const response = await fetch(`${API_BASE}/admin/gallery/albums/${albumId}/photos`, {
-      method: 'POST',
-      headers,
-      body: formData,
-    })
-
-    if (!response.ok) {
-      const body = await response.json().catch(() => null)
-      throw new Error(body?.message || i18n.t('uploadFailed', { ns: 'errors' }))
-    }
-
-    return response.json() as Promise<UploadPhotoResponse>
+    return uploadApi<UploadPhotoResponse>(`/admin/gallery/albums/${albumId}/photos`, formData)
   },
   updatePhoto: (photoId: string, data: UpdatePhotoRequest) =>
     fetchApi<void>(`/admin/gallery/photos/${photoId}`, {
@@ -1013,21 +1002,9 @@ export const adminNewsApi = {
     const error = validateImageFile(file)
     if (error) throw new Error(error)
     const compressed = await compressImage(file)
-    const token = await ensureValidToken()
     const formData = new FormData()
     formData.append('file', compressed)
-    const headers: Record<string, string> = { 'Accept-Language': i18n.language }
-    if (token) headers['Authorization'] = `Bearer ${token}`
-    const response = await fetch(`${API_BASE}/admin/news/${id}/thumbnail`, {
-      method: 'POST',
-      headers,
-      body: formData,
-    })
-    if (!response.ok) {
-      const body = await response.json().catch(() => null)
-      throw new Error(body?.message || i18n.t('uploadFailed', { ns: 'errors' }))
-    }
-    return response.json()
+    return uploadApi<UploadThumbnailResponse>(`/admin/news/${id}/thumbnail`, formData)
   },
 
   deleteThumbnail: (id: string) =>
@@ -1049,22 +1026,10 @@ export const adminNewsApi = {
     const error = validateImageFile(file)
     if (error) throw new Error(error)
     const compressed = await compressImage(file)
-    const token = await ensureValidToken()
     const formData = new FormData()
     formData.append('file', compressed)
     if (caption) formData.append('caption', caption)
-    const headers: Record<string, string> = { 'Accept-Language': i18n.language }
-    if (token) headers['Authorization'] = `Bearer ${token}`
-    const response = await fetch(`${API_BASE}/admin/news/${newsId}/blocks/image`, {
-      method: 'POST',
-      headers,
-      body: formData,
-    })
-    if (!response.ok) {
-      const body = await response.json().catch(() => null)
-      throw new Error(body?.message || i18n.t('uploadFailed', { ns: 'errors' }))
-    }
-    return response.json()
+    return uploadApi<UploadBlockImageResponse>(`/admin/news/${newsId}/blocks/image`, formData)
   },
 
   updateTextBlock: (blockId: string, data: UpdateTextBlockRequest) =>
@@ -1172,21 +1137,9 @@ export const adminCoursesApi = {
     const error = validateImageFile(file)
     if (error) throw new Error(error)
     const compressed = await compressImage(file)
-    const token = await ensureValidToken()
     const formData = new FormData()
     formData.append('file', compressed)
-    const headers: Record<string, string> = { 'Accept-Language': i18n.language }
-    if (token) headers['Authorization'] = `Bearer ${token}`
-    const response = await fetch(`${API_BASE}/admin/courses/${id}/thumbnail`, {
-      method: 'POST',
-      headers,
-      body: formData,
-    })
-    if (!response.ok) {
-      const body = await response.json().catch(() => null)
-      throw new Error(body?.message || i18n.t('uploadFailed', { ns: 'errors' }))
-    }
-    return response.json()
+    return uploadApi<UploadThumbnailResponse>(`/admin/courses/${id}/thumbnail`, formData)
   },
 
   deleteThumbnail: (id: string) =>
@@ -1208,22 +1161,10 @@ export const adminCoursesApi = {
     const error = validateImageFile(file)
     if (error) throw new Error(error)
     const compressed = await compressImage(file)
-    const token = await ensureValidToken()
     const formData = new FormData()
     formData.append('file', compressed)
     if (caption) formData.append('caption', caption)
-    const headers: Record<string, string> = { 'Accept-Language': i18n.language }
-    if (token) headers['Authorization'] = `Bearer ${token}`
-    const response = await fetch(`${API_BASE}/admin/courses/${courseId}/blocks/image`, {
-      method: 'POST',
-      headers,
-      body: formData,
-    })
-    if (!response.ok) {
-      const body = await response.json().catch(() => null)
-      throw new Error(body?.message || i18n.t('uploadFailed', { ns: 'errors' }))
-    }
-    return response.json()
+    return uploadApi<UploadBlockImageResponse>(`/admin/courses/${courseId}/blocks/image`, formData)
   },
 
   updateTextBlock: (blockId: string, data: UpdateTextBlockRequest) =>
@@ -1278,29 +1219,9 @@ export const adminAssetsApi = {
     const error = validateImageFile(file)
     if (error) throw new Error(error)
     const compressed = await compressImage(file)
-    const token = await ensureValidToken()
     const formData = new FormData()
     formData.append('file', compressed)
-
-    const headers: Record<string, string> = {
-      'Accept-Language': i18n.language,
-    }
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`
-    }
-
-    const response = await fetch(`${API_BASE}/admin/assets`, {
-      method: 'POST',
-      headers,
-      body: formData,
-    })
-
-    if (!response.ok) {
-      const body = await response.json().catch(() => null)
-      throw new Error(body?.message || i18n.t('uploadFailed', { ns: 'errors' }))
-    }
-
-    return response.json()
+    return uploadApi<AssetDto>(`/admin/assets`, formData)
   },
 
   delete: (id: string) =>
@@ -1354,26 +1275,11 @@ export const adminSiteApi = {
     const error = validateImageFile(file)
     if (error) throw new Error(error)
     const compressed = await compressImage(file)
-    const token = await ensureValidToken()
     const formData = new FormData()
     formData.append('file', compressed)
     if (focalPointX != null) formData.append('focalPointX', String(focalPointX))
     if (focalPointY != null) formData.append('focalPointY', String(focalPointY))
-    const headers: Record<string, string> = { 'Accept-Language': i18n.language }
-    if (token) headers['Authorization'] = `Bearer ${token}`
-
-    const response = await fetch(`${API_BASE}/admin/settings/hero`, {
-      method: 'POST',
-      headers,
-      body: formData,
-    })
-
-    if (!response.ok) {
-      const body = await response.json().catch(() => null)
-      throw new Error(body?.message || i18n.t('uploadFailed', { ns: 'errors' }))
-    }
-
-    return response.json()
+    return uploadApi<HeroImageDto>(`/admin/settings/hero`, formData)
   },
 
   setHeroImageUrl: (url: string, focalPointX?: number, focalPointY?: number) =>
@@ -1398,26 +1304,11 @@ export const adminSiteApi = {
     const error = validateImageFile(file)
     if (error) throw new Error(error)
     const compressed = await compressImage(file)
-    const token = await ensureValidToken()
     const formData = new FormData()
     formData.append('file', compressed)
     if (focalPointX != null) formData.append('focalPointX', String(focalPointX))
     if (focalPointY != null) formData.append('focalPointY', String(focalPointY))
-    const headers: Record<string, string> = { 'Accept-Language': i18n.language }
-    if (token) headers['Authorization'] = `Bearer ${token}`
-
-    const response = await fetch(`${API_BASE}/admin/settings/hero-mobile`, {
-      method: 'POST',
-      headers,
-      body: formData,
-    })
-
-    if (!response.ok) {
-      const body = await response.json().catch(() => null)
-      throw new Error(body?.message || i18n.t('uploadFailed', { ns: 'errors' }))
-    }
-
-    return response.json()
+    return uploadApi<HeroImageDto>(`/admin/settings/hero-mobile`, formData)
   },
 
   setHeroMobileImageUrl: (url: string, focalPointX?: number, focalPointY?: number) =>

@@ -7,6 +7,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import pl.nextsteppro.climbing.api.activitylog.ActivityLogService;
 import pl.nextsteppro.climbing.api.reservation.EventWaitlistService;
+import pl.nextsteppro.climbing.api.reservation.UserSeatReleaseService;
 import pl.nextsteppro.climbing.api.reservation.WaitlistService;
 import pl.nextsteppro.climbing.domain.auth.AuthTokenRepository;
 import pl.nextsteppro.climbing.domain.course.CourseRepository;
@@ -22,6 +23,7 @@ import pl.nextsteppro.climbing.domain.timeslot.TimeSlot;
 import pl.nextsteppro.climbing.domain.timeslot.TimeSlotRepository;
 import pl.nextsteppro.climbing.domain.trainingrequest.TrainingRequestRepository;
 import pl.nextsteppro.climbing.domain.user.User;
+import pl.nextsteppro.climbing.domain.user.UserRole;
 import pl.nextsteppro.climbing.domain.user.UserRepository;
 import pl.nextsteppro.climbing.domain.waitlist.EventWaitlistRepository;
 import pl.nextsteppro.climbing.domain.waitlist.WaitlistRepository;
@@ -38,6 +40,7 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -69,6 +72,7 @@ class AdminServiceInviteSyncTest {
     @Mock private AuthMailService authMailService;
     @Mock private WaitlistService waitlistService;
     @Mock private EventWaitlistService eventWaitlistService;
+    @Mock private UserSeatReleaseService userSeatReleaseService;
     @Mock private ReservedSeatRepository reservedSeatRepository;
     @Mock private TrainingRequestRepository trainingRequestRepository;
     @Mock private pl.nextsteppro.climbing.api.trainingcalendar.TrainingCalendarService trainingCalendarService;
@@ -102,6 +106,7 @@ class AdminServiceInviteSyncTest {
             authMailService,
             waitlistService,
             eventWaitlistService,
+            userSeatReleaseService,
             reservedSeatRepository,
             trainingRequestRepository,
             trainingCalendarService
@@ -219,6 +224,64 @@ class AdminServiceInviteSyncTest {
         // When & Then
         assertThrows(IllegalStateException.class, () ->
             adminService.updateEvent(adminId, eventId, eventRequestWithInvites(List.of(invitedUser.getId()))));
+    }
+
+    // ========== REGRESSION: admin-side account deletion ==========
+
+    @Test
+    void shouldReleaseSeatsAndNotifyWaitlistsWhenAdminDeletesUser() {
+        // Given — the admin path used to cancel the reservations with a bare bulk UPDATE and stop
+        // there: no waitlist was ever told, so a queue could sit idle on seats that had just been
+        // freed. The self-service path (UserService.deleteAccount) always did this properly.
+        UUID victimId = UUID.randomUUID();
+        User victim = new User("victim@example.com", "Vic", "Tim", "+48222222222", "victim");
+        setId(victim, victimId);
+
+        when(userRepository.findById(victimId)).thenReturn(Optional.of(victim));
+        when(userRepository.findById(adminId)).thenReturn(Optional.of(admin));
+
+        // When
+        adminService.deleteUser(adminId, victimId);
+
+        // Then
+        verify(userSeatReleaseService).releaseSeatsAndNotifyWaitlists(victimId);
+        verify(userRepository).delete(victim);
+        verify(jwtAuthenticationFilter).evictUser(victimId);
+    }
+
+    @Test
+    void shouldReleaseSeatsBeforeDeletingWhenAdminDeletesUser() {
+        // Given — the reservations cascade away with the user, so the seats have to be released
+        // and re-offered while the rows still exist.
+        UUID victimId = UUID.randomUUID();
+        User victim = new User("victim2@example.com", "Vic", "Tim", "+48333333333", "victim2");
+        setId(victim, victimId);
+
+        when(userRepository.findById(victimId)).thenReturn(Optional.of(victim));
+        when(userRepository.findById(adminId)).thenReturn(Optional.of(admin));
+
+        // When
+        adminService.deleteUser(adminId, victimId);
+
+        // Then
+        var inOrder = inOrder(userSeatReleaseService, userRepository);
+        inOrder.verify(userSeatReleaseService).releaseSeatsAndNotifyWaitlists(victimId);
+        inOrder.verify(userRepository).delete(victim);
+    }
+
+    @Test
+    void shouldRefuseToDeleteAnotherAdmin() {
+        UUID otherAdminId = UUID.randomUUID();
+        User otherAdmin = new User("admin2@example.com", "Other", "Admin", "+48444444444", "admin2");
+        setId(otherAdmin, otherAdminId);
+        otherAdmin.setRole(UserRole.ADMIN);
+
+        when(userRepository.findById(otherAdminId)).thenReturn(Optional.of(otherAdmin));
+        when(msg.get("admin.user.cannot.delete.admin")).thenReturn("Cannot delete an admin");
+
+        assertThrows(IllegalStateException.class, () -> adminService.deleteUser(adminId, otherAdminId));
+        verify(userSeatReleaseService, never()).releaseSeatsAndNotifyWaitlists(any());
+        verify(userRepository, never()).delete(any(User.class));
     }
 
     private void setId(Object entity, UUID id) {

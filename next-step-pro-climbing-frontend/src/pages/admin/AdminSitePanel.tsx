@@ -105,7 +105,6 @@ function HeroImageSection({ variant }: { variant: 'desktop' | 'mobile' }) {
 
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: ['admin', queryKeyName] })
-    queryClient.invalidateQueries({ queryKey: ['heroImage'] })
     queryClient.invalidateQueries({ queryKey: ['homeSettings'] })
   }
 
@@ -354,7 +353,6 @@ function BadgeSection() {
 
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: ['admin', 'badge'] })
-    queryClient.invalidateQueries({ queryKey: ['badgeImage'] })
     queryClient.invalidateQueries({ queryKey: ['homeSettings'] })
   }
 
@@ -499,7 +497,6 @@ function BadgeLeftSection() {
 
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: ['admin', 'badgeLeft'] })
-    queryClient.invalidateQueries({ queryKey: ['badgeLeftImage'] })
     queryClient.invalidateQueries({ queryKey: ['homeSettings'] })
   }
 

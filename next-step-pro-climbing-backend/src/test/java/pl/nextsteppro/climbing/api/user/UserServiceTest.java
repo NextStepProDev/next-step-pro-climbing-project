@@ -10,11 +10,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import pl.nextsteppro.climbing.domain.auth.AuthToken;
 import pl.nextsteppro.climbing.domain.auth.AuthTokenRepository;
 import pl.nextsteppro.climbing.domain.auth.TokenType;
-import pl.nextsteppro.climbing.api.reservation.EventWaitlistService;
-import pl.nextsteppro.climbing.api.reservation.WaitlistService;
+import pl.nextsteppro.climbing.api.reservation.UserSeatReleaseService;
 import pl.nextsteppro.climbing.domain.newsletter.NewsletterConsentLog;
 import pl.nextsteppro.climbing.domain.newsletter.NewsletterConsentLogRepository;
-import pl.nextsteppro.climbing.domain.reservation.ReservationRepository;
 import pl.nextsteppro.climbing.domain.user.User;
 import pl.nextsteppro.climbing.domain.user.UserRepository;
 import pl.nextsteppro.climbing.infrastructure.i18n.MessageService;
@@ -55,8 +53,6 @@ class UserServiceTest {
     @Mock
     private AuthMailService authMailService;
     @Mock
-    private ReservationRepository reservationRepository;
-    @Mock
     private AuthTokenRepository authTokenRepository;
     @Mock
     private JwtService jwtService;
@@ -65,9 +61,7 @@ class UserServiceTest {
     @Mock
     private NewsletterConsentLogRepository consentLogRepository;
     @Mock
-    private WaitlistService waitlistService;
-    @Mock
-    private EventWaitlistService eventWaitlistService;
+    private UserSeatReleaseService userSeatReleaseService;
     @Mock
     private pl.nextsteppro.climbing.infrastructure.storage.FileStorageService fileStorageService;
     @Mock
@@ -83,13 +77,11 @@ class UserServiceTest {
             userRepository,
             passwordEncoder,
             authMailService,
-            reservationRepository,
             authTokenRepository,
             jwtService,
             msg,
             consentLogRepository,
-            waitlistService,
-            eventWaitlistService,
+            userSeatReleaseService,
             fileStorageService,
             passwordPolicy
         );
@@ -259,7 +251,7 @@ class UserServiceTest {
         userService.deleteAccount(userId, "correctPassword");
 
         // Then
-        verify(reservationRepository).cancelConfirmedByUserId(userId);
+        verify(userSeatReleaseService).releaseSeatsAndNotifyWaitlists(userId);
         verify(authTokenRepository).deleteAllByUserId(userId);
         verify(userRepository).delete(testUser);
     }
@@ -275,7 +267,7 @@ class UserServiceTest {
         userService.deleteAccount(userId, null);
 
         // Then
-        verify(reservationRepository).cancelConfirmedByUserId(userId);
+        verify(userSeatReleaseService).releaseSeatsAndNotifyWaitlists(userId);
         verify(authTokenRepository).deleteAllByUserId(userId);
         verify(userRepository).delete(testUser);
     }
@@ -297,7 +289,7 @@ class UserServiceTest {
     }
 
     @Test
-    void shouldCancelReservationsBeforeDeletingAccount() {
+    void shouldReleaseSeatsBeforeDeletingAccount() {
         // Given
         when(userRepository.findById(userId)).thenReturn(Optional.of(testUser));
         when(passwordEncoder.matches("correctPassword", "hashedPassword")).thenReturn(true);
@@ -305,9 +297,9 @@ class UserServiceTest {
         // When
         userService.deleteAccount(userId, "correctPassword");
 
-        // Then — verify order: cancel reservations, delete tokens, delete user
-        var inOrder = inOrder(reservationRepository, authTokenRepository, userRepository);
-        inOrder.verify(reservationRepository).cancelConfirmedByUserId(userId);
+        // Then — verify order: release seats, delete tokens, delete user
+        var inOrder = inOrder(userSeatReleaseService, authTokenRepository, userRepository);
+        inOrder.verify(userSeatReleaseService).releaseSeatsAndNotifyWaitlists(userId);
         inOrder.verify(authTokenRepository).deleteAllByUserId(userId);
         inOrder.verify(userRepository).delete(testUser);
     }
@@ -319,37 +311,31 @@ class UserServiceTest {
         UUID eventId = UUID.randomUUID();
         when(userRepository.findById(userId)).thenReturn(Optional.of(testUser));
         when(passwordEncoder.matches("correctPassword", "hashedPassword")).thenReturn(true);
-        when(reservationRepository.findConfirmedSlotIdsByUserId(userId)).thenReturn(List.of(slotId));
-        when(reservationRepository.findConfirmedEventIdsByUserId(userId)).thenReturn(List.of(eventId));
+        when(userSeatReleaseService.releaseSeatsAndNotifyWaitlists(userId)).thenReturn(1);
 
         // When
         userService.deleteAccount(userId, "correctPassword");
 
-        // Then — freed spots trigger waitlist notifications and admin is informed
-        verify(reservationRepository).cancelConfirmedByUserId(userId);
-        verify(waitlistService).notifyAll(slotId);
-        verify(eventWaitlistService).notifyAll(eventId);
-        verify(waitlistService).removeUserFromAllWaitlists(userId);
-        verify(eventWaitlistService).removeUserFromAllWaitlists(userId);
+        // Then — seats are released via the shared collaborator and the admin is informed.
+        // The release ordering itself is covered by UserSeatReleaseServiceTest.
+        verify(userSeatReleaseService).releaseSeatsAndNotifyWaitlists(userId);
         verify(authMailService).sendAccountSelfDeletedAdminNotification(testUser, 1);
         verify(userRepository).delete(testUser);
     }
 
     @Test
-    void shouldFreeSpotsBeforeNotifyingWaitlistAndDeleteUserLast() {
+    void shouldReleaseSeatsBeforeDeletingUser() {
         // Given
-        UUID slotId = UUID.randomUUID();
         when(userRepository.findById(userId)).thenReturn(Optional.of(testUser));
         when(passwordEncoder.matches("correctPassword", "hashedPassword")).thenReturn(true);
-        when(reservationRepository.findConfirmedSlotIdsByUserId(userId)).thenReturn(List.of(slotId));
 
         // When
         userService.deleteAccount(userId, "correctPassword");
 
-        // Then — reservation must be cancelled (spot freed) before waitlist is notified, user deleted last
-        var inOrder = inOrder(reservationRepository, waitlistService, userRepository);
-        inOrder.verify(reservationRepository).cancelConfirmedByUserId(userId);
-        inOrder.verify(waitlistService).notifyAll(slotId);
+        // Then — seats must be freed and re-offered while the user still exists; deleting first
+        // would cascade the reservations away and leave the queue with nothing to be offered.
+        var inOrder = inOrder(userSeatReleaseService, userRepository);
+        inOrder.verify(userSeatReleaseService).releaseSeatsAndNotifyWaitlists(userId);
         inOrder.verify(userRepository).delete(testUser);
     }
 
@@ -362,10 +348,8 @@ class UserServiceTest {
         // When
         userService.deleteAccount(userId, "correctPassword");
 
-        // Then — admin notified with zero cancelled reservations, no waitlist offers
+        // Then — admin notified with zero cancelled reservations (the collaborator reports 0)
         verify(authMailService).sendAccountSelfDeletedAdminNotification(testUser, 0);
-        verify(waitlistService, never()).notifyAll(any());
-        verify(eventWaitlistService, never()).notifyAll(any());
         verify(userRepository).delete(testUser);
     }
 
