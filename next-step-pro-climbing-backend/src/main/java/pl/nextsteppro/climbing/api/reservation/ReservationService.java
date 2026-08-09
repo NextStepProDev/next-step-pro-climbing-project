@@ -158,6 +158,12 @@ public class ReservationService {
         reservation = reservationRepository.save(reservation);
 
         String displayTitle = slot.getDisplayTitle();
+        // The mail methods are @Async and read reservation.getUser()/getTimeSlot() on the mail
+        // thread, where open-in-view=false leaves no session to initialise a lazy proxy. On the
+        // reactivation path `existing` came from a finder with no JOIN FETCH, so its user proxy is
+        // still uninitialised here — same shape as the LazyInitializationException that silently
+        // ate blockTimeSlot's cancellation mails. Force-load while still managed.
+        touchForAsyncMail(reservation);
         mailService.sendReservationConfirmation(reservation, displayTitle);
         mailService.sendAdminNotification(reservation, displayTitle);
 
@@ -199,6 +205,9 @@ public class ReservationService {
         reservation.cancel();
         reservationRepository.save(reservation);
 
+        // See touchForAsyncMail: findById gives lazy user/timeSlot proxies, and getUser().getId()
+        // above does NOT initialise one (Hibernate serves the identifier straight off the proxy).
+        touchForAsyncMail(reservation);
         mailService.sendCancellationConfirmation(reservation);
         mailService.sendUserCancellationAdminNotification(reservation);
 
@@ -666,6 +675,22 @@ public class ReservationService {
         }
 
         return new EventReservationResultDto(eventId, true, msg.get("reservation.updated"), userReservations.size());
+    }
+
+    /**
+     * Initialises the lazy associations the {@code @Async} mail methods will read.
+     *
+     * <p>{@code MailService.send*(Reservation)} runs on the mail executor and dereferences
+     * {@code getUser()} and {@code getTimeSlot()} there. With {@code open-in-view: false} the
+     * request's persistence context is gone by then, so an uninitialised proxy throws
+     * {@code LazyInitializationException} — which {@code AsyncConfig}'s decorator swallows, so the
+     * mail simply never arrives and nothing is logged. Touching a non-identifier getter forces the
+     * load while the entity is still managed ({@code getId()} would not: Hibernate answers that
+     * from the proxy without hitting the database).
+     */
+    private static void touchForAsyncMail(Reservation reservation) {
+        reservation.getUser().getEmail();
+        reservation.getTimeSlot().getDate();
     }
 
     private List<TimeSlot> createDefaultSlotsForEvent(Event event) {

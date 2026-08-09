@@ -37,10 +37,11 @@ export function CoursesPage() {
     if (!courses || !hash.startsWith('#course-') || scrolledRef.current === hash) return
     scrolledRef.current = hash
     // Delay to let ScrollToTop (window.scrollTo(0,0)) finish first
-    setTimeout(() => {
+    const timer = setTimeout(() => {
       const el = document.getElementById(hash.slice(1))
       if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
     }, 200)
+    return () => clearTimeout(timer)
   }, [courses, hash])
 
   if (isLoading) {

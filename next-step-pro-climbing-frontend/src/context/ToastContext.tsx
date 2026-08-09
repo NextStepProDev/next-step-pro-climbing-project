@@ -1,4 +1,5 @@
-import { createContext, useCallback, useContext, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { X, CheckCircle, AlertCircle } from 'lucide-react'
 import clsx from 'clsx'
 
@@ -19,6 +20,7 @@ const ToastContext = createContext<ToastContextValue | null>(null)
 let nextId = 0
 
 export function ToastProvider({ children }: { children: React.ReactNode }) {
+  const { t } = useTranslation('errors')
   const [toasts, setToasts] = useState<Toast[]>([])
 
   const showToast = useCallback((message: string, type: ToastType = 'success') => {
@@ -32,6 +34,18 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   const dismiss = useCallback((id: number) => {
     setToasts(prev => prev.filter(t => t.id !== id))
   }, [])
+
+  // Safety net for mutations that never defined an onError — see the MutationCache in main.tsx.
+  // fetchApi has already turned the response into a human-readable message by this point; the
+  // generic string only covers a throw that carried none.
+  useEffect(() => {
+    const handler = (event: Event) => {
+      const message = (event as CustomEvent<string>).detail
+      showToast(message || t('unexpected', { ns: 'errors' }), 'error')
+    }
+    window.addEventListener('app:mutation-error', handler)
+    return () => window.removeEventListener('app:mutation-error', handler)
+  }, [showToast, t])
 
   return (
     <ToastContext.Provider value={{ showToast }}>
