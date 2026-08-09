@@ -24,13 +24,14 @@ export function OAuthCallbackPage() {
   useEffect(() => {
     if (processed.current) return
     processed.current = true
+    let redirectTimer: ReturnType<typeof setTimeout> | undefined
 
     const accessToken = searchParams.get('accessToken')
     const refreshToken = searchParams.get('refreshToken')
     const expiresIn = searchParams.get('expiresIn')
 
     if (!accessToken || !refreshToken || !expiresIn) {
-      setTimeout(() => navigate('/login', { replace: true }), 2000)
+      redirectTimer = setTimeout(() => navigate('/login', { replace: true }), 2000)
       return
     }
 
@@ -47,8 +48,12 @@ export function OAuthCallbackPage() {
       })
       .catch(() => {
         setError(t('oauth.callbackError'))
-        setTimeout(() => navigate('/login', { replace: true }), 2000)
+        redirectTimer = setTimeout(() => navigate('/login', { replace: true }), 2000)
       })
+
+    // Both branches park a delayed navigate so the user can read the error first. Left uncleared,
+    // a timer that outlives this page yanks whoever is already somewhere else back to /login.
+    return () => clearTimeout(redirectTimer)
   }, [searchParams, loginWithTokens, navigate, t])
 
   return (

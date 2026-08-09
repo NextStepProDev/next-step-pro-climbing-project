@@ -46,6 +46,7 @@ public class OAuth2UserService extends DefaultOAuth2UserService {
 
         String oauthId = extractOAuthId(provider, attributes);
         String email = extractEmail(attributes);
+        boolean emailVerified = extractEmailVerified(attributes);
         String firstName = extractFirstName(provider, attributes);
         String lastName = extractLastName(provider, attributes);
 
@@ -60,6 +61,18 @@ public class OAuth2UserService extends DefaultOAuth2UserService {
             // Try to find by email and link OAuth
             Optional<User> userByEmail = userRepository.findByEmail(email);
             if (userByEmail.isPresent()) {
+                // Linking by e-mail hands over an existing account — including one that was
+                // registered with a password — so the address has to be PROVEN, not merely
+                // asserted by the provider. Without this check, anyone able to obtain a provider
+                // account carrying an unverified copy of someone's address takes over that
+                // account. Google sets email_verified=true for consumer accounts, so this rejects
+                // nobody today; it exists so a second provider cannot open the hole silently.
+                if (!emailVerified) {
+                    log.warn("OAUTH-LINK-REJECTED: {} presented an unverified {} e-mail matching an existing account",
+                        email, provider);
+                    throw new OAuth2AuthenticationException(
+                        "This e-mail is already registered. Verify it with your provider, or sign in with your password.");
+                }
                 user = userByEmail.get();
                 user.setOauthProvider(provider);
                 user.setOauthId(oauthId);
@@ -70,14 +83,15 @@ public class OAuth2UserService extends DefaultOAuth2UserService {
                 userRepository.save(user);
             } else {
                 // Create new user
-                user = createNewUser(provider, oauthId, email, firstName, lastName);
+                user = createNewUser(provider, oauthId, email, firstName, lastName, emailVerified);
             }
         }
 
         return new CustomOAuth2User(oAuth2User, user);
     }
 
-    private User createNewUser(String provider, String oauthId, String email, String firstName, String lastName) {
+    private User createNewUser(String provider, String oauthId, String email, String firstName, String lastName,
+                               boolean emailVerified) {
         User user = new User(
             email,
             firstName,
@@ -87,7 +101,13 @@ public class OAuth2UserService extends DefaultOAuth2UserService {
         );
         user.setOauthProvider(provider);
         user.setOauthId(oauthId);
-        user.markEmailVerified();
+        // A fresh account is safe to create either way — nobody else owns this address yet. But we
+        // only inherit "verified" when the provider actually vouched for it; otherwise the user
+        // goes through the normal e-mail verification, because our own flag must not claim more
+        // than we know.
+        if (emailVerified) {
+            user.markEmailVerified();
+        }
         user.setPreferredLanguage(detectLanguage());
         user.setRole(adminEmailConfig.isAdminEmail(email) ? UserRole.ADMIN : UserRole.USER);
         if (user.isAdmin()) {
@@ -119,6 +139,23 @@ public class OAuth2UserService extends DefaultOAuth2UserService {
             throw new OAuth2AuthenticationException("Email not provided by OAuth provider");
         }
         return email;
+    }
+
+    /**
+     * Whether the provider states it has verified this address.
+     *
+     * <p>Defaults to {@code false} for anything we do not recognise: a provider that does not tell
+     * us has not verified anything as far as we are concerned, and this decision gates account
+     * linking. Google returns the claim under the {@code email} scope, which we already request.
+     */
+    private boolean extractEmailVerified(Map<String, Object> attributes) {
+        Object value = attributes.get("email_verified");
+        return switch (value) {
+            case Boolean b -> b;
+            // Some providers serialise the claim as a string.
+            case String s -> Boolean.parseBoolean(s);
+            case null, default -> false;
+        };
     }
 
     private String extractFirstName(String provider, Map<String, Object> attributes) {

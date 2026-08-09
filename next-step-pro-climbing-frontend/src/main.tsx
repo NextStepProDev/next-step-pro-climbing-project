@@ -2,7 +2,7 @@ import './i18n'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
-import { QueryClient, QueryClientProvider, keepPreviousData } from '@tanstack/react-query'
+import { QueryClient, QueryClientProvider, MutationCache, keepPreviousData } from '@tanstack/react-query'
 import { HelmetProvider } from 'react-helmet-async'
 import { AuthProvider } from './context/AuthContext'
 import { ThemeProvider } from './context/ThemeContext'
@@ -12,6 +12,27 @@ import App from './App'
 import './index.css'
 
 const queryClient = new QueryClient({
+  // Last-resort reporting for failed mutations.
+  //
+  // Roughly half the mutations in the app defined only `onSuccess`, so a rejected request —
+  // a 409 from a business rule, a 403, a dropped connection — did literally nothing on screen:
+  // the admin pressed Delete or Save and the UI sat there looking fine. Nothing warns you about
+  // this; the handler is simply absent, which is why it survived review.
+  //
+  // Fires ONLY when the mutation has no onError of its own, so components that already report
+  // failures keep sole ownership of their messaging and nothing is announced twice. Dispatched
+  // as an event rather than calling the toast directly because the client is built outside the
+  // React tree — same approach as `auth:session-expired` in api/client.ts.
+  mutationCache: new MutationCache({
+    onError: (error, _variables, _context, mutation) => {
+      if (mutation.options.onError) return
+      window.dispatchEvent(
+        new CustomEvent<string>('app:mutation-error', {
+          detail: error instanceof Error ? error.message : String(error),
+        }),
+      )
+    },
+  }),
   defaultOptions: {
     queries: {
       staleTime: 1000 * 60 * 5,

@@ -24,5 +24,7 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true
   },
-  "include": ["src"]
+  "include": ["src"],
+  /* Architecture gates read files off disk with Node APIs — they build under tsconfig.node.json */
+  "exclude": ["src/__architecture__"]
 }
