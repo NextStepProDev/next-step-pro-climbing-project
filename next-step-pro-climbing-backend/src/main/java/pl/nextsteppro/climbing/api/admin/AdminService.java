@@ -34,6 +34,7 @@ import pl.nextsteppro.climbing.infrastructure.mail.MailService;
 import pl.nextsteppro.climbing.infrastructure.security.JwtAuthenticationFilter;
 import pl.nextsteppro.climbing.api.activitylog.ActivityLogService;
 import pl.nextsteppro.climbing.api.reservation.EventWaitlistService;
+import pl.nextsteppro.climbing.api.reservation.UserSeatReleaseService;
 import pl.nextsteppro.climbing.api.reservation.WaitlistService;
 import pl.nextsteppro.climbing.domain.waitlist.EventWaitlist;
 import pl.nextsteppro.climbing.domain.waitlist.EventWaitlistRepository;
@@ -47,6 +48,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -81,6 +83,7 @@ public class AdminService {
     private final pl.nextsteppro.climbing.infrastructure.mail.AuthMailService authMailService;
     private final WaitlistService waitlistService;
     private final EventWaitlistService eventWaitlistService;
+    private final UserSeatReleaseService userSeatReleaseService;
     private final ReservedSeatRepository reservedSeatRepository;
     private final TrainingRequestRepository trainingRequestRepository;
     private final pl.nextsteppro.climbing.api.trainingcalendar.TrainingCalendarService trainingCalendarService;
@@ -101,6 +104,7 @@ public class AdminService {
                        pl.nextsteppro.climbing.infrastructure.mail.AuthMailService authMailService,
                        WaitlistService waitlistService,
                        EventWaitlistService eventWaitlistService,
+                       UserSeatReleaseService userSeatReleaseService,
                        ReservedSeatRepository reservedSeatRepository,
                        TrainingRequestRepository trainingRequestRepository,
                        pl.nextsteppro.climbing.api.trainingcalendar.TrainingCalendarService trainingCalendarService) {
@@ -120,6 +124,7 @@ public class AdminService {
         this.authMailService = authMailService;
         this.waitlistService = waitlistService;
         this.eventWaitlistService = eventWaitlistService;
+        this.userSeatReleaseService = userSeatReleaseService;
         this.reservedSeatRepository = reservedSeatRepository;
         this.trainingRequestRepository = trainingRequestRepository;
         this.trainingCalendarService = trainingCalendarService;
@@ -297,13 +302,15 @@ public class AdminService {
 
         // Blocking an archived slot is tidying up, not a cancellation anyone needs to hear about.
         boolean slotIsOver = BookingTimeValidator.isPast(slot.getDate(), slot.getEndTime());
-        List<Reservation> confirmed = reservationRepository.findConfirmedByTimeSlotId(slotId);
+        // Multi-slot variant (has JOIN FETCH user), exactly as deleteTimeSlot does: the mail is
+        // @Async and dereferences reservation.getUser() on the mail thread, where open-in-view=false
+        // leaves no session to initialise a lazy proxy. The resulting LazyInitializationException is
+        // swallowed by the async decorator, so the cancellation mails vanished without a trace.
+        List<Reservation> confirmed = reservationRepository.findConfirmedByTimeSlotIds(List.of(slotId));
         for (Reservation reservation : confirmed) {
+            reservation.getUser();     // force-load user proxy while still managed
             reservation.cancelByAdmin();
             reservationRepository.save(reservation);
-            if (!slotIsOver) {
-                mailService.sendAdminCancellationNotification(reservation);
-            }
             activityLogService.logCancelledByAdmin(reservation.getUser(), slot, reservation.getParticipants());
         }
 
@@ -312,6 +319,13 @@ public class AdminService {
 
         User admin = userRepository.findById(adminId).orElseThrow();
         activityLogService.logAdminSlotBlocked(admin, slot, reason);
+
+        // Mail only after the DB writes succeed, mirroring deleteTimeSlot.
+        if (!slotIsOver) {
+            for (Reservation reservation : confirmed) {
+                mailService.sendAdminCancellationNotification(reservation);
+            }
+        }
     }
 
     @Caching(evict = {
@@ -328,6 +342,14 @@ public class AdminService {
 
         User admin = userRepository.findById(adminId).orElseThrow();
         activityLogService.logAdminSlotUnblocked(admin, slot);
+
+        // Blocking cancelled every reservation, so an unblocked slot is completely empty. Every
+        // other seat-freeing operation offers those seats to the queue; without this the waitlist
+        // sat idle on a wide-open slot until some unrelated cancellation happened to wake it.
+        waitlistService.notifyAll(slotId);
+        if (slot.belongsToEvent()) {
+            eventWaitlistService.notifyAll(slot.getEvent().getId());
+        }
     }
 
     @Caching(evict = {
@@ -417,8 +439,11 @@ public class AdminService {
 
     @Transactional(readOnly = true)
     public List<TimeSlotAdminDto> getUpcomingSlots(LocalDate from) {
-        LocalDate today = LocalDate.now();
-        LocalTime now = LocalTime.now();
+        // Container clock is UTC; slot dates/times are Warsaw local. A bare now() misclassifies
+        // the whole current day between 00:00 and 02:00 Warsaw, and in summer keeps a slot that
+        // ended at 22:00 looking "upcoming" until midnight UTC.
+        LocalDate today = LocalDate.now(WARSAW);
+        LocalTime now = LocalTime.now(WARSAW);
         LocalDate to = from.plusDays(90);
         List<TimeSlot> slots = timeSlotRepository.findByDateRangeOrdered(from, to).stream()
             .filter(slot -> !slot.belongsToEvent())
@@ -432,8 +457,11 @@ public class AdminService {
 
     @Transactional(readOnly = true)
     public List<TimeSlotAdminDto> getPastSlots() {
-        LocalDate today = LocalDate.now();
-        LocalTime now = LocalTime.now();
+        // Container clock is UTC; slot dates/times are Warsaw local. A bare now() misclassifies
+        // the whole current day between 00:00 and 02:00 Warsaw, and in summer keeps a slot that
+        // ended at 22:00 looking "upcoming" until midnight UTC.
+        LocalDate today = LocalDate.now(WARSAW);
+        LocalTime now = LocalTime.now(WARSAW);
         List<TimeSlot> slots = timeSlotRepository.findPastOrdered(today, now).stream()
             .filter(slot -> !slot.belongsToEvent())
             .toList();
@@ -642,10 +670,15 @@ public class AdminService {
         int oldEventMaxParticipants = event.getMaxParticipants();
         if (request.maxParticipants() != null) {
             List<TimeSlot> eventSlots = timeSlotRepository.findByEventId(eventId);
-            if (!eventSlots.isEmpty()) {
+            // Guests sit on the event, not its slots, so they are invisible to the per-slot counts.
+            // Without them the floor lets the admin cut capacity below the people actually booked.
+            int eventGuests = guestReservationRepository.sumParticipantsByEventId(eventId);
+            if (!eventSlots.isEmpty() || eventGuests > 0) {
                 List<UUID> slotIds = eventSlots.stream().map(TimeSlot::getId).toList();
-                int maxConfirmed = reservationRepository.countConfirmedByTimeSlotIds(slotIds)
-                    .stream().mapToInt(SlotParticipantCount::countAsInt).max().orElse(0);
+                int maxConfirmed = (slotIds.isEmpty() ? 0
+                    : reservationRepository.countConfirmedByTimeSlotIds(slotIds)
+                        .stream().mapToInt(SlotParticipantCount::countAsInt).max().orElse(0))
+                    + eventGuests;
                 if (request.maxParticipants() < maxConfirmed) {
                     throw new IllegalStateException(msg.get("admin.slot.capacity.too.low", String.valueOf(maxConfirmed)));
                 }
@@ -675,6 +708,11 @@ public class AdminService {
 
         if (request.maxParticipants() != null && request.maxParticipants() > oldEventMaxParticipants) {
             eventWaitlistService.notifyAll(eventId);
+            // People can queue on an individual day-slot of an event too. Every other seat-freeing
+            // path here notifies both queues; this one used to notify only the event's.
+            for (TimeSlot eventSlot : timeSlotRepository.findByEventId(eventId)) {
+                waitlistService.notifyAll(eventSlot.getId());
+            }
         }
 
         var df = DateTimeFormatter.ofPattern("dd.MM.yyyy");
@@ -834,13 +872,14 @@ public class AdminService {
     public List<ReservationAdminDto> getAllUpcomingReservations(UUID adminId) {
         User admin = userRepository.findById(adminId).orElseThrow();
         Instant newSince = admin.getAdminReservationsSeenAt();
-        List<TimeSlot> slots = timeSlotRepository.findByDateRangeOrdered(LocalDate.now(), LocalDate.now().plusYears(1));
+        LocalDate today = LocalDate.now(WARSAW);
+        List<TimeSlot> slots = timeSlotRepository.findByDateRangeOrdered(today, today.plusYears(1));
         return buildReservationAdminDtos(slots, newSince);
     }
 
     @Transactional(readOnly = true)
     public List<ReservationAdminDto> getAllPastReservations() {
-        List<TimeSlot> slots = timeSlotRepository.findPastOrdered(LocalDate.now(), LocalTime.now());
+        List<TimeSlot> slots = timeSlotRepository.findPastOrdered(LocalDate.now(WARSAW), LocalTime.now(WARSAW));
         return buildReservationAdminDtos(slots, null);
     }
 
@@ -990,6 +1029,11 @@ public class AdminService {
         activityLogService.logAdminUserForceLogout(admin, user.getFullName() + " (" + user.getEmail() + ")");
     }
 
+    @Caching(evict = {
+        @CacheEvict(value = "calendarMonth", allEntries = true),
+        @CacheEvict(value = "calendarWeek", allEntries = true),
+        @CacheEvict(value = "calendarDay", allEntries = true)
+    })
     public void deleteUser(UUID adminId, UUID userId) {
         User user = userRepository.findById(userId)
             .orElseThrow(() -> new IllegalArgumentException("User not found"));
@@ -1001,7 +1045,10 @@ public class AdminService {
         String userDesc = user.getFullName() + " (" + user.getEmail() + ")";
 
         authMailService.sendAccountDeletedByAdminNotification(user);
-        reservationRepository.cancelConfirmedByUserId(userId);
+        // Shared with UserService.deleteAccount: cancelling the reservations is only half the job —
+        // the freed seats have to be offered to whoever is queued for them, and the user has to come
+        // off the queues they were waiting on. This path used to do neither.
+        userSeatReleaseService.releaseSeatsAndNotifyWaitlists(userId);
         authTokenRepository.deleteAllByUserId(userId);
         userRepository.delete(user);
         jwtAuthenticationFilter.evictUser(userId);
@@ -1033,11 +1080,20 @@ public class AdminService {
         );
     }
 
+    /**
+     * Occupancy per slot, guests included — same definition as {@code CalendarService.buildCountMap}
+     * and as the single-slot {@code toTimeSlotAdminDto}. Counting only confirmed reservations here
+     * made the slot LIST disagree with the slot DETAIL for any slot with walk-ins ("3/6" vs "5/6").
+     */
     private Map<UUID, Integer> buildCountMap(List<TimeSlot> slots) {
         if (slots.isEmpty()) return Map.of();
         List<UUID> slotIds = slots.stream().map(TimeSlot::getId).toList();
-        return reservationRepository.countConfirmedByTimeSlotIds(slotIds).stream()
-            .collect(Collectors.toMap(SlotParticipantCount::slotId, SlotParticipantCount::countAsInt));
+        Map<UUID, Integer> counts = new HashMap<>(reservationRepository.countConfirmedByTimeSlotIds(slotIds).stream()
+            .collect(Collectors.toMap(SlotParticipantCount::slotId, SlotParticipantCount::countAsInt)));
+        for (SlotParticipantCount guests : guestReservationRepository.sumParticipantsByTimeSlotIds(slotIds)) {
+            counts.merge(guests.slotId(), guests.countAsInt(), Integer::sum);
+        }
+        return counts;
     }
 
     // ---- Invitations (held seats) ----
@@ -1082,14 +1138,14 @@ public class AdminService {
     public int notifyEventInvites(UUID eventId, boolean onlyUnnotified) {
         Event event = eventRepository.findById(eventId)
             .orElseThrow(() -> new IllegalArgumentException("Event not found"));
-        List<UUID> slotIds = timeSlotRepository.findByEventId(eventId).stream().map(TimeSlot::getId).toList();
+        // Hoisted out of the loop: this used to run a full JOIN FETCH over every confirmed
+        // reservation of the event once per invitee — 20 invitees meant 20 identical queries on
+        // one button press. Same projection syncEventInvites already uses.
+        Set<UUID> confirmedUserIds = new HashSet<>(reservationRepository.findConfirmedUserIdsByEventId(eventId));
         int sent = 0;
         for (ReservedSeat rs : reservedSeatRepository.findByEventIdWithUser(eventId)) {
             if (onlyUnnotified && rs.getNotifiedAt() != null) continue;
-            boolean hasConfirmed = !slotIds.isEmpty() && reservationRepository
-                .findConfirmedByTimeSlotIds(slotIds).stream()
-                .anyMatch(r -> r.getUser().getId().equals(rs.getUser().getId()));
-            if (hasConfirmed) continue;
+            if (confirmedUserIds.contains(rs.getUser().getId())) continue;
             mailService.sendEventInvitationNotification(rs.getUser(), event);
             rs.markNotified();
             sent++;
@@ -1178,10 +1234,12 @@ public class AdminService {
     private void syncEventInvites(Event event, List<UUID> desiredUserIds) {
         Set<UUID> desired = new LinkedHashSet<>(desiredUserIds);
         List<TimeSlot> eventSlots = timeSlotRepository.findByEventId(event.getId());
-        int maxConfirmed = 0;
+        // Event guests occupy seats the per-slot counts cannot see — they must count against the
+        // invitation limit too, or invites can be handed out for seats walk-ins already took.
+        int maxConfirmed = guestReservationRepository.sumParticipantsByEventId(event.getId());
         if (!eventSlots.isEmpty()) {
             List<UUID> slotIds = eventSlots.stream().map(TimeSlot::getId).toList();
-            maxConfirmed = reservationRepository.countConfirmedByTimeSlotIds(slotIds)
+            maxConfirmed += reservationRepository.countConfirmedByTimeSlotIds(slotIds)
                 .stream().mapToInt(SlotParticipantCount::countAsInt).max().orElse(0);
         }
         // As in syncSlotInvites: an invitee with a confirmed event reservation is already
@@ -1396,7 +1454,8 @@ public class AdminService {
         @CacheEvict(value = "calendarDay", allEntries = true)
     })
     public void updateEventReservationParticipants(UUID eventId, UUID userId, int newParticipants) {
-        Event event = eventRepository.findById(eventId)
+        // Locked like the slot twin — a raise read against an unlocked capacity can overshoot.
+        Event event = eventRepository.findByIdForUpdate(eventId)
             .orElseThrow(() -> new IllegalArgumentException("Event not found"));
         List<TimeSlot> slots = timeSlotRepository.findByEventId(eventId);
         if (slots.isEmpty()) throw new IllegalStateException("Event has no slots");
@@ -1409,7 +1468,9 @@ public class AdminService {
         int oldParticipants = userReservations.getFirst().getParticipants();
         Map<UUID, Integer> countMap = reservationRepository.countConfirmedByTimeSlotIds(slotIds).stream()
             .collect(java.util.stream.Collectors.toMap(SlotParticipantCount::slotId, SlotParticipantCount::countAsInt));
-        int currentMaxTotal = countMap.values().stream().mapToInt(Integer::intValue).max().orElse(0);
+        // Event guests are outside the per-slot counts — see createEventReservation.
+        int currentMaxTotal = countMap.values().stream().mapToInt(Integer::intValue).max().orElse(0)
+            + guestReservationRepository.sumParticipantsByEventId(eventId);
         int available = event.getMaxParticipants() - currentMaxTotal + oldParticipants;
         if (newParticipants > available) {
             throw new IllegalStateException(msg.get("admin.slot.capacity.too.low", String.valueOf(available)));

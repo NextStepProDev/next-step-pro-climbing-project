@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { format } from 'date-fns'
 import {
+  Activity,
   CalendarPlus,
   CalendarX,
   CalendarCheck,
@@ -28,6 +29,13 @@ import { useDateLocale } from '../../utils/dateFnsLocale'
 import type { ActivityLog, ActivityActionType } from '../../types'
 
 const PAGE_SIZE = 20
+
+/** Neutral styling for an action_type the frontend has not been taught yet. See the lookup below. */
+const UNKNOWN_ACTION_CONFIG = {
+  icon: Activity,
+  color: 'text-surface-400',
+  bgColor: 'bg-surface-500/10',
+}
 
 const ACTION_CONFIG: Record<
   ActivityActionType,
@@ -245,7 +253,11 @@ export function AdminActivityPanel() {
         <>
           <div className="space-y-2">
             {allLogs.map((log) => {
-              const config = ACTION_CONFIG[log.actionType]
+              // Fallback, not `config.icon` straight off the lookup: action_type is a plain
+              // VARCHAR with no CHECK, so the backend can ship a new ActivityActionType without a
+              // migration. An unmapped value used to throw here and white-screen the whole tab —
+              // a log line nobody styled yet is not worth losing the Activity view over.
+              const config = ACTION_CONFIG[log.actionType] ?? UNKNOWN_ACTION_CONFIG
               const Icon = config.icon
 
               return (

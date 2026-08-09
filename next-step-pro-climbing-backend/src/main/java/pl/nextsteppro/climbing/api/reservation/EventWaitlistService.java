@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 import pl.nextsteppro.climbing.api.activitylog.ActivityLogService;
 import pl.nextsteppro.climbing.domain.event.Event;
 import pl.nextsteppro.climbing.domain.event.EventRepository;
+import pl.nextsteppro.climbing.domain.reservation.GuestReservationRepository;
 import pl.nextsteppro.climbing.domain.reservation.Reservation;
 import pl.nextsteppro.climbing.domain.reservation.ReservationRepository;
 import pl.nextsteppro.climbing.domain.reservation.ReservationStatus;
@@ -46,6 +47,7 @@ public class EventWaitlistService {
     private final TimeSlotRepository timeSlotRepository;
     private final ReservationRepository reservationRepository;
     private final ReservedSeatRepository reservedSeatRepository;
+    private final GuestReservationRepository guestReservationRepository;
     private final UserRepository userRepository;
     private final WaitlistMailService waitlistMailService;
     private final ActivityLogService activityLogService;
@@ -56,6 +58,7 @@ public class EventWaitlistService {
                                 TimeSlotRepository timeSlotRepository,
                                 ReservationRepository reservationRepository,
                                 ReservedSeatRepository reservedSeatRepository,
+                                GuestReservationRepository guestReservationRepository,
                                 UserRepository userRepository,
                                 WaitlistMailService waitlistMailService,
                                 ActivityLogService activityLogService,
@@ -65,6 +68,7 @@ public class EventWaitlistService {
         this.timeSlotRepository = timeSlotRepository;
         this.reservationRepository = reservationRepository;
         this.reservedSeatRepository = reservedSeatRepository;
+        this.guestReservationRepository = guestReservationRepository;
         this.userRepository = userRepository;
         this.waitlistMailService = waitlistMailService;
         this.activityLogService = activityLogService;
@@ -187,6 +191,18 @@ public class EventWaitlistService {
         // Two people confirming at once would otherwise both pass the guard below.
         Event event = eventRepository.findByIdForUpdate(eventId)
             .orElseThrow(() -> new IllegalArgumentException("Event not found"));
+
+        // An offer outlives the event state it was made under: updateEvent can deactivate or
+        // reclassify an event without purging the queue (only deleteEvent purges it). joinEventWaitlist
+        // guards both of these, so confirming must too — otherwise a queued user lands a reservation
+        // on an event that no longer appears anywhere in the calendar.
+        if (!event.isActive()) {
+            throw new IllegalStateException(msg.get("reservation.event.inactive"));
+        }
+        if (event.getEventType().blocksEnrollment()) {
+            throw new IllegalStateException(msg.get("reservation.event.enrollment.closed"));
+        }
+
         User user = entry.getUser();
 
         List<TimeSlot> slots = timeSlotRepository.findByEventId(eventId);
@@ -207,6 +223,13 @@ public class EventWaitlistService {
             .filter(slot -> !slot.isUnavailable())
             .filter(slot -> !LocalDateTime.of(slot.getDate(), slot.getStartTime()).isBefore(LocalDateTime.now(WARSAW)))
             .toList();
+
+        // Without this the loop below simply does not run: the entry is deleted, a "your reservation
+        // is confirmed" mail plus ICS goes out, and the user loses their queue position for a
+        // reservation that was never created. createEventReservation has the same guard.
+        if (activeSlots.isEmpty()) {
+            throw new IllegalStateException(msg.get("reservation.event.no.active.slots"));
+        }
 
         int slotsReserved = 0;
         for (TimeSlot slot : activeSlots) {
@@ -312,12 +335,19 @@ public class EventWaitlistService {
         );
     }
 
+    /**
+     * Occupancy of an event: the busiest of its day-slots, plus the guests booked against the event
+     * itself. Guests hang off the EVENT rather than its slots, so the per-slot counts never see them —
+     * leaving them out here made the queue believe a seat was free when walk-ins already filled it,
+     * both when joining and when confirming an offer.
+     */
     private int computeCurrentParticipants(Event event, List<TimeSlot> slots) {
-        if (slots.isEmpty()) return 0;
+        int guests = guestReservationRepository.sumParticipantsByEventId(event.getId());
+        if (slots.isEmpty()) return guests;
         List<UUID> slotIds = slots.stream().map(TimeSlot::getId).toList();
         return reservationRepository.countConfirmedByTimeSlotIds(slotIds).stream()
             .mapToInt(SlotParticipantCount::countAsInt)
             .max()
-            .orElse(0);
+            .orElse(0) + guests;
     }
 }

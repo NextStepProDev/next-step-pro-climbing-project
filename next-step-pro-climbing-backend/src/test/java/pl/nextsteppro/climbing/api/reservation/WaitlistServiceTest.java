@@ -321,6 +321,46 @@ class WaitlistServiceTest {
     }
 
     @Test
+    void confirmOffer_shouldRejectWhenSlotWasBlockedAfterTheOfferWentOut() {
+        // Given — blockTimeSlot cancels the confirmed reservations but leaves PENDING offers alive,
+        // so the seats it frees made the capacity check pass and handed this user a reservation on
+        // a term that had just been called off.
+        UUID waitlistId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+        User user = buildUser(userId);
+        TimeSlot slot = buildFutureSlot(UUID.randomUUID());
+        slot.block("instructor ill");
+        Waitlist entry = buildPendingConfirmationEntry(waitlistId, user, slot, Instant.now().plusSeconds(3600));
+
+        when(waitlistRepository.findById(waitlistId)).thenReturn(Optional.of(entry));
+        when(timeSlotRepository.findByIdForUpdate(slot.getId())).thenReturn(Optional.of(slot));
+
+        // When / Then
+        assertThrows(IllegalStateException.class, () -> waitlistService.confirmOffer(waitlistId, userId));
+        verify(reservationRepository, never()).save(any(Reservation.class));
+        verify(waitlistRepository, never()).delete(any(Waitlist.class));
+    }
+
+    @Test
+    void confirmOffer_shouldRejectWhenSlotWasMarkedUnavailableAfterTheOfferWentOut() {
+        // Given — an absence is not a bookable slot, however many seats the arithmetic says are free.
+        UUID waitlistId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+        User user = buildUser(userId);
+        TimeSlot slot = buildFutureSlot(UUID.randomUUID());
+        slot.setUnavailable(true);
+        Waitlist entry = buildPendingConfirmationEntry(waitlistId, user, slot, Instant.now().plusSeconds(3600));
+
+        when(waitlistRepository.findById(waitlistId)).thenReturn(Optional.of(entry));
+        when(timeSlotRepository.findByIdForUpdate(slot.getId())).thenReturn(Optional.of(slot));
+        lenient().when(msg.get("reservation.slot.unavailable")).thenReturn("Slot unavailable");
+
+        // When / Then
+        assertThrows(IllegalStateException.class, () -> waitlistService.confirmOffer(waitlistId, userId));
+        verify(reservationRepository, never()).save(any(Reservation.class));
+    }
+
+    @Test
     void confirmOffer_shouldBypassBookingWindowAndConfirmEvenIfClose() {
         // Given — slot starts in 2h (normally blocked by 12h booking window, but waitlist bypasses it)
         UUID waitlistId = UUID.randomUUID();

@@ -42,7 +42,7 @@ class AdminServiceNotificationsTest {
         adminService = new AdminService(
             null, null, null, reservationRepository, null,
             userRepository, null, null, null, null, null,
-            waitlistRepository, eventWaitlistRepository, null, null, null, null,
+            waitlistRepository, eventWaitlistRepository, null, null, null, null, null,
             trainingRequestRepository, trainingCalendarService);
     }
 

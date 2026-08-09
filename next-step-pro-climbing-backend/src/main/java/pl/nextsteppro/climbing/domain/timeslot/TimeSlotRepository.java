@@ -26,7 +26,9 @@ public interface TimeSlotRepository extends JpaRepository<TimeSlot, UUID> {
 
     List<TimeSlot> findByEventId(UUID eventId);
 
-    @Query("SELECT ts FROM TimeSlot ts WHERE ts.date BETWEEN :startDate AND :endDate ORDER BY ts.date, ts.startTime")
+    /* LEFT JOIN FETCH event: the admin reservation mapper reads event start/end per slot, which
+     * initialised one lazy proxy per distinct event across a year-wide window. */
+    @Query("SELECT ts FROM TimeSlot ts LEFT JOIN FETCH ts.event WHERE ts.date BETWEEN :startDate AND :endDate ORDER BY ts.date, ts.startTime")
     List<TimeSlot> findByDateRangeOrdered(LocalDate startDate, LocalDate endDate);
 
     @Query("SELECT ts FROM TimeSlot ts WHERE (ts.date < :today OR (ts.date = :today AND ts.endTime <= :now)) ORDER BY ts.date DESC, ts.startTime DESC")

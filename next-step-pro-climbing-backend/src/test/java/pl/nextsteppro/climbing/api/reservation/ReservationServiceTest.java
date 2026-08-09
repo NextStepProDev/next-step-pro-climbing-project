@@ -590,7 +590,7 @@ class ReservationServiceTest {
             createEventSlot(eventId, LocalDate.now().plusDays(7))
         );
 
-        when(eventRepository.findById(eventId)).thenReturn(Optional.of(testEvent));
+        when(eventRepository.findByIdForUpdate(eventId)).thenReturn(Optional.of(testEvent));
         when(userRepository.findById(userId)).thenReturn(Optional.of(testUser));
         when(timeSlotRepository.findByEventId(eventId)).thenReturn(eventSlots);
         when(reservationRepository.existsByUserIdAndTimeSlotIdAndStatus(eq(userId), any(UUID.class), eq(ReservationStatus.CONFIRMED)))
@@ -620,9 +620,79 @@ class ReservationServiceTest {
     }
 
     @Test
+    void shouldCountEventGuestsAgainstCapacityWhenCreatingEventReservation() {
+        // Given — 6 registered + 4 admin-added guests exactly fills a 10-seat event. Guests are
+        // booked against the EVENT, so the per-slot confirmed counts do not see them: this path
+        // used to read 6/10, report 4 seats free and let four more people in.
+        testEvent.setMaxParticipants(10);
+        TimeSlot slot = createEventSlot(eventId, LocalDate.now().plusDays(5));
+
+        when(eventRepository.findByIdForUpdate(eventId)).thenReturn(Optional.of(testEvent));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(testUser));
+        when(timeSlotRepository.findByEventId(eventId)).thenReturn(List.of(slot));
+        when(reservationRepository.existsByUserIdAndTimeSlotIdAndStatus(eq(userId), any(UUID.class), eq(ReservationStatus.CONFIRMED)))
+            .thenReturn(false);
+        when(reservationRepository.countConfirmedByTimeSlotIds(anyList()))
+            .thenReturn(List.of(new SlotParticipantCount(slot.getId(), 6L)));
+        when(guestReservationRepository.sumParticipantsByEventId(eventId)).thenReturn(4);
+        when(msg.get(anyString())).thenReturn("No spots");
+
+        // When / Then — the event is full once guests are counted.
+        assertThrows(IllegalStateException.class,
+            () -> reservationService.createEventReservation(eventId, userId, null, 1));
+        verify(reservationRepository, never()).save(any(Reservation.class));
+    }
+
+    @Test
+    void shouldLockEventBeforeReadingCapacityWhenCreatingEventReservation() {
+        // Given — the lock is what stops two concurrent bookings on the last seat both passing the
+        // capacity check. Asserting the locking finder is used keeps a future edit from quietly
+        // dropping back to findById, which is how the slot twin's race was avoided all along.
+        TimeSlot slot = createEventSlot(eventId, LocalDate.now().plusDays(5));
+
+        when(eventRepository.findByIdForUpdate(eventId)).thenReturn(Optional.of(testEvent));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(testUser));
+        when(timeSlotRepository.findByEventId(eventId)).thenReturn(List.of(slot));
+        when(reservationRepository.existsByUserIdAndTimeSlotIdAndStatus(eq(userId), any(UUID.class), eq(ReservationStatus.CONFIRMED)))
+            .thenReturn(false);
+        when(reservationRepository.countConfirmedByTimeSlotIds(anyList())).thenReturn(List.of());
+        when(reservationRepository.findByUserIdAndTimeSlotId(eq(userId), any(UUID.class))).thenReturn(null);
+        when(reservationRepository.save(any(Reservation.class))).thenAnswer(inv -> {
+            Reservation r = inv.getArgument(0);
+            setEntityIdViaReflection(r, UUID.randomUUID());
+            return r;
+        });
+        when(msg.get("reservation.event.confirmed")).thenReturn("Event reservation confirmed");
+
+        // When
+        reservationService.createEventReservation(eventId, userId, null, 1);
+
+        // Then
+        verify(eventRepository).findByIdForUpdate(eventId);
+        verify(eventRepository, never()).findById(eventId);
+    }
+
+    @Test
+    void shouldRejectBookingAnEventOwnedSlotDirectly() {
+        // Given — a slot belonging to an event must be booked through the event, or the caller
+        // skips isActive(), blocksEnrollment() and the event-level capacity. The UI hides these
+        // slots, but the endpoint is reachable with a slot id read off an event tile.
+        TimeSlot eventSlot = createEventSlot(eventId, LocalDate.now().plusDays(5));
+
+        when(timeSlotRepository.findByIdForUpdate(eventSlot.getId())).thenReturn(Optional.of(eventSlot));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(testUser));
+        when(msg.get(anyString())).thenReturn("Slot belongs to an event");
+
+        // When / Then
+        assertThrows(IllegalStateException.class,
+            () -> reservationService.createReservation(eventSlot.getId(), userId, null, 1));
+        verify(reservationRepository, never()).save(any(Reservation.class));
+    }
+
+    @Test
     void shouldThrowExceptionWhenEventNotFound() {
         // Given
-        when(eventRepository.findById(eventId)).thenReturn(Optional.empty());
+        when(eventRepository.findByIdForUpdate(eventId)).thenReturn(Optional.empty());
         when(msg.get("reservation.event.not.found")).thenReturn("Event not found");
 
         // When & Then
@@ -638,7 +708,7 @@ class ReservationServiceTest {
         // Given
         testEvent.setActive(false);
 
-        when(eventRepository.findById(eventId)).thenReturn(Optional.of(testEvent));
+        when(eventRepository.findByIdForUpdate(eventId)).thenReturn(Optional.of(testEvent));
         when(msg.get("reservation.event.inactive")).thenReturn("Event is inactive");
 
         // When & Then
@@ -658,7 +728,7 @@ class ReservationServiceTest {
         soonEvent.setDescription("Desc");
         soonEvent.setStartTime(targetDateTime.toLocalTime());
 
-        when(eventRepository.findById(eventId)).thenReturn(Optional.of(soonEvent));
+        when(eventRepository.findByIdForUpdate(eventId)).thenReturn(Optional.of(soonEvent));
         when(msg.get("reservation.event.booking.window")).thenReturn("Event booking window too short");
 
         // When & Then
@@ -674,7 +744,7 @@ class ReservationServiceTest {
         // Given
         List<TimeSlot> eventSlots = List.of(createEventSlot(eventId, LocalDate.now().plusDays(5)));
 
-        when(eventRepository.findById(eventId)).thenReturn(Optional.of(testEvent));
+        when(eventRepository.findByIdForUpdate(eventId)).thenReturn(Optional.of(testEvent));
         when(userRepository.findById(userId)).thenReturn(Optional.of(testUser));
         when(timeSlotRepository.findByEventId(eventId)).thenReturn(eventSlots);
         when(reservationRepository.existsByUserIdAndTimeSlotIdAndStatus(eq(userId), any(UUID.class), eq(ReservationStatus.CONFIRMED)))
@@ -692,7 +762,7 @@ class ReservationServiceTest {
     @Test
     void shouldCreateDefaultSlotsWhenEventHasNoSlots() {
         // Given - Event has no slots, so service will create default slots automatically
-        when(eventRepository.findById(eventId)).thenReturn(Optional.of(testEvent));
+        when(eventRepository.findByIdForUpdate(eventId)).thenReturn(Optional.of(testEvent));
         when(userRepository.findById(userId)).thenReturn(Optional.of(testUser));
         when(timeSlotRepository.findByEventId(eventId)).thenReturn(List.of());
         when(reservationRepository.existsByUserIdAndTimeSlotIdAndStatus(eq(userId), any(UUID.class), eq(ReservationStatus.CONFIRMED)))
@@ -725,7 +795,7 @@ class ReservationServiceTest {
         List<TimeSlot> eventSlots = List.of(createEventSlot(eventId, LocalDate.now().plusDays(5)));
         UUID slotId = eventSlots.get(0).getId();
 
-        when(eventRepository.findById(eventId)).thenReturn(Optional.of(testEvent));
+        when(eventRepository.findByIdForUpdate(eventId)).thenReturn(Optional.of(testEvent));
         when(userRepository.findById(userId)).thenReturn(Optional.of(testUser));
         when(timeSlotRepository.findByEventId(eventId)).thenReturn(eventSlots);
         when(reservationRepository.existsByUserIdAndTimeSlotIdAndStatus(eq(userId), any(UUID.class), eq(ReservationStatus.CONFIRMED)))
@@ -759,6 +829,7 @@ class ReservationServiceTest {
         when(timeSlotRepository.findByEventId(eventId)).thenReturn(List.of(eventSlot));
         when(reservationRepository.findByUserIdAndTimeSlotId(userId, eventSlot.getId())).thenReturn(reservation);
         when(userRepository.findById(userId)).thenReturn(Optional.of(testUser));
+        // Cancelling frees a seat rather than taking one, so it does not need the write lock.
         when(eventRepository.findById(eventId)).thenReturn(Optional.of(testEvent));
 
         // When

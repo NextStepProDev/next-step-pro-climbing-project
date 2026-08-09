@@ -115,6 +115,14 @@ public class ReservationService {
             throw new IllegalStateException(msg.get("reservation.slot.unavailable"));
         }
 
+        // A slot owned by an event is booked through the event, never on its own: going slot-first
+        // would skip event.isActive(), blocksEnrollment() and the event-level capacity, and would
+        // book a single day of a multi-day course. CalendarService hides these slots, so this is
+        // only reachable by posting a slot id read off an event tile — but it is reachable.
+        if (slot.belongsToEvent()) {
+            throw new IllegalStateException(msg.get("reservation.slot.belongs.to.event"));
+        }
+
         if (reservationRepository.existsByUserIdAndTimeSlotIdAndStatus(userId, slotId, ReservationStatus.CONFIRMED)) {
             throw new IllegalStateException(msg.get("reservation.already.exists"));
         }
@@ -386,7 +394,9 @@ public class ReservationService {
             throw new IllegalArgumentException(msg.get("reservation.min.participants"));
         }
 
-        Event event = eventRepository.findById(eventId)
+        // Locked like the slot twin (createReservation): without it two concurrent bookings on the
+        // last seat both read the same count before either writes and the event ends up oversold.
+        Event event = eventRepository.findByIdForUpdate(eventId)
             .orElseThrow(() -> new IllegalArgumentException(msg.get("reservation.event.not.found")));
 
         if (!event.isActive()) {
@@ -435,7 +445,12 @@ public class ReservationService {
                 SlotParticipantCount::slotId,
                 SlotParticipantCount::countAsInt
             ));
-        int currentParticipants = countMap.values().stream().mapToInt(Integer::intValue).max().orElse(0);
+        // Guests are booked against the EVENT, not its slots, so they never show up in the
+        // per-slot confirmed counts. The slot twin adds them (createReservation) and so does the
+        // public calendar (CalendarService.computeEventData) — omitting them here let the calendar
+        // read "full" while this endpoint happily accepted more people.
+        int currentParticipants = countMap.values().stream().mapToInt(Integer::intValue).max().orElse(0)
+            + guestReservationRepository.sumParticipantsByEventId(eventId);
 
         int reservedForOthers = reservedSeatRepository.countPendingByEventIdExcludingUser(eventId, userId);
         int spotsLeft = event.getMaxParticipants() - currentParticipants - reservedForOthers;
@@ -591,7 +606,9 @@ public class ReservationService {
             throw new IllegalArgumentException(msg.get("reservation.min.participants"));
         }
 
-        Event event = eventRepository.findById(eventId)
+        // Locked like the slot twin (updateSlotParticipants): two tabs each raising a group read
+        // the same capacity otherwise and both commit, overshooting maxParticipants.
+        Event event = eventRepository.findByIdForUpdate(eventId)
             .orElseThrow(() -> new IllegalArgumentException(msg.get("reservation.event.not.found")));
 
         List<TimeSlot> slots = timeSlotRepository.findByEventId(eventId);
@@ -621,7 +638,9 @@ public class ReservationService {
             ));
 
         int currentUserParticipants = userReservations.getFirst().getParticipants();
-        int currentMaxTotal = countMap.values().stream().mapToInt(Integer::intValue).max().orElse(0);
+        // Event guests sit outside the per-slot counts — see createEventReservation.
+        int currentMaxTotal = countMap.values().stream().mapToInt(Integer::intValue).max().orElse(0)
+            + guestReservationRepository.sumParticipantsByEventId(eventId);
         int availableForThisGroup = event.getMaxParticipants() - currentMaxTotal + currentUserParticipants;
         if (participants > availableForThisGroup) {
             throw new IllegalStateException(msg.get("reservation.event.spots.available", availableForThisGroup, participants));

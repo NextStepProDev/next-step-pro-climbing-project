@@ -10,6 +10,7 @@ import pl.nextsteppro.climbing.api.activitylog.ActivityLogService;
 import pl.nextsteppro.climbing.domain.event.Event;
 import pl.nextsteppro.climbing.domain.event.EventRepository;
 import pl.nextsteppro.climbing.domain.event.EventType;
+import pl.nextsteppro.climbing.domain.reservation.GuestReservationRepository;
 import pl.nextsteppro.climbing.domain.reservation.Reservation;
 import pl.nextsteppro.climbing.domain.reservation.ReservationRepository;
 import pl.nextsteppro.climbing.domain.reservedseat.ReservedSeatRepository;
@@ -63,6 +64,8 @@ class EventWaitlistServiceTest {
     @Mock
     private ReservedSeatRepository reservedSeatRepository;
     @Mock
+    private GuestReservationRepository guestReservationRepository;
+    @Mock
     private UserRepository userRepository;
     @Mock
     private WaitlistMailService waitlistMailService;
@@ -85,6 +88,7 @@ class EventWaitlistServiceTest {
             timeSlotRepository,
             reservationRepository,
             reservedSeatRepository,
+            guestReservationRepository,
             userRepository,
             waitlistMailService,
             activityLogService,
@@ -322,6 +326,99 @@ class EventWaitlistServiceTest {
         when(msg.get("waitlist.race.lost")).thenReturn("Someone was faster");
 
         // When & Then
+        assertThrows(IllegalStateException.class,
+            () -> eventWaitlistService.confirmEventOffer(waitlistId, userId));
+        assertEquals(WaitlistStatus.WAITING, entry.getStatus());
+        verify(reservationRepository, never()).save(any(Reservation.class));
+    }
+
+    // ========== REGRESSION: guards that confirmEventOffer used to be missing ==========
+
+    @Test
+    void shouldRejectConfirmationWhenAllEventSlotsAreBlocked() {
+        // Given — the offer outlives the slots it was made for (admin blocked every one of them).
+        UUID waitlistId = UUID.randomUUID();
+        EventWaitlist entry = new EventWaitlist(testUser, testEvent, 1);
+        entry.offerSpot(Instant.now().plusSeconds(3600));
+        setFieldViaReflection(entry, EventWaitlist.class, "id", waitlistId);
+
+        TimeSlot slot = createSlot(testEvent);
+        slot.block("admin blocked it");
+
+        when(eventWaitlistRepository.findById(waitlistId)).thenReturn(Optional.of(entry));
+        when(eventRepository.findByIdForUpdate(eventId)).thenReturn(Optional.of(testEvent));
+        when(timeSlotRepository.findByEventId(eventId)).thenReturn(List.of(slot));
+        when(reservationRepository.countConfirmedByTimeSlotIds(anyList()))
+            .thenReturn(List.of(new SlotParticipantCount(slot.getId(), 0L)));
+        when(msg.get("reservation.event.no.active.slots")).thenReturn("No active slots");
+
+        // When / Then — it used to report success, mail an ICS and delete the queue entry while
+        // creating zero reservations.
+        assertThrows(IllegalStateException.class,
+            () -> eventWaitlistService.confirmEventOffer(waitlistId, userId));
+        verify(reservationRepository, never()).save(any(Reservation.class));
+        verify(eventWaitlistRepository, never()).delete(any(EventWaitlist.class));
+        verify(waitlistMailService, never()).sendEventWaitlistReservationConfirmed(any(), any());
+    }
+
+    @Test
+    void shouldRejectConfirmationWhenEventBecameInactive() {
+        // Given — updateEvent can deactivate an event without purging its queue.
+        UUID waitlistId = UUID.randomUUID();
+        EventWaitlist entry = new EventWaitlist(testUser, testEvent, 1);
+        entry.offerSpot(Instant.now().plusSeconds(3600));
+        setFieldViaReflection(entry, EventWaitlist.class, "id", waitlistId);
+        testEvent.setActive(false);
+
+        when(eventWaitlistRepository.findById(waitlistId)).thenReturn(Optional.of(entry));
+        when(eventRepository.findByIdForUpdate(eventId)).thenReturn(Optional.of(testEvent));
+        when(msg.get("reservation.event.inactive")).thenReturn("Event inactive");
+
+        // When / Then
+        assertThrows(IllegalStateException.class,
+            () -> eventWaitlistService.confirmEventOffer(waitlistId, userId));
+        verify(reservationRepository, never()).save(any(Reservation.class));
+    }
+
+    @Test
+    void shouldRejectConfirmationWhenEventTypeBlocksEnrollment() {
+        // Given — reclassified to a type that never takes sign-ups.
+        UUID waitlistId = UUID.randomUUID();
+        EventWaitlist entry = new EventWaitlist(testUser, testEvent, 1);
+        entry.offerSpot(Instant.now().plusSeconds(3600));
+        setFieldViaReflection(entry, EventWaitlist.class, "id", waitlistId);
+        testEvent.setEventType(EventType.CONTACT_DAY);
+
+        when(eventWaitlistRepository.findById(waitlistId)).thenReturn(Optional.of(entry));
+        when(eventRepository.findByIdForUpdate(eventId)).thenReturn(Optional.of(testEvent));
+        when(msg.get("reservation.event.enrollment.closed")).thenReturn("Enrollment closed");
+
+        // When / Then
+        assertThrows(IllegalStateException.class,
+            () -> eventWaitlistService.confirmEventOffer(waitlistId, userId));
+        verify(reservationRepository, never()).save(any(Reservation.class));
+    }
+
+    @Test
+    void shouldCountEventGuestsAsOccupyingSeatsWhenConfirming() {
+        // Given — 6 confirmed + 4 admin-added guests fills a 10-seat event exactly. Guests hang
+        // off the event, not its slots, so the per-slot counts alone said 6/10 and let this through.
+        UUID waitlistId = UUID.randomUUID();
+        EventWaitlist entry = new EventWaitlist(testUser, testEvent, 1);
+        entry.offerSpot(Instant.now().plusSeconds(3600));
+        setFieldViaReflection(entry, EventWaitlist.class, "id", waitlistId);
+
+        TimeSlot slot = createSlot(testEvent);
+
+        when(eventWaitlistRepository.findById(waitlistId)).thenReturn(Optional.of(entry));
+        when(eventRepository.findByIdForUpdate(eventId)).thenReturn(Optional.of(testEvent));
+        when(timeSlotRepository.findByEventId(eventId)).thenReturn(List.of(slot));
+        when(reservationRepository.countConfirmedByTimeSlotIds(anyList()))
+            .thenReturn(List.of(new SlotParticipantCount(slot.getId(), 6L)));
+        when(guestReservationRepository.sumParticipantsByEventId(eventId)).thenReturn(4);
+        when(msg.get("waitlist.race.lost")).thenReturn("Someone was faster");
+
+        // When / Then — full is full; the confirmer goes back to WAITING.
         assertThrows(IllegalStateException.class,
             () -> eventWaitlistService.confirmEventOffer(waitlistId, userId));
         assertEquals(WaitlistStatus.WAITING, entry.getStatus());

@@ -178,6 +178,8 @@
     "chooseThumbnail": "Elegir archivo",
     "uploadThumbnail": "Subir",
     "deleteThumbnail": "Eliminar miniatura",
+    "cropEnable": "Recortar miniatura",
+    "cropDisable": "Desactivar recorte",
     "sectionContent": "Contenido del artículo",
     "noBlocks": "Sin bloques — añade un párrafo o imagen abajo",
     "addTextBlock": "Nuevo párrafo",

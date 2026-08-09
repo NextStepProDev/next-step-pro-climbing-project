@@ -19,6 +19,7 @@ import pl.nextsteppro.climbing.api.activitylog.ActivityLogService;
 import pl.nextsteppro.climbing.config.CurrentUserId;
 
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.UUID;
 
@@ -26,6 +27,8 @@ import java.util.UUID;
 @RequestMapping("/api/admin")
 @PreAuthorize("hasRole('ADMIN')")
 public class AdminController {
+
+    private static final ZoneId WARSAW = ZoneId.of("Europe/Warsaw");
 
     private final AdminService adminService;
     private final ActivityLogService activityLogService;
@@ -164,7 +167,8 @@ public class AdminController {
     public ResponseEntity<List<TimeSlotAdminDto>> getUpcomingSlots(
             @Parameter(description = "Start date (yyyy-MM-dd), defaults to today")
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from) {
-        LocalDate startDate = from != null ? from : LocalDate.now();
+        // Warsaw, not the container's UTC — "today" here is the admin's today.
+        LocalDate startDate = from != null ? from : LocalDate.now(WARSAW);
         return ResponseEntity.ok(adminService.getUpcomingSlots(startDate));
     }
 

@@ -51,6 +51,21 @@ jobs:
 
       - run: npm test
 
+      # E2E lived in the repo but ran only when someone remembered to, so it was free to rot.
+      # The golden path is deliberately backend-free and playwright.config.ts brings up the dev
+      # server itself, so this needs nothing beyond the browser binary.
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+
+      - run: npm run test:e2e
+
+      - uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: playwright-results
+          path: next-step-pro-climbing-frontend/test-results/
+          retention-days: 7
+
       - run: npm run build
 
   docker:

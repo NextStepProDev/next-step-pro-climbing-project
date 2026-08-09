@@ -8,8 +8,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
-import pl.nextsteppro.climbing.api.reservation.EventWaitlistService;
-import pl.nextsteppro.climbing.api.reservation.WaitlistService;
+import pl.nextsteppro.climbing.api.reservation.UserSeatReleaseService;
 import pl.nextsteppro.climbing.domain.auth.AuthToken;
 import pl.nextsteppro.climbing.domain.auth.AuthTokenRepository;
 import pl.nextsteppro.climbing.domain.auth.TokenType;
@@ -42,38 +41,32 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuthMailService authMailService;
-    private final ReservationRepository reservationRepository;
     private final AuthTokenRepository authTokenRepository;
     private final JwtService jwtService;
     private final MessageService msg;
     private final NewsletterConsentLogRepository consentLogRepository;
-    private final WaitlistService waitlistService;
-    private final EventWaitlistService eventWaitlistService;
+    private final UserSeatReleaseService userSeatReleaseService;
     private final FileStorageService fileStorageService;
     private final PasswordPolicyValidator passwordPolicy;
 
     public UserService(UserRepository userRepository,
                        PasswordEncoder passwordEncoder,
                        AuthMailService authMailService,
-                       ReservationRepository reservationRepository,
                        AuthTokenRepository authTokenRepository,
                        JwtService jwtService,
                        MessageService msg,
                        NewsletterConsentLogRepository consentLogRepository,
-                       WaitlistService waitlistService,
-                       EventWaitlistService eventWaitlistService,
+                       UserSeatReleaseService userSeatReleaseService,
                        FileStorageService fileStorageService,
                        PasswordPolicyValidator passwordPolicy) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.authMailService = authMailService;
-        this.reservationRepository = reservationRepository;
         this.authTokenRepository = authTokenRepository;
         this.jwtService = jwtService;
         this.msg = msg;
         this.consentLogRepository = consentLogRepository;
-        this.waitlistService = waitlistService;
-        this.eventWaitlistService = eventWaitlistService;
+        this.userSeatReleaseService = userSeatReleaseService;
         this.fileStorageService = fileStorageService;
         this.passwordPolicy = passwordPolicy;
     }
@@ -166,29 +159,9 @@ public class UserService {
             }
         }
 
-        // 1. Collect affected slots/events BEFORE cancelling reservations (projections — no entities loaded into the session).
-        List<UUID> affectedSlotIds = reservationRepository.findConfirmedSlotIdsByUserId(userId);
-        List<UUID> affectedEventIds = reservationRepository.findConfirmedEventIdsByUserId(userId);
-        int cancelledReservations = affectedSlotIds.size();
-
-        // 2. Cancel all confirmed reservations (bulk UPDATE → CANCELLED).
-        //    Bulk update instead of loading entities — avoids a Hibernate session conflict with the parent (user) being deleted.
-        //    After this step the seats are freed in the database (status != CONFIRMED).
-        reservationRepository.cancelConfirmedByUserId(userId);
-
-        // 3. Notify waitlists about the freed seats (slots first, then events).
-        //    notifyAll counts free seats with a fresh aggregate query, so it already sees the cancelled reservations.
-        for (UUID slotId : affectedSlotIds) {
-            waitlistService.notifyAll(slotId);
-        }
-        for (UUID eventId : affectedEventIds) {
-            eventWaitlistService.notifyAll(eventId);
-        }
-
-        // 4. Remove the user from waitlists THEY were waiting on.
-        //    If they had an active offer (PENDING), the freed seat goes to the remaining waiters.
-        waitlistService.removeUserFromAllWaitlists(userId);
-        eventWaitlistService.removeUserFromAllWaitlists(userId);
+        // 1-4. Free the seats and hand them to the queues. The ordering inside is load-bearing —
+        //       see UserSeatReleaseService. Shared with the admin-side deletion so the two cannot drift.
+        int cancelledReservations = userSeatReleaseService.releaseSeatsAndNotifyWaitlists(userId);
 
         // 5. Notify the admin about the account deletion (async, does not block the transaction).
         authMailService.sendAccountSelfDeletedAdminNotification(user, cancelledReservations);
