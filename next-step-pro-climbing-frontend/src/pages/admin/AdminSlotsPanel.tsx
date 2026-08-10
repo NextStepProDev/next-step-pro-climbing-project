@@ -19,6 +19,7 @@ import { slotKindOf, slotKindFlags, type SlotKind } from '../../utils/slotKind'
 import { WaitlistEntryList } from './AdminReservationsPanel'
 import { useDateLocale } from '../../utils/dateFnsLocale'
 import { useDirty } from '../../hooks/useDirty'
+import { useEditSavedToast } from '../../hooks/useEditSavedToast'
 import type { InvitedUser, SlotParticipants, SlotTemplate, TimeSlotAdmin, User } from '../../types'
 
 const ARCHIVE_PAGE_SIZE = 15
@@ -440,6 +441,7 @@ function EditSlotModal({
   onSuccess: () => void
 }) {
   const { t } = useTranslation('admin')
+  const editSaved = useEditSavedToast()
   const [form, setForm] = useState({
     startTime: slot?.startTime.slice(0, 5) ?? '',
     endTime: slot?.endTime.slice(0, 5) ?? '',
@@ -464,9 +466,10 @@ function EditSlotModal({
   const updateMutation = useMutation({
     mutationFn: (data: { startTime?: string; endTime?: string; maxParticipants?: number; title?: string; isAvailabilityWindow?: boolean; isUnavailable?: boolean; invitedUserIds?: string[] }) =>
       adminApi.updateTimeSlot(slot!.id, data),
-    onSuccess: () => {
+    onSuccess: (result) => {
       onSuccess()
       onClose()
+      editSaved(result)
     },
   })
 

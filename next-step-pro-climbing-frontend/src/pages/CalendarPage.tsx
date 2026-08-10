@@ -260,7 +260,7 @@ export function CalendarPage() {
     mutationFn: ({ slotId, date, startTime, endTime }: { slotId: string; date: string; startTime: string; endTime: string }) =>
       adminApi.updateTimeSlot(slotId, { date, startTime, endTime, sendNotifications: false }),
     onSuccess: (data, variables) => {
-      if (data.currentParticipants === 0) {
+      if (data.slot.currentParticipants === 0) {
         lastSlotMoveRef.current.delete(variables.slotId);
       }
       void queryClient.invalidateQueries({ queryKey: ['calendar'] });

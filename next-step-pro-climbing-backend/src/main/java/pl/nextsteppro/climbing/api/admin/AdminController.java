@@ -62,22 +62,22 @@ public class AdminController {
     @Tag(name = "Admin - Slots")
     @Operation(
         summary = "Update slot",
-        description = "Updates slot data (times, max participants, title)"
+        description = "Updates slot data (times, max participants, title). "
+            + "Returns the updated slot together with how many participants were mailed about the change."
     )
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "Slot updated",
-            content = @Content(schema = @Schema(implementation = TimeSlotAdminDto.class))),
+            content = @Content(schema = @Schema(implementation = SlotUpdateResultDto.class))),
         @ApiResponse(responseCode = "404", description = "Slot not found"),
         @ApiResponse(responseCode = "400", description = "Invalid data"),
         @ApiResponse(responseCode = "403", description = "Admin privileges required")
     })
     @PutMapping("/slots/{slotId}")
-    public ResponseEntity<TimeSlotAdminDto> updateTimeSlot(
+    public ResponseEntity<SlotUpdateResultDto> updateTimeSlot(
             @CurrentUserId UUID adminId,
             @Parameter(description = "Slot UUID") @PathVariable UUID slotId,
             @Valid @RequestBody UpdateTimeSlotRequest request) {
-        TimeSlotAdminDto slot = adminService.updateTimeSlot(adminId, slotId, request);
-        return ResponseEntity.ok(slot);
+        return ResponseEntity.ok(adminService.updateTimeSlot(adminId, slotId, request));
     }
 
     @Tag(name = "Admin - Slots")
@@ -319,21 +319,21 @@ public class AdminController {
     @Tag(name = "Admin - Events")
     @Operation(
         summary = "Update event",
-        description = "Updates event data (title, description, seat count)"
+        description = "Updates event data (title, description, seat count). "
+            + "Returns the updated event together with how many participants were mailed about the change."
     )
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "Event updated",
-            content = @Content(schema = @Schema(implementation = EventAdminDto.class))),
+            content = @Content(schema = @Schema(implementation = EventUpdateResultDto.class))),
         @ApiResponse(responseCode = "404", description = "Event not found"),
         @ApiResponse(responseCode = "403", description = "Admin privileges required")
     })
     @PutMapping("/events/{eventId}")
-    public ResponseEntity<EventAdminDto> updateEvent(
+    public ResponseEntity<EventUpdateResultDto> updateEvent(
             @CurrentUserId UUID adminId,
             @Parameter(description = "Event UUID") @PathVariable UUID eventId,
             @Valid @RequestBody UpdateEventRequest request) {
-        EventAdminDto event = adminService.updateEvent(adminId, eventId, request);
-        return ResponseEntity.ok(event);
+        return ResponseEntity.ok(adminService.updateEvent(adminId, eventId, request));
     }
 
     @Tag(name = "Admin - Events")

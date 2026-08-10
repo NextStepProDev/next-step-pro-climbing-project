@@ -18,6 +18,7 @@ import { saveRedirectPath } from "../../utils/redirect";
 import { adminApi, reservationApi } from "../../api/client";
 import { getErrorMessage } from "../../utils/errors";
 import { useDateLocale } from "../../utils/dateFnsLocale";
+import { useEditSavedToast } from "../../hooks/useEditSavedToast";
 import type { TimeSlotDetail } from "../../types";
 
 interface SlotDetailModalProps {
@@ -37,6 +38,7 @@ export function SlotDetailModal({
   const { t } = useTranslation('calendar');
   const { t: ta } = useTranslation('admin');
   const locale = useDateLocale();
+  const editSaved = useEditSavedToast();
   const { isAuthenticated, isAdmin, user } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -142,11 +144,12 @@ export function SlotDetailModal({
   const editSlotMutation = useMutation({
     mutationFn: (data: { startTime: string; endTime: string; maxParticipants?: number; title: string; isAvailabilityWindow: boolean; isUnavailable: boolean }) =>
       adminApi.updateTimeSlot(slot!.id, data),
-    onSuccess: () => {
+    onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ["calendar"] });
       queryClient.invalidateQueries({ queryKey: ["slot"] });
       queryClient.invalidateQueries({ queryKey: ["admin", "slots"] });
       setEditMode(false);
+      editSaved(result);
     },
   });
 

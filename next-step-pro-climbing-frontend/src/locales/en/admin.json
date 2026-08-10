@@ -702,6 +702,12 @@
     "send": "Send invitation emails ({{count}})",
     "sentResult": "Sent {{count}} invitations."
   },
+  "editSaved": {
+    "notified_one": "Changes saved. {{count}} participant was notified by email.",
+    "notified_other": "Changes saved. {{count}} participants were notified by email.",
+    "noneNotified": "Changes saved. No notifications were sent to participants.",
+    "saved": "Changes saved."
+  },
   "trainingCalendars": {
     "emptyTitle": "No designated athletes",
     "emptyHint": "Flag a user with the dumbbell icon in the Users tab to give them a personal training calendar.",

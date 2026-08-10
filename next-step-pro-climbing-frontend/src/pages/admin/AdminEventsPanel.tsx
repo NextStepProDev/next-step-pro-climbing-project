@@ -11,6 +11,7 @@ import { InviteNotifySection } from '../../components/ui/InviteNotifySection'
 import { WaitlistEntryList } from './AdminReservationsPanel'
 import { getErrorMessage } from '../../utils/errors'
 import { useDirty } from '../../hooks/useDirty'
+import { useEditSavedToast } from '../../hooks/useEditSavedToast'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
 import { QueryError } from '../../components/ui/QueryError'
 import { Button } from '../../components/ui/Button'
@@ -825,6 +826,7 @@ export function EditEventModal({
 }) {
   const { t } = useTranslation('admin')
   const { t: tc } = useTranslation('common')
+  const editSaved = useEditSavedToast()
   const [allDay, setAllDay] = useState(!event?.startTime)
   const [courseId, setCourseId] = useState<string | null>(event?.courseId ?? null)
   const [form, setForm] = useState<CreateEventRequest>({
@@ -862,12 +864,13 @@ export function EditEventModal({
   const updateMutation = useMutation({
     mutationFn: (data: CreateEventRequest & { courseId?: string | null; removeCourse?: boolean; invitedUserIds?: string[] }) =>
       adminApi.updateEvent(event!.id, data),
-    onSuccess: () => {
+    onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'events'] })
       queryClient.invalidateQueries({ queryKey: ['calendar'] })
       queryClient.invalidateQueries({ queryKey: ['courseEvents'] })
       queryClient.invalidateQueries({ queryKey: ['eventSummary', event?.id] })
       onClose()
+      editSaved(result)
     },
   })
 

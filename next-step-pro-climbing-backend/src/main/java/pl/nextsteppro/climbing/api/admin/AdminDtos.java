@@ -306,6 +306,24 @@ record AdminNotificationsDto(
 
 record NotifyParticipantsResult(int notifiedCount) {}
 
+/**
+ * An edit sends its modification mails silently — the admin used to save a moved slot and get no
+ * sign that anyone was told. How many people were mailed is a property of the operation, not of the
+ * slot, so it travels alongside the entity instead of inside it (a listing has no such number).
+ * The count matches what actually went out: participants with mail notifications switched off are
+ * skipped by {@code MailService}, so they are skipped here too.
+ *
+ * <p>{@code hadParticipants} separates the two ways of sending nothing, which are different
+ * answers: an empty slot had nobody to write to, while a booked one that mailed no-one means the
+ * edit did not concern the participants (or they all opted out). A boolean rather than a second
+ * count on purpose — the two sides count different units (a slot counts seats, an event counts
+ * people), and the panel only asks whether the silence had an audience.
+ */
+record SlotUpdateResultDto(TimeSlotAdminDto slot, int notifiedCount, boolean hadParticipants) {}
+
+/** Event twin of {@link SlotUpdateResultDto}. */
+record EventUpdateResultDto(EventAdminDto event, int notifiedCount, boolean hadParticipants) {}
+
 record NotifySlotParticipantsRequest(
     @Nullable LocalDate previousDate,
     @Nullable LocalTime previousStartTime,
