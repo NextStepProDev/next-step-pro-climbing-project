@@ -25,7 +25,10 @@ import pl.nextsteppro.climbing.infrastructure.mail.WaitlistMailService;
 import java.lang.reflect.Field;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -528,10 +531,27 @@ class WaitlistServiceTest {
         return slot;
     }
 
+    /**
+     * A slot that starts the given number of hours from now, on the same clock the service reads.
+     *
+     * <p>Two traps, both of which used to fire between 00:00 and 02:00 Warsaw — one CI run in ten:
+     * the runner's JVM is UTC while {@code BookingTimeValidator} asks Europe/Warsaw, and a bare
+     * {@code LocalTime.plusHours} wraps past midnight without moving the date, which turned
+     * "starts in 2h" into "ended 22h ago" and failed the confirm-offer test on a past slot.
+     */
     private TimeSlot buildSlotStartingIn(UUID slotId, int hoursFromNow) {
-        LocalDate date = hoursFromNow < 24 ? LocalDate.now() : LocalDate.now().plusDays(1);
-        LocalTime time = LocalTime.now().plusHours(hoursFromNow);
-        TimeSlot slot = new TimeSlot(null, date, time, time.plusHours(1), 5);
+        LocalDateTime start = LocalDateTime.now(ZoneId.of("Europe/Warsaw"))
+            .plusHours(hoursFromNow)
+            .truncatedTo(ChronoUnit.MINUTES);
+        LocalTime startTime = start.toLocalTime();
+        LocalTime endTime = startTime.plusHours(1);
+        // A slot lives inside a single day (date + start + end), so an end that wrapped would read
+        // as end-before-start, i.e. already over. Keep the whole slot in the day it starts in.
+        if (!endTime.isAfter(startTime)) {
+            startTime = LocalTime.of(23, 0);
+            endTime = LocalTime.of(23, 59);
+        }
+        TimeSlot slot = new TimeSlot(null, start.toLocalDate(), startTime, endTime, 5);
         setField(slot, "id", slotId);
         return slot;
     }
