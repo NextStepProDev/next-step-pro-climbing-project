@@ -702,6 +702,13 @@
     "send": "Wyślij zaproszenia mailem ({{count}})",
     "sentResult": "Wysłano {{count}} zaproszeń."
   },
+  "editSaved": {
+    "notified_one": "Zapisano zmiany. Powiadomiono mailem {{count}} uczestnika.",
+    "notified_few": "Zapisano zmiany. Powiadomiono mailem {{count}} uczestników.",
+    "notified_many": "Zapisano zmiany. Powiadomiono mailem {{count}} uczestników.",
+    "noneNotified": "Zapisano zmiany. Nie wysłano powiadomień uczestnikom.",
+    "saved": "Zapisano zmiany."
+  },
   "trainingCalendars": {
     "emptyTitle": "Brak oznaczonych zawodników",
     "emptyHint": "Oznacz użytkownika ikoną hantli w zakładce Użytkownicy, aby dostał osobisty kalendarz treningowy.",

@@ -634,8 +634,11 @@ export const adminApi = {
       body: JSON.stringify(data),
     }),
 
+  // notifiedCount = how many participants the edit actually mailed (people who switched email
+  // notifications off are not counted, because they were not written to either).
+  // hadParticipants tells the two silences apart: nobody booked vs booked and not written to.
   updateTimeSlot: (slotId: string, data: { date?: string; startTime?: string; endTime?: string; maxParticipants?: number; title?: string; isAvailabilityWindow?: boolean; isUnavailable?: boolean; sendNotifications?: boolean; invitedUserIds?: string[] }) =>
-    fetchApi<TimeSlotAdmin>(`/admin/slots/${slotId}`, {
+    fetchApi<{ slot: TimeSlotAdmin; notifiedCount: number; hadParticipants: boolean }>(`/admin/slots/${slotId}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     }),
@@ -691,8 +694,9 @@ export const adminApi = {
       body: JSON.stringify(data),
     }),
 
+  // notifiedCount / hadParticipants as in updateTimeSlot.
   updateEvent: (eventId: string, data: Partial<CreateEventRequest> & { active?: boolean; courseId?: string | null; removeCourse?: boolean; invitedUserIds?: string[] }) =>
-    fetchApi<EventDetail>(`/admin/events/${eventId}`, {
+    fetchApi<{ event: EventDetail; notifiedCount: number; hadParticipants: boolean }>(`/admin/events/${eventId}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     }),

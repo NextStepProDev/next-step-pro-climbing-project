@@ -185,7 +185,7 @@ public class AdminService {
         @CacheEvict(value = "calendarWeek", allEntries = true),
         @CacheEvict(value = "calendarDay", allEntries = true)
     })
-    public TimeSlotAdminDto updateTimeSlot(UUID adminId, UUID slotId, UpdateTimeSlotRequest request) {
+    public SlotUpdateResultDto updateTimeSlot(UUID adminId, UUID slotId, UpdateTimeSlotRequest request) {
         TimeSlot slot = timeSlotRepository.findById(slotId)
             .orElseThrow(() -> new IllegalArgumentException("Time slot not found"));
 
@@ -254,6 +254,7 @@ public class AdminService {
             LocalDateTime.of(slot.getDate(), slot.getEndTime()),
             LocalDateTime.now(WARSAW));
         boolean shouldNotify = isNews && !Boolean.FALSE.equals(request.sendNotifications());
+        int notifiedCount = 0;
         if (shouldNotify) {
             var tf = DateTimeFormatter.ofPattern("HH:mm");
             var df = DateTimeFormatter.ofPattern("yyyy-MM-dd");
@@ -280,15 +281,27 @@ public class AdminService {
                 ));
             }
             if (!changes.isEmpty()) {
-                List<Reservation> confirmed = reservationRepository.findConfirmedByTimeSlotId(slot.getId());
+                // JOIN FETCH variant, as in blockTimeSlot: the mail is @Async and touches the user
+                // on the mail thread, where a lazy proxy has no session left to initialise.
+                List<Reservation> confirmed = reservationRepository.findConfirmedByTimeSlotIds(List.of(slot.getId()));
                 String displayTitle = slot.getDisplayTitle();
                 for (Reservation reservation : confirmed) {
+                    // Same predicate MailService applies before sending — asking it here is what
+                    // keeps the number reported to the admin equal to the number of mails sent.
+                    if (!reservation.getUser().isEmailNotificationsEnabled()) continue;
                     mailService.sendAdminSlotModificationNotification(reservation.getUser(), slot, changes, displayTitle);
+                    notifiedCount++;
                 }
             }
         }
 
-        return toTimeSlotAdminDto(slot);
+        // Registered bookings only — guests hold seats but have no account to write to, so for
+        // "was there anyone to notify" they do not count. Fetched once and handed to the DTO
+        // factory, which would otherwise run the same count again.
+        int confirmedSeats = reservationRepository.countConfirmedByTimeSlotId(slotId);
+        int guestSeats = guestReservationRepository.sumParticipantsByTimeSlotId(slotId);
+        return new SlotUpdateResultDto(
+            toTimeSlotAdminDto(slot, confirmedSeats + guestSeats), notifiedCount, confirmedSeats > 0);
     }
 
     @Caching(evict = {
@@ -650,7 +663,7 @@ public class AdminService {
         @CacheEvict(value = "calendarWeek", allEntries = true),
         @CacheEvict(value = "calendarDay", allEntries = true)
     })
-    public EventAdminDto updateEvent(UUID adminId, UUID eventId, UpdateEventRequest request) {
+    public EventUpdateResultDto updateEvent(UUID adminId, UUID eventId, UpdateEventRequest request) {
         Event event = eventRepository.findById(eventId)
             .orElseThrow(() -> new IllegalArgumentException("Event not found"));
 
@@ -742,6 +755,7 @@ public class AdminService {
         // Tidying up a past event's location (which the athlete stats group by) is bookkeeping,
         // not news; moving a finished event to a future date still is.
         boolean isNews = EditNotificationPolicy.eventEditIsNews(oldEndDate, event.getEndDate(), LocalDate.now(WARSAW));
+        int notifiedCount = 0;
         if (!changes.isEmpty() && isNews) {
             List<TimeSlot> slots = timeSlotRepository.findByEventId(eventId);
             if (!slots.isEmpty()) {
@@ -752,12 +766,18 @@ public class AdminService {
                     notifiedUsers.putIfAbsent(reservation.getUser().getId(), reservation.getUser());
                 }
                 for (User user : notifiedUsers.values()) {
+                    // See the slot twin: counting only who MailService will actually write to.
+                    if (!user.isEmailNotificationsEnabled()) continue;
                     mailService.sendAdminEventModificationNotification(user, event, changes);
+                    notifiedCount++;
                 }
             }
         }
 
-        return toEventAdminDto(event);
+        // Registered bookings across the event's day-slots — see the slot twin for why guests
+        // are left out of this particular question.
+        boolean hadParticipants = !reservationRepository.findConfirmedUserIdsByEventId(eventId).isEmpty();
+        return new EventUpdateResultDto(toEventAdminDto(event), notifiedCount, hadParticipants);
     }
 
     @Caching(evict = {

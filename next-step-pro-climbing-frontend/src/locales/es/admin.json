@@ -702,6 +702,12 @@
     "send": "Enviar correos de invitación ({{count}})",
     "sentResult": "Se enviaron {{count}} invitaciones."
   },
+  "editSaved": {
+    "notified_one": "Cambios guardados. Se notificó por correo a {{count}} participante.",
+    "notified_other": "Cambios guardados. Se notificó por correo a {{count}} participantes.",
+    "noneNotified": "Cambios guardados. No se envió ninguna notificación a los participantes.",
+    "saved": "Cambios guardados."
+  },
   "trainingCalendars": {
     "emptyTitle": "No hay atletas designados",
     "emptyHint": "Marca a un usuario con el icono de mancuerna en la pestaña Usuarios para darle un calendario de entrenamiento personal.",
