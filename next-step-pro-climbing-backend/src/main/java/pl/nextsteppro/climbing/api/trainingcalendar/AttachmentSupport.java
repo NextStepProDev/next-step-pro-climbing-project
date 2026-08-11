@@ -183,9 +183,15 @@ public class AttachmentSupport {
             .map(AttachmentSupport::toDto).toList();
     }
 
+    /**
+     * A FILE is addressed by its ATTACHMENT id, not by its stored filename. The filename used to be
+     * the whole protection — {@code /api/files/training/{uuid}.pdf} was public, so a link that ever
+     * escaped (browser history, a pasted message, a bookmark) worked for anyone, forever. Going
+     * through the row lets the request be checked against who owns the training.
+     */
     static TrainingAttachmentDto toDto(TrainingAttachment a) {
         if (a.getKind() == pl.nextsteppro.climbing.domain.personaltraining.AttachmentKind.FILE) {
-            String serveUrl = "/api/files/" + FOLDER + "/" + a.getFilename();
+            String serveUrl = serveUrl(a.getId());
             return new TrainingAttachmentDto(a.getId(), "FILE", serveUrl, a.getLabel(),
                 null, a.getFilename(), a.getOriginalName(), a.getMimeType(), a.getSizeBytes());
         }
@@ -194,7 +200,32 @@ public class AttachmentSupport {
             url != null ? VideoEmbedUrls.toEmbedUrlOrNull(url) : null, null, null, null, null);
     }
 
-    // ---------- upload + cleanup ----------
+    static String serveUrl(UUID attachmentId) {
+        return "/api/training-calendar/files/" + attachmentId;
+    }
+
+    // ---------- streaming (authenticated; see PrivateFileResponses) ----------
+
+    TrainingAttachment requireAttachment(UUID attachmentId) {
+        return attachmentRepository.findById(attachmentId)
+            .orElseThrow(() -> new IllegalArgumentException(msg.get("training.attachment.not.found")));
+    }
+
+    boolean exists(String filename) {
+        try {
+            return fileStorageService.exists(filename, FOLDER);
+        } catch (IllegalArgumentException e) {
+            return false; // malformed name (path-traversal guard) → treat as missing
+        }
+    }
+
+    java.io.InputStream open(String filename) throws IOException {
+        return fileStorageService.getInputStream(filename, FOLDER);
+    }
+
+    long sizeOf(String filename) {
+        return fileStorageService.getFileSize(filename, FOLDER);
+    }
 
     // ---------- admin materials management (central cleanup view) ----------
 
@@ -214,7 +245,7 @@ public class AttachmentSupport {
                 ownerLabel = "";
             }
             return new MaterialDto(a.getId(), a.getOriginalName(), a.getMimeType(), a.getSizeBytes(),
-                "/api/files/" + FOLDER + "/" + a.getFilename(), ownerType, ownerLabel, a.getCreatedAt());
+                serveUrl(a.getId()), ownerType, ownerLabel, a.getCreatedAt());
         }).toList();
     }
 
@@ -232,9 +263,11 @@ public class AttachmentSupport {
     AttachmentUploadResponse upload(MultipartFile file) {
         try {
             String filename = fileStorageService.storeDocument(file, FOLDER);
+            // No URL here on purpose: the upload is two-phase, so no attachment row exists yet and
+            // the file has no address until it is saved onto a training or a template.
             return new AttachmentUploadResponse(
                 filename, sanitizeName(file.getOriginalFilename()), file.getContentType(),
-                file.getSize(), "/api/files/" + FOLDER + "/" + filename);
+                file.getSize());
         } catch (IOException e) {
             throw new IllegalStateException(msg.get("training.attachment.upload.failed"));
         }

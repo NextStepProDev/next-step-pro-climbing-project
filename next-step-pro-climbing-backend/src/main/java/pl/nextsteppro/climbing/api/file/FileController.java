@@ -18,9 +18,21 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * Public, unauthenticated media. Every folder served here is one mapping — there is no generic
+ * {@code /{folder}/{filename}} route, and that is the whole access-control mechanism: a folder is
+ * public exactly when a method below names it.
+ *
+ * <p><b>Never add a mapping for a training folder.</b> {@code training/} (coach materials) and
+ * {@code commentfiles/} (attachments people send in a thread) hold data about identifiable people's
+ * training and health, and are streamed with an ownership check by
+ * {@code TrainingCalendarController} instead. Until V80 {@code training/} was mapped here and its
+ * only protection was an unguessable filename — a link that ever escaped worked for anyone, for
+ * good. {@code PublicFileFolderArchitectureTest} fails the build if the mapping comes back.
+ */
 @RestController
 @RequestMapping("/api/files")
-@Tag(name = "Files", description = "File serving endpoints")
+@Tag(name = "Files", description = "Public file serving endpoints")
 public class FileController {
 
     private static final int FILE_CACHE_DAYS = 7;
@@ -108,17 +120,6 @@ public class FileController {
         return serveFile(filename, "avatars");
     }
 
-    @Operation(summary = "Get a training material file (uploaded PDF/image)")
-    @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "File found"),
-        @ApiResponse(responseCode = "404", description = "File not found")
-    })
-    @GetMapping("/training/{filename}")
-    public ResponseEntity<Resource> getTrainingFile(
-            @Parameter(description = "File name") @PathVariable String filename) throws IOException {
-        return serveFile(filename, "training");
-    }
-
     private ResponseEntity<Resource> serveFile(String filename, String folder) throws IOException {
         if (!fileStorageService.exists(filename, folder)) {
             return ResponseEntity.notFound().build();
@@ -135,17 +136,9 @@ public class FileController {
                 .body(new InputStreamResource(inputStream));
     }
 
-    /**
-     * Public media (gallery, news, courses, avatars...) is safe to sit in shared caches/CDN for
-     * a week. Training materials are private to a coach↔athlete pair — the endpoint stays public
-     * (browser-native &lt;img&gt;/&lt;iframe&gt;/PDF requests carry no JWT), but the file must never
-     * be stored by Cloudflare/proxies. Its only protection is the unguessable UUID filename, so we
-     * keep it out of any shared cache.
-     */
+    /** Everything reachable here is public media, safe to sit in shared caches/CDN for a week. */
     private CacheControl cacheControlFor(String folder) {
-        return "training".equals(folder)
-                ? CacheControl.noStore().cachePrivate()
-                : CacheControl.maxAge(FILE_CACHE_DAYS, TimeUnit.DAYS).cachePublic();
+        return CacheControl.maxAge(FILE_CACHE_DAYS, TimeUnit.DAYS).cachePublic();
     }
 
     private MediaType getMediaType(String filename) {

@@ -63,6 +63,8 @@ class UserServiceTest {
     @Mock
     private UserSeatReleaseService userSeatReleaseService;
     @Mock
+    private pl.nextsteppro.climbing.api.trainingcalendar.CommentFileSupport commentFileSupport;
+    @Mock
     private pl.nextsteppro.climbing.infrastructure.storage.FileStorageService fileStorageService;
     @Mock
     private pl.nextsteppro.climbing.infrastructure.security.PasswordPolicyValidator passwordPolicy;
@@ -82,6 +84,7 @@ class UserServiceTest {
             msg,
             consentLogRepository,
             userSeatReleaseService,
+            commentFileSupport,
             fileStorageService,
             passwordPolicy
         );

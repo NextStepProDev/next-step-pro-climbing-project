@@ -61,6 +61,7 @@ class TrainingCalendarServiceTest {
     @Mock private TrainingCalendarReadRepository readRepository;
     @Mock private TrainingDeletionRepository deletionRepository;
     @Mock private TrainingAttachmentRepository attachmentRepository;
+    @Mock private pl.nextsteppro.climbing.domain.personaltraining.TrainingCommentFileRepository commentFileRepository;
     @Mock private ReservationRepository reservationRepository;
     @Mock private pl.nextsteppro.climbing.domain.reservation.ReservationRpeRepository reservationRpeRepository;
     @Mock private ReservedSeatRepository reservedSeatRepository;
@@ -76,10 +77,12 @@ class TrainingCalendarServiceTest {
     @BeforeEach
     void setUp() {
         AttachmentSupport attachmentSupport = new AttachmentSupport(attachmentRepository, fileStorageService, msg);
+        CommentFileSupport commentFileSupport = new CommentFileSupport(
+            commentFileRepository, commentRepository, fileStorageService, msg);
         service = new TrainingCalendarService(
             trainingRepository, commentRepository, readRepository, deletionRepository,
             reservationRepository, reservationRpeRepository, reservedSeatRepository, userRepository,
-            attachmentSupport, msg);
+            attachmentSupport, commentFileSupport, msg);
 
         lenient().when(msg.get(anyString())).thenAnswer(inv -> inv.getArgument(0));
         lenient().when(msg.get(anyString(), any())).thenAnswer(inv -> inv.getArgument(0));
@@ -890,13 +893,17 @@ class TrainingCalendarServiceTest {
     }
 
     @Test
-    void shouldExposeServeUrlForFileAttachment() {
+    void shouldAddressFileAttachmentByAttachmentIdNotByFilename() {
+        // The filename used to BE the address (/api/files/training/{uuid}.pdf, public), so a link
+        // that ever escaped worked for anyone forever. Addressing the row is what lets the request
+        // be checked against who owns the training.
         TrainingAttachment a = TrainingAttachment.file(
             buildTraining(athlete, false), "33333333-3333-3333-3333-333333333333.pdf", "Plan.pdf",
             "application/pdf", 1024L, "Plan", 0);
         TrainingAttachmentDto dto = AttachmentSupport.toDto(a);
         assertEquals("FILE", dto.kind());
-        assertEquals("/api/files/training/33333333-3333-3333-3333-333333333333.pdf", dto.url());
+        assertTrue(dto.url().startsWith("/api/training-calendar/files/"));
+        assertFalse(dto.url().contains("33333333-3333-3333-3333-333333333333.pdf"));
         assertEquals("Plan.pdf", dto.fileName());
         assertNull(dto.embedUrl());
     }
@@ -952,7 +959,8 @@ class TrainingCalendarServiceTest {
         // Then
         assertEquals("66666666-6666-6666-6666-666666666666.pdf", res.filename());
         assertEquals("Plan.pdf", res.originalName());
-        assertEquals("/api/files/training/66666666-6666-6666-6666-666666666666.pdf", res.url());
+        // No URL: the upload is two-phase, so the file has no address until it is saved onto a
+        // training or template — and the filename alone stopped being an address in V80.
     }
 
     private static AttachmentRequest link(String url) {

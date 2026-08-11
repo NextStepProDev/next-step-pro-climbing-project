@@ -172,7 +172,20 @@
     "empty": "No comments yet. Write the first one!",
     "placeholder": "Write a comment...",
     "send": "Send",
-    "coach": "Coach"
+    "coach": "Coach",
+    "fileAdd": "Attach a file",
+    "fileRemove": "Remove the selected file",
+    "fileHint": "You can attach up to {{max}} photos or PDFs. Images disappear automatically after a year; the text stays. Do not send medical records or photos containing other people's data.",
+    "fileTooMany": "At most {{max}} files per message.",
+    "fileExpires": "Disappears {{date}}",
+    "fileDelete": "Delete",
+    "fileDownload": "Download",
+    "fileDownloading": "Downloading…",
+    "fileAlt": "File attached to the message",
+    "filePreviewOpen": "Open preview",
+    "filePreviewTitle": "Attachment preview",
+    "fileUnavailable": "Could not load the file. It may already have been deleted.",
+    "fileFallbackName": "Attachment"
   },
   "overlay": {
     "reservation": "Reservation",
@@ -280,7 +293,8 @@
     "summary": "{{count}} files · {{size}} total",
     "delete": "Delete file",
     "deleteConfirmTitle": "Delete file?",
-    "deleteConfirmMessage": "The file will be removed from its training/template and from disk. This cannot be undone."
+    "deleteConfirmMessage": "The file will be removed from its training/template and from disk. This cannot be undone.",
+    "unnamed": "Unnamed file"
   },
   "rpe": {
     "rate": "Rate the session (RPE)",
@@ -335,7 +349,7 @@
       "Perceived exertion rating RPE (1–10) and your written post-session feedback",
       "Morning weigh-ins with their dates, and the trend calculated from them",
       "Training and weight goals (starting and target weight) set by your coach",
-      "Messages in the thread with your coach, plus materials: links and files"
+      "Messages in the thread with your coach, plus files: your coach's materials (links, PDFs) and any photos or PDFs you attach in the conversation yourself — those are deleted automatically after a year"
     ],
     "coachAccess": "Your coach sees all of the above — that is the point of a shared plan. The coach is also shown a signal when weight drops faster than 1% per week. Nobody other than you and your coach has access to this data.",
     "readPolicy": "Read the privacy policy (training calendar section)",

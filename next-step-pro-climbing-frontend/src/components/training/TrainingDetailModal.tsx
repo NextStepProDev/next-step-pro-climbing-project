@@ -8,6 +8,8 @@ import { Button } from '../ui/Button'
 import { ConfirmModal } from '../ui/ConfirmModal'
 import { RpePicker } from './RpePicker'
 import { CommentThread } from './CommentThread'
+import { PrivateImage, PrivateFileCard } from './PrivateFile'
+import { isImageType } from '../../utils/mediaTypes'
 import { decodeHtmlEntities } from '../../utils/htmlEntities'
 import { useDateLocale } from '../../utils/dateFnsLocale'
 import type { TrainingCalendarAdapter } from './trainingCalendarAdapter'
@@ -293,19 +295,28 @@ function MaterialItem({ attachment }: { attachment: TrainingAttachment }) {
     )
   }
 
-  // FILE image → inline preview
-  if (kind === 'FILE' && mimeType?.startsWith('image/') && url) {
+  // FILE image → inline preview. Loaded with the session rather than pointed at by src: since V80
+  // the file has no public address, so an <img src> (which sends no token) would get a 401.
+  if (kind === 'FILE' && isImageType(mimeType) && url) {
     return (
       <figure className="space-y-1">
         {decodedLabel && <figcaption className="text-xs text-surface-400">{decodedLabel}</figcaption>}
-        <a href={url} target="_blank" rel="noopener noreferrer">
-          <img src={url} alt={decodedLabel ?? fileName ?? 'image'} className="max-h-80 rounded-lg border border-surface-800" />
-        </a>
+        <PrivateImage url={url} alt={decodedLabel ?? fileName ?? 'image'} className="max-w-sm" />
       </figure>
     )
   }
 
-  // FILE (pdf/other) or plain LINK → clickable card
+  // FILE (pdf/other) → private download card
+  if (kind === 'FILE' && url) {
+    return (
+      <figure className="space-y-1">
+        {decodedLabel && <figcaption className="text-xs text-surface-400">{decodedLabel}</figcaption>}
+        <PrivateFileCard url={url} fileName={fileName ?? null} />
+      </figure>
+    )
+  }
+
+  // Plain LINK → clickable card (an external address; nothing private about it)
   const isFile = kind === 'FILE'
   const primary = decodedLabel ?? (isFile ? fileName : url) ?? ''
   const secondary = decodedLabel ? (isFile ? fileName : url) : (isFile ? null : null)

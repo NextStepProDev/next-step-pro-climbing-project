@@ -35,6 +35,7 @@ import pl.nextsteppro.climbing.infrastructure.security.JwtAuthenticationFilter;
 import pl.nextsteppro.climbing.api.activitylog.ActivityLogService;
 import pl.nextsteppro.climbing.api.reservation.EventWaitlistService;
 import pl.nextsteppro.climbing.api.reservation.UserSeatReleaseService;
+import pl.nextsteppro.climbing.api.trainingcalendar.CommentFileSupport;
 import pl.nextsteppro.climbing.api.reservation.WaitlistService;
 import pl.nextsteppro.climbing.domain.waitlist.EventWaitlist;
 import pl.nextsteppro.climbing.domain.waitlist.EventWaitlistRepository;
@@ -84,6 +85,7 @@ public class AdminService {
     private final WaitlistService waitlistService;
     private final EventWaitlistService eventWaitlistService;
     private final UserSeatReleaseService userSeatReleaseService;
+    private final CommentFileSupport commentFileSupport;
     private final ReservedSeatRepository reservedSeatRepository;
     private final TrainingRequestRepository trainingRequestRepository;
     private final pl.nextsteppro.climbing.api.trainingcalendar.TrainingCalendarService trainingCalendarService;
@@ -105,6 +107,7 @@ public class AdminService {
                        WaitlistService waitlistService,
                        EventWaitlistService eventWaitlistService,
                        UserSeatReleaseService userSeatReleaseService,
+                       CommentFileSupport commentFileSupport,
                        ReservedSeatRepository reservedSeatRepository,
                        TrainingRequestRepository trainingRequestRepository,
                        pl.nextsteppro.climbing.api.trainingcalendar.TrainingCalendarService trainingCalendarService) {
@@ -125,6 +128,7 @@ public class AdminService {
         this.waitlistService = waitlistService;
         this.eventWaitlistService = eventWaitlistService;
         this.userSeatReleaseService = userSeatReleaseService;
+        this.commentFileSupport = commentFileSupport;
         this.reservedSeatRepository = reservedSeatRepository;
         this.trainingRequestRepository = trainingRequestRepository;
         this.trainingCalendarService = trainingCalendarService;
@@ -1069,6 +1073,9 @@ public class AdminService {
         // the freed seats have to be offered to whoever is queued for them, and the user has to come
         // off the queues they were waiting on. This path used to do neither.
         userSeatReleaseService.releaseSeatsAndNotifyWaitlists(userId);
+        // Same reason, same method as the self-deletion path: the comment attachment rows go with
+        // the cascade, the files on disk need unlinking by hand.
+        commentFileSupport.purgeForUser(userId);
         authTokenRepository.deleteAllByUserId(userId);
         userRepository.delete(user);
         jwtAuthenticationFilter.evictUser(userId);

@@ -1,14 +1,25 @@
-import { useState } from 'react'
+import { useRef, useState, type ChangeEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { Send, MessageSquare } from 'lucide-react'
+import { Send, MessageSquare, Paperclip, X } from 'lucide-react'
 import { format } from 'date-fns'
 import clsx from 'clsx'
 import { LoadingSpinner } from '../ui/LoadingSpinner'
+import { PrivateImage, PrivateFileCard } from './PrivateFile'
+import { isImageType } from '../../utils/mediaTypes'
 import { decodeHtmlEntities } from '../../utils/htmlEntities'
 import { getErrorMessage } from '../../utils/errors'
+import {
+  ATTACHMENT_INPUT_TYPES,
+  isImageInput,
+  toUploadableImage,
+  validateImageFile,
+} from '../../utils/imageUtils'
 import type { TrainingCalendarAdapter } from './trainingCalendarAdapter'
-import type { TrainingCommentItem } from '../../types'
+import type { TrainingCommentFile, TrainingCommentItem } from '../../types'
+
+/** Mirrors TrainingCommentFile.MAX_PER_COMMENT on the backend. */
+const MAX_FILES = 3
 
 interface CommentThreadProps {
   trainingId: string
@@ -22,6 +33,10 @@ export function CommentThread({ trainingId, api, onPosted }: CommentThreadProps)
   const { t } = useTranslation('training')
   const queryClient = useQueryClient()
   const [draft, setDraft] = useState('')
+  const [staged, setStaged] = useState<File[]>([])
+  const [pickError, setPickError] = useState<string | null>(null)
+  const [picking, setPicking] = useState(false)
+  const fileInput = useRef<HTMLInputElement>(null)
 
   const { data: comments, isLoading } = useQuery({
     queryKey: ['trainingCalendar', 'comments', trainingId],
@@ -30,18 +45,67 @@ export function CommentThread({ trainingId, api, onPosted }: CommentThreadProps)
     refetchInterval: 15_000,
   })
 
+  const invalidate = () =>
+    queryClient.invalidateQueries({ queryKey: ['trainingCalendar', 'comments', trainingId] })
+
   const postMutation = useMutation({
-    mutationFn: (body: string) => api.addComment(trainingId, body),
+    // JSON when it is only words, multipart when anything is attached. The choice lives in the
+    // adapter so this component never learns which role it is rendering for.
+    mutationFn: ({ body, files }: { body: string; files: File[] }) =>
+      files.length > 0
+        ? api.addCommentWithFiles(trainingId, body || null, files)
+        : api.addComment(trainingId, body),
     onSuccess: () => {
       setDraft('')
-      queryClient.invalidateQueries({ queryKey: ['trainingCalendar', 'comments', trainingId] })
+      setStaged([])
+      invalidate()
       onPosted?.()
     },
   })
 
+  const deleteMutation = useMutation({
+    mutationFn: (fileId: string) => api.deleteCommentFile(fileId),
+    onSuccess: invalidate,
+  })
+
+  const pickFiles = async (e: ChangeEvent<HTMLInputElement>) => {
+    const picked = Array.from(e.target.files ?? [])
+    // Reset at once, so picking the same file twice in a row still fires a change event.
+    e.target.value = ''
+    if (picked.length === 0) return
+
+    if (staged.length + picked.length > MAX_FILES) {
+      setPickError(t('comments.fileTooMany', { max: MAX_FILES }))
+      return
+    }
+
+    setPickError(null)
+    setPicking(true)
+    try {
+      const prepared: File[] = []
+      for (const file of picked) {
+        const invalid = validateImageFile(file, ATTACHMENT_INPUT_TYPES)
+        if (invalid) {
+          setPickError(invalid)
+          return
+        }
+        // Shrunk and re-encoded here rather than server-side: it saves the upload, it is what
+        // turns an iPhone HEIC into something the backend can read, and the canvas pass is also
+        // what drops EXIF — so the location never leaves the device in the first place.
+        prepared.push(isImageInput(file) ? await toUploadableImage(file) : file)
+      }
+      setStaged(current => [...current, ...prepared])
+    } catch (err) {
+      setPickError(getErrorMessage(err))
+    } finally {
+      setPicking(false)
+    }
+  }
+
   const send = () => {
     const body = draft.trim()
-    if (body && !postMutation.isPending) postMutation.mutate(body)
+    if ((!body && staged.length === 0) || postMutation.isPending || picking) return
+    postMutation.mutate({ body, files: staged })
   }
 
   return (
@@ -58,7 +122,12 @@ export function CommentThread({ trainingId, api, onPosted }: CommentThreadProps)
       ) : (
         <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
           {comments.map((comment) => (
-            <CommentBubble key={comment.id} comment={comment} coachLabel={t('comments.coach')} />
+            <CommentBubble
+              key={comment.id}
+              comment={comment}
+              coachLabel={t('comments.coach')}
+              onDeleteFile={(fileId) => deleteMutation.mutate(fileId)}
+            />
           ))}
         </div>
       )}
@@ -66,8 +135,53 @@ export function CommentThread({ trainingId, api, onPosted }: CommentThreadProps)
       {postMutation.isError && (
         <p className="text-xs text-rose-400/80 mt-2">{getErrorMessage(postMutation.error)}</p>
       )}
+      {deleteMutation.isError && (
+        <p className="text-xs text-rose-400/80 mt-2">{getErrorMessage(deleteMutation.error)}</p>
+      )}
+      {pickError && (
+        <p className="text-xs text-rose-400/80 mt-2" role="alert">{pickError}</p>
+      )}
+
+      {staged.length > 0 && (
+        <ul className="flex flex-wrap gap-2 mt-3">
+          {staged.map((file, index) => (
+            <li
+              key={`${file.name}-${index}`}
+              className="flex items-center gap-2 pl-2 pr-1 py-1 rounded-md border border-surface-700 bg-surface-800 text-xs text-surface-200"
+            >
+              <span className="max-w-[10rem] truncate">{file.name}</span>
+              <button
+                type="button"
+                onClick={() => setStaged(current => current.filter((_, i) => i !== index))}
+                aria-label={t('comments.fileRemove')}
+                className="p-0.5 rounded hover:bg-surface-700 text-surface-400"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
 
       <div className="flex gap-2 mt-3">
+        <input
+          ref={fileInput}
+          type="file"
+          multiple
+          accept="image/*,.heic,.heif,application/pdf"
+          onChange={pickFiles}
+          className="hidden"
+        />
+        <button
+          type="button"
+          onClick={() => fileInput.current?.click()}
+          disabled={staged.length >= MAX_FILES || picking}
+          aria-label={t('comments.fileAdd')}
+          title={t('comments.fileAdd')}
+          className="px-3 rounded-lg border border-surface-700 bg-surface-800 text-surface-300 hover:bg-surface-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+        >
+          <Paperclip className="w-4 h-4" />
+        </button>
         <textarea
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
@@ -84,18 +198,28 @@ export function CommentThread({ trainingId, api, onPosted }: CommentThreadProps)
         />
         <button
           onClick={send}
-          disabled={!draft.trim() || postMutation.isPending}
+          disabled={(!draft.trim() && staged.length === 0) || postMutation.isPending || picking}
           aria-label={t('comments.send')}
           className="px-3 rounded-lg bg-primary-600 hover:bg-primary-500 disabled:opacity-40 disabled:cursor-not-allowed text-white transition-colors"
         >
           <Send className="w-4 h-4" />
         </button>
       </div>
+
+      <p className="text-[11px] text-surface-500 mt-1.5">{t('comments.fileHint', { max: MAX_FILES })}</p>
     </div>
   )
 }
 
-function CommentBubble({ comment, coachLabel }: { comment: TrainingCommentItem; coachLabel: string }) {
+function CommentBubble({
+  comment,
+  coachLabel,
+  onDeleteFile,
+}: {
+  comment: TrainingCommentItem
+  coachLabel: string
+  onDeleteFile: (fileId: string) => void
+}) {
   return (
     <div className={clsx('flex', comment.mine ? 'justify-end' : 'justify-start')}>
       <div
@@ -111,11 +235,72 @@ function CommentBubble({ comment, coachLabel }: { comment: TrainingCommentItem; 
             {comment.authorIsAdmin ? coachLabel : comment.authorName}
           </div>
         )}
-        {/* Backend HTML-escapes on write; render as plain text */}
-        <p className="text-sm text-surface-100 whitespace-pre-wrap break-words">{decodeHtmlEntities(comment.body)}</p>
+        {/* Backend HTML-escapes on write; render as plain text. Null when the message is only files. */}
+        {comment.body && (
+          <p className="text-sm text-surface-100 whitespace-pre-wrap break-words">
+            {decodeHtmlEntities(comment.body)}
+          </p>
+        )}
+        {comment.files.length > 0 && (
+          <div className={clsx('space-y-1.5', comment.body && 'mt-2')}>
+            {comment.files.map((file) => (
+              <CommentAttachment key={file.id} file={file} onDelete={() => onDeleteFile(file.id)} />
+            ))}
+          </div>
+        )}
         <div className="text-[10px] text-surface-500 mt-0.5 text-right">
           {format(new Date(comment.createdAt), 'dd.MM HH:mm')}
         </div>
+      </div>
+    </div>
+  )
+}
+
+function CommentAttachment({ file, onDelete }: { file: TrainingCommentFile; onDelete: () => void }) {
+  const { t } = useTranslation('training')
+
+  const expiry = (
+    <p className="text-[10px] text-surface-500">
+      {t('comments.fileExpires', { date: format(new Date(file.expiresAt), 'dd.MM.yyyy') })}
+    </p>
+  )
+
+  const remove = file.canDelete ? (
+    <button
+      type="button"
+      onClick={onDelete}
+      className="text-[11px] text-rose-300/80 hover:text-rose-200 underline underline-offset-2"
+    >
+      {t('comments.fileDelete')}
+    </button>
+  ) : null
+
+  if (isImageType(file.mimeType)) {
+    return (
+      <div className="space-y-1">
+        <PrivateImage
+          url={file.url}
+          alt={file.fileName ?? t('comments.fileAlt')}
+          width={file.width}
+          height={file.height}
+          lightboxExtra={
+            <div className="flex items-center justify-between gap-3">
+              {expiry}
+              {remove}
+            </div>
+          }
+        />
+        {expiry}
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-1">
+      <PrivateFileCard url={file.url} fileName={file.fileName} sizeBytes={file.sizeBytes} />
+      <div className="flex items-center justify-between gap-3">
+        {expiry}
+        {remove}
       </div>
     </div>
   )

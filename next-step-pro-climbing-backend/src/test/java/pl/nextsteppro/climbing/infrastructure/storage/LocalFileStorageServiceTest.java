@@ -46,7 +46,7 @@ class LocalFileStorageServiceTest {
     @Test
     void shouldStoreFileWithValidImage() throws IOException {
         // Given
-        byte[] content = "fake image content".getBytes();
+        byte[] content = TestImages.jpeg();
         MultipartFile file = new MockMultipartFile(
                 "file",
                 "test.jpg",
@@ -86,7 +86,7 @@ class LocalFileStorageServiceTest {
     @Test
     void shouldRejectInvalidContentType() {
         // Given
-        byte[] content = "fake content".getBytes();
+        byte[] content = TestImages.jpeg();
         MultipartFile file = new MockMultipartFile(
                 "file",
                 "test.txt",
@@ -105,7 +105,7 @@ class LocalFileStorageServiceTest {
     @Test
     void shouldRejectPathTraversalInFolder() {
         // Given
-        byte[] content = "fake image".getBytes();
+        byte[] content = TestImages.jpeg();
         MultipartFile file = new MockMultipartFile(
                 "file",
                 "test.jpg",
@@ -125,7 +125,7 @@ class LocalFileStorageServiceTest {
     @Test
     void shouldAcceptValidFolderNames() throws IOException {
         // Given
-        byte[] content = "fake image".getBytes();
+        byte[] content = TestImages.jpeg();
         MultipartFile file = new MockMultipartFile(
                 "file",
                 "test.jpg",
@@ -142,7 +142,7 @@ class LocalFileStorageServiceTest {
     @Test
     void shouldGetInputStreamForExistingFile() throws IOException {
         // Given
-        byte[] content = "test image content".getBytes();
+        byte[] content = TestImages.png();
         MultipartFile file = new MockMultipartFile(
                 "file",
                 "test.png",
@@ -164,7 +164,7 @@ class LocalFileStorageServiceTest {
     @Test
     void shouldGetCorrectFileSize() throws IOException {
         // Given
-        byte[] content = "test content with specific length".getBytes();
+        byte[] content = TestImages.jpeg();
         MultipartFile file = new MockMultipartFile(
                 "file",
                 "test.jpg",
@@ -215,7 +215,7 @@ class LocalFileStorageServiceTest {
     @Test
     void shouldAcceptValidFilenameFormats() throws IOException {
         // Given - create actual file first
-        byte[] content = "test".getBytes();
+        byte[] content = TestImages.jpeg();
         MultipartFile file = new MockMultipartFile("file", "test.jpg", "image/jpeg", content);
         String filename = service.store(file, "instructors");
 
@@ -227,7 +227,7 @@ class LocalFileStorageServiceTest {
     @Test
     void shouldDeleteExistingFile() throws IOException {
         // Given
-        byte[] content = "test content".getBytes();
+        byte[] content = TestImages.jpeg();
         MultipartFile file = new MockMultipartFile(
                 "file",
                 "test.jpg",
@@ -256,7 +256,7 @@ class LocalFileStorageServiceTest {
     @Test
     void shouldHandleFilesWithoutFolder() throws IOException {
         // Given
-        byte[] content = "test content".getBytes();
+        byte[] content = TestImages.webp();
         MultipartFile file = new MockMultipartFile(
                 "file",
                 "test.webp",
@@ -280,7 +280,11 @@ class LocalFileStorageServiceTest {
         String[] extensions = {".jpg", ".png", ".webp"};
 
         for (int i = 0; i < formats.length; i++) {
-            byte[] content = ("test " + formats[i]).getBytes();
+            byte[] content = switch (formats[i]) {
+                case "image/png" -> TestImages.png();
+                case "image/webp" -> TestImages.webp();
+                default -> TestImages.jpeg();
+            };
             String ext = extensions[i];
             MultipartFile file = new MockMultipartFile(
                     "file",
@@ -301,7 +305,7 @@ class LocalFileStorageServiceTest {
     void shouldStorePdfDocumentWithoutOptimization() throws IOException {
         // Given
         MultipartFile file = new MockMultipartFile(
-                "file", "plan.pdf", "application/pdf", "%PDF-1.4 fake".getBytes());
+                "file", "plan.pdf", "application/pdf", TestImages.pdf());
 
         // When
         String filename = service.storeDocument(file, "training");
@@ -317,7 +321,7 @@ class LocalFileStorageServiceTest {
     @Test
     void shouldStoreImageDocument() throws IOException {
         MultipartFile file = new MockMultipartFile(
-                "file", "photo.png", "image/png", "fake image".getBytes());
+                "file", "photo.png", "image/png", TestImages.png());
         String filename = service.storeDocument(file, "training");
         assertTrue(service.exists(filename, "training"));
     }

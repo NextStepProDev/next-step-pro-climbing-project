@@ -109,6 +109,7 @@ class AdminServiceEditMailCountTest {
             waitlistService,
             eventWaitlistService,
             userSeatReleaseService,
+            null, // comment attachments: not exercised here
             reservedSeatRepository,
             trainingRequestRepository,
             trainingCalendarService

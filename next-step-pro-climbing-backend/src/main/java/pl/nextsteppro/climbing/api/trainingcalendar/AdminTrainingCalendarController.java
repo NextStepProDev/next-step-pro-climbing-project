@@ -114,6 +114,21 @@ public class AdminTrainingCalendarController {
         return ResponseEntity.ok(adminTrainingCalendarService.addComment(adminId, trainingId, request.body()));
     }
 
+    /**
+     * Only writing needs a coach-side route — it is what stamps the message as coming from the
+     * coach. Reading and deleting an attachment are single endpoints on the athlete controller,
+     * serving both roles, so there is one access check rather than two that can drift.
+     */
+    @Operation(summary = "Add comment with attachments as coach")
+    @PostMapping(value = "/trainings/{trainingId}/comments/attachments", consumes = "multipart/form-data")
+    public ResponseEntity<TrainingCommentDto> addCommentWithFiles(
+            @Parameter(hidden = true) @CurrentUserId UUID adminId,
+            @PathVariable UUID trainingId,
+            @RequestParam("files") List<MultipartFile> files,
+            @RequestParam(value = "body", required = false) @org.jspecify.annotations.Nullable String body) {
+        return ResponseEntity.ok(adminTrainingCalendarService.addCommentWithFiles(adminId, trainingId, body, files));
+    }
+
     @Operation(summary = "Mark athlete seen", description = "Called when the coach opens an athlete's calendar; resets that athlete's badge for this admin.")
     @PostMapping("/athletes/{athleteId}/seen")
     public ResponseEntity<Void> markSeen(
