@@ -9,8 +9,11 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import org.jspecify.annotations.Nullable;
+import org.springframework.core.io.Resource;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import pl.nextsteppro.climbing.config.CurrentUserId;
@@ -205,6 +208,62 @@ public class TrainingCalendarController {
             @PathVariable UUID trainingId,
             @Valid @RequestBody CreateTrainingCommentRequest request) {
         return ResponseEntity.ok(trainingCalendarService.addMyComment(userId, trainingId, request.body()));
+    }
+
+    @Operation(summary = "Add comment with attachments",
+        description = "Multipart alternative to the JSON endpoint. Text is optional here — a photo is a whole message.")
+    @PostMapping(value = "/trainings/{trainingId}/comments/attachments", consumes = "multipart/form-data")
+    public ResponseEntity<TrainingCommentDto> addCommentWithFiles(
+            @Parameter(hidden = true) @CurrentUserId UUID userId,
+            @PathVariable UUID trainingId,
+            @RequestParam("files") List<MultipartFile> files,
+            @RequestParam(value = "body", required = false) @Nullable String body) {
+        return ResponseEntity.ok(trainingCalendarService.addMyCommentWithFiles(userId, trainingId, body, files));
+    }
+
+    @Operation(summary = "Download a comment attachment",
+        description = "Authenticated stream. Serves both roles: the owning athlete and the coach. "
+            + "These files are health-adjacent and never appear under the public /api/files namespace.")
+    @GetMapping("/comment-files/{fileId}")
+    public ResponseEntity<Resource> getCommentFile(
+            @Parameter(hidden = true) @CurrentUserId UUID userId,
+            Authentication authentication,
+            @PathVariable UUID fileId) {
+        CommentFileStream file = trainingCalendarService.openCommentFile(userId, isAdmin(authentication), fileId);
+        return PrivateFileResponses.stream(file.inputStream(), file.size(), file.mimeType(), file.fileName());
+    }
+
+    @Operation(summary = "Delete a comment attachment",
+        description = "The author may withdraw what they sent; the coach may remove anything in the thread.")
+    @DeleteMapping("/comment-files/{fileId}")
+    public ResponseEntity<Void> deleteCommentFile(
+            @Parameter(hidden = true) @CurrentUserId UUID userId,
+            Authentication authentication,
+            @PathVariable UUID fileId) {
+        trainingCalendarService.deleteCommentFile(userId, isAdmin(authentication), fileId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @Operation(summary = "Download a training material",
+        description = "Authenticated stream for the coach's materials (PDF/image). Replaced the public "
+            + "/api/files/training/{filename} route, whose only protection was an unguessable name.")
+    @GetMapping("/files/{attachmentId}")
+    public ResponseEntity<Resource> getMaterial(
+            @Parameter(hidden = true) @CurrentUserId UUID userId,
+            Authentication authentication,
+            @PathVariable UUID attachmentId) {
+        CommentFileStream file = trainingCalendarService.openMaterial(userId, isAdmin(authentication), attachmentId);
+        return PrivateFileResponses.stream(file.inputStream(), file.size(), file.mimeType(), file.fileName());
+    }
+
+    /**
+     * One route serves both roles, so the role has to come from the token rather than the path.
+     * A mirrored admin route would be a second copy of an access check on other people's health
+     * data — the twin-divergence pattern this codebase has already been bitten by.
+     */
+    private static boolean isAdmin(@Nullable Authentication authentication) {
+        return authentication != null && authentication.getAuthorities().stream()
+            .anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()));
     }
 
     @Operation(summary = "Grant data-processing consent",

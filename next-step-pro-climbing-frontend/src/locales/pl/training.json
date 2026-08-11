@@ -178,7 +178,20 @@
     "empty": "Brak komentarzy. Napisz pierwszy!",
     "placeholder": "Napisz komentarz...",
     "send": "Wyślij",
-    "coach": "Trener"
+    "coach": "Trener",
+    "fileAdd": "Dołącz plik",
+    "fileRemove": "Usuń wybrany plik",
+    "fileHint": "Możesz dołączyć do {{max}} zdjęć lub PDF-ów. Zdjęcia znikają automatycznie po roku, tekst zostaje. Nie wysyłaj dokumentacji medycznej ani zdjęć z danymi innych osób.",
+    "fileTooMany": "Do jednej wiadomości można dołączyć najwyżej {{max}} pliki.",
+    "fileExpires": "Zniknie {{date}}",
+    "fileDelete": "Usuń",
+    "fileDownload": "Pobierz",
+    "fileDownloading": "Pobieram…",
+    "fileAlt": "Plik dołączony do wiadomości",
+    "filePreviewOpen": "Otwórz podgląd",
+    "filePreviewTitle": "Podgląd załącznika",
+    "fileUnavailable": "Nie udało się wczytać pliku. Mógł już zostać usunięty.",
+    "fileFallbackName": "Załącznik"
   },
   "overlay": {
     "reservation": "Rezerwacja",
@@ -298,7 +311,8 @@
     "summary": "{{count}} plików · {{size}} łącznie",
     "delete": "Usuń plik",
     "deleteConfirmTitle": "Usunąć plik?",
-    "deleteConfirmMessage": "Plik zostanie usunięty z treningu/szablonu i z dysku. Tego nie można cofnąć."
+    "deleteConfirmMessage": "Plik zostanie usunięty z treningu/szablonu i z dysku. Tego nie można cofnąć.",
+    "unnamed": "Plik bez nazwy"
   },
   "rpe": {
     "rate": "Oceń trening (RPE)",
@@ -357,7 +371,7 @@
       "Ocena zmęczenia RPE (1–10) i Twój opisowy feedback po treningu",
       "Pomiary porannej wagi wraz z datami oraz wyliczany z nich trend",
       "Cele treningowe i wagowe (waga startowa i docelowa) zakładane przez trenera",
-      "Komentarze w rozmowie z trenerem oraz materiały: linki i pliki"
+      "Komentarze w rozmowie z trenerem oraz pliki: materiały od trenera (linki, PDF-y) i zdjęcia lub PDF-y, które sam(a) załączysz w rozmowie — te znikają automatycznie po roku"
     ],
     "coachAccess": "Wszystko powyżej widzi Twój trener — to jest sens wspólnego planu. Trenerowi pokazywany jest też sygnał, gdy waga spada szybciej niż 1% tygodniowo. Nikt poza Tobą i trenerem nie ma do tych danych dostępu.",
     "readPolicy": "Przeczytaj politykę prywatności (sekcja o kalendarzu)",

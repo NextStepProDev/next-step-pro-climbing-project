@@ -1071,7 +1071,6 @@ export interface AttachmentUpload {
   originalName: string
   mimeType: string
   sizeBytes: number
-  url: string
 }
 
 export interface CreatePersonalTraining {
@@ -1167,13 +1166,30 @@ export interface TrainingCalendarRange {
 
 export interface TrainingCommentItem {
   id: string
-  body: string
+  // Null when the message is nothing but attachments
+  body: string | null
   authorIsAdmin: boolean
   authorName: string
   authorAvatarUrl: string | null
   createdAt: string
   // Whether the viewer wrote this message (chat alignment)
   mine: boolean
+  files: TrainingCommentFile[]
+}
+
+export interface TrainingCommentFile {
+  id: string
+  /** Needs the bearer token — these never enter the public /api/files namespace. */
+  url: string
+  mimeType: string
+  fileName: string | null
+  sizeBytes: number
+  /** Null for a PDF. Present for images so the thread reserves space before the bytes arrive. */
+  width: number | null
+  height: number | null
+  /** When the retention sweep removes it. Shown, so its disappearance is never a surprise. */
+  expiresAt: string
+  canDelete: boolean
 }
 
 export interface TrainingCalendarNotifications {

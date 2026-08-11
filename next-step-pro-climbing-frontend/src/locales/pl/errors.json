@@ -25,8 +25,9 @@
   },
   "uploadFailed": "Nie udało się wgrać pliku. Spróbuj ponownie.",
   "fileTooLarge": "Plik jest za duży ({{size}} MB). Maksymalny rozmiar to 50 MB.",
-  "fileInvalidType": "Niedozwolony format pliku. Dozwolone: JPG, PNG, WebP.",
+  "fileInvalidType": "Niedozwolony format pliku. Dozwolone: JPG, PNG, WebP, HEIC, PDF.",
   "imageLoadFailed": "Nie udało się wczytać obrazu.",
   "authServer": "Błąd serwera. Spróbuj ponownie później.",
-  "authGeneric": "Wystąpił błąd ({{status}}). Spróbuj ponownie."
+  "authGeneric": "Wystąpił błąd ({{status}}). Spróbuj ponownie.",
+  "imageUnreadableHeic": "Tej przeglądarce nie udało się odczytać zdjęcia. Jeśli to zdjęcie z iPhone'a (HEIC), wyślij je z telefonu albo przełącz Ustawienia → Aparat → Formaty na „Najbardziej zgodne”."
 }

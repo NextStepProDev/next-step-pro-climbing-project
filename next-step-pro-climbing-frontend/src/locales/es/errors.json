@@ -25,8 +25,9 @@
   },
   "uploadFailed": "No se pudo subir el archivo. Inténtalo de nuevo.",
   "fileTooLarge": "El archivo es demasiado grande ({{size}} MB). El tamaño máximo es 50 MB.",
-  "fileInvalidType": "Formato de archivo no permitido. Permitidos: JPG, PNG, WebP.",
+  "fileInvalidType": "Formato de archivo no admitido. Permitidos: JPG, PNG, WebP, HEIC, PDF.",
   "imageLoadFailed": "No se pudo cargar la imagen.",
   "authServer": "Error del servidor. Inténtalo de nuevo más tarde.",
-  "authGeneric": "Se ha producido un error ({{status}}). Inténtalo de nuevo."
+  "authGeneric": "Se ha producido un error ({{status}}). Inténtalo de nuevo.",
+  "imageUnreadableHeic": "Este navegador no pudo leer la imagen. Si es una foto de iPhone (HEIC), envíala desde el teléfono o cambia Ajustes → Cámara → Formatos a “Más compatible”."
 }

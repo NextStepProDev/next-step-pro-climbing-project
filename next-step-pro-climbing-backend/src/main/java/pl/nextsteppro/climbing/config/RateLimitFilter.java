@@ -37,10 +37,19 @@ public class RateLimitFilter extends OncePerRequestFilter {
     // Material uploads store a 10MB file on disk each; the endpoint is otherwise unthrottled, so a
     // tight per-IP cap bounds a disk-fill flood (orphans are also swept by the cleanup scheduler).
     private static final int UPLOAD_LIMIT = 12;
+    // Reading a private file is one request per image, and a thread can hold dozens. Sharing the
+    // 40/min calendar bucket would have a coach opening a long conversation throttled by their own
+    // photos; these are cheap streamed reads, so they get their own, roomier bucket.
+    private static final int FILE_READ_LIMIT = 120;
 
     // Uploads live under both /api/training-calendar/** and /api/admin/training-calendar/** — match
     // the shared suffix so the tighter cap covers both, and check it before the broader buckets.
     private static final String UPLOAD_PATH_SUFFIX = "/attachments/upload";
+    // Attachments posted with a message. Distinct suffix, so it does not collide with the above.
+    private static final String COMMENT_UPLOAD_SUFFIX = "/comments/attachments";
+    // Authenticated file streams (comment attachments and coach materials alike).
+    private static final String COMMENT_FILE_PATH = "/api/training-calendar/comment-files/";
+    private static final String MATERIAL_FILE_PATH = "/api/training-calendar/files/";
 
     private static final String TRAINING_CALENDAR_PATH = "/api/training-calendar";
 
@@ -90,6 +99,8 @@ public class RateLimitFilter extends OncePerRequestFilter {
     // capped by one bucket's limit while counting into another bucket's counter.
     private int resolveLimit(String path) {
         if (path.contains(UPLOAD_PATH_SUFFIX)) return UPLOAD_LIMIT;
+        if (path.contains(COMMENT_UPLOAD_SUFFIX)) return UPLOAD_LIMIT;
+        if (isPrivateFileRead(path)) return FILE_READ_LIMIT;
         if (path.startsWith("/api/auth/")) return AUTH_LIMIT;
         if (path.startsWith("/api/reservations/")) return RESERVATION_LIMIT;
         if (path.startsWith("/api/user/")) return USER_LIMIT;
@@ -100,6 +111,8 @@ public class RateLimitFilter extends OncePerRequestFilter {
 
     private String resolveBucket(String path) {
         if (path.contains(UPLOAD_PATH_SUFFIX)) return "upload";
+        if (path.contains(COMMENT_UPLOAD_SUFFIX)) return "upload";
+        if (isPrivateFileRead(path)) return "privatefile";
         if (path.startsWith("/api/auth/")) return "auth";
         if (path.startsWith("/api/reservations/")) return "reservations";
         if (path.startsWith("/api/user/")) return "user";
@@ -113,6 +126,11 @@ public class RateLimitFilter extends OncePerRequestFilter {
      * slash — a plain {@code startsWith(base + "/")} let the heaviest query of the whole feature
      * (trainings + attachments + reservations + RPE + held seats + deletion log) through unthrottled.
      */
+    /** Checked before the training bucket, and identically in both resolvers. */
+    private static boolean isPrivateFileRead(String path) {
+        return path.startsWith(COMMENT_FILE_PATH) || path.startsWith(MATERIAL_FILE_PATH);
+    }
+
     private static boolean isTrainingCalendar(String path) {
         return path.equals(TRAINING_CALENDAR_PATH) || path.startsWith(TRAINING_CALENDAR_PATH + "/");
     }

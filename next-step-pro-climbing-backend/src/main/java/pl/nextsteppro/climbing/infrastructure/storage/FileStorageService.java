@@ -25,6 +25,28 @@ public interface FileStorageService {
     String storeDocument(MultipartFile file, @Nullable String folder) throws IOException;
 
     /**
+     * Store an attachment somebody uploaded about themselves (comment attachments). Differs from
+     * {@link #storeDocument} in two ways that matter:
+     *
+     * <ul>
+     *   <li>images are <b>always</b> re-encoded to JPEG, which strips EXIF — a phone photo carries
+     *       the GPS coordinates of wherever it was taken, and nobody attaching a picture of a route
+     *       means to publish that. JPEG rather than the input format because this JVM has no WebP
+     *       reader, so a WebP could be neither stripped nor measured;</li>
+     *   <li>the caller sets its own size ceiling, lower than the 10 MB for coach materials, because
+     *       these accumulate for a year.</li>
+     * </ul>
+     *
+     * @return what was actually written — content type and dimensions come from the stored bytes,
+     *   never from the request.
+     */
+    StoredFile storeAttachment(MultipartFile file, String folder, long maxBytes) throws IOException;
+
+    /** Dimensions are null for PDFs. */
+    record StoredFile(String filename, String mimeType, long sizeBytes,
+                      @Nullable Integer width, @Nullable Integer height) {}
+
+    /**
      * Delete a file from the specified folder
      * @param filename the filename to delete
      * @param folder optional subfolder

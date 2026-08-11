@@ -97,6 +97,12 @@ public class AdminTrainingCalendarService {
         return core.addCommentAsAdmin(adminId, trainingId, body);
     }
 
+    public TrainingCommentDto addCommentWithFiles(UUID adminId, UUID trainingId,
+                                                  @org.jspecify.annotations.Nullable String body,
+                                                  List<org.springframework.web.multipart.MultipartFile> files) {
+        return core.addCommentWithFilesAsAdmin(adminId, trainingId, body, files);
+    }
+
     public void markSeen(UUID adminId, UUID athleteId) {
         core.markCoachSeen(adminId, athleteId);
     }

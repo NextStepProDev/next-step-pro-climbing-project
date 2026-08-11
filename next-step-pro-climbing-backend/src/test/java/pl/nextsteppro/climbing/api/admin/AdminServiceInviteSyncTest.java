@@ -73,6 +73,7 @@ class AdminServiceInviteSyncTest {
     @Mock private WaitlistService waitlistService;
     @Mock private EventWaitlistService eventWaitlistService;
     @Mock private UserSeatReleaseService userSeatReleaseService;
+    @Mock private pl.nextsteppro.climbing.api.trainingcalendar.CommentFileSupport commentFileSupport;
     @Mock private ReservedSeatRepository reservedSeatRepository;
     @Mock private TrainingRequestRepository trainingRequestRepository;
     @Mock private pl.nextsteppro.climbing.api.trainingcalendar.TrainingCalendarService trainingCalendarService;
@@ -107,6 +108,7 @@ class AdminServiceInviteSyncTest {
             waitlistService,
             eventWaitlistService,
             userSeatReleaseService,
+            commentFileSupport,
             reservedSeatRepository,
             trainingRequestRepository,
             trainingCalendarService

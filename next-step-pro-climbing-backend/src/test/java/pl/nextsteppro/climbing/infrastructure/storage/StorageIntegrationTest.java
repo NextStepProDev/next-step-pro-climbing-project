@@ -26,7 +26,7 @@ class StorageIntegrationTest {
     void shouldHandleCompleteFileLifecycle() throws IOException {
         // Given
         LocalFileStorageService service = new LocalFileStorageService(tempDir.toString(), new ImageOptimizer());
-        byte[] originalContent = "Test image content for integration test".getBytes();
+        byte[] originalContent = TestImages.jpeg();
         MultipartFile file = new MockMultipartFile(
                 "photo",
                 "test-photo.jpg",
@@ -70,9 +70,9 @@ class StorageIntegrationTest {
         // Given
         LocalFileStorageService service = new LocalFileStorageService(tempDir.toString(), new ImageOptimizer());
 
-        byte[] instructorPhoto = "Instructor photo".getBytes();
-        byte[] galleryPhoto1 = "Gallery photo 1".getBytes();
-        byte[] galleryPhoto2 = "Gallery photo 2".getBytes();
+        byte[] instructorPhoto = TestImages.jpeg();
+        byte[] galleryPhoto1 = TestImages.png();
+        byte[] galleryPhoto2 = TestImages.webp();
 
         MultipartFile file1 = new MockMultipartFile("f1", "i.jpg", "image/jpeg", instructorPhoto);
         MultipartFile file2 = new MockMultipartFile("f2", "g1.png", "image/png", galleryPhoto1);
@@ -117,11 +117,9 @@ class StorageIntegrationTest {
     void shouldStreamLargeFileWithoutLoadingIntoMemory() throws IOException {
         // Given: Simulate large file (5MB)
         LocalFileStorageService service = new LocalFileStorageService(tempDir.toString(), new ImageOptimizer());
-        byte[] largeContent = new byte[5 * 1024 * 1024];
-        // Fill with pattern to verify integrity
-        for (int i = 0; i < largeContent.length; i++) {
-            largeContent[i] = (byte) (i % 256);
-        }
+        // A real 3000x2000 JPEG: it has to be a decodable image now that the signature is checked,
+        // and it is large enough to exercise the resize path on the way in.
+        byte[] largeContent = TestImages.jpeg(3000, 2000);
 
         MultipartFile file = new MockMultipartFile(
                 "large",
@@ -134,30 +132,29 @@ class StorageIntegrationTest {
         String filename = service.store(file, "gallery");
         long fileSize = service.getFileSize(filename, "gallery");
 
-        // Then: File size correct
-        assertEquals(largeContent.length, fileSize);
+        // Then: stored and non-empty. NOT byte-identical to the upload: an image over 1920px is
+        // resized on the way in, so the stored file is deliberately smaller than what was sent.
+        assertTrue(fileSize > 0);
+        assertTrue(fileSize < largeContent.length);
 
         // When: Stream download (this should NOT load entire file into memory at once)
         try (InputStream stream = service.getInputStream(filename, "gallery")) {
             // Verify we got an InputStream (not byte[])
             assertNotNull(stream);
 
-            // Read in chunks to simulate streaming behavior
+            // Read in chunks to simulate streaming behavior. The old version checked a synthetic
+            // byte pattern, which only worked while uploads were stored verbatim; a real image is
+            // re-encoded on the way in, so what is verifiable here is that the whole stored file
+            // comes back through a chunked read.
             byte[] buffer = new byte[8192]; // 8KB buffer
-            int totalRead = 0;
+            long totalRead = 0;
             int bytesRead;
 
             while ((bytesRead = stream.read(buffer)) != -1) {
                 totalRead += bytesRead;
-                // Verify pattern in chunks
-                for (int i = 0; i < bytesRead; i++) {
-                    int position = totalRead - bytesRead + i;
-                    assertEquals((byte) (position % 256), buffer[i],
-                            "Byte at position " + position + " should match pattern");
-                }
             }
 
-            assertEquals(largeContent.length, totalRead,
+            assertEquals(fileSize, totalRead,
                     "Total bytes read should match file size");
         }
 

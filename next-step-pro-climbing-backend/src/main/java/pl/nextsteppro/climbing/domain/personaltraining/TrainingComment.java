@@ -36,7 +36,11 @@ public class TrainingComment {
     @Column(name = "author_is_admin", nullable = false)
     private boolean authorIsAdmin;
 
-    @Column(nullable = false, length = MAX_BODY_LENGTH)
+    // Nullable since V80: a message can be nothing but an attachment ("look, this is how it went").
+    // "Neither text nor file" is refused by TrainingCommentFileService — the condition reaches
+    // another table, so it cannot be a CHECK.
+    @Column(length = MAX_BODY_LENGTH)
+    @Nullable
     private String body;
 
     @Column(name = "created_at", nullable = false, updatable = false)
@@ -44,7 +48,7 @@ public class TrainingComment {
 
     protected TrainingComment() {}
 
-    public TrainingComment(PersonalTraining training, User author, boolean authorIsAdmin, String body) {
+    public TrainingComment(PersonalTraining training, User author, boolean authorIsAdmin, @Nullable String body) {
         this.training = training;
         this.author = author;
         this.authorIsAdmin = authorIsAdmin;
@@ -80,8 +84,18 @@ public class TrainingComment {
         return authorIsAdmin;
     }
 
+    @Nullable
     public String getBody() {
         return body;
+    }
+
+    /**
+     * FK access without initialising the lazy proxy. NOT named {@code getTrainingId()} — a
+     * "trainingId" bean property makes Spring Data derive {@code findByTrainingId} as the invalid
+     * path {@code c.trainingId} instead of {@code c.training.id} (see {@link TrainingAttachment}).
+     */
+    public UUID trainingId() {
+        return training.getId();
     }
 
     public Instant getCreatedAt() {

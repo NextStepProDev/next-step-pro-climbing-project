@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { CalendarDays, ExternalLink, FileText, Image as ImageIcon, LayoutTemplate, Trash2 } from 'lucide-react'
+import { CalendarDays, FileText, Image as ImageIcon, LayoutTemplate, Trash2 } from 'lucide-react'
+import { PrivateDownloadButton } from './PrivateFile'
 import { Modal } from '../ui/Modal'
 import { ConfirmModal } from '../ui/ConfirmModal'
 import { LoadingSpinner } from '../ui/LoadingSpinner'
@@ -72,15 +73,14 @@ export function TrainingMaterialsModal({ isOpen, onClose }: TrainingMaterialsMod
                     ? <ImageIcon className="w-4 h-4 shrink-0 text-primary-300" />
                     : <FileText className="w-4 h-4 shrink-0 text-rose-300" />}
                   <div className="min-w-0 flex-1">
-                    <a
-                      href={m.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-sm font-medium text-surface-100 hover:text-primary-300 inline-flex items-center gap-1 max-w-full"
-                    >
-                      <span className="truncate">{m.fileName ?? m.url}</span>
-                      <ExternalLink className="w-3 h-3 shrink-0 opacity-70" />
-                    </a>
+                    {/* Was a plain link opening in a new tab; since V80 the file has no public
+                        address, so it is fetched with the session and saved from memory instead. */}
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="text-sm font-medium text-surface-100 truncate">
+                        {m.fileName ?? t('materials.unnamed')}
+                      </span>
+                      <PrivateDownloadButton url={m.url} fileName={m.fileName ?? 'file'} />
+                    </div>
                     <p className="text-xs text-surface-500 flex items-center gap-2 mt-0.5 min-w-0">
                       <span className="inline-flex items-center gap-1 shrink-0">
                         {m.ownerType === 'TEMPLATE'

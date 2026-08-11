@@ -173,7 +173,20 @@
     "empty": "Aún no hay comentarios. ¡Escribe el primero!",
     "placeholder": "Escribe un comentario...",
     "send": "Enviar",
-    "coach": "Entrenador"
+    "coach": "Entrenador",
+    "fileAdd": "Adjuntar un archivo",
+    "fileRemove": "Quitar el archivo seleccionado",
+    "fileHint": "Puedes adjuntar hasta {{max}} fotos o PDF. Las imágenes desaparecen automáticamente al cabo de un año; el texto permanece. No envíes documentación médica ni fotos con datos de otras personas.",
+    "fileTooMany": "Como máximo {{max}} archivos por mensaje.",
+    "fileExpires": "Desaparece el {{date}}",
+    "fileDelete": "Eliminar",
+    "fileDownload": "Descargar",
+    "fileDownloading": "Descargando…",
+    "fileAlt": "Archivo adjunto al mensaje",
+    "filePreviewOpen": "Abrir vista previa",
+    "filePreviewTitle": "Vista previa del adjunto",
+    "fileUnavailable": "No se pudo cargar el archivo. Puede que ya se haya eliminado.",
+    "fileFallbackName": "Adjunto"
   },
   "overlay": {
     "reservation": "Reserva",
@@ -287,7 +300,8 @@
     "summary": "{{count}} archivos · {{size}} en total",
     "delete": "Eliminar archivo",
     "deleteConfirmTitle": "¿Eliminar el archivo?",
-    "deleteConfirmMessage": "El archivo se eliminará de su entrenamiento/plantilla y del disco. No se puede deshacer."
+    "deleteConfirmMessage": "El archivo se eliminará de su entrenamiento/plantilla y del disco. No se puede deshacer.",
+    "unnamed": "Archivo sin nombre"
   },
   "rpe": {
     "rate": "Valora la sesión (RPE)",
@@ -343,7 +357,7 @@
       "Valoración del esfuerzo percibido RPE (1–10) y tu comentario posterior a la sesión",
       "Pesajes matutinos con sus fechas y la tendencia calculada a partir de ellos",
       "Objetivos de entrenamiento y de peso (peso inicial y objetivo) fijados por el entrenador",
-      "Mensajes en la conversación con el entrenador y materiales: enlaces y archivos"
+      "Mensajes en la conversación con el entrenador y archivos: los materiales del entrenador (enlaces, PDF) y las fotos o PDF que adjuntes tú en la conversación, que se eliminan automáticamente al cabo de un año"
     ],
     "coachAccess": "Tu entrenador ve todo lo anterior: ese es el sentido de un plan compartido. Al entrenador también se le muestra un aviso cuando el peso baja más de un 1% por semana. Nadie más que tú y tu entrenador tiene acceso a estos datos.",
     "readPolicy": "Lee la política de privacidad (sección del calendario)",

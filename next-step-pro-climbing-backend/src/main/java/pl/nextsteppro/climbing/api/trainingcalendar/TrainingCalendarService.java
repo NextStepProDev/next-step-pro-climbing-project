@@ -5,12 +5,15 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import pl.nextsteppro.climbing.domain.personaltraining.AthleteActivityCount;
+import pl.nextsteppro.climbing.domain.personaltraining.AttachmentKind;
+import pl.nextsteppro.climbing.domain.personaltraining.TrainingAttachment;
 import pl.nextsteppro.climbing.domain.personaltraining.AthleteLastActivity;
 import pl.nextsteppro.climbing.domain.personaltraining.PersonalTraining;
 import pl.nextsteppro.climbing.domain.personaltraining.PersonalTrainingRepository;
 import pl.nextsteppro.climbing.domain.personaltraining.TrainingCalendarRead;
 import pl.nextsteppro.climbing.domain.personaltraining.TrainingCalendarReadRepository;
 import pl.nextsteppro.climbing.domain.personaltraining.TrainingComment;
+import pl.nextsteppro.climbing.domain.personaltraining.TrainingCommentFile;
 import pl.nextsteppro.climbing.domain.personaltraining.TrainingCommentRepository;
 import pl.nextsteppro.climbing.domain.personaltraining.TrainingDeletion;
 import pl.nextsteppro.climbing.domain.personaltraining.TrainingDeletionRepository;
@@ -75,6 +78,7 @@ public class TrainingCalendarService {
     private final ReservedSeatRepository reservedSeatRepository;
     private final UserRepository userRepository;
     private final AttachmentSupport attachments;
+    private final CommentFileSupport commentFiles;
     private final MessageService msg;
 
     public TrainingCalendarService(PersonalTrainingRepository trainingRepository,
@@ -86,6 +90,7 @@ public class TrainingCalendarService {
                                    ReservedSeatRepository reservedSeatRepository,
                                    UserRepository userRepository,
                                    AttachmentSupport attachments,
+                                   CommentFileSupport commentFiles,
                                    MessageService msg) {
         this.trainingRepository = trainingRepository;
         this.commentRepository = commentRepository;
@@ -96,6 +101,7 @@ public class TrainingCalendarService {
         this.reservedSeatRepository = reservedSeatRepository;
         this.userRepository = userRepository;
         this.attachments = attachments;
+        this.commentFiles = commentFiles;
         this.msg = msg;
     }
 
@@ -124,6 +130,9 @@ public class TrainingCalendarService {
         PersonalTraining training = requireOwnTraining(trainingId, userId);
         recordDeletionIfFuture(training, false);
         attachments.purgeTrainingAttachments(trainingId);
+        // Comment attachments go the same way and for the same reason: their rows disappear
+        // through the DB cascade without Hibernate loading them, so the files need unlinking here.
+        commentFiles.purgeForTraining(trainingId);
         trainingRepository.delete(training);
     }
 
@@ -205,13 +214,20 @@ public class TrainingCalendarService {
     public List<TrainingCommentDto> getMyComments(UUID userId, UUID trainingId) {
         requireAthlete(userId);
         requireOwnTraining(trainingId, userId);
-        return toCommentDtos(commentRepository.findThread(trainingId), userId);
+        return toCommentDtos(commentRepository.findThread(trainingId), userId, false);
     }
 
     public TrainingCommentDto addMyComment(UUID userId, UUID trainingId, String body) {
         User athlete = requireAthlete(userId);
         PersonalTraining training = requireOwnTraining(trainingId, userId);
-        return addComment(training, athlete, false, body, userId);
+        return addComment(training, athlete, false, body, userId, false);
+    }
+
+    public TrainingCommentDto addMyCommentWithFiles(UUID userId, UUID trainingId,
+                                                    @Nullable String body, List<MultipartFile> files) {
+        User athlete = requireAthlete(userId);
+        PersonalTraining training = requireOwnTraining(trainingId, userId);
+        return addCommentWithFiles(training, athlete, false, body, files, userId, false);
     }
 
     @Transactional(readOnly = true)
@@ -296,6 +312,9 @@ public class TrainingCalendarService {
         PersonalTraining training = requireTrainingOfFlaggedAthlete(trainingId);
         recordDeletionIfFuture(training, true);
         attachments.purgeTrainingAttachments(trainingId);
+        // Comment attachments go the same way and for the same reason: their rows disappear
+        // through the DB cascade without Hibernate loading them, so the files need unlinking here.
+        commentFiles.purgeForTraining(trainingId);
         trainingRepository.delete(training);
     }
 
@@ -314,14 +333,145 @@ public class TrainingCalendarService {
     @Transactional(readOnly = true)
     public List<TrainingCommentDto> getCommentsAsAdmin(UUID adminId, UUID trainingId) {
         requireTrainingOfFlaggedAthlete(trainingId);
-        return toCommentDtos(commentRepository.findThread(trainingId), adminId);
+        return toCommentDtos(commentRepository.findThread(trainingId), adminId, true);
     }
 
     public TrainingCommentDto addCommentAsAdmin(UUID adminId, UUID trainingId, String body) {
         PersonalTraining training = requireTrainingOfFlaggedAthlete(trainingId);
-        User admin = userRepository.findById(adminId)
+        User admin = requireUser(adminId);
+        return addComment(training, admin, true, body, adminId, true);
+    }
+
+    public TrainingCommentDto addCommentWithFilesAsAdmin(UUID adminId, UUID trainingId,
+                                                         @Nullable String body, List<MultipartFile> files) {
+        PersonalTraining training = requireTrainingOfFlaggedAthlete(trainingId);
+        User admin = requireUser(adminId);
+        return addCommentWithFiles(training, admin, true, body, files, adminId, true);
+    }
+
+    // ---------- comment attachments, addressed by file id (either role) ----------
+
+    /**
+     * One entry point for both roles rather than a mirrored pair. The pair is the failure mode
+     * CLAUDE.md records for the slot/event twins — a fix lands in one copy — and here the two
+     * copies would be guarding access to other people's health data.
+     */
+    @Transactional(readOnly = true)
+    public CommentFileStream openCommentFile(UUID viewerId, boolean viewerIsAdmin, UUID fileId) {
+        TrainingCommentFile file = requireReadableCommentFile(viewerId, viewerIsAdmin, fileId);
+        if (!commentFiles.exists(file.getFilename())) {
+            // The row outlived its file (a failed unlink, an interrupted sweep). Same answer as a
+            // missing row: there is nothing to show either way.
+            throw new IllegalArgumentException(msg.get("training.comment.file.not.found"));
+        }
+        try {
+            return new CommentFileStream(commentFiles.open(file.getFilename()),
+                commentFiles.sizeOf(file.getFilename()), file.getMimeType(), file.getOriginalName());
+        } catch (java.io.IOException e) {
+            throw new IllegalArgumentException(msg.get("training.comment.file.not.found"));
+        }
+    }
+
+    public void deleteCommentFile(UUID viewerId, boolean viewerIsAdmin, UUID fileId) {
+        TrainingCommentFile file = requireReadableCommentFile(viewerId, viewerIsAdmin, fileId);
+        if (!CommentFileSupport.canDelete(file.getComment(), viewerId, viewerIsAdmin)) {
+            throw new IllegalStateException(msg.get("training.comment.file.not.yours"));
+        }
+        commentFiles.deleteFile(file);
+    }
+
+    /**
+     * Reuses the very guards the rest of the calendar uses, rather than reading the athlete id off
+     * the row and comparing it here. A bare {@code findById} would leave a former athlete's files
+     * readable after un-flagging cleared their consent — the hole CLAUDE.md describes for the
+     * by-id routes.
+     */
+    private TrainingCommentFile requireReadableCommentFile(UUID viewerId, boolean viewerIsAdmin, UUID fileId) {
+        TrainingCommentFile file = commentFiles.requireFile(fileId);
+        UUID trainingId = file.getComment().trainingId();
+        // requireAthlete's IllegalStateException (missing flag or consent) passes through: that is
+        // about the caller's own account and says nothing about anyone else's data.
+        if (!viewerIsAdmin) {
+            requireAthlete(viewerId);
+        }
+        try {
+            if (viewerIsAdmin) {
+                requireTrainingOfFlaggedAthlete(trainingId);
+            } else {
+                requireOwnTraining(trainingId, viewerId);
+            }
+        } catch (IllegalArgumentException e) {
+            // Answer a stranger exactly as a made-up id is answered. The guards' own messages talk
+            // about the TRAINING, so letting them through told the caller their guessed file id was
+            // real — a different reply is all it takes to enumerate.
+            throw new IllegalArgumentException(msg.get("training.comment.file.not.found"));
+        }
+        return file;
+    }
+
+    /**
+     * Streams a coach material (PDF/image) after checking who is asking. Two owners, two answers:
+     * a training-owned file belongs to that athlete and to the coach; a TEMPLATE-owned file is the
+     * coach's library, which an athlete never sees — and that must not come down to whether they
+     * can guess an id.
+     */
+    @Transactional(readOnly = true)
+    public CommentFileStream openMaterial(UUID viewerId, boolean viewerIsAdmin, UUID attachmentId) {
+        TrainingAttachment attachment = attachments.requireAttachment(attachmentId);
+        String filename = attachment.getFilename();
+        if (attachment.getKind() != AttachmentKind.FILE || filename == null) {
+            // A LINK has no bytes of ours to serve.
+            throw new IllegalArgumentException(msg.get("training.attachment.not.found"));
+        }
+
+        if (attachment.getTraining() != null) {
+            UUID trainingId = attachment.trainingId();
+            if (!viewerIsAdmin) {
+                requireAthlete(viewerId);
+            }
+            try {
+                if (viewerIsAdmin) {
+                    requireTrainingOfFlaggedAthlete(trainingId);
+                } else {
+                    requireOwnTraining(trainingId, viewerId);
+                }
+            } catch (IllegalArgumentException e) {
+                // Same reply as a made-up id — see requireReadableCommentFile.
+                throw new IllegalArgumentException(msg.get("training.attachment.not.found"));
+            }
+        } else if (!viewerIsAdmin) {
+            // Template-owned: coach's library only. Same message as not-found — an athlete should
+            // not be able to tell an existing template file from a made-up id.
+            throw new IllegalArgumentException(msg.get("training.attachment.not.found"));
+        }
+
+        if (!attachments.exists(filename)) {
+            throw new IllegalArgumentException(msg.get("training.attachment.not.found"));
+        }
+        try {
+            return new CommentFileStream(attachments.open(filename), attachments.sizeOf(filename),
+                mimeTypeOf(attachment, filename), attachment.getOriginalName());
+        } catch (java.io.IOException e) {
+            throw new IllegalArgumentException(msg.get("training.attachment.not.found"));
+        }
+    }
+
+    /** Older rows predate server-side type derivation, so fall back to the stored extension. */
+    private static String mimeTypeOf(TrainingAttachment attachment, String filename) {
+        String stored = attachment.getMimeType();
+        if (stored != null && !stored.isBlank()) {
+            return stored;
+        }
+        String lower = filename.toLowerCase();
+        if (lower.endsWith(".pdf")) return "application/pdf";
+        if (lower.endsWith(".png")) return "image/png";
+        if (lower.endsWith(".webp")) return "image/webp";
+        return "image/jpeg";
+    }
+
+    private User requireUser(UUID userId) {
+        return userRepository.findById(userId)
             .orElseThrow(() -> new IllegalArgumentException("User not found"));
-        return addComment(training, admin, true, body, adminId);
     }
 
     public void markCoachSeen(UUID adminId, UUID athleteId) {
@@ -409,14 +559,34 @@ public class TrainingCalendarService {
     }
 
     private TrainingCommentDto addComment(PersonalTraining training, User author, boolean authorIsAdmin,
-                                          String body, UUID viewerId) {
+                                          String body, UUID viewerId, boolean viewerIsAdmin) {
         String sanitized = TrainingComment.sanitizeBody(body);
         if (sanitized == null) {
             throw new IllegalArgumentException(msg.get("training.calendar.comment.empty"));
         }
         TrainingComment comment = commentRepository.save(
             new TrainingComment(training, author, authorIsAdmin, sanitized));
-        return toCommentDto(comment, viewerId);
+        return toCommentDto(comment, viewerId, viewerIsAdmin, List.of());
+    }
+
+    /**
+     * Text is optional here and that is the point: a photo of a route is a whole message on its own.
+     * "Neither text nor file" is still refused — the condition spans two tables, so it cannot be a
+     * CHECK and has to be stated here.
+     */
+    private TrainingCommentDto addCommentWithFiles(PersonalTraining training, User author, boolean authorIsAdmin,
+                                                   @Nullable String body, List<MultipartFile> files,
+                                                   UUID viewerId, boolean viewerIsAdmin) {
+        String sanitized = TrainingComment.sanitizeBody(body);
+        if (sanitized == null && files.isEmpty()) {
+            throw new IllegalArgumentException(msg.get("training.calendar.comment.empty"));
+        }
+        TrainingComment comment = commentRepository.save(
+            new TrainingComment(training, author, authorIsAdmin, sanitized));
+        commentFiles.attach(comment, files);
+        return toCommentDto(comment, viewerId, viewerIsAdmin,
+            commentFiles.dtosForComments(List.of(comment.getId()), viewerId, viewerIsAdmin)
+                .getOrDefault(comment.getId(), List.of()));
     }
 
     private CalendarRangeDto buildRange(UUID athleteId, UUID viewerId, boolean viewerIsAdmin,
@@ -624,11 +794,19 @@ public class TrainingCalendarService {
         readRepository.upsertSeen(viewerId, athleteId, Instant.now());
     }
 
-    private List<TrainingCommentDto> toCommentDtos(List<TrainingComment> comments, UUID viewerId) {
-        return comments.stream().map(c -> toCommentDto(c, viewerId)).toList();
+    private List<TrainingCommentDto> toCommentDtos(List<TrainingComment> comments, UUID viewerId,
+                                                   boolean viewerIsAdmin) {
+        // One query for the whole thread's files, not one per bubble.
+        Map<UUID, List<TrainingCommentFileDto>> filesByComment = commentFiles.dtosForComments(
+            comments.stream().map(TrainingComment::getId).toList(), viewerId, viewerIsAdmin);
+        return comments.stream()
+            .map(c -> toCommentDto(c, viewerId, viewerIsAdmin,
+                filesByComment.getOrDefault(c.getId(), List.of())))
+            .toList();
     }
 
-    private static TrainingCommentDto toCommentDto(TrainingComment c, UUID viewerId) {
+    private static TrainingCommentDto toCommentDto(TrainingComment c, UUID viewerId, boolean viewerIsAdmin,
+                                                   List<TrainingCommentFileDto> files) {
         return new TrainingCommentDto(
             c.getId(),
             c.getBody(),
@@ -636,7 +814,8 @@ public class TrainingCalendarService {
             c.getAuthor().getFullName(),
             avatarUrl(c.getAuthor()),
             c.getCreatedAt(),
-            c.getAuthor().getId().equals(viewerId)
+            c.getAuthor().getId().equals(viewerId),
+            files
         );
     }
 

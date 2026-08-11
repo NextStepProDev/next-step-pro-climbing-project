@@ -160,6 +160,7 @@ function PrivacyPolicyPl({ logo }: { logo: string }) {
               'Cele treningowe i wagowe zakładane przez trenera — w tym waga startowa i docelowa oraz data osiągnięcia',
               'Komentarze w rozmowie z trenerem przy każdym treningu',
               'Materiały treningowe — linki oraz przesłane pliki (PDF, obrazy)',
+              'Zdjęcia i pliki PDF załączane przez Ciebie do wiadomości w rozmowie — kasowane automatycznie po roku',
               'Rejestr usunięć zaplanowanych treningów (tytuł i termin usuniętego wpisu) — służy wyłącznie do powiadomienia drugiej strony',
             ]} />
           </SubSection>
@@ -252,6 +253,23 @@ function PrivacyPolicyPl({ logo }: { logo: string }) {
             </p>
           </SubSection>
 
+          <SubSection title="Załączniki w rozmowie">
+            <p className="text-surface-400 text-sm leading-relaxed">
+              Do wiadomości w rozmowie przy treningu możesz dołączyć zdjęcia (np. zdjęcie drogi, zrzut ekranu
+              z zegarka) albo pliki PDF — do trzech na wiadomość. Zdjęcie jest przed wysłaniem przeliczane
+              w Twojej przeglądarce, co usuwa z niego <span className="text-surface-200 font-medium">dane
+              lokalizacji (GPS)</span> zapisane przez aparat; do mnie trafia już plik bez nich. Metadanych
+              w pliku PDF nie da się w ten sposób usunąć i pozostają one nietknięte.
+            </p>
+            <p className="text-surface-400 text-sm leading-relaxed mt-3">
+              Załączniki <span className="text-surface-200 font-medium">nie są dostępne pod żadnym publicznym
+              adresem</span> — żeby je zobaczyć, trzeba być zalogowanym jako Ty albo jako Twój trener.
+              Znikają automatycznie po roku od wysłania; tekst wiadomości zostaje, a wiadomość, która była
+              samym plikiem, znika w całości. Datę zniknięcia widzisz przy każdym załączniku i możesz usunąć
+              swój plik wcześniej, w dowolnym momencie.
+            </p>
+          </SubSection>
+
           <SubSection title="Podopieczni niepełnoletni">
             <p className="text-surface-400 text-sm leading-relaxed">
               Dane dotyczące zdrowia osoby, która nie ukończyła 16 lat, przetwarzam wyłącznie za zgodą rodzica
@@ -300,7 +318,8 @@ function PrivacyPolicyPl({ logo }: { logo: string }) {
               trwania współpracy trenerskiej. Po jej zakończeniu lub po wycofaniu zgody usuwam dane treningowe
               i wagowe najpóźniej w ciągu 30 dni. Poszczególne wpisy — treningi, pomiary wagi, materiały —
               możesz usuwać samodzielnie w każdej chwili. Rejestr usunięć zaplanowanych treningów kasuje się
-              sam po 60 dniach. Przesłane pliki znikają z serwera razem z wpisem, do którego były dołączone.
+              sam po 60 dniach. Przesłane pliki znikają z serwera razem z wpisem, do którego były dołączone,
+              a załączniki wysłane w rozmowie kasują się dodatkowo same po roku od wysłania.
             </p>
           </div>
         </Section>
@@ -515,6 +534,7 @@ function PrivacyPolicyEn({ logo }: { logo: string }) {
               'Training and weight goals set by your coach — including starting weight, target weight and the date achieved',
               'Messages in the thread with your coach on each training session',
               'Training materials — links and uploaded files (PDF, images)',
+              'Photos and PDFs you attach to messages in the conversation — deleted automatically after a year',
               'A register of deleted upcoming sessions (title and date of the removed entry) — used solely to notify the other side',
             ]} />
           </SubSection>
@@ -606,6 +626,23 @@ function PrivacyPolicyEn({ logo }: { logo: string }) {
             </p>
           </SubSection>
 
+          <SubSection title="Attachments in the conversation">
+            <p className="text-surface-400 text-sm leading-relaxed">
+              You can attach photos (a shot of a route, a screenshot from your watch) or PDF files to a message in
+              the thread beside a training — up to three per message. A photo is re-encoded in your browser before
+              it is sent, which removes the <span className="text-surface-200 font-medium">location data (GPS)</span>
+              the camera wrote into it; what reaches me no longer carries it. Metadata inside a PDF cannot be
+              removed this way and stays untouched.
+            </p>
+            <p className="text-surface-400 text-sm leading-relaxed mt-3">
+              Attachments are <span className="text-surface-200 font-medium">not available at any public
+              address</span> — seeing one requires being signed in as you or as your coach. They are deleted
+              automatically a year after they were sent; the text of the message remains, and a message that was
+              nothing but the file disappears with it. The removal date is shown next to every attachment, and you
+              can delete your own file sooner at any time.
+            </p>
+          </SubSection>
+
           <SubSection title="Athletes under 16">
             <p className="text-surface-400 text-sm leading-relaxed">
               I process health data of a person under 16 only with the consent of a parent or legal guardian. If
@@ -654,7 +691,8 @@ function PrivacyPolicyEn({ logo }: { logo: string }) {
               coaching arrangement. Once it ends, or once consent is withdrawn, I delete the training and weight
               data within 30 days at the latest. Individual entries — sessions, weigh-ins, materials — can be
               deleted by you at any time. The register of deleted upcoming sessions clears itself after 60 days.
-              Uploaded files are removed from the server together with the entry they were attached to.
+              Uploaded files are removed from the server together with the entry they were attached to, and
+              attachments sent in a conversation additionally delete themselves a year after they were sent.
             </p>
           </div>
         </Section>

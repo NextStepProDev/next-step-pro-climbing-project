@@ -106,13 +106,16 @@ record TrainingAttachmentDto(
     @Nullable Long sizeBytes
 ) {}
 
-/** Returned by the file-upload endpoint; the client echoes these fields back as a FILE attachment. */
+/**
+ * Returned by the file-upload endpoint; the client echoes these fields back as a FILE attachment.
+ * Carries no URL: the upload is two-phase, so until the file is saved onto a training or template
+ * there is no attachment row to address it by — and the filename alone is no longer an address.
+ */
 record AttachmentUploadResponse(
     String filename,
     String originalName,
     String mimeType,
-    long sizeBytes,
-    String url
+    long sizeBytes
 ) {}
 
 /** Coach creates/edits a reusable training template. */
@@ -174,6 +177,10 @@ record RateReservationRequest(
     @Nullable @Size(max = 500) String note
 ) {}
 
+/**
+ * Text-only message. The multipart endpoint takes its optional text as a plain request part
+ * instead, because a message carrying an attachment is allowed to have no words at all.
+ */
 record CreateTrainingCommentRequest(
     @NotBlank @Size(max = TrainingComment.MAX_BODY_LENGTH) String body
 ) {}
@@ -256,14 +263,43 @@ record CalendarRangeDto(
 
 record TrainingCommentDto(
     UUID id,
-    String body,
+    // Null when the message is nothing but attachments
+    @Nullable String body,
     boolean authorIsAdmin,
     String authorName,
     @Nullable String authorAvatarUrl,
     Instant createdAt,
     // Whether the viewer wrote this message (chat alignment left/right)
-    boolean mine
+    boolean mine,
+    List<TrainingCommentFileDto> files
 ) {}
+
+/**
+ * One file attached to a message. {@code url} needs the session — these never enter the public
+ * {@code /api/files} namespace — so the client fetches the bytes itself rather than pointing an
+ * {@code <img src>} at it.
+ */
+record TrainingCommentFileDto(
+    UUID id,
+    String url,
+    String mimeType,
+    // Original name as uploaded (escaped, display-only) — the stored name is a bare UUID
+    @Nullable String fileName,
+    long sizeBytes,
+    // Null for a PDF; present for images so the thread reserves space before the bytes arrive
+    @Nullable Integer width,
+    @Nullable Integer height,
+    // Shown in the UI, so the file disappearing is never a surprise
+    Instant expiresAt,
+    boolean canDelete
+) {}
+
+/**
+ * Not a JSON payload — what the streaming endpoint needs to hand the bytes back: the open stream
+ * plus the facts (type, size, name) taken from the stored file rather than from the request.
+ */
+record CommentFileStream(java.io.InputStream inputStream, long size, String mimeType,
+                         @Nullable String fileName) {}
 
 record TrainingNotificationsDto(long newCount) {}
 

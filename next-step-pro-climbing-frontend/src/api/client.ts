@@ -160,9 +160,16 @@ async function doRefresh(): Promise<string | null> {
   }
 }
 
+/**
+ * `responseType: 'blob'` is an internal option, not part of RequestInit — private files (training
+ * materials, comment attachments) are fetched as bytes because they need the bearer token and an
+ * `<img src>` sends no Authorization header.
+ */
+type FetchOptions = RequestInit & { responseType?: 'blob' }
+
 async function fetchApi<T>(
   endpoint: string,
-  options?: RequestInit
+  options?: FetchOptions
 ): Promise<T> {
   const token = await ensureValidToken()
 
@@ -275,8 +282,23 @@ async function fetchApi<T>(
     return undefined as T
   }
 
+  if (options?.responseType === 'blob') {
+    return (await response.blob()) as T
+  }
+
   return response.json()
 }
+
+/**
+ * Fetches a private file as bytes. Takes the absolute path the API hands out (it already carries
+ * the `/api` prefix that {@link fetchApi} adds itself).
+ *
+ * Goes through fetchApi rather than a bare fetch on purpose — the architecture gate forbids raw
+ * fetch, and rightly: bypassing it would lose 401 refresh, 5xx retry across a redeploy and the
+ * 30 s timeout, on requests that fire dozens at a time while scrolling a thread.
+ */
+export const fetchPrivateFile = (absolutePath: string) =>
+  fetchApi<Blob>(absolutePath.replace(/^\/api/, ''), { responseType: 'blob' })
 
 
 /**
@@ -479,6 +501,21 @@ export const trainingCalendarApi = {
       body: JSON.stringify({ body }),
     }),
 
+  /** Multipart sibling of addComment: text optional, 1-3 files. */
+  addCommentWithFiles: (trainingId: string, body: string | null, files: File[]) => {
+    const formData = new FormData()
+    files.forEach(file => formData.append('files', file, file.name))
+    if (body) formData.append('body', body)
+    return fetchApi<TrainingCommentItem>(
+      `/training-calendar/trainings/${trainingId}/comments/attachments`,
+      { method: 'POST', body: formData },
+    )
+  },
+
+  /** One endpoint for both roles — the backend decides from the token who is asking. */
+  deleteCommentFile: (fileId: string) =>
+    fetchApi<void>(`/training-calendar/comment-files/${fileId}`, { method: 'DELETE' }),
+
   /** One-time explicit consent to training-data processing; everything else here 409s without it. */
   acceptConsent: () =>
     fetchApi<void>('/training-calendar/consent', { method: 'POST' }),
@@ -552,6 +589,16 @@ export const adminTrainingCalendarApi = {
       method: 'POST',
       body: JSON.stringify({ body }),
     }),
+
+  addCommentWithFiles: (trainingId: string, body: string | null, files: File[]) => {
+    const formData = new FormData()
+    files.forEach(file => formData.append('files', file, file.name))
+    if (body) formData.append('body', body)
+    return fetchApi<TrainingCommentItem>(
+      `/admin/training-calendar/trainings/${trainingId}/comments/attachments`,
+      { method: 'POST', body: formData },
+    )
+  },
 
   markSeen: (athleteId: string) =>
     fetchApi<void>(`/admin/training-calendar/athletes/${athleteId}/seen`, { method: 'POST' }),

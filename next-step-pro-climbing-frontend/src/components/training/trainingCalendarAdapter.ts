@@ -46,6 +46,13 @@ export interface TrainingCalendarAdapter {
   deleteTraining: (trainingId: string) => Promise<void>
   getComments: (trainingId: string) => Promise<TrainingCommentItem[]>
   addComment: (trainingId: string, body: string) => Promise<TrainingCommentItem>
+  /**
+   * Multipart sibling of addComment, chosen HERE rather than in the thread component: whether a
+   * message goes as JSON or as multipart is a transport detail, and the thread must not branch on
+   * which role it is rendering for.
+   */
+  addCommentWithFiles: (trainingId: string, body: string | null, files: File[]) => Promise<TrainingCommentItem>
+  deleteCommentFile: (fileId: string) => Promise<void>
   markSeen: () => Promise<void>
   getStats: () => Promise<AthleteStats>
   getGoals: () => Promise<AthleteGoals>
@@ -62,6 +69,8 @@ export const athleteAdapter: TrainingCalendarAdapter = {
   deleteTraining: trainingCalendarApi.deleteTraining,
   getComments: trainingCalendarApi.getComments,
   addComment: trainingCalendarApi.addComment,
+  addCommentWithFiles: trainingCalendarApi.addCommentWithFiles,
+  deleteCommentFile: trainingCalendarApi.deleteCommentFile,
   markSeen: trainingCalendarApi.markSeen,
   getStats: trainingCalendarApi.getStats,
   getGoals: trainingCalendarApi.getGoals,
@@ -81,6 +90,10 @@ export function coachAdapter(athleteId: string): TrainingCalendarAdapter {
     deleteTraining: adminTrainingCalendarApi.deleteTraining,
     getComments: adminTrainingCalendarApi.getComments,
     addComment: adminTrainingCalendarApi.addComment,
+    addCommentWithFiles: adminTrainingCalendarApi.addCommentWithFiles,
+    // Reading and deleting an attachment are single endpoints serving both roles, so the coach
+    // adapter points at the same one — there is no admin twin to keep in step.
+    deleteCommentFile: trainingCalendarApi.deleteCommentFile,
     markSeen: () => adminTrainingCalendarApi.markSeen(athleteId),
     getStats: () => adminTrainingCalendarApi.getStats(athleteId),
     getGoals: () => adminTrainingCalendarApi.getGoals(athleteId),

@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import pl.nextsteppro.climbing.api.reservation.UserSeatReleaseService;
+import pl.nextsteppro.climbing.api.trainingcalendar.CommentFileSupport;
 import pl.nextsteppro.climbing.domain.auth.AuthToken;
 import pl.nextsteppro.climbing.domain.auth.AuthTokenRepository;
 import pl.nextsteppro.climbing.domain.auth.TokenType;
@@ -46,6 +47,7 @@ public class UserService {
     private final MessageService msg;
     private final NewsletterConsentLogRepository consentLogRepository;
     private final UserSeatReleaseService userSeatReleaseService;
+    private final CommentFileSupport commentFileSupport;
     private final FileStorageService fileStorageService;
     private final PasswordPolicyValidator passwordPolicy;
 
@@ -57,6 +59,7 @@ public class UserService {
                        MessageService msg,
                        NewsletterConsentLogRepository consentLogRepository,
                        UserSeatReleaseService userSeatReleaseService,
+                       CommentFileSupport commentFileSupport,
                        FileStorageService fileStorageService,
                        PasswordPolicyValidator passwordPolicy) {
         this.userRepository = userRepository;
@@ -67,6 +70,7 @@ public class UserService {
         this.msg = msg;
         this.consentLogRepository = consentLogRepository;
         this.userSeatReleaseService = userSeatReleaseService;
+        this.commentFileSupport = commentFileSupport;
         this.fileStorageService = fileStorageService;
         this.passwordPolicy = passwordPolicy;
     }
@@ -171,7 +175,12 @@ public class UserService {
             deleteAvatarFileQuietly(user.getAvatarFilename());
         }
 
-        // 7. Delete tokens (bulk DELETE) and the user themselves.
+        // 7. Unlink the files attached to their thread messages — on their own trainings and in
+        //    anyone else's. The rows go with the cascade, the files on disk do not. Shared with the
+        //    admin-side deletion; the orphan sweep would catch a miss, but not for hours.
+        commentFileSupport.purgeForUser(userId);
+
+        // 8. Delete tokens (bulk DELETE) and the user themselves.
         //    The DB cascades (ON DELETE CASCADE): cancelled reservations, waitlist entries, logs, stars.
         authTokenRepository.deleteAllByUserId(userId);
         userRepository.delete(user);
