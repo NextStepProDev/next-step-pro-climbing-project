@@ -65,7 +65,7 @@ class MailServiceTest {
         lenient().when(mailSender.createMimeMessage())
                 .thenReturn(new MimeMessage((Session) null));
 
-        lenient().when(userService.generateNewsletterUnsubscribeToken(any()))
+        lenient().when(userService.newsletterUnsubscribeToken(any()))
                 .thenReturn("test-unsubscribe-token");
 
         // Wrap the mocked JavaMailSender in a real dispatcher with near-zero backoff,

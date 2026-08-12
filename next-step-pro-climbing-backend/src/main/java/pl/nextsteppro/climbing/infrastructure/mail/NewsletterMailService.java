@@ -38,7 +38,7 @@ public class NewsletterMailService {
     public void sendToAll(News news, List<NewsContentBlock> blocks, List<User> subscribers, String baseUrl) {
         log.info("Sending newsletter '{}' to {} subscribers", news.getTitle(), subscribers.size());
         for (User subscriber : subscribers) {
-            String unsubscribeToken = userService.generateNewsletterUnsubscribeToken(subscriber);
+            String unsubscribeToken = userService.newsletterUnsubscribeToken(subscriber);
             String unsubscribeUrl = baseUrl + "/api/user/unsubscribe?token=" + unsubscribeToken;
             sendToUser(news, blocks, subscriber, baseUrl, unsubscribeUrl);
         }

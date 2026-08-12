@@ -220,7 +220,7 @@ public class MailService {
 
     private void doSendNewsletterMail(User recipient, String subject, String body) {
         String lang = recipient.getPreferredLanguage();
-        String unsubscribeToken = userService.generateNewsletterUnsubscribeToken(recipient);
+        String unsubscribeToken = userService.newsletterUnsubscribeToken(recipient);
         String unsubscribeUrl = siteUrl + "/api/user/unsubscribe?token=" + unsubscribeToken;
         String settingsUrl = siteUrl + "/settings";
         String footerText = msg.getForLang("email.newsletter.footer", lang, unsubscribeUrl, settingsUrl);

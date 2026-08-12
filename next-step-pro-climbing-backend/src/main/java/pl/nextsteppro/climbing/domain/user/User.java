@@ -74,6 +74,16 @@ public class User {
     @Nullable
     private Instant newsletterSubscribedAt;
 
+    /**
+     * Stable, long-lived token behind the unsubscribe link in every newsletter. {@code updatable =
+     * false} on purpose: it is the same value in every email we ever send, so every link we have
+     * sent keeps working. Rotating it — which is what the previous hashed {@code auth_tokens} row
+     * did on each send — invalidates every message already sitting in people's inboxes, and they
+     * unsubscribe from whichever one they have open, rarely the newest.
+     */
+    @Column(name = "newsletter_unsubscribe_token", nullable = false, updatable = false)
+    private UUID newsletterUnsubscribeToken = UUID.randomUUID();
+
     @Column(name = "preferred_language", nullable = false)
     private String preferredLanguage = "en";
 
@@ -322,6 +332,11 @@ public class User {
 
     public void setNewsletterSubscribedAt(@Nullable Instant newsletterSubscribedAt) {
         this.newsletterSubscribedAt = newsletterSubscribedAt;
+    }
+
+    /** No setter: the value is written once, at insert, and never rotated. */
+    public UUID getNewsletterUnsubscribeToken() {
+        return newsletterUnsubscribeToken;
     }
 
     public String getPreferredLanguage() {
