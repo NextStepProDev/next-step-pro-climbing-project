@@ -12,6 +12,9 @@ public interface UserRepository extends JpaRepository<User, UUID> {
 
     Optional<User> findByOauthProviderAndOauthId(String oauthProvider, String oauthId);
 
+    /** Resolves the unsubscribe link from a newsletter to its recipient. */
+    Optional<User> findByNewsletterUnsubscribeToken(UUID newsletterUnsubscribeToken);
+
     boolean existsByEmail(String email);
 
     List<User> findAllByNewsletterSubscribedTrue();

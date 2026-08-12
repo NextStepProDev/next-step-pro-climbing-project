@@ -231,13 +231,12 @@ public class UserService {
      */
     @Transactional(readOnly = true)
     public String resolveUnsubscribeLanguage(String token) {
-        return findUnsubscribeToken(token).getUser().getPreferredLanguage();
+        return findUnsubscribeRecipient(token).getPreferredLanguage();
     }
 
     /** @return the recipient's language, for the confirmation page. */
     public String unsubscribeByToken(String token) {
-        AuthToken authToken = findUnsubscribeToken(token);
-        User user = authToken.getUser();
+        User user = findUnsubscribeRecipient(token);
         user.setNewsletterSubscribed(false);
         user.setNewsletterChoiceMade(true);
         userRepository.save(user);
@@ -245,18 +244,25 @@ public class UserService {
         return user.getPreferredLanguage();
     }
 
-    private AuthToken findUnsubscribeToken(String token) {
-        String tokenHash = jwtService.hashToken(token);
-        return authTokenRepository.findValidToken(tokenHash, TokenType.NEWSLETTER_UNSUBSCRIBE, Instant.now())
+    private User findUnsubscribeRecipient(String token) {
+        UUID parsed;
+        try {
+            parsed = UUID.fromString(token);
+        } catch (IllegalArgumentException e) {
+            // Anything that is not a UUID is a mangled link, not a lookup — same answer either way.
+            throw new IllegalArgumentException("Invalid unsubscribe token");
+        }
+        return userRepository.findByNewsletterUnsubscribeToken(parsed)
             .orElseThrow(() -> new IllegalArgumentException("Invalid unsubscribe token"));
     }
 
-    public String generateNewsletterUnsubscribeToken(User user) {
-        authTokenRepository.deleteByUserIdAndTokenType(user.getId(), TokenType.NEWSLETTER_UNSUBSCRIBE);
-        String token = jwtService.generateSecureToken();
-        String tokenHash = jwtService.hashToken(token);
-        Instant expiry = Instant.now().plus(Duration.ofDays(3650));
-        authTokenRepository.save(new AuthToken(user, tokenHash, TokenType.NEWSLETTER_UNSUBSCRIBE, expiry));
-        return token;
+    /**
+     * The unsubscribe link that goes into every newsletter. It is the recipient's permanent token,
+     * not a freshly minted one — see {@link User#getNewsletterUnsubscribeToken()} for why every
+     * email carries the same value.
+     */
+    @Transactional(readOnly = true)
+    public String newsletterUnsubscribeToken(User user) {
+        return user.getNewsletterUnsubscribeToken().toString();
     }
 }

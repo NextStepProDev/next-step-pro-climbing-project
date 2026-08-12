@@ -471,22 +471,19 @@ class UserServiceTest {
 
     // ========== UNSUBSCRIBE BY TOKEN TESTS ==========
 
+    /**
+     * The token is a permanent column on the user, not a row minted per mailing, so the lookup is
+     * "who owns this token" rather than "is this token still alive".
+     */
     @Test
     void shouldUnsubscribeByTokenSuccessfully() {
-        // Given
-        String token = "unsubscribeToken123";
-        String tokenHash = "hashedToken123";
-        AuthToken authToken = new AuthToken(testUser, tokenHash, TokenType.NEWSLETTER_UNSUBSCRIBE, Instant.now().plusSeconds(86400));
         testUser.setNewsletterSubscribed(true);
+        String token = testUser.getNewsletterUnsubscribeToken().toString();
+        when(userRepository.findByNewsletterUnsubscribeToken(testUser.getNewsletterUnsubscribeToken()))
+            .thenReturn(Optional.of(testUser));
 
-        when(jwtService.hashToken(token)).thenReturn(tokenHash);
-        when(authTokenRepository.findValidToken(eq(tokenHash), eq(TokenType.NEWSLETTER_UNSUBSCRIBE), any(Instant.class)))
-            .thenReturn(Optional.of(authToken));
-
-        // When
         userService.unsubscribeByToken(token);
 
-        // Then
         assertFalse(testUser.isNewsletterSubscribed());
         assertTrue(testUser.isNewsletterChoiceMade());
         verify(userRepository).save(testUser);
@@ -499,20 +496,25 @@ class UserServiceTest {
 
     @Test
     void shouldThrowExceptionWhenUnsubscribeTokenIsInvalid() {
-        // Given
-        String token = "invalidToken";
-        String tokenHash = "hashedInvalidToken";
+        UUID unknown = UUID.randomUUID();
+        when(userRepository.findByNewsletterUnsubscribeToken(unknown)).thenReturn(Optional.empty());
 
-        when(jwtService.hashToken(token)).thenReturn(tokenHash);
-        when(authTokenRepository.findValidToken(eq(tokenHash), eq(TokenType.NEWSLETTER_UNSUBSCRIBE), any(Instant.class)))
-            .thenReturn(Optional.empty());
-
-        // When & Then
         IllegalArgumentException exception = assertThrows(
             IllegalArgumentException.class,
-            () -> userService.unsubscribeByToken(token)
+            () -> userService.unsubscribeByToken(unknown.toString())
         );
         assertEquals("Invalid unsubscribe token", exception.getMessage());
+    }
+
+    /** A truncated or mangled link is not a lookup at all — it must not reach the repository. */
+    @Test
+    void shouldRejectATokenThatIsNotEvenAUuid() {
+        IllegalArgumentException exception = assertThrows(
+            IllegalArgumentException.class,
+            () -> userService.unsubscribeByToken("not-a-uuid")
+        );
+        assertEquals("Invalid unsubscribe token", exception.getMessage());
+        verify(userRepository, never()).findByNewsletterUnsubscribeToken(any(UUID.class));
     }
 
     /**
@@ -521,18 +523,13 @@ class UserServiceTest {
      */
     @Test
     void shouldNotUnsubscribeAnybodyWhenOnlyValidatingTheToken() {
-        String token = "unsubscribeToken123";
-        String tokenHash = "hashedToken123";
-        AuthToken authToken = new AuthToken(testUser, tokenHash, TokenType.NEWSLETTER_UNSUBSCRIBE, Instant.now().plusSeconds(86400));
         testUser.setNewsletterSubscribed(true);
-
-        when(jwtService.hashToken(token)).thenReturn(tokenHash);
-        when(authTokenRepository.findValidToken(eq(tokenHash), eq(TokenType.NEWSLETTER_UNSUBSCRIBE), any(Instant.class)))
-            .thenReturn(Optional.of(authToken));
-
         testUser.setPreferredLanguage("es");
+        when(userRepository.findByNewsletterUnsubscribeToken(testUser.getNewsletterUnsubscribeToken()))
+            .thenReturn(Optional.of(testUser));
 
-        String language = userService.resolveUnsubscribeLanguage(token);
+        String language = userService.resolveUnsubscribeLanguage(
+            testUser.getNewsletterUnsubscribeToken().toString());
 
         assertTrue(testUser.isNewsletterSubscribed(), "merely opening the link must leave the subscription alone");
         verify(userRepository, never()).save(any(User.class));
@@ -542,69 +539,38 @@ class UserServiceTest {
 
     @Test
     void shouldRejectAnInvalidTokenOnTheConfirmationPage() {
-        String token = "invalidToken";
+        UUID unknown = UUID.randomUUID();
+        when(userRepository.findByNewsletterUnsubscribeToken(unknown)).thenReturn(Optional.empty());
 
-        when(jwtService.hashToken(token)).thenReturn("hashedInvalidToken");
-        when(authTokenRepository.findValidToken(eq("hashedInvalidToken"), eq(TokenType.NEWSLETTER_UNSUBSCRIBE), any(Instant.class)))
-            .thenReturn(Optional.empty());
-
-        assertThrows(IllegalArgumentException.class, () -> userService.resolveUnsubscribeLanguage(token));
+        assertThrows(IllegalArgumentException.class,
+            () -> userService.resolveUnsubscribeLanguage(unknown.toString()));
     }
 
-    // ========== GENERATE NEWSLETTER UNSUBSCRIBE TOKEN TESTS ==========
+    // ========== NEWSLETTER UNSUBSCRIBE TOKEN ==========
 
+    /**
+     * Every mailing carries the same value, so every unsubscribe link we have ever sent keeps
+     * working. The previous mechanism minted a fresh token per send and deleted the old one, which
+     * meant only the newest email could unsubscribe anyone — and people click whichever message
+     * they have open, rarely the newest.
+     */
     @Test
-    void shouldGenerateNewsletterUnsubscribeToken() {
-        // Given
-        when(jwtService.generateSecureToken()).thenReturn("newToken123");
-        when(jwtService.hashToken("newToken123")).thenReturn("hashedNewToken123");
+    void shouldGiveEveryMailingTheSameUnsubscribeToken() {
+        String first = userService.newsletterUnsubscribeToken(testUser);
+        String second = userService.newsletterUnsubscribeToken(testUser);
 
-        // When
-        String result = userService.generateNewsletterUnsubscribeToken(testUser);
-
-        // Then
-        assertEquals("newToken123", result);
-        verify(authTokenRepository).deleteByUserIdAndTokenType(userId, TokenType.NEWSLETTER_UNSUBSCRIBE);
-
-        ArgumentCaptor<AuthToken> tokenCaptor = ArgumentCaptor.forClass(AuthToken.class);
-        verify(authTokenRepository).save(tokenCaptor.capture());
-        AuthToken savedToken = tokenCaptor.getValue();
-        assertEquals("hashedNewToken123", savedToken.getTokenHash());
-        assertEquals(TokenType.NEWSLETTER_UNSUBSCRIBE, savedToken.getTokenType());
+        assertEquals(first, second);
+        assertEquals(testUser.getNewsletterUnsubscribeToken().toString(), first);
+        verifyNoInteractions(authTokenRepository);
     }
 
     @Test
-    void shouldDeleteOldUnsubscribeTokenBeforeGeneratingNew() {
-        // Given
-        when(jwtService.generateSecureToken()).thenReturn("newToken");
-        when(jwtService.hashToken("newToken")).thenReturn("hashedNewToken");
+    void shouldGiveDifferentUsersDifferentUnsubscribeTokens() {
+        User other = new User("other@example.com", "Ann", "Nowak", "+48000000000", "ann");
 
-        // When
-        userService.generateNewsletterUnsubscribeToken(testUser);
-
-        // Then — verify delete happens before save
-        var inOrder = inOrder(authTokenRepository);
-        inOrder.verify(authTokenRepository).deleteByUserIdAndTokenType(userId, TokenType.NEWSLETTER_UNSUBSCRIBE);
-        inOrder.verify(authTokenRepository).save(any(AuthToken.class));
-    }
-
-    @Test
-    void shouldGenerateTokenWithLongExpiry() {
-        // Given
-        when(jwtService.generateSecureToken()).thenReturn("token");
-        when(jwtService.hashToken("token")).thenReturn("hashedToken");
-
-        // When
-        userService.generateNewsletterUnsubscribeToken(testUser);
-
-        // Then
-        ArgumentCaptor<AuthToken> tokenCaptor = ArgumentCaptor.forClass(AuthToken.class);
-        verify(authTokenRepository).save(tokenCaptor.capture());
-
-        AuthToken savedToken = tokenCaptor.getValue();
-        // Token should expire ~10 years in the future (3650 days)
-        Instant expectedMinExpiry = Instant.now().plusSeconds(3650 * 24 * 3600 - 60);
-        assertTrue(savedToken.getExpiresAt().isAfter(expectedMinExpiry));
+        assertNotEquals(
+            userService.newsletterUnsubscribeToken(testUser),
+            userService.newsletterUnsubscribeToken(other));
     }
 
     // ========== HELPER METHODS ==========
