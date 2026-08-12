@@ -225,22 +225,24 @@ public class UserService {
     }
 
     /**
-     * Checks the unsubscribe link is real without acting on it, so the confirmation page can tell
-     * a live link from an expired one. Read-only on purpose: the page it serves is fetched by mail
-     * scanners as often as by people.
+     * Checks the unsubscribe link is real without acting on it and answers with the recipient's
+     * language, so the confirmation page speaks the same one the email did. Read-only on purpose:
+     * this page is fetched by mail scanners as often as by people.
      */
     @Transactional(readOnly = true)
-    public void requireUnsubscribeToken(String token) {
-        findUnsubscribeToken(token);
+    public String resolveUnsubscribeLanguage(String token) {
+        return findUnsubscribeToken(token).getUser().getPreferredLanguage();
     }
 
-    public void unsubscribeByToken(String token) {
+    /** @return the recipient's language, for the confirmation page. */
+    public String unsubscribeByToken(String token) {
         AuthToken authToken = findUnsubscribeToken(token);
         User user = authToken.getUser();
         user.setNewsletterSubscribed(false);
         user.setNewsletterChoiceMade(true);
         userRepository.save(user);
         consentLogRepository.save(new NewsletterConsentLog(user, "UNSUBSCRIBED", "EMAIL_LINK"));
+        return user.getPreferredLanguage();
     }
 
     private AuthToken findUnsubscribeToken(String token) {
