@@ -103,8 +103,12 @@ public class SecurityConfig {
 
                 // OG meta tags for social sharing bots (all methods incl. HEAD to preflight)
                 auth.requestMatchers("/api/og/**").permitAll()
-                    // Public unsubscribe endpoint (no login required - GDPR compliance)
-                    .requestMatchers(HttpMethod.GET, "/api/user/unsubscribe").permitAll();
+                    // Public unsubscribe endpoint (no login required - GDPR compliance).
+                    // GET renders the confirmation page, POST is what actually unsubscribes: a
+                    // link that acts on being opened is acted on by mail security scanners, which
+                    // fetch every URL in an incoming message before the recipient reads it.
+                    .requestMatchers(HttpMethod.GET, "/api/user/unsubscribe").permitAll()
+                    .requestMatchers(HttpMethod.POST, "/api/user/unsubscribe").permitAll();
                 // Dev endpoints only in dev profile
                 if (java.util.Arrays.asList(environment.getActiveProfiles()).contains("dev")) {
                     auth.requestMatchers("/api/dev/**").permitAll();

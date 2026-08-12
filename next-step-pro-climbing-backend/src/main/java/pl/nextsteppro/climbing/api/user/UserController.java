@@ -168,33 +168,79 @@ public class UserController {
         return ResponseEntity.noContent().build();
     }
 
-    @Operation(summary = "Unsubscribe from newsletter", description = "Unsubscribes the user from the newsletter without login (link from the email)")
+    /**
+     * Landing page for the unsubscribe link in the newsletter footer. Confirms the token is real
+     * and offers a button — it does <strong>not</strong> unsubscribe anybody.
+     *
+     * <p>Opening the link used to be the whole action, which handed the decision to whoever opened
+     * it first. Corporate mail security (Defender Safe Links and friends) fetches every URL in an
+     * incoming message before the recipient sees it, and to this endpoint that fetch was
+     * indistinguishable from a click — so the recipient was unsubscribed by their own employer's
+     * scanner, silently, while still reading the email that carried the link. Nobody reports that;
+     * mail simply stops arriving. Hence the split: scanners follow links, they do not submit forms.
+     * (Same reasoning as RFC 8058, which makes one-click unsubscribe a POST for this exact reason.)
+     */
+    @Operation(summary = "Unsubscribe confirmation page",
+        description = "Renders the confirmation page for the newsletter unsubscribe link. Does not change anything.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Confirmation page"),
+        @ApiResponse(responseCode = "400", description = "Invalid token")
+    })
+    @GetMapping("/unsubscribe")
+    public ResponseEntity<String> unsubscribeConfirmation(@RequestParam String token) {
+        try {
+            userService.requireUnsubscribeToken(token);
+        } catch (IllegalArgumentException e) {
+            return invalidLinkPage();
+        }
+        return ResponseEntity.ok().contentType(HTML).body(page("#3b82f6", "Wypisanie z newslettera", """
+            <p>Potwierdź, że chcesz przestać dostawać newsletter Next Step Pro Climbing.</p>
+            <form method="post" action="/api/user/unsubscribe">
+            <input type="hidden" name="token" value="%s">
+            <button type="submit" style="font:inherit;cursor:pointer;padding:12px 28px;margin:8px 0 24px;border:0;border-radius:6px;background:#3b82f6;color:#fff;">Wypisz mnie</button>
+            </form>
+            """.formatted(escapeHtmlAttribute(token))));
+    }
+
+    @Operation(summary = "Unsubscribe from newsletter",
+        description = "Unsubscribes the user from the newsletter without login (submitted from the confirmation page)")
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "Unsubscribed successfully"),
         @ApiResponse(responseCode = "400", description = "Invalid token")
     })
-    @GetMapping("/unsubscribe")
+    @PostMapping(value = "/unsubscribe", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
     public ResponseEntity<String> unsubscribe(@RequestParam String token) {
         try {
             userService.unsubscribeByToken(token);
-            String html = """
-                <html><body style="font-family:Arial,sans-serif;text-align:center;padding:60px;background:#1a1816;color:#e0e0e0;">
-                <h2 style="color:#3b82f6;">Wypisano z newslettera</h2>
-                <p>Zostałeś pomyślnie wypisany z newslettera Next Step Pro Climbing.</p>
-                <p><a href="%s" style="color:#3b82f6;">Wróć na stronę główną</a></p>
-                </body></html>
-                """.formatted(siteUrl);
-            return ResponseEntity.ok().contentType(MediaType.TEXT_HTML).body(html);
         } catch (IllegalArgumentException e) {
-            String html = """
-                <html><body style="font-family:Arial,sans-serif;text-align:center;padding:60px;background:#1a1816;color:#e0e0e0;">
-                <h2 style="color:#ef4444;">Nieprawidłowy link</h2>
-                <p>Link do wypisania jest nieprawidłowy lub wygasł.</p>
-                <p><a href="%s" style="color:#3b82f6;">Wróć na stronę główną</a></p>
-                </body></html>
-                """.formatted(siteUrl);
-            return ResponseEntity.badRequest().contentType(MediaType.TEXT_HTML).body(html);
+            return invalidLinkPage();
         }
+        return ResponseEntity.ok().contentType(HTML).body(page("#3b82f6", "Wypisano z newslettera",
+            "<p>Zostałeś pomyślnie wypisany z newslettera Next Step Pro Climbing.</p>"));
+    }
+
+    private ResponseEntity<String> invalidLinkPage() {
+        return ResponseEntity.badRequest().contentType(HTML).body(page("#ef4444", "Nieprawidłowy link",
+            "<p>Link do wypisania jest nieprawidłowy lub wygasł.</p>"));
+    }
+
+    /** Charset is explicit: without it the Polish text on these pages is at the browser's mercy. */
+    private static final MediaType HTML = MediaType.valueOf("text/html;charset=UTF-8");
+
+    private String page(String headingColor, String heading, String bodyHtml) {
+        return """
+            <html><head><meta charset="utf-8"><meta name="robots" content="noindex"></head>
+            <body style="font-family:Arial,sans-serif;text-align:center;padding:60px;background:#1a1816;color:#e0e0e0;">
+            <h2 style="color:%s;">%s</h2>
+            %s
+            <p><a href="%s" style="color:#3b82f6;">Wróć na stronę główną</a></p>
+            </body></html>
+            """.formatted(headingColor, heading, bodyHtml, siteUrl);
+    }
+
+    /** The token is opaque and generated by us, but it lands in an HTML attribute — quote it anyway. */
+    private static String escapeHtmlAttribute(String value) {
+        return value.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\"", "&quot;");
     }
 
     @Operation(summary = "Newsletter subscription", description = "Enables or disables the newsletter")

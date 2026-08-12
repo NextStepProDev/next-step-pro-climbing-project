@@ -224,15 +224,29 @@ public class UserService {
         consentLogRepository.save(new NewsletterConsentLog(user, subscribed ? "SUBSCRIBED" : "UNSUBSCRIBED", "SETTINGS"));
     }
 
+    /**
+     * Checks the unsubscribe link is real without acting on it, so the confirmation page can tell
+     * a live link from an expired one. Read-only on purpose: the page it serves is fetched by mail
+     * scanners as often as by people.
+     */
+    @Transactional(readOnly = true)
+    public void requireUnsubscribeToken(String token) {
+        findUnsubscribeToken(token);
+    }
+
     public void unsubscribeByToken(String token) {
-        String tokenHash = jwtService.hashToken(token);
-        AuthToken authToken = authTokenRepository.findValidToken(tokenHash, TokenType.NEWSLETTER_UNSUBSCRIBE, Instant.now())
-            .orElseThrow(() -> new IllegalArgumentException("Invalid unsubscribe token"));
+        AuthToken authToken = findUnsubscribeToken(token);
         User user = authToken.getUser();
         user.setNewsletterSubscribed(false);
         user.setNewsletterChoiceMade(true);
         userRepository.save(user);
         consentLogRepository.save(new NewsletterConsentLog(user, "UNSUBSCRIBED", "EMAIL_LINK"));
+    }
+
+    private AuthToken findUnsubscribeToken(String token) {
+        String tokenHash = jwtService.hashToken(token);
+        return authTokenRepository.findValidToken(tokenHash, TokenType.NEWSLETTER_UNSUBSCRIBE, Instant.now())
+            .orElseThrow(() -> new IllegalArgumentException("Invalid unsubscribe token"));
     }
 
     public String generateNewsletterUnsubscribeToken(User user) {

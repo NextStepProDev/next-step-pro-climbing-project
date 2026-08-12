@@ -515,6 +515,39 @@ class UserServiceTest {
         assertEquals("Invalid unsubscribe token", exception.getMessage());
     }
 
+    /**
+     * The confirmation page behind the unsubscribe link is fetched by mail security scanners as
+     * often as by people — checking the link must not be the same thing as using it.
+     */
+    @Test
+    void shouldNotUnsubscribeAnybodyWhenOnlyValidatingTheToken() {
+        String token = "unsubscribeToken123";
+        String tokenHash = "hashedToken123";
+        AuthToken authToken = new AuthToken(testUser, tokenHash, TokenType.NEWSLETTER_UNSUBSCRIBE, Instant.now().plusSeconds(86400));
+        testUser.setNewsletterSubscribed(true);
+
+        when(jwtService.hashToken(token)).thenReturn(tokenHash);
+        when(authTokenRepository.findValidToken(eq(tokenHash), eq(TokenType.NEWSLETTER_UNSUBSCRIBE), any(Instant.class)))
+            .thenReturn(Optional.of(authToken));
+
+        userService.requireUnsubscribeToken(token);
+
+        assertTrue(testUser.isNewsletterSubscribed(), "merely opening the link must leave the subscription alone");
+        verify(userRepository, never()).save(any(User.class));
+        verify(consentLogRepository, never()).save(any(NewsletterConsentLog.class));
+    }
+
+    @Test
+    void shouldRejectAnInvalidTokenOnTheConfirmationPage() {
+        String token = "invalidToken";
+
+        when(jwtService.hashToken(token)).thenReturn("hashedInvalidToken");
+        when(authTokenRepository.findValidToken(eq("hashedInvalidToken"), eq(TokenType.NEWSLETTER_UNSUBSCRIBE), any(Instant.class)))
+            .thenReturn(Optional.empty());
+
+        assertThrows(IllegalArgumentException.class, () -> userService.requireUnsubscribeToken(token));
+    }
+
     // ========== GENERATE NEWSLETTER UNSUBSCRIBE TOKEN TESTS ==========
 
     @Test
