@@ -100,15 +100,135 @@ class RateLimitFilterTest {
         assertTrue(json.get("message").asText().contains("Zbyt wiele"));
     }
 
+    /**
+     * The public calendar used to be exempt entirely. It is the heaviest public read in the app and
+     * the month/week/day cache only covers anonymous viewers, so a logged-in one recomputes
+     * availability per request — 20 in a row is still ordinary browsing, 61 is not.
+     */
     @Test
-    void shouldNotRateLimitPublicEndpoints() throws Exception {
-        for (int i = 0; i < 20; i++) {
-            MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/calendar/month/2026-04");
-            request.setRemoteAddr("192.168.1.1");
+    void shouldAllowOrdinaryCalendarBrowsingButThrottleAFlood() throws Exception {
+        for (int i = 0; i < 60; i++) {
             MockHttpServletResponse response = new MockHttpServletResponse();
-            filter.doFilterInternal(request, response, new MockFilterChain());
+            filter.doFilterInternal(get("/api/calendar/month/2026-04", "192.168.1.1"), response, new MockFilterChain());
+            assertEquals(200, response.getStatus(), "request " + i + " is within the calendar limit");
+        }
+        MockHttpServletResponse blocked = new MockHttpServletResponse();
+        filter.doFilterInternal(get("/api/calendar/month/2026-05", "192.168.1.1"), blocked, new MockFilterChain());
+        assertEquals(429, blocked.getStatus());
+    }
+
+    /**
+     * Proposing a time is a write. The "3 PENDING per user" rule caps what survives, not what the
+     * endpoint has to validate and query first.
+     */
+    @Test
+    void shouldThrottleTrainingRequestsOnTheBareBasePath() throws Exception {
+        for (int i = 0; i < 20; i++) {
+            MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api/training-requests");
+            request.setRemoteAddr("192.168.1.60");
+            filter.doFilterInternal(request, new MockHttpServletResponse(), new MockFilterChain());
+        }
+        MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api/training-requests");
+        request.setRemoteAddr("192.168.1.60");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        filter.doFilterInternal(request, response, new MockFilterChain());
+        assertEquals(429, response.getStatus());
+    }
+
+    /** Google sign-in lives outside /api, so it used to miss every prefix in the filter. */
+    @Test
+    void shouldThrottleOauth2LoginIntoTheSameBucketAsPasswordLogin() throws Exception {
+        for (int i = 0; i < 15; i++) {
+            MockHttpServletResponse response = new MockHttpServletResponse();
+            filter.doFilterInternal(get("/oauth2/authorization/google", "192.168.1.61"), response, new MockFilterChain());
             assertEquals(200, response.getStatus());
         }
+        // Same bucket as /api/auth/**: a sign-in attempt is a sign-in attempt either way.
+        MockHttpServletRequest passwordLogin = new MockHttpServletRequest("POST", "/api/auth/login");
+        passwordLogin.setRemoteAddr("192.168.1.61");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        filter.doFilterInternal(passwordLogin, response, new MockFilterChain());
+        assertEquals(429, response.getStatus());
+    }
+
+    /**
+     * A gallery page is one request per photo, so this bucket has to be roomy — but not endless.
+     */
+    @Test
+    void shouldGivePublicMediaItsOwnRoomyBucket() throws Exception {
+        for (int i = 0; i < 300; i++) {
+            MockHttpServletResponse response = new MockHttpServletResponse();
+            filter.doFilterInternal(get("/api/files/gallery/photo-" + i + ".jpg", "192.168.1.62"), response, new MockFilterChain());
+            assertEquals(200, response.getStatus());
+        }
+        MockHttpServletResponse blocked = new MockHttpServletResponse();
+        filter.doFilterInternal(get("/api/files/gallery/last.jpg", "192.168.1.62"), blocked, new MockFilterChain());
+        assertEquals(429, blocked.getStatus());
+    }
+
+    /**
+     * The point of denying by default: a path nobody wrote a rule for is throttled anyway. Before,
+     * an unrecognised path meant no limit, so every new controller started life unthrottled.
+     */
+    @Test
+    void shouldThrottleAnUnrecognisedApiPathUnderTheDefaultBucket() throws Exception {
+        for (int i = 0; i < 120; i++) {
+            MockHttpServletResponse response = new MockHttpServletResponse();
+            filter.doFilterInternal(get("/api/whatever-comes-next", "192.168.1.63"), response, new MockFilterChain());
+            assertEquals(200, response.getStatus());
+        }
+        MockHttpServletResponse blocked = new MockHttpServletResponse();
+        filter.doFilterInternal(get("/api/whatever-comes-next", "192.168.1.63"), blocked, new MockFilterChain());
+        assertEquals(429, blocked.getStatus());
+    }
+
+    /**
+     * The catch-all is scoped to /api on purpose: the container healthcheck polls this every few
+     * seconds from one address, and a 429 there would flap the container to unhealthy.
+     */
+    @Test
+    void shouldNeverThrottleTheHealthEndpoint() throws Exception {
+        for (int i = 0; i < 300; i++) {
+            MockHttpServletResponse response = new MockHttpServletResponse();
+            filter.doFilterInternal(get("/actuator/health", "192.168.1.64"), response, new MockFilterChain());
+            assertEquals(200, response.getStatus());
+        }
+    }
+
+    /** Buckets are independent: exhausting one must not lock a client out of the rest of the site. */
+    @Test
+    void shouldKeepBucketsIndependentForTheSameClient() throws Exception {
+        for (int i = 0; i < 61; i++) {
+            filter.doFilterInternal(get("/api/calendar/month/2026-04", "192.168.1.65"), new MockHttpServletResponse(), new MockFilterChain());
+        }
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        filter.doFilterInternal(get("/api/news", "192.168.1.65"), response, new MockFilterChain());
+        assertEquals(200, response.getStatus(), "a flood of calendar reads must not block the news list");
+    }
+
+    /** Load tests drive every request from one address; measuring the filter is not the point. */
+    @Test
+    void shouldNotThrottleAnythingWhenDisabled() throws Exception {
+        RateLimitFilter disabled = new RateLimitFilter(messageSource, false);
+        for (int i = 0; i < 50; i++) {
+            MockHttpServletResponse response = new MockHttpServletResponse();
+            disabled.doFilterInternal(createAuthRequest("en"), response, new MockFilterChain());
+            assertEquals(200, response.getStatus());
+        }
+    }
+
+    @Test
+    void shouldTellTheClientWhenToComeBack() throws Exception {
+        MockHttpServletResponse response = exhaustRateLimit(createAuthRequest("en"));
+
+        assertEquals(429, response.getStatus());
+        assertEquals("60", response.getHeader("Retry-After"));
+    }
+
+    private MockHttpServletRequest get(String path, String remoteAddr) {
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", path);
+        request.setRemoteAddr(remoteAddr);
+        return request;
     }
 
     @Test
