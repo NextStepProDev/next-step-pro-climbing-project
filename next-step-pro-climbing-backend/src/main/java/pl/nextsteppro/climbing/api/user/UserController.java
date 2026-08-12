@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -15,6 +16,7 @@ import org.springframework.web.multipart.MultipartFile;
 import pl.nextsteppro.climbing.config.AppConfig;
 import pl.nextsteppro.climbing.config.CurrentUserId;
 import pl.nextsteppro.climbing.domain.user.User;
+import pl.nextsteppro.climbing.infrastructure.i18n.MessageService;
 
 import java.io.IOException;
 import java.util.UUID;
@@ -25,10 +27,12 @@ import java.util.UUID;
 public class UserController {
 
     private final UserService userService;
+    private final MessageService msg;
     private final String siteUrl;
 
-    public UserController(UserService userService, AppConfig appConfig) {
+    public UserController(UserService userService, MessageService msg, AppConfig appConfig) {
         this.userService = userService;
+        this.msg = msg;
         this.siteUrl = appConfig.getSiteUrl();
     }
 
@@ -188,18 +192,25 @@ public class UserController {
     })
     @GetMapping("/unsubscribe")
     public ResponseEntity<String> unsubscribeConfirmation(@RequestParam String token) {
+        String lang;
         try {
-            userService.requireUnsubscribeToken(token);
+            lang = userService.resolveUnsubscribeLanguage(token);
         } catch (IllegalArgumentException e) {
             return invalidLinkPage();
         }
-        return ResponseEntity.ok().contentType(HTML).body(page("#3b82f6", "Wypisanie z newslettera", """
-            <p>Potwierdź, że chcesz przestać dostawać newsletter Next Step Pro Climbing.</p>
+        String body = """
+            <p>%s</p>
             <form method="post" action="/api/user/unsubscribe">
             <input type="hidden" name="token" value="%s">
-            <button type="submit" style="font:inherit;cursor:pointer;padding:12px 28px;margin:8px 0 24px;border:0;border-radius:6px;background:#3b82f6;color:#fff;">Wypisz mnie</button>
+            <button type="submit" style="font:inherit;cursor:pointer;padding:12px 28px;margin:8px 0 24px;border:0;border-radius:6px;background:#3b82f6;color:#fff;">%s</button>
             </form>
-            """.formatted(escapeHtmlAttribute(token))));
+            """.formatted(
+                msg.getForLang("newsletter.unsubscribe.confirm.text", lang),
+                escapeHtmlAttribute(token),
+                msg.getForLang("newsletter.unsubscribe.confirm.button", lang));
+
+        return ResponseEntity.ok().contentType(HTML).body(page(lang, "#3b82f6",
+            msg.getForLang("newsletter.unsubscribe.confirm.title", lang), body));
     }
 
     @Operation(summary = "Unsubscribe from newsletter",
@@ -210,32 +221,41 @@ public class UserController {
     })
     @PostMapping(value = "/unsubscribe", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
     public ResponseEntity<String> unsubscribe(@RequestParam String token) {
+        String lang;
         try {
-            userService.unsubscribeByToken(token);
+            lang = userService.unsubscribeByToken(token);
         } catch (IllegalArgumentException e) {
             return invalidLinkPage();
         }
-        return ResponseEntity.ok().contentType(HTML).body(page("#3b82f6", "Wypisano z newslettera",
-            "<p>Zostałeś pomyślnie wypisany z newslettera Next Step Pro Climbing.</p>"));
+        return ResponseEntity.ok().contentType(HTML).body(page(lang, "#3b82f6",
+            msg.getForLang("newsletter.unsubscribe.done.title", lang),
+            "<p>" + msg.getForLang("newsletter.unsubscribe.done.text", lang) + "</p>"));
     }
 
+    /**
+     * A dead token has no user, so there is nobody whose language to speak — fall back to what the
+     * browser asked for ({@code Accept-Language}, Polish by default).
+     */
     private ResponseEntity<String> invalidLinkPage() {
-        return ResponseEntity.badRequest().contentType(HTML).body(page("#ef4444", "Nieprawidłowy link",
-            "<p>Link do wypisania jest nieprawidłowy lub wygasł.</p>"));
+        String lang = LocaleContextHolder.getLocale().getLanguage();
+        return ResponseEntity.badRequest().contentType(HTML).body(page(lang, "#ef4444",
+            msg.get("newsletter.unsubscribe.invalid.title"),
+            "<p>" + msg.get("newsletter.unsubscribe.invalid.text") + "</p>"));
     }
 
-    /** Charset is explicit: without it the Polish text on these pages is at the browser's mercy. */
+    /** Charset is explicit: without it the accented text on these pages is at the browser's mercy. */
     private static final MediaType HTML = MediaType.valueOf("text/html;charset=UTF-8");
 
-    private String page(String headingColor, String heading, String bodyHtml) {
+    private String page(String lang, String headingColor, String heading, String bodyHtml) {
         return """
-            <html><head><meta charset="utf-8"><meta name="robots" content="noindex"></head>
+            <html lang="%s"><head><meta charset="utf-8"><meta name="robots" content="noindex"></head>
             <body style="font-family:Arial,sans-serif;text-align:center;padding:60px;background:#1a1816;color:#e0e0e0;">
             <h2 style="color:%s;">%s</h2>
             %s
-            <p><a href="%s" style="color:#3b82f6;">Wróć na stronę główną</a></p>
+            <p><a href="%s" style="color:#3b82f6;">%s</a></p>
             </body></html>
-            """.formatted(headingColor, heading, bodyHtml, siteUrl);
+            """.formatted(lang, headingColor, heading, bodyHtml, siteUrl,
+                msg.getForLang("newsletter.unsubscribe.home", lang));
     }
 
     /** The token is opaque and generated by us, but it lands in an HTML attribute — quote it anyway. */

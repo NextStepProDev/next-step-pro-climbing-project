@@ -530,11 +530,14 @@ class UserServiceTest {
         when(authTokenRepository.findValidToken(eq(tokenHash), eq(TokenType.NEWSLETTER_UNSUBSCRIBE), any(Instant.class)))
             .thenReturn(Optional.of(authToken));
 
-        userService.requireUnsubscribeToken(token);
+        testUser.setPreferredLanguage("es");
+
+        String language = userService.resolveUnsubscribeLanguage(token);
 
         assertTrue(testUser.isNewsletterSubscribed(), "merely opening the link must leave the subscription alone");
         verify(userRepository, never()).save(any(User.class));
         verify(consentLogRepository, never()).save(any(NewsletterConsentLog.class));
+        assertEquals("es", language, "the page has to speak the language the newsletter was written in");
     }
 
     @Test
@@ -545,7 +548,7 @@ class UserServiceTest {
         when(authTokenRepository.findValidToken(eq("hashedInvalidToken"), eq(TokenType.NEWSLETTER_UNSUBSCRIBE), any(Instant.class)))
             .thenReturn(Optional.empty());
 
-        assertThrows(IllegalArgumentException.class, () -> userService.requireUnsubscribeToken(token));
+        assertThrows(IllegalArgumentException.class, () -> userService.resolveUnsubscribeLanguage(token));
     }
 
     // ========== GENERATE NEWSLETTER UNSUBSCRIBE TOKEN TESTS ==========
