@@ -43,7 +43,7 @@ Kolejność wg ryzyka, nie wg wielkości.
 | Authz endpointów zawodnika (IDOR) | 🔵 przeczytane | 2026-08-08 | Wyliczone **wszystkie** metody publiczne 6 serwisów + guard każdej. Zero IDOR. |
 | `@PreAuthorize` na adminie | 🟢 bramka | 2026-08-09 | `AdminEndpointsSecuredTest` |
 | `SecurityConfig` (permitAll, CORS, GET+HEAD) | 🔵 przeczytane | 2026-08-08 | — |
-| `RateLimitFilter` (symetria prefiksów) | 🔵 przeczytane | 2026-08-08 | Sprawdzone też, czy pułapka trailing-slash dotyczy pozostałych baz. Nie dotyczy. |
+| `RateLimitFilter` (pokrycie ścieżek) | 🟢 bramka | 2026-08-12 | `RateLimitCoverageTest`. Poprzedni przegląd pytał tylko o symetrię prefiksów **wśród ścieżek już objętych filtrem** i odpowiedział „pułapka trailing-slash nie dotyczy pozostałych baz" — prawdziwie, ale nie o to szło: `/api/training-requests`, `/api/calendar`, `/api/files`, publiczny CMS i całe OAuth2 nie były objęte **w ogóle**, więc pytanie o symetrię ich nie dosięgało. Filtr limituje teraz domyślnie, a bramka sprawdza każdą bazę kontrolera. |
 | `JwtAuthenticationFilter` | 🔵 przeczytane + testy | 2026-08-09 | Fail-closed na każdej ścieżce; cache + eviction otestowane. |
 | OAuth2 (`OAuth2UserService`) | 🔵 przeczytane + testy | 2026-08-09 | **Znaleziono:** linkowanie konta bez sprawdzania `email_verified`. Naprawione. |
 | Sekrety w repo | 🟡 sonda | 2026-08-08 | Skan wzorców kluczy + `.gitignore`. Czysto. |

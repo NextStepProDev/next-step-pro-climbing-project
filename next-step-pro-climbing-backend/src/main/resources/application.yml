@@ -84,6 +84,11 @@ app:
     from: ${MAIL_FROM:${MAIL_USERNAME:nextsteppro.team@gmail.com}}
   cors:
     allowed-origins: ${CORS_ORIGINS:http://localhost:*}
+  rate-limit:
+    # Off only for load testing: k6 drives every request from one address, so throttling would
+    # measure the filter instead of the app. Never disable it in dev — local runs should behave
+    # exactly like production.
+    enabled: ${APP_RATE_LIMIT_ENABLED:true}
   base-url: ${APP_BASE_URL:http://localhost:8080}
   site-url: ${SITE_URL:https://nextsteppro.pl}
   jwt:
