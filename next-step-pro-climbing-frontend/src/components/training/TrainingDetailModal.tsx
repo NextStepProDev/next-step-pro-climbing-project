@@ -12,6 +12,7 @@ import { PrivateImage, PrivateFileCard } from './PrivateFile'
 import { isImageType } from '../../utils/mediaTypes'
 import { decodeHtmlEntities } from '../../utils/htmlEntities'
 import { useDateLocale } from '../../utils/dateFnsLocale'
+import { nowInWarsaw, parseCalendarDate, parseCalendarDateTime, todayInWarsaw } from '../../utils/calendarDate'
 import type { TrainingCalendarAdapter } from './trainingCalendarAdapter'
 import type { PersonalTraining, PersonalTrainingStatus, TrainingAttachment } from '../../types'
 
@@ -35,11 +36,14 @@ interface TrainingDetailModalProps {
   errorMessage?: string | null
 }
 
-// Completion is only possible once the training has started (backend enforces the same rule)
+// Completion is only possible once the training has started — and the backend asks the same
+// question of the Warsaw clock, so this one must too. Asking the device clock is how an
+// athlete abroad ends up either without the button hours after the server would take the
+// click, or with a button whose click comes back "cannot complete a future training".
 function hasStarted(training: PersonalTraining): boolean {
   // Untimed ("all-day") training counts as started from the beginning of its day
-  if (training.startTime == null) return training.date <= format(new Date(), 'yyyy-MM-dd')
-  return new Date(`${training.date}T${training.startTime}`) <= new Date()
+  if (training.startTime == null) return training.date <= todayInWarsaw()
+  return parseCalendarDateTime(training.date, training.startTime) <= nowInWarsaw()
 }
 
 function statusChip(status: PersonalTrainingStatus): string {
@@ -102,7 +106,7 @@ export function TrainingDetailModal({
             {statusLabel}
           </span>
           <span className="text-sm text-surface-300 capitalize">
-            {format(new Date(training.date), 'EEEE, d MMMM yyyy', { locale })}
+            {format(parseCalendarDate(training.date), 'EEEE, d MMMM yyyy', { locale })}
           </span>
           {training.startTime && training.endTime ? (
             <span className="text-sm text-surface-400">

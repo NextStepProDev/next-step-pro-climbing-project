@@ -1,12 +1,13 @@
 import { useMemo, useRef, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ChevronLeft, ChevronRight, Scissors, Copy, Bell, Check, X } from 'lucide-react'
-import { format, isToday, isBefore, startOfDay } from 'date-fns'
+import { format, isBefore, startOfDay } from 'date-fns'
 import clsx from 'clsx'
 import type { WeekDay, TimeSlot, EventSummary } from '../../types'
 import type { EventColorMap } from '../../utils/events'
 import { getEventColorByIndex } from '../../utils/events'
 import { useDateLocale } from '../../utils/dateFnsLocale'
+import { isTodayInWarsaw, nowInWarsaw, parseCalendarDate, parseCalendarDateTime } from '../../utils/calendarDate'
 import { useSlotDrag } from '../../hooks/useSlotDrag'
 import { useAuth } from '../../context/AuthContext'
 
@@ -162,9 +163,9 @@ export function WeekCalendar({
     enabled: isAdmin && !!onSlotDrop,
   })
 
-  const start = useMemo(() => new Date(startDate), [startDate])
+  const start = useMemo(() => parseCalendarDate(startDate), [startDate])
   const end = useMemo(() => {
-    const d = new Date(startDate)
+    const d = parseCalendarDate(startDate)
     d.setDate(d.getDate() + 6)
     return d
   }, [startDate])
@@ -182,8 +183,8 @@ export function WeekCalendar({
   const dayEventsMap = useMemo(() => {
     const map = new Map<string, EventSummary[]>()
     events.forEach((event) => {
-      const eStart = new Date(event.startDate)
-      const eEnd = new Date(event.endDate)
+      const eStart = parseCalendarDate(event.startDate)
+      const eEnd = parseCalendarDate(event.endDate)
       for (let d = new Date(eStart); d <= eEnd; d.setDate(d.getDate() + 1)) {
         const key = format(d, 'yyyy-MM-dd')
         const list = map.get(key) || []
@@ -197,7 +198,7 @@ export function WeekCalendar({
   // Auto-scroll to today's column on mobile
   useEffect(() => {
     if (scrollRef.current) {
-      const todayIndex = days.findIndex(d => isToday(new Date(d.date)))
+      const todayIndex = days.findIndex(d => isTodayInWarsaw(d.date))
       if (todayIndex > 0) {
         const columnWidth = 130
         scrollRef.current.scrollLeft = todayIndex * columnWidth - 20
@@ -249,9 +250,9 @@ export function WeekCalendar({
           <div className="grid border-b border-surface-800" style={{ gridTemplateColumns: '60px repeat(7, 1fr)' }}>
             <div className="py-2" />
             {days.map((day, i) => {
-              const date = new Date(day.date)
-              const today = isToday(date)
-              const past = isBefore(date, startOfDay(new Date()))
+              const date = parseCalendarDate(day.date)
+              const today = isTodayInWarsaw(day.date)
+              const past = isBefore(date, startOfDay(nowInWarsaw()))
               const dayEvents = dayEventsMap.get(day.date) || []
               return (
                 <button
@@ -304,9 +305,9 @@ export function WeekCalendar({
 
             {/* Day columns */}
             {days.map((day, dayIndex) => {
-              const date = new Date(day.date)
-              const today = isToday(date)
-              const past = isBefore(date, startOfDay(new Date()))
+              const date = parseCalendarDate(day.date)
+              const today = isTodayInWarsaw(day.date)
+              const past = isBefore(date, startOfDay(nowInWarsaw()))
               const dayEvents = dayEventsMap.get(day.date) || []
 
               return (
@@ -453,7 +454,7 @@ export function WeekCalendar({
                     const isCopied = copiedSlotId === slot.id
                     // PAST status arrives from the START time — for the admin a slot is "finished"
                     // only after its end time, so an ongoing slot can still be moved/edited.
-                    const hasEnded = slot.status === 'PAST' && new Date(`${day.date}T${slot.endTime}`) < new Date()
+                    const hasEnded = slot.status === 'PAST' && parseCalendarDateTime(day.date, slot.endTime) < nowInWarsaw()
                     const isDraggable = isAdmin && !hasEnded
                     const isPending = pendingSlotId === slot.id
                     const isLongPressing = longPressSlotId === slot.id

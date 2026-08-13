@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Plus, Lock, Trash2, X } from 'lucide-react'
-import { format, startOfWeek, addDays } from 'date-fns'
+import { format, addDays } from 'date-fns'
 import clsx from 'clsx'
 import { Modal } from '../ui/Modal'
 import { Button } from '../ui/Button'
@@ -22,13 +22,14 @@ import { TrainingFormModal, type InstantCompletion, type TrainingPrefill } from 
 import { TrainingDetailModal } from './TrainingDetailModal'
 import { SaveAsTemplateModal } from './SaveAsTemplateModal'
 import type { TemplateDraft } from './TrainingTemplateForm'
-import { monthGridRange, resolveInitialView } from './monthGrid'
+import { monthGridRange, resolveInitialView, stepWeek, weekRange } from './monthGrid'
 import { useCompactViewport } from '../../hooks/useCompactViewport'
 import { trainingCalendarApi, calendarApi } from '../../api/client'
 import { useTrainingClipboard, type TrainingClipboardEntry } from '../../context/TrainingClipboardContext'
 import { getErrorMessage } from '../../utils/errors'
 import { decodeHtmlEntities } from '../../utils/htmlEntities'
 import { keepWithinEntity } from '../../utils/queryEntity'
+import { nowInWarsaw, parseCalendarDate } from '../../utils/calendarDate'
 import type { TrainingCalendarAdapter } from './trainingCalendarAdapter'
 import type { AttachmentInput, CreatePersonalTraining, InvitationOverlayItem, PersonalTraining, ReservationOverlayItem } from '../../types'
 
@@ -86,9 +87,14 @@ export function TrainingCalendarSection({ api, scopeKey, scopeLabel, isCoachView
   const [initialCompact] = useState(compactViewport)
   const view = resolveInitialView(searchParams.get('cal'), initialCompact)
   const anchorParam = searchParams.get('calDate')
+  // The anchor round-trips through the URL as a 'yyyy-MM-dd' label: written with format()
+  // (local) and read back here. Reading it with `new Date()` parsed it as UTC midnight, so
+  // west of Greenwich it came back a day early — startOfWeek then snapped to the PREVIOUS
+  // Monday and "next week" wrote back the date already in the URL. Same string in, same
+  // string out, nothing re-rendered: the arrow was dead. See utils/calendarDate.ts.
   const anchor = useMemo(() => {
-    const d = anchorParam ? new Date(anchorParam) : new Date()
-    return isNaN(d.getTime()) ? new Date() : d
+    const d = anchorParam ? parseCalendarDate(anchorParam) : nowInWarsaw()
+    return isNaN(d.getTime()) ? nowInWarsaw() : d
   }, [anchorParam])
 
   const setView = (next: 'week' | 'month') => {
@@ -106,14 +112,7 @@ export function TrainingCalendarSection({ api, scopeKey, scopeLabel, isCoachView
   // Range for the current view: week = Mon..Sun, month = the whole 42-day grid including
   // the greyed padding days (42 < the backend's 62-day cap)
   const { from, to, weekStart } = useMemo(() => {
-    if (view === 'week') {
-      const start = startOfWeek(anchor, { weekStartsOn: 1 })
-      return {
-        from: format(start, 'yyyy-MM-dd'),
-        to: format(addDays(start, 6), 'yyyy-MM-dd'),
-        weekStart: format(start, 'yyyy-MM-dd'),
-      }
-    }
+    if (view === 'week') return weekRange(anchor)
     return { ...monthGridRange(anchor), weekStart: '' }
   }, [view, anchor])
 
@@ -284,7 +283,7 @@ export function TrainingCalendarSection({ api, scopeKey, scopeLabel, isCoachView
       endTime: tr.endTime ? tr.endTime.slice(0, 5) : null,
       attachments: toAttachmentInputs(tr),
     })
-    setPrefillDate(format(addDays(new Date(tr.date), 7), 'yyyy-MM-dd'))
+    setPrefillDate(format(addDays(parseCalendarDate(tr.date), 7), 'yyyy-MM-dd'))
     setPrefillTime(undefined)
     setFormOpen(true)
   }
@@ -459,7 +458,7 @@ export function TrainingCalendarSection({ api, scopeKey, scopeLabel, isCoachView
           <ul className="space-y-0.5">
             {deletions.map((d, i) => (
               <li key={i} className="text-sm text-surface-300">
-                {format(new Date(d.date), 'dd.MM.yyyy')}{' '}
+                {format(parseCalendarDate(d.date), 'dd.MM.yyyy')}{' '}
                 {d.startTime && d.endTime ? `${d.startTime.slice(0, 5)} - ${d.endTime.slice(0, 5)} — ` : '— '}
                 <span className="font-medium">{decodeHtmlEntities(d.title)}</span>
               </li>
@@ -547,9 +546,9 @@ export function TrainingCalendarSection({ api, scopeKey, scopeLabel, isCoachView
           reservations={reservations}
           invitations={invitations}
           invitationLabel={t('overlay.invitation')}
-          onPrevWeek={() => setAnchor(addDays(startOfWeek(anchor, { weekStartsOn: 1 }), -7))}
-          onNextWeek={() => setAnchor(addDays(startOfWeek(anchor, { weekStartsOn: 1 }), 7))}
-          onToday={() => setAnchor(new Date())}
+          onPrevWeek={() => setAnchor(stepWeek(anchor, -1))}
+          onNextWeek={() => setAnchor(stepWeek(anchor, 1))}
+          onToday={() => setAnchor(nowInWarsaw())}
           onTrainingClick={(tr) => setDetailId(tr.id)}
           onReservationClick={setReservationHint}
           onInvitationClick={openInvitation}
@@ -687,7 +686,7 @@ export function TrainingCalendarSection({ api, scopeKey, scopeLabel, isCoachView
           <div>
             {reservationHint && (
               <p className="text-sm text-surface-300 mb-2">
-                {format(new Date(reservationHint.date), 'dd.MM.yyyy')}{' '}
+                {format(parseCalendarDate(reservationHint.date), 'dd.MM.yyyy')}{' '}
                 {reservationHint.startTime.slice(0, 5)} - {reservationHint.endTime.slice(0, 5)}
               </p>
             )}

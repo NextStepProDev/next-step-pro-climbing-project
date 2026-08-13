@@ -19,6 +19,7 @@ import { Modal } from '../../components/ui/Modal'
 import { TimeScrollPicker } from '../../components/ui/TimeScrollPicker'
 import type { CreateEventRequest, EventDetail, EventType, InvitedUser, User } from '../../types'
 import { getEventColorByType } from '../../utils/events'
+import { nowInWarsaw, parseCalendarDate, todayInWarsaw } from '../../utils/calendarDate'
 
 export function AdminEventsPanel() {
   const { t } = useTranslation('admin')
@@ -50,7 +51,7 @@ export function AdminEventsPanel() {
     },
   })
 
-  const now = new Date()
+  const now = nowInWarsaw()
   const todayStr = format(now, 'yyyy-MM-dd')
   const currentTime = format(now, 'HH:mm')
   const isEventPast = (e: EventDetail) => {
@@ -290,9 +291,9 @@ function EventCard({
             )}
           </div>
           <div className="text-sm text-surface-400">
-            {format(new Date(event.startDate), 'dd.MM.yyyy')}
+            {format(parseCalendarDate(event.startDate), 'dd.MM.yyyy')}
             {event.startDate !== event.endDate && (
-              <> - {format(new Date(event.endDate), 'dd.MM.yyyy')}</>
+              <> - {format(parseCalendarDate(event.endDate), 'dd.MM.yyyy')}</>
             )}
             {event.startTime && event.endTime ? (
               <span className="ml-2 inline-flex items-center gap-1">
@@ -1100,8 +1101,8 @@ export function CreateEventModal({
     description: '',
     location: '',
     eventType: 'TRAINING',
-    startDate: initial?.startDate ?? format(new Date(), 'yyyy-MM-dd'),
-    endDate: initial?.endDate ?? initial?.startDate ?? format(new Date(), 'yyyy-MM-dd'),
+    startDate: initial?.startDate ?? todayInWarsaw(),
+    endDate: initial?.endDate ?? initial?.startDate ?? todayInWarsaw(),
     maxParticipants: initial?.maxParticipants ?? 4,
     startTime: initial?.startTime,
     endTime: initial?.endTime,
@@ -1134,8 +1135,8 @@ export function CreateEventModal({
         description: '',
         location: '',
         eventType: 'TRAINING',
-        startDate: format(new Date(), 'yyyy-MM-dd'),
-        endDate: format(new Date(), 'yyyy-MM-dd'),
+        startDate: todayInWarsaw(),
+        endDate: todayInWarsaw(),
         maxParticipants: 4,
       })
     },

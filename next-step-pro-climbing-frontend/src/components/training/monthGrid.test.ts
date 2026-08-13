@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { differenceInCalendarDays, format, parseISO } from 'date-fns'
-import { MONTH_GRID_DAYS, monthGridDays, monthGridRange, resolveInitialView } from './monthGrid'
+import { MONTH_GRID_DAYS, monthGridDays, monthGridRange, resolveInitialView, stepWeek, weekRange } from './monthGrid'
+import { parseCalendarDate } from '../../utils/calendarDate'
 
 describe('monthGridDays — a fixed six-row grid', () => {
   it('should return 42 days for a month that starts on a Monday', () => {
@@ -115,5 +116,51 @@ describe('resolveInitialView — the URL param wins over the viewport', () => {
     // A stale or hand-edited ?cal= must not strand the user on a blank branch
     expect(resolveInitialView('agenda', true)).toBe('week')
     expect(resolveInitialView('agenda', false)).toBe('month')
+  })
+})
+
+describe('weekRange / stepWeek — paging must actually move', () => {
+  it('should return the Monday..Sunday around the anchor', () => {
+    // 2026-07-16 is a Thursday
+    expect(weekRange(parseCalendarDate('2026-07-16'))).toEqual({
+      from: '2026-07-13',
+      to: '2026-07-19',
+      weekStart: '2026-07-13',
+    })
+  })
+
+  it('should keep a Monday anchor on its own week', () => {
+    expect(weekRange(parseCalendarDate('2026-07-13')).weekStart).toBe('2026-07-13')
+  })
+
+  it('should keep a Sunday anchor on the week that is ending', () => {
+    expect(weekRange(parseCalendarDate('2026-07-19')).weekStart).toBe('2026-07-13')
+  })
+
+  it('should move the anchor by exactly one week in either direction', () => {
+    const anchor = parseCalendarDate('2026-07-13')
+    expect(format(stepWeek(anchor, 1), 'yyyy-MM-dd')).toBe('2026-07-20')
+    expect(format(stepWeek(anchor, -1), 'yyyy-MM-dd')).toBe('2026-07-06')
+  })
+
+  it('should never write back the anchor it was given — the dead "next week" arrow', () => {
+    // The regression: the anchor round-trips through the URL as a 'yyyy-MM-dd'. Parsed as
+    // UTC midnight it came back a day early west of Greenwich, startOfWeek snapped to the
+    // PREVIOUS Monday, and +7 produced the string already in the URL. Nothing re-rendered
+    // and the arrow was dead. Every day of a week has to survive a round trip.
+    for (const day of ['2026-07-13', '2026-07-14', '2026-07-15', '2026-07-16', '2026-07-17', '2026-07-18', '2026-07-19']) {
+      const written = format(stepWeek(parseCalendarDate(day), 1), 'yyyy-MM-dd')
+      expect(written).not.toBe(day)
+      // and the week it lands on is the one after the anchor's own week
+      expect(weekRange(parseCalendarDate(written)).weekStart)
+        .toBe(format(stepWeek(parseCalendarDate(day), 1), 'yyyy-MM-dd'))
+    }
+  })
+
+  it('should step forward and back to where it started', () => {
+    const start = parseCalendarDate('2026-07-16')
+    const there = stepWeek(start, 1)
+    const back = stepWeek(there, -1)
+    expect(format(back, 'yyyy-MM-dd')).toBe(weekRange(start).weekStart)
   })
 })

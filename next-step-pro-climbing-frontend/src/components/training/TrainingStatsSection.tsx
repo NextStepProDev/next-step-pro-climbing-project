@@ -20,6 +20,7 @@ import {
 import { QueryError } from '../ui/QueryError'
 import { HEATMAP_LEGEND, levelClass } from './heatmapScale'
 import { useDateLocale } from '../../utils/dateFnsLocale'
+import { nowInWarsaw, parseCalendarDate } from '../../utils/calendarDate'
 import type { TrainingCalendarAdapter } from './trainingCalendarAdapter'
 import type { AthleteStats } from '../../types'
 
@@ -188,7 +189,7 @@ function KpiTiles({ stats, fmt }: { stats: AthleteStats; fmt: (n: number) => str
         {stats.firstActivityDate && (
           <StatTile
             icon={<CalendarDays className="w-4 h-4 text-surface-400" />}
-            value={format(new Date(stats.firstActivityDate), 'LLL yyyy', { locale })}
+            value={format(parseCalendarDate(stats.firstActivityDate), 'LLL yyyy', { locale })}
             label={t('stats.trainingSince')}
           />
         )}
@@ -292,7 +293,7 @@ function ActivityHeatmap({ heatmap }: { heatmap: Record<string, number> }) {
   }, [])
 
   const { weeks, monthLabels, windowStart, today } = useMemo(() => {
-    const today = new Date()
+    const today = nowInWarsaw()
     const windowStart = subDays(today, HEATMAP_DAYS - 1)
     const gridStart = startOfWeek(windowStart, { weekStartsOn: 1 })
     const weeks: Date[] = []
@@ -308,7 +309,7 @@ function ActivityHeatmap({ heatmap }: { heatmap: Record<string, number> }) {
 
   // Mon / Wed / Fri row labels, localized
   const dayLabels = useMemo(() => {
-    const monday = startOfWeek(new Date(), { weekStartsOn: 1 })
+    const monday = startOfWeek(nowInWarsaw(), { weekStartsOn: 1 })
     return [0, 2, 4].map((offset) => format(addDays(monday, offset), 'EEEEEE', { locale }))
   }, [locale])
 
@@ -463,7 +464,7 @@ function BadgeRow({ stats, fmt }: { stats: AthleteStats; fmt: (n: number) => str
       earned.push({ key: `streak-${m}`, icon: <Flame className="w-3.5 h-3.5" />, label: t('stats.badges.streak', { count: m }) })
     }
   }
-  if (stats.firstActivityDate && new Date(stats.firstActivityDate) <= subDays(new Date(), 365)) {
+  if (stats.firstActivityDate && parseCalendarDate(stats.firstActivityDate) <= subDays(nowInWarsaw(), 365)) {
     earned.push({ key: 'one-year', icon: <Trophy className="w-3.5 h-3.5" />, label: t('stats.badges.oneYear') })
   }
 

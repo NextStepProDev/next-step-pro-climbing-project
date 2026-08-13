@@ -1,13 +1,14 @@
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isToday, isBefore, startOfDay } from 'date-fns'
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isBefore, startOfDay } from 'date-fns'
 import clsx from 'clsx'
 import type { DaySummary, EventSummary } from '../../types'
 import type { EventColorMap } from '../../utils/events'
 import { getEventColorByIndex, pluralizeTraining } from '../../utils/events'
 import { useDateLocale } from '../../utils/dateFnsLocale'
 import { useAuth } from '../../context/AuthContext'
+import { isTodayInWarsaw, nowInWarsaw, parseCalendarDate } from '../../utils/calendarDate'
 
 interface MonthCalendarProps {
   currentMonth: Date
@@ -53,8 +54,8 @@ export function MonthCalendar({ currentMonth, onMonthChange, days, events, onDay
   const dayEventsMap = useMemo(() => {
     const map = new Map<string, EventSummary[]>()
     events.forEach((event) => {
-      const start = new Date(event.startDate)
-      const end = new Date(event.endDate)
+      const start = parseCalendarDate(event.startDate)
+      const end = parseCalendarDate(event.endDate)
       for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
         const key = format(d, 'yyyy-MM-dd')
         const list = map.get(key) || []
@@ -123,7 +124,7 @@ export function MonthCalendar({ currentMonth, onMonthChange, days, events, onDay
           const dateString = format(day, 'yyyy-MM-dd')
           const dayData = dayDataMap.get(dateString)
           const dayEvents = dayEventsMap.get(dateString) || []
-          const isPast = isBefore(day, startOfDay(new Date()))
+          const isPast = isBefore(day, startOfDay(nowInWarsaw()))
           const hasAvailabilityWindow = dayData?.hasAvailabilityWindow ?? false
           const hasUnavailableSlots = dayData?.hasUnavailableSlots ?? false
           const hasUserReservation = dayData?.hasUserReservation
@@ -156,8 +157,8 @@ export function MonthCalendar({ currentMonth, onMonthChange, days, events, onDay
               <div
                 className={clsx(
                   'text-sm font-medium mb-0.5',
-                  isToday(day) && 'text-primary-400',
-                  !isToday(day) && 'text-surface-300'
+                  isTodayInWarsaw(day) && 'text-primary-400',
+                  !isTodayInWarsaw(day) && 'text-surface-300'
                 )}
               >
                 {format(day, 'd')}

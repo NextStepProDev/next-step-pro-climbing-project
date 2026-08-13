@@ -19,6 +19,7 @@ import { QueryError } from "../components/ui/QueryError";
 import { Phone, Mail, ExternalLink, Scissors, Copy, X, Bell, CalendarPlus } from "lucide-react";
 import { formatAvailability, buildEventColorMap } from "../utils/events";
 import { useCalendarPromo } from "../hooks/useCalendarPromo";
+import { nowInWarsaw, parseCalendarDate, todayInWarsaw } from '../utils/calendarDate';
 import type { EventSummary, TimeSlot } from "../types";
 
 export function CalendarPage() {
@@ -42,11 +43,11 @@ export function CalendarPage() {
   });
   const [currentMonth, setCurrentMonth] = useState(() => {
     const dateParam = searchParams.get("date");
-    return dateParam ? new Date(dateParam) : new Date();
+    return dateParam ? parseCalendarDate(dateParam) : nowInWarsaw();
   });
   const [currentWeekStart, setCurrentWeekStart] = useState(() => {
     const dateParam = searchParams.get("date");
-    const base = dateParam ? new Date(dateParam) : new Date();
+    const base = dateParam ? parseCalendarDate(dateParam) : nowInWarsaw();
     return startOfWeek(base, { weekStartsOn: 1 });
   });
   const [selectedDate, setSelectedDate] = useState<string | null>(
@@ -177,7 +178,7 @@ export function CalendarPage() {
         setSelectedEvent(dayEvents[0]);
       } else if (dayEvents.length > 1) {
         eventsRef.current?.scrollIntoView({ behavior: "smooth" });
-      } else if (date >= format(new Date(), "yyyy-MM-dd")) {
+      } else if (date >= todayInWarsaw()) {
         // Empty future day: open the day view with the "Propose a time" CTA
         setSelectedDate(date);
         setSearchParams({ date });
@@ -209,7 +210,7 @@ export function CalendarPage() {
   }, []);
 
   const handleTodayWeek = useCallback(() => {
-    setCurrentWeekStart(startOfWeek(new Date(), { weekStartsOn: 1 }));
+    setCurrentWeekStart(startOfWeek(nowInWarsaw(), { weekStartsOn: 1 }));
   }, []);
 
   const handleWeekDayClick = useCallback((date: string) => {
@@ -551,7 +552,7 @@ export function CalendarPage() {
           onEventClick={setSelectedEvent}
           onCancelEvent={(id) => cancelEventMutation.mutate(id)}
           onAddSlot={isAdmin ? () => setShowCreateSlotModal(true) : undefined}
-          onProposeTraining={!isAdmin && selectedDate >= format(new Date(), "yyyy-MM-dd")
+          onProposeTraining={!isAdmin && selectedDate >= todayInWarsaw()
             ? () => setProposeContext({ date: selectedDate })
             : undefined}
         />
@@ -677,9 +678,9 @@ export function CalendarPage() {
                               {label}
                             </span>
                             <span className="text-surface-400 text-xs">
-                              {format(new Date(event.startDate), "dd.MM")}
+                              {format(parseCalendarDate(event.startDate), "dd.MM")}
                               {event.isMultiDay && (
-                                <> - {format(new Date(event.endDate), "dd.MM")}</>
+                                <> - {format(parseCalendarDate(event.endDate), "dd.MM")}</>
                               )}
                             </span>
                             {event.eventType === 'UNAVAILABLE' ? (
@@ -786,9 +787,9 @@ export function CalendarPage() {
 
                         {/* date */}
                         <span className="text-surface-400 text-xs">
-                          {format(new Date(event.startDate), "dd.MM")}
+                          {format(parseCalendarDate(event.startDate), "dd.MM")}
                           {event.isMultiDay && (
-                            <> - {format(new Date(event.endDate), "dd.MM")}</>
+                            <> - {format(parseCalendarDate(event.endDate), "dd.MM")}</>
                           )}
                         </span>
 
@@ -892,7 +893,7 @@ export function CalendarPage() {
         <div className="flex flex-col sm:flex-row gap-3 shrink-0">
           {!isAdmin && (
             <button
-              onClick={() => setProposeContext({ date: selectedDate ?? format(new Date(), 'yyyy-MM-dd') })}
+              onClick={() => setProposeContext({ date: selectedDate ?? todayInWarsaw() })}
               className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary-600 hover:bg-primary-500 text-white text-sm font-medium transition-colors"
             >
               <CalendarPlus className="w-4 h-4" />

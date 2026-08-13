@@ -9,6 +9,7 @@ import { ConfirmModal } from '../ui/ConfirmModal'
 import { QueryError } from '../ui/QueryError'
 import { WeightChart } from './WeightChart'
 import { getErrorMessage } from '../../utils/errors'
+import { nowInWarsaw, todayInWarsaw } from '../../utils/calendarDate'
 import type { TrainingCalendarAdapter } from './trainingCalendarAdapter'
 import type { WeightRange } from '../../types'
 
@@ -50,7 +51,7 @@ export function WeightPanel({ api, scopeKey, isCoachView }: WeightPanelProps) {
     placeholderData: (previous) => previous,
   })
 
-  const today = format(new Date(), 'yyyy-MM-dd')
+  const today = todayInWarsaw()
   const [draft, setDraft] = useState('')
   const [measuredOn, setMeasuredOn] = useState(today)
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null)
@@ -128,7 +129,7 @@ export function WeightPanel({ api, scopeKey, isCoachView }: WeightPanelProps) {
 
   // Derived from the server's own window width, so the picker can never offer a day the
   // server would refuse (or hide one it would accept)
-  const oldestRecordable = format(subDays(new Date(), data.backfillDays - 1), 'yyyy-MM-dd')
+  const oldestRecordable = format(subDays(nowInWarsaw(), data.backfillDays - 1), 'yyyy-MM-dd')
   const existingForDay = data.entries.find((entry) => entry.measuredOn === measuredOn)
 
   const change = data.weeklyChangePercent

@@ -19,6 +19,7 @@ import { adminApi, reservationApi } from "../../api/client";
 import { getErrorMessage } from "../../utils/errors";
 import { useDateLocale } from "../../utils/dateFnsLocale";
 import { useEditSavedToast } from "../../hooks/useEditSavedToast";
+import { nowInWarsaw, parseCalendarDate, parseCalendarDateTime } from '../../utils/calendarDate'
 import type { TimeSlotDetail } from "../../types";
 
 interface SlotDetailModalProps {
@@ -160,7 +161,7 @@ export function SlotDetailModal({
   // Neither kind can be booked, so every seat/waitlist/reservation block hangs off this one flag
   // instead of each of them remembering both shapes.
   const isBookable = !isAvailabilityWindow && !isUnavailable;
-  const dateObj = new Date(slot.date);
+  const dateObj = parseCalendarDate(slot.date);
   // Invitation-held seats: unavailable to non-invitees. The viewer's own invitation does not
   // block — that is why we subtract only OTHER people's invitations.
   const reservedSeats = slot.reservedSeats ?? 0;
@@ -171,7 +172,7 @@ export function SlotDetailModal({
   const isPast = slot.status === "PAST";
   // PAST status arrives from the START time — for the admin a slot is "finished" only after
   // its end time (an ongoing slot can still be edited/deleted, consistent with drag in WeekCalendar).
-  const hasEnded = isPast && new Date(`${slot.date}T${slot.endTime}`) < new Date();
+  const hasEnded = isPast && parseCalendarDateTime(slot.date, slot.endTime) < nowInWarsaw();
   const isBookingClosed = slot.status === "BOOKING_CLOSED";
   const isAvailable = slot.status === "AVAILABLE" && spotsLeft > 0;
   const isFull = slot.status === "FULL" || (slot.status === "AVAILABLE" && spotsLeft <= 0);

@@ -2,6 +2,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { format } from 'date-fns'
 import { useTranslation } from 'react-i18next'
 import { useDateLocale } from '../../utils/dateFnsLocale'
+import { nowInWarsaw } from '../../utils/calendarDate'
 
 interface MonthNavHeaderProps {
   currentMonth: Date
@@ -37,7 +38,7 @@ export function MonthNavHeader({ currentMonth, onMonthChange }: MonthNavHeaderPr
           {format(currentMonth, 'LLLL yyyy', { locale })}
         </h2>
         <button
-          onClick={() => onMonthChange(new Date())}
+          onClick={() => onMonthChange(nowInWarsaw())}
           className="px-2 py-1 text-xs font-medium text-surface-400 border border-surface-700 rounded-md hover:text-surface-100 hover:border-surface-500 transition-colors"
         >
           {t('nav.today')}

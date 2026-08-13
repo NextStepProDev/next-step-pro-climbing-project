@@ -14,6 +14,7 @@ import { useAuth } from '../../context/AuthContext'
 import { saveRedirectPath } from '../../utils/redirect'
 import { adminApi, calendarApi, reservationApi } from '../../api/client'
 import { getErrorMessage } from '../../utils/errors'
+import { parseCalendarDate, todayInWarsaw } from '../../utils/calendarDate'
 import type { EventSummary } from '../../types'
 
 // Full event edit form from the admin panel (course, dates, invitations etc.).
@@ -160,7 +161,7 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
 
   const enrollmentClosed = !ev.enrollmentOpen
   // As in SlotDetailModal: editing only for future/ongoing dates (ISO dates compare as strings)
-  const isPastEvent = ev.endDate < format(new Date(), 'yyyy-MM-dd')
+  const isPastEvent = ev.endDate < todayInWarsaw()
   // Invitation-held seats — unavailable to non-invitees; one's own invitation does not block.
   const reservedSeats = ev.reservedSeats ?? 0
   const reservedForOthers = Math.max(0, reservedSeats - (ev.isReservedForUser ? 1 : 0))
@@ -444,8 +445,8 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
           <Calendar className="w-5 h-5" />
           <span>
             {(() => {
-              const startD = format(new Date(ev.startDate), 'dd.MM.yyyy')
-              const endD = format(new Date(ev.endDate), 'dd.MM.yyyy')
+              const startD = format(parseCalendarDate(ev.startDate), 'dd.MM.yyyy')
+              const endD = format(parseCalendarDate(ev.endDate), 'dd.MM.yyyy')
               const startT = ev.startTime ? ev.startTime.slice(0, 5) : null
               const endT = ev.endTime ? ev.endTime.slice(0, 5) : null
               // Unavailable: show the full span — first day (opt. start hour) → last day (opt. end hour)
@@ -648,7 +649,7 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
         <ShareButtons
           title={ev.title}
           url={`${window.location.origin}/events/${ev.id}`}
-          description={`${format(new Date(ev.startDate), 'dd.MM.yyyy')}${ev.isMultiDay ? ' - ' + format(new Date(ev.endDate), 'dd.MM.yyyy') : ''}${ev.location ? ' | ' + ev.location : ''}`}
+          description={`${format(parseCalendarDate(ev.startDate), 'dd.MM.yyyy')}${ev.isMultiDay ? ' - ' + format(parseCalendarDate(ev.endDate), 'dd.MM.yyyy') : ''}${ev.location ? ' | ' + ev.location : ''}`}
         />
 
         {/* Actions — absent entirely in states that have none (see renderActions) */}

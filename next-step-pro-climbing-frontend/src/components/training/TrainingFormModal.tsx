@@ -11,6 +11,7 @@ import { RpePicker } from './RpePicker'
 import { AttachmentEditor } from './AttachmentEditor'
 import { adminTrainingCalendarApi } from '../../api/client'
 import { decodeHtmlEntities } from '../../utils/htmlEntities'
+import { nowInWarsaw } from '../../utils/calendarDate'
 import type { AttachmentInput, CreatePersonalTraining, PersonalTraining, TrainingKind, TrainingTemplate } from '../../types'
 
 // Mirrors the CHECK in V77: below 500 and above 10000 is a slipped digit, not a diet.
@@ -199,7 +200,7 @@ function TrainingForm({ training, initialDate, initialTime, prefill, onClose, on
   // offer "mark as completed right away" instead of forcing a second visit to the
   // detail modal. Create mode only, and only once the chosen start has passed
   // (same "must have started" rule the backend enforces).
-  const now = new Date()
+  const now = nowInWarsaw()
   const today = format(now, 'yyyy-MM-dd')
   const currentTime = format(now, 'HH:mm')
   const instantCompleteAvailable = !!allowInstantComplete && !training && !!date

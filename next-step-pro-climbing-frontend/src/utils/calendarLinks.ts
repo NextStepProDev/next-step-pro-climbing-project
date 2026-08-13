@@ -1,3 +1,9 @@
+import { APP_TIME_ZONE } from './calendarDate'
+
+// Every time here is a Polish wall clock reading, never an instant, so the export must name
+// that zone outright. Stamping the device's zone told an athlete abroad's calendar app that
+// a 17:00 session in Poland was 17:00 where they happen to be standing.
+
 interface CalendarEvent {
   title: string
   date: string
@@ -22,7 +28,7 @@ export function buildGoogleCalendarUrl(event: CalendarEvent): string {
 
   if (event.startTime && event.endTime) {
     params.set('dates', `${formatDateTime(event.date, event.startTime)}/${formatDateTime(event.date, event.endTime)}`)
-    params.set('ctz', Intl.DateTimeFormat().resolvedOptions().timeZone)
+    params.set('ctz', APP_TIME_ZONE)
   } else {
     params.set('dates', `${formatDateOnly(event.date)}/${formatDateOnly(event.date)}`)
   }
@@ -41,9 +47,8 @@ export function buildIcsContent(event: CalendarEvent): string {
   let dtEnd: string
 
   if (event.startTime && event.endTime) {
-    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone
-    dtStart = `DTSTART;TZID=${tz}:${formatDateTime(event.date, event.startTime)}`
-    dtEnd = `DTEND;TZID=${tz}:${formatDateTime(event.date, event.endTime)}`
+    dtStart = `DTSTART;TZID=${APP_TIME_ZONE}:${formatDateTime(event.date, event.startTime)}`
+    dtEnd = `DTEND;TZID=${APP_TIME_ZONE}:${formatDateTime(event.date, event.endTime)}`
   } else {
     dtStart = `DTSTART;VALUE=DATE:${formatDateOnly(event.date)}`
     dtEnd = `DTEND;VALUE=DATE:${formatDateOnly(event.date)}`

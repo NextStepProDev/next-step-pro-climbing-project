@@ -17,6 +17,7 @@ import { ConfirmModal } from '../components/ui/ConfirmModal'
 import { SlotDetailModal } from '../components/calendar/SlotDetailModal'
 import { EventSignupModal } from '../components/calendar/EventSignupModal'
 import { AddToCalendarButton } from '../components/ui/AddToCalendarButton'
+import { parseCalendarDate } from '../utils/calendarDate'
 import type { MyReservations, MyInvitation, WaitlistEntry, EventWaitlistEntry, TrainingRequest } from '../types'
 
 const TrainingCalendarSection = lazy(() =>
@@ -498,9 +499,9 @@ function UpcomingReservations({
                   <div className="flex items-center gap-3 text-surface-400">
                     <Calendar className="w-5 h-5" />
                     <span>
-                      {format(new Date(event.startDate), 'd MMMM', { locale })}
+                      {format(parseCalendarDate(event.startDate), 'd MMMM', { locale })}
                       {' - '}
-                      {format(new Date(event.endDate), 'd MMMM yyyy', { locale })}
+                      {format(parseCalendarDate(event.endDate), 'd MMMM yyyy', { locale })}
                     </span>
                   </div>
                   <div className="flex items-center gap-2 mt-2" onClick={(e) => e.stopPropagation()}>
@@ -600,7 +601,7 @@ function UpcomingReservations({
             {t('trainings')}
           </h2>
           {slots.map((reservation) => {
-            const dateObj = new Date(reservation.date)
+            const dateObj = parseCalendarDate(reservation.date)
             const isCancelledByAdmin = reservation.status === 'CANCELLED_BY_ADMIN'
             return (
               <div
@@ -810,9 +811,9 @@ function PastReservations({
                 <div className="flex items-center gap-3 text-surface-400">
                   <Calendar className="w-5 h-5" />
                   <span>
-                    {format(new Date(event.startDate), 'd MMMM', { locale })}
+                    {format(parseCalendarDate(event.startDate), 'd MMMM', { locale })}
                     {' - '}
-                    {format(new Date(event.endDate), 'd MMMM yyyy', { locale })}
+                    {format(parseCalendarDate(event.endDate), 'd MMMM yyyy', { locale })}
                   </span>
                 </div>
                 {event.participants > 1 && (
@@ -833,7 +834,7 @@ function PastReservations({
             {t('trainings')}
           </h2>
           {visibleSlots.map((reservation) => {
-            const dateObj = new Date(reservation.date)
+            const dateObj = parseCalendarDate(reservation.date)
             const isCancelledByAdmin = reservation.status === 'CANCELLED_BY_ADMIN'
             const isCancelled = reservation.status === 'CANCELLED' || isCancelledByAdmin
             return (
@@ -952,7 +953,7 @@ function InvitationsSection({
                   )}
                   <span className="font-medium text-surface-100 capitalize">
                     {inv.type === 'SLOT'
-                      ? format(new Date(inv.date), 'EEEE, d MMMM yyyy', { locale })
+                      ? format(parseCalendarDate(inv.date), 'EEEE, d MMMM yyyy', { locale })
                       : inv.title}
                   </span>
                   {inv.type === 'SLOT' && inv.title && (
@@ -963,11 +964,11 @@ function InvitationsSection({
                   <div className="flex items-center gap-2 text-surface-400 text-sm">
                     <Calendar className="w-4 h-4" />
                     <span>
-                      {format(new Date(inv.date), 'd MMMM', { locale })}
+                      {format(parseCalendarDate(inv.date), 'd MMMM', { locale })}
                       {inv.endDate && inv.endDate !== inv.date ? (
-                        <> – {format(new Date(inv.endDate), 'd MMMM yyyy', { locale })}</>
+                        <> – {format(parseCalendarDate(inv.endDate), 'd MMMM yyyy', { locale })}</>
                       ) : (
-                        <> {format(new Date(inv.date), 'yyyy', { locale })}</>
+                        <> {format(parseCalendarDate(inv.date), 'yyyy', { locale })}</>
                       )}
                     </span>
                   </div>
@@ -1034,7 +1035,7 @@ function WaitlistPendingSection({
               <div className="flex items-center gap-2 mb-1">
                 <Clock3 className="w-4 h-4 text-amber-400" />
                 <span className="font-medium text-surface-100 capitalize">
-                  {format(new Date(entry.slotDate), 'EEEE, d MMMM yyyy', { locale })}
+                  {format(parseCalendarDate(entry.slotDate), 'EEEE, d MMMM yyyy', { locale })}
                 </span>
               </div>
               <div className="flex items-center gap-2 text-surface-400 text-sm">
@@ -1102,7 +1103,7 @@ function WaitlistWaitingSection({
               <div className="flex items-center gap-2 mb-1">
                 <Calendar className="w-4 h-4 text-surface-400" />
                 <span className="font-medium text-surface-100 capitalize">
-                  {format(new Date(entry.slotDate), 'EEEE, d MMMM yyyy', { locale })}
+                  {format(parseCalendarDate(entry.slotDate), 'EEEE, d MMMM yyyy', { locale })}
                 </span>
               </div>
               <div className="flex items-center gap-2 text-surface-400 text-sm">
@@ -1158,12 +1159,12 @@ function EventWaitlistPendingSection({
               <div className="flex items-center gap-2 text-surface-400 text-sm">
                 <Calendar className="w-4 h-4" />
                 <span>
-                  {format(new Date(entry.eventStartDate), 'd MMMM', { locale })}
+                  {format(parseCalendarDate(entry.eventStartDate), 'd MMMM', { locale })}
                   {entry.eventStartDate !== entry.eventEndDate && (
-                    <> – {format(new Date(entry.eventEndDate), 'd MMMM yyyy', { locale })}</>
+                    <> – {format(parseCalendarDate(entry.eventEndDate), 'd MMMM yyyy', { locale })}</>
                   )}
                   {entry.eventStartDate === entry.eventEndDate && (
-                    <> {format(new Date(entry.eventStartDate), 'yyyy', { locale })}</>
+                    <> {format(parseCalendarDate(entry.eventStartDate), 'yyyy', { locale })}</>
                   )}
                 </span>
               </div>
@@ -1230,12 +1231,12 @@ function EventWaitlistWaitingSection({
               </div>
               <div className="flex items-center gap-2 text-surface-400 text-sm">
                 <span>
-                  {format(new Date(entry.eventStartDate), 'd MMMM', { locale })}
+                  {format(parseCalendarDate(entry.eventStartDate), 'd MMMM', { locale })}
                   {entry.eventStartDate !== entry.eventEndDate && (
-                    <> – {format(new Date(entry.eventEndDate), 'd MMMM yyyy', { locale })}</>
+                    <> – {format(parseCalendarDate(entry.eventEndDate), 'd MMMM yyyy', { locale })}</>
                   )}
                   {entry.eventStartDate === entry.eventEndDate && (
-                    <> {format(new Date(entry.eventStartDate), 'yyyy', { locale })}</>
+                    <> {format(parseCalendarDate(entry.eventStartDate), 'yyyy', { locale })}</>
                   )}
                 </span>
               </div>
@@ -1305,7 +1306,7 @@ function TrainingRequestsSection({ requests }: { requests: TrainingRequest[] }) 
                 <div className="flex items-center gap-3 text-surface-200">
                   <Calendar className="w-4 h-4 text-surface-400" />
                   <span className="font-medium capitalize">
-                    {format(new Date(req.requestedDate), 'EEEE, d MMMM yyyy', { locale })}
+                    {format(parseCalendarDate(req.requestedDate), 'EEEE, d MMMM yyyy', { locale })}
                   </span>
                   <span className="flex items-center gap-1 text-surface-400 text-sm">
                     <Clock className="w-4 h-4" />
