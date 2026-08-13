@@ -45,7 +45,15 @@ public class RateLimitFilter extends OncePerRequestFilter {
     // Rate limits per IP per minute
     private static final int AUTH_LIMIT = 15;
     private static final int RESERVATION_LIMIT = 20;
-    private static final int USER_LIMIT = 20;
+    // Reads under /api/reservations/my are polled by the navbar badge and the reservations page,
+    // and they shared the write limit. Twenty a minute is a sane cap on booking a seat and a
+    // silly one on looking at your own list: an ordinary session tripped it, and being throttled
+    // out of BOOKING because you glanced at the page too often is worse than the abuse the cap
+    // exists to stop. Writes keep RESERVATION_LIMIT — this rule sits before them and matches
+    // only the read sub-path, the same shape as the upload/private-file rules above.
+    private static final int RESERVATION_READ_LIMIT = 60;
+    // Every page load spends one on /user/me, and the profile screen several more.
+    private static final int USER_LIMIT = 40;
     private static final int ADMIN_LIMIT = 60;
     private static final int TRAINING_LIMIT = 40;
     // Proposing a time is a write, and each rejected one still costs validation and queries. The
@@ -96,6 +104,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
         // Google sign-in is a sign-in attempt like any other, and lives outside /api entirely.
         new Rule("auth", AUTH_LIMIT, path -> under(path, "/api/auth")
             || under(path, "/oauth2") || under(path, "/login/oauth2")),
+        new Rule("reservationread", RESERVATION_READ_LIMIT, path -> under(path, "/api/reservations/my")),
         new Rule("reservations", RESERVATION_LIMIT, path -> under(path, "/api/reservations")),
         new Rule("user", USER_LIMIT, path -> under(path, "/api/user")),
         new Rule("admin", ADMIN_LIMIT, path -> under(path, "/api/admin")),

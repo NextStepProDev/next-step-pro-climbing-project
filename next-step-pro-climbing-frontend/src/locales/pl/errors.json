@@ -29,5 +29,7 @@
   "imageLoadFailed": "Nie udało się wczytać obrazu.",
   "authServer": "Błąd serwera. Spróbuj ponownie później.",
   "authGeneric": "Wystąpił błąd ({{status}}). Spróbuj ponownie.",
-  "imageUnreadableHeic": "Tej przeglądarce nie udało się odczytać zdjęcia. Jeśli to zdjęcie z iPhone'a (HEIC), wyślij je z telefonu albo przełącz Ustawienia → Aparat → Formaty na „Najbardziej zgodne”."
+  "imageUnreadableHeic": "Tej przeglądarce nie udało się odczytać zdjęcia. Jeśli to zdjęcie z iPhone'a (HEIC), wyślij je z telefonu albo przełącz Ustawienia → Aparat → Formaty na „Najbardziej zgodne”.",
+  "rateLimited": "Za dużo żądań w krótkim czasie. Odczekaj chwilę i spróbuj ponownie.",
+  "refreshUnavailable": "Nie udało się odświeżyć sesji. Jesteś nadal zalogowany — spróbuj ponownie za chwilę."
 }

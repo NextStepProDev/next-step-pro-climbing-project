@@ -4,6 +4,7 @@ import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import { QueryClient, QueryClientProvider, MutationCache, keepPreviousData } from '@tanstack/react-query'
 import { HelmetProvider } from 'react-helmet-async'
+import { ApiError } from './utils/errors'
 import { AuthProvider } from './context/AuthContext'
 import { ThemeProvider } from './context/ThemeContext'
 import { ToastProvider } from './context/ToastContext'
@@ -36,7 +37,11 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 1000 * 60 * 5,
-      retry: 1,
+      // One retry, except on 429: the limiter's window is a fixed minute, so an immediate
+      // retry cannot succeed and only spends another request against the bucket that is
+      // already full — the failure mode feeds itself.
+      retry: (failureCount, error) =>
+        !(error instanceof ApiError && error.isRateLimited) && failureCount < 1,
       // Keep the previous result on screen while a new queryKey is fetching
       // (pagination, month/filter/language switches, type-ahead search) instead
       // of dropping to an empty/loading branch and collapsing the layout.

@@ -3,6 +3,10 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { addDays, format, subDays } from 'date-fns'
+// Fixtures follow the app's clock, not the runner's: the panel bounds its picker with
+// todayInWarsaw() to match what the server accepts, so a device-clock 'today' here disagrees
+// with it for every hour that Warsaw and the runner are on different dates.
+import { nowInWarsaw, todayInWarsaw } from '../../utils/calendarDate'
 import { WeightPanel } from './WeightPanel'
 import type { TrainingCalendarAdapter } from './trainingCalendarAdapter'
 import type { WeightSeries } from '../../types'
@@ -32,8 +36,8 @@ function makeSeries(overrides: Partial<WeightSeries> = {}): WeightSeries {
   }
 }
 
-const today = format(new Date(), 'yyyy-MM-dd')
-const missedDay = format(subDays(new Date(), 3), 'yyyy-MM-dd')
+const today = todayInWarsaw()
+const missedDay = format(subDays(nowInWarsaw(), 3), 'yyyy-MM-dd')
 
 const saveWeight = vi.fn()
 const deleteWeight = vi.fn()
@@ -168,7 +172,7 @@ describe('WeightPanel', () => {
 
     const date = await screen.findByLabelText('weight.dateLabel')
     expect(date).toHaveAttribute('max', today)
-    expect(date).toHaveAttribute('min', format(subDays(new Date(), 29), 'yyyy-MM-dd'))
+    expect(date).toHaveAttribute('min', format(subDays(nowInWarsaw(), 29), 'yyyy-MM-dd'))
   })
 
   it('lets the browser block a future day through the max attribute', async () => {
@@ -176,7 +180,7 @@ describe('WeightPanel', () => {
 
     const date = await screen.findByLabelText('weight.dateLabel')
     await userEvent.type(screen.getByLabelText('weight.todayLabel'), '70.4')
-    fireEvent.change(date, { target: { value: format(addDays(new Date(), 1), 'yyyy-MM-dd') } })
+    fireEvent.change(date, { target: { value: format(addDays(nowInWarsaw(), 1), 'yyyy-MM-dd') } })
     await userEvent.click(screen.getByRole('button', { name: 'weight.save' }))
 
     // Constraint validation aborts the submit before the handler ever runs
@@ -191,7 +195,7 @@ describe('WeightPanel', () => {
 
     const date = await screen.findByLabelText('weight.dateLabel')
     await userEvent.type(screen.getByLabelText('weight.todayLabel'), '70.4')
-    fireEvent.change(date, { target: { value: format(addDays(new Date(), 1), 'yyyy-MM-dd') } })
+    fireEvent.change(date, { target: { value: format(addDays(nowInWarsaw(), 1), 'yyyy-MM-dd') } })
     fireEvent.submit(container.querySelector('form')!)
 
     expect(await screen.findByText('weight.futureDate')).toBeInTheDocument()
@@ -221,7 +225,7 @@ describe('WeightPanel', () => {
 
   it('does not show older readings until a wider range is picked', async () => {
     // The server trims; the panel simply shows what came back for the range it asked for
-    const older = format(subDays(new Date(), 200), 'yyyy-MM-dd')
+    const older = format(subDays(nowInWarsaw(), 200), 'yyyy-MM-dd')
     const getWeights = vi.fn().mockImplementation((range: string) =>
       Promise.resolve(
         range === 'RECENT'
@@ -250,7 +254,7 @@ describe('WeightPanel', () => {
     await waitFor(() => expect(getWeights).toHaveBeenCalledWith('ALL'))
     expect(await screen.findByLabelText('weight.dateLabel')).toHaveAttribute(
       'min',
-      format(subDays(new Date(), 119), 'yyyy-MM-dd'),
+      format(subDays(nowInWarsaw(), 119), 'yyyy-MM-dd'),
     )
   })
 
@@ -290,7 +294,7 @@ describe('WeightPanel', () => {
   })
 
   it('warns that the chosen day already has a reading, so overwriting is deliberate', async () => {
-    const existing = format(subDays(new Date(), 1), 'yyyy-MM-dd')
+    const existing = format(subDays(nowInWarsaw(), 1), 'yyyy-MM-dd')
     const series = makeSeries({
       entries: [{ measuredOn: existing, weightKg: 71.2, trendKg: 71.2 }],
     })

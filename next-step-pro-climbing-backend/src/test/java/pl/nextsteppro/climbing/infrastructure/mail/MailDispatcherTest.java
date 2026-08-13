@@ -12,7 +12,9 @@ import org.springframework.mail.MailSendException;
 import org.springframework.mail.javamail.JavaMailSender;
 import pl.nextsteppro.climbing.config.AppConfig;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -49,6 +51,33 @@ class MailDispatcherTest {
         dispatcher.sendHtml("user@example.com", "Subject", "<p>Body</p>");
 
         verify(mailSender, times(1)).send(any(MimeMessage.class));
+    }
+
+    @Test
+    @DisplayName("newsletter mail carries the RFC 8058 one-click unsubscribe headers")
+    void shouldSetOneClickUnsubscribeHeadersOnNewsletterMail() throws Exception {
+        var sent = org.mockito.ArgumentCaptor.forClass(MimeMessage.class);
+
+        dispatcher.sendNewsletterHtml("user@example.com", "Subject", "<p>Body</p>",
+                "https://nextsteppro.pl/api/user/unsubscribe?token=abc");
+
+        verify(mailSender).send(sent.capture());
+        assertArrayEquals(new String[]{"<https://nextsteppro.pl/api/user/unsubscribe?token=abc>"},
+                sent.getValue().getHeader("List-Unsubscribe"));
+        assertArrayEquals(new String[]{"List-Unsubscribe=One-Click"},
+                sent.getValue().getHeader("List-Unsubscribe-Post"));
+    }
+
+    @Test
+    @DisplayName("transactional mail carries no unsubscribe headers — it is not a mailing list")
+    void shouldNotSetUnsubscribeHeadersOnTransactionalMail() throws Exception {
+        var sent = org.mockito.ArgumentCaptor.forClass(MimeMessage.class);
+
+        dispatcher.sendHtml("user@example.com", "Verify your email", "<p>Body</p>");
+
+        verify(mailSender).send(sent.capture());
+        assertNull(sent.getValue().getHeader("List-Unsubscribe"));
+        assertNull(sent.getValue().getHeader("List-Unsubscribe-Post"));
     }
 
     @Test
