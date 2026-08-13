@@ -29,5 +29,7 @@
   "imageLoadFailed": "No se pudo cargar la imagen.",
   "authServer": "Error del servidor. Inténtalo de nuevo más tarde.",
   "authGeneric": "Se ha producido un error ({{status}}). Inténtalo de nuevo.",
-  "imageUnreadableHeic": "Este navegador no pudo leer la imagen. Si es una foto de iPhone (HEIC), envíala desde el teléfono o cambia Ajustes → Cámara → Formatos a “Más compatible”."
+  "imageUnreadableHeic": "Este navegador no pudo leer la imagen. Si es una foto de iPhone (HEIC), envíala desde el teléfono o cambia Ajustes → Cámara → Formatos a “Más compatible”.",
+  "rateLimited": "Demasiadas solicitudes en poco tiempo. Espera un momento e inténtalo de nuevo.",
+  "refreshUnavailable": "No se pudo actualizar la sesión. Sigues conectado: inténtalo de nuevo en un momento."
 }

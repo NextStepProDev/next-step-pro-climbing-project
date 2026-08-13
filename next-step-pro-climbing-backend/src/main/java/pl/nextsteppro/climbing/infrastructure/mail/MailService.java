@@ -225,7 +225,8 @@ public class MailService {
         String settingsUrl = siteUrl + "/settings";
         String footerText = msg.getForLang("email.newsletter.footer", lang, unsubscribeUrl, settingsUrl);
         String htmlBody = buildCustomAdminMailBody(subject, body, footerText);
-        sendEmail(recipient.getEmail(), subject, htmlBody, null);
+        // Campaign mail, so it carries the one-click unsubscribe headers as well as the footer.
+        mailDispatcher.sendNewsletterHtml(recipient.getEmail(), subject, htmlBody, unsubscribeUrl);
     }
 
     // ---- Training requests ----

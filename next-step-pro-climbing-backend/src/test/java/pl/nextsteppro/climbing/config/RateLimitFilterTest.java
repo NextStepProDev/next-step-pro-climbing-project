@@ -118,6 +118,37 @@ class RateLimitFilterTest {
     }
 
     /**
+     * Reading your own reservations is polled (navbar badge, reservations page) and used to share
+     * the write limit, so an ordinary session could be throttled out of BOOKING by having looked
+     * at the list. Reads get their own roomier bucket; writes keep the tight one.
+     */
+    @Test
+    void shouldNotSpendTheBookingLimitOnReadingYourOwnReservations() throws Exception {
+        for (int i = 0; i < 21; i++) {
+            MockHttpServletResponse response = new MockHttpServletResponse();
+            filter.doFilterInternal(get("/api/reservations/my/invitations", "192.168.1.70"), response, new MockFilterChain());
+            assertEquals(200, response.getStatus(), "read " + i + " is within the read limit");
+        }
+
+        // The write bucket is untouched by those reads.
+        MockHttpServletRequest booking = new MockHttpServletRequest("POST", "/api/reservations");
+        booking.setRemoteAddr("192.168.1.70");
+        MockHttpServletResponse bookingResponse = new MockHttpServletResponse();
+        filter.doFilterInternal(booking, bookingResponse, new MockFilterChain());
+        assertEquals(200, bookingResponse.getStatus(), "booking must not be blocked by reads");
+    }
+
+    @Test
+    void shouldStillThrottleAFloodOfReservationReads() throws Exception {
+        for (int i = 0; i < 60; i++) {
+            filter.doFilterInternal(get("/api/reservations/my/upcoming", "192.168.1.71"), new MockHttpServletResponse(), new MockFilterChain());
+        }
+        MockHttpServletResponse blocked = new MockHttpServletResponse();
+        filter.doFilterInternal(get("/api/reservations/my/upcoming", "192.168.1.71"), blocked, new MockFilterChain());
+        assertEquals(429, blocked.getStatus());
+    }
+
+    /**
      * Proposing a time is a write. The "3 PENDING per user" rule caps what survives, not what the
      * endpoint has to validate and query first.
      */

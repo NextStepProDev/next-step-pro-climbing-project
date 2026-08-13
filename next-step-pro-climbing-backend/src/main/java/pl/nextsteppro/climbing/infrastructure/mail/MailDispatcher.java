@@ -75,6 +75,30 @@ public class MailDispatcher {
     }
 
     public void sendHtml(String to, String subject, String body, @Nullable byte[] icsAttachment) {
+        send(to, subject, body, icsAttachment, null);
+    }
+
+    /**
+     * Bulk mail only (newsletter, admin campaigns): carries the RFC 8058 one-click unsubscribe
+     * headers on top of the footer link.
+     *
+     * The footer link is what a person clicks; these headers are what a MAILBOX shows — Gmail's
+     * "Unsubscribe" next to the sender, and the same in Yahoo and Outlook. Since 2024 both Gmail
+     * and Yahoo require them of anyone sending in volume, and providers that do not find them
+     * score the message worse — which is the shape of the problem that started this: wp.pl
+     * rejecting a message outright as spam.
+     *
+     * The endpoint behind the URL already fits the RFC: POST unsubscribes, GET only renders a
+     * confirmation page, so a mailbox provider's one-click POST works while a link-scanning
+     * security gateway walking the same URL changes nothing. Never put these on transactional
+     * mail (verification, reservations) — that is not a mailing list and cannot be left.
+     */
+    public void sendNewsletterHtml(String to, String subject, String body, String unsubscribeUrl) {
+        send(to, subject, body, null, unsubscribeUrl);
+    }
+
+    private void send(String to, String subject, String body, @Nullable byte[] icsAttachment,
+                      @Nullable String unsubscribeUrl) {
         int maxAttempts = retryDelaysMs.length + 1;
         for (int attempt = 1; attempt <= maxAttempts; attempt++) {
             try {
@@ -88,6 +112,12 @@ public class MailDispatcher {
                 if (icsAttachment != null) {
                     helper.addAttachment(ICS_ATTACHMENT_NAME,
                             new ByteArrayResource(icsAttachment), "text/calendar");
+                }
+                if (unsubscribeUrl != null) {
+                    message.setHeader("List-Unsubscribe", "<" + unsubscribeUrl + ">");
+                    // Declares that the URL above accepts the one-click POST. Without this second
+                    // header Gmail treats the address as mailto-style and does not show the button.
+                    message.setHeader("List-Unsubscribe-Post", "List-Unsubscribe=One-Click");
                 }
 
                 mailSender.send(message);

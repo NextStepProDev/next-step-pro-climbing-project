@@ -50,7 +50,7 @@ public class NewsletterMailService {
         String subject = news.getTitle();
         String body = buildBody(news, blocks, subscriber, baseUrl, lang, unsubscribeUrl);
 
-        mailDispatcher.sendHtml(subscriber.getEmail(), subject, body);
+        mailDispatcher.sendNewsletterHtml(subscriber.getEmail(), subject, body, unsubscribeUrl);
     }
 
     private String buildBody(News news, List<NewsContentBlock> blocks, User subscriber, String baseUrl, String lang, String unsubscribeUrl) {

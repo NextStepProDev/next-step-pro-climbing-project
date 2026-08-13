@@ -1,4 +1,5 @@
 import i18n from '../i18n'
+import { ApiError, parseRetryAfter } from '../utils/errors'
 
 const API_BASE = '/api/auth'
 
@@ -44,14 +45,25 @@ async function authFetch<T>(endpoint: string, body: unknown): Promise<T> {
 
   if (!response.ok) {
     const error = await response.json().catch(() => null)
+    // ApiError carries the status out of here because /refresh runs through this function, and
+    // doRefresh may only end the session when the server actually rejected the token.
+    const fail = (message: string) => new ApiError(
+      message,
+      response.status,
+      error?.code,
+      parseRetryAfter(response.headers.get('Retry-After')),
+    )
     const serverMessage = error?.message
     if (serverMessage) {
-      throw new Error(serverMessage)
+      throw fail(serverMessage)
+    }
+    if (response.status === 429) {
+      throw fail(i18n.t('rateLimited', { ns: 'errors' }))
     }
     if (response.status >= 500) {
-      throw new Error(i18n.t('authServer', { ns: 'errors' }))
+      throw fail(i18n.t('authServer', { ns: 'errors' }))
     }
-    throw new Error(i18n.t('authGeneric', { status: response.status, ns: 'errors' }))
+    throw fail(i18n.t('authGeneric', { status: response.status, ns: 'errors' }))
   }
 
   return response.json()
