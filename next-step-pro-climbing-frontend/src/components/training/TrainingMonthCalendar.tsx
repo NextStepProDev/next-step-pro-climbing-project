@@ -1,11 +1,12 @@
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import { format, isSameMonth, isToday } from 'date-fns'
+import { format, isSameMonth } from 'date-fns'
 import { Plus } from 'lucide-react'
 import clsx from 'clsx'
 import { TrainingBlock, ReservationBlock, InvitationBlock } from './TrainingBlock'
 import { MonthNavHeader } from './MonthNavHeader'
 import { monthGridDays } from './monthGrid'
+import { isTodayInWarsaw } from '../../utils/calendarDate'
 import type { InvitationOverlayItem, PersonalTraining, ReservationOverlayItem } from '../../types'
 
 interface TrainingMonthCalendarProps {
@@ -98,7 +99,7 @@ export function TrainingMonthCalendar({
       <div className="grid grid-cols-7">
         {calendarDays.map((day) => {
           const dateStr = format(day, 'yyyy-MM-dd')
-          const today = isToday(day)
+          const today = isTodayInWarsaw(day)
           // Padding days stay live — reaching 31 July from the August grid is the point
           const outside = !isSameMonth(day, currentMonth)
           const dayTrainings = trainingsByDay.get(dateStr) ?? []

@@ -9,6 +9,7 @@ import { QueryError } from '../../components/ui/QueryError'
 import { ConfirmModal } from '../../components/ui/ConfirmModal'
 import { getErrorMessage } from '../../utils/errors'
 import { useDateLocale } from '../../utils/dateFnsLocale'
+import { parseCalendarDate } from '../../utils/calendarDate'
 import type { AdminWaitlists, ReservationAdmin, WaitlistAdminEntry } from '../../types'
 
 function isMultiDayEvent(r: ReservationAdmin) {
@@ -206,7 +207,7 @@ function WaitlistsSection({ data }: { data?: AdminWaitlists }) {
               <div className="flex items-center gap-3 flex-wrap">
                 <span className="font-medium text-surface-100">{ew.title}</span>
                 <span className="text-xs bg-primary-500/10 text-primary-400 px-2 py-0.5 rounded">
-                  {format(new Date(ew.startDate), 'dd.MM')} - {format(new Date(ew.endDate), 'dd.MM.yyyy')}
+                  {format(parseCalendarDate(ew.startDate), 'dd.MM')} - {format(parseCalendarDate(ew.endDate), 'dd.MM.yyyy')}
                 </span>
                 <span className="text-xs text-amber-400">{t('waitlists.people', { count: ew.entries.length })}</span>
                 {newCount > 0 && <NewBadge label={t('reservations.newCount', { count: newCount })} />}
@@ -221,7 +222,7 @@ function WaitlistsSection({ data }: { data?: AdminWaitlists }) {
             <div key={sw.slotId} className={`bg-surface-900 rounded-lg border p-4 ${newCount > 0 ? 'border-rose-500/40' : 'border-amber-500/20'}`}>
               <div className="flex items-center gap-3 flex-wrap">
                 <span className="font-medium text-surface-100 capitalize">
-                  {format(new Date(sw.date), 'EEEE, d MMMM', { locale })}
+                  {format(parseCalendarDate(sw.date), 'EEEE, d MMMM', { locale })}
                 </span>
                 <span className="text-surface-300 text-sm">
                   {sw.startTime.slice(0, 5)} - {sw.endTime.slice(0, 5)}
@@ -378,8 +379,8 @@ function ReservationList({
           <div key={date}>
             <h3 className="text-sm font-semibold text-primary-400 mb-3 capitalize">
               {hasEvent && firstEvent
-                ? `${format(new Date(firstEvent.eventStartDate), 'dd.MM')} - ${format(new Date(firstEvent.eventEndDate), 'dd.MM.yyyy')}`
-                : format(new Date(date), 'EEEE, d MMMM yyyy', { locale })
+                ? `${format(parseCalendarDate(firstEvent.eventStartDate), 'dd.MM')} - ${format(parseCalendarDate(firstEvent.eventEndDate), 'dd.MM.yyyy')}`
+                : format(parseCalendarDate(date), 'EEEE, d MMMM yyyy', { locale })
               }
             </h3>
             <div className="space-y-2">
@@ -422,7 +423,7 @@ function EventReservationCard({ group, onDelete }: { group: EventGroup; onDelete
         <div className="flex items-center gap-3 flex-wrap min-w-0">
           <span className="font-medium text-surface-100">{group.title}</span>
           <span className="text-xs bg-primary-500/10 text-primary-400 px-2 py-0.5 rounded">
-            {format(new Date(group.eventStartDate), 'dd.MM')} - {format(new Date(group.eventEndDate), 'dd.MM.yyyy')}
+            {format(parseCalendarDate(group.eventStartDate), 'dd.MM')} - {format(parseCalendarDate(group.eventEndDate), 'dd.MM.yyyy')}
           </span>
           {newCount > 0 && <NewBadge label={t('reservations.newCount', { count: newCount })} />}
         </div>

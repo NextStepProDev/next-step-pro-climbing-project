@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { format } from 'date-fns'
 import { Trophy } from 'lucide-react'
 import { Modal } from '../ui/Modal'
 import { Button } from '../ui/Button'
 import { decodeHtmlEntities } from '../../utils/htmlEntities'
+import { todayInWarsaw } from '../../utils/calendarDate'
 import type { AthleteGoal } from '../../types'
 
 interface AchieveGoalModalProps {
@@ -23,7 +23,7 @@ interface AchieveGoalModalProps {
  */
 export function AchieveGoalModal({ isOpen, onClose, goal, onConfirm, saving, submitError }: AchieveGoalModalProps) {
   const { t } = useTranslation('training')
-  const today = format(new Date(), 'yyyy-MM-dd')
+  const today = todayInWarsaw()
   const [achievedDate, setAchievedDate] = useState(today)
 
   if (!goal) return null

@@ -8,6 +8,7 @@ import type { TimeSlot, EventSummary } from "../../types";
 import { formatAvailability, getEventColorByIndex } from "../../utils/events";
 import { useDateLocale } from "../../utils/dateFnsLocale";
 import { useAuth } from "../../context/AuthContext";
+import { parseCalendarDate } from '../../utils/calendarDate'
 
 interface DayViewProps {
   date: string;
@@ -169,7 +170,7 @@ export function DayView({
   const location = useLocation();
   // Back-link target so CourseDetailPage returns here instead of the course list.
   const courseReturnTo = location.pathname + location.search;
-  const dateObj = new Date(date);
+  const dateObj = parseCalendarDate(date);
 
   const { eventSlotGroups, standaloneSlots } = useMemo(() => {
     const grouped = new Map<string, TimeSlot[]>();
@@ -340,11 +341,11 @@ export function DayView({
                           <span>
                             {" "}
                             ·{" "}
-                            {format(new Date(event.startDate), "d", {
+                            {format(parseCalendarDate(event.startDate), "d", {
                               locale,
                             })}{" "}
                             -{" "}
-                            {format(new Date(event.endDate), "d MMMM", {
+                            {format(parseCalendarDate(event.endDate), "d MMMM", {
                               locale,
                             })}
                           </span>
@@ -417,9 +418,9 @@ export function DayView({
                           {event.isMultiDay && (
                             <span className="flex items-center gap-1">
                               <Calendar className="w-4 h-4" />
-                              {format(new Date(event.startDate), "d", { locale })}{" "}
+                              {format(parseCalendarDate(event.startDate), "d", { locale })}{" "}
                               -{" "}
-                              {format(new Date(event.endDate), "d MMMM", { locale })}
+                              {format(parseCalendarDate(event.endDate), "d MMMM", { locale })}
                             </span>
                           )}
                         </div>

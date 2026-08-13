@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
-import { format, isToday, addDays } from 'date-fns'
+import { format, addDays } from 'date-fns'
 import clsx from 'clsx'
 import { TrainingBlock, ReservationBlock, InvitationBlock } from './TrainingBlock'
 import { useSlotDrag } from '../../hooks/useSlotDrag'
+import { isTodayInWarsaw, parseCalendarDate } from '../../utils/calendarDate'
 import { useDateLocale } from '../../utils/dateFnsLocale'
 import {
   HOUR_HEIGHT, START_HOUR, TOTAL_HOURS,
@@ -55,7 +56,7 @@ export function TrainingWeekCalendar({
   const dayColumnRefs = useRef<(HTMLDivElement | null)[]>([])
 
   const days = useMemo(() => {
-    const start = new Date(startDate)
+    const start = parseCalendarDate(startDate)
     return Array.from({ length: 7 }, (_, i) => format(addDays(start, i), 'yyyy-MM-dd'))
   }, [startDate])
 
@@ -76,7 +77,7 @@ export function TrainingWeekCalendar({
   const hours = useMemo(() => Array.from({ length: TOTAL_HOURS }, (_, i) => START_HOUR + i), [])
 
   const weekdays = useMemo(
-    () => days.map((d) => format(new Date(d), 'EEEEEE', { locale })),
+    () => days.map((d) => format(parseCalendarDate(d), 'EEEEEE', { locale })),
     [days, locale],
   )
 
@@ -93,15 +94,15 @@ export function TrainingWeekCalendar({
   // Auto-scroll to today's column on mobile (same behavior as the public week view)
   useEffect(() => {
     if (scrollRef.current) {
-      const todayIndex = days.findIndex((d) => isToday(new Date(d)))
+      const todayIndex = days.findIndex((d) => isTodayInWarsaw(d))
       if (todayIndex > 0) {
         scrollRef.current.scrollLeft = todayIndex * 130 - 20
       }
     }
   }, [days])
 
-  const start = new Date(days[0])
-  const end = new Date(days[6])
+  const start = parseCalendarDate(days[0])
+  const end = parseCalendarDate(days[6])
 
   return (
     <div className="bg-surface-900 rounded-xl border border-surface-800 overflow-hidden">
@@ -143,8 +144,8 @@ export function TrainingWeekCalendar({
           <div className="grid border-b border-surface-800" style={{ gridTemplateColumns: '60px repeat(7, 1fr)' }}>
             <div className="py-2" />
             {days.map((date, i) => {
-              const d = new Date(date)
-              const today = isToday(d)
+              const d = parseCalendarDate(date)
+              const today = isTodayInWarsaw(date)
               return (
                 <div
                   key={date}
@@ -168,7 +169,7 @@ export function TrainingWeekCalendar({
               {t('detail.allDay')}
             </div>
             {days.map((date) => {
-              const today = isToday(new Date(date))
+              const today = isTodayInWarsaw(date)
               const allDay = byDay.get(date)
               return (
                 <div
@@ -231,7 +232,7 @@ export function TrainingWeekCalendar({
 
             {/* Day columns */}
             {days.map((date, dayIndex) => {
-              const today = isToday(new Date(date))
+              const today = isTodayInWarsaw(date)
               const items = byDay.get(date)?.timed ?? []
               return (
                 <div

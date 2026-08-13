@@ -20,6 +20,7 @@ import { WaitlistEntryList } from './AdminReservationsPanel'
 import { useDateLocale } from '../../utils/dateFnsLocale'
 import { useDirty } from '../../hooks/useDirty'
 import { useEditSavedToast } from '../../hooks/useEditSavedToast'
+import { todayInWarsaw } from '../../utils/calendarDate'
 import type { InvitedUser, SlotParticipants, SlotTemplate, TimeSlotAdmin, User } from '../../types'
 
 const ARCHIVE_PAGE_SIZE = 15
@@ -270,7 +271,7 @@ export function AdminSlotsPanel() {
         key={filterDate ?? 'no-date'}
         isOpen={showCreateModal}
         onClose={() => setShowCreateModal(false)}
-        defaultDate={filterDate ?? format(new Date(), 'yyyy-MM-dd')}
+        defaultDate={filterDate ?? todayInWarsaw()}
         onSuccess={invalidateSlots}
       />
 

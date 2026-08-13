@@ -1,9 +1,10 @@
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import { format, isSameMonth, isToday } from 'date-fns'
+import { format, isSameMonth } from 'date-fns'
 import clsx from 'clsx'
 import { MonthNavHeader } from './MonthNavHeader'
 import { monthGridDays } from './monthGrid'
+import { isTodayInWarsaw } from '../../utils/calendarDate'
 import type { InvitationOverlayItem, PersonalTraining, ReservationOverlayItem } from '../../types'
 
 interface TrainingMonthDotsProps {
@@ -97,7 +98,7 @@ export function TrainingMonthDots({
 
         {calendarDays.map((day) => {
           const dateStr = format(day, 'yyyy-MM-dd')
-          const today = isToday(day)
+          const today = isTodayInWarsaw(day)
           const outside = !isSameMonth(day, currentMonth)
           const entries = entriesByDay.get(dateStr) ?? []
           const overflow = entries.length - MAX_DOTS

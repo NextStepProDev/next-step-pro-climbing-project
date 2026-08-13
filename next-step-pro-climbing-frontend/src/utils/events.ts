@@ -1,4 +1,5 @@
 import i18n from "../i18n";
+import { parseCalendarDate } from './calendarDate'
 import type { EventSummary } from "../types";
 
 type EventAccentColor = {
@@ -80,19 +81,19 @@ export function buildEventColorMap(events: EventSummary[]): Map<string, EventAcc
   )
 
   const sorted = [...paletteEvents].sort(
-    (a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime()
+    (a, b) => parseCalendarDate(a.startDate).getTime() - parseCalendarDate(b.startDate).getTime()
   )
 
   sorted.forEach(event => {
-    const eStart = new Date(event.startDate).getTime()
-    const eEnd = new Date(event.endDate).getTime()
+    const eStart = parseCalendarDate(event.startDate).getTime()
+    const eEnd = parseCalendarDate(event.endDate).getTime()
     const DAY = 86_400_000
 
     const usedIndices = new Set<number>()
     sorted.forEach(other => {
       if (other.id === event.id) return
-      const oStart = new Date(other.startDate).getTime()
-      const oEnd = new Date(other.endDate).getTime()
+      const oStart = parseCalendarDate(other.startDate).getTime()
+      const oEnd = parseCalendarDate(other.endDate).getTime()
       if (eEnd + DAY >= oStart && oEnd + DAY >= eStart) {
         const assigned = map.get(other.id)
         if (assigned) {

@@ -10,6 +10,7 @@ import { AchieveGoalModal } from './AchieveGoalModal'
 import { TrophyChestModal } from './TrophyChestModal'
 import { getErrorMessage } from '../../utils/errors'
 import { decodeHtmlEntities } from '../../utils/htmlEntities'
+import { nowInWarsaw, parseCalendarDate, toWarsawWallClock } from '../../utils/calendarDate'
 import type { TrainingCalendarAdapter } from './trainingCalendarAdapter'
 import type { AthleteGoal, GoalHorizon, GoalKind, SaveGoal } from '../../types'
 
@@ -110,7 +111,7 @@ export function GoalsBanner({ api, scopeKey, isCoachView }: GoalsBannerProps) {
   for (const g of goals.achieved) {
     const key = slotKey(g.kind, g.horizon)
     if (activeBySlot.has(key) || celebrating.has(key)) continue
-    if (g.achievedAt && differenceInCalendarDays(new Date(), new Date(g.achievedAt)) <= CELEBRATION_DAYS) {
+    if (g.achievedAt && differenceInCalendarDays(nowInWarsaw(), toWarsawWallClock(new Date(g.achievedAt))) <= CELEBRATION_DAYS) {
       celebrating.set(key, g)
     }
   }
@@ -301,12 +302,12 @@ function GoalSlot({
   onAdd,
 }: GoalSlotProps) {
   const { t, i18n } = useTranslation('training')
-  const today = new Date()
+  const today = nowInWarsaw()
   const fmtKg = (n: number) =>
     n.toLocaleString(i18n.language, { minimumFractionDigits: 1, maximumFractionDigits: 1 })
 
   if (goal) {
-    const daysLeft = differenceInCalendarDays(new Date(goal.targetDate), today)
+    const daysLeft = differenceInCalendarDays(parseCalendarDate(goal.targetDate), today)
     const overdue = daysLeft < 0
     const progress = kind === 'WEIGHT' ? weightProgress(goal, currentTrendKg) : null
     return (
@@ -381,7 +382,7 @@ function GoalSlot({
         )}
 
         <p className={clsx('text-xs', overdue ? 'text-surface-500' : 'text-surface-400')}>
-          {t('goals.targetDate')}: {format(new Date(goal.targetDate), 'dd.MM.yyyy')}
+          {t('goals.targetDate')}: {format(parseCalendarDate(goal.targetDate), 'dd.MM.yyyy')}
           {' · '}
           {overdue
             ? t('goals.overdue')

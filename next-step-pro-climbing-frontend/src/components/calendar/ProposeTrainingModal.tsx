@@ -13,6 +13,7 @@ import { saveRedirectPath } from '../../utils/redirect'
 import { trainingRequestApi, coursesApi } from '../../api/client'
 import { getErrorMessage } from '../../utils/errors'
 import { useDateLocale } from '../../utils/dateFnsLocale'
+import { nowInWarsaw, parseCalendarDate, todayInWarsaw } from '../../utils/calendarDate'
 
 /** Availability window the request is submitted in — constrains the date and times. */
 export interface ProposeWindow {
@@ -41,8 +42,8 @@ const toHHMM = (m: number) => `${String(Math.floor(m / 60)).padStart(2, '0')}:${
  */
 function initialWindowStart(win: ProposeWindow): string {
   const start = win.startTime.slice(0, 5)
-  if (win.date !== format(new Date(), 'yyyy-MM-dd')) return start
-  const now = new Date()
+  if (win.date !== todayInWarsaw()) return start
+  const now = nowInWarsaw()
   const nowMin = Math.ceil((now.getHours() * 60 + now.getMinutes()) / 15) * 15
   if (nowMin <= toMinutes(start)) return start
   return nowMin < toMinutes(win.endTime.slice(0, 5)) ? toHHMM(nowMin) : start
@@ -133,7 +134,7 @@ export function ProposeTrainingModal({ isOpen, onClose, defaultDate, window: pro
                 <div className="flex items-center gap-2">
                   <CalendarPlus className="w-4 h-4 text-teal-400 shrink-0" />
                   <span className="text-sm text-teal-300 font-medium capitalize">
-                    {format(new Date(proposeWindow.date), 'EEEE, d MMMM yyyy', { locale })}
+                    {format(parseCalendarDate(proposeWindow.date), 'EEEE, d MMMM yyyy', { locale })}
                   </span>
                 </div>
                 <p className="text-xs text-teal-200/80 mt-1">
@@ -146,7 +147,7 @@ export function ProposeTrainingModal({ isOpen, onClose, defaultDate, window: pro
                 <input
                   type="date"
                   value={form.date}
-                  min={format(new Date(), 'yyyy-MM-dd')}
+                  min={todayInWarsaw()}
                   onChange={(e) => setForm({ ...form, date: e.target.value })}
                   required
                   className="w-full bg-surface-800 border border-surface-700 rounded-lg px-4 py-2 text-surface-100"

@@ -17,6 +17,7 @@ import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
 import { QueryError } from '../../components/ui/QueryError'
 import { CreateSlotModal } from '../../components/calendar/CreateSlotModal'
 import { CreateEventModal } from './AdminEventsPanel'
+import { parseCalendarDate } from '../../utils/calendarDate'
 import type { AdminTrainingRequest, TrainingRequestStatus } from '../../types'
 
 type Filter = 'PENDING' | 'ALL'
@@ -292,7 +293,7 @@ function RequestCard({
         <div className="flex flex-wrap items-center gap-3 text-surface-100">
           <span className="flex items-center gap-2 font-semibold capitalize">
             <Calendar className="w-4 h-4 text-surface-400" />
-            {format(new Date(req.requestedDate), 'EEEE, d MMMM yyyy', { locale })}
+            {format(parseCalendarDate(req.requestedDate), 'EEEE, d MMMM yyyy', { locale })}
           </span>
           <span className="flex items-center gap-1 text-surface-300">
             <Clock className="w-4 h-4 text-surface-400" />
@@ -438,7 +439,7 @@ function StatusModal({
         <p className="text-sm text-surface-400">
           {t('requests.statusModalFor', {
             name: request.userFullName,
-            date: format(new Date(request.requestedDate), 'dd.MM.yyyy'),
+            date: format(parseCalendarDate(request.requestedDate), 'dd.MM.yyyy'),
           })}
         </p>
 

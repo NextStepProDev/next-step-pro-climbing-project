@@ -26,6 +26,7 @@ import { adminApi } from '../../api/client'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
 import { QueryError } from '../../components/ui/QueryError'
 import { useDateLocale } from '../../utils/dateFnsLocale'
+import { parseCalendarDate } from '../../utils/calendarDate'
 import type { ActivityLog, ActivityActionType } from '../../types'
 
 const PAGE_SIZE = 20
@@ -291,7 +292,7 @@ export function AdminActivityPanel() {
                       {/* Slot info */}
                       {log.slotDate && (
                         <span className="text-surface-300 text-xs">
-                          {format(new Date(log.slotDate), 'd MMM yyyy', { locale })}
+                          {format(parseCalendarDate(log.slotDate), 'd MMM yyyy', { locale })}
                           {log.slotStartTime && log.slotEndTime && (
                             <>
                               {' '}
@@ -311,9 +312,9 @@ export function AdminActivityPanel() {
                           {log.eventStartDate && log.eventEndDate && (
                             <span className="text-surface-500">
                               {' '}
-                              ({format(new Date(log.eventStartDate), 'd MMM', { locale })}
+                              ({format(parseCalendarDate(log.eventStartDate), 'd MMM', { locale })}
                               {' - '}
-                              {format(new Date(log.eventEndDate), 'd MMM yyyy', { locale })})
+                              {format(parseCalendarDate(log.eventEndDate), 'd MMM yyyy', { locale })})
                             </span>
                           )}
                         </span>

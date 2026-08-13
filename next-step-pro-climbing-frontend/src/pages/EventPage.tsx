@@ -11,6 +11,7 @@ import { Button } from '../components/ui/Button'
 import { ShareButtons } from '../components/ui/ShareButtons'
 import { useDateLocale } from '../utils/dateFnsLocale'
 import { getEventColorByType } from '../utils/events'
+import { parseCalendarDate } from '../utils/calendarDate'
 
 export function EventPage() {
   const { t } = useTranslation('calendar')
@@ -119,11 +120,11 @@ export function EventPage() {
           <div className="flex items-center gap-3 text-surface-300">
             <Calendar className="w-5 h-5" />
             <span>
-              {format(new Date(event.startDate), 'd MMMM yyyy', { locale })}
+              {format(parseCalendarDate(event.startDate), 'd MMMM yyyy', { locale })}
               {event.startDate !== event.endDate && (
                 <>
                   {' '}-{' '}
-                  {format(new Date(event.endDate), 'd MMMM yyyy', { locale })}
+                  {format(parseCalendarDate(event.endDate), 'd MMMM yyyy', { locale })}
                 </>
               )}
             </span>

@@ -51,6 +51,13 @@ jobs:
 
       - run: npm test
 
+      # Second pass under a negative UTC offset. Every timezone bug the calendar has had was
+      # invisible in Poland and total for an athlete abroad (a "next week" arrow that wrote
+      # back the date already in the URL, a completion button eight hours off), and a runner
+      # in UTC is not far enough west to catch them either.
+      - name: Unit tests (America/New_York)
+        run: npm run test:tz
+
       # E2E lived in the repo but ran only when someone remembered to, so it was free to rot.
       # The golden path is deliberately backend-free and playwright.config.ts brings up the dev
       # server itself, so this needs nothing beyond the browser binary.

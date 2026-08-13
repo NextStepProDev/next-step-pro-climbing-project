@@ -36,6 +36,26 @@ export function monthGridRange(anchor: Date): { from: string; to: string } {
   }
 }
 
+/** The range to request for a week page: Monday..Sunday of the week the anchor falls in. */
+export function weekRange(anchor: Date): { from: string; to: string; weekStart: string } {
+  const start = startOfWeek(anchor, { weekStartsOn: 1 })
+  const from = format(start, 'yyyy-MM-dd')
+  return { from, to: format(addDays(start, 6), 'yyyy-MM-dd'), weekStart: from }
+}
+
+/**
+ * The anchor one week either side. It lives here, next to the range it has to stay in step
+ * with, because the pair has to satisfy one property that is not obvious from either half:
+ * stepping must actually MOVE the anchor. The anchor round-trips through the URL as a
+ * 'yyyy-MM-dd', and when that string was read back with `new Date()` (UTC midnight, so a day
+ * early west of Greenwich) `startOfWeek` snapped to the previous Monday and +7 landed back
+ * on the string already in the URL — a paging button that writes what is already there
+ * re-renders nothing, so "next week" did nothing at all. Covered in monthGrid.test.ts.
+ */
+export function stepWeek(anchor: Date, weeks: number): Date {
+  return addDays(startOfWeek(anchor, { weekStartsOn: 1 }), weeks * 7)
+}
+
 export type CalendarView = 'week' | 'month'
 
 /**
