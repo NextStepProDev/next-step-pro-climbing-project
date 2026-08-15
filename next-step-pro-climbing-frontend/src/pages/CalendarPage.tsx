@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams, useLocation, useNavigate, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { PageHead } from "../components/ui/PageHead";
-import { format, startOfWeek, addWeeks, subWeeks } from "date-fns";
+import { format, startOfWeek, addWeeks, subWeeks, addDays, differenceInCalendarDays } from "date-fns";
 import { calendarApi, reservationApi, adminApi } from "../api/client";
 import { getAccessToken } from "../utils/tokenStorage";
 import { useAuth } from "../context/AuthContext";
@@ -20,7 +20,19 @@ import { Phone, Mail, ExternalLink, Scissors, Copy, X, Bell, CalendarPlus } from
 import { formatAvailability, buildEventColorMap } from "../utils/events";
 import { useCalendarPromo } from "../hooks/useCalendarPromo";
 import { nowInWarsaw, parseCalendarDate, todayInWarsaw } from '../utils/calendarDate';
-import type { EventSummary, TimeSlot } from "../types";
+import type { CreateEventRequest, EventSummary, TimeSlot } from "../types";
+
+const timeToMin = (time: string): number => {
+  const [h, m] = time.split(':').map(Number);
+  return h * 60 + m;
+};
+
+const minToTime = (minutes: number): string =>
+  `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`;
+
+/** The pasted copy keeps the source's length and starts where the admin clicked. */
+const shiftedEndTime = (newStart: string, sourceStart: string, sourceEnd: string): string =>
+  minToTime(timeToMin(newStart) + (timeToMin(sourceEnd) - timeToMin(sourceStart)));
 
 export function CalendarPage() {
   const { t } = useTranslation('calendar');
@@ -61,7 +73,9 @@ export function CalendarPage() {
   // Training request: start date + optional availability window (constrains the times)
   const [proposeContext, setProposeContext] = useState<{ date: string; window?: ProposeWindow } | null>(null);
   const [cutSlot, setCutSlot] = useState<{ id: string; date: string; startTime: string; endTime: string } | null>(null);
-  const [copiedSlot, setCopiedSlot] = useState<{ id: string; date: string; startTime: string; endTime: string; title?: string; maxParticipants: number; isAvailabilityWindow: boolean } | null>(null);
+  const [copiedSlot, setCopiedSlot] = useState<{ id: string; date: string; startTime: string; endTime: string; title?: string; maxParticipants: number; isAvailabilityWindow: boolean; isUnavailable: boolean } | null>(null);
+  // The whole summary travels: it already carries every field createEvent asks for.
+  const [copiedEvent, setCopiedEvent] = useState<EventSummary | null>(null);
   const [notifyToast, setNotifyToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const lastSlotMoveRef = useRef<Map<string, { previousDate: string; previousStartTime: string; previousEndTime: string }>>(new Map());
   const [pendingSlotMove, setPendingSlotMove] = useState<{
@@ -378,25 +392,39 @@ export function CalendarPage() {
       if (e.key === 'Escape') {
         setCutSlot(null);
         setCopiedSlot(null);
+        setCopiedEvent(null);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
+  // One thing sits on the clipboard at a time — arming a second would leave two banners
+  // on screen and no way to tell which one the next click pastes.
   const handleSlotCut = useCallback((slot: TimeSlot, date: string) => {
     setCopiedSlot(null);
+    setCopiedEvent(null);
     setCutSlot({ id: slot.id, date, startTime: slot.startTime, endTime: slot.endTime });
   }, []);
 
   const handleSlotCopy = useCallback((slot: TimeSlot, date: string) => {
     setCutSlot(null);
+    setCopiedEvent(null);
     setCopiedSlot({
       id: slot.id, date, startTime: slot.startTime, endTime: slot.endTime,
       title: slot.eventTitle ?? undefined,
       maxParticipants: slot.maxParticipants,
       isAvailabilityWindow: slot.isAvailabilityWindow,
+      // A slot has exactly one shape — dropping this flag pasted an absence back as a
+      // bookable slot with zero seats, which the calendar then reads as "full".
+      isUnavailable: slot.isUnavailable,
     });
+  }, []);
+
+  const handleEventCopy = useCallback((event: EventSummary) => {
+    setCutSlot(null);
+    setCopiedSlot(null);
+    setCopiedEvent(event);
   }, []);
 
   const copySlotMutation = useMutation({
@@ -407,17 +435,50 @@ export function CalendarPage() {
     },
   });
 
+  const copyEventMutation = useMutation({
+    mutationFn: adminApi.createEvent,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['calendar'] });
+      void queryClient.invalidateQueries({ queryKey: ['admin', 'events'] });
+      void queryClient.invalidateQueries({ queryKey: ['courseEvents'] });
+    },
+  });
+
   const handleColumnClick = useCallback((date: string, startTime: string) => {
+    if (copiedEvent) {
+      // Reservations, invitations and the waitlist stay behind — the copy is the plan
+      // (title, type, length, seats, course link), not the people who signed up for it.
+      const spanDays = differenceInCalendarDays(
+        parseCalendarDate(copiedEvent.endDate),
+        parseCalendarDate(copiedEvent.startDate),
+      );
+      const payload: CreateEventRequest = {
+        title: copiedEvent.title,
+        description: copiedEvent.description ?? undefined,
+        location: copiedEvent.location ?? undefined,
+        eventType: copiedEvent.eventType,
+        startDate: date,
+        endDate: format(addDays(parseCalendarDate(date), spanDays), 'yyyy-MM-dd'),
+        maxParticipants: copiedEvent.maxParticipants,
+        courseId: copiedEvent.courseId ?? undefined,
+        invitedUserIds: [],
+      };
+      if (copiedEvent.startTime && copiedEvent.endTime) {
+        // A one-day event lands where it was dropped. A multi-day one keeps its own hours:
+        // its start and end belong to different days, so a single click cannot place both.
+        payload.startTime = spanDays === 0 ? startTime : copiedEvent.startTime.slice(0, 5);
+        payload.endTime = spanDays === 0
+          ? shiftedEndTime(startTime, copiedEvent.startTime, copiedEvent.endTime)
+          : copiedEvent.endTime.slice(0, 5);
+      }
+      copyEventMutation.mutate(payload);
+      setCopiedEvent(null);
+      return;
+    }
+
     const source = cutSlot ?? copiedSlot;
     if (!source) return;
-    const [sh, sm] = source.startTime.split(':').map(Number);
-    const [eh, em] = source.endTime.split(':').map(Number);
-    const durationMin = (eh * 60 + em) - (sh * 60 + sm);
-    const [clickH, clickM] = startTime.split(':').map(Number);
-    const endAbsMin = clickH * 60 + clickM + durationMin;
-    const endH = Math.floor(endAbsMin / 60);
-    const endM = endAbsMin % 60;
-    const endTime = `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`;
+    const endTime = shiftedEndTime(startTime, source.startTime, source.endTime);
 
     if (cutSlot) {
       setPendingSlotMove(prev => {
@@ -438,10 +499,11 @@ export function CalendarPage() {
         maxParticipants: copiedSlot.maxParticipants,
         title: copiedSlot.title,
         isAvailabilityWindow: copiedSlot.isAvailabilityWindow,
+        isUnavailable: copiedSlot.isUnavailable,
       });
       setCopiedSlot(null);
     }
-  }, [cutSlot, copiedSlot, moveSlotMutation, copySlotMutation]);
+  }, [cutSlot, copiedSlot, copiedEvent, moveSlotMutation, copySlotMutation, copyEventMutation]);
 
   const cancelEventMutation = useMutation({
     mutationFn: (eventId: string) => reservationApi.cancelForEvent(eventId),
@@ -623,6 +685,28 @@ export function CalendarPage() {
               </div>
             )}
 
+            {/* Copied-event banner */}
+            {isAdmin && copiedEvent && (
+              <div className="mb-3 flex items-center gap-3 px-4 py-2.5 bg-primary-500/10 border border-primary-500/30 rounded-lg">
+                <Copy className="w-4 h-4 text-primary-400 shrink-0" />
+                <span className="text-sm text-primary-300 flex-1">
+                  Wydarzenie <strong>{copiedEvent.title}</strong>
+                  {copiedEvent.isMultiDay && ` (${differenceInCalendarDays(parseCalendarDate(copiedEvent.endDate), parseCalendarDate(copiedEvent.startDate)) + 1} dni)`}
+                  {' '}skopiowane — kliknij w kalendarzu w dzień, od którego ma się zacząć kopia
+                  {copiedEvent.startTime && copiedEvent.endTime && !copiedEvent.isMultiDay
+                    ? ' (godzina z miejsca kliknięcia)'
+                    : ''}
+                </span>
+                <button
+                  onClick={() => setCopiedEvent(null)}
+                  className="p-1 text-primary-400 hover:text-primary-200 transition-colors"
+                  title="Anuluj"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+
             <div className={`transition-opacity duration-150 ${weekFetching ? 'opacity-60' : ''}`}>
             <WeekCalendar
               startDate={weekData.startDate}
@@ -639,9 +723,11 @@ export function CalendarPage() {
               onSlotDrop={isAdmin ? handleSlotDrop : undefined}
               onSlotCut={isAdmin ? handleSlotCut : undefined}
               onSlotCopy={isAdmin ? handleSlotCopy : undefined}
+              onEventCopy={isAdmin ? handleEventCopy : undefined}
               cutSlotId={cutSlot?.id}
               copiedSlotId={copiedSlot?.id}
-              onColumnClick={isAdmin && (cutSlot || copiedSlot) ? handleColumnClick : undefined}
+              copiedEventId={copiedEvent?.id}
+              onColumnClick={isAdmin && (cutSlot || copiedSlot || copiedEvent) ? handleColumnClick : undefined}
               onNotifyParticipants={isAdmin ? handleNotifyParticipants : undefined}
               pendingSlotId={pendingSlotMove?.slotId}
               onConfirmSlotMove={isAdmin ? handleConfirmSlotMove : undefined}
