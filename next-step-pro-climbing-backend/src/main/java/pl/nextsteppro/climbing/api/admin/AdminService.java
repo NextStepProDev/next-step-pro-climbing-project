@@ -49,6 +49,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -684,6 +685,12 @@ public class AdminService {
         if (request.eventType() != null) event.setEventType(EventType.valueOf(request.eventType()));
         if (request.startDate() != null) event.setStartDate(request.startDate());
         if (request.endDate() != null) event.setEndDate(request.endDate());
+        // Create validates this with @AssertTrue, update never did — and an inverted range is no
+        // longer merely odd now that the slots follow it: it would leave the event zero days and
+        // take every participant's reservation with them.
+        if (event.getEndDate().isBefore(event.getStartDate())) {
+            throw new IllegalArgumentException(msg.get("validation.event.date.range"));
+        }
         int oldEventMaxParticipants = event.getMaxParticipants();
         if (request.maxParticipants() != null) {
             List<TimeSlot> eventSlots = timeSlotRepository.findByEventId(eventId);
@@ -719,6 +726,11 @@ public class AdminService {
         if (request.invitedUserIds() != null) {
             syncEventInvites(event, request.invitedUserIds());
         }
+
+        if (!oldStartDate.equals(event.getStartDate()) || !oldEndDate.equals(event.getEndDate())) {
+            reconcileEventSlots(event);
+        }
+
 
         User admin = userRepository.findById(adminId).orElseThrow();
         activityLogService.logAdminEventUpdated(admin, event);
@@ -1734,6 +1746,78 @@ public class AdminService {
             }
             activityLogService.logEventReservationCreated(user, event, request.participants());
         }
+    }
+
+    /**
+     * Keeps an event's per-day slots in step with its date range.
+     *
+     * <p>Those slots are bookkeeping the backend writes, not something an admin draws: a
+     * reservation hangs off a slot rather than an event, so the first signup silently creates one
+     * slot per day (see {@link #createDefaultSlotsForEvent}). Every participant then holds a
+     * reservation on <em>every</em> one of them — both signup paths reserve all slots — which is
+     * why nothing here needs to worry about someone booked onto one day only.
+     *
+     * <p>Until now an edit moved the event's dates and left the slots where they were, so
+     * shortening a course left a live reservation on a day the event no longer had. It was
+     * invisible in the calendar and in "my reservations" (both read the event, and the calendar
+     * filters event slots out entirely), but not to {@code TrainingStatsService}, which counts
+     * reservation ROWS: the dropped day still scored an activity, painted a heatmap square and
+     * sat in the unrated-RPE queue, asking an athlete to rate a day that never happened.
+     *
+     * <p>⚠️ Existing slots are <b>re-dated in order</b>, never deleted and recreated, and that is
+     * the whole safety of this method. A course pushed a week forward has every slot outside the
+     * new range; "delete what falls outside" would silently unbook every participant and tell them
+     * only that the dates changed. Re-dating moves the seats with the course, and only the surplus
+     * tail — days the event genuinely lost — gives its reservations up.
+     */
+    private void reconcileEventSlots(Event event) {
+        List<TimeSlot> slots = new ArrayList<>(timeSlotRepository.findByEventId(event.getId()));
+        // No slots means nobody has signed up yet; the first signup will build them for whatever
+        // range the event has by then.
+        if (slots.isEmpty()) return;
+        slots.sort(Comparator.comparing(TimeSlot::getDate).thenComparing(TimeSlot::getStartTime));
+
+        List<LocalDate> dates = new ArrayList<>();
+        for (LocalDate d = event.getStartDate(); !d.isAfter(event.getEndDate()); d = d.plusDays(1)) {
+            dates.add(d);
+        }
+
+        int kept = Math.min(slots.size(), dates.size());
+        for (int i = 0; i < kept; i++) {
+            TimeSlot slot = slots.get(i);
+            if (!slot.getDate().equals(dates.get(i))) slot.setDate(dates.get(i));
+        }
+
+        // Days the event gained get an empty slot, so the NEXT signup covers the whole range.
+        // Nobody is booked onto them: the people already enrolled signed up for the old range,
+        // and quietly adding days to their booking is not this method's call to make.
+        LocalTime slotStart = event.getStartTime() != null ? event.getStartTime() : LocalTime.of(0, 0);
+        LocalTime slotEnd = event.getEndTime() != null ? event.getEndTime() : LocalTime.of(23, 59);
+        for (int i = kept; i < dates.size(); i++) {
+            timeSlotRepository.save(new TimeSlot(event, dates.get(i), slotStart, slotEnd, event.getMaxParticipants()));
+        }
+
+        List<UUID> surplusIds = slots.subList(kept, slots.size()).stream().map(TimeSlot::getId).toList();
+        if (surplusIds.isEmpty()) return;
+
+        // ⚠️ The bulk deletes below run with clearAutomatically, which wipes the persistence
+        // context — the re-dating above is still only dirty state at this point and would go with
+        // it. Flush first, or the slots quietly keep their old dates.
+        timeSlotRepository.flush();
+
+        for (Reservation reservation : reservationRepository.findConfirmedByTimeSlotIds(surplusIds)) {
+            reservation.getUser();     // force-load while still managed, as the delete paths do
+            reservation.getTimeSlot();
+            activityLogService.logCancelledByAdmin(reservation.getUser(), reservation.getTimeSlot(),
+                                                   reservation.getParticipants());
+        }
+
+        // No cancellation mail on purpose. Everyone on a surplus day also holds the days that
+        // remain, so they are still enrolled — "your reservation was cancelled" would be false.
+        // The edit's own "dates changed" mail names exactly the days that went away.
+        waitlistRepository.deleteByTimeSlotIdIn(surplusIds);   // clears cache
+        reservationRepository.deleteByTimeSlotIds(surplusIds); // clears cache
+        timeSlotRepository.deleteAllByIdInBatch(surplusIds);
     }
 
     /* No @CacheEvict here: this is private, so proxy-based AOP never sees the call.
