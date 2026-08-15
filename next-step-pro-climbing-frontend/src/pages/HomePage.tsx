@@ -15,6 +15,7 @@ import {
   MessageSquare,
   CheckCircle2,
   Bell,
+  Mountain,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "../context/AuthContext";
@@ -429,6 +430,52 @@ export function HomePage() {
                     </Button>
                   </Link>
                 </>
+              )}
+            </div>
+          </div>
+
+          {/* Ascent logbook — a band, not a second section, and deliberately NOT inside the card
+              above. The athlete zone is unlocked by the coach; the logbook is open to anyone with
+              an account, so wearing the same amber card would hand it an access rule it does not
+              have. Different frame, its own "open to everyone" line, and a fraction of the height. */}
+          <div className="mt-6 card-glass rounded-2xl border border-surface-700/50 p-6 sm:p-8 flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-start gap-4">
+              <div className="w-11 h-11 shrink-0 bg-surface-800/80 rounded-lg flex items-center justify-center">
+                <Mountain className="w-5 h-5 text-surface-300" aria-hidden="true" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-surface-100 mb-1">
+                  {t("ascentLog.title")}
+                </h3>
+                <p className="text-sm text-surface-400 max-w-xl">{t("ascentLog.subtitle")}</p>
+                <p className="text-xs text-surface-500 mt-1">{t("ascentLog.openNote")}</p>
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-3 sm:shrink-0">
+              {isAuthenticated ? (
+                /* No icons on these two: the only sensible pair (mountain / snow-capped mountain)
+                   reads as the same glyph at 16px, so it would decorate a distinction the labels
+                   already make */
+                <>
+                  <Link to="/my-reservations?tab=ascents">
+                    <Button variant="secondary" className="w-full sm:w-auto">
+                      {t("ascentLog.ctaRock")}
+                    </Button>
+                  </Link>
+                  <Link to="/my-reservations?tab=ascents&ter=mountain">
+                    <Button variant="secondary" className="w-full sm:w-auto">
+                      {t("ascentLog.ctaMountain")}
+                    </Button>
+                  </Link>
+                </>
+              ) : (
+                <Link to="/register">
+                  <Button variant="secondary" className="w-full sm:w-auto">
+                    {t("ascentLog.ctaGuest")}
+                    <ArrowRight className="w-4 h-4 ml-2" />
+                  </Button>
+                </Link>
               )}
             </div>
           </div>

@@ -1,6 +1,6 @@
 {
-  "title": "My reservations",
-  "subtitle": "Upcoming sessions you are signed up for.",
+  "title": "Your zone",
+  "subtitle": "Your bookings, plan and ascent logbook.",
   "empty": {
     "title": "No reservations",
     "message": "You don't have any upcoming sessions.",

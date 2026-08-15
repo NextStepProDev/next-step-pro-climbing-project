@@ -151,7 +151,12 @@ public class UserService {
     @Caching(evict = {
         @CacheEvict(value = "calendarMonth", allEntries = true),
         @CacheEvict(value = "calendarWeek", allEntries = true),
-        @CacheEvict(value = "calendarDay", allEntries = true)
+        @CacheEvict(value = "calendarDay", allEntries = true),
+        // The ascents go with the account (ON DELETE CASCADE), but the public feed is cached for
+        // five minutes — without this the name of somebody who just erased their account keeps
+        // being served. Same reasoning as the opt-out switch: "you disappear within five minutes"
+        // is not an answer to a request for removal.
+        @CacheEvict(value = "publicAscents", allEntries = true)
     })
     public void deleteAccount(UUID userId, @Nullable String password) {
         User user = userRepository.findById(userId)
@@ -200,6 +205,21 @@ public class UserService {
             .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
         user.setEmailNotificationsEnabled(enabled);
+        userRepository.save(user);
+    }
+
+    /**
+     * Adds or removes this climber from the public recent-ascents list.
+     *
+     * <p>Evicts that list's cache: somebody switching visibility off has asked to disappear, and
+     * "in up to five minutes" is not an answer to that request.
+     */
+    @CacheEvict(value = "publicAscents", allEntries = true)
+    public void updateAscentsVisibility(UUID userId, boolean publicVisible) {
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        user.setAscentsPublic(publicVisible);
         userRepository.save(user);
     }
 

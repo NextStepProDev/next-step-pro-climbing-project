@@ -82,7 +82,7 @@
       "items": [
         {
           "question": "¿Cómo cancelo una reserva?",
-          "answer": "Ve a la pestaña \"Mis reservas\" (disponible tras iniciar sesión desde el menú superior), encuentra la sesión y haz clic en \"Cancelar\". La confirmación de cancelación aparece de inmediato y el lugar queda libre para otros usuarios."
+          "answer": "Ve a la pestaña \"Tu zona\" (disponible tras iniciar sesión desde el menú superior), encuentra la sesión y haz clic en \"Cancelar\". La confirmación de cancelación aparece de inmediato y el lugar queda libre para otros usuarios."
         },
         {
           "question": "¿Hasta cuándo puedo cancelar?",
@@ -103,11 +103,11 @@
         },
         {
           "question": "¿Puedo comprobar mi estado en la lista de espera?",
-          "answer": "Sí — en la pestaña \"Mis reservas\" hay una sección dedicada que muestra las listas de espera en las que te encuentras. Cuando haya un lugar disponible y debas confirmarlo, verás una notificación clara con cuenta atrás. Además te enviaremos un email con información sobre el lugar disponible — tienes 24 horas para confirmar."
+          "answer": "Sí — en la pestaña \"Tu zona\" hay una sección dedicada que muestra las listas de espera en las que te encuentras. Cuando haya un lugar disponible y debas confirmarlo, verás una notificación clara con cuenta atrás. Además te enviaremos un email con información sobre el lugar disponible — tienes 24 horas para confirmar."
         },
         {
           "question": "¿Puedo abandonar la lista de espera?",
-          "answer": "Sí — puedes abandonar una lista de espera en cualquier momento desde la pestaña \"Mis reservas\". Al salir, la oferta del lugar pasa a la siguiente persona en la cola."
+          "answer": "Sí — puedes abandonar una lista de espera en cualquier momento desde la pestaña \"Tu zona\". Al salir, la oferta del lugar pasa a la siguiente persona en la cola."
         }
       ]
     },
@@ -116,7 +116,7 @@
       "items": [
         {
           "question": "¿Dónde puedo ver mis reservas?",
-          "answer": "En la pestaña \"Mis reservas\" (disponible tras iniciar sesión) encontrarás todos los entrenamientos próximos y las listas de espera activas. Las reservas pasadas van a un archivo visible debajo de las actuales — la lista del archivo se puede expandir en cualquier momento para revisar todo el historial de tus entrenamientos."
+          "answer": "En la pestaña \"Tu zona\" (disponible tras iniciar sesión) encontrarás todos los entrenamientos próximos y las listas de espera activas. Las reservas pasadas van a un archivo visible debajo de las actuales — la lista del archivo se puede expandir en cualquier momento para revisar todo el historial de tus entrenamientos."
         }
       ]
     },

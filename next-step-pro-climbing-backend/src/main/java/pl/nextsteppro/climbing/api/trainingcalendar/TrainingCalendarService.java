@@ -768,7 +768,16 @@ public class TrainingCalendarService {
         requireAthleteIgnoringConsent(userId).grantTrainingConsent();
     }
 
-    User requireFlaggedAthlete(UUID athleteId) {
+    /**
+     * The coach-side gate: the target must be a designated athlete.
+     *
+     * <p>Public, unlike {@link #requireAthlete}, because the climbing logbook lives in its own
+     * package: that feature is open to every logged-in user, but the COACH may still only read
+     * the logbooks of his own athletes. Publishing this one does not weaken the consent gate —
+     * {@code requireAthlete} stays package-private precisely so that anything added next to the
+     * training calendar is behind GDPR consent by default.
+     */
+    public User requireFlaggedAthlete(UUID athleteId) {
         return userRepository.findById(athleteId)
             .filter(User::isAthlete)
             .orElseThrow(() -> new IllegalArgumentException(msg.get("training.calendar.athlete.not.found")));

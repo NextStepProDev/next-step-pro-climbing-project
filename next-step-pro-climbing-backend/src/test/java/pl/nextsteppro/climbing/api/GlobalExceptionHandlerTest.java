@@ -1,10 +1,14 @@
 package pl.nextsteppro.climbing.api;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpInputMessage;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
+import pl.nextsteppro.climbing.domain.climbingascent.AscentTerrain;
 import pl.nextsteppro.climbing.infrastructure.i18n.MessageService;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -86,6 +90,55 @@ class GlobalExceptionHandlerTest {
         assertEquals("NOT_FOUND", body.code());
         assertEquals("Nie znaleziono zasobu", body.message());
         assertNotNull(body.timestamp());
+    }
+
+    /**
+     * A path variable or query parameter the client wrote wrong — {@code /ascents/nie-uuid},
+     * {@code ?terrain=SPACE}. Before this handler existed these reached the catch-all and came
+     * back as a 500 with an ERROR and a stack trace, which is both the wrong answer and a way for
+     * anybody probing URLs to bury real errors in the log.
+     */
+    @Test
+    void shouldReturn400WhenAPathOrQueryParameterCannotBeConverted() {
+        when(messageService.get("error.bad.request")).thenReturn("Nieprawidłowe żądanie");
+        var ex = new MethodArgumentTypeMismatchException("SPACE", AscentTerrain.class, "terrain", null, null);
+
+        var response = handler.handleTypeMismatch(ex);
+
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        var body = response.getBody();
+        assertNotNull(body);
+        assertEquals("BAD_REQUEST", body.code());
+        assertEquals("Nieprawidłowe żądanie", body.message());
+    }
+
+    /** The rejected value must not be echoed back — it is attacker-controlled text. */
+    @Test
+    void shouldNotEchoTheRejectedValueBack() {
+        when(messageService.get("error.bad.request")).thenReturn("Nieprawidłowe żądanie");
+        var ex = new MethodArgumentTypeMismatchException(
+            "<script>alert(1)</script>", AscentTerrain.class, "terrain", null, null);
+
+        var body = handler.handleTypeMismatch(ex).getBody();
+
+        assertNotNull(body);
+        assertFalse(body.message().contains("script"));
+    }
+
+    /**
+     * Malformed JSON, or an enum constant that does not exist ({@code "grade": "FR_99Z"}).
+     * Jackson fails before Bean Validation runs, so this is the only place it can be caught.
+     */
+    @Test
+    void shouldReturn400WhenTheBodyCannotBeRead() {
+        when(messageService.get("error.bad.request")).thenReturn("Invalid request");
+        var ex = new HttpMessageNotReadableException("no enum constant FR_99Z", (HttpInputMessage) null);
+
+        var response = handler.handleUnreadableBody(ex);
+
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        assertEquals("BAD_REQUEST", response.getBody().code());
+        assertEquals("Invalid request", response.getBody().message());
     }
 
     @Test

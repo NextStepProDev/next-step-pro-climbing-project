@@ -45,6 +45,10 @@ export function SettingsPage() {
         enabled={user?.emailNotificationsEnabled ?? true}
         onUpdated={refreshUser}
       />
+      <AscentVisibilitySection
+        publicVisible={user?.ascentsPublic ?? true}
+        onUpdated={refreshUser}
+      />
       <NewsletterSection
         subscribed={user?.newsletterSubscribed ?? false}
         onUpdated={refreshUser}
@@ -480,6 +484,57 @@ function NotificationsSection({
           <input
             type="checkbox"
             checked={enabled}
+            onChange={(e) => mutation.mutate(e.target.checked)}
+            disabled={mutation.isPending}
+            className="sr-only peer"
+          />
+          <div className="w-11 h-6 bg-surface-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-500"></div>
+        </label>
+      </div>
+      {mutation.isError && (
+        <p className="text-sm text-rose-400/80 mt-2">
+          {getErrorMessage(mutation.error)}
+        </p>
+      )}
+    </section>
+  )
+}
+
+/**
+ * The public-visibility switch. Everyone is listed by default, so this is the way out — and the
+ * hint spells out exactly what gets published, because the point of an opt-out is that nobody is
+ * surprised by what they find on the site.
+ */
+function AscentVisibilitySection({
+  publicVisible,
+  onUpdated,
+}: {
+  publicVisible: boolean
+  onUpdated: () => Promise<void>
+}) {
+  const { t } = useTranslation('ascents')
+  const { t: tSettings } = useTranslation('settings')
+  const { showToast } = useToast()
+  const mutation = useMutation({
+    mutationFn: (next: boolean) => authApi.updateAscentsVisibility(next),
+    onSuccess: async () => {
+      await onUpdated()
+      showToast(tSettings('notifications.success'))
+    },
+  })
+
+  return (
+    <section className="bg-surface-900 rounded-lg border border-surface-800 p-6">
+      <h2 className="text-lg font-semibold text-surface-100 mb-4">{t('feed.title')}</h2>
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <p className="text-surface-200">{t('privacy.settingLabel')}</p>
+          <p className="text-sm text-surface-400">{t('privacy.settingHint')}</p>
+        </div>
+        <label className="relative inline-flex items-center cursor-pointer shrink-0">
+          <input
+            type="checkbox"
+            checked={publicVisible}
             onChange={(e) => mutation.mutate(e.target.checked)}
             disabled={mutation.isPending}
             className="sr-only peer"

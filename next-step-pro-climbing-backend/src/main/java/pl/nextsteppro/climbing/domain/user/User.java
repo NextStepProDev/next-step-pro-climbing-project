@@ -64,6 +64,17 @@ public class User {
     @Column(name = "email_notifications_enabled", nullable = false)
     private boolean emailNotificationsEnabled = true;
 
+    /**
+     * Whether this climber's ascents appear on the public "recent ascents" list, by name.
+     *
+     * <p>Opt-OUT (default true): the list is meant to be alive from day one. Publishing a name is
+     * processing personal data, so this flag is the GDPR art. 21 objection — one switch removes
+     * every entry at once. Per-entry hiding is deliberately not offered: visibility belongs to
+     * the author, and a hidden row that still counts in the statistics needs explaining.
+     */
+    @Column(name = "ascents_public", nullable = false)
+    private boolean ascentsPublic = true;
+
     @Column(name = "newsletter_subscribed", nullable = false)
     private boolean newsletterSubscribed = false;
 
@@ -311,6 +322,14 @@ public class User {
 
     public boolean isNewsletterSubscribed() {
         return newsletterSubscribed;
+    }
+
+    public boolean isAscentsPublic() {
+        return ascentsPublic;
+    }
+
+    public void setAscentsPublic(boolean ascentsPublic) {
+        this.ascentsPublic = ascentsPublic;
     }
 
     public void setNewsletterSubscribed(boolean newsletterSubscribed) {

@@ -95,7 +95,10 @@ public class SecurityConfig {
                     "/api/files/**",
                     // Public site settings (hero image etc.)
                     "/api/settings/**",
-                    "/api/sitemap.xml"
+                    "/api/sitemap.xml",
+                    // Recent ascents shown on the news page. ONLY this sub-path is public —
+                    // everything else under /api/ascents is somebody's own logbook.
+                    "/api/ascents/recent"
                 };
                 for (HttpMethod method : new HttpMethod[]{HttpMethod.GET, HttpMethod.HEAD}) {
                     auth.requestMatchers(method, publicReadPaths).permitAll();

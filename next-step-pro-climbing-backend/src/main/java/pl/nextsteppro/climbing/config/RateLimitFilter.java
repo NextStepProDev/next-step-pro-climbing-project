@@ -56,6 +56,10 @@ public class RateLimitFilter extends OncePerRequestFilter {
     private static final int USER_LIMIT = 40;
     private static final int ADMIN_LIMIT = 60;
     private static final int TRAINING_LIMIT = 40;
+    // The logbook is open to every signed-in user, so it gets its own bucket rather than eating
+    // the athletes' calendar allowance. Opening the tab costs three (log + stats + catalogue),
+    // and each filter or range flip costs one more, so the ceiling sits above the calendar's.
+    private static final int ASCENT_LIMIT = 60;
     // Proposing a time is a write, and each rejected one still costs validation and queries. The
     // "3 PENDING per user" rule caps what survives, not what the endpoint has to process.
     private static final int TRAINING_REQUEST_LIMIT = 20;
@@ -109,6 +113,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
         new Rule("user", USER_LIMIT, path -> under(path, "/api/user")),
         new Rule("admin", ADMIN_LIMIT, path -> under(path, "/api/admin")),
         new Rule("training", TRAINING_LIMIT, path -> under(path, "/api/training-calendar")),
+        new Rule("ascents", ASCENT_LIMIT, path -> under(path, "/api/ascents")),
         new Rule("trainingreq", TRAINING_REQUEST_LIMIT, path -> under(path, "/api/training-requests")),
         new Rule("publicfile", PUBLIC_FILE_LIMIT, path -> under(path, "/api/files")),
         new Rule("calendar", CALENDAR_LIMIT, path -> under(path, "/api/calendar")

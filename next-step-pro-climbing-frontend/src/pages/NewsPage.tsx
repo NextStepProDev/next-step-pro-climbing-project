@@ -12,11 +12,25 @@ import { renderRichText } from '../utils/renderRichText'
 import { useAuth } from '../context/AuthContext'
 import { COURSE_CONTENT_LANGUAGES, getDefaultCourseContentLanguage } from '../constants/courseLanguages'
 import clsx from 'clsx'
+import { useSearchParams } from 'react-router-dom'
+import { RecentAscentsFeed } from '../components/ascents/RecentAscentsFeed'
 
 export function NewsPage() {
   const { t, i18n } = useTranslation('common')
+  const { t: tAscents } = useTranslation('ascents')
   const { isAuthenticated } = useAuth()
   const queryClient = useQueryClient()
+  const [searchParams, setSearchParams] = useSearchParams()
+
+  // Which half of the page is showing. In the URL so the feed can be linked to directly —
+  // it is the kind of thing somebody sends to a friend ("look what I did last weekend")
+  const activeTab: 'articles' | 'feed' = searchParams.get('tab') === 'przejscia' ? 'feed' : 'articles'
+  const switchTab = (tab: 'articles' | 'feed') => {
+    const params = new URLSearchParams(searchParams)
+    if (tab === 'feed') params.set('tab', 'przejscia')
+    else params.delete('tab')
+    setSearchParams(params, { replace: true })
+  }
 
   const [searchInput, setSearchInput] = useState('')
   const [q, setQ] = useState('')
@@ -138,6 +152,28 @@ export function NewsPage() {
         </div>
       </div>
 
+      <div className="flex gap-2 mb-6">
+        {([['articles', tAscents('tabs.articles')], ['feed', tAscents('tabs.feed')]] as const).map(([tab, label]) => (
+          <button
+            key={tab}
+            onClick={() => switchTab(tab)}
+            aria-pressed={activeTab === tab}
+            className={clsx(
+              'px-4 py-2 text-sm font-medium rounded-lg border transition-colors',
+              activeTab === tab
+                ? 'bg-primary-600 border-primary-500 text-white'
+                : 'bg-surface-900 border-surface-700 text-surface-400 hover:text-surface-200',
+            )}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === 'feed' ? (
+        <RecentAscentsFeed />
+      ) : (
+      <>
       {error && (
         <div className="mb-6">
           <QueryError error={error} />
@@ -275,6 +311,8 @@ export function NewsPage() {
             </div>
           )}
         </div>
+      )}
+      </>
       )}
     </div>
   )

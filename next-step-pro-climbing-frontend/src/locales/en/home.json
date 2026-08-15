@@ -90,5 +90,13 @@
     "ctaAskCoach": "Ask the coach for access",
     "ctaGuest": "Create an account",
     "accessNote": "Access to the Athlete zone is activated by the coach for regular trainees."
+  },
+  "ascentLog": {
+    "title": "Ascent logbook",
+    "subtitle": "Log the routes you climb — rock and mountains. Grade, style, difficulty pyramid and export to Excel or PDF.",
+    "openNote": "Open to everyone with an account.",
+    "ctaRock": "Rock ascents",
+    "ctaMountain": "Mountain ascents",
+    "ctaGuest": "Create an account and start logging"
   }
 }

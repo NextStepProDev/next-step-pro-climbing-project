@@ -8,9 +8,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 import pl.nextsteppro.climbing.infrastructure.i18n.MessageService;
@@ -92,6 +94,37 @@ public class GlobalExceptionHandler {
         log.warn("Upload size exceeded: {}", ex.getMessage());
         return ResponseEntity.status(HttpStatus.CONTENT_TOO_LARGE)
             .body(new ErrorResponse("PAYLOAD_TOO_LARGE", messageService.get("file.too.large"), Instant.now()));
+    }
+
+    /**
+     * A path variable or query parameter that will not convert — {@code /ascents/nie-uuid},
+     * {@code ?terrain=SPACE}, {@code ?date=wczoraj}. The client sent nonsense, so this is a 400.
+     *
+     * <p>Without this handler it fell through to the catch-all: a 500 and an ERROR with a stack
+     * trace, from a request the server understood perfectly well and was right to refuse. Same
+     * reasoning as {@code NoResourceFoundException} below — a scanner probing URLs must not be
+     * able to fill the log with false alarms, or real errors stop being findable.
+     *
+     * <p>The reply carries a generic message on purpose: the exception text names the target type
+     * and echoes the offending value, and neither belongs in an HTTP response.
+     */
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ErrorResponse> handleTypeMismatch(MethodArgumentTypeMismatchException ex) {
+        log.warn("Unconvertible parameter '{}': {}", ex.getName(), ex.getMessage());
+        return ResponseEntity.badRequest()
+            .body(new ErrorResponse("BAD_REQUEST", messageService.get("error.bad.request"), Instant.now()));
+    }
+
+    /**
+     * A body that is not readable at all: malformed JSON, a value of the wrong JSON type, or an
+     * enum constant that does not exist ({@code "grade": "FR_99Z"}). Bean Validation never gets
+     * to run on these, so they used to surface as a 500.
+     */
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ErrorResponse> handleUnreadableBody(HttpMessageNotReadableException ex) {
+        log.warn("Unreadable request body: {}", ex.getMessage());
+        return ResponseEntity.badRequest()
+            .body(new ErrorResponse("BAD_REQUEST", messageService.get("error.bad.request"), Instant.now()));
     }
 
     @ExceptionHandler(NoResourceFoundException.class)

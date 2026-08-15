@@ -28,6 +28,7 @@ const SRC = join(__dirname, '..')
 const WATCHED = [
   'components/calendar',
   'components/training',
+  'components/ascents',
   'pages/CalendarPage.tsx',
   'pages/EventPage.tsx',
   'pages/MyReservationsPage.tsx',
@@ -44,7 +45,7 @@ const WATCHED = [
 const DATE_ONLY_FIELDS = [
   'date', 'startDate', 'endDate', 'targetDate', 'requestedDate', 'slotDate',
   'eventStartDate', 'eventEndDate', 'firstActivityDate', 'measuredOn', 'trainingDate',
-  'weekStart', 'anchorParam', 'dateParam',
+  'weekStart', 'anchorParam', 'dateParam', 'climbedOn', 'firstAscentDate',
 ]
 
 /**

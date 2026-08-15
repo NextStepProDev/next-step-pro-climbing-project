@@ -82,7 +82,7 @@
       "items": [
         {
           "question": "How do I cancel a booking?",
-          "answer": "Go to the \"My bookings\" tab (available after logging in from the top menu), find the session and click \"Cancel\". The cancellation confirmation appears immediately and the spot is released for other users."
+          "answer": "Go to the \"Your zone\" tab (available after logging in from the top menu), find the session and click \"Cancel\". The cancellation confirmation appears immediately and the spot is released for other users."
         },
         {
           "question": "How late can I cancel?",
@@ -103,11 +103,11 @@
         },
         {
           "question": "Can I check my waitlist status?",
-          "answer": "Yes — in the \"My bookings\" tab there is a dedicated section showing the waitlists you're on. When a spot becomes available and you need to confirm it, you'll see a clear notification with a countdown timer. We'll also send you an email with details about the available spot — you have 24 hours to confirm."
+          "answer": "Yes — in the \"Your zone\" tab there is a dedicated section showing the waitlists you're on. When a spot becomes available and you need to confirm it, you'll see a clear notification with a countdown timer. We'll also send you an email with details about the available spot — you have 24 hours to confirm."
         },
         {
           "question": "Can I leave the waitlist?",
-          "answer": "Yes — you can leave a waitlist at any time in the \"My bookings\" tab. After leaving, the spot offer passes to the next person in the queue."
+          "answer": "Yes — you can leave a waitlist at any time in the \"Your zone\" tab. After leaving, the spot offer passes to the next person in the queue."
         }
       ]
     },
@@ -116,7 +116,7 @@
       "items": [
         {
           "question": "Where can I see my bookings?",
-          "answer": "In the \"My bookings\" tab (available after logging in) you'll find all upcoming training sessions and active waitlists. Past bookings move to an archive visible below the current ones — the archive list can be expanded at any time to review your full training history."
+          "answer": "In the \"Your zone\" tab (available after logging in) you'll find all upcoming training sessions and active waitlists. Past bookings move to an archive visible below the current ones — the archive list can be expanded at any time to review your full training history."
         }
       ]
     },

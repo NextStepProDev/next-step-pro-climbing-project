@@ -12,6 +12,7 @@ import homePl from './locales/pl/home.json'
 import errorsPl from './locales/pl/errors.json'
 import faqPl from './locales/pl/faq.json'
 import trainingPl from './locales/pl/training.json'
+import ascentsPl from './locales/pl/ascents.json'
 
 import commonEn from './locales/en/common.json'
 import authEn from './locales/en/auth.json'
@@ -23,6 +24,7 @@ import homeEn from './locales/en/home.json'
 import errorsEn from './locales/en/errors.json'
 import faqEn from './locales/en/faq.json'
 import trainingEn from './locales/en/training.json'
+import ascentsEn from './locales/en/ascents.json'
 
 import commonEs from './locales/es/common.json'
 import authEs from './locales/es/auth.json'
@@ -34,6 +36,7 @@ import homeEs from './locales/es/home.json'
 import errorsEs from './locales/es/errors.json'
 import faqEs from './locales/es/faq.json'
 import trainingEs from './locales/es/training.json'
+import ascentsEs from './locales/es/ascents.json'
 
 i18n
   .use(LanguageDetector)
@@ -51,6 +54,7 @@ i18n
         errors: errorsPl,
         faq: faqPl,
         training: trainingPl,
+        ascents: ascentsPl,
       },
       en: {
         common: commonEn,
@@ -63,6 +67,7 @@ i18n
         errors: errorsEn,
         faq: faqEn,
         training: trainingEn,
+        ascents: ascentsEn,
       },
       es: {
         common: commonEs,
@@ -75,11 +80,12 @@ i18n
         errors: errorsEs,
         faq: faqEs,
         training: trainingEs,
+        ascents: ascentsEs,
       },
     },
     fallbackLng: 'en',
     defaultNS: 'common',
-    ns: ['common', 'auth', 'calendar', 'reservations', 'admin', 'settings', 'home', 'errors', 'faq', 'training'],
+    ns: ['common', 'auth', 'calendar', 'reservations', 'admin', 'settings', 'home', 'errors', 'faq', 'training', 'ascents'],
     interpolation: {
       escapeValue: false,
     },

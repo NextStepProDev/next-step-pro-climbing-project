@@ -37,6 +37,13 @@ import type {
   SaveWeight,
   WeightSeries,
   WeightRange,
+  Ascent,
+  AscentLog,
+  AscentOptions,
+  AscentStats,
+  AscentTerrain,
+  PublicAscent,
+  SaveAscent,
   SaveTrainingTemplate,
   TrainingMaterial,
   TrainingTemplate,
@@ -362,6 +369,13 @@ export const authApi = {
       method: 'DELETE',
       body: JSON.stringify({ password }),
     }),
+  /** Adds or removes the climber from the public recent-ascents list (GDPR art. 21 objection). */
+  updateAscentsVisibility: (publicVisible: boolean) =>
+    fetchApi<void>('/user/me/ascents-visibility', {
+      method: 'PUT',
+      body: JSON.stringify({ publicVisible }),
+    }),
+
   updateNotifications: (enabled: boolean) =>
     fetchApi<void>('/user/me/notifications', {
       method: 'PUT',
@@ -591,6 +605,44 @@ export const trainingCalendarApi = {
     }),
 }
 
+// Climbing logbook. Its own base path, not under /training-calendar: it is open to every
+// signed-in user and carries no health data, so neither the athlete flag nor the GDPR consent
+// applies. Only the COACH view is athlete-only.
+export const ascentApi = {
+  /** `year` takes a four-digit year or 'all'; omitting it selects the newest year with data. */
+  getLog: (terrain: AscentTerrain, year?: string) =>
+    fetchApi<AscentLog>(`/ascents?terrain=${terrain}${year ? `&year=${year}` : ''}`),
+
+  getStats: (terrain: AscentTerrain, year?: string) =>
+    fetchApi<AscentStats>(`/ascents/stats?terrain=${terrain}${year ? `&year=${year}` : ''}`),
+
+  create: (data: SaveAscent) =>
+    fetchApi<Ascent>('/ascents', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  update: (ascentId: string, data: SaveAscent) =>
+    fetchApi<Ascent>(`/ascents/${ascentId}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+
+  remove: (ascentId: string) =>
+    fetchApi<void>(`/ascents/${ascentId}`, { method: 'DELETE' }),
+
+  /** One endpoint for both roles: a twin admin route would be a second copy of the same list. */
+  getOptions: () =>
+    fetchApi<AscentOptions>('/ascents/options'),
+
+  /**
+   * Public — no login needed. Ten newest ascents across everyone who has not opted out,
+   * ordered by the date CLIMBED rather than by when the entry was typed in.
+   */
+  getRecentPublic: () =>
+    fetchApi<PublicAscent[]>('/ascents/recent'),
+}
+
 // Personal training calendar (coach side)
 export const adminTrainingCalendarApi = {
   getAthletes: () =>
@@ -646,6 +698,17 @@ export const adminTrainingCalendarApi = {
   getWeights: (athleteId: string, range?: WeightRange) =>
     fetchApi<WeightSeries>(
       `/admin/training-calendar/athletes/${athleteId}/weights${range ? `?range=${range}` : ''}`,
+    ),
+
+  /** Read-only, like the weight series: only the athlete logs their own ascents. */
+  getAscents: (athleteId: string, terrain: AscentTerrain, year?: string) =>
+    fetchApi<AscentLog>(
+      `/admin/ascents/athletes/${athleteId}?terrain=${terrain}${year ? `&year=${year}` : ''}`,
+    ),
+
+  getAscentStats: (athleteId: string, terrain: AscentTerrain, year?: string) =>
+    fetchApi<AscentStats>(
+      `/admin/ascents/athletes/${athleteId}/stats?terrain=${terrain}${year ? `&year=${year}` : ''}`,
     ),
 
   createGoal: (athleteId: string, data: SaveGoal) =>
