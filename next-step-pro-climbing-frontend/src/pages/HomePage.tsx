@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "../context/AuthContext";
+import { useTheme } from "../context/ThemeContext";
 import { trainingCalendarApi } from "../api/client";
 import { Button } from "../components/ui/Button";
 import { AnimatedCounter } from "../components/ui/AnimatedCounter";
@@ -70,6 +71,7 @@ function BadgeImg({ src, href, className }: { src: string; href?: string | null;
 export function HomePage() {
   const { t } = useTranslation("home");
   const { isAuthenticated, user } = useAuth();
+  const { theme } = useTheme();
   const isAthlete = !!user?.isAthlete;
 
   // Unread badge on the hero "Athlete zone" button — same cache as the navbar poll
@@ -205,12 +207,16 @@ export function HomePage() {
               style={{ objectPosition }}
             />
             {/* Gradient under the content: stronger at the bottom on mobile (seats the lower glass
-                card), subtle on desktop — so the photo edges stay bright. */}
-            <div className={`absolute inset-0 bg-gradient-to-b from-surface-950/30 via-transparent to-surface-950 sm:from-transparent sm:via-surface-950/4 transition-opacity duration-700 ${heroImgLoaded ? 'opacity-100' : 'opacity-0'}`} />
-            {/* Desktop: a constant, gentle dark underlay beneath the content (both themes) — mainly under
-                the logo, so the light text/logo stay readable on any photo; fades to transparency, so
-                the photo edges stay bright. The text itself also gets a halo (.hero-over-photo). */}
-            <div className="hidden sm:block absolute inset-0 z-[1] pointer-events-none bg-[radial-gradient(ellipse_75%_70%_at_50%_50%,rgba(0,0,0,0.18),rgba(0,0,0,0.04)_60%,transparent_80%)]" />
+                card), subtle on desktop — so the photo edges stay bright. The utility stops are the
+                DARK theme; .hero-fade repaints them for the light one (index.css), where surface-950
+                is cream and the same ramp bleaches half the photo instead of seating it. */}
+            <div className={`hero-fade absolute inset-0 bg-gradient-to-b from-surface-950/30 via-transparent to-surface-950 sm:from-transparent sm:via-surface-950/4 transition-opacity duration-700 ${heroImgLoaded ? 'opacity-100' : 'opacity-0'}`} />
+            {/* Desktop: a constant, gentle underlay beneath the content — mainly under the logo, so the
+                text/logo stay readable on any photo; fades to transparency, so the photo edges stay
+                bright. Painted in index.css (.hero-underlay), because it darkens in the dark theme and
+                BRIGHTENS in the light one — it has to push the same way as the text color, not against
+                it. The text itself also gets a halo (.hero-over-photo). */}
+            <div className="hero-underlay hidden sm:block absolute inset-0 z-[1] pointer-events-none" />
           </>
         )}
         {badgeLeftImageUrl && (
@@ -235,7 +241,7 @@ export function HomePage() {
         <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-6 sm:py-8">
           {/* Mobile: content in the lower glass card (text readability on any photo).
               Desktop (sm:): the card fades to transparency — same look as before. */}
-          <div className="text-center max-w-3xl mx-auto rounded-2xl border border-white/12 bg-surface-950/30 backdrop-blur-[2px] shadow-2xl shadow-black/40 px-5 py-6 sm:rounded-none sm:border-0 sm:bg-transparent sm:backdrop-blur-none sm:shadow-none sm:p-0">
+          <div className="hero-card text-center max-w-3xl mx-auto rounded-2xl border border-white/12 bg-surface-950/30 backdrop-blur-[2px] shadow-2xl shadow-black/40 px-5 py-6 sm:rounded-none sm:border-0 sm:bg-transparent sm:backdrop-blur-none sm:shadow-none sm:p-0">
             {/* === ANDALUSIA BADGE — shown when the section is active and the badge is non-empty === */}
             {locationEnabled && locationBadge && (
               <div className="location-badge inline-flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2 bg-amber-500/15 backdrop-blur-md border border-amber-400/40 rounded-full text-amber-400 text-sm sm:text-base font-medium mb-4 sm:mb-6 shadow-lg">
@@ -244,15 +250,21 @@ export function HomePage() {
               </div>
             )}
             {/* === END BADGE === */}
-            {/* The logo is always white — it sits on the photo (desktop) / on the dark glass card (mobile).
+            {/* The logo follows the theme, like every other logo in the app (navbar, footer, login):
+                in the light theme the hero photo is veiled to the cream page background, so the white
+                logo washes out into it — and it was the last white element left among dark text.
                 It "pops in" (hero-logo-in) as the FINALE — only after the heading is typed out (titleTyped). */}
             <img
-              src={logoWhite}
+              src={theme === 'dark' ? logoWhite : logoBlack}
               alt="Next Step Pro Climbing"
               style={{ animationDelay: '1100ms' }}
               className={`h-20 sm:h-36 lg:h-40 mx-auto mb-4 sm:mb-6 drop-shadow-[0_0_30px_rgba(59,130,246,0.3)] ${titleTyped ? 'hero-logo-in' : 'opacity-0'}`}
             />
-            <h1 style={{ '--hero-delay': '240ms' } as CSSProperties} className="hero-rise text-3xl sm:text-4xl lg:text-5xl font-bold mb-3 sm:mb-4 text-white sm:hero-over-photo">
+            {/* text-surface-100, nie text-white: w motywie jasnym spód kadru gaśnie do kremowego tła
+                strony (to-surface-950), więc biel traci kontrast dokładnie tam, gdzie stoi tekst.
+                Token obraca się razem z motywem — biały w ciemnym, prawie czarny w jasnym — a halo
+                (.hero-over-photo) odwraca się w tę samą stronę. */}
+            <h1 style={{ '--hero-delay': '240ms' } as CSSProperties} className="hero-rise text-3xl sm:text-4xl lg:text-5xl font-bold mb-3 sm:mb-4 text-surface-100 sm:hero-over-photo">
               <Typewriter
                 text={heroTagline}
                 active={heroReady}
@@ -266,11 +278,11 @@ export function HomePage() {
             {/* the paragraph appears (hero-rise) only once the heading has been typed out;
                 until then opacity-0 reserves the height → the buttons below do not jump */}
             {/* Mobile: a short, punchy subtitle (the whole glass card must fit on 1 screen). */}
-            <p style={{ '--hero-delay': '120ms' } as CSSProperties} className={`sm:hidden text-[15px] leading-snug mb-6 max-w-md mx-auto text-white/95 ${titleTyped ? 'hero-rise' : 'opacity-0'}`}>
+            <p style={{ '--hero-delay': '120ms' } as CSSProperties} className={`sm:hidden text-[15px] leading-snug mb-6 max-w-md mx-auto text-surface-100/95 ${titleTyped ? 'hero-rise' : 'opacity-0'}`}>
               {t("hero.subtitleMobile")}
             </p>
             {/* Desktop: the full description (untouched). */}
-            <p style={{ '--hero-delay': '120ms' } as CSSProperties} className={`hidden sm:block text-lg mb-6 max-w-2xl mx-auto text-white/90 hero-over-photo ${titleTyped ? 'hero-rise' : 'opacity-0'}`}>
+            <p style={{ '--hero-delay': '120ms' } as CSSProperties} className={`hidden sm:block text-lg mb-6 max-w-2xl mx-auto text-surface-100/90 hero-over-photo hero-over-photo-sm ${titleTyped ? 'hero-rise' : 'opacity-0'}`}>
               {t("hero.subtitle")}
             </p>
             {/* the buttons slide in right after the paragraph — a top-down cascade, only after the heading is typed */}

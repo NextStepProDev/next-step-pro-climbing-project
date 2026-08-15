@@ -512,13 +512,15 @@ h1, h2, h3, h4, h5, h6, .font-display {
   box-shadow: 0 0 20px rgba(71, 85, 105, 0.3), 0 0 40px rgba(71, 85, 105, 0.1);
 }
 
-/* Hero location badge sits on the hero photo (theme-independent background).
-   The global light-theme overrides flip amber to dark brown, which makes it
-   unreadable in light mode — pin it to the dark-theme amber look instead. */
+/* Hero location badge sits on the hero photo. In the light theme that photo is veiled
+   towards the cream page background, so the badge is NOT on a dark ground — jasny bursztyn
+   (#fbbf24), którym świeci w motywie ciemnym, znikał na tej mgle. Ciemny bursztyn na gęściej
+   wypełnionym polu: ten sam kolor marki, przeciwny kierunek kontrastu — dokładnie jak reszta
+   tekstu hero. */
 [data-theme="light"] .location-badge {
-  background-color: color-mix(in srgb, #f59e0b 15%, transparent);
-  border-color: color-mix(in srgb, #fbbf24 40%, transparent);
-  color: #fbbf24;
+  background-color: color-mix(in srgb, #f59e0b 22%, rgba(255, 255, 255, 0.65));
+  border-color: color-mix(in srgb, #b45309 45%, transparent);
+  color: #7a5104;
 }
 
 /* Calendar promo: drop the text-shadow in light mode — on a light background
@@ -537,6 +539,104 @@ h1, h2, h3, h4, h5, h6, .font-display {
       0 1px 2px rgba(0, 0, 0, 0.7),
       0 2px 5px rgba(0, 0, 0, 0.55),
       0 0 14px rgba(0, 0, 0, 0.4);
+  }
+
+  /* Motyw jasny odwraca CAŁY ten zestaw, a nie tylko kolor liter. Halo jest jedynym,
+     co trzyma tekst nad ciemnymi fragmentami zdjęcia (sylwetka, zieleń) — ciemna
+     poświata pod prawie czarnym tekstem zlewa się z literami i robi z nich plamę,
+     zamiast je odciąć od tła. Jaśniej i szerzej niż w ciemnym motywie, bo litery są
+     tu cieńsze optycznie: ciemny glif na jasnym tle „chudnie". */
+  [data-theme="light"] .hero-over-photo {
+    text-shadow:
+      0 0 2px rgba(255, 255, 255, 0.95),
+      0 1px 3px rgba(255, 255, 255, 0.9),
+      0 2px 7px rgba(255, 255, 255, 0.75),
+      0 0 18px rgba(255, 255, 255, 0.6);
+  }
+
+  /* ⚠️ Zasięg halo musi być proporcjonalny do STOPNIA PISMA, nie wspólny dla całego hero.
+     Poświata 18 px jest tłem dla 48 px nagłówka, ale dla 18 px akapitu jest szersza niż
+     światła wewnątrz liter: wlewa się w oczka „e"/„o" i w odstępy międzywyrazowe, więc
+     tekst przestaje mieć krawędź i czyta się jak zza mlecznej szyby — a wygląda to na
+     rozmycie renderu, nie na cień, bo żadnej ramki widać nie ma. Mały tekst dostaje więc
+     sam ciasny kontur (1–3 px), bez bloomu. Selektor jest podwójny (0,3,0), żeby wygrywał
+     z regułą wyżej niezależnie od kolejności w arkuszu. */
+  [data-theme="light"] .hero-over-photo.hero-over-photo-sm {
+    /* Kontur ciasny (2–5 px), ale KRYJĄCY: tłem jest drobnoziarnista faktura skały o niemal tej
+       samej jasności co tekst, więc miękka poświata nic nie odcina — potrzebna jest krawędź,
+       która obrysuje glif i odsunie od niego szum. */
+    text-shadow:
+      0 0 2px rgba(255, 255, 255, 1),
+      0 1px 2px rgba(255, 255, 255, 0.95),
+      0 0 5px rgba(255, 255, 255, 0.7);
+    /* 18 px w regularnej grubości daje na takim tle za mało tuszu na literę. 500 tylko tutaj —
+       w ciemnym motywie biały tekst na ciemnym zdjęciu ma kontrast z zapasem i regular wystarcza. */
+    font-weight: 500;
+    /* Pełne krycie zamiast /90 z utility. Przygaszona BIEL na ciemnym zdjęciu czyta się jako
+       „ciszej niż nagłówek", ale przygaszona CZERŃ na jasnym po prostu szarzeje — traci
+       kontrast dokładnie tam, gdzie jest go najmniej. Hierarchię niesie stopień pisma, nie
+       krycie. Tylko w jasnym, żeby ciemny motyw został co do piksela taki jak był. */
+    color: var(--color-surface-100);
+  }
+}
+
+/* Podkład pod treścią hero (desktop). Ciemny motyw przygasza zdjęcie pod białym
+   tekstem, jasny je ROZJAŚNIA pod czarnym — ten sam gest, przeciwny znak. Malowane
+   tutaj, a nie utility `bg-[radial-gradient(…)]`, bo warianty motywu w klasie
+   arbitralnej to dwa zestawy bijące się o kolejność w arkuszu. */
+.hero-underlay {
+  background: radial-gradient(ellipse 75% 70% at 50% 50%,
+    rgba(0, 0, 0, 0.18), rgba(0, 0, 0, 0.04) 60%, transparent 80%);
+}
+/* W jasnym motywie ta sama plama musi być WĘŻSZA i MOCNIEJSZA niż w ciemnym, nie odwrotnie.
+   Szeroka (75%×70%) i słaba rozkładała mgiełkę na całym kadrze: zdjęcie bladło wszędzie, a pod
+   samym tekstem i tak nie było kontrastu — najgorszy z obu światów. Wąska elipsa siada dokładnie
+   na bloku treści (to samo, co na mobile robi kremowa karta, tylko bez krawędzi), więc rogi i
+   brzegi zdjęcia zostają nasycone. Wysokie krycie w środku jest tu bezpieczne właśnie dlatego,
+   że zasięg jest mały — a wtapia się miękko, więc czyta się jak światło padające na skałę, nie
+   jak prostokąt pod napisem. */
+[data-theme="light"] .hero-underlay {
+  background: radial-gradient(ellipse 46% 50% at 50% 56%,
+    rgba(255, 255, 255, 0.68),
+    rgba(255, 255, 255, 0.45) 50%,
+    rgba(255, 255, 255, 0.16) 72%,
+    transparent 86%);
+}
+
+/* Gradient wtapiający zdjęcie w tło strony. W motywie ciemnym stopnie stawia utility Tailwinda
+   na elemencie (`to-surface-950` z `via` w połowie wysokości) i tam zostają — tutaj tylko motyw
+   jasny, gdzie surface-950 jest KREMOWY: ta sama rampa nie „sadza" zdjęcia, tylko bieli je od
+   połowy w górę i zdejmuje mu kontrast. Rozwiązanie: to samo domknięcie na krawędzi, ale zjazd
+   zaczyna się dopiero pod treścią (~60%), więc kadr zostaje nasycony tam, gdzie się na niego
+   patrzy. ⚠️ Reguła nadpisuje CAŁE `background-image` utility, więc oba warianty (mobile i sm)
+   muszą być tu wypisane — wersja desktopowa niżej, w media query, żeby wygrała kolejnością. */
+[data-theme="light"] .hero-fade {
+  background-image: linear-gradient(to bottom,
+    color-mix(in srgb, var(--color-surface-950) 20%, transparent) 0%,
+    transparent 26%,
+    transparent 58%,
+    color-mix(in srgb, var(--color-surface-950) 55%, transparent) 84%,
+    var(--color-surface-950) 100%);
+}
+@media (min-width: 640px) {
+  [data-theme="light"] .hero-fade {
+    background-image: linear-gradient(to bottom,
+      transparent 0%,
+      transparent 62%,
+      color-mix(in srgb, var(--color-surface-950) 45%, transparent) 84%,
+      var(--color-surface-950) 100%);
+  }
+}
+
+/* Mobilna szklana karta hero (poniżej sm — wyżej karta jest przezroczysta i tekst
+   leży wprost na zdjęciu). W motywie jasnym surface-950 jest kremowy, więc przy 30%
+   zdjęcie przebija na wylot i czarny tekst nie ma na czym stanąć — karta gęstnieje,
+   a biała obwódka ciemnieje, bo na kremie jest niewidoczna. */
+@media (max-width: 639px) {
+  [data-theme="light"] .hero-card {
+    background-color: color-mix(in srgb, var(--color-surface-950) 72%, transparent);
+    border-color: rgba(0, 0, 0, 0.1);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
   }
 }
 
@@ -571,10 +671,17 @@ h1, h2, h3, h4, h5, h6, .font-display {
   0%   { opacity: 0; transform: translateY(20px); filter: blur(10px); }
   100% { opacity: 1; transform: translateY(0);    filter: blur(0); }
 }
+/* ⚠️ `backwards`, NIE `both` — i bez `will-change` po wjeździe. Oba zostawiały na elemencie
+   `filter: blur(0)` i deklarację `will-change` NA ZAWSZE, a to trzyma tekst na własnej warstwie
+   kompozytora: przeglądarka renderuje go wtedy antyaliasingiem szarościowym zamiast subpikselowego.
+   Litery robią się cieńsze i miękkie — wygląda to jak nałożona poświata rozmywająca tekst, choć
+   żadnego efektu tam nie ma. Na białym tekście na ciemnym zdjęciu prawie nie widać; na ciemnym
+   18-pikselowym akapicie na jasnym tle widać od razu.
+   `backwards` daje stan sprzed animacji (klatka 0% w trakcie `--hero-delay`, czyli brak mignięcia),
+   a po jej końcu element wraca do zwykłych stylów — bez filtra, bez transformu, bez warstwy.
+   Dlatego bazowego `opacity: 0` już tu nie ma: po animacji zostałby na stałe i schowałby treść. */
 .hero-rise {
-  opacity: 0;
-  will-change: transform, opacity, filter;
-  animation: hero-rise 0.85s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+  animation: hero-rise 0.85s cubic-bezier(0.22, 0.61, 0.36, 1) backwards;
   animation-delay: var(--hero-delay, 0ms);
 }
 
@@ -604,10 +711,23 @@ h1, h2, h3, h4, h5, h6, .font-display {
    gradientem; „zapala się" bloomem niebieskiej poświaty w chwili, gdy nagłówek zostanie
    wystukany i słowo wchodzi na scenę. Gradient zostaje też przy prefers-reduced-motion. */
 .hero-keyword {
-  /* litery jako KONTUR: przezroczyste wypełnienie + biały obrys (widać tło w środku) */
+  /* litery jako KONTUR: przezroczyste wypełnienie + obrys w kolorze tekstu nagłówka
+     (widać tło w środku), więc kontur odwraca się razem z motywem — biały obrys na
+     rozjaśnionym zdjęciu znikał, zostawiając w środku zdania dziurę bez słowa. */
   color: transparent;
   -webkit-text-fill-color: transparent;
   -webkit-text-stroke: 1.5px #fff;
+}
+/* ⚠️ W motywie jasnym sama zamiana koloru kreski NIE wystarcza i to jest sedno tego efektu:
+   litera rysowana wyłącznie konturem czerpie kontrast z WNĘTRZA, a wnętrze to zdjęcie. Na
+   ciemnym kadrze biała nitka świeci, bo w środku jest mrok; na rozjaśnionym ciemna nitka 1,5 px
+   leży na skale i koszulce o podobnej jasności i słowo blednie obok pełnych, czarnych liter
+   obok — w jednym zdaniu dwa różne poziomy widoczności. Wnętrze dostaje więc jasne wypełnienie:
+   kontur dalej rysuje kształt (efekt zostaje), ale litera sama wycina się z tła zamiast liczyć
+   na to, co akurat za nią jest. Kreska grubsza, bo musi utrzymać krawędź na tym wypełnieniu. */
+[data-theme="light"] .hero-keyword {
+  -webkit-text-stroke: 2px var(--color-surface-100);
+  -webkit-text-fill-color: rgba(255, 255, 255, 0.62);
 }
 
 /* migający kursor maszyny do pisania (Typewriter) — dziedziczy kolor tekstu */
