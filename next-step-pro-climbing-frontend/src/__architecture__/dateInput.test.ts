@@ -47,9 +47,12 @@ describe('date fields', () => {
 
   it('keeps DateInput dismissing the picker on a mouse pick', () => {
     // The blur IS the fix; without it this component is an alias for the bug it exists to prevent.
+    // The focus put back after it is what keeps the fix free on browsers that close the popover
+    // themselves: without it, every pick drops focus to <body>.
     const source = readFileSync(join(SRC_DIR, OWNER), 'utf-8')
 
     expect(source).toMatch(/pointerType !== 'touch'/)
-    expect(source).toMatch(/dismissOnCommit\.current[\s\S]{0,40}blur\(\)/)
+    expect(source).toMatch(/dismissOnCommit\.current/)
+    expect(source).toMatch(/\.blur\(\)[\s\S]{0,400}\.focus\(/)
   })
 })

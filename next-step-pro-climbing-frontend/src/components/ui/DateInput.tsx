@@ -7,8 +7,9 @@ import { useRef, type InputHTMLAttributes } from 'react'
  * at that moment (the input event fires straight away — verified in Safari, which is the only way
  * to check: a native popover is browser chrome, so no automation can click it), but the calendar
  * keeps hanging over the form, so the pick reads as "nothing happened" and you learn to click
- * somewhere else to make the date appear. Blurring the field on commit dismisses it. Chrome and
- * Firefox close it themselves and never reach a second state.
+ * somewhere else to make the date appear. Blurring the field on commit dismisses it, and focus
+ * goes straight back so nothing changes for Chrome and Firefox, which close the popover
+ * themselves and would otherwise pay for this with a field that loses focus on every pick.
  *
  * This is a component rather than a remembered habit because the habit already failed once: the
  * workaround was added to a slot form in Feb 2026, that form was later extracted into
@@ -51,7 +52,14 @@ export function DateInput({ value, onChange, onPointerDown, onKeyDown, ...rest }
       }}
       onChange={(event) => {
         onChange(event.target.value)
-        if (dismissOnCommit.current) event.target.blur()
+        if (!dismissOnCommit.current) return
+        // The blur is what dismisses the popover; the focus put straight back is what keeps this
+        // free on browsers that had nothing wrong with them — otherwise picking a date would
+        // leave focus on <body>, so Enter no longer submits and Tab restarts from the top of the
+        // page. Restoring focus does not reopen the popover (verified in Safari; a native popover
+        // opens on a click, not on focus).
+        event.target.blur()
+        event.target.focus({ preventScroll: true })
       }}
     />
   )
