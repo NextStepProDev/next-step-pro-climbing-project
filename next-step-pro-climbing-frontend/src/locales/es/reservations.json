@@ -1,6 +1,6 @@
 {
-  "title": "Mis reservas",
-  "subtitle": "Próximas sesiones en las que estás inscrito/a.",
+  "title": "Tu zona",
+  "subtitle": "Tus reservas, plan y cuaderno de ascensiones.",
   "empty": {
     "title": "Sin reservas",
     "message": "No tienes ninguna sesión próxima.",

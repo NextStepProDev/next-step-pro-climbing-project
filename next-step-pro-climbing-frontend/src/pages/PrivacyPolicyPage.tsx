@@ -6,8 +6,8 @@ import logoWhite from '../assets/logo/logo-white.png'
 import logoBlack from '../assets/logo/logo-black.png'
 import { CONTACT } from '../constants/contact'
 
-const LAST_UPDATED_PL = '2 sierpnia 2026'
-const LAST_UPDATED_EN = '2 August 2026'
+const LAST_UPDATED_PL = '14 sierpnia 2026'
+const LAST_UPDATED_EN = '14 August 2026'
 
 export function PrivacyPolicyPage() {
   const { i18n } = useTranslation()
@@ -146,6 +146,19 @@ function PrivacyPolicyPl({ logo }: { logo: string }) {
             ]} />
           </SubSection>
 
+          <SubSection title="Dziennik przejść (każdy zalogowany)">
+            <p className="text-surface-400 text-sm leading-relaxed mb-3">
+              Każde konto ma własny dziennik przejść wspinaczkowych. Wpisy tworzysz wyłącznie Ty i tylko Ty
+              możesz je zmieniać. Część z nich pokazuje się publicznie na stronie Aktualności — co dokładnie
+              i jak to wyłączyć, opisuje sekcja 5.
+            </p>
+            <DataList items={[
+              'Data przejścia, rejon, skała (sektor) i nazwa drogi',
+              'Dyscyplina (sport, boulder, trad), wycena i styl przejścia',
+              'Opcjonalnie: liczba prób, ocena jakości drogi (0–5 gwiazdek) i Twój komentarz',
+            ]} />
+          </SubSection>
+
           <SubSection title="Kalendarz treningowy (tylko podopieczni)">
             <p className="text-surface-400 text-sm leading-relaxed mb-3">
               Jeśli trener wyznaczy Cię jako podopiecznego, dostajesz osobisty kalendarz treningowy. Zbiera on
@@ -197,6 +210,10 @@ function PrivacyPolicyPl({ logo }: { logo: string }) {
               purpose="Pomiary wagi, trend wagowy, cele wagowe oraz oceny RPE i feedback po treningu"
               basis="Art. 9 ust. 2 lit. a RODO — wyraźna zgoda na przetwarzanie danych dotyczących zdrowia. Zgodę wyrażasz jednorazowo przed pierwszym wejściem do kalendarza i możesz ją wycofać w każdej chwili (patrz sekcja 4)"
             />
+            <LegalBasis
+              purpose="Publiczna lista „Ostatnie przejścia” w Aktualnościach (imię i nazwisko wraz z przejściem)"
+              basis="Art. 6 ust. 1 lit. f RODO — uzasadniony interes administratora (pokazanie aktywności społeczności szkoły). Masz prawo sprzeciwu wobec tego przetwarzania: realizuje je przełącznik w ustawieniach konta, który natychmiast usuwa wszystkie Twoje wpisy z listy (patrz sekcja 5)"
+            />
           </div>
           <p className="text-surface-400 text-sm mt-6 leading-relaxed">
             Podanie danych jest dobrowolne, ale niezbędne do założenia konta i korzystania z systemu rezerwacji —
@@ -238,7 +255,7 @@ function PrivacyPolicyPl({ logo }: { logo: string }) {
               Zgodę wyrażasz świadomym kliknięciem przed pierwszym wejściem do kalendarza — nie wynika ona z
               samego korzystania z serwisu ani z akceptacji regulaminu. Zapisuję datę i godzinę jej udzielenia
               jako wymagany przez RODO dowód. Zgodę możesz wycofać w każdej chwili, pisząc na adres podany w
-              sekcji 1 lub 10 — wtedy usuwam Twoje dane treningowe i wagowe, a kalendarz przestaje być dostępny.
+              sekcji 1 lub 11 — wtedy usuwam Twoje dane treningowe i wagowe, a kalendarz przestaje być dostępny.
               Wycofanie nie wpływa na zgodność z prawem przetwarzania sprzed wycofania i nie ma żadnego wpływu
               na Twoje konto ani rezerwacje. Jeśli trener odbierze Ci status podopiecznego, zgoda wygasa
               automatycznie i ponowne włączenie kalendarza wymaga jej udzielenia od nowa.
@@ -281,7 +298,62 @@ function PrivacyPolicyPl({ logo }: { logo: string }) {
         </Section>
 
         {/* 5. How long we keep the data */}
-        <Section title="5. Jak długo przechowujemy dane">
+        {/* 5. Public ascents list — the logbook tab links here */}
+        <Section id="lista-przejsc" title="5. Publiczna lista przejść">
+          <p className="text-surface-300 leading-relaxed mb-4">
+            W zakładce Aktualności działa lista <span className="text-surface-200 font-medium">„Ostatnie
+            przejścia"</span> — dziesięć najnowszych przejść zapisanych przez użytkowników serwisu. Lista jest
+            dostępna publicznie, także dla osób bez konta, i pokazuje imię oraz nazwisko autora wpisu.
+            To jedyne miejsce w serwisie, w którym Twoje dane trafiają na stronę widoczną dla wszystkich.
+          </p>
+
+          <SubSection title="Co jest publikowane">
+            <DataList items={[
+              'Imię i nazwisko',
+              'Nazwa drogi, wycena i styl przejścia',
+              'Rejon i skała (sektor)',
+              'Dyscyplina oraz data przejścia',
+            ]} />
+            <p className="text-surface-400 text-sm leading-relaxed mt-3">
+              <span className="text-surface-200 font-medium">Nigdy nie publikujemy</span> Twojego komentarza do
+              przejścia, liczby prób ani oceny jakości drogi — te pola zostają wyłącznie w Twoim dzienniku.
+              Nie publikujemy też adresu e-mail, telefonu ani żadnych danych z kalendarza treningowego.
+            </p>
+          </SubSection>
+
+          <SubSection title="Podstawa prawna i Twój sprzeciw">
+            <p className="text-surface-400 text-sm leading-relaxed">
+              Publikacja opiera się na uzasadnionym interesie administratora (art. 6 ust. 1 lit. f RODO) —
+              pokazaniu aktywności społeczności szkoły. Zgodnie z art. 21 RODO masz prawo wnieść sprzeciw wobec
+              takiego przetwarzania i nie musisz go uzasadniać.
+            </p>
+          </SubSection>
+
+          <SubSection title="Jak się wypisać">
+            <p className="text-surface-400 text-sm leading-relaxed">
+              W ustawieniach konta znajdziesz przełącznik <span className="text-surface-200 font-medium">„Pokazuj
+              moje przejścia publicznie"</span>. Wyłączenie go usuwa z listy <span className="text-surface-200
+              font-medium">wszystkie</span> Twoje przejścia natychmiast — nie po jakimś czasie i bez potrzeby
+              kontaktu ze mną. Możesz je włączyć z powrotem w dowolnym momencie. Sam dziennik działa niezależnie
+              od tego ustawienia: wpisy, statystyki i eksporty pozostają Twoje i dostępne tylko dla Ciebie.
+            </p>
+            <p className="text-surface-400 text-sm leading-relaxed mt-3">
+              Nad swoim dziennikiem widzisz informację, w którym z tych dwóch stanów aktualnie jesteś, wraz ze
+              skrótem do ustawień — żeby publikacja nigdy nie była dla Ciebie zaskoczeniem.
+            </p>
+          </SubSection>
+
+          <SubSection title="Wyszukiwarki i usunięcie wpisu">
+            <p className="text-surface-400 text-sm leading-relaxed">
+              Strona Aktualności jest publiczna, więc opublikowane wpisy mogą zostać zaindeksowane przez
+              wyszukiwarki lub zapisane w ich pamięci podręcznej. Po wyłączeniu publikacji wpis znika z serwisu
+              natychmiast, ale usunięcie go z cache'u zewnętrznej wyszukiwarki pozostaje poza moją kontrolą i
+              może potrwać. Usunięcie samego przejścia z dziennika (albo całego konta) również zdejmuje je z listy.
+            </p>
+          </SubSection>
+        </Section>
+
+        <Section title="6. Jak długo przechowujemy dane">
           <div className="space-y-3 text-surface-300 leading-relaxed">
             <p>
               <span className="text-surface-200 font-medium">Dane konta</span> — przechowywane przez cały czas istnienia konta.
@@ -325,7 +397,7 @@ function PrivacyPolicyPl({ logo }: { logo: string }) {
         </Section>
 
         {/* 6. Who we share the data with */}
-        <Section title="6. Komu powierzamy dane">
+        <Section title="7. Komu powierzamy dane">
           <p className="text-surface-300 leading-relaxed font-medium text-lg mb-4">
             Nie sprzedajemy ani nie udostępniamy Twoich danych w celach komercyjnych.
           </p>
@@ -364,7 +436,7 @@ function PrivacyPolicyPl({ logo }: { logo: string }) {
         </Section>
 
         {/* 7. Twoje prawa */}
-        <Section title="7. Twoje prawa">
+        <Section title="8. Twoje prawa">
           <p className="text-surface-400 leading-relaxed mb-4">
             Na podstawie RODO przysługują Ci następujące prawa:
           </p>
@@ -385,7 +457,7 @@ function PrivacyPolicyPl({ logo }: { logo: string }) {
         </Section>
 
         {/* 8. Data security */}
-        <Section title="8. Bezpieczeństwo danych">
+        <Section title="9. Bezpieczeństwo danych">
           <p className="text-surface-400 leading-relaxed mb-4">
             Stosuję wielowarstwowe zabezpieczenia techniczne, aby chronić Twoje dane:
           </p>
@@ -401,7 +473,7 @@ function PrivacyPolicyPl({ logo }: { logo: string }) {
         </Section>
 
         {/* 9. Zmiany polityki */}
-        <Section title="9. Zmiany polityki prywatności">
+        <Section title="10. Zmiany polityki prywatności">
           <p className="text-surface-400 leading-relaxed">
             W przypadku istotnych zmian w polityce prywatności poinformuję Cię o tym z wyprzedzeniem —
             przez e-mail lub komunikat w serwisie. Data ostatniej aktualizacji jest zawsze widoczna na górze tej strony.
@@ -410,7 +482,7 @@ function PrivacyPolicyPl({ logo }: { logo: string }) {
         </Section>
 
         {/* 10. Kontakt */}
-        <Section title="10. Kontakt w sprawach danych osobowych">
+        <Section title="11. Kontakt w sprawach danych osobowych">
           <p className="text-surface-400 leading-relaxed">
             Jeśli masz pytania dotyczące przetwarzania Twoich danych osobowych, chcesz skorzystać z przysługujących
             Ci praw lub masz jakiekolwiek wątpliwości — napisz do mnie. Potraktuję każde zgłoszenie poważnie
@@ -520,6 +592,19 @@ function PrivacyPolicyEn({ logo }: { logo: string }) {
               'Profile picture (avatar) — optional; if you add one, it is cropped to a circle in your browser and stored on the server within the EEA. You can change or remove it at any time in account settings',
             ]} />
           </SubSection>
+          <SubSection title="Climbing logbook (every signed-in user)">
+            <p className="text-surface-400 text-sm leading-relaxed mb-3">
+              Every account has its own climbing logbook. Only you create the entries and only you can change
+              them. Some of what they contain is shown publicly on the News page — section 5 covers exactly
+              what, and how to switch it off.
+            </p>
+            <DataList items={[
+              'Date climbed, area, crag (sector) and route name',
+              'Discipline (sport, boulder, trad), grade and style of ascent',
+              'Optionally: number of attempts, route quality rating (0–5 stars) and your comment',
+            ]} />
+          </SubSection>
+
           <SubSection title="Training calendar (athletes only)">
             <p className="text-surface-400 text-sm leading-relaxed mb-3">
               If your coach designates you as an athlete, you get a personal training calendar. It collects data
@@ -570,6 +655,10 @@ function PrivacyPolicyEn({ logo }: { logo: string }) {
               purpose="Weigh-ins, weight trend, weight goals, RPE ratings and post-session feedback"
               basis="Art. 9(2)(a) GDPR — explicit consent to processing data concerning health. You give it once, before first opening the calendar, and may withdraw it at any time (see section 4)"
             />
+            <LegalBasis
+              purpose="The public “Recent ascents” list on the News page (full name alongside the ascent)"
+              basis="Art. 6(1)(f) GDPR — legitimate interest of the controller (showing the activity of the school's community). You have the right to object to this processing: the switch in your account settings implements it and removes all of your entries from the list immediately (see section 5)"
+            />
           </div>
           <p className="text-surface-400 text-sm mt-6 leading-relaxed">
             Providing your data is voluntary but necessary to create an account and use the booking system —
@@ -610,7 +699,7 @@ function PrivacyPolicyEn({ logo }: { logo: string }) {
             <p className="text-surface-400 text-sm leading-relaxed">
               You give consent by a deliberate click before first opening the calendar — it never follows from
               merely using the service or accepting the terms. I store the date and time it was given as the proof
-              GDPR requires. You may withdraw it at any time by writing to the address in section 1 or 10 — I then
+              GDPR requires. You may withdraw it at any time by writing to the address in section 1 or 11 — I then
               delete your training and weight data and the calendar becomes unavailable. Withdrawal does not affect
               the lawfulness of processing prior to it and has no effect on your account or bookings. If the coach
               removes your athlete status, the consent expires automatically, and switching the calendar back on
@@ -654,7 +743,62 @@ function PrivacyPolicyEn({ logo }: { logo: string }) {
         </Section>
 
         {/* 5 */}
-        <Section title="5. How Long We Store Your Data">
+        {/* 5. Public ascents list — the logbook tab links here */}
+        <Section id="lista-przejsc" title="5. Public Ascents List">
+          <p className="text-surface-300 leading-relaxed mb-4">
+            The News page carries a <span className="text-surface-200 font-medium">“Recent ascents”</span> list —
+            the ten newest ascents logged by users of the site. The list is public, visible to people without an
+            account too, and it shows the full name of whoever logged the entry. It is the only place on the site
+            where your data appears on a page everyone can see.
+          </p>
+
+          <SubSection title="What is published">
+            <DataList items={[
+              'First and last name',
+              'Route name, grade and style of ascent',
+              'Area and crag (sector)',
+              'Discipline and the date climbed',
+            ]} />
+            <p className="text-surface-400 text-sm leading-relaxed mt-3">
+              We <span className="text-surface-200 font-medium">never publish</span> your comment on an ascent,
+              the number of attempts or your route rating — those stay in your logbook alone. Nor do we publish
+              your email address, phone number or anything from the training calendar.
+            </p>
+          </SubSection>
+
+          <SubSection title="Legal basis and your objection">
+            <p className="text-surface-400 text-sm leading-relaxed">
+              The publication rests on the controller's legitimate interest (Art. 6(1)(f) GDPR) — showing the
+              activity of the school's community. Under Art. 21 GDPR you have the right to object to this
+              processing, and you do not have to give a reason.
+            </p>
+          </SubSection>
+
+          <SubSection title="How to opt out">
+            <p className="text-surface-400 text-sm leading-relaxed">
+              Your account settings hold a <span className="text-surface-200 font-medium">“Show my ascents
+              publicly”</span> switch. Turning it off removes <span className="text-surface-200 font-medium">all
+              </span> of your ascents from the list immediately — not after some delay, and without contacting me.
+              You can turn it back on at any time. The logbook itself works regardless of this setting: entries,
+              statistics and exports stay yours and remain visible only to you.
+            </p>
+            <p className="text-surface-400 text-sm leading-relaxed mt-3">
+              Above your logbook you can see which of the two states you are currently in, together with a
+              shortcut to the settings — so that publication is never a surprise.
+            </p>
+          </SubSection>
+
+          <SubSection title="Search engines and removing an entry">
+            <p className="text-surface-400 text-sm leading-relaxed">
+              The News page is public, so published entries may be indexed by search engines or kept in their
+              cache. Once you switch publication off the entry disappears from the site immediately, but removing
+              it from an external search engine's cache is beyond my control and may take time. Deleting the
+              ascent itself (or your whole account) also takes it off the list.
+            </p>
+          </SubSection>
+        </Section>
+
+        <Section title="6. How Long We Store Your Data">
           <div className="space-y-3 text-surface-300 leading-relaxed">
             <p>
               <span className="text-surface-200 font-medium">Account data</span> — stored for the entire duration of the account.
@@ -698,7 +842,7 @@ function PrivacyPolicyEn({ logo }: { logo: string }) {
         </Section>
 
         {/* 6 */}
-        <Section title="6. Who We Entrust Your Data To">
+        <Section title="7. Who We Entrust Your Data To">
           <p className="text-surface-300 leading-relaxed font-medium text-lg mb-4">
             We do not sell or share your data for commercial purposes.
           </p>
@@ -737,7 +881,7 @@ function PrivacyPolicyEn({ logo }: { logo: string }) {
         </Section>
 
         {/* 7 */}
-        <Section title="7. Your Rights">
+        <Section title="8. Your Rights">
           <p className="text-surface-400 leading-relaxed mb-4">Under GDPR, you have the following rights:</p>
           <div className="space-y-3">
             <Right title="Right of access" description="You may ask at any time what data we hold about you." />
@@ -755,7 +899,7 @@ function PrivacyPolicyEn({ logo }: { logo: string }) {
         </Section>
 
         {/* 8 */}
-        <Section title="8. Data Security">
+        <Section title="9. Data Security">
           <p className="text-surface-400 leading-relaxed mb-4">
             I apply multi-layered technical safeguards to protect your data:
           </p>
@@ -771,7 +915,7 @@ function PrivacyPolicyEn({ logo }: { logo: string }) {
         </Section>
 
         {/* 9 */}
-        <Section title="9. Changes to This Privacy Policy">
+        <Section title="10. Changes to This Privacy Policy">
           <p className="text-surface-400 leading-relaxed">
             In the event of significant changes to this privacy policy, I will notify you in advance —
             by e-mail or via a notice on the site. The date of the last update is always visible at the
@@ -780,7 +924,7 @@ function PrivacyPolicyEn({ logo }: { logo: string }) {
         </Section>
 
         {/* 10 */}
-        <Section title="10. Contact Regarding Personal Data">
+        <Section title="11. Contact Regarding Personal Data">
           <p className="text-surface-400 leading-relaxed">
             If you have any questions about how your personal data is processed, wish to exercise your rights,
             or have any concerns — please write to me. I will treat every request seriously and respond as

@@ -30,6 +30,9 @@ public class CacheConfig {
             build("courseDetail",  100, 60),
             build("videoList",      50, 30),
             build("instructorList", 50, 15),
+            // Public recent-ascents feed: one entry, hit by anonymous traffic on the news page.
+            // Evicted on every logbook write, so the TTL is only a backstop.
+            build("publicAscents",   1,  5),
             // Site settings: long TTL — hero image changes rarely
             build("siteSettings",   10, 30)
         ));

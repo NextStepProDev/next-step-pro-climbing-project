@@ -90,5 +90,13 @@
     "ctaAskCoach": "Pide acceso al entrenador",
     "ctaGuest": "Crea una cuenta",
     "accessNote": "El acceso a la Zona del atleta lo activa el entrenador para quienes entrenan con regularidad."
+  },
+  "ascentLog": {
+    "title": "Diario de ascensiones",
+    "subtitle": "Registra tus vías — roca y montaña. Grado, estilo, pirámide de dificultad y exportación a Excel o PDF.",
+    "openNote": "Disponible para cualquiera con una cuenta.",
+    "ctaRock": "Ascensiones en roca",
+    "ctaMountain": "Ascensiones en montaña",
+    "ctaGuest": "Crea una cuenta y empieza a registrar"
   }
 }

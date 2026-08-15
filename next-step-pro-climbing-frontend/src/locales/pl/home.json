@@ -90,5 +90,13 @@
     "ctaAskCoach": "Zapytaj trenera o dostęp",
     "ctaGuest": "Załóż konto i zacznij",
     "accessNote": "Dostęp do Strefy zawodnika aktywuje trener dla osób trenujących regularnie."
+  },
+  "ascentLog": {
+    "title": "Dziennik przejść",
+    "subtitle": "Zapisuj swoje drogi — skały i góry. Wycena, styl, piramida trudności i eksport do Excela lub PDF-a.",
+    "openNote": "Dostępny dla każdego, kto ma konto.",
+    "ctaRock": "Przejścia skalne",
+    "ctaMountain": "Przejścia górskie",
+    "ctaGuest": "Załóż konto i zacznij zapisywać"
   }
 }

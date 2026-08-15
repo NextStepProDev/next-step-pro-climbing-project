@@ -82,7 +82,7 @@
       "items": [
         {
           "question": "Jak anulować rezerwację?",
-          "answer": "Wejdź do zakładki 'Moje rezerwacje' (dostępnej po zalogowaniu w górnym menu), znajdź wybrany termin i kliknij 'Anuluj'. Potwierdzenie anulowania pojawi się od razu, a miejsce zostanie zwolnione dla innych użytkowników."
+          "answer": "Wejdź do zakładki 'Twoja strefa' (dostępnej po zalogowaniu w górnym menu), znajdź wybrany termin i kliknij 'Anuluj'. Potwierdzenie anulowania pojawi się od razu, a miejsce zostanie zwolnione dla innych użytkowników."
         },
         {
           "question": "Do kiedy mogę anulować?",
@@ -103,11 +103,11 @@
         },
         {
           "question": "Czy mogę sprawdzić swój status na liście?",
-          "answer": "Tak — w zakładce 'Moje rezerwacje' widoczna jest dedykowana sekcja z listami oczekujących, na których się znajdujesz. Gdy pojawi się wolne miejsce i będziesz musiał/a je potwierdzić, zobaczysz wyraźne powiadomienie z odliczaniem czasu. Dodatkowo wyślemy Ci emaila z informacją o dostępnym miejscu — masz 24 godziny na potwierdzenie."
+          "answer": "Tak — w zakładce 'Twoja strefa' widoczna jest dedykowana sekcja z listami oczekujących, na których się znajdujesz. Gdy pojawi się wolne miejsce i będziesz musiał/a je potwierdzić, zobaczysz wyraźne powiadomienie z odliczaniem czasu. Dodatkowo wyślemy Ci emaila z informacją o dostępnym miejscu — masz 24 godziny na potwierdzenie."
         },
         {
           "question": "Czy mogę opuścić listę oczekujących?",
-          "answer": "Tak — w każdej chwili możesz się wypisać z listy w zakładce 'Moje rezerwacje'. Po opuszczeniu listy zwolnione miejsce przechodzi do kolejnej osoby w kolejce."
+          "answer": "Tak — w każdej chwili możesz się wypisać z listy w zakładce 'Twoja strefa'. Po opuszczeniu listy zwolnione miejsce przechodzi do kolejnej osoby w kolejce."
         }
       ]
     },
@@ -116,7 +116,7 @@
       "items": [
         {
           "question": "Gdzie widzę swoje rezerwacje?",
-          "answer": "W zakładce 'Moje rezerwacje' (dostępnej po zalogowaniu) znajdziesz wszystkie nadchodzące treningi oraz aktywne listy oczekujących. Minione rezerwacje trafiają do archiwum widocznego poniżej aktualnych — listę archiwalną można w każdej chwili rozwinąć i przejrzeć całą historię swoich treningów."
+          "answer": "W zakładce 'Twoja strefa' (dostępnej po zalogowaniu) znajdziesz wszystkie nadchodzące treningi oraz aktywne listy oczekujących. Minione rezerwacje trafiają do archiwum widocznego poniżej aktualnych — listę archiwalną można w każdej chwili rozwinąć i przejrzeć całą historię swoich treningów."
         }
       ]
     },

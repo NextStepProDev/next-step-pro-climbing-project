@@ -130,6 +130,23 @@ public class UserController {
         return ResponseEntity.noContent().build();
     }
 
+    @Operation(summary = "Public visibility of my ascents",
+        description = "Switches this climber in or out of the public recent-ascents list on the "
+            + "news page. Opt-out: everyone is listed by default, and turning it off removes every "
+            + "entry at once — this is the GDPR art. 21 objection, not a decoration.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "204", description = "Preference updated"),
+        @ApiResponse(responseCode = "401", description = "User not authenticated")
+    })
+    @PutMapping("/me/ascents-visibility")
+    public ResponseEntity<Void> updateAscentsVisibility(
+            @Parameter(hidden = true) @CurrentUserId UUID userId,
+            @Valid @RequestBody UpdateAscentsVisibilityRequest request) {
+
+        userService.updateAscentsVisibility(userId, request.publicVisible());
+        return ResponseEntity.noContent().build();
+    }
+
     @Operation(summary = "Set avatar", description = "Uploads the user's profile photo (replaces the previous one)")
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "Avatar saved",
@@ -293,6 +310,7 @@ public class UserController {
             user.isAthlete(),
             user.hasTrainingConsent(),
             user.isEmailNotificationsEnabled(),
+            user.isAscentsPublic(),
             user.getPreferredLanguage(),
             user.isNewsletterSubscribed(),
             user.isNewsletterChoiceMade(),
@@ -316,6 +334,7 @@ record UserProfileDto(
     @Schema(description = "Whether the user is a coach-designated athlete (personal training calendar)") boolean isAthlete,
     @Schema(description = "Whether the athlete gave explicit consent to training-calendar data processing (drives the one-time consent screen)") boolean trainingConsentGiven,
     @Schema(description = "Whether email notifications are enabled") boolean emailNotificationsEnabled,
+    @Schema(description = "Whether this climber's ascents appear on the public recent-ascents list (opt-out, default true)") boolean ascentsPublic,
     @Schema(description = "Preferred language (pl, en, es)") String preferredLanguage,
     @Schema(description = "Whether subscribed to the newsletter") boolean newsletterSubscribed,
     @Schema(description = "Whether the user has made a newsletter choice") boolean newsletterChoiceMade,
@@ -363,6 +382,11 @@ record DeleteAccountRequest(
 @Schema(description = "Notification settings")
 record UpdateNotificationsRequest(
     @Schema(description = "Whether to enable email notifications") boolean enabled
+) {}
+
+@Schema(description = "Public visibility of this climber's ascents")
+record UpdateAscentsVisibilityRequest(
+    @Schema(description = "true = appear on the public recent-ascents list") boolean publicVisible
 ) {}
 
 @Schema(description = "Language change")

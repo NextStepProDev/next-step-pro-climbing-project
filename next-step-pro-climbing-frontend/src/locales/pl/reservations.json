@@ -1,6 +1,6 @@
 {
-  "title": "Moje rezerwacje",
-  "subtitle": "Nadchodzące zajęcia, na które jesteś zapisany/a.",
+  "title": "Twoja strefa",
+  "subtitle": "Twoje zapisy, plan i dziennik przejść.",
   "empty": {
     "title": "Brak rezerwacji",
     "message": "Nie masz żadnych nadchodzących zajęć.",

@@ -50,6 +50,8 @@ Kolejność wg ryzyka, nie wg wielkości.
 | Sekrety w repo | 🟡 sonda | 2026-08-08 | Skan wzorców kluczy + `.gitignore`. Czysto. |
 | Nagłówki / CSP | 🔵 przeczytane | 2026-08-08 | `nginx.conf`; CSP bez `unsafe-inline` w `script-src`. |
 | Upload plików (path traversal) | 🔵 przeczytane | 2026-08-08 | Regex na nazwie i folderze. |
+| Dziennik przejść — authz i powierzchnia publiczna | 🔵 przeczytane + sonda HTTP | 2026-08-14 | Wszystkie endpointy `/api/ascents` i `/api/admin/ascents` sondowane po HTTP jako anonim, obcy user i admin: publiczne jest **wyłącznie** `/recent`, własność wierszy sprawdzana lookupem po (id, właściciel), cudzy wpis odpowiada „nie istnieje". Opt-out RODO w klauzuli WHERE, publiczne DTO bez pól prywatnych, cache czyszczony na zapisie, zmianie flagi **i obu ścieżkach kasowania konta**. **Znaleziono:** brak jakiejkolwiek ścieżki zdjęcia cudzego wpisu z listy publicznej — patrz „Czego bramki NIE złapią". |
+| Odpowiedzi na bzdurne wejście (400 vs 500) | 🔵 przeczytane + testy | 2026-08-14 | Sonda po całym API, nie tylko po nowej funkcji. **Znaleziono:** nie-UUID w ścieżce, nieznana stała enumu w query i niepoprawny JSON w ciele wpadały w catch-all → 500 + ERROR ze stackiem. Dwa handlery dopisane, komunikat ogólny (nie echuje wartości od klienta). |
 
 ### Poprawność backendu
 
@@ -100,3 +102,12 @@ i ta klasa będzie wracać.
 
 Jedyna realna dźwignia na nią to **zmniejszenie liczby miejsc, w których może wystąpić** —
 czyli likwidacja bliźniactwa slot/event. Dopóki są dwie kopie, jest dwa razy więcej okazji.
+
+Druga klasa, której żadna bramka nie dotknie, to **decyzje produktowe o skutkach prawnych**.
+Audyt 2026-08-14 wyciągnął jedną otwartą: publiczna lista „Ostatnie przejścia" pokazuje imię,
+nazwisko i tekst pisany przez **każdego zalogowanego**, a jedynym wyłącznikiem jest przełącznik
+w ustawieniach **autora**. Operator serwisu nie ma w aplikacji żadnej drogi, żeby zdjąć cudzy
+wpis — zostaje prośba do autora albo `psql` na produkcji. To jest zgodne z modelem („widoczność
+jest własnością autora, wpisy nie mają własnej flagi"), więc nie jest bugiem; jest ryzykiem,
+które ktoś musi świadomie przyjąć albo zamknąć (najtaniej: admin może przestawić cudzą flagę
+`ascents_public`, co zdejmuje wszystkie wpisy tej osoby naraz).

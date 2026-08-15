@@ -25,6 +25,8 @@ export interface User {
   // athlete until they pass the one-time consent screen — the calendar API 409s without it.
   trainingConsentGiven: boolean
   emailNotificationsEnabled: boolean
+  // Opt-out: everyone is on the public recent-ascents list unless they switch this off
+  ascentsPublic: boolean
   preferredLanguage: string
   newsletterSubscribed: boolean
   newsletterChoiceMade: boolean
@@ -1272,6 +1274,225 @@ export type WeightRange = 'RECENT' | 'YEAR' | 'ALL'
 export interface SaveWeight {
   measuredOn: string
   weightKg: number
+}
+
+// ---------- climbing logbook ----------
+
+// Every entry is a COMPLETED ascent. Attempts and open projects are not modelled: the pyramid
+// and the onsight rate count ascents, so a "tried it" row would sit in the denominator of both.
+export type AscentDiscipline = 'SPORT' | 'BOULDER' | 'TRAD'
+
+// OS > FLASH > RP > PP > TR in cleanliness. Never translated — international shorthand.
+// OS > FLASH > RP > TR in cleanliness, with SOLO/FREE_SOLO above them as a different kind of
+// commitment. Pinkpoint was dropped; the two-letter names stay untranslated, SOLO/FREE_SOLO do not.
+export type AscentStyle = 'OS' | 'FLASH' | 'RP' | 'TR' | 'SOLO' | 'FREE_SOLO' | 'A0'
+
+// Two separate axes. 7a (French route) and 7A (Font) are three grades apart, so nothing
+// compares a grade from one scale with a grade from the other.
+export type GradeScale = 'FRENCH_ROUTE' | 'FONT_BOULDER'
+
+// Where the ascent happened, and therefore which shape the entry takes. Rock entries carry a
+// discipline, attempts and a star rating; mountain entries carry a season, length, pitches,
+// duration, partners and what the author led. Both share one grade axis: French.
+export type AscentTerrain = 'ROCK' | 'MOUNTAIN'
+
+export interface Ascent {
+  id: string
+  terrain: AscentTerrain
+  climbedOn: string
+  // Rock only — mountains tell entries apart by season instead
+  discipline: AscentDiscipline | null
+  gradeScale: GradeScale
+  // Enum constant (FR_7A_PLUS) — what goes back on update
+  grade: string
+  // What the climber reads on the topo (7a+). Comes from the server; never derived here.
+  gradeLabel: string
+  // Ordering within gradeScale only. Sorting the table by difficulty uses this, not the label.
+  gradeRank: number
+  style: AscentStyle
+  area: string
+  crag: string
+  routeName: string
+  attempts: number | null
+  qualityStars: number | null
+  comment: string | null
+  // ---- mountain only ----
+  winter: boolean | null
+  originalGrade: string | null
+  lengthMeters: number | null
+  pitches: number | null
+  durationMinutes: number | null
+  ledGrade: string | null
+  ledGradeLabel: string | null
+  ledGradeRank: number | null
+  ledPitches: number | null
+  partners: string | null
+  createdAt: string
+}
+
+export interface SaveAscent {
+  terrain: AscentTerrain
+  climbedOn: string
+  discipline: AscentDiscipline | null
+  grade: string
+  style: AscentStyle
+  area: string
+  // The crag on rock, the summit in the mountains — the same slot either way
+  crag: string
+  routeName: string
+  attempts: number | null
+  qualityStars: number | null
+  comment: string | null
+  winter: boolean | null
+  originalGrade: string | null
+  lengthMeters: number | null
+  pitches: number | null
+  durationMinutes: number | null
+  ledGrade: string | null
+  ledPitches: number | null
+  partners: string | null
+}
+
+// Areas the athlete has logged before, with their crags — computed across every year, so a crag
+// from 2019 still autocompletes while they are looking at 2026.
+export interface PlaceSuggestion {
+  area: string
+  crags: string[]
+}
+
+export interface AscentLog {
+  entries: Ascent[]
+  availableYears: number[]
+  // null means "all years"; echoed by the server so the picker cannot drift from the filter
+  selectedYear: number | null
+  // Across every year — tells an empty year apart from an empty logbook
+  totalCount: number
+  places: PlaceSuggestion[]
+}
+
+// The grade/style catalogue, served by the backend so the form never hardcodes a list:
+// a form offering a value the API refuses is a 400 for something that looked available.
+export interface GradeOption {
+  value: string
+  label: string
+  rank: number
+}
+
+export interface DisciplineOption {
+  value: AscentDiscipline
+  gradeScale: GradeScale
+  styles: AscentStyle[]
+}
+
+export interface AscentOptions {
+  disciplines: DisciplineOption[]
+  // Styles the mountains allow — no toprope, and no discipline to hang them off
+  mountainStyles: AscentStyle[]
+  gradesByScale: Record<GradeScale, GradeOption[]>
+}
+
+// One entry of the public recent-ascents list on the news page. Carries the climber's name —
+// and deliberately nothing private: no comment, no attempts, no rating.
+export interface PublicAscent {
+  id: string
+  climberName: string
+  climbedOn: string
+  terrain: AscentTerrain
+  // Null on mountain entries — they carry a season instead
+  discipline: AscentDiscipline | null
+  gradeScale: GradeScale
+  gradeLabel: string
+  gradeRank: number
+  style: AscentStyle
+  area: string
+  crag: string
+  routeName: string
+}
+
+export interface PyramidRow {
+  grade: string
+  gradeLabel: string
+  rank: number
+  byStyle: Partial<Record<AscentStyle, number>>
+  total: number
+}
+
+export interface BestAscent {
+  grade: string
+  gradeLabel: string
+  rank: number
+  routeName: string
+  crag: string
+  climbedOn: string
+}
+
+export interface GradeProgressPoint {
+  year: number
+  bestGradeLabel: string | null
+  bestRank: number | null
+  bestOnsightLabel: string | null
+  bestOnsightRank: number | null
+}
+
+// One block per discipline. Grades are only ever compared inside a block.
+export interface AscentDisciplineStats {
+  discipline: AscentDiscipline
+  gradeScale: GradeScale
+  ascentCount: number
+  pyramid: PyramidRow[]
+  hardestByStyle: Partial<Record<AscentStyle, BestAscent>>
+  styleDistribution: Partial<Record<AscentStyle, number>>
+  onsightRatePercent: number | null
+  // Always all-time, whatever year is selected — a progression cropped to one year is a point
+  progressionByYear: GradeProgressPoint[]
+}
+
+export interface AreaCount {
+  area: string
+  ascentCount: number
+}
+
+// Deliberately no "days on rock": only sends are logged, so a day of failed attempts or a
+// rained-off day leaves no row, and the count would have measured diligence, not climbing.
+// Every mountain total ships with the count it was built from: length, pitches and duration are
+// optional, so "4200 m" alone would not say whether that is a season or two measured entries.
+export interface MountainStats {
+  summerCount: number
+  winterCount: number
+  totalMeters: number
+  entriesWithLength: number
+  totalPitches: number
+  entriesWithPitches: number
+  totalMinutes: number
+  entriesWithDuration: number
+  summitCount: number
+  // The routes themselves — mountains have no discipline blocks, so this is the only place
+  // the level being climbed shows up
+  pyramid: PyramidRow[]
+  hardestByStyle: Partial<Record<AscentStyle, BestAscent>>
+  // What the author LED — a different question from what the route was graded
+  leadPyramid: PyramidRow[]
+  hardestLed: BestAscent | null
+  ledPitchesTotal: number
+}
+
+export interface AscentStats {
+  selectedYear: number | null
+  totalAscents: number
+  firstAscentDate: string | null
+  // Distinct places, grouped on the normalized key so one crag spelled two ways counts once
+  areaCount: number
+  cragCount: number
+  avgAttemptsToRedpoint: number | null
+  // How many redpoints the average is built from — the attempts field is optional, so the
+  // figure means nothing without its denominator
+  redpointsWithAttempts: number
+  avgQualityStars: number | null
+  topAreas: AreaCount[]
+  // Only disciplines with at least one ascent, busiest first. Empty on a mountain logbook.
+  disciplines: AscentDisciplineStats[]
+  // Present only on a mountain logbook
+  mountain: MountainStats | null
 }
 
 // Reusable coach training template (shared library). Materials reuse TrainingAttachment.

@@ -1056,7 +1056,11 @@ public class AdminService {
     @Caching(evict = {
         @CacheEvict(value = "calendarMonth", allEntries = true),
         @CacheEvict(value = "calendarWeek", allEntries = true),
-        @CacheEvict(value = "calendarDay", allEntries = true)
+        @CacheEvict(value = "calendarDay", allEntries = true),
+        // Their ascents cascade away with the row; the cached public feed would keep showing them
+        // for the rest of the TTL. Mirrors UserService.deleteAccount — the two deletion paths have
+        // drifted apart before (see UserSeatReleaseService).
+        @CacheEvict(value = "publicAscents", allEntries = true)
     })
     public void deleteUser(UUID adminId, UUID userId) {
         User user = userRepository.findById(userId)

@@ -8,6 +8,7 @@ import { Calendar, CalendarPlus, Clock, MapPin, MessageSquare, Sparkles, Users, 
 import { reservationApi, calendarApi, trainingRequestApi, trainingCalendarApi } from '../api/client'
 import { useAuth } from '../context/AuthContext'
 import { athleteAdapter } from '../components/training/trainingCalendarAdapter'
+import { athleteAscentAdapter } from '../components/ascents/ascentAdapter'
 import { TrainingConsentGate } from '../components/training/TrainingConsentGate'
 import { getErrorMessage } from '../utils/errors'
 import { LoadingSpinner } from '../components/ui/LoadingSpinner'
@@ -24,28 +25,42 @@ const TrainingCalendarSection = lazy(() =>
   import('../components/training/TrainingCalendarSection')
     .then((m) => ({ default: m.TrainingCalendarSection })))
 
+const AscentsSection = lazy(() =>
+  import('../components/ascents/AscentsSection')
+    .then((m) => ({ default: m.AscentsSection })))
+
 export function MyReservationsPage() {
   const { t } = useTranslation('reservations')
   const { t: tTraining } = useTranslation('training')
+  const { t: tAscents } = useTranslation('ascents')
   const { user, refreshUser } = useAuth()
   const queryClient = useQueryClient()
   const [searchParams, setSearchParams] = useSearchParams()
   const [showArchive, setShowArchive] = useState(false)
 
-  // Athlete-only second tab: the personal training calendar (TrainingPeaks-style)
+  // Athlete-only tab: the personal training calendar (TrainingPeaks-style)
   const isAthlete = !!user?.isAthlete
-  // GDPR art. 9 gate — one-time, and also for athletes who had the calendar before it existed
+  // GDPR art. 9 gate — one-time, and also for athletes who had the calendar before it existed.
+  // Scoped to the CALENDAR alone: the logbook carries no health data and is open to everyone.
   const needsTrainingConsent = isAthlete && !user?.trainingConsentGiven
-  const activeTab = isAthlete && searchParams.get('tab') === 'calendar' ? 'calendar' : 'reservations'
+  const tabParam = searchParams.get('tab')
+  const activeTab: 'reservations' | 'calendar' | 'ascents' =
+    tabParam === 'ascents' ? 'ascents'
+      : (isAthlete && tabParam === 'calendar') ? 'calendar'
+        : 'reservations'
 
-  const switchTab = (tab: 'reservations' | 'calendar') => {
+  const switchTab = (tab: 'reservations' | 'calendar' | 'ascents') => {
     const params = new URLSearchParams(searchParams)
-    if (tab === 'calendar') params.set('tab', 'calendar')
-    else {
-      params.delete('tab')
+    if (tab === 'reservations') params.delete('tab')
+    else params.set('tab', tab)
+    // The calendar's own view/anchor params are meaningless anywhere else, so they are dropped
+    // on the way OUT of the calendar rather than only on the way back to reservations
+    if (tab !== 'calendar') {
       params.delete('cal')
       params.delete('calDate')
     }
+    // Same reasoning for the logbook's terrain switch
+    if (tab !== 'ascents') params.delete('ter')
     setSearchParams(params, { replace: true })
   }
 
@@ -216,7 +231,7 @@ export function MyReservationsPage() {
   return (
     // The week grid is min-w-[900px]; max-w-4xl (~832px of content) would force a horizontal
     // scroll where the sticky hour gutter overlaps Monday — widen for the calendar tab
-    <div className={`${activeTab === 'calendar' ? 'max-w-6xl' : 'max-w-4xl'} mx-auto px-4 sm:px-6 lg:px-8 py-8`}>
+    <div className={`${activeTab === 'reservations' ? 'max-w-4xl' : 'max-w-6xl'} mx-auto px-4 sm:px-6 lg:px-8 py-8`}>
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-surface-100 mb-2">
           {t('title')}
@@ -226,19 +241,19 @@ export function MyReservationsPage() {
         </p>
       </div>
 
-      {/* Athlete tabs: reservations (default) | personal training calendar */}
-      {isAthlete && (
-        <div className="flex gap-2 mb-6">
-          <button
-            onClick={() => switchTab('reservations')}
-            className={`px-4 py-2 text-sm font-medium rounded-lg border transition-colors ${
-              activeTab === 'reservations'
-                ? 'bg-primary-600 border-primary-500 text-white'
-                : 'bg-surface-900 border-surface-700 text-surface-400 hover:text-surface-200'
-            }`}
-          >
-            {tTraining('tabs.reservations')}
-          </button>
+      {/* Reservations and the logbook are everybody's; the training calendar needs the flag */}
+      <div className="flex gap-2 mb-6">
+        <button
+          onClick={() => switchTab('reservations')}
+          className={`px-4 py-2 text-sm font-medium rounded-lg border transition-colors ${
+            activeTab === 'reservations'
+              ? 'bg-primary-600 border-primary-500 text-white'
+              : 'bg-surface-900 border-surface-700 text-surface-400 hover:text-surface-200'
+          }`}
+        >
+          {tTraining('tabs.reservations')}
+        </button>
+        {isAthlete && (
           <button
             onClick={() => switchTab('calendar')}
             className={`relative px-4 py-2 text-sm font-medium rounded-lg border transition-colors ${
@@ -254,17 +269,29 @@ export function MyReservationsPage() {
               </span>
             )}
           </button>
-        </div>
-      )}
+        )}
+        <button
+          onClick={() => switchTab('ascents')}
+          className={`px-4 py-2 text-sm font-medium rounded-lg border transition-colors ${
+            activeTab === 'ascents'
+              ? 'bg-primary-600 border-primary-500 text-white'
+              : 'bg-surface-900 border-surface-700 text-surface-400 hover:text-surface-200'
+          }`}
+        >
+          {tAscents('tab')}
+        </button>
+      </div>
 
-      {activeTab === 'calendar' ? (
-        // Consent first: the calendar must not even fetch before it (the API 409s), and
-        // athletes who predate the consent screen pass through it once, here.
-        needsTrainingConsent ? (
+      {activeTab !== 'reservations' ? (
+        // The consent screen guards the CALENDAR only — the logbook holds no health data, so
+        // gating it would ask for a consent its own API does not want
+        activeTab === 'calendar' && needsTrainingConsent ? (
           <TrainingConsentGate onAccepted={refreshUser} />
         ) : (
           <Suspense fallback={<div className="py-16 flex justify-center"><LoadingSpinner /></div>}>
-            <TrainingCalendarSection api={athleteAdapter} scopeKey="me" />
+            {activeTab === 'calendar'
+              ? <TrainingCalendarSection api={athleteAdapter} scopeKey="me" />
+              : <AscentsSection api={athleteAscentAdapter} scopeKey="me" />}
           </Suspense>
         )
       ) : (
