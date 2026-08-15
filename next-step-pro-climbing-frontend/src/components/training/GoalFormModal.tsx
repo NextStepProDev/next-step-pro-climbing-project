@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Modal } from '../ui/Modal'
 import { Button } from '../ui/Button'
+import { DateInput } from '../ui/DateInput'
 import { decodeHtmlEntities } from '../../utils/htmlEntities'
 import type { AthleteGoal, GoalHorizon, GoalKind, SaveGoal } from '../../types'
 
@@ -146,10 +147,9 @@ function GoalForm({ kind, horizon, goal, currentTrendKg, onClose, onSubmit, savi
 
       <div>
         <label className="block text-sm text-surface-400 mb-1">{t('goals.form.targetDate')}</label>
-        <input
-          type="date"
+        <DateInput
           value={targetDate}
-          onChange={(e) => setTargetDate(e.target.value)}
+          onChange={setTargetDate}
           required
           className="w-full bg-surface-800 border border-surface-700 rounded-lg px-4 py-2 text-surface-100"
         />

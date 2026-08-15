@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Trophy } from 'lucide-react'
 import { Modal } from '../ui/Modal'
 import { Button } from '../ui/Button'
+import { DateInput } from '../ui/DateInput'
 import { decodeHtmlEntities } from '../../utils/htmlEntities'
 import { todayInWarsaw } from '../../utils/calendarDate'
 import type { AthleteGoal } from '../../types'
@@ -43,11 +44,10 @@ export function AchieveGoalModal({ isOpen, onClose, goal, onConfirm, saving, sub
 
           <div>
             <label className="block text-sm text-surface-400 mb-1">{t('goals.achievedDate')}</label>
-            <input
-              type="date"
+            <DateInput
               value={achievedDate}
               max={today}
-              onChange={(e) => setAchievedDate(e.target.value)}
+              onChange={setAchievedDate}
               className="w-full bg-surface-800 border border-surface-700 rounded-lg px-4 py-2 text-surface-100"
             />
           </div>

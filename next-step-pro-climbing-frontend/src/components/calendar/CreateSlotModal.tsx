@@ -5,6 +5,7 @@ import { adminApi, adminSiteApi } from '../../api/client'
 import { getErrorMessage } from '../../utils/errors'
 import { Button } from '../ui/Button'
 import { Modal } from '../ui/Modal'
+import { DateInput } from '../ui/DateInput'
 import { TimeScrollPicker } from '../ui/TimeScrollPicker'
 import { InvitedUsersPicker } from '../ui/InvitedUsersPicker'
 import { SlotKindPicker } from './SlotKindPicker'
@@ -126,10 +127,9 @@ export function CreateSlotModal({
 
         <div>
           <label className="block text-sm text-surface-400 mb-1">{t('createSlot.date')}</label>
-          <input
-            type="date"
+          <DateInput
             value={form.date}
-            onChange={(e) => setForm({ ...form, date: e.target.value })}
+            onChange={(date) => setForm({ ...form, date })}
             onKeyUp={(e) => { if (e.key === 'Enter') submitForm() }}
             className="w-full bg-surface-800 border border-surface-700 rounded-lg px-4 py-2 text-surface-100"
           />
