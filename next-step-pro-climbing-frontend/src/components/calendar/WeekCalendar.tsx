@@ -32,8 +32,10 @@ interface WeekCalendarProps {
   onSlotDrop?: (slotId: string, newDate: string, newStartTime: string, newEndTime: string, oldDate: string, oldStartTime: string, oldEndTime: string) => void
   onSlotCut?: (slot: TimeSlot, date: string) => void
   onSlotCopy?: (slot: TimeSlot, date: string) => void
+  onEventCopy?: (event: EventSummary) => void
   cutSlotId?: string
   copiedSlotId?: string
+  copiedEventId?: string
   onColumnClick?: (date: string, time: string) => void
   onNotifyParticipants?: (slotId: string) => void
   pendingSlotId?: string
@@ -142,8 +144,10 @@ export function WeekCalendar({
   onSlotDrop,
   onSlotCut,
   onSlotCopy,
+  onEventCopy,
   cutSlotId,
   copiedSlotId,
+  copiedEventId,
   onColumnClick,
   onNotifyParticipants,
   pendingSlotId,
@@ -207,7 +211,7 @@ export function WeekCalendar({
   }, [days])
 
   const inCutMode = isAdmin && !!cutSlotId
-  const inCopyMode = isAdmin && !!copiedSlotId
+  const inCopyMode = isAdmin && (!!copiedSlotId || !!copiedEventId)
   const inPasteMode = inCutMode || inCopyMode
 
   return (
@@ -318,7 +322,9 @@ export function WeekCalendar({
                     'relative border-l border-surface-800',
                     today && 'bg-primary-500/5',
                     past && 'opacity-50',
-                    inPasteMode && !past && 'cursor-crosshair',
+                    // Past days accept a paste too: a finished week is the most natural
+                    // source AND the admin backfilling one is doing it on purpose.
+                    inPasteMode && 'cursor-crosshair',
                   )}
                   style={{ height: TOTAL_HOURS * HOUR_HEIGHT }}
                   onClick={(e) => {
@@ -359,21 +365,45 @@ export function WeekCalendar({
                     return segments.map(([segStart, segEnd], i) => {
                       const top = (segStart - GRID_START_MIN) / 60 * HOUR_HEIGHT
                       const height = (segEnd - segStart) / 60 * HOUR_HEIGHT
+                      const label = i === labelIdx && height >= 24 && (
+                        <div className="px-1.5 py-0.5">
+                          <div className="text-[11px] font-semibold leading-tight truncate">{t('event.unavailable')}</div>
+                          <div className="text-[10px] leading-tight truncate opacity-80">{event.title}</div>
+                        </div>
+                      )
                       return (
-                        <button
+                        <div
                           key={`${event.id}-unavail-${i}`}
-                          onClick={() => onEventClick(event)}
-                          title={event.title}
-                          className="group/unavail absolute left-1 right-1 z-[1] rounded border border-slate-500/40 bg-slate-600/25 hover:bg-slate-600/35 text-slate-300 transition-colors cursor-pointer overflow-hidden text-left"
+                          className={clsx(
+                            'group/unavail absolute left-1 right-1 z-[1] rounded border border-slate-500/40 bg-slate-600/25 text-slate-300 overflow-hidden',
+                            copiedEventId === event.id && 'ring-2 ring-dashed ring-primary-400',
+                          )}
                           style={{ top, height }}
                         >
-                          {i === labelIdx && height >= 24 && (
-                            <div className="px-1.5 py-0.5">
-                              <div className="text-[11px] font-semibold leading-tight truncate">{t('event.unavailable')}</div>
-                              <div className="text-[10px] leading-tight truncate opacity-80">{event.title}</div>
-                            </div>
+                          {/* With the clipboard armed the slab stops being a button: an
+                              absence covers whole days, so leaving it clickable meant the
+                              paste click landed on it instead of on the column beneath. */}
+                          {inPasteMode ? (
+                            <div className="w-full h-full">{label}</div>
+                          ) : (
+                            <button
+                              onClick={() => onEventClick(event)}
+                              title={event.title}
+                              className="w-full h-full text-left hover:bg-slate-600/35 transition-colors cursor-pointer"
+                            >
+                              {label}
+                            </button>
                           )}
-                        </button>
+                          {isAdmin && onEventCopy && i === labelIdx && (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); onEventCopy(event) }}
+                              className="absolute top-0.5 right-0.5 p-0.5 rounded bg-surface-900/70 text-surface-300 hover:text-primary-300 opacity-0 group-hover/unavail:opacity-100 transition-opacity"
+                              title="Kopiuj wydarzenie"
+                            >
+                              <Copy className="w-2.5 h-2.5" />
+                            </button>
+                          )}
+                        </div>
                       )
                     })
                   })}
@@ -396,19 +426,28 @@ export function WeekCalendar({
                       const top = (from - GRID_START_MIN) / 60 * HOUR_HEIGHT
                       const height = (to - from) / 60 * HOUR_HEIGHT
                       const color = eventColorMap.get(event.id) ?? getEventColorByIndex(event.id, event.eventType, event.currentParticipants >= event.maxParticipants)
-                      return (
+                      const tintClass = clsx(
+                        'absolute left-0.5 right-0.5 z-[1] overflow-hidden rounded-sm border-l-2',
+                        color.barBorder,
+                        copiedEventId === event.id && 'ring-2 ring-dashed ring-primary-400',
+                      )
+                      const fill = <span className={clsx('absolute inset-0 opacity-10', color.dot)} />
+                      // Same reason as the absence slab: the tint spans the event's whole
+                      // range, so while pasting it must let the click through to the column.
+                      return inPasteMode ? (
+                        <div key={`${event.id}-tint`} className={tintClass} style={{ top, height }}>
+                          {fill}
+                        </div>
+                      ) : (
                         <button
                           key={`${event.id}-tint`}
                           onClick={() => onEventClick(event)}
                           title={event.title}
                           aria-label={event.title}
-                          className={clsx(
-                            'absolute left-0.5 right-0.5 z-[1] overflow-hidden rounded-sm border-l-2 cursor-pointer',
-                            color.barBorder,
-                          )}
+                          className={clsx(tintClass, 'cursor-pointer')}
                           style={{ top, height }}
                         >
-                          <span className={clsx('absolute inset-0 opacity-10', color.dot)} />
+                          {fill}
                         </button>
                       )
                     })}
@@ -428,18 +467,37 @@ export function WeekCalendar({
                       stackByTop.set(baseTop, stackIdx + 1)
                       const color = eventColorMap.get(event.id) ?? getEventColorByIndex(event.id, event.eventType, event.currentParticipants >= event.maxParticipants)
                       return (
-                        <button
+                        <div
                           key={event.id}
-                          onClick={() => onEventClick(event)}
-                          title={event.title}
                           className={clsx(
-                            "absolute left-0.5 right-0.5 z-20 px-1 py-0.5 text-[11px] leading-snug font-medium rounded border truncate transition-colors cursor-pointer",
-                            color.barBg, color.barBorder, color.barText, color.barHover
+                            'group/event absolute left-0.5 right-0.5 z-20 rounded border overflow-hidden',
+                            color.barBorder,
+                            copiedEventId === event.id && 'ring-2 ring-dashed ring-primary-400',
                           )}
                           style={{ top: baseTop + stackIdx * 22 }}
                         >
-                          {event.title}
-                        </button>
+                          <button
+                            onClick={() => onEventClick(event)}
+                            title={event.title}
+                            className={clsx(
+                              'w-full px-1 py-0.5 text-left text-[11px] leading-snug font-medium truncate transition-colors cursor-pointer',
+                              color.barBg, color.barText, color.barHover,
+                            )}
+                          >
+                            {event.title}
+                          </button>
+                          {/* The bar is the only piece of an event that is always on screen
+                              (the tint hides under slots), so the copy handle lives here. */}
+                          {isAdmin && onEventCopy && (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); onEventCopy(event) }}
+                              className="absolute top-0 right-0 h-full px-1 bg-surface-900/70 text-surface-300 hover:text-primary-300 opacity-0 group-hover/event:opacity-100 transition-opacity"
+                              title="Kopiuj wydarzenie"
+                            >
+                              <Copy className="w-2.5 h-2.5" />
+                            </button>
+                          )}
+                        </div>
                       )
                     })
                   })()}
@@ -515,8 +573,11 @@ export function WeekCalendar({
                           )}
                         </button>
 
-                        {/* Admin action buttons */}
-                        {isAdmin && !hasEnded && (
+                        {/* Admin action buttons — a finished slot keeps only "copy": the
+                            week that just happened is the best template for the next one,
+                            while moving it (cut/drag) would be editing history, and
+                            notifying its participants would be a message about the past. */}
+                        {isAdmin && (
                           <div
                             data-admin-action
                             className={clsx(
@@ -547,7 +608,7 @@ export function WeekCalendar({
                               </>
                             ) : (
                               <>
-                                {!slot.isAvailabilityWindow && slot.currentParticipants > 0 && onNotifyParticipants && (
+                                {!hasEnded && !slot.isAvailabilityWindow && slot.currentParticipants > 0 && onNotifyParticipants && (
                                   <button
                                     data-admin-action
                                     onClick={(e) => { e.stopPropagation(); onNotifyParticipants(slot.id) }}
@@ -567,7 +628,7 @@ export function WeekCalendar({
                                     <Copy className="w-2.5 h-2.5" />
                                   </button>
                                 )}
-                                {onSlotCut && (
+                                {!hasEnded && onSlotCut && (
                                   <button
                                     data-admin-action
                                     onClick={(e) => { e.stopPropagation(); onSlotCut(slot, day.date) }}
