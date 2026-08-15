@@ -263,7 +263,12 @@ export function Navbar() {
         data-nav-active={active || undefined}
         data-nav-premium={link.premium || undefined}
         className={clsx(
-          "px-3 py-1.5 rounded-lg text-base font-semibold tracking-wide transition-all duration-150 active:scale-95",
+          // ⚠️ `xl:whitespace-nowrap`, nie `whitespace-nowrap`: zakaz łamania jest bezpieczny
+          // dopiero tam, gdzie rząd ma się w co rozłożyć. Poniżej xl pełny pasek (10 zakładek
+          // + logo + prawy klaster) i tak nie mieści się w oknie — bezwarunkowy nowrap zamieniłby
+          // wtedy zawijanie na WYJEŻDŻANIE zakładek pod prawy klaster, czyli nakładanie się
+          // elementów zamiast brzydkiego, ale czytelnego łamania.
+          "px-2.5 xl:px-3 xl:whitespace-nowrap py-1.5 rounded-lg text-base font-semibold tracking-wide transition-all duration-150 active:scale-95",
           link.premium
             ? "hover:bg-surface-800/60"
             : active
@@ -287,7 +292,12 @@ export function Navbar() {
         ? "bg-transparent border-b border-transparent"
         : "bg-surface-900/80 backdrop-blur-sm border-b border-surface-800",
     )}>
-      <div className={clsx("max-w-7xl mx-auto px-4 sm:px-6 lg:px-8", heroOverlay && "py-2")}>
+      {/* Szerszy niż max-w-7xl treści stron i to jest świadome: pasek ma dziś do 10 zakładek,
+          a zalogowanemu dochodzi jeszcze „Twoja strefa" z plakietką. Przy 80rem etykieta nie
+          mieściła się w swoim kaflu i ŁAMAŁA SIĘ NA DWIE LINIE (a za nią „Zaloguj się"),
+          co rozpychało pasek w pionie. Zmierzone: zalogowany admin potrzebuje ~1236 px na
+          zawartość, 80rem z paddingami dawało ~1166 px. */}
+      <div className={clsx("max-w-[88rem] mx-auto px-4 sm:px-6 lg:px-8", heroOverlay && "py-2")}>
         {/* In glass mode (top of home) the navbar becomes a floating pill with rounded
             ends, offset from the edges. In normal mode it is a full bar (h-18). */}
         <div className={clsx(
@@ -327,7 +337,7 @@ export function Navbar() {
                 onClick={() => setTeamMenuOpen(!teamMenuOpen)}
                 data-nav-active={isTeamActive || undefined}
                 className={clsx(
-                  "flex items-center gap-1 px-3 py-1.5 rounded-lg text-base font-semibold tracking-wide transition-all duration-150 active:scale-95",
+                  "flex items-center gap-1 px-2.5 xl:px-3 xl:whitespace-nowrap py-1.5 rounded-lg text-base font-semibold tracking-wide transition-all duration-150 active:scale-95",
                   isTeamActive
                     ? "text-surface-100"
                     : "text-surface-400 hover:bg-surface-800/60 hover:text-surface-200",
@@ -371,7 +381,7 @@ export function Navbar() {
                 onClick={() => setMediaMenuOpen(!mediaMenuOpen)}
                 data-nav-active={isMediaActive || undefined}
                 className={clsx(
-                  "flex items-center gap-1 px-3 py-1.5 rounded-lg text-base font-semibold tracking-wide transition-all duration-150 active:scale-95",
+                  "flex items-center gap-1 px-2.5 xl:px-3 xl:whitespace-nowrap py-1.5 rounded-lg text-base font-semibold tracking-wide transition-all duration-150 active:scale-95",
                   isMediaActive
                     ? "text-surface-100"
                     : "text-surface-400 hover:bg-surface-800/60 hover:text-surface-200",
@@ -472,7 +482,10 @@ export function Navbar() {
             ) : (
               <div className="flex items-center gap-2">
                 <Link to="/login">
-                  <Button size="sm" className="px-4">
+                  {/* Bezwarunkowy nowrap, w odróżnieniu od zakładek: „Zaloguj się" łamało się
+                      na dwie linie razem z nimi, a to jest przycisk-CTA o stałej treści —
+                      niech raczej ścisną się zakładki obok, które i tak są tylko etykietami. */}
+                  <Button size="sm" className="px-4 whitespace-nowrap">
                     {t('nav.login')}
                   </Button>
                 </Link>
