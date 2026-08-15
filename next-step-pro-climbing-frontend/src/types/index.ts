@@ -50,8 +50,14 @@ export interface DaySummary {
   hasAvailabilityWindow: boolean
   // day with no seats free for the public, but with invitation-held seats
   hasReservedSeats: boolean
-  // day carrying at least one "unavailable" slot (instructor absence)
-  hasUnavailableSlots: boolean
+  // hours of instructor absence, sorted — an absence covers PART of a day, so the month cell
+  // names the hours instead of colouring the whole cell
+  unavailableRanges: UnavailableRange[]
+}
+
+export interface UnavailableRange {
+  startTime: string
+  endTime: string
 }
 
 export interface DayView {

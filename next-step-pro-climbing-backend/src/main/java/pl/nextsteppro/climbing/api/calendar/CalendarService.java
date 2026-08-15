@@ -407,8 +407,11 @@ public class CalendarService {
         boolean hasAvailabilityWindow = standaloneSlots.stream()
             .anyMatch(TimeSlot::isAvailabilityWindow);
 
-        boolean hasUnavailableSlots = standaloneSlots.stream()
-            .anyMatch(TimeSlot::isUnavailable);
+        List<UnavailableRangeDto> unavailableRanges = standaloneSlots.stream()
+            .filter(TimeSlot::isUnavailable)
+            .sorted(Comparator.comparing(TimeSlot::getStartTime))
+            .map(slot -> new UnavailableRangeDto(slot.getStartTime(), slot.getEndTime()))
+            .toList();
 
         // Unavailable slots are not "0 of N free" — counting them would report a day off
         // as a day of full slots. They are announced by their own flag instead.
@@ -444,7 +447,7 @@ public class CalendarService {
         }
 
         return new DaySummaryDto(date, totalSlots, availableSlots, hasUserReservation, hasAvailabilityWindow,
-            hasReservedSeats, hasUnavailableSlots);
+            hasReservedSeats, unavailableRanges);
     }
 
     private TimeSlotDto toTimeSlotDto(TimeSlot slot, int confirmedCount, boolean isUserRegistered,

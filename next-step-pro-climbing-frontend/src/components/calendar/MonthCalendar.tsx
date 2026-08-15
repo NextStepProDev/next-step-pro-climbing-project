@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { Ban, ChevronLeft, ChevronRight } from 'lucide-react'
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isBefore, startOfDay } from 'date-fns'
 import clsx from 'clsx'
 import type { DaySummary, EventSummary } from '../../types'
@@ -9,6 +9,14 @@ import { getEventColorByIndex, pluralizeTraining } from '../../utils/events'
 import { useDateLocale } from '../../utils/dateFnsLocale'
 import { useAuth } from '../../context/AuthContext'
 import { isTodayInWarsaw, nowInWarsaw, parseCalendarDate } from '../../utils/calendarDate'
+
+// A month cell is ~50 px wide on a phone, so a full "18:00–20:00" does not fit. Whole hours drop
+// their ":00" the way printed timetables do; a half hour keeps its minutes, because that is the
+// part someone would get wrong.
+function compactTime(time: string): string {
+  const [hours, minutes] = time.split(':')
+  return minutes === '00' ? hours : `${hours}:${minutes}`
+}
 
 interface MonthCalendarProps {
   currentMonth: Date
@@ -126,7 +134,7 @@ export function MonthCalendar({ currentMonth, onMonthChange, days, events, onDay
           const dayEvents = dayEventsMap.get(dateString) || []
           const isPast = isBefore(day, startOfDay(nowInWarsaw()))
           const hasAvailabilityWindow = dayData?.hasAvailabilityWindow ?? false
-          const hasUnavailableSlots = dayData?.hasUnavailableSlots ?? false
+          const unavailableRanges = dayData?.unavailableRanges ?? []
           const hasUserReservation = dayData?.hasUserReservation
           const hasEvents = dayEvents.length > 0
           // Future days are clickable even when EMPTY — they open the day view with the "Propose a time"
@@ -139,7 +147,9 @@ export function MonthCalendar({ currentMonth, onMonthChange, days, events, onDay
               onClick={() => isClickable && onDayClick(dateString)}
               disabled={!isClickable}
               className={clsx(
-                'aspect-square p-0.5 sm:p-2 border-b border-r border-surface-800 transition-colors relative',
+                // overflow-hidden, because a cell is a grid track: a label that does not fit used to
+                // spill over the neighbouring day and read as if it belonged there.
+                'aspect-square p-0.5 sm:p-2 border-b border-r border-surface-800 transition-colors relative overflow-hidden',
                 !isSameMonth(day, currentMonth) && 'opacity-40',
                 isPast && 'opacity-50 cursor-not-allowed',
                 isClickable && 'hover:bg-surface-800 cursor-pointer',
@@ -148,10 +158,10 @@ export function MonthCalendar({ currentMonth, onMonthChange, days, events, onDay
                   dayEvents.every(e => e.eventType === 'UNAVAILABLE') ? 'bg-slate-500/10'
                     : dayEvents.every(e => e.eventType === 'CONTACT_DAY') ? 'bg-indigo-500/10'
                       : 'bg-primary-500/10'
-                ),
-                // An unavailable slot leaves the day counters at zero, so without its own tint
-                // a day off would render exactly like a day with nothing in it.
-                !hasEvents && hasUnavailableSlots && !isPast && 'bg-slate-500/10'
+                )
+                // No tint for unavailable SLOTS: an absence takes a few hours, and colouring the
+                // whole cell told people the entire day was off. The hours ride in their own bar
+                // below. A whole day off is an UNAVAILABLE event, tinted by the branch above.
               )}
             >
               <div
@@ -177,30 +187,42 @@ export function MonthCalendar({ currentMonth, onMonthChange, days, events, onDay
               })}
 
               {dayData && dayData.availableSlots > 0 && !isPast ? (
-                <div className="text-xs text-green-300 font-medium">
+                <div className="text-xs text-green-300 font-medium truncate">
                   {pluralizeTraining(dayData.availableSlots)}
                 </div>
               ) : dayData && dayData.totalSlots > 0 && dayData.availableSlots === 0 && dayData.hasReservedSeats && !isAuthenticated && !isPast ? (
-                <div className="text-xs text-violet-300 font-medium leading-tight">
+                <div className="text-xs text-violet-300 font-medium leading-tight truncate">
                   {t('month.invitedOnly')}
                 </div>
               ) : dayData && dayData.totalSlots > 0 && dayData.availableSlots === 0 && !hasEvents && !isPast ? (
-                <div className="text-xs text-amber-400/80 font-medium">
+                <div className="text-xs text-amber-400/80 font-medium truncate">
                   {t('noSpots')}
                 </div>
               ) : null}
 
               {hasAvailabilityWindow && !isPast && (
-                <div className="text-[10px] text-teal-400 font-medium leading-tight">
+                <div title={t('day.callToBook')} className="text-[10px] text-teal-400 font-medium leading-tight truncate">
                   {t('day.callToBook')}
                 </div>
               )}
 
-              {hasUnavailableSlots && !isPast && (
-                <div className="text-[10px] text-slate-400 font-medium leading-tight">
-                  {t('day.unavailable')}
-                </div>
-              )}
+              {!isPast && unavailableRanges.map((range) => {
+                const from = range.startTime.slice(0, 5)
+                const to = range.endTime.slice(0, 5)
+                return (
+                  <div
+                    key={`${from}-${to}`}
+                    title={`${t('day.unavailable')} ${from}–${to}`}
+                    className="flex items-center gap-0.5 text-[10px] sm:text-[11px] leading-snug font-medium truncate rounded border px-0.5 sm:px-1 py-0 sm:py-0.5 mb-0.5 bg-slate-500/10 border-slate-500/30 text-slate-300"
+                  >
+                    {/* A phone cell is too narrow for icon AND hours — the hours are the part that
+                        carries information, so the icon goes and the strikethrough does its job. */}
+                    <Ban className="hidden sm:block w-2.5 h-2.5 shrink-0" aria-hidden="true" />
+                    <span className="sr-only">{t('day.unavailable')} </span>
+                    <span className="truncate line-through decoration-slate-500">{compactTime(from)}–{compactTime(to)}</span>
+                  </div>
+                )
+              })}
 
               {hasUserReservation && (
                 <div className="absolute top-1 right-1 w-2 h-2 bg-primary-500 rounded-full" />
