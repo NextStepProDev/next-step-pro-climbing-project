@@ -2,6 +2,7 @@ import { useId, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Modal } from '../ui/Modal'
 import { Button } from '../ui/Button'
+import { DateInput } from '../ui/DateInput'
 import { StarRating } from './StarRating'
 import { todayInWarsaw } from '../../utils/calendarDate'
 import type {
@@ -187,13 +188,12 @@ function AscentForm({
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label className={LABEL_CLASS} htmlFor={`${fieldId}-date`}>{t('form.date')}</label>
-          <input
+          <DateInput
             id={`${fieldId}-date`}
-            type="date"
             value={climbedOn}
             // Warsaw's today, not the device's: the backend refuses a future date by Warsaw
             max={todayInWarsaw()}
-            onChange={event => setClimbedOn(event.target.value)}
+            onChange={setClimbedOn}
             className={INPUT_CLASS}
             required
           />

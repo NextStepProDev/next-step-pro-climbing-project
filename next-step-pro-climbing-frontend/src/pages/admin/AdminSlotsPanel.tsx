@@ -8,6 +8,7 @@ import { getErrorMessage } from '../../utils/errors'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
 import { QueryError } from '../../components/ui/QueryError'
 import { Button } from '../../components/ui/Button'
+import { DateInput } from '../../components/ui/DateInput'
 import { Modal } from '../../components/ui/Modal'
 import { TimeScrollPicker } from '../../components/ui/TimeScrollPicker'
 import { UserSearchSelect } from '../../components/ui/UserSearchSelect'
@@ -127,13 +128,9 @@ export function AdminSlotsPanel() {
       {/* Controls */}
       <div className="flex items-center gap-3 mb-6 flex-wrap">
         <div className="flex items-center gap-2">
-          <input
-            type="date"
+          <DateInput
             value={filterDate ?? ''}
-            onChange={(e) => {
-              setFilterDate(e.target.value || null)
-              e.target.blur()
-            }}
+            onChange={(date) => setFilterDate(date || null)}
             className="bg-surface-800 border border-surface-700 rounded-lg px-4 py-2 text-surface-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
           />
           {filterDate && (

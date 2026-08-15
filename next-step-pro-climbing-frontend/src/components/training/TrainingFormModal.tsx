@@ -6,6 +6,7 @@ import clsx from 'clsx'
 import { CalendarDays, Check, ClipboardList, Dumbbell, LayoutTemplate } from 'lucide-react'
 import { Modal } from '../ui/Modal'
 import { Button } from '../ui/Button'
+import { DateInput } from '../ui/DateInput'
 import { TimeScrollPicker } from '../ui/TimeScrollPicker'
 import { RpePicker } from './RpePicker'
 import { AttachmentEditor } from './AttachmentEditor'
@@ -315,10 +316,9 @@ function TrainingForm({ training, initialDate, initialTime, prefill, onClose, on
 
       <div>
         <label className="block text-sm text-surface-400 mb-1">{t('form.date')}</label>
-        <input
-          type="date"
+        <DateInput
           value={date}
-          onChange={(e) => setDate(e.target.value)}
+          onChange={setDate}
           required
           className="w-full bg-surface-800 border border-surface-700 rounded-lg px-4 py-2 text-surface-100"
         />

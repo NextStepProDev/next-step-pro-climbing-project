@@ -15,6 +15,7 @@ import { useEditSavedToast } from '../../hooks/useEditSavedToast'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
 import { QueryError } from '../../components/ui/QueryError'
 import { Button } from '../../components/ui/Button'
+import { DateInput } from '../../components/ui/DateInput'
 import { Modal } from '../../components/ui/Modal'
 import { TimeScrollPicker } from '../../components/ui/TimeScrollPicker'
 import type { CreateEventRequest, EventDetail, EventType, InvitedUser, User } from '../../types'
@@ -968,27 +969,20 @@ export function EditEventModal({
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="block text-sm text-surface-400 mb-1">{t('events.dateFrom')}</label>
-            <input
-              type="date"
+            <DateInput
               value={form.startDate}
-              onChange={(e) => {
-                const newStart = e.target.value
+              onChange={(newStart) => {
                 setForm({ ...form, startDate: newStart, endDate: form.endDate < newStart ? newStart : form.endDate })
-                e.target.blur()
               }}
               className="w-full bg-surface-800 border border-surface-700 rounded-lg px-4 py-2 text-surface-100"
             />
           </div>
           <div>
             <label className="block text-sm text-surface-400 mb-1">{t('events.dateTo')}</label>
-            <input
-              type="date"
+            <DateInput
               min={form.startDate}
               value={form.endDate}
-              onChange={(e) => {
-                setForm({ ...form, endDate: e.target.value })
-                e.target.blur()
-              }}
+              onChange={(endDate) => setForm({ ...form, endDate })}
               className="w-full bg-surface-800 border border-surface-700 rounded-lg px-4 py-2 text-surface-100"
             />
           </div>
@@ -1232,27 +1226,20 @@ export function CreateEventModal({
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="block text-sm text-surface-400 mb-1">{t('events.dateFrom')}</label>
-            <input
-              type="date"
+            <DateInput
               value={form.startDate}
-              onChange={(e) => {
-                const newStart = e.target.value
+              onChange={(newStart) => {
                 setForm({ ...form, startDate: newStart, endDate: form.endDate < newStart ? newStart : form.endDate })
-                e.target.blur()
               }}
               className="w-full bg-surface-800 border border-surface-700 rounded-lg px-4 py-2 text-surface-100"
             />
           </div>
           <div>
             <label className="block text-sm text-surface-400 mb-1">{t('events.dateTo')}</label>
-            <input
-              type="date"
+            <DateInput
               min={form.startDate}
               value={form.endDate}
-              onChange={(e) => {
-                setForm({ ...form, endDate: e.target.value })
-                e.target.blur()
-              }}
+              onChange={(endDate) => setForm({ ...form, endDate })}
               className="w-full bg-surface-800 border border-surface-700 rounded-lg px-4 py-2 text-surface-100"
             />
           </div>

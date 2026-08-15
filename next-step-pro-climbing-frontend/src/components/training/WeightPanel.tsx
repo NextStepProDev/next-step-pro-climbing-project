@@ -5,6 +5,7 @@ import { format, parseISO, subDays } from 'date-fns'
 import clsx from 'clsx'
 import { Scale, TrendingDown, TrendingUp, TriangleAlert } from 'lucide-react'
 import { Button } from '../ui/Button'
+import { DateInput } from '../ui/DateInput'
 import { ConfirmModal } from '../ui/ConfirmModal'
 import { QueryError } from '../ui/QueryError'
 import { WeightChart } from './WeightChart'
@@ -230,11 +231,10 @@ export function WeightPanel({ api, scopeKey, isCoachView }: WeightPanelProps) {
               <label htmlFor="weight-date" className="block text-xs text-surface-400 mb-1">
                 {t('weight.dateLabel')}
               </label>
-              <input
+              <DateInput
                 id="weight-date"
-                type="date"
                 value={measuredOn}
-                onChange={(e) => setMeasuredOn(e.target.value)}
+                onChange={setMeasuredOn}
                 // Nothing in the future, and nothing older than the chart can show —
                 // an invisible entry is worse than a refusal. The server enforces both.
                 max={today}

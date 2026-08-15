@@ -6,6 +6,7 @@ import { format } from 'date-fns'
 import { CalendarPlus, LogIn } from 'lucide-react'
 import { Modal } from '../ui/Modal'
 import { Button } from '../ui/Button'
+import { DateInput } from '../ui/DateInput'
 import { TimeScrollPicker } from '../ui/TimeScrollPicker'
 import { SuccessCheckmark } from '../ui/SuccessCheckmark'
 import { useAuth } from '../../context/AuthContext'
@@ -144,11 +145,10 @@ export function ProposeTrainingModal({ isOpen, onClose, defaultDate, window: pro
             ) : (
               <div>
                 <label className="block text-sm text-surface-400 mb-1">{t('propose.date')}</label>
-                <input
-                  type="date"
+                <DateInput
                   value={form.date}
                   min={todayInWarsaw()}
-                  onChange={(e) => setForm({ ...form, date: e.target.value })}
+                  onChange={(date) => setForm({ ...form, date })}
                   required
                   className="w-full bg-surface-800 border border-surface-700 rounded-lg px-4 py-2 text-surface-100"
                 />
