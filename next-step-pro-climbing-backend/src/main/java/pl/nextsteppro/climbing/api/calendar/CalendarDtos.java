@@ -26,9 +26,15 @@ record DaySummaryDto(
     boolean hasAvailabilityWindow,
     // day with no seats free for the public, but with invitation-held seats
     boolean hasReservedSeats,
-    // day carrying at least one "unavailable" slot — the month cell greys out the same way
-    // it does for an UNAVAILABLE event, instead of reading as an empty day
-    boolean hasUnavailableSlots
+    // hours the instructor is away, sorted — an absence covers PART of a day, so the month cell
+    // has to name the hours instead of colouring the whole cell (a whole day off is an
+    // UNAVAILABLE event, and that path tints the cell on its own)
+    List<UnavailableRangeDto> unavailableRanges
+) implements CalendarDtos {}
+
+record UnavailableRangeDto(
+    LocalTime startTime,
+    LocalTime endTime
 ) implements CalendarDtos {}
 
 record DayViewDto(

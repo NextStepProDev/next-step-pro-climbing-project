@@ -590,7 +590,10 @@ class CalendarServiceTest {
                 .orElseThrow();
         assertEquals(0, day.totalSlots());
         assertEquals(0, day.availableSlots());
-        assertTrue(day.hasUnavailableSlots());
+        // ...and the hours travel with it, so the month cell can say WHICH part of the day is off
+        assertEquals(1, day.unavailableRanges().size());
+        assertEquals(testSlot.getStartTime(), day.unavailableRanges().get(0).startTime());
+        assertEquals(testSlot.getEndTime(), day.unavailableRanges().get(0).endTime());
     }
 
     @Test
