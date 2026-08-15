@@ -331,6 +331,78 @@ h1, h2, h3, h4, h5, h6, .font-display {
   .calendar-quote { opacity: 1; animation: none; }
 }
 
+/* === "Twoja strefa" w nawigacji — jedyna zakładka, której nie widzi gość ===
+   Wyróżnia ją WYŁĄCZNIE tekst: żadnego tła, ramki ani ikony. Pigułka istniała
+   i została odrzucona — czytała się jak drugi egzemplarz bursztynowego badge'a
+   „Gdzie teraz szkolę", a pasek nawigacji nie może cytować elementu ze strony.
+   Zostaje światło przemykające po samych literach (background-clip: text).
+
+   Malowane tutaj, a nie klasami Tailwinda, bo gradient klipowany do tekstu ma
+   trzy warianty koloru (ciemny, jasny, na zdjęciu hero) — w utility byłyby to
+   trzy zestawy klas bijące się o kolejność w arkuszu, nie w liście klas. */
+.nav-shine {
+  --nav-shine-base: #d9a441;
+  --nav-shine-glint: #fffaf0;
+  background-image: linear-gradient(
+    100deg,
+    var(--nav-shine-base) 0%,
+    var(--nav-shine-base) 40%,
+    var(--nav-shine-glint) 50%,
+    var(--nav-shine-base) 60%,
+    var(--nav-shine-base) 100%
+  );
+  background-size: 260% 100%;
+  background-repeat: no-repeat;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  /* Jeden przelot raz na 7 s: dość, żeby oko go złapało, za rzadko, żeby męczyć
+     w pasku obecnym na każdej stronie. */
+  animation: nav-shine 7s ease-in-out 1.4s infinite;
+}
+/* ⚠️ Pozycja NIE MOŻE wyjechać poza 0–100%. Gradient jest jedynym źródłem koloru
+   liter (text-fill-color: transparent), a przy `background-position: -80%` jego
+   obraz schodzi z napisu i tekst robi się PRZEZROCZYSTY — zakładka znikała na
+   ~80% cyklu. W zakresie 0–100% widoczny wycinek zawsze zawiera kolor bazowy,
+   bo glint siedzi w środku obrazu, a oba jego krańce to baza. */
+@keyframes nav-shine {
+  0%   { background-position: 0% 0; }
+  18%  { background-position: 100% 0; }
+  100% { background-position: 100% 0; }
+}
+.nav-shine:hover,
+.nav-shine--active {
+  --nav-shine-base: #f0c060;
+}
+
+/* Bez ruchu litery muszą zostać WIDOCZNE — samo `animation: none` zostawiłoby
+   je na pozycji startowej gradientu, czyli w kolorze bazowym, ale przez
+   text-fill-color: transparent zależą od tego, że gradient w ogóle się rysuje.
+   Najprościej wyłączyć klipowanie i pomalować tekst wprost. */
+@media (prefers-reduced-motion: reduce) {
+  .nav-shine {
+    animation: none;
+    background-image: none;
+    color: var(--nav-shine-base);
+    -webkit-text-fill-color: var(--nav-shine-base);
+  }
+}
+
+/* Motyw jasny: jasne złoto na kremowym pasku jest nieczytelne, więc baza ciemnieje,
+   a rolę światła przejmuje nasycony bursztyn. Bez wyjątku dla paska na zdjęciu hero
+   — .location-badge takiego wyjątku potrzebuje, bo leży na samej fotografii, ale
+   navbar w trybie szkła ma pod sobą własne, JASNE tło (surface-950 jest w tym
+   motywie kremowe), więc dotyczy go dokładnie ta sama reguła co reszty. */
+[data-theme="light"] .nav-shine {
+  --nav-shine-base: #9a6a12;
+  --nav-shine-glint: #e0a92a;
+}
+[data-theme="light"] .nav-shine:hover,
+[data-theme="light"] .nav-shine--active {
+  --nav-shine-base: #7a5104;
+}
+
 .btn-glow {
   transition: box-shadow 0.3s ease;
 }

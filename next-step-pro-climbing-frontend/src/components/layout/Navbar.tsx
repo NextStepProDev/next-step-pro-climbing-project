@@ -14,6 +14,8 @@ import clsx from "clsx";
 import logoWhite from "../../assets/logo/logo-white.png";
 import logoBlack from "../../assets/logo/logo-black.png";
 
+type NavLink = { to: string; label: string; badge?: number; premium?: boolean };
+
 export function Navbar() {
   const { t } = useTranslation('common');
   const { user, isAuthenticated, isAdmin, logout } = useAuth();
@@ -96,23 +98,31 @@ export function Navbar() {
     { to: "/team/zawodnicy", label: t('team.competitors') },
   ];
 
-  const navLinksBefore: { to: string; label: string; badge?: number }[] = [
+  // `premium` marks the one tab a guest never sees. It is painted as a gold pill
+  // (.nav-premium) in the same amber as the Athlete Zone and the calendar promo,
+  // so gold means the same thing in the bar as on the page: this is yours.
+  const navLinksBefore: NavLink[] = [
     { to: "/", label: t('nav.home') },
     { to: "/calendar", label: t('nav.calendar') },
     ...(isAuthenticated
-      ? [{ to: "/my-reservations", label: t('nav.myReservations'), badge: invitationBadgeCount + trainingBadgeCount }]
+      ? [{
+          to: "/my-reservations",
+          label: t('nav.myReservations'),
+          badge: invitationBadgeCount + trainingBadgeCount,
+          premium: true,
+        }]
       : []),
     { to: "/aktualnosci", label: t('nav.news') },
     { to: "/kursy", label: t('nav.courses') },
   ];
 
-  const navLinksAfter: { to: string; label: string; badge?: number }[] = [
+  const navLinksAfter: NavLink[] = [
     { to: "/kontakt", label: t('nav.contact') },
     { to: "/faq", label: t('nav.help') },
     ...(isAdmin ? [{ to: "/admin", label: t('nav.admin'), badge: adminBadgeCount }] : []),
   ];
 
-  const mobileNavLinks: { to: string; label: string; badge?: number }[] =
+  const mobileNavLinks: NavLink[] =
     [...navLinksBefore, ...teamLinks, ...mediaLinks, ...navLinksAfter];
 
   const isMediaActive = mediaLinks.some((l) => isLinkActive(l.to));
@@ -191,6 +201,10 @@ export function Navbar() {
   const navContainerRef = useRef<HTMLDivElement>(null);
   const [indicator, setIndicator] = useState({ left: 0, width: 0 });
   const [hasIndicator, setHasIndicator] = useState(false);
+  // The underline takes the active tab's colour. Slate under the gold pill read as
+  // a stray line belonging to the tab next door, so it is read off the same element
+  // the indicator is already measuring — no second lookup, no extra render.
+  const [indicatorPremium, setIndicatorPremium] = useState(false);
 
   const updateIndicator = useCallback(() => {
     const container = navContainerRef.current;
@@ -203,6 +217,7 @@ export function Navbar() {
         left: activeRect.left - containerRect.left,
         width: activeRect.width,
       });
+      setIndicatorPremium(active.dataset.navPremium === "true");
       setHasIndicator(true);
     } else {
       setHasIndicator(false);
@@ -217,6 +232,50 @@ export function Navbar() {
   // so the photo shows through behind the logo/hamburger. After scrolling, with the menu
   // open, and on desktop (md:) it returns to the normal dark background.
   const heroOverlay = location.pathname === "/" && atTop && !mobileMenuOpen;
+
+  const renderBadge = (link: NavLink) =>
+    (link.badge ?? 0) > 0 ? (
+      <span className="ml-1.5 min-w-5 h-5 px-1.5 inline-flex items-center justify-center rounded-full bg-rose-500 text-white text-[11px] font-bold leading-none align-middle">
+        {link.badge}
+      </span>
+    ) : null;
+
+  // The shine lives on a span around the label, never on the <a>: the gradient is
+  // clipped to text via -webkit-text-fill-color: transparent, which INHERITS —
+  // put it on the link and the red badge inside turns invisible too.
+  const renderLabel = (link: NavLink) =>
+    link.premium ? (
+      <span className={clsx("nav-shine", isLinkActive(link.to) && "nav-shine--active")}>
+        {link.label}
+      </span>
+    ) : (
+      link.label
+    );
+
+  // One renderer for both desktop groups — the tab would otherwise live in two
+  // copies, and the twin that gets forgotten is the one that drifts.
+  const renderDesktopLink = (link: NavLink) => {
+    const active = isLinkActive(link.to);
+    return (
+      <Link
+        key={link.to}
+        to={link.to}
+        data-nav-active={active || undefined}
+        data-nav-premium={link.premium || undefined}
+        className={clsx(
+          "px-3 py-1.5 rounded-lg text-base font-semibold tracking-wide transition-all duration-150 active:scale-95",
+          link.premium
+            ? "hover:bg-surface-800/60"
+            : active
+              ? "text-surface-100"
+              : "text-surface-400 hover:bg-surface-800/60 hover:text-surface-200",
+        )}
+      >
+        {renderLabel(link)}
+        {renderBadge(link)}
+      </Link>
+    );
+  };
 
   return (
     <>
@@ -253,30 +312,14 @@ export function Navbar() {
           <div ref={navContainerRef} className="hidden md:flex items-center gap-1 relative">
             {hasIndicator && (
               <div
-                className="absolute bottom-0 h-0.5 bg-primary-400 rounded-full transition-all duration-300 ease-out"
+                className={clsx(
+                  "absolute bottom-0 h-0.5 rounded-full transition-all duration-300 ease-out",
+                  indicatorPremium ? "bg-amber-400" : "bg-primary-400",
+                )}
                 style={{ left: indicator.left, width: indicator.width }}
               />
             )}
-            {navLinksBefore.map((link) => (
-              <Link
-                key={link.to}
-                to={link.to}
-                data-nav-active={isLinkActive(link.to) || undefined}
-                className={clsx(
-                  "px-3 py-1.5 rounded-lg text-base font-semibold tracking-wide transition-all duration-150 active:scale-95",
-                  isLinkActive(link.to)
-                    ? "text-surface-100"
-                    : "text-surface-400 hover:bg-surface-800/60 hover:text-surface-200",
-                )}
-              >
-                {link.label}
-                {(link.badge ?? 0) > 0 && (
-                  <span className="ml-1.5 min-w-5 h-5 px-1.5 inline-flex items-center justify-center rounded-full bg-rose-500 text-white text-[11px] font-bold leading-none align-middle">
-                    {link.badge}
-                  </span>
-                )}
-              </Link>
-            ))}
+            {navLinksBefore.map(renderDesktopLink)}
 
             {/* Team dropdown */}
             <div className="relative" ref={teamMenuRef}>
@@ -366,26 +409,7 @@ export function Navbar() {
               )}
             </div>
 
-            {navLinksAfter.map((link) => (
-              <Link
-                key={link.to}
-                to={link.to}
-                data-nav-active={isLinkActive(link.to) || undefined}
-                className={clsx(
-                  "px-3 py-1.5 rounded-lg text-base font-semibold tracking-wide transition-all duration-150 active:scale-95",
-                  isLinkActive(link.to)
-                    ? "text-surface-100"
-                    : "text-surface-400 hover:bg-surface-800/60 hover:text-surface-200",
-                )}
-              >
-                {link.label}
-                {(link.badge ?? 0) > 0 && (
-                  <span className="ml-1.5 min-w-5 h-5 px-1.5 inline-flex items-center justify-center rounded-full bg-rose-500 text-white text-[11px] font-bold leading-none align-middle">
-                    {link.badge}
-                  </span>
-                )}
-              </Link>
-            ))}
+            {navLinksAfter.map(renderDesktopLink)}
           </div>
 
           {/* User Actions */}
@@ -485,12 +509,10 @@ export function Navbar() {
                 onClick={() => setMobileMenuOpen(false)}
                 className={clsx(
                   "block py-2 text-base font-semibold tracking-wide",
-                  isLinkActive(link.to)
-                    ? "text-primary-400"
-                    : "text-surface-300",
+                  !link.premium && (isLinkActive(link.to) ? "text-primary-400" : "text-surface-300"),
                 )}
               >
-                {link.label}
+                {renderLabel(link)}
                 {(link.badge ?? 0) > 0 && (
                   <span className="ml-2 min-w-5 h-5 px-1.5 inline-flex items-center justify-center rounded-full bg-rose-500 text-white text-[11px] font-bold leading-none align-middle">
                     {link.badge}
