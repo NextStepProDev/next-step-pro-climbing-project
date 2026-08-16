@@ -488,6 +488,7 @@
       "noReservations": "This user has no bookings or proposals",
       "newer": "Newer",
       "older": "Older",
+      "pastPageOf": "page {{page}} of {{pages}}",
       "upcoming": "Upcoming bookings",
       "past": "Past bookings",
       "waitlist": "Waiting lists",

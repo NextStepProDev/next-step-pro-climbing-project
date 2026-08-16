@@ -84,15 +84,20 @@ public class AdminUserHistoryController {
 
     @Operation(summary = "This user's bookings, queues, held seats and proposals",
         description = "Everything booking-shaped in one response. Upcoming/past are split in "
-            + "Europe/Warsaw, since slot times in the database are Warsaw wall-clock.")
+            + "Europe/Warsaw, since slot times in the database are Warsaw wall-clock. Only the past "
+            + "list is paged — it is the one section that grows without a ceiling; the rest hold "
+            + "future or active rows only.")
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "Booking history",
             content = @Content(schema = @Schema(implementation = UserReservationHistoryDto.class))),
         @ApiResponse(responseCode = "404", description = "No such user")
     })
     @GetMapping("/{userId}/reservations")
-    public ResponseEntity<UserReservationHistoryDto> getReservations(@PathVariable UUID userId) {
-        return service.getReservationHistory(userId)
+    public ResponseEntity<UserReservationHistoryDto> getReservations(
+            @PathVariable UUID userId,
+            @RequestParam(defaultValue = "0") int pastPage,
+            @RequestParam(defaultValue = "25") int pastSize) {
+        return service.getReservationHistory(userId, pastPage, pastSize)
             .map(ResponseEntity::ok)
             .orElseGet(() -> ResponseEntity.notFound().build());
     }

@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { format } from 'date-fns'
@@ -6,6 +6,7 @@ import { CalendarClock, History, ListOrdered, Ticket, MessageSquarePlus, UserCog
 import { adminUserHistoryApi } from '../../../api/client'
 import { LoadingSpinner } from '../../ui/LoadingSpinner'
 import { QueryError } from '../../ui/QueryError'
+import { Button } from '../../ui/Button'
 import { useDateLocale } from '../../../utils/dateFnsLocale'
 import { parseCalendarDate } from '../../../utils/calendarDate'
 import type { HistoryReservation } from '../../../types'
@@ -25,13 +26,18 @@ const RESERVATION_STATUS_STYLE: Record<HistoryReservation['status'], string> = {
  * proposals. Upcoming/past come split from the server, which asks the question in Europe/Warsaw —
  * the browser must not re-derive it from the device clock.
  */
+const PAST_PAGE_SIZE = 25
+
 export function UserReservationsTab({ userId }: UserReservationsTabProps) {
   const { t } = useTranslation('admin')
   const locale = useDateLocale()
+  const [pastPage, setPastPage] = useState(0)
 
   const query = useQuery({
-    queryKey: ['admin', 'userHistory', userId, 'reservations'],
-    queryFn: () => adminUserHistoryApi.getReservations(userId),
+    queryKey: ['admin', 'userHistory', userId, 'reservations', pastPage],
+    queryFn: () => adminUserHistoryApi.getReservations(userId, pastPage, PAST_PAGE_SIZE),
+    // Paging the past section must not blank the four sections that did not change
+    placeholderData: (previous) => previous,
   })
 
   if (query.isLoading) return <div className="py-16 flex justify-center"><LoadingSpinner /></div>
@@ -39,9 +45,10 @@ export function UserReservationsTab({ userId }: UserReservationsTabProps) {
     return <QueryError error={query.error} onRetry={() => query.refetch()} />
   }
 
-  const { upcoming, past, waitlist, invitations, trainingRequests } = query.data
-  const isEmpty = !upcoming.length && !past.length && !waitlist.length
+  const { upcoming, past, pastTotal, waitlist, invitations, trainingRequests } = query.data
+  const isEmpty = !upcoming.length && !pastTotal && !waitlist.length
     && !invitations.length && !trainingRequests.length
+  const pastPages = Math.max(1, Math.ceil(pastTotal / PAST_PAGE_SIZE))
 
   if (isEmpty) {
     return (
@@ -91,9 +98,25 @@ export function UserReservationsTab({ userId }: UserReservationsTabProps) {
         {reservationRows(upcoming)}
       </Section>
 
-      <Section icon={<History className="w-4 h-4" />} title={t('users.detail.past')} count={past.length}>
+      {/* The count in the heading is the FULL history, not this page — the pager below says
+          which slice is on screen. */}
+      <Section icon={<History className="w-4 h-4" />} title={t('users.detail.past')} count={pastTotal}>
         {reservationRows(past)}
       </Section>
+
+      {pastPages > 1 && (
+        <div className="flex items-center justify-center gap-3 -mt-2">
+          <Button variant="ghost" size="sm" disabled={pastPage === 0} onClick={() => setPastPage((p) => p - 1)}>
+            {t('users.detail.newer')}
+          </Button>
+          <span className="text-xs text-surface-500">
+            {t('users.detail.pastPageOf', { page: pastPage + 1, pages: pastPages })}
+          </span>
+          <Button variant="ghost" size="sm" disabled={pastPage + 1 >= pastPages} onClick={() => setPastPage((p) => p + 1)}>
+            {t('users.detail.older')}
+          </Button>
+        </div>
+      )}
 
       <Section icon={<ListOrdered className="w-4 h-4" />} title={t('users.detail.waitlist')} count={waitlist.length}>
         {waitlist.map((w) => (

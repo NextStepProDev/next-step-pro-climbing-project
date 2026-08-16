@@ -60,10 +60,19 @@ record UserCountsDto(
     @Nullable Long ascents
 ) {}
 
-/** Everything booking-shaped about one person, in the order the Reservations tab renders it. */
+/**
+ * Everything booking-shaped about one person, in the order the Reservations tab renders it.
+ *
+ * <p>{@code past} is the only paged section — see {@code AdminUserHistoryService}. The total ships
+ * alongside it so the UI can say "25 of 340" rather than guessing from a full page whether more
+ * exists, which is wrong exactly when the count is an exact multiple of the page size.
+ */
 record UserReservationHistoryDto(
     List<HistoryReservationDto> upcoming,
     List<HistoryReservationDto> past,
+    long pastTotal,
+    int pastPage,
+    int pastSize,
     List<HistoryWaitlistDto> waitlist,
     List<HistoryInviteDto> invitations,
     List<HistoryRequestDto> trainingRequests

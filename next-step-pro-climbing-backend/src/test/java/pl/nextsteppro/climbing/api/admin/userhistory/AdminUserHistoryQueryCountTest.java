@@ -90,7 +90,7 @@ class AdminUserHistoryQueryCountTest extends BaseIntegrationTest {
         stats.setStatisticsEnabled(true);
         stats.clear();
 
-        UserReservationHistoryDto history = service.getReservationHistory(user.getId()).orElseThrow();
+        UserReservationHistoryDto history = service.getReservationHistory(user.getId(), 0, 25).orElseThrow();
 
         long queries = stats.getPrepareStatementCount();
         assertTrue(queries > 0, "Hibernate statistics collected nothing — the measurement is broken, not the code");

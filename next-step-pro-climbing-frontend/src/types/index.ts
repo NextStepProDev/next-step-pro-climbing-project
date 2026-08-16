@@ -102,9 +102,18 @@ export interface UserCounts {
   ascents: number | null
 }
 
+/**
+ * `past` is the only paged section: it gains a row per attended session (and one per day of a
+ * multi-day event) and never shrinks, while the others hold future or active rows only.
+ * `pastTotal` counts the whole history, not the page — inferring "there is more" from a full page
+ * is wrong exactly when the total is a multiple of the page size.
+ */
 export interface UserReservationHistory {
   upcoming: HistoryReservation[]
   past: HistoryReservation[]
+  pastTotal: number
+  pastPage: number
+  pastSize: number
   waitlist: HistoryWaitlistEntry[]
   invitations: HistoryInvite[]
   trainingRequests: HistoryRequest[]

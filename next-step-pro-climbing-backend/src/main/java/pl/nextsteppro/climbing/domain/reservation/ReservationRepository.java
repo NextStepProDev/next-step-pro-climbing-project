@@ -1,6 +1,7 @@
 package pl.nextsteppro.climbing.domain.reservation;
 
 import org.jspecify.annotations.Nullable;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -67,8 +68,19 @@ public interface ReservationRepository extends JpaRepository<Reservation, UUID> 
     @Query("SELECT r FROM Reservation r JOIN FETCH r.timeSlot ts LEFT JOIN FETCH ts.event WHERE r.user.id = :userId AND (ts.date > :today OR (ts.date = :today AND ts.endTime > :now)) AND r.status IN ('CONFIRMED', 'CANCELLED_BY_ADMIN') ORDER BY ts.date, ts.startTime")
     List<Reservation> findUpcomingByUserIdIncludingAdminCancelled(UUID userId, LocalDate today, LocalTime now);
 
+    /**
+     * Past bookings, newest first. Takes a {@link Pageable} because this is the one per-user list
+     * that grows without a ceiling — one row per attended session, and one per DAY of a multi-day
+     * event. Pass {@code Pageable.unpaged()} to keep the whole list.
+     *
+     * <p>Paging is safe here despite the fetch joins: both are to-one, so Hibernate puts the LIMIT
+     * in SQL. The in-memory-pagination warning applies to collection fetches.
+     */
     @Query("SELECT r FROM Reservation r JOIN FETCH r.timeSlot ts LEFT JOIN FETCH ts.event WHERE r.user.id = :userId AND (ts.date < :today OR (ts.date = :today AND ts.endTime <= :now)) AND r.status IN ('CONFIRMED', 'CANCELLED', 'CANCELLED_BY_ADMIN') ORDER BY ts.date DESC, ts.startTime DESC")
-    List<Reservation> findPastByUserId(UUID userId, LocalDate today, LocalTime now);
+    List<Reservation> findPastByUserId(UUID userId, LocalDate today, LocalTime now, Pageable pageable);
+
+    @Query("SELECT COUNT(r) FROM Reservation r WHERE r.user.id = :userId AND (r.timeSlot.date < :today OR (r.timeSlot.date = :today AND r.timeSlot.endTime <= :now)) AND r.status IN ('CONFIRMED', 'CANCELLED', 'CANCELLED_BY_ADMIN')")
+    long countPastByUserId(UUID userId, LocalDate today, LocalTime now);
 
     /** Athlete statistics: attended reservations (confirmed + slot already over) reduced to
      * (date, eventType, rpe). Same past-predicate as {@link #findPastByUserId}. */

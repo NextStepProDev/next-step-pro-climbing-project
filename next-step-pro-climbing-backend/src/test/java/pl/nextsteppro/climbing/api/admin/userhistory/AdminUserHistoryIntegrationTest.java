@@ -113,7 +113,7 @@ class AdminUserHistoryIntegrationTest extends BaseIntegrationTest {
 
         assertTrue(service.getUserDetail(unknown).isEmpty());
         assertTrue(service.getActivity(unknown, 0, 20).isEmpty());
-        assertTrue(service.getReservationHistory(unknown).isEmpty());
+        assertTrue(service.getReservationHistory(unknown, 0, 25).isEmpty());
     }
 
     @Test
@@ -171,7 +171,7 @@ class AdminUserHistoryIntegrationTest extends BaseIntegrationTest {
         bookingOn(slotAt(now.toLocalDate().plusDays(3), LocalTime.of(18, 0), LocalTime.of(20, 0)));
         bookingOn(slotAt(now.toLocalDate().minusDays(3), LocalTime.of(18, 0), LocalTime.of(20, 0)));
 
-        UserReservationHistoryDto history = service.getReservationHistory(user.getId()).orElseThrow();
+        UserReservationHistoryDto history = service.getReservationHistory(user.getId(), 0, 25).orElseThrow();
 
         assertEquals(1, history.upcoming().size());
         assertEquals(1, history.past().size());
@@ -179,10 +179,40 @@ class AdminUserHistoryIntegrationTest extends BaseIntegrationTest {
         assertTrue(history.past().getFirst().date().isBefore(now.toLocalDate()));
     }
 
+    /**
+     * Past bookings are the one section with no natural ceiling — one row per attended session,
+     * and one per DAY of a multi-day event. Left unbounded, a long-standing account would ship its
+     * whole history in a single response and render it as one enormous list.
+     */
+    @Test
+    @DisplayName("shouldPageThePastSectionAndReportTheFullTotal")
+    void shouldPageThePastSectionAndReportTheFullTotal() {
+        LocalDate day = nowWarsaw().toLocalDate();
+        for (int i = 1; i <= 30; i++) {
+            bookingOn(slotAt(day.minusDays(i), LocalTime.of(10, 0), LocalTime.of(12, 0)));
+        }
+
+        UserReservationHistoryDto firstPage = service.getReservationHistory(user.getId(), 0, 10).orElseThrow();
+
+        assertEquals(10, firstPage.past().size());
+        assertEquals(30L, firstPage.pastTotal(), "the total must describe the whole history, not the page");
+        // Newest first, so page 0 starts at yesterday
+        assertEquals(day.minusDays(1), firstPage.past().getFirst().date());
+
+        UserReservationHistoryDto lastPage = service.getReservationHistory(user.getId(), 2, 10).orElseThrow();
+        assertEquals(10, lastPage.past().size());
+        assertEquals(day.minusDays(30), lastPage.past().getLast().date());
+
+        // A caller asking for everything still gets a bounded page
+        UserReservationHistoryDto greedy = service.getReservationHistory(user.getId(), 0, 100_000).orElseThrow();
+        assertTrue(greedy.past().size() <= AdminUserHistoryService.MAX_PAST_SIZE,
+            "past section must stay bounded no matter what the client asks for");
+    }
+
     @Test
     @DisplayName("shouldReturnEmptyHistorySectionsForUserWithNoActivity")
     void shouldReturnEmptyHistorySectionsForUserWithNoActivity() {
-        UserReservationHistoryDto history = service.getReservationHistory(user.getId()).orElseThrow();
+        UserReservationHistoryDto history = service.getReservationHistory(user.getId(), 0, 25).orElseThrow();
 
         assertTrue(history.upcoming().isEmpty());
         assertTrue(history.past().isEmpty());

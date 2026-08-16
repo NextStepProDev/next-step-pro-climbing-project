@@ -996,8 +996,10 @@ export const adminUserHistoryApi = {
   getActivity: (userId: string, page = 0, size = 20) =>
     fetchApi<ActivityLog[]>(`/admin/users/${userId}/activity?page=${page}&size=${size}`),
 
-  getReservations: (userId: string) =>
-    fetchApi<UserReservationHistory>(`/admin/users/${userId}/reservations`),
+  getReservations: (userId: string, pastPage = 0, pastSize = 25) =>
+    fetchApi<UserReservationHistory>(
+      `/admin/users/${userId}/reservations?pastPage=${pastPage}&pastSize=${pastSize}`,
+    ),
 }
 
 // Instructors (public)

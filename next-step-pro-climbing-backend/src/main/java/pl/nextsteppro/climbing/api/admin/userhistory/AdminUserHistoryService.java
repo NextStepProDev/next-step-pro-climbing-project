@@ -1,6 +1,8 @@
 package pl.nextsteppro.climbing.api.admin.userhistory;
 
 import org.jspecify.annotations.Nullable;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pl.nextsteppro.climbing.api.activitylog.ActivityLogDto;
@@ -48,6 +50,8 @@ import java.util.UUID;
 public class AdminUserHistoryService {
 
     private static final ZoneId WARSAW = ZoneId.of("Europe/Warsaw");
+    static final int DEFAULT_PAST_SIZE = 25;
+    static final int MAX_PAST_SIZE = 100;
 
     private final UserRepository userRepository;
     private final ReservationRepository reservationRepository;
@@ -90,8 +94,16 @@ public class AdminUserHistoryService {
         return Optional.of(activityLogService.getLogsForUser(userId, page, Math.min(size, 100)));
     }
 
+    /**
+     * Only the past list is paged, and that is the whole point: it is the one section with no
+     * ceiling — one row per attended session, one per DAY of a multi-day event, growing for as long
+     * as the account exists. The others are bounded by construction: upcoming bookings, queue
+     * entries and held seats only ever hold future or active rows, and proposals are capped at
+     * three pending at a time. Paging a list that cannot exceed a handful buys nothing and costs a
+     * control on screen.
+     */
     @Transactional(readOnly = true)
-    public Optional<UserReservationHistoryDto> getReservationHistory(UUID userId) {
+    public Optional<UserReservationHistoryDto> getReservationHistory(UUID userId, int pastPage, int pastSize) {
         if (!userRepository.existsById(userId)) return Optional.empty();
 
         // Slot times in the database are Warsaw wall-clock, so "has it happened yet" is asked in
@@ -103,9 +115,12 @@ public class AdminUserHistoryService {
         List<HistoryReservationDto> upcoming =
             reservationRepository.findUpcomingByUserIdIncludingAdminCancelled(userId, today, time)
                 .stream().map(AdminUserHistoryService::toReservationDto).toList();
+
+        Pageable pastPageable = PageRequest.of(Math.max(0, pastPage), clampPastSize(pastSize));
         List<HistoryReservationDto> past =
-            reservationRepository.findPastByUserId(userId, today, time)
+            reservationRepository.findPastByUserId(userId, today, time, pastPageable)
                 .stream().map(AdminUserHistoryService::toReservationDto).toList();
+        long pastTotal = reservationRepository.countPastByUserId(userId, today, time);
 
         List<HistoryWaitlistDto> waitlist = java.util.stream.Stream.concat(
             waitlistRepository.findActiveByUserId(userId).stream()
@@ -124,7 +139,15 @@ public class AdminUserHistoryService {
         List<HistoryRequestDto> requests = trainingRequestRepository.findByUserIdWithDetails(userId)
             .stream().map(AdminUserHistoryService::toRequestDto).toList();
 
-        return Optional.of(new UserReservationHistoryDto(upcoming, past, waitlist, invitations, requests));
+        return Optional.of(new UserReservationHistoryDto(
+            upcoming, past, pastTotal, pastPageable.getPageNumber(), pastPageable.getPageSize(),
+            waitlist, invitations, requests));
+    }
+
+    /** A page size the client asks for, kept inside a range the server is willing to render. */
+    private static int clampPastSize(int requested) {
+        if (requested < 1) return DEFAULT_PAST_SIZE;
+        return Math.min(requested, MAX_PAST_SIZE);
     }
 
     private UserDetailDto toDetail(User user) {

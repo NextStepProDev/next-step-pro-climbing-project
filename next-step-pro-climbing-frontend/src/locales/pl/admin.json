@@ -488,6 +488,7 @@
       "noReservations": "Ten użytkownik nie ma żadnych rezerwacji ani propozycji",
       "newer": "Nowsze",
       "older": "Starsze",
+      "pastPageOf": "strona {{page}} z {{pages}}",
       "upcoming": "Nadchodzące rezerwacje",
       "past": "Minione rezerwacje",
       "waitlist": "Listy rezerwowe",
