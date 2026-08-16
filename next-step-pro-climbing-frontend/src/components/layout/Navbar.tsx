@@ -1,6 +1,33 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { ChevronDown, LogOut, Menu, Moon, Sun, User, X } from "lucide-react";
-import { useState, useRef, useEffect, useLayoutEffect, useCallback } from "react";
+import {
+  CalendarDays,
+  ChevronDown,
+  CircleHelp,
+  GraduationCap,
+  House,
+  Images,
+  LogOut,
+  Mail,
+  Menu,
+  Moon,
+  Newspaper,
+  ShieldCheck,
+  Star,
+  Sun,
+  Trophy,
+  User,
+  Users,
+  Video,
+  X,
+} from "lucide-react";
+import {
+  useState,
+  useRef,
+  useEffect,
+  useLayoutEffect,
+  useCallback,
+  type ComponentType,
+} from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { adminApi, reservationApi, trainingCalendarApi } from "../../api/client";
@@ -10,11 +37,23 @@ import { Button } from "../ui/Button";
 import { Avatar } from "../ui/Avatar";
 import { SuccessCheckmark } from "../ui/SuccessCheckmark";
 import { LanguageSwitcher } from "../ui/LanguageSwitcher";
+import { MobileNavPanel, type MobileNavSection } from "./MobileNavPanel";
 import clsx from "clsx";
 import logoWhite from "../../assets/logo/logo-white.png";
 import logoBlack from "../../assets/logo/logo-black.png";
 
-type NavLink = { to: string; label: string; badge?: number; premium?: boolean };
+/**
+ * `icon` is required even though the desktop bar never draws one: the mobile drawer does, and a
+ * link declared without it would only fail once someone opened the menu. Required here means the
+ * compiler asks for the icon at the moment the tab is added.
+ */
+type NavLink = {
+  to: string;
+  label: string;
+  icon: ComponentType<{ className?: string }>;
+  badge?: number;
+  premium?: boolean;
+};
 
 export function Navbar() {
   const { t } = useTranslation('common');
@@ -88,42 +127,51 @@ export function Navbar() {
   });
   const trainingBadgeCount = user?.isAthlete ? (trainingNotifications?.newCount ?? 0) : 0;
 
-  const mediaLinks = [
-    { to: "/galeria", label: t('nav.gallery') },
-    { to: "/filmy", label: t('nav.videos') },
+  const mediaLinks: NavLink[] = [
+    { to: "/galeria", label: t('nav.gallery'), icon: Images },
+    { to: "/filmy", label: t('nav.videos'), icon: Video },
   ];
 
-  const teamLinks = [
-    { to: "/team/instruktorzy", label: t('team.instructors') },
-    { to: "/team/zawodnicy", label: t('team.competitors') },
+  const teamLinks: NavLink[] = [
+    { to: "/team/instruktorzy", label: t('team.instructors'), icon: Users },
+    { to: "/team/zawodnicy", label: t('team.competitors'), icon: Trophy },
   ];
 
   // `premium` marks the one tab a guest never sees. It is painted as a gold pill
   // (.nav-premium) in the same amber as the Athlete Zone and the calendar promo,
   // so gold means the same thing in the bar as on the page: this is yours.
   const navLinksBefore: NavLink[] = [
-    { to: "/", label: t('nav.home') },
-    { to: "/calendar", label: t('nav.calendar') },
+    { to: "/", label: t('nav.home'), icon: House },
+    { to: "/calendar", label: t('nav.calendar'), icon: CalendarDays },
     ...(isAuthenticated
       ? [{
           to: "/my-reservations",
           label: t('nav.myReservations'),
+          icon: Star,
           badge: invitationBadgeCount + trainingBadgeCount,
           premium: true,
         }]
       : []),
-    { to: "/aktualnosci", label: t('nav.news') },
-    { to: "/kursy", label: t('nav.courses') },
+    { to: "/aktualnosci", label: t('nav.news'), icon: Newspaper },
+    { to: "/kursy", label: t('nav.courses'), icon: GraduationCap },
   ];
 
   const navLinksAfter: NavLink[] = [
-    { to: "/kontakt", label: t('nav.contact') },
-    { to: "/faq", label: t('nav.help') },
-    ...(isAdmin ? [{ to: "/admin", label: t('nav.admin'), badge: adminBadgeCount }] : []),
+    { to: "/kontakt", label: t('nav.contact'), icon: Mail },
+    { to: "/faq", label: t('nav.help'), icon: CircleHelp },
+    ...(isAdmin
+      ? [{ to: "/admin", label: t('nav.admin'), icon: ShieldCheck, badge: adminBadgeCount }]
+      : []),
   ];
 
-  const mobileNavLinks: NavLink[] =
-    [...navLinksBefore, ...teamLinks, ...mediaLinks, ...navLinksAfter];
+  // The drawer groups what the desktop bar flattens: twelve links in one column read as a dump,
+  // and the two dropdowns (Team, Media) already say where the split belongs.
+  const mobileSections: MobileNavSection[] = [
+    { key: 'main', title: t('nav.sections.main'), items: navLinksBefore },
+    { key: 'team', title: t('nav.team'), items: teamLinks },
+    { key: 'media', title: t('nav.media'), items: mediaLinks },
+    { key: 'more', title: t('nav.sections.more'), items: navLinksAfter },
+  ];
 
   const isMediaActive = mediaLinks.some((l) => isLinkActive(l.to));
   const isTeamActive = teamLinks.some((l) => isLinkActive(l.to));
@@ -195,6 +243,9 @@ export function Navbar() {
     setUserMenuOpen(false);
     setMediaMenuOpen(false);
     setTeamMenuOpen(false);
+    // Also the drawer: its links close it themselves, but the browser's back button is a route
+    // change nobody clicked, and it would otherwise leave the sheet open over the new page.
+    setMobileMenuOpen(false);
   }
 
 
@@ -511,81 +562,15 @@ export function Navbar() {
         </div>
       </div>
 
-      {/* Mobile menu */}
-      {mobileMenuOpen && (
-        <div className="md:hidden bg-surface-900 border-t border-surface-800 max-h-[calc(100dvh-4.5rem)] overflow-y-auto">
-          <div className="px-4 py-4 space-y-3">
-            {mobileNavLinks.map((link) => (
-              <Link
-                key={link.to}
-                to={link.to}
-                onClick={() => setMobileMenuOpen(false)}
-                className={clsx(
-                  "block py-2 text-base font-semibold tracking-wide",
-                  !link.premium && (isLinkActive(link.to) ? "text-primary-400" : "text-surface-300"),
-                )}
-              >
-                {renderLabel(link)}
-                {(link.badge ?? 0) > 0 && (
-                  <span className="ml-2 min-w-5 h-5 px-1.5 inline-flex items-center justify-center rounded-full bg-rose-500 text-white text-[11px] font-bold leading-none align-middle">
-                    {link.badge}
-                  </span>
-                )}
-              </Link>
-            ))}
-            <div className="pt-4 border-t border-surface-800">
-              <div className="mb-3 flex items-center gap-2">
-                <button
-                  onClick={toggleTheme}
-                  className="p-2 rounded-lg text-surface-300 hover:text-surface-100 hover:bg-surface-800 transition-all duration-150 active:scale-95"
-                  aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-                >
-                  {theme === 'dark' ? <Moon className="w-4.5 h-4.5" /> : <Sun className="w-4.5 h-4.5" />}
-                </button>
-                <LanguageSwitcher />
-              </div>
-              {isAuthenticated ? (
-                <div className="space-y-1">
-                  <div className="flex items-center gap-3 px-1 py-2">
-                    <Avatar src={user?.avatarUrl} name={user?.firstName} className="w-9 h-9" />
-                    <div>
-                      <p className="text-sm font-medium text-surface-200">
-                        {user?.firstName} {user?.lastName}
-                      </p>
-                      <p className="text-xs text-surface-500">{user?.email}</p>
-                    </div>
-                  </div>
-                  <Link
-                    to="/settings"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="flex items-center gap-3 px-1 py-2 text-surface-300 text-sm"
-                  >
-                    <User className="w-4 h-4" />
-                    {t('nav.profile')}
-                  </Link>
-                  <button
-                    onClick={() => {
-                      setMobileMenuOpen(false);
-                      setShowLogoutSuccess(true);
-                    }}
-                    className="flex items-center gap-3 px-1 py-2 text-rose-400/70 text-sm"
-                  >
-                    <LogOut className="w-4 h-4" />
-                    {t('nav.logout')}
-                  </button>
-                </div>
-              ) : (
-                <Link to="/login" onClick={() => setMobileMenuOpen(false)}>
-                  <Button variant="primary" size="sm" className="w-full">
-                    {t('nav.login')}
-                  </Button>
-                </Link>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
     </nav>
+
+    <MobileNavPanel
+      open={mobileMenuOpen}
+      onClose={() => setMobileMenuOpen(false)}
+      sections={mobileSections}
+      isActive={isLinkActive}
+      onLogout={() => setShowLogoutSuccess(true)}
+    />
     </>
   );
 }

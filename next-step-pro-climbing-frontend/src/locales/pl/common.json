@@ -16,7 +16,12 @@
     "logout": "Wyloguj się",
     "login": "Zaloguj się",
     "closeMenu": "Zamknij menu",
-    "openMenu": "Otwórz menu"
+    "openMenu": "Otwórz menu",
+    "menu": "Menu",
+    "sections": {
+      "main": "Nawigacja",
+      "more": "Więcej"
+    }
   },
   "footer": {
     "description": "Szkolenia wspinaczkowe dopasowane do Twojego poziomu i celów. Trenuj pod okiem doświadczonych instruktorów i rozwijaj się świadomie.",
