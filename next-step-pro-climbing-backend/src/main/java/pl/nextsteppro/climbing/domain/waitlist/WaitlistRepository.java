@@ -33,7 +33,9 @@ public interface WaitlistRepository extends JpaRepository<Waitlist, UUID> {
     @Query("SELECT COALESCE(MAX(w.position), 0) FROM Waitlist w WHERE w.timeSlot.id = :slotId")
     int findMaxPositionForSlot(UUID slotId);
 
-    @Query("SELECT w FROM Waitlist w JOIN FETCH w.timeSlot WHERE w.user.id = :userId AND w.status IN ('WAITING', 'PENDING_CONFIRMATION') ORDER BY w.timeSlot.date ASC, w.timeSlot.startTime ASC")
+    // The event is fetched too because callers render getDisplayTitle(), which falls back to
+    // event.title when the slot has none — an extra lazy hop per entry without it.
+    @Query("SELECT w FROM Waitlist w JOIN FETCH w.timeSlot ts LEFT JOIN FETCH ts.event WHERE w.user.id = :userId AND w.status IN ('WAITING', 'PENDING_CONFIRMATION') ORDER BY ts.date ASC, ts.startTime ASC")
     List<Waitlist> findActiveByUserId(UUID userId);
 
     @Query("SELECT COUNT(w) > 0 FROM Waitlist w WHERE w.user.id = :userId AND w.timeSlot.id = :slotId AND w.status IN :statuses")

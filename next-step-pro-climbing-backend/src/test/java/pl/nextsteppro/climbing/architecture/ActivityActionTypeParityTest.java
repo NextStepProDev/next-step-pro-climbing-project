@@ -26,8 +26,11 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
  */
 class ActivityActionTypeParityTest {
 
+    /** The map moved out of AdminActivityPanel.tsx when the admin user card's timeline started
+     * sharing it — exporting a constant beside a component trips the react-refresh lint rule, and
+     * a second copy would be one more place to forget. */
     private static final Path PANEL =
-        SourceFiles.frontendFile("pages/admin/AdminActivityPanel.tsx");
+        SourceFiles.frontendFile("components/admin/activityActionConfig.ts");
 
     /** Keys of the ACTION_CONFIG record literal: two-space indented SCREAMING_SNAKE followed by ':'. */
     private static final Pattern CONFIG_KEY = Pattern.compile("(?m)^\\s{2}([A-Z][A-Z_]{2,}):");
@@ -69,7 +72,7 @@ class ActivityActionTypeParityTest {
     /** Extracts the ACTION_CONFIG object literal so trailing code cannot leak into the key scan. */
     private static String actionConfigBlock(String panel) {
         int start = panel.indexOf("const ACTION_CONFIG");
-        assertTrue(start >= 0, "ACTION_CONFIG not found in AdminActivityPanel.tsx — gate needs updating");
+        assertTrue(start >= 0, "ACTION_CONFIG not found in activityActionConfig.ts — gate needs updating");
         int end = panel.indexOf("\n}", start);
         assertTrue(end > start, "Could not find the end of the ACTION_CONFIG literal");
         return panel.substring(start, end);

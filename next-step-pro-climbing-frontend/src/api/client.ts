@@ -7,6 +7,8 @@ import type {
   MyInvitation,
   User,
   AdminUser,
+  UserDetail,
+  UserReservationHistory,
   MonthView,
   WeekView,
   DayView,
@@ -978,6 +980,26 @@ export const adminApi = {
   // Activity Logs
   getActivityLogs: (page = 0, size = 20) =>
     fetchApi<ActivityLog[]>(`/admin/activity-logs?page=${page}&size=${size}`),
+}
+
+/**
+ * The admin's read-only card for one user. Read-only is the whole shape of it: every mutation
+ * this panel offers stays in `adminApi` above, next to the user list where it already lives.
+ *
+ * The Training tab is deliberately absent here — it reuses `adminTrainingCalendarApi` and
+ * `adminAscentApi`, which already refuse users without the athlete flag.
+ */
+export const adminUserHistoryApi = {
+  getUser: (userId: string) =>
+    fetchApi<UserDetail>(`/admin/users/${userId}`),
+
+  getActivity: (userId: string, page = 0, size = 20) =>
+    fetchApi<ActivityLog[]>(`/admin/users/${userId}/activity?page=${page}&size=${size}`),
+
+  getReservations: (userId: string, pastPage = 0, pastSize = 25) =>
+    fetchApi<UserReservationHistory>(
+      `/admin/users/${userId}/reservations?pastPage=${pastPage}&pastSize=${pastSize}`,
+    ),
 }
 
 // Instructors (public)

@@ -14,6 +14,14 @@ public interface PersonalTrainingRepository extends JpaRepository<PersonalTraini
     List<PersonalTraining> findByAthleteIdAndTrainingDateBetweenOrderByTrainingDateAscStartTimeAsc(
         UUID athleteId, LocalDate from, LocalDate to);
 
+    /** Admin user card headline count. TRAINING only — a month of kept calorie limits is not
+     * a month of training, the same split {@code TrainingStatsService} makes on the way in. */
+    @Query("""
+        SELECT COUNT(t) FROM PersonalTraining t
+        WHERE t.athlete.id = :athleteId AND t.kind = 'TRAINING' AND t.completedAt IS NOT NULL
+        """)
+    long countCompletedTrainings(UUID athleteId);
+
     /** Athlete's unread counter: trainings the coach created or last edited after the athlete's seen marker. */
     @Query("""
         SELECT COUNT(t) FROM PersonalTraining t

@@ -54,6 +54,127 @@ export interface AdminUser {
   emailVerified: boolean
 }
 
+/**
+ * One user's card (`GET /admin/users/{id}`) — the listing row plus everything the four tabs
+ * need in their header and Account section. Read-only: there is no request counterpart.
+ */
+export interface UserDetail {
+  id: string
+  firstName: string
+  lastName: string
+  nickname: string
+  email: string
+  phone: string
+  avatarUrl: string | null
+  role: 'USER' | 'ADMIN'
+  /** Gates the Training tab. Not cosmetic — the endpoints behind it refuse everyone else. */
+  athlete: boolean
+
+  emailVerified: boolean
+  emailVerifiedAt: string | null
+  hasPassword: boolean
+  oauthProvider: string | null
+  preferredLanguage: string
+  emailNotificationsEnabled: boolean
+  newsletterSubscribed: boolean
+  newsletterChoiceMade: boolean
+  newsletterSubscribedAt: string | null
+  ascentsPublic: boolean
+  trainingConsentAt: string | null
+  failedLoginAttempts: number
+  lockedUntil: string | null
+  accountLocked: boolean
+  createdAt: string
+  updatedAt: string
+
+  counts: UserCounts
+}
+
+/**
+ * Headline tiles. The two training numbers are `null` — not `0` — for a non-athlete: that data
+ * is out of the admin's reach, and rendering it as a zero would state something false about
+ * somebody whose calendar and logbook are private.
+ */
+export interface UserCounts {
+  reservationsConfirmed: number
+  reservationsCancelled: number
+  trainingsCompleted: number | null
+  ascents: number | null
+}
+
+/**
+ * `past` is the only paged section: it gains a row per attended session (and one per day of a
+ * multi-day event) and never shrinks, while the others hold future or active rows only.
+ * `pastTotal` counts the whole history, not the page — inferring "there is more" from a full page
+ * is wrong exactly when the total is a multiple of the page size.
+ */
+export interface UserReservationHistory {
+  upcoming: HistoryReservation[]
+  past: HistoryReservation[]
+  pastTotal: number
+  pastPage: number
+  pastSize: number
+  waitlist: HistoryWaitlistEntry[]
+  invitations: HistoryInvite[]
+  trainingRequests: HistoryRequest[]
+}
+
+export interface HistoryReservation {
+  id: string
+  slotId: string
+  eventId: string | null
+  date: string
+  startTime: string
+  endTime: string
+  title: string
+  eventTitle: string | null
+  status: 'CONFIRMED' | 'CANCELLED' | 'CANCELLED_BY_ADMIN'
+  participants: number
+  comment: string | null
+  createdByAdmin: boolean
+  createdAt: string
+}
+
+/** `kind` says whether this queue hangs off a slot or an event — they are separate tables. */
+export interface HistoryWaitlistEntry {
+  id: string
+  kind: 'SLOT' | 'EVENT'
+  targetId: string
+  title: string
+  date: string | null
+  startTime: string | null
+  position: number
+  status: 'WAITING' | 'PENDING_CONFIRMATION' | 'EXPIRED'
+  confirmationDeadline: string | null
+  createdAt: string
+}
+
+export interface HistoryInvite {
+  id: string
+  kind: 'SLOT' | 'EVENT'
+  targetId: string
+  title: string
+  date: string | null
+  startTime: string | null
+  /** Set only when an admin sent the invitation email by hand; never automatic. */
+  notifiedAt: string | null
+  createdAt: string
+}
+
+export interface HistoryRequest {
+  id: string
+  requestedDate: string
+  startTime: string
+  endTime: string
+  participants: number
+  comment: string | null
+  status: 'PENDING' | 'ACCEPTED' | 'CONTACTED' | 'REJECTED' | 'EXPIRED'
+  adminNote: string | null
+  courseTitle: string | null
+  resolvedAt: string | null
+  createdAt: string
+}
+
 // Calendar types
 export interface MonthView {
   yearMonth: string

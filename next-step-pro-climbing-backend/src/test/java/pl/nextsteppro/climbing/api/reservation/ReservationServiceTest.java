@@ -6,6 +6,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Pageable;
 import pl.nextsteppro.climbing.api.activitylog.ActivityLogService;
 import pl.nextsteppro.climbing.domain.event.Event;
 import pl.nextsteppro.climbing.domain.event.EventRepository;
@@ -942,7 +943,7 @@ class ReservationServiceTest {
         Reservation pastReservation = new Reservation(testUser, pastSlot);
         setEntityIdViaReflection(pastReservation, UUID.randomUUID());
 
-        when(reservationRepository.findPastByUserId(eq(userId), any(LocalDate.class), any(LocalTime.class)))
+        when(reservationRepository.findPastByUserId(eq(userId), any(LocalDate.class), any(LocalTime.class), any(Pageable.class)))
             .thenReturn(List.of(pastReservation));
 
         // When

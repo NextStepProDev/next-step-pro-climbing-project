@@ -1,6 +1,7 @@
 package pl.nextsteppro.climbing.domain.reservation;
 
 import org.jspecify.annotations.Nullable;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -59,11 +60,27 @@ public interface ReservationRepository extends JpaRepository<Reservation, UUID> 
     @Nullable
     Reservation findByUserIdAndTimeSlotId(UUID userId, UUID timeSlotId);
 
-    @Query("SELECT r FROM Reservation r WHERE r.user.id = :userId AND (r.timeSlot.date > :today OR (r.timeSlot.date = :today AND r.timeSlot.endTime > :now)) AND r.status IN ('CONFIRMED', 'CANCELLED_BY_ADMIN') ORDER BY r.timeSlot.date, r.timeSlot.startTime")
+    // JOIN FETCH on the slot and its event: every caller of these two immediately dereferences both
+    // (a reservation list is nothing but slot data), and both associations are LAZY. Without the
+    // fetch the cost is N/16 extra round trips — batch_fetch_size hides it as a gentle slope rather
+    // than a classic N+1, which is why it survived unnoticed. To-one joins, so the row set is
+    // unchanged and neither method takes a Pageable.
+    @Query("SELECT r FROM Reservation r JOIN FETCH r.timeSlot ts LEFT JOIN FETCH ts.event WHERE r.user.id = :userId AND (ts.date > :today OR (ts.date = :today AND ts.endTime > :now)) AND r.status IN ('CONFIRMED', 'CANCELLED_BY_ADMIN') ORDER BY ts.date, ts.startTime")
     List<Reservation> findUpcomingByUserIdIncludingAdminCancelled(UUID userId, LocalDate today, LocalTime now);
 
-    @Query("SELECT r FROM Reservation r WHERE r.user.id = :userId AND (r.timeSlot.date < :today OR (r.timeSlot.date = :today AND r.timeSlot.endTime <= :now)) AND r.status IN ('CONFIRMED', 'CANCELLED', 'CANCELLED_BY_ADMIN') ORDER BY r.timeSlot.date DESC, r.timeSlot.startTime DESC")
-    List<Reservation> findPastByUserId(UUID userId, LocalDate today, LocalTime now);
+    /**
+     * Past bookings, newest first. Takes a {@link Pageable} because this is the one per-user list
+     * that grows without a ceiling — one row per attended session, and one per DAY of a multi-day
+     * event. Pass {@code Pageable.unpaged()} to keep the whole list.
+     *
+     * <p>Paging is safe here despite the fetch joins: both are to-one, so Hibernate puts the LIMIT
+     * in SQL. The in-memory-pagination warning applies to collection fetches.
+     */
+    @Query("SELECT r FROM Reservation r JOIN FETCH r.timeSlot ts LEFT JOIN FETCH ts.event WHERE r.user.id = :userId AND (ts.date < :today OR (ts.date = :today AND ts.endTime <= :now)) AND r.status IN ('CONFIRMED', 'CANCELLED', 'CANCELLED_BY_ADMIN') ORDER BY ts.date DESC, ts.startTime DESC")
+    List<Reservation> findPastByUserId(UUID userId, LocalDate today, LocalTime now, Pageable pageable);
+
+    @Query("SELECT COUNT(r) FROM Reservation r WHERE r.user.id = :userId AND (r.timeSlot.date < :today OR (r.timeSlot.date = :today AND r.timeSlot.endTime <= :now)) AND r.status IN ('CONFIRMED', 'CANCELLED', 'CANCELLED_BY_ADMIN')")
+    long countPastByUserId(UUID userId, LocalDate today, LocalTime now);
 
     /** Athlete statistics: attended reservations (confirmed + slot already over) reduced to
      * (date, eventType, rpe). Same past-predicate as {@link #findPastByUserId}. */
@@ -112,6 +129,14 @@ public interface ReservationRepository extends JpaRepository<Reservation, UUID> 
 
     @Query("SELECT DISTINCT r.timeSlot.event.id FROM Reservation r WHERE r.user.id = :userId AND r.status = 'CONFIRMED' AND r.timeSlot.event IS NOT NULL")
     List<UUID> findConfirmedEventIdsByUserId(UUID userId);
+
+    // Admin user card: headline counts. Kept as COUNT queries rather than sizing the lists the
+    // history tab loads — the overview is its own endpoint and must not pull entities to count them.
+    @Query("SELECT COUNT(r) FROM Reservation r WHERE r.user.id = :userId AND r.status = 'CONFIRMED'")
+    long countConfirmedByUserId(UUID userId);
+
+    @Query("SELECT COUNT(r) FROM Reservation r WHERE r.user.id = :userId AND r.status IN ('CANCELLED', 'CANCELLED_BY_ADMIN')")
+    long countCancelledByUserId(UUID userId);
 
     // Admin notifications: new reservations since last "read" (panel badge).
     // Skips reservations added manually by the admin — the dot lights up only for client actions.

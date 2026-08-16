@@ -3,6 +3,7 @@ package pl.nextsteppro.climbing.api.reservation;
 import org.jspecify.annotations.Nullable;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Caching;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pl.nextsteppro.climbing.domain.BookingTimeValidator;
@@ -352,7 +353,10 @@ public class ReservationService {
 
     @Transactional(readOnly = true)
     public MyReservationsDto getUserPastReservations(UUID userId) {
-        List<Reservation> allReservations = reservationRepository.findPastByUserId(userId, LocalDate.now(WARSAW), LocalTime.now(WARSAW));
+        // Unpaged: this view groups rows by event before rendering, so a page boundary would split
+        // an event's days across pages. Unchanged behaviour — the admin card is what needed paging.
+        List<Reservation> allReservations = reservationRepository.findPastByUserId(
+            userId, LocalDate.now(WARSAW), LocalTime.now(WARSAW), Pageable.unpaged());
 
         List<UserReservationDto> standaloneSlots = new ArrayList<>();
         Map<UUID, List<Reservation>> eventReservations = new LinkedHashMap<>();
