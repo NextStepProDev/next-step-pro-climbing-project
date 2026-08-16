@@ -478,6 +478,82 @@
     "noCourse": "— no course (manual title) —"
   },
   "users": {
+    "detail": {
+      "open": "View user history",
+      "back": "Back to the user list",
+      "roleAdmin": "Administrator",
+      "athleteBadge": "Athlete",
+      "timeline": "Timeline",
+      "noActivity": "This user has no activity yet",
+      "noReservations": "This user has no bookings or proposals",
+      "newer": "Newer",
+      "older": "Older",
+      "upcoming": "Upcoming bookings",
+      "past": "Past bookings",
+      "waitlist": "Waiting lists",
+      "invitations": "Seats held by invitation",
+      "proposals": "Time proposals",
+      "position": "position {{position}}",
+      "participants": "{{count}} people",
+      "addedByAdmin": "Added by an admin",
+      "notified": "Notified",
+      "notNotified": "Not notified",
+      "adminNote": "Admin note",
+      "tabs": {
+        "overview": "Overview",
+        "reservations": "Bookings",
+        "account": "Account"
+      },
+      "tiles": {
+        "reservations": "bookings",
+        "cancelled": "cancelled",
+        "trainings": "trainings",
+        "ascents": "ascents"
+      },
+      "reservationStatus": {
+        "CONFIRMED": "Confirmed",
+        "CANCELLED": "Cancelled",
+        "CANCELLED_BY_ADMIN": "Cancelled by an admin"
+      },
+      "waitlistStatus": {
+        "WAITING": "Waiting",
+        "PENDING_CONFIRMATION": "Awaiting confirmation",
+        "EXPIRED": "Expired"
+      },
+      "requestStatus": {
+        "PENDING": "Pending",
+        "ACCEPTED": "Accepted",
+        "CONTACTED": "Contacted",
+        "REJECTED": "Rejected",
+        "EXPIRED": "Expired"
+      },
+      "account": {
+        "access": "Access",
+        "communication": "Communication",
+        "privacy": "Privacy",
+        "details": "Details",
+        "emailVerified": "Email verified",
+        "signInMethod": "Sign-in method",
+        "oauth": "Google ({{provider}})",
+        "password": "Password",
+        "role": "Role",
+        "athlete": "Athlete",
+        "failedLogins": "Failed sign-ins",
+        "lockedUntil": "Locked until",
+        "emailNotifications": "Email notifications",
+        "newsletter": "Newsletter",
+        "newsletterChoice": "Newsletter choice made",
+        "language": "Language",
+        "ascentsPublic": "Ascents public",
+        "trainingConsent": "Training calendar consent",
+        "nickname": "Nickname",
+        "phone": "Phone",
+        "createdAt": "Account created",
+        "updatedAt": "Last change",
+        "yes": "yes",
+        "no": "no"
+      }
+    },
     "searchPlaceholder": "Search by first name, last name, or email...",
     "userColumn": "User",
     "emailColumn": "Email",

@@ -478,6 +478,82 @@
     "noCourse": "— brak kursu (tytuł ręczny) —"
   },
   "users": {
+    "detail": {
+      "open": "Zobacz historię użytkownika",
+      "back": "Powrót do listy użytkowników",
+      "roleAdmin": "Administrator",
+      "athleteBadge": "Zawodnik",
+      "timeline": "Oś czasu",
+      "noActivity": "Ten użytkownik nie ma jeszcze żadnej aktywności",
+      "noReservations": "Ten użytkownik nie ma żadnych rezerwacji ani propozycji",
+      "newer": "Nowsze",
+      "older": "Starsze",
+      "upcoming": "Nadchodzące rezerwacje",
+      "past": "Minione rezerwacje",
+      "waitlist": "Listy rezerwowe",
+      "invitations": "Miejsca na zaproszenie",
+      "proposals": "Propozycje terminów",
+      "position": "pozycja {{position}}",
+      "participants": "{{count}} os.",
+      "addedByAdmin": "Wpisane przez admina",
+      "notified": "Powiadomiony",
+      "notNotified": "Bez powiadomienia",
+      "adminNote": "Notatka admina",
+      "tabs": {
+        "overview": "Przegląd",
+        "reservations": "Rezerwacje",
+        "account": "Konto"
+      },
+      "tiles": {
+        "reservations": "rezerwacji",
+        "cancelled": "odwołanych",
+        "trainings": "treningów",
+        "ascents": "przejść"
+      },
+      "reservationStatus": {
+        "CONFIRMED": "Potwierdzona",
+        "CANCELLED": "Anulowana",
+        "CANCELLED_BY_ADMIN": "Odwołana przez admina"
+      },
+      "waitlistStatus": {
+        "WAITING": "Oczekuje",
+        "PENDING_CONFIRMATION": "Do potwierdzenia",
+        "EXPIRED": "Wygasła"
+      },
+      "requestStatus": {
+        "PENDING": "Oczekuje",
+        "ACCEPTED": "Zaakceptowana",
+        "CONTACTED": "Skontaktowano się",
+        "REJECTED": "Odrzucona",
+        "EXPIRED": "Wygasła"
+      },
+      "account": {
+        "access": "Dostęp",
+        "communication": "Komunikacja",
+        "privacy": "Prywatność",
+        "details": "Dane",
+        "emailVerified": "E-mail potwierdzony",
+        "signInMethod": "Sposób logowania",
+        "oauth": "Google ({{provider}})",
+        "password": "Hasło",
+        "role": "Rola",
+        "athlete": "Zawodnik",
+        "failedLogins": "Nieudane logowania",
+        "lockedUntil": "Zablokowane do",
+        "emailNotifications": "Powiadomienia e-mail",
+        "newsletter": "Newsletter",
+        "newsletterChoice": "Decyzja o newsletterze podjęta",
+        "language": "Język",
+        "ascentsPublic": "Przejścia publiczne",
+        "trainingConsent": "Zgoda na kalendarz treningowy",
+        "nickname": "Pseudonim",
+        "phone": "Telefon",
+        "createdAt": "Konto utworzone",
+        "updatedAt": "Ostatnia zmiana",
+        "yes": "tak",
+        "no": "nie"
+      }
+    },
     "searchPlaceholder": "Szukaj po imieniu, nazwisku lub e-mailu...",
     "userColumn": "Użytkownik",
     "emailColumn": "Email",

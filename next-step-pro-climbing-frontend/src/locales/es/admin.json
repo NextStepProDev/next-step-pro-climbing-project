@@ -478,6 +478,82 @@
     "noCourse": "— sin curso (título manual) —"
   },
   "users": {
+    "detail": {
+      "open": "Ver el historial del usuario",
+      "back": "Volver a la lista de usuarios",
+      "roleAdmin": "Administrador",
+      "athleteBadge": "Deportista",
+      "timeline": "Cronología",
+      "noActivity": "Este usuario aún no tiene actividad",
+      "noReservations": "Este usuario no tiene reservas ni propuestas",
+      "newer": "Más recientes",
+      "older": "Más antiguas",
+      "upcoming": "Reservas próximas",
+      "past": "Reservas pasadas",
+      "waitlist": "Listas de espera",
+      "invitations": "Plazas reservadas por invitación",
+      "proposals": "Propuestas de horario",
+      "position": "posición {{position}}",
+      "participants": "{{count}} personas",
+      "addedByAdmin": "Añadida por un administrador",
+      "notified": "Notificado",
+      "notNotified": "Sin notificar",
+      "adminNote": "Nota del administrador",
+      "tabs": {
+        "overview": "Resumen",
+        "reservations": "Reservas",
+        "account": "Cuenta"
+      },
+      "tiles": {
+        "reservations": "reservas",
+        "cancelled": "canceladas",
+        "trainings": "entrenamientos",
+        "ascents": "ascensiones"
+      },
+      "reservationStatus": {
+        "CONFIRMED": "Confirmada",
+        "CANCELLED": "Cancelada",
+        "CANCELLED_BY_ADMIN": "Cancelada por un administrador"
+      },
+      "waitlistStatus": {
+        "WAITING": "En espera",
+        "PENDING_CONFIRMATION": "Pendiente de confirmación",
+        "EXPIRED": "Caducada"
+      },
+      "requestStatus": {
+        "PENDING": "Pendiente",
+        "ACCEPTED": "Aceptada",
+        "CONTACTED": "Contactado",
+        "REJECTED": "Rechazada",
+        "EXPIRED": "Caducada"
+      },
+      "account": {
+        "access": "Acceso",
+        "communication": "Comunicación",
+        "privacy": "Privacidad",
+        "details": "Datos",
+        "emailVerified": "Email verificado",
+        "signInMethod": "Método de acceso",
+        "oauth": "Google ({{provider}})",
+        "password": "Contraseña",
+        "role": "Rol",
+        "athlete": "Deportista",
+        "failedLogins": "Accesos fallidos",
+        "lockedUntil": "Bloqueada hasta",
+        "emailNotifications": "Notificaciones por email",
+        "newsletter": "Boletín",
+        "newsletterChoice": "Decisión sobre el boletín tomada",
+        "language": "Idioma",
+        "ascentsPublic": "Ascensiones públicas",
+        "trainingConsent": "Consentimiento del calendario de entrenamiento",
+        "nickname": "Apodo",
+        "phone": "Teléfono",
+        "createdAt": "Cuenta creada",
+        "updatedAt": "Último cambio",
+        "yes": "sí",
+        "no": "no"
+      }
+    },
     "searchPlaceholder": "Buscar por nombre, apellido o email...",
     "userColumn": "Usuario",
     "emailColumn": "Email",

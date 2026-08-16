@@ -7,6 +7,7 @@ import { adminApi } from '../api/client'
 import { AdminSlotsPanel } from './admin/AdminSlotsPanel'
 import { AdminEventsPanel } from './admin/AdminEventsPanel'
 import { AdminUsersPanel } from './admin/AdminUsersPanel'
+import { AdminUserDetailPanel } from './admin/AdminUserDetailPanel'
 import { AdminReservationsPanel } from './admin/AdminReservationsPanel'
 import { AdminActivityPanel } from './admin/AdminActivityPanel'
 import { AdminInstructorsPanel } from './admin/AdminInstructorsPanel'
@@ -167,6 +168,7 @@ export function AdminPage() {
         <Route path="courses" element={<AdminCoursesPanel />} />
         <Route path="assets" element={<AdminAssetsPanel />} />
         <Route path="users" element={<AdminUsersPanel />} />
+        <Route path="users/:userId" element={<AdminUserDetailPanel />} />
         <Route path="mail" element={<AdminMailPanel />} />
         <Route path="activity" element={<AdminActivityPanel />} />
         <Route path="storage" element={<AdminStoragePanel />} />

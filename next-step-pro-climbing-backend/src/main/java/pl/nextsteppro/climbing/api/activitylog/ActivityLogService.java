@@ -12,6 +12,7 @@ import pl.nextsteppro.climbing.domain.timeslot.TimeSlot;
 import pl.nextsteppro.climbing.domain.user.User;
 
 import java.util.List;
+import java.util.UUID;
 
 @Service
 @Transactional
@@ -144,6 +145,17 @@ public class ActivityLogService {
     @Transactional(readOnly = true)
     public List<ActivityLogDto> getRecentLogs(int page, int size) {
         List<ActivityLog> logs = activityLogRepository.findRecentWithDetails(PageRequest.of(page, size));
+        return logs.stream().map(this::toDto).toList();
+    }
+
+    /**
+     * Timeline for the admin user card. Lives here rather than in the card's own service so the
+     * {@link #toDto} mapping stays in one place — a second copy is exactly how the panel and the
+     * card would drift apart on the next field added to {@link ActivityLogDto}.
+     */
+    @Transactional(readOnly = true)
+    public List<ActivityLogDto> getLogsForUser(UUID userId, int page, int size) {
+        List<ActivityLog> logs = activityLogRepository.findByUserIdWithDetails(userId, PageRequest.of(page, size));
         return logs.stream().map(this::toDto).toList();
     }
 

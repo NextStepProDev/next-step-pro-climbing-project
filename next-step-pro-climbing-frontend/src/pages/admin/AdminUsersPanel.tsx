@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react'
+import { Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { format } from 'date-fns'
@@ -264,8 +265,18 @@ export function AdminUsersPanel() {
               <tbody className="divide-y divide-surface-800">
                 {paged.map((user) => (
                   <tr key={user.id} className="hover:bg-surface-800/50">
-                    <td className="px-4 py-3 text-surface-100">
-                      {user.firstName} {user.lastName}
+                    {/* The name cell is the link, not the whole row: the last cell holds five
+                        buttons, and a button inside a link is a nested interactive element — one
+                        tap would both navigate and fire the action. */}
+                    <td className="px-4 py-3">
+                      <Link
+                        to={`/admin/users/${user.id}`}
+                        className="inline-flex items-center gap-1 text-surface-100 hover:text-primary-400 transition-colors group/name"
+                        title={t('users.detail.open')}
+                      >
+                        {user.firstName} {user.lastName}
+                        <ChevronRight className="w-3.5 h-3.5 shrink-0 text-surface-600 group-hover/name:text-primary-400" />
+                      </Link>
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1.5 flex-wrap">
