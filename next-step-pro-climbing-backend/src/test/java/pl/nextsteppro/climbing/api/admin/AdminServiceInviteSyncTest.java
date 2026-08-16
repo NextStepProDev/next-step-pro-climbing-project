@@ -52,6 +52,10 @@ import static org.mockito.Mockito.when;
  * Regression: an invited user who already booked is counted in confirmed
  * reservations — the guard must not count them a second time via the invite
  * list, otherwise a full slot/event with a used invitation rejects every edit.
+ *
+ * Also covers the two other guards on the same paths: unverified accounts cannot be bound to
+ * anything (invites, manual sign-ups, roles), and the admin-side account deletion has to release
+ * seats through the shared service.
  */
 @ExtendWith(MockitoExtension.class)
 class AdminServiceInviteSyncTest {
@@ -85,6 +89,7 @@ class AdminServiceInviteSyncTest {
     private UUID eventId;
     private User admin;
     private User invitedUser;
+    private User unverifiedUser;
     private TimeSlot slot;
     private Event event;
 
@@ -123,6 +128,11 @@ class AdminServiceInviteSyncTest {
 
         invitedUser = new User("invited@example.com", "Invited", "User", "+48222222222", "invited");
         setId(invitedUser, UUID.randomUUID());
+        // A real invitee has confirmed their address — the guard below refuses anyone who has not.
+        invitedUser.setEmailVerified(true);
+
+        unverifiedUser = new User("unverified@example.com", "Never", "Confirmed", "+48555555555", "never");
+        setId(unverifiedUser, UUID.randomUUID());
 
         slot = new TimeSlot(LocalDate.now().minusDays(7), LocalTime.of(10, 0), LocalTime.of(11, 0), 1);
         setId(slot, slotId);
@@ -226,6 +236,129 @@ class AdminServiceInviteSyncTest {
         // When & Then
         assertThrows(IllegalStateException.class, () ->
             adminService.updateEvent(adminId, eventId, eventRequestWithInvites(List.of(invitedUser.getId()))));
+    }
+
+    // ========== Unverified accounts cannot be bound to anything ==========
+
+    @Test
+    void shouldRejectNewSlotInviteWhenAccountIsUnverified() {
+        // Given: an empty slot and an account that never confirmed its address
+        when(timeSlotRepository.findById(slotId)).thenReturn(Optional.of(slot));
+        when(timeSlotRepository.save(slot)).thenReturn(slot);
+        when(reservationRepository.countConfirmedByTimeSlotId(slotId)).thenReturn(0);
+        when(guestReservationRepository.sumParticipantsByTimeSlotId(slotId)).thenReturn(0);
+        when(reservationRepository.findConfirmedUserIdsByTimeSlotId(slotId)).thenReturn(List.of());
+        when(reservedSeatRepository.findBySlotIdWithUser(slotId)).thenReturn(List.of());
+        when(userRepository.findById(unverifiedUser.getId())).thenReturn(Optional.of(unverifiedUser));
+        when(msg.get("admin.user.unverified", unverifiedUser.getFullName())).thenReturn("unverified");
+
+        // When & Then: 400, and no seat is held for someone who cannot log in to use it
+        assertThrows(IllegalArgumentException.class, () ->
+            adminService.updateTimeSlot(adminId, slotId, slotRequestWithInvites(List.of(unverifiedUser.getId()))));
+        verify(reservedSeatRepository, never()).save(any());
+    }
+
+    @Test
+    void shouldStillAllowEditingSlotWhoseExistingInviteIsUnverified() {
+        // Given: an invitation issued before the guard existed. The front resubmits the full
+        // invitee list on every edit, so checking all of them would make this slot uneditable.
+        when(timeSlotRepository.findById(slotId)).thenReturn(Optional.of(slot));
+        when(timeSlotRepository.save(slot)).thenReturn(slot);
+        when(reservationRepository.countConfirmedByTimeSlotId(slotId)).thenReturn(0);
+        when(guestReservationRepository.sumParticipantsByTimeSlotId(slotId)).thenReturn(0);
+        when(reservationRepository.findConfirmedUserIdsByTimeSlotId(slotId)).thenReturn(List.of());
+        when(reservedSeatRepository.findBySlotIdWithUser(slotId))
+            .thenReturn(List.of(new ReservedSeat(slot, unverifiedUser)));
+        when(userRepository.findById(adminId)).thenReturn(Optional.of(admin));
+
+        // When & Then
+        assertDoesNotThrow(() ->
+            adminService.updateTimeSlot(adminId, slotId, slotRequestWithInvites(List.of(unverifiedUser.getId()))));
+        verify(reservedSeatRepository, never()).delete(any());
+    }
+
+    @Test
+    void shouldRejectNewEventInviteWhenAccountIsUnverified() {
+        // Given
+        when(eventRepository.findById(eventId)).thenReturn(Optional.of(event));
+        when(eventRepository.save(event)).thenReturn(event);
+        when(timeSlotRepository.findByEventId(eventId)).thenReturn(List.of());
+        when(guestReservationRepository.sumParticipantsByEventId(eventId)).thenReturn(0);
+        when(reservationRepository.findConfirmedUserIdsByEventId(eventId)).thenReturn(List.of());
+        when(reservedSeatRepository.findByEventIdWithUser(eventId)).thenReturn(List.of());
+        when(userRepository.findById(unverifiedUser.getId())).thenReturn(Optional.of(unverifiedUser));
+        when(msg.get("admin.user.unverified", unverifiedUser.getFullName())).thenReturn("unverified");
+
+        // When & Then: the twin path has to refuse it too
+        assertThrows(IllegalArgumentException.class, () ->
+            adminService.updateEvent(adminId, eventId, eventRequestWithInvites(List.of(unverifiedUser.getId()))));
+        verify(reservedSeatRepository, never()).save(any());
+    }
+
+    @Test
+    void shouldRejectManualSlotSignUpWhenAccountIsUnverified() {
+        // Given
+        when(timeSlotRepository.findById(slotId)).thenReturn(Optional.of(slot));
+        when(userRepository.findById(unverifiedUser.getId())).thenReturn(Optional.of(unverifiedUser));
+        when(msg.get("admin.user.unverified", unverifiedUser.getFullName())).thenReturn("unverified");
+
+        // When & Then: a reservation they could never see, and a confirmation mail to an address
+        // nobody proved they own
+        assertThrows(IllegalArgumentException.class, () -> adminService.addRegisteredParticipantToSlot(
+            slotId, new AddRegisteredParticipantRequest(unverifiedUser.getId(), 1, null)));
+        verify(reservationRepository, never()).save(any());
+    }
+
+    @Test
+    void shouldRejectManualEventSignUpWhenAccountIsUnverified() {
+        // Given
+        when(eventRepository.findById(eventId)).thenReturn(Optional.of(event));
+        when(userRepository.findById(unverifiedUser.getId())).thenReturn(Optional.of(unverifiedUser));
+        when(msg.get("admin.user.unverified", unverifiedUser.getFullName())).thenReturn("unverified");
+
+        // When & Then
+        assertThrows(IllegalArgumentException.class, () -> adminService.addRegisteredParticipantToEvent(
+            eventId, new AddRegisteredParticipantRequest(unverifiedUser.getId(), 1, null)));
+        verify(reservationRepository, never()).save(any());
+    }
+
+    @Test
+    void shouldRejectMakeAdminWhenAccountIsUnverified() {
+        // Given
+        when(userRepository.findById(unverifiedUser.getId())).thenReturn(Optional.of(unverifiedUser));
+        when(msg.get("admin.user.unverified", unverifiedUser.getFullName())).thenReturn("unverified");
+
+        // When & Then
+        assertThrows(IllegalArgumentException.class, () ->
+            adminService.makeAdmin(adminId, unverifiedUser.getId()));
+        verify(userRepository, never()).save(any(User.class));
+    }
+
+    @Test
+    void shouldRejectGrantingAthleteFlagWhenAccountIsUnverified() {
+        // Given
+        when(userRepository.findById(unverifiedUser.getId())).thenReturn(Optional.of(unverifiedUser));
+        when(msg.get("admin.user.unverified", unverifiedUser.getFullName())).thenReturn("unverified");
+
+        // When & Then
+        assertThrows(IllegalArgumentException.class, () ->
+            adminService.setAthlete(adminId, unverifiedUser.getId(), true));
+        verify(userRepository, never()).save(any(User.class));
+    }
+
+    @Test
+    void shouldAllowRevokingAthleteFlagFromUnverifiedAccount() {
+        // Given: a flag granted before the guard existed — taking it back must stay possible,
+        // or the guard would trap the very state it forbids
+        unverifiedUser.setAthlete(true);
+        when(userRepository.findById(unverifiedUser.getId())).thenReturn(Optional.of(unverifiedUser));
+        when(userRepository.findById(adminId)).thenReturn(Optional.of(admin));
+
+        // When
+        adminService.setAthlete(adminId, unverifiedUser.getId(), false);
+
+        // Then
+        verify(userRepository).save(unverifiedUser);
     }
 
     // ========== REGRESSION: admin-side account deletion ==========

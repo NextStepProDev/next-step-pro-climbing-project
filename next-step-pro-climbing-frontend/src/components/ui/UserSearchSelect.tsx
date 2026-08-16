@@ -1,15 +1,17 @@
 import { useState, useRef, useEffect } from 'react'
-import { Search, X } from 'lucide-react'
-import type { User } from '../../types'
+import { useTranslation } from 'react-i18next'
+import { Search, X, MailWarning } from 'lucide-react'
+import type { AdminUser } from '../../types'
 
 interface UserSearchSelectProps {
-  users: User[]
+  users: AdminUser[]
   value: string
   onChange: (userId: string) => void
   placeholder?: string
 }
 
 export function UserSearchSelect({ users, value, onChange, placeholder }: UserSearchSelectProps) {
+  const { t } = useTranslation('admin')
   const selected = users.find((u) => u.id === value) ?? null
   const [query, setQuery] = useState('')
   const [open, setOpen] = useState(false)
@@ -39,7 +41,8 @@ export function UserSearchSelect({ users, value, onChange, placeholder }: UserSe
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  function handleSelect(user: User) {
+  function handleSelect(user: AdminUser) {
+    if (!user.emailVerified) return
     onChange(user.id)
     setQuery('')
     setOpen(false)
@@ -91,15 +94,30 @@ export function UserSearchSelect({ users, value, onChange, placeholder }: UserSe
             <ul className="max-h-48 overflow-y-auto">
               {filtered.map((u) => (
                 <li key={u.id}>
+                  {/* An unverified account stays visible but unselectable. Filtering it out would
+                      answer "does this person have an account?" with silence, and the admin would
+                      conclude there is none. */}
                   <button
                     type="button"
+                    disabled={!u.emailVerified}
+                    title={u.emailVerified ? undefined : t('users.unverifiedHint')}
                     onMouseDown={(e) => { e.preventDefault(); handleSelect(u) }}
-                    className="w-full text-left px-3 py-2 text-sm hover:bg-surface-700 transition-colors"
+                    className={`w-full text-left px-3 py-2 text-sm transition-colors ${
+                      u.emailVerified
+                        ? 'hover:bg-surface-700'
+                        : 'cursor-not-allowed opacity-60'
+                    }`}
                   >
-                    <span className="font-medium text-surface-100">
+                    <span className={u.emailVerified ? 'font-medium text-surface-100' : 'font-medium text-surface-400'}>
                       {u.firstName} {u.lastName}
                     </span>
                     <span className="ml-2 text-surface-400 text-xs">{u.email}</span>
+                    {!u.emailVerified && (
+                      <span className="ml-2 inline-flex items-center gap-1 text-amber-400/90 text-xs">
+                        <MailWarning className="w-3 h-3 shrink-0" />
+                        {t('users.unverifiedBadge')}
+                      </span>
+                    )}
                   </button>
                 </li>
               ))}

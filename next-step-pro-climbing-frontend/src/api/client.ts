@@ -6,6 +6,7 @@ import type {
   EventWaitlistEntry,
   MyInvitation,
   User,
+  AdminUser,
   MonthView,
   WeekView,
   DayView,
@@ -947,7 +948,7 @@ export const adminApi = {
 
   // Users
   getAllUsers: () =>
-    fetchApi<User[]>('/admin/users'),
+    fetchApi<AdminUser[]>('/admin/users'),
 
   makeAdmin: (userId: string) =>
     fetchApi<void>(`/admin/users/${userId}/make-admin`, { method: 'POST' }),

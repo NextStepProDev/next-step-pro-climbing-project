@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { format } from 'date-fns'
-import { Shield, ShieldOff, Trash2, Search, ChevronLeft, ChevronRight, Mail, ArrowUp, ArrowDown, ArrowUpDown, LogOut, Dumbbell } from 'lucide-react'
+import { Shield, ShieldOff, Trash2, Search, ChevronLeft, ChevronRight, Mail, MailWarning, ArrowUp, ArrowDown, ArrowUpDown, LogOut, Dumbbell } from 'lucide-react'
 import { adminApi } from '../../api/client'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
 import { QueryError } from '../../components/ui/QueryError'
@@ -20,6 +20,10 @@ export function AdminUsersPanel() {
   const { t } = useTranslation('admin')
   const [search, setSearch] = useState('')
   const [newsletterFilter, setNewsletterFilter] = useState<NewsletterFilter>('all')
+  // Its own toggle rather than a fourth pill in the newsletter group: verification and newsletter
+  // are different questions, and one row of buttons answering both cannot express "subscribed AND
+  // unverified".
+  const [unverifiedOnly, setUnverifiedOnly] = useState(false)
   const [sortKey, setSortKey] = useState<SortKey>('createdAt')
   const [sortDir, setSortDir] = useState<SortDir>('desc')
   const [page, setPage] = useState(1)
@@ -84,17 +88,21 @@ export function AdminUsersPanel() {
             newsletterFilter === 'subscribed' ? u.newsletterSubscribed : !u.newsletterSubscribed,
           )
 
-    if (!search.trim()) return byNewsletter
+    const byVerification = unverifiedOnly
+      ? byNewsletter.filter((u) => !u.emailVerified)
+      : byNewsletter
+
+    if (!search.trim()) return byVerification
 
     const q = search.toLowerCase().trim()
-    return byNewsletter.filter(
+    return byVerification.filter(
       (u) =>
         u.firstName.toLowerCase().includes(q) ||
         u.lastName.toLowerCase().includes(q) ||
         u.email.toLowerCase().includes(q) ||
         `${u.firstName} ${u.lastName}`.toLowerCase().includes(q),
     )
-  }, [users, search, newsletterFilter])
+  }, [users, search, newsletterFilter, unverifiedOnly])
 
   const sorted = useMemo(() => {
     const arr = [...filtered]
@@ -144,6 +152,16 @@ export function AdminUsersPanel() {
     setPage(1)
   }
 
+  const handleUnverifiedToggle = () => {
+    setUnverifiedOnly((on) => !on)
+    setPage(1)
+  }
+
+  const unverifiedCount = useMemo(
+    () => (users ?? []).filter((u) => !u.emailVerified).length,
+    [users],
+  )
+
   const sortHeader = (key: SortKey, label: string) => (
     <th className="text-left px-4 py-3 text-sm font-medium text-surface-300">
       <button
@@ -174,21 +192,41 @@ export function AdminUsersPanel() {
         </div>
       )}
 
-      {/* Newsletter filter */}
-      <div className="flex gap-1.5 mb-3 p-1 bg-surface-800 border border-surface-700 rounded-lg w-fit">
-        {filterOptions.map((opt) => (
-          <button
-            key={opt.value}
-            onClick={() => handleFilterChange(opt.value)}
-            className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
-              newsletterFilter === opt.value
-                ? 'bg-primary-500/20 text-primary-300'
-                : 'text-surface-400 hover:text-surface-200 hover:bg-surface-700/50'
-            }`}
-          >
-            {opt.label}
-          </button>
-        ))}
+      {/* Newsletter filter + verification filter (separate controls: two questions, two answers) */}
+      <div className="flex flex-wrap items-center gap-3 mb-3">
+        <div className="flex gap-1.5 p-1 bg-surface-800 border border-surface-700 rounded-lg w-fit">
+          {filterOptions.map((opt) => (
+            <button
+              key={opt.value}
+              onClick={() => handleFilterChange(opt.value)}
+              className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
+                newsletterFilter === opt.value
+                  ? 'bg-primary-500/20 text-primary-300'
+                  : 'text-surface-400 hover:text-surface-200 hover:bg-surface-700/50'
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+
+        <button
+          onClick={handleUnverifiedToggle}
+          aria-pressed={unverifiedOnly}
+          className={`flex items-center gap-1.5 px-3 py-2 text-sm rounded-lg border transition-colors ${
+            unverifiedOnly
+              ? 'bg-amber-500/15 border-amber-500/40 text-amber-300'
+              : 'bg-surface-800 border-surface-700 text-surface-400 hover:text-surface-200 hover:bg-surface-700/50'
+          }`}
+        >
+          <MailWarning className="w-4 h-4" />
+          {t('users.unverifiedFilter')}
+          {unverifiedCount > 0 && (
+            <span className="ml-0.5 px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 text-xs">
+              {unverifiedCount}
+            </span>
+          )}
+        </button>
       </div>
 
       {/* Search */}
@@ -230,11 +268,20 @@ export function AdminUsersPanel() {
                       {user.firstName} {user.lastName}
                     </td>
                     <td className="px-4 py-3">
-                      <div className="flex items-center gap-1.5">
+                      <div className="flex items-center gap-1.5 flex-wrap">
                         <span className="text-surface-300">{user.email}</span>
                         <span title={user.newsletterSubscribed ? t('users.newsletterYes') : t('users.newsletterNo')}>
                           <Mail className={`w-3 h-3 shrink-0 ${user.newsletterSubscribed ? 'text-green-400/60' : 'text-surface-600/50'}`} />
                         </span>
+                        {!user.emailVerified && (
+                          <span
+                            title={t('users.unverifiedHint')}
+                            className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-500/15 border border-amber-500/30 text-amber-300 text-xs whitespace-nowrap"
+                          >
+                            <MailWarning className="w-3 h-3 shrink-0" />
+                            {t('users.unverifiedBadge')}
+                          </span>
+                        )}
                       </div>
                     </td>
                     <td className="px-4 py-3 text-surface-300">{user.phone || '-'}</td>

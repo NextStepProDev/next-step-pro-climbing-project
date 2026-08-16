@@ -22,7 +22,7 @@ import { useDateLocale } from '../../utils/dateFnsLocale'
 import { useDirty } from '../../hooks/useDirty'
 import { useEditSavedToast } from '../../hooks/useEditSavedToast'
 import { todayInWarsaw } from '../../utils/calendarDate'
-import type { InvitedUser, SlotParticipants, SlotTemplate, TimeSlotAdmin, User } from '../../types'
+import type { InvitedUser, SlotParticipants, SlotTemplate, TimeSlotAdmin } from '../../types'
 
 const ARCHIVE_PAGE_SIZE = 15
 
@@ -930,7 +930,7 @@ function ParticipantsModal({
             {addMode === 'registered' ? (
               <form className="space-y-2" onSubmit={(e) => { e.preventDefault(); addRegisteredMutation.mutate() }}>
                 <UserSearchSelect
-                  users={(allUsers as User[] | undefined) ?? []}
+                  users={allUsers ?? []}
                   value={selectedUserId}
                   onChange={setSelectedUserId}
                 />

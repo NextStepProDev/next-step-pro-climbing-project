@@ -18,7 +18,7 @@ import { Button } from '../../components/ui/Button'
 import { DateInput } from '../../components/ui/DateInput'
 import { Modal } from '../../components/ui/Modal'
 import { TimeScrollPicker } from '../../components/ui/TimeScrollPicker'
-import type { CreateEventRequest, EventDetail, EventType, InvitedUser, User } from '../../types'
+import type { CreateEventRequest, EventDetail, EventType, InvitedUser } from '../../types'
 import { getEventColorByType } from '../../utils/events'
 import { nowInWarsaw, parseCalendarDate, todayInWarsaw } from '../../utils/calendarDate'
 
@@ -547,7 +547,7 @@ function EventCard({
               {addMode === 'registered' ? (
                 <div className="space-y-2">
                   <UserSearchSelect
-                    users={(allUsers as User[] | undefined) ?? []}
+                    users={allUsers ?? []}
                     value={selectedUserId}
                     onChange={(id) => { setSelectedUserId(id); addRegisteredMutation.reset() }}
                   />
