@@ -11,7 +11,17 @@ const LANGUAGES = [
   { code: 'es', label: 'ES' },
 ] as const
 
-export function LanguageSwitcher() {
+interface LanguageSwitcherProps {
+  /**
+   * `segmented` lays the three languages out in a row instead of behind a popover — for the
+   * mobile drawer, where a dropdown anchored at the bottom of the sheet would open off-screen.
+   * The change handler stays shared, so switching language means the same thing in both.
+   */
+  variant?: 'dropdown' | 'segmented'
+  className?: string
+}
+
+export function LanguageSwitcher({ variant = 'dropdown', className }: LanguageSwitcherProps = {}) {
   const { i18n } = useTranslation()
   const { isAuthenticated } = useAuth()
   const [open, setOpen] = useState(false)
@@ -35,6 +45,36 @@ export function LanguageSwitcher() {
     if (isAuthenticated) {
       authApi.updateLanguage(langCode).catch(() => {})
     }
+  }
+
+  if (variant === 'segmented') {
+    return (
+      <div
+        className={clsx(
+          'flex items-center gap-1 p-1 rounded-lg border border-surface-800 bg-surface-950/40',
+          className,
+        )}
+      >
+        <Globe className="w-4 h-4 shrink-0 ml-1.5 mr-0.5 text-surface-500" aria-hidden />
+        {LANGUAGES.map((lang) => (
+          <button
+            key={lang.code}
+            onClick={() => handleLanguageChange(lang.code)}
+            aria-pressed={lang.code === i18n.language}
+            className={clsx(
+              'flex-1 px-2 py-1.5 rounded-md text-xs font-semibold transition-all duration-150 active:scale-95',
+              // surface-800 sits one step from the sheet it lies on — the selected language was
+              // indistinguishable from the other two. The pill needs its own contrast, not a tint.
+              lang.code === i18n.language
+                ? 'bg-surface-700 text-surface-50 shadow-sm'
+                : 'text-surface-400 hover:text-surface-200',
+            )}
+          >
+            {lang.label}
+          </button>
+        ))}
+      </div>
+    )
   }
 
   return (

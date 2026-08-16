@@ -16,7 +16,12 @@
     "logout": "Cerrar sesión",
     "login": "Iniciar sesión",
     "closeMenu": "Cerrar menú",
-    "openMenu": "Abrir menú"
+    "openMenu": "Abrir menú",
+    "menu": "Menú",
+    "sections": {
+      "main": "Navegación",
+      "more": "Más"
+    }
   },
   "footer": {
     "description": "Formación en escalada adaptada a tu nivel y objetivos. Entrena con instructores experimentados y progresa de forma consciente.",
