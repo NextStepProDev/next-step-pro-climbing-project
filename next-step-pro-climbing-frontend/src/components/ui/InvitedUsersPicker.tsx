@@ -1,9 +1,9 @@
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
-import { X } from 'lucide-react'
+import { X, MailWarning } from 'lucide-react'
 import { adminApi } from '../../api/client'
-import type { InvitedUser, User } from '../../types'
+import type { AdminUser, InvitedUser } from '../../types'
 
 interface InvitedUsersPickerProps {
   value: InvitedUser[]
@@ -18,6 +18,9 @@ interface InvitedUsersPickerProps {
  */
 export function InvitedUsersPicker({ value, onChange, maxSeats }: InvitedUsersPickerProps) {
   const { t } = useTranslation('calendar')
+  // The unverified wording lives in the admin namespace — one dictionary entry for the panel,
+  // the pickers and the users table, so the three cannot drift apart.
+  const { t: tAdmin } = useTranslation('admin')
   const [search, setSearch] = useState('')
 
   const { data: users = [] } = useQuery({
@@ -36,7 +39,8 @@ export function InvitedUsersPicker({ value, onChange, maxSeats }: InvitedUsersPi
       .slice(0, 6)
   }, [search, users, selectedIds])
 
-  const add = (u: User) => {
+  const add = (u: AdminUser) => {
+    if (!u.emailVerified) return
     onChange([
       ...value,
       { userId: u.id, fullName: `${u.firstName} ${u.lastName}`.trim(), email: u.email },
@@ -86,12 +90,26 @@ export function InvitedUsersPicker({ value, onChange, maxSeats }: InvitedUsersPi
         <ul className="mt-1 bg-surface-800 border border-surface-700 rounded-lg divide-y divide-surface-700 max-h-48 overflow-auto">
           {results.map((u) => (
             <li key={u.id}>
+              {/* Unverified accounts stay listed but cannot be picked — the backend refuses them
+                  (admin.user.unverified), and hiding them would read as "no such account". */}
               <button
                 type="button"
+                disabled={!u.emailVerified}
+                title={u.emailVerified ? undefined : tAdmin('users.unverifiedHint')}
                 onClick={() => add(u)}
-                className="w-full text-left px-3 py-2 hover:bg-surface-700"
+                className={`w-full text-left px-3 py-2 ${
+                  u.emailVerified ? 'hover:bg-surface-700' : 'cursor-not-allowed opacity-60'
+                }`}
               >
-                <span className="text-surface-100 text-sm">{u.firstName} {u.lastName}</span>
+                <span className={`text-sm ${u.emailVerified ? 'text-surface-100' : 'text-surface-400'}`}>
+                  {u.firstName} {u.lastName}
+                </span>
+                {!u.emailVerified && (
+                  <span className="ml-2 inline-flex items-center gap-1 text-amber-400/90 text-xs">
+                    <MailWarning className="w-3 h-3 shrink-0" />
+                    {tAdmin('users.unverifiedBadge')}
+                  </span>
+                )}
                 <span className="block text-xs text-surface-400">{u.email}</span>
               </button>
             </li>

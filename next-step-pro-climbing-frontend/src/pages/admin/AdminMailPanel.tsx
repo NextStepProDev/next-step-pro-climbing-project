@@ -30,9 +30,13 @@ export function AdminMailPanel() {
 
   const filteredUsers = useMemo(() => {
     if (!users) return []
+    // Unverified accounts are dropped here, not greyed out: the backend filters them out of every
+    // send (AdminService#sendMailToUsers), so leaving them tickable would make the confirmation
+    // count promise mail that never goes out.
+    const verified = users.filter((u) => u.emailVerified)
     const q = search.toLowerCase().trim()
-    if (!q) return users
-    return users.filter(
+    if (!q) return verified
+    return verified.filter(
       (u) =>
         u.firstName.toLowerCase().includes(q) ||
         u.lastName.toLowerCase().includes(q) ||

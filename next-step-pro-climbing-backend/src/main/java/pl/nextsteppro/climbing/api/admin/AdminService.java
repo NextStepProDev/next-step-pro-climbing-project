@@ -979,7 +979,8 @@ public class AdminService {
                 u.getRole().name(),
                 u.getCreatedAt(),
                 u.isNewsletterSubscribed(),
-                u.isAthlete()
+                u.isAthlete(),
+                u.isEmailVerified()
             ))
             .toList();
     }
@@ -987,6 +988,7 @@ public class AdminService {
     public void makeAdmin(UUID adminId, UUID userId) {
         User user = userRepository.findById(userId)
             .orElseThrow(() -> new IllegalArgumentException("User not found"));
+        requireVerifiedAccount(user);
 
         user.setRole(UserRole.ADMIN);
         userRepository.save(user);
@@ -1016,6 +1018,11 @@ public class AdminService {
     public void setAthlete(UUID adminId, UUID userId, boolean isAthlete) {
         User user = userRepository.findById(userId)
             .orElseThrow(() -> new IllegalArgumentException("User not found"));
+        // Only when granting: taking the flag away from an account that turned out to be
+        // unverified has to stay possible, or the guard would trap the very state it forbids.
+        if (isAthlete) {
+            requireVerifiedAccount(user);
+        }
 
         user.setAthlete(isAthlete);
         userRepository.save(user);
@@ -1234,6 +1241,22 @@ public class AdminService {
     }
 
     /** Sets exactly the given set of invitees for the slot (diff: adds/removes). */
+    /**
+     * Refuses an account whose address was never confirmed. Such a user cannot log in at all
+     * ({@code AuthService#login} rejects them), so an invitation, a seat or a role handed to them
+     * is a record only they could act on — and they never will; the reservation mail lands in an
+     * address nobody proved they own. Guards the four places that bind a user to something (both
+     * invite syncs, both manual sign-ups) plus the two that hand out standing.
+     *
+     * <p>400 rather than 409: the request names a user the API does not accept, which is a bad
+     * argument, not a state conflict.
+     */
+    private void requireVerifiedAccount(User user) {
+        if (!user.isEmailVerified()) {
+            throw new IllegalArgumentException(msg.get("admin.user.unverified", user.getFullName()));
+        }
+    }
+
     private void syncSlotInvites(TimeSlot slot, List<UUID> desiredUserIds) {
         Set<UUID> desired = new LinkedHashSet<>(desiredUserIds);
         int confirmed = reservationRepository.countConfirmedByTimeSlotId(slot.getId())
@@ -1261,6 +1284,11 @@ public class AdminService {
             if (!existingUserIds.contains(uid)) {
                 User user = userRepository.findById(uid)
                     .orElseThrow(() -> new IllegalArgumentException("User not found: " + uid));
+                // Only the newly added are checked. The front always submits the full invitee list,
+                // so validating all of them would turn a slot carrying an invitation issued before
+                // this guard existed into a slot nobody can edit — the same trap the invitation
+                // limit hit when it counted invitees who had already booked.
+                requireVerifiedAccount(user);
                 reservedSeatRepository.save(new ReservedSeat(slot, user));
             }
         }
@@ -1307,6 +1335,8 @@ public class AdminService {
             if (!existingUserIds.contains(uid)) {
                 User user = userRepository.findById(uid)
                     .orElseThrow(() -> new IllegalArgumentException("User not found: " + uid));
+                // Newly added only — see the note in syncSlotInvites.
+                requireVerifiedAccount(user);
                 reservedSeatRepository.save(new ReservedSeat(event, user));
             }
         }
@@ -1591,6 +1621,7 @@ public class AdminService {
 
         User user = userRepository.findById(request.userId())
             .orElseThrow(() -> new IllegalArgumentException("User not found"));
+        requireVerifiedAccount(user);
 
         if (reservationRepository.existsByUserIdAndTimeSlotIdAndStatus(user.getId(), slotId, ReservationStatus.CONFIRMED)) {
             throw new IllegalStateException(msg.get("reservation.already.exists"));
@@ -1683,6 +1714,7 @@ public class AdminService {
 
         User user = userRepository.findById(request.userId())
             .orElseThrow(() -> new IllegalArgumentException("User not found"));
+        requireVerifiedAccount(user);
 
         List<TimeSlot> slots = timeSlotRepository.findByEventId(eventId);
         if (slots.isEmpty()) {

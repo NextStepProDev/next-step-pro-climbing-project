@@ -42,6 +42,21 @@ public class AuthMailService {
         sendEmail(user.getEmail(), subject, body);
     }
 
+    /**
+     * Last call before an unconfirmed account is deleted. Carries NO verification token on
+     * purpose: those live 15 minutes, and a mail saying "your account goes tomorrow" gets opened
+     * in the evening — a token minted here would be dead before it was read. The button points at
+     * the resend page, which issues a live link on demand.
+     */
+    @Async
+    public void sendVerificationReminder(User user) {
+        String lang = user.getPreferredLanguage();
+        String subject = msg.getForLang("email.verification.reminder.subject", lang);
+        String body = buildVerificationReminderBody(lang, user.getFirstName(), buildResendVerificationUrl());
+
+        sendEmail(user.getEmail(), subject, body);
+    }
+
     @Async
     public void sendWelcomeEmail(User user) {
         String lang = user.getPreferredLanguage();
@@ -226,6 +241,64 @@ public class AuthMailService {
 
     private String buildPasswordResetUrl(String token) {
         return appConfig.getBaseUrl() + "/reset-password?token=" + token;
+    }
+
+    private String buildResendVerificationUrl() {
+        return appConfig.getBaseUrl() + "/resend-verification";
+    }
+
+    private String buildVerificationReminderBody(String lang, String firstName, String resendUrl) {
+        return """
+            <html>
+            <body style="font-family: Arial, sans-serif; background-color: #1a1816; color: #e0e0e0; padding: 20px;">
+                <div style="max-width: 600px; margin: 0 auto; background-color: #312e2b; border-radius: 12px; overflow: hidden;">
+                    <div style="text-align: center; padding: 24px 30px 0;">
+                        <a href="%s" style="display: inline-block; text-decoration: none;"><img src="cid:logo" alt="Next Step Pro Climbing" style="height: 80px; display: block;" /></a>
+                    </div>
+                    <div style="padding: 20px 30px 30px;">
+                    <h1 style="color: #3b82f6; margin-bottom: 20px;">%s</h1>
+                    <p style="font-size: 16px; line-height: 1.6;">
+                        %s
+                    </p>
+                    <p style="font-size: 16px; line-height: 1.6; color: #fbbf24;">
+                        %s
+                    </p>
+                    <div style="text-align: center; margin: 30px 0;">
+                        <a href="%s"
+                           style="background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+                                  color: white;
+                                  padding: 14px 32px;
+                                  text-decoration: none;
+                                  border-radius: 8px;
+                                  font-weight: bold;
+                                  font-size: 16px;
+                                  display: inline-block;">
+                            %s
+                        </a>
+                    </div>
+                    <p style="font-size: 14px; color: #9ca3af;">
+                        %s
+                    </p>
+                    <hr style="border: none; border-top: 1px solid #2d2d44; margin: 30px 0;">
+                    <p style="font-size: 12px; color: #6b7280; text-align: center;">
+                        %s<br>
+                        %s
+                    </p>
+                    </div>
+                </div>
+            </body>
+            </html>
+            """.formatted(
+            siteUrl,
+            msg.getForLang("email.verification.reminder.greeting", lang, firstName),
+            msg.getForLang("email.verification.reminder.body", lang),
+            msg.getForLang("email.verification.reminder.deadline", lang),
+            resendUrl,
+            msg.getForLang("email.verification.reminder.button", lang),
+            msg.getForLang("email.verification.reminder.ignore", lang),
+            msg.getForLang("email.footer", lang),
+            msg.getForLang("email.footer.slogan", lang)
+        );
     }
 
     private String buildVerificationEmailBody(String lang, String firstName, String verificationUrl) {

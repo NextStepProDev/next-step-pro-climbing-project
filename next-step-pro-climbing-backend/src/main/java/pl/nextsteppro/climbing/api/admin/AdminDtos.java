@@ -274,7 +274,11 @@ record UserAdminDto(
     String role,
     Instant createdAt,
     boolean newsletterSubscribed,
-    boolean isAthlete
+    boolean isAthlete,
+    // Whether the address was ever confirmed. Every picker in the panel is fed by this one
+    // listing, so without the flag an account nobody can log into looks exactly like a real one —
+    // and the actions that refuse it (invites, manual sign-up, bulk mail) would refuse it silently.
+    boolean emailVerified
 ) {}
 
 record SetAthleteRequest(boolean isAthlete) {}

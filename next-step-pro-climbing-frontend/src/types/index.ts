@@ -35,6 +35,25 @@ export interface User {
   createdAt: string
 }
 
+/**
+ * A row of the admin user listing (`GET /admin/users`). Deliberately its own type rather than
+ * `User`: that one describes the signed-in account and carries fields this listing never sends
+ * (nickname, consent, avatar), while this one carries `emailVerified`, which `/user/me` does not.
+ */
+export interface AdminUser {
+  id: string
+  firstName: string
+  lastName: string
+  email: string
+  phone: string
+  role: 'USER' | 'ADMIN'
+  createdAt: string
+  newsletterSubscribed: boolean
+  isAthlete: boolean
+  // Never confirmed the address: cannot log in, and every binding admin action refuses them
+  emailVerified: boolean
+}
+
 // Calendar types
 export interface MonthView {
   yearMonth: string
