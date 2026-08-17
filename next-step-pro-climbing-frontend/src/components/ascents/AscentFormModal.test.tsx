@@ -13,7 +13,8 @@ vi.mock('react-i18next', () => ({
 const OPTIONS: AscentOptions = {
   disciplines: [
     { value: 'SPORT', gradeScale: 'FRENCH_ROUTE', styles: ['OS', 'FLASH', 'RP', 'TR', 'SOLO', 'FREE_SOLO'] },
-    { value: 'TRAD', gradeScale: 'FRENCH_ROUTE', styles: ['OS', 'FLASH', 'RP', 'TR', 'SOLO', 'FREE_SOLO'] },
+    // Trad speaks its own dialect and shares nothing with sport — cleanest first, as served
+    { value: 'TRAD', gradeScale: 'FRENCH_ROUTE', styles: ['OS_GU', 'FLASH_GU', 'GU', 'HP'] },
     { value: 'BOULDER', gradeScale: 'FONT_BOULDER', styles: ['OS', 'FLASH', 'RP'] },
   ],
   mountainStyles: ['OS', 'FLASH', 'RP', 'A0', 'SOLO', 'FREE_SOLO'],
@@ -105,6 +106,29 @@ describe('AscentFormModal', () => {
 
     expect(styles).toEqual(expect.arrayContaining(['SOLO', 'FREE_SOLO', 'A0']))
     expect(styles).not.toContain('TR')
+  })
+
+  // Trad asks where the ascent was worked from, not how much was known about it — so it shares
+  // no style with sport, and the default must not hand out an onsight nobody claimed
+  it('offers only the ground-up dialect for trad and defaults to the worked send', async () => {
+    renderForm()
+    await userEvent.selectOptions(screen.getByLabelText('form.discipline'), 'TRAD')
+
+    const style = screen.getByLabelText('form.style') as HTMLSelectElement
+    const styles = [...style.options].map(option => option.value)
+
+    expect(styles).toEqual(['OS_GU', 'FLASH_GU', 'GU', 'HP'])
+    expect(style.value).toBe('GU')
+  })
+
+  it('hides the attempts field for a ground-up onsight, keeps it for a worked one', async () => {
+    renderForm()
+    await userEvent.selectOptions(screen.getByLabelText('form.discipline'), 'TRAD')
+    expect(screen.getByLabelText('form.attempts')).toBeInTheDocument()
+
+    await userEvent.selectOptions(screen.getByLabelText('form.style'), 'OS_GU')
+
+    expect(screen.queryByLabelText('form.attempts')).not.toBeInTheDocument()
   })
 
   it('offers solo on roped rock', async () => {

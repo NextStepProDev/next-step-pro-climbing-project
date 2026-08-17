@@ -31,6 +31,14 @@ interface AscentFormModalProps {
 const INPUT_CLASS = 'w-full px-3 py-2 bg-surface-800 border border-surface-700 rounded-lg text-surface-100 placeholder-surface-500 focus:outline-none focus:ring-2 focus:ring-primary-500/50'
 const LABEL_CLASS = 'block text-sm font-medium text-surface-300 mb-1'
 
+// "First go" by definition, in both dialects: sport flashes an onsight, trad does it ground up.
+// The backend normalises attempts to 1 for these, so the field is hidden rather than refused.
+const FIRST_TRY_STYLES: AscentStyle[] = ['OS', 'FLASH', 'OS_GU', 'FLASH_GU']
+
+// The worked send of each dialect, best first — what a fresh entry should default to. Never the
+// cleanest style available: a default that claims an onsight is a default that lies.
+const WORKED_STYLES: AscentStyle[] = ['RP', 'GU', 'HP']
+
 export function AscentFormModal({
   isOpen, onClose, onSubmit, saving, error, options, places, terrain, editing,
 }: AscentFormModalProps) {
@@ -128,12 +136,16 @@ function AscentForm({
       setGradeCleared(true)
     }
     if (nextOption && !nextOption.styles.includes(style)) {
-      setStyle(nextOption.styles.includes('RP') ? 'RP' : nextOption.styles[0])
+      // The worked send is the safe default — the styles arrive cleanest-first, so falling back
+      // to styles[0] would have pre-filled a trad entry with OS GU and credited an onsight to
+      // anybody who did not touch the dropdown
+      const worked = WORKED_STYLES.find(candidate => nextOption.styles.includes(candidate))
+      setStyle(worked ?? nextOption.styles[nextOption.styles.length - 1])
     }
   }
 
-  // OS and FLASH mean "first go" by definition, so there is nothing to count
-  const showsAttempts = style !== 'OS' && style !== 'FLASH'
+  // A first go is a first go in either dialect, so there is nothing to count
+  const showsAttempts = !FIRST_TRY_STYLES.includes(style)
 
   const cragOptions = useMemo(() => {
     const forArea = places.find(place => place.area.toLowerCase() === area.trim().toLowerCase())

@@ -16,7 +16,11 @@
     "TR": "TR",
     "SOLO": "Solo",
     "FREE_SOLO": "Free solo",
-    "A0": "A0"
+    "A0": "A0",
+    "OS_GU": "OS GU",
+    "FLASH_GU": "Flash GU",
+    "GU": "GU",
+    "HP": "HP"
   },
   "tabs": {
     "articles": "Artículos",
@@ -139,7 +143,7 @@
     "areas": "Zonas",
     "crags_one": "{{count}} sector",
     "crags_other": "{{count}} sectores",
-    "avgAttempts": "Media intentos a RP",
+    "avgAttempts": "Media intentos trabajando",
     "avgAttemptsFrom_one": "de {{count}} encadene",
     "avgAttemptsFrom_other": "de {{count}} encadenes",
     "avgAttemptsEmpty": "sin intentos registrados",

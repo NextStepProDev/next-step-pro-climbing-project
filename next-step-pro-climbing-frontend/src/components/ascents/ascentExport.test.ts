@@ -89,7 +89,10 @@ describe('toExportRows', () => {
 
   // SOLO and FREE_SOLO are words, not shorthand, so they are the two styles that translate
   it('writes the translated style label when one is given', () => {
-    const styles = { OS: 'OS', FLASH: 'FLASH', RP: 'RP', TR: 'TR', SOLO: 'Solo', FREE_SOLO: 'Na żywca', A0: 'A0' }
+    const styles = {
+      OS: 'OS', FLASH: 'FLASH', RP: 'RP', TR: 'TR', SOLO: 'Solo', FREE_SOLO: 'Na żywca', A0: 'A0',
+      OS_GU: 'OS GU', FLASH_GU: 'Flash GU', GU: 'GU', HP: 'HP',
+    }
     const row = toExportRows([ascent({ style: 'FREE_SOLO' })], DISCIPLINES, undefined, styles)[0]
 
     expect(row[6]).toBe('Na żywca')

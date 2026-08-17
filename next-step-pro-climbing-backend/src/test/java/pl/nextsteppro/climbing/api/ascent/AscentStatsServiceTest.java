@@ -39,6 +39,12 @@ class AscentStatsServiceTest {
             null, null, null, null, null, null);
     }
 
+    private static AscentStatsRow tradWithAttempts(AscentStyle style, Integer attempts) {
+        return new AscentStatsRow(AscentDiscipline.TRAD, ClimbingGrade.FR_7A, style,
+            LocalDate.of(2026, 5, 1), "jura", "Jura", "skala", "Skała", "Droga", attempts, null,
+            null, null, null, null, null, null);
+    }
+
     private static AscentStatsRow atPlace(String areaKey, String cragKey) {
         return new AscentStatsRow(AscentDiscipline.SPORT, ClimbingGrade.FR_7A, AscentStyle.RP,
             LocalDate.of(2026, 5, 1), areaKey, areaKey, cragKey, cragKey, "Droga", null, null,
@@ -74,7 +80,7 @@ class AscentStatsServiceTest {
     void shouldGiveTradItsOwnPyramid() {
         List<AscentStatsRow> rows = List.of(
             row(LocalDate.of(2026, 5, 1), AscentDiscipline.SPORT, ClimbingGrade.FR_7A, AscentStyle.RP),
-            row(LocalDate.of(2026, 5, 2), AscentDiscipline.TRAD, ClimbingGrade.FR_6A, AscentStyle.OS));
+            row(LocalDate.of(2026, 5, 2), AscentDiscipline.TRAD, ClimbingGrade.FR_6A, AscentStyle.OS_GU));
 
         AscentStatsDto stats = service.buildStats(rows, 2026);
 
@@ -203,6 +209,31 @@ class AscentStatsServiceTest {
 
         assertThat(stats.avgAttemptsToRedpoint()).isNull();
         assertThat(stats.redpointsWithAttempts()).isZero();
+    }
+
+    @Test
+    @DisplayName("trad's worked sends count towards the attempts average — it has no RP to offer")
+    void shouldAverageAttemptsOverTheTradDialectToo() {
+        List<AscentStatsRow> rows = List.of(
+            tradWithAttempts(AscentStyle.GU, 4),
+            tradWithAttempts(AscentStyle.HP, 6),
+            tradWithAttempts(AscentStyle.OS_GU, 1));
+
+        AscentStatsDto stats = service.buildStats(rows, 2026);
+
+        assertThat(stats.avgAttemptsToRedpoint()).isEqualTo(5.0);
+        assertThat(stats.redpointsWithAttempts()).isEqualTo(2);
+    }
+
+    @Test
+    @DisplayName("a ground-up onsight is an onsight — trad would otherwise read a permanent 0%")
+    void shouldCountGroundUpOnsightsInTheOnsightRate() {
+        List<AscentStatsRow> rows = List.of(
+            row(LocalDate.of(2026, 5, 1), AscentDiscipline.TRAD, ClimbingGrade.FR_6A, AscentStyle.OS_GU),
+            row(LocalDate.of(2026, 5, 2), AscentDiscipline.TRAD, ClimbingGrade.FR_6A, AscentStyle.GU));
+
+        assertThat(block(service.buildStats(rows, 2026), AscentDiscipline.TRAD)
+            .orElseThrow().onsightRatePercent()).isEqualTo(50.0);
     }
 
     @Test

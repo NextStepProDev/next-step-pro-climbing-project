@@ -16,7 +16,11 @@
     "TR": "TR",
     "SOLO": "Solo",
     "FREE_SOLO": "Free solo",
-    "A0": "A0"
+    "A0": "A0",
+    "OS_GU": "OS GU",
+    "FLASH_GU": "Flash GU",
+    "GU": "GU",
+    "HP": "HP"
   },
   "tabs": {
     "articles": "Articles",
@@ -139,7 +143,7 @@
     "areas": "Areas",
     "crags_one": "{{count}} crag",
     "crags_other": "{{count}} crags",
-    "avgAttempts": "Avg attempts to RP",
+    "avgAttempts": "Avg attempts when worked",
     "avgAttemptsFrom_one": "from {{count}} redpoint",
     "avgAttemptsFrom_other": "from {{count}} redpoints",
     "avgAttemptsEmpty": "no attempts recorded",

@@ -1428,10 +1428,14 @@ export interface SaveWeight {
 // and the onsight rate count ascents, so a "tried it" row would sit in the denominator of both.
 export type AscentDiscipline = 'SPORT' | 'BOULDER' | 'TRAD'
 
-// OS > FLASH > RP > PP > TR in cleanliness. Never translated — international shorthand.
 // OS > FLASH > RP > TR in cleanliness, with SOLO/FREE_SOLO above them as a different kind of
-// commitment. Pinkpoint was dropped; the two-letter names stay untranslated, SOLO/FREE_SOLO do not.
-export type AscentStyle = 'OS' | 'FLASH' | 'RP' | 'TR' | 'SOLO' | 'FREE_SOLO' | 'A0'
+// commitment. Pinkpoint was dropped; the shorthand names stay untranslated, SOLO/FREE_SOLO do not.
+// Trad speaks its own dialect and shares none of the above: OS_GU > FLASH_GU > GU > HP, because
+// on gear the question is where the ascent was worked from, not how much was known about it.
+// The backend serves the per-discipline list from /ascents/options — never hardcode it in a form.
+export type AscentStyle =
+  | 'OS' | 'FLASH' | 'RP' | 'TR' | 'SOLO' | 'FREE_SOLO' | 'A0'
+  | 'OS_GU' | 'FLASH_GU' | 'GU' | 'HP'
 
 // Two separate axes. 7a (French route) and 7A (Font) are three grades apart, so nothing
 // compares a grade from one scale with a grade from the other.

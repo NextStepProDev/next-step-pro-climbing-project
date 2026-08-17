@@ -74,6 +74,12 @@ class AscentIntegrationTest extends BaseIntegrationTest {
             null, null, null, null, null, null, null, null);
     }
 
+    private SaveAscentRequest tradRequest(String routeName, ClimbingGrade grade, AscentStyle style) {
+        return new SaveAscentRequest(null, today(), AscentDiscipline.TRAD, grade, style,
+            "Jura Północna", "Rzędkowice", routeName, null, null, null,
+            null, null, null, null, null, null, null, null);
+    }
+
     /** Bypasses the entity's own guards to prove the constraint, not the setter, is doing the work. */
     private void rawInsert(String discipline, String grade, String style, Integer attempts) {
         jdbc.update("""
@@ -111,6 +117,69 @@ class AscentIntegrationTest extends BaseIntegrationTest {
     void shouldRejectPinkpointAnywhere() {
         assertThrows(DataIntegrityViolationException.class,
             () -> rawInsert("SPORT", "FR_7A", "PP", null));
+    }
+
+    // One violating statement per test on purpose: the class is @Transactional, so the first
+    // failed INSERT poisons the transaction and everything after it reports "transaction is
+    // aborted" instead of the constraint that was actually broken.
+
+    @Test
+    @DisplayName("the ground-up dialect belongs to trad alone — chk_climbing_ascents_trad_style")
+    void shouldRejectTheGroundUpDialectOutsideTrad() {
+        assertThrows(DataIntegrityViolationException.class,
+            () -> rawInsert("SPORT", "FR_7A", "GU", null));
+    }
+
+    @Test
+    @DisplayName("the other direction of the same CHECK: trad has no RP to fall back on")
+    void shouldRejectSportsVocabularyInsideTrad() {
+        assertThrows(DataIntegrityViolationException.class,
+            () -> rawInsert("TRAD", "FR_7A", "RP", null));
+    }
+
+    @Test
+    @DisplayName("trad speaks OS GU / Flash GU / GU / HP, and the service says so before the CHECK")
+    void shouldAcceptOnlyTheGroundUpDialectForTrad() {
+        AscentDto groundUp = ascentService.createMyAscent(athlete.getId(),
+            tradRequest("Rysa", ClimbingGrade.FR_6C, AscentStyle.GU));
+        AscentDto headpoint = ascentService.createMyAscent(athlete.getId(),
+            tradRequest("Zacięcie", ClimbingGrade.FR_6B, AscentStyle.HP));
+
+        assertEquals("GU", groundUp.style());
+        assertEquals("HP", headpoint.style());
+
+        assertThrows(IllegalArgumentException.class, () -> ascentService.createMyAscent(
+            athlete.getId(), tradRequest("Komin", ClimbingGrade.FR_6A, AscentStyle.RP)));
+        assertThrows(IllegalArgumentException.class, () -> ascentService.createMyAscent(
+            athlete.getId(), sportRequest("Filarek", ClimbingGrade.FR_6A, AscentStyle.GU)));
+    }
+
+    @Test
+    @DisplayName("an alpine route is ground up by default, so the label would name the normal case")
+    void shouldRejectTheGroundUpDialectInTheMountains() {
+        SaveAscentRequest groundUpInTheAlps = new SaveAscentRequest(AscentTerrain.MOUNTAIN, today(),
+            null, ClimbingGrade.FR_5A, AscentStyle.GU, "Tatry", "Mnich", "Droga", null, null, null,
+            false, null, null, null, null, null, null, null);
+
+        assertThrows(IllegalArgumentException.class,
+            () -> ascentService.createMyAscent(athlete.getId(), groundUpInTheAlps));
+    }
+
+    @Test
+    @DisplayName("a ground-up onsight is one try by definition — attempts normalise, never 400")
+    void shouldNormaliseAttemptsForAGroundUpOnsight() {
+        SaveAscentRequest fourGoOnsight = new SaveAscentRequest(null, today(), AscentDiscipline.TRAD,
+            ClimbingGrade.FR_6A, AscentStyle.OS_GU, "Jura Północna", "Rzędkowice", "Ryska",
+            4, null, null, null, null, null, null, null, null, null, null);
+
+        assertEquals(1, ascentService.createMyAscent(athlete.getId(), fourGoOnsight).attempts());
+    }
+
+    @Test
+    @DisplayName("...and the CHECK says the same for a path that skips the service")
+    void shouldRejectAGroundUpFlashWithMoreThanOneAttempt() {
+        assertThrows(DataIntegrityViolationException.class,
+            () -> rawInsert("TRAD", "FR_7A", "FLASH_GU", 4));
     }
 
     @Test
@@ -600,6 +669,16 @@ class AscentIntegrationTest extends BaseIntegrationTest {
         assertEquals(AscentDiscipline.values().length, options.disciplines().size());
         assertTrue(options.gradesByScale().get("FRENCH_ROUTE").size() > 20);
         assertTrue(options.gradesByScale().get("FONT_BOULDER").size() > 20);
+    }
+
+    @Test
+    @DisplayName("the trad dropdown arrives cleanest-first — the form renders this order verbatim")
+    void shouldServeTheTradDialectInReadingOrder() {
+        List<String> tradStyles = ascentService.getOptions().disciplines().stream()
+            .filter(option -> option.value().equals(AscentDiscipline.TRAD.name()))
+            .findFirst().orElseThrow().styles();
+
+        assertEquals(List.of("OS_GU", "FLASH_GU", "GU", "HP"), tradStyles);
     }
 
     private void logOn(LocalDate day, String routeName) {
