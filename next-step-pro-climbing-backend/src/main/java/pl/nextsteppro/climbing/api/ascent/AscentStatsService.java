@@ -117,8 +117,11 @@ public class AscentStatsService {
         // Deliberately NOT a "days on rock" count. Only ascents are logged, so a day of failed
         // attempts, a rained-off day or a day spent belaying leaves no row — the figure would
         // have measured how diligently the logbook was filled in, not how much was climbed.
+        // Worked sends across every dialect — RP on bolts, GU and HP on gear. Pinning this to RP
+        // alone would leave a trad-only logbook with a permanent dash next to a field its owner
+        // fills in on every entry
         List<AscentStatsRow> countedRedpoints = selected.stream()
-                .filter(row -> row.style() == AscentStyle.RP && row.attempts() != null)
+                .filter(row -> row.style().isWorkedSend() && row.attempts() != null)
                 .toList();
 
         return new AscentStatsDto(
@@ -229,7 +232,12 @@ public class AscentStatsService {
 
         // inScope is never empty here (the caller skips empty disciplines), so a zero rate is a
         // real answer — "no onsights this year" — rather than a missing one
-        int onsights = styleCounts.getOrDefault(AscentStyle.OS, 0);
+        // Counted through isOnsight() rather than off the OS key: trad logs its onsights as
+        // OS GU, and a block that always reported 0% would read as "never onsighted anything"
+        int onsights = styleCounts.entrySet().stream()
+                .filter(entry -> entry.getKey().isOnsight())
+                .mapToInt(Map.Entry::getValue)
+                .sum();
         double onsightRate = round1(100.0 * onsights / inScope.size());
 
         return new AscentDisciplineStatsDto(
@@ -255,7 +263,7 @@ public class AscentStatsService {
         for (AscentStatsRow row : allTime) {
             int year = row.climbedOn().getYear();
             keepHarder(bestOverall, year, row);
-            if (row.style() == AscentStyle.OS) {
+            if (row.style().isOnsight()) {
                 keepHarder(bestOnsight, year, row);
             }
         }

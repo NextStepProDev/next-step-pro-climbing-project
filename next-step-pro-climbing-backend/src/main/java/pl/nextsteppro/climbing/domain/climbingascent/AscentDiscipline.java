@@ -20,8 +20,15 @@ public enum AscentDiscipline {
     SPORT(GradeScale.FRENCH_ROUTE, Set.of(AscentStyle.OS, AscentStyle.FLASH, AscentStyle.RP,
             AscentStyle.TR, AscentStyle.SOLO, AscentStyle.FREE_SOLO)),
 
-    TRAD(GradeScale.FRENCH_ROUTE, Set.of(AscentStyle.OS, AscentStyle.FLASH, AscentStyle.RP,
-            AscentStyle.TR, AscentStyle.SOLO, AscentStyle.FREE_SOLO)),
+    /**
+     * Trad has its own vocabulary, shared with nothing else. On gear the question is where the
+     * ascent was worked from, not how much was known about it: OS GU and Flash GU are the
+     * ground-up first goes, GU is the worked ground-up lead, HP the headpoint — led after
+     * rehearsing on a rope from above. Sport's OS/FLASH/RP are gone from here because they
+     * cannot say that; toprope and solo are gone because a trad logbook is a record of leads.
+     */
+    TRAD(GradeScale.FRENCH_ROUTE, Set.of(AscentStyle.OS_GU, AscentStyle.FLASH_GU,
+            AscentStyle.GU, AscentStyle.HP)),
 
     /**
      * No rope to hang on, so toprope does not apply — and neither does free solo, since every
@@ -34,7 +41,9 @@ public enum AscentDiscipline {
      * What the mountains allow. Toprope is gone: nobody hangs a rope down an alpine route, so
      * offering it would be a question with no honest answer. A0 is here and nowhere else — an
      * alpine route pulled through one move is still an ascent of that route, while the same day
-     * on a crag is honestly recorded as a redpoint attempt.
+     * on a crag is honestly recorded as a redpoint attempt. The trad dialect (GU family, HP)
+     * stays out too: an alpine route is ground up by default, so the label would describe the
+     * normal case — the same reason free solo is not offered in bouldering.
      */
     public static final Set<AscentStyle> MOUNTAIN_STYLES = Set.of(
             AscentStyle.OS, AscentStyle.FLASH, AscentStyle.RP, AscentStyle.A0,

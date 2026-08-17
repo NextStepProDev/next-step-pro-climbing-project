@@ -116,7 +116,46 @@ class ClimbingGradeTest {
     void shouldOfferSoloOnRopedRock() {
         assertThat(AscentDiscipline.SPORT.allowedStyles())
                 .contains(AscentStyle.SOLO, AscentStyle.FREE_SOLO, AscentStyle.TR);
-        assertThat(AscentDiscipline.TRAD.allowedStyles()).contains(AscentStyle.FREE_SOLO);
+    }
+
+    /**
+     * Mirrors {@code chk_climbing_ascents_trad_style}. Trad shares no style with anything else:
+     * sport's OS/FLASH/RP cannot say where the ascent was worked from, and toprope and solo are
+     * out because a trad logbook records leads.
+     */
+    @Test
+    void shouldOfferOnlyTheGroundUpDialectForTrad() {
+        assertThat(AscentDiscipline.TRAD.allowedStyles()).containsExactlyInAnyOrder(
+                AscentStyle.OS_GU, AscentStyle.FLASH_GU, AscentStyle.GU, AscentStyle.HP);
+    }
+
+    /** The other half of the same CHECK: the dialect belongs to trad and to nothing else. */
+    @Test
+    void shouldKeepTheGroundUpDialectOutOfEveryOtherDiscipline() {
+        for (AscentStyle style : List.of(AscentStyle.OS_GU, AscentStyle.FLASH_GU,
+                AscentStyle.GU, AscentStyle.HP)) {
+            assertThat(AscentDiscipline.SPORT.allowedStyles()).doesNotContain(style);
+            assertThat(AscentDiscipline.BOULDER.allowedStyles()).doesNotContain(style);
+            assertThat(AscentDiscipline.MOUNTAIN_STYLES).doesNotContain(style);
+        }
+    }
+
+    /** An onsight is an onsight in either dialect — the onsight rate reads both. */
+    @Test
+    void shouldTreatBothOnsightDialectsAsOnsightsAndFirstTries() {
+        assertThat(AscentStyle.OS.isOnsight()).isTrue();
+        assertThat(AscentStyle.OS_GU.isOnsight()).isTrue();
+        assertThat(AscentStyle.GU.isOnsight()).isFalse();
+
+        assertThat(AscentStyle.OS_GU.isFirstTry()).isTrue();
+        assertThat(AscentStyle.FLASH_GU.isFirstTry()).isTrue();
+        assertThat(AscentStyle.GU.isFirstTry()).isFalse();
+        assertThat(AscentStyle.HP.isFirstTry()).isFalse();
+
+        assertThat(AscentStyle.GU.isWorkedSend()).isTrue();
+        assertThat(AscentStyle.HP.isWorkedSend()).isTrue();
+        assertThat(AscentStyle.RP.isWorkedSend()).isTrue();
+        assertThat(AscentStyle.TR.isWorkedSend()).isFalse();
     }
 
     /** Mirrors {@code chk_climbing_ascents_rock_style}: aid belongs to the mountains only. */
@@ -136,6 +175,14 @@ class ClimbingGradeTest {
         assertThat(AscentStyle.FLASH.purity()).isGreaterThan(AscentStyle.RP.purity());
         assertThat(AscentStyle.RP.purity()).isGreaterThan(AscentStyle.TR.purity());
         assertThat(AscentStyle.TR.purity()).isGreaterThan(AscentStyle.A0.purity());
+    }
+
+    /** Drives the order of the trad dropdown and of its pyramid legend: OS GU, Flash GU, GU, HP. */
+    @Test
+    void shouldRankTheTradDialectFromHeadpointToGroundUpOnsight() {
+        assertThat(AscentStyle.OS_GU.purity()).isGreaterThan(AscentStyle.FLASH_GU.purity());
+        assertThat(AscentStyle.FLASH_GU.purity()).isGreaterThan(AscentStyle.GU.purity());
+        assertThat(AscentStyle.GU.purity()).isGreaterThan(AscentStyle.HP.purity());
     }
 
     @Test

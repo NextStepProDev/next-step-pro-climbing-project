@@ -189,7 +189,8 @@ export function AscentsSection({ api, scopeKey, scopeLabel, isCoachView }: Ascen
           styles: {
             OS: t('style.OS'), FLASH: t('style.FLASH'), RP: t('style.RP'),
             TR: t('style.TR'), SOLO: t('style.SOLO'), FREE_SOLO: t('style.FREE_SOLO'),
-            A0: t('style.A0'),
+            A0: t('style.A0'), OS_GU: t('style.OS_GU'), FLASH_GU: t('style.FLASH_GU'),
+            GU: t('style.GU'), HP: t('style.HP'),
           },
           seasons: { summer: t('season.summer'), winter: t('season.winter') },
         },

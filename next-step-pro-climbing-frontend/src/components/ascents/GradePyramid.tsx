@@ -67,7 +67,9 @@ export function GradePyramid({ rows, showHeading = true }: GradePyramidProps) {
 }
 
 /** Cleanest first, so the bar reads left-to-right the way the styles rank. */
-const STYLE_ORDER: AscentStyle[] = ['FREE_SOLO', 'SOLO', 'OS', 'FLASH', 'RP', 'TR', 'A0']
+const STYLE_ORDER: AscentStyle[] = [
+  'FREE_SOLO', 'SOLO', 'OS_GU', 'OS', 'FLASH_GU', 'FLASH', 'GU', 'RP', 'HP', 'TR', 'A0',
+]
 
 // Greens for the clean end, cooling off towards toprope — the same "green means done well"
 // vocabulary the training heatmap already uses.
@@ -86,6 +88,13 @@ const STYLE_COLOR: Record<AscentStyle, string> = {
   TR: 'bg-surface-600',
   // Aid: the weakest style, so the flattest colour on the chart
   A0: 'bg-surface-700',
+  // Trad's dialect never shares a bar with sport's — the blocks are per discipline — so these
+  // only have to be told apart from each other. They keep the same vocabulary anyway: green for
+  // the first-go end, cooling towards the worked ones, so a glance reads the same way in both.
+  OS_GU: 'bg-emerald-400',
+  FLASH_GU: 'bg-emerald-600',
+  GU: 'bg-teal-500',
+  HP: 'bg-indigo-500',
 }
 
 function StyleLegend({ rows }: { rows: PyramidRow[] }) {

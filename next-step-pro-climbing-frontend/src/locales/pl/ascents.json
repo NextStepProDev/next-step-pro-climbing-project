@@ -16,7 +16,11 @@
     "TR": "TR",
     "SOLO": "Solo",
     "FREE_SOLO": "Na żywca",
-    "A0": "A0"
+    "A0": "A0",
+    "OS_GU": "OS GU",
+    "FLASH_GU": "Flash GU",
+    "GU": "GU",
+    "HP": "HP"
   },
   "tabs": {
     "articles": "Artykuły",
@@ -143,7 +147,7 @@
     "crags_few": "{{count}} skały",
     "crags_many": "{{count}} skał",
     "crags_other": "{{count}} skał",
-    "avgAttempts": "Śr. prób na RP",
+    "avgAttempts": "Śr. prób po pracy",
     "avgAttemptsFrom_one": "z {{count}} przejścia",
     "avgAttemptsFrom_few": "z {{count}} przejść",
     "avgAttemptsFrom_many": "z {{count}} przejść",
