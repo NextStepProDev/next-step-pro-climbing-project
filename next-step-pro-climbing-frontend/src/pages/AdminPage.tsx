@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { Routes, Route, Link, useLocation } from 'react-router-dom'
+import { Routes, Route, Link, useLocation, useMatch } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { Calendar, CalendarPlus, Users, Clock, ClipboardList, Activity, User, Image, Newspaper, BookOpen, Library, Mail, HardDrive, Video, Home, Dumbbell, type LucideIcon } from 'lucide-react'
 import clsx from 'clsx'
@@ -79,6 +79,17 @@ export function AdminPage() {
   const { t } = useTranslation('admin')
   const location = useLocation()
 
+  // The two sub-routes that are about ONE person, not about the panel: on a phone the title plus
+  // four wrapped groups of tabs eat most of the first screen, so entering somebody's card opened on
+  // panel-wide navigation instead of on that person. Below `sm` both are dropped on these routes —
+  // each panel carries its own back arrow, so nothing becomes unreachable, and `sm` and up is
+  // untouched. Rendering less beats scrolling past it: a scroll would race the panel's own data
+  // loading (a short document clamps the target and the jump lands somewhere else).
+  // Both matches are read into locals: `||` between two hook calls short-circuits the second one.
+  const userCardMatch = useMatch('/admin/users/:userId')
+  const athleteCardMatch = useMatch('/admin/training-calendars/:athleteId')
+  const isPersonRoute = !!userCardMatch || !!athleteCardMatch
+
   // Notification counters: badges on the "Requests" tab (pending) and the "Reservations" tab
   // (new since last read). The same endpoint feeds the dot on the Admin navbar link.
   const { data: notifications } = useQuery({
@@ -103,18 +114,35 @@ export function AdminPage() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-surface-100 mb-2">
+    <div
+      className={clsx(
+        'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8',
+        isPersonRoute && 'max-sm:pt-4'
+      )}
+    >
+      <div className={clsx('mb-8', isPersonRoute && 'max-sm:mb-0')}>
+        {/* `sr-only`, not `hidden`: the h1 costs no pixels either way, and dropping it would leave
+            the page with an h2 (the person's name) as its highest heading. */}
+        <h1
+          className={clsx(
+            'text-2xl font-bold text-surface-100 mb-2',
+            isPersonRoute && 'max-sm:sr-only'
+          )}
+        >
           {t('title')}
         </h1>
-        <p className="text-surface-400">
+        <p className={clsx('text-surface-400', isPersonRoute && 'max-sm:hidden')}>
           {t('subtitle')}
         </p>
       </div>
 
       {/* Tabs */}
-      <div className="flex flex-wrap gap-x-6 gap-y-3 mb-6 border-b border-surface-800 pb-4">
+      <div
+        className={clsx(
+          'flex flex-wrap gap-x-6 gap-y-3 mb-6 border-b border-surface-800 pb-4',
+          isPersonRoute && 'max-sm:hidden'
+        )}
+      >
         {adminTabGroups.map((group) => (
           <div key={group.groupKey} className="flex flex-col gap-1.5 max-sm:w-full">
             <span className="text-[11px] font-semibold uppercase tracking-wider text-surface-500 px-1">
