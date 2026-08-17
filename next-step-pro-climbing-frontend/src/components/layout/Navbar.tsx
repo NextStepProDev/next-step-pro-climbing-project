@@ -264,10 +264,12 @@ export function Navbar() {
     if (active) {
       const containerRect = container.getBoundingClientRect();
       const activeRect = active.getBoundingClientRect();
-      setIndicator({
-        left: activeRect.left - containerRect.left,
-        width: activeRect.width,
-      });
+      const left = activeRect.left - containerRect.left;
+      const width = activeRect.width;
+      // ⚠️ Wyjście przez `prev`, nie `setIndicator({left, width})`: literał obiektu jest za każdym
+      // razem nową referencją, więc React nigdy nie umorzyłby renderu — a pomiar biegnie po KAŻDYM
+      // commicie (patrz efekt niżej) i bez tej bramki zapętliłby się na pierwszym renderze.
+      setIndicator((prev) => (prev.left === left && prev.width === width ? prev : { left, width }));
       setIndicatorPremium(active.dataset.navPremium === "true");
       setHasIndicator(true);
     } else {
@@ -275,9 +277,29 @@ export function Navbar() {
     }
   }, []);
 
+  // ⚠️ Podkreślenie jest MIERZONE, więc musi się przeliczać po każdej zmianie geometrii paska,
+  // a nie tylko po nawigacji — dlatego efekt jest BEZ tablicy zależności. Lista zależności byłaby
+  // tu drugim, ręcznie utrzymywanym spisem wszystkiego, co rusza szerokość zakładki: etykiety
+  // (`i18n.language`), plakietki powiadomień, zalogowanie (dochodzi „Twoja strefa"). Zapomniana
+  // pozycja nie psuje się głośno, tylko zostawia kreskę pod sąsiednią zakładką aż do przeładowania
+  // — i dokładnie tak przeżyła tu zmiana języka, mierzona wyłącznie po `location.pathname`.
+  // Pętli nie ma, bo `updateIndicator` umarza render przy niezmienionym pomiarze.
   useLayoutEffect(() => {
     updateIndicator();
-  }, [location.pathname, updateIndicator]);
+  });
+
+  // Reszta to zmiany geometrii, o których React nie wie, bo nie stoi za nimi żaden render:
+  // zawinięcie rzędu poniżej `xl` przy zmianie szerokości okna i doładowanie fontu.
+  // ⚠️ ResizeObserver łapie je jako JEDYNY, ale nie zastępuje efektu wyżej — dostarczanie jego
+  // callbacków jest wstrzymane w karcie w tle (zero klatek renderu), więc oparcie na nim
+  // przypadków sterowanych React-em przeniosłoby cały pomiar na mechanizm, który akurat śpi.
+  useLayoutEffect(() => {
+    const container = navContainerRef.current;
+    if (!container) return;
+    const observer = new ResizeObserver(() => updateIndicator());
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, [updateIndicator]);
 
   // At the top of the homepage the navbar "sits" on the hero image as frosted glass,
   // so the photo shows through behind the logo/hamburger. After scrolling, with the menu
