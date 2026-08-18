@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
+import pl.nextsteppro.climbing.api.auth.EmailNotVerifiedException;
 import pl.nextsteppro.climbing.infrastructure.i18n.MessageService;
 
 import java.time.Instant;
@@ -35,6 +36,20 @@ public class GlobalExceptionHandler {
         log.warn("Bad request: {}", ex.getMessage());
         return ResponseEntity.badRequest()
             .body(new ErrorResponse("BAD_REQUEST", ex.getMessage(), Instant.now()));
+    }
+
+    /**
+     * Still a 409, but named. Sign-in refused for an unconfirmed address is the one conflict the
+     * page can act on — it can offer a new confirmation link right where the error appears — and a
+     * shared {@code CONFLICT} code left the client nothing to recognise it by but the message text,
+     * in three languages. Declared above the {@link IllegalStateException} handler it narrows;
+     * Spring dispatches on the most specific type regardless of order, the placement is for readers.
+     */
+    @ExceptionHandler(EmailNotVerifiedException.class)
+    public ResponseEntity<ErrorResponse> handleEmailNotVerified(EmailNotVerifiedException ex) {
+        log.warn("Login refused, address not confirmed: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+            .body(new ErrorResponse("EMAIL_NOT_VERIFIED", ex.getMessage(), Instant.now()));
     }
 
     @ExceptionHandler(IllegalStateException.class)

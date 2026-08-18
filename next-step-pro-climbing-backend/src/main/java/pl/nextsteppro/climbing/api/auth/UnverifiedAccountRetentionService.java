@@ -48,17 +48,20 @@ public class UnverifiedAccountRetentionService {
     private final AuthMailService authMailService;
     private final UserSeatReleaseService userSeatReleaseService;
     private final CommentFileSupport commentFileSupport;
+    private final VerificationLinkIssuer verificationLinkIssuer;
 
     public UnverifiedAccountRetentionService(UserRepository userRepository,
                                              AuthTokenRepository authTokenRepository,
                                              AuthMailService authMailService,
                                              UserSeatReleaseService userSeatReleaseService,
-                                             CommentFileSupport commentFileSupport) {
+                                             CommentFileSupport commentFileSupport,
+                                             VerificationLinkIssuer verificationLinkIssuer) {
         this.userRepository = userRepository;
         this.authTokenRepository = authTokenRepository;
         this.authMailService = authMailService;
         this.userSeatReleaseService = userSeatReleaseService;
         this.commentFileSupport = commentFileSupport;
+        this.verificationLinkIssuer = verificationLinkIssuer;
     }
 
     @Transactional
@@ -67,8 +70,8 @@ public class UnverifiedAccountRetentionService {
     }
 
     /**
-     * Warns everyone whose account is about to be deleted. The mail carries no verification token
-     * on purpose — see {@link AuthMailService#sendVerificationReminder}.
+     * Warns everyone whose account is about to be deleted, with a fresh link they can confirm from
+     * directly — see {@link AuthMailService#sendVerificationReminder}.
      *
      * @param now taken explicitly so the band can be tested without waiting a week
      * @return how many reminders were sent
@@ -84,7 +87,7 @@ public class UnverifiedAccountRetentionService {
             .toList();
 
         for (User user : due) {
-            authMailService.sendVerificationReminder(user);
+            authMailService.sendVerificationReminder(user, verificationLinkIssuer.issue(user));
         }
         return due.size();
     }
@@ -138,5 +141,29 @@ public class UnverifiedAccountRetentionService {
             deleted++;
         }
         return deleted;
+    }
+
+    @Transactional
+    public int purgeStaleVerificationTokens() {
+        return purgeStaleVerificationTokens(Instant.now());
+    }
+
+    /**
+     * Retires confirmation tokens once they are as old as the retention window.
+     *
+     * <p>They are the one token type the hourly cleanup leaves alone, because they have to survive
+     * their own expiry: a dead link is still the only thing tying someone who clicks it to their
+     * account, and without the row there is nobody to send a fresh link to. So the rule that
+     * governs them is this one — a confirmation token lives as long as the account it confirms —
+     * which is why the sweep sits beside that account's retention rather than with the other
+     * tokens. Accounts that did confirm are covered by the same pass: their spent token is just as
+     * old.
+     *
+     * @param now taken explicitly so the window can be tested without waiting a week
+     * @return how many token rows were removed
+     */
+    @Transactional
+    public int purgeStaleVerificationTokens(Instant now) {
+        return authTokenRepository.deleteStaleVerificationTokens(now.minus(RETENTION));
     }
 }

@@ -7,6 +7,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import pl.nextsteppro.climbing.api.auth.UnverifiedAccountRetentionService;
+import pl.nextsteppro.climbing.domain.auth.AuthToken;
+import pl.nextsteppro.climbing.domain.auth.TokenType;
 import pl.nextsteppro.climbing.domain.reservation.Reservation;
 import pl.nextsteppro.climbing.domain.timeslot.TimeSlot;
 import pl.nextsteppro.climbing.domain.user.User;
@@ -64,6 +66,59 @@ class UnverifiedAccountRetentionIntegrationTest extends BaseIntegrationTest {
 
     private Instant daysAfterRegistration(long days) {
         return registeredAt.plus(Duration.ofDays(days));
+    }
+
+    @Test
+    void shouldKeepAnExpiredVerificationTokenSoADeadLinkCanStillBeRenewed() {
+        // Given: a confirmation token that expired an hour ago. The hourly token cleanup used to
+        // take it, and with it the only record tying a click on that dead link to this account —
+        // leaving nobody to send a fresh link to.
+        User user = account("expired@example.com", false, UserRole.USER);
+        AuthToken expired = authTokenRepository.save(new AuthToken(
+            user, "hash-of-a-dead-link", TokenType.EMAIL_VERIFICATION, Instant.now().minus(Duration.ofHours(1))));
+
+        // When: the sweep runs while the account is still inside its retention window
+        int purged = retention.purgeStaleVerificationTokens(daysAfterRegistration(2));
+
+        // Then: the row outlives its own expiry, and is still findable by the token in the link
+        assertEquals(0, purged);
+        assertTrue(authTokenRepository
+            .findFirstByTokenHashAndTokenTypeOrderByCreatedAtDesc("hash-of-a-dead-link", TokenType.EMAIL_VERIFICATION)
+            .isPresent());
+        assertTrue(authTokenRepository.findById(expired.getId()).isPresent());
+    }
+
+    @Test
+    void shouldPurgeVerificationTokensOnceTheyAreAsOldAsTheRetentionWindow() {
+        // Given: the same row, but now nothing is left to renew — the account it belonged to is
+        // gone by this point, so keeping the token would only be litter.
+        User user = account("ancient@example.com", false, UserRole.USER);
+        authTokenRepository.save(new AuthToken(
+            user, "hash-of-an-ancient-link", TokenType.EMAIL_VERIFICATION, Instant.now().minus(Duration.ofHours(1))));
+
+        // When
+        int purged = retention.purgeStaleVerificationTokens(daysAfterRegistration(8));
+
+        // Then
+        assertEquals(1, purged);
+        assertTrue(authTokenRepository
+            .findFirstByTokenHashAndTokenTypeOrderByCreatedAtDesc("hash-of-an-ancient-link", TokenType.EMAIL_VERIFICATION)
+            .isEmpty());
+    }
+
+    @Test
+    void shouldLeaveOtherTokenTypesToTheHourlyCleanup() {
+        // Given: the age-based sweep is for confirmation tokens only — a password reset link is
+        // still swept the moment it expires, and must not be dragged along by this rule.
+        User user = account("reset@example.com", false, UserRole.USER);
+        authTokenRepository.save(new AuthToken(
+            user, "hash-of-a-reset-link", TokenType.PASSWORD_RESET, Instant.now().minus(Duration.ofHours(1))));
+
+        // When
+        int purged = retention.purgeStaleVerificationTokens(daysAfterRegistration(8));
+
+        // Then
+        assertEquals(0, purged);
     }
 
     @Test
@@ -131,7 +186,7 @@ class UnverifiedAccountRetentionIntegrationTest extends BaseIntegrationTest {
         // Then: warned, and still there to act on the warning
         assertEquals(1, reminded);
         assertEquals(0, deleted);
-        verify(authMailService).sendVerificationReminder(argThatIs(user));
+        verify(authMailService).sendVerificationReminder(argThatIs(user), org.mockito.ArgumentMatchers.anyString());
         assertTrue(userRepository.findById(user.getId()).isPresent());
     }
 
@@ -161,7 +216,7 @@ class UnverifiedAccountRetentionIntegrationTest extends BaseIntegrationTest {
 
         // Then
         assertEquals(0, reminded);
-        verify(authMailService, never()).sendVerificationReminder(org.mockito.ArgumentMatchers.any());
+        verify(authMailService, never()).sendVerificationReminder(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any());
     }
 
     @Test
