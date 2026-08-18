@@ -23,9 +23,31 @@ public interface AuthTokenRepository extends JpaRepository<AuthToken, UUID> {
            "AND t.expiresAt > :now AND (t.usedAt IS NULL OR t.usedAt > :graceThreshold)")
     Optional<AuthToken> findRefreshableToken(String tokenHash, TokenType tokenType, Instant now, Instant graceThreshold);
 
+    /**
+     * Finds a token whatever state it is in — expired, used, both. Every other lookup here filters
+     * those out; this one exists so a dead confirmation link can still be traced back to its owner
+     * and swapped for a fresh one.
+     */
+    Optional<AuthToken> findFirstByTokenHashAndTokenTypeOrderByCreatedAtDesc(String tokenHash, TokenType tokenType);
+
+    /**
+     * Sweeps expired tokens hourly — except confirmation ones, which are swept by age instead (see
+     * {@link #deleteStaleVerificationTokens}). Deleting those on expiry threw away the only record
+     * tying a clicked-but-expired link to an account, so the person holding it could no longer be
+     * offered a new one.
+     */
     @Modifying
-    @Query("DELETE FROM AuthToken t WHERE t.expiresAt < :cutoff")
+    @Query("DELETE FROM AuthToken t WHERE t.expiresAt < :cutoff AND t.tokenType <> pl.nextsteppro.climbing.domain.auth.TokenType.EMAIL_VERIFICATION")
     int deleteExpiredTokens(Instant cutoff);
+
+    /**
+     * Sweeps confirmation tokens by {@code createdAt}, not by expiry: they are meant to outlive
+     * their own expiry and go when the account they belong to would go. One rule covers both ends —
+     * spent tokens of accounts that did confirm, and dead ones of accounts that never did.
+     */
+    @Modifying
+    @Query("DELETE FROM AuthToken t WHERE t.tokenType = pl.nextsteppro.climbing.domain.auth.TokenType.EMAIL_VERIFICATION AND t.createdAt < :cutoff")
+    int deleteStaleVerificationTokens(Instant cutoff);
 
     @Modifying
     @Query("DELETE FROM AuthToken t WHERE t.user.id = :userId AND t.tokenType = :tokenType")

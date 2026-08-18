@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { Trans, useTranslation } from 'react-i18next'
 import { useAuth } from '../context/AuthContext'
 import { consumeRedirectPath } from '../utils/redirect'
-import { getErrorMessage } from '../utils/errors'
+import { ApiError, getErrorMessage } from '../utils/errors'
 import { Button } from '../components/ui/Button'
 import { SuccessCheckmark } from '../components/ui/SuccessCheckmark'
 import { useTheme } from '../context/ThemeContext'
@@ -18,6 +18,7 @@ export function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [unverified, setUnverified] = useState(false)
   const [loading, setLoading] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
 
@@ -31,6 +32,10 @@ export function LoginPage() {
       setShowSuccess(true)
     } catch (err) {
       setError(getErrorMessage(err))
+      // The one refusal with somewhere to go: the account exists and the password was right, only
+      // the address was never confirmed. Offering the new link beside the error beats leaving it to
+      // be found among the three links at the foot of the page.
+      setUnverified(err instanceof ApiError && err.code === 'EMAIL_NOT_VERIFIED')
       setLoading(false)
     }
   }
@@ -77,7 +82,16 @@ export function LoginPage() {
           </div>
 
           {error && (
-            <p className="text-sm text-rose-400/80">{error}</p>
+            <div className="space-y-1">
+              <p className="text-sm text-rose-400/80">{error}</p>
+              {unverified && (
+                <p className="text-sm">
+                  <Link to="/resend-verification" className="text-primary-400 hover:text-primary-300">
+                    {t('login.resendVerification')}
+                  </Link>
+                </p>
+              )}
+            </div>
           )}
 
           <Button type="submit" variant="primary" className="w-full" loading={loading}>

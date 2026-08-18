@@ -61,6 +61,8 @@ class AuthServiceTest {
     private NewsletterConsentLogRepository consentLogRepository;
     @Mock
     private pl.nextsteppro.climbing.infrastructure.security.PasswordPolicyValidator passwordPolicy;
+    @Mock
+    private VerificationLinkIssuer verificationLinkIssuer;
 
     private AuthService authService;
     private User testUser;
@@ -76,7 +78,8 @@ class AuthServiceTest {
             adminEmailConfig,
             msg,
             consentLogRepository,
-            passwordPolicy
+            passwordPolicy,
+            verificationLinkIssuer
         );
 
         testUser = new User("test@example.com", "John", "Doe", "+48123456789", "johndoe");
@@ -103,8 +106,7 @@ class AuthServiceTest {
         when(userRepository.existsByEmail(request.email())).thenReturn(false);
         when(passwordEncoder.encode(request.password())).thenReturn("encodedPassword");
         when(adminEmailConfig.isAdminEmail(request.email())).thenReturn(false);
-        when(jwtService.generateSecureToken()).thenReturn("secureToken123");
-        when(jwtService.hashToken("secureToken123")).thenReturn("hashedToken123");
+        when(verificationLinkIssuer.issue(any(User.class))).thenReturn("secureToken123");
         when(msg.get("auth.register.success")).thenReturn("Registration successful");
 
         // When
@@ -126,7 +128,6 @@ class AuthServiceTest {
         assertFalse(savedUser.isEmailVerified());
         assertEquals(UserRole.USER, savedUser.getRole());
 
-        verify(authTokenRepository).save(any(AuthToken.class));
         verify(authMailService).sendVerificationEmail(any(User.class), eq("secureToken123"));
     }
 
@@ -171,8 +172,7 @@ class AuthServiceTest {
         when(userRepository.existsByEmail(request.email())).thenReturn(false);
         when(passwordEncoder.encode(request.password())).thenReturn("encodedPassword");
         when(adminEmailConfig.isAdminEmail(request.email())).thenReturn(true);
-        when(jwtService.generateSecureToken()).thenReturn("secureToken123");
-        when(jwtService.hashToken("secureToken123")).thenReturn("hashedToken123");
+        when(verificationLinkIssuer.issue(any(User.class))).thenReturn("secureToken123");
         when(msg.get("auth.register.success")).thenReturn("Registration successful");
 
         // When
@@ -201,8 +201,7 @@ class AuthServiceTest {
         when(userRepository.existsByEmail(request.email())).thenReturn(false);
         when(passwordEncoder.encode(request.password())).thenReturn("encodedPassword");
         when(adminEmailConfig.isAdminEmail(request.email())).thenReturn(false);
-        when(jwtService.generateSecureToken()).thenReturn("secureToken123");
-        when(jwtService.hashToken("secureToken123")).thenReturn("hashedToken123");
+        when(verificationLinkIssuer.issue(any(User.class))).thenReturn("secureToken123");
         when(msg.get("auth.register.success")).thenReturn("Registration successful");
 
         // When
@@ -494,8 +493,7 @@ class AuthServiceTest {
         when(userRepository.findByEmail(request.email())).thenReturn(Optional.of(testUser));
         when(authTokenRepository.hasRecentUnusedToken(eq(testUser.getId()), eq(TokenType.EMAIL_VERIFICATION), any(Instant.class)))
             .thenReturn(false);
-        when(jwtService.generateSecureToken()).thenReturn("newToken123");
-        when(jwtService.hashToken("newToken123")).thenReturn("hashedNewToken123");
+        when(verificationLinkIssuer.issue(testUser)).thenReturn("newToken123");
         when(msg.get("auth.resend.success")).thenReturn("Verification email sent");
 
         // When
@@ -503,7 +501,6 @@ class AuthServiceTest {
 
         // Then
         assertEquals("Verification email sent", response.message());
-        verify(authTokenRepository).save(any(AuthToken.class));
         verify(authMailService).sendVerificationEmail(testUser, "newToken123");
     }
 
@@ -519,7 +516,7 @@ class AuthServiceTest {
 
         // Then
         assertEquals("Email already verified", response.message());
-        verify(authTokenRepository, never()).save(any(AuthToken.class));
+        verify(verificationLinkIssuer, never()).issue(any());
         verify(authMailService, never()).sendVerificationEmail(any(), any());
     }
 
@@ -535,7 +532,7 @@ class AuthServiceTest {
 
         // Then
         assertEquals("Verification email sent", response.message());
-        verify(authTokenRepository, never()).save(any(AuthToken.class));
+        verify(verificationLinkIssuer, never()).issue(any());
         verify(authMailService, never()).sendVerificationEmail(any(), any());
     }
 
@@ -557,7 +554,97 @@ class AuthServiceTest {
         // Then - same response as a real send, but no email actually goes out
         assertEquals("Verification email sent", response.message());
         verify(authMailService, never()).sendVerificationEmail(any(), any());
-        verify(authTokenRepository, never()).save(any(AuthToken.class));
+        verify(verificationLinkIssuer, never()).issue(any());
+    }
+
+    // ========== RENEWING AN EXPIRED VERIFICATION LINK ==========
+
+    @Test
+    void shouldRenewAnExpiredVerificationLinkFromTheDeadTokenItself() {
+        // Given: the exact case this endpoint exists for — someone clicked a confirmation link a
+        // day too late. The row is found despite being expired; findValidToken would refuse it.
+        testUser.setEmailVerified(false);
+        String deadToken = "expiredToken123";
+        AuthToken expired = new AuthToken(testUser, "hashedExpired", TokenType.EMAIL_VERIFICATION,
+            Instant.now().minusSeconds(3600));
+
+        when(jwtService.hashToken(deadToken)).thenReturn("hashedExpired");
+        when(authTokenRepository.findFirstByTokenHashAndTokenTypeOrderByCreatedAtDesc("hashedExpired", TokenType.EMAIL_VERIFICATION))
+            .thenReturn(Optional.of(expired));
+        when(authTokenRepository.hasRecentUnusedToken(eq(testUser.getId()), eq(TokenType.EMAIL_VERIFICATION), any(Instant.class)))
+            .thenReturn(false);
+        when(verificationLinkIssuer.issue(testUser)).thenReturn("freshToken456");
+        when(msg.get("auth.resend.token.sent")).thenReturn("New link sent");
+
+        // When
+        MessageResponse response = authService.resendVerificationByToken(deadToken);
+
+        // Then
+        assertEquals("New link sent", response.message());
+        verify(authMailService).sendVerificationEmail(testUser, "freshToken456");
+    }
+
+    @Test
+    void shouldTellPlainlyWhenTheTokenIsNoLongerKnown() {
+        // Given: swept with the account it belonged to. Unlike the address-based resend there is
+        // nobody to hide the account from here, so the answer says what happened instead of
+        // leaving someone waiting for a mail that will never arrive.
+        when(jwtService.hashToken("ancientToken")).thenReturn("hashedAncient");
+        when(authTokenRepository.findFirstByTokenHashAndTokenTypeOrderByCreatedAtDesc("hashedAncient", TokenType.EMAIL_VERIFICATION))
+            .thenReturn(Optional.empty());
+        when(msg.get("auth.resend.token.unknown")).thenReturn("Too old, register again");
+
+        // When & Then
+        IllegalArgumentException exception = assertThrows(
+            IllegalArgumentException.class,
+            () -> authService.resendVerificationByToken("ancientToken")
+        );
+        assertEquals("Too old, register again", exception.getMessage());
+        verify(authMailService, never()).sendVerificationEmail(any(), any());
+    }
+
+    @Test
+    void shouldNotRenewALinkWhoseAccountIsAlreadyConfirmed() {
+        // Given: testUser is verified in setUp
+        AuthToken spent = new AuthToken(testUser, "hashedSpent", TokenType.EMAIL_VERIFICATION,
+            Instant.now().minusSeconds(3600));
+
+        when(jwtService.hashToken("spentToken")).thenReturn("hashedSpent");
+        when(authTokenRepository.findFirstByTokenHashAndTokenTypeOrderByCreatedAtDesc("hashedSpent", TokenType.EMAIL_VERIFICATION))
+            .thenReturn(Optional.of(spent));
+        when(msg.get("auth.resend.already.verified")).thenReturn("Email already verified");
+
+        // When
+        MessageResponse response = authService.resendVerificationByToken("spentToken");
+
+        // Then
+        assertEquals("Email already verified", response.message());
+        verify(verificationLinkIssuer, never()).issue(any());
+        verify(authMailService, never()).sendVerificationEmail(any(), any());
+    }
+
+    @Test
+    void shouldNotMailTwiceWhenTheRenewButtonIsHammered() {
+        // Given
+        testUser.setEmailVerified(false);
+        AuthToken expired = new AuthToken(testUser, "hashedExpired", TokenType.EMAIL_VERIFICATION,
+            Instant.now().minusSeconds(3600));
+
+        when(jwtService.hashToken("expiredToken123")).thenReturn("hashedExpired");
+        when(authTokenRepository.findFirstByTokenHashAndTokenTypeOrderByCreatedAtDesc("hashedExpired", TokenType.EMAIL_VERIFICATION))
+            .thenReturn(Optional.of(expired));
+        when(authTokenRepository.hasRecentUnusedToken(eq(testUser.getId()), eq(TokenType.EMAIL_VERIFICATION), any(Instant.class)))
+            .thenReturn(true);
+        when(msg.get("auth.resend.token.sent")).thenReturn("New link sent");
+
+        // When
+        MessageResponse response = authService.resendVerificationByToken("expiredToken123");
+
+        // Then: same reply as a real send — the cooldown is about mail volume, not about hiding
+        // anything from a caller who already holds one of our tokens
+        assertEquals("New link sent", response.message());
+        verify(verificationLinkIssuer, never()).issue(any());
+        verify(authMailService, never()).sendVerificationEmail(any(), any());
     }
 
     // ========== FORGOT PASSWORD TESTS ==========

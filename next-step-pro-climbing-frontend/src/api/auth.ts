@@ -85,6 +85,15 @@ export function resendVerification(email: string): Promise<MessageResponse> {
   return authFetch('/resend-verification', { email })
 }
 
+/**
+ * Trades the token from a link that no longer works for a fresh one. The token is already in the
+ * URL of the page showing the failure, so the way out of a dead link is a single click — nothing
+ * to type, nothing to go looking for.
+ */
+export function resendVerificationByToken(token: string): Promise<MessageResponse> {
+  return authFetch(`/verify-email/resend?token=${encodeURIComponent(token)}`, {})
+}
+
 export function forgotPassword(email: string): Promise<MessageResponse> {
   return authFetch('/forgot-password', { email })
 }

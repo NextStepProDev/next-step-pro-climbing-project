@@ -31,7 +31,6 @@ public class AuthService {
 
     private static final Logger log = LoggerFactory.getLogger(AuthService.class);
     private static final Set<String> SUPPORTED_LANGUAGES = Set.of("pl", "en", "es");
-    private static final Duration EMAIL_VERIFICATION_EXPIRATION = Duration.ofMinutes(15);
     private static final Duration PASSWORD_RESET_EXPIRATION = Duration.ofHours(1);
     private static final Duration RESEND_COOLDOWN = Duration.ofMinutes(1);
     /**
@@ -51,6 +50,7 @@ public class AuthService {
     private final MessageService msg;
     private final NewsletterConsentLogRepository consentLogRepository;
     private final PasswordPolicyValidator passwordPolicy;
+    private final VerificationLinkIssuer verificationLinkIssuer;
 
     /**
      * Pre-computed BCrypt hash used to equalize login response time when an account does not
@@ -69,7 +69,8 @@ public class AuthService {
             AdminEmailConfig adminEmailConfig,
             MessageService msg,
             NewsletterConsentLogRepository consentLogRepository,
-            PasswordPolicyValidator passwordPolicy) {
+            PasswordPolicyValidator passwordPolicy,
+            VerificationLinkIssuer verificationLinkIssuer) {
         this.userRepository = userRepository;
         this.authTokenRepository = authTokenRepository;
         this.passwordEncoder = passwordEncoder;
@@ -79,6 +80,7 @@ public class AuthService {
         this.msg = msg;
         this.consentLogRepository = consentLogRepository;
         this.passwordPolicy = passwordPolicy;
+        this.verificationLinkIssuer = verificationLinkIssuer;
         this.dummyHash = passwordEncoder.encode("timing-attack-mitigation-dummy");
     }
 
@@ -160,7 +162,7 @@ public class AuthService {
         }
 
         if (!user.isEmailVerified()) {
-            throw new IllegalStateException(msg.get("auth.email.not.verified"));
+            throw new EmailNotVerifiedException(msg.get("auth.email.not.verified"));
         }
 
         // Successful login - reset failed attempts
@@ -221,6 +223,48 @@ public class AuthService {
 
         sendVerificationEmail(user);
         return new MessageResponse(msg.get("auth.resend.success"));
+    }
+
+    /**
+     * Exchanges a dead confirmation link for a fresh one. This is the way out of the screen someone
+     * lands on after clicking a link that has expired: the token is already in the URL, so nothing
+     * has to be typed and nothing has to be guessed.
+     *
+     * <p>Unlike {@link #resendVerification(ResendVerificationRequest)} the answers here are
+     * specific rather than hedged. That method has to say "if an account exists we sent a mail"
+     * whatever happens, because an email address is something anyone can type and a distinct answer
+     * would turn it into an oracle for which addresses are registered. A token is not: whoever
+     * holds it was handed it by us, in a mail to that account. There is no one to hide the account
+     * from, so it can be told plainly what happened — which is precisely what the address-based
+     * variant is unable to do, and why someone whose account had already been deleted would sit
+     * there waiting for a mail that a green success message had promised.
+     */
+    @Transactional
+    public MessageResponse resendVerificationByToken(String token) {
+        String tokenHash = jwtService.hashToken(token);
+
+        // Deliberately not findValidToken: an expired — indeed an already used — row is exactly the
+        // case this method exists for. The row is the only thing tying this click to a user, which
+        // is why verification rows outlive their own expiry (UnverifiedAccountRetentionService).
+        AuthToken authToken = authTokenRepository
+            .findFirstByTokenHashAndTokenTypeOrderByCreatedAtDesc(tokenHash, TokenType.EMAIL_VERIFICATION)
+            .orElseThrow(() -> new IllegalArgumentException(msg.get("auth.resend.token.unknown")));
+
+        User user = authToken.getUser();
+
+        if (user.isEmailVerified()) {
+            return new MessageResponse(msg.get("auth.resend.already.verified"));
+        }
+
+        // Cooldown against someone hammering the button; no enumeration concern here, so the reply
+        // is the same one a real send gives rather than a deliberately vague one.
+        if (authTokenRepository.hasRecentUnusedToken(user.getId(), TokenType.EMAIL_VERIFICATION, Instant.now().minus(RESEND_COOLDOWN))) {
+            return new MessageResponse(msg.get("auth.resend.token.sent"));
+        }
+
+        sendVerificationEmail(user);
+        log.info("Verification link renewed from an expired one for: {}", user.getEmail());
+        return new MessageResponse(msg.get("auth.resend.token.sent"));
     }
 
     @Transactional
@@ -326,14 +370,7 @@ public class AuthService {
     }
 
     private void sendVerificationEmail(User user) {
-        String token = jwtService.generateSecureToken();
-        String tokenHash = jwtService.hashToken(token);
-        Instant expiration = Instant.now().plus(EMAIL_VERIFICATION_EXPIRATION);
-
-        AuthToken authToken = new AuthToken(user, tokenHash, TokenType.EMAIL_VERIFICATION, expiration);
-        authTokenRepository.save(authToken);
-
-        authMailService.sendVerificationEmail(user, token);
+        authMailService.sendVerificationEmail(user, verificationLinkIssuer.issue(user));
     }
 
     private void sendPasswordResetEmail(User user) {

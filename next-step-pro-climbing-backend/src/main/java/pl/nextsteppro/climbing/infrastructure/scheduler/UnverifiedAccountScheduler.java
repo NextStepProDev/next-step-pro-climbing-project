@@ -35,8 +35,12 @@ public class UnverifiedAccountScheduler {
     public void sweep() {
         int reminded = retention.sendReminders();
         int deleted = retention.deleteExpired();
-        if (reminded > 0 || deleted > 0) {
-            log.info("Unverified account sweep: {} reminder(s) sent, {} account(s) deleted", reminded, deleted);
+        // Last, so the accounts that just went take their own tokens with them and this pass is
+        // left with the rows of accounts that did confirm.
+        int tokens = retention.purgeStaleVerificationTokens();
+        if (reminded > 0 || deleted > 0 || tokens > 0) {
+            log.info("Unverified account sweep: {} reminder(s) sent, {} account(s) deleted, {} stale verification token(s) purged",
+                reminded, deleted, tokens);
         } else {
             log.debug("No unverified accounts to sweep");
         }

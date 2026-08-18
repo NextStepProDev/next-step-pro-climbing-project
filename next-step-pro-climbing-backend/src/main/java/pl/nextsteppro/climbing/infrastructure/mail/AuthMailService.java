@@ -43,16 +43,20 @@ public class AuthMailService {
     }
 
     /**
-     * Last call before an unconfirmed account is deleted. Carries NO verification token on
-     * purpose: those live 15 minutes, and a mail saying "your account goes tomorrow" gets opened
-     * in the evening — a token minted here would be dead before it was read. The button points at
-     * the resend page, which issues a live link on demand.
+     * Last call before an unconfirmed account is deleted, and it carries a link that works.
+     *
+     * <p>It used to point at the resend page instead, because a confirmation token lived fifteen
+     * minutes and a mail saying "your account goes tomorrow" gets opened in the evening — one
+     * minted here would have been dead before it was read. At a day's lifetime the numbers line up
+     * instead: the reminder goes out with roughly a day left, the account goes on the next sweep,
+     * and the token expires alongside it. So the button confirms the address in one click rather
+     * than sending the reader off to ask for a second mail.
      */
     @Async
-    public void sendVerificationReminder(User user) {
+    public void sendVerificationReminder(User user, String token) {
         String lang = user.getPreferredLanguage();
         String subject = msg.getForLang("email.verification.reminder.subject", lang);
-        String body = buildVerificationReminderBody(lang, user.getFirstName(), buildResendVerificationUrl());
+        String body = buildVerificationReminderBody(lang, user.getFirstName(), buildVerificationUrl(token));
 
         sendEmail(user.getEmail(), subject, body);
     }
@@ -243,11 +247,7 @@ public class AuthMailService {
         return appConfig.getBaseUrl() + "/reset-password?token=" + token;
     }
 
-    private String buildResendVerificationUrl() {
-        return appConfig.getBaseUrl() + "/resend-verification";
-    }
-
-    private String buildVerificationReminderBody(String lang, String firstName, String resendUrl) {
+    private String buildVerificationReminderBody(String lang, String firstName, String verificationUrl) {
         return """
             <html>
             <body style="font-family: Arial, sans-serif; background-color: #1a1816; color: #e0e0e0; padding: 20px;">
@@ -293,7 +293,7 @@ public class AuthMailService {
             msg.getForLang("email.verification.reminder.greeting", lang, firstName),
             msg.getForLang("email.verification.reminder.body", lang),
             msg.getForLang("email.verification.reminder.deadline", lang),
-            resendUrl,
+            verificationUrl,
             msg.getForLang("email.verification.reminder.button", lang),
             msg.getForLang("email.verification.reminder.ignore", lang),
             msg.getForLang("email.footer", lang),

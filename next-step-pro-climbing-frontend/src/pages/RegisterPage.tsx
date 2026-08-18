@@ -90,8 +90,11 @@ export function RegisterPage() {
             </svg>
           </div>
           <h2 className="text-xl font-bold text-surface-100 mb-2">{t('register.successTitle')}</h2>
-          <p className="text-surface-400 mb-6">
+          <p className="text-surface-400 mb-2">
             {t('register.successMessage')}
+          </p>
+          <p className="text-sm text-surface-500 mb-6">
+            {t('register.successHint')}
           </p>
           <Link
             to="/login"
@@ -99,6 +102,11 @@ export function RegisterPage() {
           >
             {t('register.goToLogin')}
           </Link>
+          <p className="mt-4 text-sm text-surface-400">
+            <Link to="/resend-verification" className="text-surface-400 hover:text-primary-400">
+              {t('register.noMail')}
+            </Link>
+          </p>
         </div>
       </div>
     )

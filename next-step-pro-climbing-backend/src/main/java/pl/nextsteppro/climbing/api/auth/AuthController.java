@@ -36,6 +36,13 @@ public class AuthController {
         return ResponseEntity.ok(authService.verifyEmail(token));
     }
 
+    @PostMapping("/verify-email/resend")
+    @Operation(summary = "Renew an expired verification link",
+        description = "Takes the token from a link that no longer works and mails a fresh one to the same account")
+    public ResponseEntity<MessageResponse> resendVerificationByToken(@RequestParam String token) {
+        return ResponseEntity.ok(authService.resendVerificationByToken(token));
+    }
+
     @PostMapping("/resend-verification")
     @Operation(summary = "Resend verification email", description = "Sends another verification email if account exists")
     public ResponseEntity<MessageResponse> resendVerification(@Valid @RequestBody ResendVerificationRequest request) {
