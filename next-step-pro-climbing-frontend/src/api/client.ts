@@ -9,6 +9,7 @@ import type {
   AdminUser,
   UserDetail,
   UserReservationHistory,
+  UserStats,
   MonthView,
   WeekView,
   DayView,
@@ -1000,6 +1001,13 @@ export const adminUserHistoryApi = {
     fetchApi<UserReservationHistory>(
       `/admin/users/${userId}/reservations?pastPage=${pastPage}&pastSize=${pastSize}`,
     ),
+}
+
+// Aggregate statistics about the whole user base (Users panel → Statistics).
+// Its own base path, not /admin/users/stats: that would sit next to /admin/users/{userId} and only
+// win by Spring's specificity rules — it works, and it looks like a bug to whoever reads it next.
+export const adminUserStatsApi = {
+  get: () => fetchApi<UserStats>('/admin/user-stats'),
 }
 
 // Instructors (public)

@@ -555,6 +555,61 @@
         "no": "nie"
       }
     },
+    "listTab": "Lista",
+    "stats": {
+      "tab": "Statystyki",
+      "empty": "Brak kont — statystyki pojawią się po pierwszej rejestracji.",
+      "ofAccounts": "{{percent}}% bazy",
+      "totals": {
+        "accounts": "Kont",
+        "verified": "Potwierdzone",
+        "athletes": "Zawodnicy",
+        "newsletter": "Newsletter",
+        "admins": "Administratorzy"
+      },
+      "registrations": {
+        "title": "Nowe konta (12 miesięcy)",
+        "legendVerified": "Potwierdzone",
+        "legendUnverified": "Bez potwierdzenia",
+        "tooltip": "{{total}} rejestracji, w tym {{verified}} potwierdzonych",
+        "aria": "{{total}} rejestracji, w tym {{verified}} potwierdzonych"
+      },
+      "funnel": {
+        "title": "Od rejestracji do klienta",
+        "accounts": "Konto",
+        "verified": "Potwierdzony e-mail",
+        "booked": "Pierwsza rezerwacja",
+        "returning": "Wrócił (2+ rezerwacje)",
+        "neverNote_one": "{{count}} konto nigdy niczego nie zarezerwowało.",
+        "neverNote_few": "{{count}} konta nigdy niczego nie zarezerwowały.",
+        "neverNote_many": "{{count}} kont nigdy niczego nie zarezerwowało."
+      },
+      "cohorts": {
+        "title": "Aktywność",
+        "active": "Aktywni",
+        "dormant": "Uśpieni",
+        "never": "Bez rezerwacji",
+        "hint": "Aktywny = potwierdzona rezerwacja w ostatnich {{days}} dniach albo termin w przyszłości. Liczone po rezerwacjach, nie po logowaniach — logowań nie zapisujemy."
+      },
+      "top": {
+        "title": "Najczęściej wracają",
+        "empty": "Nikt jeszcze nie ma odbytych zajęć.",
+        "hint": "Odbyte zajęcia. Wielodniowy kurs liczy się jako tyle wejść, ile dni."
+      },
+      "newsletter": {
+        "title": "Newsletter",
+        "subscribed": "Zapisani",
+        "undecided": "Bez decyzji",
+        "unsubscribed": "Wypisani"
+      },
+      "athletes": {
+        "title": "Zawodnicy",
+        "flagged": "Nadana flaga",
+        "consented": "Podpisana zgoda",
+        "withPlan": "Coś w planie",
+        "hint": "Różnica między pierwszym a ostatnim to osoby, które dostały dostęp i nigdy z niego nie skorzystały."
+      }
+    },
     "searchPlaceholder": "Szukaj po imieniu, nazwisku lub e-mailu...",
     "userColumn": "Użytkownik",
     "emailColumn": "Email",

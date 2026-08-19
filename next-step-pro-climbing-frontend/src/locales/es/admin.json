@@ -555,6 +555,60 @@
         "no": "no"
       }
     },
+    "listTab": "Lista",
+    "stats": {
+      "tab": "Estadísticas",
+      "empty": "Aún no hay cuentas: las estadísticas aparecerán tras el primer registro.",
+      "ofAccounts": "{{percent}}% de la base",
+      "totals": {
+        "accounts": "Cuentas",
+        "verified": "Verificadas",
+        "athletes": "Deportistas",
+        "newsletter": "Newsletter",
+        "admins": "Administradores"
+      },
+      "registrations": {
+        "title": "Cuentas nuevas (12 meses)",
+        "legendVerified": "Verificadas",
+        "legendUnverified": "Sin verificar",
+        "tooltip": "{{total}} registros, {{verified}} verificados",
+        "aria": "{{total}} registros, {{verified}} verificados"
+      },
+      "funnel": {
+        "title": "Del registro al cliente",
+        "accounts": "Cuenta",
+        "verified": "Email verificado",
+        "booked": "Primera reserva",
+        "returning": "Volvió (2+ reservas)",
+        "neverNote_one": "{{count}} cuenta nunca ha reservado nada.",
+        "neverNote_other": "{{count}} cuentas nunca han reservado nada."
+      },
+      "cohorts": {
+        "title": "Actividad",
+        "active": "Activos",
+        "dormant": "Inactivos",
+        "never": "Sin reservas",
+        "hint": "Activo = una reserva confirmada en los últimos {{days}} días, o una futura. Se mide por reservas, no por inicios de sesión: los inicios de sesión no se registran."
+      },
+      "top": {
+        "title": "Los más habituales",
+        "empty": "Nadie ha asistido todavía a una sesión.",
+        "hint": "Sesiones asistidas. Un curso de varios días cuenta uno por día."
+      },
+      "newsletter": {
+        "title": "Newsletter",
+        "subscribed": "Suscritos",
+        "undecided": "Sin decidir",
+        "unsubscribed": "Dados de baja"
+      },
+      "athletes": {
+        "title": "Deportistas",
+        "flagged": "Marca concedida",
+        "consented": "Consentimiento firmado",
+        "withPlan": "Algo en el plan",
+        "hint": "La diferencia entre el primero y el último son las personas a las que se dio acceso y nunca lo usaron."
+      }
+    },
     "searchPlaceholder": "Buscar por nombre, apellido o email...",
     "userColumn": "Usuario",
     "emailColumn": "Email",

@@ -555,6 +555,60 @@
         "no": "no"
       }
     },
+    "listTab": "List",
+    "stats": {
+      "tab": "Statistics",
+      "empty": "No accounts yet — statistics appear after the first registration.",
+      "ofAccounts": "{{percent}}% of the base",
+      "totals": {
+        "accounts": "Accounts",
+        "verified": "Verified",
+        "athletes": "Athletes",
+        "newsletter": "Newsletter",
+        "admins": "Admins"
+      },
+      "registrations": {
+        "title": "New accounts (12 months)",
+        "legendVerified": "Verified",
+        "legendUnverified": "Unverified",
+        "tooltip": "{{total}} registrations, {{verified}} verified",
+        "aria": "{{total}} registrations, {{verified}} verified"
+      },
+      "funnel": {
+        "title": "From sign-up to customer",
+        "accounts": "Account",
+        "verified": "Verified email",
+        "booked": "First booking",
+        "returning": "Came back (2+ bookings)",
+        "neverNote_one": "{{count}} account has never booked anything.",
+        "neverNote_other": "{{count}} accounts have never booked anything."
+      },
+      "cohorts": {
+        "title": "Activity",
+        "active": "Active",
+        "dormant": "Dormant",
+        "never": "Never booked",
+        "hint": "Active = a confirmed booking in the last {{days}} days, or one still ahead. Measured in bookings, not logins — logins are not recorded."
+      },
+      "top": {
+        "title": "Most regular",
+        "empty": "Nobody has attended a session yet.",
+        "hint": "Sessions attended. A multi-day course counts as one per day."
+      },
+      "newsletter": {
+        "title": "Newsletter",
+        "subscribed": "Subscribed",
+        "undecided": "Never asked",
+        "unsubscribed": "Unsubscribed"
+      },
+      "athletes": {
+        "title": "Athletes",
+        "flagged": "Flag granted",
+        "consented": "Consent signed",
+        "withPlan": "Something on the plan",
+        "hint": "The gap between the first and the last is the people who were given access and never used it."
+      }
+    },
     "searchPlaceholder": "Search by first name, last name, or email...",
     "userColumn": "User",
     "emailColumn": "Email",

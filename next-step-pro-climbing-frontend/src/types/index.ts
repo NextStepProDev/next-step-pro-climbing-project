@@ -175,6 +175,77 @@ export interface HistoryRequest {
   createdAt: string
 }
 
+/**
+ * The Statistics view of the Users panel (`GET /admin/user-stats`).
+ *
+ * One snapshot: the totals, the funnel and the cohorts are folded from the same server-side read,
+ * so they always add up against each other. Nothing here is recomputed from the user list the
+ * panel already holds — two denominators from two moments differ exactly when somebody registers
+ * mid-render, and that difference reads as a bug.
+ */
+export interface UserStats {
+  totals: UserStatsTotals
+  registrations: MonthlyRegistrations[]
+  funnel: UserStatsFunnel
+  cohorts: UserStatsCohorts
+  topClients: TopClient[]
+  newsletter: NewsletterBreakdown
+  athletes: AthleteBreakdown
+}
+
+export interface UserStatsTotals {
+  accounts: number
+  verified: number
+  athletes: number
+  newsletter: number
+  admins: number
+}
+
+/** `month` is the first day of the month — a date label, so it parses like every other one. */
+export interface MonthlyRegistrations {
+  month: string
+  total: number
+  verified: number
+}
+
+/** Confirmed bookings only, and for life: `booked` means "ever held one", not "holds one now". */
+export interface UserStatsFunnel {
+  booked: number
+  returning: number
+}
+
+/**
+ * Measured in bookings, not logins — there is no last-login column in the database, so a
+ * "last seen" split would be invented rather than measured. `windowDays` ships with the numbers so
+ * the screen can name the rule it applies instead of implying a stronger one.
+ */
+export interface UserStatsCohorts {
+  active: number
+  dormant: number
+  never: number
+  windowDays: number
+}
+
+export interface TopClient {
+  userId: string
+  firstName: string
+  lastName: string
+  attended: number
+}
+
+/** The third bucket is the point: never asked is not the same answer as said no. */
+export interface NewsletterBreakdown {
+  subscribed: number
+  unsubscribed: number
+  undecided: number
+}
+
+export interface AthleteBreakdown {
+  flagged: number
+  consented: number
+  withPlan: number
+}
+
 // Calendar types
 export interface MonthView {
   yearMonth: string
