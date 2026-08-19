@@ -84,6 +84,10 @@ export function TrainingFormModal({ isOpen, onClose, training, initialDate, init
       isOpen={isOpen}
       onClose={onClose}
       title={training ? t('form.editTitle') : prefill ? t('form.duplicateTitle') : t('form.addTitle')}
+      // The description is a plan someone writes and someone else reads back on a phone;
+      // at max-w-lg it wrapped every couple of words. Same width as the detail modal that
+      // shows the result, so writing and reading do not disagree about line breaks.
+      size="lg"
     >
       {/* Mounted only while open — form state resets naturally on every open */}
       {isOpen && (
@@ -388,9 +392,12 @@ function TrainingForm({ training, initialDate, initialTime, prefill, onClose, on
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           maxLength={2000}
-          rows={4}
+          rows={8}
           placeholder={t('form.descriptionPlaceholder')}
-          className="w-full bg-surface-800 border border-surface-700 rounded-lg px-4 py-2 text-surface-100 resize-none"
+          // A 2000-character field in four rows is a peephole over your own text: while
+          // writing a plan you could only see the last sentence. Taller, plus resize-y so a
+          // long plan can be pulled open — the modal is the scroll container anyway.
+          className="w-full bg-surface-800 border border-surface-700 rounded-lg px-4 py-3 text-surface-100 leading-relaxed resize-y min-h-40"
         />
       </div>
 
@@ -419,9 +426,9 @@ function TrainingForm({ training, initialDate, initialTime, prefill, onClose, on
                   value={feedback}
                   onChange={(e) => setFeedback(e.target.value)}
                   maxLength={2000}
-                  rows={2}
+                  rows={4}
                   placeholder={t('completion.feedbackPlaceholder')}
-                  className="w-full bg-surface-800 border border-surface-700 rounded-lg px-3 py-2 text-sm text-surface-100 resize-none"
+                  className="w-full bg-surface-800 border border-surface-700 rounded-lg px-3 py-2 text-sm text-surface-100 leading-relaxed resize-y"
                 />
               </div>
               {/* A task is ticked off, never rated: perceived effort is a question about a
