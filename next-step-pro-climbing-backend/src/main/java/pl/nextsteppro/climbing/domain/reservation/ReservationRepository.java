@@ -142,4 +142,29 @@ public interface ReservationRepository extends JpaRepository<Reservation, UUID> 
     // Skips reservations added manually by the admin — the dot lights up only for client actions.
     @Query("SELECT COUNT(r) FROM Reservation r WHERE r.status = 'CONFIRMED' AND r.createdAt > :since AND r.createdByAdmin = false")
     int countConfirmedCreatedAfter(Instant since);
+
+    /**
+     * Admin statistics: everyone who has ever held a confirmed booking, as one row each.
+     *
+     * <p>Grouped in SQL rather than counted per user in a loop — the screen needs this for the
+     * whole base at once, and the per-user {@code countConfirmedByUserId} above is the shape that
+     * turns into one query per account.
+     *
+     * <p>{@code today}/{@code now} are Warsaw wall-clock and passed in for the same reason every
+     * other booking query takes them: slot times in the database are Warsaw local, so "already
+     * happened" cannot be asked of the database's own clock. The past test matches
+     * {@code findPastByUserId} exactly — the last minute of the slot, not its start.
+     */
+    @Query("""
+        SELECT new pl.nextsteppro.climbing.domain.reservation.UserBookingAggregate(
+            r.user.id,
+            COUNT(r),
+            SUM(CASE WHEN ts.date < :today OR (ts.date = :today AND ts.endTime <= :now) THEN 1 ELSE 0 END),
+            MAX(ts.date))
+        FROM Reservation r
+        JOIN r.timeSlot ts
+        WHERE r.status = 'CONFIRMED'
+        GROUP BY r.user.id
+        """)
+    List<UserBookingAggregate> aggregateConfirmedPerUser(LocalDate today, LocalTime now);
 }

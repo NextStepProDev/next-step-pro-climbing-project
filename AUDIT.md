@@ -51,6 +51,7 @@ Kolejność wg ryzyka, nie wg wielkości.
 | Nagłówki / CSP | 🔵 przeczytane | 2026-08-08 | `nginx.conf`; CSP bez `unsafe-inline` w `script-src`. |
 | Upload plików (path traversal) | 🔵 przeczytane | 2026-08-08 | Regex na nazwie i folderze. |
 | Dziennik przejść — authz i powierzchnia publiczna | 🔵 przeczytane + sonda HTTP | 2026-08-14 | Wszystkie endpointy `/api/ascents` i `/api/admin/ascents` sondowane po HTTP jako anonim, obcy user i admin: publiczne jest **wyłącznie** `/recent`, własność wierszy sprawdzana lookupem po (id, właściciel), cudzy wpis odpowiada „nie istnieje". Opt-out RODO w klauzuli WHERE, publiczne DTO bez pól prywatnych, cache czyszczony na zapisie, zmianie flagi **i obu ścieżkach kasowania konta**. **Znaleziono:** brak jakiejkolwiek ścieżki zdjęcia cudzego wpisu z listy publicznej — patrz „Czego bramki NIE złapią". |
+| Statystyki bazy użytkowników (`/api/admin/user-stats`) | 🔵 przeczytane + testy | 2026-08-20 | Autoryzacja (dwie bramki + kolejność reguł `SecurityConfig`), powierzchnia DTO, kubełek rate limitu, brak parametrów wejściowych. **Znaleziono:** `countAthletesWithPlan()` liczyło plany osób po odebraniu flagi zawodnika — dane poza zasięgiem `requireFlaggedAthlete`, do tego liczba przewyższająca mianownik. Naprawione + test. |
 | Odpowiedzi na bzdurne wejście (400 vs 500) | 🔵 przeczytane + testy | 2026-08-14 | Sonda po całym API, nie tylko po nowej funkcji. **Znaleziono:** nie-UUID w ścieżce, nieznana stała enumu w query i niepoprawny JSON w ciele wpadały w catch-all → 500 + ERROR ze stackiem. Dwa handlery dopisane, komunikat ogólny (nie echuje wartości od klienta). |
 
 ### Poprawność backendu
@@ -63,6 +64,7 @@ Kolejność wg ryzyka, nie wg wielkości.
 | Adnotacje tylko na metodach publicznych | 🟢 bramka | 2026-08-09 | `SpringProxyAnnotationsTest` — pułapka „działa, a nie działa". |
 | Transakcje i wyścigi | 🔵 przeczytane | 2026-08-08 | Blokady pesymistyczne, upserty na unikatach. |
 | N+1 | 🔵 przeczytane | 2026-08-08 | Zapytania w pętlach, leniwe asocjacje w mapperach DTO. |
+| Koszt statystyk użytkowników | 🟢 bramka | 2026-08-20 | `AdminUserStatsQueryCountTest` — 4 zapytania przy 30 kontach, budżet jako stała. Widziana na czerwono. **Znaleziono przy okazji:** zakładka dociągała nieużywaną listę kont, a klient trzymał 5-minutowy cache bez invalidacji. |
 | Encje przekazywane do `@Async` | 🔵 przeczytane | 2026-08-09 | Wszystkie metody mailowe biorące encję + ich wywołania. 3 znaleziska, naprawione. |
 | Escaping HTML w mailach | 🔵 przeczytane | 2026-08-09 | `esc()` w treści, celowo nie w temacie. Czysto. |
 | Migracje V1–V79 | 🔵 przeczytane | 2026-08-08 | Wraz z historią indeksów (dwa fałszywe alarmy odrzucone). |

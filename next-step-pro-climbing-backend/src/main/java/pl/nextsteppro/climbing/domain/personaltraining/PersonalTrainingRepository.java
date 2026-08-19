@@ -22,6 +22,21 @@ public interface PersonalTrainingRepository extends JpaRepository<PersonalTraini
         """)
     long countCompletedTrainings(UUID athleteId);
 
+    /**
+     * Admin statistics: how many athletes have anything on their plan at all.
+     *
+     * <p>Counts both kinds — the question is "was this flag ever used", and a plan of nothing but
+     * daily calorie targets is still a plan being used.
+     *
+     * <p>⚠️ <b>The flag test is not a filter for tidiness, it is the same boundary as
+     * {@code requireFlaggedAthlete}.</b> Revoking the athlete flag clears the consent but
+     * deliberately leaves the plan rows in place, so counting the whole table counts people whose
+     * calendar the coach can no longer open — and lets this number exceed the flagged total, which
+     * the UI renders as a share of it (a plan card reading "150%").
+     */
+    @Query("SELECT COUNT(DISTINCT t.athlete.id) FROM PersonalTraining t WHERE t.athlete.athlete = true")
+    long countAthletesWithPlan();
+
     /** Athlete's unread counter: trainings the coach created or last edited after the athlete's seen marker. */
     @Query("""
         SELECT COUNT(t) FROM PersonalTraining t

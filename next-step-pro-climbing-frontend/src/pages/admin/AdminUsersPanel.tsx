@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { format } from 'date-fns'
@@ -9,16 +9,26 @@ import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
 import { QueryError } from '../../components/ui/QueryError'
 import { Button } from '../../components/ui/Button'
 import { ConfirmModal } from '../../components/ui/ConfirmModal'
+import { UserStatsView } from '../../components/admin/userstats/UserStatsView'
 import { getErrorMessage } from '../../utils/errors'
 
 const PAGE_SIZE = 50
 
+type ViewTab = 'list' | 'stats'
 type NewsletterFilter = 'all' | 'subscribed' | 'unsubscribed'
 type SortKey = 'user' | 'email' | 'role' | 'createdAt'
 type SortDir = 'asc' | 'desc'
 
 export function AdminUsersPanel() {
   const { t } = useTranslation('admin')
+  const [searchParams, setSearchParams] = useSearchParams()
+  const view: ViewTab = searchParams.get('view') === 'stats' ? 'stats' : 'list'
+  const switchView = (next: ViewTab) => {
+    const params = new URLSearchParams(searchParams)
+    if (next === 'stats') params.set('view', 'stats')
+    else params.delete('view')
+    setSearchParams(params, { replace: true })
+  }
   const [search, setSearch] = useState('')
   const [newsletterFilter, setNewsletterFilter] = useState<NewsletterFilter>('all')
   // Its own toggle rather than a fourth pill in the newsletter group: verification and newsletter
@@ -36,26 +46,40 @@ export function AdminUsersPanel() {
   const queryClient = useQueryClient()
   const [actionError, setActionError] = useState<string | null>(null)
 
+  // Not fetched on the statistics view: this component stays mounted there, and nothing on that
+  // screen reads the list — the aggregate comes from its own endpoint. Without the guard, opening
+  // Statistics pulls every account down a second time for nobody.
   const { data: users, isLoading, isError, error, refetch } = useQuery({
     queryKey: ['admin', 'users'],
     queryFn: adminApi.getAllUsers,
+    enabled: view === 'list',
   })
+
+  // Both keys, always: the list renders the accounts and the statistics count them, so every
+  // action here changes both screens. The statistics endpoint refuses to cache on the server for
+  // exactly this reason — but React Query's global staleTime is five minutes, so without the
+  // second invalidation the panel would keep serving the pre-action snapshot from memory and the
+  // deliberate absence of a server cache would buy nothing.
+  const refreshUserData = () => {
+    queryClient.invalidateQueries({ queryKey: ['admin', 'users'] })
+    queryClient.invalidateQueries({ queryKey: ['admin', 'userStats'] })
+  }
 
   const makeAdminMutation = useMutation({
     mutationFn: adminApi.makeAdmin,
-    onSuccess: () => { setActionError(null); queryClient.invalidateQueries({ queryKey: ['admin', 'users'] }) },
+    onSuccess: () => { setActionError(null); refreshUserData() },
     onError: (err) => setActionError(getErrorMessage(err)),
   })
 
   const removeAdminMutation = useMutation({
     mutationFn: adminApi.removeAdmin,
-    onSuccess: () => { setActionError(null); queryClient.invalidateQueries({ queryKey: ['admin', 'users'] }) },
+    onSuccess: () => { setActionError(null); refreshUserData() },
     onError: (err) => setActionError(getErrorMessage(err)),
   })
 
   const deleteUserMutation = useMutation({
     mutationFn: adminApi.deleteUser,
-    onSuccess: () => { setActionError(null); queryClient.invalidateQueries({ queryKey: ['admin', 'users'] }) },
+    onSuccess: () => { setActionError(null); refreshUserData() },
     onError: (err) => setActionError(getErrorMessage(err)),
   })
 
@@ -73,7 +97,7 @@ export function AdminUsersPanel() {
       adminApi.setAthlete(userId, isAthlete),
     onSuccess: () => {
       setActionError(null)
-      queryClient.invalidateQueries({ queryKey: ['admin', 'users'] })
+      refreshUserData()
       queryClient.invalidateQueries({ queryKey: ['admin', 'trainingCalendar', 'athletes'] })
     },
     onError: (err) => setActionError(getErrorMessage(err)),
@@ -185,8 +209,36 @@ export function AdminUsersPanel() {
     { value: 'unsubscribed', label: t('users.newsletterFilterUnsubscribed') },
   ]
 
+  const viewTabs: { value: ViewTab; label: string }[] = [
+    { value: 'list', label: t('users.listTab') },
+    { value: 'stats', label: t('users.stats.tab') },
+  ]
+
   return (
     <div>
+      {/* In the URL, like the athlete panel and the user card: a link sent to oneself comes back to
+          the same view. The list is the default and carries no parameter. */}
+      <div className="flex gap-1.5 p-1 mb-3 bg-surface-800 border border-surface-700 rounded-lg w-fit">
+        {viewTabs.map((tab) => (
+          <button
+            key={tab.value}
+            onClick={() => switchView(tab.value)}
+            aria-pressed={view === tab.value}
+            className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+              view === tab.value
+                ? 'bg-primary-600 text-white'
+                : 'text-surface-400 hover:text-surface-200'
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {view === 'stats' ? (
+        <UserStatsView />
+      ) : (
+      <>
       {actionError && (
         <div className="mb-4 p-3 bg-rose-500/10 border border-rose-500/20 rounded-lg text-sm text-rose-400">
           {actionError}
@@ -481,6 +533,8 @@ export function AdminUsersPanel() {
         }
         variant={confirmAction?.type === 'makeAdmin' || confirmAction?.type === 'forceLogout' ? 'primary' : 'danger'}
       />
+      </>
+      )}
     </div>
   )
 }
