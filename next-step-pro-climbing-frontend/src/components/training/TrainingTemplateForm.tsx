@@ -192,9 +192,12 @@ export function TrainingTemplateForm({ template, draft, onDone, onCancel }: {
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           maxLength={2000}
-          rows={3}
+          rows={8}
           placeholder={t('form.descriptionPlaceholder')}
-          className="w-full bg-surface-800 border border-surface-700 rounded-lg px-4 py-2 text-surface-100 resize-none"
+          // Same reasoning as the training form: a template body is the longest text in this
+          // feature, and it is written once to be reused, so it deserves to be readable while
+          // being written. resize-y for the ones that outgrow eight rows.
+          className="w-full bg-surface-800 border border-surface-700 rounded-lg px-4 py-3 text-surface-100 leading-relaxed resize-y min-h-40"
         />
       </div>
 
