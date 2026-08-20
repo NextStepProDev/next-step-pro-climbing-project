@@ -851,5 +851,19 @@
     "lastActivity": "Ostatnia aktywność: {{date}}",
     "noActivity": "Brak aktywności",
     "back": "Wróć do listy zawodników"
+  },
+  "privateNote": {
+    "title": "Notatka prywatna",
+    "onlyYouHint": "Widzisz ją tylko Ty — nie widzi jej nikt inny, także uczestnicy.",
+    "add": "Dodaj notatkę",
+    "edit": "Edytuj",
+    "save": "Zapisz notatkę",
+    "cancel": "Anuluj",
+    "delete": "Usuń notatkę",
+    "deleteConfirm": "Usunąć tę notatkę? Tej operacji nie da się cofnąć.",
+    "placeholder": "Twoje obserwacje z tych zajęć — co poszło, nad czym popracować, o czym pamiętać następnym razem.",
+    "lastEdited": "Ostatnia edycja: {{date}}",
+    "showAll": "Pokaż całość",
+    "showLess": "Zwiń"
   }
 }

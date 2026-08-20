@@ -849,5 +849,19 @@
     "lastActivity": "Last activity: {{date}}",
     "noActivity": "No activity",
     "back": "Back to athlete list"
+  },
+  "privateNote": {
+    "title": "Private note",
+    "onlyYouHint": "Only you can see this — nobody else, including the participants.",
+    "add": "Add a note",
+    "edit": "Edit",
+    "save": "Save note",
+    "cancel": "Cancel",
+    "delete": "Delete note",
+    "deleteConfirm": "Delete this note? This cannot be undone.",
+    "placeholder": "Your notes from this session — what went well, what to work on, what to remember next time.",
+    "lastEdited": "Last edited: {{date}}",
+    "showAll": "Show all",
+    "showLess": "Show less"
   }
 }

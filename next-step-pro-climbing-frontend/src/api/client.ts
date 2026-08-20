@@ -58,6 +58,8 @@ import type {
   SlotWaitlistAdmin,
   EventWaitlistAdmin,
   InvitedUser,
+  AdminNoteTarget,
+  AdminPrivateNote,
   EventDetail,
   EventParticipants,
   ReservationAdmin,
@@ -833,6 +835,20 @@ export const adminApi = {
 
   getPastSlots: () =>
     fetchApi<TimeSlotAdmin[]>('/admin/slots/past'),
+
+  // Private notes — the CALLING admin's own, never anybody else's. One target type in the path
+  // keeps slot/event/training on a single code path here and on the server.
+  getPrivateNote: (target: AdminNoteTarget, targetId: string) =>
+    fetchApi<AdminPrivateNote>(`/admin/notes/${target}/${targetId}`),
+
+  savePrivateNote: (target: AdminNoteTarget, targetId: string, body: string) =>
+    fetchApi<void>(`/admin/notes/${target}/${targetId}`, {
+      method: 'PUT',
+      body: JSON.stringify({ body }),
+    }),
+
+  deletePrivateNote: (target: AdminNoteTarget, targetId: string) =>
+    fetchApi<void>(`/admin/notes/${target}/${targetId}`, { method: 'DELETE' }),
 
   // Events
   createEvent: (data: CreateEventRequest) =>

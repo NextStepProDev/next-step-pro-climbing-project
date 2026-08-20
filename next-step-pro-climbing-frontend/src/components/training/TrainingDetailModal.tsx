@@ -13,6 +13,7 @@ import { isImageType } from '../../utils/mediaTypes'
 import { decodeHtmlEntities } from '../../utils/htmlEntities'
 import { useDateLocale } from '../../utils/dateFnsLocale'
 import { nowInWarsaw, parseCalendarDate, parseCalendarDateTime, todayInWarsaw } from '../../utils/calendarDate'
+import { AdminPrivateNote } from '../admin/AdminPrivateNote'
 import type { TrainingCalendarAdapter } from './trainingCalendarAdapter'
 import type { PersonalTraining, PersonalTrainingStatus, TrainingAttachment } from '../../types'
 
@@ -255,6 +256,11 @@ export function TrainingDetailModal({
           </Button>
         </div>
       </div>
+
+      {/* The coach's private note about this entry. Gated on isCoachView, not on useAuth().isAdmin:
+          the modal already carries the role as a prop, and that is its source of truth. The plan is
+          shared with the athlete — this note is not, and never reaches the athlete's payload. */}
+      {isCoachView && <AdminPrivateNote target="training" targetId={training.id} />}
 
       <ConfirmModal
         isOpen={confirmDelete}

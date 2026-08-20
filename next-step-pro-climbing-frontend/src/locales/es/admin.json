@@ -849,5 +849,19 @@
     "lastActivity": "Última actividad: {{date}}",
     "noActivity": "Sin actividad",
     "back": "Volver a la lista de atletas"
+  },
+  "privateNote": {
+    "title": "Nota privada",
+    "onlyYouHint": "Solo tú puedes verla — nadie más, tampoco los participantes.",
+    "add": "Añadir una nota",
+    "edit": "Editar",
+    "save": "Guardar nota",
+    "cancel": "Cancelar",
+    "delete": "Eliminar nota",
+    "deleteConfirm": "¿Eliminar esta nota? Esta acción no se puede deshacer.",
+    "placeholder": "Tus observaciones de esta sesión — qué salió bien, qué mejorar, qué recordar la próxima vez.",
+    "lastEdited": "Última edición: {{date}}",
+    "showAll": "Mostrar todo",
+    "showLess": "Mostrar menos"
   }
 }

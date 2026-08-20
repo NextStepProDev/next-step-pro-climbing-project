@@ -535,6 +535,17 @@ export interface CreateTimeSlotRequest {
   trainingRequestId?: string
 }
 
+// What a private admin note hangs on. Lower-case: it is a URL segment, not a stored value.
+export type AdminNoteTarget = 'slot' | 'event' | 'training'
+
+// The CALLING admin's own note about one session. Both fields null = nothing written yet.
+// Deliberately not folded into TimeSlot/EventSummary/PersonalTraining: those shapes are shared
+// with clients, athletes and the anonymous calendar cache, so a note on them would leak by default.
+export interface AdminPrivateNote {
+  body: string | null
+  updatedAt: string | null
+}
+
 // Invitee of a held seat (prefill for admin forms)
 export interface InvitedUser {
   userId: string

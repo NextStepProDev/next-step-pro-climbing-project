@@ -15,6 +15,7 @@ import { saveRedirectPath } from '../../utils/redirect'
 import { adminApi, calendarApi, reservationApi } from '../../api/client'
 import { getErrorMessage } from '../../utils/errors'
 import { parseCalendarDate, todayInWarsaw } from '../../utils/calendarDate'
+import { AdminPrivateNote } from '../admin/AdminPrivateNote'
 import type { EventSummary } from '../../types'
 
 // Full event edit form from the admin panel (course, dates, invitations etc.).
@@ -644,6 +645,10 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
             {ta('events.deleteTitle')}
           </button>
         )}
+
+        {/* The owner's private note — one per event, however many days it spans. Not gated on
+            the event being over: writing before is as legitimate as writing after. */}
+        {isAdmin && <AdminPrivateNote target="event" targetId={ev.id} />}
 
         {/* Share */}
         <ShareButtons
