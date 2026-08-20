@@ -1,0 +1,12 @@
+-- Znacznik "przeczytane" dla powiadomień admina o nowych potwierdzonych kontach.
+-- Badge w panelu admina (zakładka Użytkownicy + link Admin w navbarze) liczy konta, których
+-- email_verified_at jest PO tym znaczniku; wejście w listę użytkowników ustawia go na now().
+--
+-- Osobna kolumna, a nie współdzielenie admin_reservations_seen_at: te dwa liczniki gasi inna
+-- zakładka, więc wspólny znacznik znaczyłby, że wejście w Rezerwacje kasuje kropkę przy
+-- Użytkownikach.
+--
+-- DEFAULT now() jest tu mechanizmem, nie kosmetyką: bez niego wdrożenie zapaliłoby adminowi
+-- kropkę z liczbą WSZYSTKICH kont potwierdzonych w historii serwisu.
+-- Kolumna per-user (każdy admin ma własny stan przeczytania); dla zwykłych użytkowników nieużywana.
+ALTER TABLE users ADD COLUMN admin_users_seen_at TIMESTAMPTZ NOT NULL DEFAULT now();

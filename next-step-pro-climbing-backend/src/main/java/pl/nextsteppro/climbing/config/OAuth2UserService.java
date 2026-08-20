@@ -8,6 +8,7 @@ import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
+import pl.nextsteppro.climbing.api.auth.AccountConfirmation;
 import pl.nextsteppro.climbing.domain.user.User;
 import pl.nextsteppro.climbing.domain.user.UserRepository;
 import pl.nextsteppro.climbing.domain.user.UserRole;
@@ -26,11 +27,14 @@ public class OAuth2UserService extends DefaultOAuth2UserService {
     private final UserRepository userRepository;
     private final AdminEmailConfig adminEmailConfig;
     private final AuthMailService authMailService;
+    private final AccountConfirmation accountConfirmation;
 
-    public OAuth2UserService(UserRepository userRepository, AdminEmailConfig adminEmailConfig, AuthMailService authMailService) {
+    public OAuth2UserService(UserRepository userRepository, AdminEmailConfig adminEmailConfig,
+                             AuthMailService authMailService, AccountConfirmation accountConfirmation) {
         this.userRepository = userRepository;
         this.adminEmailConfig = adminEmailConfig;
         this.authMailService = authMailService;
+        this.accountConfirmation = accountConfirmation;
     }
 
     @Override
@@ -77,7 +81,9 @@ public class OAuth2UserService extends DefaultOAuth2UserService {
                 user.setOauthProvider(provider);
                 user.setOauthId(oauthId);
                 if (!user.isEmailVerified()) {
-                    user.markEmailVerified();
+                    // The account existed but had never been usable; this is the moment it becomes
+                    // one, so it counts as a confirmation exactly like clicking the mailed link.
+                    accountConfirmation.confirm(user, AccountConfirmation.ConfirmationSource.OAUTH);
                 }
                 promoteToAdminIfConfigured(user);
                 userRepository.save(user);
@@ -101,19 +107,24 @@ public class OAuth2UserService extends DefaultOAuth2UserService {
         );
         user.setOauthProvider(provider);
         user.setOauthId(oauthId);
-        // A fresh account is safe to create either way — nobody else owns this address yet. But we
-        // only inherit "verified" when the provider actually vouched for it; otherwise the user
-        // goes through the normal e-mail verification, because our own flag must not claim more
-        // than we know.
-        if (emailVerified) {
-            user.markEmailVerified();
-        }
         user.setPreferredLanguage(detectLanguage());
         user.setRole(adminEmailConfig.isAdminEmail(email) ? UserRole.ADMIN : UserRole.USER);
         if (user.isAdmin()) {
             log.info("AUTO-ADMIN-PROMOTION: {} promoted to ADMIN during OAuth2 registration", email);
         }
         User savedUser = userRepository.save(user);
+        // A fresh account is safe to create either way — nobody else owns this address yet. But we
+        // only inherit "verified" when the provider actually vouched for it; otherwise the user
+        // goes through the normal e-mail verification, because our own flag must not claim more
+        // than we know.
+        //
+        // Confirmed AFTER the first save, and saved again: confirming writes an activity entry
+        // pointing at this user, and that row cannot reference an account the database has not
+        // seen yet. The intermediate unconfirmed state is invisible — nobody else holds this id.
+        if (emailVerified) {
+            accountConfirmation.confirm(savedUser, AccountConfirmation.ConfirmationSource.OAUTH);
+            savedUser = userRepository.save(savedUser);
+        }
         authMailService.sendWelcomeEmail(savedUser);
         return savedUser;
     }

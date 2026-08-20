@@ -24,6 +24,23 @@ public class ActivityLogService {
         this.activityLogRepository = activityLogRepository;
     }
 
+    /**
+     * An account became usable (address confirmed, or vouched for by an OAuth provider).
+     *
+     * <p>The actor is the <b>user themselves</b>, not an admin — so the entry also shows up on
+     * that person's own timeline in the admin user card, which is where it belongs. Same reasoning
+     * as {@code logCancelledByAdmin}, where {@code user_id} deliberately names the affected user
+     * rather than the admin who acted.
+     *
+     * <p>Call it through {@link pl.nextsteppro.climbing.api.auth.AccountConfirmation}, never
+     * directly: the panel badge counts {@code email_verified_at}, so a confirmation path that
+     * stamps the column without writing this entry leaves the dot claiming a new account the
+     * timeline cannot show.
+     */
+    public void logAccountConfirmed(User user, String description) {
+        save(user, ActivityActionType.USER_ACCOUNT_CONFIRMED, null, null, null, description);
+    }
+
     public void logReservationCreated(User user, TimeSlot timeSlot, int participants) {
         save(user, ActivityActionType.RESERVATION_CREATED, timeSlot, null, participants, null);
     }

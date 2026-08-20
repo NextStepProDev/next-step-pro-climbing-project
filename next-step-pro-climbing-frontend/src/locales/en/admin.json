@@ -657,6 +657,7 @@
     "noActivity": "No activity to display",
     "loadMore": "Load more",
     "actions": {
+      "USER_ACCOUNT_CONFIRMED": "New account confirmed",
       "RESERVATION_CREATED": "New reservation",
       "RESERVATION_REACTIVATED": "Reservation reactivated",
       "RESERVATION_UPDATED": "Participants updated",

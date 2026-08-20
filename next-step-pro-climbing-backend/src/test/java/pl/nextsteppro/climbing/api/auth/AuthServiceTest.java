@@ -63,12 +63,19 @@ class AuthServiceTest {
     private pl.nextsteppro.climbing.infrastructure.security.PasswordPolicyValidator passwordPolicy;
     @Mock
     private VerificationLinkIssuer verificationLinkIssuer;
+    @Mock
+    private pl.nextsteppro.climbing.api.activitylog.ActivityLogService activityLogService;
 
+    // Real, not a mock: confirming is two writes that must happen together (the flag and the
+    // activity entry), and a stubbed-out AccountConfirmation would let this test keep passing
+    // while verifyEmail stopped marking anything confirmed at all.
+    private AccountConfirmation accountConfirmation;
     private AuthService authService;
     private User testUser;
 
     @BeforeEach
     void setUp() {
+        accountConfirmation = new AccountConfirmation(activityLogService);
         authService = new AuthService(
             userRepository,
             authTokenRepository,
@@ -79,7 +86,8 @@ class AuthServiceTest {
             msg,
             consentLogRepository,
             passwordPolicy,
-            verificationLinkIssuer
+            verificationLinkIssuer,
+            accountConfirmation
         );
 
         testUser = new User("test@example.com", "John", "Doe", "+48123456789", "johndoe");
@@ -461,6 +469,9 @@ class AuthServiceTest {
 
         verify(userRepository).save(testUser);
         verify(authTokenRepository).save(authToken);
+        // The admin panel badge counts email_verified_at, so a confirmation the timeline cannot
+        // show would leave the dot claiming an account nobody can find.
+        verify(activityLogService).logAccountConfirmed(testUser, "e-mail");
     }
 
     @Test

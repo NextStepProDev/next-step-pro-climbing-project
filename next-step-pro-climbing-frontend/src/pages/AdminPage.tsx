@@ -111,6 +111,8 @@ export function AdminPage() {
     '/admin/reservations': (notifications?.newReservations ?? 0) + (notifications?.newWaitlistEntries ?? 0),
     // Unread athlete activity (new trainings/completions/comments) across all athletes
     '/admin/training-calendars': notifications?.athleteActivity ?? 0,
+    // Accounts confirmed since this admin last opened the Users list
+    '/admin/users': notifications?.newUsers ?? 0,
   }
 
   return (

@@ -9,6 +9,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.oauth2.core.user.DefaultOAuth2User;
 import org.springframework.security.oauth2.core.user.OAuth2User;
+import pl.nextsteppro.climbing.api.activitylog.ActivityLogService;
+import pl.nextsteppro.climbing.api.auth.AccountConfirmation;
 import pl.nextsteppro.climbing.domain.user.User;
 import pl.nextsteppro.climbing.domain.user.UserRepository;
 import pl.nextsteppro.climbing.infrastructure.mail.AuthMailService;
@@ -24,6 +26,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -45,12 +49,17 @@ class OAuth2UserServiceTest {
     private AdminEmailConfig adminEmailConfig;
     @Mock
     private AuthMailService authMailService;
+    @Mock
+    private ActivityLogService activityLogService;
 
     private OAuth2UserService service;
 
     @BeforeEach
     void setUp() {
-        service = new OAuth2UserService(userRepository, adminEmailConfig, authMailService);
+        // Real AccountConfirmation over a mocked log: it is what marks the account confirmed, so
+        // stubbing it out would hide the very behaviour these tests assert on.
+        service = new OAuth2UserService(userRepository, adminEmailConfig, authMailService,
+            new AccountConfirmation(activityLogService));
     }
 
     // ---- linking to an existing account ----
@@ -115,6 +124,46 @@ class OAuth2UserServiceTest {
     }
 
     @Test
+    void shouldRecordAnActivityEntryWhenTheProviderVouchesForANewAccount() {
+        // The admin panel badge counts email_verified_at, and a Google sign-up never sees a
+        // confirmation link — so if this path stamped the column without logging, the dot would
+        // announce an account the timeline cannot show.
+        when(userRepository.findByOauthProviderAndOauthId("google", "sub-new")).thenReturn(Optional.empty());
+        when(userRepository.findByEmail("new@example.com")).thenReturn(Optional.empty());
+        when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        process(oauthUser("new@example.com", true, "sub-new"));
+
+        verify(activityLogService).logAccountConfirmed(any(User.class), eq("Google"));
+    }
+
+    @Test
+    void shouldNotRecordAnActivityEntryWhenTheProviderDidNotVouchForTheAddress() {
+        // Nothing was confirmed, so nothing is announced — the account still owes us the link.
+        when(userRepository.findByOauthProviderAndOauthId("google", "sub-new")).thenReturn(Optional.empty());
+        when(userRepository.findByEmail("new@example.com")).thenReturn(Optional.empty());
+        when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        process(oauthUser("new@example.com", false, "sub-new"));
+
+        verify(activityLogService, never()).logAccountConfirmed(any(User.class), any());
+    }
+
+    @Test
+    void shouldRecordAnActivityEntryWhenLinkingConfirmsAnAccountThatNeverWas() {
+        // An account that registered with a password and never clicked the link becomes usable
+        // here for the first time — that is a confirmation like any other.
+        User existing = new User("owner@example.com", "Own", "Er", "+48222222222", "owner");
+        when(userRepository.findByOauthProviderAndOauthId("google", "sub-owner")).thenReturn(Optional.empty());
+        when(userRepository.findByEmail("owner@example.com")).thenReturn(Optional.of(existing));
+        when(adminEmailConfig.isAdminEmail("owner@example.com")).thenReturn(false);
+
+        process(oauthUser("owner@example.com", true, "sub-owner"));
+
+        verify(activityLogService).logAccountConfirmed(existing, "Google");
+    }
+
+    @Test
     void shouldTreatAMissingEmailVerifiedClaimAsUnverified() {
         // A provider that does not tell us has not verified anything, as far as we are concerned.
         Map<String, Object> attributes = new HashMap<>();
@@ -146,9 +195,14 @@ class OAuth2UserServiceTest {
 
     // ---- helpers ----
 
+    /**
+     * The account as it was last written. A verified sign-up saves twice on purpose — the row has
+     * to exist before the activity entry can point at it — so this takes the final state rather
+     * than insisting on a single save.
+     */
     private User saved() {
         ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
-        verify(userRepository).save(captor.capture());
+        verify(userRepository, atLeastOnce()).save(captor.capture());
         return captor.getValue();
     }
 
