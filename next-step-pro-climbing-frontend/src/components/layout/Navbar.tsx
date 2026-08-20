@@ -96,6 +96,7 @@ export function Navbar() {
       + (adminNotifications?.newReservations ?? 0)
       + (adminNotifications?.newWaitlistEntries ?? 0)
       + (adminNotifications?.athleteActivity ?? 0)
+      + (adminNotifications?.newUsers ?? 0)
     : 0;
 
   // The client's pending invitations (invitation-held seats) — a badge on the

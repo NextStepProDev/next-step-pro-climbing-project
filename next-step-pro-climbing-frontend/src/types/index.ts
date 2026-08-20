@@ -625,6 +625,8 @@ export interface AdminNotifications {
   newWaitlistEntries: number
   // Unread athlete activity in training calendars (per this admin's read markers)
   athleteActivity: number
+  // Accounts confirmed since last "read" — its own marker, cleared by the Users list
+  newUsers: number
 }
 
 // Waitlist entry in admin views (participants modal + Reservations tab)
@@ -699,6 +701,7 @@ export interface AdminTrainingRequest {
 
 // Activity Log types
 export type ActivityActionType =
+  | 'USER_ACCOUNT_CONFIRMED'
   | 'RESERVATION_CREATED'
   | 'RESERVATION_CANCELLED'
   | 'RESERVATION_REACTIVATED'

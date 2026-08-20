@@ -9,6 +9,7 @@ import {
   Lock,
   Unlock,
   UserCheck,
+  UserPlus,
   UserX,
   UserMinus,
   LogOut,
@@ -49,6 +50,13 @@ export const ACTION_CONFIG: Record<
   ActivityActionType,
   { icon: typeof CalendarPlus; color: string; bgColor: string }
 > = {
+  // Green, not the orange of the ADMIN_USER_* family: those are things an admin did TO an
+  // account, this is something a client did. Green already reads as "something arrived" here.
+  USER_ACCOUNT_CONFIRMED: {
+    icon: UserPlus,
+    color: 'text-green-400',
+    bgColor: 'bg-green-500/10',
+  },
   RESERVATION_CREATED: {
     icon: CalendarPlus,
     color: 'text-green-400',

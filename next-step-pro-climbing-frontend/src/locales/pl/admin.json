@@ -658,6 +658,7 @@
     "noActivity": "Brak aktywności do wyświetlenia",
     "loadMore": "Załaduj więcej",
     "actions": {
+      "USER_ACCOUNT_CONFIRMED": "Nowe konto potwierdzone",
       "RESERVATION_CREATED": "Nowa rezerwacja",
       "RESERVATION_REACTIVATED": "Ponowna rezerwacja",
       "RESERVATION_UPDATED": "Zmiana liczby uczestników",

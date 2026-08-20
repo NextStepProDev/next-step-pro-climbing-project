@@ -116,6 +116,12 @@ public class User {
     @Column(name = "admin_reservations_seen_at", nullable = false)
     private Instant adminReservationsSeenAt = Instant.now();
 
+    // "Read" marker for admin notifications about newly confirmed accounts (panel badge);
+    // unused for regular users. Its own marker rather than sharing the reservations one, because
+    // a different tab clears it.
+    @Column(name = "admin_users_seen_at", nullable = false)
+    private Instant adminUsersSeenAt = Instant.now();
+
     // Coach-designated athlete: unlocks the personal training calendar.
     // Toggled by admin; switching off hides the calendar but keeps its data.
     @Column(name = "is_athlete", nullable = false)
@@ -242,6 +248,14 @@ public class User {
 
     public void markAdminReservationsSeen() {
         this.adminReservationsSeenAt = Instant.now();
+    }
+
+    public Instant getAdminUsersSeenAt() {
+        return adminUsersSeenAt;
+    }
+
+    public void markAdminUsersSeen() {
+        this.adminUsersSeenAt = Instant.now();
     }
 
     public boolean isAdmin() {

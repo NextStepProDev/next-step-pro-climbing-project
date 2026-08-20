@@ -690,7 +690,8 @@ public class AdminController {
     @Tag(name = "Admin - Notifications", description = "Admin panel notification counters")
     @Operation(
         summary = "Admin notifications",
-        description = "Badge counters: pending training requests + new reservations since last read."
+        description = "Badge counters: pending training requests, new reservations and newly "
+            + "confirmed accounts since last read."
     )
     @GetMapping("/notifications")
     public ResponseEntity<AdminNotificationsDto> getNotifications(@CurrentUserId UUID adminId) {
@@ -705,6 +706,17 @@ public class AdminController {
     @PostMapping("/notifications/reservations-seen")
     public ResponseEntity<Void> markReservationsSeen(@CurrentUserId UUID adminId) {
         adminService.markReservationsSeen(adminId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @Tag(name = "Admin - Notifications")
+    @Operation(
+        summary = "Mark newly confirmed accounts as read",
+        description = "Sets the read marker for newly confirmed accounts (called on entering the Users list)."
+    )
+    @PostMapping("/notifications/users-seen")
+    public ResponseEntity<Void> markUsersSeen(@CurrentUserId UUID adminId) {
+        adminService.markUsersSeen(adminId);
         return ResponseEntity.noContent().build();
     }
 }

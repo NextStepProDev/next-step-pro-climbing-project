@@ -25,6 +25,17 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     List<User> findAllByAthleteTrueOrderByFirstNameAscLastNameAsc();
 
     /**
+     * Admin notifications: accounts confirmed since this admin last read them (panel badge).
+     *
+     * <p>Counted off {@code email_verified_at} rather than {@code created_at} so both routes into
+     * the service land in it without a branch: the e-mail link stamps it, and so does an OAuth
+     * sign-up, which never sees a confirmation link at all. Accounts that never confirmed hold
+     * NULL there and drop out on their own — which is the wanted answer, since an unconfirmed
+     * account is one nobody can sign in to.
+     */
+    int countByEmailVerifiedAtAfter(Instant seenAt);
+
+    /**
      * Accounts that never confirmed their address and were registered before {@code cutoff}.
      * Serves both retention passes: the reminder reads the [6d, 7d) band, the deletion everything
      * older than 7 days.

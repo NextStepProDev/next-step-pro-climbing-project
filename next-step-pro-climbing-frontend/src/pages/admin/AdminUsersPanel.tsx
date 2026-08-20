@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
@@ -49,11 +49,26 @@ export function AdminUsersPanel() {
   // Not fetched on the statistics view: this component stays mounted there, and nothing on that
   // screen reads the list — the aggregate comes from its own endpoint. Without the guard, opening
   // Statistics pulls every account down a second time for nobody.
-  const { data: users, isLoading, isError, error, refetch } = useQuery({
+  const usersQuery = useQuery({
     queryKey: ['admin', 'users'],
     queryFn: adminApi.getAllUsers,
     enabled: view === 'list',
   })
+  const { data: users, isLoading, isError, error, refetch } = usersQuery
+
+  // Advance the "newly confirmed accounts" marker once the list has actually loaded post-mount,
+  // then refresh the badges (tab + navbar). Same shape as the Reservations tab.
+  //
+  // Tied to the list query, so landing straight on ?view=stats leaves the badge alone until the
+  // list is opened — deliberate: the marker means "I looked at the accounts", and the statistics
+  // view does not show them. Errors are swallowed; the badge clears on the next visit.
+  const usersLoaded = usersQuery.isFetchedAfterMount
+  useEffect(() => {
+    if (!usersLoaded) return
+    adminApi.markUsersSeen()
+      .then(() => queryClient.invalidateQueries({ queryKey: ['admin', 'notifications'] }))
+      .catch(() => { /* the badge clears on the next successful visit */ })
+  }, [usersLoaded, queryClient])
 
   // Both keys, always: the list renders the accounts and the statistics count them, so every
   // action here changes both screens. The statistics endpoint refuses to cache on the server for

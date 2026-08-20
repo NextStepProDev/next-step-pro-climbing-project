@@ -1209,7 +1209,8 @@ public class AdminService {
      * Badge counters: pending training requests (inherent state — PENDING) plus new
      * reservations and waitlist joins since last "read" (per-admin marker
      * {@code adminReservationsSeenAt}, reset by entering the Reservations tab via
-     * {@link #markReservationsSeen}).
+     * {@link #markReservationsSeen}), plus newly confirmed accounts since this admin's separate
+     * {@code adminUsersSeenAt} marker ({@link #markUsersSeen}).
      */
     @Transactional(readOnly = true)
     public AdminNotificationsDto getNotifications(UUID adminId) {
@@ -1219,12 +1220,21 @@ public class AdminService {
         int newWaitlistEntries = waitlistRepository.countActiveCreatedAfter(admin.getAdminReservationsSeenAt())
             + eventWaitlistRepository.countActiveCreatedAfter(admin.getAdminReservationsSeenAt());
         long athleteActivity = trainingCalendarService.getTotalAthleteActivity(adminId);
-        return new AdminNotificationsDto(pendingRequests, newReservations, newWaitlistEntries, athleteActivity);
+        // Deliberately unfiltered by role: an admin auto-promoted at registration is still a new
+        // confirmed account, and the badge clears on the first visit to the Users list anyway.
+        int newUsers = userRepository.countByEmailVerifiedAtAfter(admin.getAdminUsersSeenAt());
+        return new AdminNotificationsDto(
+            pendingRequests, newReservations, newWaitlistEntries, athleteActivity, newUsers);
     }
 
     public void markReservationsSeen(UUID adminId) {
         User admin = userRepository.findById(adminId).orElseThrow();
         admin.markAdminReservationsSeen();
+    }
+
+    public void markUsersSeen(UUID adminId) {
+        User admin = userRepository.findById(adminId).orElseThrow();
+        admin.markAdminUsersSeen();
     }
 
     /**

@@ -1,6 +1,11 @@
 package pl.nextsteppro.climbing.domain.activitylog;
 
 public enum ActivityActionType {
+    // An account became usable: the address was confirmed by e-mail link, or the provider vouched
+    // for it during OAuth sign-up. Deliberately not named USER_REGISTERED (registration precedes
+    // this by hours on the e-mail path) nor USER_EMAIL_VERIFIED (the Google path verifies nothing
+    // of ours). Written by AccountConfirmation, never directly.
+    USER_ACCOUNT_CONFIRMED,
     RESERVATION_CREATED,
     RESERVATION_CANCELLED,
     RESERVATION_REACTIVATED,

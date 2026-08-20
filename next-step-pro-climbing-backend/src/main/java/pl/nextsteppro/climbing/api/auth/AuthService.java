@@ -51,6 +51,7 @@ public class AuthService {
     private final NewsletterConsentLogRepository consentLogRepository;
     private final PasswordPolicyValidator passwordPolicy;
     private final VerificationLinkIssuer verificationLinkIssuer;
+    private final AccountConfirmation accountConfirmation;
 
     /**
      * Pre-computed BCrypt hash used to equalize login response time when an account does not
@@ -70,7 +71,8 @@ public class AuthService {
             MessageService msg,
             NewsletterConsentLogRepository consentLogRepository,
             PasswordPolicyValidator passwordPolicy,
-            VerificationLinkIssuer verificationLinkIssuer) {
+            VerificationLinkIssuer verificationLinkIssuer,
+            AccountConfirmation accountConfirmation) {
         this.userRepository = userRepository;
         this.authTokenRepository = authTokenRepository;
         this.passwordEncoder = passwordEncoder;
@@ -81,6 +83,7 @@ public class AuthService {
         this.consentLogRepository = consentLogRepository;
         this.passwordPolicy = passwordPolicy;
         this.verificationLinkIssuer = verificationLinkIssuer;
+        this.accountConfirmation = accountConfirmation;
         this.dummyHash = passwordEncoder.encode("timing-attack-mitigation-dummy");
     }
 
@@ -189,7 +192,7 @@ public class AuthService {
             .orElseThrow(() -> new IllegalArgumentException(msg.get("auth.verify.invalid")));
 
         User user = authToken.getUser();
-        user.markEmailVerified();
+        accountConfirmation.confirm(user, AccountConfirmation.ConfirmationSource.EMAIL_LINK);
         authToken.markAsUsed();
 
         userRepository.save(user);

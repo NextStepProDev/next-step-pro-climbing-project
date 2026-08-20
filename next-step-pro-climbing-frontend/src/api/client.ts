@@ -873,6 +873,9 @@ export const adminApi = {
   markReservationsSeen: () =>
     fetchApi<void>('/admin/notifications/reservations-seen', { method: 'POST' }),
 
+  markUsersSeen: () =>
+    fetchApi<void>('/admin/notifications/users-seen', { method: 'POST' }),
+
   updateTrainingRequestStatus: (requestId: string, data: { status: 'PENDING' | 'CONTACTED' | 'REJECTED'; adminNote?: string; notifyUser?: boolean }) =>
     fetchApi<AdminTrainingRequest>(`/admin/training-requests/${requestId}/status`, {
       method: 'PUT',

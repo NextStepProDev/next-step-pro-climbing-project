@@ -305,7 +305,10 @@ record AdminNotificationsDto(
     int newWaitlistEntries,
     // Athlete training-calendar activity (new trainings/completions/comments)
     // across all athletes, per this admin's read markers (training_calendar_reads)
-    long athleteActivity
+    long athleteActivity,
+    // Accounts confirmed since last "read" — its own marker (admin_users_seen_at), cleared by
+    // opening the Users list, not the Reservations tab
+    int newUsers
 ) {}
 
 record NotifyParticipantsResult(int notifiedCount) {}
