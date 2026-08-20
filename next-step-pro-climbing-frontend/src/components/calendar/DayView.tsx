@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { format } from "date-fns";
-import { ArrowLeft, Clock, Calendar, CalendarPlus, Users, Plus, ExternalLink, X, Phone, Ban } from "lucide-react";
+import { ArrowLeft, Clock, Calendar, CalendarPlus, Users, Plus, ExternalLink, X, Phone, Ban, NotebookPen } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import clsx from "clsx";
 import type { TimeSlot, EventSummary } from "../../types";
@@ -9,6 +9,7 @@ import { formatAvailability, getEventColorByIndex } from "../../utils/events";
 import { useDateLocale } from "../../utils/dateFnsLocale";
 import { useAuth } from "../../context/AuthContext";
 import { parseCalendarDate } from '../../utils/calendarDate'
+import type { NoteMarks } from '../admin/useNoteMarks'
 
 interface DayViewProps {
   date: string;
@@ -21,6 +22,8 @@ interface DayViewProps {
   onAddSlot?: () => void;
   /** Training request (non-admin): shown on an empty day. */
   onProposeTraining?: () => void;
+  /** Admin only. Undefined for everybody else, so the marker cannot render by accident. */
+  noteMarks?: NoteMarks;
 }
 
 /* ===============================
@@ -30,10 +33,12 @@ function SlotButton({
   slot,
   onSlotClick,
   showTitle = false,
+  hasNote = false,
 }: {
   slot: TimeSlot;
   onSlotClick: (slotId: string) => void;
   showTitle?: boolean;
+  hasNote?: boolean;
 }) {
   const { t } = useTranslation('calendar');
   const { isAdmin, isAuthenticated } = useAuth();
@@ -95,6 +100,11 @@ function SlotButton({
         </div>
 
         <div className="flex items-center gap-2">
+          {/* The card is roomy here, so the marker joins the badge cluster rather than
+              squeezing in beside the time the way it has to in the week grid. */}
+          {hasNote && (
+            <NotebookPen className="w-4 h-4 text-amber-500" aria-label={t('slot.hasPrivateNote')} />
+          )}
           {isAvailabilityWindow && (
             <span className="px-2 py-1 text-xs font-medium bg-teal-500/20 text-teal-400 rounded">
               {t('day.callToBook')}
@@ -164,9 +174,17 @@ export function DayView({
   onCancelEvent,
   onAddSlot,
   onProposeTraining,
+  noteMarks,
 }: DayViewProps) {
   const { t } = useTranslation('calendar');
   const locale = useDateLocale();
+
+  // An event has four card shapes here (absence, contact day, with slots, without) and the
+  // marker belongs in the title of each. Inline-block so it rides inside the heading without
+  // turning it into a flex row four times over.
+  const eventNoteMark = (eventId: string) => noteMarks?.events.has(eventId)
+    ? <NotebookPen className="inline-block w-4 h-4 mr-1.5 align-[-3px] text-amber-500" aria-label={t('event.hasPrivateNote')} />
+    : null;
   const location = useLocation();
   // Back-link target so CourseDetailPage returns here instead of the course list.
   const courseReturnTo = location.pathname + location.search;
@@ -266,7 +284,7 @@ export function DayView({
                     className={clsx("rounded-lg border p-4", color.border, color.bg)}
                   >
                     <h3 className={clsx("text-base font-semibold mb-2", color.text)}>
-                      {event.title}
+                      {eventNoteMark(event.id)}{event.title}
                     </h3>
                     {event.description && (
                       <p className="text-sm text-surface-300 mb-3">{event.description}</p>
@@ -286,7 +304,7 @@ export function DayView({
                     className={clsx("rounded-lg border p-4", color.border, color.bg)}
                   >
                     <h3 className={clsx("text-base font-semibold mb-2", color.text)}>
-                      {event.title}
+                      {eventNoteMark(event.id)}{event.title}
                     </h3>
                     {event.description && (
                       <p className="text-sm text-surface-300 mb-3">{event.description}</p>
@@ -321,7 +339,7 @@ export function DayView({
                           onClick={() => onEventClick?.(event)}
                           className={clsx("text-base font-semibold text-left hover:underline", color.text)}
                         >
-                          {event.title}
+                          {eventNoteMark(event.id)}{event.title}
                         </button>
                         {event.courseId && (
                           <Link
@@ -382,6 +400,7 @@ export function DayView({
                           key={slot.id}
                           slot={slot}
                           onSlotClick={onSlotClick}
+                          hasNote={!!noteMarks?.slots.has(slot.id)}
                         />
                       ))}
                     </div>
@@ -406,7 +425,7 @@ export function DayView({
                           onClick={() => onEventClick?.(event)}
                           className={clsx("text-base font-semibold text-left hover:underline", color.text)}
                         >
-                          {event.title}
+                          {eventNoteMark(event.id)}{event.title}
                         </button>
 
                         <div className="flex items-center gap-4 mt-1 text-sm text-surface-400">
@@ -485,6 +504,7 @@ export function DayView({
                       slot={slot}
                       onSlotClick={onSlotClick}
                       showTitle={true}
+                      hasNote={!!noteMarks?.slots.has(slot.id)}
                     />
                   ))}
                 </div>
@@ -505,6 +525,7 @@ export function DayView({
                       slot={slot}
                       onSlotClick={onSlotClick}
                       showTitle={true}
+                      hasNote={!!noteMarks?.slots.has(slot.id)}
                     />
                   ))}
                 </div>

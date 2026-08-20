@@ -17,6 +17,7 @@ import pl.nextsteppro.climbing.integration.BaseIntegrationTest;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.List;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -274,6 +275,80 @@ class AdminPrivateNoteIntegrationTest extends BaseIntegrationTest {
         noteService.saveNote(owner.getId(), "slot", slot.getId(), new SaveAdminNoteRequest(typed));
 
         assertEquals(typed, noteService.getNote(owner.getId(), "slot", slot.getId()).body());
+    }
+
+    // ---------- markers: where the calendar draws the icon ----------
+
+    @Test
+    @DisplayName("shouldMarkOnlyTheSessionsInsideTheAskedRange")
+    void shouldMarkOnlyTheSessionsInsideTheAskedRange() {
+        // Given: notes on a slot inside the window and on one well outside it
+        TimeSlot outside = timeSlotRepository.saveAndFlush(new TimeSlot(
+            LocalDate.now().minusDays(40), LocalTime.of(17, 0), LocalTime.of(19, 0), 6));
+        noteService.saveNote(owner.getId(), "slot", slot.getId(), new SaveAdminNoteRequest("W oknie"));
+        noteService.saveNote(owner.getId(), "slot", outside.getId(), new SaveAdminNoteRequest("Poza oknem"));
+
+        // When: the calendar asks for the week around the near slot
+        AdminNoteMarkersDto markers = noteService.getMarkers(
+            owner.getId(), LocalDate.now().minusDays(7), LocalDate.now());
+
+        // Then
+        assertEquals(List.of(slot.getId()), markers.slotIds());
+        assertEquals(List.of(slot.getDate()), markers.slotDates());
+    }
+
+    @Test
+    @DisplayName("shouldMarkAnEventThatMerelyOVERLAPSTheRange")
+    void shouldMarkAnEventThatMerelyOverlapsTheRange() {
+        // Given: a course that starts before the window and ends inside it — an event is a span,
+        // so "in range" has to be an overlap, not a containment
+        Event event = eventRepository.saveAndFlush(new Event("Kurs skalny", EventType.COURSE,
+            LocalDate.now().minusDays(9), LocalDate.now().minusDays(5), 10));
+        noteService.saveNote(owner.getId(), "event", event.getId(), new SaveAdminNoteRequest("Padał deszcz"));
+
+        AdminNoteMarkersDto markers = noteService.getMarkers(
+            owner.getId(), LocalDate.now().minusDays(7), LocalDate.now());
+
+        assertEquals(List.of(event.getId()), markers.eventIds());
+    }
+
+    @Test
+    @DisplayName("shouldNeverMarkAnotherAdminsNotes")
+    void shouldNeverMarkAnotherAdminsNotes() {
+        // Given: only the other admin wrote something
+        noteService.saveNote(otherAdmin.getId(), "slot", slot.getId(), new SaveAdminNoteRequest("Jego notatka"));
+
+        // When: the owner's calendar asks where its markers go
+        AdminNoteMarkersDto markers = noteService.getMarkers(
+            owner.getId(), LocalDate.now().minusDays(7), LocalDate.now());
+
+        // Then: an icon here would advertise that somebody else wrote about this session
+        assertEquals(List.of(), markers.slotIds());
+        assertEquals(List.of(), markers.slotDates());
+    }
+
+    @Test
+    @DisplayName("shouldMarkTrainingsSeparatelyFromBookings")
+    void shouldMarkTrainingsSeparatelyFromBookings() {
+        PersonalTraining training = trainingForAthlete();
+        noteService.saveNote(owner.getId(), "training", training.getId(), new SaveAdminNoteRequest("Nogi martwe"));
+
+        AdminNoteMarkersDto markers = noteService.getMarkers(
+            owner.getId(), LocalDate.now().minusDays(7), LocalDate.now());
+
+        // The two calendars are different screens; a training note must not light up a slot
+        assertEquals(List.of(training.getId()), markers.trainingIds());
+        assertEquals(List.of(), markers.slotIds());
+    }
+
+    @Test
+    @DisplayName("shouldRefuseARangeWiderThanTheCalendarEverAsksFor")
+    void shouldRefuseARangeWiderThanTheCalendarEverAsksFor() {
+        // The month grid asks for 42 days and the booking month for at most 31
+        assertThrows(IllegalArgumentException.class, () -> noteService.getMarkers(
+            owner.getId(), LocalDate.now().minusDays(400), LocalDate.now()));
+        assertThrows(IllegalArgumentException.class, () -> noteService.getMarkers(
+            owner.getId(), LocalDate.now(), LocalDate.now().minusDays(1)));
     }
 
     // ---------- DDL guarantees ----------

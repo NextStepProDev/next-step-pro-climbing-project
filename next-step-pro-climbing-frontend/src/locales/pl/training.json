@@ -363,6 +363,9 @@
     "emptyCoach": "Ta osoba nie zapisała jeszcze żadnego pomiaru w tym zakresie.",
     "dailyHiddenHint": "przy tak długim zakresie pojedyncze pomiary zlewałyby się — widać samą linię trendu"
   },
+  "privateNote": {
+    "marker": "Masz tu prywatną notatkę"
+  },
   "consent": {
     "title": "Zanim wejdziesz do kalendarza",
     "intro": "Kalendarz treningowy zbiera więcej niż reszta serwisu — także dane o Twoim ciele. Zanim zaczniemy, potrzebuję Twojej wyraźnej zgody.",

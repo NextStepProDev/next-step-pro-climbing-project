@@ -3,10 +3,11 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams, useLocation, useNavigate, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { PageHead } from "../components/ui/PageHead";
-import { format, startOfWeek, addWeeks, subWeeks, addDays, differenceInCalendarDays } from "date-fns";
+import { format, startOfWeek, addWeeks, subWeeks, addDays, differenceInCalendarDays, startOfMonth, endOfMonth } from "date-fns";
 import { calendarApi, reservationApi, adminApi } from "../api/client";
 import { getAccessToken } from "../utils/tokenStorage";
 import { useAuth } from "../context/AuthContext";
+import { useNoteMarks } from "../components/admin/useNoteMarks";
 import { MonthCalendar } from "../components/calendar/MonthCalendar";
 import { WeekCalendar } from "../components/calendar/WeekCalendar";
 import { DayView } from "../components/calendar/DayView";
@@ -129,6 +130,21 @@ export function CalendarPage() {
     enabled: !!selectedDate,
     staleTime: 0,
   });
+
+  // Where the owner already wrote something, for whatever is on screen. Admin-only: the endpoint
+  // is too, so asking as anybody else would be a guaranteed 403 on every calendar load. The month
+  // range covers the day view as well — a day is opened by clicking a cell of the month in view.
+  const markerRange = useMemo(() => {
+    if (viewMode === 'week') {
+      return { from: weekStartString, to: format(addDays(currentWeekStart, 6), 'yyyy-MM-dd') };
+    }
+    return {
+      from: format(startOfMonth(currentMonth), 'yyyy-MM-dd'),
+      to: format(endOfMonth(currentMonth), 'yyyy-MM-dd'),
+    };
+  }, [viewMode, weekStartString, currentWeekStart, currentMonth]);
+
+  const noteMarks = useNoteMarks(isAdmin, markerRange.from, markerRange.to);
 
   const { data: slotDetail } = useQuery({
     queryKey: ["slot", selectedSlotId],
@@ -617,6 +633,7 @@ export function CalendarPage() {
           onProposeTraining={!isAdmin && selectedDate >= todayInWarsaw()
             ? () => setProposeContext({ date: selectedDate })
             : undefined}
+          noteMarks={isAdmin ? noteMarks : undefined}
         />
       ) : viewMode === 'week' ? (
         weekLoading ? (
@@ -724,6 +741,7 @@ export function CalendarPage() {
               onSlotCut={isAdmin ? handleSlotCut : undefined}
               onSlotCopy={isAdmin ? handleSlotCopy : undefined}
               onEventCopy={isAdmin ? handleEventCopy : undefined}
+              noteMarks={isAdmin ? noteMarks : undefined}
               cutSlotId={cutSlot?.id}
               copiedSlotId={copiedSlot?.id}
               copiedEventId={copiedEvent?.id}
@@ -828,6 +846,7 @@ export function CalendarPage() {
               onDayClick={handleDayClick}
               allDaysClickable={isAdmin}
               eventColorMap={monthColorMap}
+              noteMarks={isAdmin ? noteMarks : undefined}
             />
           </div>
 

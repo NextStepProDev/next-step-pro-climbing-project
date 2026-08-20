@@ -13,6 +13,8 @@ import pl.nextsteppro.climbing.domain.timeslot.TimeSlotRepository;
 import pl.nextsteppro.climbing.infrastructure.i18n.MessageService;
 
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -29,6 +31,9 @@ import java.util.UUID;
 @Service
 @Transactional
 public class AdminNoteService {
+
+    /** Matches the training calendar's range cap, so the two calendars refuse the same asks. */
+    static final int MAX_RANGE_DAYS = 62;
 
     private final AdminPrivateNoteRepository noteRepository;
     private final TimeSlotRepository timeSlotRepository;
@@ -49,6 +54,25 @@ public class AdminNoteService {
         this.trainingRepository = trainingRepository;
         this.calendarService = calendarService;
         this.msg = msg;
+    }
+
+    /**
+     * Where the calling admin already has notes, for one visible calendar range.
+     *
+     * <p>The range is capped at the same {@code MAX_RANGE_DAYS} the training calendar uses: the
+     * month grid asks for 42 days and the booking month for at most 31, so the cap costs nothing
+     * real and keeps a hand-written query from scanning the whole history of the notebook.
+     */
+    @Transactional(readOnly = true)
+    public AdminNoteMarkersDto getMarkers(UUID adminId, LocalDate from, LocalDate to) {
+        if (to.isBefore(from) || ChronoUnit.DAYS.between(from, to) > MAX_RANGE_DAYS) {
+            throw new IllegalArgumentException(msg.get("admin.note.range.invalid"));
+        }
+        return new AdminNoteMarkersDto(
+            noteRepository.findSlotIdsWithNote(adminId, from, to),
+            noteRepository.findSlotDatesWithNote(adminId, from, to),
+            noteRepository.findEventIdsWithNote(adminId, from, to),
+            noteRepository.findTrainingIdsWithNote(adminId, from, to));
     }
 
     @Transactional(readOnly = true)

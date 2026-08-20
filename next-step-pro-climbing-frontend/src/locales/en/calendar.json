@@ -13,7 +13,8 @@
   "month": {
     "previousMonth": "Previous month",
     "nextMonth": "Next month",
-    "invitedOnly": "🎟 For invited guests"
+    "invitedOnly": "🎟 For invited guests",
+    "hasPrivateNote": "You have a private note here"
   },
   "week": {
     "today": "Today",
@@ -63,6 +64,7 @@
     "overLimit": "Number of invitations exceeds the number of seats ({{count}})."
   },
   "slot": {
+    "hasPrivateNote": "You have a private note here",
     "title": "Slot details",
     "past": "This time slot has already ended",
     "bookingClosed": "Online booking is available up to 12 hours before the slot. Contact the instructor by phone to check availability.",
@@ -104,6 +106,7 @@
     }
   },
   "event": {
+    "hasPrivateNote": "You have a private note here",
     "title": "Sign up for event",
     "unavailable": "Unavailable",
     "unavailableInfo": "We're unavailable on this date — sign-ups are not possible.",

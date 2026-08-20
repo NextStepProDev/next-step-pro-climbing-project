@@ -44,6 +44,10 @@ export function AdminPrivateNote({ target, targetId }: AdminPrivateNoteProps) {
     queryFn: () => adminApi.getPrivateNote(target, targetId),
   })
 
+  // The whole ['admin','notes'] prefix, not just this note's key: the calendar markers live under
+  // it too, so writing here lights the marker up without a manual refresh.
+  const refreshNotes = () => queryClient.invalidateQueries({ queryKey: ['admin', 'notes'] })
+
   const body = data?.body ?? null
   // Baseline is the loaded note, which arrives after mount — hence a plain comparison rather than
   // useDirty, whose snapshot would freeze on the empty first render and call everything dirty.
@@ -53,7 +57,7 @@ export function AdminPrivateNote({ target, targetId }: AdminPrivateNoteProps) {
     mutationFn: () => adminApi.savePrivateNote(target, targetId, draft.trim()),
     onSuccess: () => {
       setEditing(false)
-      queryClient.invalidateQueries({ queryKey })
+      refreshNotes()
     },
   })
 
@@ -63,7 +67,7 @@ export function AdminPrivateNote({ target, targetId }: AdminPrivateNoteProps) {
       setConfirmDelete(false)
       setEditing(false)
       setDraft('')
-      queryClient.invalidateQueries({ queryKey })
+      refreshNotes()
     },
   })
 

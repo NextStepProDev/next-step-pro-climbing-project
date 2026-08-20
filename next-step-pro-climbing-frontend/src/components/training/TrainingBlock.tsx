@@ -1,4 +1,4 @@
-import { Check, ClipboardList, Copy, Gauge, Lock, Paperclip, Scissors, Star } from 'lucide-react'
+import { Check, ClipboardList, Copy, Gauge, Lock, NotebookPen, Paperclip, Scissors, Star } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import clsx from 'clsx'
 import type { InvitationOverlayItem, PersonalTraining, ReservationOverlayItem } from '../../types'
@@ -138,6 +138,12 @@ export function TrainingBlock({
         {training.attachments.length > 0 && (
           <Paperclip className="w-3 h-3 shrink-0 text-surface-400" aria-label={t('detail.materials')} />
         )}
+        {/* Coach only (the flag is stamped on in coach view and never sent by the API). It joins
+            the trailing signal row rather than taking the left edge or the border style — those
+            two channels are already spoken for by status and kind. */}
+        {training.hasPrivateNote && (
+          <NotebookPen className="w-3 h-3 shrink-0 text-amber-500" aria-label={t('privateNote.marker')} />
+        )}
         {training.hasUnreadActivity && (
           <span className="shrink-0 w-2 h-2 rounded-full bg-rose-500" />
         )}
@@ -188,6 +194,9 @@ export function TrainingBlock({
       <span className="flex items-center gap-1 min-w-0">
         {isTask && <ClipboardList className="w-3 h-3 shrink-0 text-sky-400" aria-label={t('form.kind.TASK')} />}
         {training.status === 'COMPLETED' && <Check className="w-3 h-3 shrink-0" />}
+        {training.hasPrivateNote && (
+          <NotebookPen className="w-3 h-3 shrink-0 text-amber-500" aria-label={t('privateNote.marker')} />
+        )}
         <span className="font-medium truncate">{training.title}</span>
       </span>
       {density === 'full' && training.targetCalories != null && (

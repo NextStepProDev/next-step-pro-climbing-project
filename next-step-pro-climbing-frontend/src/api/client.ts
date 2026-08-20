@@ -60,6 +60,7 @@ import type {
   InvitedUser,
   AdminNoteTarget,
   AdminPrivateNote,
+  AdminNoteMarkers,
   EventDetail,
   EventParticipants,
   ReservationAdmin,
@@ -849,6 +850,10 @@ export const adminApi = {
 
   deletePrivateNote: (target: AdminNoteTarget, targetId: string) =>
     fetchApi<void>(`/admin/notes/${target}/${targetId}`, { method: 'DELETE' }),
+
+  // Ids only, for drawing markers over a visible range. Never the text.
+  getPrivateNoteMarkers: (from: string, to: string) =>
+    fetchApi<AdminNoteMarkers>(`/admin/notes/markers?from=${from}&to=${to}`),
 
   // Events
   createEvent: (data: CreateEventRequest) =>

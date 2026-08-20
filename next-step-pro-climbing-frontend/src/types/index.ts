@@ -546,6 +546,17 @@ export interface AdminPrivateNote {
   updatedAt: string | null
 }
 
+// Where the calling admin already has notes, for one visible calendar range. Ids only — the
+// calendar draws markers from this, reading the text still costs a deliberate open.
+// `slotDates` is not redundant: a month cell knows its day but not which slots sit on it
+// (DaySummary carries counts, not ids), so it is the only thing that cell can match on.
+export interface AdminNoteMarkers {
+  slotIds: string[]
+  slotDates: string[]
+  eventIds: string[]
+  trainingIds: string[]
+}
+
 // Invitee of a held seat (prefill for admin forms)
 export interface InvitedUser {
   userId: string
@@ -1349,6 +1360,13 @@ export interface PersonalTraining {
   hasUnreadActivity: boolean
   createdAt: string
   attachments: TrainingAttachment[]
+  /**
+   * CLIENT-SIDE ONLY — the API never sends this, and must not: the athlete reads this same
+   * record, and the coach's notebook is not part of their plan. TrainingCalendarSection stamps
+   * it from the marker query in coach view so TrainingBlock can draw the marker without the flag
+   * being threaded through four calendar components.
+   */
+  hasPrivateNote?: boolean
 }
 
 // Read-only overlay: athlete's confirmed booking from the public reservation system

@@ -6,6 +6,9 @@ import org.jspecify.annotations.Nullable;
 import pl.nextsteppro.climbing.domain.adminnote.AdminPrivateNote;
 
 import java.time.Instant;
+import java.time.LocalDate;
+import java.util.List;
+import java.util.UUID;
 
 /**
  * The calling admin's private note for one target. Both fields are {@code null} when nothing has
@@ -33,4 +36,19 @@ record AdminNoteDto(
 /** Upsert payload. Blank is rejected rather than read as a delete — that is what DELETE is for. */
 record SaveAdminNoteRequest(
     @NotBlank @Size(max = AdminPrivateNote.MAX_BODY_LENGTH) String body
+) {}
+
+/**
+ * Which sessions in the visible range the calling admin has already written about.
+ *
+ * <p><b>Ids only, never text.</b> The calendar needs to answer "is there a note here" for a whole
+ * month at once; answering it with the notes themselves would put the notebook into a response
+ * that exists to draw icons, and would undo the reason the note has its own per-session endpoint
+ * in the first place. The marker says where to look — reading still costs a deliberate open.
+ */
+record AdminNoteMarkersDto(
+    List<UUID> slotIds,
+    List<LocalDate> slotDates,
+    List<UUID> eventIds,
+    List<UUID> trainingIds
 ) {}

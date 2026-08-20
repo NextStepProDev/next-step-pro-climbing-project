@@ -6,11 +6,13 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import pl.nextsteppro.climbing.config.CurrentUserId;
 
+import java.time.LocalDate;
 import java.util.UUID;
 
 /**
@@ -34,6 +36,22 @@ public class AdminNoteController {
 
     public AdminNoteController(AdminNoteService adminNoteService) {
         this.adminNoteService = adminNoteService;
+    }
+
+    @Operation(summary = "Where I already have notes",
+        description = "Ids of the sessions in a date range that the calling admin has written about "
+            + "— never the text. Lets the calendar mark them without opening each one. Capped at 62 "
+            + "days, the same range the training calendar accepts.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Ids, grouped by target type"),
+        @ApiResponse(responseCode = "400", description = "Inverted or oversized range")
+    })
+    @GetMapping("/markers")
+    public ResponseEntity<AdminNoteMarkersDto> getMarkers(
+            @Parameter(hidden = true) @CurrentUserId UUID adminId,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
+        return ResponseEntity.ok(adminNoteService.getMarkers(adminId, from, to));
     }
 
     @Operation(summary = "Read my note for a session",
