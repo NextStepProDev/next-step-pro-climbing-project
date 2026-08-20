@@ -20,6 +20,7 @@ import { getErrorMessage } from "../../utils/errors";
 import { useDateLocale } from "../../utils/dateFnsLocale";
 import { useEditSavedToast } from "../../hooks/useEditSavedToast";
 import { nowInWarsaw, parseCalendarDate, parseCalendarDateTime } from '../../utils/calendarDate'
+import { AdminPrivateNote } from '../admin/AdminPrivateNote'
 import type { TimeSlotDetail } from "../../types";
 
 interface SlotDetailModalProps {
@@ -558,6 +559,11 @@ export function SlotDetailModal({
             {ta('slots.deleteSlot')}
           </button>
         )}
+
+        {/* The owner's private note. Not gated on `hasEnded` — a session that is over is exactly
+            what there is something to write about. A slot belonging to an event is skipped: the
+            event carries one note for all its days, and the server refuses this address anyway. */}
+        {isAdmin && !slot.eventId && <AdminPrivateNote target="slot" targetId={slot.id} />}
 
         {/* Actions */}
         {isBookable && <div className="flex gap-3 pt-4 border-t border-surface-800">
