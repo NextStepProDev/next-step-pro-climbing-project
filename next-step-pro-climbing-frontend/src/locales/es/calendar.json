@@ -13,7 +13,8 @@
   "month": {
     "previousMonth": "Mes anterior",
     "nextMonth": "Mes siguiente",
-    "invitedOnly": "🎟 Para invitados"
+    "invitedOnly": "🎟 Para invitados",
+    "hasPrivateNote": "Aquí tienes una nota privada"
   },
   "week": {
     "today": "Hoy",
@@ -63,6 +64,7 @@
     "overLimit": "El número de invitaciones supera el número de plazas ({{count}})."
   },
   "slot": {
+    "hasPrivateNote": "Aquí tienes una nota privada",
     "title": "Detalles de la franja horaria",
     "past": "Esta franja horaria ya ha finalizado",
     "bookingClosed": "La reserva online es posible hasta 12 horas antes de la sesión. Contacta con el instructor por teléfono para consultar la disponibilidad.",
@@ -104,6 +106,7 @@
     }
   },
   "event": {
+    "hasPrivateNote": "Aquí tienes una nota privada",
     "title": "Inscribirse en el evento",
     "unavailable": "No disponible",
     "unavailableInfo": "No estamos disponibles en esta fecha — no es posible inscribirse.",

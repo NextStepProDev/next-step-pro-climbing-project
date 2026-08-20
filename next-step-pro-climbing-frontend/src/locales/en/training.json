@@ -341,6 +341,9 @@
     "emptyCoach": "This person has not recorded any reading in this range yet.",
     "dailyHiddenHint": "over a range this long the individual readings would smear together — only the trend line is shown"
   },
+  "privateNote": {
+    "marker": "You have a private note here"
+  },
   "consent": {
     "title": "Before you open the calendar",
     "intro": "The training calendar collects more than the rest of the site — including data about your body. Before we start, I need your explicit consent.",

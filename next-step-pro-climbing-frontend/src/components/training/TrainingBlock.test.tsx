@@ -303,3 +303,22 @@ describe('TrainingBlock — unread dot', () => {
     expect(container.querySelector('.bg-rose-500')).toBeNull()
   })
 })
+
+describe('TrainingBlock — private note marker', () => {
+  it('should mark an entry the coach has written about, in both densities', () => {
+    for (const density of ['tile', 'full'] as const) {
+      const { unmount } = render(
+        <TrainingBlock training={makeTraining({ hasPrivateNote: true })} density={density} onClick={vi.fn()} />,
+      )
+      expect(screen.getByLabelText('privateNote.marker')).toBeInTheDocument()
+      unmount()
+    }
+  })
+
+  it('should render nothing when the flag is absent', () => {
+    // The API never sends this field — the athlete's copy of the same entry has no flag at all,
+    // so "undefined" has to mean "no marker" rather than throwing or defaulting to true.
+    render(<TrainingBlock training={makeTraining()} onClick={vi.fn()} />)
+    expect(screen.queryByLabelText('privateNote.marker')).not.toBeInTheDocument()
+  })
+})

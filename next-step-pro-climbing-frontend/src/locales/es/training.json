@@ -349,6 +349,9 @@
     "emptyCoach": "Esta persona aún no ha registrado ninguna medición en este rango.",
     "dailyHiddenHint": "en un rango tan largo las mediciones individuales se solaparían — solo se muestra la línea de tendencia"
   },
+  "privateNote": {
+    "marker": "Aquí tienes una nota privada"
+  },
   "consent": {
     "title": "Antes de entrar en el calendario",
     "intro": "El calendario de entrenamiento recoge más datos que el resto del sitio, incluidos datos sobre tu cuerpo. Antes de empezar, necesito tu consentimiento explícito.",

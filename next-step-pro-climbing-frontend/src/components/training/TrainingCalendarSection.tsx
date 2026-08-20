@@ -10,6 +10,7 @@ import { Button } from '../ui/Button'
 import { LoadingSpinner } from '../ui/LoadingSpinner'
 import { QueryError } from '../ui/QueryError'
 import { SlotDetailModal } from '../calendar/SlotDetailModal'
+import { useNoteMarks } from '../admin/useNoteMarks'
 import { GoalsBanner } from './GoalsBanner'
 import { WeightPanel } from './WeightPanel'
 import { ReservationRatingSection } from './ReservationRatingSection'
@@ -419,6 +420,20 @@ export function TrainingCalendarSection({ api, scopeKey, scopeLabel, isCoachView
     moveMutation.mutate({ training: tr, date, startTime, endTime })
   }
 
+  // Coach only, and the same range the grid is showing. Stamped onto the entries rather than
+  // passed down: TrainingBlock is rendered by four different hosts (week, month, dots, day
+  // sheet), and threading a Set through all four to reach a 12px icon is more plumbing than
+  // the signal is worth. Both hooks sit ABOVE the loading/error returns below — a hook after
+  // an early return changes the hook order between renders.
+  const noteMarks = useNoteMarks(!!isCoachView, from, to)
+
+  const trainings = useMemo(() => {
+    const list = rangeQuery.data?.trainings ?? []
+    if (!isCoachView || noteMarks.trainings.size === 0) return list
+    return list.map((tr) =>
+      noteMarks.trainings.has(tr.id) ? { ...tr, hasPrivateNote: true } : tr)
+  }, [rangeQuery.data?.trainings, isCoachView, noteMarks])
+
   // ---------- render ----------
   if (rangeQuery.isLoading) {
     return <div className="py-16 flex justify-center"><LoadingSpinner /></div>
@@ -427,7 +442,6 @@ export function TrainingCalendarSection({ api, scopeKey, scopeLabel, isCoachView
     return <QueryError error={rangeQuery.error} onRetry={() => rangeQuery.refetch()} />
   }
 
-  const trainings = rangeQuery.data?.trainings ?? []
   const reservations = rangeQuery.data?.reservations ?? []
   const invitations = rangeQuery.data?.invitations ?? []
   const deletions = rangeQuery.data?.deletions ?? []

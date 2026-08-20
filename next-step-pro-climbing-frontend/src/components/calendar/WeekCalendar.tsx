@@ -1,6 +1,6 @@
 import { useMemo, useRef, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ChevronLeft, ChevronRight, Scissors, Copy, Bell, Check, X } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Scissors, Copy, Bell, Check, X, NotebookPen } from 'lucide-react'
 import { format, isBefore, startOfDay } from 'date-fns'
 import clsx from 'clsx'
 import type { WeekDay, TimeSlot, EventSummary } from '../../types'
@@ -10,6 +10,7 @@ import { useDateLocale } from '../../utils/dateFnsLocale'
 import { isTodayInWarsaw, nowInWarsaw, parseCalendarDate, parseCalendarDateTime } from '../../utils/calendarDate'
 import { useSlotDrag } from '../../hooks/useSlotDrag'
 import { useAuth } from '../../context/AuthContext'
+import type { NoteMarks } from '../admin/useNoteMarks'
 
 const HOUR_HEIGHT = 40
 const START_HOUR = 7
@@ -33,6 +34,8 @@ interface WeekCalendarProps {
   onSlotCut?: (slot: TimeSlot, date: string) => void
   onSlotCopy?: (slot: TimeSlot, date: string) => void
   onEventCopy?: (event: EventSummary) => void
+  // Admin only. Undefined for everybody else, so the marker cannot render by accident.
+  noteMarks?: NoteMarks
   cutSlotId?: string
   copiedSlotId?: string
   copiedEventId?: string
@@ -145,6 +148,7 @@ export function WeekCalendar({
   onSlotCut,
   onSlotCopy,
   onEventCopy,
+  noteMarks,
   cutSlotId,
   copiedSlotId,
   copiedEventId,
@@ -480,11 +484,17 @@ export function WeekCalendar({
                             onClick={() => onEventClick(event)}
                             title={event.title}
                             className={clsx(
-                              'w-full px-1 py-0.5 text-left text-[11px] leading-snug font-medium truncate transition-colors cursor-pointer',
+                              'w-full px-1 py-0.5 flex items-center gap-1 text-left text-[11px] leading-snug font-medium transition-colors cursor-pointer',
                               color.barBg, color.barText, color.barHover,
                             )}
                           >
-                            {event.title}
+                            {noteMarks?.events.has(event.id) && (
+                              <NotebookPen
+                                className="w-2.5 h-2.5 shrink-0 text-amber-500"
+                                aria-label={t('event.hasPrivateNote')}
+                              />
+                            )}
+                            <span className="truncate">{event.title}</span>
                           </button>
                           {/* The bar is the only piece of an event that is always on screen
                               (the tint hides under slots), so the copy handle lives here. */}
@@ -558,8 +568,20 @@ export function WeekCalendar({
                             isDraggable && 'select-none',
                           )}
                         >
-                          <div className="text-[11px] font-semibold leading-tight truncate">
-                            {slot.startTime.slice(0, 5)} - {slot.endTime.slice(0, 5)}
+                          {/* In the flow, ahead of the time, rather than pinned to a corner:
+                              the top-right holds the hover-revealed admin cluster and the
+                              registered dot, and a short slot is only 30px tall, so an
+                              absolutely placed icon would land on the time itself. */}
+                          <div className="flex items-center gap-1 text-[11px] font-semibold leading-tight">
+                            {noteMarks?.slots.has(slot.id) && (
+                              <NotebookPen
+                                className="w-2.5 h-2.5 shrink-0 text-amber-500"
+                                aria-label={t('slot.hasPrivateNote')}
+                              />
+                            )}
+                            <span className="truncate">
+                              {slot.startTime.slice(0, 5)} - {slot.endTime.slice(0, 5)}
+                            </span>
                           </div>
                           {showTitle && (
                             <div className="text-[10px] leading-tight truncate opacity-80">

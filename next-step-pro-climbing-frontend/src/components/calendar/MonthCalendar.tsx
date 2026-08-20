@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Ban, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Ban, ChevronLeft, ChevronRight, NotebookPen } from 'lucide-react'
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isBefore, startOfDay } from 'date-fns'
 import clsx from 'clsx'
 import type { DaySummary, EventSummary } from '../../types'
@@ -9,6 +9,7 @@ import { getEventColorByIndex, pluralizeTraining } from '../../utils/events'
 import { useDateLocale } from '../../utils/dateFnsLocale'
 import { useAuth } from '../../context/AuthContext'
 import { isTodayInWarsaw, nowInWarsaw, parseCalendarDate } from '../../utils/calendarDate'
+import type { NoteMarks } from '../admin/useNoteMarks'
 
 // A month cell is ~50 px wide on a phone, so a full "18:00–20:00" does not fit. Whole hours drop
 // their ":00" the way printed timetables do; a half hour keeps its minutes, because that is the
@@ -26,9 +27,11 @@ interface MonthCalendarProps {
   onDayClick: (date: string) => void
   allDaysClickable?: boolean
   eventColorMap: EventColorMap
+  // Admin only. Undefined for everybody else, so the marker cannot render by accident.
+  noteMarks?: NoteMarks
 }
 
-export function MonthCalendar({ currentMonth, onMonthChange, days, events, onDayClick, allDaysClickable, eventColorMap }: MonthCalendarProps) {
+export function MonthCalendar({ currentMonth, onMonthChange, days, events, onDayClick, allDaysClickable, eventColorMap, noteMarks }: MonthCalendarProps) {
   const { t } = useTranslation('calendar')
   const { isAuthenticated } = useAuth()
   const locale = useDateLocale()
@@ -140,6 +143,11 @@ export function MonthCalendar({ currentMonth, onMonthChange, days, events, onDay
           // Future days are clickable even when EMPTY — they open the day view with the "Propose a time"
           // CTA (without this, the only request entry point from an empty day was the week view).
           const isClickable = allDaysClickable || !isPast
+          // A note on any slot that day, or on any event covering it. Matched by date for slots
+          // because the cell has no slot ids; by id for events, which it does hold.
+          const hasNote = !!noteMarks && (
+            noteMarks.dates.has(dateString) || dayEvents.some((e) => noteMarks.events.has(e.id))
+          )
 
           return (
             <button
@@ -226,6 +234,17 @@ export function MonthCalendar({ currentMonth, onMonthChange, days, events, onDay
 
               {hasUserReservation && (
                 <div className="absolute top-1 right-1 w-2 h-2 bg-primary-500 rounded-full" />
+              )}
+
+              {/* Absolutely positioned like the reservation dot above, and for the same reason:
+                  the cell is a grid track with overflow-hidden, so anything added to the flow
+                  competes with labels that are already truncating. Bottom-right is the only
+                  corner nothing else uses. */}
+              {hasNote && (
+                <NotebookPen
+                  className="absolute bottom-1 right-1 w-3 h-3 text-amber-500"
+                  aria-label={t('month.hasPrivateNote')}
+                />
               )}
             </button>
           )

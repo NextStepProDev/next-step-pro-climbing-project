@@ -13,7 +13,8 @@
   "month": {
     "previousMonth": "Poprzedni miesiąc",
     "nextMonth": "Następny miesiąc",
-    "invitedOnly": "🎟 Dla zaproszonych"
+    "invitedOnly": "🎟 Dla zaproszonych",
+    "hasPrivateNote": "Masz tu prywatną notatkę"
   },
   "week": {
     "today": "Dziś",
@@ -63,6 +64,7 @@
     "overLimit": "Liczba zaproszeń przekracza liczbę miejsc ({{count}})."
   },
   "slot": {
+    "hasPrivateNote": "Masz tu prywatną notatkę",
     "title": "Szczegóły terminu",
     "past": "Ten termin już się zakończył",
     "bookingClosed": "Rezerwacja online jest możliwa do 12 godzin przed terminem. Skontaktuj się z instruktorem telefonicznie, aby sprawdzić dostępność.",
@@ -104,6 +106,7 @@
     }
   },
   "event": {
+    "hasPrivateNote": "Masz tu prywatną notatkę",
     "title": "Zapisz się na wydarzenie",
     "unavailable": "Niedostępny",
     "unavailableInfo": "W tym terminie jesteśmy niedostępni — zapisy nie są możliwe.",
