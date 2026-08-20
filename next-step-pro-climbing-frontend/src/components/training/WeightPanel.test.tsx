@@ -30,6 +30,9 @@ function makeSeries(overrides: Partial<WeightSeries> = {}): WeightSeries {
     weeklyChangePercent: -0.4,
     rapidLoss: false,
     latestWeightKg: 70.6,
+    lowestTrendKg: 69.4,
+    lowestTrendOn: '2026-06-12',
+    lowestWindowDays: 90,
     latestMeasuredOn: '2026-08-01',
     backfillDays: 120,
     ...overrides,
@@ -108,6 +111,22 @@ describe('WeightPanel', () => {
     renderPanel(makeApi(series), false)
     await screen.findByText('weight.title')
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  })
+
+  it('shows the 90-day low with the day it was reached', async () => {
+    renderPanel(makeApi(makeSeries()))
+
+    expect(await screen.findByText('weight.lowest')).toBeInTheDocument()
+    expect(screen.getByText('69,4 kg')).toBeInTheDocument()
+    expect(screen.getByText('· 12.06.2026')).toBeInTheDocument()
+  })
+
+  it('hides the low entirely rather than claiming one the trend never confirmed', async () => {
+    // A best nobody could have earned a trophy for must not sit next to the goals
+    renderPanel(makeApi(makeSeries({ lowestTrendKg: null, lowestTrendOn: null })))
+
+    await screen.findByText('weight.title')
+    expect(screen.queryByText('weight.lowest')).not.toBeInTheDocument()
   })
 
   it('explains an unconfirmed trend so a met target does not look like a bug', async () => {

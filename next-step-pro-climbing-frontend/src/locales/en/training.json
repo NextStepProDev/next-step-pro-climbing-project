@@ -312,6 +312,7 @@
     "save": "Save",
     "invalid": "Enter the weight as a number, e.g. 71.2",
     "perWeek": "/week",
+    "lowest": "Lowest trend ({{months}} months)",
     "legendTrend": "7-day trend",
     "legendDaily": "daily reading",
     "chartLabel": "Weight chart with the 7-day trend",

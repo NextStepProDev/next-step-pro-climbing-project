@@ -320,6 +320,7 @@
     "save": "Guardar",
     "invalid": "Introduce el peso como número, p. ej. 71,2",
     "perWeek": "/sem.",
+    "lowest": "Tendencia mínima ({{months}} meses)",
     "legendTrend": "tendencia 7 días",
     "legendDaily": "medición diaria",
     "chartLabel": "Gráfico de peso con la tendencia de 7 días",

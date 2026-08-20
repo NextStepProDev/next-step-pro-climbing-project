@@ -3,14 +3,14 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { format, parseISO, subDays } from 'date-fns'
 import clsx from 'clsx'
-import { Scale, TrendingDown, TrendingUp, TriangleAlert } from 'lucide-react'
+import { ArrowDownToLine, Scale, TrendingDown, TrendingUp, TriangleAlert } from 'lucide-react'
 import { Button } from '../ui/Button'
 import { DateInput } from '../ui/DateInput'
 import { ConfirmModal } from '../ui/ConfirmModal'
 import { QueryError } from '../ui/QueryError'
 import { WeightChart } from './WeightChart'
 import { getErrorMessage } from '../../utils/errors'
-import { nowInWarsaw, todayInWarsaw } from '../../utils/calendarDate'
+import { nowInWarsaw, parseCalendarDate, todayInWarsaw } from '../../utils/calendarDate'
 import type { TrainingCalendarAdapter } from './trainingCalendarAdapter'
 import type { WeightRange } from '../../types'
 
@@ -162,6 +162,25 @@ export function WeightPanel({ api, scopeKey, isCoachView }: WeightPanelProps) {
           </div>
         )}
       </div>
+
+      {/*
+        The lowest CONFIRMED trend, i.e. the same value that closes a weight goal. A minimum
+        over raw readings would drop the more often somebody weighs in — a number about
+        diligence, not progress — and could show a best next to a goal it never closed.
+        Its window is fixed at 90 days, so the label stays true when the chart range changes.
+      */}
+      {data.lowestTrendKg != null && data.lowestTrendOn && (
+        <div className="flex items-center gap-1.5 text-xs text-surface-400">
+          <ArrowDownToLine className="w-3.5 h-3.5 shrink-0 text-surface-500" />
+          <span>{t('weight.lowest', { months: Math.round(data.lowestWindowDays / 30) })}</span>
+          <span className="font-semibold text-surface-200 tabular-nums">
+            {fmt(data.lowestTrendKg)} kg
+          </span>
+          <span className="text-surface-500 tabular-nums">
+            &middot; {format(parseCalendarDate(data.lowestTrendOn), 'dd.MM.yyyy')}
+          </span>
+        </div>
+      )}
 
       {isCoachView && data.rapidLoss && (
         <div

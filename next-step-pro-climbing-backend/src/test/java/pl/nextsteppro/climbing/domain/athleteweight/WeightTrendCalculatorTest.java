@@ -2,12 +2,15 @@ package pl.nextsteppro.climbing.domain.athleteweight;
 
 import org.junit.jupiter.api.Test;
 import pl.nextsteppro.climbing.domain.athleteweight.WeightTrendCalculator.ConfirmedTrend;
+import pl.nextsteppro.climbing.domain.athleteweight.WeightTrendCalculator.LowestTrend;
 import pl.nextsteppro.climbing.domain.athleteweight.WeightTrendCalculator.TrendPoint;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.NavigableMap;
+import java.util.TreeMap;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -28,6 +31,16 @@ class WeightTrendCalculatorTest {
             byDate.put(TODAY.minusDays((int) daysAgoAndWeight[i]), new BigDecimal(String.valueOf(daysAgoAndWeight[i + 1])));
         }
         return byDate;
+    }
+
+    /** The lowest-trend path needs the sorted map the service actually passes in. */
+    private static NavigableMap<LocalDate, BigDecimal> sortedReadings(Object... daysAgoAndWeight) {
+        return new TreeMap<>(readings(daysAgoAndWeight));
+    }
+
+    private static LowestTrend lowest(NavigableMap<LocalDate, BigDecimal> byDate) {
+        return WeightTrendCalculator.lowestConfirmedTrend(
+            byDate, TODAY, WeightTrendCalculator.LOWEST_WINDOW_DAYS);
     }
 
     // ---------- trendOn: the display path ----------
@@ -187,5 +200,82 @@ class WeightTrendCalculatorTest {
     @Test
     void shouldNotFlagRapidLossWithoutData() {
         assertFalse(WeightTrendCalculator.isRapidLoss(null));
+    }
+
+    // ---------- lowestConfirmedTrend: the personal-best tile ----------
+
+    @Test
+    void shouldReportTheLowestConfirmedTrendAndTheDayItWasReached() {
+        // Given: 70 kg this week, and a genuine 68 kg dip a month ago backed by three readings
+        NavigableMap<LocalDate, BigDecimal> byDate = sortedReadings(
+            0, "70", 1, "70", 2, "70",
+            30, "68", 31, "68", 32, "68");
+
+        // When
+        LowestTrend result = lowest(byDate);
+
+        // Then
+        assertNotNull(result);
+        assertEquals(0, new BigDecimal("68.00").compareTo(result.value()));
+        assertEquals(TODAY.minusDays(30), result.day());
+    }
+
+    @Test
+    void shouldIgnoreADipThatCouldNotHaveClosedAGoal() {
+        // Given: a single 60 kg morning after a long break — a low nobody held for a week
+        NavigableMap<LocalDate, BigDecimal> byDate = sortedReadings(
+            0, "70", 1, "70", 2, "70",
+            40, "60");
+
+        // When
+        LowestTrend result = lowest(byDate);
+
+        // Then: the tile can never show a value a weight goal would have refused to close
+        assertNotNull(result);
+        assertEquals(0, new BigDecimal("70.00").compareTo(result.value()));
+        assertEquals(TODAY, result.day());
+    }
+
+    @Test
+    void shouldReturnNothingWhenNoDayInTheWindowEverCarriedEnoughReadings() {
+        // Given: someone who weighs in twice a week never reaches three inside seven days
+        NavigableMap<LocalDate, BigDecimal> byDate = sortedReadings(0, "70", 4, "71", 8, "70", 12, "71");
+
+        // When / Then: null, not the best of the unconfirmed ones
+        assertNull(lowest(byDate));
+    }
+
+    @Test
+    void shouldPreferTheMostRecentDayWhenTheLowIsTied() {
+        // Given: the same 70.00 trend reached three weeks ago and again today
+        NavigableMap<LocalDate, BigDecimal> byDate = sortedReadings(
+            0, "70", 1, "70", 2, "70",
+            20, "70", 21, "70", 22, "70");
+
+        // When
+        LowestTrend result = lowest(byDate);
+
+        // Then: being back at your best is the news, having once been there is not
+        assertNotNull(result);
+        assertEquals(TODAY, result.day());
+    }
+
+    @Test
+    void shouldIncludeTheLastDayOfTheWindowButNotTheDayBeforeIt() {
+        // Given: the only confirmed low sits exactly on the far edge of the 90-day window
+        NavigableMap<LocalDate, BigDecimal> onEdge = sortedReadings(89, "60", 90, "60", 91, "60");
+        // ...and the same low one day further back, i.e. just outside it
+        NavigableMap<LocalDate, BigDecimal> pastEdge = sortedReadings(90, "60", 91, "60", 92, "60");
+
+        // When / Then
+        LowestTrend included = lowest(onEdge);
+        assertNotNull(included);
+        assertEquals(TODAY.minusDays(89), included.day());
+        assertNull(lowest(pastEdge));
+    }
+
+    @Test
+    void shouldReportNothingWithoutAnyReadings() {
+        assertNull(lowest(new TreeMap<>()));
     }
 }

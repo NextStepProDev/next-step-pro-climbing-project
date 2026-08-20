@@ -1479,6 +1479,14 @@ export interface WeightSeries {
   rapidLoss: boolean
   latestWeightKg: number | null
   latestMeasuredOn: string | null
+  // Lowest CONFIRMED trend of the last 90 days (the same value type that closes a weight goal)
+  // and the day it was reached. Null when no day in that window carried enough readings —
+  // the tile hides rather than showing a best nobody could have earned a trophy for
+  lowestTrendKg: number | null
+  lowestTrendOn: string | null
+  // The window behind lowestTrendKg. Fixed policy, NOT the selected range, so the label the
+  // panel prints cannot drift from what was actually measured
+  lowestWindowDays: number
   // How far back a reading may be backfilled. Fixed policy, NOT the selected range — the date
   // picker derives its `min` from this so it cannot drift from what the server accepts
   backfillDays: number

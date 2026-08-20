@@ -78,6 +78,17 @@ class AthleteWeightServiceTest {
         return readings;
     }
 
+    /** Readings on arbitrary days back, given as (daysAgo, weight) pairs. */
+    private List<AthleteWeight> readingsOn(Object... daysAgoAndWeight) {
+        List<AthleteWeight> readings = new ArrayList<>();
+        for (int i = 0; i < daysAgoAndWeight.length; i += 2) {
+            readings.add(new AthleteWeight(athlete,
+                today().minusDays((int) daysAgoAndWeight[i]),
+                new BigDecimal(String.valueOf(daysAgoAndWeight[i + 1]))));
+        }
+        return readings;
+    }
+
     private SaveWeightRequest weighIn(String weight) {
         return new SaveWeightRequest(today(), new BigDecimal(weight));
     }
@@ -418,5 +429,53 @@ class AthleteWeightServiceTest {
         } catch (ReflectiveOperationException e) {
             throw new IllegalStateException(e);
         }
+    }
+
+    // ---------- the 90-day low ----------
+
+    @Test
+    void shouldReportTheLowestConfirmedTrendAndTheDayItWasReached() {
+        // Given: 70 kg now, and a real 68 kg spell a month ago held over three readings
+        stubRangeHonouringBounds(readingsOn(0, "70", 1, "70", 2, "70", 30, "68", 31, "68", 32, "68"));
+
+        // When
+        AthleteWeightSeriesDto series = service.getMySeries(athleteId, WeightRange.RECENT);
+
+        // Then
+        assertNotNull(series.lowestTrendKg());
+        assertEquals(0, new BigDecimal("68.00").compareTo(series.lowestTrendKg()));
+        assertEquals(today().minusDays(30), series.lowestTrendOn());
+        assertEquals(WeightTrendCalculator.LOWEST_WINDOW_DAYS, series.lowestWindowDays());
+    }
+
+    @Test
+    void shouldKeepTheLowestWindowFixedWhateverRangeIsBeingViewed() {
+        // Given: a confirmed 65 kg spell 100 days back — on the chart under ALL, outside the
+        // 90 days the tile is labelled with
+        stubRangeHonouringBounds(readingsOn(0, "70", 1, "70", 2, "70", 100, "65", 101, "65", 102, "65"));
+
+        // When
+        AthleteWeightSeriesDto series = service.getMySeries(athleteId, WeightRange.ALL);
+
+        // Then: the older spell is drawn, but a tile that says "3 months" must not quote it
+        assertEquals(6, series.entries().size());
+        assertNotNull(series.lowestTrendKg());
+        assertEquals(0, new BigDecimal("70.00").compareTo(series.lowestTrendKg()));
+        assertEquals(today(), series.lowestTrendOn());
+    }
+
+    @Test
+    void shouldNotClaimALowestWeightThatCouldNotHaveClosedAGoal() {
+        // Given: two readings — enough to draw a trend, never enough to confirm one
+        stubRangeHonouringBounds(readingsOn(0, "70", 1, "71"));
+
+        // When
+        AthleteWeightSeriesDto series = service.getMySeries(athleteId, WeightRange.RECENT);
+
+        // Then: the trend still shows, but no personal best is claimed alongside it
+        assertNotNull(series.currentTrendKg());
+        assertFalse(series.trendConfirmed());
+        assertNull(series.lowestTrendKg());
+        assertNull(series.lowestTrendOn());
     }
 }

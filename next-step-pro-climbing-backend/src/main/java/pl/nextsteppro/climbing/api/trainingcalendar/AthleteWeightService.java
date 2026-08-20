@@ -7,6 +7,7 @@ import pl.nextsteppro.climbing.domain.athleteweight.AthleteWeight;
 import pl.nextsteppro.climbing.domain.athleteweight.AthleteWeightRepository;
 import pl.nextsteppro.climbing.domain.athleteweight.WeightRange;
 import pl.nextsteppro.climbing.domain.athleteweight.WeightTrendCalculator;
+import pl.nextsteppro.climbing.domain.athleteweight.WeightTrendCalculator.LowestTrend;
 import pl.nextsteppro.climbing.domain.athleteweight.WeightTrendCalculator.TrendPoint;
 import pl.nextsteppro.climbing.infrastructure.i18n.MessageService;
 
@@ -131,6 +132,9 @@ public class AthleteWeightService {
         TrendPoint trend = WeightTrendCalculator.trendOn(byDate, today);
         BigDecimal weeklyChange = WeightTrendCalculator.weeklyChangePercent(byDate, today);
         LocalDate latestDay = byDate.isEmpty() ? null : byDate.lastKey();
+        // Its own fixed 90-day window, not `days`: the tile says "3 months" whatever the chart shows
+        LowestTrend lowest = WeightTrendCalculator.lowestConfirmedTrend(
+            byDate, today, WeightTrendCalculator.LOWEST_WINDOW_DAYS);
 
         return new AthleteWeightSeriesDto(
             entries,
@@ -141,6 +145,9 @@ public class AthleteWeightService {
             WeightTrendCalculator.isRapidLoss(weeklyChange),
             latestDay != null ? byDate.get(latestDay) : null,
             latestDay,
+            lowest != null ? lowest.value() : null,
+            lowest != null ? lowest.day() : null,
+            WeightTrendCalculator.LOWEST_WINDOW_DAYS,
             BACKFILL_DAYS
         );
     }
@@ -168,14 +175,21 @@ public class AthleteWeightService {
      *       days before it, or the left edge of the line is computed from a window that is
      *       mostly missing and bends downward for no real reason;</li>
      *   <li>the week-over-week percentage compares today's trend with the trend a week ago,
-     *       so at least {@code 2 * WINDOW_DAYS} days must be on hand however short the chart.</li>
+     *       so at least {@code 2 * WINDOW_DAYS} days must be on hand however short the chart;</li>
+     *   <li>the 90-day low is its own fixed window, and the oldest day in it needs its own
+     *       trailing average — so it reaches back {@code LOWEST_WINDOW_DAYS + WINDOW_DAYS - 1}
+     *       whatever range was asked for. Today this is covered by the shortest range anyway
+     *       (RECENT is 120 days), but a shorter range added later must not silently shrink
+     *       the window the tile is labelled with.</li>
      * </ul>
      *
      * The extra days are read but never sent — {@code buildSeries} trims to the range.
      */
     private NavigableMap<LocalDate, BigDecimal> loadWindow(UUID athleteId, LocalDate today, int days) {
-        long lookback = Math.max(days + WeightTrendCalculator.WINDOW_DAYS - 1L,
-                                 2L * WeightTrendCalculator.WINDOW_DAYS);
+        long lookback = Math.max(
+            Math.max(days + WeightTrendCalculator.WINDOW_DAYS - 1L,
+                     2L * WeightTrendCalculator.WINDOW_DAYS),
+            WeightTrendCalculator.LOWEST_WINDOW_DAYS + WeightTrendCalculator.WINDOW_DAYS - 1L);
         LocalDate from = today.minusDays(lookback - 1L);
         return WeightTrendCalculator.index(weightRepository.findRange(athleteId, from, today));
     }
