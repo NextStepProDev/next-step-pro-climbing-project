@@ -332,6 +332,7 @@
     "save": "Zapisz",
     "invalid": "Podaj wagę liczbą, np. 71,2",
     "perWeek": "/tydz.",
+    "lowest": "Najniższy trend ({{months}} mies.)",
     "legendTrend": "trend 7 dni",
     "legendDaily": "pomiar dzienny",
     "chartLabel": "Wykres wagi z trendem 7-dniowym",

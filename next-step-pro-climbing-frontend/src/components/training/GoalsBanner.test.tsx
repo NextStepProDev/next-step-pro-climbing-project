@@ -33,6 +33,9 @@ const weightSeries: WeightSeries = {
   weeklyChangePercent: -0.5,
   rapidLoss: false,
   latestWeightKg: 69.4,
+  lowestTrendKg: 69.4,
+  lowestTrendOn: '2026-06-12',
+  lowestWindowDays: 90,
   latestMeasuredOn: '2026-08-01',
   backfillDays: 120,
 }

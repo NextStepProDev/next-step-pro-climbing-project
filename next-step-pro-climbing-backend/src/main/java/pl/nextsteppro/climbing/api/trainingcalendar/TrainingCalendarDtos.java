@@ -441,6 +441,15 @@ record AthleteWeightSeriesDto(
     boolean rapidLoss,
     @Nullable BigDecimal latestWeightKg,
     @Nullable LocalDate latestMeasuredOn,
+    // Lowest CONFIRMED trend of the last 90 days, and the day it was reached. Confirmed on
+    // purpose: a personal best shown next to a goal that stayed open would contradict it.
+    // Null when no day in that window ever carried enough readings — the tile then hides
+    // rather than claiming a number nobody earned
+    @Nullable BigDecimal lowestTrendKg,
+    @Nullable LocalDate lowestTrendOn,
+    // The window behind lowestTrendKg. A FIXED policy like backfillDays, so the label cannot
+    // drift from what was measured when the chart range changes
+    int lowestWindowDays,
     // How far back a reading may be backfilled. A FIXED policy, independent of the selected
     // range: viewing a year must not let the date picker offer days the server would refuse
     int backfillDays

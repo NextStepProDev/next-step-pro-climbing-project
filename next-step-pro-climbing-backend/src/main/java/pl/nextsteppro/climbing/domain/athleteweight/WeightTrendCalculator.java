@@ -34,6 +34,14 @@ public final class WeightTrendCalculator {
     public static final int WINDOW_DAYS = 7;
 
     /**
+     * How far back {@link #lowestConfirmedTrend} looks. A FIXED policy, deliberately not the
+     * range the athlete happens to be viewing: the tile is labelled "3 months" and that label
+     * has to stay true when somebody switches the chart to a year. Same reasoning as
+     * {@code AthleteWeightService.BACKFILL_DAYS}.
+     */
+    public static final int LOWEST_WINDOW_DAYS = 90;
+
+    /**
      * A trend may only close a goal when it rests on at least this many readings inside the
      * window. Weight swings a kilo on water alone; one lucky morning is not an achievement.
      */
@@ -61,6 +69,9 @@ public final class WeightTrendCalculator {
             }
         }
     }
+
+    /** The lowest confirmed trend inside the window, and the day it was reached. */
+    public record LowestTrend(BigDecimal value, LocalDate day) {}
 
     /** Readings keyed by day, for O(1) window lookups. */
     public static NavigableMap<LocalDate, BigDecimal> index(List<AthleteWeight> weights) {
@@ -115,6 +126,34 @@ public final class WeightTrendCalculator {
             .subtract(weekAgo.average())
             .multiply(HUNDRED)
             .divide(weekAgo.average(), 1, RoundingMode.HALF_UP);
+    }
+
+    /**
+     * Lowest trend reached in the trailing {@code windowDays}, or null if none was ever
+     * confirmed there.
+     *
+     * <p><b>Confirmed, like a goal.</b> This number sits on the same screen as the weight
+     * goals, so it is built from {@link #confirmedTrendOn}: a value that could not have closed
+     * a goal must never be displayed as a personal best next to a goal that stayed open. It
+     * also keeps the tile from rewarding the frequent weigher — a minimum over raw readings
+     * drops the more often you step on the scale, which measures diligence, not progress.
+     *
+     * <p>Evaluated only on days that HAVE a reading, matching the chart's trend line; a trailing
+     * average on an empty day would put the low on a day nothing happened. Ties go to the most
+     * recent day — being back at your best is news, having once been there is not.
+     */
+    @Nullable
+    public static LowestTrend lowestConfirmedTrend(NavigableMap<LocalDate, BigDecimal> byDate,
+                                                   LocalDate today, int windowDays) {
+        LowestTrend lowest = null;
+        for (LocalDate day : byDate.subMap(today.minusDays(windowDays - 1L), true, today, true).keySet()) {
+            ConfirmedTrend trend = confirmedTrendOn(byDate, day);
+            if (trend == null) continue;
+            if (lowest == null || trend.value().compareTo(lowest.value()) <= 0) {
+                lowest = new LowestTrend(trend.value(), day);
+            }
+        }
+        return lowest;
     }
 
     /**
