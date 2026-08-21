@@ -45,7 +45,7 @@ public class AscentController {
     }
 
     @Operation(summary = "Recent ascents across the club",
-        description = "The ten newest ascents by climbers who have not switched public visibility "
+        description = "The fifteen newest ascents by climbers who have not switched public visibility "
             + "off. Ordered by the DATE CLIMBED, not by when the entry was typed in — somebody "
             + "backfilling an old season must not push this week's sends off the list. Public: no "
             + "login required, and it carries only name, route, grade, style, place and date.")

@@ -25,8 +25,8 @@ import java.util.List;
 @Transactional(readOnly = true)
 public class PublicAscentService {
 
-    /** Ten, per the brief: enough to show the place is alive, short enough to stay scannable. */
-    static final int RECENT_LIMIT = 10;
+    /** Fifteen, per the brief: enough to show the place is alive, short enough to stay scannable. */
+    static final int RECENT_LIMIT = 15;
 
     /** One cache entry, so the name is a constant rather than a key nobody can guess later. */
     static final String CACHE = "publicAscents";

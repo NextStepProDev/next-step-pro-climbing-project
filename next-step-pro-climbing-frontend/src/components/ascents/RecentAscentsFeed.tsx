@@ -8,7 +8,7 @@ import { QueryError } from '../ui/QueryError'
 import { parseCalendarDate } from '../../utils/calendarDate'
 
 /**
- * The club's ten newest ascents, on the public news page.
+ * The club's fifteen newest ascents, on the public news page.
  *
  * <p>Public in the strict sense: no login, no tokens, and the API returns only what belongs on a
  * noticeboard — who, what, where, when. Comments, attempt counts and route ratings stay in the
