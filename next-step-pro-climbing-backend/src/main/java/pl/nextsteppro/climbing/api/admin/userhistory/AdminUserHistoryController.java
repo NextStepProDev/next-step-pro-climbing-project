@@ -31,10 +31,11 @@ import java.util.UUID;
  * stays in the user list; the coach's calendar stays the place to edit training. Reading somebody's
  * whole history in one screen is not a reason to grow new ways of changing it.
  *
- * <p>The Training tab has no endpoint here at all: it reuses
- * {@code /api/admin/training-calendar/athletes/{id}} and {@code /api/admin/ascents/athletes/{id}},
- * which already refuse users without the athlete flag. The card asks for them only when
- * {@code UserDetailDto.athlete()} is true.
+ * <p>The Training and Ascents tabs have no endpoints here at all: they reuse
+ * {@code /api/admin/training-calendar/athletes/{id}} and {@code /api/admin/ascents/users/{id}},
+ * each of which applies its own gate. The card asks for them only when the matching flag on
+ * {@code UserDetailDto} — {@code athlete()} and {@code ascentsReadable()} — says the answer will
+ * not be a refusal.
  */
 @RestController
 @RequestMapping("/api/admin/users")

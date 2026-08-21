@@ -329,16 +329,31 @@ function PrivacyPolicyPl({ logo }: { logo: string }) {
             </p>
           </SubSection>
 
-          <SubSection title="Jak się wypisać">
+          <SubSection title="Kto jeszcze widzi Twój dziennik">
             <p className="text-surface-400 text-sm leading-relaxed">
-              W ustawieniach konta znajdziesz przełącznik <span className="text-surface-200 font-medium">„Pokazuj
-              moje przejścia publicznie"</span>. Wyłączenie go usuwa z listy <span className="text-surface-200
-              font-medium">wszystkie</span> Twoje przejścia natychmiast — nie po jakimś czasie i bez potrzeby
-              kontaktu ze mną. Możesz je włączyć z powrotem w dowolnym momencie. Sam dziennik działa niezależnie
-              od tego ustawienia: wpisy, statystyki i eksporty pozostają Twoje i dostępne tylko dla Ciebie.
+              Ten sam przełącznik decyduje o jeszcze jednym: dopóki jest włączony, Twój dziennik przejść widzi
+              również <span className="text-surface-200 font-medium">trener w panelu administracyjnym</span> —
+              w całości, razem z komentarzem, liczbą prób i oceną drogi, których publiczna lista nigdy nie
+              pokazuje. Nie ma tam możliwości edycji: wpisy do dziennika dodajesz i zmieniasz wyłącznie Ty.
             </p>
             <p className="text-surface-400 text-sm leading-relaxed mt-3">
-              Nad swoim dziennikiem widzisz informację, w którym z tych dwóch stanów aktualnie jesteś, wraz ze
+              Wyjątek: jeśli trener prowadzi Twój <span className="text-surface-200 font-medium">indywidualny
+              kalendarz treningowy</span> (sekcja 4), widzi Twój dziennik niezależnie od tego ustawienia —
+              wyłączenie przełącznika zdejmuje Cię wtedy z publicznej listy, ale nie kończy współpracy
+              treningowej. Informację o tym, w którym z tych stanów jesteś, masz nad samym dziennikiem.
+            </p>
+          </SubSection>
+
+          <SubSection title="Jak się wypisać">
+            <p className="text-surface-400 text-sm leading-relaxed">
+              W ustawieniach konta znajdziesz przełącznik <span className="text-surface-200 font-medium">„Udostępniaj
+              moje przejścia"</span>. Wyłączenie go usuwa z listy <span className="text-surface-200
+              font-medium">wszystkie</span> Twoje przejścia natychmiast — nie po jakimś czasie i bez potrzeby
+              kontaktu ze mną. Możesz je włączyć z powrotem w dowolnym momencie. Sam dziennik działa niezależnie
+              od tego ustawienia: wpisy, statystyki i eksporty pozostają Twoje.
+            </p>
+            <p className="text-surface-400 text-sm leading-relaxed mt-3">
+              Nad swoim dziennikiem widzisz informację, w którym z tych stanów aktualnie jesteś, wraz ze
               skrótem do ustawień — żeby publikacja nigdy nie była dla Ciebie zaskoczeniem.
             </p>
           </SubSection>
@@ -777,16 +792,31 @@ function PrivacyPolicyEn({ logo }: { logo: string }) {
             </p>
           </SubSection>
 
-          <SubSection title="How to opt out">
+          <SubSection title="Who else sees your logbook">
             <p className="text-surface-400 text-sm leading-relaxed">
-              Your account settings hold a <span className="text-surface-200 font-medium">“Show my ascents
-              publicly”</span> switch. Turning it off removes <span className="text-surface-200 font-medium">all
-              </span> of your ascents from the list immediately — not after some delay, and without contacting me.
-              You can turn it back on at any time. The logbook itself works regardless of this setting: entries,
-              statistics and exports stay yours and remain visible only to you.
+              The same switch decides one more thing: while it is on, your logbook is also visible to
+              <span className="text-surface-200 font-medium"> the coach in the admin panel</span> — in full,
+              including the comment, the attempt count and the route rating that the public list never shows.
+              There is no way to edit it there: entries are added and changed by you alone.
             </p>
             <p className="text-surface-400 text-sm leading-relaxed mt-3">
-              Above your logbook you can see which of the two states you are currently in, together with a
+              One exception: if the coach runs your <span className="text-surface-200 font-medium">personal
+              training calendar</span> (section 4), they see your logbook regardless of this setting — switching
+              it off then takes you off the public list without ending the coaching relationship. Which of these
+              states you are in is stated above the logbook itself.
+            </p>
+          </SubSection>
+
+          <SubSection title="How to opt out">
+            <p className="text-surface-400 text-sm leading-relaxed">
+              Your account settings hold a <span className="text-surface-200 font-medium">“Share my
+              ascents”</span> switch. Turning it off removes <span className="text-surface-200 font-medium">all
+              </span> of your ascents from the list immediately — not after some delay, and without contacting me.
+              You can turn it back on at any time. The logbook itself works regardless of this setting: entries,
+              statistics and exports stay yours.
+            </p>
+            <p className="text-surface-400 text-sm leading-relaxed mt-3">
+              Above your logbook you can see which of these states you are currently in, together with a
               shortcut to the settings — so that publication is never a surprise.
             </p>
           </SubSection>

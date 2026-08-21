@@ -69,6 +69,12 @@ export interface UserDetail {
   role: 'USER' | 'ADMIN'
   /** Gates the Training tab. Not cosmetic — the endpoints behind it refuse everyone else. */
   athlete: boolean
+  /**
+   * Gates the Ascents tab. Computed by the server (athlete, or ascents left visible) rather than
+   * derived here from `athlete` and `ascentsPublic`: one copy of the rule, so the tab cannot drift
+   * into rendering something the endpoint behind it refuses.
+   */
+  ascentsReadable: boolean
 
   emailVerified: boolean
   emailVerifiedAt: string | null

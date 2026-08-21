@@ -41,10 +41,12 @@ import java.util.UUID;
  * (role, athlete flag, forced logout, deletion) and in the coach's calendar. Same stance as the
  * coach's view of weigh-ins and the logbook: reading somebody's history is not a licence to edit it.
  *
- * <p><b>The athlete flag is a privacy boundary, not a display preference.</b> Training and logbook
- * numbers are omitted for anyone without it, because the endpoints behind the Training tab refuse
- * those users anyway ({@code requireFlaggedAthlete}) — a plain user's logbook is private, and being
- * read by a coach has to follow from a decision somebody made.
+ * <p><b>Two different privacy boundaries, so two different rules.</b> Training numbers need the
+ * athlete flag — the calendar holds health data behind a GDPR art. 9 consent that revoking the flag
+ * clears. The logbook needs only that its owner has not hidden it, which is the same rule the
+ * endpoint behind the tab applies ({@code AscentService.requireReadableLogbook}). Either way the
+ * count is omitted rather than sent as zero when the admin may not read the data: "nothing to show"
+ * and "a genuine zero" must not render the same.
  */
 @Service
 public class AdminUserHistoryService {
@@ -152,10 +154,12 @@ public class AdminUserHistoryService {
 
     private UserDetailDto toDetail(User user) {
         UUID id = user.getId();
-        // Null, not zero, for non-athletes: the tiles must not claim "0 trainings" about somebody
-        // whose calendar this admin is not allowed to read in the first place.
+        // Null, not zero, when the data is out of reach: the tiles must not claim "0 trainings"
+        // about somebody whose calendar this admin is not allowed to open in the first place.
+        // The logbook has its own, wider rule — hidden only if its owner switched it off.
+        boolean logbookReadable = user.isLogbookVisibleToCoach();
         Long trainings = user.isAthlete() ? personalTrainingRepository.countCompletedTrainings(id) : null;
-        Long ascents = user.isAthlete() ? climbingAscentRepository.countByAthleteId(id) : null;
+        Long ascents = logbookReadable ? climbingAscentRepository.countByAthleteId(id) : null;
 
         UserCountsDto counts = new UserCountsDto(
             reservationRepository.countConfirmedByUserId(id),
@@ -173,6 +177,7 @@ public class AdminUserHistoryService {
             avatarUrl(user),
             user.getRole().name(),
             user.isAthlete(),
+            logbookReadable,
             user.isEmailVerified(),
             user.getEmailVerifiedAt(),
             user.hasPassword(),

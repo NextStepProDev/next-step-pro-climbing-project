@@ -25,6 +25,13 @@ record UserDetailDto(
     String role,
     /** Drives whether the card offers a Training tab at all — see {@link UserCountsDto}. */
     boolean athlete,
+    /**
+     * Drives the Ascents tab. Computed here rather than left to the client to derive from
+     * {@code athlete} and {@code ascentsPublic}: the rule lives in one place on the server, and a
+     * copy of it in the UI would drift the day the rule changes — into a tab that renders and
+     * then 400s, or one that hides data we would happily serve.
+     */
+    boolean ascentsReadable,
 
     // ---- Account ----
     boolean emailVerified,
@@ -48,10 +55,11 @@ record UserDetailDto(
 ) {}
 
 /**
- * Headline tiles. The two training numbers are {@code null} — not zero — for anyone without the
- * athlete flag: the calendar and the logbook are unreadable for the admin in that case (the
- * logbook of a plain user is private), so "no data to show" and "a genuine zero" must not render
- * the same. Null here is what removes the tile, the same way it removes the Training tab.
+ * Headline tiles. A count is {@code null} — not zero — whenever the admin may not read the data
+ * behind it, so that "nothing to show" and "a genuine zero" never render the same. The two are
+ * gated differently on purpose: trainings need the athlete flag (the calendar sits behind a GDPR
+ * art. 9 consent), the logbook only needs its owner not to have hidden it. Null here is what
+ * removes the tile, the same way it removes the tab.
  */
 record UserCountsDto(
     long reservationsConfirmed,

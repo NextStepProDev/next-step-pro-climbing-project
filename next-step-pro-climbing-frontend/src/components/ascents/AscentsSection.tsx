@@ -49,6 +49,11 @@ export function AscentsSection({ api, scopeKey, scopeLabel, isCoachView }: Ascen
   const queryClient = useQueryClient()
   const { user } = useAuth()
   const isPublic = user?.ascentsPublic ?? true
+  // Hiding the logbook does not hide it from the coach who runs this athlete's calendar — that
+  // relationship outranks the switch (see `User.isLogbookVisibleToCoach`). Saying "hidden from
+  // the coach's panel" to somebody it is not hidden from would be the one lie this banner exists
+  // to prevent, so the opted-out state has two wordings rather than one.
+  const hiddenKey = user?.isAthlete ? 'privacy.hiddenAthlete' : 'privacy.hidden'
 
   // In the URL: rock and mountain are two different logbooks, and a link to one should come
   // back to the same one. `?ter=` rather than `terrain=` to stay short next to ?tab= and ?cal=
@@ -272,7 +277,7 @@ export function AscentsSection({ api, scopeKey, scopeLabel, isCoachView }: Ascen
           {isPublic ? (
             <><Globe className="w-3.5 h-3.5" aria-hidden="true" />{t('privacy.public')}</>
           ) : (
-            <><Lock className="w-3.5 h-3.5" aria-hidden="true" />{t('privacy.hidden')}</>
+            <><Lock className="w-3.5 h-3.5" aria-hidden="true" />{t(hiddenKey)}</>
           )}
           <Link to="/settings" className="underline hover:text-surface-300 transition">
             {t('privacy.manage')}

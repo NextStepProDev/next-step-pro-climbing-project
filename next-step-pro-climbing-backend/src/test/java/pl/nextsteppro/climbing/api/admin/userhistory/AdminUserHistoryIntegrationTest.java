@@ -117,15 +117,42 @@ class AdminUserHistoryIntegrationTest extends BaseIntegrationTest {
     }
 
     @Test
-    @DisplayName("shouldLeaveTrainingCountsNullWhenUserIsNotAnAthlete")
-    void shouldLeaveTrainingCountsNullWhenUserIsNotAnAthlete() {
+    @DisplayName("shouldLeaveTrainingCountNullWhenUserIsNotAnAthlete")
+    void shouldLeaveTrainingCountNullWhenUserIsNotAnAthlete() {
         UserDetailDto detail = service.getUserDetail(user.getId()).orElseThrow();
 
         assertFalse(detail.athlete());
-        // Null, not 0: the calendar and the logbook are unreadable for the admin here, and
-        // "nothing to show" must not render as a genuine zero.
+        // Null, not 0: the calendar is unreadable for the admin here, and "nothing to show" must
+        // not render as a genuine zero. The logbook is a separate boundary — visible by default.
         assertNull(detail.counts().trainingsCompleted());
+        assertTrue(detail.ascentsReadable());
+        assertEquals(0L, detail.counts().ascents());
+    }
+
+    @Test
+    @DisplayName("shouldLeaveAscentCountNullWhenUserHidTheirLogbook")
+    void shouldLeaveAscentCountNullWhenUserHidTheirLogbook() {
+        user.setAscentsPublic(false);
+        user = userRepository.save(user);
+
+        UserDetailDto detail = service.getUserDetail(user.getId()).orElseThrow();
+
+        assertFalse(detail.ascentsReadable());
         assertNull(detail.counts().ascents());
+    }
+
+    /** Coaching outranks the switch — see {@code User.isLogbookVisibleToCoach}. */
+    @Test
+    @DisplayName("shouldStillReadTheLogbookOfAnAthleteWhoHidTheirAscents")
+    void shouldStillReadTheLogbookOfAnAthleteWhoHidTheirAscents() {
+        user.setAthlete(true);
+        user.setAscentsPublic(false);
+        user = userRepository.save(user);
+
+        UserDetailDto detail = service.getUserDetail(user.getId()).orElseThrow();
+
+        assertTrue(detail.ascentsReadable());
+        assertEquals(0L, detail.counts().ascents());
     }
 
     @Test
