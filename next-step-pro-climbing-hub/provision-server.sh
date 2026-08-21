@@ -6,7 +6,7 @@
 #   - Docker CE + compose plugin (official apt repo, multi-arch)
 #   - 2 GB swap (setup-swap.sh)
 #   - rclone + cron (for backups)
-#   - backup script nsp-backup.sh + 3:00 AM cron
+#   - backup script nsp-backup.sh + 3:00 AM cron + logrotate
 #   - Cloudflare origin firewall (cf-origin-firewall.sh + systemd service)
 #   - weekly Docker image cleanup
 #
@@ -20,7 +20,7 @@
 
 set -euo pipefail
 
-# Script directory (sibling files: setup-swap.sh, nsp-backup.sh, cf-origin-firewall.*)
+# Script directory (sibling files: setup-swap.sh, nsp-backup.*, cf-origin-firewall.*)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Non-root user to be added to the docker group (SUDO_USER when run via sudo)
@@ -68,13 +68,27 @@ log "4/7 swap 2 GB (setup-swap.sh)"
 bash "${SCRIPT_DIR}/setup-swap.sh"
 
 # ---------------------------------------------------------------------------
-log "5/7 backup script + 3:00 AM cron"
+log "5/7 backup script + 3:00 AM cron + log rotation"
 install -m 0755 "${SCRIPT_DIR}/nsp-backup.sh" /usr/local/bin/nsp-backup.sh
+install -m 0644 "${SCRIPT_DIR}/nsp-backup.logrotate" /etc/logrotate.d/nsp-backup
 mkdir -p /backups/db /backups/files
 # root cron: daily backup at 3:00 AM (idempotent)
 ( crontab -l 2>/dev/null | grep -v "nsp-backup.sh"; echo "0 3 * * * /usr/local/bin/nsp-backup.sh" ) | crontab -
 systemctl enable --now cron
-echo "    backup: /usr/local/bin/nsp-backup.sh, cron 0 3 * * *"
+# Monitoring secret. Created empty and commented out: the backup runs fine without
+# it, and a placeholder URL would be worse than none — it would report success
+# from a check nobody is watching. Fill in from the password manager.
+if [[ ! -f /etc/nsp-backup.env ]]; then
+  cat > /etc/nsp-backup.env <<'ENVEOF'
+# Healthchecks.io ping URL for the nightly backup (see SERVER-SETUP.md).
+# Uncomment and paste the check URL — no trailing slash:
+#HEALTHCHECK_URL="https://hc-ping.com/<uuid>"
+ENVEOF
+fi
+chmod 600 /etc/nsp-backup.env
+echo "    backup: /usr/local/bin/nsp-backup.sh, cron 0 3 * * *, logrotate weekly"
+grep -q '^HEALTHCHECK_URL=' /etc/nsp-backup.env \
+  || echo "    NOTE: /etc/nsp-backup.env has no HEALTHCHECK_URL - a failed backup will be silent"
 
 # ---------------------------------------------------------------------------
 log "6/7 Cloudflare origin firewall (script + systemd service)"
@@ -102,7 +116,8 @@ cat <<'EOF'
   1. ~/nsp-app/            -> docker-compose.prod.yml (from the hub/ repo) + .env (from the password manager)
   2. ~/nginx-proxy-manager/ -> compose + data/ + letsencrypt/ (from the old server or re-issue)
   3. rclone config         -> /root/.config/rclone/rclone.conf (GDrive token + crypt passwords)
-  4. backup seed           -> sudo rclone copy gdrive-crypt: /backups   (BEFORE the first sync!)
+  3b. backup monitoring    -> /etc/nsp-backup.env: HEALTHCHECK_URL (healthchecks.io), chmod 600
+  4. backup seed           -> sudo rclone copy gdrive-crypt: /backups   (optional: gives a local copy to restore from)
   5. bring up NPM (first):   cd ~/nginx-proxy-manager && docker compose up -d
   6. bring up the app:       cd ~/nsp-app && docker compose -f docker-compose.prod.yml up -d
   7. data:                   pg_dump -> psql (database) + tar of the uploads_data_prod volume

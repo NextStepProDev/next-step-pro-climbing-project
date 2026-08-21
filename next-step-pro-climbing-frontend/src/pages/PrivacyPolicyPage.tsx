@@ -6,8 +6,8 @@ import logoWhite from '../assets/logo/logo-white.png'
 import logoBlack from '../assets/logo/logo-black.png'
 import { CONTACT } from '../constants/contact'
 
-const LAST_UPDATED_PL = '14 sierpnia 2026'
-const LAST_UPDATED_EN = '14 August 2026'
+const LAST_UPDATED_PL = '21 sierpnia 2026'
+const LAST_UPDATED_EN = '21 August 2026'
 
 export function PrivacyPolicyPage() {
   const { i18n } = useTranslation()
@@ -369,12 +369,15 @@ function PrivacyPolicyPl({ logo }: { logo: string }) {
               (kaskadowe usunięcie na poziomie bazy danych). Nie ma możliwości ich odzyskania po usunięciu konta.
             </p>
             <p>
-              <span className="text-surface-200 font-medium">Kopie zapasowe</span> — przechowywane w cyklu 7-dniowym
-              i nadpisywane, więc dane usunięte z bazy znikają z kopii najpóźniej po 7 dniach. Kopie służą wyłącznie
-              odtworzeniu serwisu po awarii i nie są przeszukiwane w żadnym innym celu.
+              <span className="text-surface-200 font-medium">Kopie zapasowe</span> — przechowywane przez 7 dni na
+              serwerze i do 90 dni w zaszyfrowanym archiwum na Google Drive, po czym są automatycznie usuwane.
+              Oznacza to, że dane usunięte z bazy mogą pozostawać w kopiach najdłużej przez 90 dni. Dłuższy okres
+              jest konieczny, aby serwis dało się odtworzyć także po awarii wykrytej z opóźnieniem (np. błędzie,
+              który uszkodził dane kilka tygodni wcześniej). Kopie służą wyłącznie odtworzeniu serwisu po awarii,
+              nie są przeszukiwane w żadnym innym celu i nie są wykorzystywane do przywracania usuniętych kont.
             </p>
             <p>
-              <span className="text-surface-200 font-medium">Tokeny bezpieczeństwa</span> (weryfikacja e-mail: 15 min, reset hasła: 1h,
+              <span className="text-surface-200 font-medium">Tokeny bezpieczeństwa</span> (weryfikacja e-mail: 24h, reset hasła: 1h,
               sesja: 7 dni) — usuwane automatycznie po wygaśnięciu przez wbudowany mechanizm czyszczenia.
             </p>
             <p>
@@ -814,12 +817,15 @@ function PrivacyPolicyEn({ logo }: { logo: string }) {
               (cascading deletion at database level). They cannot be recovered after account deletion.
             </p>
             <p>
-              <span className="text-surface-200 font-medium">Backups</span> — kept on a rolling 7-day cycle and
-              overwritten, so data deleted from the database disappears from the backups within 7 days at the latest.
-              Backups exist solely to restore the service after a failure and are not searched for any other purpose.
+              <span className="text-surface-200 font-medium">Backups</span> — kept for 7 days on the server and for
+              up to 90 days in an encrypted archive on Google Drive, after which they are deleted automatically. This
+              means data deleted from the database may persist in backups for up to 90 days. The longer period is
+              necessary so the service can also be restored after a failure discovered late (for example a fault that
+              corrupted data several weeks earlier). Backups exist solely to restore the service after a failure, are
+              not searched for any other purpose, and are never used to reinstate deleted accounts.
             </p>
             <p>
-              <span className="text-surface-200 font-medium">Security tokens</span> (email verification: 15 min, password reset: 1h,
+              <span className="text-surface-200 font-medium">Security tokens</span> (email verification: 24h, password reset: 1h,
               session: 7 days) — automatically deleted upon expiry by a built-in cleanup mechanism.
             </p>
             <p>

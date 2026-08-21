@@ -1,0 +1,18 @@
+# /etc/logrotate.d/nsp-backup — rotation for /var/log/nsp-backup.log
+#
+# rclone logs at INFO on every run, so this file only grows. Left alone it is the
+# one thing on this box that fills the disk slowly enough to go unnoticed — and a
+# full disk is exactly what breaks the backup it was recording.
+#
+# copytruncate, not create: the running script holds the file open through
+# `--log-file`, so a plain rename would leave rclone writing into an unlinked
+# inode and the rotated log would be the only one that ever got any content.
+/var/log/nsp-backup.log {
+    weekly
+    rotate 8
+    compress
+    delaycompress
+    missingok
+    notifempty
+    copytruncate
+}
