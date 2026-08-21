@@ -108,10 +108,18 @@ public class AdminNoteService {
         }
     }
 
-    /** Idempotent: deleting a note that is not there is a success, not a 404. */
+    /**
+     * Idempotent: deleting a note that is not there is a success, not a 404.
+     *
+     * <p><b>No target gate here, unlike read and write.</b> Removing your own text cannot leak
+     * anything, and the statement is scoped to (author, target) so it can only ever match a row
+     * the caller wrote. Running the gate would mean the opposite of safety: dropping an athlete's
+     * flag would strand every note about their trainings — invisible, because the coach calendar
+     * is unreachable without the flag, and undeletable, because the gate refuses the one operation
+     * that could clear them. That is somebody's personal data with no path to erasure.
+     */
     public void deleteNote(UUID adminId, String targetSegment, UUID targetId) {
         NoteTarget target = parseTarget(targetSegment);
-        requireTargetExists(target, targetId);
         switch (target) {
             case SLOT -> noteRepository.deleteForSlot(adminId, targetId);
             case EVENT -> noteRepository.deleteForEvent(adminId, targetId);
