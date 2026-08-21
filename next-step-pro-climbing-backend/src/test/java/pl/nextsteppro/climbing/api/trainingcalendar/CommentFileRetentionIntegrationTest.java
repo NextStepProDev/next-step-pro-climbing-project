@@ -43,11 +43,29 @@ class CommentFileRetentionIntegrationTest extends BaseIntegrationTest {
     @Autowired private UserService userService;
     @Autowired private JdbcTemplate jdbcTemplate;
 
+    /**
+     * The scratch folder the test profile points storage at. Same value as
+     * {@code app.storage.root} in application-test.yml, plus the attachments subfolder.
+     */
+    private static final Path FILES_FOLDER = Path.of(
+        System.getProperty("java.io.tmpdir"), "nsp-climbing-test-uploads", CommentFileSupport.FOLDER);
+
     private User athlete;
     private UUID trainingId;
 
     @BeforeEach
-    void setUp() {
+    void setUp() throws IOException {
+        // Three tests below assert an EXACT sweep count, which is only meaningful against a known
+        // folder. Uploads are not transactional: every test that attaches a file leaves it on disk
+        // while its rows roll back, so the folder accumulates across runs. Once those leftovers age
+        // past the sweeper's grace window they get counted too — "expected 1 but was 47".
+        //
+        // The failure hides itself, which is why it read as flaky for so long: the run that fails
+        // also deletes the backlog, so the next run is green and the cycle restarts only after
+        // files have sat unused long enough to age. CI never sees it at all — a fresh container
+        // starts with an empty tmpdir.
+        emptyTheAttachmentFolder();
+
         commentFileRepository.deleteAll();
         trainingCommentRepository.deleteAll();
         personalTrainingRepository.deleteAll();
@@ -163,11 +181,19 @@ class CommentFileRetentionIntegrationTest extends BaseIntegrationTest {
         assertFalse(fileStorageService.exists(filename, CommentFileSupport.FOLDER));
     }
 
+    /** Leaves the folder present but empty, so an exact sweep count means what it says. */
+    private static void emptyTheAttachmentFolder() throws IOException {
+        Files.createDirectories(FILES_FOLDER);
+        try (var entries = Files.list(FILES_FOLDER)) {
+            for (Path leftover : entries.toList()) {
+                Files.deleteIfExists(leftover);
+            }
+        }
+    }
+
     private Path writeStrayFile() throws IOException {
-        Path folder = Path.of(System.getProperty("java.io.tmpdir"), "nsp-climbing-test-uploads",
-            CommentFileSupport.FOLDER);
-        Files.createDirectories(folder);
-        Path stray = folder.resolve(UUID.randomUUID() + ".jpg");
+        Files.createDirectories(FILES_FOLDER);
+        Path stray = FILES_FOLDER.resolve(UUID.randomUUID() + ".jpg");
         Files.write(stray, TestImages.jpeg());
         return stray;
     }
