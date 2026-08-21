@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { format } from 'date-fns'
@@ -36,6 +36,7 @@ export function AdminPrivateNote({ target, targetId }: AdminPrivateNoteProps) {
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState('')
   const [expanded, setExpanded] = useState(false)
+  const [isClamped, setIsClamped] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
 
   const queryKey = ['admin', 'notes', target, targetId]
@@ -75,6 +76,18 @@ export function AdminPrivateNote({ target, targetId }: AdminPrivateNoteProps) {
     setDraft(body ?? '')
     setEditing(true)
   }
+
+  /**
+   * Whether the clamp is actually hiding anything, measured rather than guessed.
+   *
+   * A character count cannot answer this: `line-clamp-6` counts LINES, so a ten-line bulleted
+   * note of 200 characters is cut off while any sensible length threshold says it is short —
+   * and then the last four lines are unreachable, with no control offered to reveal them.
+   */
+  const measureClamp = useCallback((el: HTMLParagraphElement | null) => {
+    if (!el || expanded) return
+    setIsClamped(el.scrollHeight > el.clientHeight + 1)
+  }, [expanded])
 
   if (isLoading) return null
 
@@ -143,10 +156,13 @@ export function AdminPrivateNote({ target, targetId }: AdminPrivateNoteProps) {
         </Button>
       ) : (
         <div className="space-y-1">
-          <p className={`text-sm text-surface-200 whitespace-pre-wrap ${expanded ? '' : 'line-clamp-6'}`}>
+          <p
+            ref={measureClamp}
+            className={`text-sm text-surface-200 whitespace-pre-wrap ${expanded ? '' : 'line-clamp-6'}`}
+          >
             {body}
           </p>
-          {body.length > 300 && (
+          {(expanded || isClamped) && (
             <button
               type="button"
               onClick={() => setExpanded((v) => !v)}

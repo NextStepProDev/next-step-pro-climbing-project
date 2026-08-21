@@ -7,6 +7,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -29,8 +30,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 class PrivateNoteIsolationTest {
 
+    private static final String NOTE_PACKAGE = "pl.nextsteppro.climbing.domain.adminnote";
+
+    // Longest first: \bAdminPrivateNote\b also matches inside nothing else, but reporting the
+    // repository as the plain entity would send the reader to the wrong file.
     private static final List<String> NOTE_TYPES =
-        List.of("AdminPrivateNote", "AdminPrivateNoteRepository");
+        List.of("AdminPrivateNoteRepository", "AdminPrivateNote");
 
     /**
      * The only two packages allowed to touch the note: the entity's own home, and the admin API
@@ -52,9 +57,21 @@ class PrivateNoteIsolationTest {
             if (ALLOWED_PACKAGE_PATHS.stream().anyMatch(path::contains)) continue;
 
             String source = SourceFiles.readWithoutComments(file);
+
+            // The package in any import shape. `import ...domain.adminnote.*;` is the local house
+            // style — three services already import their own domain package that way — so keying
+            // only off the fully qualified type name left the most likely bypass wide open.
+            if (source.contains(NOTE_PACKAGE)) {
+                offenders.add(path + " imports " + NOTE_PACKAGE);
+                continue;
+            }
             for (String type : NOTE_TYPES) {
-                if (source.contains("adminnote." + type) || source.contains(type + " ")) {
+                // Word boundaries, not `type + " "`: a wildcard import followed by
+                // `AdminPrivateNote.MAX_BODY_LENGTH` or `List<AdminPrivateNote>` puts a `.` or a
+                // `>` after the name, and the old check waved both through.
+                if (Pattern.compile("\\b" + type + "\\b").matcher(source).find()) {
                     offenders.add(path + " references " + type);
+                    break;
                 }
             }
         }

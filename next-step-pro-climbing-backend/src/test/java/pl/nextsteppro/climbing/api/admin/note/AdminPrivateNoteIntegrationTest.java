@@ -227,6 +227,22 @@ class AdminPrivateNoteIntegrationTest extends BaseIntegrationTest {
     }
 
     @Test
+    @DisplayName("shouldStillLetTheAuthorEraseANoteAfterTheAthleteFlagIsGone")
+    void shouldStillLetTheAuthorEraseANoteAfterTheAthleteFlagIsGone() {
+        // Given: a note written while the athlete was still flagged
+        PersonalTraining training = trainingForAthlete();
+        noteService.saveNote(owner.getId(), "training", training.getId(), new SaveAdminNoteRequest("Do usunięcia"));
+        athlete.setAthlete(false);
+        userRepository.saveAndFlush(athlete);
+
+        // When / Then: erasure must stay reachable. Gating delete would strand the row —
+        // invisible (the coach calendar needs the flag) and undeletable, which is somebody's
+        // personal data with no path out.
+        assertDoesNotThrow(() -> noteService.deleteNote(owner.getId(), "training", training.getId()));
+        assertEquals(0, noteCount());
+    }
+
+    @Test
     @DisplayName("shouldRejectATrainingNoteOnceTheAthleteFlagIsGone")
     void shouldRejectATrainingNoteOnceTheAthleteFlagIsGone() {
         // Given: a training whose athlete has since been de-flagged (which also wipes the consent)
