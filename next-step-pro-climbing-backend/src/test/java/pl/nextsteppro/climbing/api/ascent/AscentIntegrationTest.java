@@ -596,7 +596,7 @@ class AscentIntegrationTest extends BaseIntegrationTest {
     // ---------- the public feed ----------
 
     /**
-     * The rule the brief is explicit about: "10 newest", not "10 most recently typed in".
+     * The rule the brief is explicit about: "15 newest", not "15 most recently typed in".
      * Somebody backfilling a 2019 season must not sweep this week's sends off the list.
      */
     @Test
@@ -613,12 +613,12 @@ class AscentIntegrationTest extends BaseIntegrationTest {
     }
 
     @Test
-    void shouldCapTheFeedAtTenEntries() {
-        for (int i = 0; i < 13; i++) {
+    void shouldCapTheFeedAtFifteenEntries() {
+        for (int i = 0; i < 18; i++) {
             logOn(today().minusDays(i), "Droga " + i);
         }
 
-        assertEquals(10, publicAscentService.getRecent().size());
+        assertEquals(15, publicAscentService.getRecent().size());
     }
 
     @Test

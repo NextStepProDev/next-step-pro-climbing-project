@@ -302,7 +302,7 @@ function PrivacyPolicyPl({ logo }: { logo: string }) {
         <Section id="lista-przejsc" title="5. Publiczna lista przejść">
           <p className="text-surface-300 leading-relaxed mb-4">
             W zakładce Aktualności działa lista <span className="text-surface-200 font-medium">„Ostatnie
-            przejścia"</span> — dziesięć najnowszych przejść zapisanych przez użytkowników serwisu. Lista jest
+            przejścia"</span> — piętnaście najnowszych przejść zapisanych przez użytkowników serwisu. Lista jest
             dostępna publicznie, także dla osób bez konta, i pokazuje imię oraz nazwisko autora wpisu.
             To jedyne miejsce w serwisie, w którym Twoje dane trafiają na stronę widoczną dla wszystkich.
           </p>
@@ -765,7 +765,7 @@ function PrivacyPolicyEn({ logo }: { logo: string }) {
         <Section id="lista-przejsc" title="5. Public Ascents List">
           <p className="text-surface-300 leading-relaxed mb-4">
             The News page carries a <span className="text-surface-200 font-medium">“Recent ascents”</span> list —
-            the ten newest ascents logged by users of the site. The list is public, visible to people without an
+            the fifteen newest ascents logged by users of the site. The list is public, visible to people without an
             account too, and it shows the full name of whoever logged the entry. It is the only place on the site
             where your data appears on a page everyone can see.
           </p>

@@ -643,7 +643,7 @@ export const ascentApi = {
     fetchApi<AscentOptions>('/ascents/options'),
 
   /**
-   * Public — no login needed. Ten newest ascents across everyone who has not opted out,
+   * Public — no login needed. Fifteen newest ascents across everyone who has not opted out,
    * ordered by the date CLIMBED rather than by when the entry was typed in.
    */
   getRecentPublic: () =>
