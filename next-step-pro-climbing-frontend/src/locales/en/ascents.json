@@ -32,12 +32,13 @@
     "empty": "Nobody has logged an ascent yet."
   },
   "privacy": {
-    "public": "Your ascents appear on the public list in News (full name, route, grade, area).",
-    "hidden": "Your ascents are hidden from the public list in News.",
+    "public": "Your ascents are on the public list in News (full name, route, grade, area) and your coach can see them.",
+    "hidden": "Your ascents are hidden — neither on the public list nor in the coach's panel.",
+    "hiddenAthlete": "Your ascents are hidden from the public list. The coach who runs your calendar still sees them.",
     "manage": "Change in settings",
     "policy": "What is published",
-    "settingLabel": "Show my ascents publicly",
-    "settingHint": "Your ascents appear on the “Recent ascents” list in News — showing your full name, route, grade, style, area and date. Comments, attempt counts and ratings are never published."
+    "settingLabel": "Share my ascents",
+    "settingHint": "On: your ascents appear on the “Recent ascents” list in News — showing your full name, route, grade, style, area and date — and your coach can see your logbook in the admin panel. Turning it off removes them from both at once. Comments, attempt counts and ratings are never published. If your coach runs your training calendar, they see your logbook regardless of this setting."
   },
   "title": "Climbing logbook",
   "add": "Log an ascent",

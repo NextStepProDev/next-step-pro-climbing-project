@@ -21,6 +21,7 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -278,24 +279,46 @@ class AscentIntegrationTest extends BaseIntegrationTest {
     }
 
     /**
-     * The other half of opening it up: a logbook is only visible to the coach when its owner is
-     * a designated athlete, so signing up for an account is not signing up for supervision.
+     * The switch that takes somebody off the public list takes them off the admin's screen too —
+     * it is the one control the site offers over who sees these entries, so it has to mean the
+     * same thing in both places.
      */
     @Test
-    @DisplayName("the coach cannot read the logbook of somebody who is not their athlete")
-    void shouldKeepAPlainUsersLogbookPrivateFromTheCoach() {
+    @DisplayName("the coach cannot read the logbook of somebody who hid their ascents")
+    void shouldKeepAHiddenLogbookPrivateFromTheCoach() {
         User plain = new User("private@example.com", "Prywatny", "Wspinacz", "+48666666666", "pass");
         plain.setEmailVerified(true);
+        plain.setAscentsPublic(false);
         User saved = userRepository.save(plain);
         ascentService.createMyAscent(saved.getId(),
             sportRequest("Nie Twoja Sprawa", ClimbingGrade.FR_7A, AscentStyle.RP));
 
         assertThrows(IllegalArgumentException.class,
             () -> ascentService.getLogForAthlete(saved.getId(), AscentTerrain.ROCK, null));
+        assertThrows(IllegalArgumentException.class,
+            () -> ascentStatsService.getStatsForAthlete(saved.getId(), AscentTerrain.ROCK, null));
+    }
+
+    /**
+     * Being coached 1:1 is itself the decision, so the athlete flag outranks the switch: hiding
+     * one's name from a public page must not quietly cut the trainer out of the logbook they
+     * work from.
+     */
+    @Test
+    @DisplayName("a designated athlete stays readable even with ascents hidden")
+    void shouldLetTheCoachReadAHidingAthletesLogbook() {
+        athlete.setAscentsPublic(false);
+        userRepository.save(athlete);
+        ascentService.createMyAscent(athlete.getId(),
+            sportRequest("Ukryte, ale nie przed trenerem", ClimbingGrade.FR_7A, AscentStyle.RP));
+
+        AscentLogDto log = ascentService.getLogForAthlete(athlete.getId(), AscentTerrain.ROCK, null);
+
+        assertEquals(1, log.entries().size());
     }
 
     @Test
-    @DisplayName("the coach reads the logbook through the by-athlete path")
+    @DisplayName("the coach reads the logbook through the by-user path")
     void shouldLetTheCoachReadTheLogbook() {
         ascentService.createMyAscent(athlete.getId(),
             sportRequest("Wielkie Ciśnienie", ClimbingGrade.FR_7A, AscentStyle.RP));
@@ -306,14 +329,26 @@ class AscentIntegrationTest extends BaseIntegrationTest {
         assertEquals("Wielkie Ciśnienie", log.entries().getFirst().routeName());
     }
 
+    /** Visibility is opt-out, so a plain account is readable without anybody doing anything. */
     @Test
-    void shouldRefuseTheCoachPathForSomebodyWhoIsNotAnAthlete() {
+    @DisplayName("the coach reads a plain user's logbook while it is left visible")
+    void shouldLetTheCoachReadAPlainUsersVisibleLogbook() {
         User plain = new User("plain2@example.com", "Zwykły", "Użytkownik", "+48444444444", "pass");
         plain.setEmailVerified(true);
         User saved = userRepository.save(plain);
+        ascentService.createMyAscent(saved.getId(),
+            sportRequest("Jawna Droga", ClimbingGrade.FR_6C, AscentStyle.RP));
 
+        AscentLogDto log = ascentService.getLogForAthlete(saved.getId(), AscentTerrain.ROCK, null);
+
+        assertEquals(1, log.entries().size());
+        assertEquals("Jawna Droga", log.entries().getFirst().routeName());
+    }
+
+    @Test
+    void shouldRefuseTheCoachPathForAnUnknownUser() {
         assertThrows(IllegalArgumentException.class,
-            () -> ascentService.getLogForAthlete(saved.getId(), AscentTerrain.ROCK, null));
+            () -> ascentService.getLogForAthlete(UUID.randomUUID(), AscentTerrain.ROCK, null));
     }
 
     @Test

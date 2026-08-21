@@ -4,7 +4,6 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import pl.nextsteppro.climbing.api.trainingcalendar.TrainingCalendarService;
 import pl.nextsteppro.climbing.domain.climbingascent.AreaUsageRow;
 import pl.nextsteppro.climbing.domain.climbingascent.AscentDiscipline;
 import pl.nextsteppro.climbing.domain.climbingascent.AscentStyle;
@@ -33,10 +32,12 @@ import java.util.function.Function;
  * flag nor the GDPR art. 9 consent. Anyone with an account keeps their own — which is also why
  * this lives in its own package rather than in {@code api/trainingcalendar}.
  *
- * <p><b>The coach still only sees designated athletes.</b> {@link #getLogForAthlete} goes through
- * {@code requireFlaggedAthlete}, so somebody who never signed up for 1:1 coaching keeps a private
- * logbook — being visible to a coach must follow from a decision the user made, not from having
- * an account.
+ * <p><b>The coach reads a logbook the owner has not hidden.</b> {@link #requireReadableLogbook}
+ * is the whole rule: a designated athlete's logbook is always open to the coach (that relationship
+ * is itself a decision somebody made, and switching off the public list is about strangers, not
+ * about the trainer), and everybody else's is open exactly while {@code users.ascents_public} is
+ * on. That switch therefore answers two questions with one answer, which is why the Settings copy
+ * and the privacy policy name both of them.
  *
  * <p><b>Only the owner writes.</b> There is deliberately no admin write path anywhere in this
  * class — crediting somebody else with an ascent is not the coach's call. Same shape as
@@ -62,16 +63,13 @@ public class AscentService {
 
     private final ClimbingAscentRepository ascentRepository;
     private final UserRepository userRepository;
-    private final TrainingCalendarService calendarService;
     private final MessageService msg;
 
     public AscentService(ClimbingAscentRepository ascentRepository,
                          UserRepository userRepository,
-                         TrainingCalendarService calendarService,
                          MessageService msg) {
         this.ascentRepository = ascentRepository;
         this.userRepository = userRepository;
-        this.calendarService = calendarService;
         this.msg = msg;
     }
 
@@ -85,11 +83,26 @@ public class AscentService {
         return buildLog(userId, terrain, year);
     }
 
-    /** Coach path — designated athletes only, so a plain user's logbook stays private. */
+    /** Coach path — see {@link #requireReadableLogbook} for who is readable. */
     @Transactional(readOnly = true)
     public AscentLogDto getLogForAthlete(UUID athleteId, AscentTerrain terrain, @Nullable String year) {
-        calendarService.requireFlaggedAthlete(athleteId);
+        requireReadableLogbook(athleteId);
         return buildLog(athleteId, terrain, year);
+    }
+
+    /**
+     * The coach-side gate for one logbook. Who qualifies is decided by
+     * {@link User#isLogbookVisibleToCoach()} — the rule is asked from here and from the admin user
+     * card, so it lives on the entity rather than being spelled out twice.
+     *
+     * <p>Hidden and non-existent get the same message on purpose: whether a given account exists
+     * is not something an error should confirm, and the admin has the user list for that anyway.
+     */
+    @Transactional(readOnly = true)
+    public User requireReadableLogbook(UUID athleteId) {
+        return userRepository.findById(athleteId)
+                .filter(User::isLogbookVisibleToCoach)
+                .orElseThrow(() -> new IllegalArgumentException(msg.get("ascent.logbook.unavailable")));
     }
 
     /**

@@ -15,20 +15,23 @@ import { coachAdapter } from '../../components/training/trainingCalendarAdapter'
 import { AscentsSection } from '../../components/ascents/AscentsSection'
 import { coachAscentAdapter } from '../../components/ascents/ascentAdapter'
 
-type TabKey = 'overview' | 'reservations' | 'training' | 'account'
+type TabKey = 'overview' | 'reservations' | 'training' | 'ascents' | 'account'
 
 /**
  * One user's whole history in the admin panel, read-only.
  *
- * <p>Four tabs rather than one long page: this screen answers four unrelated questions ("what has
- * this person been doing", "what are they booked on", "how is their training going", "what state is
- * the account in"), and stacking them made the last one unreachable without scrolling past a
- * calendar. Same reasoning, and the same URL-backed segmented control, as the coach's athlete panel.
+ * <p>Tabs rather than one long page: this screen answers several unrelated questions ("what has
+ * this person been doing", "what are they booked on", "how is their training going", "what have
+ * they climbed", "what state is the account in"), and stacking them made the last one unreachable
+ * without scrolling past a calendar. Same reasoning, and the same URL-backed segmented control, as
+ * the coach's athlete panel.
  *
- * <p><b>The Training tab exists only for flagged athletes.</b> Not a display choice: the endpoints
- * behind it (`/api/admin/training-calendar/...`, `/api/admin/ascents/...`) refuse everyone else,
- * because a plain user's logbook is private and being read by a coach has to follow from a decision
- * somebody actually made. Rendering the tab and letting it 400 would advertise data we do not serve.
+ * <p><b>Training and Ascents are two tabs because they are two privacy boundaries.</b> The calendar
+ * needs the athlete flag — it holds health data behind a GDPR art. 9 consent. The logbook needs
+ * only that its owner has not switched their ascents off, which is a wider set of people, so
+ * folding it into the Training tab would hide it from everyone who is not coached 1:1. Neither
+ * flag is a display choice: the endpoints behind the tabs refuse anyone else, and rendering a tab
+ * that then 400s would advertise data we do not serve.
  */
 export function AdminUserDetailPanel() {
   const { t } = useTranslation('admin')
@@ -45,6 +48,8 @@ export function AdminUserDetailPanel() {
 
   const user = userQuery.data
   const isAthlete = user?.athlete ?? false
+  // From the server, not derived from `athlete` + `ascentsPublic` here: one copy of the rule
+  const canReadAscents = user?.ascentsReadable ?? false
 
   const adapter = useMemo(() => coachAdapter(userId!), [userId])
   const ascentAdapter = useMemo(() => coachAscentAdapter(userId!), [userId])
@@ -56,6 +61,9 @@ export function AdminUserDetailPanel() {
   const activeTab: TabKey =
     requested === 'reservations' || requested === 'account' ? requested
       : requested === 'training' && isAthlete ? 'training'
+      // Falls back to the overview rather than rendering a tab whose endpoint would refuse:
+      // a link saved while somebody's logbook was visible must not break after they hide it
+      : requested === 'ascents' && canReadAscents ? 'ascents'
       : 'overview'
 
   const switchTab = (tab: TabKey) => {
@@ -67,12 +75,18 @@ export function AdminUserDetailPanel() {
 
   if (!userId) return null
 
-  const tabs: TabKey[] = isAthlete
-    ? ['overview', 'reservations', 'training', 'account']
-    : ['overview', 'reservations', 'account']
+  const tabs: TabKey[] = [
+    'overview',
+    'reservations',
+    ...(isAthlete ? ['training' as const] : []),
+    ...(canReadAscents ? ['ascents' as const] : []),
+    'account',
+  ]
 
   const tabLabel = (tab: TabKey) =>
-    tab === 'training' ? tTraining('tabs.calendar') : t(`users.detail.tabs.${tab}`)
+    tab === 'training' ? tTraining('tabs.calendar')
+      : tab === 'ascents' ? tAscents('tab')
+      : t(`users.detail.tabs.${tab}`)
 
   const fullName = user ? `${user.firstName} ${user.lastName}` : undefined
 
@@ -138,27 +152,24 @@ export function AdminUserDetailPanel() {
           {activeTab === 'reservations' && <UserReservationsTab userId={userId} />}
           {activeTab === 'account' && <UserAccountTab user={user} />}
           {activeTab === 'training' && (
-            // key: the sections are also mounted from the coach roster, and a stale mark-seen
+            // key: the section is also mounted from the coach roster, and a stale mark-seen
             // effect from another athlete must not survive a switch between people
-            <div className="space-y-6">
-              <TrainingCalendarSection
-                key={`cal-${userId}`}
-                api={adapter}
-                scopeKey={userId}
-                scopeLabel={fullName}
-                isCoachView
-              />
-              <div>
-                <h3 className="text-sm font-semibold text-surface-300 mb-2">{tAscents('tab')}</h3>
-                <AscentsSection
-                  key={`asc-${userId}`}
-                  api={ascentAdapter}
-                  scopeKey={userId}
-                  scopeLabel={fullName}
-                  isCoachView
-                />
-              </div>
-            </div>
+            <TrainingCalendarSection
+              key={`cal-${userId}`}
+              api={adapter}
+              scopeKey={userId}
+              scopeLabel={fullName}
+              isCoachView
+            />
+          )}
+          {activeTab === 'ascents' && (
+            <AscentsSection
+              key={`asc-${userId}`}
+              api={ascentAdapter}
+              scopeKey={userId}
+              scopeLabel={fullName}
+              isCoachView
+            />
           )}
         </>
       )}

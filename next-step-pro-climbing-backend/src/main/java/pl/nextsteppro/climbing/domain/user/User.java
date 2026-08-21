@@ -346,6 +346,22 @@ public class User {
         this.ascentsPublic = ascentsPublic;
     }
 
+    /**
+     * Whether an admin may read this person's climbing logbook — the whole rule, in one place,
+     * because it is asked from two sides (the endpoint that serves the logbook and the user card
+     * that decides whether to offer the tab) and a second copy would drift.
+     *
+     * <p>Two ways in, and they are not the same decision. A <b>designated athlete</b> qualifies
+     * unconditionally: being coached 1:1 already is a decision somebody made, and the visibility
+     * switch is aimed at the public list of strangers — letting it cut the coach off would break a
+     * working relationship as a side effect of a setting pointed elsewhere. <b>Everyone else</b>
+     * qualifies exactly while {@link #isAscentsPublic()} is on, so the opt-out that takes somebody
+     * off the public list takes them off the admin's screen too.
+     */
+    public boolean isLogbookVisibleToCoach() {
+        return athlete || ascentsPublic;
+    }
+
     public void setNewsletterSubscribed(boolean newsletterSubscribed) {
         this.newsletterSubscribed = newsletterSubscribed;
     }

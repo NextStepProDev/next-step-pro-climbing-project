@@ -1,4 +1,4 @@
-import { ascentApi, adminTrainingCalendarApi } from '../../api/client'
+import { ascentApi, adminAscentApi } from '../../api/client'
 import type { Ascent, AscentLog, AscentStats, AscentTerrain, SaveAscent } from '../../types'
 
 /**
@@ -13,8 +13,8 @@ export interface AscentMutations {
 }
 
 /**
- * One logbook codebase, two consumers: the athlete's tab talks to /api/training-calendar/ascents,
- * the coach panel to /api/admin/training-calendar/athletes/{id}/ascents.
+ * One logbook codebase, two consumers: the owner's tab talks to /api/ascents, the admin panel to
+ * /api/admin/ascents/users/{id}.
  */
 export interface AscentAdapter {
   getLog: (terrain: AscentTerrain, year?: string) => Promise<AscentLog>
@@ -32,10 +32,10 @@ export const athleteAscentAdapter: AscentAdapter = {
   },
 }
 
-export function coachAscentAdapter(athleteId: string): AscentAdapter {
+export function coachAscentAdapter(userId: string): AscentAdapter {
   return {
-    getLog: (terrain, year) => adminTrainingCalendarApi.getAscents(athleteId, terrain, year),
-    getStats: (terrain, year) => adminTrainingCalendarApi.getAscentStats(athleteId, terrain, year),
-    // No mutations: the coach reads the logbook, never writes it
+    getLog: (terrain, year) => adminAscentApi.getLog(userId, terrain, year),
+    getStats: (terrain, year) => adminAscentApi.getStats(userId, terrain, year),
+    // No mutations: the admin reads the logbook, never writes it
   }
 }

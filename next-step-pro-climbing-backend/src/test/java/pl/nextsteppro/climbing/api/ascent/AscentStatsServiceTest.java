@@ -19,7 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class AscentStatsServiceTest {
 
-    private final AscentStatsService service = new AscentStatsService(null, null, null);
+    private final AscentStatsService service = new AscentStatsService(null, null);
 
     private static AscentStatsRow row(LocalDate day, AscentDiscipline discipline,
                                       ClimbingGrade grade, AscentStyle style) {

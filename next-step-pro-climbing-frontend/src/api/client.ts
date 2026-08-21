@@ -614,7 +614,7 @@ export const trainingCalendarApi = {
 
 // Climbing logbook. Its own base path, not under /training-calendar: it is open to every
 // signed-in user and carries no health data, so neither the athlete flag nor the GDPR consent
-// applies. Only the COACH view is athlete-only.
+// applies. The admin's read-only view of somebody else's logbook lives in `adminAscentApi`.
 export const ascentApi = {
   /** `year` takes a four-digit year or 'all'; omitting it selects the newest year with data. */
   getLog: (terrain: AscentTerrain, year?: string) =>
@@ -648,6 +648,24 @@ export const ascentApi = {
    */
   getRecentPublic: () =>
     fetchApi<PublicAscent[]>('/ascents/recent'),
+}
+
+/**
+ * The admin's read-only window into one user's logbook. Addressed by user rather than by athlete,
+ * and separate from `adminTrainingCalendarApi` for the same reason the backend keeps it out of
+ * /training-calendar: the logbook is not part of the coaching relationship. The server refuses
+ * anyone who switched their ascents off — `UserDetail.ascentsReadable` says so before we ask.
+ */
+export const adminAscentApi = {
+  getLog: (userId: string, terrain: AscentTerrain, year?: string) =>
+    fetchApi<AscentLog>(
+      `/admin/ascents/users/${userId}?terrain=${terrain}${year ? `&year=${year}` : ''}`,
+    ),
+
+  getStats: (userId: string, terrain: AscentTerrain, year?: string) =>
+    fetchApi<AscentStats>(
+      `/admin/ascents/users/${userId}/stats?terrain=${terrain}${year ? `&year=${year}` : ''}`,
+    ),
 }
 
 // Personal training calendar (coach side)
@@ -707,16 +725,6 @@ export const adminTrainingCalendarApi = {
       `/admin/training-calendar/athletes/${athleteId}/weights${range ? `?range=${range}` : ''}`,
     ),
 
-  /** Read-only, like the weight series: only the athlete logs their own ascents. */
-  getAscents: (athleteId: string, terrain: AscentTerrain, year?: string) =>
-    fetchApi<AscentLog>(
-      `/admin/ascents/athletes/${athleteId}?terrain=${terrain}${year ? `&year=${year}` : ''}`,
-    ),
-
-  getAscentStats: (athleteId: string, terrain: AscentTerrain, year?: string) =>
-    fetchApi<AscentStats>(
-      `/admin/ascents/athletes/${athleteId}/stats?terrain=${terrain}${year ? `&year=${year}` : ''}`,
-    ),
 
   createGoal: (athleteId: string, data: SaveGoal) =>
     fetchApi<AthleteGoal>(`/admin/training-calendar/athletes/${athleteId}/goals`, {

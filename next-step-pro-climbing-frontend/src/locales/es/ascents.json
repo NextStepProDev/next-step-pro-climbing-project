@@ -32,12 +32,13 @@
     "empty": "Todavía nadie ha registrado una ascensión."
   },
   "privacy": {
-    "public": "Tus ascensiones aparecen en la lista pública de Novedades (nombre y apellidos, vía, grado, zona).",
-    "hidden": "Tus ascensiones están ocultas de la lista pública en Novedades.",
+    "public": "Tus ascensiones están en la lista pública de Novedades (nombre y apellidos, vía, grado, zona) y tu entrenador puede verlas.",
+    "hidden": "Tus ascensiones están ocultas: no aparecen ni en la lista pública ni en el panel del entrenador.",
+    "hiddenAthlete": "Tus ascensiones están ocultas de la lista pública. El entrenador que lleva tu calendario sigue viéndolas.",
     "manage": "Cambiar en ajustes",
     "policy": "Qué se publica",
-    "settingLabel": "Mostrar mis ascensiones públicamente",
-    "settingHint": "Tus ascensiones aparecen en la lista “Ascensiones recientes” de Novedades — con tu nombre y apellidos, vía, grado, estilo, zona y fecha. Los comentarios, los intentos y las valoraciones nunca se publican."
+    "settingLabel": "Compartir mis ascensiones",
+    "settingHint": "Activado: tus ascensiones aparecen en la lista “Ascensiones recientes” de Novedades — con tu nombre y apellidos, vía, grado, estilo, zona y fecha — y tu entrenador puede ver tu cuaderno en el panel. Al desactivarlo desaparecen de ambos sitios a la vez. Los comentarios, los intentos y las valoraciones nunca se publican. Si tu entrenador lleva tu calendario de entrenamiento, ve tu cuaderno independientemente de este ajuste."
   },
   "title": "Cuaderno de ascensiones",
   "add": "Registrar ascensión",

@@ -32,12 +32,13 @@
     "empty": "Nikt nie wpisał jeszcze żadnego przejścia."
   },
   "privacy": {
-    "public": "Twoje przejścia pojawiają się na publicznej liście w Aktualnościach (imię i nazwisko, droga, wycena, rejon).",
-    "hidden": "Twoje przejścia są ukryte przed publiczną listą w Aktualnościach.",
+    "public": "Twoje przejścia są na publicznej liście w Aktualnościach (imię i nazwisko, droga, wycena, rejon) i widzi je trener.",
+    "hidden": "Twoje przejścia są ukryte — nie ma ich ani na publicznej liście, ani w panelu trenera.",
+    "hiddenAthlete": "Twoje przejścia są ukryte przed publiczną listą. Trener, który prowadzi Twój kalendarz, nadal je widzi.",
     "manage": "Zmień w ustawieniach",
     "policy": "Co jest publikowane",
-    "settingLabel": "Pokazuj moje przejścia publicznie",
-    "settingHint": "Twoje przejścia trafiają na listę „Ostatnie przejścia” w Aktualnościach — widoczne są imię i nazwisko, droga, wycena, styl, rejon i data. Komentarze, liczba prób i oceny nigdy nie są publikowane."
+    "settingLabel": "Udostępniaj moje przejścia",
+    "settingHint": "Włączone: Twoje przejścia trafiają na listę „Ostatnie przejścia” w Aktualnościach — widoczne są imię i nazwisko, droga, wycena, styl, rejon i data — a trener widzi Twój dziennik w panelu. Wyłączenie zdejmuje je z obu miejsc naraz. Komentarze, liczba prób i oceny nigdy nie są publikowane. Jeśli trener prowadzi Twój kalendarz treningowy, widzi Twój dziennik niezależnie od tego ustawienia."
   },
   "title": "Dziennik przejść",
   "add": "Dodaj przejście",

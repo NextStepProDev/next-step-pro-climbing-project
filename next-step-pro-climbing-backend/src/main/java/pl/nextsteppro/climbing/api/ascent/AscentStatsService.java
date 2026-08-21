@@ -3,7 +3,6 @@ package pl.nextsteppro.climbing.api.ascent;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import pl.nextsteppro.climbing.api.trainingcalendar.TrainingCalendarService;
 import pl.nextsteppro.climbing.domain.climbingascent.AscentDiscipline;
 import pl.nextsteppro.climbing.domain.climbingascent.AscentStatsRow;
 import pl.nextsteppro.climbing.domain.climbingascent.AscentStyle;
@@ -54,14 +53,11 @@ public class AscentStatsService {
 
     private final ClimbingAscentRepository ascentRepository;
     private final AscentService ascentService;
-    private final TrainingCalendarService calendarService;
 
     public AscentStatsService(ClimbingAscentRepository ascentRepository,
-                              AscentService ascentService,
-                              TrainingCalendarService calendarService) {
+                              AscentService ascentService) {
         this.ascentRepository = ascentRepository;
         this.ascentService = ascentService;
-        this.calendarService = calendarService;
     }
 
     /** Own logbook, so being logged in is the whole gate — see {@link AscentService}. */
@@ -69,9 +65,9 @@ public class AscentStatsService {
         return buildStats(userId, terrain, year);
     }
 
-    /** Coach path — designated athletes only, so a plain user's logbook stays private. */
+    /** Coach path — one gate for the logbook and its statistics, see {@code AscentService}. */
     public AscentStatsDto getStatsForAthlete(UUID athleteId, AscentTerrain terrain, @Nullable String year) {
-        calendarService.requireFlaggedAthlete(athleteId);
+        ascentService.requireReadableLogbook(athleteId);
         return buildStats(athleteId, terrain, year);
     }
 
