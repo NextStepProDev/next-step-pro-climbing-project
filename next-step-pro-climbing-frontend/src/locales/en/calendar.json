@@ -163,6 +163,14 @@
     "partOfCourse": "This event is part of a course",
     "viewCourse": "View course"
   },
+  "addEntry": {
+    "buttonTitle": "Add a time slot or an event",
+    "title": "What to add on {{day}}?",
+    "slot": "Time slot",
+    "slotHint": "One day, set hours.",
+    "event": "Event",
+    "eventHint": "A course or a trip — can span several days."
+  },
   "createSlot": {
     "title": "Add new time slot",
     "slotTitle": "Title (e.g. \"Climbing wall training\")",

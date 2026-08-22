@@ -163,6 +163,14 @@
     "partOfCourse": "Este evento forma parte de un curso",
     "viewCourse": "Ver curso"
   },
+  "addEntry": {
+    "buttonTitle": "Añadir una franja horaria o un evento",
+    "title": "¿Qué añadir el {{day}}?",
+    "slot": "Franja horaria",
+    "slotHint": "Un día, horas concretas.",
+    "event": "Evento",
+    "eventHint": "Un curso o un viaje — puede durar varios días."
+  },
   "createSlot": {
     "title": "Añadir nueva franja horaria",
     "slotTitle": "Título (ej. \"Entrenamiento en rocódromo\")",

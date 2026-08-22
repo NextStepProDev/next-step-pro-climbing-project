@@ -163,6 +163,14 @@
     "partOfCourse": "To wydarzenie jest częścią kursu",
     "viewCourse": "Zobacz kurs"
   },
+  "addEntry": {
+    "buttonTitle": "Dodaj termin lub wydarzenie",
+    "title": "Co dodać {{day}}?",
+    "slot": "Termin",
+    "slotHint": "Jeden dzień, konkretne godziny.",
+    "event": "Wydarzenie",
+    "eventHint": "Kurs lub wyjazd — może trwać kilka dni."
+  },
   "createSlot": {
     "title": "Dodaj nowy termin",
     "slotTitle": "Tytuł (np. \"Trening na ściance\")",
