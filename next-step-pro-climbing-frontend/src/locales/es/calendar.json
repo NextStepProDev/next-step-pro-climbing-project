@@ -167,11 +167,24 @@
     "title": "Añadir nueva franja horaria",
     "slotTitle": "Título (ej. \"Entrenamiento en rocódromo\")",
     "slotTitlePlaceholder": "Título de la franja horaria (visible para los clientes)",
+    "absenceTitle": "Etiqueta (opcional, visible para los clientes)",
+    "absenceTitlePlaceholder": "p. ej. \"Viaje a los Tatras\" — vacío significa \"No disponible\"",
     "date": "Fecha",
+    "dateFrom": "Fecha desde",
+    "dateTo": "Fecha hasta",
+    "multiDay": "Dura varios días",
+    "wholeDay": "Todo el día (sin horas)",
+    "wholeDays": "Días completos (sin horas)",
+    "startsAt": "Inicio ({{day}})",
+    "endsAt": "Fin ({{day}})",
+    "summaryAllDay": "No disponible todo el día {{day}}.",
+    "summaryAllDays": "No disponible durante {{days}} días: del {{from}} al {{to}} inclusive.",
+    "summaryTimed": "No disponible desde {{from}} de forma continua hasta {{to}} — los días intermedios quedan cerrados por completo.",
     "from": "Desde",
     "to": "Hasta",
     "maxParticipants": "Máx. participantes",
     "endAfterStart": "La hora de fin debe ser posterior a la de inicio",
+    "endDateAfterStart": "La fecha de fin no puede ser anterior a la de inicio",
     "templateLabel": "Plantilla",
     "templatePlaceholder": "— nombre personalizado —",
     "submit": "Crear franja horaria",
@@ -188,7 +201,10 @@
     "cta": "Ir a contacto"
   },
   "unavailable": {
-    "message": "No estamos disponibles en esta fecha — sin clases ni inscripciones."
+    "message": "No estamos disponibles en esta fecha — sin clases ni inscripciones.",
+    "betweenHours": "No disponible de {{from}} a {{to}} — sin clases ni inscripciones en esas horas.",
+    "fromHour": "No disponible desde las {{time}} hasta el final del día — las horas anteriores están abiertas.",
+    "untilHour": "No disponible hasta las {{time}} — las horas posteriores están abiertas."
   },
   "availability": {
     "closed": "Inscripciones cerradas",

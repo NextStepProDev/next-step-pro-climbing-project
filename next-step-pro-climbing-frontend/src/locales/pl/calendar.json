@@ -167,11 +167,24 @@
     "title": "Dodaj nowy termin",
     "slotTitle": "Tytuł (np. \"Trening na ściance\")",
     "slotTitlePlaceholder": "Tytuł terminu (widoczny dla klientów)",
+    "absenceTitle": "Podpis (opcjonalny, widoczny dla klientów)",
+    "absenceTitlePlaceholder": "np. \"Wyjazd w Tatry\" — puste znaczy \"Niedostępność\"",
     "date": "Data",
+    "dateFrom": "Data od",
+    "dateTo": "Data do",
+    "multiDay": "Trwa kilka dni",
+    "wholeDay": "Cały dzień (bez godzin)",
+    "wholeDays": "Całe dni (bez godzin)",
+    "startsAt": "Początek ({{day}})",
+    "endsAt": "Koniec ({{day}})",
+    "summaryAllDay": "Niedostępne przez cały dzień {{day}}.",
+    "summaryAllDays": "Niedostępne przez {{days}} dni: od {{from}} do {{to}} włącznie.",
+    "summaryTimed": "Niedostępne od {{from}} nieprzerwanie do {{to}} — dni pomiędzy zamknięte w całości.",
     "from": "Od",
     "to": "Do",
     "maxParticipants": "Maks. uczestników",
     "endAfterStart": "Godzina zakończenia musi być późniejsza niż rozpoczęcia",
+    "endDateAfterStart": "Data zakończenia nie może być wcześniejsza niż data rozpoczęcia",
     "templateLabel": "Szablon",
     "templatePlaceholder": "— własna nazwa —",
     "submit": "Utwórz termin",
@@ -188,7 +201,10 @@
     "cta": "Przejdź do kontaktu"
   },
   "unavailable": {
-    "message": "W tym terminie jesteśmy niedostępni — brak zajęć i zapisów."
+    "message": "W tym terminie jesteśmy niedostępni — brak zajęć i zapisów.",
+    "betweenHours": "Niedostępne od {{from}} do {{to}} — w tych godzinach brak zajęć i zapisów.",
+    "fromHour": "Niedostępne od {{time}} do końca dnia — wcześniejsze godziny są otwarte.",
+    "untilHour": "Niedostępne do {{time}} — późniejsze godziny są otwarte."
   },
   "availability": {
     "closed": "Zapisy zamknięte",

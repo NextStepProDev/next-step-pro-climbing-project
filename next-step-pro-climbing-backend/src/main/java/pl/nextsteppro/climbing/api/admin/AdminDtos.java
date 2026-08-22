@@ -180,6 +180,17 @@ record CreateEventRequest(
     boolean isDateRangeValid() {
         return startDate == null || endDate == null || !endDate.isBefore(startDate);
     }
+
+    /* Only when the event lives inside ONE day. Across a range the times belong to different
+     * days ("from 18:00 on Friday until 08:00 on Sunday"), so end before start is normal there;
+     * on a single day it is a window of negative length, which every renderer draws as nothing —
+     * an entry the admin believes they created and then cannot find. */
+    @AssertTrue(message = "{validation.event.time.range}")
+    boolean isSameDayTimeRangeValid() {
+        if (startDate == null || !startDate.equals(endDate)) return true;
+        if (startTime == null || endTime == null) return true;
+        return endTime.isAfter(startTime);
+    }
 }
 
 record UpdateEventRequest(

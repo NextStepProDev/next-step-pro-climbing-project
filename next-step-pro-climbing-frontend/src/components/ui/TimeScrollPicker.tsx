@@ -66,6 +66,15 @@ function ScrollColumn({
   const containerRef = useRef<HTMLDivElement>(null)
   const isScrollingRef = useRef(false)
   const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  /* The column's position IS its value, so a scroll the component started itself is
+   * indistinguishable from a user spin — including the half-finished frames of a smooth one.
+   * A smooth scroll is interruptible (focus moving to another field cancels it), and the reader
+   * below runs 80 ms after the last scroll event, so an interrupted animation leaves it reading
+   * a row nobody chose and reporting it as a choice: reveal the pickers, click straight into the
+   * date field, and the time silently becomes 09:00 instead of the 10:00 on screen. Rare — a
+   * race, so it survived a long time — and invisible, because the form then agrees with itself.
+   * Marking our own scrolls costs one ref and removes the whole class. */
+  const selfScrollRef = useRef(false)
 
   // Scroll to selected item on mount and when selected changes externally
   useEffect(() => {
@@ -73,6 +82,8 @@ function ScrollColumn({
     if (!container || isScrollingRef.current) return
 
     const targetScroll = selectedIndex * ITEM_HEIGHT
+    if (Math.abs(container.scrollTop - targetScroll) < 1) return
+    selfScrollRef.current = true
     container.scrollTo({ top: targetScroll, behavior: 'smooth' })
   }, [selectedIndex])
 
@@ -84,6 +95,20 @@ function ScrollColumn({
     scrollTimeoutRef.current = setTimeout(() => {
       const container = containerRef.current
       if (!container) return
+
+      const targetScroll = selectedIndex * ITEM_HEIGHT
+      if (selfScrollRef.current) {
+        // Our own scroll came back to us. Land it on the target — the animation may have been
+        // cut short — and report nothing: the value never left the one the form already holds.
+        selfScrollRef.current = false
+        if (Math.abs(container.scrollTop - targetScroll) >= 1) {
+          container.scrollTo({ top: targetScroll, behavior: 'auto' })
+        }
+        setTimeout(() => {
+          isScrollingRef.current = false
+        }, 100)
+        return
+      }
 
       const scrollTop = container.scrollTop
       const newIndex = Math.round(scrollTop / ITEM_HEIGHT)

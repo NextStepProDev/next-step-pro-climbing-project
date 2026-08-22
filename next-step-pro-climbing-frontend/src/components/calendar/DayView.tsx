@@ -190,6 +190,18 @@ export function DayView({
   const courseReturnTo = location.pathname + location.search;
   const dateObj = parseCalendarDate(date);
 
+  /* An absence spanning several days is closed on THIS day only from its start hour (first day)
+     or up to its end hour (last day) — the rest of that day is open, and its slots are listed
+     right below this card. A flat "we are unavailable" would be a lie about half the screen. */
+  const unavailableMessage = (event: EventSummary) => {
+    const from = event.startTime && date === event.startDate ? event.startTime.slice(0, 5) : null;
+    const to = event.endTime && date === event.endDate ? event.endTime.slice(0, 5) : null;
+    if (from && to) return t('unavailable.betweenHours', { from, to });
+    if (from) return t('unavailable.fromHour', { time: from });
+    if (to) return t('unavailable.untilHour', { time: to });
+    return t('unavailable.message');
+  };
+
   const { eventSlotGroups, standaloneSlots } = useMemo(() => {
     const grouped = new Map<string, TimeSlot[]>();
     const standalone: TimeSlot[] = [];
@@ -290,7 +302,7 @@ export function DayView({
                       <p className="text-sm text-surface-300 mb-3">{event.description}</p>
                     )}
                     <div className="p-3 rounded-lg bg-slate-500/10 border border-slate-500/20">
-                      <p className="text-sm text-slate-300">{t('unavailable.message')}</p>
+                      <p className="text-sm text-slate-300">{unavailableMessage(event)}</p>
                     </div>
                   </div>
                 );
