@@ -19,7 +19,8 @@ interface DayViewProps {
   onSlotClick: (slotId: string) => void;
   onEventClick?: (event: EventSummary) => void;
   onCancelEvent?: (eventId: string) => void;
-  onAddSlot?: () => void;
+  /** Opens the "slot or event?" chooser — not a form, so the name must not promise a slot. */
+  onAddEntry?: () => void;
   /** Training request (non-admin): shown on an empty day. */
   onProposeTraining?: () => void;
   /** Admin only. Undefined for everybody else, so the marker cannot render by accident. */
@@ -172,7 +173,7 @@ export function DayView({
   onSlotClick,
   onEventClick,
   onCancelEvent,
-  onAddSlot,
+  onAddEntry,
   onProposeTraining,
   noteMarks,
 }: DayViewProps) {
@@ -254,10 +255,11 @@ export function DayView({
           {format(dateObj, "EEEE, d MMMM yyyy", { locale })}
         </h2>
 
-        {onAddSlot && (
+        {onAddEntry && (
           <button
-            onClick={onAddSlot}
-            title={t('createSlot.title')}
+            onClick={onAddEntry}
+            title={t('addEntry.buttonTitle')}
+            aria-label={t('addEntry.buttonTitle')}
             className="p-2 text-surface-400 hover:text-primary-400 hover:bg-surface-800 rounded-lg transition-colors"
           >
             <Plus className="w-5 h-5" />

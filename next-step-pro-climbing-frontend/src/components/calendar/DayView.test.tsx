@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { DayView } from './DayView'
 import type { EventSummary } from '../../types'
@@ -85,5 +86,38 @@ describe('DayView — how much of the day an absence actually takes', () => {
     renderDay('2030-06-10', absence({ endDate: '2030-06-10', isMultiDay: false }))
 
     expect(screen.getByText('unavailable.betweenHours:18:00,20:00')).toBeInTheDocument()
+  })
+})
+
+/* The button opens the "slot or event?" chooser, so it belongs to the admin and to nobody else. */
+describe('DayView — adding an entry', () => {
+  const renderWithAdd = (onAddEntry?: () => void) =>
+    render(
+      <MemoryRouter>
+        <DayView
+          date="2030-06-10"
+          slots={[]}
+          events={[]}
+          onBack={vi.fn()}
+          onSlotClick={vi.fn()}
+          onAddEntry={onAddEntry}
+        />
+      </MemoryRouter>,
+    )
+
+  it('should hand the click to the caller rather than opening a form itself', async () => {
+    const user = userEvent.setup()
+    const onAddEntry = vi.fn()
+    renderWithAdd(onAddEntry)
+
+    await user.click(screen.getByRole('button', { name: 'addEntry.buttonTitle' }))
+
+    expect(onAddEntry).toHaveBeenCalledTimes(1)
+  })
+
+  it('should not offer the button at all without a handler', () => {
+    renderWithAdd(undefined)
+
+    expect(screen.queryByRole('button', { name: 'addEntry.buttonTitle' })).not.toBeInTheDocument()
   })
 })

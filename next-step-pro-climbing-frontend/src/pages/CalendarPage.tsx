@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect, useMemo } from "react";
+import { useState, useCallback, useRef, useEffect, useMemo, lazy, Suspense } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams, useLocation, useNavigate, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -14,6 +14,7 @@ import { DayView } from "../components/calendar/DayView";
 import { SlotDetailModal } from "../components/calendar/SlotDetailModal";
 import { EventSignupModal } from "../components/calendar/EventSignupModal";
 import { CreateSlotModal } from "../components/calendar/CreateSlotModal";
+import { AddEntryModal } from "../components/calendar/AddEntryModal";
 import { ProposeTrainingModal, type ProposeWindow } from "../components/calendar/ProposeTrainingModal";
 import { LoadingSpinner } from "../components/ui/LoadingSpinner";
 import { QueryError } from "../components/ui/QueryError";
@@ -22,6 +23,14 @@ import { formatAvailability, buildEventColorMap } from "../utils/events";
 import { useCalendarPromo } from "../hooks/useCalendarPromo";
 import { nowInWarsaw, parseCalendarDate, todayInWarsaw } from '../utils/calendarDate';
 import type { CreateEventRequest, EventSummary, TimeSlot } from "../types";
+
+// The full event form from the admin panel — the same one the events panel and the training
+// requests panel open, so a course added from the calendar asks for exactly the same fields.
+// Lazy for the reason EventSignupModal already states: only an admin ever sees it, and the panel
+// module drags AdminReservationsPanel along with it.
+const CreateEventModal = lazy(() =>
+  import("./admin/AdminEventsPanel").then((m) => ({ default: m.CreateEventModal }))
+);
 
 const timeToMin = (time: string): number => {
   const [h, m] = time.split(':').map(Number);
@@ -70,7 +79,10 @@ export function CalendarPage() {
     searchParams.get("slot")
   );
   const [selectedEvent, setSelectedEvent] = useState<EventSummary | null>(null);
+  // "+" in the day view asks first, then opens one of the two forms.
+  const [showAddChoice, setShowAddChoice] = useState(false);
   const [showCreateSlotModal, setShowCreateSlotModal] = useState(false);
+  const [showCreateEventModal, setShowCreateEventModal] = useState(false);
   // Training request: start date + optional availability window (constrains the times)
   const [proposeContext, setProposeContext] = useState<{ date: string; window?: ProposeWindow } | null>(null);
   const [cutSlot, setCutSlot] = useState<{ id: string; date: string; startTime: string; endTime: string } | null>(null);
@@ -250,6 +262,11 @@ export function CalendarPage() {
 
   const handleBackFromDay = useCallback(() => {
     setSelectedDate(null);
+    // The whole add branch is gated on selectedDate, so a flag left standing here would pop the
+    // form open again the next time any day is opened.
+    setShowAddChoice(false);
+    setShowCreateSlotModal(false);
+    setShowCreateEventModal(false);
     if (viewMode === 'week') {
       setSearchParams({ view: 'week' });
     } else {
@@ -629,7 +646,7 @@ export function CalendarPage() {
           onSlotClick={handleSlotClick}
           onEventClick={setSelectedEvent}
           onCancelEvent={(id) => cancelEventMutation.mutate(id)}
-          onAddSlot={isAdmin ? () => setShowCreateSlotModal(true) : undefined}
+          onAddEntry={isAdmin ? () => setShowAddChoice(true) : undefined}
           onProposeTraining={!isAdmin && selectedDate >= todayInWarsaw()
             ? () => setProposeContext({ date: selectedDate })
             : undefined}
@@ -971,12 +988,36 @@ export function CalendarPage() {
       />
 
       {isAdmin && selectedDate && (
-        <CreateSlotModal
-          key={selectedDate}
-          isOpen={showCreateSlotModal}
-          onClose={() => setShowCreateSlotModal(false)}
-          defaultDate={selectedDate}
-        />
+        <>
+          <AddEntryModal
+            isOpen={showAddChoice}
+            onClose={() => setShowAddChoice(false)}
+            date={selectedDate}
+            onPickSlot={() => { setShowAddChoice(false); setShowCreateSlotModal(true); }}
+            onPickEvent={() => { setShowAddChoice(false); setShowCreateEventModal(true); }}
+          />
+
+          <CreateSlotModal
+            key={selectedDate}
+            isOpen={showCreateSlotModal}
+            onClose={() => setShowCreateSlotModal(false)}
+            defaultDate={selectedDate}
+          />
+
+          {/* Mounted only once picked, so the panel chunk downloads on the choice and not on
+              every day an admin opens. `key` because the form reads `initial` on mount alone —
+              without it the next day would open prefilled with the previous one. */}
+          <Suspense fallback={null}>
+            {showCreateEventModal && (
+              <CreateEventModal
+                key={selectedDate}
+                isOpen
+                onClose={() => setShowCreateEventModal(false)}
+                initial={{ startDate: selectedDate, endDate: selectedDate }}
+              />
+            )}
+          </Suspense>
+        </>
       )}
 
       {proposeContext && (
