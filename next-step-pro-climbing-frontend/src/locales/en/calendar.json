@@ -167,9 +167,9 @@
     "buttonTitle": "Add a time slot or an event",
     "title": "What to add on {{day}}?",
     "slot": "Time slot",
-    "slotHint": "One day, set hours.",
+    "slotHint": "Sessions, a contact window or time off — several days too.",
     "event": "Event",
-    "eventHint": "A course or a trip — can span several days."
+    "eventHint": "A course, a workshop, a trip — with a description and sign-ups."
   },
   "createSlot": {
     "title": "Add new time slot",
