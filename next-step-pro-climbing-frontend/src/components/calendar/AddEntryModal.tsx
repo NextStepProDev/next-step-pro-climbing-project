@@ -33,6 +33,15 @@ export function AddEntryModal({
   const { t } = useTranslation('calendar')
   const locale = useDateLocale()
 
+  // ⚠️ Props are evaluated before Modal decides to render nothing, and this one is mounted on
+  // every day an admin opens. A hand-edited `?date=` arrives here as an unparseable label, and
+  // `format` on Invalid Date **throws** — a throw in render takes the whole page, replacing the
+  // graceful QueryError the day view falls back to. Same lesson as `datesFilled` in
+  // CreateSlotModal, one component further out.
+  if (!isOpen) return null
+  const parsed = parseCalendarDate(date)
+  const day = Number.isNaN(parsed.getTime()) ? date : format(parsed, 'd MMMM', { locale })
+
   const options = [
     { key: 'slot', Icon: Clock, onPick: onPickSlot },
     { key: 'event', Icon: CalendarDays, onPick: onPickEvent },
@@ -42,7 +51,7 @@ export function AddEntryModal({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={t('addEntry.title', { day: format(parseCalendarDate(date), 'd MMMM', { locale }) })}
+      title={t('addEntry.title', { day })}
     >
       <div className="grid grid-cols-2 gap-3">
         {options.map(({ key, Icon, onPick }) => (
