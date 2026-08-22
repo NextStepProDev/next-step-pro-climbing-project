@@ -108,9 +108,23 @@ czyli likwidacja bliźniactwa slot/event. Dopóki są dwie kopie, jest dwa razy 
 
 Druga klasa, której żadna bramka nie dotknie, to **decyzje produktowe o skutkach prawnych**.
 Audyt 2026-08-14 wyciągnął jedną otwartą: publiczna lista „Ostatnie przejścia" pokazuje imię,
-nazwisko i tekst pisany przez **każdego zalogowanego**, a jedynym wyłącznikiem jest przełącznik
-w ustawieniach **autora**. Operator serwisu nie ma w aplikacji żadnej drogi, żeby zdjąć cudzy
-wpis — zostaje prośba do autora albo `psql` na produkcji. To jest zgodne z modelem („widoczność
-jest własnością autora, wpisy nie mają własnej flagi"), więc nie jest bugiem; jest ryzykiem,
-które ktoś musi świadomie przyjąć albo zamknąć (najtaniej: admin może przestawić cudzą flagę
-`ascents_public`, co zdejmuje wszystkie wpisy tej osoby naraz).
+nazwisko i tekst pisany przez **każdego zalogowanego**, a jedynym wyłącznikiem był przełącznik
+w ustawieniach **autora**. Operator serwisu nie miał w aplikacji żadnej drogi, żeby zdjąć cudzy
+wpis — zostawała prośba do autora albo `psql` na produkcji.
+
+**Zamknięte 2026-08-22 (V90).** Admin zdejmuje z listy **pojedynczy wpis**
+(`climbing_ascents.hidden_from_public_at`). Wpis zostaje w dzienniku autora i w jego statystykach
+— zniknął z cudzej tablicy ogłoszeń, nie z własnego zeszytu. Autor nie ma na to pola żadnej
+kontrolki, więc przełączanie własnej widoczności zdjęcia nie cofa; przywrócić może tylko admin.
+
+⚠️ **Rozwiązanie zapisane tu wcześniej jako „najtańsze" — pozwolić adminowi przestawiać cudze
+`ascents_public` — jest BŁĘDNE i nie wolno do niego wracać.** Kosztuje dwa razy. Po pierwsze, ta
+kolumna od 2026-08-21 bramkuje także podgląd dziennika w panelu, więc admin zdejmujący kogoś
+z listy oślepiłby własny widok tej osoby (poza zawodnikami 1:1, których przepuszcza flaga
+`is_athlete`) — czyli straciłby z oczu dokładnie tego, kogo właśnie moderował. Po drugie, autor
+widzi ten przełącznik w swoich Ustawieniach i cofnąłby zdjęcie jednym kliknięciem. Moderacja,
+którą moderowany cofa, nie jest moderacją. To dwa różne czasowniki („rezygnuję" vs „zdejmuję")
+i tylko pozornie mieszczą się w jednym polu.
+
+Nadal otwarte, świadomie: przy uporczywym nadużyciu zdejmowanie idzie wpis po wpisie. Eskalacja
+to rozmowa z autorem, a w ostateczności usunięcie konta — droga, która już istnieje.

@@ -129,6 +129,15 @@ public class ClimbingAscent {
     @Column(name = "partners", length = MAX_PARTNERS_LENGTH)
     private @Nullable String partners;
 
+    /**
+     * When the site owner took this entry off the public list; {@code null} means it is published
+     * normally. Not the author's field: their wish is {@code users.ascents_public}, which covers
+     * their whole logbook. This one says "this row does not belong on my noticeboard" and only
+     * the admin can set or clear it — see V90.
+     */
+    @Column(name = "hidden_from_public_at")
+    private @Nullable Instant hiddenFromPublicAt;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -392,6 +401,24 @@ public class ClimbingAscent {
 
     public Instant getCreatedAt() {
         return createdAt;
+    }
+
+    public @Nullable Instant getHiddenFromPublicAt() {
+        return hiddenFromPublicAt;
+    }
+
+    /**
+     * Takes this entry off the public list, or puts it back. Deliberately the only thing an admin
+     * may change about somebody else's ascent: publication is the owner's call, the content never
+     * is. Re-taking down an already hidden entry keeps the original timestamp — the interesting
+     * moment is when it came off, not when the button was last pressed.
+     */
+    public void setHiddenFromPublic(boolean hidden, Instant now) {
+        if (!hidden) {
+            hiddenFromPublicAt = null;
+        } else if (hiddenFromPublicAt == null) {
+            hiddenFromPublicAt = now;
+        }
     }
 
     /**

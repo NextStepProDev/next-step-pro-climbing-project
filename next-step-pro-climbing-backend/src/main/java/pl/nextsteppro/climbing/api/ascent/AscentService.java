@@ -16,6 +16,7 @@ import pl.nextsteppro.climbing.domain.user.User;
 import pl.nextsteppro.climbing.domain.user.UserRepository;
 import pl.nextsteppro.climbing.infrastructure.i18n.MessageService;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.LinkedHashMap;
@@ -39,9 +40,16 @@ import java.util.function.Function;
  * on. That switch therefore answers two questions with one answer, which is why the Settings copy
  * and the privacy policy name both of them.
  *
- * <p><b>Only the owner writes.</b> There is deliberately no admin write path anywhere in this
- * class — crediting somebody else with an ascent is not the coach's call. Same shape as
+ * <p><b>Only the owner writes the CONTENT.</b> No admin path creates, edits or deletes somebody
+ * else's entry — crediting somebody with an ascent is not the coach's call. Same shape as
  * {@code AthleteWeightService}.
+ *
+ * <p><b>The one exception is publication, and it is a different verb.</b>
+ * {@link #setPublicVisibility} lets the site owner take one entry off the public feed. It changes
+ * nothing about the ascent itself: the row stays in the author's logbook and keeps counting in
+ * their statistics, because it is still their ascent. What changed is whether it hangs on the
+ * owner's noticeboard. The line the whole feature rests on: <b>the logbook is the author's, the
+ * public list is the owner's.</b>
  *
  * <p>Every entry is a completed ascent. Attempts and open projects are not modelled at all: the
  * pyramid and the onsight rate count ascents, so a "tried it" row would land in the denominator
@@ -162,6 +170,36 @@ public class AscentService {
     @CacheEvict(value = PublicAscentService.CACHE, allEntries = true)
     public void deleteMyAscent(UUID userId, UUID ascentId) {
         ascentRepository.delete(requireOwnAscent(ascentId, userId));
+    }
+
+    /**
+     * Admin only: takes one entry off the public feed, or puts it back.
+     *
+     * <p>The site owner's remedy for something they do not want on their own front page. Before
+     * this existed the only ways out were asking the author or running SQL on production — and an
+     * incident is the worst moment to be doing surgery on the live database.
+     *
+     * <p><b>Deliberately not implemented as flipping the author's {@code ascents_public}</b>, which
+     * looks like the cheap way and costs twice. That column also gates the admin's view of the
+     * logbook, so using it would blind the admin about the very person they just moderated; and
+     * the author sees it in their own Settings, so they would undo the takedown with one click.
+     * Moderation the moderated party can reverse is not moderation.
+     *
+     * <p>Lives in this class rather than a service of its own so that it cannot forget the eviction
+     * every other write here performs: a takedown that stays visible for the cache TTL is exactly
+     * the failure the button exists to prevent.
+     *
+     * <p>Gated on the logbook being readable at all, like every other admin path here. That is
+     * belt-and-braces rather than a real filter — an entry belonging to a hidden logbook is not on
+     * the public list in the first place, so there is nothing there to take down.
+     */
+    @CacheEvict(value = PublicAscentService.CACHE, allEntries = true)
+    public AscentDto setPublicVisibility(UUID ascentId, boolean hidden) {
+        ClimbingAscent ascent = ascentRepository.findById(ascentId)
+                .orElseThrow(() -> new IllegalArgumentException(msg.get("ascent.not.found")));
+        requireReadableLogbook(ascent.getAthlete().getId());
+        ascent.setHiddenFromPublic(hidden, Instant.now());
+        return toDto(ascent);
     }
 
     /**
@@ -391,6 +429,7 @@ public class AscentService {
                 led != null ? led.rank() : null,
                 ascent.getLedPitches(),
                 ascent.getPartners(),
-                ascent.getCreatedAt());
+                ascent.getCreatedAt(),
+                ascent.getHiddenFromPublicAt());
     }
 }

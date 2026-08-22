@@ -1595,6 +1595,12 @@ export interface Ascent {
   ledPitches: number | null
   partners: string | null
   createdAt: string
+  /**
+   * Set when the site owner took this entry off the public list. Sent to the author as well as to
+   * the admin: their logbook banner says their ascents are public, so one of them quietly missing
+   * from the list would be exactly the kind of small lie that banner exists to prevent.
+   */
+  hiddenFromPublicAt: string | null
 }
 
 export interface SaveAscent {

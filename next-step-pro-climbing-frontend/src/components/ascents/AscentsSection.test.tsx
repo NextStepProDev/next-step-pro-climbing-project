@@ -60,6 +60,7 @@ const ENTRY: Ascent = {
   ledPitches: null,
   partners: null,
   createdAt: '2026-05-01T10:00:00Z',
+    hiddenFromPublicAt: null,
 }
 
 const LOG: AscentLog = {

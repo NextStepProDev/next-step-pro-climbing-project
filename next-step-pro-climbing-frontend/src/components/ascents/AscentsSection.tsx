@@ -140,6 +140,21 @@ export function AscentsSection({ api, scopeKey, scopeLabel, isCoachView }: Ascen
     onError: (error) => { setActionError(getErrorMessage(error)); setDeleting(null) },
   })
 
+  /**
+   * Admin only: takes one entry off the public list, or puts it back. Reuses `invalidate`, which
+   * already drops the public feed's cached query — the takedown has to be visible on the news page
+   * immediately, otherwise the button solves nothing for the length of the cache.
+   */
+  const visibilityMutation = useMutation({
+    mutationFn: ({ ascentId, hidden }: { ascentId: string; hidden: boolean }) => {
+      const moderation = api.moderation
+      if (!moderation) throw new Error('read-only')
+      return moderation.setPublicVisibility(ascentId, hidden)
+    },
+    onSuccess: () => { setActionError(null); invalidate() },
+    onError: (error) => setActionError(getErrorMessage(error)),
+  })
+
   const handleSort = (key: AscentSortKey) => {
     if (key === sortKey) {
       setSortDirection(current => (current === 'asc' ? 'desc' : 'asc'))
@@ -330,6 +345,12 @@ export function AscentsSection({ api, scopeKey, scopeLabel, isCoachView }: Ascen
               onSort={handleSort}
               onEdit={canWrite ? (ascent) => { setEditing(ascent); setFormOpen(true) } : undefined}
               onDelete={canWrite ? setDeleting : undefined}
+              onSetPublicVisibility={api.moderation
+                ? (ascent, hidden) => visibilityMutation.mutate({ ascentId: ascent.id, hidden })
+                : undefined}
+              pendingVisibilityId={visibilityMutation.isPending
+                ? visibilityMutation.variables?.ascentId
+                : null}
             />
           )}
 

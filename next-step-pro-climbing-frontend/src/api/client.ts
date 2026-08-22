@@ -666,6 +666,17 @@ export const adminAscentApi = {
     fetchApi<AscentStats>(
       `/admin/ascents/users/${userId}/stats?terrain=${terrain}${year ? `&year=${year}` : ''}`,
     ),
+
+  /**
+   * Takes one entry off the public list, or puts it back. Addressed by entry, not by author: this
+   * removes a row from the noticeboard, not a person from the list. The only write the admin has
+   * here — the entry itself stays the author's.
+   */
+  setPublicVisibility: (ascentId: string, hidden: boolean) =>
+    fetchApi<Ascent>(`/admin/ascents/entries/${ascentId}/public-visibility`, {
+      method: 'PUT',
+      body: JSON.stringify({ hidden }),
+    }),
 }
 
 // Personal training calendar (coach side)
