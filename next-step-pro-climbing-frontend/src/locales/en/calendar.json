@@ -167,11 +167,24 @@
     "title": "Add new time slot",
     "slotTitle": "Title (e.g. \"Climbing wall training\")",
     "slotTitlePlaceholder": "Slot title (visible to clients)",
+    "absenceTitle": "Label (optional, visible to clients)",
+    "absenceTitlePlaceholder": "e.g. \"Trip to the Tatras\" — empty means \"Unavailable\"",
     "date": "Date",
+    "dateFrom": "From date",
+    "dateTo": "To date",
+    "multiDay": "Lasts several days",
+    "wholeDay": "All day (no hours)",
+    "wholeDays": "Whole days (no hours)",
+    "startsAt": "Starts ({{day}})",
+    "endsAt": "Ends ({{day}})",
+    "summaryAllDay": "Unavailable all day on {{day}}.",
+    "summaryAllDays": "Unavailable for {{days}} days: {{from}} through {{to}} inclusive.",
+    "summaryTimed": "Unavailable from {{from}} straight through to {{to}} — the days in between are closed entirely.",
     "from": "From",
     "to": "To",
     "maxParticipants": "Max. participants",
     "endAfterStart": "End time must be later than start time",
+    "endDateAfterStart": "End date cannot be earlier than start date",
     "templateLabel": "Template",
     "templatePlaceholder": "— custom name —",
     "submit": "Create slot",
@@ -188,7 +201,10 @@
     "cta": "Go to contact"
   },
   "unavailable": {
-    "message": "We're unavailable on this date — no classes and no sign-ups."
+    "message": "We're unavailable on this date — no classes and no sign-ups.",
+    "betweenHours": "Unavailable from {{from}} to {{to}} — no classes and no sign-ups in those hours.",
+    "fromHour": "Unavailable from {{time}} until the end of the day — earlier hours are open.",
+    "untilHour": "Unavailable until {{time}} — later hours are open."
   },
   "availability": {
     "closed": "Bookings closed",

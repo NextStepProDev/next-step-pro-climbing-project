@@ -628,12 +628,15 @@ public class AdminService {
         @CacheEvict(value = "calendarDay", allEntries = true)
     })
     public EventAdminDto createEvent(UUID adminId, CreateEventRequest request) {
+        EventType eventType = EventType.valueOf(request.eventType());
         Event event = new Event(
             request.title(),
-            EventType.valueOf(request.eventType()),
+            eventType,
             request.startDate(),
             request.endDate(),
-            request.maxParticipants()
+            // An absence carries no seats — same reason the slot constructor zeroes them: a
+            // capacity nobody can ever use is a number the next reader has to explain away.
+            eventType == EventType.UNAVAILABLE ? 0 : request.maxParticipants()
         );
         event.setDescription(request.description());
         event.setLocation(request.location());
@@ -682,7 +685,23 @@ public class AdminService {
         if (request.title() != null) event.setTitle(request.title());
         if (request.description() != null) event.setDescription(request.description());
         if (request.location() != null) event.setLocation(request.location());
-        if (request.eventType() != null) event.setEventType(EventType.valueOf(request.eventType()));
+        if (request.eventType() != null) {
+            EventType oldType = event.getEventType();
+            EventType newType = EventType.valueOf(request.eventType());
+            // The slot twin refuses exactly this (admin.slot.unavailable.has.reservations). A type
+            // that blocks enrollment cuts everyone already booked off from their reservation, and
+            // does it silently — no cancellation, no mail. Only the CHANGE is refused, so an event
+            // that already sits in that state stays editable (and deletable) instead of trapped.
+            if (newType.blocksEnrollment() && !oldType.blocksEnrollment()) {
+                int booked = reservationRepository.findConfirmedUserIdsByEventId(eventId).size()
+                    + guestReservationRepository.sumParticipantsByEventId(eventId);
+                if (booked > 0) {
+                    throw new IllegalStateException(
+                        msg.get("admin.event.enrollment.blocked.has.reservations", String.valueOf(booked)));
+                }
+            }
+            event.setEventType(newType);
+        }
         if (request.startDate() != null) event.setStartDate(request.startDate());
         if (request.endDate() != null) event.setEndDate(request.endDate());
         // Create validates this with @AssertTrue, update never did — and an inverted range is no
@@ -709,9 +728,26 @@ public class AdminService {
             }
             event.setMaxParticipants(request.maxParticipants());
         }
+        // After the capacity block, so a request carrying both a type and a stale seat count
+        // cannot put the seats back. Mirrors createEvent.
+        if (request.eventType() != null && event.getEventType() == EventType.UNAVAILABLE) {
+            event.setMaxParticipants(0);
+        }
         if (request.active() != null) event.setActive(request.active());
         if (request.startTime() != null) event.setStartTime(request.startTime());
         if (request.endTime() != null) event.setEndTime(request.endTime());
+        // Same rule as create, but only when this request touched the schedule: an inverted
+        // single-day window renders as nothing, and refusing edits to an event that already
+        // holds one would leave it unfixable through the very form that fixes it.
+        if (request.startDate() != null || request.endDate() != null
+            || request.startTime() != null || request.endTime() != null) {
+            LocalTime start = event.getStartTime();
+            LocalTime end = event.getEndTime();
+            if (event.getStartDate().equals(event.getEndDate())
+                && start != null && end != null && !end.isAfter(start)) {
+                throw new IllegalArgumentException(msg.get("validation.event.time.range"));
+            }
+        }
         if (request.courseId() != null) {
             Course course = courseRepository.findById(request.courseId())
                 .orElseThrow(() -> new IllegalArgumentException("Course not found"));
