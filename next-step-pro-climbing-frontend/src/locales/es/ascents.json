@@ -182,5 +182,12 @@
     "lead": "Largos liderados",
     "ledPitches_one": "{{count}} largo liderado",
     "ledPitches_other": "{{count}} largos liderados"
+  },
+  "takedown": {
+    "column": "Visibilidad pública",
+    "hide": "Quitar de la lista pública",
+    "restore": "Devolver a la lista pública",
+    "badge": "retirada",
+    "badgeHint": "Esta ascensión fue retirada de la lista pública en Novedades. Permanece en el cuaderno y sigue contando en las estadísticas."
   }
 }

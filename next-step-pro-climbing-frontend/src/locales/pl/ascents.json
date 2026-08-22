@@ -192,5 +192,12 @@
     "ledPitches_few": "{{count}} poprowadzone wyciągi",
     "ledPitches_many": "{{count}} poprowadzonych wyciągów",
     "ledPitches_other": "{{count}} poprowadzonych wyciągów"
+  },
+  "takedown": {
+    "column": "Widoczność publiczna",
+    "hide": "Zdejmij z publicznej listy",
+    "restore": "Przywróć na publiczną listę",
+    "badge": "zdjęte",
+    "badgeHint": "Ten wpis został zdjęty z publicznej listy w Aktualnościach. Pozostaje w dzienniku i liczy się w statystykach."
   }
 }

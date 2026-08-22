@@ -1,5 +1,5 @@
 import { format } from 'date-fns'
-import { ArrowDown, ArrowUp, ArrowUpDown, Pencil, Trash2 } from 'lucide-react'
+import { ArrowDown, ArrowUp, ArrowUpDown, EyeOff, Globe, Pencil, Trash2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { StarRating } from './StarRating'
 import { parseCalendarDate } from '../../utils/calendarDate'
@@ -14,18 +14,29 @@ interface AscentTableProps {
   onSort: (key: AscentSortKey) => void
   onEdit?: (ascent: Ascent) => void
   onDelete?: (ascent: Ascent) => void
+  /** Admin only: takes one entry off the public list, or puts it back. */
+  onSetPublicVisibility?: (ascent: Ascent, hidden: boolean) => void
+  /** Which entry is mid-request, so its control can be disabled without a per-row state. */
+  pendingVisibilityId?: string | null
 }
 
 /**
- * The logbook itself. Read-only when `onEdit`/`onDelete` are absent — that is how the coach's
+ * The logbook itself. Read-only when `onEdit`/`onDelete` are absent — that is how the admin's
  * view renders, and the absent handler is the whole mechanism: there is no "can I edit" flag to
  * get wrong.
+ *
+ * <p>`onSetPublicVisibility` is the mirror image: present only for the admin, absent for the
+ * author. It is a separate prop rather than a third item on the edit pair because it answers a
+ * different question — not "may I change this entry" but "does this entry belong on the public
+ * list". The two never appear together.
  */
 export function AscentTable({
   terrain, entries, sortKey, sortDirection, onSort, onEdit, onDelete,
+  onSetPublicVisibility, pendingVisibilityId,
 }: AscentTableProps) {
   const { t } = useTranslation('ascents')
   const editable = Boolean(onEdit && onDelete)
+  const moderatable = Boolean(onSetPublicVisibility)
   const isMountain = terrain === 'MOUNTAIN'
 
   const header = (key: AscentSortKey, label: string, className = '') => (
@@ -76,6 +87,7 @@ export function AscentTable({
                 {header('stars', t('table.stars'), 'w-28')}
               </>
             )}
+            {moderatable && <th className="px-3 py-2 w-12"><span className="sr-only">{t('takedown.column')}</span></th>}
             {editable && <th className="px-3 py-2 w-20"><span className="sr-only">{t('table.actions')}</span></th>}
           </tr>
         </thead>
@@ -89,6 +101,17 @@ export function AscentTable({
               </td>
               <td className="px-3 py-2 text-surface-100">
                 <span className="font-medium">{entry.routeName}</span>
+                {/* Shown to the author too, not just to the admin: their banner says their ascents
+                    are public, so one of them missing from the list needs a reason on screen */}
+                {entry.hiddenFromPublicAt && (
+                  <span
+                    className="ml-2 inline-flex items-center gap-1 align-middle px-1.5 py-0.5 rounded text-[11px] bg-amber-500/10 text-amber-300"
+                    title={t('takedown.badgeHint')}
+                  >
+                    <EyeOff className="w-3 h-3" aria-hidden="true" />
+                    {t('takedown.badge')}
+                  </span>
+                )}
                 {entry.comment && (
                   <span className="block text-xs text-surface-500 line-clamp-1">{entry.comment}</span>
                 )}
@@ -134,6 +157,22 @@ export function AscentTable({
                     <StarRating value={entry.qualityStars} size="sm" />
                   </td>
                 </>
+              )}
+              {moderatable && (
+                <td className="px-3 py-2">
+                  <button
+                    type="button"
+                    disabled={pendingVisibilityId === entry.id}
+                    onClick={() => onSetPublicVisibility?.(entry, !entry.hiddenFromPublicAt)}
+                    className="p-1.5 rounded text-surface-400 hover:text-surface-100 hover:bg-surface-800 transition disabled:opacity-40"
+                    aria-label={`${t(entry.hiddenFromPublicAt ? 'takedown.restore' : 'takedown.hide')}: ${entry.routeName}`}
+                    title={t(entry.hiddenFromPublicAt ? 'takedown.restore' : 'takedown.hide')}
+                  >
+                    {entry.hiddenFromPublicAt
+                      ? <Globe className="w-4 h-4" aria-hidden="true" />
+                      : <EyeOff className="w-4 h-4" aria-hidden="true" />}
+                  </button>
+                </td>
               )}
               {editable && (
                 <td className="px-3 py-2">

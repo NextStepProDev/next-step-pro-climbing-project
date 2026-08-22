@@ -182,5 +182,12 @@
     "lead": "Pitches led",
     "ledPitches_one": "{{count}} pitch led",
     "ledPitches_other": "{{count}} pitches led"
+  },
+  "takedown": {
+    "column": "Public visibility",
+    "hide": "Remove from the public list",
+    "restore": "Put back on the public list",
+    "badge": "removed",
+    "badgeHint": "This entry was removed from the public list in News. It stays in the logbook and still counts in the statistics."
   }
 }

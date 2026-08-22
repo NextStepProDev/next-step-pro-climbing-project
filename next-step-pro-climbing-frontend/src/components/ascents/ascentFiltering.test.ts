@@ -30,6 +30,7 @@ function ascent(overrides: Partial<Ascent> = {}): Ascent {
     ledPitches: null,
     partners: null,
     createdAt: '2026-05-01T10:00:00Z',
+    hiddenFromPublicAt: null,
     ...overrides,
   }
 }

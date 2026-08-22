@@ -82,16 +82,21 @@ public interface ClimbingAscentRepository extends JpaRepository<ClimbingAscent, 
      * lately", so somebody backfilling a season from 2019 must not push this week's sends off it.
      * {@code createdAt} only breaks ties within a day.
      *
-     * <p>The opt-out lives in the WHERE clause rather than in a filter afterwards: a caller who
-     * forgets to apply it publishes somebody who asked not to be published, and that is not a
-     * mistake worth leaving available. Paged rather than {@code LIMIT}, because JPQL has no limit.
+     * <p>Both filters live in the WHERE clause rather than in a pass afterwards: a caller who
+     * forgets one publishes somebody who asked not to be published, or re-publishes an entry the
+     * owner took down, and neither is a mistake worth leaving available. Paged rather than
+     * {@code LIMIT}, because JPQL has no limit.
+     *
+     * <p>They are two different exclusions and both are needed. {@code u.ascentsPublic} is the
+     * author's own wish about their whole logbook; {@code a.hiddenFromPublicAt} is the site
+     * owner's takedown of one row. Either one alone is enough to keep an entry off the list.
      */
     @Query("""
         SELECT new pl.nextsteppro.climbing.domain.climbingascent.PublicAscentRow(
             a.id, u.firstName, u.lastName, a.climbedOn, a.terrain, a.discipline, a.grade, a.style,
             a.area, a.crag, a.routeName)
         FROM ClimbingAscent a JOIN a.athlete u
-        WHERE u.ascentsPublic = true
+        WHERE u.ascentsPublic = true AND a.hiddenFromPublicAt IS NULL
         ORDER BY a.climbedOn DESC, a.createdAt DESC
         """)
     List<PublicAscentRow> findRecentPublic(Pageable pageable);

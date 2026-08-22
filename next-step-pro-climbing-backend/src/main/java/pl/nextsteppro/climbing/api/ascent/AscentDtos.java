@@ -103,7 +103,22 @@ record AscentDto(
         @Nullable Integer ledGradeRank,
         @Nullable Integer ledPitches,
         @Nullable String partners,
-        Instant createdAt) {
+        Instant createdAt,
+        /**
+         * Set when the site owner took this entry off the public list. Shown to the author too,
+         * not just to the admin: their logbook says their ascents are public, so one of them
+         * quietly missing from the list would be a small lie of exactly the kind this feature's
+         * own copy was written to avoid.
+         */
+        @Schema(description = "When the site owner removed this entry from the public list; null if it is published normally.")
+        @Nullable Instant hiddenFromPublicAt) {
+}
+
+@Schema(description = "Whether the site owner is taking this entry off the public list.")
+record PublicVisibilityRequest(
+        @NotNull
+        @Schema(description = "true removes it from the list, false puts it back.")
+        Boolean hidden) {
 }
 
 @Schema(description = "One area the athlete has climbed in, with the crags they logged there.")

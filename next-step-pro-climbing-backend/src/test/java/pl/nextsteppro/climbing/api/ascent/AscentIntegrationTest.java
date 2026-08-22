@@ -612,6 +612,81 @@ class AscentIntegrationTest extends BaseIntegrationTest {
         assertEquals(2, recent.size());
     }
 
+    /**
+     * The site owner's remedy for something they do not want on their own front page. Publication
+     * only: the row stays in the author's logbook, because it is still their ascent.
+     */
+    @Test
+    @DisplayName("an entry the owner took down leaves the public list but stays in the logbook")
+    void shouldRemoveATakenDownEntryFromTheFeedOnly() {
+        logOn(today().minusDays(2), "Zostaje");
+        logOn(today().minusDays(1), "Do zdjęcia");
+        UUID offending = publicAscentService.getRecent().stream()
+            .filter(entry -> entry.routeName().equals("Do zdjęcia"))
+            .findFirst().orElseThrow().id();
+
+        AscentDto hidden = ascentService.setPublicVisibility(offending, true);
+
+        assertNotNull(hidden.hiddenFromPublicAt());
+        assertEquals(List.of("Zostaje"),
+            publicAscentService.getRecent().stream().map(PublicAscentDto::routeName).toList());
+        // Still the author's: present in their own logbook and counted in the total
+        AscentLogDto log = ascentService.getMyLog(athlete.getId(), AscentTerrain.ROCK, "all");
+        assertEquals(2, log.entries().size());
+        assertEquals(2, log.totalCount());
+    }
+
+    /** Reversible, but only by the admin — the author has no control over this field at all. */
+    @Test
+    @DisplayName("the owner can put a taken-down entry back on the list")
+    void shouldRestoreATakenDownEntry() {
+        logOn(today().minusDays(1), "Wraca");
+        UUID id = publicAscentService.getRecent().getFirst().id();
+        ascentService.setPublicVisibility(id, true);
+        assertTrue(publicAscentService.getRecent().isEmpty());
+
+        AscentDto restored = ascentService.setPublicVisibility(id, false);
+
+        assertNull(restored.hiddenFromPublicAt());
+        assertEquals(1, publicAscentService.getRecent().size());
+    }
+
+    /**
+     * The author's own switch must not undo a takedown. Turning visibility off and on again is the
+     * one lever they have, and if it cleared the flag, moderation would be reversible by the
+     * moderated party — which is the whole reason this is not implemented as the admin flipping
+     * {@code ascents_public}.
+     */
+    @Test
+    @DisplayName("the author cannot bring a taken-down entry back by toggling their own visibility")
+    void shouldKeepTheTakedownAcrossTheAuthorsOwnVisibilityToggle() {
+        logOn(today().minusDays(1), "Nie wraca");
+        ascentService.setPublicVisibility(publicAscentService.getRecent().getFirst().id(), true);
+
+        userService.updateAscentsVisibility(athlete.getId(), false);
+        userService.updateAscentsVisibility(athlete.getId(), true);
+
+        assertTrue(publicAscentService.getRecent().isEmpty());
+    }
+
+    /**
+     * A takedown that stays visible for the cache TTL is exactly the failure the button exists to
+     * prevent. Asserted on the cache, like the account-deletion test above and for the same reason.
+     */
+    @Test
+    @DisplayName("taking an entry down drops the cached feed")
+    void shouldEvictTheFeedCacheOnTakedown() {
+        logOn(today().minusDays(1), "Cache");
+        UUID id = publicAscentService.getRecent().getFirst().id();
+        assertNotNull(Objects.requireNonNull(cacheManager.getCache(PublicAscentService.CACHE))
+            .get(PublicAscentService.CACHE_KEY.replace("'", "")));
+
+        ascentService.setPublicVisibility(id, true);
+
+        assertNull(Objects.requireNonNull(cacheManager.getCache(PublicAscentService.CACHE))
+            .get(PublicAscentService.CACHE_KEY.replace("'", "")));
+    }
+
     @Test
     void shouldCapTheFeedAtFifteenEntries() {
         for (int i = 0; i < 18; i++) {
