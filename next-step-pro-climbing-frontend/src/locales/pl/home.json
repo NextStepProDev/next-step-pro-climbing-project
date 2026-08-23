@@ -3,8 +3,7 @@
   "hero": {
     "tagline": "Twój następny krok we wspinaczce zaczyna się tutaj",
     "taglineHighlight": "wspinaczce",
-    "subtitle": "Profesjonalne wsparcie w drodze do Twojego mistrzostwa zaczyna się od wyboru trenera lub instruktora. Jestem tu, aby pomóc Ci osiągnąć Twoje wspinaczkowe cele i rozwijać się w tej pasjonującej dyscyplinie. Razem możemy stworzyć plan treningowy dopasowany do Twoich potrzeb i możliwości, dzięki któremu osiągniesz swoje cele. Do zobaczenia na treningu! Dziękuję za zaufanie!",
-    "subtitleMobile": "Trening i coaching szyty na miarę — sięgnij po swoje wspinaczkowe cele.",
+    "motto": "The Magic You Are Looking For Is in the Work You Are Avoiding",
     "viewCalendar": "Zobacz kalendarz",
     "seeOffer": "Poznaj ofertę",
     "athleteZone": "Strefa zawodnika"
@@ -27,6 +26,7 @@
   "offer": {
     "title": "Nasza oferta",
     "subtitle": "Wybierz formę treningu dopasowaną do Twoich potrzeb i poziomu zaawansowania",
+    "intro": "Profesjonalne wsparcie w drodze do Twojego mistrzostwa zaczyna się od wyboru trenera lub instruktora. Jestem tu, aby pomóc Ci osiągnąć Twoje wspinaczkowe cele i rozwijać się w tej pasjonującej dyscyplinie. Razem możemy stworzyć plan treningowy dopasowany do Twoich potrzeb i możliwości, dzięki któremu osiągniesz swoje cele. Do zobaczenia na treningu! Dziękuję za zaufanie!",
     "courses": {
       "title": "Kursy",
       "description": "Kursy wspinaczkowe przygotowujące do samodzielnego i bezpiecznego wspinania w skałach oraz na sztucznej ścianie. Szkolenia prowadzone są przez doświadczonych instruktorów PZA.",

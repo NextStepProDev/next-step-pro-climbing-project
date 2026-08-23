@@ -46,6 +46,17 @@ h1, h2, h3, h4, h5, h6, .font-display {
   letter-spacing: -0.01em;
 }
 
+/* Odręczny krój motta w hero. BEZ `italic` na wywołaniu: Caveat nie ma odmiany
+   pochylonej, więc przeglądarka dorobiłaby ją pochyleniem syntetycznym — pismo
+   odręczne pochylone drugi raz robi się nieczytelne. Kreski są cieńsze niż w Inter,
+   więc rozmiar tej klasy jest dobrany do CZYTELNOŚCI na zdjęciu, nie do wysokości
+   liter: Caveat ma niski x-height, więc 40 px optycznie odpowiada mniej więcej 26 px
+   Intera i poniżej tego zaczyna się gubić na fakturze skały. */
+.font-hand {
+  font-family: 'Caveat', 'Inter', system-ui, cursive;
+  letter-spacing: 0.01em;
+}
+
 * {
   scrollbar-width: thin;
   scrollbar-color: var(--color-surface-700) var(--color-surface-900);

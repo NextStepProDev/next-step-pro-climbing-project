@@ -3,8 +3,7 @@
   "hero": {
     "tagline": "Your next step in climbing starts here",
     "taglineHighlight": "climbing",
-    "subtitle": "Professional support on the path to your mastery starts with choosing the right coach or instructor. I'm here to help you achieve your climbing goals and grow in this exciting discipline. Together, we can create a training plan tailored to your needs and abilities, helping you reach your goals. See you at training! Thank you for your trust!",
-    "subtitleMobile": "Tailored training and coaching — reach your climbing goals.",
+    "motto": "The Magic You Are Looking For Is in the Work You Are Avoiding",
     "viewCalendar": "View calendar",
     "seeOffer": "See our offer",
     "athleteZone": "Athlete zone"
@@ -27,6 +26,7 @@
   "offer": {
     "title": "Our offer",
     "subtitle": "Choose a training format that suits your needs and skill level",
+    "intro": "Professional support on the path to your mastery starts with choosing the right coach or instructor. I'm here to help you achieve your climbing goals and grow in this exciting discipline. Together, we can create a training plan tailored to your needs and abilities, helping you reach your goals. See you at training! Thank you for your trust!",
     "courses": {
       "title": "Courses",
       "description": "Climbing courses preparing you for independent and safe climbing on rock and artificial walls. Training sessions are led by experienced PZA instructors.",
