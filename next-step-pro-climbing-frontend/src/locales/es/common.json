@@ -60,7 +60,12 @@
     "TRAINING": "Entrenamiento",
     "WORKSHOP": "Taller",
     "CONTACT_DAY": "Sesión privada",
-    "UNAVAILABLE": "No disponible"
+    "UNAVAILABLE": "No disponible",
+    "COURSEHint": "Con inscripciones — el título suele venir de un curso del CMS.",
+    "TRAININGHint": "Sesión normal con inscripciones y número de plazas.",
+    "WORKSHOPHint": "Sesión temática puntual con inscripciones.",
+    "CONTACT_DAYHint": "Sin inscripciones — el cliente lo concierta por teléfono.",
+    "UNAVAILABLEHint": "Días cerrados: sin plazas, sin inscripciones ni lista de espera."
   },
   "allDay": "Todo el día",
   "participants_one": "{{count}} participante",
