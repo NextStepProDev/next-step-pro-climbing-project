@@ -8,6 +8,7 @@ import { adminApi, adminCoursesApi } from '../../api/client'
 import { UserSearchSelect } from '../../components/ui/UserSearchSelect'
 import { InvitedUsersPicker } from '../../components/ui/InvitedUsersPicker'
 import { InviteNotifySection } from '../../components/ui/InviteNotifySection'
+import { EventTypePicker } from '../../components/calendar/EventTypePicker'
 import { WaitlistEntryList } from './AdminReservationsPanel'
 import { getErrorMessage } from '../../utils/errors'
 import { useDirty } from '../../hooks/useDirty'
@@ -827,7 +828,6 @@ export function EditEventModal({
   onClose: () => void
 }) {
   const { t } = useTranslation('admin')
-  const { t: tc } = useTranslation('common')
   const editSaved = useEditSavedToast()
   const [allDay, setAllDay] = useState(!event?.startTime)
   const [courseId, setCourseId] = useState<string | null>(event?.courseId ?? null)
@@ -933,23 +933,13 @@ export function EditEventModal({
           </div>
         )}
 
-        <div>
-          <label className="block text-sm text-surface-400 mb-1">{t('events.typeLabel')}</label>
-          <select
-            value={form.eventType}
-            onChange={(e) => {
-              const eventType = e.target.value as EventType
-              setForm({ ...form, eventType, maxParticipants: eventType === 'UNAVAILABLE' ? 0 : form.maxParticipants })
-            }}
-            className="w-full bg-surface-800 border border-surface-700 rounded-lg px-4 py-2 text-surface-100"
-          >
-            <option value="COURSE">{tc('eventTypes.COURSE')}</option>
-            <option value="TRAINING">{tc('eventTypes.TRAINING')}</option>
-            <option value="WORKSHOP">{tc('eventTypes.WORKSHOP')}</option>
-            <option value="CONTACT_DAY">{tc('eventTypes.CONTACT_DAY')}</option>
-            <option value="UNAVAILABLE">{tc('eventTypes.UNAVAILABLE')}</option>
-          </select>
-        </div>
+        <EventTypePicker
+          label={t('events.typeLabel')}
+          value={form.eventType}
+          onChange={(eventType) =>
+            setForm({ ...form, eventType, maxParticipants: eventType === 'UNAVAILABLE' ? 0 : form.maxParticipants })
+          }
+        />
 
         <div>
           <label className="block text-sm text-surface-400 mb-1">{t('events.descriptionLabel')}</label>
@@ -1087,7 +1077,6 @@ export function CreateEventModal({
   }
 }) {
   const { t } = useTranslation('admin')
-  const { t: tc } = useTranslation('common')
   const [allDay, setAllDay] = useState(!(initial?.startTime && initial?.endTime))
   const [courseId, setCourseId] = useState<string | undefined>(initial?.courseId)
   const [form, setForm] = useState<CreateEventRequest>({
@@ -1190,23 +1179,13 @@ export function CreateEventModal({
           </div>
         )}
 
-        <div>
-          <label className="block text-sm text-surface-400 mb-1">{t('events.typeLabel')}</label>
-          <select
-            value={form.eventType}
-            onChange={(e) => {
-              const eventType = e.target.value as EventType
-              setForm({ ...form, eventType, maxParticipants: eventType === 'UNAVAILABLE' ? 0 : form.maxParticipants })
-            }}
-            className="w-full bg-surface-800 border border-surface-700 rounded-lg px-4 py-2 text-surface-100"
-          >
-            <option value="COURSE">{tc('eventTypes.COURSE')}</option>
-            <option value="TRAINING">{tc('eventTypes.TRAINING')}</option>
-            <option value="WORKSHOP">{tc('eventTypes.WORKSHOP')}</option>
-            <option value="CONTACT_DAY">{tc('eventTypes.CONTACT_DAY')}</option>
-            <option value="UNAVAILABLE">{tc('eventTypes.UNAVAILABLE')}</option>
-          </select>
-        </div>
+        <EventTypePicker
+          label={t('events.typeLabel')}
+          value={form.eventType}
+          onChange={(eventType) =>
+            setForm({ ...form, eventType, maxParticipants: eventType === 'UNAVAILABLE' ? 0 : form.maxParticipants })
+          }
+        />
 
         <div>
           <label className="block text-sm text-surface-400 mb-1">{t('events.descriptionLabel')}</label>

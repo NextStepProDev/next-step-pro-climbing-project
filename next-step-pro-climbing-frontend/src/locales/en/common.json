@@ -60,7 +60,12 @@
     "TRAINING": "Training",
     "WORKSHOP": "Workshop",
     "CONTACT_DAY": "Private session",
-    "UNAVAILABLE": "Unavailable"
+    "UNAVAILABLE": "Unavailable",
+    "COURSEHint": "Sign-ups open — the title usually comes from a CMS course.",
+    "TRAININGHint": "A regular session with sign-ups and a seat count.",
+    "WORKSHOPHint": "A one-off themed session with sign-ups.",
+    "CONTACT_DAYHint": "No sign-ups — the client arranges it by phone.",
+    "UNAVAILABLEHint": "Days closed off: no seats, no sign-ups, no waitlist."
   },
   "allDay": "All day",
   "participants_one": "{{count}} participant",

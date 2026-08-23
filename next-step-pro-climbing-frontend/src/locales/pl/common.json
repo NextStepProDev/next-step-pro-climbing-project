@@ -60,7 +60,12 @@
     "TRAINING": "Trening",
     "WORKSHOP": "Warsztat",
     "CONTACT_DAY": "Zajęcia na zlecenie",
-    "UNAVAILABLE": "Niedostępność"
+    "UNAVAILABLE": "Niedostępność",
+    "COURSEHint": "Zajęcia z zapisami — tytuł zwykle bierze się z kursu w CMS.",
+    "TRAININGHint": "Zwykłe zajęcia z zapisami i liczbą miejsc.",
+    "WORKSHOPHint": "Jednorazowe zajęcia tematyczne z zapisami.",
+    "CONTACT_DAYHint": "Bez zapisów — klient umawia się telefonicznie.",
+    "UNAVAILABLEHint": "Dni zamknięte: zero miejsc, bez zapisów i listy rezerwowej."
   },
   "allDay": "Cały dzień",
   "participants_one": "{{count}} uczestnik",
