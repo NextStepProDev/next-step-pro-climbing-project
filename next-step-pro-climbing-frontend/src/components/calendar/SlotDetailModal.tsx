@@ -13,6 +13,8 @@ import { slotKindOf, slotKindFlags, type SlotKind } from "../../utils/slotKind";
 import { AddToCalendarButton } from "../ui/AddToCalendarButton";
 import { CompleteProfileModal } from "../ui/CompleteProfileModal";
 import { TimeScrollPicker } from "../ui/TimeScrollPicker";
+import { InvitedUsersPicker } from "../ui/InvitedUsersPicker";
+import { InviteNotifySection } from "../ui/InviteNotifySection";
 import { useAuth } from "../../context/AuthContext";
 import { saveRedirectPath } from "../../utils/redirect";
 import { adminApi, reservationApi } from "../../api/client";
@@ -21,7 +23,7 @@ import { useDateLocale } from "../../utils/dateFnsLocale";
 import { useEditSavedToast } from "../../hooks/useEditSavedToast";
 import { nowInWarsaw, parseCalendarDate, parseCalendarDateTime } from '../../utils/calendarDate'
 import { AdminPrivateNote } from '../admin/AdminPrivateNote'
-import type { TimeSlotDetail } from "../../types";
+import type { InvitedUser, TimeSlotDetail } from "../../types";
 
 interface SlotDetailModalProps {
   slot: TimeSlotDetail | null;
@@ -51,6 +53,9 @@ export function SlotDetailModal({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [editMode, setEditMode] = useState(false);
+  // Invitations: server baseline, a local override only once the admin changes something
+  // (override pattern instead of setState in useEffect — avoids cascading renders).
+  const [editedInvited, setEditedInvited] = useState<InvitedUser[] | null>(null);
   const [editForm, setEditForm] = useState({
     title: '',
     startTime: '',
@@ -131,6 +136,16 @@ export function SlotDetailModal({
     enabled: isAdmin && showDeleteConfirm && !!slot,
   });
 
+  // Fetched only once the admin actually opens the edit form: this modal is what EVERY visitor
+  // sees after tapping a slot, and an admin-only list has no business being requested for a slot
+  // nobody is editing. A slot belonging to an event is skipped — held seats hang off the event
+  // there, so its invitations are managed in the events panel.
+  const { data: invitesData } = useQuery({
+    queryKey: ['admin', 'slotInvites', slot?.id],
+    queryFn: () => adminApi.getSlotInvites(slot!.id),
+    enabled: isAdmin && editMode && !!slot && !slot.eventId,
+  });
+
   const deleteSlotMutation = useMutation({
     mutationFn: adminApi.deleteTimeSlot,
     onSuccess: () => {
@@ -144,12 +159,15 @@ export function SlotDetailModal({
   });
 
   const editSlotMutation = useMutation({
-    mutationFn: (data: { startTime: string; endTime: string; maxParticipants?: number; title: string; isAvailabilityWindow: boolean; isUnavailable: boolean }) =>
+    mutationFn: (data: { startTime: string; endTime: string; maxParticipants?: number; title: string; isAvailabilityWindow: boolean; isUnavailable: boolean; invitedUserIds?: string[] }) =>
       adminApi.updateTimeSlot(slot!.id, data),
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ["calendar"] });
       queryClient.invalidateQueries({ queryKey: ["slot"] });
       queryClient.invalidateQueries({ queryKey: ["admin", "slots"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "slotInvites", slot!.id] });
+      // Drop the local override so the refetched baseline is what the form reopens with.
+      setEditedInvited(null);
       setEditMode(false);
       editSaved(result);
     },
@@ -197,7 +215,23 @@ export function SlotDetailModal({
     kind: slotKindOf(slot),
   };
   const editTimeError = editForm.endTime <= editForm.startTime;
-  const editDirty = JSON.stringify(editForm) !== JSON.stringify(editBaseline);
+
+  const baselineInvited = invitesData ?? [];
+  const invited = editedInvited ?? baselineInvited;
+  const invitedKey = (list: InvitedUser[]) => list.map((u) => u.userId).sort().join(',');
+  const invitedDirty = invitedKey(invited) !== invitedKey(baselineInvited);
+  // Held seats belong to a bookable slot only; an event's own slot keeps them on the event.
+  const canManageInvites = editForm.kind === 'REGULAR' && !slot.eventId;
+  // `undefined` means "leave the invitations alone" — which is exactly what an unresolved query
+  // means here. Sending [] before the baseline lands would silently withdraw every invitation
+  // the slot already has, and the admin would only find out from the people who stopped coming.
+  const invitedUserIdsForSave = !canManageInvites
+    ? []
+    : invitesData !== undefined
+      ? invited.map((u) => u.userId)
+      : undefined;
+
+  const editDirty = JSON.stringify(editForm) !== JSON.stringify(editBaseline) || invitedDirty;
 
   const handleLoginRedirect = () => {
     saveRedirectPath(`/calendar?date=${slot.date}`);
@@ -498,6 +532,19 @@ export function SlotDetailModal({
                     />
                   </div>
                 )}
+                {canManageInvites && (
+                  <InvitedUsersPicker
+                    value={invited}
+                    onChange={setEditedInvited}
+                    maxSeats={editForm.maxParticipants}
+                  />
+                )}
+                {/* Unsaved picker edits hide the send button: it mails whoever the SERVER holds a
+                    seat for, so offering it next to a list that is not saved yet promises mail to
+                    someone the backend has never heard of. */}
+                {canManageInvites && !invitedDirty && (
+                  <InviteNotifySection target={{ type: 'slot', slotId: slot.id }} invites={baselineInvited} />
+                )}
                 <div className="flex gap-3">
                   <Button
                     loading={editSlotMutation.isPending}
@@ -515,12 +562,13 @@ export function SlotDetailModal({
                           : { maxParticipants: editForm.kind === 'WINDOW' ? 1 : editForm.maxParticipants }),
                         title: editForm.title || '',
                         ...slotKindFlags(editForm.kind),
+                        ...(invitedUserIdsForSave ? { invitedUserIds: invitedUserIdsForSave } : {}),
                       });
                     }}
                   >
                     {ta('slots.saveChanges')}
                   </Button>
-                  <Button variant="ghost" onClick={() => setEditMode(false)}>
+                  <Button variant="ghost" onClick={() => { setEditedInvited(null); setEditMode(false); }}>
                     {ta('slots.cancel')}
                   </Button>
                 </div>
@@ -539,6 +587,7 @@ export function SlotDetailModal({
                     maxParticipants: slot.maxParticipants,
                     kind: slotKindOf(slot),
                   });
+                  setEditedInvited(null);
                   setEditMode(true);
                 }}
                 className="flex items-center gap-2 text-sm text-primary-400 hover:text-primary-300 transition-colors"
