@@ -281,12 +281,10 @@ export function HomePage() {
                 translated three ways stops reading as one and starts reading as a slogan we wrote.
                 Deliberately unattributed — the saying circulates without a reliable author, and a
                 wrong credit on the front page is worse than none.
-                Handwriting earns its size back: Caveat's thin strokes and low x-height need the
-                full-size halo (hero-over-photo, not the -sm contour) and no opacity dimming, or the
-                line dissolves into the rock texture. The strokes are the whole reason this one is
-                set larger than the paragraph it replaced — it is not a louder line, it is a thinner
-                one that needs the room. */}
-            <p style={{ '--hero-delay': '120ms' } as CSSProperties} className={`font-hand text-[30px] leading-[1.15] sm:text-[40px] sm:leading-[1.2] mb-6 max-w-md sm:max-w-3xl mx-auto text-surface-100 sm:hero-over-photo ${titleTyped ? 'hero-rise' : 'opacity-0'}`}>
+                Caveat at 600, with the tight -sm contour: the wide bloom softens handwritten
+                strokes until the line stops looking like the face that was chosen. The size is not
+                loudness — a low x-height means 40px reads about as big as 26px of Inter. */}
+            <p style={{ '--hero-delay': '120ms' } as CSSProperties} className={`font-hand text-[30px] leading-[1.15] sm:text-[40px] sm:leading-[1.2] mb-6 max-w-md sm:max-w-2xl mx-auto text-surface-100 sm:hero-over-photo sm:hero-over-photo-sm ${titleTyped ? 'hero-rise' : 'opacity-0'}`}>
               {t("hero.motto")}
             </p>
             {/* the buttons slide in right after the paragraph — a top-down cascade, only after the heading is typed */}
