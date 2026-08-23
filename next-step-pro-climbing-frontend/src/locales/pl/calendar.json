@@ -167,9 +167,9 @@
     "buttonTitle": "Dodaj termin lub wydarzenie",
     "title": "Co dodać {{day}}?",
     "slot": "Termin",
-    "slotHint": "Jeden dzień, konkretne godziny.",
+    "slotHint": "Zajęcia, okno kontaktu lub nieobecność — też kilkudniowa.",
     "event": "Wydarzenie",
-    "eventHint": "Kurs lub wyjazd — może trwać kilka dni."
+    "eventHint": "Kurs, warsztat, wyjazd — z opisem i zapisami."
   },
   "createSlot": {
     "title": "Dodaj nowy termin",

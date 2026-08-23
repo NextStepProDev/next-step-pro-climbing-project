@@ -57,4 +57,22 @@ describe('AddEntryModal — the "+" asks before it opens a form', () => {
 
     expect(screen.getByText(/^addEntry\.title:10/)).toBeInTheDocument()
   })
+
+  // `?date=` is hand-editable and reaches this component raw. `format` on an Invalid Date throws,
+  // and a throw in render takes the whole calendar page down — not just this modal.
+  it('should fall back to the raw label rather than throw on an unparseable date', () => {
+    expect(() =>
+      render(
+        <AddEntryModal
+          isOpen
+          onClose={vi.fn()}
+          date="2030-06-31"
+          onPickSlot={vi.fn()}
+          onPickEvent={vi.fn()}
+        />,
+      ),
+    ).not.toThrow()
+
+    expect(screen.getByText('addEntry.title:2030-06-31')).toBeInTheDocument()
+  })
 })

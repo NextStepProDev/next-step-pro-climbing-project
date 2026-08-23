@@ -167,9 +167,9 @@
     "buttonTitle": "Añadir una franja horaria o un evento",
     "title": "¿Qué añadir el {{day}}?",
     "slot": "Franja horaria",
-    "slotHint": "Un día, horas concretas.",
+    "slotHint": "Sesiones, ventana de contacto o ausencia — también de varios días.",
     "event": "Evento",
-    "eventHint": "Un curso o un viaje — puede durar varios días."
+    "eventHint": "Un curso, un taller, un viaje — con descripción e inscripciones."
   },
   "createSlot": {
     "title": "Añadir nueva franja horaria",

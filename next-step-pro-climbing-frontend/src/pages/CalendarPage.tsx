@@ -1007,7 +1007,15 @@ export function CalendarPage() {
           {/* Mounted only once picked, so the panel chunk downloads on the choice and not on
               every day an admin opens. `key` because the form reads `initial` on mount alone —
               without it the next day would open prefilled with the previous one. */}
-          <Suspense fallback={null}>
+          {/* Not `fallback={null}`: the chooser closes on the same click, so on a slow connection
+              the screen would show nothing at all and the admin re-taps "+" — stacking the chooser
+              on top of the form that was already loading. The overlay both answers the click and
+              covers the button. */}
+          <Suspense fallback={
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+              <LoadingSpinner size="lg" />
+            </div>
+          }>
             {showCreateEventModal && (
               <CreateEventModal
                 key={selectedDate}
