@@ -275,15 +275,19 @@ export function HomePage() {
                 onDone={() => setTitleTyped(true)}
               />
             </h1>
-            {/* the paragraph appears (hero-rise) only once the heading has been typed out;
+            {/* the motto appears (hero-rise) only once the heading has been typed out;
                 until then opacity-0 reserves the height → the buttons below do not jump */}
-            {/* Mobile: a short, punchy subtitle (the whole glass card must fit on 1 screen). */}
-            <p style={{ '--hero-delay': '120ms' } as CSSProperties} className={`sm:hidden text-[15px] leading-snug mb-6 max-w-md mx-auto text-surface-100/95 ${titleTyped ? 'hero-rise' : 'opacity-0'}`}>
-              {t("hero.subtitleMobile")}
-            </p>
-            {/* Desktop: the full description (untouched). */}
-            <p style={{ '--hero-delay': '120ms' } as CSSProperties} className={`hidden sm:block text-lg mb-6 max-w-2xl mx-auto text-surface-100/90 hero-over-photo hero-over-photo-sm ${titleTyped ? 'hero-rise' : 'opacity-0'}`}>
-              {t("hero.subtitle")}
+            {/* One line under the heading, in English in every locale: it is a quote, and a quote
+                translated three ways stops reading as one and starts reading as a slogan we wrote.
+                Deliberately unattributed — the saying circulates without a reliable author, and a
+                wrong credit on the front page is worse than none.
+                Handwriting earns its size back: Caveat's thin strokes and low x-height need the
+                full-size halo (hero-over-photo, not the -sm contour) and no opacity dimming, or the
+                line dissolves into the rock texture. The strokes are the whole reason this one is
+                set larger than the paragraph it replaced — it is not a louder line, it is a thinner
+                one that needs the room. */}
+            <p style={{ '--hero-delay': '120ms' } as CSSProperties} className={`font-hand text-[30px] leading-[1.15] sm:text-[40px] sm:leading-[1.2] mb-6 max-w-md sm:max-w-3xl mx-auto text-surface-100 sm:hero-over-photo ${titleTyped ? 'hero-rise' : 'opacity-0'}`}>
+              {t("hero.motto")}
             </p>
             {/* the buttons slide in right after the paragraph — a top-down cascade, only after the heading is typed */}
             <div style={{ '--hero-delay': '320ms' } as CSSProperties} className={`flex flex-col sm:flex-row gap-4 justify-center ${titleTyped ? 'hero-rise' : 'opacity-0'}`}>
@@ -524,6 +528,11 @@ export function HomePage() {
             </h2>
             <p className="text-surface-400 max-w-2xl mx-auto">
               {t("offer.subtitle")}
+            </p>
+            {/* The coach's personal note. It used to open the hero, where 70 words in four
+                sentences went unread; here it sits next to what it actually describes. */}
+            <p className="text-surface-400 max-w-3xl mx-auto mt-6 text-sm sm:text-base leading-relaxed">
+              {t("offer.intro")}
             </p>
           </div>
 

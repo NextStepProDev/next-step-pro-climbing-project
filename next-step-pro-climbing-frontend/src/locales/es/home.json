@@ -3,8 +3,7 @@
   "hero": {
     "tagline": "Tu siguiente paso en la escalada comienza aquí",
     "taglineHighlight": "escalada",
-    "subtitle": "El apoyo profesional en el camino hacia tu maestría comienza con la elección del entrenador o instructor adecuado. Estoy aquí para ayudarte a alcanzar tus metas en la escalada y crecer en esta apasionante disciplina. Juntos podemos crear un plan de entrenamiento adaptado a tus necesidades y capacidades, gracias al cual alcanzarás tus objetivos. ¡Nos vemos en el entrenamiento! ¡Gracias por tu confianza!",
-    "subtitleMobile": "Entrenamiento y coaching a medida — alcanza tus objetivos de escalada.",
+    "motto": "The Magic You Are Looking For Is in the Work You Are Avoiding",
     "viewCalendar": "Ver calendario",
     "seeOffer": "Conoce nuestra oferta",
     "athleteZone": "Zona del atleta"
@@ -27,6 +26,7 @@
   "offer": {
     "title": "Nuestra oferta",
     "subtitle": "Elige la forma de entrenamiento adaptada a tus necesidades y nivel",
+    "intro": "El apoyo profesional en el camino hacia tu maestría comienza con la elección del entrenador o instructor adecuado. Estoy aquí para ayudarte a alcanzar tus metas en la escalada y crecer en esta apasionante disciplina. Juntos podemos crear un plan de entrenamiento adaptado a tus necesidades y capacidades, gracias al cual alcanzarás tus objetivos. ¡Nos vemos en el entrenamiento! ¡Gracias por tu confianza!",
     "courses": {
       "title": "Cursos",
       "description": "Cursos de escalada que te preparan para escalar de forma autónoma y segura en roca y en rocódromo. Las formaciones están dirigidas por instructores experimentados de la PZA.",
