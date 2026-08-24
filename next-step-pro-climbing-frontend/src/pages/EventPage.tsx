@@ -1,6 +1,5 @@
 import { useParams, useLocation, Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { format } from 'date-fns'
 import { useTranslation } from 'react-i18next'
 import { Helmet } from 'react-helmet-async'
 import { ArrowLeft, BookOpen, Calendar, MapPin, Users } from 'lucide-react'
@@ -10,8 +9,7 @@ import { LoadingSpinner } from '../components/ui/LoadingSpinner'
 import { Button } from '../components/ui/Button'
 import { ShareButtons } from '../components/ui/ShareButtons'
 import { useDateLocale } from '../utils/dateFnsLocale'
-import { getEventColorByType } from '../utils/events'
-import { parseCalendarDate } from '../utils/calendarDate'
+import { formatEventWhen, getEventColorByType } from '../utils/events'
 
 export function EventPage() {
   const { t } = useTranslation('calendar')
@@ -120,13 +118,7 @@ export function EventPage() {
           <div className="flex items-center gap-3 text-surface-300">
             <Calendar className="w-5 h-5" />
             <span>
-              {format(parseCalendarDate(event.startDate), 'd MMMM yyyy', { locale })}
-              {event.startDate !== event.endDate && (
-                <>
-                  {' '}-{' '}
-                  {format(parseCalendarDate(event.endDate), 'd MMMM yyyy', { locale })}
-                </>
-              )}
+              {formatEventWhen(event, { dateFormat: 'd MMMM yyyy', allDayLabel: tc('allDay'), locale })}
             </span>
           </div>
 

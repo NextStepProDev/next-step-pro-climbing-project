@@ -15,6 +15,7 @@ import { saveRedirectPath } from '../../utils/redirect'
 import { adminApi, calendarApi, reservationApi } from '../../api/client'
 import { getErrorMessage } from '../../utils/errors'
 import { parseCalendarDate, todayInWarsaw } from '../../utils/calendarDate'
+import { formatEventWhen } from '../../utils/events'
 import { AdminPrivateNote } from '../admin/AdminPrivateNote'
 import type { EventSummary } from '../../types'
 
@@ -445,19 +446,7 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
         <div className="flex items-center gap-2 text-surface-300">
           <Calendar className="w-5 h-5" />
           <span>
-            {(() => {
-              const startD = format(parseCalendarDate(ev.startDate), 'dd.MM.yyyy')
-              const endD = format(parseCalendarDate(ev.endDate), 'dd.MM.yyyy')
-              const startT = ev.startTime ? ev.startTime.slice(0, 5) : null
-              const endT = ev.endTime ? ev.endTime.slice(0, 5) : null
-              // Unavailable: show the full span — first day (opt. start hour) → last day (opt. end hour)
-              if (ev.eventType === 'UNAVAILABLE') {
-                if (ev.isMultiDay) return `${startD}${startT ? ` ${startT}` : ''} – ${endD}${endT ? ` ${endT}` : ''}`
-                if (startT && endT) return `${startD} · ${startT}–${endT}`
-                return `${startD} · ${tc('allDay')}`
-              }
-              return ev.isMultiDay ? `${startD} - ${endD}` : startD
-            })()}
+            {formatEventWhen(ev, { dateFormat: 'dd.MM.yyyy', allDayLabel: tc('allDay') })}
           </span>
         </div>
 
