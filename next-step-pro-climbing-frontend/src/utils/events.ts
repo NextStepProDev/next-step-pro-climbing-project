@@ -1,3 +1,5 @@
+import { format } from 'date-fns'
+import type { Locale } from 'date-fns'
 import i18n from "../i18n";
 import { parseCalendarDate } from './calendarDate'
 import type { EventSummary } from "../types";
@@ -120,6 +122,40 @@ export function buildEventColorMap(events: EventSummary[]): Map<string, EventAcc
   })
 
   return map
+}
+
+/** The one "when" line for an event: the day (or the span) plus whatever hours the entry carries.
+ *
+ *  On a multi-day event each clock stays beside its OWN date and the two are never joined into a
+ *  range. The backend deliberately allows an end earlier than the start once the dates differ
+ *  (`CreateEventRequest.isSameDayTimeRangeValid`) — Friday 18:00 to Sunday 08:00 is a weekend, not
+ *  an inverted window — so "18:00–08:00" would describe a single day instead of the trip.
+ *
+ *  The all-day label is only added on a single day: a bare date range already reads as whole days.
+ *
+ *  `allDayLabel` is passed in rather than read from i18n here so the function stays pure; both
+ *  call sites already hold the `common` namespace. */
+export function formatEventWhen(
+  event: Pick<EventSummary, 'startDate' | 'endDate' | 'startTime' | 'endTime' | 'isMultiDay'>,
+  opts: { dateFormat: string; allDayLabel: string; locale?: Locale },
+): string {
+  const { dateFormat, allDayLabel, locale } = opts
+  // A 'yyyy-MM-dd' from the API is a label, not a moment — parseCalendarDate, never new Date().
+  const startDate = format(parseCalendarDate(event.startDate), dateFormat, { locale })
+  const endDate = format(parseCalendarDate(event.endDate), dateFormat, { locale })
+  // The wire carries both "18:00" and "18:00:00"; the rest of the app slices the same way.
+  const startTime = event.startTime ? event.startTime.slice(0, 5) : null
+  const endTime = event.endTime ? event.endTime.slice(0, 5) : null
+
+  if (event.isMultiDay) {
+    return `${startDate}${startTime ? ` ${startTime}` : ''} – ${endDate}${endTime ? ` ${endTime}` : ''}`
+  }
+  if (startTime && endTime) return `${startDate} · ${startTime}–${endTime}`
+  // Exactly one clock is an API-only shape: the admin form moves both together, but the columns
+  // are nullable with no CHECK. Say only the day — "all day" would be a plain lie about an entry
+  // that does carry an hour, and a lone "18:00" cannot say which end of the day it is.
+  if (startTime || endTime) return startDate
+  return `${startDate} · ${allDayLabel}`
 }
 
 export function pluralizeTraining(n: number): string {
