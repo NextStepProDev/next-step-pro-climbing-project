@@ -119,6 +119,104 @@ class TrainingCalendarIntegrationTest extends BaseIntegrationTest {
         assertEquals(date, range.reservations().get(0).date());
     }
 
+    /**
+     * The reason editing a message touches the unread queries at all. The counters used to ask
+     * {@code createdAt > seen} alone, so a correction would have been completely silent — the athlete
+     * who had already read "3x10" would train on it while the thread said "4x8".
+     */
+    @Test
+    void shouldRaiseTheUnreadCounterAgainWhenTheCoachEditsAnAlreadyReadMessage() {
+        LocalDate date = LocalDate.now().minusDays(1);
+        PersonalTrainingDto training = adminTrainingCalendarService.createForAthlete(coach.getId(), athlete.getId(),
+            new CreatePersonalTrainingRequest(date, LocalTime.of(18, 0), LocalTime.of(19, 30), "Siła", null));
+
+        TrainingCommentDto posted =
+            adminTrainingCalendarService.addComment(coach.getId(), training.id(), "Zrób 3x10");
+        assertNull(posted.editedAt());
+
+        trainingCalendarService.markAthleteSeen(athlete.getId());
+        assertEquals(0L, trainingCalendarService.getAthleteNotifications(athlete.getId()).newCount());
+
+        TrainingCommentDto corrected =
+            trainingCalendarService.editComment(coach.getId(), true, posted.id(), "Zrób 4x8");
+        assertEquals("Zrób 4x8", corrected.body());
+        assertNotNull(corrected.editedAt());
+
+        assertEquals(1L, trainingCalendarService.getAthleteNotifications(athlete.getId()).newCount());
+        // ...and the calendar block carries the dot, so there is somewhere to go and look
+        CalendarRangeDto range = trainingCalendarService.getMyRange(athlete.getId(), date, date);
+        assertTrue(range.trainings().get(0).hasUnreadActivity());
+    }
+
+    /**
+     * The other direction, through a different query: the coach's roster badge is a LEFT JOIN against
+     * this admin's per-athlete marker, so it needed the same {@code editedAt} half and would otherwise
+     * have been the one modified query nothing exercised.
+     */
+    @Test
+    void shouldRaiseTheCoachRosterBadgeWhenTheAthleteEditsAnAlreadyReadMessage() {
+        LocalDate date = LocalDate.now().minusDays(1);
+        PersonalTrainingDto training = trainingCalendarService.createMy(athlete.getId(),
+            new CreatePersonalTrainingRequest(date, LocalTime.of(18, 0), LocalTime.of(19, 30), "Siła", null));
+        TrainingCommentDto posted =
+            trainingCalendarService.addMyComment(athlete.getId(), training.id(), "Zrobione 3x10");
+
+        adminTrainingCalendarService.markSeen(coach.getId(), athlete.getId());
+        assertEquals(0L, adminTrainingCalendarService.getAthleteSummaries(coach.getId()).get(0).newCount());
+
+        trainingCalendarService.editComment(athlete.getId(), false, posted.id(), "Zrobione 4x8, nogi martwe");
+        assertEquals(1L, adminTrainingCalendarService.getAthleteSummaries(coach.getId()).get(0).newCount());
+    }
+
+    @Test
+    void shouldStaySilentWhenTheSavedTextIsUnchanged() {
+        LocalDate date = LocalDate.now().minusDays(1);
+        PersonalTrainingDto training = adminTrainingCalendarService.createForAthlete(coach.getId(), athlete.getId(),
+            new CreatePersonalTrainingRequest(date, LocalTime.of(18, 0), LocalTime.of(19, 30), "Siła", null));
+        TrainingCommentDto posted =
+            adminTrainingCalendarService.addComment(coach.getId(), training.id(), "Zrób 3x10");
+
+        trainingCalendarService.markAthleteSeen(athlete.getId());
+        assertEquals(0L, trainingCalendarService.getAthleteNotifications(athlete.getId()).newCount());
+
+        // Opening the field and saving it untouched is not a correction: no stamp, no badge.
+        TrainingCommentDto same =
+            trainingCalendarService.editComment(coach.getId(), true, posted.id(), "Zrób 3x10");
+        assertNull(same.editedAt());
+        assertEquals(0L, trainingCalendarService.getAthleteNotifications(athlete.getId()).newCount());
+    }
+
+    @Test
+    void shouldNotCountAFreshlyCorrectedMessageTwice() {
+        LocalDate date = LocalDate.now().minusDays(1);
+        PersonalTrainingDto training = adminTrainingCalendarService.createForAthlete(coach.getId(), athlete.getId(),
+            new CreatePersonalTrainingRequest(date, LocalTime.of(18, 0), LocalTime.of(19, 30), "Siła", null));
+        // The training itself is one unread item; the message is the second
+        TrainingCommentDto posted =
+            adminTrainingCalendarService.addComment(coach.getId(), training.id(), "Zrób 3x01");
+        assertEquals(2L, trainingCalendarService.getAthleteNotifications(athlete.getId()).newCount());
+
+        // Fixing a typo before anyone has read it must not ring a second time
+        trainingCalendarService.editComment(coach.getId(), true, posted.id(), "Zrób 3x10");
+        assertEquals(2L, trainingCalendarService.getAthleteNotifications(athlete.getId()).newCount());
+    }
+
+    @Test
+    void shouldNotLetTheAthleteRewriteWhatTheCoachWrote() {
+        LocalDate date = LocalDate.now().minusDays(1);
+        PersonalTrainingDto training = adminTrainingCalendarService.createForAthlete(coach.getId(), athlete.getId(),
+            new CreatePersonalTrainingRequest(date, LocalTime.of(18, 0), LocalTime.of(19, 30), "Siła", null));
+        TrainingCommentDto fromCoach =
+            adminTrainingCalendarService.addComment(coach.getId(), training.id(), "Zrób 3x10");
+
+        // The athlete can read it and can ask for it to go; putting different words in the coach's
+        // mouth is the one thing the thread must never allow.
+        assertThrows(IllegalStateException.class,
+            () -> trainingCalendarService.editComment(athlete.getId(), false, fromCoach.id(), "Zrób 1x1"));
+        assertEquals("Zrób 3x10",
+            trainingCalendarService.getMyComments(athlete.getId(), training.id()).get(0).body());
+    }
+
     @Test
     void shouldLetCoachManageTrainingAndKeepDataAfterUnflag() {
         LocalDate date = LocalDate.now().plusDays(5);

@@ -566,6 +566,16 @@ export const trainingCalendarApi = {
     )
   },
 
+  /**
+   * Corrects the text of a message the caller wrote. One endpoint for both roles, like
+   * deleteCommentFile — and author-only on the server, so the coach cannot rewrite what the athlete said.
+   */
+  editComment: (commentId: string, body: string) =>
+    fetchApi<TrainingCommentItem>(`/training-calendar/comments/${commentId}`, {
+      method: 'PUT',
+      body: JSON.stringify({ body }),
+    }),
+
   /** One endpoint for both roles — the backend decides from the token who is asking. */
   deleteCommentFile: (fileId: string) =>
     fetchApi<void>(`/training-calendar/comment-files/${fileId}`, { method: 'DELETE' }),

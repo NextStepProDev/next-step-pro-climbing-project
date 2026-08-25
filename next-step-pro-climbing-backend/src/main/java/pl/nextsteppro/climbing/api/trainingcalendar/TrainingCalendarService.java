@@ -381,6 +381,68 @@ public class TrainingCalendarService {
     }
 
     /**
+     * Corrects the text of a message its author already sent. One entry point for both roles, for the
+     * same reason as the file routes above.
+     *
+     * <p>Author only — deliberately NOT {@link CommentFileSupport#canDelete}, which lets the coach
+     * reach anything in the thread. Removing what someone sent is moderation; rewriting it puts words
+     * in their mouth, and this codebase draws that line everywhere else too (the coach never records
+     * an athlete's weight or their ascents).
+     */
+    public TrainingCommentDto editComment(UUID viewerId, boolean viewerIsAdmin, UUID commentId, String body) {
+        TrainingComment comment = requireEditableComment(viewerId, viewerIsAdmin, commentId);
+        if (comment.getBody() == null) {
+            // A message that is nothing but a photo has no words to correct. Growing one a caption
+            // would change the shape of the message; the next thought is a new message — and it
+            // should be, because new words deserve the unread mark that an edit gives the old ones.
+            throw new IllegalStateException(msg.get("training.calendar.comment.text.only"));
+        }
+        String sanitized = TrainingComment.sanitizeBody(body);
+        if (sanitized == null) {
+            throw new IllegalArgumentException(msg.get("training.calendar.comment.empty"));
+        }
+        // Opening the field and saving it untouched must stay a no-op. Stamping it anyway would ring
+        // the other side's badge and label the bubble "edited" over text nobody changed — the exact
+        // false signal this whole feature is built to avoid.
+        if (!sanitized.equals(comment.getBody())) {
+            comment.edit(sanitized);
+            commentRepository.save(comment);
+        }
+        return toCommentDto(comment, viewerId, viewerIsAdmin,
+            commentFiles.dtosForComments(List.of(comment.getId()), viewerId, viewerIsAdmin)
+                .getOrDefault(comment.getId(), List.of()));
+    }
+
+    /**
+     * Same guard sequence as {@link #requireReadableCommentFile}, plus authorship.
+     *
+     * <p>The author comparison lives here and nowhere else, so there is no branch left in which one
+     * could forget it — the reason the ascent log addresses rows as {@code findByIdAndAthleteId}.
+     */
+    private TrainingComment requireEditableComment(UUID viewerId, boolean viewerIsAdmin, UUID commentId) {
+        TrainingComment comment = commentRepository.findById(commentId)
+            .orElseThrow(() -> new IllegalArgumentException(msg.get("training.calendar.comment.not.found")));
+        if (!viewerIsAdmin) {
+            requireAthlete(viewerId);
+        }
+        try {
+            if (viewerIsAdmin) {
+                requireTrainingOfFlaggedAthlete(comment.trainingId());
+            } else {
+                requireOwnTraining(comment.trainingId(), viewerId);
+            }
+        } catch (IllegalArgumentException e) {
+            // Answer a stranger exactly as a made-up id is answered — the guards' own messages talk
+            // about the TRAINING and would confirm that a guessed comment id is real.
+            throw new IllegalArgumentException(msg.get("training.calendar.comment.not.found"));
+        }
+        if (!comment.getAuthor().getId().equals(viewerId)) {
+            throw new IllegalStateException(msg.get("training.calendar.comment.not.yours"));
+        }
+        return comment;
+    }
+
+    /**
      * Reuses the very guards the rest of the calendar uses, rather than reading the athlete id off
      * the row and comparing it here. A bare {@code findById} would leave a former athlete's files
      * readable after un-flagging cleared their consent — the hole CLAUDE.md describes for the
@@ -823,6 +885,7 @@ public class TrainingCalendarService {
             c.getAuthor().getFullName(),
             avatarUrl(c.getAuthor()),
             c.getCreatedAt(),
+            c.getEditedAt(),
             c.getAuthor().getId().equals(viewerId),
             files
         );

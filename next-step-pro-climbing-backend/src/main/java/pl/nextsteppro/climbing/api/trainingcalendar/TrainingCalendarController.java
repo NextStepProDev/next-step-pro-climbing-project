@@ -244,6 +244,22 @@ public class TrainingCalendarController {
         return ResponseEntity.noContent().build();
     }
 
+    @Operation(summary = "Edit a message",
+        description = "Corrects the text of a message the caller wrote. Author only — the coach may remove "
+            + "what is in the thread but never rewrites somebody else's words. Attachments are untouched, "
+            + "and the text may not be emptied. Serves both roles from one route, like the file endpoints. "
+            + "An edit re-raises the other side's unread mark: nothing else would tell a reader who has "
+            + "already seen the message that it now says something different.")
+    @PutMapping("/comments/{commentId}")
+    public ResponseEntity<TrainingCommentDto> editComment(
+            @Parameter(hidden = true) @CurrentUserId UUID userId,
+            Authentication authentication,
+            @PathVariable UUID commentId,
+            @Valid @RequestBody CreateTrainingCommentRequest request) {
+        return ResponseEntity.ok(
+            trainingCalendarService.editComment(userId, isAdmin(authentication), commentId, request.body()));
+    }
+
     @Operation(summary = "Download a training material",
         description = "Authenticated stream for the coach's materials (PDF/image). Replaced the public "
             + "/api/files/training/{filename} route, whose only protection was an unguessable name.")

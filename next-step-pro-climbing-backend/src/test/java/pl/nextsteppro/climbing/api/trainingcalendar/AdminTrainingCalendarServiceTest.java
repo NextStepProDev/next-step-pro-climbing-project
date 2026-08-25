@@ -99,7 +99,7 @@ class AdminTrainingCalendarServiceTest {
         UUID trainingId = UUID.randomUUID();
         when(core.addCommentAsAdmin(adminId, trainingId, "Dobra robota"))
             .thenReturn(new TrainingCommentDto(UUID.randomUUID(), "Dobra robota", true,
-                "Trener Główny", null, Instant.now(), true, java.util.List.of()));
+                "Trener Główny", null, Instant.now(), null, true, java.util.List.of()));
 
         // When
         service.addComment(adminId, trainingId, "Dobra robota");

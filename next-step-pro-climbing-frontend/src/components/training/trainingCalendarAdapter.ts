@@ -52,6 +52,8 @@ export interface TrainingCalendarAdapter {
    * which role it is rendering for.
    */
   addCommentWithFiles: (trainingId: string, body: string | null, files: File[]) => Promise<TrainingCommentItem>
+  /** Corrects the text of a message the viewer wrote. Author-only on the server, both roles here. */
+  editComment: (commentId: string, body: string) => Promise<TrainingCommentItem>
   deleteCommentFile: (fileId: string) => Promise<void>
   markSeen: () => Promise<void>
   getStats: () => Promise<AthleteStats>
@@ -70,6 +72,7 @@ export const athleteAdapter: TrainingCalendarAdapter = {
   getComments: trainingCalendarApi.getComments,
   addComment: trainingCalendarApi.addComment,
   addCommentWithFiles: trainingCalendarApi.addCommentWithFiles,
+  editComment: trainingCalendarApi.editComment,
   deleteCommentFile: trainingCalendarApi.deleteCommentFile,
   markSeen: trainingCalendarApi.markSeen,
   getStats: trainingCalendarApi.getStats,
@@ -91,8 +94,10 @@ export function coachAdapter(athleteId: string): TrainingCalendarAdapter {
     getComments: adminTrainingCalendarApi.getComments,
     addComment: adminTrainingCalendarApi.addComment,
     addCommentWithFiles: adminTrainingCalendarApi.addCommentWithFiles,
-    // Reading and deleting an attachment are single endpoints serving both roles, so the coach
-    // adapter points at the same one — there is no admin twin to keep in step.
+    // Reading an attachment, deleting one and editing one's own message are single endpoints
+    // serving both roles, so the coach adapter points at the same ones — there is no admin twin
+    // to keep in step.
+    editComment: trainingCalendarApi.editComment,
     deleteCommentFile: trainingCalendarApi.deleteCommentFile,
     markSeen: () => adminTrainingCalendarApi.markSeen(athleteId),
     getStats: () => adminTrainingCalendarApi.getStats(athleteId),

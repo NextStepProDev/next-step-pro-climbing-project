@@ -180,6 +180,12 @@ record RateReservationRequest(
 /**
  * Text-only message. The multipart endpoint takes its optional text as a plain request part
  * instead, because a message carrying an attachment is allowed to have no words at all.
+ *
+ * <p>Also carries an edit: same single field, same validation, so a twin
+ * {@code UpdateTrainingCommentRequest} would only be a second copy waiting to drift. Here
+ * {@code @NotBlank} is a domain rule rather than hygiene — an edit corrects the text and may never
+ * empty it, because a message that lost its words would be an empty bubble (or a silent delete,
+ * which is not what this endpoint is for).
  */
 record CreateTrainingCommentRequest(
     @NotBlank @Size(max = TrainingComment.MAX_BODY_LENGTH) String body
@@ -269,6 +275,9 @@ record TrainingCommentDto(
     String authorName,
     @Nullable String authorAvatarUrl,
     Instant createdAt,
+    // Null until the author corrected their own words. Drives the "(edited)" badge — in a two-person
+    // thread the record of what was agreed is the only record there is, so a rewrite has to show.
+    @Nullable Instant editedAt,
     // Whether the viewer wrote this message (chat alignment left/right)
     boolean mine,
     List<TrainingCommentFileDto> files
