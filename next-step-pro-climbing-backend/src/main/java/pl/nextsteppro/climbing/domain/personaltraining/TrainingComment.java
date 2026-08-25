@@ -14,6 +14,12 @@ import java.util.UUID;
  * <p>{@code authorIsAdmin} records the author's role at the time of writing (robust against
  * later role changes) and drives the unread counters: the athlete counts coach messages,
  * the coach counts athlete messages.
+ *
+ * <p>{@code editedAt} is not audit metadata — it feeds those same counters. The queries used to ask
+ * {@code createdAt > seen} alone, which would have made an edit completely silent: the reader who
+ * already saw "3x10" would never learn it now says "4x8". Since the author may edit at any time, the
+ * re-raised unread mark is the only thing that keeps editing honest — the shape
+ * {@link PersonalTraining} already uses for its own edits.
  */
 @Entity
 @Table(name = "training_comments")
@@ -46,6 +52,13 @@ public class TrainingComment {
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
+    // Null until the author corrects their own words. NOT stamped on insert: "never edited" is the
+    // fact both the "(edited)" badge and the unread queries need, and a timestamp equal to createdAt
+    // would make each of them reconstruct it by comparing two clocks.
+    @Column(name = "edited_at")
+    @Nullable
+    private Instant editedAt;
+
     protected TrainingComment() {}
 
     public TrainingComment(PersonalTraining training, User author, boolean authorIsAdmin, @Nullable String body) {
@@ -58,6 +71,18 @@ public class TrainingComment {
     @PrePersist
     void onCreate() {
         createdAt = Instant.now();
+    }
+
+    /**
+     * Replaces the text with an already-sanitized body and stamps the edit.
+     *
+     * <p>A named method rather than a setter plus {@code @PreUpdate}: the entity is write-once apart
+     * from this one path, so the single way to mutate it should be visible at the call site instead
+     * of happening inside a lifecycle hook.
+     */
+    public void edit(String sanitizedBody) {
+        this.body = sanitizedBody;
+        this.editedAt = Instant.now();
     }
 
     /** HTML-escapes and trims the message (UTF-8 variant — keeps Polish diacritics intact). */
@@ -100,5 +125,10 @@ public class TrainingComment {
 
     public Instant getCreatedAt() {
         return createdAt;
+    }
+
+    @Nullable
+    public Instant getEditedAt() {
+        return editedAt;
     }
 }

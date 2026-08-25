@@ -1,7 +1,7 @@
 import { useRef, useState, type ChangeEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { Send, MessageSquare, Paperclip, X } from 'lucide-react'
+import { Send, MessageSquare, Paperclip, X, Pencil } from 'lucide-react'
 import { format } from 'date-fns'
 import clsx from 'clsx'
 import { LoadingSpinner } from '../ui/LoadingSpinner'
@@ -36,6 +36,11 @@ export function CommentThread({ trainingId, api, onPosted }: CommentThreadProps)
   const [staged, setStaged] = useState<File[]>([])
   const [pickError, setPickError] = useState<string | null>(null)
   const [picking, setPicking] = useState(false)
+  // Which message is open for correction, and its working text. Both live HERE rather than inside
+  // the bubble: the thread polls every 15 s, and state owned by the parent cannot be lost to a
+  // re-render of the list — it also makes "at most one message is being edited" true by construction.
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editDraft, setEditDraft] = useState('')
   const fileInput = useRef<HTMLInputElement>(null)
 
   const { data: comments, isLoading } = useQuery({
@@ -67,6 +72,36 @@ export function CommentThread({ trainingId, api, onPosted }: CommentThreadProps)
     mutationFn: (fileId: string) => api.deleteCommentFile(fileId),
     onSuccess: invalidate,
   })
+
+  const editMutation = useMutation({
+    mutationFn: ({ commentId, body }: { commentId: string; body: string }) =>
+      api.editComment(commentId, body),
+    onSuccess: () => {
+      setEditingId(null)
+      setEditDraft('')
+      invalidate()
+    },
+  })
+
+  const startEdit = (comment: TrainingCommentItem) => {
+    editMutation.reset()
+    setEditingId(comment.id)
+    // The backend escapes on write, so the stored text carries entities. Seeding the field with the
+    // raw body would show "&quot;" and escape it a second time on save.
+    setEditDraft(decodeHtmlEntities(comment.body ?? ''))
+  }
+
+  const cancelEdit = () => {
+    setEditingId(null)
+    setEditDraft('')
+  }
+
+  const saveEdit = (commentId: string) => {
+    const body = editDraft.trim()
+    // An edit corrects the text; it may never empty it. Clearing a message is not this button's job.
+    if (!body || editMutation.isPending) return
+    editMutation.mutate({ commentId, body })
+  }
 
   const pickFiles = async (e: ChangeEvent<HTMLInputElement>) => {
     const picked = Array.from(e.target.files ?? [])
@@ -127,6 +162,15 @@ export function CommentThread({ trainingId, api, onPosted }: CommentThreadProps)
               comment={comment}
               coachLabel={t('comments.coach')}
               onDeleteFile={(fileId) => deleteMutation.mutate(fileId)}
+              edit={{
+                editing: editingId === comment.id,
+                draft: editDraft,
+                saving: editMutation.isPending,
+                onStart: () => startEdit(comment),
+                onChange: setEditDraft,
+                onCancel: cancelEdit,
+                onSave: () => saveEdit(comment.id),
+              }}
             />
           ))}
         </div>
@@ -137,6 +181,9 @@ export function CommentThread({ trainingId, api, onPosted }: CommentThreadProps)
       )}
       {deleteMutation.isError && (
         <p className="text-xs text-rose-400/80 mt-2">{getErrorMessage(deleteMutation.error)}</p>
+      )}
+      {editMutation.isError && (
+        <p className="text-xs text-rose-400/80 mt-2">{getErrorMessage(editMutation.error)}</p>
       )}
       {pickError && (
         <p className="text-xs text-rose-400/80 mt-2" role="alert">{pickError}</p>
@@ -211,15 +258,32 @@ export function CommentThread({ trainingId, api, onPosted }: CommentThreadProps)
   )
 }
 
+interface BubbleEdit {
+  editing: boolean
+  draft: string
+  saving: boolean
+  onStart: () => void
+  onChange: (value: string) => void
+  onCancel: () => void
+  onSave: () => void
+}
+
 function CommentBubble({
   comment,
   coachLabel,
   onDeleteFile,
+  edit,
 }: {
   comment: TrainingCommentItem
   coachLabel: string
   onDeleteFile: (fileId: string) => void
+  edit: BubbleEdit
 }) {
+  const { t } = useTranslation('training')
+  // Only the author, and only where there are words to correct: a message that is nothing but a
+  // photo would have to grow a caption, which is a new message rather than a correction.
+  const canEdit = comment.mine && comment.body !== null
+
   return (
     <div className={clsx('flex', comment.mine ? 'justify-end' : 'justify-start')}>
       <div
@@ -236,10 +300,54 @@ function CommentBubble({
           </div>
         )}
         {/* Backend HTML-escapes on write; render as plain text. Null when the message is only files. */}
-        {comment.body && (
-          <p className="text-sm text-surface-100 whitespace-pre-wrap break-words">
-            {decodeHtmlEntities(comment.body)}
-          </p>
+        {edit.editing ? (
+          <div className="space-y-1.5">
+            <textarea
+              value={edit.draft}
+              onChange={(e) => edit.onChange(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault()
+                  edit.onSave()
+                } else if (e.key === 'Escape') {
+                  e.preventDefault()
+                  // stopPropagation, not just preventDefault: Modal listens for Escape on the
+                  // document, so without this one keypress both cancels the edit AND slams the
+                  // whole training modal shut — backing out of a correction would close the thread.
+                  e.stopPropagation()
+                  edit.onCancel()
+                }
+              }}
+              rows={2}
+              maxLength={1000}
+              autoFocus
+              aria-label={t('comments.edit')}
+              className="w-full bg-surface-900 border border-surface-700 rounded-lg px-2 py-1.5 text-sm text-surface-100 resize-none"
+            />
+            <div className="flex justify-end gap-2 text-[11px]">
+              <button
+                type="button"
+                onClick={edit.onCancel}
+                className="px-2 py-0.5 rounded text-surface-400 hover:text-surface-200"
+              >
+                {t('comments.editCancel')}
+              </button>
+              <button
+                type="button"
+                onClick={edit.onSave}
+                disabled={!edit.draft.trim() || edit.saving}
+                className="px-2 py-0.5 rounded bg-primary-600 hover:bg-primary-500 disabled:opacity-40 disabled:cursor-not-allowed text-white transition-colors"
+              >
+                {t('comments.editSave')}
+              </button>
+            </div>
+          </div>
+        ) : (
+          comment.body && (
+            <p className="text-sm text-surface-100 whitespace-pre-wrap break-words">
+              {decodeHtmlEntities(comment.body)}
+            </p>
+          )
         )}
         {comment.files.length > 0 && (
           <div className={clsx('space-y-1.5', comment.body && 'mt-2')}>
@@ -248,8 +356,23 @@ function CommentBubble({
             ))}
           </div>
         )}
-        <div className="text-[10px] text-surface-500 mt-0.5 text-right">
-          {format(new Date(comment.createdAt), 'dd.MM HH:mm')}
+        <div className="flex items-center justify-end gap-1.5 text-[10px] text-surface-500 mt-0.5">
+          {canEdit && !edit.editing && (
+            <button
+              type="button"
+              onClick={edit.onStart}
+              aria-label={t('comments.edit')}
+              title={t('comments.edit')}
+              // Always visible rather than revealed on hover: on a touch screen a hover-only
+              // affordance is one that never appears.
+              className="p-0.5 -m-0.5 rounded text-surface-500 hover:text-surface-300 transition-colors"
+            >
+              <Pencil className="w-3 h-3" />
+            </button>
+          )}
+          {/* The thread is the only record of what was agreed, so a rewrite has to say so. */}
+          {comment.editedAt && <span>{t('comments.edited')}</span>}
+          <span>{format(new Date(comment.createdAt), 'dd.MM HH:mm')}</span>
         </div>
       </div>
     </div>

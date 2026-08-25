@@ -1,0 +1,21 @@
+-- Autor może poprawić tekst własnej wiadomości w wątku pod treningiem.
+--
+-- Do tej pory wątek był zapisem jednorazowym (samo POST + GET), więc zła liczba w rozpisce
+-- ("3x10" zamiast "4x8") zostawała tam na zawsze, a jedynym wyjściem było dopisać sprostowanie —
+-- czyli nową wiadomość, która zapala drugiej stronie kropkę i podbija licznik. Poprawka literówki
+-- kosztowała tyle samo hałasu, co nowe polecenie.
+--
+-- Kolumna jest NULLOWALNA, a nie updated_at NOT NULL jak w admin_private_notes: NULL znaczy
+-- "nigdy nie edytowana" i to jest informacja, której potrzebują DWIE strony naraz — plakietka
+-- "edytowano" w dymku oraz zapytania nieprzeczytanych. Znacznik ustawiany przy wstawieniu kazałby
+-- obu porównywać dwa czasy, żeby odtworzyć fakt, który NULL mówi wprost.
+--
+-- ⚠️ Ta kolumna NIE jest metadanymi audytu — współsteruje licznikami nieprzeczytanych. Wszystkie
+-- trzy zapytania w TrainingCommentRepository liczyły dotąd wyłącznie "createdAt > seen", więc
+-- edycja byłaby CAŁKOWICIE NIEMA: zawodnik przeczytał "3x10", trener tydzień później poprawił na
+-- "4x8" i nic by mu tego nie powiedziało. Skoro okna czasowego nie ma, jedyną rzeczą, która czyni
+-- edycję uczciwą, jest ponowne zapalenie kropki — dokładnie tak, jak personal_trainings.updated_at
+-- razem z last_modified_by_admin już dziś robi dla edycji samego treningu.
+--
+-- Bez indeksu świadomie: te zapytania i tak filtrują po zawodniku i po roli autora.
+ALTER TABLE training_comments ADD COLUMN edited_at TIMESTAMPTZ;

@@ -686,6 +686,94 @@ class TrainingCalendarServiceTest {
         assertThrows(IllegalArgumentException.class, () -> service.deleteMy(athleteId, trainingId));
     }
 
+    // ========== editing a message ==========
+
+    @Test
+    void shouldEscapeHtmlWhenEditingComment() {
+        UUID commentId = UUID.randomUUID();
+        UUID trainingId = UUID.randomUUID();
+        PersonalTraining training = buildTraining(athlete, false);
+        setField(training, "id", trainingId);
+        TrainingComment comment = buildComment(commentId, training, athlete, false, "Zrób 3x10");
+        when(commentRepository.findById(commentId)).thenReturn(Optional.of(comment));
+        when(trainingRepository.findById(trainingId)).thenReturn(Optional.of(training));
+        when(commentRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        TrainingCommentDto dto = service.editComment(athleteId, false, commentId, "<b>4x8</b>");
+
+        assertEquals("&lt;b&gt;4x8&lt;/b&gt;", dto.body());
+        // Without the stamp the correction is invisible: no badge and no "(edited)" in the bubble
+        assertNotNull(dto.editedAt());
+        assertNotNull(comment.getEditedAt());
+        assertEquals(comment.getCreatedAt(), dto.createdAt());
+    }
+
+    @Test
+    void shouldRefuseEditingSomebodyElsesMessage() {
+        UUID commentId = UUID.randomUUID();
+        UUID trainingId = UUID.randomUUID();
+        PersonalTraining training = buildTraining(athlete, true);
+        setField(training, "id", trainingId);
+        // The coach wrote it. The athlete may read it and could ask for it to go, but never rewrites it.
+        TrainingComment fromCoach = buildComment(commentId, training, buildCoach(), true, "Zrób 3x10");
+        when(commentRepository.findById(commentId)).thenReturn(Optional.of(fromCoach));
+        when(trainingRepository.findById(trainingId)).thenReturn(Optional.of(training));
+
+        assertThrows(IllegalStateException.class,
+            () -> service.editComment(athleteId, false, commentId, "Zrób 4x8"));
+        verify(commentRepository, never()).save(any());
+    }
+
+    @Test
+    void shouldRefuseEditingAMessageThatIsOnlyAFile() {
+        UUID commentId = UUID.randomUUID();
+        UUID trainingId = UUID.randomUUID();
+        PersonalTraining training = buildTraining(athlete, false);
+        setField(training, "id", trainingId);
+        TrainingComment photoOnly = buildComment(commentId, training, athlete, false, null);
+        when(commentRepository.findById(commentId)).thenReturn(Optional.of(photoOnly));
+        when(trainingRepository.findById(trainingId)).thenReturn(Optional.of(training));
+
+        // Growing a caption changes the shape of the message; the next thought is a new message.
+        assertThrows(IllegalStateException.class,
+            () -> service.editComment(athleteId, false, commentId, "tak to wyszło"));
+        verify(commentRepository, never()).save(any());
+    }
+
+    @Test
+    void shouldRefuseBlankEdit() {
+        UUID commentId = UUID.randomUUID();
+        UUID trainingId = UUID.randomUUID();
+        PersonalTraining training = buildTraining(athlete, false);
+        setField(training, "id", trainingId);
+        TrainingComment comment = buildComment(commentId, training, athlete, false, "Zrób 3x10");
+        when(commentRepository.findById(commentId)).thenReturn(Optional.of(comment));
+        when(trainingRepository.findById(trainingId)).thenReturn(Optional.of(training));
+
+        assertThrows(IllegalArgumentException.class,
+            () -> service.editComment(athleteId, false, commentId, "   "));
+        assertEquals("Zrób 3x10", comment.getBody());
+        assertNull(comment.getEditedAt());
+        verify(commentRepository, never()).save(any());
+    }
+
+    @Test
+    void shouldAnswerAnEditOfAForeignMessageAsIfTheIdWereMadeUp() {
+        UUID commentId = UUID.randomUUID();
+        UUID trainingId = UUID.randomUUID();
+        PersonalTraining foreign = buildTraining(buildAthlete(UUID.randomUUID()), false);
+        setField(foreign, "id", trainingId);
+        TrainingComment comment = buildComment(commentId, foreign, athlete, false, "Zrób 3x10");
+        when(commentRepository.findById(commentId)).thenReturn(Optional.of(comment));
+        when(trainingRepository.findById(trainingId)).thenReturn(Optional.of(foreign));
+
+        // The training guard's own message would confirm that a guessed comment id is real.
+        IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
+            () -> service.editComment(athleteId, false, commentId, "Zrób 4x8"));
+        assertEquals("training.calendar.comment.not.found", e.getMessage());
+        verify(commentRepository, never()).save(any());
+    }
+
     // ========== sanitization ==========
 
     @Test
@@ -1406,6 +1494,20 @@ class TrainingCalendarServiceTest {
         user.grantTrainingConsent();
         setField(user, "id", id);
         return user;
+    }
+
+    private static User buildCoach() {
+        User user = new User("coach@example.com", "Marek", "Trener", "+48987654321", "marek");
+        setField(user, "id", UUID.randomUUID());
+        return user;
+    }
+
+    private static TrainingComment buildComment(UUID id, PersonalTraining training, User author,
+                                                boolean authorIsAdmin, @Nullable String body) {
+        TrainingComment comment = new TrainingComment(training, author, authorIsAdmin, body);
+        setField(comment, "id", id);
+        setField(comment, "createdAt", Instant.now());
+        return comment;
     }
 
     // Yesterday by default: completion requires a training that has already started

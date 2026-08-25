@@ -1429,6 +1429,8 @@ export interface TrainingCommentItem {
   authorName: string
   authorAvatarUrl: string | null
   createdAt: string
+  // Null until the author corrected their own words
+  editedAt: string | null
   // Whether the viewer wrote this message (chat alignment)
   mine: boolean
   files: TrainingCommentFile[]
