@@ -110,7 +110,9 @@ export function VideosPage() {
 
                 {video.excerpt && (
                   <div
-                    className="text-sm text-surface-300 mb-3 line-clamp-3 prose-sm"
+                    // max-height, not line-clamp: that works via -webkit-box, which does not
+                    // clamp the block elements the renderer emits (lists, headings).
+                    className="text-sm text-surface-300 mb-3 max-h-[3.75rem] overflow-hidden prose-sm"
                     dangerouslySetInnerHTML={{ __html: renderRichText(video.excerpt) }}
                   />
                 )}

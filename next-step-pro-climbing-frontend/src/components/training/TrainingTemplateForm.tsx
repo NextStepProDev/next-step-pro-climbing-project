@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import clsx from 'clsx'
 import { ClipboardList, Dumbbell } from 'lucide-react'
 import { Button } from '../ui/Button'
+import { RichTextEditor } from '../ui/RichTextEditor'
 import { AttachmentEditor } from './AttachmentEditor'
 import { adminTrainingCalendarApi } from '../../api/client'
 import { getErrorMessage } from '../../utils/errors'
@@ -188,16 +189,16 @@ export function TrainingTemplateForm({ template, draft, onDone, onCancel }: {
 
       <div>
         <label className="block text-sm text-surface-400 mb-1">{t('form.description')}</label>
-        <textarea
+        <RichTextEditor
           value={description}
-          onChange={(e) => setDescription(e.target.value)}
+          onChange={setDescription}
           maxLength={2000}
           rows={8}
           placeholder={t('form.descriptionPlaceholder')}
           // Same reasoning as the training form: a template body is the longest text in this
           // feature, and it is written once to be reused, so it deserves to be readable while
           // being written. resize-y for the ones that outgrow eight rows.
-          className="w-full bg-surface-800 border border-surface-700 rounded-lg px-4 py-3 text-surface-100 leading-relaxed resize-y min-h-40"
+          inputClassName="w-full bg-surface-800 border border-surface-600 rounded-b px-4 py-3 text-surface-100 leading-relaxed resize-y min-h-40 focus:outline-none focus:border-primary-500"
         />
       </div>
 

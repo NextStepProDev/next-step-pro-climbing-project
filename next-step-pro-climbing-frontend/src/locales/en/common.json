@@ -1,4 +1,15 @@
 {
+  "richText": {
+    "bold": "Bold (⌘B)",
+    "italic": "Italic (⌘I)",
+    "underline": "Underline (⌘U)",
+    "strikethrough": "Strikethrough (⌘⇧X)",
+    "heading": "Section heading (##)",
+    "bulletList": "Bulleted list (•)",
+    "numberedList": "Numbered list (1.)",
+    "letteredList": "Lettered list (a))",
+    "hint": "Select text → click a style"
+  },
   "nav": {
     "home": "Home",
     "calendar": "Calendar",

@@ -1,4 +1,5 @@
 import { APP_TIME_ZONE } from './calendarDate'
+import { toPlainText } from './renderRichText'
 
 // Every time here is a Polish wall clock reading, never an instant, so the export must name
 // that zone outright. Stamping the device's zone told an athlete abroad's calendar app that
@@ -21,6 +22,28 @@ function formatDateOnly(date: string): string {
   return date.replace(/-/g, '')
 }
 
+/**
+ * An event description is written in the pseudo-markdown the site renders, and a calendar app
+ * renders none of it — so the markers that structure the page on screen are exactly what would
+ * show up as "## Co zabrać" on somebody's phone.
+ */
+function describe(description: string): string {
+  return toPlainText(description)
+}
+
+/**
+ * RFC 5545 escaping. Without it a description containing a newline — which every multi-line one
+ * does — emits a bare line that is not a property, and the calendar app drops the event or
+ * refuses the file. Commas and semicolons are value separators and need the same treatment.
+ */
+function escapeIcs(value: string): string {
+  return value
+    .replace(/\\/g, '\\\\')
+    .replace(/,/g, '\\,')
+    .replace(/;/g, '\\;')
+    .replace(/\r?\n/g, '\\n')
+}
+
 export function buildGoogleCalendarUrl(event: CalendarEvent): string {
   const params = new URLSearchParams()
   params.set('action', 'TEMPLATE')
@@ -34,7 +57,8 @@ export function buildGoogleCalendarUrl(event: CalendarEvent): string {
   }
 
   if (event.location) params.set('location', event.location)
-  if (event.description) params.set('details', event.description)
+  // URLSearchParams handles the URL encoding; only the markers have to go.
+  if (event.description) params.set('details', describe(event.description))
 
   return `https://calendar.google.com/calendar/render?${params.toString()}`
 }
@@ -63,11 +87,11 @@ export function buildIcsContent(event: CalendarEvent): string {
     `DTSTAMP:${now}`,
     dtStart,
     dtEnd,
-    `SUMMARY:${event.title}`,
+    `SUMMARY:${escapeIcs(event.title)}`,
   ]
 
-  if (event.location) lines.push(`LOCATION:${event.location}`)
-  if (event.description) lines.push(`DESCRIPTION:${event.description}`)
+  if (event.location) lines.push(`LOCATION:${escapeIcs(event.location)}`)
+  if (event.description) lines.push(`DESCRIPTION:${escapeIcs(describe(event.description))}`)
 
   lines.push('END:VEVENT', 'END:VCALENDAR')
 

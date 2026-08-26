@@ -8,6 +8,7 @@ import { Modal } from '../ui/Modal'
 import { Button } from '../ui/Button'
 import { DateInput } from '../ui/DateInput'
 import { TimeScrollPicker } from '../ui/TimeScrollPicker'
+import { RichTextEditor } from '../ui/RichTextEditor'
 import { RpePicker } from './RpePicker'
 import { AttachmentEditor } from './AttachmentEditor'
 import { adminTrainingCalendarApi } from '../../api/client'
@@ -388,16 +389,16 @@ function TrainingForm({ training, initialDate, initialTime, prefill, onClose, on
 
       <div>
         <label className="block text-sm text-surface-400 mb-1">{t('form.description')}</label>
-        <textarea
+        <RichTextEditor
           value={description}
-          onChange={(e) => setDescription(e.target.value)}
+          onChange={setDescription}
           maxLength={2000}
           rows={8}
           placeholder={t('form.descriptionPlaceholder')}
           // A 2000-character field in four rows is a peephole over your own text: while
           // writing a plan you could only see the last sentence. Taller, plus resize-y so a
           // long plan can be pulled open — the modal is the scroll container anyway.
-          className="w-full bg-surface-800 border border-surface-700 rounded-lg px-4 py-3 text-surface-100 leading-relaxed resize-y min-h-40"
+          inputClassName="w-full bg-surface-800 border border-surface-600 rounded-b px-4 py-3 text-surface-100 leading-relaxed resize-y min-h-40 focus:outline-none focus:border-primary-500"
         />
       </div>
 

@@ -81,7 +81,7 @@ final class CalendarUtils {
             sb.append("LOCATION:").append(escapeIcs(location)).append("\r\n");
         }
         if (description != null && !description.isBlank()) {
-            sb.append("DESCRIPTION:").append(escapeIcs(description)).append("\r\n");
+            sb.append("DESCRIPTION:").append(escapeIcs(toPlainText(description))).append("\r\n");
         }
 
         sb.append("END:VEVENT\r\n");
@@ -92,6 +92,30 @@ final class CalendarUtils {
 
     private static String encode(String value) {
         return URLEncoder.encode(value, StandardCharsets.UTF_8);
+    }
+
+    /**
+     * Strips the pseudo-markdown an event description is written in.
+     *
+     * DESCRIPTION is a plain-text field, so the markers that structure the description on the site
+     * would land in the reader's calendar as literal "## Co zabrać". Mirrors {@code toPlainText}
+     * in the frontend's renderRichText.ts, which does the same job for the browser-side export —
+     * a marker taught to the editor has to reach both, and {@code CalendarUtilsTest} pins it here.
+     *
+     * <p>Bullets keep a character because a marked item still reads as a list without markup;
+     * numbered and lettered items already spell their own label out.
+     */
+    static String toPlainText(String description) {
+        return description.lines()
+            .map(line -> line
+                .replaceFirst("^#{1,3} ", "")
+                .replaceFirst("^[•\\-*] ", "• "))
+            .map(line -> line
+                .replaceAll("\\*\\*(.+?)\\*\\*", "$1")
+                .replaceAll("\\*(.+?)\\*", "$1")
+                .replaceAll("__(.+?)__", "$1")
+                .replaceAll("~~(.+?)~~", "$1"))
+            .collect(java.util.stream.Collectors.joining("\n"));
     }
 
     private static String escapeIcs(String value) {

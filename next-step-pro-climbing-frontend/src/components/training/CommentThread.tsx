@@ -8,6 +8,8 @@ import { LoadingSpinner } from '../ui/LoadingSpinner'
 import { PrivateImage, PrivateFileCard } from './PrivateFile'
 import { isImageType } from '../../utils/mediaTypes'
 import { decodeHtmlEntities } from '../../utils/htmlEntities'
+import { renderRichText } from '../../utils/renderRichText'
+import { continueList, normalizeBulletMarker, type TextEdit } from '../../utils/richTextInput'
 import { getErrorMessage } from '../../utils/errors'
 import {
   ATTACHMENT_INPUT_TYPES,
@@ -20,6 +22,56 @@ import type { TrainingCommentFile, TrainingCommentItem } from '../../types'
 
 /** Mirrors TrainingCommentFile.MAX_PER_COMMENT on the backend. */
 const MAX_FILES = 3
+/** Mirrors TrainingComment.MAX_BODY_LENGTH, which CreateTrainingCommentRequest enforces with @Size. */
+const MAX_BODY = 1000
+/** Rows the composer grows to before it starts scrolling — enough to see a short list whole. */
+const MAX_ROWS = 6
+
+/** Grows the box with the text: a one-row field building a five-item list is a peephole. */
+function rowsFor(text: string, min: number): number {
+  return Math.min(MAX_ROWS, Math.max(min, text.split('\n').length))
+}
+
+function applyTextEdit(ta: HTMLTextAreaElement, edit: TextEdit, setValue: (value: string) => void) {
+  setValue(edit.value)
+  const { caret } = edit
+  requestAnimationFrame(() => {
+    ta.focus()
+    ta.setSelectionRange(caret, caret)
+  })
+}
+
+/**
+ * Carries a list on to the next item.
+ *
+ * Bound to Shift+Enter rather than Enter because in this thread Enter sends the message — the
+ * rule belongs to whichever key actually breaks the line, which is why RichTextEditor (where
+ * that key is plain Enter) wires the same helper to a different one. No toolbar here: the
+ * bubble is too narrow for one, so the markers are typed and ⌘B/⌘I stay in the big forms.
+ */
+function carryListOnShiftEnter(
+  e: React.KeyboardEvent<HTMLTextAreaElement>,
+  setValue: (value: string) => void,
+) {
+  const ta = e.currentTarget
+  const edit = continueList(ta.value, ta.selectionStart, ta.selectionEnd, MAX_BODY)
+  if (!edit) return
+  e.preventDefault()
+  applyTextEdit(ta, edit, setValue)
+}
+
+/** Turns a just-typed `- ` / `* ` at a line start into the bullet the renderer draws. */
+function handleMarkdownChange(
+  e: ChangeEvent<HTMLTextAreaElement>,
+  setValue: (value: string) => void,
+) {
+  const edit = normalizeBulletMarker(e.target.value, e.target.selectionStart)
+  if (edit) {
+    applyTextEdit(e.target, edit, setValue)
+    return
+  }
+  setValue(e.target.value)
+}
 
 interface CommentThreadProps {
   trainingId: string
@@ -231,16 +283,18 @@ export function CommentThread({ trainingId, api, onPosted }: CommentThreadProps)
         </button>
         <textarea
           value={draft}
-          onChange={(e) => setDraft(e.target.value)}
+          onChange={(e) => handleMarkdownChange(e, setDraft)}
           onKeyDown={(e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
               e.preventDefault()
               send()
+            } else if (e.key === 'Enter') {
+              carryListOnShiftEnter(e, setDraft)
             }
           }}
           placeholder={t('comments.placeholder')}
-          rows={1}
-          maxLength={1000}
+          rows={rowsFor(draft, 1)}
+          maxLength={MAX_BODY}
           className="flex-1 bg-surface-800 border border-surface-700 rounded-lg px-3 py-2 text-sm text-surface-100 resize-none"
         />
         <button
@@ -299,16 +353,19 @@ function CommentBubble({
             {comment.authorIsAdmin ? coachLabel : comment.authorName}
           </div>
         )}
-        {/* Backend HTML-escapes on write; render as plain text. Null when the message is only files. */}
+        {/* Backend HTML-escapes on write, so decode before the renderer escapes again. Null when
+            the message is only files. A div, not a p — lists and headings are block elements. */}
         {edit.editing ? (
           <div className="space-y-1.5">
             <textarea
               value={edit.draft}
-              onChange={(e) => edit.onChange(e.target.value)}
+              onChange={(e) => handleMarkdownChange(e, edit.onChange)}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && !e.shiftKey) {
                   e.preventDefault()
                   edit.onSave()
+                } else if (e.key === 'Enter') {
+                  carryListOnShiftEnter(e, edit.onChange)
                 } else if (e.key === 'Escape') {
                   e.preventDefault()
                   // stopPropagation, not just preventDefault: Modal listens for Escape on the
@@ -318,8 +375,8 @@ function CommentBubble({
                   edit.onCancel()
                 }
               }}
-              rows={2}
-              maxLength={1000}
+              rows={rowsFor(edit.draft, 2)}
+              maxLength={MAX_BODY}
               autoFocus
               aria-label={t('comments.edit')}
               className="w-full bg-surface-900 border border-surface-700 rounded-lg px-2 py-1.5 text-sm text-surface-100 resize-none"
@@ -344,9 +401,10 @@ function CommentBubble({
           </div>
         ) : (
           comment.body && (
-            <p className="text-sm text-surface-100 whitespace-pre-wrap break-words">
-              {decodeHtmlEntities(comment.body)}
-            </p>
+            <div
+              className="text-sm text-surface-100 break-words whitespace-pre-wrap"
+              dangerouslySetInnerHTML={{ __html: renderRichText(decodeHtmlEntities(comment.body)) }}
+            />
           )
         )}
         {comment.files.length > 0 && (

@@ -535,16 +535,31 @@ public class MailService {
             """.formatted(siteUrl, subject, htmlBody, unsubscribeSection);
     }
 
+    /**
+     * Server-side twin of the frontend's renderRichText, for the one body the admin writes and the
+     * server turns into HTML (mass mail and newsletters).
+     *
+     * ⚠️ The two MUST accept the same markers, because the same RichTextEditor writes both — and
+     * this is the one place where a gap is invisible before it ships: AdminMailPanel has no
+     * preview, so an unsupported marker is first seen by the recipients, in a mass send that
+     * cannot be recalled. Heading, strikethrough and the hand-typed bullets were added here for
+     * exactly that reason; anything added to the editor has to land in both files.
+     */
     private String richTextToHtml(String text) {
         String[] lines = text.split("\n", -1);
         StringBuilder sb = new StringBuilder();
         int i = 0;
         while (i < lines.length) {
             String line = lines[i];
-            if (line.startsWith("• ")) {
+            if (line.matches("^#{1,3} .*")) {
+                sb.append("<h3 style=\"margin:16px 0 4px 0;font-size:16px;color:#312e2b;\">")
+                    .append(inlineFormat(line.replaceFirst("^#{1,3} ", "")))
+                    .append("</h3>");
+                i++;
+            } else if (line.matches("^[•\\-*] .*")) {
                 sb.append("<ul style=\"margin:8px 0;padding-left:20px;\">");
-                while (i < lines.length && lines[i].startsWith("• ")) {
-                    sb.append("<li>").append(inlineFormat(lines[i].substring(2))).append("</li>");
+                while (i < lines.length && lines[i].matches("^[•\\-*] .*")) {
+                    sb.append("<li>").append(inlineFormat(lines[i].replaceFirst("^[•\\-*] ", ""))).append("</li>");
                     i++;
                 }
                 sb.append("</ul>");
@@ -577,6 +592,8 @@ public class MailService {
         text = text.replaceAll("\\*\\*(.+?)\\*\\*", "<strong>$1</strong>");
         text = text.replaceAll("__(.+?)__", "<u>$1</u>");
         text = text.replaceAll("\\*(.+?)\\*", "<em>$1</em>");
+        // A styled span rather than <s>: Outlook renders the CSS reliably, the tag less so.
+        text = text.replaceAll("~~(.+?)~~", "<span style=\"text-decoration: line-through;\">$1</span>");
         return text;
     }
 

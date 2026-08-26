@@ -8,6 +8,7 @@ import { PageHead } from '../components/ui/PageHead'
 import { LoadingSpinner } from '../components/ui/LoadingSpinner'
 import { Button } from '../components/ui/Button'
 import { ShareButtons } from '../components/ui/ShareButtons'
+import { renderRichText } from '../utils/renderRichText'
 import { useDateLocale } from '../utils/dateFnsLocale'
 import { formatEventWhen, getEventColorByType } from '../utils/events'
 
@@ -142,9 +143,10 @@ export function EventPage() {
           {event.description && (
             <div className="pt-4 border-t border-surface-800">
               <h3 className="text-sm font-medium text-surface-400 mb-2">{t('eventPage.description')}</h3>
-              <p className="text-surface-200 whitespace-pre-wrap">
-                {event.description}
-              </p>
+              <div
+                className="text-surface-200 whitespace-pre-wrap"
+                dangerouslySetInnerHTML={{ __html: renderRichText(event.description) }}
+              />
             </div>
           )}
 
