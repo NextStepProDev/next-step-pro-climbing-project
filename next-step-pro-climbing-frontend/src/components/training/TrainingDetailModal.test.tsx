@@ -94,7 +94,11 @@ describe('TrainingDetailModal — failed completion keeps the form open (#98)', 
     const error = await screen.findByText('save failed')
     const save = screen.getByText('completion.save')
     expect(error.compareDocumentPosition(save) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
-    const form = screen.getByPlaceholderText('completion.feedbackPlaceholder').closest('div')!.parentElement!
+    // Walk up from the feedback field to the first block that also holds Save: that block IS the
+    // form, whatever the field happens to be wrapped in. Counting parentElement hops instead ties
+    // this assertion to the field's markup — it broke the day the field grew a toolbar.
+    let form = screen.getByPlaceholderText('completion.feedbackPlaceholder').parentElement!
+    while (!form.contains(save)) form = form.parentElement!
     expect(form).toContainElement(error)
   })
 

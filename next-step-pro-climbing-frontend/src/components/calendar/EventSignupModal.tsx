@@ -8,6 +8,7 @@ import { Modal } from '../ui/Modal'
 import { Button } from '../ui/Button'
 import { SuccessCheckmark } from '../ui/SuccessCheckmark'
 import { ShareButtons } from '../ui/ShareButtons'
+import { renderRichText } from '../../utils/renderRichText'
 import { AddToCalendarButton } from '../ui/AddToCalendarButton'
 import { CompleteProfileModal } from '../ui/CompleteProfileModal'
 import { useAuth } from '../../context/AuthContext'
@@ -439,7 +440,10 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
 
         {/* Description */}
         {ev.description && (
-          <p className="text-sm text-surface-300 whitespace-pre-wrap">{ev.description}</p>
+          <div
+            className="text-sm text-surface-300 whitespace-pre-wrap"
+            dangerouslySetInnerHTML={{ __html: renderRichText(ev.description) }}
+          />
         )}
 
         {/* Date / time */}

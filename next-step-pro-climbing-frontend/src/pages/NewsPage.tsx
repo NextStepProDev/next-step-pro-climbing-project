@@ -275,7 +275,9 @@ export function NewsPage() {
                       {article.title}
                     </h2>
                     {article.excerpt && (
-                      <p className="mt-2 text-sm text-surface-300 line-clamp-3"
+                      // A div: renderRichText emits lists and headings, and a <p> may not hold
+                      // block elements — the browser closes it early and the rest escapes the card.
+                      <div className="mt-2 text-sm text-surface-300 max-h-[3.75rem] overflow-hidden"
                         dangerouslySetInnerHTML={{ __html: renderRichText(article.excerpt) }} />
                     )}
                   </div>

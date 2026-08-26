@@ -3,10 +3,12 @@ import { useMutation } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Pencil } from 'lucide-react'
 import { Button } from '../ui/Button'
+import { RichTextEditor } from '../ui/RichTextEditor'
 import { RpePicker } from './RpePicker'
 import { trainingCalendarApi } from '../../api/client'
 import { getErrorMessage } from '../../utils/errors'
 import { decodeHtmlEntities } from '../../utils/htmlEntities'
+import { renderRichText } from '../../utils/renderRichText'
 import type { ReservationOverlayItem } from '../../types'
 
 interface ReservationRatingSectionProps {
@@ -41,7 +43,10 @@ export function ReservationRatingSection({ reservation, onRated }: ReservationRa
           </Button>
         </div>
         {reservation.rpeNote && (
-          <p className="text-sm text-surface-300 whitespace-pre-wrap">{decodeHtmlEntities(reservation.rpeNote)}</p>
+          <div
+            className="text-sm text-surface-300 whitespace-pre-wrap"
+            dangerouslySetInnerHTML={{ __html: renderRichText(decodeHtmlEntities(reservation.rpeNote)) }}
+          />
         )}
       </div>
     )
@@ -53,13 +58,13 @@ export function ReservationRatingSection({ reservation, onRated }: ReservationRa
       <RpePicker value={rpe} onChange={setRpe} />
       <div>
         <label className="block text-sm text-surface-400 mb-1">{t('rpe.note')}</label>
-        <textarea
+        <RichTextEditor
           value={note}
-          onChange={(e) => setNote(e.target.value)}
+          onChange={setNote}
           maxLength={500}
-          rows={2}
+          rows={3}
           placeholder={t('rpe.notePlaceholder')}
-          className="w-full bg-surface-800 border border-surface-700 rounded-lg px-3 py-2 text-sm text-surface-100 resize-none"
+          inputClassName="w-full bg-surface-800 border border-surface-600 rounded-b px-3 py-2 text-sm text-surface-100 resize-y focus:outline-none focus:border-primary-500"
         />
       </div>
       {mutation.isError && <p className="text-sm text-rose-400/80">{getErrorMessage(mutation.error)}</p>}

@@ -1,5 +1,7 @@
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef } from 'react'
-import { Bold, Italic, Underline, List, ListOrdered } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
+import { Bold, Italic, Underline, Strikethrough, Heading, List, ListOrdered } from 'lucide-react'
+import { BULLET_MARKER, LIST_PREFIX_RE, continueList, normalizeBulletMarker } from '../../utils/richTextInput'
 
 function htmlToRichText(html: string): string | null {
   const doc = new DOMParser().parseFromString(html, 'text/html')
@@ -14,7 +16,7 @@ function htmlToRichText(html: string): string | null {
     if (tag === 'ul') {
       return Array.from(el.children)
         .filter(c => c.tagName.toLowerCase() === 'li')
-        .map(li => `• ${convertChildren(li).trim()}`)
+        .map(li => `${BULLET_MARKER}${convertChildren(li).trim()}`)
         .join('\n') + '\n'
     }
 
@@ -30,8 +32,13 @@ function htmlToRichText(html: string): string | null {
       case 'strong': case 'b': return `**${inner.trim()}**`
       case 'em':     case 'i': return `*${inner.trim()}*`
       case 'u':                return `__${inner.trim()}__`
+      case 's': case 'strike': case 'del': return `~~${inner.trim()}~~`
       case 'br':               return '\n'
-      case 'p': case 'h1': case 'h2': case 'h3': case 'h4': case 'h5': case 'h6':
+      // Word and Google Docs paste their section titles as real headings; keeping the marker
+      // means a pasted plan arrives already sectioned instead of flattened into one wall.
+      case 'h1': case 'h2': case 'h3': case 'h4': case 'h5': case 'h6':
+        return inner.trim() ? `## ${inner.trim()}\n` : ''
+      case 'p':
         return inner.trim() ? inner.trim() + '\n' : ''
       case 'div':
         return inner.trim() ? inner.trim() + '\n' : ''
@@ -53,6 +60,10 @@ interface RichTextEditorProps {
   rows?: number
   placeholder?: string
   className?: string
+  maxLength?: number
+  autoFocus?: boolean
+  /** Textarea classes, for call sites whose field is styled differently from the CMS panels. */
+  inputClassName?: string
 }
 
 interface ToolbarButtonProps {
@@ -68,16 +79,19 @@ function ToolbarButton({ onAction, title, children }: ToolbarButtonProps) {
       onMouseDown={(e) => { e.preventDefault(); onAction() }}
       className="p-1 rounded text-surface-300 hover:text-surface-100 hover:bg-surface-700 transition-colors"
       title={title}
+      aria-label={title}
     >
       {children}
     </button>
   )
 }
 
-const LIST_PREFIX_RE = /^(• |\d+\. |[a-z]\) )/i
+const HEADING_PREFIX_RE = /^#{1,3} /
+const HEADING_MARKER = '## '
 
-function stripListPrefix(line: string): string {
-  return line.replace(LIST_PREFIX_RE, '')
+/** A line is a heading or a list item, never both — so switching one off strips whichever is there. */
+function stripBlockPrefix(line: string): string {
+  return line.replace(LIST_PREFIX_RE, '').replace(HEADING_PREFIX_RE, '')
 }
 
 export const RichTextEditor = forwardRef<HTMLTextAreaElement, RichTextEditorProps>(function RichTextEditor({
@@ -86,7 +100,11 @@ export const RichTextEditor = forwardRef<HTMLTextAreaElement, RichTextEditorProp
   rows = 16,
   placeholder,
   className,
+  maxLength,
+  autoFocus,
+  inputClassName,
 }, forwardedRef) {
+  const { t } = useTranslation('common')
   const internalRef = useRef<HTMLTextAreaElement>(null)
   useImperativeHandle(forwardedRef, () => internalRef.current!, [])
   const textareaRef = internalRef
@@ -137,6 +155,17 @@ export const RichTextEditor = forwardRef<HTMLTextAreaElement, RichTextEditorProp
   }, [onChange])
   // ───────────────────────────────────────────────────────────────────────────
 
+  /** Applies a computed edit and puts the caret where the rule said it belongs. */
+  const applyEdit = useCallback((newValue: string, caret: number) => {
+    const ta = textareaRef.current
+    callOnChange(newValue)
+    requestAnimationFrame(() => {
+      if (!ta) return
+      ta.focus()
+      ta.setSelectionRange(caret, caret)
+    })
+  }, [callOnChange, textareaRef])
+
   const wrapSelection = useCallback((marker: string) => {
     const ta = textareaRef.current
     if (!ta) return
@@ -152,7 +181,7 @@ export const RichTextEditor = forwardRef<HTMLTextAreaElement, RichTextEditorProp
     })
   }, [callOnChange, textareaRef])
 
-  const applyList = useCallback((type: 'bullet' | 'numbered' | 'lettered') => {
+  const applyBlock = useCallback((type: 'bullet' | 'numbered' | 'lettered' | 'heading') => {
     const ta = textareaRef.current
     if (!ta) return
     const start = ta.selectionStart
@@ -164,23 +193,29 @@ export const RichTextEditor = forwardRef<HTMLTextAreaElement, RichTextEditorProp
 
     const lines = ta.value.slice(lineStart, lineEnd).split('\n')
 
-    const allBullet   = lines.every(l => l.startsWith('• '))
+    const allBullet   = lines.every(l => /^[•\-*] /.test(l))
     const allNumbered = lines.every(l => /^\d+\. /.test(l))
     const allLettered = lines.every(l => /^[a-z]\) /i.test(l))
+    const allHeading  = lines.every(l => HEADING_PREFIX_RE.test(l))
 
     let newLines: string[]
     if (type === 'bullet') {
       newLines = allBullet
-        ? lines.map(stripListPrefix)
-        : lines.map(l => `• ${stripListPrefix(l)}`)
+        ? lines.map(stripBlockPrefix)
+        : lines.map(l => `${BULLET_MARKER}${stripBlockPrefix(l)}`)
     } else if (type === 'numbered') {
       newLines = allNumbered
-        ? lines.map(stripListPrefix)
-        : lines.map((l, i) => `${i + 1}. ${stripListPrefix(l)}`)
-    } else {
+        ? lines.map(stripBlockPrefix)
+        : lines.map((l, i) => `${i + 1}. ${stripBlockPrefix(l)}`)
+    } else if (type === 'lettered') {
       newLines = allLettered
-        ? lines.map(stripListPrefix)
-        : lines.map((l, i) => `${String.fromCharCode(97 + i)}) ${stripListPrefix(l)}`)
+        ? lines.map(stripBlockPrefix)
+        // Clamped at 'z': past 26 lines the next code points are '{', '|', '}'
+        : lines.map((l, i) => `${String.fromCharCode(97 + Math.min(i, 25))}) ${stripBlockPrefix(l)}`)
+    } else {
+      newLines = allHeading
+        ? lines.map(stripBlockPrefix)
+        : lines.map(l => `${HEADING_MARKER}${stripBlockPrefix(l)}`)
     }
 
     const newSelected = newLines.join('\n')
@@ -195,19 +230,45 @@ export const RichTextEditor = forwardRef<HTMLTextAreaElement, RichTextEditorProp
   const handleBold      = useCallback(() => wrapSelection('**'), [wrapSelection])
   const handleItalic    = useCallback(() => wrapSelection('*'),  [wrapSelection])
   const handleUnderline = useCallback(() => wrapSelection('__'), [wrapSelection])
-  const handleBullet    = useCallback(() => applyList('bullet'),   [applyList])
-  const handleNumbered  = useCallback(() => applyList('numbered'), [applyList])
-  const handleLettered  = useCallback(() => applyList('lettered'), [applyList])
+  const handleStrike    = useCallback(() => wrapSelection('~~'), [wrapSelection])
+  const handleHeading   = useCallback(() => applyBlock('heading'),  [applyBlock])
+  const handleBullet    = useCallback(() => applyBlock('bullet'),   [applyBlock])
+  const handleNumbered  = useCallback(() => applyBlock('numbered'), [applyBlock])
+  const handleLettered  = useCallback(() => applyBlock('lettered'), [applyBlock])
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     const meta = e.metaKey || e.ctrlKey
+
+    // Enter inside a list carries the list on — writing ten points otherwise means ten trips
+    // to the toolbar. Here Enter is the key that makes a new line; in the comment thread it
+    // sends the message, which is why the rule itself lives outside this component.
+    if (!meta && e.key === 'Enter') {
+      const ta = e.currentTarget
+      const edit = continueList(ta.value, ta.selectionStart, ta.selectionEnd, maxLength)
+      if (edit) {
+        e.preventDefault()
+        applyEdit(edit.value, edit.caret)
+      }
+      return
+    }
+
     if (!meta) return
     if (e.key === 'z' && !e.shiftKey) { e.preventDefault(); undo(); return }
     if ((e.key === 'z' && e.shiftKey) || e.key === 'y') { e.preventDefault(); redo(); return }
     if (e.key === 'b') { e.preventDefault(); handleBold() }
     if (e.key === 'i') { e.preventDefault(); handleItalic() }
     if (e.key === 'u') { e.preventDefault(); handleUnderline() }
-  }, [handleBold, handleItalic, handleUnderline, undo, redo])
+    if (e.shiftKey && (e.key === 'x' || e.key === 'X')) { e.preventDefault(); handleStrike() }
+  }, [applyEdit, handleBold, handleItalic, handleUnderline, handleStrike, maxLength, undo, redo])
+
+  const handleChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const edit = normalizeBulletMarker(e.target.value, e.target.selectionStart)
+    if (edit) {
+      applyEdit(edit.value, edit.caret)
+      return
+    }
+    callOnChange(e.target.value)
+  }, [applyEdit, callOnChange])
 
   const handlePaste = useCallback((e: React.ClipboardEvent<HTMLTextAreaElement>) => {
     const html = e.clipboardData.getData('text/html')
@@ -230,26 +291,30 @@ export const RichTextEditor = forwardRef<HTMLTextAreaElement, RichTextEditorProp
   return (
     <div className={className}>
       <div className="flex items-center gap-0.5 border border-surface-600 border-b-0 rounded-t bg-surface-800 px-2 py-1">
-        <ToolbarButton onAction={handleBold}      title="Pogrubienie (⌘B)"><Bold className="h-3.5 w-3.5" /></ToolbarButton>
-        <ToolbarButton onAction={handleItalic}    title="Kursywa (⌘I)"><Italic className="h-3.5 w-3.5" /></ToolbarButton>
-        <ToolbarButton onAction={handleUnderline} title="Podkreślenie (⌘U)"><Underline className="h-3.5 w-3.5" /></ToolbarButton>
+        <ToolbarButton onAction={handleBold}      title={t('richText.bold')}><Bold className="h-3.5 w-3.5" /></ToolbarButton>
+        <ToolbarButton onAction={handleItalic}    title={t('richText.italic')}><Italic className="h-3.5 w-3.5" /></ToolbarButton>
+        <ToolbarButton onAction={handleUnderline} title={t('richText.underline')}><Underline className="h-3.5 w-3.5" /></ToolbarButton>
+        <ToolbarButton onAction={handleStrike}    title={t('richText.strikethrough')}><Strikethrough className="h-3.5 w-3.5" /></ToolbarButton>
         <span className="w-px h-4 bg-surface-600 mx-1.5" />
-        <ToolbarButton onAction={handleBullet}   title="Lista punktowana (•)"><List className="h-3.5 w-3.5" /></ToolbarButton>
-        <ToolbarButton onAction={handleNumbered} title="Lista numerowana (1.)"><ListOrdered className="h-3.5 w-3.5" /></ToolbarButton>
-        <ToolbarButton onAction={handleLettered} title="Lista literowa (a))">
+        <ToolbarButton onAction={handleHeading}  title={t('richText.heading')}><Heading className="h-3.5 w-3.5" /></ToolbarButton>
+        <ToolbarButton onAction={handleBullet}   title={t('richText.bulletList')}><List className="h-3.5 w-3.5" /></ToolbarButton>
+        <ToolbarButton onAction={handleNumbered} title={t('richText.numberedList')}><ListOrdered className="h-3.5 w-3.5" /></ToolbarButton>
+        <ToolbarButton onAction={handleLettered} title={t('richText.letteredList')}>
           <span className="text-xs font-mono leading-none px-0.5">a)</span>
         </ToolbarButton>
-        <span className="ml-auto text-xs text-surface-500 hidden sm:block">Zaznacz tekst → kliknij styl</span>
+        <span className="ml-auto text-xs text-surface-500 hidden sm:block">{t('richText.hint')}</span>
       </div>
       <textarea
         ref={internalRef}
         value={value}
-        onChange={(e) => callOnChange(e.target.value)}
+        onChange={handleChange}
         onKeyDown={handleKeyDown}
         onPaste={handlePaste}
         rows={rows}
+        maxLength={maxLength}
+        autoFocus={autoFocus}
         placeholder={placeholder}
-        className="w-full bg-surface-700 border border-surface-600 rounded-b px-3 py-2 text-surface-100 focus:outline-none focus:border-primary-500 resize-y min-h-0 text-sm"
+        className={inputClassName ?? 'w-full bg-surface-700 border border-surface-600 rounded-b px-3 py-2 text-surface-100 focus:outline-none focus:border-primary-500 resize-y min-h-0 text-sm'}
       />
     </div>
   )

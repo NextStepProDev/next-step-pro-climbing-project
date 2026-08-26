@@ -10,6 +10,7 @@ import { SuccessCheckmark } from "../ui/SuccessCheckmark";
 import { ShareButtons } from "../ui/ShareButtons";
 import { SlotKindPicker } from "./SlotKindPicker";
 import { slotKindOf, slotKindFlags, type SlotKind } from "../../utils/slotKind";
+import { renderRichText } from "../../utils/renderRichText";
 import { AddToCalendarButton } from "../ui/AddToCalendarButton";
 import { CompleteProfileModal } from "../ui/CompleteProfileModal";
 import { TimeScrollPicker } from "../ui/TimeScrollPicker";
@@ -264,7 +265,10 @@ export function SlotDetailModal({
           <div className="p-3 bg-primary-500/10 border border-primary-500/20 rounded-lg">
             <span className="text-sm font-medium text-primary-400">{slot.eventTitle}</span>
             {slot.eventDescription && (
-              <p className="text-sm text-surface-300 mt-2 whitespace-pre-wrap">{slot.eventDescription}</p>
+              <div
+                className="text-sm text-surface-300 mt-2 whitespace-pre-wrap"
+                dangerouslySetInnerHTML={{ __html: renderRichText(slot.eventDescription) }}
+              />
             )}
           </div>
         )}

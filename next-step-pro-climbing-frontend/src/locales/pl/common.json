@@ -1,4 +1,15 @@
 {
+  "richText": {
+    "bold": "Pogrubienie (⌘B)",
+    "italic": "Kursywa (⌘I)",
+    "underline": "Podkreślenie (⌘U)",
+    "strikethrough": "Przekreślenie (⌘⇧X)",
+    "heading": "Nagłówek sekcji (##)",
+    "bulletList": "Lista punktowana (•)",
+    "numberedList": "Lista numerowana (1.)",
+    "letteredList": "Lista literowa (a))",
+    "hint": "Zaznacz tekst → kliknij styl"
+  },
   "nav": {
     "home": "Start",
     "calendar": "Kalendarz",

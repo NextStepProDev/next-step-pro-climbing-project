@@ -6,11 +6,13 @@ import clsx from 'clsx'
 import { Modal } from '../ui/Modal'
 import { Button } from '../ui/Button'
 import { ConfirmModal } from '../ui/ConfirmModal'
+import { RichTextEditor } from '../ui/RichTextEditor'
 import { RpePicker } from './RpePicker'
 import { CommentThread } from './CommentThread'
 import { PrivateImage, PrivateFileCard } from './PrivateFile'
 import { isImageType } from '../../utils/mediaTypes'
 import { decodeHtmlEntities } from '../../utils/htmlEntities'
+import { renderRichText } from '../../utils/renderRichText'
 import { useDateLocale } from '../../utils/dateFnsLocale'
 import { nowInWarsaw, parseCalendarDate, parseCalendarDateTime, todayInWarsaw } from '../../utils/calendarDate'
 import { AdminPrivateNote } from '../admin/AdminPrivateNote'
@@ -123,7 +125,13 @@ export function TrainingDetailModal({
         </div>
 
         {training.description && (
-          <p className="text-sm text-surface-300 whitespace-pre-wrap">{decodeHtmlEntities(training.description)}</p>
+          // A div, not a p: the renderer emits lists and headings, and a <p> may not contain
+          // block elements — the browser would close it early and orphan the rest of the plan.
+          // decode first, because the backend escaped on write and renderRichText escapes again.
+          <div
+            className="text-sm text-surface-300 whitespace-pre-wrap"
+            dangerouslySetInnerHTML={{ __html: renderRichText(decodeHtmlEntities(training.description)) }}
+          />
         )}
 
         {/* Materials: embedded YouTube/Instagram players + plain link cards */}
@@ -156,10 +164,10 @@ export function TrainingDetailModal({
                 )}
               </div>
               {training.feedback ? (
-                <p className="text-sm text-surface-300 whitespace-pre-wrap">
+                <div className="text-sm text-surface-300">
                   {isCoachView && <span className="block text-xs text-surface-500 mb-0.5">{t('completion.athleteFeedback')}</span>}
-                  {decodeHtmlEntities(training.feedback)}
-                </p>
+                  <div className="whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: renderRichText(decodeHtmlEntities(training.feedback)) }} />
+                </div>
               ) : (
                 isCoachView && <p className="text-sm text-surface-500">{t('completion.noFeedback')}</p>
               )}
@@ -180,13 +188,13 @@ export function TrainingDetailModal({
             <div className="space-y-3">
               <div>
                 <label className="block text-sm text-surface-400 mb-1">{t('completion.feedback')}</label>
-                <textarea
+                <RichTextEditor
                   value={feedback}
-                  onChange={(e) => setFeedback(e.target.value)}
+                  onChange={setFeedback}
                   maxLength={2000}
-                  rows={3}
+                  rows={4}
                   placeholder={t('completion.feedbackPlaceholder')}
-                  className="w-full bg-surface-800 border border-surface-700 rounded-lg px-3 py-2 text-sm text-surface-100 resize-none"
+                  inputClassName="w-full bg-surface-800 border border-surface-600 rounded-b px-3 py-2 text-sm text-surface-100 resize-y focus:outline-none focus:border-primary-500"
                 />
               </div>
               {!isTask && (
