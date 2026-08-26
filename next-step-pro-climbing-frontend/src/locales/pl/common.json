@@ -8,7 +8,10 @@
     "bulletList": "Lista punktowana (•)",
     "numberedList": "Lista numerowana (1.)",
     "letteredList": "Lista literowa (a))",
-    "hint": "Zaznacz tekst → kliknij styl"
+    "hint": "**pogrubienie** · *kursywa* · ## nagłówek · - lista",
+    "preview": "Podgląd",
+    "backToEditing": "Edytuj",
+    "previewEmpty": "Nic tu jeszcze nie ma — napisz coś i wróć do podglądu."
   },
   "nav": {
     "home": "Start",

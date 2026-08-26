@@ -8,7 +8,10 @@
     "bulletList": "Bulleted list (•)",
     "numberedList": "Numbered list (1.)",
     "letteredList": "Lettered list (a))",
-    "hint": "Select text → click a style"
+    "hint": "**bold** · *italic* · ## heading · - list",
+    "preview": "Preview",
+    "backToEditing": "Edit",
+    "previewEmpty": "Nothing here yet — write something and come back."
   },
   "nav": {
     "home": "Home",

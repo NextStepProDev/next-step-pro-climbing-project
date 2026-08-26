@@ -100,13 +100,31 @@ export function continueList(
  */
 export function normalizeBulletMarker(value: string, caret: number): TextEdit | null {
   const start = lineStartAt(value, caret)
-  if (caret !== start + 2) return null
 
-  const typed = value.slice(start, caret)
-  if (typed !== '- ' && typed !== '* ') return null
-
-  return {
-    value: value.slice(0, start) + BULLET_MARKER + value.slice(caret),
-    caret: start + BULLET_MARKER.length,
+  // A dash typed at the very start of a line becomes the bullet
+  if (caret === start + 2) {
+    const typed = value.slice(start, caret)
+    if (typed === '- ' || typed === '* ') {
+      return {
+        value: value.slice(0, start) + BULLET_MARKER + value.slice(caret),
+        caret: start + BULLET_MARKER.length,
+      }
+    }
   }
+
+  // …and a dash typed straight after a marker the editor just inserted is swallowed, because
+  // that is what a habit produces: Enter opens "• " on its own, then the hand types "- " at
+  // the start of the line the way it did on the line before, and the item reads "• - kask".
+  const prefix = LIST_PREFIX_RE.exec(value.slice(start))?.[0]
+  if (prefix && caret === start + prefix.length + 2) {
+    const typed = value.slice(start + prefix.length, caret)
+    if (typed === '- ' || typed === '* ') {
+      return {
+        value: value.slice(0, start + prefix.length) + value.slice(caret),
+        caret: start + prefix.length,
+      }
+    }
+  }
+
+  return null
 }

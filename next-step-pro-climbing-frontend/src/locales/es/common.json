@@ -8,7 +8,10 @@
     "bulletList": "Lista con viñetas (•)",
     "numberedList": "Lista numerada (1.)",
     "letteredList": "Lista con letras (a))",
-    "hint": "Selecciona el texto → haz clic en un estilo"
+    "hint": "**negrita** · *cursiva* · ## título · - lista",
+    "preview": "Vista previa",
+    "backToEditing": "Editar",
+    "previewEmpty": "Aquí no hay nada todavía — escribe algo y vuelve."
   },
   "nav": {
     "home": "Inicio",
