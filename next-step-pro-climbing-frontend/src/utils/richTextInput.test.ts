@@ -91,3 +91,22 @@ describe('continueList — length limit', () => {
     expect(continueList(value, value.length, value.length, value.length)?.value).toBe('• a\n')
   })
 })
+
+describe('normalizeBulletMarker — the dash typed out of habit', () => {
+  const at = (text: string) => ({ value: text.replace('|', ''), caret: text.indexOf('|') })
+
+  it('should swallow a dash typed straight after a bullet the editor just opened', () => {
+    const { value, caret } = at('• uprząż\n• - |')
+    expect(normalizeBulletMarker(value, caret)).toEqual({ value: '• uprząż\n• ', caret: 11 })
+  })
+
+  it('should do the same after a numbered marker', () => {
+    const { value, caret } = at('1. seria\n2. - |')
+    expect(normalizeBulletMarker(value, caret)?.value).toBe('1. seria\n2. ')
+  })
+
+  it('should leave a dash alone once the item has words before it', () => {
+    const { value, caret } = at('• kask - |')
+    expect(normalizeBulletMarker(value, caret)).toBeNull()
+  })
+})
