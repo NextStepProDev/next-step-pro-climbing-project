@@ -1,8 +1,11 @@
+import { Fragment, useState } from 'react'
 import { format } from 'date-fns'
-import { ArrowDown, ArrowUp, ArrowUpDown, EyeOff, Globe, Pencil, Trash2 } from 'lucide-react'
+import { ArrowDown, ArrowUp, ArrowUpDown, ChevronDown, EyeOff, Globe, Pencil, Trash2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import clsx from 'clsx'
 import { StarRating } from './StarRating'
 import { parseCalendarDate } from '../../utils/calendarDate'
+import { renderRichText, toPlainText } from '../../utils/renderRichText'
 import type { AscentSortKey, SortDirection } from './ascentFiltering'
 import type { Ascent, AscentTerrain } from '../../types'
 
@@ -38,6 +41,18 @@ export function AscentTable({
   const editable = Boolean(onEdit && onDelete)
   const moderatable = Boolean(onSetPublicVisibility)
   const isMountain = terrain === 'MOUNTAIN'
+
+  // A set rather than one open id: comparing two entries is the reason to open one at all.
+  // Ids of rows filtered away simply stop matching, so nothing has to prune this.
+  const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set())
+  const toggle = (id: string) => setExpanded(current => {
+    const next = new Set(current)
+    if (!next.delete(id)) next.add(id)
+    return next
+  })
+
+  // date, route, grade, season/discipline, style, area, crag — then whatever the terrain adds
+  const columnCount = 7 + (isMountain ? 4 : 2) + (moderatable ? 1 : 0) + (editable ? 1 : 0)
 
   const header = (key: AscentSortKey, label: string, className = '') => (
     <th className={`px-3 py-2 text-left font-medium ${className}`}>
@@ -92,8 +107,15 @@ export function AscentTable({
           </tr>
         </thead>
         <tbody>
-          {entries.map(entry => (
-            <tr key={entry.id} className="border-b border-surface-800/60 last:border-0 hover:bg-surface-800/40">
+          {entries.map(entry => {
+            const isOpen = expanded.has(entry.id)
+            return (
+            <Fragment key={entry.id}>
+            <tr className={clsx(
+              'border-b border-surface-800/60 hover:bg-surface-800/40',
+              // The comment row carries the border when it is showing, so the pair reads as one entry
+              isOpen ? 'border-b-0' : 'last:border-0',
+            )}>
               <td className="px-3 py-2 text-surface-400 tabular-nums whitespace-nowrap">
                 {/* A 'yyyy-MM-dd' from the API is a label, not an instant — parseCalendarDate
                     keeps it on the right day west of Greenwich */}
@@ -112,8 +134,26 @@ export function AscentTable({
                     {t('takedown.badge')}
                   </span>
                 )}
+                {/* The teaser is the control: a 2000-character field whose only render was one
+                    clipped line meant the text could be written and never read back. Plain text
+                    here on purpose — markers would be noise in a single clipped line, and the
+                    formatted version is one click away. */}
                 {entry.comment && (
-                  <span className="block text-xs text-surface-500 line-clamp-1">{entry.comment}</span>
+                  <button
+                    type="button"
+                    onClick={() => toggle(entry.id)}
+                    aria-expanded={isOpen}
+                    aria-controls={`ascent-comment-${entry.id}`}
+                    className="group/comment mt-0.5 flex w-full items-start gap-1 text-left text-xs text-surface-500 hover:text-surface-300 transition-colors"
+                  >
+                    <ChevronDown
+                      className={clsx('w-3 h-3 mt-0.5 shrink-0 transition-transform', isOpen && 'rotate-180')}
+                      aria-hidden="true"
+                    />
+                    <span className={clsx('min-w-0', !isOpen && 'line-clamp-1')}>
+                      {isOpen ? t('table.commentHide') : toPlainText(entry.comment)}
+                    </span>
+                  </button>
                 )}
               </td>
               <td className="px-3 py-2">
@@ -197,7 +237,21 @@ export function AscentTable({
                 </td>
               )}
             </tr>
-          ))}
+            {isOpen && entry.comment && (
+              <tr id={`ascent-comment-${entry.id}`} className="border-b border-surface-800/60 last:border-0">
+                <td colSpan={columnCount} className="px-3 pb-3 pt-0">
+                  {/* max-w so a long note keeps a readable measure on a 940px-wide table, and it
+                      starts at the left edge — where the route column the reader just clicked is */}
+                  <div
+                    className="max-w-3xl rounded-lg bg-surface-800/50 px-3 py-2 text-sm text-surface-300 whitespace-pre-wrap"
+                    dangerouslySetInnerHTML={{ __html: renderRichText(entry.comment) }}
+                  />
+                </td>
+              </tr>
+            )}
+            </Fragment>
+            )
+          })}
         </tbody>
       </table>
     </div>

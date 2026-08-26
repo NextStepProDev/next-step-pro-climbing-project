@@ -1,4 +1,5 @@
 import fontDataUri from '../../assets/fonts/NotoSans-Regular.ttf?inline'
+import { toPlainText } from '../../utils/renderRichText'
 import { todayInWarsaw } from '../../utils/calendarDate'
 import type { AscentFilterState } from './ascentFiltering'
 import type { Ascent, AscentDiscipline, AscentStyle, AscentTerrain } from '../../types'
@@ -80,7 +81,7 @@ export function toExportRows(entries: Ascent[],
       entry.ledGradeLabel ?? '',
       entry.ledPitches?.toString() ?? '',
       entry.partners ?? '',
-      entry.comment ?? '',
+      entry.comment ? toPlainText(entry.comment) : '',
     ]
     : [
       entry.climbedOn,
@@ -92,7 +93,7 @@ export function toExportRows(entries: Ascent[],
       styles?.[entry.style] ?? entry.style,
       entry.attempts?.toString() ?? '',
       entry.qualityStars?.toString() ?? '',
-      entry.comment ?? '',
+      entry.comment ? toPlainText(entry.comment) : '',
     ])
 }
 

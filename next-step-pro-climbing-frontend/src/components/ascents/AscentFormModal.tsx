@@ -1,6 +1,7 @@
 import { useId, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Modal } from '../ui/Modal'
+import { RichTextEditor } from '../ui/RichTextEditor'
 import { Button } from '../ui/Button'
 import { DateInput } from '../ui/DateInput'
 import { StarRating } from './StarRating'
@@ -405,15 +406,14 @@ function AscentForm({
       </div>
 
       <div>
-        <label className={LABEL_CLASS} htmlFor={`${fieldId}-comment`}>{t('form.comment')}</label>
-        <textarea
-          id={`${fieldId}-comment`}
+        <label className={LABEL_CLASS}>{t('form.comment')}</label>
+        <RichTextEditor
           value={comment}
-          onChange={event => setComment(event.target.value)}
+          onChange={setComment}
           rows={3}
           maxLength={2000}
           placeholder={t('form.commentPlaceholder')}
-          className={INPUT_CLASS}
+          inputClassName="w-full bg-surface-800 border border-surface-600 rounded-b px-3 py-2 text-sm text-surface-100 resize-y focus:outline-none focus:border-primary-500"
         />
       </div>
 
