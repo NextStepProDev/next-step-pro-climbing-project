@@ -21,11 +21,14 @@ vi.mock('../../api/client', () => ({
   },
 }))
 
-function renderForm(props: Parameters<typeof TrainingTemplateForm>[0]) {
+type FormProps = Parameters<typeof TrainingTemplateForm>[0]
+
+/** `onDirtyChange` is only interesting to the wrapping modal, so these cases need not pass one. */
+function renderForm(props: Omit<FormProps, 'onDirtyChange'> & Partial<Pick<FormProps, 'onDirtyChange'>>) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   return render(
     <QueryClientProvider client={client}>
-      <TrainingTemplateForm {...props} />
+      <TrainingTemplateForm onDirtyChange={() => {}} {...props} />
     </QueryClientProvider>,
   )
 }

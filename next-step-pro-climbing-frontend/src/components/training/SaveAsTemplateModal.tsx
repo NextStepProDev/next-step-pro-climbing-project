@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Modal } from '../ui/Modal'
 import { useToast } from '../../context/ToastContext'
 import { TrainingTemplateForm, type TemplateDraft } from './TrainingTemplateForm'
+import { useChildDirty } from '../../hooks/useChildDirty'
 
 /**
  * "Save as template" from an entry's detail view: the library form, opened with the entry's
@@ -19,12 +20,16 @@ export function SaveAsTemplateModal({ draft, onClose }: {
   const { t } = useTranslation('training')
   const queryClient = useQueryClient()
   const { showToast } = useToast()
+  // Before the early return: hooks cannot be skipped, and `draft` flipping back to a value is
+  // what marks a fresh open here — this modal has no `isOpen` of its own.
+  const [isDirty, reportDirty] = useChildDirty(!!draft)
 
   if (!draft) return null
 
   return (
-    <Modal isOpen onClose={onClose} title={t('templates.saveAs')} size="lg">
+    <Modal isOpen onClose={onClose} title={t('templates.saveAs')} size="lg" confirmClose={isDirty}>
       <TrainingTemplateForm
+        onDirtyChange={reportDirty}
         draft={draft}
         onDone={() => {
           queryClient.invalidateQueries({ queryKey: ['admin', 'trainingTemplates'] })
