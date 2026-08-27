@@ -1,9 +1,13 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Modal } from '../ui/Modal'
+import { useModalClose } from '../ui/modalClose'
 import { Button } from '../ui/Button'
 import { DateInput } from '../ui/DateInput'
 import { decodeHtmlEntities } from '../../utils/htmlEntities'
+import { useDirty } from '../../hooks/useDirty'
+import { useChildDirty } from '../../hooks/useChildDirty'
+import { useUnsavedChangesWarning } from '../../hooks/useUnsavedChangesWarning'
 import type { AthleteGoal, GoalHorizon, GoalKind, SaveGoal } from '../../types'
 
 interface GoalFormModalProps {
@@ -33,12 +37,20 @@ export function GoalFormModal({
   submitError,
 }: GoalFormModalProps) {
   const { t } = useTranslation('training')
+  // Reported up by the form below, so closing a half-written goal asks first
+  const [isDirty, reportDirty] = useChildDirty(isOpen)
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={goal ? t('goals.form.editTitle') : t('goals.form.addTitle')}>
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={goal ? t('goals.form.editTitle') : t('goals.form.addTitle')}
+      confirmClose={isDirty}
+    >
       {/* Mounted only while open — form state resets naturally on every open */}
       {isOpen && (
         <GoalForm
+          onDirtyChange={reportDirty}
           kind={kind}
           horizon={horizon}
           goal={goal}
@@ -53,7 +65,8 @@ export function GoalFormModal({
   )
 }
 
-function GoalForm({ kind, horizon, goal, currentTrendKg, onClose, onSubmit, saving, submitError }: {
+function GoalForm({ onDirtyChange, kind, horizon, goal, currentTrendKg, onClose, onSubmit, saving, submitError }: {
+  onDirtyChange: (dirty: boolean) => void
   kind: GoalKind
   horizon: GoalHorizon
   goal?: AthleteGoal | null
@@ -69,6 +82,15 @@ function GoalForm({ kind, horizon, goal, currentTrendKg, onClose, onSubmit, savi
   const [targetDate, setTargetDate] = useState(goal?.targetDate ?? '')
   const [targetWeight, setTargetWeight] = useState(goal?.targetWeightKg != null ? String(goal.targetWeightKg) : '')
   const [error, setError] = useState<string | null>(null)
+
+  // `error` stays out of the snapshot — validation output, not anything the coach typed
+  const isDirty = useDirty({ content, targetDate, targetWeight })
+  onDirtyChange(isDirty)  // during render on purpose — see useChildDirty
+  useUnsavedChangesWarning(isDirty)
+  // Cancel sits next to Save, so a mis-click there is both the likeliest and the costliest.
+  // Route it through the modal's guard rather than closing outright — see modalClose.
+  const guardedClose = useModalClose()
+  const cancel = () => (guardedClose ?? onClose)()
 
   const isWeight = kind === 'WEIGHT'
   const hasTrend = currentTrendKg != null
@@ -158,7 +180,7 @@ function GoalForm({ kind, horizon, goal, currentTrendKg, onClose, onSubmit, savi
       {(error || submitError) && <p className="text-sm text-rose-400/80">{error ?? submitError}</p>}
 
       <div className="flex justify-end gap-3 pt-2">
-        <Button type="button" variant="secondary" onClick={onClose}>
+        <Button type="button" variant="secondary" onClick={cancel}>
           {t('form.cancel')}
         </Button>
         <Button type="submit" variant="primary" loading={saving}>

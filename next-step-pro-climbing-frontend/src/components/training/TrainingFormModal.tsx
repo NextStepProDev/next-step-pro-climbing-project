@@ -5,6 +5,7 @@ import { format } from 'date-fns'
 import clsx from 'clsx'
 import { CalendarDays, Check, ClipboardList, Dumbbell, LayoutTemplate } from 'lucide-react'
 import { Modal } from '../ui/Modal'
+import { useModalClose } from '../ui/modalClose'
 import { Button } from '../ui/Button'
 import { DateInput } from '../ui/DateInput'
 import { TimeScrollPicker } from '../ui/TimeScrollPicker'
@@ -13,6 +14,9 @@ import { RpePicker } from './RpePicker'
 import { AttachmentEditor } from './AttachmentEditor'
 import { adminTrainingCalendarApi } from '../../api/client'
 import { decodeHtmlEntities } from '../../utils/htmlEntities'
+import { useDirty } from '../../hooks/useDirty'
+import { useChildDirty } from '../../hooks/useChildDirty'
+import { useUnsavedChangesWarning } from '../../hooks/useUnsavedChangesWarning'
 import { nowInWarsaw } from '../../utils/calendarDate'
 import type { AttachmentInput, CreatePersonalTraining, PersonalTraining, TrainingKind, TrainingTemplate } from '../../types'
 
@@ -79,11 +83,14 @@ interface TrainingFormModalProps {
 
 export function TrainingFormModal({ isOpen, onClose, training, initialDate, initialTime, prefill, onSubmit, saving, allowInstantComplete, onUpload, templatesEnabled, submitError }: TrainingFormModalProps) {
   const { t } = useTranslation('training')
+  // Reported up by the form below, so closing a half-written plan asks first
+  const [isDirty, reportDirty] = useChildDirty(isOpen)
 
   return (
     <Modal
       isOpen={isOpen}
       onClose={onClose}
+      confirmClose={isDirty}
       title={training ? t('form.editTitle') : prefill ? t('form.duplicateTitle') : t('form.addTitle')}
       // The description is a plan someone writes and someone else reads back on a phone;
       // at max-w-lg it wrapped every couple of words. Same width as the detail modal that
@@ -93,6 +100,7 @@ export function TrainingFormModal({ isOpen, onClose, training, initialDate, init
       {/* Mounted only while open — form state resets naturally on every open */}
       {isOpen && (
         <TrainingForm
+          onDirtyChange={reportDirty}
           training={training}
           initialDate={initialDate}
           initialTime={initialTime}
@@ -119,7 +127,8 @@ function addMinutes(time: string, minutes: number): string {
   return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`
 }
 
-function TrainingForm({ training, initialDate, initialTime, prefill, onClose, onSubmit, saving, allowInstantComplete, onUpload, templatesEnabled, submitError }: {
+function TrainingForm({ onDirtyChange, training, initialDate, initialTime, prefill, onClose, onSubmit, saving, allowInstantComplete, onUpload, templatesEnabled, submitError }: {
+  onDirtyChange: (dirty: boolean) => void
   training?: PersonalTraining | null
   initialDate?: string
   initialTime?: string
@@ -176,6 +185,35 @@ function TrainingForm({ training, initialDate, initialTime, prefill, onClose, on
   const isTask = kind === 'TASK'
   const [calories, setCalories] = useState(
     training?.targetCalories != null ? String(training.targetCalories) : '')
+
+  /**
+   * Everything the writer can change, snapshotted against the values this form opened with.
+   *
+   * A snapshot rather than the bubbling-onChange trick `AscentFormModal` uses: three of these
+   * are not inputs and emit no change event — the Training/Task switch is a <button>, the two
+   * clocks are `TimeScrollPicker` (the scroll position IS the value) and the materials list is
+   * rewritten from code by `applyTemplate` and by uploads. A guard that silently misses those
+   * is worse than none, because it teaches you to trust it.
+   *
+   * `error` is deliberately out: it is validation output, not something anyone typed.
+   */
+  const isDirty = useDirty({
+    kind, date, allDay, startTime, endTime, calories,
+    title, description, attachments, markDone, feedback, rpe,
+  })
+
+  // Reported during render, not from an effect: the guard is read by a click handler, and an
+  // effect would deliver this one render too late — see useChildDirty. Writing a ref is the only
+  // thing this does, so it causes no re-render and is safe to repeat.
+  onDirtyChange(isDirty)
+
+  // …and the browser owns the other exits: a refresh, a closed tab, a typed address. No modal in
+  // this app guarded those before, so Cmd+R over a half-written plan threw it away in silence.
+  useUnsavedChangesWarning(isDirty)
+  // Cancel sits next to Save, so a mis-click there is both the likeliest and the costliest.
+  // Route it through the modal's guard rather than closing outright — see modalClose.
+  const guardedClose = useModalClose()
+  const cancel = () => (guardedClose ?? onClose)()
 
   // Coach create-mode: fill the form from a reusable template (content is copied)
   const showTemplates = !!templatesEnabled && !training
@@ -443,7 +481,7 @@ function TrainingForm({ training, initialDate, initialTime, prefill, onClose, on
       {(error || submitError) && <p className="text-sm text-rose-400/80">{error ?? submitError}</p>}
 
       <div className="flex justify-end gap-3 pt-2">
-        <Button type="button" variant="secondary" onClick={onClose}>
+        <Button type="button" variant="secondary" onClick={cancel}>
           {t('form.cancel')}
         </Button>
         <Button type="submit" variant="primary" loading={saving}>

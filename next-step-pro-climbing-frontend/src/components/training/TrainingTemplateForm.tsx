@@ -9,6 +9,8 @@ import { AttachmentEditor } from './AttachmentEditor'
 import { adminTrainingCalendarApi } from '../../api/client'
 import { getErrorMessage } from '../../utils/errors'
 import { decodeHtmlEntities } from '../../utils/htmlEntities'
+import { useDirty } from '../../hooks/useDirty'
+import { useUnsavedChangesWarning } from '../../hooks/useUnsavedChangesWarning'
 import type { AttachmentInput, SaveTrainingTemplate, TrainingKind, TrainingTemplate } from '../../types'
 
 const DEFAULT_DURATION = 90
@@ -52,7 +54,13 @@ function templateToInputs(tpl: TrainingTemplate): AttachmentInput[] {
  * because flipping a completed training would have to discard its RPE, and a template has no
  * completion, rating or history to lose.
  */
-export function TrainingTemplateForm({ template, draft, onDone, onCancel }: {
+export function TrainingTemplateForm({ onDirtyChange, template, draft, onDone, onCancel }: {
+  /**
+   * Reported upward because this form renders no `<Modal>` of its own — it is wrapped by
+   * `TrainingTemplatesModal` and by `SaveAsTemplateModal`, and `confirmClose` belongs to whichever
+   * one is showing it. Wiring only one of them would leave half the feature unguarded.
+   */
+  onDirtyChange: (dirty: boolean) => void
   template?: TrainingTemplate | null
   draft?: TemplateDraft | null
   onDone: () => void
@@ -73,6 +81,11 @@ export function TrainingTemplateForm({ template, draft, onDone, onCancel }: {
   const [attachments, setAttachments] = useState<AttachmentInput[]>(
     template ? templateToInputs(template) : draft?.attachments ?? [])
   const [error, setError] = useState<string | null>(null)
+
+  // `error` stays out — validation output, not typed content
+  const isDirty = useDirty({ kind, title, description, duration, calories, attachments })
+  onDirtyChange(isDirty)  // during render on purpose — see useChildDirty
+  useUnsavedChangesWarning(isDirty)
 
   const isTask = kind === 'TASK'
 

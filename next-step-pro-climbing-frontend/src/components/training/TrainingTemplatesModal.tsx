@@ -9,6 +9,7 @@ import { LoadingSpinner } from '../ui/LoadingSpinner'
 import { TrainingTemplateForm } from './TrainingTemplateForm'
 import { adminTrainingCalendarApi } from '../../api/client'
 import { decodeHtmlEntities } from '../../utils/htmlEntities'
+import { useChildDirty } from '../../hooks/useChildDirty'
 import type { TrainingTemplate } from '../../types'
 
 const TEMPLATES_KEY = ['admin', 'trainingTemplates']
@@ -25,6 +26,9 @@ export function TrainingTemplatesModal({ isOpen, onClose }: TrainingTemplatesMod
   // null = list view; 'new' or a template = form view
   const [editing, setEditing] = useState<TrainingTemplate | 'new' | null>(null)
   const [confirmDelete, setConfirmDelete] = useState<TrainingTemplate | null>(null)
+  // Keyed on the FORM being up, not the modal: browsing the template list must stay closable
+  // without a prompt, and the flag has to reset every time the form opens or is left.
+  const [isDirty, reportDirty] = useChildDirty(editing !== null)
 
   const templatesQuery = useQuery({
     queryKey: TEMPLATES_KEY,
@@ -47,9 +51,11 @@ export function TrainingTemplatesModal({ isOpen, onClose }: TrainingTemplatesMod
       onClose={() => { setEditing(null); onClose() }}
       title={editing ? (editing === 'new' ? t('templates.add') : t('templates.edit')) : t('templates.title')}
       size="lg"
+      confirmClose={isDirty}
     >
       {editing ? (
         <TrainingTemplateForm
+          onDirtyChange={reportDirty}
           template={editing === 'new' ? null : editing}
           onDone={() => { setEditing(null); invalidate() }}
           onCancel={() => setEditing(null)}

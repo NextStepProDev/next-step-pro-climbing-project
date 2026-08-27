@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react'
+import { ModalCloseContext } from './modalClose'
 import { X } from 'lucide-react'
 import { createPortal } from 'react-dom'
 import { useTranslation } from 'react-i18next'
@@ -16,7 +17,7 @@ interface ModalProps {
    * the user to confirm — used to guard against losing unsaved form input.
    * Pass the form's dirty flag so a pristine form still closes instantly.
    */
-  confirmClose?: boolean
+  confirmClose?: boolean | (() => boolean)
 }
 
 export function Modal({ isOpen, onClose, title, children, size = 'md', confirmClose = false }: ModalProps) {
@@ -25,7 +26,12 @@ export function Modal({ isOpen, onClose, title, children, size = 'md', confirmCl
   const [confirmingClose, setConfirmingClose] = useState(false)
 
   const requestClose = () => {
-    if (confirmClose) setConfirmingClose(true)
+    // Asked at the moment of the click, not read from a prop captured a render earlier. A form
+    // that reports its dirty state upward cannot get that report through React before the very
+    // next event: type a title and hit Escape in the same tick and the boolean was still false,
+    // so the work went away exactly for the person typing fastest.
+    const needsConfirm = typeof confirmClose === 'function' ? confirmClose() : confirmClose
+    if (needsConfirm) setConfirmingClose(true)
     else onClose()
   }
 
@@ -66,6 +72,8 @@ export function Modal({ isOpen, onClose, title, children, size = 'md', confirmCl
   if (!isOpen) return null
 
   return createPortal(
+    // Children get the guarded close, so a form's own Cancel cannot slip past confirmClose
+    <ModalCloseContext.Provider value={requestClose}>
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       {/* Backdrop */}
       <div
@@ -128,7 +136,8 @@ export function Modal({ isOpen, onClose, title, children, size = 'md', confirmCl
           </div>
         )}
       </div>
-    </div>,
+    </div>
+    </ModalCloseContext.Provider>,
     document.body
   )
 }
