@@ -81,13 +81,17 @@ interface TrainingBlockProps {
  */
 function renderPassive(
   passive: boolean,
-  props: { className: string; title: string; onClick: () => void },
+  props: { className: string; title: string; onClick: () => void; style?: React.CSSProperties },
   children: React.ReactNode,
 ) {
   if (passive) {
-    return <div className={props.className} title={props.title}>{children}</div>
+    return <div className={props.className} title={props.title} style={props.style}>{children}</div>
   }
-  return <button onClick={props.onClick} className={props.className} title={props.title}>{children}</button>
+  return (
+    <button onClick={props.onClick} className={props.className} title={props.title} style={props.style}>
+      {children}
+    </button>
+  )
 }
 
 export function TrainingBlock({
@@ -215,21 +219,29 @@ export function TrainingBlock({
   )
 
   if (density === 'chip') {
-    return (
-      <button
-        onClick={onClick}
-        style={style}
-        className={clsx(
+    // Through renderPassive like every other density. The all-day lane is the ONLY place an
+    // untimed entry or a task can be pasted, and while the clipboard was armed the chips sitting
+    // in it stayed <button>s — so the lane's own closest('button') guard swallowed the click and
+    // the card opened instead of the paste landing. The one drop target was blocked by its
+    // own contents.
+    return renderPassive(
+      !!pasteActive,
+      {
+        className: clsx(
           // 'relative' (needed by the unread dot) must NOT coexist with 'absolute' —
           // whichever wins in the stylesheet breaks week-grid positioning
-          'border rounded-md text-left transition-colors overflow-hidden',
+          'border rounded-md text-left overflow-hidden',
+          !pasteActive && 'transition-colors',
           trainingColors(training.status),
           'relative w-full px-1.5 py-0.5 text-[11px] truncate block',
-        )}
-        title={training.title}
-      >
-        {content}
-      </button>
+          isCut && 'opacity-50',
+          isCopied && 'ring-1 ring-primary-400/60',
+        ),
+        title: training.title,
+        onClick,
+        style,
+      },
+      content,
     )
   }
 
@@ -355,17 +367,22 @@ export function InvitationBlock({ invitation, label, onClick, style, density = '
     )
   }
 
-  return (
-    <button
-      onClick={onClick}
-      style={style}
-      className={clsx(
-        'border rounded-md text-left transition-colors overflow-hidden',
-        'bg-amber-500/20 border-amber-500/70 text-amber-300 hover:bg-amber-500/35',
+  // Passive while the clipboard is armed, for the same reason as the training chip: an all-day
+  // invitation sits in the very lane a task has to be pasted into.
+  return renderPassive(
+    !!pasteActive,
+    {
+      className: clsx(
+        'border rounded-md text-left overflow-hidden',
+        !pasteActive && 'transition-colors hover:bg-amber-500/35',
+        'bg-amber-500/20 border-amber-500/70 text-amber-300',
         density === 'chip' ? 'relative w-full px-1.5 py-0.5 text-[11px] truncate block' : 'absolute px-1.5 py-1 text-xs',
-      )}
-      title={`${label}: ${title}`}
-    >
+      ),
+      title: `${label}: ${title}`,
+      onClick,
+      style,
+    },
+    <>
       <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
       <span className="flex items-center gap-1 min-w-0">
         <Star className="w-3 h-3 shrink-0" />
@@ -378,7 +395,7 @@ export function InvitationBlock({ invitation, label, onClick, style, density = '
             : title}
         </span>
       )}
-    </button>
+    </>,
   )
 }
 

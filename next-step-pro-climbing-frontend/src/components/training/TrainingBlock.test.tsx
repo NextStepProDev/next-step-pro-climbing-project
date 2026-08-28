@@ -229,6 +229,29 @@ describe('TrainingBlock — armed clipboard (Fire Academy 129f7a7)', () => {
     expect(onClick).not.toHaveBeenCalled()
     expect(container.firstElementChild!.tagName).toBe('DIV')
   })
+
+  /**
+   * The chip density used to ignore pasteActive entirely, and it is the density the week view's
+   * all-day lane renders — the only place an untimed entry or a task can be pasted. A chip left
+   * as a button made the lane's closest('button') guard swallow the paste and open the card.
+   */
+  it('should stop being a control at chip density too', () => {
+    render(
+      <TrainingBlock training={makeTraining({ startTime: null, endTime: null })}
+        onClick={vi.fn()} density="chip" pasteActive />,
+    )
+
+    expect(screen.queryByRole('button')).not.toBeInTheDocument()
+  })
+
+  it('should stay a control at chip density when nothing is on the clipboard', () => {
+    render(
+      <TrainingBlock training={makeTraining({ startTime: null, endTime: null })}
+        onClick={vi.fn()} density="chip" />,
+    )
+
+    expect(screen.getByRole('button')).toBeInTheDocument()
+  })
 })
 
 describe('ReservationBlock — unread dot for new athlete bookings (#79)', () => {

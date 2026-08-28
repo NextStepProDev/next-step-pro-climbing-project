@@ -198,6 +198,33 @@ describe('TrainingWeekCalendar — clicking empty space', () => {
     expect(onPasteAt).toHaveBeenCalledWith(MONDAY, null)
     expect(onDayClick).not.toHaveBeenCalled()
   })
+
+  /**
+   * ...including when the lane already holds something. The chips render at `chip` density, which
+   * used to ignore pasteActive, so they stayed <button>s — the cell's closest('button') guard bailed
+   * out and the training card opened instead. The one drop target an untimed entry has was blocked
+   * by its own contents.
+   */
+  it('should paste through an all-day chip that already occupies the lane', () => {
+    const resting = makeTraining({ date: MONDAY, startTime: null, endTime: null, title: 'Rest day' })
+    const onPasteAt = vi.fn()
+    const { onTrainingClick } = renderWeek({ trainings: [resting], pasteActive: true, onPasteAt })
+
+    fireEvent.click(screen.getByText('Rest day'))
+
+    expect(onPasteAt).toHaveBeenCalledWith(MONDAY, null)
+    expect(onTrainingClick).not.toHaveBeenCalled()
+  })
+
+  it('should open the card from an all-day chip when the clipboard is empty', () => {
+    const resting = makeTraining({ date: MONDAY, startTime: null, endTime: null, title: 'Rest day' })
+    const { onTrainingClick, onDayClick } = renderWeek({ trainings: [resting] })
+
+    fireEvent.click(screen.getByText('Rest day'))
+
+    expect(onTrainingClick).toHaveBeenCalledTimes(1)
+    expect(onDayClick).not.toHaveBeenCalled()
+  })
 })
 
 describe('TrainingWeekCalendar — untimed vs timed placement (V72)', () => {
