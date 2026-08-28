@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import pl.nextsteppro.climbing.api.reservation.UserSeatReleaseService;
 import pl.nextsteppro.climbing.api.trainingcalendar.CommentFileSupport;
+import pl.nextsteppro.climbing.api.trainingcalendar.AttachmentSupport;
 import pl.nextsteppro.climbing.domain.auth.AuthToken;
 import pl.nextsteppro.climbing.domain.auth.AuthTokenRepository;
 import pl.nextsteppro.climbing.domain.auth.TokenType;
@@ -48,6 +49,7 @@ public class UserService {
     private final NewsletterConsentLogRepository consentLogRepository;
     private final UserSeatReleaseService userSeatReleaseService;
     private final CommentFileSupport commentFileSupport;
+    private final AttachmentSupport attachmentSupport;
     private final FileStorageService fileStorageService;
     private final PasswordPolicyValidator passwordPolicy;
 
@@ -60,6 +62,7 @@ public class UserService {
                        NewsletterConsentLogRepository consentLogRepository,
                        UserSeatReleaseService userSeatReleaseService,
                        CommentFileSupport commentFileSupport,
+                       AttachmentSupport attachmentSupport,
                        FileStorageService fileStorageService,
                        PasswordPolicyValidator passwordPolicy) {
         this.userRepository = userRepository;
@@ -71,6 +74,7 @@ public class UserService {
         this.consentLogRepository = consentLogRepository;
         this.userSeatReleaseService = userSeatReleaseService;
         this.commentFileSupport = commentFileSupport;
+        this.attachmentSupport = attachmentSupport;
         this.fileStorageService = fileStorageService;
         this.passwordPolicy = passwordPolicy;
     }
@@ -184,6 +188,11 @@ public class UserService {
         //    anyone else's. The rows go with the cascade, the files on disk do not. Shared with the
         //    admin-side deletion; the orphan sweep would catch a miss, but not for hours.
         commentFileSupport.purgeForUser(userId);
+
+        // 7b. Same for the coach's materials on their plan. Reference-counted, because one file can
+        //     also hang off a template or a copy on somebody else's calendar. These used to wait for
+        //     the six-hourly orphan sweep — "eventually" is the wrong answer to an erasure request.
+        attachmentSupport.purgeForUser(userId);
 
         // 8. Delete tokens (bulk DELETE) and the user themselves.
         //    The DB cascades (ON DELETE CASCADE): cancelled reservations, waitlist entries, logs, stars.

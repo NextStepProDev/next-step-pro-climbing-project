@@ -68,6 +68,7 @@
   },
   "detail": {
     "allDay": "All day",
+    "vanished": "This entry is no longer in the calendar — the other side may have moved or removed it. Below is the last version we saw.",
     "addedByCoach": "Added by coach",
     "addedByAthlete": "Added by athlete",
     "materials": "Materials",

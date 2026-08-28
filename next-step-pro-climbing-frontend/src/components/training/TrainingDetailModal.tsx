@@ -35,6 +35,12 @@ interface TrainingDetailModalProps {
   onComplete?: (training: PersonalTraining, data: { feedback?: string; rpe?: number }) => void | Promise<unknown>
   onUncomplete?: (training: PersonalTraining) => void
   mutating?: boolean
+  /**
+   * The entry is no longer in the calendar's range — the other side moved or deleted it while this
+   * was open. The card stays on screen showing the last version it saw, because closing itself
+   * would take whatever was being typed with it.
+   */
+  vanished?: boolean
   onCommentPosted?: () => void
   // Backend rejection of delete/complete/uncomplete — shown above the footer
   errorMessage?: string | null
@@ -63,7 +69,7 @@ function statusChip(status: PersonalTrainingStatus): string {
 
 export function TrainingDetailModal({
   training, onClose, api, isCoachView, onEdit, onDuplicate, onSaveAsTemplate, onDelete,
-  onComplete, onUncomplete, mutating, onCommentPosted, errorMessage,
+  onComplete, onUncomplete, mutating, vanished, onCommentPosted, errorMessage,
 }: TrainingDetailModalProps) {
   const { t } = useTranslation('training')
   const locale = useDateLocale()
@@ -130,6 +136,18 @@ export function TrainingDetailModal({
       confirmClose={hasUnsavedWork}
     >
       <div className="space-y-5">
+        {/* Said plainly rather than by closing the card: the other side can move or delete an entry
+            while this is open, and a modal that disappears mid-sentence takes the message being
+            typed with it. What is shown below is the last version this card saw. */}
+        {vanished && (
+          <p
+            role="alert"
+            className="text-sm text-amber-300 bg-amber-500/10 border border-amber-500/30 rounded-lg px-3 py-2"
+          >
+            {t('detail.vanished')}
+          </p>
+        )}
+
         {/* Header: date, time, status, provenance */}
         <div className="flex flex-wrap items-center gap-2">
           <span className={clsx('px-2 py-0.5 text-xs font-medium border rounded-full', statusChip(training.status))}>

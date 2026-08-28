@@ -189,10 +189,30 @@ export function TrainingCalendarSection({ api, scopeKey, scopeLabel, isCoachView
     placeholderData: undefined,
   })
 
-  // Detail modal always shows fresh data from the range query
-  const detailTraining = detailId
+  /**
+   * Detail modal always shows fresh data from the range query — but it must not VANISH when the
+   * entry leaves that range.
+   *
+   * The calendar refetches in the background every 60s, and the plan is shared: the other side can
+   * move the entry into another week or delete it while the card is open. Reading straight from the
+   * range then turned the card null and closed it mid-sentence, taking a half-written message with
+   * it. Now the last version seen is kept and the card says the entry is gone, which is also the
+   * only way the unsaved-work guard can do its job — a modal that unmounts asks nobody anything.
+   */
+  const [lastSeenDetail, setLastSeenDetail] = useState<PersonalTraining | null>(null)
+  const liveDetail = detailId
     ? rangeQuery.data?.trainings.find((tr) => tr.id === detailId) ?? null
     : null
+  // Adjusted during render, the supported pattern for deriving state from changing input (the same
+  // one Modal uses for its pending confirmation). State rather than a ref because this IS read in
+  // render, and each branch settles after one pass: the query hands back a stable object until it
+  // refetches, and closing the card clears the memory exactly once.
+  if (liveDetail && liveDetail !== lastSeenDetail) setLastSeenDetail(liveDetail)
+  if (!detailId && lastSeenDetail) setLastSeenDetail(null)
+  const detailTraining = liveDetail ?? lastSeenDetail
+  // Tells "the range is still loading" apart from "the other side removed it": only claim it is
+  // gone once there is data in hand and the entry is not in it.
+  const detailVanished = !!detailId && !liveDetail && !!rangeQuery.data && !!lastSeenDetail
 
   // ---------- mutations ----------
   const invalidate = () => {
@@ -714,6 +734,7 @@ export function TrainingCalendarSection({ api, scopeKey, scopeLabel, isCoachView
       {/* Detail: completion + comment thread + edit/delete */}
       <TrainingDetailModal
         training={detailTraining}
+        vanished={detailVanished}
         onClose={() => setDetailId(null)}
         api={api}
         isCoachView={isCoachView}
