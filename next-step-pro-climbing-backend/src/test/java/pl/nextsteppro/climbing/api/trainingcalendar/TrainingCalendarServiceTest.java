@@ -6,6 +6,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import pl.nextsteppro.climbing.domain.personaltraining.AthleteActivityCount;
 import pl.nextsteppro.climbing.domain.personaltraining.PersonalTraining;
 import pl.nextsteppro.climbing.domain.personaltraining.AttachmentKind;
@@ -1183,6 +1184,124 @@ class TrainingCalendarServiceTest {
 
         assertDoesNotThrow(() -> service.updateMy(athleteId, trainingId, request));
         assertEquals(LocalDate.now().minusDays(3), training.getTrainingDate());
+    }
+
+    /**
+     * A task is always untimed (V77), so its end is 23:59 of its own day — which is still ahead
+     * for all of that day. Asking only "does the new end lie ahead?" therefore made every task
+     * ticked off today uneditable, and answered a rename with "cannot move a completed training
+     * into the future".
+     */
+    @Test
+    void shouldAllowEditingCompletedTaskOnItsOwnDay() {
+        UUID trainingId = UUID.randomUUID();
+        PersonalTraining task = buildTask(LocalDate.now(WARSAW), 2200);
+        task.complete(null, null);
+        when(trainingRepository.findById(trainingId)).thenReturn(Optional.of(task));
+        CreatePersonalTrainingRequest request = new CreatePersonalTrainingRequest(
+            TrainingKind.TASK, LocalDate.now(WARSAW), null, null, "Limit 2000 kcal", null, 2000, null);
+
+        assertDoesNotThrow(() -> service.updateMy(athleteId, trainingId, request));
+        assertEquals("Limit 2000 kcal", task.getTitle());
+        assertEquals(2000, task.getTargetCalories());
+    }
+
+    /** Same shape for an all-day training: the day has not ended, but nothing was moved either. */
+    @Test
+    void shouldAllowEditingCompletedAllDayTrainingOnItsOwnDay() {
+        UUID trainingId = UUID.randomUUID();
+        PersonalTraining training = untimed(LocalDate.now(WARSAW));
+        training.complete("zrobione", 6);
+        when(trainingRepository.findById(trainingId)).thenReturn(Optional.of(training));
+        CreatePersonalTrainingRequest request = new CreatePersonalTrainingRequest(
+            LocalDate.now(WARSAW), null, null, "Zmieniony tytuł", null);
+
+        assertDoesNotThrow(() -> service.updateMy(athleteId, trainingId, request));
+        assertEquals("Zmieniony tytuł", training.getTitle());
+    }
+
+    /**
+     * complete() explicitly allows ticking off a session that is still running, so editing one
+     * afterwards must not be refused for sitting where it always sat.
+     */
+    @Test
+    void shouldAllowEditingSessionCheckedOffBeforeItEnds() {
+        UUID trainingId = UUID.randomUUID();
+        LocalDate today = LocalDate.now(WARSAW);
+        PersonalTraining training = new PersonalTraining(
+            athlete, today, LocalTime.MIDNIGHT, LocalTime.of(23, 59), "Trening", null, false);
+        setField(training, "createdAt", Instant.now());
+        setField(training, "updatedAt", Instant.now());
+        training.complete("skończone wcześniej", 7);
+        when(trainingRepository.findById(trainingId)).thenReturn(Optional.of(training));
+        CreatePersonalTrainingRequest request = new CreatePersonalTrainingRequest(
+            today, LocalTime.MIDNIGHT, LocalTime.of(23, 59), "Poprawiony opis", null);
+
+        assertDoesNotThrow(() -> service.updateMy(athleteId, trainingId, request));
+        assertEquals("Poprawiony opis", training.getTitle());
+    }
+
+    /** The guard still does its job: what is refused is the MOVE, not the state. */
+    @Test
+    void shouldStillRejectMovingCompletedTaskToAnotherDay() {
+        UUID trainingId = UUID.randomUUID();
+        PersonalTraining task = buildTask(LocalDate.now(WARSAW), 2200);
+        task.complete(null, null);
+        when(trainingRepository.findById(trainingId)).thenReturn(Optional.of(task));
+        CreatePersonalTrainingRequest request = new CreatePersonalTrainingRequest(
+            TrainingKind.TASK, LocalDate.now(WARSAW).plusDays(1), null, null, "Limit kalorii", null, 2200, null);
+
+        IllegalStateException e = assertThrows(IllegalStateException.class,
+            () -> service.updateMy(athleteId, trainingId, request));
+        assertEquals("training.calendar.completed.future", e.getMessage());
+    }
+
+    // ========== optimistic lock across requests ==========
+
+    @Test
+    void shouldRejectUpdateBuiltOnAStaleVersion() {
+        UUID trainingId = UUID.randomUUID();
+        PersonalTraining training = buildTraining(athlete, true);
+        setField(training, "version", 3L);
+        when(trainingRepository.findById(trainingId)).thenReturn(Optional.of(training));
+        CreatePersonalTrainingRequest request = new CreatePersonalTrainingRequest(
+            null, LocalDate.now(WARSAW).minusDays(1), LocalTime.of(18, 0), LocalTime.of(19, 30),
+            "Nadpisanie", null, null, null, 2L);
+
+        assertThrows(ObjectOptimisticLockingFailureException.class,
+            () -> service.updateMy(athleteId, trainingId, request));
+        assertEquals("Trening", training.getTitle());
+    }
+
+    @Test
+    void shouldAcceptUpdateCarryingTheCurrentVersion() {
+        UUID trainingId = UUID.randomUUID();
+        PersonalTraining training = buildTraining(athlete, true);
+        setField(training, "version", 3L);
+        when(trainingRepository.findById(trainingId)).thenReturn(Optional.of(training));
+        CreatePersonalTrainingRequest request = new CreatePersonalTrainingRequest(
+            null, LocalDate.now(WARSAW).minusDays(1), LocalTime.of(18, 0), LocalTime.of(19, 30),
+            "Zmieniony", null, null, null, 3L);
+
+        assertDoesNotThrow(() -> service.updateMy(athleteId, trainingId, request));
+        assertEquals("Zmieniony", training.getTitle());
+    }
+
+    /**
+     * A drag and a paste act on the entry under the cursor, so they send no version — and must not
+     * be broken by the lock that protects the edit form.
+     */
+    @Test
+    void shouldAcceptUpdateWithoutAVersion() {
+        UUID trainingId = UUID.randomUUID();
+        PersonalTraining training = buildTraining(athlete, true);
+        setField(training, "version", 3L);
+        when(trainingRepository.findById(trainingId)).thenReturn(Optional.of(training));
+        CreatePersonalTrainingRequest request = new CreatePersonalTrainingRequest(
+            LocalDate.now(WARSAW).minusDays(1), LocalTime.of(20, 0), LocalTime.of(21, 0), "Trening", null);
+
+        assertDoesNotThrow(() -> service.updateMy(athleteId, trainingId, request));
+        assertEquals(LocalTime.of(20, 0), training.getStartTime());
     }
 
     @Test

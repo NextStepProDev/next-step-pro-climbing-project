@@ -28,6 +28,7 @@ export function makeTraining(overrides: Partial<PersonalTraining> = {}): Persona
     rpe: null,
     hasUnreadActivity: false,
     createdAt: '2026-07-01T09:00:00Z',
+    version: 0,
     attachments: [],
     ...overrides,
   }

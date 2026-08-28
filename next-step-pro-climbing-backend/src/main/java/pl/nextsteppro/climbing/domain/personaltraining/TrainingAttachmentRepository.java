@@ -19,6 +19,25 @@ public interface TrainingAttachmentRepository extends JpaRepository<TrainingAtta
     @Modifying
     void deleteByTrainingId(UUID trainingId);
 
+    /**
+     * Materials on a departing account's own trainings — the erasure path.
+     *
+     * <p>The rows leave with the cascade, so this exists for the FILES: nothing in the database can
+     * reach the disk. Same reason {@code TrainingCommentFileRepository.findFilenamesForUser} exists,
+     * and unlike that one it returns entities rather than names, because the caller has to tell a
+     * LINK from a FILE before it starts counting references.
+     */
+    @Query("SELECT a FROM TrainingAttachment a WHERE a.training.athlete.id = :userId")
+    List<TrainingAttachment> findByAthleteId(UUID userId);
+
+    /** Bulk-delete of the same set, so the reference count that follows is accurate. */
+    @Modifying
+    @Query("""
+        DELETE FROM TrainingAttachment a
+        WHERE a.training.id IN (SELECT t.id FROM PersonalTraining t WHERE t.athlete.id = :userId)
+        """)
+    void deleteByAthleteId(UUID userId);
+
     // ---- templates (attachments owned by a template instead of a training) ----
 
     List<TrainingAttachment> findByTemplateIdOrderByPositionAsc(UUID templateId);

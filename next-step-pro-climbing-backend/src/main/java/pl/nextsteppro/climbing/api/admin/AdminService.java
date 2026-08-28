@@ -36,6 +36,7 @@ import pl.nextsteppro.climbing.api.activitylog.ActivityLogService;
 import pl.nextsteppro.climbing.api.reservation.EventWaitlistService;
 import pl.nextsteppro.climbing.api.reservation.UserSeatReleaseService;
 import pl.nextsteppro.climbing.api.trainingcalendar.CommentFileSupport;
+import pl.nextsteppro.climbing.api.trainingcalendar.AttachmentSupport;
 import pl.nextsteppro.climbing.api.reservation.WaitlistService;
 import pl.nextsteppro.climbing.domain.waitlist.EventWaitlist;
 import pl.nextsteppro.climbing.domain.waitlist.EventWaitlistRepository;
@@ -87,6 +88,7 @@ public class AdminService {
     private final EventWaitlistService eventWaitlistService;
     private final UserSeatReleaseService userSeatReleaseService;
     private final CommentFileSupport commentFileSupport;
+    private final AttachmentSupport attachmentSupport;
     private final ReservedSeatRepository reservedSeatRepository;
     private final TrainingRequestRepository trainingRequestRepository;
     private final pl.nextsteppro.climbing.api.trainingcalendar.TrainingCalendarService trainingCalendarService;
@@ -109,6 +111,7 @@ public class AdminService {
                        EventWaitlistService eventWaitlistService,
                        UserSeatReleaseService userSeatReleaseService,
                        CommentFileSupport commentFileSupport,
+                       AttachmentSupport attachmentSupport,
                        ReservedSeatRepository reservedSeatRepository,
                        TrainingRequestRepository trainingRequestRepository,
                        pl.nextsteppro.climbing.api.trainingcalendar.TrainingCalendarService trainingCalendarService) {
@@ -130,6 +133,7 @@ public class AdminService {
         this.eventWaitlistService = eventWaitlistService;
         this.userSeatReleaseService = userSeatReleaseService;
         this.commentFileSupport = commentFileSupport;
+        this.attachmentSupport = attachmentSupport;
         this.reservedSeatRepository = reservedSeatRepository;
         this.trainingRequestRepository = trainingRequestRepository;
         this.trainingCalendarService = trainingCalendarService;
@@ -1135,6 +1139,10 @@ public class AdminService {
         // Same reason, same method as the self-deletion path: the comment attachment rows go with
         // the cascade, the files on disk need unlinking by hand.
         commentFileSupport.purgeForUser(userId);
+        // Same again for the materials on their plan — reference-counted, because one file can also
+        // belong to a template or to a copy on somebody else's calendar. Mirrors the self-deletion
+        // path; these used to be left to the six-hourly orphan sweep.
+        attachmentSupport.purgeForUser(userId);
         authTokenRepository.deleteAllByUserId(userId);
         userRepository.delete(user);
         jwtAuthenticationFilter.evictUser(userId);

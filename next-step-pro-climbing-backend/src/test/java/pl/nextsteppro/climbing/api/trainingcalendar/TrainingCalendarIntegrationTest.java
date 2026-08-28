@@ -168,6 +168,44 @@ class TrainingCalendarIntegrationTest extends BaseIntegrationTest {
         assertEquals(1L, adminTrainingCalendarService.getAthleteSummaries(coach.getId()).get(0).newCount());
     }
 
+    /**
+     * The per-block dot has always lit when the athlete edits an entry; the number next to their
+     * name did not, because the roster query counted creations only. A dot with nothing to explain
+     * it is worse than no dot — the coach opens the calendar looking for what changed.
+     */
+    @Test
+    void shouldRaiseTheCoachRosterBadgeWhenTheAthleteEditsAnExistingTraining() {
+        LocalDate date = LocalDate.now().minusDays(1);
+        PersonalTrainingDto training = adminTrainingCalendarService.createForAthlete(coach.getId(), athlete.getId(),
+            new CreatePersonalTrainingRequest(date, LocalTime.of(18, 0), LocalTime.of(19, 30), "Siła", null));
+
+        adminTrainingCalendarService.markSeen(coach.getId(), athlete.getId());
+        assertEquals(0L, adminTrainingCalendarService.getAthleteSummaries(coach.getId()).get(0).newCount());
+
+        trainingCalendarService.updateMy(athlete.getId(), training.id(),
+            new CreatePersonalTrainingRequest(date, LocalTime.of(20, 0), LocalTime.of(21, 30), "Siła", null));
+
+        assertEquals(1L, adminTrainingCalendarService.getAthleteSummaries(coach.getId()).get(0).newCount());
+    }
+
+    /**
+     * ...and exactly once. {@code complete()} clears {@code lastModifiedByAdmin} and bumps
+     * {@code updatedAt}, so the edit half of the roster query would otherwise count the same tick
+     * that the completion counter already counts — one action, two badges.
+     */
+    @Test
+    void shouldCountAnAthleteCompletionOnceInTheRosterBadge() {
+        LocalDate date = LocalDate.now().minusDays(1);
+        PersonalTrainingDto training = adminTrainingCalendarService.createForAthlete(coach.getId(), athlete.getId(),
+            new CreatePersonalTrainingRequest(date, LocalTime.of(18, 0), LocalTime.of(19, 30), "Siła", null));
+
+        adminTrainingCalendarService.markSeen(coach.getId(), athlete.getId());
+        trainingCalendarService.complete(athlete.getId(), training.id(),
+            new CompleteTrainingRequest("zrobione", 7));
+
+        assertEquals(1L, adminTrainingCalendarService.getAthleteSummaries(coach.getId()).get(0).newCount());
+    }
+
     @Test
     void shouldStaySilentWhenTheSavedTextIsUnchanged() {
         LocalDate date = LocalDate.now().minusDays(1);

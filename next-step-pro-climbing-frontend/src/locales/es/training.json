@@ -68,6 +68,7 @@
   },
   "detail": {
     "allDay": "Todo el día",
+    "vanished": "Esta entrada ya no está en el calendario: la otra parte pudo moverla o eliminarla. Abajo está la última versión que vimos.",
     "addedByCoach": "Añadido por el entrenador",
     "addedByAthlete": "Añadido por el atleta",
     "materials": "Materiales",

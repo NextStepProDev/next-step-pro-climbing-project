@@ -167,7 +167,7 @@ class AdminTrainingCalendarServiceTest {
         return new PersonalTrainingDto(
             UUID.randomUUID(), TrainingKind.TRAINING, request.date(), request.startTime(), request.endTime(),
             request.title(), request.description(), null, true, "PLANNED",
-            null, null, null, false, Instant.now(), java.util.List.of());
+            null, null, null, false, Instant.now(), java.util.List.of(), 0L);
     }
 
     private static void setField(Object target, String fieldName, Object value) {

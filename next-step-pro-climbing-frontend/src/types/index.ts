@@ -1337,6 +1337,15 @@ export interface CreatePersonalTraining {
   targetCalories?: number | null
   // undefined = leave attachments untouched (move/drag); [] = clear; a list = replace
   attachments?: AttachmentInput[]
+  /**
+   * Optimistic lock, echoed back from the entry the form was opened with. Ignored on create.
+   *
+   * Omitting it means "do not check", and the callers that omit it are the ones with nothing
+   * stale to protect: a drag and a paste act on the entry under the cursor. The edit FORM sends
+   * it, because that is the one flow with minutes between reading the row and writing it back —
+   * long enough for the other side to have rewritten it, which used to be a silent overwrite.
+   */
+  version?: number
 }
 
 /**
@@ -1366,6 +1375,9 @@ export interface PersonalTraining {
   hasUnreadActivity: boolean
   createdAt: string
   attachments: TrainingAttachment[]
+  // Optimistic lock. Sent back by the edit form so a save built on a stale read is refused (409)
+  // instead of quietly overwriting what the other side wrote meanwhile.
+  version: number
   /**
    * CLIENT-SIDE ONLY — the API never sends this, and must not: the athlete reads this same
    * record, and the coach's notebook is not part of their plan. TrainingCalendarSection stamps

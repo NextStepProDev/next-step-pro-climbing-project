@@ -189,10 +189,30 @@ export function TrainingCalendarSection({ api, scopeKey, scopeLabel, isCoachView
     placeholderData: undefined,
   })
 
-  // Detail modal always shows fresh data from the range query
-  const detailTraining = detailId
+  /**
+   * Detail modal always shows fresh data from the range query — but it must not VANISH when the
+   * entry leaves that range.
+   *
+   * The calendar refetches in the background every 60s, and the plan is shared: the other side can
+   * move the entry into another week or delete it while the card is open. Reading straight from the
+   * range then turned the card null and closed it mid-sentence, taking a half-written message with
+   * it. Now the last version seen is kept and the card says the entry is gone, which is also the
+   * only way the unsaved-work guard can do its job — a modal that unmounts asks nobody anything.
+   */
+  const [lastSeenDetail, setLastSeenDetail] = useState<PersonalTraining | null>(null)
+  const liveDetail = detailId
     ? rangeQuery.data?.trainings.find((tr) => tr.id === detailId) ?? null
     : null
+  // Adjusted during render, the supported pattern for deriving state from changing input (the same
+  // one Modal uses for its pending confirmation). State rather than a ref because this IS read in
+  // render, and each branch settles after one pass: the query hands back a stable object until it
+  // refetches, and closing the card clears the memory exactly once.
+  if (liveDetail && liveDetail !== lastSeenDetail) setLastSeenDetail(liveDetail)
+  if (!detailId && lastSeenDetail) setLastSeenDetail(null)
+  const detailTraining = liveDetail ?? lastSeenDetail
+  // Tells "the range is still loading" apart from "the other side removed it": only claim it is
+  // gone once there is data in hand and the entry is not in it.
+  const detailVanished = !!detailId && !liveDetail && !!rangeQuery.data && !!lastSeenDetail
 
   // ---------- mutations ----------
   const invalidate = () => {
@@ -204,19 +224,52 @@ export function TrainingCalendarSection({ api, scopeKey, scopeLabel, isCoachView
     }
   }
 
+  /**
+   * These four report their failures inline (`submitError` on the form, `errorMessage` on the
+   * detail modal), so each declares an `onError` even though it does nothing: main.tsx only fires
+   * the global error toast for mutations that have NONE, and its whole contract is that a
+   * component already showing the failure owns the messaging. Without these, every failed save,
+   * completion or delete was announced twice — once as a toast and once in red next to the button.
+   */
+  const reportedInline = () => {}
+
+  /**
+   * The id of an entry this flow already created, kept so a retry does not create a second one.
+   *
+   * "Log it as done right away" is two calls, and only the first is idempotent-ish: when the
+   * create landed and the completion did not (a dropped connection, a 409 on the "must have
+   * started" boundary), the form stayed open with the error — and pressing Save again made
+   * ANOTHER training. Now the retry only completes what already exists.
+   */
+  const pendingCompletionId = useRef<string | null>(null)
+
   const saveMutation = useMutation({
     mutationFn: async ({ data, completion }: { data: CreatePersonalTraining; completion?: InstantCompletion | null }) => {
       if (editedTraining) return api.updateTraining(editedTraining.id, data)
-      const created = await api.createTraining(data)
+
+      // A retry after the completion half failed: the entry is already there, only the tick is not
+      const existingId = pendingCompletionId.current
+      const created = existingId ? null : await api.createTraining(data)
+      const trainingId = existingId ?? created!.id
+
       // Retroactive logging: create + immediately mark completed in one flow (athlete only)
-      if (completion) return trainingCalendarApi.complete(created.id, completion)
-      return created
+      if (!completion) {
+        pendingCompletionId.current = null
+        // Unticked on the retry — the entry exists, so this is an edit, not a second create
+        return created ?? (await api.updateTraining(trainingId, data))
+      }
+      // Remembered BEFORE the second call, so a failure there leaves the id behind for the retry
+      pendingCompletionId.current = trainingId
+      const done = await trainingCalendarApi.complete(trainingId, completion)
+      pendingCompletionId.current = null
+      return done
     },
     onSuccess: () => {
       setFormOpen(false)
       setEditedTraining(null)
       invalidate()
     },
+    onError: reportedInline,
   })
 
   const deleteMutation = useMutation({
@@ -225,6 +278,7 @@ export function TrainingCalendarSection({ api, scopeKey, scopeLabel, isCoachView
       setDetailId(null)
       invalidate()
     },
+    onError: reportedInline,
   })
 
   // Completion is athlete-only (the coach sees a read-only summary)
@@ -232,14 +286,19 @@ export function TrainingCalendarSection({ api, scopeKey, scopeLabel, isCoachView
     mutationFn: ({ trainingId, data }: { trainingId: string; data: { feedback?: string; rpe?: number } }) =>
       trainingCalendarApi.complete(trainingId, data),
     onSuccess: invalidate,
+    onError: reportedInline,
   })
 
   const uncompleteMutation = useMutation({
     mutationFn: (trainingId: string) => trainingCalendarApi.uncomplete(trainingId),
     onSuccess: invalidate,
+    onError: reportedInline,
   })
 
+  // Every fresh open starts a new entry, so the half-finished one from a previous attempt must not
+  // be adopted by it — the id only survives a RETRY of the same save.
   const openCreate = (date?: string, time?: string) => {
+    pendingCompletionId.current = null
     setEditedTraining(null)
     setDuplicatePrefill(null)
     setPrefillDate(date)
@@ -248,6 +307,7 @@ export function TrainingCalendarSection({ api, scopeKey, scopeLabel, isCoachView
   }
 
   const openEdit = (training: PersonalTraining) => {
+    pendingCompletionId.current = null
     setEditedTraining(training)
     setDuplicatePrefill(null)
     setFormOpen(true)
@@ -273,6 +333,7 @@ export function TrainingCalendarSection({ api, scopeKey, scopeLabel, isCoachView
   // Duplicate: create-mode form seeded with the source content, date defaults to +7 days
   // ("same training next week"); everything stays editable before saving
   const openDuplicate = (tr: PersonalTraining) => {
+    pendingCompletionId.current = null
     setDetailId(null)
     setEditedTraining(null)
     setDuplicatePrefill({
@@ -629,7 +690,9 @@ export function TrainingCalendarSection({ api, scopeKey, scopeLabel, isCoachView
         />
       )}
 
-      {trainings.length === 0 && reservations.length === 0 && (
+      {/* Invitations count as something planned. Without them a week holding only a held seat drew
+          the loud amber "book me!" block and put "nothing planned" directly underneath it. */}
+      {trainings.length === 0 && reservations.length === 0 && invitations.length === 0 && (
         <div className="text-center py-6">
           <p className="text-surface-400 font-medium">{t('empty.title')}</p>
           <p className="text-sm text-surface-500 mt-1">{t('empty.hint')}</p>
@@ -648,7 +711,14 @@ export function TrainingCalendarSection({ api, scopeKey, scopeLabel, isCoachView
       {/* Add / edit */}
       <TrainingFormModal
         isOpen={formOpen}
-        onClose={() => { setFormOpen(false); setEditedTraining(null); setDuplicatePrefill(null); saveMutation.reset() }}
+        onClose={() => {
+          setFormOpen(false)
+          setEditedTraining(null)
+          setDuplicatePrefill(null)
+          // Walking away abandons the half-finished entry; the next create must not adopt its id
+          pendingCompletionId.current = null
+          saveMutation.reset()
+        }}
         training={editedTraining}
         initialDate={prefillDate}
         initialTime={prefillTime}
@@ -664,6 +734,7 @@ export function TrainingCalendarSection({ api, scopeKey, scopeLabel, isCoachView
       {/* Detail: completion + comment thread + edit/delete */}
       <TrainingDetailModal
         training={detailTraining}
+        vanished={detailVanished}
         onClose={() => setDetailId(null)}
         api={api}
         isCoachView={isCoachView}

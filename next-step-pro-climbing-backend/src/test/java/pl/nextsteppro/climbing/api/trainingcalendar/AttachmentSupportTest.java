@@ -16,6 +16,7 @@ import pl.nextsteppro.climbing.infrastructure.storage.FileStorageService;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -34,6 +35,59 @@ class AttachmentSupportTest {
     @BeforeEach
     void setUp() {
         support = new AttachmentSupport(attachmentRepository, fileStorageService, msg);
+    }
+
+    /**
+     * Erasure has to reach the disk: the attachment rows leave with the cascade, so after the
+     * account is gone nothing in the database can name these files. They used to wait for the
+     * six-hourly orphan sweep, which is the wrong answer to a deletion request.
+     */
+    @Test
+    void shouldUnlinkTheMaterialsOfADepartingAccount() throws Exception {
+        String file = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa.pdf";
+        UUID userId = UUID.randomUUID();
+        when(attachmentRepository.findByAthleteId(userId)).thenReturn(List.of(fileAttachment(file)));
+        when(attachmentRepository.countByFilename(file)).thenReturn(0L);
+
+        support.purgeForUser(userId);
+
+        verify(attachmentRepository).deleteByAthleteId(userId);
+        verify(fileStorageService).delete(file, "training");
+    }
+
+    /**
+     * ...but reference-counted, unlike the comment attachments. Duplicate, paste and "use template"
+     * all point several rows at ONE file on purpose, so deleting the bytes with the account would
+     * blank a picture in the coach's library.
+     */
+    @Test
+    void shouldKeepAMaterialTheCoachLibraryStillPointsAt() throws Exception {
+        String shared = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb.jpg";
+        UUID userId = UUID.randomUUID();
+        when(attachmentRepository.findByAthleteId(userId)).thenReturn(List.of(fileAttachment(shared)));
+        when(attachmentRepository.countByFilename(shared)).thenReturn(1L);
+
+        support.purgeForUser(userId);
+
+        verify(attachmentRepository).deleteByAthleteId(userId);
+        verify(fileStorageService, never()).delete(eq(shared), anyString());
+    }
+
+    /** A LINK has no bytes of ours; asking storage to remove one would be a malformed-name error. */
+    @Test
+    void shouldIgnoreLinksWhenPurgingAnAccount() throws Exception {
+        UUID userId = UUID.randomUUID();
+        when(attachmentRepository.findByAthleteId(userId))
+            .thenReturn(List.of(TrainingAttachment.link(mock(PersonalTraining.class), "https://x.pl", null, 0)));
+
+        support.purgeForUser(userId);
+
+        verify(fileStorageService, never()).delete(anyString(), anyString());
+    }
+
+    private static TrainingAttachment fileAttachment(String filename) {
+        return TrainingAttachment.file(
+            mock(PersonalTraining.class), filename, "plan.pdf", "application/pdf", 1024L, null, 0);
     }
 
     @Test

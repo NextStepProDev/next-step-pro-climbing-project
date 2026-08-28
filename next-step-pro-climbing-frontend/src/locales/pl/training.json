@@ -70,6 +70,7 @@
   },
   "detail": {
     "allDay": "Cały dzień",
+    "vanished": "Ten wpis zniknął z kalendarza — druga strona mogła go przenieść albo usunąć. Poniżej ostatnia wersja, którą widzieliśmy.",
     "addedByCoach": "Dodany przez trenera",
     "addedByAthlete": "Dodany przez zawodnika",
     "materials": "Materiały",

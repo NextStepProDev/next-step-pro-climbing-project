@@ -1,5 +1,5 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react'
-import { format } from 'date-fns'
+import { addMonths, format } from 'date-fns'
 import { useTranslation } from 'react-i18next'
 import { useDateLocale } from '../../utils/dateFnsLocale'
 import { nowInWarsaw } from '../../utils/calendarDate'
@@ -18,11 +18,13 @@ export function MonthNavHeader({ currentMonth, onMonthChange }: MonthNavHeaderPr
   const { t } = useTranslation('training')
   const locale = useDateLocale()
 
-  const changeMonth = (delta: number) => {
-    const d = new Date(currentMonth)
-    d.setMonth(d.getMonth() + delta)
-    onMonthChange(d)
-  }
+  /**
+   * `addMonths`, never `Date.setMonth` — the anchor keeps its day of the month, and `setMonth`
+   * OVERFLOWS instead of clamping: from 31 January it produced "31 February", i.e. 3 March, so
+   * pressing "next" skipped February whole and there was no way to reach it going forward.
+   * Only bites on the 29th–31st, which is why it survived. date-fns clamps to the last valid day.
+   */
+  const changeMonth = (delta: number) => onMonthChange(addMonths(currentMonth, delta))
 
   return (
     <div className="flex items-center justify-between p-4 border-b border-surface-800">

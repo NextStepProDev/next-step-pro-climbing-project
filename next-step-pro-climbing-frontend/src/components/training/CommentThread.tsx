@@ -1,4 +1,4 @@
-import { useRef, useState, type ChangeEvent } from 'react'
+import { useLayoutEffect, useRef, useState, type ChangeEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Send, MessageSquare, Paperclip, X, Pencil } from 'lucide-react'
@@ -32,13 +32,42 @@ function rowsFor(text: string, min: number): number {
   return Math.min(MAX_ROWS, Math.max(min, text.split('\n').length))
 }
 
-function applyTextEdit(ta: HTMLTextAreaElement, edit: TextEdit, setValue: (value: string) => void) {
-  setValue(edit.value)
-  const { caret } = edit
-  requestAnimationFrame(() => {
+type ApplyEdit = (edit: TextEdit, setValue: (value: string) => void) => void
+
+/**
+ * Puts the caret where a rule this component computed says it belongs.
+ *
+ * ⚠️ Restored in a LAYOUT EFFECT, never in requestAnimationFrame. rAF fires a frame later, so every
+ * keystroke landing in that window has its caret yanked back afterwards — typing "**Uwaga:**"
+ * straight after Enter came out as "*Uwaga:** tekst*", with the characters genuinely reordered in
+ * the message that got sent. A layout effect runs synchronously after React commits the new value
+ * and before the browser can deliver the next input event, so that window does not exist.
+ * `value` rides along so a stale restore cannot fire against text that has already moved on.
+ *
+ * A hook rather than the helper it replaced: this thread has TWO fields that need the rule (the
+ * composer and the edit bubble), and the old helper took the element and hoped.
+ * {@link RichTextEditor} carries the same warning for the same reason.
+ */
+function useCaretRestore() {
+  const ref = useRef<HTMLTextAreaElement>(null)
+  const pending = useRef<{ caret: number; value: string } | null>(null)
+
+  useLayoutEffect(() => {
+    const target = pending.current
+    if (!target) return
+    pending.current = null
+    const ta = ref.current
+    if (!ta || ta.value !== target.value) return
     ta.focus()
-    ta.setSelectionRange(caret, caret)
+    ta.setSelectionRange(target.caret, target.caret)
   })
+
+  const applyEdit: ApplyEdit = (edit, setValue) => {
+    pending.current = { caret: edit.caret, value: edit.value }
+    setValue(edit.value)
+  }
+
+  return { ref, applyEdit }
 }
 
 /**
@@ -52,22 +81,24 @@ function applyTextEdit(ta: HTMLTextAreaElement, edit: TextEdit, setValue: (value
 function carryListOnShiftEnter(
   e: React.KeyboardEvent<HTMLTextAreaElement>,
   setValue: (value: string) => void,
+  applyEdit: ApplyEdit,
 ) {
   const ta = e.currentTarget
   const edit = continueList(ta.value, ta.selectionStart, ta.selectionEnd, MAX_BODY)
   if (!edit) return
   e.preventDefault()
-  applyTextEdit(ta, edit, setValue)
+  applyEdit(edit, setValue)
 }
 
 /** Turns a just-typed `- ` / `* ` at a line start into the bullet the renderer draws. */
 function handleMarkdownChange(
   e: ChangeEvent<HTMLTextAreaElement>,
   setValue: (value: string) => void,
+  applyEdit: ApplyEdit,
 ) {
   const edit = normalizeBulletMarker(e.target.value, e.target.selectionStart)
   if (edit) {
-    applyTextEdit(e.target, edit, setValue)
+    applyEdit(edit, setValue)
     return
   }
   setValue(e.target.value)
@@ -78,10 +109,17 @@ interface CommentThreadProps {
   api: TrainingCalendarAdapter
   // Invalidated after posting so unread badges on the other side stay honest
   onPosted?: () => void
+  /**
+   * Reports whether anything here would be lost by closing: a typed message, a staged file, or a
+   * correction still open. Called during render (never from an effect) for the reason spelled out
+   * in useChildDirty — the host reads it inside a click handler, and an effect arrives a render
+   * too late.
+   */
+  onDirtyChange?: (dirty: boolean) => void
 }
 
 // Chat-like athlete <-> coach thread of a single training.
-export function CommentThread({ trainingId, api, onPosted }: CommentThreadProps) {
+export function CommentThread({ trainingId, api, onPosted, onDirtyChange }: CommentThreadProps) {
   const { t } = useTranslation('training')
   const queryClient = useQueryClient()
   const [draft, setDraft] = useState('')
@@ -94,6 +132,10 @@ export function CommentThread({ trainingId, api, onPosted }: CommentThreadProps)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editDraft, setEditDraft] = useState('')
   const fileInput = useRef<HTMLInputElement>(null)
+  // Destructured at the call site: reaching for `composer.ref` inside the JSX reads as accessing
+  // a ref during render, which the react-hooks lint rule refuses (rightly — it cannot tell that
+  // this is the ref OBJECT and not its `.current`).
+  const { ref: composerRef, applyEdit: applyComposerEdit } = useCaretRestore()
 
   const { data: comments, isLoading } = useQuery({
     queryKey: ['trainingCalendar', 'comments', trainingId],
@@ -195,6 +237,9 @@ export function CommentThread({ trainingId, api, onPosted }: CommentThreadProps)
     postMutation.mutate({ body, files: staged })
   }
 
+  // Reported during render on purpose — see the prop's doc and useChildDirty.
+  onDirtyChange?.(draft.trim().length > 0 || staged.length > 0 || editingId !== null)
+
   return (
     <div>
       <h4 className="flex items-center gap-2 text-sm font-semibold text-surface-300 mb-2">
@@ -282,14 +327,15 @@ export function CommentThread({ trainingId, api, onPosted }: CommentThreadProps)
           <Paperclip className="w-4 h-4" />
         </button>
         <textarea
+          ref={composerRef}
           value={draft}
-          onChange={(e) => handleMarkdownChange(e, setDraft)}
+          onChange={(e) => handleMarkdownChange(e, setDraft, applyComposerEdit)}
           onKeyDown={(e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
               e.preventDefault()
               send()
             } else if (e.key === 'Enter') {
-              carryListOnShiftEnter(e, setDraft)
+              carryListOnShiftEnter(e, setDraft, applyComposerEdit)
             }
           }}
           placeholder={t('comments.placeholder')}
@@ -334,6 +380,7 @@ function CommentBubble({
   edit: BubbleEdit
 }) {
   const { t } = useTranslation('training')
+  const { ref: editorRef, applyEdit: applyEditorEdit } = useCaretRestore()
   // Only the author, and only where there are words to correct: a message that is nothing but a
   // photo would have to grow a caption, which is a new message rather than a correction.
   const canEdit = comment.mine && comment.body !== null
@@ -358,14 +405,15 @@ function CommentBubble({
         {edit.editing ? (
           <div className="space-y-1.5">
             <textarea
+              ref={editorRef}
               value={edit.draft}
-              onChange={(e) => handleMarkdownChange(e, edit.onChange)}
+              onChange={(e) => handleMarkdownChange(e, edit.onChange, applyEditorEdit)}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && !e.shiftKey) {
                   e.preventDefault()
                   edit.onSave()
                 } else if (e.key === 'Enter') {
-                  carryListOnShiftEnter(e, edit.onChange)
+                  carryListOnShiftEnter(e, edit.onChange, applyEditorEdit)
                 } else if (e.key === 'Escape') {
                   e.preventDefault()
                   // stopPropagation, not just preventDefault: Modal listens for Escape on the

@@ -292,6 +292,28 @@ public class AttachmentSupport {
         deleteFilesIfUnreferenced(files);
     }
 
+    /**
+     * Unlink the materials on a departing account's trainings. Call BEFORE the user row goes, for
+     * the same reason as {@link #purgeTrainingAttachments}: the rows vanish through the cascade
+     * without Hibernate loading them, so nothing left in the database can reach the disk.
+     *
+     * <p>Public because BOTH deletion paths need it — the self-service one and the admin one. One
+     * method called twice, never a second implementation: those two have already drifted apart once
+     * over seat release. Until now only comment attachments were unlinked here and these waited for
+     * the six-hourly orphan sweep, which is the wrong answer to an erasure request — the very thing
+     * {@code CommentFileSupport.purgeForUser} says in its own comment.
+     *
+     * <p>⚠️ Reference-counted, unlike the comment files: those are one row per file, while a
+     * material can be shared with a coach's TEMPLATE or with a copy on somebody else's plan
+     * (duplicate, paste and "use template" all point at one file on purpose). Deleting the bytes
+     * outright would blank a picture in a library that has nothing to do with this account.
+     */
+    public void purgeForUser(UUID userId) {
+        List<String> files = fileFilenames(attachmentRepository.findByAthleteId(userId));
+        attachmentRepository.deleteByAthleteId(userId);
+        deleteFilesIfUnreferenced(files);
+    }
+
     void purgeTemplateAttachments(UUID templateId) {
         List<String> files = fileFilenames(attachmentRepository.findByTemplateIdOrderByPositionAsc(templateId));
         attachmentRepository.deleteByTemplateId(templateId);

@@ -24,10 +24,11 @@ const api = {
  * Mirrors how TrainingCalendarSection drives the modal: onComplete is a mutateAsync,
  * so a rejected save both throws into the modal and lands in the section's error state.
  */
-function Harness({ training, onComplete, isCoachView }: {
+function Harness({ training, onComplete, isCoachView, vanished }: {
   training: PersonalTraining
   onComplete: (training: PersonalTraining, data: { feedback?: string; rpe?: number }) => Promise<unknown>
   isCoachView?: boolean
+  vanished?: boolean
 }) {
   const [error, setError] = useState<string | null>(null)
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
@@ -38,6 +39,7 @@ function Harness({ training, onComplete, isCoachView }: {
         onClose={vi.fn()}
         api={api}
         isCoachView={isCoachView}
+        vanished={vanished}
         onEdit={vi.fn()}
         onDuplicate={vi.fn()}
         onDelete={vi.fn()}
@@ -229,5 +231,101 @@ describe('TrainingDetailModal — completion gating', () => {
 
     expect(onComplete).not.toHaveBeenCalled()
     expect(screen.getByText('completion.markDone')).toBeInTheDocument()
+  })
+})
+
+/**
+ * This modal is the only one in the feature that had no guard at all, and it holds three separate
+ * pieces of unsaved work: a completion being filled in, a message being typed, and a correction to
+ * a message already sent. Escape, the backdrop and the X threw away all three without asking.
+ */
+describe('TrainingDetailModal — unsaved work is not thrown away silently', () => {
+  const asking = () => screen.queryByText('unsaved.title') !== null
+  const closeButton = () => screen.getAllByRole('button', { name: /close/i })[0]
+
+  it('should close without asking when nothing has been touched', async () => {
+    const user = userEvent.setup()
+    render(<Harness training={makeTraining({ date: yesterday() })} onComplete={vi.fn()} />)
+
+    await user.click(closeButton())
+
+    expect(asking()).toBe(false)
+  })
+
+  it('should ask when a completion is half filled in', async () => {
+    const user = await openFormAndRateOn(makeTraining({ date: yesterday() }))
+
+    await user.click(closeButton())
+
+    expect(asking()).toBe(true)
+  })
+
+  it('should ask when a message has been typed but not sent', async () => {
+    const user = userEvent.setup()
+    render(<Harness training={makeTraining({ date: yesterday() })} onComplete={vi.fn()} />)
+
+    await user.type(await screen.findByPlaceholderText('comments.placeholder'), 'jeszcze jedno')
+    await user.click(closeButton())
+
+    expect(asking()).toBe(true)
+  })
+
+  // Opening the form and changing nothing is not unsaved work — an athlete reading their own
+  // feedback back must still be able to shut the card in one click.
+  it('should not ask when the completion form was opened but left untouched', async () => {
+    const user = userEvent.setup()
+    render(
+      <Harness
+        training={makeTraining({
+          date: yesterday(), status: 'COMPLETED', completedAt: '2026-07-20T13:00:00Z', rpe: 8,
+        })}
+        onComplete={vi.fn()}
+      />,
+    )
+
+    await user.click(screen.getByText('completion.edit'))
+    await user.click(closeButton())
+
+    expect(asking()).toBe(false)
+  })
+
+  async function openFormAndRateOn(training: PersonalTraining) {
+    render(<Harness training={training} onComplete={vi.fn()} />)
+    return openFormAndRate()
+  }
+})
+
+/**
+ * The calendar refetches in the background every 60s and the plan is shared, so the other side can
+ * move an entry into another week or delete it while this card is open. Reading straight from the
+ * range used to turn the card null and unmount it mid-sentence — which also silently defeats the
+ * unsaved-work guard, because a modal that disappears asks nobody anything.
+ */
+describe('TrainingDetailModal — an entry leaving the range does not close the card', () => {
+  it('should say the entry is gone instead of vanishing', () => {
+    render(
+      <Harness training={makeTraining({ date: yesterday(), title: 'Siła' })} onComplete={vi.fn()} vanished />,
+    )
+
+    expect(screen.getByRole('alert')).toHaveTextContent('detail.vanished')
+    // ...and still shows the last version it saw, rather than an empty shell
+    expect(screen.getByText('Siła')).toBeInTheDocument()
+  })
+
+  it('should say nothing while the entry is still there', () => {
+    render(<Harness training={makeTraining({ date: yesterday() })} onComplete={vi.fn()} />)
+
+    expect(screen.queryByText('detail.vanished')).not.toBeInTheDocument()
+  })
+
+  /**
+   * Moved out of the week is not the same as deleted, so the actions stay live — re-planning the
+   * entry from here is exactly what someone would want to do next.
+   */
+  it('should keep the actions available', () => {
+    render(<Harness training={makeTraining({ date: yesterday() })} onComplete={vi.fn()} vanished />)
+
+    expect(screen.getByText('detail.edit')).toBeEnabled()
+    expect(screen.getByText('detail.duplicate')).toBeEnabled()
   })
 })

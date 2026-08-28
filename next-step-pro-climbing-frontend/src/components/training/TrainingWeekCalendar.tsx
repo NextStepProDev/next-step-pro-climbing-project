@@ -193,12 +193,23 @@ export function TrainingWeekCalendar({
                     onDayClick(date)
                   }}
                 >
+                  {/* pasteActive is load-bearing here, not decoration: this lane is the only
+                      drop target an untimed entry or a task has, and a chip left as a <button>
+                      makes the cell's closest('button') guard swallow the paste. */}
                   {allDay?.allDayTrainings.map((tr) => (
                     <TrainingBlock
                       key={tr.id}
                       training={tr}
                       onClick={() => onTrainingClick(tr)}
                       density="chip"
+                      pasteActive={pasteActive}
+                      // The all-day lane is the only place an untimed entry shows up in this view,
+                      // so without these it was the one entry that could be seen but not copied.
+                      // Cut follows the hour grid: history stays where it happened.
+                      onCopy={onTrainingCopy ? () => onTrainingCopy(tr) : undefined}
+                      onCut={onTrainingCut && tr.status !== 'COMPLETED' ? () => onTrainingCut(tr) : undefined}
+                      isCut={cutTrainingId === tr.id}
+                      isCopied={copiedTrainingId === tr.id}
                     />
                   ))}
                   {allDay?.allDayInvitations.map((inv, i) => (
@@ -208,6 +219,7 @@ export function TrainingWeekCalendar({
                       label={invitationLabel}
                       onClick={() => onInvitationClick(inv)}
                       density="chip"
+                      pasteActive={pasteActive}
                     />
                   ))}
                 </div>
