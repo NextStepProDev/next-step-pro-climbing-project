@@ -105,7 +105,12 @@ record AttachmentRequest(
 
 /**
  * embedUrl is non-null for supported YouTube/Instagram LINKs → the UI renders an iframe.
- * For FILEs, url points at /api/files/training/{filename}; fileName/mimeType drive the card.
+ *
+ * <p>For FILEs, url points at the AUTHENTICATED route /api/training-calendar/files/{attachmentId}.
+ * It is deliberately NOT under the public /api/files namespace: that route existed until V80 and
+ * its only protection was an unguessable name, so a link that ever escaped worked for anyone,
+ * forever. The client therefore fetches the bytes with its session rather than pointing an
+ * &lt;img src&gt; at them. fileName/mimeType drive the card.
  */
 record TrainingAttachmentDto(
     UUID id,

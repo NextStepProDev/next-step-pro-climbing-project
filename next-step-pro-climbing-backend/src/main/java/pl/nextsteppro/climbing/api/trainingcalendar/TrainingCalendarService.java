@@ -198,8 +198,13 @@ public class TrainingCalendarService {
         if (slot == null) {
             throw new IllegalStateException(msg.get("training.reservation.rpe.not.attended"));
         }
-        LocalDate today = LocalDate.now(WARSAW);
-        LocalTime now = LocalTime.now(WARSAW);
+        // One reading of the clock, split into its two halves. Asking twice put the date and the
+        // time a microsecond apart, and a request crossing midnight between the two calls compared
+        // yesterday's date against 00:00 — telling an athlete that the session they finished an
+        // hour ago has not happened yet.
+        LocalDateTime nowWarsaw = nowWarsaw();
+        LocalDate today = nowWarsaw.toLocalDate();
+        LocalTime now = nowWarsaw.toLocalTime();
         boolean past = slot.getDate().isBefore(today)
             || (slot.getDate().equals(today) && !slot.getEndTime().isAfter(now));
         if (!past) {
@@ -755,8 +760,10 @@ public class TrainingCalendarService {
      */
     private List<InvitationOverlayDto> buildInvitationOverlay(UUID athleteId, LocalDate from, LocalDate to) {
         List<InvitationOverlayDto> invitations = new ArrayList<>();
-        LocalDate today = LocalDate.now(WARSAW);
-        LocalTime nowTime = LocalTime.now(WARSAW);
+        // Read once and split — see rateReservation for what asking twice costs at midnight.
+        LocalDateTime nowWarsaw = nowWarsaw();
+        LocalDate today = nowWarsaw.toLocalDate();
+        LocalTime nowTime = nowWarsaw.toLocalTime();
 
         for (ReservedSeat rs : reservedSeatRepository.findUpcomingPendingSlotInvitesByUserId(athleteId, today, nowTime)) {
             TimeSlot slot = Objects.requireNonNull(rs.getTimeSlot());

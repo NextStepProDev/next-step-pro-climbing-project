@@ -670,7 +670,9 @@ export function TrainingCalendarSection({ api, scopeKey, scopeLabel, isCoachView
         />
       )}
 
-      {trainings.length === 0 && reservations.length === 0 && (
+      {/* Invitations count as something planned. Without them a week holding only a held seat drew
+          the loud amber "book me!" block and put "nothing planned" directly underneath it. */}
+      {trainings.length === 0 && reservations.length === 0 && invitations.length === 0 && (
         <div className="text-center py-6">
           <p className="text-surface-400 font-medium">{t('empty.title')}</p>
           <p className="text-sm text-surface-500 mt-1">{t('empty.hint')}</p>

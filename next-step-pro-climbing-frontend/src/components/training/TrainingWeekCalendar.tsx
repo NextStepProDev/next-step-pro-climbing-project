@@ -203,6 +203,11 @@ export function TrainingWeekCalendar({
                       onClick={() => onTrainingClick(tr)}
                       density="chip"
                       pasteActive={pasteActive}
+                      // The all-day lane is the only place an untimed entry shows up in this view,
+                      // so without these it was the one entry that could be seen but not copied.
+                      // Cut follows the hour grid: history stays where it happened.
+                      onCopy={onTrainingCopy ? () => onTrainingCopy(tr) : undefined}
+                      onCut={onTrainingCut && tr.status !== 'COMPLETED' ? () => onTrainingCut(tr) : undefined}
                       isCut={cutTrainingId === tr.id}
                       isCopied={copiedTrainingId === tr.id}
                     />

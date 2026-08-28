@@ -75,8 +75,10 @@ public class TrainingCommentFile {
         this.originalName = originalName;
         this.mimeType = mimeType;
         this.sizeBytes = sizeBytes;
-        this.width = width == null ? null : width.shortValue();
-        this.height = height == null ? null : height.shortValue();
+        // Both or neither — chk_tcf_dimensions (V80) — so one unusable value drops the pair.
+        boolean usable = fitsColumn(width) && fitsColumn(height);
+        this.width = usable && width != null ? width.shortValue() : null;
+        this.height = usable && height != null ? height.shortValue() : null;
         this.position = (short) position;
         this.expiresAt = expiresAt;
     }
@@ -84,6 +86,20 @@ public class TrainingCommentFile {
     @PrePersist
     void onCreate() {
         createdAt = Instant.now();
+    }
+
+    /**
+     * Whether a decoded dimension survives the SMALLINT column (V80).
+     *
+     * <p>A bare {@code shortValue()} WRAPS rather than refusing: a 40000px panorama was stored as a
+     * NEGATIVE width, and the thread hands that number to the browser as the space to reserve for
+     * the image. Out of range is recorded as "unknown" instead — the column is nullable exactly so
+     * a PDF can have no dimensions, and a missing hint costs one reflow, which a negative one does
+     * not even buy. Unreachable through the UI (the browser re-encodes every picture before upload),
+     * but the endpoint takes bytes from anyone with a session.
+     */
+    private static boolean fitsColumn(@Nullable Integer value) {
+        return value == null || (value >= 0 && value <= Short.MAX_VALUE);
     }
 
     /**

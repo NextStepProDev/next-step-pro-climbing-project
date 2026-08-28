@@ -216,6 +216,40 @@ describe('TrainingWeekCalendar — clicking empty space', () => {
     expect(onTrainingClick).not.toHaveBeenCalled()
   })
 
+  /**
+   * The all-day lane is the only place an untimed entry appears in the week view, so without a
+   * copy control it was the one entry you could see here but not put on the clipboard.
+   */
+  it('should offer copy on an all-day chip', () => {
+    const resting = makeTraining({ date: MONDAY, startTime: null, endTime: null, title: 'Rest day' })
+    const onTrainingCopy = vi.fn()
+    renderWeek({ trainings: [resting], onTrainingCopy })
+
+    fireEvent.click(screen.getByRole('button', { name: 'clipboard.copy' }))
+
+    expect(onTrainingCopy).toHaveBeenCalledTimes(1)
+    expect(onTrainingCopy.mock.calls[0][0].id).toBe(resting.id)
+  })
+
+  it('should not offer cut on a completed all-day chip', () => {
+    const done = makeTraining({
+      date: MONDAY, startTime: null, endTime: null, title: 'Rest day', status: 'COMPLETED',
+    })
+    renderWeek({ trainings: [done], onTrainingCopy: vi.fn(), onTrainingCut: vi.fn() })
+
+    // History may be re-planned forward, never moved
+    expect(screen.getByRole('button', { name: 'clipboard.copy' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'clipboard.cut' })).not.toBeInTheDocument()
+  })
+
+  it('should hide the chip controls while the clipboard is armed', () => {
+    const resting = makeTraining({ date: MONDAY, startTime: null, endTime: null, title: 'Rest day' })
+    renderWeek({ trainings: [resting], onTrainingCopy: vi.fn(), pasteActive: true, onPasteAt: vi.fn() })
+
+    // Leaving them would put back exactly what blocks the lane from receiving the paste
+    expect(screen.queryByRole('button', { name: 'clipboard.copy' })).not.toBeInTheDocument()
+  })
+
   it('should open the card from an all-day chip when the clipboard is empty', () => {
     const resting = makeTraining({ date: MONDAY, startTime: null, endTime: null, title: 'Rest day' })
     const { onTrainingClick, onDayClick } = renderWeek({ trainings: [resting] })

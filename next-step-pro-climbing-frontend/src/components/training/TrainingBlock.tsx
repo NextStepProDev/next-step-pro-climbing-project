@@ -224,23 +224,53 @@ export function TrainingBlock({
     // in it stayed <button>s — so the lane's own closest('button') guard swallowed the click and
     // the card opened instead of the paste landing. The one drop target was blocked by its
     // own contents.
+    const chipClass = clsx(
+      // 'relative' (needed by the unread dot) must NOT coexist with 'absolute' —
+      // whichever wins in the stylesheet breaks week-grid positioning
+      'border rounded-md text-left overflow-hidden',
+      !pasteActive && 'transition-colors',
+      trainingColors(training.status),
+      'relative w-full px-1.5 py-0.5 text-[11px] truncate block',
+      isCut && 'opacity-50',
+      isCopied && 'ring-1 ring-primary-400/60',
+    )
+
+    // Clipboard controls, same container shape as the tile density. Skipped entirely while the
+    // clipboard is armed: the lane underneath is then the drop target, and leaving buttons in it
+    // would put back the very thing renderPassive is here to remove.
+    if ((onCopy || onCut) && !pasteActive) {
+      return (
+        <div className={clsx(chipClass, 'flex items-center gap-1')} style={style}>
+          <button onClick={onClick} className="flex-1 min-w-0 truncate text-left" title={training.title}>
+            {content}
+          </button>
+          {onCopy && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onCopy() }}
+              className="shrink-0 p-0.5 rounded border border-surface-600 bg-surface-950/80 text-surface-200 hover:text-primary-300 hover:border-primary-400 transition-colors"
+              title={t('clipboard.copy')}
+              aria-label={t('clipboard.copy')}
+            >
+              <Copy className="w-3 h-3" />
+            </button>
+          )}
+          {onCut && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onCut() }}
+              className="shrink-0 p-0.5 rounded border border-surface-600 bg-surface-950/80 text-surface-200 hover:text-amber-300 hover:border-amber-400 transition-colors"
+              title={t('clipboard.cut')}
+              aria-label={t('clipboard.cut')}
+            >
+              <Scissors className="w-3 h-3" />
+            </button>
+          )}
+        </div>
+      )
+    }
+
     return renderPassive(
       !!pasteActive,
-      {
-        className: clsx(
-          // 'relative' (needed by the unread dot) must NOT coexist with 'absolute' —
-          // whichever wins in the stylesheet breaks week-grid positioning
-          'border rounded-md text-left overflow-hidden',
-          !pasteActive && 'transition-colors',
-          trainingColors(training.status),
-          'relative w-full px-1.5 py-0.5 text-[11px] truncate block',
-          isCut && 'opacity-50',
-          isCopied && 'ring-1 ring-primary-400/60',
-        ),
-        title: training.title,
-        onClick,
-        style,
-      },
+      { className: chipClass, title: training.title, onClick, style },
       content,
     )
   }

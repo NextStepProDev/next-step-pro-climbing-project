@@ -39,6 +39,10 @@ export function TrainingConsentGate({ onAccepted }: Props) {
       await onAccepted()
     } catch (e) {
       setError(getErrorMessage(e))
+    } finally {
+      // Cleared on success too, not only on failure. Normally the refreshed profile unmounts this
+      // screen and nobody notices — but if the flag does not flip (a cached profile, a refresh that
+      // resolves without it), the button span forever with no message and no way forward.
       setSaving(false)
     }
   }
