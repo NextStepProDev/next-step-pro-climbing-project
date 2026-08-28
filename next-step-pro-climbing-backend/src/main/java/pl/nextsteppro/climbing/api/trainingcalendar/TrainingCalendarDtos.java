@@ -48,12 +48,27 @@ record CreatePersonalTrainingRequest(
     Integer targetCalories,
     // null = leave attachments untouched (so a move/drag PUT keeps them);
     // [] = clear; a list = replace. Max 3.
-    @Nullable @Size(max = TrainingAttachment.MAX_PER_TRAINING) List<@Valid AttachmentRequest> attachments
+    @Nullable @Size(max = TrainingAttachment.MAX_PER_TRAINING) List<@Valid AttachmentRequest> attachments,
+    // Optimistic lock, IGNORED on create. null = "do not check", and that is load-bearing rather
+    // than lax: the PUTs that carry no version are real ones — a drag, a paste of a cut entry, and
+    // any client written before this field existed. Those move an entry the user is looking at
+    // right now, so there is nothing stale to protect. The edit FORM sends it, because that is the
+    // one flow with a gap between reading the row and writing it back.
+    @Nullable Long version
 ) {
     // Convenience for callers that don't touch attachments (null = leave untouched)
     CreatePersonalTrainingRequest(LocalDate date, @Nullable LocalTime startTime, @Nullable LocalTime endTime,
                                   String title, @Nullable String description) {
         this(date, startTime, endTime, title, description, null);
+    }
+
+    // Pre-version shape, kept so every caller that does not care about the lock reads unchanged
+    CreatePersonalTrainingRequest(@Nullable TrainingKind kind, LocalDate date,
+                                  @Nullable LocalTime startTime, @Nullable LocalTime endTime,
+                                  String title, @Nullable String description,
+                                  @Nullable Integer targetCalories,
+                                  @Nullable List<AttachmentRequest> attachments) {
+        this(kind, date, startTime, endTime, title, description, targetCalories, attachments, null);
     }
 
     // Convenience for the ordinary TRAINING case, which is everything except the task form
@@ -212,7 +227,11 @@ record PersonalTrainingDto(
     // Unread activity from the OTHER side (viewer-dependent): new/edited entry or new comments
     boolean hasUnreadActivity,
     Instant createdAt,
-    List<TrainingAttachmentDto> attachments
+    List<TrainingAttachmentDto> attachments,
+    // Optimistic lock. Echoed back by the edit form so a save built on a stale read is refused
+    // (409) instead of quietly overwriting what the other side wrote in the meantime — the plan is
+    // shared, and this is the only entity in the app two people really edit in parallel.
+    long version
 ) {}
 
 /** Read-only overlay: the athlete's confirmed booking from the public reservation system. */

@@ -1,6 +1,7 @@
 package pl.nextsteppro.climbing.api.trainingcalendar;
 
 import org.jspecify.annotations.Nullable;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -586,15 +587,27 @@ public class TrainingCalendarService {
     }
 
     private void applyUpdate(PersonalTraining training, boolean byAdmin, CreatePersonalTrainingRequest request) {
+        // Asked FIRST, before any payload validation: if somebody else has already rewritten this
+        // row, what the caller typed is beside the point, and a complaint about their times would
+        // send them looking in the wrong place.
+        requireCurrentVersion(training, request.version());
         // The kind on the request is ignored: it is fixed at creation. Validate against the kind the
         // row actually has, so a task cannot be given hours by editing it.
         TrainingKind kind = training.getKind();
         validateTimes(request, kind);
         validateTargetCalories(request, kind);
-        // Defense in depth (the UI already blocks dragging completed sessions): a completed training
-        // must stay in the past. Moving it into the future would leave a COMPLETED entry dated ahead
-        // of "now" and skew the date-keyed stats/heatmap. Uncomplete first to reschedule.
-        if (training.isCompleted()
+        // Defense in depth (the UI already blocks dragging completed sessions): a completed entry
+        // must not be MOVED into the future. That would leave a COMPLETED row dated ahead of "now"
+        // and skew the date-keyed stats/heatmap. Uncomplete first to reschedule.
+        //
+        // What is refused is the CHANGE OF SCHEDULE, never the state — the same rule as the
+        // event-type guard and setAthlete. Asking only "does the new end lie ahead?" refused far
+        // more than that, because an untimed entry ends at LocalTime.MAX of its own day: every task
+        // ticked off TODAY became uneditable (a task is always untimed, V77), as did an all-day
+        // training dated today and any session checked off before its end time — which complete()
+        // explicitly allows. Renaming one answered "cannot move a completed training into the
+        // future", an error about something the caller had not done.
+        if (training.isCompleted() && movesSchedule(training, request)
                 && trainingEnd(request.date(), request.endTime()).isAfter(nowWarsaw())) {
             throw new IllegalStateException(msg.get("training.calendar.completed.future"));
         }
@@ -609,6 +622,36 @@ public class TrainingCalendarService {
         if (request.attachments() != null) {
             attachments.replaceForTraining(training, request.attachments());
         }
+    }
+
+    /**
+     * Refuses a save built on a stale read.
+     *
+     * <p>{@code @Version} alone never covered this. Hibernate compares versions inside ONE
+     * transaction, so it only catches writes that overlap by microseconds — while the collision this
+     * shared plan actually has is measured in minutes: the coach opens the form, the athlete saves
+     * meanwhile, the coach presses Save. Both requests load the row fresh, so Hibernate sees no
+     * conflict at all and the later write wins in silence.
+     *
+     * <p>A null version means "do not check", and the callers that send none are the ones with
+     * nothing stale to protect — a drag and a paste act on the entry under the cursor. Making it
+     * required instead would break them for no gain.
+     */
+    private static void requireCurrentVersion(PersonalTraining training, @Nullable Long expected) {
+        if (expected != null && expected != training.getVersion()) {
+            throw new ObjectOptimisticLockingFailureException(PersonalTraining.class, training.getId());
+        }
+    }
+
+    /**
+     * Whether this edit changes WHEN the entry sits — the only thing the completed-entry guard is
+     * about. An untimed entry stores both times as null, so comparing them with {@link Objects}
+     * keeps "still untimed" from reading as a move.
+     */
+    private static boolean movesSchedule(PersonalTraining training, CreatePersonalTrainingRequest request) {
+        return !training.getTrainingDate().equals(request.date())
+            || !Objects.equals(training.getStartTime(), request.startTime())
+            || !Objects.equals(training.getEndTime(), request.endTime());
     }
 
     public AttachmentUploadResponse uploadMyAttachment(UUID userId, MultipartFile file) {
@@ -914,7 +957,8 @@ public class TrainingCalendarService {
             t.getRpe(),
             hasUnreadActivity,
             t.getCreatedAt(),
-            attachments
+            attachments,
+            t.getVersion()
         );
     }
 

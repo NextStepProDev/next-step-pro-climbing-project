@@ -254,4 +254,17 @@ public class PersonalTraining {
     public Instant getUpdatedAt() {
         return updatedAt;
     }
+
+    /**
+     * The optimistic-lock counter, exposed because it has to reach the client to do its job.
+     *
+     * <p>Hibernate's own check only covers transactions that overlap in time — microseconds — while
+     * the collision this calendar actually has is a human one: the coach opens the form, the athlete
+     * saves meanwhile, the coach presses Save. Both requests load the row fresh, so nothing conflicts
+     * and the later write wins in silence. Carrying this number out in the DTO and back in the update
+     * request is what turns that into a 409.
+     */
+    public long getVersion() {
+        return version;
+    }
 }

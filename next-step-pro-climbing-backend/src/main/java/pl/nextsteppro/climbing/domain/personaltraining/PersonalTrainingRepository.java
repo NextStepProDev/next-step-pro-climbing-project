@@ -51,12 +51,33 @@ public interface PersonalTrainingRepository extends JpaRepository<PersonalTraini
     // The `athlete.athlete = true` filter belongs IN the query: these feed a navbar badge polled
     // every 60s, and aggregating every user's history only to drop the un-flagged ones in Java
     // made the badge the heaviest recurring query in the app.
+    /**
+     * Entries the athlete created OR last edited after this admin's marker.
+     *
+     * <p>The edit half is not decoration. The per-block dot ({@code TrainingCalendarService.hasUnread})
+     * has always lit on {@code !lastModifiedByAdmin && updatedAt > seen}, so without it an athlete
+     * rescheduling or renaming a session raised a dot the roster number never explained — and the
+     * athlete's own counter ({@link #countCoachChangesSince}) has carried the mirror-image branch
+     * from the start.
+     *
+     * <p>{@code COUNT} counts ROWS, so an entry both created and later edited since the marker still
+     * counts once — and a freshly created one, where {@code updatedAt == createdAt}, does not count
+     * twice for a single act.
+     *
+     * <p>⚠️ Completions are excluded from the edit half on purpose: {@code complete()} clears
+     * {@code lastModifiedByAdmin} and {@code @PreUpdate} bumps {@code updatedAt}, so without that
+     * clause one tick of the checkbox would be counted here AND by
+     * {@link #countNewCompletionsPerAthlete} — one action, two badges.
+     */
     @Query("""
         SELECT new pl.nextsteppro.climbing.domain.personaltraining.AthleteActivityCount(t.athlete.id, COUNT(t))
         FROM PersonalTraining t
         LEFT JOIN TrainingCalendarRead r ON r.userId = :adminId AND r.athleteId = t.athlete.id
         WHERE t.athlete.athlete = true
-          AND t.createdByAdmin = false AND (r.seenAt IS NULL OR t.createdAt > r.seenAt)
+          AND ((t.createdByAdmin = false AND (r.seenAt IS NULL OR t.createdAt > r.seenAt))
+               OR (t.lastModifiedByAdmin = false
+                   AND (r.seenAt IS NULL OR t.updatedAt > r.seenAt)
+                   AND (t.completedAt IS NULL OR (r.seenAt IS NOT NULL AND t.completedAt <= r.seenAt))))
         GROUP BY t.athlete.id
         """)
     List<AthleteActivityCount> countNewAthleteTrainingsPerAthlete(UUID adminId);
