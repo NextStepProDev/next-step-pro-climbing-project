@@ -1,6 +1,7 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Modal } from '../ui/Modal'
+import { useModalClose } from '../ui/modalClose'
 import { useToast } from '../../context/ToastContext'
 import { TrainingTemplateForm, type TemplateDraft } from './TrainingTemplateForm'
 import { useChildDirty } from '../../hooks/useChildDirty'
@@ -28,7 +29,7 @@ export function SaveAsTemplateModal({ draft, onClose }: {
 
   return (
     <Modal isOpen onClose={onClose} title={t('templates.saveAs')} size="lg" confirmClose={isDirty}>
-      <TrainingTemplateForm
+      <GuardedTemplateForm
         onDirtyChange={reportDirty}
         draft={draft}
         onDone={() => {
@@ -36,8 +37,28 @@ export function SaveAsTemplateModal({ draft, onClose }: {
           showToast(t('templates.savedAsTemplate'))
           onClose()
         }}
-        onCancel={onClose}
+        onClose={onClose}
       />
     </Modal>
   )
+}
+
+/**
+ * Routes the form's own "Cancel" through the modal's guard.
+ *
+ * ⚠️ Done HERE and not inside `TrainingTemplateForm`, even though that is where the button lives:
+ * the same form is also the editor in `TrainingTemplatesModal`, and there "Cancel" means *go back
+ * to the list*, not *close the modal*. Wiring `useModalClose()` into the form itself once shut the
+ * whole library instead of stepping back one screen. In this modal the two meanings coincide, so
+ * only this caller may make the swap — and the hook has to be called from INSIDE `Modal`, which is
+ * where the context lives.
+ */
+function GuardedTemplateForm({ onClose, ...props }: {
+  onDirtyChange: (dirty: boolean) => void
+  draft: TemplateDraft
+  onDone: () => void
+  onClose: () => void
+}) {
+  const guardedClose = useModalClose()
+  return <TrainingTemplateForm {...props} onCancel={guardedClose ?? onClose} />
 }

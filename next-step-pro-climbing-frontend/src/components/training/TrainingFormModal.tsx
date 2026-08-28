@@ -236,8 +236,15 @@ function TrainingForm({ onDirtyChange, training, initialDate, initialTime, prefi
       return
     }
     setCalories('')
-    // Only a training has a span to prefill; a task never reaches the time pickers
-    if (tpl.defaultDurationMinutes != null) setEndTime(addMinutesTo(startTime, tpl.defaultDurationMinutes))
+    // Only a training has a span to prefill; a task never reaches the time pickers.
+    // Turning "all day" OFF is half of that and used to be missing: a fresh create with no clicked
+    // hour opens all-day, and submit() drops both times in that mode — so picking "Siła · 90 min"
+    // saved an all-day entry and silently threw away the one thing a TRAINING template carries
+    // beyond its text.
+    if (tpl.defaultDurationMinutes != null) {
+      setAllDay(false)
+      setEndTime(addMinutesTo(startTime, tpl.defaultDurationMinutes))
+    }
   }
 
   // Retroactive logging (adding a training after the fact — often days later):
@@ -290,6 +297,9 @@ function TrainingForm({ onDirtyChange, training, initialDate, initialTime, prefi
     onSubmit({
       // Only on create: the server ignores it on update, and sending it would imply it can change
       ...(training ? {} : { kind }),
+      // ...and only on edit, which is the one flow that reads the row, waits for a human, then
+      // writes it back. A drag or a paste sends none, and the server treats that as "do not check".
+      ...(training ? { version: training.version } : {}),
       date,
       // A task and an all-day training both carry no times
       startTime: isTask || allDay ? undefined : startTime,

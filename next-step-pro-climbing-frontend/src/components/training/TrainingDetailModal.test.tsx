@@ -231,3 +231,64 @@ describe('TrainingDetailModal — completion gating', () => {
     expect(screen.getByText('completion.markDone')).toBeInTheDocument()
   })
 })
+
+/**
+ * This modal is the only one in the feature that had no guard at all, and it holds three separate
+ * pieces of unsaved work: a completion being filled in, a message being typed, and a correction to
+ * a message already sent. Escape, the backdrop and the X threw away all three without asking.
+ */
+describe('TrainingDetailModal — unsaved work is not thrown away silently', () => {
+  const asking = () => screen.queryByText('unsaved.title') !== null
+  const closeButton = () => screen.getAllByRole('button', { name: /close/i })[0]
+
+  it('should close without asking when nothing has been touched', async () => {
+    const user = userEvent.setup()
+    render(<Harness training={makeTraining({ date: yesterday() })} onComplete={vi.fn()} />)
+
+    await user.click(closeButton())
+
+    expect(asking()).toBe(false)
+  })
+
+  it('should ask when a completion is half filled in', async () => {
+    const user = await openFormAndRateOn(makeTraining({ date: yesterday() }))
+
+    await user.click(closeButton())
+
+    expect(asking()).toBe(true)
+  })
+
+  it('should ask when a message has been typed but not sent', async () => {
+    const user = userEvent.setup()
+    render(<Harness training={makeTraining({ date: yesterday() })} onComplete={vi.fn()} />)
+
+    await user.type(await screen.findByPlaceholderText('comments.placeholder'), 'jeszcze jedno')
+    await user.click(closeButton())
+
+    expect(asking()).toBe(true)
+  })
+
+  // Opening the form and changing nothing is not unsaved work — an athlete reading their own
+  // feedback back must still be able to shut the card in one click.
+  it('should not ask when the completion form was opened but left untouched', async () => {
+    const user = userEvent.setup()
+    render(
+      <Harness
+        training={makeTraining({
+          date: yesterday(), status: 'COMPLETED', completedAt: '2026-07-20T13:00:00Z', rpe: 8,
+        })}
+        onComplete={vi.fn()}
+      />,
+    )
+
+    await user.click(screen.getByText('completion.edit'))
+    await user.click(closeButton())
+
+    expect(asking()).toBe(false)
+  })
+
+  async function openFormAndRateOn(training: PersonalTraining) {
+    render(<Harness training={training} onComplete={vi.fn()} />)
+    return openFormAndRate()
+  }
+})

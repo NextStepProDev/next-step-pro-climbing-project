@@ -14,6 +14,7 @@ import { isImageType } from '../../utils/mediaTypes'
 import { decodeHtmlEntities } from '../../utils/htmlEntities'
 import { renderRichText } from '../../utils/renderRichText'
 import { useDateLocale } from '../../utils/dateFnsLocale'
+import { useChildDirty } from '../../hooks/useChildDirty'
 import { nowInWarsaw, parseCalendarDate, parseCalendarDateTime, todayInWarsaw } from '../../utils/calendarDate'
 import { AdminPrivateNote } from '../admin/AdminPrivateNote'
 import type { TrainingCalendarAdapter } from './trainingCalendarAdapter'
@@ -71,6 +72,11 @@ export function TrainingDetailModal({
   const [completionOpen, setCompletionOpen] = useState(false)
   const [feedback, setFeedback] = useState('')
   const [rpe, setRpe] = useState<number | null>(null)
+  // What the thread below would lose: a typed message, a staged file, an open correction.
+  const [threadDirty, reportThreadDirty] = useChildDirty(!!training)
+  // The completion form, snapshotted against the values it opened with — editing an existing
+  // completion starts populated, so "opened" is not the same as "empty".
+  const [completionBaseline, setCompletionBaseline] = useState({ feedback: '', rpe: null as number | null })
 
   if (!training) return null
 
@@ -80,10 +86,25 @@ export function TrainingDetailModal({
   const isTask = training.kind === 'TASK'
 
   const openCompletionForm = () => {
-    setFeedback(training.feedback ? decodeHtmlEntities(training.feedback) : '')
-    setRpe(training.rpe)
+    const seed = { feedback: training.feedback ? decodeHtmlEntities(training.feedback) : '', rpe: training.rpe }
+    setFeedback(seed.feedback)
+    setRpe(seed.rpe)
+    setCompletionBaseline(seed)
     setCompletionOpen(true)
   }
+
+  /**
+   * Read at the moment of the click, not from a prop captured a render earlier — the reason
+   * `Modal` takes a getter at all (see useChildDirty).
+   *
+   * This modal is the only one in the feature that had no guard, and it hosts three separate
+   * pieces of unsaved work at once: a completion the athlete is filling in, a message being typed,
+   * and a correction to a message already sent. Escape, the backdrop and the X threw away all
+   * three without asking.
+   */
+  const hasUnsavedWork = () =>
+    threadDirty()
+    || (completionOpen && (feedback !== completionBaseline.feedback || rpe !== completionBaseline.rpe))
 
   const saveCompletion = async () => {
     try {
@@ -101,7 +122,13 @@ export function TrainingDetailModal({
   }
 
   return (
-    <Modal isOpen onClose={onClose} title={decodeHtmlEntities(training.title)} size="lg">
+    <Modal
+      isOpen
+      onClose={onClose}
+      title={decodeHtmlEntities(training.title)}
+      size="lg"
+      confirmClose={hasUnsavedWork}
+    >
       <div className="space-y-5">
         {/* Header: date, time, status, provenance */}
         <div className="flex flex-wrap items-center gap-2">
@@ -231,7 +258,12 @@ export function TrainingDetailModal({
         </div>
 
         {/* Comment thread */}
-        <CommentThread trainingId={training.id} api={api} onPosted={onCommentPosted} />
+        <CommentThread
+          trainingId={training.id}
+          api={api}
+          onPosted={onCommentPosted}
+          onDirtyChange={reportThreadDirty}
+        />
 
         {/* Delete/uncomplete errors (no form open); the completion form renders its own error inline */}
         {errorMessage && !completionOpen && (

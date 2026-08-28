@@ -134,3 +134,60 @@ describe('TrainingFormModal — Cancel is guarded too', () => {
     expect(screen.queryByPlaceholderText('form.titlePlaceholder')).toBeNull()
   })
 })
+
+/**
+ * A fresh create with no clicked hour opens in all-day mode, and submit() drops both times there.
+ * Applying a TRAINING template therefore has to switch all-day OFF, or the duration — the one
+ * thing such a template carries beyond its text — is thrown away without a word.
+ */
+describe('TrainingFormModal — applying a template that carries a duration', () => {
+  const TEMPLATE = {
+    id: 'tpl-1',
+    kind: 'TRAINING' as const,
+    title: 'Siła',
+    description: null,
+    defaultDurationMinutes: 90,
+    targetCalories: null,
+    attachments: [],
+    updatedAt: '2026-07-01T09:00:00Z',
+  }
+
+  function renderWithTemplates() {
+    const onSubmit = vi.fn()
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    render(
+      <QueryClientProvider client={client}>
+        <TrainingFormModal
+          isOpen
+          onClose={vi.fn()}
+          initialDate="2026-09-01"
+          onSubmit={onSubmit}
+          saving={false}
+          onUpload={vi.fn()}
+          templatesEnabled
+        />
+      </QueryClientProvider>,
+    )
+    return { onSubmit }
+  }
+
+  it('should turn all-day off and submit the template span', async () => {
+    const { adminTrainingCalendarApi } = await import('../../api/client')
+    vi.mocked(adminTrainingCalendarApi.getTemplates).mockResolvedValue([TEMPLATE])
+    const user = userEvent.setup()
+    const { onSubmit } = renderWithTemplates()
+
+    const picker = await screen.findByRole('combobox')
+    await user.selectOptions(picker, 'tpl-1')
+
+    // The checkbox is the visible half of the same decision
+    expect(screen.getByRole('checkbox', { name: /form.allDay/ })).not.toBeChecked()
+
+    await user.click(screen.getByText('form.save'))
+
+    expect(onSubmit).toHaveBeenCalledTimes(1)
+    const payload = onSubmit.mock.calls[0][0]
+    expect(payload.startTime).toBe('17:00')
+    expect(payload.endTime).toBe('18:30')
+  })
+})

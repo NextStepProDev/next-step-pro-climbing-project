@@ -204,19 +204,52 @@ export function TrainingCalendarSection({ api, scopeKey, scopeLabel, isCoachView
     }
   }
 
+  /**
+   * These four report their failures inline (`submitError` on the form, `errorMessage` on the
+   * detail modal), so each declares an `onError` even though it does nothing: main.tsx only fires
+   * the global error toast for mutations that have NONE, and its whole contract is that a
+   * component already showing the failure owns the messaging. Without these, every failed save,
+   * completion or delete was announced twice — once as a toast and once in red next to the button.
+   */
+  const reportedInline = () => {}
+
+  /**
+   * The id of an entry this flow already created, kept so a retry does not create a second one.
+   *
+   * "Log it as done right away" is two calls, and only the first is idempotent-ish: when the
+   * create landed and the completion did not (a dropped connection, a 409 on the "must have
+   * started" boundary), the form stayed open with the error — and pressing Save again made
+   * ANOTHER training. Now the retry only completes what already exists.
+   */
+  const pendingCompletionId = useRef<string | null>(null)
+
   const saveMutation = useMutation({
     mutationFn: async ({ data, completion }: { data: CreatePersonalTraining; completion?: InstantCompletion | null }) => {
       if (editedTraining) return api.updateTraining(editedTraining.id, data)
-      const created = await api.createTraining(data)
+
+      // A retry after the completion half failed: the entry is already there, only the tick is not
+      const existingId = pendingCompletionId.current
+      const created = existingId ? null : await api.createTraining(data)
+      const trainingId = existingId ?? created!.id
+
       // Retroactive logging: create + immediately mark completed in one flow (athlete only)
-      if (completion) return trainingCalendarApi.complete(created.id, completion)
-      return created
+      if (!completion) {
+        pendingCompletionId.current = null
+        // Unticked on the retry — the entry exists, so this is an edit, not a second create
+        return created ?? (await api.updateTraining(trainingId, data))
+      }
+      // Remembered BEFORE the second call, so a failure there leaves the id behind for the retry
+      pendingCompletionId.current = trainingId
+      const done = await trainingCalendarApi.complete(trainingId, completion)
+      pendingCompletionId.current = null
+      return done
     },
     onSuccess: () => {
       setFormOpen(false)
       setEditedTraining(null)
       invalidate()
     },
+    onError: reportedInline,
   })
 
   const deleteMutation = useMutation({
@@ -225,6 +258,7 @@ export function TrainingCalendarSection({ api, scopeKey, scopeLabel, isCoachView
       setDetailId(null)
       invalidate()
     },
+    onError: reportedInline,
   })
 
   // Completion is athlete-only (the coach sees a read-only summary)
@@ -232,14 +266,19 @@ export function TrainingCalendarSection({ api, scopeKey, scopeLabel, isCoachView
     mutationFn: ({ trainingId, data }: { trainingId: string; data: { feedback?: string; rpe?: number } }) =>
       trainingCalendarApi.complete(trainingId, data),
     onSuccess: invalidate,
+    onError: reportedInline,
   })
 
   const uncompleteMutation = useMutation({
     mutationFn: (trainingId: string) => trainingCalendarApi.uncomplete(trainingId),
     onSuccess: invalidate,
+    onError: reportedInline,
   })
 
+  // Every fresh open starts a new entry, so the half-finished one from a previous attempt must not
+  // be adopted by it — the id only survives a RETRY of the same save.
   const openCreate = (date?: string, time?: string) => {
+    pendingCompletionId.current = null
     setEditedTraining(null)
     setDuplicatePrefill(null)
     setPrefillDate(date)
@@ -248,6 +287,7 @@ export function TrainingCalendarSection({ api, scopeKey, scopeLabel, isCoachView
   }
 
   const openEdit = (training: PersonalTraining) => {
+    pendingCompletionId.current = null
     setEditedTraining(training)
     setDuplicatePrefill(null)
     setFormOpen(true)
@@ -273,6 +313,7 @@ export function TrainingCalendarSection({ api, scopeKey, scopeLabel, isCoachView
   // Duplicate: create-mode form seeded with the source content, date defaults to +7 days
   // ("same training next week"); everything stays editable before saving
   const openDuplicate = (tr: PersonalTraining) => {
+    pendingCompletionId.current = null
     setDetailId(null)
     setEditedTraining(null)
     setDuplicatePrefill({
@@ -648,7 +689,14 @@ export function TrainingCalendarSection({ api, scopeKey, scopeLabel, isCoachView
       {/* Add / edit */}
       <TrainingFormModal
         isOpen={formOpen}
-        onClose={() => { setFormOpen(false); setEditedTraining(null); setDuplicatePrefill(null); saveMutation.reset() }}
+        onClose={() => {
+          setFormOpen(false)
+          setEditedTraining(null)
+          setDuplicatePrefill(null)
+          // Walking away abandons the half-finished entry; the next create must not adopt its id
+          pendingCompletionId.current = null
+          saveMutation.reset()
+        }}
         training={editedTraining}
         initialDate={prefillDate}
         initialTime={prefillTime}
