@@ -169,7 +169,7 @@ export function AscentStatsPanel({ api, scopeKey, terrain, year, selectedYear }:
       )}
 
       {stats.disciplines.length > 1 && (
-        <p className="text-xs text-surface-600">{t('stats.scaleNote')}</p>
+        <p className="text-xs text-surface-500">{t('stats.scaleNote')}</p>
       )}
     </section>
   )
@@ -218,7 +218,7 @@ function MountainBlock({ stats }: { stats: MountainStats }) {
                 </span>
                 <span className="font-semibold text-surface-100 tabular-nums">{best.gradeLabel}</span>
                 <span className="text-surface-400 truncate">{best.routeName}</span>
-                <span className="ml-auto shrink-0 text-xs text-surface-600 truncate max-w-[8rem]">
+                <span className="ml-auto shrink-0 text-xs text-surface-500 truncate max-w-[8rem]">
                   {best.crag}
                 </span>
               </li>
@@ -261,7 +261,7 @@ function MountainFigure({ value, unit, label, sub }: {
         {value}{unit && <span className="text-sm font-normal text-surface-400"> {unit}</span>}
       </div>
       <div className="text-xs text-surface-400">{label}</div>
-      {sub && <div className="text-[11px] text-surface-600">{sub}</div>}
+      {sub && <div className="text-[11px] text-surface-500">{sub}</div>}
     </div>
   )
 }
@@ -295,7 +295,7 @@ function DisciplineBlock({ block }: { block: AscentDisciplineStats }) {
                 <span className="font-semibold text-surface-100 tabular-nums">{best.gradeLabel}</span>
                 {/* The route, because "8a" without a name is a number, not a memory */}
                 <span className="text-surface-400 truncate">{best.routeName}</span>
-                <span className="ml-auto shrink-0 text-xs text-surface-600 truncate max-w-[8rem]">
+                <span className="ml-auto shrink-0 text-xs text-surface-500 truncate max-w-[8rem]">
                   {best.crag}
                 </span>
               </li>
@@ -320,7 +320,7 @@ function StatTile({ icon, value, label, sub }: {
       <div className="flex items-center gap-1.5 text-surface-500 mb-1">{icon}</div>
       <div className="text-2xl font-bold text-surface-100 tabular-nums">{value}</div>
       <div className="text-xs text-surface-400">{label}</div>
-      {sub && <div className="text-[11px] text-surface-600 mt-0.5">{sub}</div>}
+      {sub && <div className="text-[11px] text-surface-500 mt-0.5">{sub}</div>}
     </div>
   )
 }

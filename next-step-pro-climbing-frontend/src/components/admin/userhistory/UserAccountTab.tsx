@@ -138,5 +138,5 @@ function Flag({ on }: { on: boolean }) {
   const { t } = useTranslation('admin')
   return on
     ? <Check className="w-4 h-4 text-green-400" aria-label={t('users.detail.account.yes')} />
-    : <X className="w-4 h-4 text-surface-600" aria-label={t('users.detail.account.no')} />
+    : <X className="w-4 h-4 text-surface-400" aria-label={t('users.detail.account.no')} />
 }

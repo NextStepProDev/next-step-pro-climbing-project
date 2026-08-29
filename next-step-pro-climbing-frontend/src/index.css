@@ -64,7 +64,12 @@
   --color-primary-100: #e2e8f0;
   --color-primary-200: #cbd5e1;
   --color-primary-300: #94a3b8;
-  --color-primary-400: #64748b;
+  /* Links, type badges and 150-odd other pieces of running text. At the old #64748b this
+     measured 3.32:1 on a card and 3.72:1 on the page — under WCAG AA either way. Raised only
+     HERE, i.e. only for the dark theme: the light override below is a dark blue on cream and
+     already sits at 6.95:1, and nudging it the same direction dropped it to 5.31:1 (measured).
+     Backgrounds and borders using this token are 13 places, all checked. */
+  --color-primary-400: #8496ad;
   --color-primary-500: #475569;
   --color-primary-600: #334155;
   --color-primary-700: #1e293b;
@@ -85,7 +90,13 @@
   --color-surface-200: #e7e5e4;
   --color-surface-300: #d6d3d1;
   --color-surface-400: #b0aaa5;
-  --color-surface-500: #857f79;
+  /* The muted-text step. 248 of its ~285 uses are text (plus 20 placeholders); only 2
+     backgrounds and 14 borders ride along, so moving the token is the cheap way to fix all of
+     them at once. #857f79 measured 4.00:1 on a card — just under AA. Dark theme only. */
+  --color-surface-500: #9a938c;
+  /* NOT raised, deliberately: 91 of this token's uses are BORDERS and only 30 were text.
+     Lightening it would brighten every hairline in the app to fix a handful of labels, so the
+     labels moved up to surface-500 instead and this stays the quiet border/icon step. */
   --color-surface-600: #57534e;
   --color-surface-700: #44403c;
   --color-surface-800: #312e2b;
@@ -495,7 +506,11 @@ h1, h2, h3, h4, h5, h6, .font-display {
   --color-surface-200: #292524;
   --color-surface-300: #3d3a37;
   --color-surface-400: #57534e;
-  --color-surface-500: #78716c;
+  /* Mirror of the dark-side change, and it has to happen here too — this scale is INVERTED
+     between themes, so surface-500 (#78716c) was actually LIGHTER than surface-600 (#736e6a)
+     on cream. Moving the muted labels up to 500 for the dark theme's sake would have dropped
+     them from 4.10:1 to 3.90:1 here. #665f5a measures 5.53:1 on the page. */
+  --color-surface-500: #665f5a;
   --color-surface-600: #736e6a;
   --color-surface-700: #c5bfb7;
   --color-surface-800: #e0dbd4;
@@ -516,7 +531,12 @@ h1, h2, h3, h4, h5, h6, .font-display {
   --color-amber-400: #7a5503;
   --color-amber-500: #d49a0a;
   --color-amber-600: #e5a811;
-  --color-green-400: #5a7a3e;
+  /* The "done / published / confirmed" text colour, 54 uses. On the pale green badge fill it
+     measured 4.04:1 — the reading that says an entry IS live sat under AA while the greys
+     around it had just been fixed. #4b6733 measures 5.2:1 there.
+     Deliberately NOT merged with green-500 below despite the similar value: 500 paints 45
+     backgrounds and 18 borders and no text at all, so the two must stay free to move apart. */
+  --color-green-400: #4b6733;
   --color-green-500: #4d6935;
   --color-green-700: #a3b893;
   --color-indigo-200: #4338ca;
