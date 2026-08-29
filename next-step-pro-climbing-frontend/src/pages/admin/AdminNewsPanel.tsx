@@ -338,7 +338,7 @@ function TranslationGroupRow({
               'text-xs px-2 py-0.5 rounded-full',
               displayArticle.published
                 ? 'bg-green-900/40 text-green-400'
-                : 'bg-surface-600 text-surface-400'
+                : 'bg-surface-700 text-surface-100'
             )}
           >
             {displayArticle.published ? t('news.published') : t('news.draft')}
@@ -833,7 +833,7 @@ function EditView({
           <LanguageBadge lang={detail.language} />
           <span className={clsx(
             'text-xs px-2.5 py-1 rounded-full',
-            published ? 'bg-green-900/40 text-green-400' : 'bg-surface-600 text-surface-400'
+            published ? 'bg-green-900/40 text-green-400' : 'bg-surface-700 text-surface-100'
           )}>
             {published ? t('news.published') : t('news.draft')}
           </span>

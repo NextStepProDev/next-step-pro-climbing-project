@@ -4,9 +4,14 @@ import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpInputMessage;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.HttpMediaTypeNotSupportedException;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 import pl.nextsteppro.climbing.domain.climbingascent.AscentTerrain;
 import pl.nextsteppro.climbing.infrastructure.i18n.MessageService;
@@ -149,4 +154,74 @@ class GlobalExceptionHandlerTest {
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
         assertEquals("INTERNAL_ERROR", response.getBody().code());
     }
+
+    /* ---------------------------------------------------------------------------------------
+     * The three doors that were still open after the 2026-08-14 round closed the other two.
+     * Each is a request the server understands and is right to refuse, and each used to leave
+     * a 500 plus an ERROR-level stack trace behind — the same log noise the NoResourceFound
+     * handler exists to prevent.
+     * ------------------------------------------------------------------------------------ */
+
+    @Test
+    void shouldReturn400WhenAMultipartPartIsMissing() {
+        when(messageService.get("error.bad.request")).thenReturn("Nieprawidłowe żądanie");
+        var ex = new MissingServletRequestPartException("file");
+
+        var response = handler.handleMissingInput(ex);
+
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        var body = response.getBody();
+        assertNotNull(body);
+        assertEquals("BAD_REQUEST", body.code());
+    }
+
+    @Test
+    void shouldReturn400WhenARequiredQueryParameterIsMissing() {
+        when(messageService.get("error.bad.request")).thenReturn("Nieprawidłowe żądanie");
+        var ex = new MissingServletRequestParameterException("from", "LocalDate");
+
+        var response = handler.handleMissingInput(ex);
+
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertEquals("BAD_REQUEST", response.getBody().code());
+    }
+
+    @Test
+    void shouldReturn415WhenTheBodyArrivesUnderAContentTypeTheEndpointDoesNotRead() {
+        when(messageService.get("error.bad.request")).thenReturn("Nieprawidłowe żądanie");
+        var ex = new HttpMediaTypeNotSupportedException(MediaType.TEXT_PLAIN, java.util.List.of(MediaType.APPLICATION_JSON));
+
+        var response = handler.handleUnsupportedMediaType(ex);
+
+        assertEquals(HttpStatus.UNSUPPORTED_MEDIA_TYPE, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertEquals("UNSUPPORTED_MEDIA_TYPE", response.getBody().code());
+    }
+
+    @Test
+    void shouldReturn405AndNameTheAllowedVerbsWhenThePathExistsUnderADifferentMethod() {
+        when(messageService.get("error.bad.request")).thenReturn("Nieprawidłowe żądanie");
+        var ex = new HttpRequestMethodNotSupportedException("POST", java.util.List.of("GET", "PUT"));
+
+        var response = handler.handleMethodNotSupported(ex);
+
+        assertEquals(HttpStatus.METHOD_NOT_ALLOWED, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertEquals("METHOD_NOT_ALLOWED", response.getBody().code());
+        // Allow is the whole point: it tells the caller what to send instead.
+        assertTrue(response.getHeaders().getAllow().contains(HttpMethod.GET));
+        assertTrue(response.getHeaders().getAllow().contains(HttpMethod.PUT));
+    }
+
+    @Test
+    void shouldSurviveAMethodNotSupportedExceptionThatNamesNoAlternative() {
+        when(messageService.get("error.bad.request")).thenReturn("Nieprawidłowe żądanie");
+        var ex = new HttpRequestMethodNotSupportedException("TRACE");
+
+        var response = handler.handleMethodNotSupported(ex);
+
+        assertEquals(HttpStatus.METHOD_NOT_ALLOWED, response.getStatusCode());
+    }
+
 }

@@ -183,5 +183,16 @@
     "REGULARHint": "Klienci rezerwują miejsca w tych godzinach.",
     "WINDOWHint": "Klienci nie rezerwują — proponują termin w tych godzinach.",
     "UNAVAILABLEHint": "Godziny zamknięte: bez miejsc, bez zapisów i listy rezerwowej."
+  },
+  "notFound": {
+    "title": "Nie ma takiej strony",
+    "description": "Adres, pod który trafiłeś, nie istnieje albo strona została przeniesiona. Sprawdź link albo wróć na stronę główną.",
+    "home": "Strona główna",
+    "calendar": "Zobacz kalendarz"
+  },
+  "sessionUnavailable": {
+    "title": "Nie udało się potwierdzić sesji",
+    "description": "Nie mogliśmy połączyć się z serwerem, żeby sprawdzić Twoje konto. Nie wylogowaliśmy Cię — zostajesz na tej stronie. Spróbuj ponownie za chwilę.",
+    "retry": "Spróbuj ponownie"
   }
 }
