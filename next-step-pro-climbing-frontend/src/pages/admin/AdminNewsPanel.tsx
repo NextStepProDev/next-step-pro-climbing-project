@@ -378,7 +378,7 @@ function TranslationGroupRow({
                 title={t('news.createTranslation', { lang: lang.toUpperCase() })}
                 className={clsx(
                   'text-[10px] font-bold uppercase px-2 py-0.5 rounded border border-dashed cursor-pointer transition-colors',
-                  'border-surface-500 text-surface-500 hover:border-surface-300 hover:text-surface-300',
+                  'border-surface-500 text-surface-400 hover:border-surface-300 hover:text-surface-200',
                   isCreatingTranslation && 'opacity-50 cursor-wait',
                 )}
               >

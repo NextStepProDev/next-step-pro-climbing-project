@@ -109,14 +109,14 @@ export function Footer() {
         <div className="mt-5 pt-4 border-t border-surface-800 text-center text-surface-500 text-sm">
           <p>&copy; {new Date().getFullYear()} Next Step Pro Climbing. {t('footer.copyright')}</p>
           <p className="mt-1 space-x-3">
-            <Link to="/polityka-prywatnosci" className="text-surface-600 hover:text-surface-400 transition-colors text-xs">
+            <Link to="/polityka-prywatnosci" className="text-surface-500 hover:text-surface-300 transition-colors text-xs">
               Polityka prywatności
             </Link>
-            <Link to="/faq" className="text-surface-600 hover:text-surface-400 transition-colors text-xs">
+            <Link to="/faq" className="text-surface-500 hover:text-surface-300 transition-colors text-xs">
               {t('nav.help')}
             </Link>
           </p>
-          <p className="mt-1 text-surface-600 text-xs">v{__APP_VERSION__}</p>
+          <p className="mt-1 text-surface-500 text-xs">v{__APP_VERSION__}</p>
         </div>
       </div>
     </footer>
