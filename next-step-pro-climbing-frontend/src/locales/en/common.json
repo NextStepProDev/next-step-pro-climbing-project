@@ -183,5 +183,16 @@
     "REGULARHint": "Clients book seats in these hours.",
     "WINDOWHint": "Clients do not book — they propose a time inside these hours.",
     "UNAVAILABLEHint": "Hours closed off: no seats, no sign-ups, no waitlist."
+  },
+  "notFound": {
+    "title": "This page does not exist",
+    "description": "The address you followed does not exist, or the page has moved. Check the link, or head back to the home page.",
+    "home": "Home page",
+    "calendar": "See the calendar"
+  },
+  "sessionUnavailable": {
+    "title": "We could not confirm your session",
+    "description": "We could not reach the server to check your account. You have not been logged out — you are still on this page. Try again in a moment.",
+    "retry": "Try again"
   }
 }

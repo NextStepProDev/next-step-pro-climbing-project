@@ -32,6 +32,7 @@ const FAQPage = lazyWithReload(() => import('./pages/FAQPage').then(m => ({ defa
 const PrivacyPolicyPage = lazyWithReload(() => import('./pages/PrivacyPolicyPage').then(m => ({ default: m.PrivacyPolicyPage })))
 const SettingsPage = lazyWithReload(() => import('./pages/SettingsPage').then(m => ({ default: m.SettingsPage })))
 const AdminPage = lazyWithReload(() => import('./pages/AdminPage').then(m => ({ default: m.AdminPage })))
+const NotFoundPage = lazyWithReload(() => import('./pages/NotFoundPage').then(m => ({ default: m.NotFoundPage })))
 
 const LazyFallback = () => (
   <div className="flex justify-center py-12">
@@ -95,6 +96,9 @@ export default function App() {
                 </AdminRoute>
               }
             />
+            {/* Anything the router does not know. nginx already answered 200 with the SPA shell,
+                so without this the visitor got a blank page and a crawler got a soft 404. */}
+            <Route path="*" element={<NotFoundPage />} />
           </Route>
         </Routes>
       </Suspense>

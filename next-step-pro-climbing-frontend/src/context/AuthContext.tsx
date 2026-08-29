@@ -8,22 +8,26 @@ import { ApiError } from '../utils/errors'
 import type { User } from '../types'
 
 /**
- * A failed `/user/me` is not proof that the login is over.
+ * A failed `/user/me` is not proof that the login is over. Returns true when the session really
+ * ended, false when we simply could not find out.
  *
- * This used to clear the tokens on ANY error, so one 429 from the rate limiter — or a
- * momentary network drop — threw the user out of a perfectly valid session and made them log
- * in again. Only a server that actively refused the credentials ends a session; everything
- * else leaves the tokens alone, so the next attempt (or a reload) picks the session back up.
+ * This used to clear the tokens on ANY error, so one 429 from the rate limiter — or a momentary
+ * network drop — threw the user out of a perfectly valid session. Positive proof is required and
+ * the default is to keep the session: a network failure arrives here as a plain Error (fetchApi
+ * turns it into one), so "not an ApiError" must mean "I don't know", not "log them out". Keeping
+ * a stale token costs nothing — the next request 401s, the refresh runs, and THAT path ends the
+ * session properly if the server really refuses it.
+ *
+ * The return value matters as much as the clearing: "I don't know" has to reach the route guards,
+ * or they read a null user as "not logged in" and redirect — which is how a blip used to eject an
+ * admin from the page they were working on.
  */
-function endSessionOnlyIfRejected(error: unknown, forget: () => void) {
-  // Positive proof required, and the default is to keep the session: a network failure arrives
-  // here as a plain Error (fetchApi turns it into one), so "not an ApiError" must mean "I don't
-  // know", not "log them out". Keeping a stale token costs nothing — the next request 401s, the
-  // refresh runs, and THAT path ends the session properly if the server really refuses it.
+function endSessionOnlyIfRejected(error: unknown, forget: () => void): boolean {
   const refused = error instanceof ApiError && error.isAuthRejection
-  if (!refused) return
+  if (!refused) return false
   clearTokens()
   forget()
+  return true
 }
 
 interface AuthContextType {
@@ -31,6 +35,14 @@ interface AuthContextType {
   isLoading: boolean
   isAuthenticated: boolean
   isAdmin: boolean
+  /**
+   * We hold tokens but could not find out who they belong to, and the server never actually
+   * refused them — a 429, a 500, a moment offline. This is NOT "logged out": treating it as
+   * such sends the route guards into a redirect, which erases the address the person was on
+   * and throws away anything unsaved on the page, all because one request blipped.
+   */
+  sessionUnknown: boolean
+  retrySession: () => Promise<void>
   login: (email: string, password: string) => Promise<void>
   loginWithTokens: (tokens: AuthTokens) => Promise<void>
   logout: () => void
@@ -46,6 +58,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Initialise from token presence so the "logged out" case needs no synchronous
   // state update on mount (avoids set-state-in-effect).
   const [isLoading, setIsLoading] = useState(() => hasTokens())
+  const [sessionUnknown, setSessionUnknown] = useState(false)
 
   const i18nRef = useRef(i18n)
   useEffect(() => {
@@ -61,15 +74,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const fetchUser = useCallback(async () => {
     if (!hasTokens()) {
       setUser(null)
+      setSessionUnknown(false)
       setIsLoading(false)
       return
     }
     try {
       const currentUser = await authApi.getCurrentUser()
       setUser(currentUser)
+      setSessionUnknown(false)
       syncLanguage(currentUser.preferredLanguage)
     } catch (error) {
-      endSessionOnlyIfRejected(error, () => setUser(null))
+      const ended = endSessionOnlyIfRejected(error, () => setUser(null))
+      setSessionUnknown(!ended)
     } finally {
       setIsLoading(false)
     }
@@ -89,7 +105,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       })
       .catch((error) => {
         if (cancelled) return
-        endSessionOnlyIfRejected(error, () => setUser(null))
+        const ended = endSessionOnlyIfRejected(error, () => setUser(null))
+        // The server never refused us; we just do not know yet. Say so, so the route guards
+        // hold the page instead of redirecting a perfectly valid session off its own address.
+        setSessionUnknown(!ended)
       })
       .finally(() => {
         if (!cancelled) setIsLoading(false)
@@ -103,6 +122,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const handler = () => {
       clearTokens()
       setUser(null)
+      setSessionUnknown(false)
       queryClient.clear()
     }
     window.addEventListener('auth:session-expired', handler)
@@ -114,6 +134,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     saveTokens(tokens)
     const currentUser = await authApi.getCurrentUser()
     setUser(currentUser)
+    setSessionUnknown(false)
     syncLanguage(currentUser.preferredLanguage)
   }, [syncLanguage])
 
@@ -121,12 +142,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     saveTokens(tokens)
     const currentUser = await authApi.getCurrentUser()
     setUser(currentUser)
+    setSessionUnknown(false)
     syncLanguage(currentUser.preferredLanguage)
   }, [syncLanguage])
 
   const logout = useCallback(() => {
     authApi.logout()
     setUser(null)
+    setSessionUnknown(false)
     queryClient.clear()
   }, [queryClient])
 
@@ -135,11 +158,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isLoading,
     isAuthenticated: !!user,
     isAdmin: user?.isAdmin ?? false,
+    sessionUnknown,
+    retrySession: fetchUser,
     login,
     loginWithTokens,
     logout,
     refreshUser: fetchUser,
-  }), [user, isLoading, login, loginWithTokens, logout, fetchUser])
+  }), [user, isLoading, sessionUnknown, login, loginWithTokens, logout, fetchUser])
 
   return (
     <AuthContext.Provider value={value}>

@@ -4,21 +4,27 @@ import io.jsonwebtoken.JwtException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.HttpMediaTypeNotSupportedException;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 import pl.nextsteppro.climbing.api.auth.EmailNotVerifiedException;
 import pl.nextsteppro.climbing.infrastructure.i18n.MessageService;
 
 import java.time.Instant;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @RestControllerAdvice
@@ -140,6 +146,55 @@ public class GlobalExceptionHandler {
         log.warn("Unreadable request body: {}", ex.getMessage());
         return ResponseEntity.badRequest()
             .body(new ErrorResponse("BAD_REQUEST", messageService.get("error.bad.request"), Instant.now()));
+    }
+
+    /**
+     * The same class of mistake as the two above, arriving through the three remaining doors
+     * Spring models with their own exception types. All three used to fall through to the
+     * catch-all: a 500 with a full stack trace at ERROR level, for a request the server
+     * understood perfectly well and was right to refuse.
+     *
+     * <ul>
+     *   <li>{@code MissingServletRequestPartException} — a multipart part is absent. Reachable
+     *       from a browser, not just from a broken client: an upload cut off mid-flight looks
+     *       exactly like this to the server.</li>
+     *   <li>{@code MissingServletRequestParameterException} — a required query parameter is
+     *       absent ({@code /notes/markers} without {@code from}/{@code to}).</li>
+     *   <li>{@code HttpMediaTypeNotSupportedException} — the body arrived under a content type
+     *       the endpoint does not read. That one is a 415, not a 400; the status is the answer.</li>
+     * </ul>
+     *
+     * <p>Logging them as WARN rather than ERROR is the point, not tidiness: a scanner spraying
+     * malformed uploads must not be able to fill the log with false alarms, or a real 500 stops
+     * being findable. Same reasoning as {@code NoResourceFoundException} below.
+     */
+    @ExceptionHandler({MissingServletRequestPartException.class, MissingServletRequestParameterException.class})
+    public ResponseEntity<ErrorResponse> handleMissingInput(Exception ex) {
+        log.warn("Incomplete request: {}", ex.getMessage());
+        return ResponseEntity.badRequest()
+            .body(new ErrorResponse("BAD_REQUEST", messageService.get("error.bad.request"), Instant.now()));
+    }
+
+    @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
+    public ResponseEntity<ErrorResponse> handleUnsupportedMediaType(HttpMediaTypeNotSupportedException ex) {
+        log.warn("Unsupported media type: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
+            .body(new ErrorResponse("UNSUPPORTED_MEDIA_TYPE", messageService.get("error.bad.request"), Instant.now()));
+    }
+
+    /**
+     * A path that exists under a different verb. Answering 500 told a caller that the server
+     * broke, when in fact it knows exactly what is wrong — and {@code Allow} names the fix.
+     */
+    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+    public ResponseEntity<ErrorResponse> handleMethodNotSupported(HttpRequestMethodNotSupportedException ex) {
+        log.warn("Method not supported: {}", ex.getMessage());
+        ResponseEntity.BodyBuilder reply = ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED);
+        Set<HttpMethod> allowed = ex.getSupportedHttpMethods();
+        if (allowed != null && !allowed.isEmpty()) {
+            reply.allow(allowed.toArray(new HttpMethod[0]));
+        }
+        return reply.body(new ErrorResponse("METHOD_NOT_ALLOWED", messageService.get("error.bad.request"), Instant.now()));
     }
 
     @ExceptionHandler(NoResourceFoundException.class)

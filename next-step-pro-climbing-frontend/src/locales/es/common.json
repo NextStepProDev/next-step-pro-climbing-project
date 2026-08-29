@@ -183,5 +183,16 @@
     "REGULARHint": "Los clientes reservan plazas en estas horas.",
     "WINDOWHint": "Los clientes no reservan — proponen una hora dentro de estas horas.",
     "UNAVAILABLEHint": "Horas cerradas: sin plazas, sin inscripciones ni lista de espera."
+  },
+  "notFound": {
+    "title": "Esta página no existe",
+    "description": "La dirección que has seguido no existe o la página se ha movido. Comprueba el enlace o vuelve a la página de inicio.",
+    "home": "Página de inicio",
+    "calendar": "Ver el calendario"
+  },
+  "sessionUnavailable": {
+    "title": "No hemos podido confirmar tu sesión",
+    "description": "No hemos podido conectar con el servidor para comprobar tu cuenta. No has cerrado sesión: sigues en esta página. Inténtalo de nuevo en un momento.",
+    "retry": "Inténtalo de nuevo"
   }
 }

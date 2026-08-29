@@ -310,7 +310,7 @@ function TranslationGroupRow({
               'text-xs px-2 py-0.5 rounded-full',
               displayCourse.published
                 ? 'bg-green-900/40 text-green-400'
-                : 'bg-surface-600 text-surface-400'
+                : 'bg-surface-700 text-surface-100'
             )}
           >
             {displayCourse.published ? t('courses.published') : t('courses.draft')}
@@ -789,7 +789,7 @@ function EditView({
           <h3 className="text-lg font-semibold text-surface-100">{t('courses.sectionMeta')}</h3>
           <span className={clsx(
             'text-xs px-2.5 py-1 rounded-full',
-            published ? 'bg-green-900/40 text-green-400' : 'bg-surface-600 text-surface-400'
+            published ? 'bg-green-900/40 text-green-400' : 'bg-surface-700 text-surface-100'
           )}>
             {published ? t('courses.published') : t('courses.draft')}
           </span>

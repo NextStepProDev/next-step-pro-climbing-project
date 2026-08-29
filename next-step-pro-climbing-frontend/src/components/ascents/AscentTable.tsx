@@ -72,7 +72,12 @@ export function AscentTable({
   )
 
   return (
-    <div className="bg-surface-900 rounded-xl border border-surface-800 overflow-x-auto">
+    // `relative` is load-bearing, not decoration. The sr-only labels inside the header cells are
+    // `position: absolute`, and without a positioned ancestor they resolve against the initial
+    // containing block — so on a phone the "Akcje" label landed at x≈914 in DOCUMENT coordinates,
+    // outside the scroll container's reach, and dragged the whole page 500px sideways. The
+    // container's own `overflow-x-auto` cannot clip what was never positioned inside it.
+    <div className="relative bg-surface-900 rounded-xl border border-surface-800 overflow-x-auto">
       <table className="w-full min-w-[940px] text-sm">
         <thead className="text-surface-400 border-b border-surface-800">
           <tr>
