@@ -2,8 +2,39 @@ spring:
   jpa:
     show-sql: true
 
+  # Local mail goes to Mailhog (hub/docker-compose.dev.yml, UI on :8025), never to a real relay.
+  #
+  # ⚠️ The variable names here are DEV_MAIL_*, deliberately not MAIL_*. Reading MAIL_* would put
+  # this back exactly where it was: those names are what docker-compose.prod.yml and the hub .env
+  # use, and a long-lived Gradle daemon inherits whatever environment first started it and hands
+  # it to every later `bootRun`. During the 2026-08-29 audit a daemon that had been up eight hours
+  # was still carrying MAIL_HOST=smtp.gmail.com with real credentials — invisible in `env`,
+  # invisible in the shell profile, visible only in the JVM's own environment — so "local" testing
+  # was delivering through Gmail while Mailhog sat empty and the log cheerfully said "Email sent".
+  #
+  # The button that makes that unrecoverable already exists: AdminMailPanel sends to every user at
+  # once and has no preview. So dev must not be reachable by an ambient variable at all; wanting a
+  # real relay here has to be an explicit, differently-named act.
+  mail:
+    host: ${DEV_MAIL_HOST:localhost}
+    port: ${DEV_MAIL_PORT:1025}
+    username: ${DEV_MAIL_USERNAME:dev}
+    password: ${DEV_MAIL_PASSWORD:dev}
+    properties:
+      mail:
+        smtp:
+          auth: ${DEV_MAIL_AUTH:false}
+          starttls:
+            enable: ${DEV_MAIL_STARTTLS:false}
+
 app:
   site-url: http://localhost:5173
+  # The two links a person clicks out of an email — confirm your address, reset your password —
+  # are built from base-url, not site-url, and both point at FRONTEND routes. Without this line
+  # dev inherited http://localhost:8080 from application.yml and produced links into the backend,
+  # which has no such GET route: every locally tested confirmation and reset was a dead link.
+  # Production is unaffected (docker-compose.prod.yml sets APP_BASE_URL to the real site).
+  base-url: http://localhost:5173
   jwt:
     secret: dev-secret-key-change-in-production-minimum-32-characters
 

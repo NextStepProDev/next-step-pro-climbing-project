@@ -1459,6 +1459,9 @@ public class AdminService {
         // Over = the slot has ENDED. Keyed off the start time, a cancellation sent while the
         // session was still running went silent — to someone who may well be on their way to it.
         if (!BookingTimeValidator.isPast(slot.getDate(), slot.getEndTime())) {
+            // The mail thread reads getUser() on a lazy proxy. It worked here only because that
+            // thread kept beating this transaction to the close; see Reservation.touchForAsyncMail.
+            reservation.touchForAsyncMail();
             mailService.sendAdminCancellationNotification(reservation);
         }
         activityLogService.logCancelledByAdmin(user, slot, participants);

@@ -80,6 +80,29 @@ public class Reservation {
         return timeSlot;
     }
 
+    /**
+     * Initialises the lazy associations that the {@code @Async} mail methods will read.
+     *
+     * <p>{@code MailService.send*(Reservation)} runs on the mail executor and dereferences
+     * {@code getUser()} and {@code getTimeSlot()} there. With {@code open-in-view: false} the
+     * request's persistence context is gone by then, so an uninitialised proxy throws
+     * {@code LazyInitializationException} — which the async decorator swallows, so the mail simply
+     * never arrives and nothing is logged. Touching a non-identifier getter forces the load while
+     * the entity is still managed; {@code getId()} would not, because Hibernate answers that from
+     * the proxy without going to the database.
+     *
+     * <p>It lives on the entity rather than in one of the services because both
+     * {@code ReservationService} and {@code AdminService} hand reservations to those mail methods,
+     * and which associations a mail reader needs is a property of this row, not of either caller.
+     * The audit on 2026-08-29 found {@code AdminService.cancelReservationByAdmin} sending without
+     * it and working anyway — but only because the mail thread happened to reach the caller's
+     * session before it closed. That is a race, not a contract.
+     */
+    public void touchForAsyncMail() {
+        getUser().getEmail();
+        getTimeSlot().getDate();
+    }
+
     public ReservationStatus getStatus() {
         return status;
     }
