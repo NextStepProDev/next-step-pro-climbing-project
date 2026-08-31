@@ -1,9 +1,9 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Link, useLocation, useSearchParams } from 'react-router-dom'
 import { format } from 'date-fns'
-import { AlertTriangle, Building2, CircleHelp, Coins, TrendingUp, Users } from 'lucide-react'
+import { AlertTriangle, Building2, ChevronDown, ChevronRight, CircleHelp, Coins, TrendingUp, Users } from 'lucide-react'
 import { Button } from '../../components/ui/Button'
 import { DateInput } from '../../components/ui/DateInput'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
@@ -11,7 +11,7 @@ import { QueryError } from '../../components/ui/QueryError'
 import { STATS_FILL, swatchClass } from '../../components/admin/userstats/statsPalette'
 import { adminSettlementsApi } from '../../api/client'
 import { getErrorMessage } from '../../utils/errors'
-import { parseCalendarDate } from '../../utils/calendarDate'
+import { parseCalendarDate, todayInWarsaw } from '../../utils/calendarDate'
 import { useDateLocale } from '../../utils/dateFnsLocale'
 import { formatPln, parseAmount } from '../../utils/money'
 import type {
@@ -200,13 +200,6 @@ function UnpricedCard({ unpriced }: { unpriced: UnpricedSummary }) {
 
 // ---------- outstanding ----------
 
-/** Two debts of the same person are two rows, so identity is the whole address, not the payer. */
-function isSameDebt(a: OutstandingItem | undefined, b: OutstandingItem): boolean {
-  return a !== undefined
-    && a.targetType === b.targetType && a.targetId === b.targetId
-    && a.payerType === b.payerType && a.payerId === b.payerId
-}
-
 /**
  * Debts, oldest first — the useful order for a list of things owed is how long they have been owed.
  *
@@ -216,23 +209,22 @@ function isSameDebt(a: OutstandingItem | undefined, b: OutstandingItem): boolean
 function OutstandingCard({ overview }: { overview: SettlementOverview }) {
   const { t } = useTranslation('admin')
   const money = useMoney()
-  const locale = useDateLocale()
-  const queryClient = useQueryClient()
-  const location = useLocation()
-  // Carries the year filter too, so closing the modal returns to the same view of the tab.
-  const backHere = location.pathname + location.search
-
-  const settle = useMutation({
-    // Paid on the day of the session: the same default the modal offers, and the one that puts the
-    // money in the month the work happened.
-    mutationFn: (item: OutstandingItem) =>
-      adminSettlementsApi.save(
-        item.targetType, item.targetId, item.payerType, item.payerId, item.amount, item.date,
-      ),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin', 'settlements'] }),
-  })
-
   const { outstanding } = overview
+
+  // Grouped by payer, because that is how the money arrives: one person settles a month at a time,
+  // and their four debts scattered among everybody else's by date cannot be acted on as one.
+  const groups = useMemo(() => {
+    const byPayer = new Map<string, { key: string; name: string; items: OutstandingItem[]; total: number }>()
+    for (const item of outstanding.items) {
+      const key = `${item.payerType}:${item.payerId}`
+      const group = byPayer.get(key) ?? { key, name: item.name, items: [], total: 0 }
+      group.items.push(item)
+      group.total += item.amount
+      byPayer.set(key, group)
+    }
+    // Oldest debt first, same order as the flat list had — a backlog reads in the order it grew.
+    return [...byPayer.values()]
+  }, [outstanding.items])
 
   return (
     <Card
@@ -263,51 +255,114 @@ function OutstandingCard({ overview }: { overview: SettlementOverview }) {
       ) : (
         <>
           <p className="text-xs text-surface-500">{t('settlements.tab.outstanding.ignoresYear')}</p>
-          <div className="overflow-x-auto">
-            <ul className="min-w-[32rem] divide-y divide-surface-800">
-              {outstanding.items.map((item) => (
-                <li
-                  key={`${item.targetType}:${item.targetId}:${item.payerType}:${item.payerId}`}
-                  className="flex items-center gap-3 py-2"
-                >
-                  <span className="w-24 shrink-0 text-xs text-surface-400 tabular-nums">
-                    {format(parseCalendarDate(item.date), 'dd.MM.yyyy', { locale })}
-                  </span>
-                  {/* Straight into the entry, so collecting a debt does not start with hunting
-                      through the calendar for the day it was on. Uses the existing deep link the
-                      athlete calendar's invitation overlay already relies on — `?slot=`/`?event=`
-                      opens that modal, and `returnTo` brings closing it back here rather than
-                      stranding the admin on the public calendar. */}
-                  <Link
-                    to={`/calendar?date=${item.date}&${item.targetType}=${item.targetId}`}
-                    state={{ returnTo: backHere }}
-                    aria-label={t('settlements.tab.outstanding.open', {
-                      name: item.name,
-                      date: format(parseCalendarDate(item.date), 'dd.MM.yyyy'),
-                    })}
-                    className="flex-1 min-w-0 text-sm text-surface-300 truncate hover:text-primary-300 transition-colors"
-                  >
-                    {item.title ?? t(`settlements.tab.outstanding.untitled.${item.targetType}`)}
-                  </Link>
-                  <span className="w-40 shrink-0 text-sm text-surface-200 truncate">{item.name}</span>
-                  <span className="w-24 shrink-0 text-right text-sm text-amber-500 tabular-nums">
-                    {money(item.amount)}
-                  </span>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => settle.mutate(item)}
-                    loading={settle.isPending && isSameDebt(settle.variables, item)}
-                  >
-                    {t('settlements.tab.outstanding.settle')}
-                  </Button>
-                </li>
-              ))}
-            </ul>
-          </div>
+          <ul className="divide-y divide-surface-800">
+            {groups.map((group) => (
+              <PayerDebtGroup key={group.key} group={group} />
+            ))}
+          </ul>
         </>
       )}
     </Card>
+  )
+}
+
+/**
+ * One person and everything they owe.
+ *
+ * ⚠️ The payment date defaults to TODAY here, not to each session's own day as the modal does — and
+ * the difference is the point. In the modal one amount belongs to one session, so its date is the
+ * honest default. Here one transfer covered a month of them, so the only date true of all of them
+ * is the day it arrived. Defaulting to the sessions would scatter a single payment across the
+ * months it paid for.
+ */
+function PayerDebtGroup({
+  group,
+}: {
+  group: { key: string; name: string; items: OutstandingItem[]; total: number }
+}) {
+  const { t } = useTranslation('admin')
+  const money = useMoney()
+  const locale = useDateLocale()
+  const location = useLocation()
+  const queryClient = useQueryClient()
+  const [open, setOpen] = useState(false)
+  const [paidOn, setPaidOn] = useState(() => todayInWarsaw())
+
+  const first = group.items[0]
+  const backHere = location.pathname + location.search
+
+  const settleAll = useMutation({
+    mutationFn: () =>
+      adminSettlementsApi.settleOutstanding(first.payerType, first.payerId, paidOn),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin', 'settlements'] }),
+  })
+
+  return (
+    <li className="py-2 space-y-2">
+      <div className="flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          aria-expanded={open}
+          className="flex flex-1 min-w-0 items-center gap-1.5 text-left text-sm text-surface-200 hover:text-surface-100 transition-colors"
+        >
+          {open ? <ChevronDown className="w-4 h-4 shrink-0" /> : <ChevronRight className="w-4 h-4 shrink-0" />}
+          <span className="truncate">{group.name}</span>
+          <span className="text-surface-500 shrink-0">
+            · {t('settlements.tab.outstanding.sessions', { n: group.items.length })}
+          </span>
+        </button>
+        <span className="shrink-0 text-sm font-semibold text-amber-500 tabular-nums">
+          {money(group.total)}
+        </span>
+        <DateInput
+          value={paidOn}
+          onChange={setPaidOn}
+          aria-label={t('settlements.tab.outstanding.paidOnLabel', { name: group.name })}
+          className="bg-surface-800 border border-surface-600 rounded px-2 py-1 text-sm text-surface-100 focus:outline-none focus:border-primary-500"
+        />
+        <Button
+          size="sm"
+          variant="primary"
+          loading={settleAll.isPending}
+          disabled={paidOn === ''}
+          onClick={() => settleAll.mutate()}
+        >
+          {t('settlements.tab.outstanding.settleAll', { amount: money(group.total) })}
+        </Button>
+      </div>
+
+      {open && (
+        <ul className="pl-6 space-y-1">
+          {group.items.map((item) => (
+            <li
+              key={`${item.targetType}:${item.targetId}`}
+              className="flex flex-wrap items-center gap-2 text-xs"
+            >
+              <span className="w-24 shrink-0 text-surface-400 tabular-nums">
+                {format(parseCalendarDate(item.date), 'dd.MM.yyyy', { locale })}
+              </span>
+              <Link
+                to={`/calendar?date=${item.date}&${item.targetType}=${item.targetId}`}
+                state={{ returnTo: backHere }}
+                aria-label={t('settlements.tab.outstanding.open', {
+                  name: item.name,
+                  date: format(parseCalendarDate(item.date), 'dd.MM.yyyy'),
+                })}
+                className="flex-1 min-w-0 truncate text-surface-300 hover:text-primary-300 transition-colors"
+              >
+                {item.title ?? t(`settlements.tab.outstanding.untitled.${item.targetType}`)}
+              </Link>
+              <span className="shrink-0 text-amber-500 tabular-nums">{money(item.amount)}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {settleAll.isError && (
+        <p className="text-sm text-rose-400/80">{getErrorMessage(settleAll.error)}</p>
+      )}
+    </li>
   )
 }
 

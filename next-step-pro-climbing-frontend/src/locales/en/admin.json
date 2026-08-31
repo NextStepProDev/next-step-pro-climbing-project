@@ -918,12 +918,14 @@
         "oldest": "oldest: {{date}}",
         "none": "Everything is settled.",
         "ignoresYear": "This list covers the WHOLE history and does not follow the year picker — a debt from two years ago is still a debt.",
-        "settle": "Settle",
         "untitled": {
           "slot": "One-to-one session",
           "event": "Event"
         },
-        "open": "Open the session — {{name}}, {{date}}"
+        "open": "Open the session — {{name}}, {{date}}",
+        "sessions": "{{n}} sessions",
+        "settleAll": "Settle all — {{amount}}",
+        "paidOnLabel": "Payment date — {{name}}"
       },
       "revenue": {
         "title": "Revenue",

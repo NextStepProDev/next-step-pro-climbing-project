@@ -920,12 +920,14 @@
         "oldest": "najstarsza: {{date}}",
         "none": "Wszystko rozliczone.",
         "ignoresYear": "Ta lista pokazuje CAŁĄ historię i nie zmienia się z wyborem roku — dług sprzed dwóch lat nadal jest długiem.",
-        "settle": "Rozlicz",
         "untitled": {
           "slot": "Trening 1:1",
           "event": "Wydarzenie"
         },
-        "open": "Otwórz termin — {{name}}, {{date}}"
+        "open": "Otwórz termin — {{name}}, {{date}}",
+        "sessions": "{{n}} zajęć",
+        "settleAll": "Rozlicz wszystko — {{amount}}",
+        "paidOnLabel": "Data wpłaty — {{name}}"
       },
       "revenue": {
         "title": "Przychód",

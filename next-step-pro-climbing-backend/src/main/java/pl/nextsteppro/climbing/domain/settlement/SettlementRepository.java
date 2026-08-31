@@ -266,6 +266,31 @@ public interface SettlementRepository extends JpaRepository<Settlement, UUID> {
                              @Param("settledOn") @Nullable LocalDate settledOn,
                              @Param("updatedAt") Instant updatedAt);
 
+    /**
+     * Settles everything this payer still owes, on one date.
+     *
+     * <p>One statement rather than a loop of upserts: a regular client can owe a month of sessions,
+     * and issuing one request each would be twenty round trips, twenty chances to fail halfway, and
+     * a real dent in the admin rate-limit bucket. It also means all of it carries the SAME payment
+     * date, which is the whole point — one transfer covered them, so one day did.
+     *
+     * <p>Only unsettled rows are touched, so running it twice is a no-op rather than a rewrite of
+     * dates somebody already corrected by hand.
+     */
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE Settlement s SET s.settledOn = :settledOn, s.updatedAt = :now "
+        + "WHERE s.settledOn IS NULL AND s.user.id = :userId")
+    int settleAllForUser(@Param("userId") UUID userId,
+                         @Param("settledOn") LocalDate settledOn,
+                         @Param("now") Instant now);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE Settlement s SET s.settledOn = :settledOn, s.updatedAt = :now "
+        + "WHERE s.settledOn IS NULL AND s.guest.id = :guestId")
+    int settleAllForGuest(@Param("guestId") UUID guestId,
+                          @Param("settledOn") LocalDate settledOn,
+                          @Param("now") Instant now);
+
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("DELETE FROM Settlement s WHERE s.timeSlot.id = :slotId AND s.user.id = :userId")
     int deleteForSlotUser(@Param("slotId") UUID slotId, @Param("userId") UUID userId);

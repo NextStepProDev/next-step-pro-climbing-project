@@ -321,6 +321,67 @@ class AdminSettlementIntegrationTest extends BaseIntegrationTest {
             () -> save("slot", slot.getId(), "user", client.getId(), "100000.01", null));
     }
 
+    // -------------------------------------------- settling a month in one go
+
+    @Test
+    @DisplayName("shouldSettleAWholeMonthOfOnePersonOnTheDayTheyActuallyPaid")
+    void shouldSettleAWholeMonthOfOnePersonOnTheDayTheyActuallyPaid() {
+        User other = saveUser("other@example.com", "Piotr", "Nowak");
+        TimeSlot second = timeSlotRepository.saveAndFlush(
+            new TimeSlot(date.plusDays(7), LocalTime.of(18, 0), LocalTime.of(20, 0), 4));
+        reservationRepository.saveAndFlush(new Reservation(client, second));
+        reservationRepository.saveAndFlush(new Reservation(other, second));
+
+        save("slot", slot.getId(), "user", client.getId(), "150", null);
+        save("slot", second.getId(), "user", client.getId(), "80", null);
+        save("slot", second.getId(), "user", other.getId(), "150", null);
+
+        LocalDate paidOn = date.plusDays(20);
+        int settled = service.settleOutstanding(
+            new SettleOutstandingRequest("user", client.getId(), paidOn));
+
+        assertEquals(2, settled, "Both of hers, and only hers");
+        // One transfer covered the month, so one date is true of all of it — taking each session's
+        // own day would scatter a single payment across the months it paid for.
+        assertEquals(paidOn, service.getSection("slot", slot.getId()).lines().getFirst().settledOn());
+        assertEquals(paidOn, lineFor(second, client).settledOn());
+        assertNull(lineFor(second, other).settledOn(),
+            "Somebody else's debt on the same session must not be settled by it");
+    }
+
+    @Test
+    @DisplayName("shouldLeaveAlreadySettledAmountsAloneWhenRunAgain")
+    void shouldLeaveAlreadySettledAmountsAloneWhenRunAgain() {
+        save("slot", slot.getId(), "user", client.getId(), "150", date);
+
+        assertEquals(0, service.settleOutstanding(
+                new SettleOutstandingRequest("user", client.getId(), date.plusDays(20))),
+            "Running it twice must not rewrite a date somebody corrected by hand");
+        assertEquals(date, service.getSection("slot", slot.getId()).lines().getFirst().settledOn());
+    }
+
+    @Test
+    @DisplayName("shouldSettleAGuestsOwnDebtsOnly")
+    void shouldSettleAGuestsOwnDebtsOnly() {
+        GuestReservation guest = guestReservationRepository.saveAndFlush(
+            new GuestReservation(slot, "Marek — kolega Ani", 1));
+        save("slot", slot.getId(), "guest", guest.getId(), "150", null);
+        save("slot", slot.getId(), "user", client.getId(), "150", null);
+
+        assertEquals(1, service.settleOutstanding(
+            new SettleOutstandingRequest("guest", guest.getId(), date)));
+        assertNull(service.getSection("slot", slot.getId()).lines().stream()
+            .filter(line -> line.payerId().equals(client.getId()))
+            .findFirst().orElseThrow().settledOn());
+    }
+
+    @Test
+    @DisplayName("shouldRejectAnUnknownPayerTypeForABatch")
+    void shouldRejectAnUnknownPayerTypeForABatch() {
+        assertThrows(IllegalArgumentException.class, () -> service.settleOutstanding(
+            new SettleOutstandingRequest("sponsor", client.getId(), date)));
+    }
+
     // ------------------------------------------------------------ database rules
 
     @Test
@@ -394,6 +455,13 @@ class AdminSettlementIntegrationTest extends BaseIntegrationTest {
                       String amount, LocalDate settledOn) {
         service.save(target, targetId, payer, payerId,
             new SaveSettlementRequest(new BigDecimal(amount), settledOn));
+    }
+
+    private SettlementLineDto lineFor(TimeSlot on, User payer) {
+        return service.getSection("slot", on.getId()).lines().stream()
+            .filter(line -> line.payerId().equals(payer.getId()))
+            .findFirst()
+            .orElseThrow(() -> new AssertionError("no line for " + payer.getId()));
     }
 
     private BigDecimal amountOf(SettlementSectionDto section) {

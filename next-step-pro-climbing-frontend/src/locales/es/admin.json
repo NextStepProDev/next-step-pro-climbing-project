@@ -918,12 +918,14 @@
         "oldest": "más antigua: {{date}}",
         "none": "Todo está liquidado.",
         "ignoresYear": "Esta lista cubre TODO el historial y no sigue al selector de año — una deuda de hace dos años sigue siendo una deuda.",
-        "settle": "Liquidar",
         "untitled": {
           "slot": "Sesión individual",
           "event": "Evento"
         },
-        "open": "Abrir la sesión — {{name}}, {{date}}"
+        "open": "Abrir la sesión — {{name}}, {{date}}",
+        "sessions": "{{n}} sesiones",
+        "settleAll": "Liquidar todo — {{amount}}",
+        "paidOnLabel": "Fecha de pago — {{name}}"
       },
       "revenue": {
         "title": "Ingresos",

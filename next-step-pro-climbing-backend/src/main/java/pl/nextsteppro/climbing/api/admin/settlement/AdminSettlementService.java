@@ -161,6 +161,23 @@ public class AdminSettlementService {
         }
     }
 
+    /**
+     * Settles a whole month of one person's sessions on the day they actually paid.
+     *
+     * <p>Covers everything they owe, not just what one screen listed — which is the same set, since
+     * the outstanding list deliberately spans the whole history. Deliberately NO participation
+     * guard: it can only touch rows that already exist, and a person who has since cancelled still
+     * owes for the sessions they attended.
+     */
+    public int settleOutstanding(SettleOutstandingRequest request) {
+        SettlementPayer payer = parsePayer(request.payerType());
+        Instant now = Instant.now();
+        return switch (payer) {
+            case USER -> settlementRepository.settleAllForUser(request.payerId(), request.settledOn(), now);
+            case GUEST -> settlementRepository.settleAllForGuest(request.payerId(), request.settledOn(), now);
+        };
+    }
+
     // ---------------------------------------------------------------- sections
 
     private SettlementSectionDto slotSection(TimeSlot slot) {

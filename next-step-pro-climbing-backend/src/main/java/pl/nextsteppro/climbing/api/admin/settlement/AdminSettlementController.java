@@ -127,6 +127,21 @@ public class AdminSettlementController {
         return ResponseEntity.noContent().build();
     }
 
+    @Operation(summary = "Settle everything one payer owes",
+        description = "One date for the whole batch, because one transfer covered it. Taking each "
+            + "session's own day instead would scatter a single payment across the months it paid "
+            + "for. Only unsettled rows are touched, so running it twice changes nothing.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "How many amounts were settled"),
+        @ApiResponse(responseCode = "400", description = "Unknown payer type")
+    })
+    @PostMapping("/settle-outstanding")
+    public ResponseEntity<SettleOutstandingResultDto> settleOutstanding(
+            @Valid @RequestBody SettleOutstandingRequest request) {
+        return ResponseEntity.ok(new SettleOutstandingResultDto(
+            settlementService.settleOutstanding(request)));
+    }
+
     @Operation(summary = "The Settlements tab",
         description = "Outstanding debt, revenue by month, and a per-person breakdown, from one "
             + "read. Outstanding debt deliberately covers the WHOLE history and ignores the year "

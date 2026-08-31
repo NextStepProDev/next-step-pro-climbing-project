@@ -1100,6 +1100,14 @@ export const adminSettlementsApi = {
       method: 'DELETE',
     }),
 
+  // Everything one payer still owes, on one date. A loop of per-row saves would be twenty round
+  // trips for a month of sessions, twenty chances to fail halfway, and twenty different dates.
+  settleOutstanding: (payerType: SettlementPayer, payerId: string, settledOn: string) =>
+    fetchApi<{ settled: number }>('/admin/settlements/settle-outstanding', {
+      method: 'POST',
+      body: JSON.stringify({ payerType, payerId, settledOn }),
+    }),
+
   // The Settlements tab. Omit the year for the newest one holding data — not the current one, which
   // would make an empty January look like lost history. 'all' for everything.
   getOverview: (year?: string) =>

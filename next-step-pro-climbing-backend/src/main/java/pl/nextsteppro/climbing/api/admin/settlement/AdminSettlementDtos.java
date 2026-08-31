@@ -77,6 +77,22 @@ record SaveSettlementRequest(
 ) {}
 
 /**
+ * Settles everything one payer still owes, in one go and on one date.
+ *
+ * <p>⚠️ The date is NOT defaulted from the sessions here, unlike the per-participant field. One
+ * transfer covered a month of them, so the day it arrived is the only date that is true of all of
+ * them; taking each session's own day would scatter a single payment across the months it paid for.
+ */
+record SettleOutstandingRequest(
+    @NotNull String payerType,
+    @NotNull UUID payerId,
+    @NotNull LocalDate settledOn
+) {}
+
+/** How many rows it actually touched, so the client can say so rather than guess. */
+record SettleOutstandingResultDto(int settled) {}
+
+/**
  * Everything the Settlements tab draws, from one read.
  *
  * <p>Assembled on the server even for figures the client could add up itself, for the reason spelled

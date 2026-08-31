@@ -14,6 +14,7 @@ vi.mock('react-i18next', () => ({
 const getOverview = vi.fn()
 const save = vi.fn()
 const createPayout = vi.fn()
+const settleOutstanding = vi.fn()
 const createSource = vi.fn()
 const setSourceArchived = vi.fn()
 
@@ -22,6 +23,7 @@ vi.mock('../../api/client', () => ({
     getOverview: (...args: unknown[]) => getOverview(...args),
     save: (...args: unknown[]) => save(...args),
     createPayout: (...args: unknown[]) => createPayout(...args),
+    settleOutstanding: (...args: unknown[]) => settleOutstanding(...args),
     createSource: (...args: unknown[]) => createSource(...args),
     setSourceArchived: (...args: unknown[]) => setSourceArchived(...args),
   },
@@ -66,6 +68,7 @@ describe('AdminSettlementsPanel', () => {
     getOverview.mockReset()
     save.mockReset().mockResolvedValue(undefined)
     createPayout.mockReset().mockResolvedValue('payout-1')
+    settleOutstanding.mockReset().mockResolvedValue({ settled: 2 })
     createSource.mockReset().mockResolvedValue({ id: 'src-2', name: 'Klub XYZ', archived: false })
     setSourceArchived.mockReset().mockResolvedValue(undefined)
   })
@@ -176,67 +179,82 @@ describe('AdminSettlementsPanel', () => {
     expect(screen.getByText('Piotr Nowak')).toBeInTheDocument()
   })
 
-  it('links each debt straight into its own session', async () => {
+  it('groups debts by person and settles a whole month on one date', async () => {
     getOverview.mockResolvedValue(makeOverview({
       outstanding: {
-        total: 1050,
-        count: 2,
-        oldest: '2026-03-12',
+        total: 680,
+        count: 3,
+        oldest: '2026-08-05',
         items: [
           {
-            targetType: 'slot', targetId: 'slot-1', date: '2026-03-12', title: 'Trening 1:1',
-            payerType: 'user', payerId: 'user-1', name: 'Piotr Nowak', amount: 450,
+            targetType: 'slot', targetId: 'slot-1', date: '2026-08-05', title: 'Trening 1:1',
+            payerType: 'user', payerId: 'anna', name: 'Anna Kowalska', amount: 150,
           },
           {
-            targetType: 'event', targetId: 'event-1', date: '2026-06-04', title: 'Kurs skalny',
-            payerType: 'guest', payerId: 'guest-1', name: 'Ekipa z Krakowa', amount: 600,
+            targetType: 'slot', targetId: 'slot-2', date: '2026-08-12', title: 'Trening grupowy',
+            payerType: 'user', payerId: 'anna', name: 'Anna Kowalska', amount: 80,
+          },
+          {
+            targetType: 'slot', targetId: 'slot-3', date: '2026-08-19', title: 'Trening 1:1',
+            payerType: 'user', payerId: 'piotr', name: 'Piotr Nowak', amount: 450,
           },
         ],
-      },
-    }))
-
-    renderPanel()
-
-    // The visible text is the session title; the accessible name comes from the aria-label, which
-    // under this test's i18n mock is the raw key — hence matching by key and asserting in list
-    // order (oldest debt first).
-    const links = await screen.findAllByRole('link', { name: 'settlements.tab.outstanding.open' })
-
-    // Collecting a debt must not start with hunting through the calendar for the day it was on.
-    expect(links[0]).toHaveAttribute('href', '/calendar?date=2026-03-12&slot=slot-1')
-    expect(links[0]).toHaveTextContent('Trening 1:1')
-    // An event is addressed as an event: its per-day slots are bookkeeping the admin never sees.
-    expect(links[1]).toHaveAttribute('href', '/calendar?date=2026-06-04&event=event-1')
-    expect(links[1]).toHaveTextContent('Kurs skalny')
-  })
-
-  it('settles a debt on the SESSION date, not today', async () => {
-    getOverview.mockResolvedValue(makeOverview({
-      outstanding: {
-        total: 450,
-        count: 1,
-        oldest: '2026-03-12',
-        items: [{
-          targetType: 'slot',
-          targetId: 'slot-1',
-          date: '2026-03-12',
-          title: 'Trening 1:1',
-          payerType: 'user',
-          payerId: 'user-1',
-          name: 'Piotr Nowak',
-          amount: 450,
-        }],
       },
     }))
     const user = userEvent.setup()
 
     renderPanel()
 
-    await user.click(await screen.findByRole('button', { name: 'settlements.tab.outstanding.settle' }))
+    // Two people, not three debts: one person settles a month at a time.
+    const settleButtons = await screen.findAllByRole('button', {
+      name: 'settlements.tab.outstanding.settleAll',
+    })
+    expect(settleButtons).toHaveLength(2)
+
+    // ⚠️ Today, NOT each session's own day: one transfer covered the month, so the only date true
+    // of all of it is the day it arrived.
+    const dateFields = screen.getAllByLabelText('settlements.tab.outstanding.paidOnLabel')
+    await user.clear(dateFields[0])
+    await user.type(dateFields[0], '2026-08-31')
+    await user.click(settleButtons[0])
 
     await waitFor(() =>
-      expect(save).toHaveBeenCalledWith('slot', 'slot-1', 'user', 'user-1', 450, '2026-03-12'),
+      expect(settleOutstanding).toHaveBeenCalledWith('user', 'anna', '2026-08-31'),
     )
+    expect(settleOutstanding).toHaveBeenCalledTimes(1)
+  })
+
+  it('shows what a person owes it for only once the group is opened', async () => {
+    getOverview.mockResolvedValue(makeOverview({
+      outstanding: {
+        total: 230,
+        count: 2,
+        oldest: '2026-08-05',
+        items: [
+          {
+            targetType: 'slot', targetId: 'slot-1', date: '2026-08-05', title: 'Trening 1:1',
+            payerType: 'user', payerId: 'anna', name: 'Anna Kowalska', amount: 150,
+          },
+          {
+            targetType: 'event', targetId: 'event-2', date: '2026-08-12', title: 'Kurs skalny',
+            payerType: 'user', payerId: 'anna', name: 'Anna Kowalska', amount: 80,
+          },
+        ],
+      },
+    }))
+    const user = userEvent.setup()
+
+    renderPanel()
+
+    expect(await screen.findByText('Anna Kowalska')).toBeInTheDocument()
+    expect(screen.queryByText('Kurs skalny')).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { expanded: false }))
+
+    // Opened, each session is still its own link into the calendar.
+    expect(screen.getByText('Kurs skalny')).toBeInTheDocument()
+    const links = screen.getAllByRole('link', { name: 'settlements.tab.outstanding.open' })
+    expect(links[1]).toHaveAttribute('href', '/calendar?date=2026-08-12&event=event-2')
   })
 
   it('links a registered payer to their card and leaves a guest unlinked', async () => {
