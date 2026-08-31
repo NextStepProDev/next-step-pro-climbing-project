@@ -78,6 +78,10 @@ public interface SettlementRepository extends JpaRepository<Settlement, UUID> {
      * filter: a debt from two years ago is still a debt, and hiding it behind a year picker is how
      * it stops being collected.
      */
+    /** One client's whole history, for their card in the Users panel. */
+    @Query(ROW_SELECT + " WHERE u.id = :userId")
+    List<SettlementRow> findRowsForUser(@Param("userId") UUID userId);
+
     @Query(ROW_SELECT + " WHERE s.settledOn IS NULL")
     List<SettlementRow> findUnsettledRows();
 

@@ -554,6 +554,16 @@
         "updatedAt": "Ostatnia zmiana",
         "yes": "tak",
         "no": "nie"
+      },
+      "money": {
+        "title": "Rozliczenia",
+        "paid": "zapłacone",
+        "owed": "zaległe",
+        "count": "wpłat",
+        "last": "ostatnia wpłata",
+        "none": "Brak wpisanych kwot dla tej osoby.",
+        "unpaid": "nierozliczone",
+        "untitled": "Trening 1:1"
       }
     },
     "listTab": "Lista",

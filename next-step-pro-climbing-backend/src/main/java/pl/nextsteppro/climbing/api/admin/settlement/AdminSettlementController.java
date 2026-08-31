@@ -36,6 +36,9 @@ import java.util.UUID;
 @Tag(name = "Admin Settlements", description = "Per-participant price and payment status for a session — never visible to clients")
 public class AdminSettlementController {
 
+    /** Enough to say what the balance is made of without becoming a second Settlements tab. */
+    private static final int RECENT_PAYER_LINES = 8;
+
     private final AdminSettlementService settlementService;
     private final AdminSettlementStatsService statsService;
     private final AdminPayoutService payoutService;
@@ -130,6 +133,16 @@ public class AdminSettlementController {
             @Valid @RequestBody SettleOutstandingRequest request) {
         return ResponseEntity.ok(new SettleOutstandingResultDto(
             settlementService.settleOutstanding(request)));
+    }
+
+    @Operation(summary = "One client's money, for their user card",
+        description = "Whole history, not the tab's selected year — this answers 'what do I have "
+            + "with this person', which has no year in it. A second request from the browser rather "
+            + "than a field on the user card's own DTO: the settlement types are unreachable from "
+            + "that package by design, and one rule beats an exception to it.")
+    @GetMapping("/payers/user/{userId}")
+    public ResponseEntity<PayerSummaryDto> payerSummary(@PathVariable UUID userId) {
+        return ResponseEntity.ok(statsService.payerSummary(userId, RECENT_PAYER_LINES));
     }
 
     @Operation(summary = "Every income line of a year, for the accountant",

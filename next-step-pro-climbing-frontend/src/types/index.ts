@@ -635,6 +635,23 @@ export interface PayoutPeriod {
   transfers: PayoutEntry[]
 }
 
+// One client's money, for their card in the Users panel. Whole history, not the tab's selected
+// year: "what do I have with this person" has no year in it.
+export interface PayerSummary {
+  paid: number
+  outstanding: number
+  settlementCount: number
+  lastPayment: string | null
+  recent: PayerLine[]
+}
+
+export interface PayerLine {
+  date: string
+  title: string | null
+  amount: number
+  settledOn: string | null
+}
+
 // One income line for the accountant. Unpaid lines come through with settledOn null on purpose —
 // "what is still owed for this year" is the other half of the same conversation.
 export interface SettlementExportRow {

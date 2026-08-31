@@ -554,6 +554,16 @@
         "updatedAt": "Last change",
         "yes": "yes",
         "no": "no"
+      },
+      "money": {
+        "title": "Settlements",
+        "paid": "paid",
+        "owed": "owed",
+        "count": "payments",
+        "last": "last payment",
+        "none": "No amounts recorded for this person.",
+        "unpaid": "outstanding",
+        "untitled": "One-to-one session"
       }
     },
     "listTab": "List",

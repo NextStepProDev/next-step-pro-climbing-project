@@ -165,6 +165,37 @@ public class AdminSettlementStatsService {
         return lines;
     }
 
+    /**
+     * What one client has paid and still owes, whole history.
+     *
+     * <p>Whole history, not the tab's selected year: this is somebody's card, and "what do I have
+     * with this person" has no year in it.
+     */
+    public PayerSummaryDto payerSummary(UUID userId, int recentLimit) {
+        BigDecimal paid = BigDecimal.ZERO;
+        BigDecimal outstanding = BigDecimal.ZERO;
+        int count = 0;
+        LocalDate lastPayment = null;
+        List<PayerLineDto> lines = new ArrayList<>();
+
+        for (SettlementRow row : settlementRepository.findRowsForUser(userId)) {
+            if (row.settledOn() != null) {
+                paid = paid.add(row.amount());
+                count++;
+                if (lastPayment == null || row.settledOn().isAfter(lastPayment)) {
+                    lastPayment = row.settledOn();
+                }
+            } else {
+                outstanding = outstanding.add(row.amount());
+            }
+            lines.add(new PayerLineDto(row.targetDate(), row.targetTitle(), row.amount(), row.settledOn()));
+        }
+
+        lines.sort(Comparator.comparing(PayerLineDto::date).reversed());
+        return new PayerSummaryDto(scale(paid), scale(outstanding), count, lastPayment,
+            lines.stream().limit(recentLimit).toList());
+    }
+
     // ---------------------------------------------------------------- unpriced
 
     /**

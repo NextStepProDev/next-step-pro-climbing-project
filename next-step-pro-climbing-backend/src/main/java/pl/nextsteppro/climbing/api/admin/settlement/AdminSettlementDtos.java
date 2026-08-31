@@ -350,3 +350,29 @@ record SettlementExportRowDto(
     BigDecimal amount,
     @Nullable LocalDate settledOn
 ) {}
+
+/**
+ * One client's money, for their card in the Users panel.
+ *
+ * <p>Served from here rather than folded into {@code UserDetailDto} for a reason the isolation gate
+ * enforces: {@code api/admin/userhistory} may not reach the settlement types at all, so the card's
+ * money block is a second request from the browser rather than a second import in Java. That keeps
+ * one rule — money lives in one package — instead of an exception to it.
+ *
+ * @param recent the last few lines, newest first. Enough to answer "what is this made of" without
+ *               turning the card into a second Settlements tab.
+ */
+record PayerSummaryDto(
+    BigDecimal paid,
+    BigDecimal outstanding,
+    int settlementCount,
+    @Nullable LocalDate lastPayment,
+    List<PayerLineDto> recent
+) {}
+
+record PayerLineDto(
+    LocalDate date,
+    @Nullable String title,
+    BigDecimal amount,
+    @Nullable LocalDate settledOn
+) {}

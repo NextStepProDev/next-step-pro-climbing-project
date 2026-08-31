@@ -554,6 +554,16 @@
         "updatedAt": "Último cambio",
         "yes": "sí",
         "no": "no"
+      },
+      "money": {
+        "title": "Liquidaciones",
+        "paid": "pagado",
+        "owed": "pendiente",
+        "count": "pagos",
+        "last": "último pago",
+        "none": "No hay importes registrados para esta persona.",
+        "unpaid": "pendiente",
+        "untitled": "Sesión individual"
       }
     },
     "listTab": "Lista",

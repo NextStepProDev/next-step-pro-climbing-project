@@ -66,6 +66,7 @@ import type {
   SettlementSection,
   SettlementOverview,
   SettlementExportRow,
+  PayerSummary,
   PayoutSource,
   EventDetail,
   EventParticipants,
@@ -1100,6 +1101,11 @@ export const adminSettlementsApi = {
     fetchApi<void>(`/admin/settlements/${target}/${targetId}/${payerType}/${payerId}`, {
       method: 'DELETE',
     }),
+
+  // One client's money, for their user card. A second request rather than a field on the card's
+  // own DTO: the settlement types are deliberately unreachable from that package.
+  getPayerSummary: (userId: string) =>
+    fetchApi<PayerSummary>(`/admin/settlements/payers/user/${userId}`),
 
   // Line items for the accountant. Its own endpoint: the tab needs aggregates, and making the
   // common read carry a year of rows would be paying for the rare case every time.
