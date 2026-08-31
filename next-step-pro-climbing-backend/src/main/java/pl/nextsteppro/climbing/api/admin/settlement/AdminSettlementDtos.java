@@ -2,8 +2,11 @@ package pl.nextsteppro.climbing.api.admin.settlement;
 
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import org.jspecify.annotations.Nullable;
+import pl.nextsteppro.climbing.domain.settlement.PayoutSource;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -26,7 +29,9 @@ import java.util.UUID;
  */
 record SettlementSectionDto(
     LocalDate targetDate,
-    List<SettlementLineDto> lines
+    List<SettlementLineDto> lines,
+    @Nullable UUID payoutSourceId,
+    @Nullable String payoutSourceName
 ) {}
 
 /**
@@ -89,7 +94,8 @@ record SettlementOverviewDto(
     UnpricedDto unpriced,
     OutstandingDto outstanding,
     RevenueDto revenue,
-    List<PersonRevenueDto> people
+    List<PersonRevenueDto> people,
+    PayoutsDto payouts
 ) {}
 
 /**
@@ -178,15 +184,17 @@ record OutstandingItemDto(
  *                       in September otherwise reads as a third of what it earned. {@code null} when
  *                       nothing has been paid, so the tile disappears rather than showing a zero.
  * @param fromSlots      revenue from one-to-one slots, {@code fromEvents} from courses, workshops and
- *                       trips. The only split worth drawing: it is the difference between two ways of
- *                       working, not two labels on the same one.
+ *                       trips, {@code fromPayouts} from work somebody else settles in bulk. Three
+ *                       genuinely different ways of earning, not three labels on one — and the third
+ *                       is the one you do not set the price of.
  */
 record RevenueDto(
     BigDecimal total,
     @Nullable BigDecimal monthlyAverage,
     List<MonthlyRevenueDto> months,
     BigDecimal fromSlots,
-    BigDecimal fromEvents
+    BigDecimal fromEvents,
+    BigDecimal fromPayouts
 ) {}
 
 /**
@@ -216,4 +224,69 @@ record PersonRevenueDto(
     BigDecimal paid,
     BigDecimal outstanding,
     @Nullable LocalDate lastPayment
+) {}
+
+/**
+ * A payer who settles in bulk — a school, a club. Archived ones still come back in the list, because
+ * the tab has to be able to name the source of money earned last year.
+ */
+record PayoutSourceDto(UUID id, String name, boolean archived) {}
+
+record SavePayoutSourceRequest(
+    @NotBlank @Size(max = PayoutSource.MAX_NAME_LENGTH) String name
+) {}
+
+/**
+ * Attaches a session to a bulk payer, or detaches it when {@code sourceId} is null.
+ *
+ * <p>One endpoint with a nullable body rather than a PUT and a DELETE, and deliberately NOT
+ * {@code /{targetType}/{targetId}/source/{sourceId}}: that shape has the same four segments as the
+ * per-payer write, so it would resolve only by Spring preferring a literal segment over a variable.
+ * It would work, and it would read as a bug to whoever met the two routes next — the same reason
+ * {@code /admin/user-stats} does not live at {@code /admin/users/stats}.
+ */
+record AssignPayoutSourceRequest(@Nullable UUID sourceId) {}
+
+/**
+ * One transfer. {@code periodMonth} is any day of the month the work was done in — the server snaps
+ * it to the first — while {@code receivedOn} is when the money landed. Revenue counts on the second,
+ * the derived rate on the first.
+ */
+record SavePayoutRequest(
+    @NotNull UUID sourceId,
+    @NotNull LocalDate periodMonth,
+    @NotNull @DecimalMin("0") @DecimalMax("1000000") BigDecimal amount,
+    @NotNull LocalDate receivedOn
+) {}
+
+/**
+ * The bulk-payment half of the tab.
+ *
+ * @param total money that ARRIVED inside the selected range, on the same axis as settled amounts, so
+ *              the two halves of revenue add up to one monthly figure.
+ */
+record PayoutsDto(
+    List<PayoutSourceDto> sources,
+    BigDecimal total,
+    List<PayoutPeriodDto> periods
+) {}
+
+/**
+ * What one month of work for one payer held, and what it earned.
+ *
+ * <p>⚠️ Rows come from the union of both sides, not from the payouts alone. A month with sessions and
+ * no transfer yet is the single most useful row on this table — it is the invoice nobody has paid —
+ * and listing only what arrived would hide exactly that.
+ *
+ * @param ratePerSession the point of the whole feature: what the place actually pays per session.
+ *                       {@code null} when either half is missing, because a rate needs both a
+ *                       numerator and a denominator and a zero would be a claim rather than a gap.
+ */
+record PayoutPeriodDto(
+    UUID sourceId,
+    String sourceName,
+    LocalDate month,
+    int sessions,
+    BigDecimal amount,
+    @Nullable BigDecimal ratePerSession
 ) {}

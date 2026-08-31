@@ -45,11 +45,16 @@ class AdminSettlementQueryCountTest extends BaseIntegrationTest {
     private static final int SETTLEMENTS = 30;
 
     /**
-     * Rows of the year, the outstanding history, the two distinct-date reads behind the year picker
-     * and the four reads behind the "to be priced" queue (two session kinds x two payer kinds) —
-     * one query each, plus slack for Spring Data's own round trips.
+     * Rows of the year, the outstanding history, the two distinct-date reads behind the year picker,
+     * the four reads behind the "to be priced" queue (two session kinds x two payer kinds) and the
+     * four behind bulk payouts (the payer list, transfers by arrival, transfers by work month, and
+     * the sessions they cover) — one query each, plus slack for Spring Data's own round trips.
+     *
+     * <p>Twelve is a lot for one endpoint and it is deliberate: the tab answers four independent
+     * questions in one read so its figures cannot disagree with each other. What matters is that the
+     * number does not move with the data, which is what this gate holds.
      */
-    private static final int MAX_QUERIES = 10;
+    private static final int MAX_QUERIES = 14;
 
     private static final LocalDate TODAY = LocalDate.of(2026, 8, 31);
 

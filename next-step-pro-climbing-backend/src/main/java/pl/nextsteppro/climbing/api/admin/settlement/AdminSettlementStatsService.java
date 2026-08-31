@@ -6,6 +6,10 @@ import org.springframework.transaction.annotation.Transactional;
 import pl.nextsteppro.climbing.domain.settlement.Settlement;
 import pl.nextsteppro.climbing.domain.settlement.SettlementRepository;
 import pl.nextsteppro.climbing.domain.settlement.SettlementRow;
+import pl.nextsteppro.climbing.domain.settlement.PayoutRepository;
+import pl.nextsteppro.climbing.domain.settlement.PayoutRow;
+import pl.nextsteppro.climbing.domain.settlement.SessionPayoutRepository;
+import pl.nextsteppro.climbing.domain.settlement.SessionPayoutRow;
 import pl.nextsteppro.climbing.domain.settlement.UnpricedPayer;
 import pl.nextsteppro.climbing.infrastructure.i18n.MessageService;
 
@@ -66,10 +70,20 @@ public class AdminSettlementStatsService {
     static final int UNPRICED_WINDOW_DAYS = 90;
 
     private final SettlementRepository settlementRepository;
+    private final PayoutRepository payoutRepository;
+    private final SessionPayoutRepository sessionPayoutRepository;
+    private final AdminPayoutService payoutService;
     private final MessageService msg;
 
-    public AdminSettlementStatsService(SettlementRepository settlementRepository, MessageService msg) {
+    public AdminSettlementStatsService(SettlementRepository settlementRepository,
+                                       PayoutRepository payoutRepository,
+                                       SessionPayoutRepository sessionPayoutRepository,
+                                       AdminPayoutService payoutService,
+                                       MessageService msg) {
         this.settlementRepository = settlementRepository;
+        this.payoutRepository = payoutRepository;
+        this.sessionPayoutRepository = sessionPayoutRepository;
+        this.payoutService = payoutService;
         this.msg = msg;
     }
 
@@ -95,14 +109,23 @@ public class AdminSettlementStatsService {
 
         LocalDate from = year == null ? LocalDate.MIN : LocalDate.of(year, 1, 1);
         LocalDate to = year == null ? LocalDate.MAX : LocalDate.of(year, 12, 31);
+        List<YearMonth> buckets = monthBuckets(year, today);
+
+        // Bulk transfers are revenue like any other and are counted on the day they arrived, so the
+        // month total stays one number no matter which way the money came in.
+        LocalDate windowFrom = buckets.getFirst().atDay(1);
+        LocalDate windowTo = buckets.getLast().atEndOfMonth();
+        List<PayoutRow> receivedPayouts = payoutRepository.findByReceivedBetween(
+            year == null ? windowFrom : from, year == null ? windowTo : to);
 
         return new SettlementOverviewDto(
             years,
             year,
             unpriced(today),
             outstanding(unsettled),
-            revenue(rows, from, to, monthBuckets(year, today)),
-            people(rows, from, to));
+            revenue(rows, receivedPayouts, from, to, buckets),
+            people(rows, from, to),
+            payouts(receivedPayouts, windowFrom, windowTo));
     }
 
     // ---------------------------------------------------------------- unpriced
@@ -194,7 +217,8 @@ public class AdminSettlementStatsService {
 
     // ----------------------------------------------------------------- revenue
 
-    private RevenueDto revenue(List<SettlementRow> rows, LocalDate from, LocalDate to, List<YearMonth> buckets) {
+    private RevenueDto revenue(List<SettlementRow> rows, List<PayoutRow> receivedPayouts,
+                               LocalDate from, LocalDate to, List<YearMonth> buckets) {
         Map<YearMonth, BigDecimal> byMonth = new LinkedHashMap<>();
         for (YearMonth bucket : buckets) {
             byMonth.put(bucket, BigDecimal.ZERO);
@@ -203,6 +227,7 @@ public class AdminSettlementStatsService {
         BigDecimal total = BigDecimal.ZERO;
         BigDecimal fromSlots = BigDecimal.ZERO;
         BigDecimal fromEvents = BigDecimal.ZERO;
+        BigDecimal fromPayouts = BigDecimal.ZERO;
         for (SettlementRow row : rows) {
             LocalDate paidOn = row.settledOn();
             if (paidOn == null || paidOn.isBefore(from) || paidOn.isAfter(to)) {
@@ -219,12 +244,22 @@ public class AdminSettlementStatsService {
             byMonth.computeIfPresent(YearMonth.from(paidOn), (month, sum) -> sum.add(row.amount()));
         }
 
+        for (PayoutRow payout : receivedPayouts) {
+            LocalDate paidOn = payout.receivedOn();
+            if (paidOn.isBefore(from) || paidOn.isAfter(to)) {
+                continue;
+            }
+            total = total.add(payout.amount());
+            fromPayouts = fromPayouts.add(payout.amount());
+            byMonth.computeIfPresent(YearMonth.from(paidOn), (month, sum) -> sum.add(payout.amount()));
+        }
+
         List<MonthlyRevenueDto> months = byMonth.entrySet().stream()
             .map(entry -> new MonthlyRevenueDto(entry.getKey().atDay(1), scale(entry.getValue())))
             .toList();
 
         return new RevenueDto(scale(total), monthlyAverage(byMonth), months,
-            scale(fromSlots), scale(fromEvents));
+            scale(fromSlots), scale(fromEvents), scale(fromPayouts));
     }
 
     /**
@@ -266,6 +301,91 @@ public class AdminSettlementStatsService {
             buckets.add(end.minusMonths(back));
         }
         return buckets;
+    }
+
+    // ----------------------------------------------------------------- payouts
+
+    /**
+     * What each month of bulk work held and what it earned.
+     *
+     * <p>⚠️ Rows are the UNION of both sides, not the transfers alone. A month with sessions and no
+     * transfer yet is the most useful row on this table — it is the invoice nobody has paid — and
+     * listing only what arrived would hide precisely that. The mirror case is a transfer against no
+     * marked sessions, which says the calendar was not filled in.
+     *
+     * <p>The rate is the point of the whole feature: one transfer divided by the sessions it covered
+     * is what the place actually pays. Null whenever either half is missing, because a rate needs
+     * both and a zero would be a claim rather than a gap.
+     */
+    private PayoutsDto payouts(List<PayoutRow> receivedPayouts, LocalDate windowFrom, LocalDate windowTo) {
+        // Once, up front. Resolving a name per session row would be a query inside a loop — the
+        // exact shape the query-count gates on this tab exist to keep out.
+        List<PayoutSourceDto> sources = payoutService.listSources();
+        Map<UUID, String> names = new LinkedHashMap<>();
+        for (PayoutSourceDto source : sources) {
+            names.put(source.id(), source.name());
+        }
+
+        Map<String, Period> byKey = new LinkedHashMap<>();
+        for (PayoutRow payout : payoutRepository.findByPeriodBetween(windowFrom, windowTo)) {
+            periodOf(byKey, names, payout.sourceId(), payout.periodMonth()).addAmount(payout.amount());
+        }
+        for (SessionPayoutRow session : sessionPayoutRepository.findSessionsBetween(windowFrom, windowTo)) {
+            periodOf(byKey, names, session.sourceId(), session.date().withDayOfMonth(1)).addSession();
+        }
+
+        BigDecimal total = BigDecimal.ZERO;
+        for (PayoutRow payout : receivedPayouts) {
+            total = total.add(payout.amount());
+        }
+
+        List<PayoutPeriodDto> periods = byKey.values().stream()
+            .sorted(Comparator.comparing((Period period) -> period.month).reversed()
+                .thenComparing(period -> period.sourceName, String.CASE_INSENSITIVE_ORDER))
+            .map(period -> new PayoutPeriodDto(period.sourceId, period.sourceName, period.month,
+                period.sessions, scale(period.amount), period.rate()))
+            .toList();
+
+        return new PayoutsDto(sources, scale(total), periods);
+    }
+
+    private static Period periodOf(Map<String, Period> byKey, Map<UUID, String> names,
+                                   UUID sourceId, LocalDate month) {
+        return byKey.computeIfAbsent(sourceId + "@" + month,
+            ignored -> new Period(sourceId, names.getOrDefault(sourceId, ""), month));
+    }
+
+    private static final class Period {
+        private final UUID sourceId;
+        private final String sourceName;
+        private final LocalDate month;
+        private BigDecimal amount = BigDecimal.ZERO;
+        private int sessions;
+
+        private Period(UUID sourceId, String sourceName, LocalDate month) {
+            this.sourceId = sourceId;
+            this.sourceName = sourceName;
+            this.month = month;
+        }
+
+        private void addAmount(BigDecimal value) {
+            amount = amount.add(value);
+        }
+
+        private void addSession() {
+            sessions++;
+        }
+
+        /**
+         * What the place actually paid per session. Null when either half is missing: a rate needs a
+         * numerator and a denominator, and a zero here would be a claim rather than a gap.
+         */
+        private @Nullable BigDecimal rate() {
+            if (sessions == 0 || amount.signum() == 0) {
+                return null;
+            }
+            return amount.divide(BigDecimal.valueOf(sessions), Settlement.AMOUNT_SCALE, RoundingMode.HALF_UP);
+        }
     }
 
     // ------------------------------------------------------------------ people

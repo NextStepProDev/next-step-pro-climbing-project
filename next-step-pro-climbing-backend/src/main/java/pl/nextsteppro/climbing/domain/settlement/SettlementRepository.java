@@ -128,6 +128,7 @@ public interface SettlementRepository extends JpaRepository<Settlement, UUID> {
           AND (ts.date < :today OR (ts.date = :today AND ts.endTime <= :now))
           AND NOT EXISTS (
             SELECT 1 FROM Settlement s WHERE s.timeSlot.id = ts.id AND s.user.id = r.user.id)
+          AND NOT EXISTS (SELECT 1 FROM SessionPayout sp WHERE sp.timeSlot.id = ts.id)
         """)
     List<UnpricedPayer> findUnpricedSlotUsers(@Param("from") LocalDate from,
                                               @Param("today") LocalDate today,
@@ -141,6 +142,7 @@ public interface SettlementRepository extends JpaRepository<Settlement, UUID> {
           AND ts.date >= :from
           AND (ts.date < :today OR (ts.date = :today AND ts.endTime <= :now))
           AND NOT EXISTS (SELECT 1 FROM Settlement s WHERE s.guest.id = g.id)
+          AND NOT EXISTS (SELECT 1 FROM SessionPayout sp WHERE sp.timeSlot.id = ts.id)
         """)
     List<UnpricedPayer> findUnpricedSlotGuests(@Param("from") LocalDate from,
                                                @Param("today") LocalDate today,
@@ -155,6 +157,7 @@ public interface SettlementRepository extends JpaRepository<Settlement, UUID> {
           AND e.endDate >= :from AND e.endDate < :today
           AND NOT EXISTS (
             SELECT 1 FROM Settlement s WHERE s.event.id = e.id AND s.user.id = r.user.id)
+          AND NOT EXISTS (SELECT 1 FROM SessionPayout sp WHERE sp.event.id = e.id)
         """)
     List<UnpricedPayer> findUnpricedEventUsers(@Param("from") LocalDate from,
                                                @Param("today") LocalDate today);
@@ -177,6 +180,8 @@ public interface SettlementRepository extends JpaRepository<Settlement, UUID> {
         WHERE COALESCE(ge.endDate, gtse.endDate) >= :from
           AND COALESCE(ge.endDate, gtse.endDate) < :today
           AND NOT EXISTS (SELECT 1 FROM Settlement s WHERE s.guest.id = g.id)
+          AND NOT EXISTS (
+            SELECT 1 FROM SessionPayout sp WHERE sp.event.id = COALESCE(ge.id, gtse.id))
         """)
     List<UnpricedPayer> findUnpricedEventGuests(@Param("from") LocalDate from,
                                                 @Param("today") LocalDate today);

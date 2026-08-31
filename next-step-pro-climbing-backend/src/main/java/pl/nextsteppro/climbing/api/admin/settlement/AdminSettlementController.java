@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -37,11 +38,93 @@ public class AdminSettlementController {
 
     private final AdminSettlementService settlementService;
     private final AdminSettlementStatsService statsService;
+    private final AdminPayoutService payoutService;
 
     public AdminSettlementController(AdminSettlementService settlementService,
-                                     AdminSettlementStatsService statsService) {
+                                     AdminSettlementStatsService statsService,
+                                     AdminPayoutService payoutService) {
         this.settlementService = settlementService;
         this.statsService = statsService;
+        this.payoutService = payoutService;
+    }
+
+    // ----- bulk payers: work somebody else settles for a whole month at once -----
+
+    @Operation(summary = "List bulk payers",
+        description = "Schools, clubs and the like. Archived ones are included and flagged: the tab "
+            + "still has to name the source of money earned last season.")
+    @GetMapping("/sources")
+    public ResponseEntity<List<PayoutSourceDto>> listSources() {
+        return ResponseEntity.ok(payoutService.listSources());
+    }
+
+    @Operation(summary = "Add a bulk payer")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Created"),
+        @ApiResponse(responseCode = "400", description = "Blank name, or a name an active payer already uses")
+    })
+    @PostMapping("/sources")
+    public ResponseEntity<PayoutSourceDto> createSource(@Valid @RequestBody SavePayoutSourceRequest request) {
+        return ResponseEntity.ok(payoutService.createSource(request));
+    }
+
+    @Operation(summary = "Rename a bulk payer")
+    @PutMapping("/sources/{sourceId}")
+    public ResponseEntity<Void> renameSource(@PathVariable UUID sourceId,
+                                             @Valid @RequestBody SavePayoutSourceRequest request) {
+        payoutService.renameSource(sourceId, request);
+        return ResponseEntity.noContent().build();
+    }
+
+    @Operation(summary = "Archive or restore a bulk payer",
+        description = "Archived rather than deleted: transfers and session assignments point at it, "
+            + "and a collaboration that ended does not un-earn what it paid.")
+    @PutMapping("/sources/{sourceId}/archived")
+    public ResponseEntity<Void> setSourceArchived(@PathVariable UUID sourceId,
+                                                  @RequestParam boolean archived) {
+        payoutService.setSourceArchived(sourceId, archived);
+        return ResponseEntity.noContent().build();
+    }
+
+    @Operation(summary = "Mark a session as work for a bulk payer",
+        description = "Send a null sourceId to unmark it. A marked session is not priced per "
+            + "participant — there is nobody to charge — so it stays out of the pricing queue.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "204", description = "Saved"),
+        @ApiResponse(responseCode = "400", description = "Unknown target, a slot belonging to an event, or an unknown payer")
+    })
+    @PutMapping("/{targetType}/{targetId}/payout-source")
+    public ResponseEntity<Void> assignSource(
+            @Parameter(description = "slot or event") @PathVariable String targetType,
+            @PathVariable UUID targetId,
+            @Valid @RequestBody AssignPayoutSourceRequest request) {
+        payoutService.assignSource(targetType, targetId, request);
+        return ResponseEntity.noContent().build();
+    }
+
+    @Operation(summary = "Record a transfer that arrived",
+        description = "periodMonth is any day of the month the work was done in; receivedOn is when "
+            + "the money landed. Revenue counts on the second, the derived rate on the first.")
+    @PostMapping("/payouts")
+    public ResponseEntity<UUID> createPayout(@Valid @RequestBody SavePayoutRequest request) {
+        return ResponseEntity.ok(payoutService.createPayout(request));
+    }
+
+    @Operation(summary = "Correct a transfer",
+        description = "The payer is fixed at creation: moving a transfer between payers would rewrite "
+            + "two months' rates at once, so the honest correction is to delete and re-enter.")
+    @PutMapping("/payouts/{payoutId}")
+    public ResponseEntity<Void> updatePayout(@PathVariable UUID payoutId,
+                                             @Valid @RequestBody SavePayoutRequest request) {
+        payoutService.updatePayout(payoutId, request);
+        return ResponseEntity.noContent().build();
+    }
+
+    @Operation(summary = "Delete a transfer")
+    @DeleteMapping("/payouts/{payoutId}")
+    public ResponseEntity<Void> deletePayout(@PathVariable UUID payoutId) {
+        payoutService.deletePayout(payoutId);
+        return ResponseEntity.noContent().build();
     }
 
     @Operation(summary = "The Settlements tab",

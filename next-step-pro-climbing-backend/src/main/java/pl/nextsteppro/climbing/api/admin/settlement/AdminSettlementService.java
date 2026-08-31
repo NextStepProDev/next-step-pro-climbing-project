@@ -14,6 +14,9 @@ import pl.nextsteppro.climbing.domain.settlement.PayerLastAmount;
 import pl.nextsteppro.climbing.domain.settlement.Settlement;
 import pl.nextsteppro.climbing.domain.settlement.SettlementRepository;
 import pl.nextsteppro.climbing.domain.settlement.SettlementRow;
+import pl.nextsteppro.climbing.domain.settlement.PayoutSource;
+import pl.nextsteppro.climbing.domain.settlement.PayoutSourceRepository;
+import pl.nextsteppro.climbing.domain.settlement.SessionPayoutRepository;
 import pl.nextsteppro.climbing.domain.timeslot.TimeSlot;
 import pl.nextsteppro.climbing.domain.timeslot.TimeSlotRepository;
 import pl.nextsteppro.climbing.domain.user.UserRepository;
@@ -29,6 +32,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
@@ -55,6 +59,8 @@ public class AdminSettlementService {
     private final ReservationRepository reservationRepository;
     private final GuestReservationRepository guestReservationRepository;
     private final UserRepository userRepository;
+    private final SessionPayoutRepository sessionPayoutRepository;
+    private final PayoutSourceRepository payoutSourceRepository;
     private final MessageService msg;
 
     public AdminSettlementService(SettlementRepository settlementRepository,
@@ -63,6 +69,8 @@ public class AdminSettlementService {
                                   ReservationRepository reservationRepository,
                                   GuestReservationRepository guestReservationRepository,
                                   UserRepository userRepository,
+                                  SessionPayoutRepository sessionPayoutRepository,
+                                  PayoutSourceRepository payoutSourceRepository,
                                   MessageService msg) {
         this.settlementRepository = settlementRepository;
         this.timeSlotRepository = timeSlotRepository;
@@ -70,6 +78,8 @@ public class AdminSettlementService {
         this.reservationRepository = reservationRepository;
         this.guestReservationRepository = guestReservationRepository;
         this.userRepository = userRepository;
+        this.sessionPayoutRepository = sessionPayoutRepository;
+        this.payoutSourceRepository = payoutSourceRepository;
         this.msg = msg;
     }
 
@@ -158,7 +168,8 @@ public class AdminSettlementService {
         List<Line> lines = new ArrayList<>();
         addUserLines(lines, reservationRepository.findConfirmedByTimeSlotIds(List.of(slotId)));
         addGuestLines(lines, guestReservationRepository.findByTimeSlotId(slotId));
-        return assemble(slot.getDate(), lines, settlementRepository.findRowsForSlot(slotId));
+        return assemble(SettlementTarget.SLOT, slotId, slot.getDate(), lines,
+            settlementRepository.findRowsForSlot(slotId));
     }
 
     private SettlementSectionDto eventSection(Event event) {
@@ -178,7 +189,8 @@ public class AdminSettlementService {
         }
         addGuestLines(lines, guests);
 
-        return assemble(event.getStartDate(), lines, settlementRepository.findRowsForEvent(eventId));
+        return assemble(SettlementTarget.EVENT, eventId, event.getStartDate(), lines,
+            settlementRepository.findRowsForEvent(eventId));
     }
 
     /** Collapses reservations by user, keeping the largest headcount that person booked. */
@@ -210,7 +222,8 @@ public class AdminSettlementService {
      * Folds saved amounts onto the participant list, then appends the settlements that no longer
      * match anybody bookable — those are the cancelled bookings that already paid.
      */
-    private SettlementSectionDto assemble(LocalDate targetDate, List<Line> participants, List<SettlementRow> saved) {
+    private SettlementSectionDto assemble(SettlementTarget target, UUID targetId, LocalDate targetDate,
+                                          List<Line> participants, List<SettlementRow> saved) {
         Map<UUID, SettlementRow> byPayer = new LinkedHashMap<>();
         for (SettlementRow row : saved) {
             UUID payerId = row.isGuest() ? row.guestId() : row.userId();
@@ -243,7 +256,17 @@ public class AdminSettlementService {
                 Objects.requireNonNull(payerId), name, 1, true,
                 orphan.amount(), orphan.settledOn(), null));
         }
-        return new SettlementSectionDto(targetDate, result);
+        // A session settled in bulk has nobody to charge per head, so the section switches mode
+        // rather than offering fields that would invent an amount.
+        Optional<UUID> sourceId = switch (target) {
+            case SLOT -> sessionPayoutRepository.findSourceIdForSlot(targetId);
+            case EVENT -> sessionPayoutRepository.findSourceIdForEvent(targetId);
+        };
+        PayoutSource source = sourceId.flatMap(payoutSourceRepository::findById).orElse(null);
+
+        return new SettlementSectionDto(targetDate, result,
+            source == null ? null : source.getId(),
+            source == null ? null : source.getName());
     }
 
     /**
@@ -291,6 +314,18 @@ public class AdminSettlementService {
     private SettlementPayer parsePayer(String segment) {
         return SettlementPayer.tryFrom(segment)
             .orElseThrow(() -> new IllegalArgumentException(msg.get("admin.settlement.payer.unknown")));
+    }
+
+    /**
+     * Parses the path segment and checks the session can actually be addressed, returning the target
+     * so callers do not re-derive it. Shared with {@code AdminPayoutService} so both halves of the
+     * money model agree on what an addressable session is — an event is one engagement however many
+     * days it spans, and its per-day slots are bookkeeping nobody writes to.
+     */
+    SettlementTarget requireAddressableTarget(String targetSegment, UUID targetId) {
+        SettlementTarget target = parseTarget(targetSegment);
+        requireTargetExists(target, targetId);
+        return target;
     }
 
     private void requireTargetExists(SettlementTarget target, UUID targetId) {
