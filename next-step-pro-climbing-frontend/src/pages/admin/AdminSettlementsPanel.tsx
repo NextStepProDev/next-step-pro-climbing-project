@@ -389,6 +389,13 @@ function RevenueCard({ overview }: { overview: SettlementOverview }) {
     ...(revenue.monthlyAverage !== null ? [{ key: 'average', value: revenue.monthlyAverage }] : []),
   ]
 
+  // Only when there is something to compare against: a year with no predecessor would otherwise
+  // read as "-100%", which says the business collapsed rather than that it had not started.
+  const comparable = revenue.previousMonths.length > 0 && revenue.previousTotal > 0
+  const change = comparable
+    ? Math.round(((revenue.total - revenue.previousTotal) / revenue.previousTotal) * 100)
+    : null
+
   return (
     <Card
       title={t('settlements.tab.revenue.title')}
@@ -404,7 +411,20 @@ function RevenueCard({ overview }: { overview: SettlementOverview }) {
         ))}
       </div>
 
-      <RevenueChart months={revenue.months} />
+      {change !== null && (
+        <p className="text-xs text-surface-400">
+          {/* Against the SAME months a year earlier, never against last month: climbing is
+              seasonal, so a month-over-month arrow is a confident wrong reading. */}
+          <span className={change >= 0 ? 'text-green-400' : 'text-amber-500'}>
+            {change >= 0 ? '▲' : '▼'} {Math.abs(change)}%
+          </span>{' '}
+          {t('settlements.tab.revenue.vsLastYear', {
+            previous: money(revenue.previousTotal),
+          })}
+        </p>
+      )}
+
+      <RevenueChart months={revenue.months} previousMonths={revenue.previousMonths} />
 
       {revenue.total > 0 && (
         <div className="space-y-2">
@@ -448,16 +468,29 @@ function RevenueCard({ overview }: { overview: SettlementOverview }) {
  * Empty months are drawn as a baseline tick rather than left out: a missing column reads as missing
  * data, a flat tick reads as a month when nothing came in — which is the fact.
  */
-function RevenueChart({ months }: { months: MonthlyRevenue[] }) {
+function RevenueChart({
+  months,
+  previousMonths,
+}: {
+  months: MonthlyRevenue[]
+  previousMonths: MonthlyRevenue[]
+}) {
+  const { t } = useTranslation('admin')
   const money = useMoney()
   const locale = useDateLocale()
-  const max = Math.max(1, ...months.map((bucket) => bucket.amount))
+  // Both years share one scale, or the comparison bar would lie about its own height.
+  const max = Math.max(
+    1,
+    ...months.map((bucket) => bucket.amount),
+    ...previousMonths.map((bucket) => bucket.amount),
+  )
 
   return (
     <>
       <div className="flex items-end gap-1 h-32">
-        {months.map((bucket) => {
+        {months.map((bucket, index) => {
           const month = parseCalendarDate(bucket.month)
+          const previous = previousMonths[index]
           return (
             <div
               key={bucket.month}
@@ -469,14 +502,28 @@ function RevenueChart({ months }: { months: MonthlyRevenue[] }) {
                 <span className="font-medium">{format(month, 'LLLL yyyy', { locale })}</span>
                 {' · '}
                 {money(bucket.amount)}
+                {previous !== undefined && (
+                  <span className="text-surface-400">
+                    {' · '}
+                    {t('settlements.tab.revenue.lastYearTooltip', { amount: money(previous.amount) })}
+                  </span>
+                )}
               </div>
+              {/* Last year as a faint ghost behind this one: a second full bar would double the
+                  chart's density for a number that is context, not the subject. */}
+              {previous !== undefined && previous.amount > 0 && (
+                <div
+                  className="absolute inset-x-0 bottom-0 rounded-t bg-surface-700"
+                  style={{ height: `${(previous.amount / max) * 100}%` }}
+                />
+              )}
               {bucket.amount > 0 ? (
                 <div
-                  className={`rounded-t ${STATS_FILL.done}`}
+                  className={`relative rounded-t ${STATS_FILL.done}`}
                   style={{ height: `${(bucket.amount / max) * 100}%` }}
                 />
               ) : (
-                <div className="h-0.5 rounded-full bg-surface-800" />
+                <div className="relative h-0.5 rounded-full bg-surface-800" />
               )}
             </div>
           )

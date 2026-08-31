@@ -214,6 +214,52 @@ class AdminSettlementStatsTest extends BaseIntegrationTest {
         assertThrows(IllegalArgumentException.class, () -> stats.buildOverview("12", TODAY));
     }
 
+    @Test
+    @DisplayName("shouldCompareEachMonthWithTheSameMonthAYearEarlier")
+    void shouldCompareEachMonthWithTheSameMonthAYearEarlier() {
+        settleSlot(LocalDate.of(2025, 9, 4), client, "800", LocalDate.of(2025, 9, 4));
+        settleSlot(LocalDate.of(2026, 9, 4), client, "1000", LocalDate.of(2026, 9, 4));
+
+        RevenueDto revenue = stats.buildOverview("2026", TODAY).revenue();
+
+        // Climbing is seasonal, so month against previous month calls a quiet October a bad month
+        // when it is simply October. Only the same month a year earlier answers "is this going up".
+        assertEquals(0, new BigDecimal("1000.00").compareTo(revenue.total()));
+        assertEquals(0, new BigDecimal("800.00").compareTo(revenue.previousTotal()));
+        assertEquals(12, revenue.previousMonths().size());
+        assertEquals(LocalDate.of(2025, 1, 1), revenue.previousMonths().getFirst().month());
+        assertEquals(0, new BigDecimal("800.00").compareTo(
+            revenue.previousMonths().stream()
+                .filter(m -> m.month().equals(LocalDate.of(2025, 9, 1)))
+                .findFirst().orElseThrow().amount()));
+    }
+
+    @Test
+    @DisplayName("shouldOfferNoComparisonForTheEverythingView")
+    void shouldOfferNoComparisonForTheEverythingView() {
+        settleSlot(LocalDate.of(2026, 9, 4), client, "1000", LocalDate.of(2026, 9, 4));
+
+        RevenueDto revenue = stats.buildOverview("all", TODAY).revenue();
+
+        // "Everything" has no previous; shifting its rolling window would compare two arbitrary spans.
+        assertTrue(revenue.previousMonths().isEmpty());
+        assertEquals(0, BigDecimal.ZERO.compareTo(revenue.previousTotal()));
+    }
+
+    @Test
+    @DisplayName("shouldKeepLastYearsMoneyOutOfThisYearsFigures")
+    void shouldKeepLastYearsMoneyOutOfThisYearsFigures() {
+        settleSlot(LocalDate.of(2025, 5, 1), client, "500", LocalDate.of(2025, 5, 1));
+        settleSlot(LocalDate.of(2026, 5, 1), other, "300", LocalDate.of(2026, 5, 1));
+
+        SettlementOverviewDto overview = stats.buildOverview("2026", TODAY);
+
+        // The read now spans two years so the comparison is free — but every other figure still
+        // filters on the selected one, and a leak here would inflate the year silently.
+        assertEquals(0, new BigDecimal("300.00").compareTo(overview.revenue().total()));
+        assertEquals(1, overview.people().size(), "Last year's payer must not appear in this year");
+    }
+
     // ------------------------------------------------- sessions nobody priced yet
 
     @Test

@@ -47,6 +47,8 @@ function makeOverview(overrides: Partial<SettlementOverview> = {}): SettlementOv
       fromSlots: 0,
       fromEvents: 0,
       fromPayouts: 0,
+      previousMonths: [],
+      previousTotal: 0,
     },
     people: [],
     payouts: { sources: [], total: 0, periods: [] },
@@ -282,6 +284,40 @@ describe('AdminSettlementsPanel', () => {
     // No account, so no card to link to — the null userId IS that signal.
     expect(screen.queryByRole('link', { name: 'Ekipa z Krakowa' })).not.toBeInTheDocument()
     expect(screen.getByText('Ekipa z Krakowa')).toBeInTheDocument()
+  })
+
+  it('compares a year with the same months a year earlier, never with last month', async () => {
+    getOverview.mockResolvedValue(makeOverview({
+      revenue: {
+        ...makeOverview().revenue,
+        total: 1000,
+        previousTotal: 800,
+        previousMonths: Array.from({ length: 12 }, (_, i) => ({
+          month: `2025-${String(i + 1).padStart(2, '0')}-01`,
+          amount: i === 8 ? 800 : 0,
+        })),
+      },
+    }))
+
+    renderPanel()
+
+    // Climbing is seasonal: a month-over-month arrow would call a quiet October a bad month when it
+    // is simply October.
+    expect(await screen.findByText(/25%/)).toBeInTheDocument()
+    expect(screen.getByText('settlements.tab.revenue.vsLastYear')).toBeInTheDocument()
+  })
+
+  it('offers no comparison when there is no previous year to compare with', async () => {
+    getOverview.mockResolvedValue(makeOverview({
+      revenue: { ...makeOverview().revenue, total: 1000 },
+    }))
+
+    renderPanel()
+
+    // A first year would otherwise read as -100%, which says the business collapsed rather than
+    // that it had not started.
+    await screen.findByText('settlements.tab.revenue.title')
+    expect(screen.queryByText('settlements.tab.revenue.vsLastYear')).not.toBeInTheDocument()
   })
 
   it('hides the average tile rather than claiming a zero', async () => {

@@ -203,6 +203,15 @@ record OutstandingItemDto(
  *                       trips, {@code fromPayouts} from work somebody else settles in bulk. Three
  *                       genuinely different ways of earning, not three labels on one — and the third
  *                       is the one you do not set the price of.
+ * @param previousMonths the SAME twelve months a year earlier, or empty in the "everything" view,
+ *                       which has no previous to compare against.
+ *                       <p>⚠️ This is the only honest comparison this business has. Climbing is
+ *                       seasonal, so month against previous month says a quiet October is a bad
+ *                       month when it is simply October; only October against last October answers
+ *                       whether the year is going up. A month-over-month arrow would be a confident
+ *                       wrong reading, which is worse than none.
+ * @param previousTotal  what those twelve months earned, so the headline can be compared without
+ *                       the client re-summing a list and disagreeing by a rounding step.
  */
 record RevenueDto(
     BigDecimal total,
@@ -210,7 +219,9 @@ record RevenueDto(
     List<MonthlyRevenueDto> months,
     BigDecimal fromSlots,
     BigDecimal fromEvents,
-    BigDecimal fromPayouts
+    BigDecimal fromPayouts,
+    List<MonthlyRevenueDto> previousMonths,
+    BigDecimal previousTotal
 ) {}
 
 /**

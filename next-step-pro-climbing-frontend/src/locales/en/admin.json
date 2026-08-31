@@ -933,7 +933,9 @@
         "total": "in the selected period",
         "average": "monthly average",
         "fromSlots": "One-to-one slots",
-        "fromEvents": "Events"
+        "fromEvents": "Events",
+        "vsLastYear": "against the same period a year earlier ({{previous}})",
+        "lastYearTooltip": "a year earlier: {{amount}}"
       },
       "people": {
         "title": "By person",

@@ -104,7 +104,8 @@ public class AdminSettlementStatsService {
 
         List<SettlementRow> rows = year == null
             ? settlementRepository.findAllRows()
-            : settlementRepository.findRowsInRange(LocalDate.of(year, 1, 1), LocalDate.of(year, 12, 31));
+            : settlementRepository.findRowsInRange(
+                LocalDate.of(year - 1, 1, 1), LocalDate.of(year, 12, 31));
         List<SettlementRow> unsettled = settlementRepository.findUnsettledRows();
 
         LocalDate from = year == null ? LocalDate.MIN : LocalDate.of(year, 1, 1);
@@ -119,14 +120,14 @@ public class AdminSettlementStatsService {
         // for the twelve charted months while settlements covered everything made the total short.
         List<PayoutRow> receivedPayouts = year == null
             ? payoutRepository.findAllRows()
-            : payoutRepository.findByReceivedBetween(from, to);
+            : payoutRepository.findByReceivedBetween(LocalDate.of(year - 1, 1, 1), to);
 
         return new SettlementOverviewDto(
             years,
             year,
             unpriced(today),
             outstanding(unsettled),
-            revenue(rows, receivedPayouts, from, to, buckets),
+            revenue(rows, receivedPayouts, from, to, buckets, year),
             people(rows, from, to),
             payouts(receivedPayouts, windowFrom, windowTo));
     }
@@ -221,7 +222,8 @@ public class AdminSettlementStatsService {
     // ----------------------------------------------------------------- revenue
 
     private RevenueDto revenue(List<SettlementRow> rows, List<PayoutRow> receivedPayouts,
-                               LocalDate from, LocalDate to, List<YearMonth> buckets) {
+                               LocalDate from, LocalDate to, List<YearMonth> buckets,
+                               @Nullable Integer year) {
         Map<YearMonth, BigDecimal> byMonth = new LinkedHashMap<>();
         for (YearMonth bucket : buckets) {
             byMonth.put(bucket, BigDecimal.ZERO);
@@ -261,8 +263,44 @@ public class AdminSettlementStatsService {
             .map(entry -> new MonthlyRevenueDto(entry.getKey().atDay(1), scale(entry.getValue())))
             .toList();
 
+        // The same twelve months a year earlier. Only for a chosen year: "everything" has no
+        // previous, and inventing one by shifting a rolling window would compare two arbitrary spans.
+        List<MonthlyRevenueDto> previousMonths = List.of();
+        BigDecimal previousTotal = BigDecimal.ZERO;
+        if (year != null) {
+            Map<YearMonth, BigDecimal> lastYear = new LinkedHashMap<>();
+            for (YearMonth bucket : buckets) {
+                lastYear.put(bucket.minusYears(1), BigDecimal.ZERO);
+            }
+            previousTotal = fill(lastYear, rows, receivedPayouts,
+                LocalDate.of(year - 1, 1, 1), LocalDate.of(year - 1, 12, 31));
+            previousMonths = lastYear.entrySet().stream()
+                .map(entry -> new MonthlyRevenueDto(entry.getKey().atDay(1), scale(entry.getValue())))
+                .toList();
+        }
+
         return new RevenueDto(scale(total), monthlyAverage(byMonth), months,
-            scale(fromSlots), scale(fromEvents), scale(fromPayouts));
+            scale(fromSlots), scale(fromEvents), scale(fromPayouts),
+            previousMonths, scale(previousTotal));
+    }
+
+    /** Buckets both money sources into a prepared month map and returns what landed in the range. */
+    private BigDecimal fill(Map<YearMonth, BigDecimal> byMonth, List<SettlementRow> rows,
+                            List<PayoutRow> payouts, LocalDate from, LocalDate to) {
+        BigDecimal total = BigDecimal.ZERO;
+        for (SettlementRow row : rows) {
+            LocalDate paidOn = row.settledOn();
+            if (paidOn == null || paidOn.isBefore(from) || paidOn.isAfter(to)) continue;
+            total = total.add(row.amount());
+            byMonth.computeIfPresent(YearMonth.from(paidOn), (month, sum) -> sum.add(row.amount()));
+        }
+        for (PayoutRow payout : payouts) {
+            LocalDate paidOn = payout.receivedOn();
+            if (paidOn.isBefore(from) || paidOn.isAfter(to)) continue;
+            total = total.add(payout.amount());
+            byMonth.computeIfPresent(YearMonth.from(paidOn), (month, sum) -> sum.add(payout.amount()));
+        }
+        return total;
     }
 
     /**
@@ -403,18 +441,27 @@ public class AdminSettlementStatsService {
     private List<PersonRevenueDto> people(List<SettlementRow> rows, LocalDate from, LocalDate to) {
         Map<String, Accumulator> byPayer = new LinkedHashMap<>();
         for (SettlementRow row : rows) {
+            LocalDate paidOn = row.settledOn();
+            boolean paidInRange = paidOn != null && !paidOn.isBefore(from) && !paidOn.isAfter(to);
+            boolean owedInRange = paidOn == null
+                && !row.targetDate().isBefore(from) && !row.targetDate().isAfter(to);
+            // ⚠️ The accumulator is created only by a row that actually contributes. Creating it
+            // first and then testing the range put payers into the ranking with 0 paid and 0 owed:
+            // rows reach here matched on EITHER axis, so a session held this year but settled next
+            // one already produced a phantom, and widening the read to two years for the
+            // year-over-year comparison would have filled the table with last year's clients.
+            if (!paidInRange && !owedInRange) {
+                continue;
+            }
             Accumulator acc = byPayer.computeIfAbsent(row.payerKey(),
                 key -> new Accumulator(row.isGuest() ? "guest" : "user", row.userId(), nameOf(row)));
-            LocalDate paidOn = row.settledOn();
-            if (paidOn != null) {
-                if (!paidOn.isBefore(from) && !paidOn.isAfter(to)) {
-                    acc.paid = acc.paid.add(row.amount());
-                    acc.count++;
-                    if (acc.lastPayment == null || paidOn.isAfter(acc.lastPayment)) {
-                        acc.lastPayment = paidOn;
-                    }
+            if (paidInRange) {
+                acc.paid = acc.paid.add(row.amount());
+                acc.count++;
+                if (acc.lastPayment == null || paidOn.isAfter(acc.lastPayment)) {
+                    acc.lastPayment = paidOn;
                 }
-            } else if (!row.targetDate().isBefore(from) && !row.targetDate().isAfter(to)) {
+            } else {
                 acc.outstanding = acc.outstanding.add(row.amount());
             }
         }

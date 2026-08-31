@@ -711,6 +711,11 @@ export interface RevenueSummary {
   // Work somebody else settled in bulk. Three genuinely different ways of earning, and this is the
   // one whose price you do not set.
   fromPayouts: number
+  // ⚠️ The same twelve months a year earlier — empty in the "everything" view, which has no
+  // previous. This is the only honest comparison this business has: climbing is seasonal, so month
+  // against previous month calls a quiet October a bad month when it is simply October.
+  previousMonths: MonthlyRevenue[]
+  previousTotal: number
 }
 
 // `month` is the first day of the month, like MonthlyRegistrations — a label, not a moment, so it

@@ -935,7 +935,9 @@
         "total": "w wybranym okresie",
         "average": "średnia miesięczna",
         "fromSlots": "Sloty 1:1",
-        "fromEvents": "Wydarzenia"
+        "fromEvents": "Wydarzenia",
+        "vsLastYear": "wobec tego samego okresu rok wcześniej ({{previous}})",
+        "lastYearTooltip": "rok wcześniej: {{amount}}"
       },
       "people": {
         "title": "Wg osób",

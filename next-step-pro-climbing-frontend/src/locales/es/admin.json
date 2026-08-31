@@ -933,7 +933,9 @@
         "total": "en el periodo seleccionado",
         "average": "media mensual",
         "fromSlots": "Sesiones individuales",
-        "fromEvents": "Eventos"
+        "fromEvents": "Eventos",
+        "vsLastYear": "frente al mismo periodo del año anterior ({{previous}})",
+        "lastYearTooltip": "un año antes: {{amount}}"
       },
       "people": {
         "title": "Por persona",
