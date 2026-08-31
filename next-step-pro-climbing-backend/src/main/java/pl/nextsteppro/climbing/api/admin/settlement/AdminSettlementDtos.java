@@ -324,3 +324,29 @@ record PayoutPeriodDto(
 
 /** One arrival, addressable so it can be deleted. */
 record PayoutEntryDto(UUID id, BigDecimal amount, LocalDate receivedOn) {}
+
+/**
+ * One line of income for the year, flattened for an accountant.
+ *
+ * <p>Its own endpoint rather than a field on the overview: these are line items, and the tab needs
+ * aggregates. Loading every row of a year into a response that renders four cards would make the
+ * common read pay for the rare one.
+ *
+ * <p>Unpaid lines are included with an empty {@code settledOn} on purpose. What was received is the
+ * question most of the time, but "what is still owed for this year" is the other half of the same
+ * conversation, and dropping those rows would make the file impossible to reconcile against the
+ * screen it came from.
+ *
+ * @param kind  which money model the line came from, because they are chased differently: a client's
+ *              own fee versus a transfer from a school.
+ * @param payer the person or the institution. Guests appear under whatever name was written down —
+ *              it is the only one there is.
+ */
+record SettlementExportRowDto(
+    String kind,
+    LocalDate date,
+    @Nullable String title,
+    String payer,
+    BigDecimal amount,
+    @Nullable LocalDate settledOn
+) {}

@@ -65,6 +65,7 @@ import type {
   SettlementPayer,
   SettlementSection,
   SettlementOverview,
+  SettlementExportRow,
   PayoutSource,
   EventDetail,
   EventParticipants,
@@ -1099,6 +1100,14 @@ export const adminSettlementsApi = {
     fetchApi<void>(`/admin/settlements/${target}/${targetId}/${payerType}/${payerId}`, {
       method: 'DELETE',
     }),
+
+  // Line items for the accountant. Its own endpoint: the tab needs aggregates, and making the
+  // common read carry a year of rows would be paying for the rare case every time.
+  getExportRows: (year: string | undefined, clientKind: string, payoutKind: string) =>
+    fetchApi<SettlementExportRow[]>(
+      `/admin/settlements/export?clientKind=${encodeURIComponent(clientKind)}`
+      + `&payoutKind=${encodeURIComponent(payoutKind)}${year ? `&year=${year}` : ''}`,
+    ),
 
   // Everything one payer still owes, on one date. A loop of per-row saves would be twenty round
   // trips for a month of sessions, twenty chances to fail halfway, and twenty different dates.

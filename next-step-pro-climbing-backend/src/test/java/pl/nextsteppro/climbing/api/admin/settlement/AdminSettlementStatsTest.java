@@ -18,6 +18,7 @@ import pl.nextsteppro.climbing.integration.BaseIntegrationTest;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.List;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -258,6 +259,25 @@ class AdminSettlementStatsTest extends BaseIntegrationTest {
         // filters on the selected one, and a leak here would inflate the year silently.
         assertEquals(0, new BigDecimal("300.00").compareTo(overview.revenue().total()));
         assertEquals(1, overview.people().size(), "Last year's payer must not appear in this year");
+    }
+
+    @Test
+    @DisplayName("shouldExportBothMoneyModelsAsOneOrderedListOfLines")
+    void shouldExportBothMoneyModelsAsOneOrderedListOfLines() {
+        settleSlot(LocalDate.of(2026, 3, 4), client, "150", LocalDate.of(2026, 3, 4));
+        settleSlot(LocalDate.of(2026, 5, 1), other, "450", null);
+
+        List<SettlementExportRowDto> lines = stats.exportRows("2026", "Klient", "Wyplata");
+
+        assertEquals(2, lines.size());
+        // Ordered by the day the money is attributed to: the payment date where there is one, the
+        // session's own date where there is not.
+        assertEquals(LocalDate.of(2026, 3, 4), lines.getFirst().settledOn());
+        assertEquals("Anna Kowalska", lines.getFirst().payer());
+        // ⚠️ The unpaid line is present with an empty payment date — dropping it would make the file
+        // impossible to reconcile against the screen it came from.
+        assertNull(lines.get(1).settledOn());
+        assertEquals(0, new BigDecimal("450.00").compareTo(lines.get(1).amount()));
     }
 
     // ------------------------------------------------- sessions nobody priced yet

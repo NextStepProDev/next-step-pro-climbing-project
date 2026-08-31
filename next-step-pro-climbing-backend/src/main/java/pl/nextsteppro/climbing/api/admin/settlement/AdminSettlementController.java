@@ -132,6 +132,21 @@ public class AdminSettlementController {
             settlementService.settleOutstanding(request)));
     }
 
+    @Operation(summary = "Every income line of a year, for the accountant",
+        description = "Line items rather than the tab's aggregates, and its own endpoint so the "
+            + "common read does not pay for the rare one. Unpaid lines are included with an empty "
+            + "payment date — what is still owed is the other half of the same conversation.")
+    @GetMapping("/export")
+    public ResponseEntity<List<SettlementExportRowDto>> exportRows(
+            @Parameter(description = "A four-digit year, 'all', or omitted for the newest year holding data")
+            @RequestParam(required = false) String year,
+            @Parameter(description = "Label for a client's own fee, translated by the caller")
+            @RequestParam String clientKind,
+            @Parameter(description = "Label for a bulk transfer, translated by the caller")
+            @RequestParam String payoutKind) {
+        return ResponseEntity.ok(statsService.exportRows(year, clientKind, payoutKind));
+    }
+
     @Operation(summary = "The Settlements tab",
         description = "Outstanding debt, revenue by month, and a per-person breakdown, from one "
             + "read. Outstanding debt deliberately covers the WHOLE history and ignores the year "

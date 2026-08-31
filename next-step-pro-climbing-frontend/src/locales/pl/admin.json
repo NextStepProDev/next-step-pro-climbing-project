@@ -969,6 +969,19 @@
         "deleteTransfer": "Usuń wypłatę {{amount}}",
         "restore": "Przywróć — {{name}}",
         "rename": "Nazwa — {{name}}"
+      },
+      "export": {
+        "action": "Eksport XLSX",
+        "summary": "Rozliczenia — {{year}} · {{count}} pozycji · wygenerowano {{generated}}",
+        "colKind": "Rodzaj",
+        "colDate": "Data zajęć / okres",
+        "colTitle": "Opis",
+        "colPayer": "Płatnik",
+        "colAmount": "Kwota (PLN)",
+        "colSettledOn": "Data zapłaty",
+        "kindClient": "Klient",
+        "kindPayout": "Wypłata zbiorcza",
+        "unpaid": "nierozliczone"
       }
     }
   }

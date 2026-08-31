@@ -967,6 +967,19 @@
         "deleteTransfer": "Delete the transfer of {{amount}}",
         "restore": "Restore — {{name}}",
         "rename": "Name — {{name}}"
+      },
+      "export": {
+        "action": "Export XLSX",
+        "summary": "Settlements — {{year}} · {{count}} lines · generated {{generated}}",
+        "colKind": "Kind",
+        "colDate": "Session date / period",
+        "colTitle": "Description",
+        "colPayer": "Payer",
+        "colAmount": "Amount (PLN)",
+        "colSettledOn": "Payment date",
+        "kindClient": "Client",
+        "kindPayout": "Bulk payout",
+        "unpaid": "outstanding"
       }
     }
   }

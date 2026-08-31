@@ -967,6 +967,19 @@
         "deleteTransfer": "Eliminar el pago de {{amount}}",
         "restore": "Restaurar — {{name}}",
         "rename": "Nombre — {{name}}"
+      },
+      "export": {
+        "action": "Exportar XLSX",
+        "summary": "Liquidaciones — {{year}} · {{count}} líneas · generado {{generated}}",
+        "colKind": "Tipo",
+        "colDate": "Fecha de sesión / periodo",
+        "colTitle": "Descripción",
+        "colPayer": "Pagador",
+        "colAmount": "Importe (PLN)",
+        "colSettledOn": "Fecha de pago",
+        "kindClient": "Cliente",
+        "kindPayout": "Pago global",
+        "unpaid": "pendiente"
       }
     }
   }

@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Link, useLocation, useSearchParams } from 'react-router-dom'
 import { format } from 'date-fns'
-import { AlertTriangle, Building2, ChevronDown, ChevronRight, CircleHelp, Coins, TrendingUp, Users } from 'lucide-react'
+import { AlertTriangle, Building2, ChevronDown, ChevronRight, CircleHelp, Coins, Download, TrendingUp, Users } from 'lucide-react'
 import { Button } from '../../components/ui/Button'
 import { DateInput } from '../../components/ui/DateInput'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
@@ -93,6 +93,8 @@ export function AdminSettlementsPanel() {
         )}
       </div>
 
+      {!nothingAtAll && <ExportButton year={data.year} />}
+
       {nothingAtAll ? (
         <div className="bg-surface-900 rounded-xl border border-surface-800 p-8 space-y-4 text-center text-surface-400">
           <p>{t('settlements.tab.empty')}</p>
@@ -112,6 +114,61 @@ export function AdminSettlementsPanel() {
           <PeopleCard people={data.people} />
         </>
       )}
+    </div>
+  )
+}
+
+/**
+ * Pulls the year's line items and writes a spreadsheet.
+ *
+ * The rows are fetched on click rather than carried by the overview: the tab renders four cards
+ * from aggregates, and making that read haul a year of lines would charge every visit for the one
+ * time in January somebody exports.
+ */
+function ExportButton({ year }: { year: number | null }) {
+  const { t } = useTranslation('admin')
+  const locale = useDateLocale()
+
+  const run = useMutation({
+    mutationFn: async () => {
+      const [{ exportSettlements }, rows] = await Promise.all([
+        // Two levels of laziness, like the logbook export: the module, and the library inside it.
+        import('./settlementExport'),
+        adminSettlementsApi.getExportRows(
+          year === null ? 'all' : String(year),
+          t('settlements.tab.export.kindClient'),
+          t('settlements.tab.export.kindPayout'),
+        ),
+      ])
+      await exportSettlements({
+        rows,
+        year,
+        labels: {
+          summary: t('settlements.tab.export.summary', {
+            year: year === null ? t('settlements.tab.allYears') : year,
+            generated: format(parseCalendarDate(todayInWarsaw()), 'dd.MM.yyyy', { locale }),
+            count: rows.length,
+          }),
+          columns: [
+            t('settlements.tab.export.colKind'),
+            t('settlements.tab.export.colDate'),
+            t('settlements.tab.export.colTitle'),
+            t('settlements.tab.export.colPayer'),
+            t('settlements.tab.export.colAmount'),
+            t('settlements.tab.export.colSettledOn'),
+          ],
+          unpaid: t('settlements.tab.export.unpaid'),
+        },
+      })
+    },
+  })
+
+  return (
+    <div className="flex justify-end">
+      <Button size="sm" variant="ghost" loading={run.isPending} onClick={() => run.mutate()}>
+        <Download className="w-3.5 h-3.5 mr-1" />
+        {t('settlements.tab.export.action')}
+      </Button>
     </div>
   )
 }

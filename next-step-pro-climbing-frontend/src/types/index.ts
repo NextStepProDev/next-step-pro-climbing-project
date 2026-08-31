@@ -635,6 +635,17 @@ export interface PayoutPeriod {
   transfers: PayoutEntry[]
 }
 
+// One income line for the accountant. Unpaid lines come through with settledOn null on purpose —
+// "what is still owed for this year" is the other half of the same conversation.
+export interface SettlementExportRow {
+  kind: string
+  date: string
+  title: string | null
+  payer: string
+  amount: number
+  settledOn: string | null
+}
+
 export interface PayoutEntry {
   id: string
   amount: number

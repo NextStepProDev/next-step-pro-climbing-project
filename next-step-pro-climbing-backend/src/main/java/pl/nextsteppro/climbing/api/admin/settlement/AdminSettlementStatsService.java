@@ -132,6 +132,39 @@ public class AdminSettlementStatsService {
             payouts(receivedPayouts, windowFrom, windowTo));
     }
 
+    /**
+     * Every income line of a year, flattened — the file an accountant asks for in January.
+     *
+     * <p>Reuses the same two reads the tab does, so the export can never disagree with the screen it
+     * was taken from. Sorted by the day the money is attributed to: the payment date where there is
+     * one, the session's own date where there is not.
+     */
+    public List<SettlementExportRowDto> exportRows(@Nullable String yearParam, String clientKind,
+                                                   String payoutKind) {
+        LocalDate today = LocalDate.now(WARSAW);
+        Integer year = resolveYear(yearParam, availableYears(), today);
+        LocalDate from = year == null ? LocalDate.of(1970, 1, 1) : LocalDate.of(year, 1, 1);
+        LocalDate to = year == null ? LocalDate.of(2999, 12, 31) : LocalDate.of(year, 12, 31);
+
+        List<SettlementExportRowDto> lines = new ArrayList<>();
+        for (SettlementRow row : year == null
+                ? settlementRepository.findAllRows()
+                : settlementRepository.findRowsInRange(from, to)) {
+            lines.add(new SettlementExportRowDto(clientKind, row.targetDate(), row.targetTitle(),
+                nameOf(row), row.amount(), row.settledOn()));
+        }
+        for (PayoutRow payout : year == null
+                ? payoutRepository.findAllRows()
+                : payoutRepository.findByReceivedBetween(from, to)) {
+            lines.add(new SettlementExportRowDto(payoutKind, payout.periodMonth(), null,
+                payout.sourceName(), payout.amount(), payout.receivedOn()));
+        }
+
+        lines.sort(Comparator.comparing(
+            line -> line.settledOn() == null ? line.date() : line.settledOn()));
+        return lines;
+    }
+
     // ---------------------------------------------------------------- unpriced
 
     /**
