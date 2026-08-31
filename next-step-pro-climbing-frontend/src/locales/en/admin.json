@@ -18,7 +18,8 @@
     "storage": "Storage",
     "site": "Homepage",
     "requests": "Proposals",
-    "trainingCalendars": "Training calendars"
+    "trainingCalendars": "Training calendars",
+    "settlements": "Settlements"
   },
   "tabGroups": {
     "calendar": "Calendar",
@@ -863,5 +864,75 @@
     "lastEdited": "Last edited: {{date}}",
     "showAll": "Show all",
     "showLess": "Show less"
+  },
+  "settlements": {
+    "section": {
+      "title": "Settlements",
+      "onlyYouHint": "Only you can see these amounts — participants never see them anywhere.",
+      "empty": "Nobody is booked on this session yet.",
+      "totals": "total: {{total}} · paid: {{paid}}"
+    },
+    "line": {
+      "people": "({{n}} people)",
+      "guest": "guest",
+      "orphaned": "booking cancelled",
+      "settled": "settled",
+      "amountPlaceholder": "amount",
+      "amountLabel": "Amount — {{name}}",
+      "settledOnLabel": "Payment date — {{name}}",
+      "useLast": "last time: {{amount}}",
+      "clear": "Remove amount — {{name}}",
+      "settledLabel": "Settled — {{name}}"
+    },
+    "actions": {
+      "setAll": "Apply to all",
+      "save": "Save"
+    },
+    "errors": {
+      "invalidAmount": "The amount must be a number between 0 and 100000."
+    },
+    "tab": {
+      "title": "Settlements",
+      "year": "Year:",
+      "allYears": "everything",
+      "empty": "No settlements yet. Amounts are entered on a slot or an event in the calendar.",
+      "unpriced": {
+        "title": "To be priced",
+        "count": "{{n}} sessions",
+        "people": "{{n}} without an amount",
+        "scope": "Sessions that have happened and carry no amount at all. This list does not follow the year picker and reaches {{days}} days back.",
+        "open": "Open the session of {{date}} and enter the amounts"
+      },
+      "outstanding": {
+        "title": "Outstanding",
+        "count": "{{n}} items",
+        "oldest": "oldest: {{date}}",
+        "none": "Everything is settled.",
+        "ignoresYear": "This list covers the WHOLE history and does not follow the year picker — a debt from two years ago is still a debt.",
+        "settle": "Settle",
+        "untitled": {
+          "slot": "One-to-one session",
+          "event": "Event"
+        },
+        "open": "Open the session — {{name}}, {{date}}"
+      },
+      "revenue": {
+        "title": "Revenue",
+        "axis": "counted on the payment date",
+        "total": "in the selected period",
+        "average": "monthly average",
+        "fromSlots": "One-to-one slots",
+        "fromEvents": "Events"
+      },
+      "people": {
+        "title": "By person",
+        "person": "Person",
+        "count": "payments",
+        "paid": "paid",
+        "owed": "owed",
+        "last": "last payment",
+        "scope": "The figures here cover the selected period — a debt from an earlier year shows above, under “Outstanding”."
+      }
+    }
   }
 }

@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next'
 import { Routes, Route, Link, useLocation, useMatch } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { Calendar, CalendarPlus, Users, Clock, ClipboardList, Activity, User, Image, Newspaper, BookOpen, Library, Mail, HardDrive, Video, Home, Dumbbell, type LucideIcon } from 'lucide-react'
+import { Calendar, CalendarPlus, Users, Clock, ClipboardList, Activity, User, Image, Newspaper, BookOpen, Library, Mail, HardDrive, Video, Home, Dumbbell, Wallet, type LucideIcon } from 'lucide-react'
 import clsx from 'clsx'
 import { adminApi } from '../api/client'
 import { AdminSlotsPanel } from './admin/AdminSlotsPanel'
@@ -21,6 +21,7 @@ import { AdminMailPanel } from './admin/AdminMailPanel'
 import { AdminStoragePanel } from './admin/AdminStoragePanel'
 import { AdminSitePanel } from './admin/AdminSitePanel'
 import { AdminRequestsPanel } from './admin/AdminRequestsPanel'
+import { AdminSettlementsPanel } from './admin/AdminSettlementsPanel'
 import { AdminTrainingCalendarsPanel } from './admin/AdminTrainingCalendarsPanel'
 import { AdminAthleteCalendarPanel } from './admin/AdminAthleteCalendarPanel'
 
@@ -44,6 +45,7 @@ const adminTabGroups: AdminTabGroup[] = [
       { path: '/admin/events', labelKey: 'tabs.events', icon: Calendar },
       { path: '/admin/requests', labelKey: 'tabs.requests', icon: CalendarPlus },
       { path: '/admin/training-calendars', labelKey: 'tabs.trainingCalendars', icon: Dumbbell },
+      { path: '/admin/settlements', labelKey: 'tabs.settlements', icon: Wallet },
     ],
   },
   {
@@ -188,6 +190,7 @@ export function AdminPage() {
         <Route path="reservations" element={<AdminReservationsPanel />} />
         <Route path="events" element={<AdminEventsPanel />} />
         <Route path="requests" element={<AdminRequestsPanel />} />
+        <Route path="settlements" element={<AdminSettlementsPanel />} />
         <Route path="training-calendars" element={<AdminTrainingCalendarsPanel />} />
         <Route path="training-calendars/:athleteId" element={<AdminAthleteCalendarPanel />} />
         <Route path="instructors" element={<AdminInstructorsPanel />} />

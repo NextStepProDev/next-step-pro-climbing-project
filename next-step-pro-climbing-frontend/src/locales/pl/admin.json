@@ -18,7 +18,8 @@
     "storage": "Storage",
     "site": "Strona główna",
     "requests": "Propozycje",
-    "trainingCalendars": "Kalendarze treningowe"
+    "trainingCalendars": "Kalendarze treningowe",
+    "settlements": "Rozliczenia"
   },
   "tabGroups": {
     "calendar": "Kalendarz",
@@ -865,5 +866,75 @@
     "lastEdited": "Ostatnia edycja: {{date}}",
     "showAll": "Pokaż całość",
     "showLess": "Zwiń"
+  },
+  "settlements": {
+    "section": {
+      "title": "Rozliczenia",
+      "onlyYouHint": "Kwoty widzisz tylko Ty — uczestnicy nie widzą ich nigdzie.",
+      "empty": "Nikt nie jest jeszcze zapisany na ten termin.",
+      "totals": "razem: {{total}} · zapłacone: {{paid}}"
+    },
+    "line": {
+      "people": "({{n}} os.)",
+      "guest": "gość",
+      "orphaned": "rezerwacja anulowana",
+      "settled": "rozliczone",
+      "amountPlaceholder": "kwota",
+      "amountLabel": "Kwota — {{name}}",
+      "settledOnLabel": "Data zapłaty — {{name}}",
+      "useLast": "ostatnio: {{amount}}",
+      "clear": "Usuń kwotę — {{name}}",
+      "settledLabel": "Rozliczone — {{name}}"
+    },
+    "actions": {
+      "setAll": "Ustaw wszystkim",
+      "save": "Zapisz"
+    },
+    "errors": {
+      "invalidAmount": "Kwota musi być liczbą z przedziału od 0 do 100000."
+    },
+    "tab": {
+      "title": "Rozliczenia",
+      "year": "Rok:",
+      "allYears": "wszystko",
+      "empty": "Nie ma jeszcze żadnych rozliczeń. Kwoty wpisuje się przy slocie lub wydarzeniu w kalendarzu.",
+      "unpriced": {
+        "title": "Do wyceny",
+        "count": "{{n}} zajęć",
+        "people": "{{n}} os. bez kwoty",
+        "scope": "Zajęcia, które się odbyły i nie mają wpisanej żadnej kwoty. Ta lista nie zmienia się z wyborem roku i sięga {{days}} dni wstecz.",
+        "open": "Otwórz zajęcia z {{date}} i wpisz kwoty"
+      },
+      "outstanding": {
+        "title": "Do odzyskania",
+        "count": "{{n}} poz.",
+        "oldest": "najstarsza: {{date}}",
+        "none": "Wszystko rozliczone.",
+        "ignoresYear": "Ta lista pokazuje CAŁĄ historię i nie zmienia się z wyborem roku — dług sprzed dwóch lat nadal jest długiem.",
+        "settle": "Rozlicz",
+        "untitled": {
+          "slot": "Trening 1:1",
+          "event": "Wydarzenie"
+        },
+        "open": "Otwórz termin — {{name}}, {{date}}"
+      },
+      "revenue": {
+        "title": "Przychód",
+        "axis": "liczony wg daty zapłaty",
+        "total": "w wybranym okresie",
+        "average": "średnia miesięczna",
+        "fromSlots": "Sloty 1:1",
+        "fromEvents": "Wydarzenia"
+      },
+      "people": {
+        "title": "Wg osób",
+        "person": "Osoba",
+        "count": "wpłat",
+        "paid": "zapłacone",
+        "owed": "zaległe",
+        "last": "ostatnia płatność",
+        "scope": "Liczby w tej tabeli dotyczą wybranego okresu — zaległość z wcześniejszego roku widać wyżej, w „Do odzyskania”."
+      }
+    }
   }
 }

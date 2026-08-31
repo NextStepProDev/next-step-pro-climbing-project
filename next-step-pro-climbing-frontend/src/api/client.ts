@@ -61,6 +61,10 @@ import type {
   AdminNoteTarget,
   AdminPrivateNote,
   AdminNoteMarkers,
+  SettlementTarget,
+  SettlementPayer,
+  SettlementSection,
+  SettlementOverview,
   EventDetail,
   EventParticipants,
   ReservationAdmin,
@@ -1061,6 +1065,44 @@ export const adminUserHistoryApi = {
 // win by Spring's specificity rules — it works, and it looks like a bug to whoever reads it next.
 export const adminUserStatsApi = {
   get: () => fetchApi<UserStats>('/admin/user-stats'),
+}
+
+// Per-participant price and payment status for a session. Admin-only, and its own endpoint on
+// purpose: money about named people must never ride along in the calendar payloads, which are
+// served to anonymous visitors and cached.
+// Both the target kind and the payer kind are path segments, so the four combinations stay on one
+// code path here and on the server.
+export const adminSettlementsApi = {
+  getSection: (target: SettlementTarget, targetId: string) =>
+    fetchApi<SettlementSection>(`/admin/settlements/${target}/${targetId}`),
+
+  save: (
+    target: SettlementTarget,
+    targetId: string,
+    payerType: SettlementPayer,
+    payerId: string,
+    amount: number,
+    settledOn: string | null,
+  ) =>
+    fetchApi<void>(`/admin/settlements/${target}/${targetId}/${payerType}/${payerId}`, {
+      method: 'PUT',
+      body: JSON.stringify({ amount, settledOn }),
+    }),
+
+  remove: (
+    target: SettlementTarget,
+    targetId: string,
+    payerType: SettlementPayer,
+    payerId: string,
+  ) =>
+    fetchApi<void>(`/admin/settlements/${target}/${targetId}/${payerType}/${payerId}`, {
+      method: 'DELETE',
+    }),
+
+  // The Settlements tab. Omit the year for the newest one holding data — not the current one, which
+  // would make an empty January look like lost history. 'all' for everything.
+  getOverview: (year?: string) =>
+    fetchApi<SettlementOverview>(`/admin/settlements/overview${year ? `?year=${year}` : ''}`),
 }
 
 // Instructors (public)

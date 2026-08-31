@@ -24,6 +24,7 @@ import { useDateLocale } from "../../utils/dateFnsLocale";
 import { useEditSavedToast } from "../../hooks/useEditSavedToast";
 import { nowInWarsaw, parseCalendarDate, parseCalendarDateTime } from '../../utils/calendarDate'
 import { AdminPrivateNote } from '../admin/AdminPrivateNote'
+import { SettlementSection } from '../admin/SettlementSection'
 import type { InvitedUser, TimeSlotDetail } from "../../types";
 
 interface SlotDetailModalProps {
@@ -617,6 +618,12 @@ export function SlotDetailModal({
             what there is something to write about. A slot belonging to an event is skipped: the
             event carries one note for all its days, and the server refuses this address anyway. */}
         {isAdmin && !slot.eventId && <AdminPrivateNote target="slot" targetId={slot.id} />}
+
+        {/* Per-participant price and payment status. Same two gates as the note above, and the
+            second one for the same reason: an event is priced ONCE however many days it spans, so
+            its per-day slots — bookkeeping the first booking creates — are not an address money
+            can be written to. The server refuses this one too. */}
+        {isAdmin && !slot.eventId && <SettlementSection target="slot" targetId={slot.id} />}
 
         {/* Actions */}
         {isBookable && <div className="flex gap-3 pt-4 border-t border-surface-800">

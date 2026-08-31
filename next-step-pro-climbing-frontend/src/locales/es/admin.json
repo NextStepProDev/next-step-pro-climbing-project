@@ -18,7 +18,8 @@
     "storage": "Almacenamiento",
     "site": "Página principal",
     "requests": "Propuestas",
-    "trainingCalendars": "Calendarios de entrenamiento"
+    "trainingCalendars": "Calendarios de entrenamiento",
+    "settlements": "Liquidaciones"
   },
   "tabGroups": {
     "calendar": "Calendario",
@@ -863,5 +864,75 @@
     "lastEdited": "Última edición: {{date}}",
     "showAll": "Mostrar todo",
     "showLess": "Mostrar menos"
+  },
+  "settlements": {
+    "section": {
+      "title": "Liquidaciones",
+      "onlyYouHint": "Solo tú ves estos importes — los participantes no los ven en ningún sitio.",
+      "empty": "Todavía no hay nadie inscrito en esta sesión.",
+      "totals": "total: {{total}} · pagado: {{paid}}"
+    },
+    "line": {
+      "people": "({{n}} pers.)",
+      "guest": "invitado",
+      "orphaned": "reserva cancelada",
+      "settled": "liquidado",
+      "amountPlaceholder": "importe",
+      "amountLabel": "Importe — {{name}}",
+      "settledOnLabel": "Fecha de pago — {{name}}",
+      "useLast": "la última vez: {{amount}}",
+      "clear": "Eliminar importe — {{name}}",
+      "settledLabel": "Liquidado — {{name}}"
+    },
+    "actions": {
+      "setAll": "Aplicar a todos",
+      "save": "Guardar"
+    },
+    "errors": {
+      "invalidAmount": "El importe debe ser un número entre 0 y 100000."
+    },
+    "tab": {
+      "title": "Liquidaciones",
+      "year": "Año:",
+      "allYears": "todo",
+      "empty": "Todavía no hay liquidaciones. Los importes se introducen en una sesión o un evento del calendario.",
+      "unpriced": {
+        "title": "Por valorar",
+        "count": "{{n}} sesiones",
+        "people": "{{n}} sin importe",
+        "scope": "Sesiones ya celebradas y sin ningún importe. Esta lista no sigue al selector de año y alcanza {{days}} días atrás.",
+        "open": "Abrir la sesión del {{date}} e introducir los importes"
+      },
+      "outstanding": {
+        "title": "Pendiente de cobro",
+        "count": "{{n}} elementos",
+        "oldest": "más antigua: {{date}}",
+        "none": "Todo está liquidado.",
+        "ignoresYear": "Esta lista cubre TODO el historial y no sigue al selector de año — una deuda de hace dos años sigue siendo una deuda.",
+        "settle": "Liquidar",
+        "untitled": {
+          "slot": "Sesión individual",
+          "event": "Evento"
+        },
+        "open": "Abrir la sesión — {{name}}, {{date}}"
+      },
+      "revenue": {
+        "title": "Ingresos",
+        "axis": "contados por la fecha de pago",
+        "total": "en el periodo seleccionado",
+        "average": "media mensual",
+        "fromSlots": "Sesiones individuales",
+        "fromEvents": "Eventos"
+      },
+      "people": {
+        "title": "Por persona",
+        "person": "Persona",
+        "count": "pagos",
+        "paid": "pagado",
+        "owed": "pendiente",
+        "last": "último pago",
+        "scope": "Las cifras de esta tabla cubren el periodo seleccionado — una deuda de un año anterior aparece arriba, en «Pendiente de cobro»."
+      }
+    }
   }
 }
