@@ -14,16 +14,23 @@ vi.mock('react-i18next', () => ({
 const getSection = vi.fn()
 const save = vi.fn()
 const remove = vi.fn()
+const listSources = vi.fn()
+const assignSource = vi.fn()
 
 vi.mock('../../api/client', () => ({
   adminSettlementsApi: {
     getSection: (...args: unknown[]) => getSection(...args),
     save: (...args: unknown[]) => save(...args),
     remove: (...args: unknown[]) => remove(...args),
+    listSources: (...args: unknown[]) => listSources(...args),
+    assignSource: (...args: unknown[]) => assignSource(...args),
   },
 }))
 
 const TARGET_DATE = '2026-08-14'
+
+/** Most sessions are priced per participant; the bulk fields are absent unless a test sets them. */
+const bulkOff = { payoutSourceId: null, payoutSourceName: null }
 
 function line(overrides: Partial<SettlementLine> = {}): SettlementLine {
   return {
@@ -53,10 +60,12 @@ describe('SettlementSection', () => {
     getSection.mockReset()
     save.mockReset().mockResolvedValue(undefined)
     remove.mockReset().mockResolvedValue(undefined)
+    listSources.mockReset().mockResolvedValue([{ id: 'src-1', name: 'SP nr 12', archived: false }])
+    assignSource.mockReset().mockResolvedValue(undefined)
   })
 
   it('says whose money this is before anything is typed', async () => {
-    getSection.mockResolvedValue({ targetDate: TARGET_DATE, lines: [line()] })
+    getSection.mockResolvedValue({ ...bulkOff, targetDate: TARGET_DATE, lines: [line()] })
 
     renderSection()
 
@@ -65,7 +74,7 @@ describe('SettlementSection', () => {
   })
 
   it('keeps Save disabled until something actually changes', async () => {
-    getSection.mockResolvedValue({ targetDate: TARGET_DATE, lines: [line()] })
+    getSection.mockResolvedValue({ ...bulkOff, targetDate: TARGET_DATE, lines: [line()] })
     const user = userEvent.setup()
 
     renderSection()
@@ -78,7 +87,7 @@ describe('SettlementSection', () => {
   })
 
   it('prefills the payment date with the SESSION date, not today', async () => {
-    getSection.mockResolvedValue({ targetDate: TARGET_DATE, lines: [line()] })
+    getSection.mockResolvedValue({ ...bulkOff, targetDate: TARGET_DATE, lines: [line()] })
     const user = userEvent.setup()
 
     renderSection()
@@ -97,7 +106,7 @@ describe('SettlementSection', () => {
   })
 
   it('leaves an amount outstanding when the box is not ticked', async () => {
-    getSection.mockResolvedValue({ targetDate: TARGET_DATE, lines: [line()] })
+    getSection.mockResolvedValue({ ...bulkOff, targetDate: TARGET_DATE, lines: [line()] })
     const user = userEvent.setup()
 
     renderSection()
@@ -111,7 +120,7 @@ describe('SettlementSection', () => {
   })
 
   it('reads a comma as a decimal separator', async () => {
-    getSection.mockResolvedValue({ targetDate: TARGET_DATE, lines: [line()] })
+    getSection.mockResolvedValue({ ...bulkOff, targetDate: TARGET_DATE, lines: [line()] })
     const user = userEvent.setup()
 
     renderSection()
@@ -126,6 +135,7 @@ describe('SettlementSection', () => {
 
   it('clearing the field removes the amount rather than saving a zero', async () => {
     getSection.mockResolvedValue({
+      ...bulkOff,
       targetDate: TARGET_DATE,
       lines: [line({ amount: 150, settledOn: TARGET_DATE })],
     })
@@ -143,6 +153,7 @@ describe('SettlementSection', () => {
 
   it('offers the last amount charged to this person without applying it', async () => {
     getSection.mockResolvedValue({
+      ...bulkOff,
       targetDate: TARGET_DATE,
       lines: [line({ suggestedAmount: 150 })],
     })
@@ -159,6 +170,7 @@ describe('SettlementSection', () => {
 
   it('keeps a payer whose booking was cancelled on screen, flagged', async () => {
     getSection.mockResolvedValue({
+      ...bulkOff,
       targetDate: TARGET_DATE,
       lines: [line({ orphaned: true, amount: 150, settledOn: TARGET_DATE })],
     })
@@ -173,6 +185,7 @@ describe('SettlementSection', () => {
 
   it('prices a guest like anybody else and shows the headcount', async () => {
     getSection.mockResolvedValue({
+      ...bulkOff,
       targetDate: TARGET_DATE,
       lines: [line({ payerType: 'guest', payerId: 'guest-1', name: 'Ekipa z Krakowa', participants: 3 })],
     })
@@ -194,6 +207,7 @@ describe('SettlementSection', () => {
 
   it('fills every empty amount at once when several people are booked', async () => {
     getSection.mockResolvedValue({
+      ...bulkOff,
       targetDate: TARGET_DATE,
       lines: [
         line({ payerId: 'user-1', name: 'Anna Kowalska' }),
@@ -215,11 +229,68 @@ describe('SettlementSection', () => {
   })
 
   it('says so plainly when nobody is booked yet', async () => {
-    getSection.mockResolvedValue({ targetDate: TARGET_DATE, lines: [] })
+    getSection.mockResolvedValue({ ...bulkOff, targetDate: TARGET_DATE, lines: [] })
 
     renderSection()
 
     expect(await screen.findByText('settlements.section.empty')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'settlements.actions.save' })).not.toBeInTheDocument()
+  })
+})
+
+describe('SettlementSection — settled in bulk', () => {
+  beforeEach(() => {
+    getSection.mockReset()
+    listSources.mockReset().mockResolvedValue([{ id: 'src-1', name: 'SP nr 12', archived: false }])
+    assignSource.mockReset().mockResolvedValue(undefined)
+  })
+
+  it('replaces the per-participant fields rather than disabling them', async () => {
+    getSection.mockResolvedValue({
+      targetDate: TARGET_DATE,
+      lines: [line()],
+      payoutSourceId: 'src-1',
+      payoutSourceName: 'SP nr 12',
+    })
+
+    renderSection()
+
+    // There is nobody here to charge per head, so offering an amount field would invite a made-up
+    // number — the field is absent, not greyed out.
+    expect(await screen.findByText('settlements.section.bulk')).toBeInTheDocument()
+    expect(screen.queryByLabelText('settlements.line.amountLabel')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'settlements.actions.save' })).not.toBeInTheDocument()
+  })
+
+  it('marks an ordinary session as settled in bulk', async () => {
+    getSection.mockResolvedValue({ ...bulkOff, targetDate: TARGET_DATE, lines: [line()] })
+    const user = userEvent.setup()
+
+    renderSection()
+
+    await user.click(await screen.findByRole('button', { name: 'settlements.section.markBulk' }))
+    // The payer list is fetched only once the picker opens: this section loads on every slot an
+    // admin opens, and almost none of them are settled in bulk.
+    await waitFor(() => expect(listSources).toHaveBeenCalled())
+
+    await user.selectOptions(screen.getByLabelText('settlements.section.bulkPayer'), 'src-1')
+    await user.click(screen.getByRole('button', { name: 'settlements.actions.save' }))
+
+    await waitFor(() => expect(assignSource).toHaveBeenCalledWith('slot', 'target-1', 'src-1'))
+  })
+
+  it('unmarks a session with null rather than a second endpoint', async () => {
+    getSection.mockResolvedValue({
+      targetDate: TARGET_DATE,
+      lines: [],
+      payoutSourceId: 'src-1',
+      payoutSourceName: 'SP nr 12',
+    })
+    const user = userEvent.setup()
+
+    renderSection()
+
+    await user.click(await screen.findByRole('button', { name: 'settlements.section.clearBulk' }))
+    await waitFor(() => expect(assignSource).toHaveBeenCalledWith('slot', 'target-1', null))
   })
 })

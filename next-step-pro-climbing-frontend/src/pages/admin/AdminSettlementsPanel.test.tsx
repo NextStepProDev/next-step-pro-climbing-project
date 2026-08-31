@@ -13,11 +13,17 @@ vi.mock('react-i18next', () => ({
 
 const getOverview = vi.fn()
 const save = vi.fn()
+const createPayout = vi.fn()
+const createSource = vi.fn()
+const setSourceArchived = vi.fn()
 
 vi.mock('../../api/client', () => ({
   adminSettlementsApi: {
     getOverview: (...args: unknown[]) => getOverview(...args),
     save: (...args: unknown[]) => save(...args),
+    createPayout: (...args: unknown[]) => createPayout(...args),
+    createSource: (...args: unknown[]) => createSource(...args),
+    setSourceArchived: (...args: unknown[]) => setSourceArchived(...args),
   },
 }))
 
@@ -36,8 +42,10 @@ function makeOverview(overrides: Partial<SettlementOverview> = {}): SettlementOv
       })),
       fromSlots: 0,
       fromEvents: 0,
+      fromPayouts: 0,
     },
     people: [],
+    payouts: { sources: [], total: 0, periods: [] },
     ...overrides,
   }
 }
@@ -57,6 +65,9 @@ describe('AdminSettlementsPanel', () => {
   beforeEach(() => {
     getOverview.mockReset()
     save.mockReset().mockResolvedValue(undefined)
+    createPayout.mockReset().mockResolvedValue('payout-1')
+    createSource.mockReset().mockResolvedValue({ id: 'src-2', name: 'Klub XYZ', archived: false })
+    setSourceArchived.mockReset().mockResolvedValue(undefined)
   })
 
   it('asks for no particular year, so the server can pick the newest one holding data', async () => {
@@ -269,5 +280,65 @@ describe('AdminSettlementsPanel', () => {
 
     expect(await screen.findByText('settlements.tab.empty')).toBeInTheDocument()
     expect(screen.queryByText('settlements.tab.revenue.title')).not.toBeInTheDocument()
+  })
+
+  it('shows a month of work nobody has paid for yet, and no rate for it', async () => {
+    getOverview.mockResolvedValue(makeOverview({
+      payouts: {
+        sources: [{ id: 'src-1', name: 'SP nr 12', archived: false }],
+        total: 1400,
+        periods: [
+          {
+            sourceId: 'src-1', sourceName: 'SP nr 12', month: '2026-10-01',
+            sessions: 12, amount: 1400, ratePerSession: 116.67,
+          },
+          {
+            sourceId: 'src-1', sourceName: 'SP nr 12', month: '2026-11-01',
+            sessions: 4, amount: 0, ratePerSession: null,
+          },
+        ],
+      },
+    }))
+
+    renderPanel()
+
+    expect(await screen.findByText('settlements.tab.payouts.title')).toBeInTheDocument()
+    // The invoice nobody has paid — the row this table is worth having for.
+    expect(screen.getByText('settlements.tab.payouts.awaiting')).toBeInTheDocument()
+    // And the one figure that exists nowhere else: 1400 over twelve sessions.
+    expect(screen.getByText(/116[.,]67/)).toBeInTheDocument()
+  })
+
+  it('records a transfer with both of its dates', async () => {
+    getOverview.mockResolvedValue(makeOverview({
+      payouts: {
+        sources: [{ id: 'src-1', name: 'SP nr 12', archived: false }],
+        total: 0,
+        periods: [],
+      },
+    }))
+    const user = userEvent.setup()
+
+    renderPanel()
+
+    await user.click(await screen.findByRole('button', { name: 'settlements.tab.payouts.add' }))
+    await user.type(screen.getByLabelText('settlements.tab.payouts.periodField'), '2026-10-15')
+    await user.type(screen.getByLabelText('settlements.tab.payouts.amountField'), '1400')
+    await user.type(screen.getByLabelText('settlements.tab.payouts.receivedField'), '2026-11-08')
+    await user.click(screen.getByRole('button', { name: 'settlements.actions.save' }))
+
+    // Any day of the work month is sent as-is; the server snaps it to the first.
+    await waitFor(() =>
+      expect(createPayout).toHaveBeenCalledWith('src-1', '2026-10-15', 1400, '2026-11-08'),
+    )
+  })
+
+  it('hides the bulk card entirely until there is a payer or a period', async () => {
+    getOverview.mockResolvedValue(makeOverview())
+
+    renderPanel()
+
+    await screen.findByText('settlements.tab.revenue.title')
+    expect(screen.queryByText('settlements.tab.payouts.title')).not.toBeInTheDocument()
   })
 })

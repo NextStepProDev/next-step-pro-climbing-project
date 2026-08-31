@@ -870,7 +870,16 @@
       "title": "Liquidaciones",
       "onlyYouHint": "Solo tú ves estos importes — los participantes no los ven en ningún sitio.",
       "empty": "Todavía no hay nadie inscrito en esta sesión.",
-      "totals": "total: {{total}} · pagado: {{paid}}"
+      "totals": "total: {{total}} · pagado: {{paid}}",
+      "bulk": "Liquidado en bloque · {{name}}",
+      "bulkHint": "Estas sesiones no se valoran por participante — registra la transferencia mensual en la pestaña Liquidaciones.",
+      "changeBulk": "Cambiar pagador",
+      "clearBulk": "Quitar marca",
+      "markBulk": "Liquidado en bloque…",
+      "bulkPayer": "Pagador",
+      "choosePayer": "— elegir —",
+      "noPayers": "Aún no hay pagadores. Añade uno en la pestaña Liquidaciones.",
+      "cancel": "Cancelar"
     },
     "line": {
       "people": "({{n}} pers.)",
@@ -932,6 +941,23 @@
         "owed": "pendiente",
         "last": "último pago",
         "scope": "Las cifras de esta tabla cubren el periodo seleccionado — una deuda de un año anterior aparece arriba, en «Pendiente de cobro»."
+      },
+      "payouts": {
+        "title": "Pagos globales",
+        "axis": "Ingresos contados por la fecha de entrada. Tarifa = pago ÷ sesiones marcadas de ese mes.",
+        "payer": "Pagador",
+        "period": "Periodo",
+        "sessions": "sesiones",
+        "amount": "pago",
+        "rate": "tarifa",
+        "awaiting": "sin pago",
+        "add": "Añadir pago",
+        "periodField": "Del mes (cualquier día)",
+        "amountField": "Importe (neto)",
+        "receivedField": "Fecha de entrada",
+        "newPayer": "Nombre del pagador",
+        "addPayer": "Añadir",
+        "archive": "Archivar — {{name}}"
       }
     }
   }

@@ -1,20 +1,25 @@
+import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Link, useLocation, useSearchParams } from 'react-router-dom'
 import { format } from 'date-fns'
-import { AlertTriangle, CircleHelp, Coins, TrendingUp, Users } from 'lucide-react'
+import { AlertTriangle, Building2, CircleHelp, Coins, TrendingUp, Users } from 'lucide-react'
 import { Button } from '../../components/ui/Button'
+import { DateInput } from '../../components/ui/DateInput'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
 import { QueryError } from '../../components/ui/QueryError'
 import { STATS_FILL, swatchClass } from '../../components/admin/userstats/statsPalette'
 import { adminSettlementsApi } from '../../api/client'
+import { getErrorMessage } from '../../utils/errors'
 import { parseCalendarDate } from '../../utils/calendarDate'
 import { useDateLocale } from '../../utils/dateFnsLocale'
-import { formatPln } from '../../utils/money'
+import { formatPln, parseAmount } from '../../utils/money'
 import type {
   MonthlyRevenue,
   OutstandingItem,
   PersonRevenue,
+  PayoutSource,
+  PayoutsSummary,
   SettlementOverview,
   UnpricedSummary,
 } from '../../types'
@@ -92,6 +97,7 @@ export function AdminSettlementsPanel() {
           <UnpricedCard unpriced={data.unpriced} />
           <OutstandingCard overview={data} />
           <RevenueCard overview={data} />
+          <PayoutsCard payouts={data.payouts} />
           <PeopleCard people={data.people} />
         </>
       )}
@@ -418,6 +424,249 @@ function RevenueChart({ months }: { months: MonthlyRevenue[] }) {
         ))}
       </div>
     </>
+  )
+}
+
+// ---------- bulk payouts ----------
+
+/**
+ * Work somebody else settles for a whole month at once.
+ *
+ * The table lists the union of both sides on purpose: a month with sessions and no transfer is the
+ * invoice nobody has paid, and a transfer with no marked sessions says the calendar was not filled
+ * in. Only when both halves are there is a rate shown — that figure is why this exists at all.
+ */
+function PayoutsCard({ payouts }: { payouts: PayoutsSummary }) {
+  const { t } = useTranslation('admin')
+  const money = useMoney()
+  const locale = useDateLocale()
+  const queryClient = useQueryClient()
+  const [adding, setAdding] = useState(false)
+
+  const active = payouts.sources.filter((source) => !source.archived)
+  const refresh = () => queryClient.invalidateQueries({ queryKey: ['admin', 'settlements'] })
+
+  if (payouts.sources.length === 0 && payouts.periods.length === 0) return null
+
+  return (
+    <Card
+      title={t('settlements.tab.payouts.title')}
+      icon={Building2}
+      aside={
+        payouts.total > 0 ? (
+          <span className="text-sm text-surface-200 tabular-nums">{money(payouts.total)}</span>
+        ) : undefined
+      }
+    >
+      <p className="text-xs text-surface-500">{t('settlements.tab.payouts.axis')}</p>
+
+      {payouts.periods.length > 0 && (
+        <div className="relative overflow-x-auto">
+          <table className="min-w-[34rem] w-full text-sm">
+            <thead>
+              <tr className="text-xs text-surface-500 text-left">
+                <th className="py-1 font-normal">{t('settlements.tab.payouts.payer')}</th>
+                <th className="py-1 font-normal">{t('settlements.tab.payouts.period')}</th>
+                <th className="py-1 font-normal text-right">{t('settlements.tab.payouts.sessions')}</th>
+                <th className="py-1 font-normal text-right">{t('settlements.tab.payouts.amount')}</th>
+                <th className="py-1 font-normal text-right">{t('settlements.tab.payouts.rate')}</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-surface-800">
+              {payouts.periods.map((period) => (
+                <tr key={`${period.sourceId}:${period.month}`}>
+                  <td className="py-2 text-surface-200">{period.sourceName}</td>
+                  <td className="py-2 text-surface-400">
+                    {format(parseCalendarDate(period.month), 'LLLL yyyy', { locale })}
+                  </td>
+                  <td className="py-2 text-right text-surface-400 tabular-nums">{period.sessions}</td>
+                  <td className="py-2 text-right tabular-nums">
+                    {period.amount > 0 ? (
+                      <span className="text-surface-200">{money(period.amount)}</span>
+                    ) : (
+                      /* Work done, nothing received: the row people actually come here for. */
+                      <span className="text-amber-500">{t('settlements.tab.payouts.awaiting')}</span>
+                    )}
+                  </td>
+                  <td className="py-2 text-right text-surface-200 tabular-nums">
+                    {period.ratePerSession === null ? (
+                      <span className="text-surface-500">—</span>
+                    ) : (
+                      money(period.ratePerSession)
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {adding ? (
+        <PayoutForm
+          sources={active}
+          onCancel={() => setAdding(false)}
+          onSaved={() => {
+            setAdding(false)
+            refresh()
+          }}
+        />
+      ) : (
+        <div className="flex flex-wrap items-center gap-2">
+          <Button size="sm" variant="secondary" onClick={() => setAdding(true)} disabled={active.length === 0}>
+            {t('settlements.tab.payouts.add')}
+          </Button>
+          <SourceManager sources={payouts.sources} onChanged={refresh} />
+        </div>
+      )}
+    </Card>
+  )
+}
+
+/** Two dates because they answer different questions — what the money is for, and when it landed. */
+function PayoutForm({
+  sources,
+  onCancel,
+  onSaved,
+}: {
+  sources: PayoutSource[]
+  onCancel: () => void
+  onSaved: () => void
+}) {
+  const { t } = useTranslation('admin')
+  const [sourceId, setSourceId] = useState(sources[0]?.id ?? '')
+  const [periodMonth, setPeriodMonth] = useState('')
+  const [amount, setAmount] = useState('')
+  const [receivedOn, setReceivedOn] = useState('')
+
+  const parsed = parseAmount(amount)
+  const ready = sourceId !== '' && periodMonth !== '' && receivedOn !== '' && parsed !== null
+
+  const create = useMutation({
+    mutationFn: () =>
+      adminSettlementsApi.createPayout(sourceId, periodMonth, parsed as number, receivedOn),
+    onSuccess: onSaved,
+  })
+
+  return (
+    <div className="space-y-2 rounded-lg border border-surface-800 p-3">
+      <div className="flex flex-wrap items-end gap-2">
+        <label className="flex flex-col gap-1 text-xs text-surface-400">
+          {t('settlements.tab.payouts.payer')}
+          <select
+            value={sourceId}
+            onChange={(e) => setSourceId(e.target.value)}
+            className="bg-surface-800 border border-surface-600 rounded px-2 py-1 text-sm text-surface-100 focus:outline-none focus:border-primary-500"
+          >
+            {sources.map((source) => (
+              <option key={source.id} value={source.id}>{source.name}</option>
+            ))}
+          </select>
+        </label>
+        <label className="flex flex-col gap-1 text-xs text-surface-400">
+          {/* Any day of it: the server snaps to the first, so this is a month picker without
+              needing input[type=month], which desktop Safari does not implement. */}
+          {t('settlements.tab.payouts.periodField')}
+          <DateInput
+            value={periodMonth}
+            onChange={setPeriodMonth}
+            className="bg-surface-800 border border-surface-600 rounded px-2 py-1 text-sm text-surface-100 focus:outline-none focus:border-primary-500"
+          />
+        </label>
+        <label className="flex flex-col gap-1 text-xs text-surface-400">
+          {t('settlements.tab.payouts.amountField')}
+          <input
+            inputMode="decimal"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            className="w-28 bg-surface-800 border border-surface-600 rounded px-2 py-1 text-sm text-surface-100 focus:outline-none focus:border-primary-500"
+          />
+        </label>
+        <label className="flex flex-col gap-1 text-xs text-surface-400">
+          {t('settlements.tab.payouts.receivedField')}
+          <DateInput
+            value={receivedOn}
+            onChange={setReceivedOn}
+            className="bg-surface-800 border border-surface-600 rounded px-2 py-1 text-sm text-surface-100 focus:outline-none focus:border-primary-500"
+          />
+        </label>
+      </div>
+      {create.isError && (
+        <p className="text-sm text-rose-400/80">{getErrorMessage(create.error)}</p>
+      )}
+      <div className="flex justify-end gap-2">
+        <Button size="sm" variant="ghost" onClick={onCancel}>
+          {t('settlements.section.cancel')}
+        </Button>
+        <Button
+          size="sm"
+          variant="primary"
+          disabled={!ready}
+          loading={create.isPending}
+          onClick={() => create.mutate()}
+        >
+          {t('settlements.actions.save')}
+        </Button>
+      </div>
+    </div>
+  )
+}
+
+/** Adding and archiving payers, inline: a separate admin screen for a list of three names is worse. */
+function SourceManager({ sources, onChanged }: { sources: PayoutSource[]; onChanged: () => void }) {
+  const { t } = useTranslation('admin')
+  const [name, setName] = useState('')
+
+  const create = useMutation({
+    mutationFn: () => adminSettlementsApi.createSource(name.trim()),
+    onSuccess: () => {
+      setName('')
+      onChanged()
+    },
+  })
+  const archive = useMutation({
+    mutationFn: (sourceId: string) => adminSettlementsApi.setSourceArchived(sourceId, true),
+    onSuccess: onChanged,
+  })
+
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      {sources.filter((source) => !source.archived).map((source) => (
+        <span
+          key={source.id}
+          className="inline-flex items-center gap-1 rounded-full border border-surface-700 px-2 py-0.5 text-xs text-surface-300"
+        >
+          {source.name}
+          <button
+            type="button"
+            onClick={() => archive.mutate(source.id)}
+            aria-label={t('settlements.tab.payouts.archive', { name: source.name })}
+            className="text-surface-500 hover:text-rose-400 transition-colors"
+          >
+            ×
+          </button>
+        </span>
+      ))}
+      <input
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        placeholder={t('settlements.tab.payouts.newPayer')}
+        aria-label={t('settlements.tab.payouts.newPayer')}
+        className="w-40 bg-surface-800 border border-surface-600 rounded px-2 py-1 text-xs text-surface-100 focus:outline-none focus:border-primary-500"
+      />
+      <Button
+        size="sm"
+        variant="ghost"
+        disabled={name.trim() === ''}
+        loading={create.isPending}
+        onClick={() => create.mutate()}
+      >
+        {t('settlements.tab.payouts.addPayer')}
+      </Button>
+      {create.isError && (
+        <span className="text-xs text-rose-400/80">{getErrorMessage(create.error)}</span>
+      )}
+    </div>
   )
 }
 

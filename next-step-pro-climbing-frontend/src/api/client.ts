@@ -65,6 +65,7 @@ import type {
   SettlementPayer,
   SettlementSection,
   SettlementOverview,
+  PayoutSource,
   EventDetail,
   EventParticipants,
   ReservationAdmin,
@@ -1103,6 +1104,38 @@ export const adminSettlementsApi = {
   // would make an empty January look like lost history. 'all' for everything.
   getOverview: (year?: string) =>
     fetchApi<SettlementOverview>(`/admin/settlements/overview${year ? `?year=${year}` : ''}`),
+
+  // Bulk payers: work a school or a club settles for a whole month at once.
+  listSources: () => fetchApi<PayoutSource[]>('/admin/settlements/sources'),
+
+  createSource: (name: string) =>
+    fetchApi<PayoutSource>('/admin/settlements/sources', {
+      method: 'POST',
+      body: JSON.stringify({ name }),
+    }),
+
+  setSourceArchived: (sourceId: string, archived: boolean) =>
+    fetchApi<void>(`/admin/settlements/sources/${sourceId}/archived?archived=${archived}`, {
+      method: 'PUT',
+    }),
+
+  // Null detaches the session. Its own path segment rather than a fourth {payerType} slot: that
+  // shape would collide with the per-payer write and resolve only by Spring's specificity rules.
+  assignSource: (target: SettlementTarget, targetId: string, sourceId: string | null) =>
+    fetchApi<void>(`/admin/settlements/${target}/${targetId}/payout-source`, {
+      method: 'PUT',
+      body: JSON.stringify({ sourceId }),
+    }),
+
+  // periodMonth is any day of the month the work was done in — the server snaps it to the first.
+  createPayout: (sourceId: string, periodMonth: string, amount: number, receivedOn: string) =>
+    fetchApi<string>('/admin/settlements/payouts', {
+      method: 'POST',
+      body: JSON.stringify({ sourceId, periodMonth, amount, receivedOn }),
+    }),
+
+  deletePayout: (payoutId: string) =>
+    fetchApi<void>(`/admin/settlements/payouts/${payoutId}`, { method: 'DELETE' }),
 }
 
 // Instructors (public)

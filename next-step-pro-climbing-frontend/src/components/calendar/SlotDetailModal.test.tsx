@@ -29,6 +29,15 @@ const updateTimeSlot = vi.fn().mockResolvedValue({ notifiedCount: 0, hadParticip
 let invitesPromise: Promise<InvitedUser[]>
 
 vi.mock('../../api/client', () => ({
+  adminSettlementsApi: {
+    getSection: vi.fn().mockResolvedValue({
+      targetDate: '2026-08-14', lines: [], payoutSourceId: null, payoutSourceName: null,
+    }),
+    listSources: vi.fn().mockResolvedValue([]),
+    assignSource: vi.fn().mockResolvedValue(undefined),
+    save: vi.fn().mockResolvedValue(undefined),
+    remove: vi.fn().mockResolvedValue(undefined),
+  },
   adminApi: {
     updateTimeSlot: (...args: unknown[]) => updateTimeSlot(...args),
     getSlotInvites: () => invitesPromise,

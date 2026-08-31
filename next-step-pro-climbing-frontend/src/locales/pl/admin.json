@@ -872,7 +872,16 @@
       "title": "Rozliczenia",
       "onlyYouHint": "Kwoty widzisz tylko Ty — uczestnicy nie widzą ich nigdzie.",
       "empty": "Nikt nie jest jeszcze zapisany na ten termin.",
-      "totals": "razem: {{total}} · zapłacone: {{paid}}"
+      "totals": "razem: {{total}} · zapłacone: {{paid}}",
+      "bulk": "Rozliczane zbiorczo · {{name}}",
+      "bulkHint": "Kwoty za te zajęcia nie wpisuje się per uczestnik — wypłatę za cały miesiąc wpisujesz w zakładce Rozliczenia.",
+      "changeBulk": "Zmień kontrahenta",
+      "clearBulk": "Usuń oznaczenie",
+      "markBulk": "Rozliczane zbiorczo…",
+      "bulkPayer": "Kontrahent",
+      "choosePayer": "— wybierz —",
+      "noPayers": "Brak kontrahentów. Dodaj go w zakładce Rozliczenia.",
+      "cancel": "Anuluj"
     },
     "line": {
       "people": "({{n}} os.)",
@@ -934,6 +943,23 @@
         "owed": "zaległe",
         "last": "ostatnia płatność",
         "scope": "Liczby w tej tabeli dotyczą wybranego okresu — zaległość z wcześniejszego roku widać wyżej, w „Do odzyskania”."
+      },
+      "payouts": {
+        "title": "Wypłaty zbiorcze",
+        "axis": "Przychód liczony wg daty wpływu. Stawka = wypłata ÷ liczba oznaczonych zajęć w danym miesiącu.",
+        "payer": "Kontrahent",
+        "period": "Okres",
+        "sessions": "zajęć",
+        "amount": "wypłata",
+        "rate": "stawka",
+        "awaiting": "brak wypłaty",
+        "add": "Dodaj wypłatę",
+        "periodField": "Za miesiąc (dowolny dzień)",
+        "amountField": "Kwota (netto)",
+        "receivedField": "Data wpływu",
+        "newPayer": "Nazwa kontrahenta",
+        "addPayer": "Dodaj",
+        "archive": "Zarchiwizuj — {{name}}"
       }
     }
   }

@@ -1,13 +1,13 @@
 import { useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { Coins, Lock, Trash2 } from 'lucide-react'
+import { Building2, Coins, Lock, Trash2 } from 'lucide-react'
 import { Button } from '../ui/Button'
 import { DateInput } from '../ui/DateInput'
 import { adminSettlementsApi } from '../../api/client'
 import { getErrorMessage } from '../../utils/errors'
 import { formatPln, parseAmount } from '../../utils/money'
-import type { SettlementLine, SettlementTarget } from '../../types'
+import type { PayoutSource, SettlementLine, SettlementTarget } from '../../types'
 
 interface SettlementSectionProps {
   target: SettlementTarget
@@ -45,11 +45,29 @@ export function SettlementSection({ target, targetId }: SettlementSectionProps) 
   const [drafts, setDrafts] = useState<Record<string, Draft>>({})
   const [bulkAmount, setBulkAmount] = useState('')
   const [invalidKeys, setInvalidKeys] = useState<string[]>([])
+  const [picking, setPicking] = useState(false)
 
   const queryKey = ['admin', 'settlements', target, targetId]
   const { data, isLoading } = useQuery({
     queryKey,
     queryFn: () => adminSettlementsApi.getSection(target, targetId),
+  })
+
+  // Only once the picker is open. The section loads on every slot an admin opens, and the payer
+  // list is of no use to the far more common case where nobody settles this in bulk.
+  const { data: sources } = useQuery({
+    queryKey: ['admin', 'settlements', 'sources'],
+    queryFn: () => adminSettlementsApi.listSources(),
+    enabled: picking,
+  })
+
+  const assignMutation = useMutation({
+    mutationFn: (sourceId: string | null) =>
+      adminSettlementsApi.assignSource(target, targetId, sourceId),
+    onSuccess: () => {
+      setPicking(false)
+      queryClient.invalidateQueries({ queryKey: ['admin', 'settlements'] })
+    },
   })
 
   const targetDate = data?.targetDate ?? ''
@@ -195,8 +213,54 @@ export function SettlementSection({ target, targetId }: SettlementSectionProps) 
         {t('settlements.section.onlyYouHint')}
       </p>
 
-      {lines.length === 0 ? (
-        <p className="text-sm text-surface-400">{t('settlements.section.empty')}</p>
+      {data?.payoutSourceId ? (
+        /* Settled in bulk: there is nobody here to charge per head, so the per-participant fields
+           are not merely disabled but absent — offering them would invite an invented amount. */
+        <div className="space-y-2">
+          <p className="flex items-center gap-2 text-sm text-surface-200">
+            <Building2 className="w-4 h-4 text-surface-400 shrink-0" />
+            {t('settlements.section.bulk', { name: data.payoutSourceName })}
+          </p>
+          <p className="text-xs text-surface-500">{t('settlements.section.bulkHint')}</p>
+          {picking ? (
+            <SourcePicker
+              sources={sources ?? []}
+              current={data.payoutSourceId}
+              pending={assignMutation.isPending}
+              onPick={(id) => assignMutation.mutate(id)}
+              onCancel={() => setPicking(false)}
+            />
+          ) : (
+            <div className="flex gap-2">
+              <Button size="sm" variant="ghost" onClick={() => setPicking(true)}>
+                {t('settlements.section.changeBulk')}
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => assignMutation.mutate(null)}
+                loading={assignMutation.isPending}
+              >
+                {t('settlements.section.clearBulk')}
+              </Button>
+            </div>
+          )}
+        </div>
+      ) : lines.length === 0 && !picking ? (
+        <div className="space-y-2">
+          <p className="text-sm text-surface-400">{t('settlements.section.empty')}</p>
+          <Button size="sm" variant="ghost" onClick={() => setPicking(true)}>
+            {t('settlements.section.markBulk')}
+          </Button>
+        </div>
+      ) : picking ? (
+        <SourcePicker
+          sources={sources ?? []}
+          current={null}
+          pending={assignMutation.isPending}
+          onPick={(id) => assignMutation.mutate(id)}
+          onCancel={() => setPicking(false)}
+        />
       ) : (
         <>
           {lines.length > 1 && (
@@ -317,7 +381,10 @@ export function SettlementSection({ target, targetId }: SettlementSectionProps) 
             <p className="text-sm text-rose-400/80">{getErrorMessage(saveMutation.error)}</p>
           )}
 
-          <div className="flex justify-end">
+          <div className="flex items-center justify-between gap-2">
+            <Button size="sm" variant="ghost" onClick={() => setPicking(true)}>
+              {t('settlements.section.markBulk')}
+            </Button>
             <Button
               size="sm"
               variant="primary"
@@ -329,6 +396,61 @@ export function SettlementSection({ target, targetId }: SettlementSectionProps) 
             </Button>
           </div>
         </>
+      )}
+    </div>
+  )
+}
+
+/**
+ * Picks which bulk payer a session belongs to.
+ *
+ * Archived payers are left out: they exist so old money keeps a name, not so new work can be filed
+ * under a collaboration that ended.
+ */
+function SourcePicker({
+  sources,
+  current,
+  pending,
+  onPick,
+  onCancel,
+}: {
+  sources: PayoutSource[]
+  current: string | null
+  pending: boolean
+  onPick: (sourceId: string) => void
+  onCancel: () => void
+}) {
+  const { t } = useTranslation('admin')
+  const active = sources.filter((source) => !source.archived || source.id === current)
+  const [choice, setChoice] = useState(current ?? '')
+
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <select
+        value={choice}
+        onChange={(e) => setChoice(e.target.value)}
+        aria-label={t('settlements.section.bulkPayer')}
+        className="bg-surface-800 border border-surface-600 rounded px-2 py-1 text-sm text-surface-100 focus:outline-none focus:border-primary-500"
+      >
+        <option value="">{t('settlements.section.choosePayer')}</option>
+        {active.map((source) => (
+          <option key={source.id} value={source.id}>{source.name}</option>
+        ))}
+      </select>
+      <Button
+        size="sm"
+        variant="primary"
+        disabled={choice === '' || choice === current}
+        loading={pending}
+        onClick={() => onPick(choice)}
+      >
+        {t('settlements.actions.save')}
+      </Button>
+      <Button size="sm" variant="ghost" onClick={onCancel}>
+        {t('settlements.section.cancel')}
+      </Button>
+      {active.length === 0 && (
+        <span className="text-xs text-surface-500">{t('settlements.section.noPayers')}</span>
       )}
     </div>
   )

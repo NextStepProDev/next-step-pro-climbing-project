@@ -870,7 +870,16 @@
       "title": "Settlements",
       "onlyYouHint": "Only you can see these amounts — participants never see them anywhere.",
       "empty": "Nobody is booked on this session yet.",
-      "totals": "total: {{total}} · paid: {{paid}}"
+      "totals": "total: {{total}} · paid: {{paid}}",
+      "bulk": "Settled in bulk · {{name}}",
+      "bulkHint": "These sessions are not priced per participant — record the monthly transfer on the Settlements tab.",
+      "changeBulk": "Change payer",
+      "clearBulk": "Remove mark",
+      "markBulk": "Settled in bulk…",
+      "bulkPayer": "Payer",
+      "choosePayer": "— choose —",
+      "noPayers": "No payers yet. Add one on the Settlements tab.",
+      "cancel": "Cancel"
     },
     "line": {
       "people": "({{n}} people)",
@@ -932,6 +941,23 @@
         "owed": "owed",
         "last": "last payment",
         "scope": "The figures here cover the selected period — a debt from an earlier year shows above, under “Outstanding”."
+      },
+      "payouts": {
+        "title": "Bulk payouts",
+        "axis": "Revenue counted on the date money arrived. Rate = transfer ÷ marked sessions in that month.",
+        "payer": "Payer",
+        "period": "Period",
+        "sessions": "sessions",
+        "amount": "transfer",
+        "rate": "rate",
+        "awaiting": "not paid yet",
+        "add": "Add a transfer",
+        "periodField": "For month (any day)",
+        "amountField": "Amount (net)",
+        "receivedField": "Received on",
+        "newPayer": "Payer name",
+        "addPayer": "Add",
+        "archive": "Archive — {{name}}"
       }
     }
   }

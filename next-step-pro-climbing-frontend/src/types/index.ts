@@ -596,6 +596,40 @@ export interface SettlementLine {
 export interface SettlementSection {
   targetDate: string
   lines: SettlementLine[]
+  // Set when this session is work somebody else settles in bulk. Then there is nobody to charge per
+  // head, so the section switches mode rather than offering fields that would invent an amount.
+  payoutSourceId: string | null
+  payoutSourceName: string | null
+}
+
+// A payer who settles a whole month at once — a school, a club. Archived ones still come back in the
+// list: the tab has to be able to name the source of money earned last season.
+export interface PayoutSource {
+  id: string
+  name: string
+  archived: boolean
+}
+
+// The bulk half of the tab. `total` is money that ARRIVED in the selected range, on the same axis as
+// settled amounts, so both halves of revenue add up to one monthly figure.
+export interface PayoutsSummary {
+  sources: PayoutSource[]
+  total: number
+  periods: PayoutPeriod[]
+}
+
+// What one month of work for one payer held, and what it earned.
+// ⚠️ Rows are the UNION of both sides: a month with sessions and no transfer yet is the invoice
+// nobody has paid, and listing only what arrived would hide exactly that.
+// `ratePerSession` is null whenever either half is missing — a rate needs both, and a zero would be
+// a claim rather than a gap.
+export interface PayoutPeriod {
+  sourceId: string
+  sourceName: string
+  month: string
+  sessions: number
+  amount: number
+  ratePerSession: number | null
 }
 
 // The Settlements tab, from one read. Assembled on the server even for figures the client could add
@@ -608,6 +642,7 @@ export interface SettlementOverview {
   outstanding: OutstandingSummary
   revenue: RevenueSummary
   people: PersonRevenue[]
+  payouts: PayoutsSummary
 }
 
 // Sessions that are over and were never priced at all. The gap this closes is that such a session
@@ -664,6 +699,9 @@ export interface RevenueSummary {
   months: MonthlyRevenue[]
   fromSlots: number
   fromEvents: number
+  // Work somebody else settled in bulk. Three genuinely different ways of earning, and this is the
+  // one whose price you do not set.
+  fromPayouts: number
 }
 
 // `month` is the first day of the month, like MonthlyRegistrations — a label, not a moment, so it
