@@ -13,11 +13,12 @@ import { adminSettlementsApi } from '../../api/client'
 import { getErrorMessage } from '../../utils/errors'
 import { parseCalendarDate, todayInWarsaw } from '../../utils/calendarDate'
 import { useDateLocale } from '../../utils/dateFnsLocale'
-import { formatPln, parseAmount } from '../../utils/money'
+import { MAX_PAYOUT_AMOUNT, formatPln, parseAmount } from '../../utils/money'
 import type {
   MonthlyRevenue,
   OutstandingItem,
   PersonRevenue,
+  PayoutPeriod,
   PayoutSource,
   PayoutsSummary,
   SettlementOverview,
@@ -42,6 +43,7 @@ import type {
 export function AdminSettlementsPanel() {
   const { t } = useTranslation('admin')
   const [searchParams, setSearchParams] = useSearchParams()
+  const queryClient = useQueryClient()
 
   // No parameter = the newest year holding data, decided by the server. An empty January of a new
   // year looks exactly like lost history, so "current year" is the wrong default.
@@ -51,6 +53,8 @@ export function AdminSettlementsPanel() {
     queryKey: ['admin', 'settlements', 'overview', year ?? 'default'],
     queryFn: () => adminSettlementsApi.getOverview(year),
   })
+
+  const refresh = () => queryClient.invalidateQueries({ queryKey: ['admin', 'settlements'] })
 
   const selectYear = (next: string) => {
     const params = new URLSearchParams(searchParams)
@@ -62,8 +66,11 @@ export function AdminSettlementsPanel() {
   if (isLoading) return <div className="py-16 flex justify-center"><LoadingSpinner /></div>
   if (isError || !data) return <QueryError error={error} onRetry={() => refetch()} />
 
+  // Every source of content, not just settlements: a tab used only for bulk work has no settlement
+  // years and no debts, and would otherwise announce itself as empty over a full payouts table.
   const nothingAtAll =
     data.years.length === 0 && data.outstanding.count === 0 && data.unpriced.count === 0
+    && data.payouts.periods.length === 0 && data.payouts.sources.length === 0
 
   return (
     <div className="space-y-4">
@@ -87,8 +94,12 @@ export function AdminSettlementsPanel() {
       </div>
 
       {nothingAtAll ? (
-        <div className="bg-surface-900 rounded-xl border border-surface-800 p-8 text-center text-surface-400">
-          {t('settlements.tab.empty')}
+        <div className="bg-surface-900 rounded-xl border border-surface-800 p-8 space-y-4 text-center text-surface-400">
+          <p>{t('settlements.tab.empty')}</p>
+          <p className="text-xs text-surface-500">{t('settlements.tab.payouts.setupHint')}</p>
+          <div className="flex justify-center">
+            <SourceManager sources={data.payouts.sources} onChanged={refresh} />
+          </div>
         </div>
       ) : (
         <>
@@ -494,7 +505,6 @@ function RevenueChart({ months }: { months: MonthlyRevenue[] }) {
 function PayoutsCard({ payouts }: { payouts: PayoutsSummary }) {
   const { t } = useTranslation('admin')
   const money = useMoney()
-  const locale = useDateLocale()
   const queryClient = useQueryClient()
   const [adding, setAdding] = useState(false)
 
@@ -529,28 +539,7 @@ function PayoutsCard({ payouts }: { payouts: PayoutsSummary }) {
             </thead>
             <tbody className="divide-y divide-surface-800">
               {payouts.periods.map((period) => (
-                <tr key={`${period.sourceId}:${period.month}`}>
-                  <td className="py-2 text-surface-200">{period.sourceName}</td>
-                  <td className="py-2 text-surface-400">
-                    {format(parseCalendarDate(period.month), 'LLLL yyyy', { locale })}
-                  </td>
-                  <td className="py-2 text-right text-surface-400 tabular-nums">{period.sessions}</td>
-                  <td className="py-2 text-right tabular-nums">
-                    {period.amount > 0 ? (
-                      <span className="text-surface-200">{money(period.amount)}</span>
-                    ) : (
-                      /* Work done, nothing received: the row people actually come here for. */
-                      <span className="text-amber-500">{t('settlements.tab.payouts.awaiting')}</span>
-                    )}
-                  </td>
-                  <td className="py-2 text-right text-surface-200 tabular-nums">
-                    {period.ratePerSession === null ? (
-                      <span className="text-surface-500">—</span>
-                    ) : (
-                      money(period.ratePerSession)
-                    )}
-                  </td>
-                </tr>
+                <PayoutPeriodRow key={`${period.sourceId}:${period.month}`} period={period} onChanged={refresh} />
               ))}
             </tbody>
           </table>
@@ -578,6 +567,86 @@ function PayoutsCard({ payouts }: { payouts: PayoutsSummary }) {
   )
 }
 
+/**
+ * One month of one payer, expandable into the transfers it adds up.
+ *
+ * The expansion is not decoration: the row is an aggregate, so without a way down to the individual
+ * arrivals a mistyped 14000 for 1400 would be permanent.
+ */
+function PayoutPeriodRow({ period, onChanged }: { period: PayoutPeriod; onChanged: () => void }) {
+  const { t } = useTranslation('admin')
+  const money = useMoney()
+  const locale = useDateLocale()
+  const [open, setOpen] = useState(false)
+
+  const remove = useMutation({
+    mutationFn: (payoutId: string) => adminSettlementsApi.deletePayout(payoutId),
+    onSuccess: onChanged,
+  })
+
+  return (
+    <>
+      <tr>
+        <td className="py-2 text-surface-200">{period.sourceName}</td>
+        <td className="py-2 text-surface-400">
+          {period.transfers.length > 0 ? (
+            <button
+              type="button"
+              onClick={() => setOpen((v) => !v)}
+              aria-expanded={open}
+              className="hover:text-primary-300 transition-colors"
+            >
+              {format(parseCalendarDate(period.month), 'LLLL yyyy', { locale })}
+            </button>
+          ) : (
+            format(parseCalendarDate(period.month), 'LLLL yyyy', { locale })
+          )}
+        </td>
+        <td className="py-2 text-right text-surface-400 tabular-nums">{period.sessions}</td>
+        <td className="py-2 text-right tabular-nums">
+          {period.amount > 0 ? (
+            <span className="text-surface-200">{money(period.amount)}</span>
+          ) : (
+            /* Work done, nothing received: the row people actually come here for. */
+            <span className="text-amber-500">{t('settlements.tab.payouts.awaiting')}</span>
+          )}
+        </td>
+        <td className="py-2 text-right text-surface-200 tabular-nums">
+          {period.ratePerSession === null ? (
+            <span className="text-surface-500">—</span>
+          ) : (
+            money(period.ratePerSession)
+          )}
+        </td>
+      </tr>
+      {open && period.transfers.map((transfer) => (
+        <tr key={transfer.id} className="text-xs">
+          <td />
+          <td className="py-1 pl-4 text-surface-500">
+            {t('settlements.tab.payouts.received', {
+              date: format(parseCalendarDate(transfer.receivedOn), 'dd.MM.yyyy', { locale }),
+            })}
+          </td>
+          <td />
+          <td className="py-1 text-right text-surface-300 tabular-nums">{money(transfer.amount)}</td>
+          <td className="py-1 text-right">
+            <button
+              type="button"
+              onClick={() => remove.mutate(transfer.id)}
+              aria-label={t('settlements.tab.payouts.deleteTransfer', {
+                amount: money(transfer.amount),
+              })}
+              className="text-surface-500 hover:text-rose-400 transition-colors"
+            >
+              ×
+            </button>
+          </td>
+        </tr>
+      ))}
+    </>
+  )
+}
+
 /** Two dates because they answer different questions — what the money is for, and when it landed. */
 function PayoutForm({
   sources,
@@ -594,7 +663,7 @@ function PayoutForm({
   const [amount, setAmount] = useState('')
   const [receivedOn, setReceivedOn] = useState('')
 
-  const parsed = parseAmount(amount)
+  const parsed = parseAmount(amount, MAX_PAYOUT_AMOUNT)
   const ready = sourceId !== '' && periodMonth !== '' && receivedOn !== '' && parsed !== null
 
   const create = useMutation({
@@ -667,10 +736,18 @@ function PayoutForm({
   )
 }
 
-/** Adding and archiving payers, inline: a separate admin screen for a list of three names is worse. */
+/**
+ * Adding, renaming, archiving and restoring payers, inline — a separate admin screen for a list of
+ * three names would cost more navigation than it saves.
+ *
+ * Archived ones stay listed and restorable. Archiving is otherwise a one-way door, and the only way
+ * back would be creating a namesake, which orphans the history under the old row.
+ */
 function SourceManager({ sources, onChanged }: { sources: PayoutSource[]; onChanged: () => void }) {
   const { t } = useTranslation('admin')
   const [name, setName] = useState('')
+  const [editing, setEditing] = useState<string | null>(null)
+  const [draft, setDraft] = useState('')
 
   const create = useMutation({
     mutationFn: () => adminSettlementsApi.createSource(name.trim()),
@@ -679,29 +756,78 @@ function SourceManager({ sources, onChanged }: { sources: PayoutSource[]; onChan
       onChanged()
     },
   })
-  const archive = useMutation({
-    mutationFn: (sourceId: string) => adminSettlementsApi.setSourceArchived(sourceId, true),
+  const rename = useMutation({
+    mutationFn: (sourceId: string) => adminSettlementsApi.renameSource(sourceId, draft.trim()),
+    onSuccess: () => {
+      setEditing(null)
+      onChanged()
+    },
+  })
+  const setArchived = useMutation({
+    mutationFn: ({ id, archived }: { id: string; archived: boolean }) =>
+      adminSettlementsApi.setSourceArchived(id, archived),
     onSuccess: onChanged,
   })
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      {sources.filter((source) => !source.archived).map((source) => (
-        <span
-          key={source.id}
-          className="inline-flex items-center gap-1 rounded-full border border-surface-700 px-2 py-0.5 text-xs text-surface-300"
-        >
-          {source.name}
-          <button
-            type="button"
-            onClick={() => archive.mutate(source.id)}
-            aria-label={t('settlements.tab.payouts.archive', { name: source.name })}
-            className="text-surface-500 hover:text-rose-400 transition-colors"
+      {sources.map((source) =>
+        editing === source.id ? (
+          <span key={source.id} className="inline-flex items-center gap-1">
+            <input
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              aria-label={t('settlements.tab.payouts.rename', { name: source.name })}
+              className="w-40 bg-surface-800 border border-surface-600 rounded px-2 py-1 text-xs text-surface-100 focus:outline-none focus:border-primary-500"
+            />
+            <Button
+              size="sm"
+              variant="ghost"
+              disabled={draft.trim() === ''}
+              loading={rename.isPending}
+              onClick={() => rename.mutate(source.id)}
+            >
+              {t('settlements.actions.save')}
+            </Button>
+            <Button size="sm" variant="ghost" onClick={() => setEditing(null)}>
+              {t('settlements.section.cancel')}
+            </Button>
+          </span>
+        ) : (
+          <span
+            key={source.id}
+            className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs ${
+              source.archived
+                ? 'border-surface-800 text-surface-500'
+                : 'border-surface-700 text-surface-300'
+            }`}
           >
-            ×
-          </button>
-        </span>
-      ))}
+            <button
+              type="button"
+              onClick={() => {
+                setEditing(source.id)
+                setDraft(source.name)
+              }}
+              className="hover:text-primary-300 transition-colors"
+            >
+              {source.name}
+            </button>
+            <button
+              type="button"
+              onClick={() => setArchived.mutate({ id: source.id, archived: !source.archived })}
+              aria-label={t(
+                source.archived
+                  ? 'settlements.tab.payouts.restore'
+                  : 'settlements.tab.payouts.archive',
+                { name: source.name },
+              )}
+              className="text-surface-500 hover:text-rose-400 transition-colors"
+            >
+              {source.archived ? '↩' : '×'}
+            </button>
+          </span>
+        ),
+      )}
       <input
         value={name}
         onChange={(e) => setName(e.target.value)}
@@ -718,8 +844,10 @@ function SourceManager({ sources, onChanged }: { sources: PayoutSource[]; onChan
       >
         {t('settlements.tab.payouts.addPayer')}
       </Button>
-      {create.isError && (
-        <span className="text-xs text-rose-400/80">{getErrorMessage(create.error)}</span>
+      {(create.isError || rename.isError) && (
+        <span className="text-xs text-rose-400/80">
+          {getErrorMessage(create.error ?? rename.error)}
+        </span>
       )}
     </div>
   )

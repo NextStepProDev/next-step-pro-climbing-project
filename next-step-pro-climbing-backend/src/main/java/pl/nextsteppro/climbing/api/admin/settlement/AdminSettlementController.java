@@ -110,16 +110,6 @@ public class AdminSettlementController {
         return ResponseEntity.ok(payoutService.createPayout(request));
     }
 
-    @Operation(summary = "Correct a transfer",
-        description = "The payer is fixed at creation: moving a transfer between payers would rewrite "
-            + "two months' rates at once, so the honest correction is to delete and re-enter.")
-    @PutMapping("/payouts/{payoutId}")
-    public ResponseEntity<Void> updatePayout(@PathVariable UUID payoutId,
-                                             @Valid @RequestBody SavePayoutRequest request) {
-        payoutService.updatePayout(payoutId, request);
-        return ResponseEntity.noContent().build();
-    }
-
     @Operation(summary = "Delete a transfer")
     @DeleteMapping("/payouts/{payoutId}")
     public ResponseEntity<Void> deletePayout(@PathVariable UUID payoutId) {

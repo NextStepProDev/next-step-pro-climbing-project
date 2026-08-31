@@ -959,7 +959,12 @@
         "receivedField": "Received on",
         "newPayer": "Payer name",
         "addPayer": "Add",
-        "archive": "Archive — {{name}}"
+        "archive": "Archive — {{name}}",
+        "setupHint": "Extra classes settled once a month? Add a payer here, then mark a session with it in the calendar.",
+        "received": "arrived {{date}}",
+        "deleteTransfer": "Delete the transfer of {{amount}}",
+        "restore": "Restore — {{name}}",
+        "rename": "Name — {{name}}"
       }
     }
   }

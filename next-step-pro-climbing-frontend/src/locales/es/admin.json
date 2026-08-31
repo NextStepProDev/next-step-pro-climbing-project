@@ -959,7 +959,12 @@
         "receivedField": "Fecha de entrada",
         "newPayer": "Nombre del pagador",
         "addPayer": "Añadir",
-        "archive": "Archivar — {{name}}"
+        "archive": "Archivar — {{name}}",
+        "setupHint": "¿Sesiones extra liquidadas una vez al mes? Añade aquí un pagador y luego marca una sesión con él en el calendario.",
+        "received": "entró el {{date}}",
+        "deleteTransfer": "Eliminar el pago de {{amount}}",
+        "restore": "Restaurar — {{name}}",
+        "rename": "Nombre — {{name}}"
       }
     }
   }

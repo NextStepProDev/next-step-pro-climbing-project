@@ -297,6 +297,9 @@ record PayoutsDto(
  * @param ratePerSession the point of the whole feature: what the place actually pays per session.
  *                       {@code null} when either half is missing, because a rate needs both a
  *                       numerator and a denominator and a zero would be a claim rather than a gap.
+ * @param transfers      the individual arrivals this row adds up. Carried so a mistyped figure can
+ *                       be removed: without them the feature is write-only, and a 14000 entered for
+ *                       1400 would be permanent.
  */
 record PayoutPeriodDto(
     UUID sourceId,
@@ -304,5 +307,9 @@ record PayoutPeriodDto(
     LocalDate month,
     int sessions,
     BigDecimal amount,
-    @Nullable BigDecimal ratePerSession
+    @Nullable BigDecimal ratePerSession,
+    List<PayoutEntryDto> transfers
 ) {}
+
+/** One arrival, addressable so it can be deleted. */
+record PayoutEntryDto(UUID id, BigDecimal amount, LocalDate receivedOn) {}

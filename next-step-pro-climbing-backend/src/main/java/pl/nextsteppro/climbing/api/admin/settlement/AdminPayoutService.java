@@ -115,6 +115,11 @@ public class AdminPayoutService {
             }
             return;
         }
+        // Refuses the CHANGE, never the state: a session already priced per participant keeps those
+        // amounts, and marking it in bulk would hide them while they went on counting.
+        if (settlementService.hasPricedParticipants(target, targetId)) {
+            throw new IllegalArgumentException(msg.get("admin.payout.session.has.amounts"));
+        }
         requireSource(sourceId);
         switch (target) {
             case SLOT -> sessionPayoutRepository.assignSlot(targetId, sourceId);
@@ -130,14 +135,6 @@ public class AdminPayoutService {
             Payout.normalizePeriod(request.periodMonth()),
             amountOf(request),
             request.receivedOn())).getId();
-    }
-
-    public void updatePayout(UUID payoutId, SavePayoutRequest request) {
-        Payout payout = payoutRepository.findById(payoutId)
-            .orElseThrow(() -> new IllegalArgumentException(msg.get("admin.payout.not.found")));
-        // The source is fixed at creation: moving a transfer between payers would silently rewrite
-        // two months' rates at once, and the honest correction is to delete it and enter it again.
-        payout.update(Payout.normalizePeriod(request.periodMonth()), amountOf(request), request.receivedOn());
     }
 
     public void deletePayout(UUID payoutId) {

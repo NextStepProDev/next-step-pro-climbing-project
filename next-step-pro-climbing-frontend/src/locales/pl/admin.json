@@ -961,7 +961,12 @@
         "receivedField": "Data wpływu",
         "newPayer": "Nazwa kontrahenta",
         "addPayer": "Dodaj",
-        "archive": "Zarchiwizuj — {{name}}"
+        "archive": "Zarchiwizuj — {{name}}",
+        "setupHint": "Zajęcia dodatkowe rozliczane raz na miesiąc? Dodaj tu kontrahenta, a potem oznacz nim termin w kalendarzu.",
+        "received": "wpłynęło {{date}}",
+        "deleteTransfer": "Usuń wypłatę {{amount}}",
+        "restore": "Przywróć — {{name}}",
+        "rename": "Nazwa — {{name}}"
       }
     }
   }

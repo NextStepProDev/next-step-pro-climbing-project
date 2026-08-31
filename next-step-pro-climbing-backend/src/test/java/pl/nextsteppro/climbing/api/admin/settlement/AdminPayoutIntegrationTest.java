@@ -244,6 +244,74 @@ class AdminPayoutIntegrationTest extends BaseIntegrationTest {
     }
 
     @Test
+    @DisplayName("shouldRefuseToMarkASessionThatAlreadyHasPerParticipantAmounts")
+    void shouldRefuseToMarkASessionThatAlreadyHasPerParticipantAmounts() {
+        User pupil = saveUser("pupil2@example.com");
+        TimeSlot slot = timeSlotRepository.saveAndFlush(
+            new TimeSlot(TODAY.plusDays(3), LocalTime.of(16, 0), LocalTime.of(17, 0), 10));
+        reservationRepository.saveAndFlush(new Reservation(pupil, slot));
+        settlementService.save("slot", slot.getId(), "user", pupil.getId(),
+            new SaveSettlementRequest(new BigDecimal("150"), null));
+
+        // ⚠️ Otherwise the amount stays in the table, the section stops showing it, and it goes on
+        // counting in revenue and in outstanding debt — money visible in the totals and nowhere else.
+        assertThrows(IllegalArgumentException.class, () -> payoutService.assignSource(
+            "slot", slot.getId(), new AssignPayoutSourceRequest(school)));
+
+        settlementService.delete("slot", slot.getId(), "user", pupil.getId());
+        payoutService.assignSource("slot", slot.getId(), new AssignPayoutSourceRequest(school));
+        assertEquals(school, settlementService.getSection("slot", slot.getId()).payoutSourceId(),
+            "Clearing the amounts is what unblocks it — the guard rejects the change, not the state");
+    }
+
+    @Test
+    @DisplayName("shouldRefuseAPerParticipantAmountOnASessionSettledInBulk")
+    void shouldRefuseAPerParticipantAmountOnASessionSettledInBulk() {
+        User pupil = saveUser("pupil3@example.com");
+        TimeSlot slot = timeSlotRepository.saveAndFlush(
+            new TimeSlot(TODAY.plusDays(3), LocalTime.of(16, 0), LocalTime.of(17, 0), 10));
+        reservationRepository.saveAndFlush(new Reservation(pupil, slot));
+        payoutService.assignSource("slot", slot.getId(), new AssignPayoutSourceRequest(school));
+
+        // The mirror direction. The front hides the fields, but the endpoint must not depend on that.
+        assertThrows(IllegalArgumentException.class, () -> settlementService.save(
+            "slot", slot.getId(), "user", pupil.getId(),
+            new SaveSettlementRequest(new BigDecimal("150"), null)));
+    }
+
+    @Test
+    @DisplayName("shouldListTheIndividualTransfersSoAMistypedOneCanBeRemoved")
+    void shouldListTheIndividualTransfersSoAMistypedOneCanBeRemoved() {
+        assignSlot(OCTOBER.plusDays(1), school);
+        payoutService.createPayout(new SavePayoutRequest(
+            school, OCTOBER, new BigDecimal("1400"), LocalDate.of(2026, 11, 8)));
+        UUID typo = payoutService.createPayout(new SavePayoutRequest(
+            school, OCTOBER, new BigDecimal("14000"), LocalDate.of(2026, 11, 9)));
+
+        PayoutPeriodDto before = periodOf(LocalDate.of(2026, 11, 30), OCTOBER);
+        assertEquals(2, before.transfers().size(), "Write-only would make a fat finger permanent");
+
+        payoutService.deletePayout(typo);
+
+        assertEquals(0, new BigDecimal("1400.00")
+            .compareTo(periodOf(LocalDate.of(2026, 11, 30), OCTOBER).amount()));
+    }
+
+    @Test
+    @DisplayName("shouldCountEveryTransferInTheEverythingViewNotJustTheChartedMonths")
+    void shouldCountEveryTransferInTheEverythingViewNotJustTheChartedMonths() {
+        // Older than the twelve months the chart rolls over.
+        payoutService.createPayout(new SavePayoutRequest(
+            school, LocalDate.of(2024, 3, 1), new BigDecimal("900"), LocalDate.of(2024, 4, 5)));
+
+        RevenueDto revenue = stats.buildOverview("all", LocalDate.of(2026, 11, 30)).revenue();
+
+        // Settlements are read all-time in this view, so clipping transfers to the chart made the
+        // all-time total quietly short.
+        assertEquals(0, new BigDecimal("900.00").compareTo(revenue.fromPayouts()));
+    }
+
+    @Test
     @DisplayName("shouldRejectAnUnknownPayerAndAnAmountOutOfRange")
     void shouldRejectAnUnknownPayerAndAnAmountOutOfRange() {
         assertThrows(IllegalArgumentException.class, () -> payoutService.createPayout(

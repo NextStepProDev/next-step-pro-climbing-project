@@ -630,6 +630,15 @@ export interface PayoutPeriod {
   sessions: number
   amount: number
   ratePerSession: number | null
+  // The individual arrivals this row adds up. Carried so a mistyped figure can be removed —
+  // without them the feature is write-only and a 14000 entered for 1400 would be permanent.
+  transfers: PayoutEntry[]
+}
+
+export interface PayoutEntry {
+  id: string
+  amount: number
+  receivedOn: string
 }
 
 // The Settlements tab, from one read. Assembled on the server even for figures the client could add

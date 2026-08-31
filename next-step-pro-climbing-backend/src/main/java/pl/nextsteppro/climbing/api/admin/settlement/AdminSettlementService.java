@@ -107,6 +107,9 @@ public class AdminSettlementService {
         SettlementPayer payer = parsePayer(payerSegment);
         requireTargetExists(target, targetId);
 
+        if (isSettledInBulk(target, targetId)) {
+            throw new IllegalArgumentException(msg.get("admin.settlement.session.settled.in.bulk"));
+        }
         BigDecimal amount = Settlement.normalizeAmount(
             request.amount(), msg.get("admin.settlement.amount.invalid"));
         LocalDate settledOn = request.settledOn();
@@ -343,6 +346,30 @@ public class AdminSettlementService {
         SettlementTarget target = parseTarget(targetSegment);
         requireTargetExists(target, targetId);
         return target;
+    }
+
+    /**
+     * ⚠️ A session is priced ONE way or the other, never both — and this guard is what makes that
+     * true rather than merely intended.
+     *
+     * <p>Marking an already-priced session as settled in bulk used to leave those per-participant
+     * amounts in the table. The section then switched mode and stopped showing them, but they went
+     * on counting in revenue and in outstanding debt: money visible in the totals and nowhere else,
+     * which is the hardest kind of wrong figure to ever notice.
+     */
+    boolean hasPricedParticipants(SettlementTarget target, UUID targetId) {
+        return !(switch (target) {
+            case SLOT -> settlementRepository.findRowsForSlot(targetId);
+            case EVENT -> settlementRepository.findRowsForEvent(targetId);
+        }).isEmpty();
+    }
+
+    /** True when this session is settled in bulk, so nobody on it may be charged per head. */
+    boolean isSettledInBulk(SettlementTarget target, UUID targetId) {
+        return switch (target) {
+            case SLOT -> sessionPayoutRepository.findSourceIdForSlot(targetId).isPresent();
+            case EVENT -> sessionPayoutRepository.findSourceIdForEvent(targetId).isPresent();
+        }; 
     }
 
     private void requireTargetExists(SettlementTarget target, UUID targetId) {

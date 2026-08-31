@@ -29,4 +29,12 @@ public interface PayoutRepository extends JpaRepository<Payout, UUID> {
      */
     @Query(ROW_SELECT + " WHERE p.receivedOn BETWEEN :from AND :to")
     List<PayoutRow> findByReceivedBetween(@Param("from") LocalDate from, @Param("to") LocalDate to);
+
+    /**
+     * Every transfer ever. Used by the "everything" view, where settlements are read all-time too —
+     * clipping one side to the charted window and not the other made the all-time total quietly
+     * short by whatever arrived before it.
+     */
+    @Query(ROW_SELECT)
+    List<PayoutRow> findAllRows();
 }

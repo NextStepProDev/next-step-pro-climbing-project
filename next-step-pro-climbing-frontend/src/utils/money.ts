@@ -9,6 +9,8 @@
 /** Mirrors `chk_settlements_amount_range` in V92 and the Bean Validation bounds on the request. */
 export const MIN_AMOUNT = 0
 export const MAX_AMOUNT = 100000
+/** A bulk transfer covers a month of work, so it has its own, higher ceiling (V93). */
+export const MAX_PAYOUT_AMOUNT = 1000000
 
 /**
  * Renders an amount the way the viewer's language writes money.
@@ -33,12 +35,14 @@ export function formatPln(amount: number, language: string): string {
  * amount — including blank, so the caller can tell "cleared the field" from "typed a zero", which
  * are different states: no row versus free of charge.
  */
-export function parseAmount(input: string): number | null {
+export function parseAmount(input: string, max: number = MAX_AMOUNT): number | null {
   const normalized = input.replace(/\s/g, '').replace(',', '.')
   if (normalized === '') return null
   const value = Number(normalized)
   if (!Number.isFinite(value)) return null
-  if (value < MIN_AMOUNT || value > MAX_AMOUNT) return null
+  // The ceiling is a parameter because the two money models have different ones: reusing the
+  // settlement cap for a transfer left the Save button disabled with nothing on screen saying why.
+  if (value < MIN_AMOUNT || value > max) return null
   // Two decimals, matching NUMERIC(10,2): rounding here rather than letting the server do it
   // silently means the field shows what will actually be stored.
   return Math.round(value * 100) / 100

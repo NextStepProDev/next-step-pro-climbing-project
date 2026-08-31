@@ -16,6 +16,7 @@ const save = vi.fn()
 const createPayout = vi.fn()
 const settleOutstanding = vi.fn()
 const createSource = vi.fn()
+const deletePayout = vi.fn()
 const setSourceArchived = vi.fn()
 
 vi.mock('../../api/client', () => ({
@@ -25,6 +26,7 @@ vi.mock('../../api/client', () => ({
     createPayout: (...args: unknown[]) => createPayout(...args),
     settleOutstanding: (...args: unknown[]) => settleOutstanding(...args),
     createSource: (...args: unknown[]) => createSource(...args),
+    deletePayout: (...args: unknown[]) => deletePayout(...args),
     setSourceArchived: (...args: unknown[]) => setSourceArchived(...args),
   },
 }))
@@ -70,6 +72,7 @@ describe('AdminSettlementsPanel', () => {
     createPayout.mockReset().mockResolvedValue('payout-1')
     settleOutstanding.mockReset().mockResolvedValue({ settled: 2 })
     createSource.mockReset().mockResolvedValue({ id: 'src-2', name: 'Klub XYZ', archived: false })
+    deletePayout.mockReset().mockResolvedValue(undefined)
     setSourceArchived.mockReset().mockResolvedValue(undefined)
   })
 
@@ -309,10 +312,11 @@ describe('AdminSettlementsPanel', () => {
           {
             sourceId: 'src-1', sourceName: 'SP nr 12', month: '2026-10-01',
             sessions: 12, amount: 1400, ratePerSession: 116.67,
+            transfers: [{ id: 'p-1', amount: 1400, receivedOn: '2026-11-08' }],
           },
           {
             sourceId: 'src-1', sourceName: 'SP nr 12', month: '2026-11-01',
-            sessions: 4, amount: 0, ratePerSession: null,
+            sessions: 4, amount: 0, ratePerSession: null, transfers: [],
           },
         ],
       },
@@ -349,6 +353,50 @@ describe('AdminSettlementsPanel', () => {
     await waitFor(() =>
       expect(createPayout).toHaveBeenCalledWith('src-1', '2026-10-15', 1400, '2026-11-08'),
     )
+  })
+
+  it('offers a way to add the first payer when the tab is otherwise empty', async () => {
+    getOverview.mockResolvedValue(makeOverview({ years: [], year: 2026 }))
+    const user = userEvent.setup()
+
+    renderPanel()
+
+    // ⚠️ The payer manager used to live only inside a card that hides itself when there are no
+    // payers, so the first one could never be created and the session picker pointed at a card
+    // that was not there.
+    await user.type(
+      await screen.findByLabelText('settlements.tab.payouts.newPayer'),
+      'SP nr 12',
+    )
+    await user.click(screen.getByRole('button', { name: 'settlements.tab.payouts.addPayer' }))
+
+    await waitFor(() => expect(createSource).toHaveBeenCalledWith('SP nr 12'))
+  })
+
+  it('lets a mistyped transfer be deleted', async () => {
+    getOverview.mockResolvedValue(makeOverview({
+      payouts: {
+        sources: [{ id: 'src-1', name: 'SP nr 12', archived: false }],
+        total: 15400,
+        periods: [{
+          sourceId: 'src-1', sourceName: 'SP nr 12', month: '2026-10-01',
+          sessions: 12, amount: 15400, ratePerSession: 1283.33,
+          transfers: [
+            { id: 'p-1', amount: 1400, receivedOn: '2026-11-08' },
+            { id: 'p-2', amount: 14000, receivedOn: '2026-11-09' },
+          ],
+        }],
+      },
+    }))
+    const user = userEvent.setup()
+
+    renderPanel()
+
+    // The row is an aggregate, so without a way down to the arrivals a fat finger is permanent.
+    await user.click(await screen.findByRole('button', { expanded: false }))
+    await user.click(screen.getAllByRole('button', { name: 'settlements.tab.payouts.deleteTransfer' })[1])
+
+    await waitFor(() => expect(deletePayout).toHaveBeenCalledWith('p-2'))
   })
 
   it('hides the bulk card entirely until there is a payer or a period', async () => {

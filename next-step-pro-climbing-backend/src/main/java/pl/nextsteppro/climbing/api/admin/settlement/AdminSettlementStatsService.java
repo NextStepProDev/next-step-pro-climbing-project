@@ -115,8 +115,11 @@ public class AdminSettlementStatsService {
         // month total stays one number no matter which way the money came in.
         LocalDate windowFrom = buckets.getFirst().atDay(1);
         LocalDate windowTo = buckets.getLast().atEndOfMonth();
-        List<PayoutRow> receivedPayouts = payoutRepository.findByReceivedBetween(
-            year == null ? windowFrom : from, year == null ? windowTo : to);
+        // ⚠️ All-time when no year is chosen, matching findAllRows above. Reading transfers only
+        // for the twelve charted months while settlements covered everything made the total short.
+        List<PayoutRow> receivedPayouts = year == null
+            ? payoutRepository.findAllRows()
+            : payoutRepository.findByReceivedBetween(from, to);
 
         return new SettlementOverviewDto(
             years,
@@ -328,7 +331,7 @@ public class AdminSettlementStatsService {
 
         Map<String, Period> byKey = new LinkedHashMap<>();
         for (PayoutRow payout : payoutRepository.findByPeriodBetween(windowFrom, windowTo)) {
-            periodOf(byKey, names, payout.sourceId(), payout.periodMonth()).addAmount(payout.amount());
+            periodOf(byKey, names, payout.sourceId(), payout.periodMonth()).add(payout);
         }
         for (SessionPayoutRow session : sessionPayoutRepository.findSessionsBetween(windowFrom, windowTo)) {
             periodOf(byKey, names, session.sourceId(), session.date().withDayOfMonth(1)).addSession();
@@ -343,7 +346,7 @@ public class AdminSettlementStatsService {
             .sorted(Comparator.comparing((Period period) -> period.month).reversed()
                 .thenComparing(period -> period.sourceName, String.CASE_INSENSITIVE_ORDER))
             .map(period -> new PayoutPeriodDto(period.sourceId, period.sourceName, period.month,
-                period.sessions, scale(period.amount), period.rate()))
+                period.sessions, scale(period.amount), period.rate(), period.transfers))
             .toList();
 
         return new PayoutsDto(sources, scale(total), periods);
@@ -361,6 +364,7 @@ public class AdminSettlementStatsService {
         private final LocalDate month;
         private BigDecimal amount = BigDecimal.ZERO;
         private int sessions;
+        private final List<PayoutEntryDto> transfers = new ArrayList<>();
 
         private Period(UUID sourceId, String sourceName, LocalDate month) {
             this.sourceId = sourceId;
@@ -368,8 +372,9 @@ public class AdminSettlementStatsService {
             this.month = month;
         }
 
-        private void addAmount(BigDecimal value) {
-            amount = amount.add(value);
+        private void add(PayoutRow payout) {
+            amount = amount.add(payout.amount());
+            transfers.add(new PayoutEntryDto(payout.id(), payout.amount(), payout.receivedOn()));
         }
 
         private void addSession() {

@@ -1122,6 +1122,12 @@ export const adminSettlementsApi = {
       body: JSON.stringify({ name }),
     }),
 
+  renameSource: (sourceId: string, name: string) =>
+    fetchApi<void>(`/admin/settlements/sources/${sourceId}`, {
+      method: 'PUT',
+      body: JSON.stringify({ name }),
+    }),
+
   setSourceArchived: (sourceId: string, archived: boolean) =>
     fetchApi<void>(`/admin/settlements/sources/${sourceId}/archived?archived=${archived}`, {
       method: 'PUT',
