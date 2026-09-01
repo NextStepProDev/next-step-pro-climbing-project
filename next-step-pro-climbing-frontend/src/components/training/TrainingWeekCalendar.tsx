@@ -141,7 +141,7 @@ export function TrainingWeekCalendar({
       <div ref={scrollRef} className="overflow-x-auto">
         <div className="min-w-[900px]">
           {/* Column headers */}
-          <div className="grid border-b border-surface-800" style={{ gridTemplateColumns: '60px repeat(7, 1fr)' }}>
+          <div className="grid border-b border-surface-800" style={{ gridTemplateColumns: '60px repeat(7, minmax(0, 1fr))' }}>
             <div className="py-2" />
             {days.map((date, i) => {
               const d = parseCalendarDate(date)
@@ -164,7 +164,7 @@ export function TrainingWeekCalendar({
               Untimed is common here, so the lane is sized for two chips without growing, and the
               gutter uses the SHORT label with bottom clearance — the first hour label ("7:00")
               is shifted 8px up into this row, and the long form wording collided with it. */}
-          <div className="grid border-b border-surface-800" style={{ gridTemplateColumns: '60px repeat(7, 1fr)' }}>
+          <div className="grid border-b border-surface-800" style={{ gridTemplateColumns: '60px repeat(7, minmax(0, 1fr))' }}>
             <div className="flex items-start justify-end pr-2 pt-1.5 pb-3 text-[10px] leading-tight text-surface-500">
               {t('detail.allDay')}
             </div>
@@ -228,7 +228,7 @@ export function TrainingWeekCalendar({
           </div>
 
           {/* Time grid */}
-          <div className="relative grid" style={{ gridTemplateColumns: '60px repeat(7, 1fr)' }}>
+          <div className="relative grid" style={{ gridTemplateColumns: '60px repeat(7, minmax(0, 1fr))' }}>
             {/* Hour labels */}
             <div className="sticky left-0 z-10 bg-surface-900">
               {hours.map((hour) => (

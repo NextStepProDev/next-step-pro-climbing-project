@@ -255,7 +255,7 @@ export function WeekCalendar({
       <div ref={scrollRef} className="overflow-x-auto">
         <div className="min-w-[900px]">
           {/* Column headers */}
-          <div className="grid border-b border-surface-800" style={{ gridTemplateColumns: '60px repeat(7, 1fr)' }}>
+          <div className="grid border-b border-surface-800" style={{ gridTemplateColumns: '60px repeat(7, minmax(0, 1fr))' }}>
             <div className="py-2" />
             {days.map((day, i) => {
               const date = parseCalendarDate(day.date)
@@ -295,7 +295,7 @@ export function WeekCalendar({
           </div>
 
           {/* Time grid */}
-          <div className="relative grid" style={{ gridTemplateColumns: '60px repeat(7, 1fr)' }}>
+          <div className="relative grid" style={{ gridTemplateColumns: '60px repeat(7, minmax(0, 1fr))' }}>
             {/* Hour labels (sticky left) */}
             <div className="sticky left-0 z-10 bg-surface-900">
               {hours.map((hour) => (
