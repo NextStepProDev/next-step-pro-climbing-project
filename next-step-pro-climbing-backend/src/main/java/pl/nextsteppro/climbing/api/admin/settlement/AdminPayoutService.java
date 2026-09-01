@@ -150,10 +150,21 @@ class AdminPayoutService {
      * attended it. Without the second, the mark would take the session out of the pricing queue and
      * attribute it to a subscription that does not exist — the same invisible-work failure as an
      * amount hidden behind a bulk mark, only inverted: work that earns nothing and says so nowhere.
+     *
+     * <p>⚠️ And a third: the mark covers the SESSION, while a retainer covers one PERSON. On a
+     * session with somebody else on it those are not the same claim, and the difference is a dead
+     * end — marking it takes the whole session out of per-participant pricing, so the other
+     * participant's cash has nowhere to go, while pricing them first blocks the mark. There is no
+     * order that works, so it is refused here, at the click that causes it, instead of surfacing
+     * later as "this session is settled in bulk" while somebody is trying to enter an amount.
+     * A bulk payer is different and stays allowed on a group: a school really does pay for the room.
      */
     private void requireSubscriberOfSession(SettlementTarget target, UUID targetId, UUID userId) {
         if (!settlementService.isParticipant(target, targetId, userId)) {
             throw new IllegalArgumentException(msg.get("admin.payout.session.not.participant"));
+        }
+        if (settlementService.countPayers(target, targetId) > 1) {
+            throw new IllegalArgumentException(msg.get("admin.payout.session.shared.with.others"));
         }
         LocalDate month = settlementService.sessionMonth(target, targetId);
         if (subscriptionRepository.findByUserId(userId).stream().noneMatch(s -> s.covers(month))) {

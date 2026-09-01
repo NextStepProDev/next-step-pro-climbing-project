@@ -273,15 +273,24 @@ public class AdminSettlementService {
 
     private SettlementSectionDto slotSection(TimeSlot slot) {
         UUID slotId = slot.getId();
-        List<Line> lines = new ArrayList<>();
-        addUserLines(lines, reservationRepository.findConfirmedByTimeSlotIds(List.of(slotId)));
-        addGuestLines(lines, guestReservationRepository.findByTimeSlotId(slotId));
-        return assemble(SettlementTarget.SLOT, slotId, slot.getDate(), lines,
+        return assemble(SettlementTarget.SLOT, slotId, slot.getDate(), slotPayers(slotId),
             settlementRepository.findRowsForSlot(slotId));
     }
 
     private SettlementSectionDto eventSection(Event event) {
         UUID eventId = event.getId();
+        return assemble(SettlementTarget.EVENT, eventId, event.getStartDate(), eventPayers(eventId),
+            settlementRepository.findRowsForEvent(eventId));
+    }
+
+    private List<Line> slotPayers(UUID slotId) {
+        List<Line> lines = new ArrayList<>();
+        addUserLines(lines, reservationRepository.findConfirmedByTimeSlotIds(List.of(slotId)));
+        addGuestLines(lines, guestReservationRepository.findByTimeSlotId(slotId));
+        return lines;
+    }
+
+    private List<Line> eventPayers(UUID eventId) {
         List<UUID> slotIds = timeSlotRepository.findByEventId(eventId).stream().map(TimeSlot::getId).toList();
 
         List<Line> lines = new ArrayList<>();
@@ -296,9 +305,19 @@ public class AdminSettlementService {
             guests.addAll(guestReservationRepository.findByTimeSlotIds(slotIds));
         }
         addGuestLines(lines, guests);
+        return lines;
+    }
 
-        return assemble(SettlementTarget.EVENT, eventId, event.getStartDate(), lines,
-            settlementRepository.findRowsForEvent(eventId));
+    /**
+     * How many separate payers this session has — people and guests, one each however many days or
+     * seats they booked. The same collapse the section itself performs, so the two cannot disagree
+     * about what "one payer" means.
+     */
+    int countPayers(SettlementTarget target, UUID targetId) {
+        return switch (target) {
+            case SLOT -> slotPayers(targetId).size();
+            case EVENT -> eventPayers(targetId).size();
+        };
     }
 
     /** Collapses reservations by user, keeping the largest headcount that person booked. */

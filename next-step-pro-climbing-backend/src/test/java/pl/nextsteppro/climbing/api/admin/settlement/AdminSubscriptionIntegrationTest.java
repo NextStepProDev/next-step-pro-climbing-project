@@ -268,6 +268,50 @@ class AdminSubscriptionIntegrationTest extends BaseIntegrationTest {
     }
 
     @Test
+    @DisplayName("shouldRefuseToCoverASessionSomebodyElseIsAlsoOn")
+    void shouldRefuseToCoverASessionSomebodyElseIsAlsoOn() {
+        // ⚠️ The mark covers the SESSION; a retainer covers one PERSON. Where somebody else is on
+        // it those are different claims, and allowing it is a dead end with no way out: the mark
+        // takes the whole session out of per-participant pricing, so the cash payer beside her has
+        // nowhere to be entered — and pricing him first blocks the mark instead. Refused at the
+        // click that causes it rather than later, at an amount that then cannot be saved.
+        subscriptions.create(client.getId(), new SaveSubscriptionRequest(
+            new BigDecimal("400"), monthsAgo(1), null));
+        TimeSlot group = bookedSlot(monthsAgo(1).plusDays(3));
+        User cashPayer = saveOtherUser();
+        reservationRepository.saveAndFlush(new Reservation(cashPayer, group));
+
+        assertThrows(IllegalArgumentException.class, () -> payouts.assignSource(
+            "slot", group.getId(), new AssignPayoutSourceRequest(null, client.getId())));
+
+        // And the other participant can still be priced, which is the point of refusing.
+        settlements.save("slot", group.getId(), "user", cashPayer.getId(),
+            new SaveSettlementRequest(new BigDecimal("150"), null, null));
+    }
+
+    @Test
+    @DisplayName("shouldStillLetAnInstitutionSettleAWholeGroupSession")
+    void shouldStillLetAnInstitutionSettleAWholeGroupSession() {
+        // The single-payer rule belongs to retainers only. A school really does pay for the room,
+        // however many people are in it, so the bulk branch must stay open on a group.
+        TimeSlot group = bookedSlot(monthsAgo(1).plusDays(3));
+        reservationRepository.saveAndFlush(new Reservation(saveOtherUser(), group));
+        UUID sourceId = payouts.createSource(new SavePayoutSourceRequest("Szkola XYZ")).id();
+
+        payouts.assignSource("slot", group.getId(),
+            new AssignPayoutSourceRequest(sourceId, null));
+
+        assertEquals(0, unpricedCount(), "Marked in bulk, so it leaves the pricing queue");
+    }
+
+    private User saveOtherUser() {
+        User user = new User("cash@example.com", "Piotr", "Nowak", "+48111222333", "piotr");
+        user.setRole(UserRole.USER);
+        user.setEmailVerified(true);
+        return userRepository.saveAndFlush(user);
+    }
+
+    @Test
     @DisplayName("shouldRefuseToCoverASessionInAMonthTheSubscriptionDoesNotReach")
     void shouldRefuseToCoverASessionInAMonthTheSubscriptionDoesNotReach() {
         subscriptions.create(client.getId(), new SaveSubscriptionRequest(
