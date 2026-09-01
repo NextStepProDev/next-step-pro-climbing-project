@@ -329,11 +329,19 @@ export function SettlementSection({ target, targetId }: SettlementSectionProps) 
                       </span>
                     )}
                     {/* The standing balance, in front of you at the moment you type the next
-                        amount — which is the only moment it is any use. */}
+                        amount — which is the only moment it is any use.
+
+                        ⚠️ The two states are NOT a plus and a minus on one scale, and colouring
+                        them as if they were was wrong. A debt is a task: chase it, so it takes
+                        amber, which already means "outstanding" in seven other places here. A
+                        credit is only something to remember while pricing, so it stays neutral —
+                        green in this app means "done", which a credit is not, and red means "broken
+                        or destructive", which a debt is not either. The word carries the meaning;
+                        the colour only says whether it is work. */}
                     {line.balance !== 0 && (
                       <span
                         className={`block text-xs ${
-                          line.balance > 0 ? 'text-emerald-400' : 'text-amber-500'
+                          line.balance > 0 ? 'text-surface-300' : 'text-amber-500'
                         }`}
                       >
                         {t(
