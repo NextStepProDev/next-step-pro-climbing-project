@@ -88,21 +88,47 @@ class AdminPayoutIntegrationTest extends BaseIntegrationTest {
     // -------------------------------------------------------------- the point
 
     @Test
-    @DisplayName("shouldDeriveWhatThePlaceActuallyPaysPerSession")
-    void shouldDeriveWhatThePlaceActuallyPaysPerSession() {
-        for (int i = 0; i < 12; i++) {
-            assignSlot(OCTOBER.plusDays(i), school);
+    @DisplayName("shouldDeriveWhatThePlaceActuallyPaysPerHourNotPerSession")
+    void shouldDeriveWhatThePlaceActuallyPaysPerHourNotPerSession() {
+        // Ten hours across sessions of two different lengths — the case a per-session average
+        // cannot describe: eight one-hour classes and one two-hour block.
+        for (int i = 0; i < 8; i++) {
+            assignSlot(OCTOBER.plusDays(i), school, LocalTime.of(16, 0), LocalTime.of(17, 0));
         }
-        // One transfer, arriving the month after the work, for the whole of it.
+        assignSlot(OCTOBER.plusDays(20), school, LocalTime.of(16, 0), LocalTime.of(18, 0));
+
         payoutService.createPayout(new SavePayoutRequest(
-            school, OCTOBER.plusDays(9), new BigDecimal("1400"), LocalDate.of(2026, 11, 8)));
+            school, OCTOBER.plusDays(9), new BigDecimal("1000"), LocalDate.of(2026, 11, 8)));
 
         PayoutPeriodDto october = periodOf(LocalDate.of(2026, 11, 30), OCTOBER);
 
-        assertEquals(12, october.sessions());
-        assertEquals(0, new BigDecimal("1400.00").compareTo(october.amount()));
-        // 1400 / 12 -- the figure that is nowhere else in the app, and the reason to keep this at all.
-        assertEquals(0, new BigDecimal("116.67").compareTo(october.ratePerSession()));
+        assertEquals(9, october.sessions());
+        assertEquals(600, october.minutes(), "Ten hours, not nine sessions");
+        // 1000 zl over ten hours. Per session it would have read 111.11 -- a figure comparable with
+        // nothing, least of all an hourly price list.
+        assertEquals(0, new BigDecimal("100.00").compareTo(october.ratePerHour()));
+    }
+
+    @Test
+    @DisplayName("shouldSayHowManyCoveredSessionsHadNoKnowableDuration")
+    void shouldSayHowManyCoveredSessionsHadNoKnowableDuration() {
+        assignSlot(OCTOBER.plusDays(1), school, LocalTime.of(16, 0), LocalTime.of(18, 0));
+        // An all-day event has no times at all, so its duration is not knowable.
+        Event allDay = eventRepository.saveAndFlush(
+            new Event("Wyjazd", EventType.WORKSHOP, OCTOBER.plusDays(5), OCTOBER.plusDays(5), 8));
+        payoutService.assignSource("event", allDay.getId(),
+            new AssignPayoutSourceRequest(school, null));
+        payoutService.createPayout(new SavePayoutRequest(
+            school, OCTOBER, new BigDecimal("200"), LocalDate.of(2026, 11, 8)));
+
+        PayoutPeriodDto october = periodOf(LocalDate.of(2026, 11, 30), OCTOBER);
+
+        assertEquals(2, october.sessions());
+        assertEquals(1, october.sessionsWithoutHours(),
+            "Shown rather than folded in at zero: a rate over a smaller denominator reads high and "
+                + "says nothing about why");
+        assertEquals(0, new BigDecimal("100.00").compareTo(october.ratePerHour()),
+            "Computed from the two hours it could measure");
     }
 
     @Test
@@ -117,7 +143,7 @@ class AdminPayoutIntegrationTest extends BaseIntegrationTest {
         // would hide precisely this.
         assertEquals(2, october.sessions());
         assertEquals(0, BigDecimal.ZERO.compareTo(october.amount()));
-        assertNull(october.ratePerSession(),
+        assertNull(october.ratePerHour(),
             "A rate needs both halves; a zero here would be a claim rather than a gap");
     }
 
@@ -132,7 +158,7 @@ class AdminPayoutIntegrationTest extends BaseIntegrationTest {
         // The mirror case: money arrived but the calendar was never marked, so there is no rate.
         assertEquals(0, october.sessions());
         assertEquals(0, new BigDecimal("800.00").compareTo(october.amount()));
-        assertNull(october.ratePerSession());
+        assertNull(october.ratePerHour());
     }
 
     @Test
@@ -331,8 +357,11 @@ class AdminPayoutIntegrationTest extends BaseIntegrationTest {
     }
 
     private void assignSlot(LocalDate date, UUID sourceId) {
-        TimeSlot slot = timeSlotRepository.saveAndFlush(
-            new TimeSlot(date, LocalTime.of(16, 0), LocalTime.of(17, 0), 10));
+        assignSlot(date, sourceId, LocalTime.of(16, 0), LocalTime.of(17, 0));
+    }
+
+    private void assignSlot(LocalDate date, UUID sourceId, LocalTime from, LocalTime to) {
+        TimeSlot slot = timeSlotRepository.saveAndFlush(new TimeSlot(date, from, to, 10));
         payoutService.assignSource("slot", slot.getId(), new AssignPayoutSourceRequest(sourceId, null));
     }
 

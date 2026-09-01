@@ -635,8 +635,17 @@ export interface PayoutPeriod {
   sourceName: string
   month: string
   sessions: number
+  // Total measured time, so the screen can show the denominator it divided by.
+  minutes: number
+  // Covered entries with no knowable duration — all-day, or multi-day with start and end on
+  // different days. Shown rather than folded in at zero: a rate over a smaller denominator reads
+  // high and says nothing about why.
+  sessionsWithoutHours: number
   amount: number
-  ratePerSession: number | null
+  // ⚠️ Per HOUR, not per session. A 45-minute school hour and a ninety-minute block are not the same
+  // unit, so dividing by a count yields a figure comparable with nothing — least of all an hourly
+  // price list. Null when either half is missing, or when nothing had a knowable duration.
+  ratePerHour: number | null
   // The individual arrivals this row adds up. Carried so a mistyped figure can be removed —
   // without them the feature is write-only and a 14000 entered for 1400 would be permanent.
   transfers: PayoutEntry[]

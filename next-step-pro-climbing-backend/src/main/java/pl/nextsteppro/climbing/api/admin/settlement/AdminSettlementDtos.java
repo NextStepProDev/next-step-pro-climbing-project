@@ -322,9 +322,17 @@ record PayoutsDto(
  * no transfer yet is the single most useful row on this table — it is the invoice nobody has paid —
  * and listing only what arrived would hide exactly that.
  *
- * @param ratePerSession the point of the whole feature: what the place actually pays per session.
- *                       {@code null} when either half is missing, because a rate needs both a
- *                       numerator and a denominator and a zero would be a claim rather than a gap.
+ * @param ratePerHour    the point of the whole feature: what the place actually pays per HOUR.
+ *                       ⚠️ Per hour and not per session, because a 45-minute school hour and a
+ *                       ninety-minute block are not the same unit — averaging them produces a figure
+ *                       that cannot be compared with anything, least of all your own hourly price.
+ *                       {@code null} when either half is missing: a rate needs a numerator and a
+ *                       denominator, and a zero would be a claim rather than a gap.
+ * @param minutes        total measured time, so the screen can show the denominator it divided by.
+ * @param sessionsWithoutHours how many covered entries had no knowable duration — an all-day entry,
+ *                       or a multi-day event whose start and end are on different days. Shown rather
+ *                       than folded in at zero: a rate quietly computed over a smaller denominator
+ *                       reads high and says nothing about why.
  * @param transfers      the individual arrivals this row adds up. Carried so a mistyped figure can
  *                       be removed: without them the feature is write-only, and a 14000 entered for
  *                       1400 would be permanent.
@@ -334,8 +342,10 @@ record PayoutPeriodDto(
     String sourceName,
     LocalDate month,
     int sessions,
+    int minutes,
+    int sessionsWithoutHours,
     BigDecimal amount,
-    @Nullable BigDecimal ratePerSession,
+    @Nullable BigDecimal ratePerHour,
     List<PayoutEntryDto> transfers
 ) {}
 

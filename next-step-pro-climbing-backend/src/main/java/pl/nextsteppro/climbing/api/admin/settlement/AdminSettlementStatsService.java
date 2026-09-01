@@ -436,7 +436,8 @@ public class AdminSettlementStatsService {
             periodOf(byKey, names, payout.sourceId(), payout.periodMonth()).add(payout);
         }
         for (SessionPayoutRow session : sessionPayoutRepository.findSessionsBetween(windowFrom, windowTo)) {
-            periodOf(byKey, names, session.sourceId(), session.date().withDayOfMonth(1)).addSession();
+            periodOf(byKey, names, session.sourceId(), session.date().withDayOfMonth(1))
+                .addSession(session.minutes());
         }
 
         BigDecimal total = BigDecimal.ZERO;
@@ -448,7 +449,8 @@ public class AdminSettlementStatsService {
             .sorted(Comparator.comparing((Period period) -> period.month).reversed()
                 .thenComparing(period -> period.sourceName, String.CASE_INSENSITIVE_ORDER))
             .map(period -> new PayoutPeriodDto(period.sourceId, period.sourceName, period.month,
-                period.sessions, scale(period.amount), period.rate(), period.transfers))
+                period.sessions, period.minutes, period.sessionsWithoutHours,
+                scale(period.amount), period.rate(), period.transfers))
             .toList();
 
         return new PayoutsDto(sources, scale(total), periods);
@@ -466,6 +468,8 @@ public class AdminSettlementStatsService {
         private final LocalDate month;
         private BigDecimal amount = BigDecimal.ZERO;
         private int sessions;
+        private int minutes;
+        private int sessionsWithoutHours;
         private final List<PayoutEntryDto> transfers = new ArrayList<>();
 
         private Period(UUID sourceId, String sourceName, LocalDate month) {
@@ -479,19 +483,31 @@ public class AdminSettlementStatsService {
             transfers.add(new PayoutEntryDto(payout.id(), payout.amount(), payout.receivedOn()));
         }
 
-        private void addSession() {
+        private void addSession(@Nullable Integer sessionMinutes) {
             sessions++;
+            if (sessionMinutes == null) {
+                sessionsWithoutHours++;
+            } else {
+                minutes += sessionMinutes;
+            }
         }
 
         /**
-         * What the place actually paid per session. Null when either half is missing: a rate needs a
-         * numerator and a denominator, and a zero here would be a claim rather than a gap.
+         * What the place actually paid per HOUR.
+         *
+         * <p>⚠️ Per hour and not per session. A 45-minute school hour and a ninety-minute block are
+         * not the same unit, so dividing by a count averages things that cannot be averaged and
+         * yields a number comparable with nothing — least of all an hourly price list.
+         *
+         * <p>Null when either half is missing, and null when nothing had a knowable duration: a rate
+         * needs a numerator and a denominator, and a zero would be a claim rather than a gap.
          */
         private @Nullable BigDecimal rate() {
-            if (sessions == 0 || amount.signum() == 0) {
+            if (minutes == 0 || amount.signum() == 0) {
                 return null;
             }
-            return amount.divide(BigDecimal.valueOf(sessions), Settlement.AMOUNT_SCALE, RoundingMode.HALF_UP);
+            return amount.multiply(BigDecimal.valueOf(60))
+                .divide(BigDecimal.valueOf(minutes), Settlement.AMOUNT_SCALE, RoundingMode.HALF_UP);
         }
     }
 

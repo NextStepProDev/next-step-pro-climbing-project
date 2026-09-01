@@ -38,7 +38,8 @@ public interface SessionPayoutRepository extends JpaRepository<SessionPayout, UU
      */
     @Query("""
         SELECT new pl.nextsteppro.climbing.domain.settlement.SessionPayoutRow(
-            sp.source.id, COALESCE(ts.date, e.startDate))
+            sp.source.id, COALESCE(ts.date, e.startDate), e.endDate,
+            COALESCE(ts.startTime, e.startTime), COALESCE(ts.endTime, e.endTime))
         FROM SessionPayout sp
         LEFT JOIN sp.timeSlot ts
         LEFT JOIN sp.event e
@@ -47,21 +48,6 @@ public interface SessionPayoutRepository extends JpaRepository<SessionPayout, UU
         """)
     List<SessionPayoutRow> findSessionsBetween(@Param("from") LocalDate from,
                                                @Param("to") LocalDate to);
-
-    /**
-     * How many sessions one client's subscription covered in a month — the denominator of "what did
-     * the retainer work out at per session", which is the figure that says whether it is priced right.
-     */
-    @Query("""
-        SELECT COUNT(sp) FROM SessionPayout sp
-        LEFT JOIN sp.timeSlot ts
-        LEFT JOIN sp.event e
-        WHERE sp.user.id = :userId
-          AND COALESCE(ts.date, e.startDate) BETWEEN :from AND :to
-        """)
-    long countCoveredSessions(@Param("userId") UUID userId,
-                              @Param("from") LocalDate from,
-                              @Param("to") LocalDate to);
 
     /**
      * ⚠️ Every upsert sets BOTH payer columns, one of them to NULL. Setting only the one being

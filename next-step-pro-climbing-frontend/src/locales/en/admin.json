@@ -979,7 +979,7 @@
         "period": "Period",
         "sessions": "sessions",
         "amount": "transfer",
-        "rate": "rate",
+        "rate": "rate / h",
         "awaiting": "not paid yet",
         "add": "Add a transfer",
         "periodField": "For month (any day)",
@@ -992,7 +992,9 @@
         "received": "arrived {{date}}",
         "deleteTransfer": "Delete the transfer of {{amount}}",
         "restore": "Restore — {{name}}",
-        "rename": "Name — {{name}}"
+        "rename": "Name — {{name}}",
+        "hours": "hours",
+        "withoutHours": "(+{{n}} without hours)"
       },
       "export": {
         "action": "Export XLSX",

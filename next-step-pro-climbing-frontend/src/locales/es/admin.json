@@ -979,7 +979,7 @@
         "period": "Periodo",
         "sessions": "sesiones",
         "amount": "pago",
-        "rate": "tarifa",
+        "rate": "tarifa / h",
         "awaiting": "sin pago",
         "add": "Añadir pago",
         "periodField": "Del mes (cualquier día)",
@@ -992,7 +992,9 @@
         "received": "entró el {{date}}",
         "deleteTransfer": "Eliminar el pago de {{amount}}",
         "restore": "Restaurar — {{name}}",
-        "rename": "Nombre — {{name}}"
+        "rename": "Nombre — {{name}}",
+        "hours": "horas",
+        "withoutHours": "(+{{n}} sin horas)"
       },
       "export": {
         "action": "Exportar XLSX",

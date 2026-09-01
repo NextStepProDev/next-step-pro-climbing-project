@@ -645,6 +645,7 @@ function PayoutsCard({ payouts }: { payouts: PayoutsSummary }) {
                 <th className="py-1 font-normal">{t('settlements.tab.payouts.payer')}</th>
                 <th className="py-1 font-normal">{t('settlements.tab.payouts.period')}</th>
                 <th className="py-1 font-normal text-right">{t('settlements.tab.payouts.sessions')}</th>
+                <th className="py-1 font-normal text-right">{t('settlements.tab.payouts.hours')}</th>
                 <th className="py-1 font-normal text-right">{t('settlements.tab.payouts.amount')}</th>
                 <th className="py-1 font-normal text-right">{t('settlements.tab.payouts.rate')}</th>
               </tr>
@@ -715,6 +716,16 @@ function PayoutPeriodRow({ period, onChanged }: { period: PayoutPeriod; onChange
           )}
         </td>
         <td className="py-2 text-right text-surface-400 tabular-nums">{period.sessions}</td>
+        <td className="py-2 text-right text-surface-400 tabular-nums">
+          {(period.minutes / 60).toFixed(1)}
+          {/* The denominator's own gap, stated rather than hidden. */}
+          {period.sessionsWithoutHours > 0 && (
+            <span className="text-amber-500">
+              {' '}
+              {t('settlements.tab.payouts.withoutHours', { n: period.sessionsWithoutHours })}
+            </span>
+          )}
+        </td>
         <td className="py-2 text-right tabular-nums">
           {period.amount > 0 ? (
             <span className="text-surface-200">{money(period.amount)}</span>
@@ -724,22 +735,21 @@ function PayoutPeriodRow({ period, onChanged }: { period: PayoutPeriod; onChange
           )}
         </td>
         <td className="py-2 text-right text-surface-200 tabular-nums">
-          {period.ratePerSession === null ? (
+          {period.ratePerHour === null ? (
             <span className="text-surface-500">—</span>
           ) : (
-            money(period.ratePerSession)
+            money(period.ratePerHour)
           )}
         </td>
       </tr>
       {open && period.transfers.map((transfer) => (
         <tr key={transfer.id} className="text-xs">
           <td />
-          <td className="py-1 pl-4 text-surface-500">
+          <td className="py-1 pl-4 text-surface-500" colSpan={2}>
             {t('settlements.tab.payouts.received', {
               date: format(parseCalendarDate(transfer.receivedOn), 'dd.MM.yyyy', { locale }),
             })}
           </td>
-          <td />
           <td className="py-1 text-right text-surface-300 tabular-nums">{money(transfer.amount)}</td>
           <td className="py-1 text-right">
             <button

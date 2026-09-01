@@ -347,12 +347,14 @@ describe('AdminSettlementsPanel', () => {
         periods: [
           {
             sourceId: 'src-1', sourceName: 'SP nr 12', month: '2026-10-01',
-            sessions: 12, amount: 1400, ratePerSession: 116.67,
+            sessions: 12, minutes: 1080, sessionsWithoutHours: 0,
+            amount: 1400, ratePerHour: 77.78,
             transfers: [{ id: 'p-1', amount: 1400, receivedOn: '2026-11-08' }],
           },
           {
             sourceId: 'src-1', sourceName: 'SP nr 12', month: '2026-11-01',
-            sessions: 4, amount: 0, ratePerSession: null, transfers: [],
+            sessions: 4, minutes: 240, sessionsWithoutHours: 0,
+            amount: 0, ratePerHour: null, transfers: [],
           },
         ],
       },
@@ -363,8 +365,8 @@ describe('AdminSettlementsPanel', () => {
     expect(await screen.findByText('settlements.tab.payouts.title')).toBeInTheDocument()
     // The invoice nobody has paid — the row this table is worth having for.
     expect(screen.getByText('settlements.tab.payouts.awaiting')).toBeInTheDocument()
-    // And the one figure that exists nowhere else: 1400 over twelve sessions.
-    expect(screen.getByText(/116[.,]67/)).toBeInTheDocument()
+    // And the one figure that exists nowhere else: 1400 over eighteen HOURS, not twelve sessions.
+    expect(screen.getByText(/77[.,]78/)).toBeInTheDocument()
   })
 
   it('records a transfer with both of its dates', async () => {
@@ -416,7 +418,8 @@ describe('AdminSettlementsPanel', () => {
         total: 15400,
         periods: [{
           sourceId: 'src-1', sourceName: 'SP nr 12', month: '2026-10-01',
-          sessions: 12, amount: 15400, ratePerSession: 1283.33,
+          sessions: 12, minutes: 1080, sessionsWithoutHours: 0,
+          amount: 15400, ratePerHour: 855.56,
           transfers: [
             { id: 'p-1', amount: 1400, receivedOn: '2026-11-08' },
             { id: 'p-2', amount: 14000, receivedOn: '2026-11-09' },

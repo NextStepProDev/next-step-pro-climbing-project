@@ -981,7 +981,7 @@
         "period": "Okres",
         "sessions": "zajęć",
         "amount": "wypłata",
-        "rate": "stawka",
+        "rate": "stawka / h",
         "awaiting": "brak wypłaty",
         "add": "Dodaj wypłatę",
         "periodField": "Za miesiąc (dowolny dzień)",
@@ -994,7 +994,9 @@
         "received": "wpłynęło {{date}}",
         "deleteTransfer": "Usuń wypłatę {{amount}}",
         "restore": "Przywróć — {{name}}",
-        "rename": "Nazwa — {{name}}"
+        "rename": "Nazwa — {{name}}",
+        "hours": "godz.",
+        "withoutHours": "(+{{n}} bez godzin)"
       },
       "export": {
         "action": "Eksport XLSX",
