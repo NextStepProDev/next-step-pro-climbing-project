@@ -683,6 +683,8 @@ export interface PayerLine {
   date: string
   title: string | null
   amount: number
+  /** What actually arrived. Below `amount` the rest is still owed, above it the change is credit. */
+  paidAmount: number
   settledOn: string | null
 }
 
@@ -774,8 +776,12 @@ export interface RevenueSummary {
   months: MonthlyRevenue[]
   fromSlots: number
   fromEvents: number
-  // Work somebody else settled in bulk. Three genuinely different ways of earning, and this is the
-  // one whose price you do not set.
+  // A standing monthly coaching fee. NOT slot income: the sessions a retainer covers are left
+  // unpriced on purpose, so filing it under slots claims earnings for sessions that earned nothing.
+  fromSubscriptions: number
+  // Work somebody else settled in bulk. Four genuinely different ways of earning, and this is the
+  // one whose price you do not set. All four must add up to `total` — the client draws them against
+  // it, so a missing source is an unexplained gap in the bar.
   fromPayouts: number
   // ⚠️ The same twelve months a year earlier — empty in the "everything" view, which has no
   // previous. This is the only honest comparison this business has: climbing is seasonal, so month

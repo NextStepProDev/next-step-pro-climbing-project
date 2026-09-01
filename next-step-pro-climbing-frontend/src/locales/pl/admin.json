@@ -563,6 +563,7 @@
         "last": "ostatnia wpłata",
         "none": "Brak wpisanych kwot dla tej osoby.",
         "unpaid": "nierozliczone",
+        "short": "brakuje {{amount}}",
         "untitled": "Trening 1:1",
         "subscription": {
           "title": "Abonament — prowadzenie",
@@ -969,6 +970,8 @@
         "average": "średnia miesięczna",
         "fromSlots": "Sloty 1:1",
         "fromEvents": "Wydarzenia",
+        "fromSubscriptions": "Abonamenty",
+        "fromPayouts": "Wypłaty zbiorcze",
         "vsLastYear": "wobec tego samego okresu rok wcześniej ({{previous}})",
         "lastYearTooltip": "rok wcześniej: {{amount}}"
       },

@@ -402,11 +402,113 @@ class AdminSettlementStatsTest extends BaseIntegrationTest {
         return userRepository.saveAndFlush(user);
     }
 
+    @Test
+    @DisplayName("shouldNotCountAStandingMonthlyFeeAsSessionIncome")
+    void shouldNotCountAStandingMonthlyFeeAsSessionIncome() {
+        // ⚠️ A retainer is charged for the month, not for time in the calendar — the sessions it
+        // covers are deliberately left unpriced. Folding it into "1:1 slots" therefore states
+        // session income for somebody whose sessions all earned nothing, and the two facts sit two
+        // cards apart on the same screen.
+        monthlyFee(LocalDate.of(2026, 3, 1), client, "500", LocalDate.of(2026, 3, 1));
+
+        SettlementOverviewDto overview = stats.buildOverview("2026", TODAY);
+
+        assertEquals(0, new BigDecimal("500.00").compareTo(overview.revenue().total()),
+            "It is revenue — just not revenue from a session");
+        assertEquals(0, BigDecimal.ZERO.compareTo(overview.revenue().fromSlots()),
+            "No slot earned anything this year");
+        assertEquals(0, new BigDecimal("500.00").compareTo(overview.revenue().fromSubscriptions()));
+    }
+
+    @Test
+    @DisplayName("shouldSplitEveryZlotyOfRevenueIntoExactlyOneBucket")
+    void shouldSplitEveryZlotyOfRevenueIntoExactlyOneBucket() {
+        // The split is drawn as one bar against the headline total, so a source missing from it is a
+        // gap nobody can account for, and a source counted twice is a bar wider than its own track.
+        settleSlot(LocalDate.of(2026, 2, 10), client, "150", LocalDate.of(2026, 2, 10));
+        settleEvent(LocalDate.of(2026, 4, 1), LocalDate.of(2026, 4, 3), other, "600",
+            LocalDate.of(2026, 4, 1));
+        monthlyFee(LocalDate.of(2026, 3, 1), client, "500", LocalDate.of(2026, 3, 1));
+
+        RevenueDto revenue = stats.buildOverview("2026", TODAY).revenue();
+
+        BigDecimal parts = revenue.fromSlots()
+            .add(revenue.fromEvents())
+            .add(revenue.fromSubscriptions())
+            .add(revenue.fromPayouts());
+        assertEquals(0, revenue.total().compareTo(parts),
+            "The parts of the split must add up to the total they are drawn against");
+    }
+
+    // ------------------------------------------------- the client's own card
+
+    @Test
+    @DisplayName("shouldReportWhatArrivedOnTheCardNotWhatWasCharged")
+    void shouldReportWhatArrivedOnTheCardNotWhatWasCharged() {
+        // ⚠️ Cash rarely settles a bill exactly, which is the whole reason paid_amount exists. A card
+        // that reads settled_on as "paid in full" tells the owner this client is square while the
+        // Settlements tab is still chasing them — two screens, one client, two answers.
+        partiallyPaidSlot(LocalDate.of(2026, 3, 12), client, "150", "100", LocalDate.of(2026, 3, 12));
+
+        PayerSummaryDto summary = stats.payerSummary(client.getId(), 10);
+
+        assertEquals(0, new BigDecimal("100.00").compareTo(summary.paid()),
+            "A hundred arrived, so a hundred is what this client has paid");
+        assertEquals(0, new BigDecimal("50.00").compareTo(summary.outstanding()),
+            "And the fifty they are still short has to be on their own card, not only on the tab");
+    }
+
+    @Test
+    @DisplayName("shouldCountAnOverpaymentOnTheCardAsMoneyThatArrived")
+    void shouldCountAnOverpaymentOnTheCardAsMoneyThatArrived() {
+        partiallyPaidSlot(LocalDate.of(2026, 3, 12), client, "150", "200", LocalDate.of(2026, 3, 12));
+
+        PayerSummaryDto summary = stats.payerSummary(client.getId(), 10);
+
+        assertEquals(0, new BigDecimal("200.00").compareTo(summary.paid()),
+            "The change from a two-hundred note is money in hand, not something to round away");
+        assertEquals(0, BigDecimal.ZERO.compareTo(summary.outstanding()),
+            "Nobody who has overpaid owes anything");
+    }
+
+    @Test
+    @DisplayName("shouldAgreeWithTheSettlementsTabAboutWhatOneClientOwes")
+    void shouldAgreeWithTheSettlementsTabAboutWhatOneClientOwes() {
+        // The point is not either figure on its own — it is that the two screens cannot disagree.
+        partiallyPaidSlot(LocalDate.of(2026, 3, 12), client, "150", "100", LocalDate.of(2026, 3, 12));
+        partiallyPaidSlot(LocalDate.of(2026, 4, 2), client, "80", "0", null);
+
+        PayerSummaryDto card = stats.payerSummary(client.getId(), 10);
+        SettlementOverviewDto overview = stats.buildOverview("2026", TODAY);
+
+        assertEquals(0, overview.outstanding().total().compareTo(card.outstanding()),
+            "The tab chases 130 and so must the card");
+        assertEquals(0, overview.revenue().total().compareTo(card.paid()),
+            "And they agree on what came in, too");
+    }
+
     /**
      * Written straight into the table: these tests are about the arithmetic on top, and the write
      * path has its own coverage in {@code AdminSettlementIntegrationTest}. Going through the service
      * would also mean fabricating a confirmed booking for every row.
      */
+    /** A standing coaching fee: a settlement whose target is a month, with no calendar entry at all. */
+    private void monthlyFee(LocalDate month, User payer, String amount, LocalDate settledOn) {
+        jdbc.update("INSERT INTO settlements (period_month, user_id, amount, paid_amount, settled_on) "
+                + "VALUES (?, ?, ?, ?, ?)",
+            month, payer.getId(), new BigDecimal(amount),
+            settledOn == null ? BigDecimal.ZERO : new BigDecimal(amount), settledOn);
+    }
+
+    private void partiallyPaidSlot(LocalDate on, User payer, String amount, String paid,
+                                   LocalDate settledOn) {
+        TimeSlot slot = timeSlotRepository.saveAndFlush(
+            new TimeSlot(on, LocalTime.of(18, 0), LocalTime.of(20, 0), 4));
+        jdbc.update("INSERT INTO settlements (time_slot_id, user_id, amount, paid_amount, settled_on) "
+                + "VALUES (?, ?, ?, ?, ?)",
+            slot.getId(), payer.getId(), new BigDecimal(amount), new BigDecimal(paid), settledOn);
+    }
+
     private void settleSlot(LocalDate on, User payer, String amount, LocalDate settledOn) {
         TimeSlot slot = timeSlotRepository.saveAndFlush(
             new TimeSlot(on, LocalTime.of(18, 0), LocalTime.of(20, 0), 4));

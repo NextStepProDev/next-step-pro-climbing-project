@@ -8,7 +8,7 @@ import { Button } from '../../components/ui/Button'
 import { DateInput } from '../../components/ui/DateInput'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
 import { QueryError } from '../../components/ui/QueryError'
-import { STATS_FILL, swatchClass } from '../../components/admin/userstats/statsPalette'
+import { STATS_FILL } from '../../components/admin/userstats/statsPalette'
 import { adminSettlementsApi } from '../../api/client'
 import { getErrorMessage } from '../../utils/errors'
 import { parseCalendarDate, todayInWarsaw } from '../../utils/calendarDate'
@@ -511,36 +511,39 @@ function RevenueCard({ overview }: { overview: SettlementOverview }) {
 
       <RevenueChart months={revenue.months} previousMonths={revenue.previousMonths} />
 
+      {/* ⚠️ ALL FOUR sources, and one row each rather than one stacked bar.
+          Two reasons. The split is read against the headline total, so a source left out is an
+          unexplained gap in it — bulk transfers were computed and never drawn, and a retainer was
+          counted as slot income, which claims session earnings for a client whose sessions are
+          deliberately unpriced. And four categories need four fills that hold up in BOTH themes,
+          which the three-fill semantic palette does not have and must not be guessed at (see
+          statsPalette: the obvious green/amber-400 pairing is unreadable in the light theme). A row
+          per source carries identity in the label, so colour is left saying only "money in". */}
       {revenue.total > 0 && (
-        <div className="space-y-2">
-          <div className="flex gap-0.5 h-3 rounded-full overflow-hidden bg-surface-800">
-            {revenue.fromSlots > 0 && (
-              <div
-                className={STATS_FILL.done}
-                style={{ width: `${(100 * revenue.fromSlots) / revenue.total}%` }}
-              />
-            )}
-            {revenue.fromEvents > 0 && (
-              <div
-                className={STATS_FILL.pending}
-                style={{ width: `${(100 * revenue.fromEvents) / revenue.total}%` }}
-              />
-            )}
-          </div>
-          {/* Every segment's number is in the legend, which is what lets the bar use fills that sit
-              under the 3:1 line in one of the two themes — identity never rests on colour alone. */}
-          <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-surface-400">
-            <span className="inline-flex items-center gap-1.5">
-              <span className={swatchClass(STATS_FILL.done)} />
-              {t('settlements.tab.revenue.fromSlots')}
-              <span className="text-surface-200 tabular-nums">{money(revenue.fromSlots)}</span>
-            </span>
-            <span className="inline-flex items-center gap-1.5">
-              <span className={swatchClass(STATS_FILL.pending)} />
-              {t('settlements.tab.revenue.fromEvents')}
-              <span className="text-surface-200 tabular-nums">{money(revenue.fromEvents)}</span>
-            </span>
-          </div>
+        <div className="space-y-1.5">
+          {([
+            ['fromSlots', revenue.fromSlots],
+            ['fromEvents', revenue.fromEvents],
+            ['fromSubscriptions', revenue.fromSubscriptions],
+            ['fromPayouts', revenue.fromPayouts],
+          ] as const)
+            .filter(([, value]) => value > 0)
+            .map(([key, value]) => (
+              <div key={key} className="flex items-center gap-2 text-xs">
+                <span className="w-28 shrink-0 truncate text-surface-400">
+                  {t(`settlements.tab.revenue.${key}`)}
+                </span>
+                <span className="flex-1 h-2 rounded-full bg-surface-800 overflow-hidden">
+                  <span
+                    className={`block h-full ${STATS_FILL.done}`}
+                    style={{ width: `${(100 * value) / revenue.total}%` }}
+                  />
+                </span>
+                <span className="w-24 shrink-0 text-right text-surface-200 tabular-nums">
+                  {money(value)}
+                </span>
+              </div>
+            ))}
         </div>
       )}
     </Card>

@@ -208,6 +208,33 @@ class AdminSubscriptionIntegrationTest extends BaseIntegrationTest {
     }
 
     @Test
+    @DisplayName("shouldSettleAFeeAndTheExtraSessionsBesideItInOneGo")
+    void shouldSettleAFeeAndTheExtraSessionsBesideItInOneGo() {
+        // ⚠️ This is what the fee being a settlement rather than its own table BUYS. One transfer
+        // covers the retainer and the sessions that fell outside it, so it has to clear both — a
+        // separate table would have meant a second queue, a second sum and a second click.
+        subscriptions.create(client.getId(), new SaveSubscriptionRequest(
+            new BigDecimal("400"), monthsAgo(0), null));
+
+        LocalDate sessionDay = LocalDate.now(AdminSubscriptionService.WARSAW).minusDays(2);
+        TimeSlot extra = timeSlotRepository.saveAndFlush(
+            new TimeSlot(sessionDay, LocalTime.of(18, 0), LocalTime.of(20, 0), 4));
+        reservationRepository.saveAndFlush(new Reservation(client, extra));
+        settlements.save("slot", extra.getId(), "user", client.getId(),
+            new SaveSettlementRequest(new BigDecimal("150"), null, null));
+
+        var result = settlements.settleOutstanding(new SettleOutstandingRequest(
+            "user", client.getId(), LocalDate.now(AdminSubscriptionService.WARSAW),
+            new BigDecimal("550")));
+
+        assertEquals(2, result.settled(), "The retainer and the session, from one payment");
+        assertEquals(0, BigDecimal.ZERO.compareTo(result.balance()));
+        assertEquals(0, stats.buildOverview("all",
+            LocalDate.now(AdminSubscriptionService.WARSAW)).outstanding().count(),
+            "Nothing of hers is left open, fee or session");
+    }
+
+    @Test
     @DisplayName("shouldCoverASessionWithTheSubscriptionInsteadOfPricingItAtZero")
     void shouldCoverASessionWithTheSubscriptionInsteadOfPricingItAtZero() {
         subscriptions.create(client.getId(), new SaveSubscriptionRequest(

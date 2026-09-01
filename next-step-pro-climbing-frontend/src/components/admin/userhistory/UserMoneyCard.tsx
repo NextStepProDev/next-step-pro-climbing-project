@@ -79,7 +79,16 @@ export function UserMoneyCard({ userId }: { userId: string }) {
                 </span>
                 <span className="shrink-0 text-surface-200 tabular-nums">{money(line.amount)}</span>
                 <span className="w-24 shrink-0 text-right tabular-nums">
-                  {line.settledOn ? (
+                  {/* A part payment is neither of the two old states. Showing only the charge beside
+                      a payment date read as settled in full, which is how somebody stops chasing a
+                      remainder they never knew about. */}
+                  {line.settledOn && line.paidAmount < line.amount ? (
+                    <span className="text-amber-500">
+                      {t('users.detail.money.short', {
+                        amount: money(line.amount - line.paidAmount),
+                      })}
+                    </span>
+                  ) : line.settledOn ? (
                     <span className="text-surface-500">
                       {format(parseCalendarDate(line.settledOn), 'dd.MM.yyyy', { locale })}
                     </span>

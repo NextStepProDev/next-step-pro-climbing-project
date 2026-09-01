@@ -191,16 +191,20 @@ class AdminSettlementStatsService {
         List<PayerLineDto> lines = new ArrayList<>();
 
         for (SettlementRow row : settlementRepository.findRowsForUser(userId)) {
+            // ⚠️ What ARRIVED and what is STILL SHORT, on the same two axes the tab uses. Reading
+            // settled_on as "paid in full" — which it stopped meaning in V96 — told the owner a
+            // client who had handed over 100 of 150 was square, while the tab went on chasing the
+            // 50. Both screens are about the same person, so they cannot be allowed to disagree.
+            paid = paid.add(row.paidAmount());
+            outstanding = outstanding.add(row.remaining());
             if (row.settledOn() != null) {
-                paid = paid.add(row.amount());
                 count++;
                 if (lastPayment == null || row.settledOn().isAfter(lastPayment)) {
                     lastPayment = row.settledOn();
                 }
-            } else {
-                outstanding = outstanding.add(row.amount());
             }
-            lines.add(new PayerLineDto(row.targetDate(), row.targetTitle(), row.amount(), row.settledOn()));
+            lines.add(new PayerLineDto(row.targetDate(), row.targetTitle(),
+                row.amount(), row.paidAmount(), row.settledOn()));
         }
 
         lines.sort(Comparator.comparing(PayerLineDto::date).reversed());
@@ -308,6 +312,7 @@ class AdminSettlementStatsService {
         BigDecimal total = BigDecimal.ZERO;
         BigDecimal fromSlots = BigDecimal.ZERO;
         BigDecimal fromEvents = BigDecimal.ZERO;
+        BigDecimal fromSubscriptions = BigDecimal.ZERO;
         BigDecimal fromPayouts = BigDecimal.ZERO;
         for (SettlementRow row : rows) {
             LocalDate paidOn = row.settledOn();
@@ -317,7 +322,11 @@ class AdminSettlementStatsService {
             // ⚠️ What arrived, not what was charged. A row paid 100 of 150 is 100 of revenue, and
             // one paid 200 of 150 is 200 — the overpayment is money in hand like any other.
             total = total.add(row.paidAmount());
-            if (row.eventId() != null) {
+            // ⚠️ Three targets, three buckets — a monthly fee has neither a slot nor an event, so an
+            // "else" here quietly filed retainers under session income.
+            if (row.isMonthlyFee()) {
+                fromSubscriptions = fromSubscriptions.add(row.paidAmount());
+            } else if (row.eventId() != null) {
                 fromEvents = fromEvents.add(row.paidAmount());
             } else {
                 fromSlots = fromSlots.add(row.paidAmount());
@@ -358,7 +367,7 @@ class AdminSettlementStatsService {
         }
 
         return new RevenueDto(scale(total), monthlyAverage(byMonth), months,
-            scale(fromSlots), scale(fromEvents), scale(fromPayouts),
+            scale(fromSlots), scale(fromEvents), scale(fromSubscriptions), scale(fromPayouts),
             previousMonths, scale(previousTotal));
     }
 

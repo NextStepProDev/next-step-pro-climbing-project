@@ -563,6 +563,7 @@
         "last": "último pago",
         "none": "No hay importes registrados para esta persona.",
         "unpaid": "pendiente",
+        "short": "faltan {{amount}}",
         "untitled": "Sesión individual",
         "subscription": {
           "title": "Cuota de seguimiento",
@@ -967,6 +968,8 @@
         "average": "media mensual",
         "fromSlots": "Sesiones individuales",
         "fromEvents": "Eventos",
+        "fromSubscriptions": "Suscripciones",
+        "fromPayouts": "Pagos globales",
         "vsLastYear": "frente al mismo periodo del año anterior ({{previous}})",
         "lastYearTooltip": "un año antes: {{amount}}"
       },

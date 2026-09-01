@@ -24,6 +24,7 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -438,6 +439,50 @@ class AdminSettlementIntegrationTest extends BaseIntegrationTest {
     void shouldRejectAnUnknownPayerTypeForABatch() {
         assertThrows(IllegalArgumentException.class, () -> service.settleOutstanding(
             new SettleOutstandingRequest("sponsor", client.getId(), date, new BigDecimal("150"))));
+    }
+
+    @Test
+    @DisplayName("shouldPayOffTheOldestDebtFirstWhenTheMoneyDoesNotCoverEverything")
+    void shouldPayOffTheOldestDebtFirstWhenTheMoneyDoesNotCoverEverything() {
+        // ⚠️ The order is not cosmetic. A backlog is paid off the way it accumulated, and the client
+        // asking "so which sessions am I straight for?" has to get the same answer the screen gives.
+        // With the order reversed both totals stay right and every individual row is wrong.
+        TimeSlot later = timeSlotRepository.saveAndFlush(
+            new TimeSlot(date.plusDays(7), LocalTime.of(18, 0), LocalTime.of(20, 0), 4));
+        reservationRepository.saveAndFlush(new Reservation(client, later));
+        save("slot", slot.getId(), "user", client.getId(), "150", null);
+        save("slot", later.getId(), "user", client.getId(), "80", null);
+
+        // Enough for the older one only.
+        int settled = service.settleOutstanding(new SettleOutstandingRequest(
+            "user", client.getId(), date.plusDays(20), new BigDecimal("150"))).settled();
+
+        assertEquals(1, settled);
+        assertNotNull(lineFor(slot, client).settledOn(), "The older session is the one that closes");
+        assertNull(lineFor(later, client).settledOn(), "And the newer one is still open");
+        assertEquals(0, new BigDecimal("80.00").compareTo(stats().outstanding().total()));
+    }
+
+    @Test
+    @DisplayName("shouldSplitAPartPaymentAcrossDebtsInsteadOfPickingOne")
+    void shouldSplitAPartPaymentAcrossDebtsInsteadOfPickingOne() {
+        // 200 against 150 + 80: the first closes and the second takes the remaining 50, leaving 30.
+        // Money that stopped at a row boundary would leave the client credited and still in debt.
+        TimeSlot later = timeSlotRepository.saveAndFlush(
+            new TimeSlot(date.plusDays(7), LocalTime.of(18, 0), LocalTime.of(20, 0), 4));
+        reservationRepository.saveAndFlush(new Reservation(client, later));
+        save("slot", slot.getId(), "user", client.getId(), "150", null);
+        save("slot", later.getId(), "user", client.getId(), "80", null);
+
+        SettleOutstandingResultDto result = service.settleOutstanding(new SettleOutstandingRequest(
+            "user", client.getId(), date.plusDays(20), new BigDecimal("200")));
+
+        assertEquals(2, result.settled(), "The money reached both rows");
+        assertEquals(0, new BigDecimal("-30.00").compareTo(result.balance()));
+        assertEquals(0, new BigDecimal("30.00").compareTo(stats().outstanding().total()),
+            "Thirty of the second session is still owed — not eighty, and not nothing");
+        assertEquals(1, stats().outstanding().count(),
+            "And only the part-paid row is still listed");
     }
 
     @Test

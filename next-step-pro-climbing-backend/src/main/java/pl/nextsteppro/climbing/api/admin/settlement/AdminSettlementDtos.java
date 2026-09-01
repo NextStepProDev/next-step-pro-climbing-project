@@ -231,9 +231,16 @@ record OutstandingItemDto(
  *                       in September otherwise reads as a third of what it earned. {@code null} when
  *                       nothing has been paid, so the tile disappears rather than showing a zero.
  * @param fromSlots      revenue from one-to-one slots, {@code fromEvents} from courses, workshops and
- *                       trips, {@code fromPayouts} from work somebody else settles in bulk. Three
- *                       genuinely different ways of earning, not three labels on one — and the third
- *                       is the one you do not set the price of.
+ *                       trips, {@code fromSubscriptions} from standing monthly coaching fees, and
+ *                       {@code fromPayouts} from work somebody else settles in bulk. Four genuinely
+ *                       different ways of earning, not four labels on one — you set the price of the
+ *                       first three and not of the last.
+ *                       <p>⚠️ They must add up to {@code total}, because the client draws them as
+ *                       one bar against it: a source missing from the split is an unexplained gap,
+ *                       and one counted twice is a bar wider than its own track. A retainer in
+ *                       particular is NOT slot income — the sessions it covers are deliberately left
+ *                       unpriced, so filing it under slots claims session earnings for a client
+ *                       whose sessions all earned nothing.
  * @param previousMonths the SAME twelve months a year earlier, or empty in the "everything" view,
  *                       which has no previous to compare against.
  *                       <p>⚠️ This is the only honest comparison this business has. Climbing is
@@ -250,6 +257,7 @@ record RevenueDto(
     List<MonthlyRevenueDto> months,
     BigDecimal fromSlots,
     BigDecimal fromEvents,
+    BigDecimal fromSubscriptions,
     BigDecimal fromPayouts,
     List<MonthlyRevenueDto> previousMonths,
     BigDecimal previousTotal
@@ -418,10 +426,17 @@ record PayerSummaryDto(
     List<PayerLineDto> recent
 ) {}
 
+/**
+ * @param amount     what this session cost
+ * @param paidAmount what actually arrived against it. Carried beside {@code amount} rather than
+ *                   folded into it, because a line showing only the charge next to a payment date
+ *                   reads as paid in full — which a part payment is not.
+ */
 record PayerLineDto(
     LocalDate date,
     @Nullable String title,
     BigDecimal amount,
+    BigDecimal paidAmount,
     @Nullable LocalDate settledOn
 ) {}
 

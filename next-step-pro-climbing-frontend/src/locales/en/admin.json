@@ -563,6 +563,7 @@
         "last": "last payment",
         "none": "No amounts recorded for this person.",
         "unpaid": "outstanding",
+        "short": "{{amount}} short",
         "untitled": "One-to-one session",
         "subscription": {
           "title": "Coaching subscription",
@@ -967,6 +968,8 @@
         "average": "monthly average",
         "fromSlots": "One-to-one slots",
         "fromEvents": "Events",
+        "fromSubscriptions": "Subscriptions",
+        "fromPayouts": "Bulk payouts",
         "vsLastYear": "against the same period a year earlier ({{previous}})",
         "lastYearTooltip": "a year earlier: {{amount}}"
       },

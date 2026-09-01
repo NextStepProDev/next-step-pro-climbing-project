@@ -46,6 +46,7 @@ function makeOverview(overrides: Partial<SettlementOverview> = {}): SettlementOv
       })),
       fromSlots: 0,
       fromEvents: 0,
+      fromSubscriptions: 0,
       fromPayouts: 0,
       previousMonths: [],
       previousTotal: 0,
@@ -322,6 +323,41 @@ describe('AdminSettlementsPanel', () => {
     expect(screen.getByText('Kurs skalny')).toBeInTheDocument()
     const links = screen.getAllByRole('link', { name: 'settlements.tab.outstanding.open' })
     expect(links[1]).toHaveAttribute('href', '/calendar?date=2026-08-12&event=event-2')
+  })
+
+  it('accounts for every source of revenue in the split, not just the two from sessions', async () => {
+    // ⚠️ The split is read against the headline total. Bulk transfers were computed by the server
+    // and never drawn, so a coach earning mostly from a school saw a bar that did not add up to the
+    // number above it — and a retainer used to be counted as slot income, which claims session
+    // earnings for a client whose sessions are deliberately left unpriced.
+    getOverview.mockResolvedValue(makeOverview({
+      revenue: {
+        ...makeOverview().revenue,
+        total: 3050,
+        fromSlots: 150,
+        fromEvents: 600,
+        fromSubscriptions: 900,
+        fromPayouts: 1400,
+      },
+    }))
+
+    renderPanel()
+
+    expect(await screen.findByText('settlements.tab.revenue.fromSlots')).toBeInTheDocument()
+    expect(screen.getByText('settlements.tab.revenue.fromEvents')).toBeInTheDocument()
+    expect(screen.getByText('settlements.tab.revenue.fromSubscriptions')).toBeInTheDocument()
+    expect(screen.getByText('settlements.tab.revenue.fromPayouts')).toBeInTheDocument()
+  })
+
+  it('leaves out a source that earned nothing rather than drawing an empty row', async () => {
+    getOverview.mockResolvedValue(makeOverview({
+      revenue: { ...makeOverview().revenue, total: 150, fromSlots: 150 },
+    }))
+
+    renderPanel()
+
+    expect(await screen.findByText('settlements.tab.revenue.fromSlots')).toBeInTheDocument()
+    expect(screen.queryByText('settlements.tab.revenue.fromPayouts')).not.toBeInTheDocument()
   })
 
   it('links a registered payer to their card and leaves a guest unlinked', async () => {
