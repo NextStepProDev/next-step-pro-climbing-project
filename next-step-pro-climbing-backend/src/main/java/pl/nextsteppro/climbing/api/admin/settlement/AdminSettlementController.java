@@ -124,9 +124,10 @@ public class AdminSettlementController {
     }
 
     @Operation(summary = "Settle everything one payer owes",
-        description = "One date for the whole batch, because one transfer covered it. Taking each "
-            + "session's own day instead would scatter a single payment across the months it paid "
-            + "for. Only unsettled rows are touched, so running it twice changes nothing.")
+        description = "Takes what actually changed hands, which cash rarely makes equal to what was "
+            + "owed. The money is applied oldest first, any credit the person already had is pulled "
+            + "in first, and anything over stays as an overpayment on their account. One date for "
+            + "the whole batch, because one payment covered it.")
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "How many amounts were settled"),
         @ApiResponse(responseCode = "400", description = "Unknown payer type")
@@ -134,8 +135,7 @@ public class AdminSettlementController {
     @PostMapping("/settle-outstanding")
     public ResponseEntity<SettleOutstandingResultDto> settleOutstanding(
             @Valid @RequestBody SettleOutstandingRequest request) {
-        return ResponseEntity.ok(new SettleOutstandingResultDto(
-            settlementService.settleOutstanding(request)));
+        return ResponseEntity.ok(settlementService.settleOutstanding(request));
     }
 
     // ----- standing monthly coaching fees -----

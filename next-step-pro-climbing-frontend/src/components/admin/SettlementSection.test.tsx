@@ -40,6 +40,8 @@ function line(overrides: Partial<SettlementLine> = {}): SettlementLine {
     participants: 1,
     orphaned: false,
     amount: null,
+    paidAmount: 0,
+    balance: 0,
     settledOn: null,
     suggestedAmount: null,
     ...overrides,
@@ -101,7 +103,7 @@ describe('SettlementSection', () => {
 
     await user.click(screen.getByRole('button', { name: 'settlements.actions.save' }))
     await waitFor(() =>
-      expect(save).toHaveBeenCalledWith('slot', 'target-1', 'user', 'user-1', 150, TARGET_DATE),
+      expect(save).toHaveBeenCalledWith('slot', 'target-1', 'user', 'user-1', 150, 150, TARGET_DATE),
     )
   })
 
@@ -115,7 +117,7 @@ describe('SettlementSection', () => {
     await user.click(screen.getByRole('button', { name: 'settlements.actions.save' }))
 
     await waitFor(() =>
-      expect(save).toHaveBeenCalledWith('slot', 'target-1', 'user', 'user-1', 150, null),
+      expect(save).toHaveBeenCalledWith('slot', 'target-1', 'user', 'user-1', 150, null, null),
     )
   })
 
@@ -129,7 +131,7 @@ describe('SettlementSection', () => {
     await user.click(screen.getByRole('button', { name: 'settlements.actions.save' }))
 
     await waitFor(() =>
-      expect(save).toHaveBeenCalledWith('slot', 'target-1', 'user', 'user-1', 149.5, null),
+      expect(save).toHaveBeenCalledWith('slot', 'target-1', 'user', 'user-1', 149.5, null, null),
     )
   })
 
@@ -137,7 +139,7 @@ describe('SettlementSection', () => {
     getSection.mockResolvedValue({
       ...bulkOff,
       targetDate: TARGET_DATE,
-      lines: [line({ amount: 150, settledOn: TARGET_DATE })],
+      lines: [line({ amount: 150, paidAmount: 150, settledOn: TARGET_DATE })],
     })
     const user = userEvent.setup()
 
@@ -172,7 +174,7 @@ describe('SettlementSection', () => {
     getSection.mockResolvedValue({
       ...bulkOff,
       targetDate: TARGET_DATE,
-      lines: [line({ orphaned: true, amount: 150, settledOn: TARGET_DATE })],
+      lines: [line({ orphaned: true, amount: 150, paidAmount: 150, settledOn: TARGET_DATE })],
     })
 
     renderSection()
@@ -201,7 +203,7 @@ describe('SettlementSection', () => {
     await user.click(screen.getByRole('button', { name: 'settlements.actions.save' }))
 
     await waitFor(() =>
-      expect(save).toHaveBeenCalledWith('event', 'target-1', 'guest', 'guest-1', 1800, null),
+      expect(save).toHaveBeenCalledWith('event', 'target-1', 'guest', 'guest-1', 1800, null, null),
     )
   })
 
@@ -224,8 +226,8 @@ describe('SettlementSection', () => {
 
     // Pricing a course means typing one number, not one per head.
     await waitFor(() => expect(save).toHaveBeenCalledTimes(2))
-    expect(save).toHaveBeenCalledWith('slot', 'target-1', 'user', 'user-1', 600, null)
-    expect(save).toHaveBeenCalledWith('slot', 'target-1', 'user', 'user-2', 600, null)
+    expect(save).toHaveBeenCalledWith('slot', 'target-1', 'user', 'user-1', 600, null, null)
+    expect(save).toHaveBeenCalledWith('slot', 'target-1', 'user', 'user-2', 600, null, null)
   })
 
   it('says so plainly when nobody is booked yet', async () => {
@@ -327,5 +329,47 @@ describe('SettlementSection — settled in bulk', () => {
     await waitFor(() => expect(listSources).toHaveBeenCalled())
 
     expect(screen.queryByRole('option', { name: 'Marek' })).not.toBeInTheDocument()
+  })
+
+  it('records what actually arrived when it differs from the charge', async () => {
+    getSection.mockResolvedValue({ ...bulkOff, targetDate: TARGET_DATE, lines: [line()] })
+    const user = userEvent.setup()
+
+    renderSection()
+
+    await user.type(await screen.findByLabelText('settlements.line.amountLabel'), '150')
+    await user.click(screen.getByRole('checkbox'))
+    // A two-hundred note against a hundred-and-fifty session — the ordinary way cash goes.
+    await user.type(screen.getByLabelText('settlements.line.receivedLabel'), '200')
+    await user.click(screen.getByRole('button', { name: 'settlements.actions.save' }))
+
+    await waitFor(() =>
+      expect(save).toHaveBeenCalledWith('slot', 'target-1', 'user', 'user-1', 150, 200, TARGET_DATE),
+    )
+  })
+
+  it('shows what the person already has on account while you type', async () => {
+    getSection.mockResolvedValue({
+      ...bulkOff,
+      targetDate: TARGET_DATE,
+      lines: [line({ balance: 50 })],
+    })
+
+    renderSection()
+
+    // The figure is only any use at the moment the next amount is entered, so it lives on the line.
+    expect(await screen.findByText('settlements.line.credit')).toBeInTheDocument()
+  })
+
+  it('shows a shortfall as owed rather than as a credit', async () => {
+    getSection.mockResolvedValue({
+      ...bulkOff,
+      targetDate: TARGET_DATE,
+      lines: [line({ balance: -50 })],
+    })
+
+    renderSection()
+
+    expect(await screen.findByText('settlements.line.debt')).toBeInTheDocument()
   })
 })

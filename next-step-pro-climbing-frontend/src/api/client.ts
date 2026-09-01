@@ -1086,11 +1086,12 @@ export const adminSettlementsApi = {
     payerType: SettlementPayer,
     payerId: string,
     amount: number,
+    paidAmount: number | null,
     settledOn: string | null,
   ) =>
     fetchApi<void>(`/admin/settlements/${target}/${targetId}/${payerType}/${payerId}`, {
       method: 'PUT',
-      body: JSON.stringify({ amount, settledOn }),
+      body: JSON.stringify({ amount, paidAmount, settledOn }),
     }),
 
   remove: (
@@ -1148,10 +1149,18 @@ export const adminSettlementsApi = {
 
   // Everything one payer still owes, on one date. A loop of per-row saves would be twenty round
   // trips for a month of sessions, twenty chances to fail halfway, and twenty different dates.
-  settleOutstanding: (payerType: SettlementPayer, payerId: string, settledOn: string) =>
-    fetchApi<{ settled: number }>('/admin/settlements/settle-outstanding', {
+  // `received` is what actually changed hands, which cash rarely makes equal to what was owed. The
+  // server applies it oldest first, pulls in any credit the person already had, and keeps anything
+  // over as an overpayment.
+  settleOutstanding: (
+    payerType: SettlementPayer,
+    payerId: string,
+    settledOn: string,
+    received: number,
+  ) =>
+    fetchApi<{ settled: number; balance: number }>('/admin/settlements/settle-outstanding', {
       method: 'POST',
-      body: JSON.stringify({ payerType, payerId, settledOn }),
+      body: JSON.stringify({ payerType, payerId, settledOn, received }),
     }),
 
   // The Settlements tab. Omit the year for the newest one holding data — not the current one, which

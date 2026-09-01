@@ -151,13 +151,13 @@ public class AdminSettlementStatsService {
                 ? settlementRepository.findAllRows()
                 : settlementRepository.findRowsInRange(from, to)) {
             lines.add(new SettlementExportRowDto(clientKind, row.targetDate(), row.targetTitle(),
-                nameOf(row), row.amount(), row.settledOn()));
+                nameOf(row), row.amount(), row.paidAmount(), row.settledOn()));
         }
         for (PayoutRow payout : year == null
                 ? payoutRepository.findAllRows()
                 : payoutRepository.findByReceivedBetween(from, to)) {
             lines.add(new SettlementExportRowDto(payoutKind, payout.periodMonth(), null,
-                payout.sourceName(), payout.amount(), payout.receivedOn()));
+                payout.sourceName(), payout.amount(), payout.amount(), payout.receivedOn()));
         }
 
         lines.sort(Comparator.comparing(
@@ -266,7 +266,7 @@ public class AdminSettlementStatsService {
         BigDecimal total = BigDecimal.ZERO;
         List<OutstandingItemDto> items = new ArrayList<>(sorted.size());
         for (SettlementRow row : sorted) {
-            total = total.add(row.amount());
+            total = total.add(row.remaining());
             items.add(new OutstandingItemDto(
                 row.isMonthlyFee() ? "month" : row.eventId() != null ? "event" : "slot",
                 row.isMonthlyFee() ? null : row.eventId() != null ? row.eventId() : row.slotId(),
@@ -275,7 +275,7 @@ public class AdminSettlementStatsService {
                 row.isGuest() ? "guest" : "user",
                 row.isGuest() ? row.guestId() : row.userId(),
                 nameOf(row),
-                row.amount()));
+                row.remaining()));
         }
         return new OutstandingDto(
             scale(total), items.size(),
@@ -302,15 +302,17 @@ public class AdminSettlementStatsService {
             if (paidOn == null || paidOn.isBefore(from) || paidOn.isAfter(to)) {
                 continue;
             }
-            total = total.add(row.amount());
+            // ⚠️ What arrived, not what was charged. A row paid 100 of 150 is 100 of revenue, and
+            // one paid 200 of 150 is 200 — the overpayment is money in hand like any other.
+            total = total.add(row.paidAmount());
             if (row.eventId() != null) {
-                fromEvents = fromEvents.add(row.amount());
+                fromEvents = fromEvents.add(row.paidAmount());
             } else {
-                fromSlots = fromSlots.add(row.amount());
+                fromSlots = fromSlots.add(row.paidAmount());
             }
             // A payment can fall inside the selected year and outside the twelve drawn buckets only
             // in the "everything" view, where the chart is a rolling window rather than a year.
-            byMonth.computeIfPresent(YearMonth.from(paidOn), (month, sum) -> sum.add(row.amount()));
+            byMonth.computeIfPresent(YearMonth.from(paidOn), (month, sum) -> sum.add(row.paidAmount()));
         }
 
         for (PayoutRow payout : receivedPayouts) {
@@ -355,8 +357,8 @@ public class AdminSettlementStatsService {
         for (SettlementRow row : rows) {
             LocalDate paidOn = row.settledOn();
             if (paidOn == null || paidOn.isBefore(from) || paidOn.isAfter(to)) continue;
-            total = total.add(row.amount());
-            byMonth.computeIfPresent(YearMonth.from(paidOn), (month, sum) -> sum.add(row.amount()));
+            total = total.add(row.paidAmount());
+            byMonth.computeIfPresent(YearMonth.from(paidOn), (month, sum) -> sum.add(row.paidAmount()));
         }
         for (PayoutRow payout : payouts) {
             LocalDate paidOn = payout.receivedOn();
@@ -523,7 +525,9 @@ public class AdminSettlementStatsService {
         for (SettlementRow row : rows) {
             LocalDate paidOn = row.settledOn();
             boolean paidInRange = paidOn != null && !paidOn.isBefore(from) && !paidOn.isAfter(to);
-            boolean owedInRange = paidOn == null
+            // A row paid in part is BOTH: money that arrived, and a remainder still owed. It is
+            // counted on the payment axis above and, when still short, on the session axis here.
+            boolean owedInRange = !row.isFullyPaid()
                 && !row.targetDate().isBefore(from) && !row.targetDate().isAfter(to);
             // ⚠️ The accumulator is created only by a row that actually contributes. Creating it
             // first and then testing the range put payers into the ranking with 0 paid and 0 owed:
@@ -536,13 +540,14 @@ public class AdminSettlementStatsService {
             Accumulator acc = byPayer.computeIfAbsent(row.payerKey(),
                 key -> new Accumulator(row.isGuest() ? "guest" : "user", row.userId(), nameOf(row)));
             if (paidInRange) {
-                acc.paid = acc.paid.add(row.amount());
+                acc.paid = acc.paid.add(row.paidAmount());
                 acc.count++;
                 if (acc.lastPayment == null || paidOn.isAfter(acc.lastPayment)) {
                     acc.lastPayment = paidOn;
                 }
-            } else {
-                acc.outstanding = acc.outstanding.add(row.amount());
+            }
+            if (owedInRange) {
+                acc.outstanding = acc.outstanding.add(row.remaining());
             }
         }
 

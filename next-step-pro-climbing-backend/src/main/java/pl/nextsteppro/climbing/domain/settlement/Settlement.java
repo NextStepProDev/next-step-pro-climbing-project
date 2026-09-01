@@ -74,8 +74,19 @@ public class Settlement {
     @Nullable
     private GuestReservation guest;
 
+    /** What it costs. */
     @Column(nullable = false, precision = 10, scale = AMOUNT_SCALE)
     private BigDecimal amount;
+
+    /**
+     * What actually arrived against this row. Less than {@link #amount} leaves the remainder owed;
+     * more is an overpayment that raises the client's balance — which happens with cash constantly.
+     *
+     * <p>⚠️ The balance itself is NOT stored anywhere. It is the sum of this minus the sum of amount
+     * across the person's rows, so there is nothing to keep in step and nothing to drift.
+     */
+    @Column(name = "paid_amount", nullable = false, precision = 10, scale = AMOUNT_SCALE)
+    private BigDecimal paidAmount = BigDecimal.ZERO;
 
     /**
      * Third kind of target: the month a standing coaching fee is owed for. Not a foreign key — the

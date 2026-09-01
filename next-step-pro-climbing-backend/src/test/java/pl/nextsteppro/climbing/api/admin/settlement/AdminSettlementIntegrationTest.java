@@ -39,6 +39,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class AdminSettlementIntegrationTest extends BaseIntegrationTest {
 
     @Autowired private AdminSettlementService service;
+    @Autowired private AdminSettlementStatsService statsService;
     @Autowired private GuestReservationRepository guestReservationRepository;
     @Autowired private JdbcTemplate jdbc;
 
@@ -338,7 +339,8 @@ class AdminSettlementIntegrationTest extends BaseIntegrationTest {
 
         LocalDate paidOn = date.plusDays(20);
         int settled = service.settleOutstanding(
-            new SettleOutstandingRequest("user", client.getId(), paidOn));
+            new SettleOutstandingRequest("user", client.getId(), paidOn, new BigDecimal("230")))
+            .settled();
 
         assertEquals(2, settled, "Both of hers, and only hers");
         // One transfer covered the month, so one date is true of all of it — taking each session's
@@ -350,14 +352,70 @@ class AdminSettlementIntegrationTest extends BaseIntegrationTest {
     }
 
     @Test
-    @DisplayName("shouldLeaveAlreadySettledAmountsAloneWhenRunAgain")
-    void shouldLeaveAlreadySettledAmountsAloneWhenRunAgain() {
+    @DisplayName("shouldRefuseToRecordMoneyAgainstAnAccountThatOwesNothing")
+    void shouldRefuseToRecordMoneyAgainstAnAccountThatOwesNothing() {
         save("slot", slot.getId(), "user", client.getId(), "150", date);
 
-        assertEquals(0, service.settleOutstanding(
-                new SettleOutstandingRequest("user", client.getId(), date.plusDays(20))),
-            "Running it twice must not rewrite a date somebody corrected by hand");
-        assertEquals(date, service.getSection("slot", slot.getId()).lines().getFirst().settledOn());
+        // Nothing open and no credit to draw on: there is no row for the money to land against, and
+        // silently doing nothing would look like it had been recorded.
+        assertThrows(IllegalArgumentException.class, () -> service.settleOutstanding(
+            new SettleOutstandingRequest("user", client.getId(), date.plusDays(20), BigDecimal.ZERO)));
+        assertEquals(date, service.getSection("slot", slot.getId()).lines().getFirst().settledOn(),
+            "And the date somebody corrected by hand is untouched");
+    }
+
+    @Test
+    @DisplayName("shouldKeepTheChangeAsCreditWhenSomebodyPaysMoreThanTheyOwe")
+    void shouldKeepTheChangeAsCreditWhenSomebodyPaysMoreThanTheyOwe() {
+        save("slot", slot.getId(), "user", client.getId(), "150", null);
+
+        // A two-hundred note against a hundred-and-fifty session, which is how cash usually goes.
+        SettleOutstandingResultDto result = service.settleOutstanding(new SettleOutstandingRequest(
+            "user", client.getId(), date, new BigDecimal("200")));
+
+        assertEquals(1, result.settled());
+        assertEquals(0, new BigDecimal("50.00").compareTo(result.balance()),
+            "The change does not vanish — it stays on their account");
+        assertEquals(0, service.getSection("slot", slot.getId()).lines().getFirst()
+            .balance().compareTo(new BigDecimal("50.00")),
+            "And it is in front of you at the moment you type the next amount");
+    }
+
+    @Test
+    @DisplayName("shouldSpendThatCreditOnTheNextSessionInsteadOfLeavingItStranded")
+    void shouldSpendThatCreditOnTheNextSessionInsteadOfLeavingItStranded() {
+        save("slot", slot.getId(), "user", client.getId(), "150", null);
+        service.settleOutstanding(new SettleOutstandingRequest(
+            "user", client.getId(), date, new BigDecimal("200")));
+
+        TimeSlot next = timeSlotRepository.saveAndFlush(
+            new TimeSlot(date.plusDays(7), LocalTime.of(18, 0), LocalTime.of(20, 0), 4));
+        reservationRepository.saveAndFlush(new Reservation(client, next));
+        save("slot", next.getId(), "user", client.getId(), "150", null);
+
+        // He hands over 100 and the 50 already held covers the rest.
+        SettleOutstandingResultDto result = service.settleOutstanding(new SettleOutstandingRequest(
+            "user", client.getId(), date.plusDays(7), new BigDecimal("100")));
+
+        assertEquals(0, BigDecimal.ZERO.compareTo(result.balance()), "Square");
+        // ⚠️ And the rows agree with the balance. Leaving the credit where it was would net to zero
+        // while the second session still read as owing 50 — two true-looking figures disagreeing.
+        assertEquals(0, stats().outstanding().count(),
+            "Nothing is owed, so nothing is listed");
+    }
+
+    @Test
+    @DisplayName("shouldKeepChasingTheRemainderWhenSomebodyPaysTooLittle")
+    void shouldKeepChasingTheRemainderWhenSomebodyPaysTooLittle() {
+        save("slot", slot.getId(), "user", client.getId(), "150", null);
+
+        SettleOutstandingResultDto result = service.settleOutstanding(new SettleOutstandingRequest(
+            "user", client.getId(), date, new BigDecimal("100")));
+
+        assertEquals(0, new BigDecimal("-50.00").compareTo(result.balance()));
+        assertEquals(1, stats().outstanding().count());
+        assertEquals(0, new BigDecimal("50.00").compareTo(stats().outstanding().total()),
+            "Fifty still owed, not the whole hundred and fifty");
     }
 
     @Test
@@ -369,7 +427,7 @@ class AdminSettlementIntegrationTest extends BaseIntegrationTest {
         save("slot", slot.getId(), "user", client.getId(), "150", null);
 
         assertEquals(1, service.settleOutstanding(
-            new SettleOutstandingRequest("guest", guest.getId(), date)));
+            new SettleOutstandingRequest("guest", guest.getId(), date, new BigDecimal("150"))).settled());
         assertNull(service.getSection("slot", slot.getId()).lines().stream()
             .filter(line -> line.payerId().equals(client.getId()))
             .findFirst().orElseThrow().settledOn());
@@ -379,7 +437,7 @@ class AdminSettlementIntegrationTest extends BaseIntegrationTest {
     @DisplayName("shouldRejectAnUnknownPayerTypeForABatch")
     void shouldRejectAnUnknownPayerTypeForABatch() {
         assertThrows(IllegalArgumentException.class, () -> service.settleOutstanding(
-            new SettleOutstandingRequest("sponsor", client.getId(), date)));
+            new SettleOutstandingRequest("sponsor", client.getId(), date, new BigDecimal("150"))));
     }
 
     // ------------------------------------------------------------ database rules
@@ -453,8 +511,12 @@ class AdminSettlementIntegrationTest extends BaseIntegrationTest {
 
     private void save(String target, UUID targetId, String payer, UUID payerId,
                       String amount, LocalDate settledOn) {
-        service.save(target, targetId, payer, payerId,
-            new SaveSettlementRequest(new BigDecimal(amount), settledOn));
+        service.save(target, targetId, payer, payerId, new SaveSettlementRequest(
+            new BigDecimal(amount), settledOn == null ? null : new BigDecimal(amount), settledOn));
+    }
+
+    private SettlementOverviewDto stats() {
+        return statsService.buildOverview("all", LocalDate.now());
     }
 
     private SettlementLineDto lineFor(TimeSlot on, User payer) {

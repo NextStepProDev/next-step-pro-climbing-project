@@ -580,7 +580,14 @@ export interface SettlementLine {
   name: string
   participants: number
   orphaned: boolean
+  // What it costs.
   amount: number | null
+  // What actually arrived against it. Cash rarely equals the charge, so these are two numbers and
+  // the screen shows both.
+  paidAmount: number
+  // Where this payer's whole account stands: positive means you are holding their money. Carried on
+  // the line so it is in front of you at the moment you type the next amount.
+  balance: number
   settledOn: string | null
   // What this person was last charged, offered as a prefill and never applied on its own. This is
   // what stands in for a default-rate column on the slot: the price follows the person (a pass, a
@@ -744,6 +751,8 @@ export interface OutstandingSummary {
 
 // Carries its own address (targetType/targetId + payerType/payerId), so the tab can settle a debt
 // in place without reconstructing one.
+// `amount` here is what is STILL owed on that row, not the original charge: a session paid 100 of
+// 150 appears as 50.
 export interface OutstandingItem {
   // 'month' is a standing coaching fee, which has no calendar entry behind it — hence the nullable
   // targetId. The null IS the signal not to offer a link, not an omission.

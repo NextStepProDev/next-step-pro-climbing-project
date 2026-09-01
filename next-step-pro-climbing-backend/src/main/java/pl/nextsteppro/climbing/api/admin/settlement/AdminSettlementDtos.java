@@ -50,9 +50,14 @@ record SettlementCoverageDto(String kind, UUID id, String name) {}
  * @param participants how many people this booking covers. Shown next to the name because the
  *                     amount prices the whole row, not a head — "Piotr Nowak (2 osoby)" is
  *                     otherwise indistinguishable from a single seat at double the rate.
- * @param amount       {@code null} when nothing has been priced yet. That is a different state from
- *                     {@code 0}, which means free of charge: only the second one is a decision, and
- *                     only the second one belongs in the totals.
+ * @param amount       what it costs. {@code null} when nothing has been priced yet — a different
+ *                     state from {@code 0}, which means free of charge: only the second is a
+ *                     decision, and only the second belongs in the totals.
+ * @param paidAmount   what actually arrived against it. Cash rarely equals the charge, so these are
+ *                     two figures and the screen shows both side by side.
+ * @param balance      where this payer's whole account stands: positive means we are holding their
+ *                     money. Carried on the line so the figure is in front of you at the moment you
+ *                     type the next amount — which is the only moment it is any use.
  * @param orphaned     true when a settlement exists but the booking behind it does not any more.
  *                     The row stays visible rather than dropping out of the list: money that
  *                     changed hands does not stop having changed hands because somebody cancelled.
@@ -69,6 +74,8 @@ record SettlementLineDto(
     int participants,
     boolean orphaned,
     @Nullable BigDecimal amount,
+    BigDecimal paidAmount,
+    BigDecimal balance,
     @Nullable LocalDate settledOn,
     @Nullable BigDecimal suggestedAmount
 ) {}
@@ -83,6 +90,12 @@ record SettlementLineDto(
  */
 record SaveSettlementRequest(
     @NotNull @DecimalMin("0") @DecimalMax("100000") BigDecimal amount,
+    /**
+     * What arrived against this row. Null is read as nothing yet — the same meaning a missing
+     * {@code settledOn} carries, kept together so a row cannot claim a payment date with no money
+     * behind it.
+     */
+    @Nullable @DecimalMin("0") @DecimalMax("100000") BigDecimal paidAmount,
     @Nullable LocalDate settledOn
 ) {}
 
@@ -96,11 +109,16 @@ record SaveSettlementRequest(
 record SettleOutstandingRequest(
     @NotNull String payerType,
     @NotNull UUID payerId,
-    @NotNull LocalDate settledOn
+    @NotNull LocalDate settledOn,
+    /** What actually changed hands. May be less than owed, or more — cash rarely has change. */
+    @NotNull @DecimalMin("0") @DecimalMax("100000") BigDecimal received
 ) {}
 
-/** How many rows it actually touched, so the client can say so rather than guess. */
-record SettleOutstandingResultDto(int settled) {}
+/**
+ * @param settled how many rows the money reached
+ * @param balance where the account stands afterwards: positive means we are holding their money.
+ */
+record SettleOutstandingResultDto(int settled, BigDecimal balance) {}
 
 /**
  * Everything the Settlements tab draws, from one read.
@@ -374,7 +392,10 @@ record SettlementExportRowDto(
     LocalDate date,
     @Nullable String title,
     String payer,
+    /** What it cost. */
     BigDecimal amount,
+    /** What actually arrived. Less than the charge leaves a remainder; more is an overpayment. */
+    BigDecimal paid,
     @Nullable LocalDate settledOn
 ) {}
 

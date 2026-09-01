@@ -63,9 +63,14 @@ class AdminSettlementQueryCountTest extends BaseIntegrationTest {
 
     /**
      * Event, its days, their confirmed bookings, guests on the event, guests on its days, the saved
-     * amounts, and the prefill — one query each, plus slack for Spring Data's own round trips.
+     * amounts, the prefill, who settles it in bulk, and the two balance reads (one for registered
+     * payers, one for guests) — one query each, plus slack for Spring Data's own round trips.
+     *
+     * <p>The balances were briefly a query PER PAYER, which took this to nineteen on a fixture of
+     * ten. This gate is what caught it; the ceiling stays a constant so the same mistake cannot hide
+     * behind a bigger fixture.
      */
-    private static final int MAX_SECTION_QUERIES = 9;
+    private static final int MAX_SECTION_QUERIES = 12;
 
     @Autowired private AdminSettlementStatsService service;
     @Autowired private AdminSettlementService settlementService;
@@ -100,9 +105,11 @@ class AdminSettlementQueryCountTest extends BaseIntegrationTest {
                 new TimeSlot(date, LocalTime.of(18, 0), LocalTime.of(20, 0), 4));
 
             // Every third one left unpaid, so the outstanding read has work to do as well.
-            jdbc.update("INSERT INTO settlements (time_slot_id, user_id, amount, settled_on) "
-                    + "VALUES (?, ?, ?, ?)",
-                slot.getId(), payer.getId(), new BigDecimal("150.00"), i % 3 == 0 ? null : date);
+            jdbc.update("INSERT INTO settlements (time_slot_id, user_id, amount, paid_amount, settled_on) "
+                    + "VALUES (?, ?, ?, ?, ?)",
+                slot.getId(), payer.getId(), new BigDecimal("150.00"),
+                i % 3 == 0 ? BigDecimal.ZERO : new BigDecimal("150.00"),
+                i % 3 == 0 ? null : date);
         }
 
         entityManager.flush();

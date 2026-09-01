@@ -278,7 +278,7 @@ class AdminPayoutIntegrationTest extends BaseIntegrationTest {
             new TimeSlot(TODAY.plusDays(3), LocalTime.of(16, 0), LocalTime.of(17, 0), 10));
         reservationRepository.saveAndFlush(new Reservation(pupil, slot));
         settlementService.save("slot", slot.getId(), "user", pupil.getId(),
-            new SaveSettlementRequest(new BigDecimal("150"), null));
+            new SaveSettlementRequest(new BigDecimal("150"), null, null));
 
         // ⚠️ Otherwise the amount stays in the table, the section stops showing it, and it goes on
         // counting in revenue and in outstanding debt — money visible in the totals and nowhere else.
@@ -303,7 +303,7 @@ class AdminPayoutIntegrationTest extends BaseIntegrationTest {
         // The mirror direction. The front hides the fields, but the endpoint must not depend on that.
         assertThrows(IllegalArgumentException.class, () -> settlementService.save(
             "slot", slot.getId(), "user", pupil.getId(),
-            new SaveSettlementRequest(new BigDecimal("150"), null)));
+            new SaveSettlementRequest(new BigDecimal("150"), null, null)));
     }
 
     @Test

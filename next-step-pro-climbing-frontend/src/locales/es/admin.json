@@ -916,7 +916,13 @@
       "settledOnLabel": "Fecha de pago — {{name}}",
       "useLast": "la última vez: {{amount}}",
       "clear": "Eliminar importe — {{name}}",
-      "settledLabel": "Liquidado — {{name}}"
+      "settledLabel": "Liquidado — {{name}}",
+      "credit": "saldo a favor {{amount}}",
+      "debt": "debe {{amount}}",
+      "receivedPlaceholder": "recibido",
+      "receivedLabel": "Recibido — {{name}}",
+      "receivedHint": "recibido",
+      "dueHint": "a pagar"
     },
     "actions": {
       "setAll": "Aplicar a todos",
@@ -951,7 +957,8 @@
         "open": "Abrir la sesión — {{name}}, {{date}}",
         "sessions": "{{n}} sesiones",
         "settleAll": "Liquidar todo — {{amount}}",
-        "paidOnLabel": "Fecha de pago — {{name}}"
+        "paidOnLabel": "Fecha de pago — {{name}}",
+        "receivedLabel": "Recibido — {{name}}"
       },
       "revenue": {
         "title": "Ingresos",

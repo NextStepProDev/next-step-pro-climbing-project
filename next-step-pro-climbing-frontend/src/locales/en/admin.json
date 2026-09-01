@@ -916,7 +916,13 @@
       "settledOnLabel": "Payment date — {{name}}",
       "useLast": "last time: {{amount}}",
       "clear": "Remove amount — {{name}}",
-      "settledLabel": "Settled — {{name}}"
+      "settledLabel": "Settled — {{name}}",
+      "credit": "credit {{amount}}",
+      "debt": "owes {{amount}}",
+      "receivedPlaceholder": "received",
+      "receivedLabel": "Received — {{name}}",
+      "receivedHint": "received",
+      "dueHint": "due"
     },
     "actions": {
       "setAll": "Apply to all",
@@ -951,7 +957,8 @@
         "open": "Open the session — {{name}}, {{date}}",
         "sessions": "{{n}} sessions",
         "settleAll": "Settle all — {{amount}}",
-        "paidOnLabel": "Payment date — {{name}}"
+        "paidOnLabel": "Payment date — {{name}}",
+        "receivedLabel": "Received — {{name}}"
       },
       "revenue": {
         "title": "Revenue",

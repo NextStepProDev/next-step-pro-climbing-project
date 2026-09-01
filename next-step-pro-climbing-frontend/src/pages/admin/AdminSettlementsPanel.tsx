@@ -355,13 +355,17 @@ function PayerDebtGroup({
   const queryClient = useQueryClient()
   const [open, setOpen] = useState(false)
   const [paidOn, setPaidOn] = useState(() => todayInWarsaw())
+  // What actually changed hands, defaulting to what is owed — the common case is one click, and the
+  // field is there for the times a note is bigger than the bill.
+  const [received, setReceived] = useState(() => String(group.total))
 
   const first = group.items[0]
   const backHere = location.pathname + location.search
 
   const settleAll = useMutation({
     mutationFn: () =>
-      adminSettlementsApi.settleOutstanding(first.payerType, first.payerId, paidOn),
+      adminSettlementsApi.settleOutstanding(
+        first.payerType, first.payerId, paidOn, parseAmount(received, MAX_PAYOUT_AMOUNT) ?? 0),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin', 'settlements'] }),
   })
 
@@ -383,6 +387,13 @@ function PayerDebtGroup({
         <span className="shrink-0 text-sm font-semibold text-amber-500 tabular-nums">
           {money(group.total)}
         </span>
+        <input
+          inputMode="decimal"
+          value={received}
+          onChange={(e) => setReceived(e.target.value)}
+          aria-label={t('settlements.tab.outstanding.receivedLabel', { name: group.name })}
+          className="w-24 bg-surface-800 border border-surface-600 rounded px-2 py-1 text-sm text-surface-100 focus:outline-none focus:border-primary-500"
+        />
         <DateInput
           value={paidOn}
           onChange={setPaidOn}
@@ -393,7 +404,7 @@ function PayerDebtGroup({
           size="sm"
           variant="primary"
           loading={settleAll.isPending}
-          disabled={paidOn === ''}
+          disabled={paidOn === '' || parseAmount(received, MAX_PAYOUT_AMOUNT) === null}
           onClick={() => settleAll.mutate()}
         >
           {t('settlements.tab.outstanding.settleAll', { amount: money(group.total) })}

@@ -13,6 +13,7 @@ import pl.nextsteppro.climbing.domain.reservation.ReservationStatus;
 import pl.nextsteppro.climbing.domain.settlement.PayerLastAmount;
 import pl.nextsteppro.climbing.domain.settlement.Settlement;
 import pl.nextsteppro.climbing.domain.settlement.SettlementRepository;
+import pl.nextsteppro.climbing.domain.settlement.PayerBalance;
 import pl.nextsteppro.climbing.domain.settlement.SettlementRow;
 import pl.nextsteppro.climbing.domain.settlement.PayoutSourceRepository;
 import pl.nextsteppro.climbing.domain.settlement.SessionCoverage;
@@ -27,7 +28,9 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.Collection;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -112,7 +115,12 @@ public class AdminSettlementService {
         }
         BigDecimal amount = Settlement.normalizeAmount(
             request.amount(), msg.get("admin.settlement.amount.invalid"));
-        LocalDate settledOn = request.settledOn();
+        BigDecimal paid = request.paidAmount() == null
+            ? BigDecimal.ZERO
+            : Settlement.normalizeAmount(request.paidAmount(), msg.get("admin.settlement.amount.invalid"));
+        // A date with no money behind it would read as paid on every screen while contributing
+        // nothing, so the two travel together or not at all.
+        LocalDate settledOn = paid.signum() == 0 ? null : request.settledOn();
         Instant now = Instant.now();
 
         // Single statement rather than read-then-save: a second tab or a double-click loses the race
@@ -122,15 +130,15 @@ public class AdminSettlementService {
             case USER -> {
                 requireChargeableUser(target, targetId, payerId);
                 switch (target) {
-                    case SLOT -> settlementRepository.upsertForSlotUser(targetId, payerId, amount, settledOn, now);
-                    case EVENT -> settlementRepository.upsertForEventUser(targetId, payerId, amount, settledOn, now);
+                    case SLOT -> settlementRepository.upsertForSlotUser(targetId, payerId, amount, paid, settledOn, now);
+                    case EVENT -> settlementRepository.upsertForEventUser(targetId, payerId, amount, paid, settledOn, now);
                 }
             }
             case GUEST -> {
                 requireGuestOfTarget(target, targetId, payerId);
                 switch (target) {
-                    case SLOT -> settlementRepository.upsertForSlotGuest(targetId, payerId, amount, settledOn, now);
-                    case EVENT -> settlementRepository.upsertForEventGuest(targetId, payerId, amount, settledOn, now);
+                    case SLOT -> settlementRepository.upsertForSlotGuest(targetId, payerId, amount, paid, settledOn, now);
+                    case EVENT -> settlementRepository.upsertForEventGuest(targetId, payerId, amount, paid, settledOn, now);
                 }
             }
         }
@@ -172,13 +180,83 @@ public class AdminSettlementService {
      * guard: it can only touch rows that already exist, and a person who has since cancelled still
      * owes for the sessions they attended.
      */
-    public int settleOutstanding(SettleOutstandingRequest request) {
+    public SettleOutstandingResultDto settleOutstanding(SettleOutstandingRequest request) {
         SettlementPayer payer = parsePayer(request.payerType());
-        Instant now = Instant.now();
-        return switch (payer) {
-            case USER -> settlementRepository.settleAllForUser(request.payerId(), request.settledOn(), now);
-            case GUEST -> settlementRepository.settleAllForGuest(request.payerId(), request.settledOn(), now);
+        BigDecimal received = Settlement.normalizeAmount(
+            request.received(), msg.get("admin.settlement.amount.invalid"));
+
+        List<SettlementRow> open = switch (payer) {
+            case USER -> settlementRepository.findOpenRowsForUser(request.payerId());
+            case GUEST -> settlementRepository.findOpenRowsForGuest(request.payerId());
         };
+        List<SettlementRow> credited = creditRows(payer, request.payerId());
+        if (open.isEmpty() && credited.isEmpty()) {
+            throw new IllegalArgumentException(msg.get("admin.settlement.nothing.to.settle"));
+        }
+
+        Instant now = Instant.now();
+        LocalDate settledOn = request.settledOn();
+
+        // ⚠️ Money the person already left with us is pulled back into the pool first, and the rows
+        // holding it are reset to exact. Without this the balance and the rows tell different
+        // stories: the ledger nets to zero while an invoice still reads as open, and neither figure
+        // is wrong on its own — which is the worst kind of disagreement to debug.
+        BigDecimal pool = received;
+        for (SettlementRow row : credited) {
+            pool = pool.add(row.paidAmount().subtract(row.amount()));
+            settlementRepository.recordPayment(row.id(), row.amount(), row.settledOn(), now);
+        }
+
+        // Oldest first: a backlog is paid off in the order it accumulated.
+        int touched = 0;
+        SettlementRow last = null;
+        for (SettlementRow row : open) {
+            if (pool.signum() <= 0) break;
+            BigDecimal applied = pool.min(row.remaining());
+            settlementRepository.recordPayment(row.id(), row.paidAmount().add(applied), settledOn, now);
+            pool = pool.subtract(applied);
+            last = row;
+            touched++;
+        }
+
+        // Anything over what was owed is an overpayment and stays as one, on the row it landed
+        // against. Refusing it would mean the change from a two-hundred note simply vanishes.
+        if (pool.signum() > 0) {
+            SettlementRow holder = last != null ? last
+                : open.isEmpty() ? credited.getFirst() : open.getFirst();
+            BigDecimal base = holder.equals(last) ? holder.amount() : holder.amount();
+            settlementRepository.recordPayment(holder.id(), base.add(pool), settledOn, now);
+            if (last == null) {
+                touched++;
+            }
+        }
+
+        return new SettleOutstandingResultDto(touched, scaleAmount(balanceOf(payer, request.payerId())));
+    }
+
+    private List<SettlementRow> creditRows(SettlementPayer payer, UUID payerId) {
+        List<SettlementRow> all = switch (payer) {
+            case USER -> settlementRepository.findRowsForUser(payerId);
+            case GUEST -> settlementRepository.findRowsForGuest(payerId);
+        };
+        return all.stream().filter(row -> row.balanceDelta().signum() > 0).toList();
+    }
+
+    /**
+     * What this person's account nets to: positive when we are holding their money, negative when
+     * they are holding ours. Derived, never stored — a column beside it would be a second truth to
+     * keep in step through every correction.
+     */
+    @Transactional(readOnly = true)
+    public BigDecimal balanceOf(SettlementPayer payer, UUID payerId) {
+        return switch (payer) {
+            case USER -> settlementRepository.balanceForUser(payerId);
+            case GUEST -> settlementRepository.balanceForGuest(payerId);
+        };
+    }
+
+    private static BigDecimal scaleAmount(BigDecimal value) {
+        return value.setScale(Settlement.AMOUNT_SCALE, java.math.RoundingMode.HALF_UP);
     }
 
     // ---------------------------------------------------------------- sections
@@ -252,6 +330,10 @@ public class AdminSettlementService {
             }
         }
         Map<UUID, BigDecimal> suggestions = lastAmountsFor(participants, byPayer.keySet());
+        // ⚠️ Two reads for the whole section, not one per payer. The balance spans a person's whole
+        // history so it cannot come from these rows — but asking for it inside the loop is the
+        // per-person query the count gate exists to stop, and it caught exactly that here.
+        Map<UUID, BigDecimal> balances = balancesFor(participants, byPayer.values());
 
         List<SettlementLineDto> result = new ArrayList<>();
         for (Line line : participants) {
@@ -259,6 +341,8 @@ public class AdminSettlementService {
             result.add(new SettlementLineDto(
                 segment(line.payer()), line.payerId(), line.name(), line.participants(), false,
                 row == null ? null : row.amount(),
+                row == null ? BigDecimal.ZERO : row.paidAmount(),
+                balances.getOrDefault(line.payerId(), BigDecimal.ZERO),
                 row == null ? null : row.settledOn(),
                 // Only offered where there is nothing yet — a prefill next to a figure the admin
                 // already wrote reads as a second, competing amount.
@@ -271,14 +355,42 @@ public class AdminSettlementService {
             String name = guest
                 ? (note == null ? "" : note)
                 : displayName(orphan.firstName(), orphan.lastName());
+            SettlementPayer orphanPayer = guest ? SettlementPayer.GUEST : SettlementPayer.USER;
             result.add(new SettlementLineDto(
-                segment(guest ? SettlementPayer.GUEST : SettlementPayer.USER),
-                Objects.requireNonNull(payerId), name, 1, true,
-                orphan.amount(), orphan.settledOn(), null));
+                segment(orphanPayer), Objects.requireNonNull(payerId), name, 1, true,
+                orphan.amount(), orphan.paidAmount(),
+                balances.getOrDefault(payerId, BigDecimal.ZERO),
+                orphan.settledOn(), null));
         }
         // A session settled in bulk has nobody to charge per head, so the section switches mode
         // rather than offering fields that would invent an amount.
         return new SettlementSectionDto(targetDate, result, coverageOf(target, targetId));
+    }
+
+    /** Balances for everyone on this section, in two reads regardless of how many people there are. */
+    private Map<UUID, BigDecimal> balancesFor(List<Line> participants, Collection<SettlementRow> orphans) {
+        Set<UUID> userIds = new LinkedHashSet<>();
+        Set<UUID> guestIds = new LinkedHashSet<>();
+        for (Line line : participants) {
+            (line.payer() == SettlementPayer.USER ? userIds : guestIds).add(line.payerId());
+        }
+        for (SettlementRow orphan : orphans) {
+            if (orphan.isGuest()) {
+                guestIds.add(Objects.requireNonNull(orphan.guestId()));
+            } else if (orphan.userId() != null) {
+                userIds.add(orphan.userId());
+            }
+        }
+        Map<UUID, BigDecimal> balances = new LinkedHashMap<>();
+        if (!userIds.isEmpty()) {
+            settlementRepository.balancesForUsers(userIds)
+                .forEach(row -> balances.put(row.payerId(), row.balance()));
+        }
+        if (!guestIds.isEmpty()) {
+            settlementRepository.balancesForGuests(guestIds)
+                .forEach(row -> balances.put(row.payerId(), row.balance()));
+        }
+        return balances;
     }
 
     /**

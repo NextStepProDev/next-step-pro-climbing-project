@@ -16,7 +16,10 @@ interface SettlementSectionProps {
 
 /** Local edits, keyed by payer. The amount stays a string until save — see `parseAmount`. */
 interface Draft {
+  /** What it costs. */
   amount: string
+  /** What actually arrived. Kept apart from the charge, because cash rarely makes them equal. */
+  received: string
   settled: boolean
   settledOn: string
 }
@@ -83,6 +86,7 @@ export function SettlementSection({ target, targetId }: SettlementSectionProps) 
     for (const line of lines) {
       map[payerKey(line)] = {
         amount: line.amount === null ? '' : String(line.amount),
+        received: line.paidAmount === 0 ? '' : String(line.paidAmount),
         settled: line.settledOn !== null,
         settledOn: line.settledOn ?? targetDate,
       }
@@ -104,6 +108,7 @@ export function SettlementSection({ target, targetId }: SettlementSectionProps) 
     if (!draft) return false
     const base = saved[key]
     if (draft.amount.trim() !== base.amount) return true
+    if (draft.received.trim() !== base.received) return true
     if (draft.settled !== base.settled) return true
     // The date only counts while the row claims to be settled; an untouched picker behind an
     // unchecked box is not a change anybody made.
@@ -132,12 +137,18 @@ export function SettlementSection({ target, targetId }: SettlementSectionProps) 
           invalid.push(key)
           continue
         }
+        // Ticking "settled" without touching the received field means the charge arrived in full,
+        // which is the ordinary case and must stay a single click.
+        const received = draft.settled
+          ? (parseAmount(draft.received) ?? amount)
+          : null
         await adminSettlementsApi.save(
           target,
           targetId,
           line.payerType,
           line.payerId,
           amount,
+          received,
           draft.settled ? draft.settledOn : null,
         )
       }
@@ -155,7 +166,7 @@ export function SettlementSection({ target, targetId }: SettlementSectionProps) 
     },
   })
 
-  const clearRow = (line: SettlementLine) => patch(line, { amount: '', settled: false })
+  const clearRow = (line: SettlementLine) => patch(line, { amount: '', received: '', settled: false })
 
   /**
    * Writes the same amount into EVERY row, not only the blank ones — which is what the button says
@@ -184,7 +195,8 @@ export function SettlementSection({ target, targetId }: SettlementSectionProps) 
       const amount = parseAmount(draft.amount)
       if (amount === null) continue
       total += amount
-      if (draft.settled) paid += amount
+      // What arrived, not what was charged — the two are the whole point of the second field.
+      if (draft.settled) paid += parseAmount(draft.received) ?? amount
     }
     return { total, paid }
   }, [lines, drafts, saved])
@@ -316,6 +328,22 @@ export function SettlementSection({ target, targetId }: SettlementSectionProps) 
                         {t('settlements.line.orphaned')}
                       </span>
                     )}
+                    {/* The standing balance, in front of you at the moment you type the next
+                        amount — which is the only moment it is any use. */}
+                    {line.balance !== 0 && (
+                      <span
+                        className={`block text-xs ${
+                          line.balance > 0 ? 'text-emerald-400' : 'text-amber-500'
+                        }`}
+                      >
+                        {t(
+                          line.balance > 0
+                            ? 'settlements.line.credit'
+                            : 'settlements.line.debt',
+                          { amount: formatPln(Math.abs(line.balance), i18n.language) },
+                        )}
+                      </span>
+                    )}
                   </span>
 
                   <span className="flex flex-col">
@@ -333,6 +361,9 @@ export function SettlementSection({ target, targetId }: SettlementSectionProps) 
                         invalidKeys.includes(key) ? 'border-rose-500' : 'border-surface-600'
                       }`}
                     />
+                    <span className="mt-0.5 text-[11px] text-surface-500">
+                      {t('settlements.line.dueHint')}
+                    </span>
                     {line.suggestedAmount !== null && draft.amount.trim() === '' && (
                       <button
                         type="button"
@@ -345,6 +376,22 @@ export function SettlementSection({ target, targetId }: SettlementSectionProps) 
                       </button>
                     )}
                   </span>
+
+                  {draft.settled && (
+                    <span className="flex flex-col">
+                      <input
+                        inputMode="decimal"
+                        value={draft.received}
+                        onChange={(e) => patch(line, { received: e.target.value })}
+                        placeholder={draft.amount || t('settlements.line.receivedPlaceholder')}
+                        aria-label={t('settlements.line.receivedLabel', { name: line.name })}
+                        className="w-24 bg-surface-800 border border-surface-600 rounded px-2 py-1 text-sm text-surface-100 focus:outline-none focus:border-primary-500"
+                      />
+                      <span className="mt-0.5 text-[11px] text-surface-500">
+                        {t('settlements.line.receivedHint')}
+                      </span>
+                    </span>
+                  )}
 
                   <label className="flex items-center gap-1.5 text-xs text-surface-300">
                     <input

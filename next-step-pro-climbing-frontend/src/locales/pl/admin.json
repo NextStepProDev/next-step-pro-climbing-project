@@ -918,7 +918,13 @@
       "settledOnLabel": "Data zapłaty — {{name}}",
       "useLast": "ostatnio: {{amount}}",
       "clear": "Usuń kwotę — {{name}}",
-      "settledLabel": "Rozliczone — {{name}}"
+      "settledLabel": "Rozliczone — {{name}}",
+      "credit": "nadpłata {{amount}}",
+      "debt": "zaległość {{amount}}",
+      "receivedPlaceholder": "otrzymano",
+      "receivedLabel": "Otrzymano — {{name}}",
+      "receivedHint": "otrzymano",
+      "dueHint": "należne"
     },
     "actions": {
       "setAll": "Ustaw wszystkim",
@@ -953,7 +959,8 @@
         "open": "Otwórz termin — {{name}}, {{date}}",
         "sessions": "{{n}} zajęć",
         "settleAll": "Rozlicz wszystko — {{amount}}",
-        "paidOnLabel": "Data wpłaty — {{name}}"
+        "paidOnLabel": "Data wpłaty — {{name}}",
+        "receivedLabel": "Otrzymano — {{name}}"
       },
       "revenue": {
         "title": "Przychód",

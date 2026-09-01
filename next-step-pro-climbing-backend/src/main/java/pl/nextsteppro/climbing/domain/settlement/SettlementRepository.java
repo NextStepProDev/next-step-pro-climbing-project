@@ -44,7 +44,7 @@ public interface SettlementRepository extends JpaRepository<Settlement, UUID> {
         SELECT new pl.nextsteppro.climbing.domain.settlement.SettlementRow(
             s.id, ts.id, e.id, s.periodMonth, u.id, u.firstName, u.lastName, g.id, g.note,
             COALESCE(ts.date, e.startDate, s.periodMonth), COALESCE(ts.title, e.title), e.eventType,
-            s.amount, s.settledOn)
+            s.amount, s.paidAmount, s.settledOn)
         FROM Settlement s
         LEFT JOIN s.timeSlot ts
         LEFT JOIN s.event e
@@ -82,7 +82,10 @@ public interface SettlementRepository extends JpaRepository<Settlement, UUID> {
     @Query(ROW_SELECT + " WHERE u.id = :userId")
     List<SettlementRow> findRowsForUser(@Param("userId") UUID userId);
 
-    @Query(ROW_SELECT + " WHERE s.settledOn IS NULL")
+    @Query(ROW_SELECT + " WHERE g.id = :guestId")
+    List<SettlementRow> findRowsForGuest(@Param("guestId") UUID guestId);
+
+    @Query(ROW_SELECT + " WHERE s.paidAmount < s.amount")
     List<SettlementRow> findUnsettledRows();
 
     /** Distinct session days, for the year picker. */
@@ -198,31 +201,37 @@ public interface SettlementRepository extends JpaRepository<Settlement, UUID> {
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query(value = """
-        INSERT INTO settlements (time_slot_id, user_id, amount, settled_on, updated_at)
-        VALUES (:slotId, :userId, CAST(:amount AS NUMERIC), CAST(:settledOn AS DATE), :updatedAt)
+        INSERT INTO settlements (time_slot_id, user_id, amount, paid_amount, settled_on, updated_at)
+        VALUES (:slotId, :userId, CAST(:amount AS NUMERIC), CAST(:paid AS NUMERIC),
+                CAST(:settledOn AS DATE), :updatedAt)
         ON CONFLICT (time_slot_id, user_id) WHERE time_slot_id IS NOT NULL AND user_id IS NOT NULL
         DO UPDATE SET amount = CAST(:amount AS NUMERIC),
+                      paid_amount = CAST(:paid AS NUMERIC),
                       settled_on = CAST(:settledOn AS DATE),
                       updated_at = :updatedAt
         """, nativeQuery = true)
     void upsertForSlotUser(@Param("slotId") UUID slotId,
                            @Param("userId") UUID userId,
                            @Param("amount") BigDecimal amount,
+                           @Param("paid") BigDecimal paid,
                            @Param("settledOn") @Nullable LocalDate settledOn,
                            @Param("updatedAt") Instant updatedAt);
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query(value = """
-        INSERT INTO settlements (event_id, user_id, amount, settled_on, updated_at)
-        VALUES (:eventId, :userId, CAST(:amount AS NUMERIC), CAST(:settledOn AS DATE), :updatedAt)
+        INSERT INTO settlements (event_id, user_id, amount, paid_amount, settled_on, updated_at)
+        VALUES (:eventId, :userId, CAST(:amount AS NUMERIC), CAST(:paid AS NUMERIC),
+                CAST(:settledOn AS DATE), :updatedAt)
         ON CONFLICT (event_id, user_id) WHERE event_id IS NOT NULL AND user_id IS NOT NULL
         DO UPDATE SET amount = CAST(:amount AS NUMERIC),
+                      paid_amount = CAST(:paid AS NUMERIC),
                       settled_on = CAST(:settledOn AS DATE),
                       updated_at = :updatedAt
         """, nativeQuery = true)
     void upsertForEventUser(@Param("eventId") UUID eventId,
                             @Param("userId") UUID userId,
                             @Param("amount") BigDecimal amount,
+                            @Param("paid") BigDecimal paid,
                             @Param("settledOn") @Nullable LocalDate settledOn,
                             @Param("updatedAt") Instant updatedAt);
 
@@ -238,35 +247,41 @@ public interface SettlementRepository extends JpaRepository<Settlement, UUID> {
      */
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query(value = """
-        INSERT INTO settlements (time_slot_id, guest_reservation_id, amount, settled_on, updated_at)
-        VALUES (:slotId, :guestId, CAST(:amount AS NUMERIC), CAST(:settledOn AS DATE), :updatedAt)
+        INSERT INTO settlements (time_slot_id, guest_reservation_id, amount, paid_amount, settled_on, updated_at)
+        VALUES (:slotId, :guestId, CAST(:amount AS NUMERIC), CAST(:paid AS NUMERIC),
+                CAST(:settledOn AS DATE), :updatedAt)
         ON CONFLICT (guest_reservation_id) WHERE guest_reservation_id IS NOT NULL
         DO UPDATE SET time_slot_id = :slotId,
                       event_id = NULL,
                       amount = CAST(:amount AS NUMERIC),
+                      paid_amount = CAST(:paid AS NUMERIC),
                       settled_on = CAST(:settledOn AS DATE),
                       updated_at = :updatedAt
         """, nativeQuery = true)
     void upsertForSlotGuest(@Param("slotId") UUID slotId,
                             @Param("guestId") UUID guestId,
                             @Param("amount") BigDecimal amount,
+                            @Param("paid") BigDecimal paid,
                             @Param("settledOn") @Nullable LocalDate settledOn,
                             @Param("updatedAt") Instant updatedAt);
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query(value = """
-        INSERT INTO settlements (event_id, guest_reservation_id, amount, settled_on, updated_at)
-        VALUES (:eventId, :guestId, CAST(:amount AS NUMERIC), CAST(:settledOn AS DATE), :updatedAt)
+        INSERT INTO settlements (event_id, guest_reservation_id, amount, paid_amount, settled_on, updated_at)
+        VALUES (:eventId, :guestId, CAST(:amount AS NUMERIC), CAST(:paid AS NUMERIC),
+                CAST(:settledOn AS DATE), :updatedAt)
         ON CONFLICT (guest_reservation_id) WHERE guest_reservation_id IS NOT NULL
         DO UPDATE SET event_id = :eventId,
                       time_slot_id = NULL,
                       amount = CAST(:amount AS NUMERIC),
+                      paid_amount = CAST(:paid AS NUMERIC),
                       settled_on = CAST(:settledOn AS DATE),
                       updated_at = :updatedAt
         """, nativeQuery = true)
     void upsertForEventGuest(@Param("eventId") UUID eventId,
                              @Param("guestId") UUID guestId,
                              @Param("amount") BigDecimal amount,
+                             @Param("paid") BigDecimal paid,
                              @Param("settledOn") @Nullable LocalDate settledOn,
                              @Param("updatedAt") Instant updatedAt);
 
@@ -281,19 +296,42 @@ public interface SettlementRepository extends JpaRepository<Settlement, UUID> {
      * <p>Only unsettled rows are touched, so running it twice is a no-op rather than a rewrite of
      * dates somebody already corrected by hand.
      */
-    @Modifying(clearAutomatically = true, flushAutomatically = true)
-    @Query("UPDATE Settlement s SET s.settledOn = :settledOn, s.updatedAt = :now "
-        + "WHERE s.settledOn IS NULL AND s.user.id = :userId")
-    int settleAllForUser(@Param("userId") UUID userId,
-                         @Param("settledOn") LocalDate settledOn,
-                         @Param("now") Instant now);
+    /** One row of somebody's ledger, oldest first — the order money is applied in. */
+    @Query(ROW_SELECT + " WHERE u.id = :userId AND s.paidAmount < s.amount "
+        + "ORDER BY COALESCE(ts.date, e.startDate, s.periodMonth)")
+    List<SettlementRow> findOpenRowsForUser(@Param("userId") UUID userId);
 
+    @Query(ROW_SELECT + " WHERE g.id = :guestId AND s.paidAmount < s.amount "
+        + "ORDER BY COALESCE(ts.date, e.startDate, s.periodMonth)")
+    List<SettlementRow> findOpenRowsForGuest(@Param("guestId") UUID guestId);
+
+    /** Records money against one row. Addressed by its id, which is why it is only ever called with
+     * an id that came out of one of the reads above. */
     @Modifying(clearAutomatically = true, flushAutomatically = true)
-    @Query("UPDATE Settlement s SET s.settledOn = :settledOn, s.updatedAt = :now "
-        + "WHERE s.settledOn IS NULL AND s.guest.id = :guestId")
-    int settleAllForGuest(@Param("guestId") UUID guestId,
-                          @Param("settledOn") LocalDate settledOn,
-                          @Param("now") Instant now);
+    @Query("UPDATE Settlement s SET s.paidAmount = :paidAmount, s.settledOn = :settledOn, "
+        + "s.updatedAt = :now WHERE s.id = :id")
+    int recordPayment(@Param("id") UUID id,
+                      @Param("paidAmount") BigDecimal paidAmount,
+                      @Param("settledOn") LocalDate settledOn,
+                      @Param("now") Instant now);
+
+    /** Balances for a whole section in one read — see {@link PayerBalance}. */
+    @Query("SELECT new pl.nextsteppro.climbing.domain.settlement.PayerBalance("
+        + "s.user.id, COALESCE(SUM(s.paidAmount - s.amount), 0)) "
+        + "FROM Settlement s WHERE s.user.id IN :ids GROUP BY s.user.id")
+    List<PayerBalance> balancesForUsers(@Param("ids") Collection<UUID> ids);
+
+    @Query("SELECT new pl.nextsteppro.climbing.domain.settlement.PayerBalance("
+        + "s.guest.id, COALESCE(SUM(s.paidAmount - s.amount), 0)) "
+        + "FROM Settlement s WHERE s.guest.id IN :ids GROUP BY s.guest.id")
+    List<PayerBalance> balancesForGuests(@Param("ids") Collection<UUID> ids);
+
+    /** Everything this person has ever been charged and has ever paid — the balance derives from it. */
+    @Query("SELECT COALESCE(SUM(s.paidAmount - s.amount), 0) FROM Settlement s WHERE s.user.id = :userId")
+    BigDecimal balanceForUser(@Param("userId") UUID userId);
+
+    @Query("SELECT COALESCE(SUM(s.paidAmount - s.amount), 0) FROM Settlement s WHERE s.guest.id = :guestId")
+    BigDecimal balanceForGuest(@Param("guestId") UUID guestId);
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("DELETE FROM Settlement s WHERE s.timeSlot.id = :slotId AND s.user.id = :userId")

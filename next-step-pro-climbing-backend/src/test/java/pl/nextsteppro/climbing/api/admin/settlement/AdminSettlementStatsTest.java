@@ -162,8 +162,8 @@ class AdminSettlementStatsTest extends BaseIntegrationTest {
             new Event("Wyjazd", EventType.WORKSHOP, LocalDate.of(2026, 7, 1), LocalDate.of(2026, 7, 3), 8));
         UUID guestId = guestReservationRepository.saveAndFlush(
             new GuestReservation(event, "Ekipa z Krakowa", 3)).getId();
-        jdbc.update("INSERT INTO settlements (event_id, guest_reservation_id, amount, settled_on) "
-            + "VALUES (?, ?, 1800, ?)", event.getId(), guestId, LocalDate.of(2026, 7, 1));
+        jdbc.update("INSERT INTO settlements (event_id, guest_reservation_id, amount, paid_amount, settled_on) "
+            + "VALUES (?, ?, 1800, 1800, ?)", event.getId(), guestId, LocalDate.of(2026, 7, 1));
 
         PersonRevenueDto guest = stats.buildOverview("2026", TODAY).people().getFirst();
 
@@ -410,15 +410,19 @@ class AdminSettlementStatsTest extends BaseIntegrationTest {
     private void settleSlot(LocalDate on, User payer, String amount, LocalDate settledOn) {
         TimeSlot slot = timeSlotRepository.saveAndFlush(
             new TimeSlot(on, LocalTime.of(18, 0), LocalTime.of(20, 0), 4));
-        jdbc.update("INSERT INTO settlements (time_slot_id, user_id, amount, settled_on) VALUES (?, ?, ?, ?)",
-            slot.getId(), payer.getId(), new BigDecimal(amount), settledOn);
+        jdbc.update("INSERT INTO settlements (time_slot_id, user_id, amount, paid_amount, settled_on) "
+                + "VALUES (?, ?, ?, ?, ?)",
+            slot.getId(), payer.getId(), new BigDecimal(amount),
+            settledOn == null ? BigDecimal.ZERO : new BigDecimal(amount), settledOn);
     }
 
     private void settleEvent(LocalDate from, LocalDate to, User payer, String amount, LocalDate settledOn) {
         Event event = eventRepository.saveAndFlush(
             new Event("Kurs", EventType.COURSE, from, to, 8));
-        jdbc.update("INSERT INTO settlements (event_id, user_id, amount, settled_on) VALUES (?, ?, ?, ?)",
-            event.getId(), payer.getId(), new BigDecimal(amount), settledOn);
+        jdbc.update("INSERT INTO settlements (event_id, user_id, amount, paid_amount, settled_on) "
+                + "VALUES (?, ?, ?, ?, ?)",
+            event.getId(), payer.getId(), new BigDecimal(amount),
+            settledOn == null ? BigDecimal.ZERO : new BigDecimal(amount), settledOn);
     }
 
     private BigDecimal monthOf(SettlementOverviewDto overview, LocalDate month) {

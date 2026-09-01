@@ -137,7 +137,7 @@ class AdminSubscriptionIntegrationTest extends BaseIntegrationTest {
         UUID id = subscriptions.create(client.getId(), new SaveSubscriptionRequest(
             new BigDecimal("400"), monthsAgo(3), null)).id();
         // She paid for the month after the one they actually stopped in.
-        jdbc.update("UPDATE settlements SET settled_on = ? WHERE period_month = ?",
+        jdbc.update("UPDATE settlements SET settled_on = ?, paid_amount = amount WHERE period_month = ?",
             monthsAgo(1), monthsAgo(1));
 
         subscriptions.end(id, new EndSubscriptionRequest(monthsAgo(2)));

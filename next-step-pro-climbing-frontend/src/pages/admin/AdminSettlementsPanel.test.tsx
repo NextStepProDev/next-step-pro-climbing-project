@@ -72,7 +72,7 @@ describe('AdminSettlementsPanel', () => {
     getOverview.mockReset()
     save.mockReset().mockResolvedValue(undefined)
     createPayout.mockReset().mockResolvedValue('payout-1')
-    settleOutstanding.mockReset().mockResolvedValue({ settled: 2 })
+    settleOutstanding.mockReset().mockResolvedValue({ settled: 2, balance: 0 })
     createSource.mockReset().mockResolvedValue({ id: 'src-2', name: 'Klub XYZ', archived: false })
     deletePayout.mockReset().mockResolvedValue(undefined)
     setSourceArchived.mockReset().mockResolvedValue(undefined)
@@ -224,7 +224,7 @@ describe('AdminSettlementsPanel', () => {
     await user.click(settleButtons[0])
 
     await waitFor(() =>
-      expect(settleOutstanding).toHaveBeenCalledWith('user', 'anna', '2026-08-31'),
+      expect(settleOutstanding).toHaveBeenCalledWith('user', 'anna', '2026-08-31', 230),
     )
     expect(settleOutstanding).toHaveBeenCalledTimes(1)
   })

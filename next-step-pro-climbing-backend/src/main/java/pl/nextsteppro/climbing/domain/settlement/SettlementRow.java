@@ -39,8 +39,23 @@ public record SettlementRow(
     @Nullable String targetTitle,
     @Nullable EventType eventType,
     BigDecimal amount,
+    BigDecimal paidAmount,
     @Nullable LocalDate settledOn
 ) {
+
+    /** What is still owed on this row — never negative, because an overpayment is not a debt. */
+    public BigDecimal remaining() {
+        return amount.subtract(paidAmount).max(BigDecimal.ZERO);
+    }
+
+    /** Signed contribution to the payer's balance: positive when they gave more than they owed. */
+    public BigDecimal balanceDelta() {
+        return paidAmount.subtract(amount);
+    }
+
+    public boolean isFullyPaid() {
+        return paidAmount.compareTo(amount) >= 0;
+    }
 
     /**
      * True when this is a standing coaching fee rather than a session. Such a row has no calendar
