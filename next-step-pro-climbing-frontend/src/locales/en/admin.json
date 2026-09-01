@@ -563,7 +563,19 @@
         "last": "last payment",
         "none": "No amounts recorded for this person.",
         "unpaid": "outstanding",
-        "untitled": "One-to-one session"
+        "untitled": "One-to-one session",
+        "subscription": {
+          "title": "Coaching subscription",
+          "perMonth": "/ month",
+          "openEnded": "open-ended",
+          "add": "Set up a subscription",
+          "start": "Start",
+          "end": "End",
+          "reopen": "Reopen",
+          "amount": "Amount / month",
+          "from": "From month",
+          "endLabel": "Last month"
+        }
       }
     },
     "listTab": "List",
@@ -930,7 +942,8 @@
         "ignoresYear": "This list covers the WHOLE history and does not follow the year picker — a debt from two years ago is still a debt.",
         "untitled": {
           "slot": "One-to-one session",
-          "event": "Event"
+          "event": "Event",
+          "month": "Coaching fee"
         },
         "open": "Open the session — {{name}}, {{date}}",
         "sessions": "{{n}} sessions",

@@ -39,8 +39,8 @@ class SettlementIsolationTest {
      */
     private static final List<String> SETTLEMENT_TYPES = List.of(
         "SettlementRepository", "SettlementRow", "SessionPayoutRepository", "SessionPayoutRow",
-        "PayoutSourceRepository", "PayoutRepository", "PayerLastAmount", "UnpricedPayer",
-        "SessionPayout", "PayoutSource", "PayoutRow", "Settlement", "Payout");
+        "SubscriptionRepository", "PayoutSourceRepository", "PayoutRepository", "PayerLastAmount", "UnpricedPayer",
+        "SessionPayout", "PayoutSource", "PayoutRow", "Subscription", "Settlement", "Payout");
 
     /**
      * The only two packages allowed to touch money: the entity's own home, and the admin API that
@@ -97,7 +97,7 @@ class SettlementIsolationTest {
             .filter(p -> ALLOWED_PACKAGE_PATHS.stream().anyMatch(p::contains))
             .count();
 
-        assertTrue(guarded >= 15,
+        assertTrue(guarded >= 18,
             "Expected both money models: settlements (entity, repository, projections) and bulk "
                 + "payouts (source, assignment, payout, their repositories and projections), plus "
                 + "the controller, services, DTOs and the two path enums — found " + guarded);

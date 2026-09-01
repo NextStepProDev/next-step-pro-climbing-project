@@ -22,7 +22,10 @@ import java.util.UUID;
  * feature therefore lives in this package and {@code api.admin.settlement}, and
  * {@code SettlementIsolationTest} keeps the types unreachable anywhere else.
  *
- * <p><b>The target is a slot XOR an event — never a reservation.</b> Booking a multi-day event
+ * <p><b>The target is a slot XOR an event XOR a month — never a reservation.</b> The third is a
+ * standing coaching fee, which belongs to no single session; it lives here rather than in a table of
+ * its own so that an unpaid fee lands in the same outstanding list as everything else that person
+ * owes and settles in the same click. Booking a multi-day event
  * writes one {@code reservations} row <em>per day</em>, so a settlement hanging on a reservation
  * would price a three-day course three times. Pairing (target, payer) makes "one settlement per
  * person per entry" true by construction rather than by a de-duplication step at read time.
@@ -73,6 +76,15 @@ public class Settlement {
 
     @Column(nullable = false, precision = 10, scale = AMOUNT_SCALE)
     private BigDecimal amount;
+
+    /**
+     * Third kind of target: the month a standing coaching fee is owed for. Not a foreign key — the
+     * address is the pair (user, month), and the cascade on {@code user_id} already takes the row
+     * away with the account. See V94.
+     */
+    @Column(name = "period_month")
+    @Nullable
+    private LocalDate periodMonth;
 
     /** {@code null} = not settled. A day label in Poland, not an instant — like {@code training_date}. */
     @Column(name = "settled_on")

@@ -42,13 +42,16 @@ public class AdminSettlementController {
     private final AdminSettlementService settlementService;
     private final AdminSettlementStatsService statsService;
     private final AdminPayoutService payoutService;
+    private final AdminSubscriptionService subscriptionService;
 
     public AdminSettlementController(AdminSettlementService settlementService,
                                      AdminSettlementStatsService statsService,
-                                     AdminPayoutService payoutService) {
+                                     AdminPayoutService payoutService,
+                                     AdminSubscriptionService subscriptionService) {
         this.settlementService = settlementService;
         this.statsService = statsService;
         this.payoutService = payoutService;
+        this.subscriptionService = subscriptionService;
     }
 
     // ----- bulk payers: work somebody else settles for a whole month at once -----
@@ -133,6 +136,65 @@ public class AdminSettlementController {
             @Valid @RequestBody SettleOutstandingRequest request) {
         return ResponseEntity.ok(new SettleOutstandingResultDto(
             settlementService.settleOutstanding(request)));
+    }
+
+    // ----- standing monthly coaching fees -----
+
+    @Operation(summary = "This client's coaching subscriptions",
+        description = "Newest first, ended ones included: the months they billed still point at them.")
+    @GetMapping("/subscriptions/{userId}")
+    public ResponseEntity<List<SubscriptionDto>> subscriptions(@PathVariable UUID userId) {
+        return ResponseEntity.ok(subscriptionService.forUser(userId));
+    }
+
+    @Operation(summary = "Start a coaching subscription",
+        description = "Bills every month it already covers straight away, rather than waiting for "
+            + "the nightly run — somebody adding a retainer that started in March expects March.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Started"),
+        @ApiResponse(responseCode = "400", description = "Another one is already running for this person, or the end precedes the start")
+    })
+    @PostMapping("/subscriptions/{userId}")
+    public ResponseEntity<SubscriptionDto> createSubscription(
+            @PathVariable UUID userId, @Valid @RequestBody SaveSubscriptionRequest request) {
+        return ResponseEntity.ok(subscriptionService.create(userId, request));
+    }
+
+    @Operation(summary = "Change what a subscription charges",
+        description = "Forward-only: months already billed keep what they were billed at, because a "
+            + "raise in June is not a claim about March.")
+    @PutMapping("/subscriptions/{subscriptionId}/amount")
+    public ResponseEntity<Void> changeSubscriptionAmount(
+            @PathVariable UUID subscriptionId, @Valid @RequestBody SaveSubscriptionRequest request) {
+        subscriptionService.changeAmount(subscriptionId, request);
+        return ResponseEntity.noContent().build();
+    }
+
+    @Operation(summary = "End a subscription",
+        description = "The month may be in the past. A backdated end drops the fees for months "
+            + "beginning after it, but only the UNPAID ones — a paid fee stays, because the money "
+            + "arrived and a date written down late does not overrule the bank.")
+    @PutMapping("/subscriptions/{subscriptionId}/end")
+    public ResponseEntity<Void> endSubscription(
+            @PathVariable UUID subscriptionId, @Valid @RequestBody EndSubscriptionRequest request) {
+        subscriptionService.end(subscriptionId, request);
+        return ResponseEntity.noContent().build();
+    }
+
+    @Operation(summary = "Reopen a subscription closed by mistake")
+    @PutMapping("/subscriptions/{subscriptionId}/reopen")
+    public ResponseEntity<Void> reopenSubscription(@PathVariable UUID subscriptionId) {
+        subscriptionService.reopen(subscriptionId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @Operation(summary = "Delete a subscription",
+        description = "Removes the rule. Fees it already billed stay: they are somebody's debts or "
+            + "somebody's payments, and neither stops being one because the rule went away.")
+    @DeleteMapping("/subscriptions/{subscriptionId}")
+    public ResponseEntity<Void> deleteSubscription(@PathVariable UUID subscriptionId) {
+        subscriptionService.delete(subscriptionId);
+        return ResponseEntity.noContent().build();
     }
 
     @Operation(summary = "One client's money, for their user card",

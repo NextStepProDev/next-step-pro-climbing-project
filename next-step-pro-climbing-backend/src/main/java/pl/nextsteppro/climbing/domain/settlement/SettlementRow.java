@@ -29,6 +29,7 @@ public record SettlementRow(
     UUID id,
     @Nullable UUID slotId,
     @Nullable UUID eventId,
+    @Nullable LocalDate periodMonth,
     @Nullable UUID userId,
     @Nullable String firstName,
     @Nullable String lastName,
@@ -40,6 +41,14 @@ public record SettlementRow(
     BigDecimal amount,
     @Nullable LocalDate settledOn
 ) {
+
+    /**
+     * True when this is a standing coaching fee rather than a session. Such a row has no calendar
+     * entry behind it, so nothing may try to link into one.
+     */
+    public boolean isMonthlyFee() {
+        return periodMonth != null;
+    }
 
     /** True when the payer is a guest with no account — no user card to link to. */
     public boolean isGuest() {

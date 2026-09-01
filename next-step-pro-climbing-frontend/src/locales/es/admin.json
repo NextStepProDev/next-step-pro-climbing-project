@@ -563,7 +563,19 @@
         "last": "último pago",
         "none": "No hay importes registrados para esta persona.",
         "unpaid": "pendiente",
-        "untitled": "Sesión individual"
+        "untitled": "Sesión individual",
+        "subscription": {
+          "title": "Cuota de seguimiento",
+          "perMonth": "/ mes",
+          "openEnded": "indefinida",
+          "add": "Configurar cuota",
+          "start": "Iniciar",
+          "end": "Finalizar",
+          "reopen": "Reanudar",
+          "amount": "Importe / mes",
+          "from": "Desde el mes",
+          "endLabel": "Último mes"
+        }
       }
     },
     "listTab": "Lista",
@@ -930,7 +942,8 @@
         "ignoresYear": "Esta lista cubre TODO el historial y no sigue al selector de año — una deuda de hace dos años sigue siendo una deuda.",
         "untitled": {
           "slot": "Sesión individual",
-          "event": "Evento"
+          "event": "Evento",
+          "month": "Cuota de seguimiento"
         },
         "open": "Abrir la sesión — {{name}}, {{date}}",
         "sessions": "{{n}} sesiones",

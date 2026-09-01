@@ -42,8 +42,8 @@ public interface SettlementRepository extends JpaRepository<Settlement, UUID> {
      */
     String ROW_SELECT = """
         SELECT new pl.nextsteppro.climbing.domain.settlement.SettlementRow(
-            s.id, ts.id, e.id, u.id, u.firstName, u.lastName, g.id, g.note,
-            COALESCE(ts.date, e.startDate), COALESCE(ts.title, e.title), e.eventType,
+            s.id, ts.id, e.id, s.periodMonth, u.id, u.firstName, u.lastName, g.id, g.note,
+            COALESCE(ts.date, e.startDate, s.periodMonth), COALESCE(ts.title, e.title), e.eventType,
             s.amount, s.settledOn)
         FROM Settlement s
         LEFT JOIN s.timeSlot ts
@@ -65,7 +65,7 @@ public interface SettlementRepository extends JpaRepository<Settlement, UUID> {
      * and the tab labels which axis each figure uses.
      */
     @Query(ROW_SELECT + """
-        WHERE (COALESCE(ts.date, e.startDate) BETWEEN :from AND :to)
+        WHERE (COALESCE(ts.date, e.startDate, s.periodMonth) BETWEEN :from AND :to)
            OR (s.settledOn BETWEEN :from AND :to)
         """)
     List<SettlementRow> findRowsInRange(@Param("from") LocalDate from, @Param("to") LocalDate to);
@@ -86,7 +86,7 @@ public interface SettlementRepository extends JpaRepository<Settlement, UUID> {
     List<SettlementRow> findUnsettledRows();
 
     /** Distinct session days, for the year picker. */
-    @Query("SELECT DISTINCT COALESCE(ts.date, e.startDate) FROM Settlement s "
+    @Query("SELECT DISTINCT COALESCE(ts.date, e.startDate, s.periodMonth) FROM Settlement s "
         + "LEFT JOIN s.timeSlot ts LEFT JOIN s.event e")
     List<LocalDate> findDistinctTargetDates();
 

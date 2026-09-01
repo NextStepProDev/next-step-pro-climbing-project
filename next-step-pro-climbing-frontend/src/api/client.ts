@@ -67,6 +67,7 @@ import type {
   SettlementOverview,
   SettlementExportRow,
   PayerSummary,
+  Subscription,
   PayoutSource,
   EventDetail,
   EventParticipants,
@@ -1101,6 +1102,36 @@ export const adminSettlementsApi = {
     fetchApi<void>(`/admin/settlements/${target}/${targetId}/${payerType}/${payerId}`, {
       method: 'DELETE',
     }),
+
+  // Standing coaching fees. The rule lives on the client's card, where "what do I have with this
+  // person" already lives.
+  listSubscriptions: (userId: string) =>
+    fetchApi<Subscription[]>(`/admin/settlements/subscriptions/${userId}`),
+
+  createSubscription: (userId: string, amount: number, startedOn: string, endedOn: string | null) =>
+    fetchApi<Subscription>(`/admin/settlements/subscriptions/${userId}`, {
+      method: 'POST',
+      body: JSON.stringify({ amount, startedOn, endedOn }),
+    }),
+
+  changeSubscriptionAmount: (subscriptionId: string, amount: number, startedOn: string) =>
+    fetchApi<void>(`/admin/settlements/subscriptions/${subscriptionId}/amount`, {
+      method: 'PUT',
+      body: JSON.stringify({ amount, startedOn, endedOn: null }),
+    }),
+
+  // Any day of the month; the server snaps it. A past month is allowed and expected.
+  endSubscription: (subscriptionId: string, endedOn: string) =>
+    fetchApi<void>(`/admin/settlements/subscriptions/${subscriptionId}/end`, {
+      method: 'PUT',
+      body: JSON.stringify({ endedOn }),
+    }),
+
+  reopenSubscription: (subscriptionId: string) =>
+    fetchApi<void>(`/admin/settlements/subscriptions/${subscriptionId}/reopen`, { method: 'PUT' }),
+
+  deleteSubscription: (subscriptionId: string) =>
+    fetchApi<void>(`/admin/settlements/subscriptions/${subscriptionId}`, { method: 'DELETE' }),
 
   // One client's money, for their user card. A second request rather than a field on the card's
   // own DTO: the settlement types are deliberately unreachable from that package.

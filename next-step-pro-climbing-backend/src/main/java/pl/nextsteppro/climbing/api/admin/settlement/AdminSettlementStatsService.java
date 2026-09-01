@@ -268,8 +268,8 @@ public class AdminSettlementStatsService {
         for (SettlementRow row : sorted) {
             total = total.add(row.amount());
             items.add(new OutstandingItemDto(
-                row.eventId() != null ? "event" : "slot",
-                row.eventId() != null ? row.eventId() : row.slotId(),
+                row.isMonthlyFee() ? "month" : row.eventId() != null ? "event" : "slot",
+                row.isMonthlyFee() ? null : row.eventId() != null ? row.eventId() : row.slotId(),
                 row.targetDate(),
                 row.targetTitle(),
                 row.isGuest() ? "guest" : "user",

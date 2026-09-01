@@ -563,7 +563,19 @@
         "last": "ostatnia wpłata",
         "none": "Brak wpisanych kwot dla tej osoby.",
         "unpaid": "nierozliczone",
-        "untitled": "Trening 1:1"
+        "untitled": "Trening 1:1",
+        "subscription": {
+          "title": "Abonament — prowadzenie",
+          "perMonth": "/ mies.",
+          "openEnded": "bezterminowo",
+          "add": "Ustaw abonament",
+          "start": "Uruchom",
+          "end": "Zakończ",
+          "reopen": "Wznów",
+          "amount": "Kwota / mies.",
+          "from": "Od miesiąca",
+          "endLabel": "Ostatni miesiąc"
+        }
       }
     },
     "listTab": "Lista",
@@ -932,7 +944,8 @@
         "ignoresYear": "Ta lista pokazuje CAŁĄ historię i nie zmienia się z wyborem roku — dług sprzed dwóch lat nadal jest długiem.",
         "untitled": {
           "slot": "Trening 1:1",
-          "event": "Wydarzenie"
+          "event": "Wydarzenie",
+          "month": "Abonament (prowadzenie)"
         },
         "open": "Otwórz termin — {{name}}, {{date}}",
         "sessions": "{{n}} zajęć",

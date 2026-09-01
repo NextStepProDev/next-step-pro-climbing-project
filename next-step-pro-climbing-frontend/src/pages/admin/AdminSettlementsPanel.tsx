@@ -410,17 +410,25 @@ function PayerDebtGroup({
               <span className="w-24 shrink-0 text-surface-400 tabular-nums">
                 {format(parseCalendarDate(item.date), 'dd.MM.yyyy', { locale })}
               </span>
-              <Link
-                to={`/calendar?date=${item.date}&${item.targetType}=${item.targetId}`}
-                state={{ returnTo: backHere }}
-                aria-label={t('settlements.tab.outstanding.open', {
-                  name: item.name,
-                  date: format(parseCalendarDate(item.date), 'dd.MM.yyyy'),
-                })}
-                className="flex-1 min-w-0 truncate text-surface-300 hover:text-primary-300 transition-colors"
-              >
-                {item.title ?? t(`settlements.tab.outstanding.untitled.${item.targetType}`)}
-              </Link>
+              {/* A standing fee has no calendar entry behind it, so it is text — a link that goes
+                  nowhere is worse than no link. */}
+              {item.targetId === null ? (
+                <span className="flex-1 min-w-0 truncate text-surface-300">
+                  {t('settlements.tab.outstanding.untitled.month')}
+                </span>
+              ) : (
+                <Link
+                  to={`/calendar?date=${item.date}&${item.targetType}=${item.targetId}`}
+                  state={{ returnTo: backHere }}
+                  aria-label={t('settlements.tab.outstanding.open', {
+                    name: item.name,
+                    date: format(parseCalendarDate(item.date), 'dd.MM.yyyy'),
+                  })}
+                  className="flex-1 min-w-0 truncate text-surface-300 hover:text-primary-300 transition-colors"
+                >
+                  {item.title ?? t(`settlements.tab.outstanding.untitled.${item.targetType}`)}
+                </Link>
+              )}
               <span className="shrink-0 text-amber-500 tabular-nums">{money(item.amount)}</span>
             </li>
           ))}

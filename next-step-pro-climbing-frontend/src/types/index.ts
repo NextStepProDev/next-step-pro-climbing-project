@@ -635,6 +635,17 @@ export interface PayoutPeriod {
   transfers: PayoutEntry[]
 }
 
+// A standing monthly coaching fee — the rule, not the money. What it produces is an ordinary
+// settlement with a month for its target, which is why an unpaid fee queues and settles with
+// everything else that person owes.
+export interface Subscription {
+  id: string
+  amount: number
+  startedOn: string
+  endedOn: string | null
+  active: boolean
+}
+
 // One client's money, for their card in the Users panel. Whole history, not the tab's selected
 // year: "what do I have with this person" has no year in it.
 export interface PayerSummary {
@@ -718,8 +729,10 @@ export interface OutstandingSummary {
 // Carries its own address (targetType/targetId + payerType/payerId), so the tab can settle a debt
 // in place without reconstructing one.
 export interface OutstandingItem {
-  targetType: SettlementTarget
-  targetId: string
+  // 'month' is a standing coaching fee, which has no calendar entry behind it — hence the nullable
+  // targetId. The null IS the signal not to offer a link, not an omission.
+  targetType: SettlementTarget | 'month'
+  targetId: string | null
   date: string
   title: string | null
   payerType: SettlementPayer

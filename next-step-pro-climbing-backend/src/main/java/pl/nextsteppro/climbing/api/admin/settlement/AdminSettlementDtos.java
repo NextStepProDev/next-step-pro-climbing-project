@@ -173,14 +173,17 @@ record OutstandingDto(
 /**
  * One unpaid amount, addressed so the tab can settle it in place.
  *
- * @param targetType {@code slot} or {@code event} — the same path segment the write endpoint takes,
- *                   so the row carries its own address rather than the client reconstructing one.
+ * @param targetType {@code slot}, {@code event}, or {@code month} for a standing coaching fee.
+ *                   The first two are the same path segment the write endpoint takes, so the row
+ *                   carries its own address rather than the client reconstructing one.
+ * @param targetId   ⚠️ null for a monthly fee. It has no calendar entry behind it, so the client
+ *                   must not offer a link into one — the null is that signal, not an omission.
  * @param date       the session's day. Outstanding debt is counted on this axis because an unpaid
  *                   row has no payment date to be counted on.
  */
 record OutstandingItemDto(
     String targetType,
-    UUID targetId,
+    @Nullable UUID targetId,
     LocalDate date,
     @Nullable String title,
     String payerType,
@@ -376,3 +379,26 @@ record PayerLineDto(
     BigDecimal amount,
     @Nullable LocalDate settledOn
 ) {}
+
+/**
+ * A standing monthly coaching fee.
+ *
+ * @param endedOn {@code null} while it runs. May be a past month: a collaboration ends in a
+ *                conversation and gets written down a week later.
+ */
+record SubscriptionDto(
+    UUID id,
+    BigDecimal amount,
+    LocalDate startedOn,
+    @Nullable LocalDate endedOn,
+    boolean active
+) {}
+
+record SaveSubscriptionRequest(
+    @NotNull @DecimalMin("0") @DecimalMax("100000") BigDecimal amount,
+    @NotNull LocalDate startedOn,
+    @Nullable LocalDate endedOn
+) {}
+
+/** Any day of the month; the server snaps it, because a subscription ends in a month, not on a day. */
+record EndSubscriptionRequest(@NotNull LocalDate endedOn) {}
