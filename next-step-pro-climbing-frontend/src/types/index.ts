@@ -563,6 +563,257 @@ export interface AdminNoteMarkers {
   trainingIds: string[]
 }
 
+// What a settlement hangs on, and who owes it. Lower-case: URL segments, not stored values.
+// There is deliberately no 'reservation' target — a multi-day event books one reservation row per
+// DAY, so pricing per reservation would charge a three-day course three times.
+export type SettlementTarget = 'slot' | 'event'
+export type SettlementPayer = 'user' | 'guest'
+
+// One payer on one calendar entry.
+// `amount: null` means nothing has been priced yet, which is a DIFFERENT state from 0 (free of
+// charge) — only the second is a decision and only the second belongs in the totals.
+// `orphaned` marks a payer whose booking has since been cancelled: the row stays on screen because
+// money that changed hands does not stop having changed hands.
+export interface SettlementLine {
+  payerType: SettlementPayer
+  payerId: string
+  name: string
+  participants: number
+  orphaned: boolean
+  // What it costs.
+  amount: number | null
+  // What actually arrived against it. Cash rarely equals the charge, so these are two numbers and
+  // the screen shows both.
+  paidAmount: number
+  // Where this payer's whole account stands: positive means you are holding their money. Carried on
+  // the line so it is in front of you at the moment you type the next amount.
+  balance: number
+  settledOn: string | null
+  // What this person was last charged, offered as a prefill and never applied on its own. This is
+  // what stands in for a default-rate column on the slot: the price follows the person (a pass, a
+  // discount, gear), not the hour. Only sent for a line that has no amount yet, and never for a
+  // guest — a guest row is a one-off with no history to draw on.
+  suggestedAmount: number | null
+}
+
+// Admin-only. Deliberately not folded into TimeSlot/EventSummary: those shapes are served to
+// anonymous visitors and cached, so an amount on them would publish what a named person paid.
+// `targetDate` is the session's day — the prefill for the payment date, so money lands in the
+// month the session happened rather than the month somebody got round to ticking the box.
+export interface SettlementSection {
+  targetDate: string
+  lines: SettlementLine[]
+  // Set when somebody settles this session in bulk. Then there is nobody to charge per head, so the
+  // section switches mode rather than offering fields that would invent an amount.
+  coveredBy: SettlementCoverage | null
+}
+
+// One shape for both payer kinds: an institution paying a lump for a month, and a client whose
+// standing subscription covers the session, are the same thing from two sides.
+export interface SettlementCoverage {
+  kind: 'source' | 'subscription'
+  id: string
+  name: string
+}
+
+// A payer who settles a whole month at once — a school, a club. Archived ones still come back in the
+// list: the tab has to be able to name the source of money earned last season.
+export interface PayoutSource {
+  id: string
+  name: string
+  archived: boolean
+}
+
+// The bulk half of the tab. `total` is money that ARRIVED in the selected range, on the same axis as
+// settled amounts, so both halves of revenue add up to one monthly figure.
+export interface PayoutsSummary {
+  sources: PayoutSource[]
+  total: number
+  periods: PayoutPeriod[]
+}
+
+// What one month of work for one payer held, and what it earned.
+// ⚠️ Rows are the UNION of both sides: a month with sessions and no transfer yet is the invoice
+// nobody has paid, and listing only what arrived would hide exactly that.
+// `ratePerSession` is null whenever either half is missing — a rate needs both, and a zero would be
+// a claim rather than a gap.
+export interface PayoutPeriod {
+  sourceId: string
+  sourceName: string
+  month: string
+  sessions: number
+  // Total measured time, so the screen can show the denominator it divided by.
+  minutes: number
+  // Covered entries with no knowable duration — all-day, or multi-day with start and end on
+  // different days. Shown rather than folded in at zero: a rate over a smaller denominator reads
+  // high and says nothing about why.
+  sessionsWithoutHours: number
+  amount: number
+  // ⚠️ Per HOUR, not per session. A 45-minute school hour and a ninety-minute block are not the same
+  // unit, so dividing by a count yields a figure comparable with nothing — least of all an hourly
+  // price list. Null when either half is missing, or when nothing had a knowable duration.
+  ratePerHour: number | null
+  // The individual arrivals this row adds up. Carried so a mistyped figure can be removed —
+  // without them the feature is write-only and a 14000 entered for 1400 would be permanent.
+  transfers: PayoutEntry[]
+}
+
+// A standing monthly coaching fee — the rule, not the money. What it produces is an ordinary
+// settlement with a month for its target, which is why an unpaid fee queues and settles with
+// everything else that person owes.
+export interface Subscription {
+  id: string
+  amount: number
+  startedOn: string
+  endedOn: string | null
+  active: boolean
+}
+
+// One client's money, for their card in the Users panel. Whole history, not the tab's selected
+// year: "what do I have with this person" has no year in it.
+export interface PayerSummary {
+  paid: number
+  outstanding: number
+  settlementCount: number
+  lastPayment: string | null
+  recent: PayerLine[]
+}
+
+export interface PayerLine {
+  date: string
+  title: string | null
+  /**
+   * ⚠️ A standing monthly fee has no calendar entry behind it, so it must NOT fall back to the
+   * untitled-session label — that label is "Trening 1:1", which would put a training that never
+   * happened on the card once a month.
+   */
+  monthlyFee: boolean
+  amount: number
+  /** What actually arrived. Below `amount` the rest is still owed, above it the change is credit. */
+  paidAmount: number
+  settledOn: string | null
+}
+
+// One income line for the accountant. Unpaid lines come through with settledOn null on purpose —
+// "what is still owed for this year" is the other half of the same conversation.
+export interface SettlementExportRow {
+  kind: string
+  date: string
+  title: string | null
+  payer: string
+  amount: number
+  settledOn: string | null
+}
+
+export interface PayoutEntry {
+  id: string
+  amount: number
+  receivedOn: string
+}
+
+// The Settlements tab, from one read. Assembled on the server even for figures the client could add
+// up itself: two denominators taken at two moments differ by one and look like a bug.
+// `year: null` means "everything".
+export interface SettlementOverview {
+  years: number[]
+  year: number | null
+  unpriced: UnpricedSummary
+  outstanding: OutstandingSummary
+  revenue: RevenueSummary
+  people: PersonRevenue[]
+  payouts: PayoutsSummary
+}
+
+// Sessions that are over and were never priced at all. The gap this closes is that such a session
+// CANNOT ASK FOR ITSELF: an unpaid amount is at least a row and shows up as a debt, but a session
+// nobody priced is neither revenue nor debt, so without this it is invisible everywhere.
+// ⚠️ Ignores the year picker, like outstanding debt — but bounded to a rolling window, because
+// otherwise the first load reports every session in the app's history. `windowDays` is sent so the
+// heading can state the rule it applies instead of leaving it to be guessed.
+export interface UnpricedSummary {
+  count: number
+  windowDays: number
+  sessions: UnpricedSession[]
+}
+
+// Grouped per session, not per person: you collect money from a person, but you PRICE a session —
+// and the modal this links to prices everyone on it in one go. `payerCount` says whether opening it
+// is one field or ten.
+export interface UnpricedSession {
+  targetType: SettlementTarget
+  targetId: string
+  date: string
+  title: string | null
+  payerCount: number
+}
+
+// ⚠️ Whole history, IGNORING the selected year — a debt from two years ago is still a debt. The tab
+// says so above the list, because a section that quietly disobeys the filter above it is otherwise
+// indistinguishable from a broken filter.
+export interface OutstandingSummary {
+  total: number
+  count: number
+  oldest: string | null
+  items: OutstandingItem[]
+}
+
+// Carries its own address (targetType/targetId + payerType/payerId), so the tab can settle a debt
+// in place without reconstructing one.
+// `amount` here is what is STILL owed on that row, not the original charge: a session paid 100 of
+// 150 appears as 50.
+export interface OutstandingItem {
+  // 'month' is a standing coaching fee, which has no calendar entry behind it — hence the nullable
+  // targetId. The null IS the signal not to offer a link, not an omission.
+  targetType: SettlementTarget | 'month'
+  targetId: string | null
+  date: string
+  title: string | null
+  payerType: SettlementPayer
+  payerId: string
+  name: string
+  amount: number
+}
+
+// Money that arrived, counted on the payment date. `monthlyAverage: null` when nothing was paid, so
+// the tile disappears rather than claiming a zero.
+export interface RevenueSummary {
+  total: number
+  monthlyAverage: number | null
+  months: MonthlyRevenue[]
+  fromSlots: number
+  fromEvents: number
+  // A standing monthly coaching fee. NOT slot income: the sessions a retainer covers are left
+  // unpriced on purpose, so filing it under slots claims earnings for sessions that earned nothing.
+  fromSubscriptions: number
+  // Work somebody else settled in bulk. Four genuinely different ways of earning, and this is the
+  // one whose price you do not set. All four must add up to `total` — the client draws them against
+  // it, so a missing source is an unexplained gap in the bar.
+  fromPayouts: number
+  // ⚠️ The same twelve months a year earlier — empty in the "everything" view, which has no
+  // previous. This is the only honest comparison this business has: climbing is seasonal, so month
+  // against previous month calls a quiet October a bad month when it is simply October.
+  previousMonths: MonthlyRevenue[]
+  previousTotal: number
+}
+
+// `month` is the first day of the month, like MonthlyRegistrations — a label, not a moment, so it
+// goes through parseCalendarDate and never through `new Date(s)`.
+export interface MonthlyRevenue {
+  month: string
+  amount: number
+}
+
+// `userId: null` for a guest — no account, so no user card to link to. The null IS the signal.
+export interface PersonRevenue {
+  payerType: SettlementPayer
+  userId: string | null
+  name: string
+  settlementCount: number
+  paid: number
+  outstanding: number
+  lastPayment: string | null
+}
+
 // Invitee of a held seat (prefill for admin forms)
 export interface InvitedUser {
   userId: string

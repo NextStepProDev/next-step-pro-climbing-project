@@ -14,6 +14,15 @@ public interface GuestReservationRepository extends JpaRepository<GuestReservati
 
     List<GuestReservation> findByEventId(UUID eventId);
 
+    /**
+     * Guests written onto specific days. A guest row is {@code timeSlot} XOR {@code event}, and both
+     * shapes occur for an event: the booking path attaches them to the event, but an admin adding a
+     * guest from a day view attaches them to that day's slot. Settlements list both, so that a guest
+     * cannot end up without a way to be charged.
+     */
+    @Query("SELECT g FROM GuestReservation g WHERE g.timeSlot.id IN :slotIds")
+    List<GuestReservation> findByTimeSlotIds(@Param("slotIds") Collection<UUID> slotIds);
+
     void deleteByTimeSlotId(UUID slotId);
 
     void deleteByEventId(UUID eventId);

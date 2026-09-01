@@ -18,7 +18,8 @@
     "storage": "Storage",
     "site": "Strona główna",
     "requests": "Propozycje",
-    "trainingCalendars": "Kalendarze treningowe"
+    "trainingCalendars": "Kalendarze treningowe",
+    "settlements": "Rozliczenia"
   },
   "tabGroups": {
     "calendar": "Kalendarz",
@@ -553,6 +554,30 @@
         "updatedAt": "Ostatnia zmiana",
         "yes": "tak",
         "no": "nie"
+      },
+      "money": {
+        "title": "Rozliczenia",
+        "paid": "zapłacone",
+        "owed": "zaległe",
+        "count": "wpłat",
+        "last": "ostatnia wpłata",
+        "none": "Brak wpisanych kwot dla tej osoby.",
+        "unpaid": "nierozliczone",
+        "short": "brakuje {{amount}}",
+        "untitled": "Trening 1:1",
+        "feeFor": "Abonament — {{month}}",
+        "subscription": {
+          "title": "Abonament — prowadzenie",
+          "perMonth": "/ mies.",
+          "openEnded": "bezterminowo",
+          "add": "Ustaw abonament",
+          "start": "Uruchom",
+          "end": "Zakończ",
+          "reopen": "Wznów",
+          "amount": "Kwota / mies.",
+          "from": "Od miesiąca",
+          "endLabel": "Ostatni miesiąc"
+        }
       }
     },
     "listTab": "Lista",
@@ -865,5 +890,138 @@
     "lastEdited": "Ostatnia edycja: {{date}}",
     "showAll": "Pokaż całość",
     "showLess": "Zwiń"
+  },
+  "settlements": {
+    "section": {
+      "title": "Rozliczenia",
+      "onlyYouHint": "Kwoty widzisz tylko Ty — uczestnicy nie widzą ich nigdzie.",
+      "empty": "Nikt nie jest jeszcze zapisany na ten termin.",
+      "totals": "razem: {{total}} · zapłacone: {{paid}}",
+      "bulk": "Rozliczane zbiorczo · {{name}}",
+      "bulkHint": "Kwoty za te zajęcia nie wpisuje się per uczestnik — wypłatę za cały miesiąc wpisujesz w zakładce Rozliczenia.",
+      "changeBulk": "Zmień kontrahenta",
+      "clearBulk": "Usuń oznaczenie",
+      "markBulk": "Rozliczane zbiorczo…",
+      "bulkPayer": "Kontrahent",
+      "choosePayer": "— wybierz —",
+      "noPayers": "Brak kontrahentów. Dodaj go w zakładce Rozliczenia.",
+      "cancel": "Anuluj",
+      "bulkSubscription": "W abonamencie · {{name}}",
+      "groupSubscription": "Abonament uczestnika",
+      "groupSource": "Kontrahent"
+    },
+    "line": {
+      "people": "({{n}} os.)",
+      "guest": "gość",
+      "orphaned": "rezerwacja anulowana",
+      "settled": "rozliczone",
+      "amountPlaceholder": "kwota",
+      "amountLabel": "Kwota — {{name}}",
+      "settledOnLabel": "Data zapłaty — {{name}}",
+      "useLast": "ostatnio: {{amount}}",
+      "clear": "Usuń kwotę — {{name}}",
+      "settledLabel": "Rozliczone — {{name}}",
+      "credit": "nadpłata {{amount}}",
+      "debt": "zaległość {{amount}}",
+      "receivedPlaceholder": "otrzymano",
+      "receivedLabel": "Otrzymano — {{name}}",
+      "receivedHint": "otrzymano",
+      "dueHint": "należne"
+    },
+    "actions": {
+      "setAll": "Ustaw wszystkim",
+      "save": "Zapisz"
+    },
+    "errors": {
+      "invalidAmount": "Kwota musi być liczbą z przedziału od 0 do 100000."
+    },
+    "tab": {
+      "title": "Rozliczenia",
+      "year": "Rok:",
+      "allYears": "wszystko",
+      "empty": "Nie ma jeszcze żadnych rozliczeń. Kwoty wpisuje się przy slocie lub wydarzeniu w kalendarzu.",
+      "unpriced": {
+        "title": "Do wyceny",
+        "count": "{{n}} zajęć",
+        "people": "{{n}} os. bez kwoty",
+        "scope": "Zajęcia, które się odbyły i nie mają wpisanej żadnej kwoty. Ta lista nie zmienia się z wyborem roku i sięga {{days}} dni wstecz.",
+        "open": "Otwórz zajęcia z {{date}} i wpisz kwoty"
+      },
+      "outstanding": {
+        "title": "Do odzyskania",
+        "count": "{{n}} poz.",
+        "oldest": "najstarsza: {{date}}",
+        "none": "Wszystko rozliczone.",
+        "ignoresYear": "Ta lista pokazuje CAŁĄ historię i nie zmienia się z wyborem roku — dług sprzed dwóch lat nadal jest długiem.",
+        "untitled": {
+          "slot": "Trening 1:1",
+          "event": "Wydarzenie",
+          "month": "Abonament (prowadzenie)"
+        },
+        "open": "Otwórz termin — {{name}}, {{date}}",
+        "sessions": "{{n}} zajęć",
+        "settleAll": "Rozlicz wszystko — {{amount}}",
+        "paidOnLabel": "Data wpłaty — {{name}}",
+        "receivedLabel": "Otrzymano — {{name}}"
+      },
+      "revenue": {
+        "title": "Przychód",
+        "axis": "liczony wg daty zapłaty",
+        "total": "w wybranym okresie",
+        "average": "średnia miesięczna",
+        "fromSlots": "Sloty 1:1",
+        "fromEvents": "Wydarzenia",
+        "fromSubscriptions": "Abonamenty",
+        "fromPayouts": "Wypłaty zbiorcze",
+        "vsLastYear": "wobec tego samego okresu rok wcześniej ({{previous}})",
+        "lastYearTooltip": "rok wcześniej: {{amount}}"
+      },
+      "people": {
+        "title": "Wg osób",
+        "person": "Osoba",
+        "count": "wpłat",
+        "paid": "zapłacone",
+        "owed": "zaległe",
+        "last": "ostatnia płatność",
+        "scope": "Liczby w tej tabeli dotyczą wybranego okresu — zaległość z wcześniejszego roku widać wyżej, w „Do odzyskania”."
+      },
+      "payouts": {
+        "title": "Wypłaty zbiorcze",
+        "axis": "Przychód liczony wg daty wpływu. Stawka = wypłata ÷ liczba oznaczonych zajęć w danym miesiącu.",
+        "payer": "Kontrahent",
+        "period": "Okres",
+        "sessions": "zajęć",
+        "amount": "wypłata",
+        "rate": "stawka / h",
+        "awaiting": "brak wypłaty",
+        "add": "Dodaj wypłatę",
+        "periodField": "Za miesiąc (dowolny dzień)",
+        "amountField": "Kwota (netto)",
+        "receivedField": "Data wpływu",
+        "newPayer": "Nazwa kontrahenta",
+        "addPayer": "Dodaj",
+        "archive": "Zarchiwizuj — {{name}}",
+        "setupHint": "Zajęcia dodatkowe rozliczane raz na miesiąc? Dodaj tu kontrahenta, a potem oznacz nim termin w kalendarzu.",
+        "received": "wpłynęło {{date}}",
+        "deleteTransfer": "Usuń wypłatę {{amount}}",
+        "restore": "Przywróć — {{name}}",
+        "rename": "Nazwa — {{name}}",
+        "hours": "godz.",
+        "withoutHours": "(+{{n}} bez godzin)"
+      },
+      "export": {
+        "action": "Eksport XLSX",
+        "summary": "Rozliczenia — {{year}} · {{count}} pozycji · wygenerowano {{generated}}",
+        "colKind": "Rodzaj",
+        "colDate": "Data zajęć / okres",
+        "colTitle": "Opis",
+        "colPayer": "Płatnik",
+        "colAmount": "Kwota (PLN)",
+        "colSettledOn": "Data zapłaty",
+        "kindClient": "Klient",
+        "kindPayout": "Wypłata zbiorcza",
+        "unpaid": "nierozliczone"
+      }
+    }
   }
 }

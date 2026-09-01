@@ -18,6 +18,7 @@ import { getErrorMessage } from '../../utils/errors'
 import { parseCalendarDate, todayInWarsaw } from '../../utils/calendarDate'
 import { formatEventWhen } from '../../utils/events'
 import { AdminPrivateNote } from '../admin/AdminPrivateNote'
+import { SettlementSection } from '../admin/SettlementSection'
 import type { EventSummary } from '../../types'
 
 // Full event edit form from the admin panel (course, dates, invitations etc.).
@@ -642,6 +643,12 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
         {/* The owner's private note — one per event, however many days it spans. Not gated on
             the event being over: writing before is as legitimate as writing after. */}
         {isAdmin && <AdminPrivateNote target="event" targetId={ev.id} />}
+
+        {/* Per-participant price and payment status — one line per PERSON, however many days the
+            event spans. That is the whole reason the settlement hangs on the event rather than on
+            a reservation: booking a three-day course writes three reservation rows, and pricing
+            those would charge it three times. */}
+        {isAdmin && <SettlementSection target="event" targetId={ev.id} />}
 
         {/* Share */}
         <ShareButtons

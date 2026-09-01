@@ -61,6 +61,14 @@ import type {
   AdminNoteTarget,
   AdminPrivateNote,
   AdminNoteMarkers,
+  SettlementTarget,
+  SettlementPayer,
+  SettlementSection,
+  SettlementOverview,
+  SettlementExportRow,
+  PayerSummary,
+  Subscription,
+  PayoutSource,
   EventDetail,
   EventParticipants,
   ReservationAdmin,
@@ -1061,6 +1069,149 @@ export const adminUserHistoryApi = {
 // win by Spring's specificity rules — it works, and it looks like a bug to whoever reads it next.
 export const adminUserStatsApi = {
   get: () => fetchApi<UserStats>('/admin/user-stats'),
+}
+
+// Per-participant price and payment status for a session. Admin-only, and its own endpoint on
+// purpose: money about named people must never ride along in the calendar payloads, which are
+// served to anonymous visitors and cached.
+// Both the target kind and the payer kind are path segments, so the four combinations stay on one
+// code path here and on the server.
+export const adminSettlementsApi = {
+  getSection: (target: SettlementTarget, targetId: string) =>
+    fetchApi<SettlementSection>(`/admin/settlements/${target}/${targetId}`),
+
+  save: (
+    target: SettlementTarget,
+    targetId: string,
+    payerType: SettlementPayer,
+    payerId: string,
+    amount: number,
+    paidAmount: number | null,
+    settledOn: string | null,
+  ) =>
+    fetchApi<void>(`/admin/settlements/${target}/${targetId}/${payerType}/${payerId}`, {
+      method: 'PUT',
+      body: JSON.stringify({ amount, paidAmount, settledOn }),
+    }),
+
+  remove: (
+    target: SettlementTarget,
+    targetId: string,
+    payerType: SettlementPayer,
+    payerId: string,
+  ) =>
+    fetchApi<void>(`/admin/settlements/${target}/${targetId}/${payerType}/${payerId}`, {
+      method: 'DELETE',
+    }),
+
+  // Standing coaching fees. The rule lives on the client's card, where "what do I have with this
+  // person" already lives.
+  listSubscriptions: (userId: string) =>
+    fetchApi<Subscription[]>(`/admin/settlements/subscriptions/${userId}`),
+
+  createSubscription: (userId: string, amount: number, startedOn: string, endedOn: string | null) =>
+    fetchApi<Subscription>(`/admin/settlements/subscriptions/${userId}`, {
+      method: 'POST',
+      body: JSON.stringify({ amount, startedOn, endedOn }),
+    }),
+
+  changeSubscriptionAmount: (subscriptionId: string, amount: number, startedOn: string) =>
+    fetchApi<void>(`/admin/settlements/subscriptions/${subscriptionId}/amount`, {
+      method: 'PUT',
+      body: JSON.stringify({ amount, startedOn, endedOn: null }),
+    }),
+
+  // Any day of the month; the server snaps it. A past month is allowed and expected.
+  endSubscription: (subscriptionId: string, endedOn: string) =>
+    fetchApi<void>(`/admin/settlements/subscriptions/${subscriptionId}/end`, {
+      method: 'PUT',
+      body: JSON.stringify({ endedOn }),
+    }),
+
+  reopenSubscription: (subscriptionId: string) =>
+    fetchApi<void>(`/admin/settlements/subscriptions/${subscriptionId}/reopen`, { method: 'PUT' }),
+
+  deleteSubscription: (subscriptionId: string) =>
+    fetchApi<void>(`/admin/settlements/subscriptions/${subscriptionId}`, { method: 'DELETE' }),
+
+  // One client's money, for their user card. A second request rather than a field on the card's
+  // own DTO: the settlement types are deliberately unreachable from that package.
+  getPayerSummary: (userId: string) =>
+    fetchApi<PayerSummary>(`/admin/settlements/payers/user/${userId}`),
+
+  // Line items for the accountant. Its own endpoint: the tab needs aggregates, and making the
+  // common read carry a year of rows would be paying for the rare case every time.
+  getExportRows: (year: string | undefined, clientKind: string, payoutKind: string) =>
+    fetchApi<SettlementExportRow[]>(
+      `/admin/settlements/export?clientKind=${encodeURIComponent(clientKind)}`
+      + `&payoutKind=${encodeURIComponent(payoutKind)}${year ? `&year=${year}` : ''}`,
+    ),
+
+  // Everything one payer still owes, on one date. A loop of per-row saves would be twenty round
+  // trips for a month of sessions, twenty chances to fail halfway, and twenty different dates.
+  // `received` is what actually changed hands, which cash rarely makes equal to what was owed. The
+  // server applies it oldest first, pulls in any credit the person already had, and keeps anything
+  // over as an overpayment.
+  settleOutstanding: (
+    payerType: SettlementPayer,
+    payerId: string,
+    settledOn: string,
+    received: number,
+  ) =>
+    fetchApi<{ settled: number; balance: number }>('/admin/settlements/settle-outstanding', {
+      method: 'POST',
+      body: JSON.stringify({ payerType, payerId, settledOn, received }),
+    }),
+
+  // The Settlements tab. Omit the year for the newest one holding data — not the current one, which
+  // would make an empty January look like lost history. 'all' for everything.
+  getOverview: (year?: string) =>
+    fetchApi<SettlementOverview>(`/admin/settlements/overview${year ? `?year=${year}` : ''}`),
+
+  // Bulk payers: work a school or a club settles for a whole month at once.
+  listSources: () => fetchApi<PayoutSource[]>('/admin/settlements/sources'),
+
+  createSource: (name: string) =>
+    fetchApi<PayoutSource>('/admin/settlements/sources', {
+      method: 'POST',
+      body: JSON.stringify({ name }),
+    }),
+
+  renameSource: (sourceId: string, name: string) =>
+    fetchApi<void>(`/admin/settlements/sources/${sourceId}`, {
+      method: 'PUT',
+      body: JSON.stringify({ name }),
+    }),
+
+  setSourceArchived: (sourceId: string, archived: boolean) =>
+    fetchApi<void>(`/admin/settlements/sources/${sourceId}/archived?archived=${archived}`, {
+      method: 'PUT',
+    }),
+
+  // Null detaches the session. Its own path segment rather than a fourth {payerType} slot: that
+  // shape would collide with the per-payer write and resolve only by Spring's specificity rules.
+  // Exactly one of sourceId / subscriberId, or both null to detach. Its own path segment rather
+  // than a fourth {payerType} slot: that shape would collide with the per-payer write.
+  assignSource: (
+    target: SettlementTarget,
+    targetId: string,
+    sourceId: string | null,
+    subscriberId: string | null = null,
+  ) =>
+    fetchApi<void>(`/admin/settlements/${target}/${targetId}/payout-source`, {
+      method: 'PUT',
+      body: JSON.stringify({ sourceId, subscriberId }),
+    }),
+
+  // periodMonth is any day of the month the work was done in — the server snaps it to the first.
+  createPayout: (sourceId: string, periodMonth: string, amount: number, receivedOn: string) =>
+    fetchApi<string>('/admin/settlements/payouts', {
+      method: 'POST',
+      body: JSON.stringify({ sourceId, periodMonth, amount, receivedOn }),
+    }),
+
+  deletePayout: (payoutId: string) =>
+    fetchApi<void>(`/admin/settlements/payouts/${payoutId}`, { method: 'DELETE' }),
 }
 
 // Instructors (public)

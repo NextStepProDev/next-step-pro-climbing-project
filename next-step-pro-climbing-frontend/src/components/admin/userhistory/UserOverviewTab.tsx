@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { format } from 'date-fns'
 import { CalendarCheck, CalendarX, Dumbbell, Mountain } from 'lucide-react'
+import { UserMoneyCard } from './UserMoneyCard'
 import { adminUserHistoryApi } from '../../../api/client'
 import { ACTION_CONFIG, UNKNOWN_ACTION_CONFIG } from '../activityActionConfig'
 import { LoadingSpinner } from '../../ui/LoadingSpinner'
@@ -71,6 +72,8 @@ export function UserOverviewTab({ userId, user }: UserOverviewTabProps) {
           )
         })}
       </div>
+
+      <UserMoneyCard userId={userId} />
 
       <div>
         <h3 className="text-sm font-semibold text-surface-300 mb-2">

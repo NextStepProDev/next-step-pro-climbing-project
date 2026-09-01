@@ -18,7 +18,8 @@
     "storage": "Almacenamiento",
     "site": "Página principal",
     "requests": "Propuestas",
-    "trainingCalendars": "Calendarios de entrenamiento"
+    "trainingCalendars": "Calendarios de entrenamiento",
+    "settlements": "Liquidaciones"
   },
   "tabGroups": {
     "calendar": "Calendario",
@@ -553,6 +554,30 @@
         "updatedAt": "Último cambio",
         "yes": "sí",
         "no": "no"
+      },
+      "money": {
+        "title": "Liquidaciones",
+        "paid": "pagado",
+        "owed": "pendiente",
+        "count": "pagos",
+        "last": "último pago",
+        "none": "No hay importes registrados para esta persona.",
+        "unpaid": "pendiente",
+        "short": "faltan {{amount}}",
+        "untitled": "Sesión individual",
+        "feeFor": "Suscripción — {{month}}",
+        "subscription": {
+          "title": "Cuota de seguimiento",
+          "perMonth": "/ mes",
+          "openEnded": "indefinida",
+          "add": "Configurar cuota",
+          "start": "Iniciar",
+          "end": "Finalizar",
+          "reopen": "Reanudar",
+          "amount": "Importe / mes",
+          "from": "Desde el mes",
+          "endLabel": "Último mes"
+        }
       }
     },
     "listTab": "Lista",
@@ -863,5 +888,138 @@
     "lastEdited": "Última edición: {{date}}",
     "showAll": "Mostrar todo",
     "showLess": "Mostrar menos"
+  },
+  "settlements": {
+    "section": {
+      "title": "Liquidaciones",
+      "onlyYouHint": "Solo tú ves estos importes — los participantes no los ven en ningún sitio.",
+      "empty": "Todavía no hay nadie inscrito en esta sesión.",
+      "totals": "total: {{total}} · pagado: {{paid}}",
+      "bulk": "Liquidado en bloque · {{name}}",
+      "bulkHint": "Estas sesiones no se valoran por participante — registra la transferencia mensual en la pestaña Liquidaciones.",
+      "changeBulk": "Cambiar pagador",
+      "clearBulk": "Quitar marca",
+      "markBulk": "Liquidado en bloque…",
+      "bulkPayer": "Pagador",
+      "choosePayer": "— elegir —",
+      "noPayers": "Aún no hay pagadores. Añade uno en la pestaña Liquidaciones.",
+      "cancel": "Cancelar",
+      "bulkSubscription": "Cubierto por una cuota · {{name}}",
+      "groupSubscription": "Cuota del participante",
+      "groupSource": "Entidad"
+    },
+    "line": {
+      "people": "({{n}} pers.)",
+      "guest": "invitado",
+      "orphaned": "reserva cancelada",
+      "settled": "liquidado",
+      "amountPlaceholder": "importe",
+      "amountLabel": "Importe — {{name}}",
+      "settledOnLabel": "Fecha de pago — {{name}}",
+      "useLast": "la última vez: {{amount}}",
+      "clear": "Eliminar importe — {{name}}",
+      "settledLabel": "Liquidado — {{name}}",
+      "credit": "saldo a favor {{amount}}",
+      "debt": "debe {{amount}}",
+      "receivedPlaceholder": "recibido",
+      "receivedLabel": "Recibido — {{name}}",
+      "receivedHint": "recibido",
+      "dueHint": "a pagar"
+    },
+    "actions": {
+      "setAll": "Aplicar a todos",
+      "save": "Guardar"
+    },
+    "errors": {
+      "invalidAmount": "El importe debe ser un número entre 0 y 100000."
+    },
+    "tab": {
+      "title": "Liquidaciones",
+      "year": "Año:",
+      "allYears": "todo",
+      "empty": "Todavía no hay liquidaciones. Los importes se introducen en una sesión o un evento del calendario.",
+      "unpriced": {
+        "title": "Por valorar",
+        "count": "{{n}} sesiones",
+        "people": "{{n}} sin importe",
+        "scope": "Sesiones ya celebradas y sin ningún importe. Esta lista no sigue al selector de año y alcanza {{days}} días atrás.",
+        "open": "Abrir la sesión del {{date}} e introducir los importes"
+      },
+      "outstanding": {
+        "title": "Pendiente de cobro",
+        "count": "{{n}} elementos",
+        "oldest": "más antigua: {{date}}",
+        "none": "Todo está liquidado.",
+        "ignoresYear": "Esta lista cubre TODO el historial y no sigue al selector de año — una deuda de hace dos años sigue siendo una deuda.",
+        "untitled": {
+          "slot": "Sesión individual",
+          "event": "Evento",
+          "month": "Cuota de seguimiento"
+        },
+        "open": "Abrir la sesión — {{name}}, {{date}}",
+        "sessions": "{{n}} sesiones",
+        "settleAll": "Liquidar todo — {{amount}}",
+        "paidOnLabel": "Fecha de pago — {{name}}",
+        "receivedLabel": "Recibido — {{name}}"
+      },
+      "revenue": {
+        "title": "Ingresos",
+        "axis": "contados por la fecha de pago",
+        "total": "en el periodo seleccionado",
+        "average": "media mensual",
+        "fromSlots": "Sesiones individuales",
+        "fromEvents": "Eventos",
+        "fromSubscriptions": "Suscripciones",
+        "fromPayouts": "Pagos globales",
+        "vsLastYear": "frente al mismo periodo del año anterior ({{previous}})",
+        "lastYearTooltip": "un año antes: {{amount}}"
+      },
+      "people": {
+        "title": "Por persona",
+        "person": "Persona",
+        "count": "pagos",
+        "paid": "pagado",
+        "owed": "pendiente",
+        "last": "último pago",
+        "scope": "Las cifras de esta tabla cubren el periodo seleccionado — una deuda de un año anterior aparece arriba, en «Pendiente de cobro»."
+      },
+      "payouts": {
+        "title": "Pagos globales",
+        "axis": "Ingresos contados por la fecha de entrada. Tarifa = pago ÷ sesiones marcadas de ese mes.",
+        "payer": "Pagador",
+        "period": "Periodo",
+        "sessions": "sesiones",
+        "amount": "pago",
+        "rate": "tarifa / h",
+        "awaiting": "sin pago",
+        "add": "Añadir pago",
+        "periodField": "Del mes (cualquier día)",
+        "amountField": "Importe (neto)",
+        "receivedField": "Fecha de entrada",
+        "newPayer": "Nombre del pagador",
+        "addPayer": "Añadir",
+        "archive": "Archivar — {{name}}",
+        "setupHint": "¿Sesiones extra liquidadas una vez al mes? Añade aquí un pagador y luego marca una sesión con él en el calendario.",
+        "received": "entró el {{date}}",
+        "deleteTransfer": "Eliminar el pago de {{amount}}",
+        "restore": "Restaurar — {{name}}",
+        "rename": "Nombre — {{name}}",
+        "hours": "horas",
+        "withoutHours": "(+{{n}} sin horas)"
+      },
+      "export": {
+        "action": "Exportar XLSX",
+        "summary": "Liquidaciones — {{year}} · {{count}} líneas · generado {{generated}}",
+        "colKind": "Tipo",
+        "colDate": "Fecha de sesión / periodo",
+        "colTitle": "Descripción",
+        "colPayer": "Pagador",
+        "colAmount": "Importe (PLN)",
+        "colSettledOn": "Fecha de pago",
+        "kindClient": "Cliente",
+        "kindPayout": "Pago global",
+        "unpaid": "pendiente"
+      }
+    }
   }
 }
