@@ -30,9 +30,19 @@ import java.util.UUID;
 record SettlementSectionDto(
     LocalDate targetDate,
     List<SettlementLineDto> lines,
-    @Nullable UUID payoutSourceId,
-    @Nullable String payoutSourceName
+    @Nullable SettlementCoverageDto coveredBy
 ) {}
+
+/**
+ * Who settles this session in bulk, when somebody does.
+ *
+ * <p>One shape for both kinds rather than two nullable pairs of fields: an institution paying a lump
+ * for a month and a client whose subscription covers the session are the same phenomenon from two
+ * sides, and the screen says the same sentence about either.
+ *
+ * @param kind {@code source} for an institution, {@code subscription} for a client's standing fee.
+ */
+record SettlementCoverageDto(String kind, UUID id, String name) {}
 
 /**
  * One payer on one entry.
@@ -275,7 +285,11 @@ record SavePayoutSourceRequest(
  * It would work, and it would read as a bug to whoever met the two routes next — the same reason
  * {@code /admin/user-stats} does not live at {@code /admin/users/stats}.
  */
-record AssignPayoutSourceRequest(@Nullable UUID sourceId) {}
+record AssignPayoutSourceRequest(
+    @Nullable UUID sourceId,
+    /** A client whose standing subscription covers the session. Exclusive with {@code sourceId}. */
+    @Nullable UUID subscriberId
+) {}
 
 /**
  * One transfer. {@code periodMonth} is any day of the month the work was done in — the server snaps

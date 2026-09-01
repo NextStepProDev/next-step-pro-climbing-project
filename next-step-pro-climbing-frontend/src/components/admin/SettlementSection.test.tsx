@@ -30,7 +30,7 @@ vi.mock('../../api/client', () => ({
 const TARGET_DATE = '2026-08-14'
 
 /** Most sessions are priced per participant; the bulk fields are absent unless a test sets them. */
-const bulkOff = { payoutSourceId: null, payoutSourceName: null }
+const bulkOff = { coveredBy: null }
 
 function line(overrides: Partial<SettlementLine> = {}): SettlementLine {
   return {
@@ -249,8 +249,7 @@ describe('SettlementSection — settled in bulk', () => {
     getSection.mockResolvedValue({
       targetDate: TARGET_DATE,
       lines: [line()],
-      payoutSourceId: 'src-1',
-      payoutSourceName: 'SP nr 12',
+      coveredBy: { kind: 'source', id: 'src-1', name: 'SP nr 12' },
     })
 
     renderSection()
@@ -276,21 +275,57 @@ describe('SettlementSection — settled in bulk', () => {
     await user.selectOptions(screen.getByLabelText('settlements.section.bulkPayer'), 'src-1')
     await user.click(screen.getByRole('button', { name: 'settlements.actions.save' }))
 
-    await waitFor(() => expect(assignSource).toHaveBeenCalledWith('slot', 'target-1', 'src-1'))
+    await waitFor(() => expect(assignSource).toHaveBeenCalledWith('slot', 'target-1', 'src-1', null))
   })
 
   it('unmarks a session with null rather than a second endpoint', async () => {
     getSection.mockResolvedValue({
       targetDate: TARGET_DATE,
       lines: [],
-      payoutSourceId: 'src-1',
-      payoutSourceName: 'SP nr 12',
+      coveredBy: { kind: 'source', id: 'src-1', name: 'SP nr 12' },
     })
     const user = userEvent.setup()
 
     renderSection()
 
     await user.click(await screen.findByRole('button', { name: 'settlements.section.clearBulk' }))
-    await waitFor(() => expect(assignSource).toHaveBeenCalledWith('slot', 'target-1', null))
+    await waitFor(() => expect(assignSource).toHaveBeenCalledWith('slot', 'target-1', null, null))
+  })
+  it('offers the participant\'s own subscription, not just institutions', async () => {
+    getSection.mockResolvedValue({ ...bulkOff, targetDate: TARGET_DATE, lines: [line()] })
+    const user = userEvent.setup()
+
+    renderSection()
+
+    await user.click(await screen.findByRole('button', { name: 'settlements.section.markBulk' }))
+    await waitFor(() => expect(listSources).toHaveBeenCalled())
+
+    // The whole point of this half: a session covered by the client's retainer leaves the pricing
+    // queue WITHOUT a zero, so zero keeps meaning "free of charge".
+    await user.selectOptions(
+      screen.getByLabelText('settlements.section.bulkPayer'),
+      'user:user-1',
+    )
+    await user.click(screen.getByRole('button', { name: 'settlements.actions.save' }))
+
+    await waitFor(() =>
+      expect(assignSource).toHaveBeenCalledWith('slot', 'target-1', null, 'user-1'),
+    )
+  })
+
+  it('does not offer a guest, who has no account to hold a subscription', async () => {
+    getSection.mockResolvedValue({
+      ...bulkOff,
+      targetDate: TARGET_DATE,
+      lines: [line({ payerType: 'guest', payerId: 'guest-1', name: 'Marek' })],
+    })
+    const user = userEvent.setup()
+
+    renderSection()
+
+    await user.click(await screen.findByRole('button', { name: 'settlements.section.markBulk' }))
+    await waitFor(() => expect(listSources).toHaveBeenCalled())
+
+    expect(screen.queryByRole('option', { name: 'Marek' })).not.toBeInTheDocument()
   })
 })

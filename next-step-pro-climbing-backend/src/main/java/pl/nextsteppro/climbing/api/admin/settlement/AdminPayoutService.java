@@ -7,9 +7,11 @@ import pl.nextsteppro.climbing.domain.settlement.PayoutRepository;
 import pl.nextsteppro.climbing.domain.settlement.PayoutSource;
 import pl.nextsteppro.climbing.domain.settlement.PayoutSourceRepository;
 import pl.nextsteppro.climbing.domain.settlement.SessionPayoutRepository;
+import pl.nextsteppro.climbing.domain.settlement.SubscriptionRepository;
 import pl.nextsteppro.climbing.infrastructure.i18n.MessageService;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -33,17 +35,20 @@ public class AdminPayoutService {
     private final PayoutSourceRepository sourceRepository;
     private final PayoutRepository payoutRepository;
     private final SessionPayoutRepository sessionPayoutRepository;
+    private final SubscriptionRepository subscriptionRepository;
     private final AdminSettlementService settlementService;
     private final MessageService msg;
 
     public AdminPayoutService(PayoutSourceRepository sourceRepository,
                               PayoutRepository payoutRepository,
                               SessionPayoutRepository sessionPayoutRepository,
+                              SubscriptionRepository subscriptionRepository,
                               AdminSettlementService settlementService,
                               MessageService msg) {
         this.sourceRepository = sourceRepository;
         this.payoutRepository = payoutRepository;
         this.sessionPayoutRepository = sessionPayoutRepository;
+        this.subscriptionRepository = subscriptionRepository;
         this.settlementService = settlementService;
         this.msg = msg;
     }
@@ -107,23 +112,50 @@ public class AdminPayoutService {
     public void assignSource(String targetSegment, UUID targetId, AssignPayoutSourceRequest request) {
         SettlementTarget target = settlementService.requireAddressableTarget(targetSegment, targetId);
         UUID sourceId = request.sourceId();
+        UUID userId = request.subscriberId();
 
-        if (sourceId == null) {
+        if (sourceId == null && userId == null) {
             switch (target) {
                 case SLOT -> sessionPayoutRepository.clearSlot(targetId);
                 case EVENT -> sessionPayoutRepository.clearEvent(targetId);
             }
             return;
         }
+        if (sourceId != null && userId != null) {
+            throw new IllegalArgumentException(msg.get("admin.payout.session.two.payers"));
+        }
         // Refuses the CHANGE, never the state: a session already priced per participant keeps those
         // amounts, and marking it in bulk would hide them while they went on counting.
         if (settlementService.hasPricedParticipants(target, targetId)) {
             throw new IllegalArgumentException(msg.get("admin.payout.session.has.amounts"));
         }
-        requireSource(sourceId);
+        if (sourceId != null) {
+            requireSource(sourceId);
+        } else {
+            requireSubscriberOfSession(target, targetId, userId);
+        }
         switch (target) {
-            case SLOT -> sessionPayoutRepository.assignSlot(targetId, sourceId);
-            case EVENT -> sessionPayoutRepository.assignEvent(targetId, sourceId);
+            case SLOT -> sessionPayoutRepository.assignSlot(targetId, sourceId, userId);
+            case EVENT -> sessionPayoutRepository.assignEvent(targetId, sourceId, userId);
+        }
+    }
+
+    /**
+     * A session may only be marked as covered by somebody's retainer if that somebody is actually on
+     * it and actually has a retainer for the month it falls in.
+     *
+     * <p>Both halves matter. Without the first, a session could be filed under a client who never
+     * attended it. Without the second, the mark would take the session out of the pricing queue and
+     * attribute it to a subscription that does not exist — the same invisible-work failure as an
+     * amount hidden behind a bulk mark, only inverted: work that earns nothing and says so nowhere.
+     */
+    private void requireSubscriberOfSession(SettlementTarget target, UUID targetId, UUID userId) {
+        if (!settlementService.isParticipant(target, targetId, userId)) {
+            throw new IllegalArgumentException(msg.get("admin.payout.session.not.participant"));
+        }
+        LocalDate month = settlementService.sessionMonth(target, targetId);
+        if (subscriptionRepository.findByUserId(userId).stream().noneMatch(s -> s.covers(month))) {
+            throw new IllegalArgumentException(msg.get("admin.payout.session.no.subscription"));
         }
     }
 

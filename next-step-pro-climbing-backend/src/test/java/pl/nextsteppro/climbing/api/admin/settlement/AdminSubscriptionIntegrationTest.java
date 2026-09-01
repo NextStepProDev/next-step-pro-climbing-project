@@ -5,12 +5,15 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
+import pl.nextsteppro.climbing.domain.reservation.Reservation;
+import pl.nextsteppro.climbing.domain.timeslot.TimeSlot;
 import pl.nextsteppro.climbing.domain.user.User;
 import pl.nextsteppro.climbing.domain.user.UserRole;
 import pl.nextsteppro.climbing.integration.BaseIntegrationTest;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -29,12 +32,15 @@ class AdminSubscriptionIntegrationTest extends BaseIntegrationTest {
 
     @Autowired private AdminSubscriptionService subscriptions;
     @Autowired private AdminSettlementStatsService stats;
+    @Autowired private AdminPayoutService payouts;
+    @Autowired private AdminSettlementService settlements;
     @Autowired private JdbcTemplate jdbc;
 
     private User client;
 
     @BeforeEach
     void setUp() {
+        jdbc.update("DELETE FROM session_payouts");
         jdbc.update("DELETE FROM subscriptions");
         jdbc.update("DELETE FROM settlements");
         reservationRepository.deleteAll();
@@ -50,6 +56,18 @@ class AdminSubscriptionIntegrationTest extends BaseIntegrationTest {
 
     private LocalDate monthsAgo(int months) {
         return LocalDate.now(AdminSubscriptionService.WARSAW).withDayOfMonth(1).minusMonths(months);
+    }
+
+    private TimeSlot bookedSlot(LocalDate on) {
+        TimeSlot slot = timeSlotRepository.saveAndFlush(
+            new TimeSlot(on, LocalTime.of(18, 0), LocalTime.of(20, 0), 4));
+        reservationRepository.saveAndFlush(new Reservation(client, slot));
+        return slot;
+    }
+
+    private int unpricedCount() {
+        return stats.buildOverview("all", LocalDate.now(AdminSubscriptionService.WARSAW))
+            .unpriced().count();
     }
 
     private int feeCount() {
@@ -187,6 +205,63 @@ class AdminSubscriptionIntegrationTest extends BaseIntegrationTest {
         assertNull(outstanding.items().getFirst().targetId(),
             "A fee has no calendar entry, so nothing may try to link into one");
         assertTrue(outstanding.items().getFirst().targetType().equals("month"));
+    }
+
+    @Test
+    @DisplayName("shouldCoverASessionWithTheSubscriptionInsteadOfPricingItAtZero")
+    void shouldCoverASessionWithTheSubscriptionInsteadOfPricingItAtZero() {
+        subscriptions.create(client.getId(), new SaveSubscriptionRequest(
+            new BigDecimal("400"), monthsAgo(1), null));
+        // Last month, so it has certainly happened — the queue only lists work already done.
+        TimeSlot slot = bookedSlot(monthsAgo(1).plusDays(3));
+
+        assertEquals(1, unpricedCount(), "Before the mark it is ordinary unpriced work");
+
+        payouts.assignSource("slot", slot.getId(),
+            new AssignPayoutSourceRequest(null, client.getId()));
+
+        // The whole point: it leaves the queue WITHOUT a zero, so zero keeps meaning "free of
+        // charge" and the revenue split does not claim one-to-one work earns nothing.
+        assertEquals(0, unpricedCount());
+        SettlementSectionDto section = settlements.getSection("slot", slot.getId());
+        assertEquals("subscription", section.coveredBy().kind());
+        assertEquals(client.getId(), section.coveredBy().id());
+    }
+
+    @Test
+    @DisplayName("shouldRefuseToCoverASessionThePersonIsNotBookedOn")
+    void shouldRefuseToCoverASessionThePersonIsNotBookedOn() {
+        subscriptions.create(client.getId(), new SaveSubscriptionRequest(
+            new BigDecimal("400"), monthsAgo(1), null));
+        TimeSlot empty = timeSlotRepository.saveAndFlush(new TimeSlot(
+            monthsAgo(1).plusDays(3), LocalTime.of(18, 0), LocalTime.of(20, 0), 4));
+
+        assertThrows(IllegalArgumentException.class, () -> payouts.assignSource(
+            "slot", empty.getId(), new AssignPayoutSourceRequest(null, client.getId())));
+    }
+
+    @Test
+    @DisplayName("shouldRefuseToCoverASessionInAMonthTheSubscriptionDoesNotReach")
+    void shouldRefuseToCoverASessionInAMonthTheSubscriptionDoesNotReach() {
+        subscriptions.create(client.getId(), new SaveSubscriptionRequest(
+            new BigDecimal("400"), monthsAgo(1), null));
+        TimeSlot lastYear = bookedSlot(monthsAgo(6).plusDays(3));
+
+        // Otherwise the mark takes the session out of the queue and files it under a retainer that
+        // never covered it — work that earns nothing and says so nowhere.
+        assertThrows(IllegalArgumentException.class, () -> payouts.assignSource(
+            "slot", lastYear.getId(), new AssignPayoutSourceRequest(null, client.getId())));
+    }
+
+    @Test
+    @DisplayName("shouldRefuseTwoPayersOnOneSession")
+    void shouldRefuseTwoPayersOnOneSession() {
+        subscriptions.create(client.getId(), new SaveSubscriptionRequest(
+            new BigDecimal("400"), monthsAgo(1), null));
+        TimeSlot slot = bookedSlot(monthsAgo(1).plusDays(3));
+
+        assertThrows(IllegalArgumentException.class, () -> payouts.assignSource(
+            "slot", slot.getId(), new AssignPayoutSourceRequest(UUID.randomUUID(), client.getId())));
     }
 
     @Test

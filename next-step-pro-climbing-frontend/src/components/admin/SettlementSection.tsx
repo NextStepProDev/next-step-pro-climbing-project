@@ -62,8 +62,8 @@ export function SettlementSection({ target, targetId }: SettlementSectionProps) 
   })
 
   const assignMutation = useMutation({
-    mutationFn: (sourceId: string | null) =>
-      adminSettlementsApi.assignSource(target, targetId, sourceId),
+    mutationFn: (choice: { sourceId: string | null; subscriberId: string | null }) =>
+      adminSettlementsApi.assignSource(target, targetId, choice.sourceId, choice.subscriberId),
     onSuccess: () => {
       setPicking(false)
       queryClient.invalidateQueries({ queryKey: ['admin', 'settlements'] })
@@ -213,21 +213,27 @@ export function SettlementSection({ target, targetId }: SettlementSectionProps) 
         {t('settlements.section.onlyYouHint')}
       </p>
 
-      {data?.payoutSourceId ? (
+      {data?.coveredBy ? (
         /* Settled in bulk: there is nobody here to charge per head, so the per-participant fields
            are not merely disabled but absent — offering them would invite an invented amount. */
         <div className="space-y-2">
           <p className="flex items-center gap-2 text-sm text-surface-200">
             <Building2 className="w-4 h-4 text-surface-400 shrink-0" />
-            {t('settlements.section.bulk', { name: data.payoutSourceName })}
+            {t(
+              data.coveredBy.kind === 'subscription'
+                ? 'settlements.section.bulkSubscription'
+                : 'settlements.section.bulk',
+              { name: data.coveredBy.name },
+            )}
           </p>
           <p className="text-xs text-surface-500">{t('settlements.section.bulkHint')}</p>
           {picking ? (
             <SourcePicker
               sources={sources ?? []}
-              current={data.payoutSourceId}
+              participants={lines}
+              current={data.coveredBy.id}
               pending={assignMutation.isPending}
-              onPick={(id) => assignMutation.mutate(id)}
+              onPick={(choice) => assignMutation.mutate(choice)}
               onCancel={() => setPicking(false)}
             />
           ) : (
@@ -238,7 +244,7 @@ export function SettlementSection({ target, targetId }: SettlementSectionProps) 
               <Button
                 size="sm"
                 variant="ghost"
-                onClick={() => assignMutation.mutate(null)}
+                onClick={() => assignMutation.mutate({ sourceId: null, subscriberId: null })}
                 loading={assignMutation.isPending}
               >
                 {t('settlements.section.clearBulk')}
@@ -256,9 +262,10 @@ export function SettlementSection({ target, targetId }: SettlementSectionProps) 
       ) : picking ? (
         <SourcePicker
           sources={sources ?? []}
+          participants={lines}
           current={null}
           pending={assignMutation.isPending}
-          onPick={(id) => assignMutation.mutate(id)}
+          onPick={(choice) => assignMutation.mutate(choice)}
           onCancel={() => setPicking(false)}
         />
       ) : (
@@ -409,19 +416,23 @@ export function SettlementSection({ target, targetId }: SettlementSectionProps) 
  */
 function SourcePicker({
   sources,
+  participants,
   current,
   pending,
   onPick,
   onCancel,
 }: {
   sources: PayoutSource[]
+  participants: SettlementLine[]
   current: string | null
   pending: boolean
-  onPick: (sourceId: string) => void
+  onPick: (choice: { sourceId: string | null; subscriberId: string | null }) => void
   onCancel: () => void
 }) {
   const { t } = useTranslation('admin')
   const active = sources.filter((source) => !source.archived || source.id === current)
+  // Guests have no account and no continuity, so no subscription can cover them.
+  const subscribers = participants.filter((line) => line.payerType === 'user')
   const [choice, setChoice] = useState(current ?? '')
 
   return (
@@ -433,23 +444,42 @@ function SourcePicker({
         className="bg-surface-800 border border-surface-600 rounded px-2 py-1 text-sm text-surface-100 focus:outline-none focus:border-primary-500"
       >
         <option value="">{t('settlements.section.choosePayer')}</option>
-        {active.map((source) => (
-          <option key={source.id} value={source.id}>{source.name}</option>
-        ))}
+        {/* Two groups, because they are two different relationships — an institution that pays for
+            a batch, and a client whose retainer already covers this. */}
+        {subscribers.length > 0 && (
+          <optgroup label={t('settlements.section.groupSubscription')}>
+            {subscribers.map((line) => (
+              <option key={line.payerId} value={`user:${line.payerId}`}>{line.name}</option>
+            ))}
+          </optgroup>
+        )}
+        {active.length > 0 && (
+          <optgroup label={t('settlements.section.groupSource')}>
+            {active.map((source) => (
+              <option key={source.id} value={source.id}>{source.name}</option>
+            ))}
+          </optgroup>
+        )}
       </select>
       <Button
         size="sm"
         variant="primary"
         disabled={choice === '' || choice === current}
         loading={pending}
-        onClick={() => onPick(choice)}
+        onClick={() =>
+          onPick(
+            choice.startsWith('user:')
+              ? { sourceId: null, subscriberId: choice.slice(5) }
+              : { sourceId: choice, subscriberId: null },
+          )
+        }
       >
         {t('settlements.actions.save')}
       </Button>
       <Button size="sm" variant="ghost" onClick={onCancel}>
         {t('settlements.section.cancel')}
       </Button>
-      {active.length === 0 && (
+      {active.length === 0 && subscribers.length === 0 && (
         <span className="text-xs text-surface-500">{t('settlements.section.noPayers')}</span>
       )}
     </div>

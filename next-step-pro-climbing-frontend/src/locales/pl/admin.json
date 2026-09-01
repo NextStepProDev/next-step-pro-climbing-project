@@ -903,7 +903,10 @@
       "bulkPayer": "Kontrahent",
       "choosePayer": "— wybierz —",
       "noPayers": "Brak kontrahentów. Dodaj go w zakładce Rozliczenia.",
-      "cancel": "Anuluj"
+      "cancel": "Anuluj",
+      "bulkSubscription": "W abonamencie · {{name}}",
+      "groupSubscription": "Abonament uczestnika",
+      "groupSource": "Kontrahent"
     },
     "line": {
       "people": "({{n}} os.)",

@@ -596,10 +596,17 @@ export interface SettlementLine {
 export interface SettlementSection {
   targetDate: string
   lines: SettlementLine[]
-  // Set when this session is work somebody else settles in bulk. Then there is nobody to charge per
-  // head, so the section switches mode rather than offering fields that would invent an amount.
-  payoutSourceId: string | null
-  payoutSourceName: string | null
+  // Set when somebody settles this session in bulk. Then there is nobody to charge per head, so the
+  // section switches mode rather than offering fields that would invent an amount.
+  coveredBy: SettlementCoverage | null
+}
+
+// One shape for both payer kinds: an institution paying a lump for a month, and a client whose
+// standing subscription covers the session, are the same thing from two sides.
+export interface SettlementCoverage {
+  kind: 'source' | 'subscription'
+  id: string
+  name: string
 }
 
 // A payer who settles a whole month at once — a school, a club. Archived ones still come back in the

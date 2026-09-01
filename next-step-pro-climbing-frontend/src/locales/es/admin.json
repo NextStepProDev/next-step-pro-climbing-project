@@ -901,7 +901,10 @@
       "bulkPayer": "Pagador",
       "choosePayer": "— elegir —",
       "noPayers": "Aún no hay pagadores. Añade uno en la pestaña Liquidaciones.",
-      "cancel": "Cancelar"
+      "cancel": "Cancelar",
+      "bulkSubscription": "Cubierto por una cuota · {{name}}",
+      "groupSubscription": "Cuota del participante",
+      "groupSource": "Entidad"
     },
     "line": {
       "people": "({{n}} pers.)",

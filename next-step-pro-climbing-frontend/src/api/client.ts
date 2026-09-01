@@ -1181,10 +1181,17 @@ export const adminSettlementsApi = {
 
   // Null detaches the session. Its own path segment rather than a fourth {payerType} slot: that
   // shape would collide with the per-payer write and resolve only by Spring's specificity rules.
-  assignSource: (target: SettlementTarget, targetId: string, sourceId: string | null) =>
+  // Exactly one of sourceId / subscriberId, or both null to detach. Its own path segment rather
+  // than a fourth {payerType} slot: that shape would collide with the per-payer write.
+  assignSource: (
+    target: SettlementTarget,
+    targetId: string,
+    sourceId: string | null,
+    subscriberId: string | null = null,
+  ) =>
     fetchApi<void>(`/admin/settlements/${target}/${targetId}/payout-source`, {
       method: 'PUT',
-      body: JSON.stringify({ sourceId }),
+      body: JSON.stringify({ sourceId, subscriberId }),
     }),
 
   // periodMonth is any day of the month the work was done in — the server snaps it to the first.

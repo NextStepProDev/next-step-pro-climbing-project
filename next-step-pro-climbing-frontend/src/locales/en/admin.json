@@ -901,7 +901,10 @@
       "bulkPayer": "Payer",
       "choosePayer": "— choose —",
       "noPayers": "No payers yet. Add one on the Settlements tab.",
-      "cancel": "Cancel"
+      "cancel": "Cancel",
+      "bulkSubscription": "Covered by a subscription · {{name}}",
+      "groupSubscription": "Participant's subscription",
+      "groupSource": "Institution"
     },
     "line": {
       "people": "({{n}} people)",

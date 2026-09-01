@@ -14,8 +14,8 @@ import pl.nextsteppro.climbing.domain.settlement.PayerLastAmount;
 import pl.nextsteppro.climbing.domain.settlement.Settlement;
 import pl.nextsteppro.climbing.domain.settlement.SettlementRepository;
 import pl.nextsteppro.climbing.domain.settlement.SettlementRow;
-import pl.nextsteppro.climbing.domain.settlement.PayoutSource;
 import pl.nextsteppro.climbing.domain.settlement.PayoutSourceRepository;
+import pl.nextsteppro.climbing.domain.settlement.SessionCoverage;
 import pl.nextsteppro.climbing.domain.settlement.SessionPayoutRepository;
 import pl.nextsteppro.climbing.domain.timeslot.TimeSlot;
 import pl.nextsteppro.climbing.domain.timeslot.TimeSlotRepository;
@@ -278,15 +278,7 @@ public class AdminSettlementService {
         }
         // A session settled in bulk has nobody to charge per head, so the section switches mode
         // rather than offering fields that would invent an amount.
-        Optional<UUID> sourceId = switch (target) {
-            case SLOT -> sessionPayoutRepository.findSourceIdForSlot(targetId);
-            case EVENT -> sessionPayoutRepository.findSourceIdForEvent(targetId);
-        };
-        PayoutSource source = sourceId.flatMap(payoutSourceRepository::findById).orElse(null);
-
-        return new SettlementSectionDto(targetDate, result,
-            source == null ? null : source.getId(),
-            source == null ? null : source.getName());
+        return new SettlementSectionDto(targetDate, result, coverageOf(target, targetId));
     }
 
     /**
@@ -366,10 +358,51 @@ public class AdminSettlementService {
 
     /** True when this session is settled in bulk, so nobody on it may be charged per head. */
     boolean isSettledInBulk(SettlementTarget target, UUID targetId) {
+        return coverage(target, targetId).isPresent();
+    }
+
+    /** Whether this person actually holds a confirmed booking on the session. */
+    boolean isParticipant(SettlementTarget target, UUID targetId, UUID userId) {
         return switch (target) {
-            case SLOT -> sessionPayoutRepository.findSourceIdForSlot(targetId).isPresent();
-            case EVENT -> sessionPayoutRepository.findSourceIdForEvent(targetId).isPresent();
-        }; 
+            case SLOT -> reservationRepository.existsByUserIdAndTimeSlotIdAndStatus(
+                userId, targetId, ReservationStatus.CONFIRMED);
+            case EVENT -> !reservationRepository.findUserParticipantsForEvent(userId, targetId).isEmpty();
+        };
+    }
+
+    /** The month a session falls in — an event by its first day, the unit a subscription bills in. */
+    LocalDate sessionMonth(SettlementTarget target, UUID targetId) {
+        return (switch (target) {
+            case SLOT -> requireSlot(targetId).getDate();
+            case EVENT -> requireEvent(targetId).getStartDate();
+        }).withDayOfMonth(1);
+    }
+
+    Optional<SessionCoverage> coverage(SettlementTarget target, UUID targetId) {
+        return switch (target) {
+            case SLOT -> sessionPayoutRepository.findCoverageForSlot(targetId);
+            case EVENT -> sessionPayoutRepository.findCoverageForEvent(targetId);
+        };
+    }
+
+    /**
+     * Who settles this session in bulk, named for the screen — an institution or a client whose
+     * subscription covers it. Null when nobody does, which is the ordinary case.
+     */
+    private @Nullable SettlementCoverageDto coverageOf(SettlementTarget target, UUID targetId) {
+        SessionCoverage found = coverage(target, targetId).orElse(null);
+        if (found == null) {
+            return null;
+        }
+        if (found.bySubscription()) {
+            return userRepository.findById(Objects.requireNonNull(found.userId()))
+                .map(user -> new SettlementCoverageDto("subscription", user.getId(),
+                    (user.getFirstName() + " " + user.getLastName()).trim()))
+                .orElse(null);
+        }
+        return payoutSourceRepository.findById(Objects.requireNonNull(found.sourceId()))
+            .map(source -> new SettlementCoverageDto("source", source.getId(), source.getName()))
+            .orElse(null);
     }
 
     private void requireTargetExists(SettlementTarget target, UUID targetId) {
@@ -417,12 +450,7 @@ public class AdminSettlementService {
         if (!userRepository.existsById(userId)) {
             throw new IllegalArgumentException(msg.get("admin.settlement.payer.not.found"));
         }
-        boolean participates = switch (target) {
-            case SLOT -> reservationRepository.existsByUserIdAndTimeSlotIdAndStatus(
-                userId, targetId, ReservationStatus.CONFIRMED);
-            case EVENT -> !reservationRepository.findUserParticipantsForEvent(userId, targetId).isEmpty();
-        };
-        if (!participates) {
+        if (!isParticipant(target, targetId, userId)) {
             throw new IllegalArgumentException(msg.get("admin.settlement.payer.not.participant"));
         }
     }
