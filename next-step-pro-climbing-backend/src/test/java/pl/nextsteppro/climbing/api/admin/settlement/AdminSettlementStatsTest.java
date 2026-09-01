@@ -472,6 +472,23 @@ class AdminSettlementStatsTest extends BaseIntegrationTest {
     }
 
     @Test
+    @DisplayName("shouldMarkAStandingFeeSoItIsNotLabelledAsASession")
+    void shouldMarkAStandingFeeSoItIsNotLabelledAsASession() {
+        // ⚠️ A fee has no calendar entry, so it carries no title — and the client's fallback for a
+        // missing title is "Trening 1:1". Without this flag the card listed a training that never
+        // happened, once for every month billed.
+        monthlyFee(LocalDate.of(2026, 3, 1), client, "400", null);
+        partiallyPaidSlot(LocalDate.of(2026, 3, 12), client, "150", "150", LocalDate.of(2026, 3, 12));
+
+        List<PayerLineDto> lines = stats.payerSummary(client.getId(), 10).recent();
+
+        PayerLineDto fee = lines.stream().filter(PayerLineDto::monthlyFee).findFirst().orElseThrow();
+        assertNull(fee.title(), "A fee has no session to name");
+        assertEquals(1, lines.stream().filter(line -> !line.monthlyFee()).count(),
+            "And the real session is not flagged as one");
+    }
+
+    @Test
     @DisplayName("shouldAgreeWithTheSettlementsTabAboutWhatOneClientOwes")
     void shouldAgreeWithTheSettlementsTabAboutWhatOneClientOwes() {
         // The point is not either figure on its own — it is that the two screens cannot disagree.

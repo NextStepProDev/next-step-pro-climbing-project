@@ -75,7 +75,11 @@ export function UserMoneyCard({ userId }: { userId: string }) {
                   {format(parseCalendarDate(line.date), 'dd.MM.yyyy', { locale })}
                 </span>
                 <span className="flex-1 min-w-0 truncate text-surface-300">
-                  {line.title ?? t('users.detail.money.untitled')}
+                  {line.monthlyFee
+                    ? t('users.detail.money.feeFor', {
+                        month: format(parseCalendarDate(line.date), 'LLLL yyyy', { locale }),
+                      })
+                    : line.title ?? t('users.detail.money.untitled')}
                 </span>
                 <span className="shrink-0 text-surface-200 tabular-nums">{money(line.amount)}</span>
                 <span className="w-24 shrink-0 text-right tabular-nums">

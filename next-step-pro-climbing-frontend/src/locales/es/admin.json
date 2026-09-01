@@ -565,6 +565,7 @@
         "unpaid": "pendiente",
         "short": "faltan {{amount}}",
         "untitled": "Sesión individual",
+        "feeFor": "Suscripción — {{month}}",
         "subscription": {
           "title": "Cuota de seguimiento",
           "perMonth": "/ mes",

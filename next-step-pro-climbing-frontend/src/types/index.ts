@@ -682,6 +682,12 @@ export interface PayerSummary {
 export interface PayerLine {
   date: string
   title: string | null
+  /**
+   * ⚠️ A standing monthly fee has no calendar entry behind it, so it must NOT fall back to the
+   * untitled-session label — that label is "Trening 1:1", which would put a training that never
+   * happened on the card once a month.
+   */
+  monthlyFee: boolean
   amount: number
   /** What actually arrived. Below `amount` the rest is still owed, above it the change is credit. */
   paidAmount: number

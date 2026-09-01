@@ -203,7 +203,7 @@ class AdminSettlementStatsService {
                     lastPayment = row.settledOn();
                 }
             }
-            lines.add(new PayerLineDto(row.targetDate(), row.targetTitle(),
+            lines.add(new PayerLineDto(row.targetDate(), row.targetTitle(), row.isMonthlyFee(),
                 row.amount(), row.paidAmount(), row.settledOn()));
         }
 

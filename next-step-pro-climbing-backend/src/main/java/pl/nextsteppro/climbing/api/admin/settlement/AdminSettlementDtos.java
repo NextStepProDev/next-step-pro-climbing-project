@@ -435,6 +435,12 @@ record PayerSummaryDto(
 record PayerLineDto(
     LocalDate date,
     @Nullable String title,
+    /**
+     * ⚠️ A standing monthly fee has no calendar entry, so the client must not fall back to its
+     * "untitled session" label for it — that label is "Trening 1:1", which would put a training
+     * that never happened on the card, three times a quarter.
+     */
+    boolean monthlyFee,
     BigDecimal amount,
     BigDecimal paidAmount,
     @Nullable LocalDate settledOn

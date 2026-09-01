@@ -565,6 +565,7 @@
         "unpaid": "outstanding",
         "short": "{{amount}} short",
         "untitled": "One-to-one session",
+        "feeFor": "Subscription — {{month}}",
         "subscription": {
           "title": "Coaching subscription",
           "perMonth": "/ month",
