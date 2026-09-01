@@ -229,6 +229,68 @@ describe('AdminSettlementsPanel', () => {
     expect(settleOutstanding).toHaveBeenCalledTimes(1)
   })
 
+  it('offers a round amount even when the debts add up to a float tail', async () => {
+    // 299.23 + 44.95 + 326.98 is 671.1600000000001 in binary floating point, and roughly three
+    // groups in ten land somewhere like it. The heading beside this field renders 671,16 zł through
+    // Intl, so anything but a rounded default puts two different totals on one row of one screen.
+    getOverview.mockResolvedValue(makeOverview({
+      outstanding: {
+        total: 671.16,
+        count: 3,
+        oldest: '2026-08-05',
+        items: [
+          {
+            targetType: 'slot', targetId: 'slot-1', date: '2026-08-05', title: 'Trening 1:1',
+            payerType: 'user', payerId: 'anna', name: 'Anna Kowalska', amount: 299.23,
+          },
+          {
+            targetType: 'slot', targetId: 'slot-2', date: '2026-08-12', title: 'Trening 1:1',
+            payerType: 'user', payerId: 'anna', name: 'Anna Kowalska', amount: 44.95,
+          },
+          {
+            targetType: 'slot', targetId: 'slot-3', date: '2026-08-19', title: 'Trening 1:1',
+            payerType: 'user', payerId: 'anna', name: 'Anna Kowalska', amount: 326.98,
+          },
+        ],
+      },
+    }))
+
+    renderPanel()
+
+    const received = await screen.findByLabelText('settlements.tab.outstanding.receivedLabel')
+    expect(received).toHaveValue('671.16')
+  })
+
+  it('refuses an amount the server would reject, rather than letting it be sent', async () => {
+    // The ceiling here is the SETTLEMENT one: this money lands on a settlement row, which the server
+    // caps at 100000. Reusing the higher bulk-transfer ceiling left the button live on an amount
+    // that then came back 400.
+    getOverview.mockResolvedValue(makeOverview({
+      outstanding: {
+        total: 150,
+        count: 1,
+        oldest: '2026-08-05',
+        items: [{
+          targetType: 'slot', targetId: 'slot-1', date: '2026-08-05', title: 'Trening 1:1',
+          payerType: 'user', payerId: 'anna', name: 'Anna Kowalska', amount: 150,
+        }],
+      },
+    }))
+    const user = userEvent.setup()
+
+    renderPanel()
+
+    const received = await screen.findByLabelText('settlements.tab.outstanding.receivedLabel')
+    const settle = screen.getByRole('button', { name: 'settlements.tab.outstanding.settleAll' })
+    expect(settle).toBeEnabled()
+
+    await user.clear(received)
+    await user.type(received, '200000')
+
+    expect(settle).toBeDisabled()
+    expect(settleOutstanding).not.toHaveBeenCalled()
+  })
+
   it('shows what a person owes it for only once the group is opened', async () => {
     getOverview.mockResolvedValue(makeOverview({
       outstanding: {

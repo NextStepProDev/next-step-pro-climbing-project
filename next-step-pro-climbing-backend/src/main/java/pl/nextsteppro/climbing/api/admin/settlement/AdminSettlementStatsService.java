@@ -51,7 +51,11 @@ import java.util.UUID;
  */
 @Service
 @Transactional(readOnly = true)
-public class AdminSettlementStatsService {
+// Package-private on purpose: only this package's controller has any business reading what clients
+// were charged, and Java is a stronger gate than a source-scanning test. A future service that tries
+// to pull revenue into a shared DTO now fails to COMPILE rather than needing somebody to notice it
+// in review. Spring proxies package-private classes fine — the proxy is generated in this package.
+class AdminSettlementStatsService {
 
     static final ZoneId WARSAW = ZoneId.of("Europe/Warsaw");
 
@@ -139,8 +143,16 @@ public class AdminSettlementStatsService {
      * was taken from. Sorted by the day the money is attributed to: the payment date where there is
      * one, the session's own date where there is not.
      */
-    public List<SettlementExportRowDto> exportRows(@Nullable String yearParam, String clientKind,
-                                                   String payoutKind) {
+    public List<SettlementExportRowDto> exportRows(@Nullable String yearParam, String clientKindParam,
+                                                   String payoutKindParam) {
+        // These two are display labels the caller translates and hands us, so they are the only
+        // free text on this endpoint — and each is copied onto EVERY row of the export. Capping the
+        // length here rather than with @Size on the parameter is deliberate: nothing in this
+        // codebase puts @Validated on a controller, so the annotation would be inert, and switching
+        // it on would turn an over-long label into an unhandled ConstraintViolationException — a
+        // 500 and an ERROR in the log for a request the server understood perfectly well.
+        String clientKind = capLabel(clientKindParam);
+        String payoutKind = capLabel(payoutKindParam);
         LocalDate today = LocalDate.now(WARSAW);
         Integer year = resolveYear(yearParam, availableYears(), today);
         LocalDate from = year == null ? LocalDate.of(1970, 1, 1) : LocalDate.of(year, 1, 1);
@@ -624,5 +636,22 @@ public class AdminSettlementStatsService {
     /** Every figure leaves at the column's scale, so the client never has to round money itself. */
     private static BigDecimal scale(BigDecimal value) {
         return value.setScale(Settlement.AMOUNT_SCALE, RoundingMode.HALF_UP);
+    }
+
+    /**
+     * Longest a caller-supplied export label may be. Comfortably above the real ones ("Klient",
+     * "Wypłata zbiorcza") in any of the three languages, and low enough that the label cannot
+     * dominate a response it is repeated on once per row.
+     */
+    private static final int MAX_LABEL_LENGTH = 100;
+
+    /**
+     * Truncates rather than rejects, because the label is decoration: a caller that sends something
+     * absurd should still get its numbers back. Silently dropping it instead would produce an export
+     * whose kind column is blank, which reads as missing data rather than as a rejected label.
+     */
+    private static String capLabel(String label) {
+        String trimmed = label.strip();
+        return trimmed.length() <= MAX_LABEL_LENGTH ? trimmed : trimmed.substring(0, MAX_LABEL_LENGTH);
     }
 }

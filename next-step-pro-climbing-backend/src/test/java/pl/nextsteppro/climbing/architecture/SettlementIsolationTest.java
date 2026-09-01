@@ -38,9 +38,26 @@ class SettlementIsolationTest {
      * wrong one would send the reader to the wrong file.
      */
     private static final List<String> SETTLEMENT_TYPES = List.of(
+        // ⚠️ The services belong here even though they live in api/admin/settlement rather than the
+        // domain package. `\bSettlement\b` does NOT match inside `AdminSettlementService` — there is
+        // no word boundary in the middle of an identifier — so without naming them explicitly the
+        // whole service layer was reachable from anywhere with this gate still green, which is the
+        // opposite of what this class's own javadoc promises. Two of them are package-private as
+        // well, but AdminSettlementService and AdminSubscriptionService cannot be.
+        "AdminSettlementStatsService", "AdminSubscriptionService", "AdminSettlementService",
+        "AdminPayoutService",
         "SettlementRepository", "SettlementRow", "SessionPayoutRepository", "SessionPayoutRow",
         "SubscriptionRepository", "PayoutSourceRepository", "PayoutRepository", "PayerLastAmount", "UnpricedPayer",
         "SessionPayout", "PayoutSource", "PayoutRow", "Subscription", "Settlement", "Payout");
+
+    /**
+     * The one file outside those packages allowed to name a settlement type, and only because the
+     * alternative is worse: a {@code @Scheduled} method on the service's own class would bypass the
+     * AOP proxy and run without a transaction. The scheduler holds nothing but a reference and calls
+     * one method returning a count, so no amount passes through it.
+     */
+    private static final String SCHEDULER_EXCEPTION =
+        "infrastructure/scheduler/SubscriptionBillingScheduler.java";
 
     /**
      * The only two packages allowed to touch money: the entity's own home, and the admin API that
@@ -60,6 +77,7 @@ class SettlementIsolationTest {
         for (Path file : SourceFiles.mainJavaFiles()) {
             String path = file.toString().replace('\\', '/');
             if (ALLOWED_PACKAGE_PATHS.stream().anyMatch(path::contains)) continue;
+            if (path.endsWith(SCHEDULER_EXCEPTION)) continue;
 
             String source = SourceFiles.readWithoutComments(file);
 

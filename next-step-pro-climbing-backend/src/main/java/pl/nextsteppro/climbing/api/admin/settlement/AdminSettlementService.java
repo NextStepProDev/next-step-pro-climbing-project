@@ -224,8 +224,18 @@ public class AdminSettlementService {
         if (pool.signum() > 0) {
             SettlementRow holder = last != null ? last
                 : open.isEmpty() ? credited.getFirst() : open.getFirst();
-            BigDecimal base = holder.equals(last) ? holder.amount() : holder.amount();
-            settlementRepository.recordPayment(holder.id(), base.add(pool), settledOn, now);
+            // Every row the loop touched was brought up to exactly what it owed, and a row it never
+            // reached is still at its own amount — so the carrier starts from `amount` either way.
+            BigDecimal carried = holder.amount().add(pool);
+            // ⚠️ The column is NUMERIC(10,2) with chk_settlements_paid_range behind it. Landing the
+            // whole remainder on one row can exceed that ceiling even though `received` itself was
+            // in range, because the pool also absorbs credit the person had already left with us.
+            // Without this the write dies as a DataIntegrityViolation and surfaces as a bare 409
+            // naming no field — a translated message beats a constraint name.
+            if (carried.compareTo(Settlement.MAX_AMOUNT) > 0) {
+                throw new IllegalArgumentException(msg.get("admin.settlement.amount.invalid"));
+            }
+            settlementRepository.recordPayment(holder.id(), carried, settledOn, now);
             if (last == null) {
                 touched++;
             }

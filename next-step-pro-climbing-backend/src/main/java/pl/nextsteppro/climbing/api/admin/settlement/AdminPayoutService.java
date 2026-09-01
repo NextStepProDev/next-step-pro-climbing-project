@@ -30,7 +30,9 @@ import java.util.UUID;
  */
 @Service
 @Transactional
-public class AdminPayoutService {
+// Package-private for the same reason as AdminSettlementStatsService: nothing outside this package
+// uses it, so the compiler can enforce that rather than leaving it to a test to notice.
+class AdminPayoutService {
 
     private final PayoutSourceRepository sourceRepository;
     private final PayoutRepository payoutRepository;

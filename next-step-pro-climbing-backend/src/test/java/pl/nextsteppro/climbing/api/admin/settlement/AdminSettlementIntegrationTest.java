@@ -440,6 +440,27 @@ class AdminSettlementIntegrationTest extends BaseIntegrationTest {
             new SettleOutstandingRequest("sponsor", client.getId(), date, new BigDecimal("150"))));
     }
 
+    @Test
+    @DisplayName("shouldRefuseAnOverpaymentTooBigToLandOnOneRow")
+    void shouldRefuseAnOverpaymentTooBigToLandOnOneRow() {
+        // ⚠️ The leftover of a batch lands on ONE row, and the pool it comes from is not just what
+        // was handed over — it also absorbs credit the person had already left on other rows. So the
+        // carrier can breach that row's ceiling while every individual figure was in range. It takes
+        // credit spread across several rows to get there, which is why one overpaid row cannot do
+        // it. Left to the database this came back as a bare 409 naming no field.
+        TimeSlot second = timeSlotRepository.saveAndFlush(
+            new TimeSlot(date.plusDays(7), LocalTime.of(18, 0), LocalTime.of(20, 0), 4));
+        reservationRepository.saveAndFlush(new Reservation(client, second));
+
+        service.save("slot", slot.getId(), "user", client.getId(),
+            new SaveSettlementRequest(BigDecimal.ONE, new BigDecimal("100000"), date));
+        service.save("slot", second.getId(), "user", client.getId(),
+            new SaveSettlementRequest(BigDecimal.ONE, new BigDecimal("100000"), date));
+
+        assertThrows(IllegalArgumentException.class, () -> service.settleOutstanding(
+            new SettleOutstandingRequest("user", client.getId(), date, BigDecimal.ZERO)));
+    }
+
     // ------------------------------------------------------------ database rules
 
     @Test

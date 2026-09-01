@@ -357,15 +357,24 @@ function PayerDebtGroup({
   const [paidOn, setPaidOn] = useState(() => todayInWarsaw())
   // What actually changed hands, defaulting to what is owed — the common case is one click, and the
   // field is there for the times a note is bigger than the bill.
-  const [received, setReceived] = useState(() => String(group.total))
+  //
+  // ⚠️ `toFixed(2)`, never `String()`. The total is accumulated with `+=` over floats, so about
+  // three groups in ten land on something like `671.1600000000001` — while the heading right beside
+  // this field renders the same number as `671,16 zł` through `Intl`. The stored value would still
+  // be right (the server rounds to the column's scale), but a money screen that disagrees with
+  // itself by eleven decimal places is not one anybody should have to trust.
+  const [received, setReceived] = useState(() => group.total.toFixed(2))
 
   const first = group.items[0]
   const backHere = location.pathname + location.search
 
   const settleAll = useMutation({
     mutationFn: () =>
+      // The settlement ceiling, NOT the payout one: this money lands on a settlement row, which the
+      // server caps at MAX_AMOUNT. Passing the higher transfer ceiling here left Save enabled on an
+      // amount the server then rejected — the mirror image of the bug that ceiling was added for.
       adminSettlementsApi.settleOutstanding(
-        first.payerType, first.payerId, paidOn, parseAmount(received, MAX_PAYOUT_AMOUNT) ?? 0),
+        first.payerType, first.payerId, paidOn, parseAmount(received) ?? 0),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin', 'settlements'] }),
   })
 
@@ -404,7 +413,7 @@ function PayerDebtGroup({
           size="sm"
           variant="primary"
           loading={settleAll.isPending}
-          disabled={paidOn === '' || parseAmount(received, MAX_PAYOUT_AMOUNT) === null}
+          disabled={paidOn === '' || parseAmount(received) === null}
           onClick={() => settleAll.mutate()}
         >
           {t('settlements.tab.outstanding.settleAll', { amount: money(group.total) })}
