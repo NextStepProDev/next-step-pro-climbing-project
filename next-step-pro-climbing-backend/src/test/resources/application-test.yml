@@ -24,6 +24,21 @@ spring:
 # Uploads go to a scratch directory rather than ./uploads, so a test run never leaves files in
 # the working tree and parallel runs cannot collide with a developer's local storage.
 app:
+  # ⚠️ The suite signs and verifies its own tokens inside a single run, so this value never has to
+  # match anything — but JwtConfig refuses to start without one, and until this line existed the
+  # whole test suite depended on JWT_SECRET reaching it from outside.
+  #
+  # That dependency was invisible locally (the developer's .env supplies it) and broke two things
+  # that matter: a fresh clone could not run `./gradlew test` at all, and every Dependabot pull
+  # request failed its entire backend build. Dependabot runs get their own, separate secret store,
+  # which is empty here, so `secrets.JWT_SECRET` resolved to a blank string, the Spring context
+  # never started, and all 1,199 tests failed with one cause. A red tick that means "the secret is
+  # missing" teaches people to ignore red ticks.
+  #
+  # Deliberately a literal rather than a default like ${JWT_SECRET:something}: reading the real
+  # production secret during tests would make the run depend on which machine it is on.
+  jwt:
+    secret: test-only-jwt-secret-never-used-outside-the-test-suite
   storage:
     root: ${java.io.tmpdir}/nsp-climbing-test-uploads
 
