@@ -564,6 +564,7 @@
         "none": "Brak wpisanych kwot dla tej osoby.",
         "unpaid": "nierozliczone",
         "short": "brakuje {{amount}}",
+        "credit": "nadpłata {{amount}}",
         "untitled": "Trening 1:1",
         "feeFor": "Abonament — {{month}}",
         "subscription": {
@@ -924,6 +925,12 @@
       "clear": "Usuń kwotę — {{name}}",
       "settledLabel": "Rozliczone — {{name}}",
       "credit": "nadpłata {{amount}}",
+      "spendCredit": "→ Rozlicz z nadpłaty ({{amount}})",
+      "spendCreditLabel": "Rozlicz z nadpłaty — {{name}}",
+      "saveFirst": "Zapisz kwotę, żeby rozliczyć ją z nadpłaty.",
+      "creditSpent": "Zużyto nadpłatę — najstarszy dług pierwszy. Saldo: {{balance}}.",
+      "creditSpentOwing": "Zużyto nadpłatę — najstarszy dług pierwszy. Zostaje zaległość {{amount}}.",
+      "creditGone": "Nic nie zostało do zużycia — nadpłata poszła gdzie indziej. Odśwież widok.",
       "debt": "zaległość {{amount}}",
       "receivedPlaceholder": "otrzymano",
       "receivedLabel": "Otrzymano — {{name}}",
@@ -935,7 +942,8 @@
       "save": "Zapisz"
     },
     "errors": {
-      "invalidAmount": "Kwota musi być liczbą z przedziału od 0 do 100000."
+      "invalidAmount": "Kwota musi być liczbą z przedziału od 0 do 100000.",
+      "zeroReceived": "Zero nie rozlicza wiersza — użyj „Rozlicz z nadpłaty” albo odznacz „rozliczone”."
     },
     "tab": {
       "title": "Rozliczenia",
@@ -964,7 +972,8 @@
         "sessions": "{{n}} zajęć",
         "settleAll": "Rozlicz wszystko — {{amount}}",
         "paidOnLabel": "Data wpłaty — {{name}}",
-        "receivedLabel": "Otrzymano — {{name}}"
+        "receivedLabel": "Otrzymano — {{name}}",
+        "credit": "Ma u Ciebie {{credit}} nadpłaty — do dobrania {{toCollect}}."
       },
       "revenue": {
         "title": "Przychód",

@@ -76,6 +76,14 @@ record SettlementLineDto(
     @Nullable BigDecimal amount,
     BigDecimal paidAmount,
     BigDecimal balance,
+    /**
+     * ⚠️ What is parked on this person's overpaid rows, which is <b>not</b> {@code balance}. Somebody
+     * who overpaid fifty and then attended an unpaid fifty session nets to zero while fifty of his
+     * money still sits on the older row — so the net figure would say "no credit" about exactly the
+     * client whose next session is already covered. This is the figure the "pay from credit" action
+     * can spend; {@code balance} is the summary the line states.
+     */
+    BigDecimal credit,
     @Nullable LocalDate settledOn,
     @Nullable BigDecimal suggestedAmount
 ) {}
@@ -189,14 +197,29 @@ record UnpricedSessionDto(
  * list, because a section that quietly disobeys the filter above it is otherwise indistinguishable
  * from a broken filter.
  *
- * @param oldest the earliest session with an unpaid amount, or {@code null} when nothing is owed.
+ * @param oldest  the earliest session with an unpaid amount, or {@code null} when nothing is owed.
+ * @param credits what the people on this list have already left with us. ⚠️ The totals above stay
+ *                <b>gross</b>: a debt is a debt, and netting it would make the heading disagree
+ *                with the rows beneath it while those rows are still genuinely open. The credit
+ *                rides alongside so the screen can say how much actually needs collecting, and so
+ *                that a client whose account nets to zero is not chased for money he already paid.
  */
 record OutstandingDto(
     BigDecimal total,
     int count,
     @Nullable LocalDate oldest,
-    List<OutstandingItemDto> items
+    List<OutstandingItemDto> items,
+    List<OutstandingCreditDto> credits
 ) {}
+
+/**
+ * What one payer on the outstanding list is holding to their name, always positive.
+ *
+ * <p>Keyed by the payer rather than repeated on every item, because that is what it belongs to: one
+ * credit spread across a person's four debts would be added up four times by anything summing a
+ * group, and nothing on screen would show it.
+ */
+record OutstandingCreditDto(String payerType, UUID payerId, BigDecimal credit) {}
 
 /**
  * One unpaid amount, addressed so the tab can settle it in place.
@@ -415,12 +438,20 @@ record SettlementExportRowDto(
  * money block is a second request from the browser rather than a second import in Java. That keeps
  * one rule — money lives in one package — instead of an exception to it.
  *
- * @param recent the last few lines, newest first. Enough to answer "what is this made of" without
- *               turning the card into a second Settlements tab.
+ * @param recent  the last few lines, newest first. Enough to answer "what is this made of" without
+ *                turning the card into a second Settlements tab.
+ * @param credit  what is sitting on their overpaid rows — the money we are holding on their behalf.
+ *                Shown beside {@code outstanding} rather than subtracted from it: the two answer
+ *                different questions ("what is still open" against "what have they left with me"),
+ *                and the card has to agree with the Settlements tab, which keeps its debts gross and
+ *                names the credit alongside them. ⚠️ The pair is the whole story and either alone is
+ *                misleading: a client owing 50 while holding 50 of ours is square, and a card
+ *                showing only one of those figures says the opposite of the tab about him.
  */
 record PayerSummaryDto(
     BigDecimal paid,
     BigDecimal outstanding,
+    BigDecimal credit,
     int settlementCount,
     @Nullable LocalDate lastPayment,
     List<PayerLineDto> recent

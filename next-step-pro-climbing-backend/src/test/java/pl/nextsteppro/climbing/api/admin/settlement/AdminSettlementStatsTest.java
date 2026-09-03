@@ -489,6 +489,115 @@ class AdminSettlementStatsTest extends BaseIntegrationTest {
     }
 
     @Test
+    @DisplayName("shouldReportOnTheCardWhatTheClientHasLeftWithUs")
+    void shouldReportOnTheCardWhatTheClientHasLeftWithUs() {
+        // Fifty of the two hundred was change against a hundred-and-fifty session, and it is still
+        // ours to spend on his behalf. Beside the debt, never subtracted from it: this card and the
+        // tab both keep debts gross, and one screen quietly netting them is how they start
+        // disagreeing about the same client.
+        partiallyPaidSlot(LocalDate.of(2026, 3, 12), client, "150", "200", LocalDate.of(2026, 3, 12));
+
+        PayerSummaryDto summary = stats.payerSummary(client.getId(), 10);
+
+        assertEquals(0, new BigDecimal("50.00").compareTo(summary.credit()),
+            "We are holding fifty of his");
+        assertEquals(0, BigDecimal.ZERO.compareTo(summary.outstanding()),
+            "And he owes nothing, which is a different question");
+    }
+
+    @Test
+    @DisplayName("shouldTellTheCardAndTheTabTheSameThingAboutAClientWhoIsSquare")
+    void shouldTellTheCardAndTheTabTheSameThingAboutAClientWhoIsSquare() {
+        // ⚠️ The reported case seen from the client's own card. He owes 50 on paper and is holding
+        // 50 of ours, so the pair is the whole story — and the card has to tell it the same way the
+        // tab does. Reporting the NET position here instead would say "no credit" beside a debt the
+        // tab has already annotated as covered, about the same person, on two screens.
+        partiallyPaidSlot(LocalDate.of(2026, 3, 12), client, "50", "100", LocalDate.of(2026, 3, 12));
+        partiallyPaidSlot(LocalDate.of(2026, 5, 7), client, "50", "0", null);
+
+        PayerSummaryDto card = stats.payerSummary(client.getId(), 10);
+        OutstandingDto tab = stats.buildOverview("2026", TODAY).outstanding();
+
+        assertEquals(0, tab.total().compareTo(card.outstanding()),
+            "Both say fifty is open");
+        assertEquals(0, tab.credits().getFirst().credit().compareTo(card.credit()),
+            "And both say fifty of his is already here");
+    }
+
+    @Test
+    @DisplayName("shouldSayThatADebtorIsAlreadyHoldingMoneyOfOurs")
+    void shouldSayThatADebtorIsAlreadyHoldingMoneyOfOurs() {
+        // The reported case: a hundred handed over for a fifty session, then a second session at
+        // fifty that he has not paid for because he does not have to. The row is genuinely open, so
+        // it stays on the list at its gross figure — but a list that says only "owes 50" about
+        // somebody whose account nets to zero is a demand for money already handed over.
+        partiallyPaidSlot(LocalDate.of(2026, 3, 12), client, "50", "100", LocalDate.of(2026, 3, 12));
+        partiallyPaidSlot(LocalDate.of(2026, 5, 7), client, "50", "0", null);
+
+        OutstandingDto outstanding = stats.buildOverview("2026", TODAY).outstanding();
+
+        assertEquals(0, new BigDecimal("50.00").compareTo(outstanding.total()),
+            "The debt stays gross: the row really is open");
+        OutstandingCreditDto credit = outstanding.credits().stream()
+            .filter(row -> row.payerId().equals(client.getId()))
+            .findFirst()
+            .orElseThrow(() -> new AssertionError("The credit that covers this debt has to travel with it"));
+        assertEquals("user", credit.payerType());
+        assertEquals(0, new BigDecimal("50.00").compareTo(credit.credit()),
+            "Which is exactly what he already left with us");
+    }
+
+    @Test
+    @DisplayName("shouldNotReportACreditForSomebodyWhoIsSimplyBehind")
+    void shouldNotReportACreditForSomebodyWhoIsSimplyBehind() {
+        partiallyPaidSlot(LocalDate.of(2026, 3, 12), client, "150", "100", LocalDate.of(2026, 3, 12));
+
+        OutstandingDto outstanding = stats.buildOverview("2026", TODAY).outstanding();
+
+        assertTrue(outstanding.credits().isEmpty(),
+            "A negative balance is the debt already listed above, under its own name");
+    }
+
+    @Test
+    @DisplayName("shouldNotPretendAGuestCanCarryCreditBetweenSessions")
+    void shouldNotPretendAGuestCanCarryCreditBetweenSessions() {
+        // ⚠️ {@code uq_settlements_guest} is unique on the guest alone, so one guest reservation is
+        // one settlement row: a guest cannot be short on one and in credit on another, and the
+        // credit lookup therefore asks about registered payers only. Their change has nowhere to go,
+        // which is what a guest is — a booking with no continuity behind it. If this test ever fails
+        // because a guest DID accumulate two rows, the lookup needs its guest half back.
+        GuestReservation overpaid = guestReservationRepository.saveAndFlush(
+            new GuestReservation(pastSlot(LocalDate.of(2026, 3, 12)), "Ekipa z Krakowa", 2));
+        guestSettlement(overpaid, "50", "80", LocalDate.of(2026, 3, 12));
+        GuestReservation owing = guestReservationRepository.saveAndFlush(
+            new GuestReservation(pastSlot(LocalDate.of(2026, 5, 7)), "Ekipa z Krakowa", 2));
+        guestSettlement(owing, "200", "0", null);
+
+        OutstandingDto outstanding = stats.buildOverview("2026", TODAY).outstanding();
+
+        assertEquals(0, new BigDecimal("200.00").compareTo(outstanding.total()),
+            "The guest who owes is listed for the whole two hundred");
+        assertTrue(outstanding.credits().isEmpty(),
+            "And the other guest's change is not theirs to spend — two bookings are two payers");
+    }
+
+    @Test
+    @DisplayName("shouldFindACreditLeftInAYearTheTabIsNotShowing")
+    void shouldFindACreditLeftInAYearTheTabIsNotShowing() {
+        // ⚠️ The debt list spans the whole history on purpose, so the credit against it has to as
+        // well. Deriving it from the rows the tab read for its charts would lose exactly this one,
+        // because those obey the year picker.
+        partiallyPaidSlot(LocalDate.of(2025, 11, 4), client, "50", "100", LocalDate.of(2025, 11, 4));
+        partiallyPaidSlot(LocalDate.of(2026, 5, 7), client, "50", "0", null);
+
+        OutstandingDto outstanding = stats.buildOverview("2026", TODAY).outstanding();
+
+        assertEquals(1, outstanding.credits().size(),
+            "A credit left two Decembers ago still covers today's session");
+        assertEquals(0, new BigDecimal("50.00").compareTo(outstanding.credits().getFirst().credit()));
+    }
+
+    @Test
     @DisplayName("shouldAgreeWithTheSettlementsTabAboutWhatOneClientOwes")
     void shouldAgreeWithTheSettlementsTabAboutWhatOneClientOwes() {
         // The point is not either figure on its own — it is that the two screens cannot disagree.
@@ -524,6 +633,13 @@ class AdminSettlementStatsTest extends BaseIntegrationTest {
         jdbc.update("INSERT INTO settlements (time_slot_id, user_id, amount, paid_amount, settled_on) "
                 + "VALUES (?, ?, ?, ?, ?)",
             slot.getId(), payer.getId(), new BigDecimal(amount), new BigDecimal(paid), settledOn);
+    }
+
+    /** A guest's own row. Unique on the guest alone, so there is never a second one to pair it with. */
+    private void guestSettlement(GuestReservation guest, String amount, String paid, LocalDate settledOn) {
+        jdbc.update("INSERT INTO settlements (time_slot_id, guest_reservation_id, amount, paid_amount, settled_on) "
+                + "VALUES (?, ?, ?, ?, ?)",
+            guest.getTimeSlot().getId(), guest.getId(), new BigDecimal(amount), new BigDecimal(paid), settledOn);
     }
 
     private void settleSlot(LocalDate on, User payer, String amount, LocalDate settledOn) {

@@ -49,6 +49,17 @@ export function SettlementSection({ target, targetId }: SettlementSectionProps) 
   const [bulkAmount, setBulkAmount] = useState('')
   const [invalidKeys, setInvalidKeys] = useState<string[]>([])
   const [picking, setPicking] = useState(false)
+  /**
+   * What came of the last "pay from credit", so the row can report it.
+   *
+   * ⚠️ `settled` is carried, not just the balance: the endpoint reaches nothing when the credit has
+   * been spent from another tab since this section loaded, and a row that announced "credit spent"
+   * on a request that moved no money would be a lie about money — the one kind this feature cannot
+   * afford. The stale figure is on screen for as long as the query cache holds it, so the race is
+   * ordinary rather than exotic.
+   */
+  const [creditResult, setCreditResult] =
+    useState<{ key: string; settled: number; balance: number } | null>(null)
 
   const queryKey = ['admin', 'settlements', target, targetId]
   const { data, isLoading } = useQuery({
@@ -99,6 +110,9 @@ export function SettlementSection({ target, targetId }: SettlementSectionProps) 
   const patch = (line: SettlementLine, change: Partial<Draft>) => {
     const key = payerKey(line)
     setInvalidKeys((keys) => keys.filter((k) => k !== key))
+    // The report of a spent credit is about the figure that was there when it was spent; leaving it
+    // above a row somebody is now retyping would make it a claim about the new one.
+    setCreditResult((result) => (result?.key === key ? null : result))
     setDrafts((prev) => ({ ...prev, [key]: { ...(prev[key] ?? saved[key]), ...change } }))
   }
 
@@ -120,6 +134,22 @@ export function SettlementSection({ target, targetId }: SettlementSectionProps) 
   const saveMutation = useMutation({
     mutationFn: async () => {
       const invalid: string[] = []
+      // ⚠️ Ticking "settled" and typing a zero cannot be saved, and used to be swallowed. The server
+      // drops the payment date whenever nothing arrived — a date with no money behind it would read
+      // as paid on every screen while contributing nothing to revenue — so the row came back
+      // unsettled with the box unticked and nothing said why. The case behind it is real and has
+      // its own answer: the client owes nothing because he is spending an overpayment, and that is
+      // the "spend credit" button, which actually moves the money.
+      const zeroed = dirtyLines.filter((line) => {
+        const draft = draftFor(line)
+        const amount = parseAmount(draft.amount.trim())
+        // A zero-amount row is free of charge, where a zero received is the honest figure.
+        return draft.settled && amount !== null && amount > 0 && parseAmount(draft.received) === 0
+      })
+      if (zeroed.length > 0) {
+        setInvalidKeys(zeroed.map(payerKey))
+        throw new Error(t('settlements.errors.zeroReceived'))
+      }
       for (const line of dirtyLines) {
         const draft = draftFor(line)
         const key = payerKey(line)
@@ -162,6 +192,36 @@ export function SettlementSection({ target, targetId }: SettlementSectionProps) 
       setInvalidKeys([])
       // The whole ['admin','settlements'] prefix, not just this session's key: the Settlements tab
       // lives under it too, so a figure written here shows up there without a manual refresh.
+      queryClient.invalidateQueries({ queryKey: ['admin', 'settlements'] })
+    },
+  })
+
+  /**
+   * Spends what this person already left with you on what they still owe.
+   *
+   * The same endpoint the Settlements tab uses, called with nothing received: the server pulls the
+   * credit back into a pool, resets the rows that were holding it to exact, and pays off the open
+   * debts oldest first. Reusing it rather than adding a "pay this one row from credit" route is
+   * deliberate — a second route would be a second copy of that pool loop, and it would have to
+   * disagree with the oldest-first rule to do anything different.
+   *
+   * ⚠️ So the money may well land on an OLDER session than the one on screen, which is correct and
+   * is why the button reports the resulting balance instead of claiming this row is now paid.
+   */
+  const spendCredit = useMutation({
+    mutationFn: async (line: SettlementLine) => {
+      const result = await adminSettlementsApi.settleOutstanding(
+        line.payerType,
+        line.payerId,
+        // The session's own date, matching what this row suggests as a payment date. The tab
+        // defaults to today instead, because there one transfer covers a month of sessions.
+        targetDate,
+        0,
+      )
+      return { key: payerKey(line), settled: result.settled, balance: result.balance }
+    },
+    onSuccess: (result) => {
+      setCreditResult(result)
       queryClient.invalidateQueries({ queryKey: ['admin', 'settlements'] })
     },
   })
@@ -360,6 +420,60 @@ export function SettlementSection({ target, targetId }: SettlementSectionProps) 
                         )}
                       </span>
                     )}
+
+                    {/* Spending that credit, offered where the pricing happens. Driven by `credit`
+                        and NOT by `balance`: once this session is priced the two debts cancel and
+                        the net figure reads zero, which is the exact moment the offer is wanted.
+                        Only against a SAVED row with something still owed: the endpoint works on
+                        rows already in the database, so a figure still sitting in the draft has
+                        nothing for the credit to land on — hence the hint rather than a button that
+                        would silently pay off some other session instead. */}
+                    {line.credit > 0 && line.amount !== null && line.paidAmount < line.amount && (
+                      isRowDirty(line) ? (
+                        <span className="block text-[11px] text-surface-500">
+                          {t('settlements.line.saveFirst')}
+                        </span>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => spendCredit.mutate(line)}
+                          disabled={spendCredit.isPending}
+                          // Same reasoning as the "settled" checkbox below: the visible text is the
+                          // same sentence on every row, so without this a screen reader announces
+                          // two identical "pay from credit" buttons and the person they belong to
+                          // is only inferable from reading order.
+                          aria-label={t('settlements.line.spendCreditLabel', { name: line.name })}
+                          className="mt-0.5 block text-left text-[11px] text-primary-400 hover:text-primary-300 disabled:text-surface-500 transition-colors"
+                        >
+                          {t('settlements.line.spendCredit', {
+                            amount: formatPln(
+                              Math.min(line.credit, line.amount - line.paidAmount),
+                              i18n.language,
+                            ),
+                          })}
+                        </button>
+                      )
+                    )}
+
+                    {/* What actually happened, because it need not be this row: the credit pays the
+                        OLDEST debt first, so the honest report is where the account now stands.
+
+                        Three outcomes, three sentences. A leftover debt is named as a debt rather
+                        than shown as a negative balance — "saldo: -150,00 zł" is arithmetic, and the
+                        line already has a word for that state two rows up. */}
+                    {creditResult?.key === key && (
+                      <span className="block text-[11px] text-surface-400">
+                        {creditResult.settled === 0
+                          ? t('settlements.line.creditGone')
+                          : creditResult.balance < 0
+                            ? t('settlements.line.creditSpentOwing', {
+                                amount: formatPln(-creditResult.balance, i18n.language),
+                              })
+                            : t('settlements.line.creditSpent', {
+                                balance: formatPln(creditResult.balance, i18n.language),
+                              })}
+                      </span>
+                    )}
                   </span>
 
                   <span className="flex flex-col">
@@ -449,6 +563,9 @@ export function SettlementSection({ target, targetId }: SettlementSectionProps) 
 
           {saveMutation.isError && (
             <p className="text-sm text-rose-400/80">{getErrorMessage(saveMutation.error)}</p>
+          )}
+          {spendCredit.isError && (
+            <p className="text-sm text-rose-400/80">{getErrorMessage(spendCredit.error)}</p>
           )}
 
           <div className="flex items-center justify-between gap-2">

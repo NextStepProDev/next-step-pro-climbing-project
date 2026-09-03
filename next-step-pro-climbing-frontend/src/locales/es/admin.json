@@ -564,6 +564,7 @@
         "none": "No hay importes registrados para esta persona.",
         "unpaid": "pendiente",
         "short": "faltan {{amount}}",
+        "credit": "saldo a favor {{amount}}",
         "untitled": "Sesión individual",
         "feeFor": "Suscripción — {{month}}",
         "subscription": {
@@ -922,6 +923,12 @@
       "clear": "Eliminar importe — {{name}}",
       "settledLabel": "Liquidado — {{name}}",
       "credit": "saldo a favor {{amount}}",
+      "spendCredit": "→ Usar el saldo a favor ({{amount}})",
+      "spendCreditLabel": "Usar el saldo a favor — {{name}}",
+      "saveFirst": "Guarda el importe para poder usar el saldo a favor.",
+      "creditSpent": "Saldo usado — primero la deuda más antigua. Saldo: {{balance}}.",
+      "creditSpentOwing": "Saldo usado — primero la deuda más antigua. Quedan {{amount}} por pagar.",
+      "creditGone": "No quedaba nada que usar: el saldo se ha ido a otra parte. Recarga la vista.",
       "debt": "debe {{amount}}",
       "receivedPlaceholder": "recibido",
       "receivedLabel": "Recibido — {{name}}",
@@ -933,7 +940,8 @@
       "save": "Guardar"
     },
     "errors": {
-      "invalidAmount": "El importe debe ser un número entre 0 y 100000."
+      "invalidAmount": "El importe debe ser un número entre 0 y 100000.",
+      "zeroReceived": "Un cero no liquida la línea: usa «Usar el saldo a favor» o desmarca «liquidado»."
     },
     "tab": {
       "title": "Liquidaciones",
@@ -962,7 +970,8 @@
         "sessions": "{{n}} sesiones",
         "settleAll": "Liquidar todo — {{amount}}",
         "paidOnLabel": "Fecha de pago — {{name}}",
-        "receivedLabel": "Recibido — {{name}}"
+        "receivedLabel": "Recibido — {{name}}",
+        "credit": "Tiene {{credit}} a su favor contigo — quedan {{toCollect}} por cobrar."
       },
       "revenue": {
         "title": "Ingresos",

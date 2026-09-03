@@ -564,6 +564,7 @@
         "none": "No amounts recorded for this person.",
         "unpaid": "outstanding",
         "short": "{{amount}} short",
+        "credit": "credit {{amount}}",
         "untitled": "One-to-one session",
         "feeFor": "Subscription — {{month}}",
         "subscription": {
@@ -922,6 +923,12 @@
       "clear": "Remove amount — {{name}}",
       "settledLabel": "Settled — {{name}}",
       "credit": "credit {{amount}}",
+      "spendCredit": "→ Pay from credit ({{amount}})",
+      "spendCreditLabel": "Pay from credit — {{name}}",
+      "saveFirst": "Save the amount first, then pay it from the credit.",
+      "creditSpent": "Credit spent — oldest debt first. Balance: {{balance}}.",
+      "creditSpentOwing": "Credit spent — oldest debt first. {{amount}} still owed.",
+      "creditGone": "There was nothing left to spend — the credit went elsewhere. Reload the view.",
       "debt": "owes {{amount}}",
       "receivedPlaceholder": "received",
       "receivedLabel": "Received — {{name}}",
@@ -933,7 +940,8 @@
       "save": "Save"
     },
     "errors": {
-      "invalidAmount": "The amount must be a number between 0 and 100000."
+      "invalidAmount": "The amount must be a number between 0 and 100000.",
+      "zeroReceived": "A zero does not settle the row — use “Pay from credit” or untick “settled”."
     },
     "tab": {
       "title": "Settlements",
@@ -962,7 +970,8 @@
         "sessions": "{{n}} sessions",
         "settleAll": "Settle all — {{amount}}",
         "paidOnLabel": "Payment date — {{name}}",
-        "receivedLabel": "Received — {{name}}"
+        "receivedLabel": "Received — {{name}}",
+        "credit": "Holding {{credit}} of theirs — {{toCollect}} left to collect."
       },
       "revenue": {
         "title": "Revenue",

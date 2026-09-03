@@ -588,6 +588,11 @@ export interface SettlementLine {
   // Where this payer's whole account stands: positive means you are holding their money. Carried on
   // the line so it is in front of you at the moment you type the next amount.
   balance: number
+  // ⚠️ What is parked on their overpaid rows, which is NOT `balance`. Somebody who overpaid 50 and
+  // then attended an unpaid 50 session nets to zero while 50 of his money still sits on the older
+  // row — so the net figure says "no credit" about exactly the client whose session is covered.
+  // This is what the "pay from credit" action can spend; `balance` is what the line states.
+  credit: number
   settledOn: string | null
   // What this person was last charged, offered as a prefill and never applied on its own. This is
   // what stands in for a default-rate column on the slot: the price follows the person (a pass, a
@@ -674,6 +679,11 @@ export interface Subscription {
 export interface PayerSummary {
   paid: number
   outstanding: number
+  // What is sitting on their overpaid rows — money you are holding on their behalf. Beside
+  // `outstanding` rather than subtracted from it: the debts stay gross here exactly as they do on
+  // the tab, and the pair is the whole story. Somebody owing 50 while holding 50 of yours is square,
+  // and a card showing only one of those figures says the opposite of the tab about him.
+  credit: number
   settlementCount: number
   lastPayment: string | null
   recent: PayerLine[]
@@ -755,6 +765,18 @@ export interface OutstandingSummary {
   count: number
   oldest: string | null
   items: OutstandingItem[]
+  // What the people on this list have already left with you. The totals above stay GROSS — netting
+  // them would make the heading disagree with the rows under it while those rows are still open —
+  // so the credit rides alongside and the screen says how much actually needs collecting.
+  credits: OutstandingCredit[]
+}
+
+// Keyed by the payer, not repeated on each item: one credit spread over somebody's four debts would
+// be counted four times by anything summing a group.
+export interface OutstandingCredit {
+  payerType: SettlementPayer
+  payerId: string
+  credit: number
 }
 
 // Carries its own address (targetType/targetId + payerType/payerId), so the tab can settle a debt

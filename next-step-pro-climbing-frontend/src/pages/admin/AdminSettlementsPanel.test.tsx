@@ -36,7 +36,7 @@ function makeOverview(overrides: Partial<SettlementOverview> = {}): SettlementOv
     years: [2026, 2025],
     year: 2026,
     unpriced: { count: 0, windowDays: 90, sessions: [] },
-    outstanding: { total: 0, count: 0, oldest: null, items: [] },
+    outstanding: { total: 0, count: 0, oldest: null, items: [], credits: [] },
     revenue: {
       total: 0,
       monthlyAverage: null,
@@ -165,6 +165,7 @@ describe('AdminSettlementsPanel', () => {
         total: 450,
         count: 1,
         oldest: '2026-03-12',
+        credits: [],
         items: [{
           targetType: 'slot',
           targetId: 'slot-1',
@@ -191,6 +192,7 @@ describe('AdminSettlementsPanel', () => {
         total: 680,
         count: 3,
         oldest: '2026-08-05',
+        credits: [],
         items: [
           {
             targetType: 'slot', targetId: 'slot-1', date: '2026-08-05', title: 'Trening 1:1',
@@ -230,6 +232,37 @@ describe('AdminSettlementsPanel', () => {
     expect(settleOutstanding).toHaveBeenCalledTimes(1)
   })
 
+  it('says a debtor is holding your money, and asks only for the rest', async () => {
+    getOverview.mockResolvedValue(makeOverview({
+      outstanding: {
+        total: 50,
+        count: 1,
+        oldest: '2026-08-19',
+        // He paid 100 for a 50 session two months ago, so the next 50 is already covered.
+        credits: [{ payerType: 'user', payerId: 'anna', credit: 50 }],
+        items: [{
+          targetType: 'slot', targetId: 'slot-1', date: '2026-08-19', title: 'Trening 1:1',
+          payerType: 'user', payerId: 'anna', name: 'Anna Kowalska', amount: 50,
+        }],
+      },
+    }))
+    const user = userEvent.setup()
+
+    renderPanel()
+
+    // The row is genuinely open, so the figures above stay gross — but a screen that says only
+    // "owes 50" about somebody who already handed the money over is a demand for it twice.
+    expect(await screen.findByText('settlements.tab.outstanding.credit')).toBeInTheDocument()
+
+    // And the field asks for what is actually left: the server pulls the credit into the pool
+    // before paying rows off, so typing the gross figure would hand him a second overpayment.
+    await user.click(screen.getByRole('button', { name: 'settlements.tab.outstanding.settleAll' }))
+
+    await waitFor(() =>
+      expect(settleOutstanding).toHaveBeenCalledWith('user', 'anna', expect.any(String), 0),
+    )
+  })
+
   it('offers a round amount even when the debts add up to a float tail', async () => {
     // 299.23 + 44.95 + 326.98 is 671.1600000000001 in binary floating point, and roughly three
     // groups in ten land somewhere like it. The heading beside this field renders 671,16 zł through
@@ -239,6 +272,7 @@ describe('AdminSettlementsPanel', () => {
         total: 671.16,
         count: 3,
         oldest: '2026-08-05',
+        credits: [],
         items: [
           {
             targetType: 'slot', targetId: 'slot-1', date: '2026-08-05', title: 'Trening 1:1',
@@ -271,6 +305,7 @@ describe('AdminSettlementsPanel', () => {
         total: 150,
         count: 1,
         oldest: '2026-08-05',
+        credits: [],
         items: [{
           targetType: 'slot', targetId: 'slot-1', date: '2026-08-05', title: 'Trening 1:1',
           payerType: 'user', payerId: 'anna', name: 'Anna Kowalska', amount: 150,
@@ -298,6 +333,7 @@ describe('AdminSettlementsPanel', () => {
         total: 230,
         count: 2,
         oldest: '2026-08-05',
+        credits: [],
         items: [
           {
             targetType: 'slot', targetId: 'slot-1', date: '2026-08-05', title: 'Trening 1:1',

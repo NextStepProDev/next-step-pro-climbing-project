@@ -112,6 +112,16 @@ class AdminSettlementQueryCountTest extends BaseIntegrationTest {
                 i % 3 == 0 ? null : date);
         }
 
+        // A guest who owes, as well as the registered ones: the outstanding list mixes both kinds
+        // of payer, and a fixture of registered clients only would let a guest-shaped cost hide.
+        TimeSlot guestSlot = timeSlotRepository.saveAndFlush(
+            new TimeSlot(TODAY.minusDays(3), LocalTime.of(17, 0), LocalTime.of(19, 0), 4));
+        GuestReservation guest = guestReservationRepository.saveAndFlush(
+            new GuestReservation(guestSlot, "Ekipa z Krakowa", 2));
+        jdbc.update("INSERT INTO settlements (time_slot_id, guest_reservation_id, amount, paid_amount, settled_on) "
+                + "VALUES (?, ?, ?, ?, ?)",
+            guestSlot.getId(), guest.getId(), new BigDecimal("150.00"), BigDecimal.ZERO, null);
+
         entityManager.flush();
         entityManager.clear();
     }

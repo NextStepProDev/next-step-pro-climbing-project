@@ -362,7 +362,7 @@ public class AdminSettlementService {
         // ⚠️ Two reads for the whole section, not one per payer. The balance spans a person's whole
         // history so it cannot come from these rows — but asking for it inside the loop is the
         // per-person query the count gate exists to stop, and it caught exactly that here.
-        Map<UUID, BigDecimal> balances = balancesFor(participants, byPayer.values());
+        Map<UUID, PayerBalance> balances = balancesFor(participants, byPayer.values());
 
         List<SettlementLineDto> result = new ArrayList<>();
         for (Line line : participants) {
@@ -371,7 +371,8 @@ public class AdminSettlementService {
                 segment(line.payer()), line.payerId(), line.name(), line.participants(), false,
                 row == null ? null : row.amount(),
                 row == null ? BigDecimal.ZERO : row.paidAmount(),
-                balances.getOrDefault(line.payerId(), BigDecimal.ZERO),
+                balanceOf(balances, line.payerId()),
+                creditOf(balances, line.payerId()),
                 row == null ? null : row.settledOn(),
                 // Only offered where there is nothing yet — a prefill next to a figure the admin
                 // already wrote reads as a second, competing amount.
@@ -388,7 +389,7 @@ public class AdminSettlementService {
             result.add(new SettlementLineDto(
                 segment(orphanPayer), Objects.requireNonNull(payerId), name, 1, true,
                 orphan.amount(), orphan.paidAmount(),
-                balances.getOrDefault(payerId, BigDecimal.ZERO),
+                balanceOf(balances, payerId), creditOf(balances, payerId),
                 orphan.settledOn(), null));
         }
         // A session settled in bulk has nobody to charge per head, so the section switches mode
@@ -397,7 +398,7 @@ public class AdminSettlementService {
     }
 
     /** Balances for everyone on this section, in two reads regardless of how many people there are. */
-    private Map<UUID, BigDecimal> balancesFor(List<Line> participants, Collection<SettlementRow> orphans) {
+    private Map<UUID, PayerBalance> balancesFor(List<Line> participants, Collection<SettlementRow> orphans) {
         Set<UUID> userIds = new LinkedHashSet<>();
         Set<UUID> guestIds = new LinkedHashSet<>();
         for (Line line : participants) {
@@ -410,16 +411,31 @@ public class AdminSettlementService {
                 userIds.add(orphan.userId());
             }
         }
-        Map<UUID, BigDecimal> balances = new LinkedHashMap<>();
+        Map<UUID, PayerBalance> balances = new LinkedHashMap<>();
         if (!userIds.isEmpty()) {
             settlementRepository.balancesForUsers(userIds)
-                .forEach(row -> balances.put(row.payerId(), row.balance()));
+                .forEach(row -> balances.put(row.payerId(), row));
         }
         if (!guestIds.isEmpty()) {
             settlementRepository.balancesForGuests(guestIds)
-                .forEach(row -> balances.put(row.payerId(), row.balance()));
+                .forEach(row -> balances.put(row.payerId(), row));
         }
         return balances;
+    }
+
+    /** Where the account nets out — the figure the line states. Nobody with no rows has a balance. */
+    private static BigDecimal balanceOf(Map<UUID, PayerBalance> balances, UUID payerId) {
+        PayerBalance found = balances.get(payerId);
+        return found == null ? BigDecimal.ZERO : found.balance();
+    }
+
+    /**
+     * What can actually be spent on this person's behalf, which is a different question from where
+     * their account nets out — see {@link PayerBalance}.
+     */
+    private static BigDecimal creditOf(Map<UUID, PayerBalance> balances, UUID payerId) {
+        PayerBalance found = balances.get(payerId);
+        return found == null ? BigDecimal.ZERO : found.credit();
     }
 
     /**
