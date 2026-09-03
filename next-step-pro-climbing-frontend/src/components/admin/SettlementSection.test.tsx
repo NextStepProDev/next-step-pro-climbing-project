@@ -349,6 +349,26 @@ describe('SettlementSection — settled in bulk', () => {
     expect(screen.queryByRole('option', { name: 'Anna Kowalska' })).not.toBeInTheDocument()
   })
 
+  it('reopens the picker on the payer already covering the session', async () => {
+    // Both kinds, because the bug was in exactly one of them: an institution's entry is its own
+    // id, a person's carries a prefix so the two cannot collide inside one dropdown, and the
+    // coverage arrives as a bare id either way.
+    for (const [coveredBy, expected] of [
+      [{ kind: 'subscription', id: 'user-1', name: 'Anna Kowalska' }, 'user:user-1'],
+      [{ kind: 'source', id: 'src-1', name: 'SP nr 12' }, 'src-1'],
+    ] as const) {
+      getSection.mockResolvedValue({ targetDate: TARGET_DATE, lines: [line()], coveredBy })
+      const user = userEvent.setup()
+
+      const view = renderSection()
+      await user.click(await screen.findByRole('button', { name: 'settlements.section.changeBulk' }))
+      await waitFor(() => expect(listSources).toHaveBeenCalled())
+
+      expect(screen.getByLabelText('settlements.section.bulkPayer')).toHaveValue(expected)
+      view.unmount()
+    }
+  })
+
   it('unmarks a session with null rather than a second endpoint', async () => {
     getSection.mockResolvedValue({
       targetDate: TARGET_DATE,

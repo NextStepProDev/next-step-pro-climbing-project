@@ -243,7 +243,15 @@ export function SettlementSection({ target, targetId }: SettlementSectionProps) 
             <SourcePicker
               sources={sources ?? []}
               participants={lines}
-              current={data.coveredBy.id}
+              // ⚠️ One dropdown holds two kinds of payer, so a person's entry is prefixed to keep
+              // it apart from an institution's. The coverage arrives as a bare id, and without the
+              // same prefix it matched no entry at all: reopening the picker on a session covered
+              // by a retainer showed "choose a payer" instead of the person covering it.
+              current={
+                data.coveredBy.kind === 'subscription'
+                  ? `user:${data.coveredBy.id}`
+                  : data.coveredBy.id
+              }
               pending={assignMutation.isPending}
               onPick={(choice) => assignMutation.mutate(choice)}
               onCancel={() => setPicking(false)}
