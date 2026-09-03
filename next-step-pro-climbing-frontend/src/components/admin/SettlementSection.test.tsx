@@ -280,6 +280,54 @@ describe('SettlementSection — settled in bulk', () => {
     await waitFor(() => expect(assignSource).toHaveBeenCalledWith('slot', 'target-1', 'src-1', null))
   })
 
+  it('puts the subscription out of reach when somebody else is on the session', async () => {
+    // The server refuses this combination, so offering it and failing afterwards only moves the
+    // refusal to a worse moment. A retainer covers one PERSON while the mark covers the SESSION,
+    // and marking it would take the cash payer beside her out of pricing altogether.
+    getSection.mockResolvedValue({
+      ...bulkOff,
+      targetDate: TARGET_DATE,
+      lines: [line(), line({ payerId: 'user-2', name: 'Piotr Nowak' })],
+    })
+    const user = userEvent.setup()
+
+    renderSection()
+
+    await user.click(await screen.findByRole('button', { name: 'settlements.section.markBulk' }))
+    await waitFor(() => expect(listSources).toHaveBeenCalled())
+
+    const subscriptions = screen.getByRole('group', {
+      name: 'settlements.section.groupSubscriptionShared',
+    })
+    expect(subscriptions).toBeDisabled()
+    // And the reason is on screen: a greyed-out option with no explanation reads as a broken app.
+    expect(screen.getByText('settlements.section.subscriptionSharedHint')).toBeInTheDocument()
+
+    // The institution stays available — a school really does pay for a whole group.
+    await user.selectOptions(screen.getByLabelText('settlements.section.bulkPayer'), 'src-1')
+    await user.click(screen.getByRole('button', { name: 'settlements.actions.save' }))
+    await waitFor(() => expect(assignSource).toHaveBeenCalledWith('slot', 'target-1', 'src-1', null))
+  })
+
+  it('still offers the subscription when a cancelled booking is the only other line', async () => {
+    // An orphaned row is money taken from somebody who has since cancelled. They are not on the
+    // session any more, so they do not make it shared — the server counts it the same way.
+    getSection.mockResolvedValue({
+      ...bulkOff,
+      targetDate: TARGET_DATE,
+      lines: [line(), line({ payerId: 'user-2', name: 'Piotr Nowak', orphaned: true, amount: 150 })],
+    })
+    const user = userEvent.setup()
+
+    renderSection()
+
+    await user.click(await screen.findByRole('button', { name: 'settlements.section.markBulk' }))
+    await waitFor(() => expect(listSources).toHaveBeenCalled())
+
+    expect(screen.getByRole('group', { name: 'settlements.section.groupSubscription' }))
+      .not.toBeDisabled()
+  })
+
   it('unmarks a session with null rather than a second endpoint', async () => {
     getSection.mockResolvedValue({
       targetDate: TARGET_DATE,

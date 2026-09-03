@@ -906,6 +906,8 @@
       "cancel": "Cancelar",
       "bulkSubscription": "Cubierto por una cuota · {{name}}",
       "groupSubscription": "Cuota del participante",
+      "groupSubscriptionShared": "Suscripción del participante — solo sesiones de una persona",
+      "subscriptionSharedHint": "Una suscripción cubre a una sola persona y en esta sesión hay más, así que las demás no tendrían cómo pagar. Cobra a cada participante por separado o elige un contratante.",
       "groupSource": "Entidad"
     },
     "line": {

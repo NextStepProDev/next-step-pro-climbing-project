@@ -488,6 +488,18 @@ function SourcePicker({
   const active = sources.filter((source) => !source.archived || source.id === current)
   // Guests have no account and no continuity, so no subscription can cover them.
   const subscribers = participants.filter((line) => line.payerType === 'user')
+
+  // ⚠️ Mirrors the server's countPayers, orphaned rows excluded: those are amounts belonging to
+  // somebody whose booking is gone, so they do not make the session shared. Getting this count
+  // wrong in either direction is worse than not having it — too high greys out a legal choice,
+  // too low offers one the server then refuses, which is the state this replaced.
+  const payerCount = participants.filter((line) => !line.orphaned).length
+  // A retainer covers a PERSON while the mark covers the SESSION, so on a session somebody else
+  // is also on there is no way to spend it: marking it takes the whole session out of
+  // per-participant pricing and the other payer's cash has nowhere to go. The server refuses it;
+  // offering it here and failing afterwards just moves the refusal somewhere less useful.
+  const subscriptionBlocked = payerCount > 1
+
   const [choice, setChoice] = useState(current ?? '')
 
   return (
@@ -502,7 +514,17 @@ function SourcePicker({
         {/* Two groups, because they are two different relationships — an institution that pays for
             a batch, and a client whose retainer already covers this. */}
         {subscribers.length > 0 && (
-          <optgroup label={t('settlements.section.groupSubscription')}>
+          // `disabled` on the optgroup rather than on each option: it greys the whole group and
+          // takes every name in it out of reach in one attribute, and the label carries the reason
+          // where the eye already is.
+          <optgroup
+            label={
+              subscriptionBlocked
+                ? t('settlements.section.groupSubscriptionShared')
+                : t('settlements.section.groupSubscription')
+            }
+            disabled={subscriptionBlocked}
+          >
             {subscribers.map((line) => (
               <option key={line.payerId} value={`user:${line.payerId}`}>{line.name}</option>
             ))}
@@ -536,6 +558,13 @@ function SourcePicker({
       </Button>
       {active.length === 0 && subscribers.length === 0 && (
         <span className="text-xs text-surface-500">{t('settlements.section.noPayers')}</span>
+      )}
+      {/* Greyed-out options with no stated reason read as a bug in the app rather than a rule of
+          the domain, and the reason does not fit in an optgroup label on a narrow screen. */}
+      {subscriptionBlocked && subscribers.length > 0 && (
+        <span className="w-full text-xs text-surface-500">
+          {t('settlements.section.subscriptionSharedHint')}
+        </span>
       )}
     </div>
   )
