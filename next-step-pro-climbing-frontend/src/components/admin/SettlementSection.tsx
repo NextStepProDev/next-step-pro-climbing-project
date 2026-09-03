@@ -486,8 +486,11 @@ function SourcePicker({
 }) {
   const { t } = useTranslation('admin')
   const active = sources.filter((source) => !source.archived || source.id === current)
-  // Guests have no account and no continuity, so no subscription can cover them.
-  const subscribers = participants.filter((line) => line.payerType === 'user')
+  // Guests have no account and no continuity, so no subscription can cover them — and neither can
+  // an orphaned row, which is an amount belonging to somebody whose booking is gone. The server's
+  // first check is whether the person is actually on the session, so listing them here would be
+  // another choice that can only be refused after the click.
+  const subscribers = participants.filter((line) => line.payerType === 'user' && !line.orphaned)
 
   // ⚠️ Mirrors the server's countPayers, orphaned rows excluded: those are amounts belonging to
   // somebody whose booking is gone, so they do not make the session shared. Getting this count

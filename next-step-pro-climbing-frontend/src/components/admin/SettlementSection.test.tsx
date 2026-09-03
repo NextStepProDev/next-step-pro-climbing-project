@@ -328,6 +328,27 @@ describe('SettlementSection — settled in bulk', () => {
       .not.toBeDisabled()
   })
 
+  it('does not offer a subscription to somebody who has cancelled', async () => {
+    // Same defect as the greyed-out group, one row over: the server's first check is whether the
+    // person is on the session at all, so a cancelled payer could only ever be refused after the
+    // click. Their row stays visible above — the money is real — but they are not a payer here.
+    getSection.mockResolvedValue({
+      ...bulkOff,
+      targetDate: TARGET_DATE,
+      lines: [line({ orphaned: true, amount: 150, paidAmount: 150, settledOn: TARGET_DATE })],
+    })
+    const user = userEvent.setup()
+
+    renderSection()
+
+    await user.click(await screen.findByRole('button', { name: 'settlements.section.markBulk' }))
+    await waitFor(() => expect(listSources).toHaveBeenCalled())
+
+    expect(screen.queryByRole('group', { name: 'settlements.section.groupSubscription' }))
+      .not.toBeInTheDocument()
+    expect(screen.queryByRole('option', { name: 'Anna Kowalska' })).not.toBeInTheDocument()
+  })
+
   it('unmarks a session with null rather than a second endpoint', async () => {
     getSection.mockResolvedValue({
       targetDate: TARGET_DATE,
