@@ -48,6 +48,11 @@ class SettlementIsolationTest {
         "AdminPayoutService",
         "SettlementRepository", "SettlementRow", "SessionPayoutRepository", "SessionPayoutRow",
         "SubscriptionRepository", "PayoutSourceRepository", "PayoutRepository", "PayerLastAmount", "UnpricedPayer",
+        // ⚠️ Public records carrying what one named person owes, holds, or is covered by — every bit
+        // as leakable as SettlementRow and, being public, reachable by a plain import from anywhere.
+        // They were missed when this list was written, which is the failure mode this gate has: a
+        // type nobody remembered to name is protected by nothing at all.
+        "PayerBalance", "SessionCoverage",
         "SessionPayout", "PayoutSource", "PayoutRow", "Subscription", "Settlement", "Payout");
 
     /**

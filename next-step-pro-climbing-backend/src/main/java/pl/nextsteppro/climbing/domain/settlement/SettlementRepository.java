@@ -73,11 +73,6 @@ public interface SettlementRepository extends JpaRepository<Settlement, UUID> {
     @Query(ROW_SELECT)
     List<SettlementRow> findAllRows();
 
-    /**
-     * Outstanding debt, whole history. ⚠️ This is the one read that deliberately ignores the year
-     * filter: a debt from two years ago is still a debt, and hiding it behind a year picker is how
-     * it stops being collected.
-     */
     /** One client's whole history, for their card in the Users panel. */
     @Query(ROW_SELECT + " WHERE u.id = :userId")
     List<SettlementRow> findRowsForUser(@Param("userId") UUID userId);
@@ -85,6 +80,15 @@ public interface SettlementRepository extends JpaRepository<Settlement, UUID> {
     @Query(ROW_SELECT + " WHERE g.id = :guestId")
     List<SettlementRow> findRowsForGuest(@Param("guestId") UUID guestId);
 
+    /**
+     * Outstanding debt, whole history. ⚠️ This is the one read that deliberately ignores the year
+     * filter: a debt from two years ago is still a debt, and hiding it behind a year picker is how
+     * it stops being collected.
+     *
+     * <p>⚠️ It is also, by its own condition, free of credit — a row holding an overpayment has
+     * {@code paidAmount > amount} and is not here. Anything that wants to know what a debtor has
+     * already left with us has to ask {@link #balancesForUsers} separately.
+     */
     @Query(ROW_SELECT + " WHERE s.paidAmount < s.amount")
     List<SettlementRow> findUnsettledRows();
 
@@ -315,14 +319,22 @@ public interface SettlementRepository extends JpaRepository<Settlement, UUID> {
                       @Param("settledOn") LocalDate settledOn,
                       @Param("now") Instant now);
 
-    /** Balances for a whole section in one read — see {@link PayerBalance}. */
+    /**
+     * Balances for a whole section in one read — see {@link PayerBalance}.
+     *
+     * <p>Both figures in the same statement, because they are two sums over the same rows and the
+     * screen needs them together: the net position to state, and the credit actually sitting on
+     * overpaid rows to offer for spending. Splitting them would double the reads for nothing.
+     */
     @Query("SELECT new pl.nextsteppro.climbing.domain.settlement.PayerBalance("
-        + "s.user.id, COALESCE(SUM(s.paidAmount - s.amount), 0)) "
+        + "s.user.id, COALESCE(SUM(s.paidAmount - s.amount), 0), "
+        + "COALESCE(SUM(CASE WHEN s.paidAmount > s.amount THEN s.paidAmount - s.amount ELSE 0 END), 0)) "
         + "FROM Settlement s WHERE s.user.id IN :ids GROUP BY s.user.id")
     List<PayerBalance> balancesForUsers(@Param("ids") Collection<UUID> ids);
 
     @Query("SELECT new pl.nextsteppro.climbing.domain.settlement.PayerBalance("
-        + "s.guest.id, COALESCE(SUM(s.paidAmount - s.amount), 0)) "
+        + "s.guest.id, COALESCE(SUM(s.paidAmount - s.amount), 0), "
+        + "COALESCE(SUM(CASE WHEN s.paidAmount > s.amount THEN s.paidAmount - s.amount ELSE 0 END), 0)) "
         + "FROM Settlement s WHERE s.guest.id IN :ids GROUP BY s.guest.id")
     List<PayerBalance> balancesForGuests(@Param("ids") Collection<UUID> ids);
 

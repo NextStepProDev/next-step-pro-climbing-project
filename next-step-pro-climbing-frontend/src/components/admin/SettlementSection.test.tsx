@@ -16,6 +16,7 @@ const save = vi.fn()
 const remove = vi.fn()
 const listSources = vi.fn()
 const assignSource = vi.fn()
+const settleOutstanding = vi.fn()
 
 vi.mock('../../api/client', () => ({
   adminSettlementsApi: {
@@ -24,6 +25,7 @@ vi.mock('../../api/client', () => ({
     remove: (...args: unknown[]) => remove(...args),
     listSources: (...args: unknown[]) => listSources(...args),
     assignSource: (...args: unknown[]) => assignSource(...args),
+    settleOutstanding: (...args: unknown[]) => settleOutstanding(...args),
   },
 }))
 
@@ -42,6 +44,7 @@ function line(overrides: Partial<SettlementLine> = {}): SettlementLine {
     amount: null,
     paidAmount: 0,
     balance: 0,
+    credit: 0,
     settledOn: null,
     suggestedAmount: null,
     ...overrides,
@@ -64,6 +67,7 @@ describe('SettlementSection', () => {
     remove.mockReset().mockResolvedValue(undefined)
     listSources.mockReset().mockResolvedValue([{ id: 'src-1', name: 'SP nr 12', archived: false }])
     assignSource.mockReset().mockResolvedValue(undefined)
+    settleOutstanding.mockReset().mockResolvedValue({ settled: 1, balance: 0 })
   })
 
   it('says whose money this is before anything is typed', async () => {
@@ -237,6 +241,143 @@ describe('SettlementSection', () => {
 
     expect(await screen.findByText('settlements.section.empty')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'settlements.actions.save' })).not.toBeInTheDocument()
+  })
+
+  it('offers to pay an unpaid session out of the credit that person is holding', async () => {
+    // ⚠️ The reported case, and note the balance: he overpaid 50 two months ago and this session is
+    // priced at 50, so his account NETS TO ZERO while 50 of his money still sits on the older row.
+    // Driving the offer off the net figure would hide it from precisely the client it is for.
+    getSection.mockResolvedValue({
+      ...bulkOff,
+      targetDate: TARGET_DATE,
+      lines: [line({ amount: 50, paidAmount: 0, balance: 0, credit: 50 })],
+    })
+    const user = userEvent.setup()
+
+    renderSection()
+
+    expect(await screen.findByRole('button', { name: 'settlements.line.spendCreditLabel' })).toBeInTheDocument()
+    // The chip states the account, which really is square; the button is what says there is money
+    // parked that can close this row.
+    expect(screen.queryByText('settlements.line.credit')).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'settlements.line.spendCreditLabel' }))
+
+    // The same endpoint the Settlements tab uses, called with nothing received: the server pulls the
+    // credit back into a pool and pays the debts off with it. Dated with the SESSION's day, matching
+    // what this row suggests as a payment date.
+    await waitFor(() =>
+      expect(settleOutstanding).toHaveBeenCalledWith('user', 'user-1', TARGET_DATE, 0),
+    )
+    // And it reports where the account landed rather than claiming this row is the one that got
+    // paid — the credit goes to the oldest debt, which need not be the session on screen.
+    expect(await screen.findByText('settlements.line.creditSpent')).toBeInTheDocument()
+  })
+
+  it('does not claim to have spent a credit that another tab already spent', async () => {
+    // The figure on screen is whatever the query cache holds, so this race is ordinary: the server
+    // finds nothing to pull into the pool and reaches no rows. Announcing "credit spent" on a
+    // request that moved no money would be a lie about money.
+    getSection.mockResolvedValue({
+      ...bulkOff,
+      targetDate: TARGET_DATE,
+      lines: [line({ amount: 50, paidAmount: 0, balance: 0, credit: 50 })],
+    })
+    settleOutstanding.mockResolvedValue({ settled: 0, balance: -50 })
+    const user = userEvent.setup()
+
+    renderSection()
+
+    await user.click(await screen.findByRole('button', { name: 'settlements.line.spendCreditLabel' }))
+
+    expect(await screen.findByText('settlements.line.creditGone')).toBeInTheDocument()
+    expect(screen.queryByText('settlements.line.creditSpent')).not.toBeInTheDocument()
+  })
+
+  it('names a leftover debt as a debt rather than as a negative balance', async () => {
+    getSection.mockResolvedValue({
+      ...bulkOff,
+      targetDate: TARGET_DATE,
+      lines: [line({ amount: 200, paidAmount: 0, balance: -150, credit: 50 })],
+    })
+    settleOutstanding.mockResolvedValue({ settled: 1, balance: -150 })
+    const user = userEvent.setup()
+
+    renderSection()
+
+    await user.click(await screen.findByRole('button', { name: 'settlements.line.spendCreditLabel' }))
+
+    // "Saldo: -150,00 zł" is arithmetic; the line already has a word for this state.
+    expect(await screen.findByText('settlements.line.creditSpentOwing')).toBeInTheDocument()
+  })
+
+  it('does not offer to spend a credit on a session that is already paid', async () => {
+    getSection.mockResolvedValue({
+      ...bulkOff,
+      targetDate: TARGET_DATE,
+      lines: [line({ amount: 50, paidAmount: 50, settledOn: TARGET_DATE, balance: 50, credit: 50 })],
+    })
+
+    renderSection()
+
+    expect(await screen.findByText('settlements.line.credit')).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'settlements.line.spendCreditLabel' }),
+    ).not.toBeInTheDocument()
+  })
+
+  it('asks for the amount to be saved before it can be paid from the credit', async () => {
+    getSection.mockResolvedValue({
+      ...bulkOff,
+      targetDate: TARGET_DATE,
+      lines: [line({ amount: 50, paidAmount: 0, balance: 0, credit: 50 })],
+    })
+    const user = userEvent.setup()
+
+    renderSection()
+
+    const amount = await screen.findByLabelText('settlements.line.amountLabel')
+    await user.clear(amount)
+    await user.type(amount, '80')
+
+    // The endpoint works on rows already in the database, so a figure still in the draft has nothing
+    // for the credit to land against — offering the button here would pay off some other session.
+    expect(
+      screen.queryByRole('button', { name: 'settlements.line.spendCreditLabel' }),
+    ).not.toBeInTheDocument()
+    expect(screen.getByText('settlements.line.saveFirst')).toBeInTheDocument()
+  })
+
+  it('refuses to save a settled row with nothing received instead of silently dropping the tick', async () => {
+    getSection.mockResolvedValue({ ...bulkOff, targetDate: TARGET_DATE, lines: [line()] })
+    const user = userEvent.setup()
+
+    renderSection()
+
+    await user.type(await screen.findByLabelText('settlements.line.amountLabel'), '50')
+    await user.click(screen.getByRole('checkbox'))
+    await user.type(screen.getByLabelText('settlements.line.receivedLabel'), '0')
+    await user.click(screen.getByRole('button', { name: 'settlements.actions.save' }))
+
+    // The server drops the payment date when nothing arrived, so this used to come back unsettled
+    // with the box unticked and nothing saying why. The case behind it has its own answer.
+    expect(await screen.findByText('settlements.errors.zeroReceived')).toBeInTheDocument()
+    expect(save).not.toHaveBeenCalled()
+  })
+
+  it('still lets a free session be ticked, where a zero received is the honest figure', async () => {
+    getSection.mockResolvedValue({ ...bulkOff, targetDate: TARGET_DATE, lines: [line()] })
+    const user = userEvent.setup()
+
+    renderSection()
+
+    await user.type(await screen.findByLabelText('settlements.line.amountLabel'), '0')
+    await user.click(screen.getByRole('checkbox'))
+    await user.click(screen.getByRole('button', { name: 'settlements.actions.save' }))
+
+    await waitFor(() =>
+      expect(save).toHaveBeenCalledWith('slot', 'target-1', 'user', 'user-1', 0, 0, TARGET_DATE),
+    )
   })
 })
 

@@ -406,6 +406,125 @@ class AdminSettlementIntegrationTest extends BaseIntegrationTest {
     }
 
     @Test
+    @DisplayName("shouldCloseASessionThatTheCreditAlonePaysForWithNothingChangingHands")
+    void shouldCloseASessionThatTheCreditAlonePaysForWithNothingChangingHands() {
+        // The reported case, and the one the per-participant fields cannot express: a hundred handed
+        // over for a fifty session, then a session two months later that the change already covers.
+        // Writing "charged 50, received 0" on that second row is true and settles nothing — the row
+        // stays open while the balance reads zero, which is the disagreement this whole mechanism
+        // exists to prevent. Only spending the credit moves both figures at once.
+        save("slot", slot.getId(), "user", client.getId(), "50", null);
+        service.settleOutstanding(new SettleOutstandingRequest(
+            "user", client.getId(), date, new BigDecimal("100")));
+
+        TimeSlot next = timeSlotRepository.saveAndFlush(
+            new TimeSlot(date.plusMonths(2), LocalTime.of(18, 0), LocalTime.of(20, 0), 4));
+        reservationRepository.saveAndFlush(new Reservation(client, next));
+        save("slot", next.getId(), "user", client.getId(), "50", null);
+
+        // Nothing changed hands this time, which is the whole point of the zero.
+        SettleOutstandingResultDto result = service.settleOutstanding(new SettleOutstandingRequest(
+            "user", client.getId(), date.plusMonths(2), BigDecimal.ZERO));
+
+        assertEquals(1, result.settled(), "The credit reached the open session");
+        assertEquals(0, BigDecimal.ZERO.compareTo(result.balance()), "Square");
+        assertEquals(0, stats().outstanding().count(),
+            "And the session no longer reads as owed, because it is not");
+        assertEquals(date.plusMonths(2), lineFor(next, client).settledOn(),
+            "The session it paid for is the one that carries the date");
+        // ⚠️ The property the owner's books depend on: spending a credit MOVES revenue between
+        // months, it does not mint or destroy any. A hundred came through the door and a hundred is
+        // still counted — fifty of it now attributed to the session it actually paid for. Getting
+        // this wrong would be invisible on every screen except the yearly total.
+        assertEquals(0, new BigDecimal("100.00").compareTo(stats().revenue().total()),
+            "One hundred arrived in total, so one hundred is the revenue however it was allocated");
+        assertEquals(0, new BigDecimal("50.00").compareTo(lineFor(slot, client).paidAmount()),
+            "And the row that was holding the change is back to exactly what it charged");
+    }
+
+    @Test
+    @DisplayName("shouldLeaveTheRestOfAnOverpaymentOnAccountWhenItOutrunsTheSession")
+    void shouldLeaveTheRestOfAnOverpaymentOnAccountWhenItOutrunsTheSession() {
+        // Eighty of credit against a fifty session: the fifty closes, and the remaining thirty has
+        // to stay his — spending a credit must never round somebody's money away.
+        save("slot", slot.getId(), "user", client.getId(), "50", null);
+        service.settleOutstanding(new SettleOutstandingRequest(
+            "user", client.getId(), date, new BigDecimal("130")));
+
+        TimeSlot next = timeSlotRepository.saveAndFlush(
+            new TimeSlot(date.plusDays(7), LocalTime.of(18, 0), LocalTime.of(20, 0), 4));
+        reservationRepository.saveAndFlush(new Reservation(client, next));
+        save("slot", next.getId(), "user", client.getId(), "50", null);
+
+        SettleOutstandingResultDto result = service.settleOutstanding(new SettleOutstandingRequest(
+            "user", client.getId(), date.plusDays(7), BigDecimal.ZERO));
+
+        assertEquals(0, new BigDecimal("30.00").compareTo(result.balance()),
+            "Thirty of his is still here, ready for the session after this one");
+        assertEquals(0, stats().outstanding().count(), "And nothing is owed");
+        SettlementLineDto line = lineFor(next, client);
+        assertEquals(0, new BigDecimal("80.00").compareTo(line.paidAmount()),
+            "The change rides on the row it landed against — 50 charged, 80 held");
+        assertEquals(0, new BigDecimal("30.00").compareTo(line.credit()),
+            "So the section offers that thirty next time, and no button while nothing is owed");
+    }
+
+    @Test
+    @DisplayName("shouldPayWhatItCanAndKeepChasingTheRestWhenTheCreditFallsShort")
+    void shouldPayWhatItCanAndKeepChasingTheRestWhenTheCreditFallsShort() {
+        // Thirty of credit against a fifty session: the twenty short stays a debt, on the same row,
+        // rather than the session dropping off the list as though it had been dealt with.
+        save("slot", slot.getId(), "user", client.getId(), "50", null);
+        service.settleOutstanding(new SettleOutstandingRequest(
+            "user", client.getId(), date, new BigDecimal("80")));
+
+        TimeSlot next = timeSlotRepository.saveAndFlush(
+            new TimeSlot(date.plusDays(7), LocalTime.of(18, 0), LocalTime.of(20, 0), 4));
+        reservationRepository.saveAndFlush(new Reservation(client, next));
+        save("slot", next.getId(), "user", client.getId(), "50", null);
+
+        SettleOutstandingResultDto result = service.settleOutstanding(new SettleOutstandingRequest(
+            "user", client.getId(), date.plusDays(7), BigDecimal.ZERO));
+
+        assertEquals(0, new BigDecimal("-20.00").compareTo(result.balance()),
+            "Twenty short, and the screen says so rather than showing a negative balance");
+        assertEquals(1, stats().outstanding().count(), "The session is still owed for");
+        assertEquals(0, new BigDecimal("20.00").compareTo(stats().outstanding().total()),
+            "Twenty, not the whole fifty — the credit really did land");
+        SettlementLineDto line = lineFor(next, client);
+        assertEquals(0, new BigDecimal("30.00").compareTo(line.paidAmount()));
+        assertEquals(0, BigDecimal.ZERO.compareTo(line.credit()),
+            "Nothing left to spend, so the button is gone and the row is simply short");
+    }
+
+    @Test
+    @DisplayName("shouldSpendACreditOnTheOldestDebtFirstEvenFromANewerSession")
+    void shouldSpendACreditOnTheOldestDebtFirstEvenFromANewerSession() {
+        // Clicking on today's session does not make today's session the one that gets paid: a
+        // backlog is paid off in the order it accumulated, which is why the button reports the
+        // balance instead of claiming the row in front of you is now settled.
+        save("slot", slot.getId(), "user", client.getId(), "50", null);
+        service.settleOutstanding(new SettleOutstandingRequest(
+            "user", client.getId(), date, new BigDecimal("100")));
+
+        TimeSlot older = timeSlotRepository.saveAndFlush(
+            new TimeSlot(date.plusDays(3), LocalTime.of(18, 0), LocalTime.of(20, 0), 4));
+        TimeSlot newer = timeSlotRepository.saveAndFlush(
+            new TimeSlot(date.plusDays(9), LocalTime.of(18, 0), LocalTime.of(20, 0), 4));
+        reservationRepository.saveAndFlush(new Reservation(client, older));
+        reservationRepository.saveAndFlush(new Reservation(client, newer));
+        save("slot", older.getId(), "user", client.getId(), "50", null);
+        save("slot", newer.getId(), "user", client.getId(), "50", null);
+
+        service.settleOutstanding(new SettleOutstandingRequest(
+            "user", client.getId(), date.plusDays(9), BigDecimal.ZERO));
+
+        assertNotNull(lineFor(older, client).settledOn(), "The older session is the one it paid");
+        assertNull(lineFor(newer, client).settledOn(),
+            "And the one on screen is still owed for, which the result message reports");
+    }
+
+    @Test
     @DisplayName("shouldKeepChasingTheRemainderWhenSomebodyPaysTooLittle")
     void shouldKeepChasingTheRemainderWhenSomebodyPaysTooLittle() {
         save("slot", slot.getId(), "user", client.getId(), "150", null);

@@ -281,18 +281,30 @@ function OutstandingCard({ overview }: { overview: SettlementOverview }) {
 
   // Grouped by payer, because that is how the money arrives: one person settles a month at a time,
   // and their four debts scattered among everybody else's by date cannot be acted on as one.
+  //
+  // The credit joins the group here rather than the item, which is where the server sends it: one
+  // overpayment spread over somebody's four debts would be added to the group total four times.
   const groups = useMemo(() => {
-    const byPayer = new Map<string, { key: string; name: string; items: OutstandingItem[]; total: number }>()
+    // ⚠️ Defensive on a field the type says is always there: during a deploy the new bundle can be
+    // served for a few seconds while the previous backend still answers, and `.map` of undefined in
+    // a useMemo throws during render — which in this panel is a white screen, not a missing line.
+    const credits = new Map<string, number>(
+      (outstanding.credits ?? []).map(
+        (credit) => [`${credit.payerType}:${credit.payerId}`, credit.credit],
+      ),
+    )
+    const byPayer = new Map<string, PayerDebt>()
     for (const item of outstanding.items) {
       const key = `${item.payerType}:${item.payerId}`
-      const group = byPayer.get(key) ?? { key, name: item.name, items: [], total: 0 }
+      const group = byPayer.get(key)
+        ?? { key, name: item.name, items: [], total: 0, credit: credits.get(key) ?? 0 }
       group.items.push(item)
       group.total += item.amount
       byPayer.set(key, group)
     }
     // Oldest debt first, same order as the flat list had — a backlog reads in the order it grew.
     return [...byPayer.values()]
-  }, [outstanding.items])
+  }, [outstanding.items, outstanding.credits])
 
   return (
     <Card
@@ -334,6 +346,16 @@ function OutstandingCard({ overview }: { overview: SettlementOverview }) {
   )
 }
 
+/** One payer's debts, plus whatever they have already left with you against them. */
+interface PayerDebt {
+  key: string
+  name: string
+  items: OutstandingItem[]
+  total: number
+  /** Always positive, and 0 for the ordinary case where they are holding nothing of yours. */
+  credit: number
+}
+
 /**
  * One person and everything they owe.
  *
@@ -343,11 +365,7 @@ function OutstandingCard({ overview }: { overview: SettlementOverview }) {
  * is the day it arrived. Defaulting to the sessions would scatter a single payment across the
  * months it paid for.
  */
-function PayerDebtGroup({
-  group,
-}: {
-  group: { key: string; name: string; items: OutstandingItem[]; total: number }
-}) {
+function PayerDebtGroup({ group }: { group: PayerDebt }) {
   const { t } = useTranslation('admin')
   const money = useMoney()
   const locale = useDateLocale()
@@ -363,7 +381,13 @@ function PayerDebtGroup({
   // this field renders the same number as `671,16 zł` through `Intl`. The stored value would still
   // be right (the server rounds to the column's scale), but a money screen that disagrees with
   // itself by eleven decimal places is not one anybody should have to trust.
-  const [received, setReceived] = useState(() => group.total.toFixed(2))
+  //
+  // ⚠️ What is left AFTER the credit, not the whole debt. The server pulls an overpayment back into
+  // the pool before it starts paying rows off, so typing the gross figure over a credit hands the
+  // person a second overpayment of exactly that size — and the ordinary case, where the credit
+  // covers the lot, is a zero somebody would otherwise have to know to type.
+  const toCollect = Math.max(0, group.total - group.credit)
+  const [received, setReceived] = useState(() => toCollect.toFixed(2))
 
   const first = group.items[0]
   const backHere = location.pathname + location.search
@@ -419,6 +443,20 @@ function PayerDebtGroup({
           {t('settlements.tab.outstanding.settleAll', { amount: money(group.total) })}
         </Button>
       </div>
+
+      {/* ⚠️ The figures above stay GROSS — the rows really are open, and a heading that quietly
+          nets them would stop matching the items under it. This line is what keeps the screen from
+          reading as a demand for money the person has already handed over: it names the credit and
+          what is genuinely left to collect, which is also what the field beside it is prefilled
+          with. Neutral, not green: green means "done" in this app, and a credit is not done. */}
+      {group.credit > 0 && (
+        <p className="text-xs text-surface-400">
+          {t('settlements.tab.outstanding.credit', {
+            credit: money(group.credit),
+            toCollect: money(toCollect),
+          })}
+        </p>
+      )}
 
       {open && (
         <ul className="pl-6 space-y-1">

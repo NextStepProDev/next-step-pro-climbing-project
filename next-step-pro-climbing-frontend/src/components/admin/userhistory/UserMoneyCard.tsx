@@ -56,6 +56,17 @@ export function UserMoneyCard({ userId }: { userId: string }) {
               label={t('users.detail.money.owed')}
               value={data.outstanding > 0 ? money(data.outstanding) : '—'}
               tone={data.outstanding > 0 ? 'text-amber-500' : 'text-surface-500'}
+              /* ⚠️ Beside the debt, never subtracted from it: this card and the Settlements tab are
+                 about the same client and both keep debts gross, and the one time they were allowed
+                 to do the arithmetic differently the client read as square here while the tab
+                 chased him. The pair is the story — 50 owed against 50 of his held here is square,
+                 and either figure alone says the opposite. Neutral tone, because a credit is a
+                 thing to remember while pricing: not work outstanding (amber), not done (green). */
+              hint={
+                data.credit > 0
+                  ? t('users.detail.money.credit', { amount: money(data.credit) })
+                  : undefined
+              }
             />
             <Figure label={t('users.detail.money.count')} value={String(data.settlementCount)} />
             <Figure
@@ -109,11 +120,22 @@ export function UserMoneyCard({ userId }: { userId: string }) {
   )
 }
 
-function Figure({ label, value, tone }: { label: string; value: string; tone?: string }) {
+function Figure({
+  label,
+  value,
+  tone,
+  hint,
+}: {
+  label: string
+  value: string
+  tone?: string
+  hint?: string
+}) {
   return (
     <div>
       <div className={`text-lg font-semibold tabular-nums ${tone ?? 'text-surface-100'}`}>{value}</div>
       <div className="text-xs text-surface-400">{label}</div>
+      {hint && <div className="text-xs text-surface-500">{hint}</div>}
     </div>
   )
 }

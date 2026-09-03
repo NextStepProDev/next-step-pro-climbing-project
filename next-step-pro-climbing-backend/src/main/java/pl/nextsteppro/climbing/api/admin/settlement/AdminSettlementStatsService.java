@@ -3,6 +3,7 @@ package pl.nextsteppro.climbing.api.admin.settlement;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import pl.nextsteppro.climbing.domain.settlement.PayerBalance;
 import pl.nextsteppro.climbing.domain.settlement.Settlement;
 import pl.nextsteppro.climbing.domain.settlement.SettlementRepository;
 import pl.nextsteppro.climbing.domain.settlement.SettlementRow;
@@ -26,6 +27,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.UUID;
@@ -186,6 +188,10 @@ class AdminSettlementStatsService {
     public PayerSummaryDto payerSummary(UUID userId, int recentLimit) {
         BigDecimal paid = BigDecimal.ZERO;
         BigDecimal outstanding = BigDecimal.ZERO;
+        // In the same pass, not a second read: the credit is a sum over exactly these rows. Positive
+        // deltas only, mirroring what the tab reports and what settling this person would spend —
+        // netting it against the debts would make the card disagree with the tab about him.
+        BigDecimal credit = BigDecimal.ZERO;
         int count = 0;
         LocalDate lastPayment = null;
         List<PayerLineDto> lines = new ArrayList<>();
@@ -197,6 +203,7 @@ class AdminSettlementStatsService {
             // 50. Both screens are about the same person, so they cannot be allowed to disagree.
             paid = paid.add(row.paidAmount());
             outstanding = outstanding.add(row.remaining());
+            credit = credit.add(row.balanceDelta().max(BigDecimal.ZERO));
             if (row.settledOn() != null) {
                 count++;
                 if (lastPayment == null || row.settledOn().isAfter(lastPayment)) {
@@ -208,7 +215,7 @@ class AdminSettlementStatsService {
         }
 
         lines.sort(Comparator.comparing(PayerLineDto::date).reversed());
-        return new PayerSummaryDto(scale(paid), scale(outstanding), count, lastPayment,
+        return new PayerSummaryDto(scale(paid), scale(outstanding), scale(credit), count, lastPayment,
             lines.stream().limit(recentLimit).toList());
     }
 
@@ -280,8 +287,12 @@ class AdminSettlementStatsService {
             .toList();
 
         BigDecimal total = BigDecimal.ZERO;
+        Set<UUID> debtorUserIds = new LinkedHashSet<>();
         List<OutstandingItemDto> items = new ArrayList<>(sorted.size());
         for (SettlementRow row : sorted) {
+            if (!row.isGuest()) {
+                debtorUserIds.add(Objects.requireNonNull(row.userId()));
+            }
             total = total.add(row.remaining());
             items.add(new OutstandingItemDto(
                 row.isMonthlyFee() ? "month" : row.eventId() != null ? "event" : "slot",
@@ -296,7 +307,43 @@ class AdminSettlementStatsService {
         return new OutstandingDto(
             scale(total), items.size(),
             sorted.isEmpty() ? null : sorted.getFirst().targetDate(),
-            items);
+            items, creditsOf(debtorUserIds));
+    }
+
+    /**
+     * What the people on the outstanding list are already holding to their name.
+     *
+     * <p>⚠️ A read of its own, because nothing already in hand can stand in for it.
+     * {@code findUnsettledRows} is by definition free of credit — a row holding an overpayment is
+     * not unpaid — and {@code findRowsInRange} obeys the year picker, which this list deliberately
+     * does not, so a credit left two Decembers ago would simply not be there. Batched over every
+     * debtor rather than asked per person: that is the per-payer loop
+     * {@code AdminSettlementQueryCountTest} exists to keep out, and the loop the modal's section was
+     * already caught building.
+     *
+     * <p>⚠️ <b>Registered payers only, and the schema is the reason.</b>
+     * {@code uq_settlements_guest} makes a guest's settlement unique on the guest alone, so one
+     * guest reservation is one row: a guest cannot be short on one and in credit on another, and
+     * asking would be a query that can only ever come back empty. That also means a guest's change
+     * has nowhere to go — which is what a guest is, a booking with no continuity behind it. The day
+     * that unique index goes, this needs the guest half back.
+     *
+     * <p>⚠️ The CREDIT, not the balance — the difference is the whole reported case. A client who
+     * overpaid fifty and then attended an unpaid fifty session nets to zero, so the net figure would
+     * report no credit for precisely the person this list needs to stop chasing. What sits on his
+     * overpaid row is fifty, and that is what settling him would spend.
+     */
+    private List<OutstandingCreditDto> creditsOf(Set<UUID> userIds) {
+        if (userIds.isEmpty()) {
+            return List.of();
+        }
+        List<OutstandingCreditDto> credits = new ArrayList<>();
+        for (PayerBalance balance : settlementRepository.balancesForUsers(userIds)) {
+            if (balance.credit().signum() > 0) {
+                credits.add(new OutstandingCreditDto("user", balance.payerId(), scale(balance.credit())));
+            }
+        }
+        return credits;
     }
 
     // ----------------------------------------------------------------- revenue

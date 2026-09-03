@@ -125,7 +125,12 @@ class SettlementNotInSharedPayloadTest extends BaseIntegrationTest {
         String lower = json.toLowerCase();
         assertFalse(json.contains(SECRET_TEXT),
             "The " + what + " payload carries the amount a client was charged: " + json);
-        assertFalse(lower.contains("settle") || lower.contains("amount"),
+        // ⚠️ "balance" and "credit" belong in this list as much as the first two do. They are what
+        // the section calls the money it holds on a named person's behalf, and neither contains the
+        // word "amount" — so a field copied onto a shared shape under either name would have sailed
+        // past a green gate. Every new word for money needs adding here the day it is coined.
+        assertFalse(lower.contains("settle") || lower.contains("amount")
+                || lower.contains("balance") || lower.contains("credit"),
             "The " + what + " payload has grown a settlement field. Money must reach the admin "
                 + "through /api/admin/settlements — these shapes are served to anonymous visitors "
                 + "and cached under calendarMonth/Week/Day. Payload: " + json);
