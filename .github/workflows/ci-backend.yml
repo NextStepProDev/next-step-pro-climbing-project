@@ -19,6 +19,9 @@ concurrency:
 permissions:
   contents: read
   packages: write
+  # Pozwala wgrać wynik skanu do zakładki Security. Bez tego upload-sarif
+  # kończy się 403, a skan znów jest widoczny wyłącznie w logu.
+  security-events: write
 
 jobs:
   build-and-test:
@@ -97,21 +100,53 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      # Skan CVE w warstwie systemowej obrazu (czego gradle dependency-check nie widzi).
-      # Informacyjnie na razie (exit-code 0 = nie blokuje deployu). ignore-unfixed
-      # ucina szum z podatności bez łatki; zostają te naprawialne bumpem bazy.
-      # Gdy wyniki będą czyste, ustaw exit-code na 1, by high/critical wywalały build.
-      # Skanuje manifest amd64 (warstwa OS wspólna dla obu arch).
-      - name: Trivy image scan (high+)
+      # Skan CVE obrazu: warstwa systemowa ORAZ biblioteki w app.jar — Trivy analizuje jary,
+      # czego gradle dependency-check tu nie robi. ignore-unfixed ucina szum z podatności bez
+      # łatki; zostają te naprawialne bumpem. Skanuje manifest amd64 (warstwa OS wspólna dla
+      # obu architektur).
+      # Wynik idzie do zakładki Security, nie tylko do logu. ⚠️ To nie jest kosmetyka:
+      # przez cały czas skan zgłaszał podatności app.jar (3× CRITICAL na tomcat-embed-core),
+      # ale przy format: table i exit-code: 0 raport oglądał wyłącznie ten, kto otworzył log
+      # zakończonego na zielono builda. Czyli nikt. SARIF wgrany tutaj daje alerty w miejscu,
+      # do którego GitHub sam kieruje — i działa niezależnie od grafu zależności, który dla
+      # Javy w tym repo bywa ślepy.
+      - name: Trivy image scan (SARIF do zakładki Security)
         uses: aquasecurity/trivy-action@v0.36.0
         with:
-          # Nazwa obrazu musi być lowercase (owner NextStepProDev ma wielkie litery,
-          # a OCI reference wymaga małych — metadata-action lowercase'uje sam przy pushu).
           image-ref: ghcr.io/nextstepprodev/nextsteppro-backend:${{ steps.version.outputs.version }}
-          format: table
+          format: sarif
+          output: trivy-backend.sarif
           severity: HIGH,CRITICAL
           ignore-unfixed: true
+          # Ten przebieg tylko raportuje; bramką jest krok poniżej.
           exit-code: '0'
+        env:
+          TRIVY_USERNAME: ${{ github.actor }}
+          TRIVY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Wgraj wynik do zakładki Security
+        uses: github/codeql-action/upload-sarif@v3
+        # Wgraj także wtedy, gdy bramka niżej wywali build — inaczej dokładnie w sytuacji,
+        # w której raport jest najbardziej potrzebny, nie ma go nigdzie.
+        if: always()
+        with:
+          sarif_file: trivy-backend.sarif
+          category: trivy-backend
+
+      # Bramka: CRITICAL zatrzymuje build, HIGH tylko raportuje.
+      # ⚠️ Próg jest na CRITICAL, a nie na HIGH, i to jest przemyślane: warstwa systemowa alpine
+      # ma stale kilka HIGH bez związku z naszym kodem (curl, openssl), więc bramka na HIGH
+      # blokowałaby deploy w rytmie wydań Alpine'a i szybko zostałaby wyłączona. CRITICAL jest
+      # dziś czyste — po naprawie tomcata app.jar zgłasza zero — więc ta bramka od pierwszego
+      # dnia znaczy "coś się właśnie zepsuło", a nie "znowu to samo".
+      - name: Bramka CVE (CRITICAL blokuje)
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: ghcr.io/nextstepprodev/nextsteppro-backend:${{ steps.version.outputs.version }}
+          format: table
+          severity: CRITICAL
+          ignore-unfixed: true
+          exit-code: '1'
         env:
           TRIVY_USERNAME: ${{ github.actor }}
           TRIVY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
