@@ -1,0 +1,36 @@
+# Wersje zależności backendu — jedno miejsce, i to takie, które GitHub potrafi przeczytać.
+#
+# ⚠️ Powód istnienia tego pliku jest inny niż porządek. Wcześniej wersje siedziały w
+# gradle.properties i wchodziły do build.gradle przez "${springdocVersion}". Parser grafu
+# zależności GitHuba nie umie rozwiązać takiej zmiennej, więc widział w tym repo **zero**
+# zależności Javy (352 pakiety npm, 12 akcji, 0 mavenowych). Skutek był podwójny i cichy:
+# Dependabot przez cały czas nie zaproponował ani jednej aktualizacji backendu, a alerty
+# bezpieczeństwa dla Spring Boota czy jjwt nie miały jak do Was dotrzeć — bo dla GitHuba te
+# biblioteki nie istniały. Brak PR-ów wygląda dokładnie tak samo jak "wszystko aktualne".
+#
+# Format katalogu wersji Gradle jest wspierany przez Dependabota wprost, więc wersje nadal są
+# w jednym pliku, a narzędzia je widzą. Nie wracać do "${...}" w build.gradle.
+[versions]
+spring-boot = "4.1.0"
+dependency-management = "1.1.7"
+jspecify = "1.0.0"
+springdoc = "3.0.3"
+jjwt = "0.13.0"
+testcontainers = "1.21.4"
+thumbnailator = "0.4.21"
+# Nie zależność, tylko wersja narzędzia dla wtyczki jacoco — stąd odczyt przez libs.versions.
+jacoco = "0.8.15"
+
+[libraries]
+jspecify = { module = "org.jspecify:jspecify", version.ref = "jspecify" }
+springdoc-openapi = { module = "org.springdoc:springdoc-openapi-starter-webmvc-ui", version.ref = "springdoc" }
+thumbnailator = { module = "net.coobird:thumbnailator", version.ref = "thumbnailator" }
+jjwt-api = { module = "io.jsonwebtoken:jjwt-api", version.ref = "jjwt" }
+jjwt-impl = { module = "io.jsonwebtoken:jjwt-impl", version.ref = "jjwt" }
+jjwt-jackson = { module = "io.jsonwebtoken:jjwt-jackson", version.ref = "jjwt" }
+testcontainers-postgresql = { module = "org.testcontainers:postgresql", version.ref = "testcontainers" }
+testcontainers-junit = { module = "org.testcontainers:junit-jupiter", version.ref = "testcontainers" }
+
+[plugins]
+spring-boot = { id = "org.springframework.boot", version.ref = "spring-boot" }
+dependency-management = { id = "io.spring.dependency-management", version.ref = "dependency-management" }

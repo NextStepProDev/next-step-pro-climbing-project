@@ -6,7 +6,9 @@ ARG APP_VERSION=dev
 # 1. Kopiujemy wrapper i konfigurację Gradle
 COPY gradlew .
 COPY gradle/ gradle/
-COPY build.gradle settings.gradle gradle.properties ./
+# Wersje zależności siedzą w gradle/libs.versions.toml, który wchodzi tu razem z katalogiem
+# gradle/ w linii wyżej — dlatego nie ma tu już gradle.properties.
+COPY build.gradle settings.gradle ./
 
 # 2. Kopiujemy kod źródłowy
 COPY src src
