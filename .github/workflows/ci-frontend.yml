@@ -149,7 +149,7 @@ jobs:
           TRIVY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Wgraj wynik do zakładki Security
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         # Wgraj także wtedy, gdy bramka niżej wywali build — inaczej dokładnie w sytuacji,
         # w której raport jest najbardziej potrzebny, nie ma go nigdzie.
         if: always()
