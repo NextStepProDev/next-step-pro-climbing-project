@@ -860,8 +860,20 @@
     "title": "Invitation emails (manual send)",
     "sentAt": "sent {{date}}",
     "notSent": "not sent",
+    "booked": "already booked",
+    "notificationsOff": "emails switched off",
     "send": "Send invitation emails ({{count}})",
-    "sentResult": "Sent {{count}} invitations."
+    "saveAndSend": "Save and send invitations",
+    "sentResult_one": "Sent {{count}} invitation.",
+    "sentResult_other": "Sent {{count}} invitations.",
+    "savedAndSent_one": "Changes saved. Sent {{count}} invitation.",
+    "savedAndSent_other": "Changes saved. Sent {{count}} invitations.",
+    "savedNothingSent": "Changes saved. No invitation was sent.",
+    "skipped_one": "Skipped {{count}} person with emails switched off.",
+    "skipped_other": "Skipped {{count}} people with emails switched off.",
+    "cancelWarningTitle_one": "{{count}} invitee already has an email with this date",
+    "cancelWarningTitle_other": "{{count}} invitees already have an email with this date",
+    "cancelWarning": "They will not be told it is cancelled — cancellation emails go only to confirmed bookings. This date sits in their calendar, so write to them."
   },
   "editSaved": {
     "notified_one": "Changes saved. {{count}} participant was notified by email.",

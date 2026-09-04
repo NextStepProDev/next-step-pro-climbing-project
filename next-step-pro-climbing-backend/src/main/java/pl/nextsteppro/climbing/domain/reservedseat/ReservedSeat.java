@@ -95,4 +95,19 @@ public class ReservedSeat {
     public void markNotified() {
         this.notifiedAt = Instant.now();
     }
+
+    /**
+     * Forgets that the invitation was mailed — called when the slot/event moves to a different
+     * date or time. The message the recipient is holding (and the calendar entry its ICS
+     * attachment created) now describes a term that no longer exists, so "sent" would be a claim
+     * about a mail that is no longer true. Clearing it makes the admin's list say "not sent",
+     * which is the honest state, and brings the send button back with this person counted in it.
+     *
+     * <p>Deliberately not paired with an automatic re-send: the invitation mail says "a seat is
+     * held for you", not "the time changed", so mailing it again unprompted delivers a near
+     * duplicate the recipient can easily skim past. The admin re-sends with one click instead.
+     */
+    public void clearNotified() {
+        this.notifiedAt = null;
+    }
 }

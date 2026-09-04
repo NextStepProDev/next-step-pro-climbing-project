@@ -226,13 +226,13 @@ public class AdminController {
     @Tag(name = "Admin - Slots")
     @Operation(
         summary = "Send invitation emails (slot)",
-        description = "Manually sends emails to people with a held seat who have not booked yet. onlyUnnotified=true (default) skips those already notified."
+        description = "Manually sends emails to people with a held seat who have not booked yet. onlyUnnotified=true (default) skips those already notified. Recipients with email notifications switched off are skipped and reported separately."
     )
     @PostMapping("/slots/{slotId}/invites/notify")
-    public ResponseEntity<NotifyParticipantsResult> notifySlotInvites(
+    public ResponseEntity<NotifyInvitesResult> notifySlotInvites(
             @Parameter(description = "Slot UUID") @PathVariable UUID slotId,
             @Parameter(description = "Skip people already sent an invitation") @RequestParam(defaultValue = "true") boolean onlyUnnotified) {
-        return ResponseEntity.ok(new NotifyParticipantsResult(adminService.notifySlotInvites(slotId, onlyUnnotified)));
+        return ResponseEntity.ok(adminService.notifySlotInvites(slotId, onlyUnnotified));
     }
 
     @Tag(name = "Admin - Slots")
@@ -417,13 +417,13 @@ public class AdminController {
     @Tag(name = "Admin - Events")
     @Operation(
         summary = "Send invitation emails (event)",
-        description = "Manually sends emails to people with a held seat who have not booked yet. onlyUnnotified=true (default) skips those already notified."
+        description = "Manually sends emails to people with a held seat who have not booked yet. onlyUnnotified=true (default) skips those already notified. Recipients with email notifications switched off are skipped and reported separately."
     )
     @PostMapping("/events/{eventId}/invites/notify")
-    public ResponseEntity<NotifyParticipantsResult> notifyEventInvites(
+    public ResponseEntity<NotifyInvitesResult> notifyEventInvites(
             @Parameter(description = "Event UUID") @PathVariable UUID eventId,
             @Parameter(description = "Skip people already sent an invitation") @RequestParam(defaultValue = "true") boolean onlyUnnotified) {
-        return ResponseEntity.ok(new NotifyParticipantsResult(adminService.notifyEventInvites(eventId, onlyUnnotified)));
+        return ResponseEntity.ok(adminService.notifyEventInvites(eventId, onlyUnnotified));
     }
 
     // ==================== Reservations Overview ====================

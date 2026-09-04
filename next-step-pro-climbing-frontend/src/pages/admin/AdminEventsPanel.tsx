@@ -13,6 +13,9 @@ import { WaitlistEntryList } from './AdminReservationsPanel'
 import { getErrorMessage } from '../../utils/errors'
 import { useDirty } from '../../hooks/useDirty'
 import { useEditSavedToast } from '../../hooks/useEditSavedToast'
+import { useInviteSentToast } from '../../hooks/useInviteSentToast'
+import { MailedInvitesWarning } from '../../components/ui/MailedInvitesWarning'
+import { canOfferSaveAndSend } from '../../utils/inviteStatus'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
 import { QueryError } from '../../components/ui/QueryError'
 import { Button } from '../../components/ui/Button'
@@ -658,6 +661,7 @@ function EventCard({
           isOpen={showDeleteConfirm}
           onClose={() => setShowDeleteConfirm(false)}
           eventTitle={event.title}
+          eventId={event.id}
           archived={archived}
           participants={participantsData.participants}
           onConfirm={() => {
@@ -674,6 +678,7 @@ function ConfirmDeleteEventModal({
   isOpen,
   onClose,
   eventTitle,
+  eventId,
   archived,
   participants,
   onConfirm,
@@ -681,6 +686,7 @@ function ConfirmDeleteEventModal({
   isOpen: boolean
   onClose: () => void
   eventTitle: string
+  eventId: string
   archived?: boolean
   participants: { userId: string; fullName: string; email: string }[]
   onConfirm: () => void
@@ -697,6 +703,10 @@ function ConfirmDeleteEventModal({
         <div className="text-sm text-surface-400">
           {t('events.eventLabel')}<span className="text-surface-200">{eventTitle}</span>
         </div>
+
+        {/* Deletion mails confirmed reservations only, and an invitee never booked — so nobody
+            tells them the term carried by their invitation (and its ICS) is gone. */}
+        <MailedInvitesWarning target={{ type: 'event', eventId }} archived={archived} />
 
         {hasParticipants ? (
           <>
@@ -830,6 +840,7 @@ export function EditEventModal({
 }) {
   const { t } = useTranslation('admin')
   const editSaved = useEditSavedToast()
+  const inviteSent = useInviteSentToast()
   const [allDay, setAllDay] = useState(!event?.startTime)
   const [courseId, setCourseId] = useState<string | null>(event?.courseId ?? null)
   const [form, setForm] = useState<CreateEventRequest>({
@@ -864,16 +875,24 @@ export function EditEventModal({
 
   const queryClient = useQueryClient()
 
+  // `sendInvites` chains the manual invitation send onto the save — the send button lives in this
+  // form, which closes on save, so the two-step flow was easy to abandon halfway. Chained inside
+  // mutationFn rather than onSuccess so the order is guaranteed and both errors land on one call.
   const updateMutation = useMutation({
-    mutationFn: (data: CreateEventRequest & { courseId?: string | null; removeCourse?: boolean; invitedUserIds?: string[] }) =>
-      adminApi.updateEvent(event!.id, data),
-    onSuccess: (result) => {
+    mutationFn: async ({ sendInvites, ...data }: CreateEventRequest & { courseId?: string | null; removeCourse?: boolean; invitedUserIds?: string[]; sendInvites?: boolean }) => {
+      const result = await adminApi.updateEvent(event!.id, data)
+      const notified = sendInvites ? await adminApi.notifyEventInvites(event!.id) : null
+      return { result, notified }
+    },
+    onSuccess: ({ result, notified }) => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'events'] })
       queryClient.invalidateQueries({ queryKey: ['calendar'] })
       queryClient.invalidateQueries({ queryKey: ['courseEvents'] })
       queryClient.invalidateQueries({ queryKey: ['eventSummary', event?.id] })
+      queryClient.invalidateQueries({ queryKey: ['admin', 'eventInvites', event?.id] })
       onClose()
-      editSaved(result)
+      if (notified) inviteSent(notified)
+      else editSaved(result)
     },
   })
 
@@ -881,9 +900,8 @@ export function EditEventModal({
 
   if (!event) return null
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    const payload: CreateEventRequest & { courseId?: string | null; removeCourse?: boolean; invitedUserIds?: string[] } = { ...form }
+  const submitEdit = (sendInvites: boolean) => {
+    const payload: CreateEventRequest & { courseId?: string | null; removeCourse?: boolean; invitedUserIds?: string[]; sendInvites?: boolean } = { ...form }
     if (allDay) {
       delete payload.startTime
       delete payload.endTime
@@ -894,8 +912,27 @@ export function EditEventModal({
       payload.removeCourse = true
     }
     payload.invitedUserIds = form.eventType === 'UNAVAILABLE' ? [] : invited.map((u) => u.userId)
+    payload.sendInvites = sendInvites
     updateMutation.mutate(payload)
   }
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    submitEdit(false)
+  }
+
+  // Counted off the picker's current list, so an invitee added in this session enables it before
+  // the save. The term check matters because saving a moved event resets every mailed invitation
+  // to "not sent" — those people become recipients of this very click.
+  // The all-day toggle counts: it strips the times from the payload, which the backend reads as
+  // a moved term exactly like editing the clock would.
+  const termChanged =
+    form.startDate !== event.startDate
+    || form.endDate !== event.endDate
+    || allDay !== !event.startTime
+    || (!allDay && (form.startTime ?? null) !== (event.startTime?.slice(0, 5) ?? null))
+    || (!allDay && (form.endTime ?? null) !== (event.endTime?.slice(0, 5) ?? null))
+  const canSendInvites = form.eventType !== 'UNAVAILABLE' && canOfferSaveAndSend(invited, termChanged)
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={t('events.editTitle')} confirmClose={isDirty}>
@@ -1036,13 +1073,26 @@ export function EditEventModal({
           <InviteNotifySection target={{ type: 'event', eventId: event.id }} invites={baselineInvited} />
         )}
 
-        <div className="flex gap-3 pt-4">
+        <div className="flex flex-wrap gap-3 pt-4">
           <Button type="submit" loading={updateMutation.isPending} disabled={!isDirty} className="flex-1">
             {t('events.saveChanges')}
           </Button>
           <Button type="button" variant="ghost" onClick={onClose}>
             {t('events.cancel')}
           </Button>
+          {/* A second action, not a checkbox on the first: mailing is not a property of saving,
+              and saving quietly has to stay available. */}
+          {canSendInvites && (
+            <Button
+              type="button"
+              variant="secondary"
+              loading={updateMutation.isPending}
+              className="w-full"
+              onClick={() => submitEdit(true)}
+            >
+              {t('inviteNotify.saveAndSend')}
+            </Button>
+          )}
         </div>
 
         {updateMutation.isError && (

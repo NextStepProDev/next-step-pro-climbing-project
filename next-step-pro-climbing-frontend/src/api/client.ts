@@ -58,6 +58,7 @@ import type {
   SlotWaitlistAdmin,
   EventWaitlistAdmin,
   InvitedUser,
+  NotifyInvitesResult,
   AdminNoteTarget,
   AdminPrivateNote,
   AdminNoteMarkers,
@@ -834,7 +835,7 @@ export const adminApi = {
     fetchApi<InvitedUser[]>(`/admin/slots/${slotId}/invites`),
 
   notifySlotInvites: (slotId: string, onlyUnnotified = true) =>
-    fetchApi<{ notifiedCount: number }>(`/admin/slots/${slotId}/invites/notify?onlyUnnotified=${onlyUnnotified}`, {
+    fetchApi<NotifyInvitesResult>(`/admin/slots/${slotId}/invites/notify?onlyUnnotified=${onlyUnnotified}`, {
       method: 'POST',
     }),
 
@@ -910,7 +911,7 @@ export const adminApi = {
     fetchApi<InvitedUser[]>(`/admin/events/${eventId}/invites`),
 
   notifyEventInvites: (eventId: string, onlyUnnotified = true) =>
-    fetchApi<{ notifiedCount: number }>(`/admin/events/${eventId}/invites/notify?onlyUnnotified=${onlyUnnotified}`, {
+    fetchApi<NotifyInvitesResult>(`/admin/events/${eventId}/invites/notify?onlyUnnotified=${onlyUnnotified}`, {
       method: 'POST',
     }),
 

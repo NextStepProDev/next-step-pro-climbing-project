@@ -22,6 +22,9 @@ import { adminApi, reservationApi } from "../../api/client";
 import { getErrorMessage } from "../../utils/errors";
 import { useDateLocale } from "../../utils/dateFnsLocale";
 import { useEditSavedToast } from "../../hooks/useEditSavedToast";
+import { useInviteSentToast } from "../../hooks/useInviteSentToast";
+import { MailedInvitesWarning } from "../ui/MailedInvitesWarning";
+import { canOfferSaveAndSend } from "../../utils/inviteStatus";
 import { nowInWarsaw, parseCalendarDate, parseCalendarDateTime } from '../../utils/calendarDate'
 import { AdminPrivateNote } from '../admin/AdminPrivateNote'
 import { SettlementSection } from '../admin/SettlementSection'
@@ -45,6 +48,7 @@ export function SlotDetailModal({
   const { t: ta } = useTranslation('admin');
   const locale = useDateLocale();
   const editSaved = useEditSavedToast();
+  const inviteSent = useInviteSentToast();
   const { isAuthenticated, isAdmin, user } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -160,10 +164,17 @@ export function SlotDetailModal({
     },
   });
 
+  // `sendInvites` chains the manual invitation send onto the save. Saving invitees has never
+  // mailed anyone (deliberately), but the send button lives in the edit form, which closes on
+  // save — so the two-step flow was easy to walk away from halfway. Chaining inside mutationFn
+  // rather than in onSuccess keeps the order guaranteed and both errors on one mutation.
   const editSlotMutation = useMutation({
-    mutationFn: (data: { startTime: string; endTime: string; maxParticipants?: number; title: string; isAvailabilityWindow: boolean; isUnavailable: boolean; invitedUserIds?: string[] }) =>
-      adminApi.updateTimeSlot(slot!.id, data),
-    onSuccess: (result) => {
+    mutationFn: async ({ sendInvites, ...data }: { startTime: string; endTime: string; maxParticipants?: number; title: string; isAvailabilityWindow: boolean; isUnavailable: boolean; invitedUserIds?: string[]; sendInvites?: boolean }) => {
+      const result = await adminApi.updateTimeSlot(slot!.id, data);
+      const notified = sendInvites ? await adminApi.notifySlotInvites(slot!.id) : null;
+      return { result, notified };
+    },
+    onSuccess: ({ result, notified }) => {
       queryClient.invalidateQueries({ queryKey: ["calendar"] });
       queryClient.invalidateQueries({ queryKey: ["slot"] });
       queryClient.invalidateQueries({ queryKey: ["admin", "slots"] });
@@ -171,7 +182,8 @@ export function SlotDetailModal({
       // Drop the local override so the refetched baseline is what the form reopens with.
       setEditedInvited(null);
       setEditMode(false);
-      editSaved(result);
+      if (notified) inviteSent(notified);
+      else editSaved(result);
     },
   });
 
@@ -234,6 +246,30 @@ export function SlotDetailModal({
       : undefined;
 
   const editDirty = JSON.stringify(editForm) !== JSON.stringify(editBaseline) || invitedDirty;
+
+  // Counted off the picker's current list, so an invitee added in this very session enables it
+  // before the save. The term check matters because saving a moved slot resets every mailed
+  // invitation to "not sent" — those people become recipients of this very click.
+  const termChanged =
+    editForm.startTime !== editBaseline.startTime || editForm.endTime !== editBaseline.endTime;
+  const canSendInvites = canManageInvites && canOfferSaveAndSend(invited, termChanged);
+
+  const saveEdit = (sendInvites: boolean) => {
+    if (editForm.endTime <= editForm.startTime) return;
+    editSlotMutation.mutate({
+      startTime: editForm.startTime,
+      endTime: editForm.endTime,
+      // Capacity is omitted for an absence: a slot that still has people
+      // booked must fail as "cannot mark unavailable", not as a capacity error.
+      ...(editForm.kind === 'UNAVAILABLE'
+        ? {}
+        : { maxParticipants: editForm.kind === 'WINDOW' ? 1 : editForm.maxParticipants }),
+      title: editForm.title || '',
+      ...slotKindFlags(editForm.kind),
+      ...(invitedUserIdsForSave ? { invitedUserIds: invitedUserIdsForSave } : {}),
+      sendInvites,
+    });
+  };
 
   const handleLoginRedirect = () => {
     saveRedirectPath(`/calendar?date=${slot.date}`);
@@ -550,32 +586,32 @@ export function SlotDetailModal({
                 {canManageInvites && !invitedDirty && (
                   <InviteNotifySection target={{ type: 'slot', slotId: slot.id }} invites={baselineInvited} />
                 )}
-                <div className="flex gap-3">
+                <div className="flex flex-wrap gap-3">
                   <Button
                     loading={editSlotMutation.isPending}
                     disabled={!editDirty || editTimeError}
                     className="flex-1"
-                    onClick={() => {
-                      if (editForm.endTime <= editForm.startTime) return;
-                      editSlotMutation.mutate({
-                        startTime: editForm.startTime,
-                        endTime: editForm.endTime,
-                        // Capacity is omitted for an absence: a slot that still has people
-                        // booked must fail as "cannot mark unavailable", not as a capacity error.
-                        ...(editForm.kind === 'UNAVAILABLE'
-                          ? {}
-                          : { maxParticipants: editForm.kind === 'WINDOW' ? 1 : editForm.maxParticipants }),
-                        title: editForm.title || '',
-                        ...slotKindFlags(editForm.kind),
-                        ...(invitedUserIdsForSave ? { invitedUserIds: invitedUserIdsForSave } : {}),
-                      });
-                    }}
+                    onClick={() => saveEdit(false)}
                   >
                     {ta('slots.saveChanges')}
                   </Button>
                   <Button variant="ghost" onClick={() => { setEditedInvited(null); setEditMode(false); }}>
                     {ta('slots.cancel')}
                   </Button>
+                  {/* Second action rather than a checkbox on the first: sending mail is not a
+                      property of saving, and the admin should be able to save quietly. Shown only
+                      when somebody could receive one — see canSendInvites. */}
+                  {canSendInvites && (
+                    <Button
+                      variant="secondary"
+                      loading={editSlotMutation.isPending}
+                      disabled={editTimeError}
+                      className="w-full"
+                      onClick={() => saveEdit(true)}
+                    >
+                      {ta('inviteNotify.saveAndSend')}
+                    </Button>
+                  )}
                 </div>
                 {editSlotMutation.isError && (
                   <p className="text-sm text-rose-400/80">{getErrorMessage(editSlotMutation.error)}</p>
@@ -756,6 +792,12 @@ export function SlotDetailModal({
             {format(dateObj, 'EEEE, d MMMM', { locale })} |{' '}
             {slot.startTime.slice(0, 5)} - {slot.endTime.slice(0, 5)}
           </div>
+
+          {/* Cancellation mails reach confirmed reservations only, so an invitee holding a mailed
+              invitation (and the calendar entry its ICS created) would hear nothing. */}
+          {!slot.eventId && !hasEnded && (
+            <MailedInvitesWarning target={{ type: 'slot', slotId: slot.id }} />
+          )}
 
           {deleteConfirmParticipants.participants.length > 0 ? (
             <>

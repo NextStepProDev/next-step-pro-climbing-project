@@ -39,9 +39,13 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -56,6 +60,9 @@ import static org.mockito.Mockito.when;
  * Also covers the two other guards on the same paths: unverified accounts cannot be bound to
  * anything (invites, manual sign-ups, roles), and the admin-side account deletion has to release
  * seats through the shared service.
+ *
+ * <p>Plus the invitation mail itself, which shares these paths: who it skips and why, and the fact
+ * that a moved term forgets an invitation was ever sent.
  */
 @ExtendWith(MockitoExtension.class)
 class AdminServiceInviteSyncTest {
@@ -419,6 +426,114 @@ class AdminServiceInviteSyncTest {
         assertThrows(IllegalStateException.class, () -> adminService.deleteUser(adminId, otherAdminId));
         verify(userSeatReleaseService, never()).releaseSeatsAndNotifyWaitlists(any());
         verify(userRepository, never()).delete(any(User.class));
+    }
+
+    // ========== INVITATION MAILS ==========
+
+    @Test
+    void shouldSkipInvitationMailForSomeoneWhoTurnedEmailsOff() {
+        // Given: two pending invitations, one of them belongs to someone who switched emails off
+        User optedOut = new User("quiet@example.com", "Quiet", "User", "+48333333333", "quiet");
+        setId(optedOut, UUID.randomUUID());
+        optedOut.setEmailVerified(true);
+        optedOut.setEmailNotificationsEnabled(false);
+
+        when(timeSlotRepository.findById(slotId)).thenReturn(Optional.of(slot));
+        when(reservationRepository.findConfirmedUserIdsByTimeSlotId(slotId)).thenReturn(List.of());
+        when(reservedSeatRepository.findBySlotIdWithUser(slotId))
+            .thenReturn(List.of(new ReservedSeat(slot, invitedUser), new ReservedSeat(slot, optedOut)));
+
+        // When
+        NotifyInvitesResult result = adminService.notifySlotInvites(slotId, true);
+
+        // Then: the count reported to the admin is the number of mails that left, and the person
+        // who will never receive one is named as skipped rather than silently dropped.
+        assertEquals(1, result.notifiedCount());
+        assertEquals(1, result.skippedNotificationsOff());
+        verify(mailService).sendSlotInvitationNotification(eq(invitedUser), eq(slot), any());
+        verify(mailService, never()).sendSlotInvitationNotification(eq(optedOut), any(), any());
+    }
+
+    @Test
+    void shouldNotCountSomeoneWhoAlreadyBookedAsSkippedForNotifications() {
+        // Given: the only invitee has booked — they got the ordinary confirmation instead
+        when(timeSlotRepository.findById(slotId)).thenReturn(Optional.of(slot));
+        when(reservationRepository.findConfirmedUserIdsByTimeSlotId(slotId))
+            .thenReturn(List.of(invitedUser.getId()));
+        when(reservedSeatRepository.findBySlotIdWithUser(slotId))
+            .thenReturn(List.of(new ReservedSeat(slot, invitedUser)));
+
+        // When
+        NotifyInvitesResult result = adminService.notifySlotInvites(slotId, true);
+
+        // Then: nothing sent and nothing to explain — "skipped" is reserved for the opt-out,
+        // which is the only skip the admin can act on.
+        assertEquals(0, result.notifiedCount());
+        assertEquals(0, result.skippedNotificationsOff());
+        verify(mailService, never()).sendSlotInvitationNotification(any(), any(), any());
+    }
+
+    @Test
+    void shouldForgetTheInvitationWasSentWhenTheSlotMovesToAnotherTime() {
+        // Given: an invitation already mailed for 10:00–11:00
+        ReservedSeat seat = new ReservedSeat(slot, invitedUser);
+        seat.markNotified();
+
+        when(timeSlotRepository.findById(slotId)).thenReturn(Optional.of(slot));
+        when(timeSlotRepository.save(slot)).thenReturn(slot);
+        when(reservedSeatRepository.findBySlotIdWithUser(slotId)).thenReturn(List.of(seat));
+        when(userRepository.findById(adminId)).thenReturn(Optional.of(admin));
+
+        // When: the slot is moved
+        adminService.updateTimeSlot(adminId, slotId, new UpdateTimeSlotRequest(
+            null, LocalTime.of(18, 0), LocalTime.of(19, 0), null, null, null, null, false, null));
+
+        // Then: "sent" would now be a claim about a mail describing a time that no longer exists,
+        // so the list goes back to "not sent" and the send button counts this person again.
+        // Deliberately no mail from here — re-sending is the admin's call, one click away.
+        assertNull(seat.getNotifiedAt());
+        verify(mailService, never()).sendSlotInvitationNotification(any(), any(), any());
+    }
+
+    @Test
+    void shouldKeepTheInvitationMarkedSentWhenOnlyTheTitleChanges() {
+        // Given: the same mailed invitation
+        ReservedSeat seat = new ReservedSeat(slot, invitedUser);
+        seat.markNotified();
+
+        when(timeSlotRepository.findById(slotId)).thenReturn(Optional.of(slot));
+        when(timeSlotRepository.save(slot)).thenReturn(slot);
+        when(userRepository.findById(adminId)).thenReturn(Optional.of(admin));
+
+        // When: only the title is edited
+        adminService.updateTimeSlot(adminId, slotId, new UpdateTimeSlotRequest(
+            null, null, null, null, "Nowy tytuł", null, null, false, null));
+
+        // Then: the mail in the recipient's inbox still describes the right term, so re-inviting
+        // everyone over a renamed slot would be noise.
+        assertNotNull(seat.getNotifiedAt());
+    }
+
+    @Test
+    void shouldForgetTheInvitationWasSentWhenTheEventMovesToAnotherDate() {
+        // Given: an event invitation already mailed
+        ReservedSeat seat = new ReservedSeat(event, invitedUser);
+        seat.markNotified();
+
+        when(eventRepository.findById(eventId)).thenReturn(Optional.of(event));
+        when(eventRepository.save(event)).thenReturn(event);
+        when(reservedSeatRepository.findByEventIdWithUser(eventId)).thenReturn(List.of(seat));
+        when(timeSlotRepository.findByEventId(eventId)).thenReturn(List.of());
+        when(userRepository.findById(adminId)).thenReturn(Optional.of(admin));
+
+        // When: the event is moved a week out
+        LocalDate moved = event.getStartDate().plusDays(7);
+        adminService.updateEvent(adminId, eventId, new UpdateEventRequest(
+            null, null, null, null, moved, moved, null, null, null, null, null, null, null));
+
+        // Then: same rule as the slot twin
+        assertNull(seat.getNotifiedAt());
+        verify(mailService, never()).sendEventInvitationNotification(any(), any());
     }
 
     private void setId(Object entity, UUID id) {
