@@ -33,7 +33,9 @@ jobs:
 
       - uses: actions/setup-node@v7
         with:
-          node-version: 24
+          # The version lives in .nvmrc, which `nvm use` reads too, so this job and a developer's
+          # machine cannot drift apart by editing one of two copies of the same number.
+          node-version-file: next-step-pro-climbing-frontend/.nvmrc
           cache: npm
           cache-dependency-path: next-step-pro-climbing-frontend/package-lock.json
 

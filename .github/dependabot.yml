@@ -42,6 +42,14 @@ updates:
     directory: /next-step-pro-climbing-frontend
     schedule:
       interval: monthly
+    # ⚠️ Patches arrive on their own: the Dockerfile says `node:24-alpine`, a floating tag that
+    # resolves to the newest 24.x at build time, so there is nothing here to raise for them.
+    # The only PR this would ever open is a jump to the next major — and node's odd majors (25, 27)
+    # NEVER become LTS and die in about seven months, so merging one on the strength of a bigger
+    # number would quietly move the build onto a proving ground. Changing lines stays a decision.
+    ignore:
+      - dependency-name: node
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: docker
     directory: /next-step-pro-climbing-backend
     schedule:
