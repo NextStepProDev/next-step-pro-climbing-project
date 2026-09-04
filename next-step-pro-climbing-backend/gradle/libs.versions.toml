@@ -11,7 +11,7 @@
 # Format katalogu wersji Gradle jest wspierany przez Dependabota wprost, więc wersje nadal są
 # w jednym pliku, a narzędzia je widzą. Nie wracać do "${...}" w build.gradle.
 [versions]
-spring-boot = "4.1.0"
+spring-boot = "4.1.1"
 dependency-management = "1.1.7"
 jspecify = "1.0.0"
 springdoc = "3.0.3"

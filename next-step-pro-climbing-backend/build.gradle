@@ -24,6 +24,19 @@ repositories {
     mavenCentral()
 }
 
+// ⚠️ Nadpisanie wersji zarządzanej przez BOM Spring Boota, nie kaprys.
+//
+// Trivy skanuje app.jar przy każdym buildzie i zgłaszał na tomcat-embed-core 11.0.22 trzy
+// podatności CRITICAL (CVE-2026-65182, -65905, -68525), załatane dopiero w 11.0.25. Spring Boot
+// 4.1.1 podnosi Tomcata tylko do 11.0.24, więc sam bump Boota ich NIE zamyka — trzeba powiedzieć
+// to wprost. Postgres nie potrzebuje nadpisania: 4.1.1 daje 42.7.13, a łatka na CVE-2026-54291
+// jest w 42.7.12.
+//
+// Ta linia znika, gdy Spring Boot zacznie zarządzać 11.0.25 lub nowszym — wtedy zostawienie jej
+// przypina Was do starszej wersji, niż niesie BOM. Sprawdzać przy każdym bumpie Boota:
+// spring-boot-dependencies-<wersja>.pom, klucz <tomcat.version>.
+ext['tomcat.version'] = '11.0.25'
+
 dependencies {
     // Spring Boot Starters
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
