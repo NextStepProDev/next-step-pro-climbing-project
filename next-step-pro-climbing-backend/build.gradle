@@ -1,7 +1,7 @@
 plugins {
     id 'java'
-    id 'org.springframework.boot' version "${springBootVersion}"
-    id 'io.spring.dependency-management' version "${dependencyManagementVersion}"
+    alias(libs.plugins.spring.boot)
+    alias(libs.plugins.dependency.management)
     id 'jacoco'
 }
 
@@ -44,18 +44,18 @@ dependencies {
     implementation 'com.github.ben-manes.caffeine:caffeine'
 
     // Null Safety
-    implementation "org.jspecify:jspecify:${jspecifyVersion}"
+    implementation libs.jspecify
 
     // API Documentation (Swagger/OpenAPI)
-    implementation "org.springdoc:springdoc-openapi-starter-webmvc-ui:${springdocVersion}"
+    implementation libs.springdoc.openapi
 
     // Image optimization
-    implementation "net.coobird:thumbnailator:${thumbnailatorVersion}"
+    implementation libs.thumbnailator
 
     // JWT (JSON Web Tokens)
-    implementation "io.jsonwebtoken:jjwt-api:${jjwtVersion}"
-    runtimeOnly "io.jsonwebtoken:jjwt-impl:${jjwtVersion}"
-    runtimeOnly "io.jsonwebtoken:jjwt-jackson:${jjwtVersion}"
+    implementation libs.jjwt.api
+    runtimeOnly libs.jjwt.impl
+    runtimeOnly libs.jjwt.jackson
 
     // Dev Tools
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
@@ -63,8 +63,8 @@ dependencies {
     // Testing
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.springframework.security:spring-security-test'
-    testImplementation "org.testcontainers:postgresql:${testcontainersVersion}"
-    testImplementation "org.testcontainers:junit-jupiter:${testcontainersVersion}"
+    testImplementation libs.testcontainers.postgresql
+    testImplementation libs.testcontainers.junit
 }
 
 tasks.named('bootRun') {
@@ -106,7 +106,7 @@ jacocoTestReport {
 }
 
 jacoco {
-    toolVersion = "${jacocoVersion}"
+    toolVersion = libs.versions.jacoco.get()
 }
 
 tasks.withType(JavaCompile) {
