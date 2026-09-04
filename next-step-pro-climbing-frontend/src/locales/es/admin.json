@@ -860,8 +860,20 @@
     "title": "Correos de invitación (envío manual)",
     "sentAt": "enviado {{date}}",
     "notSent": "no enviado",
+    "booked": "ya se apuntó",
+    "notificationsOff": "correos desactivados",
     "send": "Enviar correos de invitación ({{count}})",
-    "sentResult": "Se enviaron {{count}} invitaciones."
+    "saveAndSend": "Guardar y enviar invitaciones",
+    "sentResult_one": "Se envió {{count}} invitación.",
+    "sentResult_other": "Se enviaron {{count}} invitaciones.",
+    "savedAndSent_one": "Cambios guardados. Se envió {{count}} invitación.",
+    "savedAndSent_other": "Cambios guardados. Se enviaron {{count}} invitaciones.",
+    "savedNothingSent": "Cambios guardados. No se envió ninguna invitación.",
+    "skipped_one": "Se omitió {{count}} persona con los correos desactivados.",
+    "skipped_other": "Se omitieron {{count}} personas con los correos desactivados.",
+    "cancelWarningTitle_one": "{{count}} persona invitada ya tiene un correo con esta fecha",
+    "cancelWarningTitle_other": "{{count}} personas invitadas ya tienen un correo con esta fecha",
+    "cancelWarning": "No recibirán aviso de la cancelación: el correo de cancelación solo llega a quienes tienen reserva confirmada. Esta fecha está en su calendario, así que escríbeles."
   },
   "editSaved": {
     "notified_one": "Cambios guardados. Se notificó por correo a {{count}} participante.",

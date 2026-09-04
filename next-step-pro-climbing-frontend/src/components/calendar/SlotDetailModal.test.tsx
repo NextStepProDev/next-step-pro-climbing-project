@@ -23,6 +23,7 @@ vi.mock('../../context/AuthContext', () => ({
 Element.prototype.scrollTo = Element.prototype.scrollTo ?? (() => {})
 
 vi.mock('../../hooks/useEditSavedToast', () => ({ useEditSavedToast: () => vi.fn() }))
+vi.mock('../../hooks/useInviteSentToast', () => ({ useInviteSentToast: () => vi.fn() }))
 vi.mock('../admin/AdminPrivateNote', () => ({ AdminPrivateNote: () => null }))
 
 const updateTimeSlot = vi.fn().mockResolvedValue({ notifiedCount: 0, hadParticipants: false })
@@ -44,7 +45,7 @@ vi.mock('../../api/client', () => ({
     getAllUsers: () => Promise.resolve([]),
     getSlotParticipants: () => Promise.resolve([]),
     deleteTimeSlot: () => Promise.resolve(),
-    notifySlotInvites: () => Promise.resolve({ notifiedCount: 0 }),
+    notifySlotInvites: () => Promise.resolve({ notifiedCount: 0, skippedNotificationsOff: 0 }),
   },
   reservationApi: { createReservation: vi.fn() },
 }))

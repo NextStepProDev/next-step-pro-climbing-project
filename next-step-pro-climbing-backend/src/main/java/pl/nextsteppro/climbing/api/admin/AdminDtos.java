@@ -32,12 +32,22 @@ record CreateTimeSlotRequest(
 ) {}
 
 // Held seat + invited person data (prefill for the slot/event edit form)
+//
+// The last two fields exist so the invite list can say why someone will get no mail instead of
+// flatly reporting "not sent". Both are reasons the send loop skips a person, so the count on the
+// send button equals the set that will actually be written to — the button used to offer "send to
+// 1" for someone the backend had always skipped, and answer with "sent 0".
 record InvitedUserDto(
     UUID userId,
     String fullName,
     String email,
     // When the admin manually sent the invitation email (null = not yet)
-    @Nullable Instant notifiedAt
+    @Nullable Instant notifiedAt,
+    // false = this person turned emails off in their profile; the invitation still holds their
+    // seat and still shows up in their in-app "Invitations" section, we just do not write to them
+    boolean emailNotificationsEnabled,
+    // true = they already booked this slot/event, so they got the ordinary confirmation instead
+    boolean alreadyBooked
 ) {}
 
 record TimeSlotAdminDto(
@@ -323,6 +333,17 @@ record AdminNotificationsDto(
 ) {}
 
 record NotifyParticipantsResult(int notifiedCount) {}
+
+/**
+ * Result of sending invitation mails. Carries the skipped count alongside the sent one because
+ * "sent 0" has two very different meanings: everyone was already invited (nothing to do) and
+ * everyone left has emails switched off (there is nobody we are allowed to write to). Reporting
+ * only the first number would let the admin read the second case as a failure.
+ *
+ * <p>Separate from {@link NotifyParticipantsResult} on purpose: the participant bell has no
+ * equivalent skip to report, and widening its shape would mean answering a question nobody asked.
+ */
+record NotifyInvitesResult(int notifiedCount, int skippedNotificationsOff) {}
 
 /**
  * An edit sends its modification mails silently — the admin used to save a moved slot and get no

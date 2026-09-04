@@ -21,6 +21,9 @@ import { WaitlistEntryList } from './AdminReservationsPanel'
 import { useDateLocale } from '../../utils/dateFnsLocale'
 import { useDirty } from '../../hooks/useDirty'
 import { useEditSavedToast } from '../../hooks/useEditSavedToast'
+import { useInviteSentToast } from '../../hooks/useInviteSentToast'
+import { MailedInvitesWarning } from '../../components/ui/MailedInvitesWarning'
+import { canOfferSaveAndSend } from '../../utils/inviteStatus'
 import { todayInWarsaw } from '../../utils/calendarDate'
 import type { InvitedUser, SlotParticipants, SlotTemplate, TimeSlotAdmin } from '../../types'
 
@@ -302,6 +305,7 @@ export function AdminSlotsPanel() {
           action={confirmAction.action}
           archived={confirmAction.archived}
           data={confirmParticipants}
+          slotId={confirmAction.slotId}
           onConfirm={() => {
             if (confirmAction.action === 'block') {
               blockMutation.mutate({ slotId: confirmAction.slotId })
@@ -440,6 +444,7 @@ function EditSlotModal({
 }) {
   const { t } = useTranslation('admin')
   const editSaved = useEditSavedToast()
+  const inviteSent = useInviteSentToast()
   const [form, setForm] = useState({
     startTime: slot?.startTime.slice(0, 5) ?? '',
     endTime: slot?.endTime.slice(0, 5) ?? '',
@@ -461,17 +466,40 @@ function EditSlotModal({
   const invitedKey = (list: InvitedUser[]) => list.map((u) => u.userId).sort().join(',')
   const invitedDirty = invitedKey(invited) !== invitedKey(baselineInvited)
 
+  // `sendInvites` chains the manual invitation send onto the save — the send button lives in this
+  // form, which closes on save, so the two-step flow was easy to abandon halfway. Chained inside
+  // mutationFn rather than onSuccess so the order is guaranteed and both errors land on one call.
   const updateMutation = useMutation({
-    mutationFn: (data: { startTime?: string; endTime?: string; maxParticipants?: number; title?: string; isAvailabilityWindow?: boolean; isUnavailable?: boolean; invitedUserIds?: string[] }) =>
-      adminApi.updateTimeSlot(slot!.id, data),
-    onSuccess: (result) => {
+    mutationFn: async ({ sendInvites, ...data }: { startTime?: string; endTime?: string; maxParticipants?: number; title?: string; isAvailabilityWindow?: boolean; isUnavailable?: boolean; invitedUserIds?: string[]; sendInvites?: boolean }) => {
+      const result = await adminApi.updateTimeSlot(slot!.id, data)
+      const notified = sendInvites ? await adminApi.notifySlotInvites(slot!.id) : null
+      return { result, notified }
+    },
+    onSuccess: ({ result, notified }) => {
       onSuccess()
       onClose()
-      editSaved(result)
+      if (notified) inviteSent(notified)
+      else editSaved(result)
     },
   })
 
   const isDirty = useDirty(form) || invitedDirty
+
+
+  const submitEdit = (sendInvites: boolean) => {
+    if (timeError) return
+    updateMutation.mutate({
+      startTime: form.startTime,
+      endTime: form.endTime,
+      // Capacity is left out for an absence so a slot that still has people booked
+      // fails with "cannot mark unavailable", not with a capacity error.
+      ...(isUnavailable ? {} : { maxParticipants: isRegular ? form.maxParticipants : 1 }),
+      title: form.title || '',
+      ...slotKindFlags(form.kind),
+      invitedUserIds: isRegular ? invited.map((u) => u.userId) : [],
+      sendInvites,
+    })
+  }
 
   if (!slot) return null
 
@@ -481,22 +509,19 @@ function EditSlotModal({
   const isRegular = form.kind === 'REGULAR'
   const isUnavailable = form.kind === 'UNAVAILABLE'
 
+  // Counted off the picker's current list, so an invitee added in this session enables it before
+  // the save. The term check matters because saving a moved slot resets every mailed invitation
+  // to "not sent" — those people become recipients of this very click.
+  const termChanged =
+    form.startTime !== slot.startTime.slice(0, 5) || form.endTime !== slot.endTime.slice(0, 5)
+  const canSendInvites = isRegular && canOfferSaveAndSend(invited, termChanged)
+
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={t('slots.editTitle')}>
       <form
         onSubmit={(e) => {
           e.preventDefault()
-          if (timeError) return
-          updateMutation.mutate({
-            startTime: form.startTime,
-            endTime: form.endTime,
-            // Capacity is left out for an absence so a slot that still has people booked
-            // fails with "cannot mark unavailable", not with a capacity error.
-            ...(isUnavailable ? {} : { maxParticipants: isRegular ? form.maxParticipants : 1 }),
-            title: form.title || '',
-            ...slotKindFlags(form.kind),
-            invitedUserIds: isRegular ? invited.map((u) => u.userId) : [],
-          })
+          submitEdit(false)
         }}
         className="space-y-4"
       >
@@ -553,13 +578,27 @@ function EditSlotModal({
           <InviteNotifySection target={{ type: 'slot', slotId: slot.id }} invites={baselineInvited} />
         )}
 
-        <div className="flex gap-3 pt-4">
+        <div className="flex flex-wrap gap-3 pt-4">
           <Button type="submit" loading={updateMutation.isPending} disabled={!isDirty || !!timeError} className="flex-1">
             {t('slots.saveChanges')}
           </Button>
           <Button type="button" variant="ghost" onClick={onClose}>
             {t('slots.cancel')}
           </Button>
+          {/* A second action, not a checkbox on the first: mailing is not a property of saving,
+              and saving quietly has to stay available. */}
+          {canSendInvites && (
+            <Button
+              type="button"
+              variant="secondary"
+              loading={updateMutation.isPending}
+              disabled={!!timeError}
+              className="w-full"
+              onClick={() => submitEdit(true)}
+            >
+              {t('inviteNotify.saveAndSend')}
+            </Button>
+          )}
         </div>
 
         {updateMutation.isError && (
@@ -578,6 +617,7 @@ function ConfirmBlockModal({
   action,
   archived,
   data,
+  slotId,
   onConfirm,
 }: {
   isOpen: boolean
@@ -585,6 +625,7 @@ function ConfirmBlockModal({
   action: 'block' | 'delete'
   archived?: boolean
   data: SlotParticipants
+  slotId: string
   onConfirm: () => void
 }) {
   const { t } = useTranslation('admin')
@@ -607,6 +648,10 @@ function ConfirmBlockModal({
           {format(parseISO(data.date), 'EEEE, d MMMM', { locale })} |{' '}
           {data.startTime.slice(0, 5)} - {data.endTime.slice(0, 5)}
         </div>
+
+        {/* Both actions end the term for good, and neither mails an invitee — they never booked,
+            so the cancellation path has no reservation of theirs to write to. */}
+        <MailedInvitesWarning target={{ type: 'slot', slotId }} archived={archived} />
 
         {hasParticipants ? (
           <>

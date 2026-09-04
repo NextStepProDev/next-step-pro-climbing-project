@@ -18,6 +18,7 @@ import { getErrorMessage } from '../../utils/errors'
 import { parseCalendarDate, todayInWarsaw } from '../../utils/calendarDate'
 import { formatEventWhen } from '../../utils/events'
 import { AdminPrivateNote } from '../admin/AdminPrivateNote'
+import { MailedInvitesWarning } from '../ui/MailedInvitesWarning'
 import { SettlementSection } from '../admin/SettlementSection'
 import type { EventSummary } from '../../types'
 
@@ -711,6 +712,10 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
           <div className="text-sm text-surface-400">
             {ta('events.eventLabel')}<span className="text-surface-200">{ev.title}</span>
           </div>
+
+          {/* Cancellation mails reach confirmed reservations only, so an invitee holding a mailed
+              invitation (and the calendar entry its ICS created) would hear nothing. */}
+          <MailedInvitesWarning target={{ type: 'event', eventId: ev.id }} archived={isPastEvent} />
 
           {deleteConfirmParticipants.participants.length > 0 ? (
             <>

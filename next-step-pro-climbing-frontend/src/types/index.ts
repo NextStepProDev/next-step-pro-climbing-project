@@ -843,6 +843,19 @@ export interface InvitedUser {
   email: string
   // When the admin manually sent the invitation email (null = not yet)
   notifiedAt?: string | null
+  // false = this person switched emails off; the seat is still held for them and their in-app
+  // invitation still stands, we just do not write to them.
+  // Both of these come from the server and are therefore absent on a pick that has not been saved
+  // yet — "unknown" must not read as "will not be mailed", or the send button hides itself for
+  // exactly the people who were just invited. See utils/inviteStatus.
+  emailNotificationsEnabled?: boolean
+  // true = they already booked, so the ordinary confirmation replaced the invitation
+  alreadyBooked?: boolean
+}
+
+export interface NotifyInvitesResult {
+  notifiedCount: number
+  skippedNotificationsOff: number
 }
 
 export interface CourseEvent {

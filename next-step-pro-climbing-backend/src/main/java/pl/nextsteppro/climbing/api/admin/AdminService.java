@@ -257,6 +257,16 @@ public class AdminService {
             }
         }
 
+        // Last, for the same reason as the event twin: nothing downstream can then discard these
+        // entities before commit. Seats added by this very request were never mailed, so the sync
+        // above leaves them alone regardless.
+        boolean termMoved = !oldDate.equals(slot.getDate())
+            || !oldStart.equals(slot.getStartTime())
+            || !oldEnd.equals(slot.getEndTime());
+        if (termMoved && !slot.isUnavailable()) {
+            clearInviteNotifications(reservedSeatRepository.findBySlotIdWithUser(slotId));
+        }
+
         // A slot that is over — before AND after the edit — must not mail its participants.
         boolean isNews = EditNotificationPolicy.slotEditIsNews(
             LocalDateTime.of(oldDate, oldEnd),
@@ -771,6 +781,19 @@ public class AdminService {
             reconcileEventSlots(event);
         }
 
+        // Same rule as the slot twin: a moved term makes "invitation sent" a claim about a mail
+        // describing dates that no longer exist.
+        // ⚠️ Deliberately AFTER reconcileEventSlots. That method's bulk deletes run with
+        // clearAutomatically, so anything left dirty before it can be wiped instead of saved —
+        // the trap its own re-dating had to flush around. Reading the seats afterwards means the
+        // entities we mutate cannot be discarded by anything downstream.
+        boolean termMoved = !oldStartDate.equals(event.getStartDate())
+            || !oldEndDate.equals(event.getEndDate())
+            || !Objects.equals(oldStartTime, event.getStartTime())
+            || !Objects.equals(oldEndTime, event.getEndTime());
+        if (termMoved) {
+            clearInviteNotifications(reservedSeatRepository.findByEventIdWithUser(eventId));
+        }
 
         User admin = userRepository.findById(adminId).orElseThrow();
         activityLogService.logAdminEventUpdated(admin, event);
@@ -1194,16 +1217,32 @@ public class AdminService {
 
     @Transactional(readOnly = true)
     public List<InvitedUserDto> getSlotInvites(UUID slotId) {
+        // One query for the whole list, not one per invitee: the notify loop needs exactly the
+        // same answer, and the read serving the edit form must agree with it or the button
+        // promises mail to people the send skips.
+        Set<UUID> booked = new HashSet<>(reservationRepository.findConfirmedUserIdsByTimeSlotId(slotId));
         return reservedSeatRepository.findBySlotIdWithUser(slotId).stream()
-            .map(rs -> new InvitedUserDto(rs.getUser().getId(), rs.getUser().getFullName(), rs.getUser().getEmail(), rs.getNotifiedAt()))
+            .map(rs -> toInvitedUserDto(rs, booked))
             .toList();
     }
 
     @Transactional(readOnly = true)
     public List<InvitedUserDto> getEventInvites(UUID eventId) {
+        Set<UUID> booked = new HashSet<>(reservationRepository.findConfirmedUserIdsByEventId(eventId));
         return reservedSeatRepository.findByEventIdWithUser(eventId).stream()
-            .map(rs -> new InvitedUserDto(rs.getUser().getId(), rs.getUser().getFullName(), rs.getUser().getEmail(), rs.getNotifiedAt()))
+            .map(rs -> toInvitedUserDto(rs, booked))
             .toList();
+    }
+
+    private InvitedUserDto toInvitedUserDto(ReservedSeat rs, Set<UUID> bookedUserIds) {
+        User user = rs.getUser();
+        return new InvitedUserDto(
+            user.getId(),
+            user.getFullName(),
+            user.getEmail(),
+            rs.getNotifiedAt(),
+            user.isEmailNotificationsEnabled(),
+            bookedUserIds.contains(user.getId()));
     }
 
     /**
@@ -1211,25 +1250,38 @@ public class AdminService {
      * Sends only to "pending" invitations (recipient has no confirmed reservation yet) —
      * whoever already booked got a regular confirmation. {@code onlyUnnotified} skips people
      * already invited (re-send after adding new invitees without spamming the rest).
+     *
+     * <p>Somebody who switched emails off is skipped and counted separately rather than silently
+     * dropped. The preference is checked here, before the {@code @Async} call, for the same reason
+     * the slot-edit mail counts that way: a number reported to the admin has to be the number of
+     * mails that left. Their seat is still held and their in-app invitation still stands — this
+     * decides only whether we write to them.
      */
-    public int notifySlotInvites(UUID slotId, boolean onlyUnnotified) {
+    public NotifyInvitesResult notifySlotInvites(UUID slotId, boolean onlyUnnotified) {
         TimeSlot slot = timeSlotRepository.findById(slotId)
             .orElseThrow(() -> new IllegalArgumentException("Time slot not found"));
         String displayTitle = slot.getDisplayTitle();
+        // Hoisted out of the loop, as the event twin already was: this ran one existence query per
+        // invitee on a single button press.
+        Set<UUID> confirmedUserIds = new HashSet<>(reservationRepository.findConfirmedUserIdsByTimeSlotId(slotId));
         int sent = 0;
+        int skipped = 0;
         for (ReservedSeat rs : reservedSeatRepository.findBySlotIdWithUser(slotId)) {
             if (onlyUnnotified && rs.getNotifiedAt() != null) continue;
-            if (reservationRepository.existsByUserIdAndTimeSlotIdAndStatus(
-                    rs.getUser().getId(), slotId, ReservationStatus.CONFIRMED)) continue;
+            if (confirmedUserIds.contains(rs.getUser().getId())) continue;
+            if (!rs.getUser().isEmailNotificationsEnabled()) {
+                skipped++;
+                continue;
+            }
             mailService.sendSlotInvitationNotification(rs.getUser(), slot, displayTitle);
             rs.markNotified();
             sent++;
         }
-        return sent;
+        return new NotifyInvitesResult(sent, skipped);
     }
 
     /** Like {@link #notifySlotInvites}, but for event invitations. */
-    public int notifyEventInvites(UUID eventId, boolean onlyUnnotified) {
+    public NotifyInvitesResult notifyEventInvites(UUID eventId, boolean onlyUnnotified) {
         Event event = eventRepository.findById(eventId)
             .orElseThrow(() -> new IllegalArgumentException("Event not found"));
         // Hoisted out of the loop: this used to run a full JOIN FETCH over every confirmed
@@ -1237,14 +1289,35 @@ public class AdminService {
         // one button press. Same projection syncEventInvites already uses.
         Set<UUID> confirmedUserIds = new HashSet<>(reservationRepository.findConfirmedUserIdsByEventId(eventId));
         int sent = 0;
+        int skipped = 0;
         for (ReservedSeat rs : reservedSeatRepository.findByEventIdWithUser(eventId)) {
             if (onlyUnnotified && rs.getNotifiedAt() != null) continue;
             if (confirmedUserIds.contains(rs.getUser().getId())) continue;
+            if (!rs.getUser().isEmailNotificationsEnabled()) {
+                skipped++;
+                continue;
+            }
             mailService.sendEventInvitationNotification(rs.getUser(), event);
             rs.markNotified();
             sent++;
         }
-        return sent;
+        return new NotifyInvitesResult(sent, skipped);
+    }
+
+    /**
+     * Forgets that invitations were mailed, because the term they describe has moved. Called from
+     * both edit paths when the date or the time changed — and only then: a new title or seat count
+     * does not invalidate the message sitting in the recipient's mailbox, nor the calendar entry
+     * its ICS attachment created.
+     *
+     * <p>No mail goes out here. The recipient already sees the current term in their in-app
+     * "Invitations" section; it is the mailbox that has gone stale, and re-sending is one click
+     * away once the list says "not sent" again.
+     */
+    private void clearInviteNotifications(List<ReservedSeat> seats) {
+        for (ReservedSeat rs : seats) {
+            if (rs.getNotifiedAt() != null) rs.clearNotified();
+        }
     }
 
     // ---- Admin panel notifications ----
