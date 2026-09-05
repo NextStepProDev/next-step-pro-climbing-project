@@ -34,8 +34,13 @@ public abstract class BaseIntegrationTest {
     // Singleton pattern: one container for the entire JVM, shared across all subclasses.
     // @Testcontainers + @Container would stop the container after each test class finishes,
     // causing connection errors when subsequent test classes try to reuse the Spring context.
+    //
+    // ⚠️ This version must match the one production runs (hub/docker-compose.prod.yml), and nothing
+    // enforces it: no Dependabot ecosystem reads Java source, so this string never moves on its own.
+    // It already drifted once — production was bumped to 18 while this said 17, which quietly turns
+    // 1300 integration tests into evidence about a database the application does not run on.
     @SuppressWarnings("resource")
-    static final PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:17-alpine")
+    static final PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:18-alpine")
             .withDatabaseName("testdb")
             .withUsername("test")
             .withPassword("test");

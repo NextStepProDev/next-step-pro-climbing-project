@@ -19,7 +19,14 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
-      - postgres_data_prod:/var/lib/postgresql/data
+      # ⚠️ ŚCIEŻKA I NAZWA ZMIENIONE RAZEM Z OBRAZEM 18 — jedno bez drugiego traci dane.
+      # Obraz postgres:18 przeniósł PGDATA na /var/lib/postgresql/18/docker, a deklarowany
+      # VOLUME z /var/lib/postgresql/data na /var/lib/postgresql. Wolumen zamontowany pod
+      # starą ścieżką nie jest więc już katalogiem danych: kontener WSTAJE, initdb tworzy
+      # pusty klaster obok, Flyway przelatuje migracje od zera i aplikacja odpowiada 200 na
+      # pustej bazie — awaria wyglądająca na zdrowie. Nowa nazwa wolumenu jest celowa:
+      # postgres_data_prod ze starym klastrem 17 zostaje nietknięty i JEST planem wycofania.
+      - postgres_data_prod_pg18:/var/lib/postgresql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
       interval: 10s
@@ -92,7 +99,7 @@ services:
         max-file: "3"
 
 volumes:
-  postgres_data_prod:
+  postgres_data_prod_pg18:
   uploads_data_prod:
 
 networks:

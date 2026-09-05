@@ -23,10 +23,12 @@ Odtworzenie całego serwera od zera (Docker, NPM, firewall) — `SERVER-SETUP.md
 - Format zrzutu: **plain SQL** (`pg_dump` bez `-F c`), spakowany gzipem → odtwarza `psql`, nie `pg_restore`.
 - Kontenery: `nsp-postgres-prod`, `nsp-backend-prod`. Wolumen plików: `nsp-app_uploads_data_prod`.
 
-⚠️ **Odtwarzaj `psql`-em w wersji ≥ serwera, który robił zrzut** (dziś PostgreSQL 17).
+⚠️ **Odtwarzaj `psql`-em w wersji ≥ serwera, który robił zrzut** (dziś PostgreSQL 18).
 PostgreSQL 17.6+ wstawia do zrzutu polecenia `\restrict` / `\unrestrict`; starszy klient
 `psql` przerwie na nich z błędem składni w połowie odtwarzania. Poniższe komendy uruchamiają
-`psql` **wewnątrz kontenera** `postgres:17-alpine`, więc wersja zgadza się z definicji.
+`psql` **wewnątrz kontenera** `postgres:18-alpine`, więc wersja zgadza się z definicji.
+⚠️ Zrzut sprzed migracji na 18 (do 2026-09-05) pochodzi z serwera 17 i wchodzi w klienta 18 bez
+problemu — reguła działa w jedną stronę. Odwrotnie nie: zrzutu z 18 nie wlewaj klientem 17.
 
 ---
 
@@ -189,7 +191,7 @@ DATE=2026-08-21
 #    nie potrzebujemy, a dane giną razem z kontenerem (--rm).
 docker run -d --rm --name nsp-restore-drill \
   -e POSTGRES_USER=nextsteppro -e POSTGRES_PASSWORD=drill -e POSTGRES_DB=nextsteppro \
-  postgres:17-alpine
+  postgres:18-alpine
 
 # 2. Poczekaj, aż wstanie
 until docker exec nsp-restore-drill pg_isready -U nextsteppro -q; do sleep 1; done
@@ -223,11 +225,70 @@ to jedyna liczba, z którą będziesz mieć co porównać.
 
 ---
 
-## 6. Gdy coś nie działa
+## 6. Migracja majora Postgresa (17 → 18 i każda następna)
+
+Major nie jest podbitką tagu: katalog danych z jednego majora **nie wystartuje** pod następnym.
+Kopie to `pg_dump` w plain SQL, czyli zrzut logiczny — i to jest cała droga przejścia.
+
+⚠️ **W 18 zmieniła się ścieżka danych w obrazie**: `PGDATA` to `/var/lib/postgresql/18/docker`,
+a deklarowany `VOLUME` przeniósł się na `/var/lib/postgresql`. Wolumen zamontowany pod starą
+ścieżką `/var/lib/postgresql/data` przestaje być katalogiem danych — kontener **wstaje**, `initdb`
+tworzy pusty klaster obok i aplikacja odpowiada 200 na pustej bazie. Dlatego compose zmienia
+**ścieżkę montowania razem z obrazem**, a wolumen dostaje **nową nazwę** (`..._pg18`): stary
+zostaje nietknięty i jest planem wycofania.
+
+```bash
+cd /home/ubuntu/nsp-app
+STAMP=$(date +%F-%H%M)
+
+# 1. Świeży zrzut ze starego serwera (jeszcze działającego)
+docker compose -f docker-compose.prod.yml exec -T postgres \
+  pg_dump -U nextsteppro nextsteppro | gzip > /backups/db/PRZED-MIGRACJA-${STAMP}.sql.gz
+gunzip -c /backups/db/PRZED-MIGRACJA-${STAMP}.sql.gz | tail -20 \
+  | grep -q 'PostgreSQL database dump complete' && echo "OK: zrzut kompletny"
+
+# 2. PRÓBA GENERALNA — nowy major w tymczasowym kontenerze, produkcja nietknięta.
+#    Nie przechodź dalej, dopóki to nie wyjdzie z kodem 0.
+docker volume create nsp-migracja-drill
+docker run -d --rm --name nsp-migracja-drill -v nsp-migracja-drill:/var/lib/postgresql \
+  -e POSTGRES_USER=nextsteppro -e POSTGRES_PASSWORD=drill -e POSTGRES_DB=nextsteppro postgres:18-alpine
+until docker exec nsp-migracja-drill pg_isready -U nextsteppro -q; do sleep 1; done
+gunzip -c /backups/db/PRZED-MIGRACJA-${STAMP}.sql.gz \
+  | docker exec -i nsp-migracja-drill psql -U nextsteppro -d nextsteppro -v ON_ERROR_STOP=1 -q
+echo "psql zakończył się kodem: $?"   # musi być 0
+docker exec nsp-migracja-drill psql -U nextsteppro -d nextsteppro -c \
+  "SELECT count(*) users FROM users;"
+docker stop nsp-migracja-drill && docker volume rm nsp-migracja-drill
+
+# 3. Przełączenie (compose z nowym obrazem, ścieżką i nazwą wolumenu jest już wgrany deployem)
+docker compose -f docker-compose.prod.yml stop backend
+docker compose -f docker-compose.prod.yml up -d postgres     # initdb w nowym wolumenie
+until docker exec nsp-postgres-prod pg_isready -U nextsteppro -q; do sleep 1; done
+
+# 4. Odtworzenie
+gunzip -c /backups/db/PRZED-MIGRACJA-${STAMP}.sql.gz | docker compose -f docker-compose.prod.yml \
+  exec -T postgres psql -U nextsteppro -d nextsteppro -v ON_ERROR_STOP=1 -q
+echo "psql zakończył się kodem: $?"   # musi być 0
+
+# 5. Backend z powrotem, potem CAŁA weryfikacja z sekcji 4
+docker compose -f docker-compose.prod.yml start backend
+docker exec nsp-postgres-prod psql -U nextsteppro -d nextsteppro -c "SELECT version();"
+```
+
+**Wycofanie** (kilka minut, dane nietknięte): przywróć w compose poprzedni obraz, starą ścieżkę
+`:/var/lib/postgresql/data` i starą nazwę wolumenu, potem `up -d`. Stary klaster leży tam
+przez cały czas.
+
+⚠️ **Stary wolumen kasuj dopiero po kilku dniach** pracy na nowym majorze i po co najmniej jednej
+udanej kopii dobowej z niego. Do tego czasu jest Twoim jedynym wyjściem awaryjnym.
+
+---
+
+## 7. Gdy coś nie działa
 
 | Objaw | Przyczyna | Co zrobić |
 |---|---|---|
-| `syntax error at or near "\restrict"` | `psql` starszy niż serwer, który robił zrzut | Odtwarzaj `psql`-em w kontenerze `postgres:17-alpine` (sekcja 2.4) |
+| `syntax error at or near "\restrict"` | `psql` starszy niż serwer, który robił zrzut | Odtwarzaj `psql`-em w kontenerze `postgres:18-alpine` (sekcja 2.4) |
 | `database "nextsteppro" is being accessed by other users` | Backend trzyma połączenia | `docker compose -f docker-compose.prod.yml stop backend` przed DROP |
 | `psql` kończy 0, ale aplikacja rzuca błędami schematu | Zrzut wlany bez `ON_ERROR_STOP=1` — połowa poleceń przepadła | Powtórz od 2.3 z `ON_ERROR_STOP=1` |
 | Strona działa, obrazki połamane | Baza i pliki z różnych dni | Odtwórz oba z **tej samej daty** |
