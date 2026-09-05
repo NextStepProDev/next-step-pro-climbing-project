@@ -44,3 +44,14 @@ jobs:
         with:
           # Projekt Gradle'a nie leży w korzeniu repozytorium.
           build-root-directory: next-step-pro-climbing-backend
+          # ⚠️ Bez tego graf opisuje też biblioteki, których używają WTYCZKI Gradle'a przy
+          # budowaniu — a te nie trafiają ani do jara, ani na serwer. Pierwszy przebieg zgłosił
+          # w ten sposób commons-lang3 3.16.0 z classpathu wtyczek (aplikacja używa 3.20.0, czyli
+          # nowszej niż łatka) i wygenerował alert o czymś, co nigdy nie opuszcza runnera CI.
+          # Dependabot próbował potem otworzyć PR naprawczy, nie znalazł tej biblioteki w żadnym
+          # pliku do edycji i wywalał przebieg z `security_update_dependency_not_found`.
+          #
+          # Alert o narzędziu budującym to szum, a szum zabija alerty — ta sama zasada, dla której
+          # bramka Trivy blokuje CRITICAL, a nie HIGH. Wersji samych wtyczek to nie osłabia:
+          # pilnuje ich ekosystem `gradle`, bo siedzą w gradle/libs.versions.toml.
+          dependency-graph-exclude-configurations: classpath
