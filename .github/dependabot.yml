@@ -54,6 +54,12 @@ updates:
     directory: /next-step-pro-climbing-backend
     schedule:
       interval: monthly
+    # ⚠️ Major obrazu JDK to zmiana skoordynowana, nie podbitka tagu: build.gradle ma
+    # `toolchain { languageVersion = 25 }`, więc obraz z samym JDK 26 zostawia Gradle'a szukającego
+    # dwudziestki piątki, której tam nie ma. Obie liczby zmienia się razem albo wcale.
+    ignore:
+      - dependency-name: eclipse-temurin
+        update-types: ["version-update:semver-major"]
 
   # ⚠️ Compose produkcyjny, a nie kolejny Dockerfile — i dlatego ekosystem jest inny.
   # Stoi tu postgres:17-alpine, czyli baza z danymi klientów, i do tej pory nie pilnował jej
@@ -65,3 +71,10 @@ updates:
     directory: /next-step-pro-climbing-hub
     schedule:
       interval: monthly
+    # ⚠️ Major Postgresa NIE jest podbitką tagu — to migracja danych, i ta blokada powstała po
+    # tym, jak 17 → 18 wjechało tu jako zwykły PR i zostało zmergowane. Katalog danych z jednego
+    # majora nie startuje pod następnym, a w 18 doszła zmiana ścieżki PGDATA, przez którą kontener
+    # wstaje na PUSTEJ bazie zamiast odmówić. Procedura przejścia: hub/RESTORE.md (zrzut + odtworzenie).
+    ignore:
+      - dependency-name: postgres
+        update-types: ["version-update:semver-major"]
