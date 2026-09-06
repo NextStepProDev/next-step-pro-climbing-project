@@ -221,6 +221,43 @@ public class TrainingCalendarController {
         return ResponseEntity.ok(trainingCalendarService.addMyCommentWithFiles(userId, trainingId, body, files));
     }
 
+    @Operation(summary = "Thread of a booked session",
+        description = "Same conversation, under a session booked in the public calendar. Addressed by "
+            + "RESERVATION id because that is the one id carrying both halves of a thread's address — "
+            + "who booked and what they booked. The thread itself is stored against the slot or the "
+            + "event, so a multi-day course is one conversation and cancelling plus re-booking keeps it.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Messages",
+            content = @Content(array = @ArraySchema(schema = @Schema(implementation = TrainingCommentDto.class))))
+    })
+    @GetMapping("/reservations/{reservationId}/comments")
+    public ResponseEntity<List<TrainingCommentDto>> getSessionComments(
+            @Parameter(hidden = true) @CurrentUserId UUID userId,
+            @PathVariable UUID reservationId) {
+        return ResponseEntity.ok(trainingCalendarService.getMySessionComments(userId, reservationId));
+    }
+
+    @Operation(summary = "Add a message under a booked session")
+    @PostMapping("/reservations/{reservationId}/comments")
+    public ResponseEntity<TrainingCommentDto> addSessionComment(
+            @Parameter(hidden = true) @CurrentUserId UUID userId,
+            @PathVariable UUID reservationId,
+            @Valid @RequestBody CreateTrainingCommentRequest request) {
+        return ResponseEntity.ok(
+            trainingCalendarService.addMySessionComment(userId, reservationId, request.body()));
+    }
+
+    @Operation(summary = "Add a message with attachments under a booked session")
+    @PostMapping(value = "/reservations/{reservationId}/comments/attachments", consumes = "multipart/form-data")
+    public ResponseEntity<TrainingCommentDto> addSessionCommentWithFiles(
+            @Parameter(hidden = true) @CurrentUserId UUID userId,
+            @PathVariable UUID reservationId,
+            @RequestParam("files") List<MultipartFile> files,
+            @RequestParam(value = "body", required = false) @Nullable String body) {
+        return ResponseEntity.ok(
+            trainingCalendarService.addMySessionCommentWithFiles(userId, reservationId, body, files));
+    }
+
     @Operation(summary = "Download a comment attachment",
         description = "Authenticated stream. Serves both roles: the owning athlete and the coach. "
             + "These files are health-adjacent and never appear under the public /api/files namespace.")

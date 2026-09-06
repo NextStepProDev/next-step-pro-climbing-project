@@ -290,6 +290,34 @@ describe('ReservationBlock — unread dot for new athlete bookings (#79)', () =>
     expect(unreadDot(container)).not.toBeNull()
   })
 
+  it('should render the dot for an unread message under an already-seen booking', () => {
+    // The booking is old news; the conversation about it is not. Reading only `isNew` would make a
+    // booked session the one place in this calendar where a message arrives silently — which is
+    // exactly the gap that let a session from the public calendar stay mute in the first place.
+    const { container } = render(
+      <ReservationBlock
+        reservation={makeReservation({ isNew: false, hasUnreadActivity: true })}
+        label="overlay.reservation"
+        onClick={vi.fn()}
+      />,
+    )
+
+    expect(unreadDot(container)).not.toBeNull()
+  })
+
+  it('should render the message dot on a month tile too', () => {
+    const { container } = render(
+      <ReservationBlock
+        reservation={makeReservation({ isNew: false, hasUnreadActivity: true })}
+        label="overlay.reservation"
+        onClick={vi.fn()}
+        density="tile"
+      />,
+    )
+
+    expect(unreadDot(container)).not.toBeNull()
+  })
+
   it('should show the rate CTA only to the athlete on a rateable booking', () => {
     const reservation = makeReservation({ canRate: true, rpe: null })
     const { rerender } = render(

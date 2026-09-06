@@ -697,7 +697,6 @@ class TrainingCalendarServiceTest {
         setField(training, "id", trainingId);
         TrainingComment comment = buildComment(commentId, training, athlete, false, "Zrób 3x10");
         when(commentRepository.findById(commentId)).thenReturn(Optional.of(comment));
-        when(trainingRepository.findById(trainingId)).thenReturn(Optional.of(training));
         when(commentRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         TrainingCommentDto dto = service.editComment(athleteId, false, commentId, "<b>4x8</b>");
@@ -718,7 +717,6 @@ class TrainingCalendarServiceTest {
         // The coach wrote it. The athlete may read it and could ask for it to go, but never rewrites it.
         TrainingComment fromCoach = buildComment(commentId, training, buildCoach(), true, "Zrób 3x10");
         when(commentRepository.findById(commentId)).thenReturn(Optional.of(fromCoach));
-        when(trainingRepository.findById(trainingId)).thenReturn(Optional.of(training));
 
         assertThrows(IllegalStateException.class,
             () -> service.editComment(athleteId, false, commentId, "Zrób 4x8"));
@@ -733,7 +731,6 @@ class TrainingCalendarServiceTest {
         setField(training, "id", trainingId);
         TrainingComment photoOnly = buildComment(commentId, training, athlete, false, null);
         when(commentRepository.findById(commentId)).thenReturn(Optional.of(photoOnly));
-        when(trainingRepository.findById(trainingId)).thenReturn(Optional.of(training));
 
         // Growing a caption changes the shape of the message; the next thought is a new message.
         assertThrows(IllegalStateException.class,
@@ -749,7 +746,6 @@ class TrainingCalendarServiceTest {
         setField(training, "id", trainingId);
         TrainingComment comment = buildComment(commentId, training, athlete, false, "Zrób 3x10");
         when(commentRepository.findById(commentId)).thenReturn(Optional.of(comment));
-        when(trainingRepository.findById(trainingId)).thenReturn(Optional.of(training));
 
         assertThrows(IllegalArgumentException.class,
             () -> service.editComment(athleteId, false, commentId, "   "));
@@ -766,9 +762,8 @@ class TrainingCalendarServiceTest {
         setField(foreign, "id", trainingId);
         TrainingComment comment = buildComment(commentId, foreign, athlete, false, "Zrób 3x10");
         when(commentRepository.findById(commentId)).thenReturn(Optional.of(comment));
-        when(trainingRepository.findById(trainingId)).thenReturn(Optional.of(foreign));
 
-        // The training guard's own message would confirm that a guessed comment id is real.
+        // The calendar guard's own message would confirm that a guessed comment id is real.
         IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
             () -> service.editComment(athleteId, false, commentId, "Zrób 4x8"));
         assertEquals("training.calendar.comment.not.found", e.getMessage());
@@ -1058,6 +1053,122 @@ class TrainingCalendarServiceTest {
 
     private static AttachmentRequest fileAttachment(String filename, String originalName, String mimeType) {
         return new AttachmentRequest(AttachmentKind.FILE, null, filename, originalName, mimeType, 1024L, null);
+    }
+
+    // ========== conversation under a session booked in the public calendar ==========
+
+    @Test
+    void shouldHangTheThreadOfAPlainBookingOnItsSlot() {
+        UUID reservationId = UUID.randomUUID();
+        TimeSlot slot = new TimeSlot(LocalDate.now().minusDays(1), LocalTime.of(10, 0), LocalTime.of(11, 0), 4);
+        setField(slot, "id", UUID.randomUUID());
+        Reservation r = reservationWithCreatedAt(slot, Instant.now());
+        setField(r, "id", reservationId);
+        when(reservationRepository.findById(reservationId)).thenReturn(Optional.of(r));
+        when(commentRepository.save(any())).thenAnswer(inv -> {
+            TrainingComment c = inv.getArgument(0);
+            setField(c, "id", UUID.randomUUID());
+            setField(c, "createdAt", Instant.now());
+            return c;
+        });
+
+        service.addMySessionComment(athleteId, reservationId, "Nogi dziś martwe");
+
+        ArgumentCaptor<TrainingComment> saved = ArgumentCaptor.forClass(TrainingComment.class);
+        verify(commentRepository).save(saved.capture());
+        assertEquals(slot.getId(), saved.getValue().timeSlotId());
+        assertNull(saved.getValue().eventId());
+        // The owner is spelled out even though nothing here implies it — every unread query reads it
+        assertEquals(athleteId, saved.getValue().athleteId());
+        assertNull(saved.getValue().trainingId());
+    }
+
+    /**
+     * A booking on an event resolves to the EVENT, never to the per-day slot behind it.
+     *
+     * <p>Booking a multi-day course lays down one reservation row per day, so a thread addressed by
+     * the day would split one conversation into three — and each of those days is a slot the admin
+     * never sees, since they are bookkeeping the first booking creates.
+     */
+    @Test
+    void shouldHangTheThreadOfAnEventBookingOnTheEventSoEveryDayShareOne() {
+        UUID reservationId = UUID.randomUUID();
+        var event = new pl.nextsteppro.climbing.domain.event.Event(
+            "Kurs skalny", pl.nextsteppro.climbing.domain.event.EventType.COURSE,
+            LocalDate.now().minusDays(3), LocalDate.now().minusDays(1), 8);
+        setField(event, "id", UUID.randomUUID());
+        TimeSlot dayTwo = new TimeSlot(event, LocalDate.now().minusDays(2),
+            LocalTime.of(10, 0), LocalTime.of(16, 0), 8);
+        setField(dayTwo, "id", UUID.randomUUID());
+        Reservation r = reservationWithCreatedAt(dayTwo, Instant.now());
+        setField(r, "id", reservationId);
+        when(reservationRepository.findById(reservationId)).thenReturn(Optional.of(r));
+        when(commentRepository.save(any())).thenAnswer(inv -> {
+            TrainingComment c = inv.getArgument(0);
+            setField(c, "id", UUID.randomUUID());
+            setField(c, "createdAt", Instant.now());
+            return c;
+        });
+
+        service.addMySessionComment(athleteId, reservationId, "Drugi dzień był mokry");
+
+        ArgumentCaptor<TrainingComment> saved = ArgumentCaptor.forClass(TrainingComment.class);
+        verify(commentRepository).save(saved.capture());
+        assertEquals(event.getId(), saved.getValue().eventId());
+        assertNull(saved.getValue().timeSlotId());
+    }
+
+    @Test
+    void shouldAnswerSomebodyElsesBookingAsIfTheIdWereMadeUp() {
+        UUID reservationId = UUID.randomUUID();
+        TimeSlot slot = new TimeSlot(LocalDate.now().minusDays(1), LocalTime.of(10, 0), LocalTime.of(11, 0), 4);
+        Reservation foreign = new Reservation(buildAthlete(UUID.randomUUID()), slot);
+        setField(foreign, "id", reservationId);
+        when(reservationRepository.findById(reservationId)).thenReturn(Optional.of(foreign));
+
+        // A different reply is all it takes to confirm that a guessed booking id is real
+        IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
+            () -> service.addMySessionComment(athleteId, reservationId, "cześć"));
+        assertEquals("training.calendar.reservation.not.found", e.getMessage());
+        verify(commentRepository, never()).save(any());
+    }
+
+    /**
+     * Cancelling ends the conversation's entry point, exactly as it ends the right to rate the
+     * session. The thread itself survives on the slot, so booking again brings it back.
+     */
+    @Test
+    void shouldRefuseWritingUnderACancelledBooking() {
+        UUID reservationId = UUID.randomUUID();
+        TimeSlot slot = new TimeSlot(LocalDate.now().minusDays(1), LocalTime.of(10, 0), LocalTime.of(11, 0), 4);
+        Reservation r = reservationWithCreatedAt(slot, Instant.now());
+        setField(r, "id", reservationId);
+        setField(r, "status", pl.nextsteppro.climbing.domain.reservation.ReservationStatus.CANCELLED);
+        when(reservationRepository.findById(reservationId)).thenReturn(Optional.of(r));
+
+        IllegalStateException e = assertThrows(IllegalStateException.class,
+            () -> service.addMySessionComment(athleteId, reservationId, "cześć"));
+        assertEquals("training.calendar.reservation.not.confirmed", e.getMessage());
+        verify(commentRepository, never()).save(any());
+    }
+
+    /**
+     * Un-flagging an athlete clears their consent, so the coach must lose the thread with it —
+     * the hole CLAUDE.md describes for every route addressed by an id other than the athlete's.
+     */
+    @Test
+    void shouldRefuseTheCoachAThreadOfSomebodyWhoIsNoLongerAnAthlete() {
+        UUID reservationId = UUID.randomUUID();
+        User formerAthlete = buildAthlete(UUID.randomUUID());
+        formerAthlete.setAthlete(false);
+        TimeSlot slot = new TimeSlot(LocalDate.now().minusDays(1), LocalTime.of(10, 0), LocalTime.of(11, 0), 4);
+        Reservation r = new Reservation(formerAthlete, slot);
+        setField(r, "id", reservationId);
+        when(reservationRepository.findById(reservationId)).thenReturn(Optional.of(r));
+
+        IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
+            () -> service.getSessionCommentsAsAdmin(UUID.randomUUID(), reservationId));
+        assertEquals("training.calendar.athlete.not.found", e.getMessage());
     }
 
     // ========== reservation RPE + required completion RPE ==========
@@ -1623,7 +1734,7 @@ class TrainingCalendarServiceTest {
 
     private static TrainingComment buildComment(UUID id, PersonalTraining training, User author,
                                                 boolean authorIsAdmin, @Nullable String body) {
-        TrainingComment comment = new TrainingComment(training, author, authorIsAdmin, body);
+        TrainingComment comment = TrainingComment.onTraining(training, author, authorIsAdmin, body);
         setField(comment, "id", id);
         setField(comment, "createdAt", Instant.now());
         return comment;

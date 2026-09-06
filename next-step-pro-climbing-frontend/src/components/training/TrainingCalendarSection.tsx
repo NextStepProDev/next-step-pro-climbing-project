@@ -21,10 +21,12 @@ import { TrainingDaySheet } from './TrainingDaySheet'
 import { TrainingStatsSection } from './TrainingStatsSection'
 import { TrainingFormModal, type InstantCompletion, type TrainingPrefill } from './TrainingFormModal'
 import { TrainingDetailModal } from './TrainingDetailModal'
+import { CommentThread } from './CommentThread'
 import { SaveAsTemplateModal } from './SaveAsTemplateModal'
 import type { TemplateDraft } from './TrainingTemplateForm'
 import { monthGridRange, resolveInitialView, stepWeek, weekRange } from './monthGrid'
 import { useCompactViewport } from '../../hooks/useCompactViewport'
+import { useChildDirty } from '../../hooks/useChildDirty'
 import { trainingCalendarApi, calendarApi } from '../../api/client'
 import { useTrainingClipboard, type TrainingClipboardEntry } from '../../context/TrainingClipboardContext'
 import { getErrorMessage } from '../../utils/errors'
@@ -176,6 +178,10 @@ export function TrainingCalendarSection({ api, scopeKey, scopeLabel, isCoachView
   const [templateDraft, setTemplateDraft] = useState<TemplateDraft | null>(null)
   const [detailId, setDetailId] = useState<string | null>(null)
   const [reservationHint, setReservationHint] = useState<ReservationOverlayItem | null>(null)
+  // What the thread in that modal would lose on Escape: a typed message, a staged file, an open
+  // correction. Read at click time rather than from a prop captured a render earlier — see
+  // useChildDirty for why Modal takes a getter.
+  const [reservationThreadDirty, reportReservationThreadDirty] = useChildDirty(reservationHint !== null)
   // Full official-slot preview opened from the hint modal ("Zobacz szczegóły")
   const [officialSlotId, setOfficialSlotId] = useState<string | null>(null)
   // One day's entries: the phone's only way into a day, and the desktop's way past "+N"
@@ -760,11 +766,13 @@ export function TrainingCalendarSection({ api, scopeKey, scopeLabel, isCoachView
       {/* Library form seeded from the entry above — stays open over the detail modal it came from */}
       <SaveAsTemplateModal draft={templateDraft} onClose={() => setTemplateDraft(null)} />
 
-      {/* Read-only reservation hint + gateway to the full official-slot preview */}
+      {/* The booking itself stays read-only here — but the conversation about it does not. */}
       <Modal
         isOpen={reservationHint !== null}
         onClose={() => setReservationHint(null)}
         title={reservationHint?.title || t('overlay.reservation')}
+        size="lg"
+        confirmClose={reservationThreadDirty}
       >
         <div className="flex items-start gap-3">
           <Lock className="w-5 h-5 text-surface-400 shrink-0 mt-0.5" />
@@ -787,9 +795,34 @@ export function TrainingCalendarSection({ api, scopeKey, scopeLabel, isCoachView
             onRated={() => {
               queryClient.invalidateQueries({ queryKey: ['trainingCalendar', 'range', scopeKey] })
               queryClient.invalidateQueries({ queryKey: ['trainingCalendar', 'stats', scopeKey] })
-              setReservationHint(null)
+              // Deliberately NOT closing the modal: the thread underneath may hold a half-typed
+              // reply, and rating is no longer the last thing there is to do here.
             }}
           />
+        )}
+
+        {/* Same conversation as under a plan entry. A multi-day course shares one thread, so the
+            note above the composer says which days it covers — otherwise the second day looks like
+            a thread that mysteriously already has messages in it. */}
+        {reservationHint && (
+          <div className="mt-4 pt-4 border-t border-surface-700">
+            {reservationHint.eventId && (
+              <p className="text-xs text-surface-400 mb-2">{t('overlay.threadCoversEvent')}</p>
+            )}
+            <CommentThread
+              key={reservationHint.id}
+              target={{ kind: 'reservation', id: reservationHint.id }}
+              api={api}
+              onPosted={() => {
+                // The dot on the tile is computed server-side from this thread
+                queryClient.invalidateQueries({ queryKey: ['trainingCalendar', 'range', scopeKey] })
+                if (isCoachView) {
+                  queryClient.invalidateQueries({ queryKey: ['admin', 'trainingCalendar', 'athletes'] })
+                }
+              }}
+              onDirtyChange={reportReservationThreadDirty}
+            />
+          </div>
         )}
 
         <div className="flex justify-end mt-4">

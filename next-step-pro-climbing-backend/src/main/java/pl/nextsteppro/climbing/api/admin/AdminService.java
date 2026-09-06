@@ -411,6 +411,11 @@ public class AdminService {
             activityLogService.logCancelledByAdmin(reservation.getUser(), slot, reservation.getParticipants());
         }
 
+        // Since V97 a slot can hold athlete <-> coach threads, and their attachments have to be
+        // named before the cascade takes the rows: Hibernate never loads them, so nothing else can
+        // reach the files. Must run BEFORE the delete, exactly like purgeForTraining.
+        commentFileSupport.purgeForSlot(slotId);
+
         // Delete in FK-safe order; clearAutomatically clears L1 cache after each JPQL delete
         waitlistRepository.deleteByTimeSlotId(slotId);           // clears cache
         reservationRepository.deleteByTimeSlotIds(List.of(slotId)); // clears cache
@@ -890,6 +895,10 @@ public class AdminService {
                 activityLogService.logCancelledByAdmin(user, reservation.getTimeSlot(), reservation.getParticipants());
             }
         }
+
+        // Thread attachments first — see deleteTimeSlot. An event carries ONE conversation per
+        // athlete, hung on the event itself, so its per-day slots hold none of their own.
+        commentFileSupport.purgeForEvent(eventId);
 
         // Delete in FK-safe order; clearAutomatically = true clears L1 cache after each JPQL delete,
         // preventing stale managed-entity conflicts when Hibernate removes the TimeSlot/Event entities.

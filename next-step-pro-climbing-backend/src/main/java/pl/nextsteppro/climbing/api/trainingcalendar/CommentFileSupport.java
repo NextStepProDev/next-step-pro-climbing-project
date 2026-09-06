@@ -20,6 +20,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 
@@ -87,8 +88,7 @@ public class CommentFileSupport {
         if (files.size() > TrainingCommentFile.MAX_PER_COMMENT) {
             throw new IllegalArgumentException(msg.get("training.comment.file.too.many"));
         }
-        long alreadyOnTraining = fileRepository.countForTraining(comment.trainingId());
-        if (alreadyOnTraining + files.size() > MAX_PER_TRAINING) {
+        if (countInThread(comment) + files.size() > MAX_PER_TRAINING) {
             throw new IllegalStateException(msg.get("training.comment.file.training.limit"));
         }
 
@@ -107,6 +107,21 @@ public class CommentFileSupport {
                 position++,
                 expiresAt));
         }
+    }
+
+    /**
+     * How much of the cap this conversation has already spent. Three branches because the target is
+     * three real columns; the alternative — one query joining all three with {@code IS NULL} arms —
+     * would read as if a message could hang on two things at once and would skip the partial
+     * indexes. The switch is exhaustive by construction: the CHECK guarantees exactly one target.
+     */
+    private long countInThread(TrainingComment comment) {
+        UUID trainingId = comment.trainingId();
+        if (trainingId != null) return fileRepository.countForTraining(trainingId);
+        UUID slotId = comment.timeSlotId();
+        if (slotId != null) return fileRepository.countForSlotThread(slotId, comment.athleteId());
+        return fileRepository.countForEventThread(
+            Objects.requireNonNull(comment.eventId()), comment.athleteId());
     }
 
     private FileStorageService.StoredFile store(MultipartFile file) {
@@ -183,6 +198,24 @@ public class CommentFileSupport {
      */
     void purgeForTraining(UUID trainingId) {
         unlinkAll(fileRepository.findFilenamesForTraining(trainingId));
+    }
+
+    /**
+     * Same, for a slot or an event about to be deleted. Public because the callers are in
+     * {@code AdminService}, which owns both deletions.
+     *
+     * <p>New with V97 and easy to miss: until threads could hang on a booked session, deleting one
+     * destroyed no conversation and so needed no unlink. Now it does, and the rows still vanish
+     * through the DB cascade without Hibernate loading them — so the files have to be named here or
+     * they are simply left behind.
+     */
+    public void purgeForSlot(UUID slotId) {
+        unlinkAll(fileRepository.findFilenamesForSlot(slotId));
+    }
+
+    /** Twin of {@link #purgeForSlot} — see there. */
+    public void purgeForEvent(UUID eventId) {
+        unlinkAll(fileRepository.findFilenamesForEvent(eventId));
     }
 
     /**

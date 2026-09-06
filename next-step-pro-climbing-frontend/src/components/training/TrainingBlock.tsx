@@ -436,6 +436,10 @@ export function ReservationBlock({ reservation, label, onClick, style, density =
   // Rated → show the value; past & unrated & athlete → prompt to rate
   const rated = reservation.rpe != null
   const showRateCta = !isCoachView && !rated && reservation.canRate
+  // One dot for two facts that mean the same thing to the person looking at it — something here
+  // happened that you have not seen. `isNew` is the booking itself (coach side only);
+  // `hasUnreadActivity` is a message in its thread, and both open the same modal.
+  const unseen = reservation.isNew || reservation.hasUnreadActivity
 
   if (density === 'tile') {
     return renderPassive(
@@ -465,7 +469,7 @@ export function ReservationBlock({ reservation, label, onClick, style, density =
             <Gauge className="w-2.5 h-2.5" />{t('rpe.rateShort')}
           </span>
         )}
-        {reservation.isNew && <span className="shrink-0 w-2 h-2 rounded-full bg-rose-500" />}
+        {unseen && <span className="shrink-0 w-2 h-2 rounded-full bg-rose-500" />}
       </>,
     )
   }
@@ -481,7 +485,7 @@ export function ReservationBlock({ reservation, label, onClick, style, density =
       )}
       title={title}
     >
-      {reservation.isNew && (
+      {unseen && (
         <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-rose-500" />
       )}
       <span className="flex items-center gap-1 min-w-0">

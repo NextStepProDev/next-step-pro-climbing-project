@@ -64,6 +64,8 @@ export function makeReservation(overrides: Partial<ReservationOverlayItem> = {})
   return {
     id: nextId('reservation'),
     slotId: nextId('slot'),
+    // A plain slot booking by default; pass an id to model a day of a multi-day event
+    eventId: null,
     date: '2026-07-20',
     startTime: '10:00',
     endTime: '11:00',
@@ -72,6 +74,7 @@ export function makeReservation(overrides: Partial<ReservationOverlayItem> = {})
     rpe: null,
     rpeNote: null,
     canRate: false,
+    hasUnreadActivity: false,
     ...overrides,
   }
 }

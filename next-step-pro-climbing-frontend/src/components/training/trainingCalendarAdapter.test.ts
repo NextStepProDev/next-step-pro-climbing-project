@@ -6,6 +6,11 @@ import type { TrainingCalendarAdapter } from './trainingCalendarAdapter'
 // contract is exercised end to end: adapter -> api/client -> the URL that actually goes out.
 const ATHLETE_ID = 'athlete-42'
 const TRAINING_ID = 'training-7'
+const RESERVATION_ID = 'reservation-7'
+/** A thread under a plan entry — the shape every existing comment assertion talks about. */
+const TRAINING_THREAD = { kind: 'training', id: TRAINING_ID } as const
+/** A thread under a session booked in the public calendar, addressed by the booking. */
+const SESSION_THREAD = { kind: 'reservation', id: RESERVATION_ID } as const
 const FROM = '2026-07-20'
 const TO = '2026-07-26'
 
@@ -41,7 +46,7 @@ function allPaths(): string[] {
 
 async function callEveryReadPath(api: TrainingCalendarAdapter) {
   await api.getRange(FROM, TO)
-  await api.getComments(TRAINING_ID)
+  await api.getComments(TRAINING_THREAD)
   await api.markSeen()
   await api.getStats()
   await api.getGoals()
@@ -70,12 +75,26 @@ describe('athleteAdapter — the athlete talks to their own calendar', () => {
   })
 
   it('should read and post comments on the athlete endpoint', async () => {
-    await athleteAdapter.getComments(TRAINING_ID)
+    await athleteAdapter.getComments(TRAINING_THREAD)
     expect(lastRequest().path).toBe(`/training-calendar/trainings/${TRAINING_ID}/comments`)
 
-    await athleteAdapter.addComment(TRAINING_ID, 'felt strong')
+    await athleteAdapter.addComment(TRAINING_THREAD, 'felt strong')
     expect(lastRequest()).toMatchObject({
       path: `/training-calendar/trainings/${TRAINING_ID}/comments`,
+      method: 'POST',
+    })
+  })
+
+  it('should address a booked session by its reservation, not by the slot behind it', async () => {
+    // The booking is the only id naming both the person and the session; the server resolves it to
+    // the slot or the event the thread is stored against. Sending a slot id here would silently
+    // address a different (and for a multi-day event, invisible) conversation.
+    await athleteAdapter.getComments(SESSION_THREAD)
+    expect(lastRequest().path).toBe(`/training-calendar/reservations/${RESERVATION_ID}/comments`)
+
+    await athleteAdapter.addComment(SESSION_THREAD, 'legs were dead')
+    expect(lastRequest()).toMatchObject({
+      path: `/training-calendar/reservations/${RESERVATION_ID}/comments`,
       method: 'POST',
     })
   })

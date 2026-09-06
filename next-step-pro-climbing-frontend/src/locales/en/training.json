@@ -194,7 +194,8 @@
   },
   "overlay": {
     "reservation": "Reservation",
-    "readonlyHint": "This is your booking from the main calendar — manage it in the Reservations tab.",
+    "readonlyHint": "A session from the main calendar — the booking itself is managed in the Reservations tab.",
+    "threadCoversEvent": "This conversation covers the whole event — the same thread under each of its days.",
     "invitation": "Invitation — book now!",
     "viewDetails": "View details"
   },

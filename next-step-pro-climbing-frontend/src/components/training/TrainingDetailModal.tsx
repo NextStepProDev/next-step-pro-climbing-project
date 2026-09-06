@@ -277,7 +277,7 @@ export function TrainingDetailModal({
 
         {/* Comment thread */}
         <CommentThread
-          trainingId={training.id}
+          target={{ kind: 'training', id: training.id }}
           api={api}
           onPosted={onCommentPosted}
           onDirtyChange={reportThreadDirty}

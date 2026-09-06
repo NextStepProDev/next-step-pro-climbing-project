@@ -11,6 +11,7 @@ import pl.nextsteppro.climbing.domain.personaltraining.TrainingAttachment;
 import pl.nextsteppro.climbing.domain.personaltraining.AthleteLastActivity;
 import pl.nextsteppro.climbing.domain.personaltraining.PersonalTraining;
 import pl.nextsteppro.climbing.domain.personaltraining.PersonalTrainingRepository;
+import pl.nextsteppro.climbing.domain.personaltraining.SessionCommentTarget;
 import pl.nextsteppro.climbing.domain.personaltraining.TrainingCalendarRead;
 import pl.nextsteppro.climbing.domain.personaltraining.TrainingCalendarReadRepository;
 import pl.nextsteppro.climbing.domain.personaltraining.TrainingComment;
@@ -226,14 +227,33 @@ public class TrainingCalendarService {
     public TrainingCommentDto addMyComment(UUID userId, UUID trainingId, String body) {
         User athlete = requireAthlete(userId);
         PersonalTraining training = requireOwnTraining(trainingId, userId);
-        return addComment(training, athlete, false, body, userId, false);
+        return addComment(CommentThread.of(training), athlete, false, body, userId, false);
     }
 
     public TrainingCommentDto addMyCommentWithFiles(UUID userId, UUID trainingId,
                                                     @Nullable String body, List<MultipartFile> files) {
         User athlete = requireAthlete(userId);
         PersonalTraining training = requireOwnTraining(trainingId, userId);
-        return addCommentWithFiles(training, athlete, false, body, files, userId, false);
+        return addCommentWithFiles(CommentThread.of(training), athlete, false, body, files, userId, false);
+    }
+
+    // ---------- threads under a session booked in the public calendar ----------
+
+    @Transactional(readOnly = true)
+    public List<TrainingCommentDto> getMySessionComments(UUID userId, UUID reservationId) {
+        CommentThread thread = requireSessionThread(reservationId, userId, false);
+        return toCommentDtos(thread.read(commentRepository), userId, false);
+    }
+
+    public TrainingCommentDto addMySessionComment(UUID userId, UUID reservationId, String body) {
+        CommentThread thread = requireSessionThread(reservationId, userId, false);
+        return addComment(thread, thread.athlete(), false, body, userId, false);
+    }
+
+    public TrainingCommentDto addMySessionCommentWithFiles(UUID userId, UUID reservationId,
+                                                           @Nullable String body, List<MultipartFile> files) {
+        CommentThread thread = requireSessionThread(reservationId, userId, false);
+        return addCommentWithFiles(thread, thread.athlete(), false, body, files, userId, false);
     }
 
     @Transactional(readOnly = true)
@@ -345,14 +365,31 @@ public class TrainingCalendarService {
     public TrainingCommentDto addCommentAsAdmin(UUID adminId, UUID trainingId, String body) {
         PersonalTraining training = requireTrainingOfFlaggedAthlete(trainingId);
         User admin = requireUser(adminId);
-        return addComment(training, admin, true, body, adminId, true);
+        return addComment(CommentThread.of(training), admin, true, body, adminId, true);
     }
 
     public TrainingCommentDto addCommentWithFilesAsAdmin(UUID adminId, UUID trainingId,
                                                          @Nullable String body, List<MultipartFile> files) {
         PersonalTraining training = requireTrainingOfFlaggedAthlete(trainingId);
         User admin = requireUser(adminId);
-        return addCommentWithFiles(training, admin, true, body, files, adminId, true);
+        return addCommentWithFiles(CommentThread.of(training), admin, true, body, files, adminId, true);
+    }
+
+    @Transactional(readOnly = true)
+    public List<TrainingCommentDto> getSessionCommentsAsAdmin(UUID adminId, UUID reservationId) {
+        CommentThread thread = requireSessionThread(reservationId, adminId, true);
+        return toCommentDtos(thread.read(commentRepository), adminId, true);
+    }
+
+    public TrainingCommentDto addSessionCommentAsAdmin(UUID adminId, UUID reservationId, String body) {
+        CommentThread thread = requireSessionThread(reservationId, adminId, true);
+        return addComment(thread, requireUser(adminId), true, body, adminId, true);
+    }
+
+    public TrainingCommentDto addSessionCommentWithFilesAsAdmin(UUID adminId, UUID reservationId,
+                                                                @Nullable String body, List<MultipartFile> files) {
+        CommentThread thread = requireSessionThread(reservationId, adminId, true);
+        return addCommentWithFiles(thread, requireUser(adminId), true, body, files, adminId, true);
     }
 
     // ---------- comment attachments, addressed by file id (either role) ----------
@@ -428,20 +465,8 @@ public class TrainingCalendarService {
     private TrainingComment requireEditableComment(UUID viewerId, boolean viewerIsAdmin, UUID commentId) {
         TrainingComment comment = commentRepository.findById(commentId)
             .orElseThrow(() -> new IllegalArgumentException(msg.get("training.calendar.comment.not.found")));
-        if (!viewerIsAdmin) {
-            requireAthlete(viewerId);
-        }
-        try {
-            if (viewerIsAdmin) {
-                requireTrainingOfFlaggedAthlete(comment.trainingId());
-            } else {
-                requireOwnTraining(comment.trainingId(), viewerId);
-            }
-        } catch (IllegalArgumentException e) {
-            // Answer a stranger exactly as a made-up id is answered — the guards' own messages talk
-            // about the TRAINING and would confirm that a guessed comment id is real.
-            throw new IllegalArgumentException(msg.get("training.calendar.comment.not.found"));
-        }
+        requireThreadAccess(comment.getAthlete(), viewerId, viewerIsAdmin,
+            "training.calendar.comment.not.found");
         if (!comment.getAuthor().getId().equals(viewerId)) {
             throw new IllegalStateException(msg.get("training.calendar.comment.not.yours"));
         }
@@ -456,25 +481,37 @@ public class TrainingCalendarService {
      */
     private TrainingCommentFile requireReadableCommentFile(UUID viewerId, boolean viewerIsAdmin, UUID fileId) {
         TrainingCommentFile file = commentFiles.requireFile(fileId);
-        UUID trainingId = file.getComment().trainingId();
-        // requireAthlete's IllegalStateException (missing flag or consent) passes through: that is
-        // about the caller's own account and says nothing about anyone else's data.
-        if (!viewerIsAdmin) {
-            requireAthlete(viewerId);
-        }
-        try {
-            if (viewerIsAdmin) {
-                requireTrainingOfFlaggedAthlete(trainingId);
-            } else {
-                requireOwnTraining(trainingId, viewerId);
-            }
-        } catch (IllegalArgumentException e) {
-            // Answer a stranger exactly as a made-up id is answered. The guards' own messages talk
-            // about the TRAINING, so letting them through told the caller their guessed file id was
-            // real — a different reply is all it takes to enumerate.
-            throw new IllegalArgumentException(msg.get("training.comment.file.not.found"));
-        }
+        requireThreadAccess(file.getComment().getAthlete(), viewerId, viewerIsAdmin,
+            "training.comment.file.not.found");
         return file;
+    }
+
+    /**
+     * The by-id gate: may this viewer see into the conversation this row belongs to?
+     *
+     * <p>Asks the calendar OWNER, not the target, so one gate covers a plan entry and a booked
+     * session alike — the alternative is a branch per target shape in every by-id route, and a
+     * branch is how one of them ends up missing.
+     *
+     * <p>The flag is read off the already-loaded association rather than through a second findById,
+     * for the reason {@link #requireTrainingOfFlaggedAthlete} spells out: un-flagging clears the
+     * athlete's consent, and a lookup that forgets the flag leaves an ex-athlete's thread readable.
+     *
+     * <p>{@code requireAthlete}'s IllegalStateException (missing flag or consent) passes through:
+     * that is about the caller's own account and says nothing about anyone else's data. Everything
+     * else answers exactly as a made-up id would — a different reply is all it takes to enumerate.
+     */
+    private void requireThreadAccess(User athlete, UUID viewerId, boolean viewerIsAdmin, String notFoundKey) {
+        if (viewerIsAdmin) {
+            if (!athlete.isAthlete()) {
+                throw new IllegalArgumentException(msg.get(notFoundKey));
+            }
+            return;
+        }
+        requireAthlete(viewerId);
+        if (!athlete.getId().equals(viewerId)) {
+            throw new IllegalArgumentException(msg.get(notFoundKey));
+        }
     }
 
     /**
@@ -568,6 +605,52 @@ public class TrainingCalendarService {
             throw new IllegalArgumentException(msg.get("training.calendar.athlete.not.found"));
         }
         return training;
+    }
+
+    /**
+     * Resolves a booking into the conversation that belongs to it, and authorises the caller.
+     *
+     * <p>The reservation is the address ON THE WIRE only. It is the one id carrying both halves of
+     * the pair — who booked, and what they booked — while the thread itself is stored against the
+     * slot or the event, exactly as money is. Storing it against the reservation would split a
+     * multi-day course into one conversation per day (a booking lays down one row per day) and
+     * would drop the whole history the moment somebody cancelled and booked again.
+     *
+     * <p>A booking on an event resolves to the EVENT, never to the per-day slot the first booking
+     * lays down for it: those slots are bookkeeping nobody is shown, so a thread there would be a
+     * second, invisible conversation about the same course. Same boundary the private note and the
+     * settlement draw.
+     *
+     * <p>The confirmed check is not hygiene: without it a slot id plus a cancelled booking would be
+     * enough to keep writing under a session the athlete no longer attends. Same predicate as
+     * {@link #rateReservation}, so both halves of what an athlete can say about an attended session
+     * open and close together.
+     */
+    private CommentThread requireSessionThread(UUID reservationId, UUID viewerId, boolean viewerIsAdmin) {
+        Reservation reservation = reservationRepository.findById(reservationId)
+            .orElseThrow(() -> new IllegalArgumentException(msg.get("training.calendar.reservation.not.found")));
+        User athlete = reservation.getUser();
+
+        if (viewerIsAdmin) {
+            // Flag read off the loaded association, like requireTrainingOfFlaggedAthlete: un-flagging
+            // clears consent, and a bare findById would leave an ex-athlete's threads writable.
+            if (!athlete.isAthlete()) {
+                throw new IllegalArgumentException(msg.get("training.calendar.athlete.not.found"));
+            }
+        } else {
+            requireAthlete(viewerId);
+            if (!athlete.getId().equals(viewerId)) {
+                // Same reply as a made-up id — otherwise a guessed reservation id can be confirmed.
+                throw new IllegalArgumentException(msg.get("training.calendar.reservation.not.found"));
+            }
+        }
+        if (reservation.getStatus() != ReservationStatus.CONFIRMED) {
+            throw new IllegalStateException(msg.get("training.calendar.reservation.not.confirmed"));
+        }
+
+        TimeSlot slot = reservation.getTimeSlot();
+        Event event = slot.getEvent();
+        return event != null ? CommentThread.of(athlete, event) : CommentThread.of(athlete, slot);
     }
 
     // ---------- shared internals ----------
@@ -668,14 +751,14 @@ public class TrainingCalendarService {
         return attachments.upload(file);
     }
 
-    private TrainingCommentDto addComment(PersonalTraining training, User author, boolean authorIsAdmin,
+    private TrainingCommentDto addComment(CommentThread thread, User author, boolean authorIsAdmin,
                                           String body, UUID viewerId, boolean viewerIsAdmin) {
         String sanitized = TrainingComment.sanitizeBody(body);
         if (sanitized == null) {
             throw new IllegalArgumentException(msg.get("training.calendar.comment.empty"));
         }
         TrainingComment comment = commentRepository.save(
-            new TrainingComment(training, author, authorIsAdmin, sanitized));
+            thread.newMessage(author, authorIsAdmin, sanitized));
         return toCommentDto(comment, viewerId, viewerIsAdmin, List.of());
     }
 
@@ -684,7 +767,7 @@ public class TrainingCalendarService {
      * "Neither text nor file" is still refused — the condition spans two tables, so it cannot be a
      * CHECK and has to be stated here.
      */
-    private TrainingCommentDto addCommentWithFiles(PersonalTraining training, User author, boolean authorIsAdmin,
+    private TrainingCommentDto addCommentWithFiles(CommentThread thread, User author, boolean authorIsAdmin,
                                                    @Nullable String body, List<MultipartFile> files,
                                                    UUID viewerId, boolean viewerIsAdmin) {
         String sanitized = TrainingComment.sanitizeBody(body);
@@ -692,7 +775,7 @@ public class TrainingCalendarService {
             throw new IllegalArgumentException(msg.get("training.calendar.comment.empty"));
         }
         TrainingComment comment = commentRepository.save(
-            new TrainingComment(training, author, authorIsAdmin, sanitized));
+            thread.newMessage(author, authorIsAdmin, sanitized));
         commentFiles.attach(comment, files);
         return toCommentDto(comment, viewerId, viewerIsAdmin,
             commentFiles.dtosForComments(List.of(comment.getId()), viewerId, viewerIsAdmin)
@@ -730,9 +813,18 @@ public class TrainingCalendarService {
                 rpeByReservation.put(rr.reservationId(), rr);
             }
         }
+        // Unread dot on an overlaid booking, same signal the plan entries carry. Split into two sets
+        // because a booking on an event answers as the event, never as its per-day slots.
+        Set<UUID> unreadSlots = new HashSet<>();
+        Set<UUID> unreadEvents = new HashSet<>();
+        for (SessionCommentTarget target : commentRepository
+                .findSessionsWithNewComments(athleteId, !viewerIsAdmin, seen)) {
+            if (target.slotId() != null) unreadSlots.add(target.slotId());
+            if (target.eventId() != null) unreadEvents.add(target.eventId());
+        }
         List<ReservationOverlayDto> overlay = confirmed.stream()
             .map(r -> toOverlayDto(r, viewerIsAdmin && isNewForCoach(r, seen),
-                rpeByReservation.get(r.getId()), nowWarsaw))
+                rpeByReservation.get(r.getId()), nowWarsaw, unreadSlots, unreadEvents))
             .toList();
 
         List<InvitationOverlayDto> invitations = buildInvitationOverlay(athleteId, from, to);
@@ -993,17 +1085,26 @@ public class TrainingCalendarService {
     }
 
     private static ReservationOverlayDto toOverlayDto(Reservation r, boolean isNew,
-                                                      @Nullable ReservationRpe rpe, LocalDateTime nowWarsaw) {
+                                                      @Nullable ReservationRpe rpe, LocalDateTime nowWarsaw,
+                                                      Set<UUID> unreadSlots, Set<UUID> unreadEvents) {
         TimeSlot slot = r.getTimeSlot();
+        Event event = slot.getEvent();
         // Ratable once the booking is over (same past-predicate as the stats/rate guard)
         boolean past = slot.getDate().isBefore(nowWarsaw.toLocalDate())
             || (slot.getDate().equals(nowWarsaw.toLocalDate()) && !slot.getEndTime().isAfter(nowWarsaw.toLocalTime()));
+        // One conversation per event, so every day of a course carries the same dot — the thread is
+        // the same one whichever day it is opened from.
+        boolean unread = event != null
+            ? unreadEvents.contains(event.getId())
+            : unreadSlots.contains(slot.getId());
         return new ReservationOverlayDto(
-            r.getId(), slot.getId(), slot.getDate(), slot.getStartTime(), slot.getEndTime(), slot.getDisplayTitle(),
+            r.getId(), slot.getId(), event != null ? event.getId() : null,
+            slot.getDate(), slot.getStartTime(), slot.getEndTime(), slot.getDisplayTitle(),
             isNew,
             rpe != null ? rpe.getRpe() : null,
             rpe != null ? rpe.getNote() : null,
-            past);
+            past,
+            unread);
     }
 
     @Nullable
