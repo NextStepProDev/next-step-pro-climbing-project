@@ -18,6 +18,7 @@ import { getErrorMessage } from '../../utils/errors'
 import { parseCalendarDate, todayInWarsaw } from '../../utils/calendarDate'
 import { formatEventWhen } from '../../utils/events'
 import { AdminPrivateNote } from '../admin/AdminPrivateNote'
+import { ParticipantsSection } from '../admin/ParticipantsSection'
 import { MailedInvitesWarning } from '../ui/MailedInvitesWarning'
 import { SettlementSection } from '../admin/SettlementSection'
 import type { EventSummary } from '../../types'
@@ -639,6 +640,13 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
             <Trash2 className="w-4 h-4" />
             {ta('events.deleteTitle')}
           </button>
+        )}
+
+        {/* Who is booked — one row per PERSON, however many days the event spans, for the same
+            reason the settlement below hangs on the event rather than on a reservation. An absence
+            is skipped: nobody was ever going to be written down on it. */}
+        {isAdmin && ev.eventType !== 'UNAVAILABLE' && (
+          <ParticipantsSection target="event" targetId={ev.id} />
         )}
 
         {/* The owner's private note — one per event, however many days it spans. Not gated on
