@@ -43,7 +43,21 @@ vi.mock('../../api/client', () => ({
     updateTimeSlot: (...args: unknown[]) => updateTimeSlot(...args),
     getSlotInvites: () => invitesPromise,
     getAllUsers: () => Promise.resolve([]),
-    getSlotParticipants: () => Promise.resolve([]),
+    // The full DTO shape, not a bare array: the participants section reads `.participants` and
+    // `.guestParticipants` off it, and an array would blow up the whole modal on render.
+    getSlotParticipants: () => Promise.resolve({
+      slotId: 'slot-1',
+      date: '2030-06-10',
+      startTime: '10:00:00',
+      endTime: '11:00:00',
+      maxParticipants: 3,
+      participants: [],
+      guestParticipants: [],
+    }),
+    addRegisteredParticipantToSlot: vi.fn().mockResolvedValue(undefined),
+    addGuestParticipantToSlot: vi.fn().mockResolvedValue(undefined),
+    deleteGuestParticipantFromSlot: vi.fn().mockResolvedValue(undefined),
+    cancelReservationByAdmin: vi.fn().mockResolvedValue(undefined),
     deleteTimeSlot: () => Promise.resolve(),
     notifySlotInvites: () => Promise.resolve({ notifiedCount: 0, skippedNotificationsOff: 0 }),
   },

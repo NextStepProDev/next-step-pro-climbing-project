@@ -27,6 +27,7 @@ import { MailedInvitesWarning } from "../ui/MailedInvitesWarning";
 import { canOfferSaveAndSend } from "../../utils/inviteStatus";
 import { nowInWarsaw, parseCalendarDate, parseCalendarDateTime } from '../../utils/calendarDate'
 import { AdminPrivateNote } from '../admin/AdminPrivateNote'
+import { ParticipantsSection } from '../admin/ParticipantsSection'
 import { SettlementSection } from '../admin/SettlementSection'
 import type { InvitedUser, TimeSlotDetail } from "../../types";
 
@@ -648,6 +649,17 @@ export function SlotDetailModal({
             <Trash2 className="w-4 h-4" />
             {ta('slots.deleteSlot')}
           </button>
+        )}
+
+        {/* Who is booked, and the two ways to write somebody down. Same two gates as the note and
+            the settlement below, and one more: an availability window holds nothing and an absence
+            has zero seats by construction, so neither is an address a booking can go to.
+            Not gated on `hasEnded` — a session that is over is exactly the one where the admin
+            writes down who actually turned up, and the server already knows not to mail about a
+            past date (BookingTimeValidator). A blocked slot keeps its roster but loses the form:
+            the server refuses the write, so offering it would only ever produce an error. */}
+        {isAdmin && !slot.eventId && isBookable && (
+          <ParticipantsSection target="slot" targetId={slot.id} canAdd={slot.status !== 'BLOCKED'} />
         )}
 
         {/* The owner's private note. Not gated on `hasEnded` — a session that is over is exactly
