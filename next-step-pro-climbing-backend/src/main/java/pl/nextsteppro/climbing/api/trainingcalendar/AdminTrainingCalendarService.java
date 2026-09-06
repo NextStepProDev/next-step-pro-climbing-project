@@ -103,6 +103,26 @@ public class AdminTrainingCalendarService {
         return core.addCommentWithFilesAsAdmin(adminId, trainingId, body, files);
     }
 
+    /**
+     * The same three, for a session the athlete booked in the public calendar. Addressed by the
+     * booking, which is the only id naming both the person and the session — see the guard in
+     * {@code TrainingCalendarService#requireSessionThread}.
+     */
+    @Transactional(readOnly = true)
+    public List<TrainingCommentDto> getSessionComments(UUID adminId, UUID reservationId) {
+        return core.getSessionCommentsAsAdmin(adminId, reservationId);
+    }
+
+    public TrainingCommentDto addSessionComment(UUID adminId, UUID reservationId, String body) {
+        return core.addSessionCommentAsAdmin(adminId, reservationId, body);
+    }
+
+    public TrainingCommentDto addSessionCommentWithFiles(UUID adminId, UUID reservationId,
+                                                         @org.jspecify.annotations.Nullable String body,
+                                                         List<org.springframework.web.multipart.MultipartFile> files) {
+        return core.addSessionCommentWithFilesAsAdmin(adminId, reservationId, body, files);
+    }
+
     public void markSeen(UUID adminId, UUID athleteId) {
         core.markCoachSeen(adminId, athleteId);
     }

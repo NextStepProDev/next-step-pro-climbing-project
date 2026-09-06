@@ -3,6 +3,7 @@ import { compressImage, validateImageFile } from '../utils/imageUtils'
 import { ApiError, parseRetryAfter } from '../utils/errors'
 import type {
   AssetDto,
+  CommentTarget,
   EventWaitlistEntry,
   MyInvitation,
   User,
@@ -524,6 +525,19 @@ export const trainingRequestApi = {
     fetchApi<void>(`/training-requests/${requestId}`, { method: 'DELETE' }),
 }
 
+/**
+ * Where a thread lives under either kind of entry. One helper for both roles, so the athlete and
+ * coach clients cannot drift about which segment addresses what — the twin-path failure this
+ * codebase keeps paying for is always a change landing in one copy.
+ *
+ * A booked session is addressed by its RESERVATION: it is the only id naming both the person and
+ * the session, and the server resolves it to the slot or the event the thread is stored against.
+ */
+const commentPath = (base: string, target: CommentTarget) =>
+  target.kind === 'training'
+    ? `${base}/trainings/${target.id}/comments`
+    : `${base}/reservations/${target.id}/comments`
+
 // Personal training calendar (athlete side; requires the coach-set athlete flag)
 export const trainingCalendarApi = {
   getRange: (from: string, to: string) =>
@@ -555,22 +569,22 @@ export const trainingCalendarApi = {
       method: 'POST',
     }),
 
-  getComments: (trainingId: string) =>
-    fetchApi<TrainingCommentItem[]>(`/training-calendar/trainings/${trainingId}/comments`),
+  getComments: (target: CommentTarget) =>
+    fetchApi<TrainingCommentItem[]>(commentPath('/training-calendar', target)),
 
-  addComment: (trainingId: string, body: string) =>
-    fetchApi<TrainingCommentItem>(`/training-calendar/trainings/${trainingId}/comments`, {
+  addComment: (target: CommentTarget, body: string) =>
+    fetchApi<TrainingCommentItem>(commentPath('/training-calendar', target), {
       method: 'POST',
       body: JSON.stringify({ body }),
     }),
 
   /** Multipart sibling of addComment: text optional, 1-3 files. */
-  addCommentWithFiles: (trainingId: string, body: string | null, files: File[]) => {
+  addCommentWithFiles: (target: CommentTarget, body: string | null, files: File[]) => {
     const formData = new FormData()
     files.forEach(file => formData.append('files', file, file.name))
     if (body) formData.append('body', body)
     return fetchApi<TrainingCommentItem>(
-      `/training-calendar/trainings/${trainingId}/comments/attachments`,
+      `${commentPath('/training-calendar', target)}/attachments`,
       { method: 'POST', body: formData },
     )
   },
@@ -721,21 +735,21 @@ export const adminTrainingCalendarApi = {
   deleteTraining: (trainingId: string) =>
     fetchApi<void>(`/admin/training-calendar/trainings/${trainingId}`, { method: 'DELETE' }),
 
-  getComments: (trainingId: string) =>
-    fetchApi<TrainingCommentItem[]>(`/admin/training-calendar/trainings/${trainingId}/comments`),
+  getComments: (target: CommentTarget) =>
+    fetchApi<TrainingCommentItem[]>(commentPath('/admin/training-calendar', target)),
 
-  addComment: (trainingId: string, body: string) =>
-    fetchApi<TrainingCommentItem>(`/admin/training-calendar/trainings/${trainingId}/comments`, {
+  addComment: (target: CommentTarget, body: string) =>
+    fetchApi<TrainingCommentItem>(commentPath('/admin/training-calendar', target), {
       method: 'POST',
       body: JSON.stringify({ body }),
     }),
 
-  addCommentWithFiles: (trainingId: string, body: string | null, files: File[]) => {
+  addCommentWithFiles: (target: CommentTarget, body: string | null, files: File[]) => {
     const formData = new FormData()
     files.forEach(file => formData.append('files', file, file.name))
     if (body) formData.append('body', body)
     return fetchApi<TrainingCommentItem>(
-      `/admin/training-calendar/trainings/${trainingId}/comments/attachments`,
+      `${commentPath('/admin/training-calendar', target)}/attachments`,
       { method: 'POST', body: formData },
     )
   },

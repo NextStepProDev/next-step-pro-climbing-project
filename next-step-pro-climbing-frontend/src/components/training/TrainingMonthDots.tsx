@@ -103,7 +103,8 @@ export function TrainingMonthDots({
           const entries = entriesByDay.get(dateStr) ?? []
           const overflow = entries.length - MAX_DOTS
           const unread = entries.some(
-            (e) => e.training?.hasUnreadActivity || e.reservation?.isNew,
+            (e) => e.training?.hasUnreadActivity
+              || e.reservation?.isNew || e.reservation?.hasUnreadActivity,
           )
 
           return (

@@ -488,6 +488,106 @@ class TrainingCalendarIntegrationTest extends BaseIntegrationTest {
             () -> trainingCalendarService.deleteMy(otherId, training.id()));
     }
 
+    /**
+     * The gap this feature closes: whether the pair could talk used to depend on which tool the
+     * coach created the session with, and that difference is invisible from the athlete's side.
+     */
+    @Test
+    void shouldCarryAConversationUnderASessionBookedInThePublicCalendar() {
+        LocalDate date = LocalDate.now().minusDays(1);
+        TimeSlot slot = timeSlotRepository.save(new TimeSlot(date, LocalTime.of(10, 0), LocalTime.of(12, 0), 5));
+        Reservation booking = reservationRepository.save(new Reservation(athlete, slot));
+
+        // Both sides start level, so the dot below is caused by the message and nothing else
+        trainingCalendarService.markAthleteSeen(athlete.getId());
+        adminTrainingCalendarService.markSeen(coach.getId(), athlete.getId());
+
+        adminTrainingCalendarService.addSessionComment(coach.getId(), booking.getId(), "Jak poszło?");
+
+        // The athlete sees it as unread, on the overlaid booking itself
+        assertEquals(1L, trainingCalendarService.getAthleteNotifications(athlete.getId()).newCount());
+        CalendarRangeDto range = trainingCalendarService.getMyRange(athlete.getId(), date, date);
+        assertEquals(1, range.reservations().size());
+        assertTrue(range.reservations().get(0).hasUnreadActivity(),
+            "a message under a booking must light the same dot a message under a plan entry does");
+
+        // ...and can answer in the same thread
+        trainingCalendarService.addMySessionComment(athlete.getId(), booking.getId(), "Ciężko, ale dobrze");
+        List<TrainingCommentDto> thread =
+            adminTrainingCalendarService.getSessionComments(coach.getId(), booking.getId());
+        assertEquals(2, thread.size());
+        assertTrue(thread.get(0).authorIsAdmin());
+        assertFalse(thread.get(1).authorIsAdmin());
+
+        // Reading it clears the dot, exactly as it does for a plan entry
+        trainingCalendarService.markAthleteSeen(athlete.getId());
+        assertFalse(trainingCalendarService.getMyRange(athlete.getId(), date, date)
+            .reservations().get(0).hasUnreadActivity());
+    }
+
+    /**
+     * Booking a multi-day event lays down one reservation row PER DAY. The thread hangs on the
+     * event, so all of them address one conversation — reached from whichever day is open.
+     */
+    @Test
+    void shouldGiveAMultiDayEventOneConversationRatherThanOnePerDay() {
+        LocalDate start = LocalDate.now().minusDays(3);
+        var event = eventRepository.save(new pl.nextsteppro.climbing.domain.event.Event(
+            "Kurs skalny", pl.nextsteppro.climbing.domain.event.EventType.COURSE, start, start.plusDays(1), 8));
+        TimeSlot dayOne = timeSlotRepository.save(
+            new TimeSlot(event, start, LocalTime.of(10, 0), LocalTime.of(16, 0), 8));
+        TimeSlot dayTwo = timeSlotRepository.save(
+            new TimeSlot(event, start.plusDays(1), LocalTime.of(10, 0), LocalTime.of(16, 0), 8));
+        Reservation first = reservationRepository.save(new Reservation(athlete, dayOne));
+        Reservation second = reservationRepository.save(new Reservation(athlete, dayTwo));
+
+        trainingCalendarService.addMySessionComment(athlete.getId(), first.getId(), "Pierwszy dzień mokry");
+
+        // Written under day one, read under day two — one course, one conversation
+        assertEquals(1, trainingCalendarService.getMySessionComments(athlete.getId(), second.getId()).size());
+        assertEquals(1, trainingCommentRepository.count(),
+            "a per-day thread would have written one row per booked day");
+
+        // ...and the dot shows on every day of the course, since any of them opens that thread
+        adminTrainingCalendarService.markSeen(coach.getId(), athlete.getId());
+        trainingCalendarService.addMySessionComment(athlete.getId(), second.getId(), "Drugi lepszy");
+        CalendarRangeDto coachView = adminTrainingCalendarService.getRangeForAthlete(
+            coach.getId(), athlete.getId(), start, start.plusDays(1));
+        assertEquals(2, coachView.reservations().size());
+        assertTrue(coachView.reservations().stream().allMatch(ReservationOverlayDto::hasUnreadActivity));
+    }
+
+    /**
+     * A slot can hold several people, so the address of a thread is the PAIR (session, athlete).
+     * Dropping the athlete half would publish one client's conversation to everyone else booked on
+     * the same session.
+     */
+    @Test
+    void shouldKeepTwoPeopleOnOneSlotInSeparateConversations() {
+        LocalDate date = LocalDate.now().minusDays(1);
+        TimeSlot shared = timeSlotRepository.save(new TimeSlot(date, LocalTime.of(10, 0), LocalTime.of(12, 0), 5));
+
+        User otherAthlete = new User("other@example.com", "Ola", "Druga", "+48333333333", "ola");
+        otherAthlete.setRole(UserRole.USER);
+        otherAthlete.setEmailVerified(true);
+        otherAthlete.setAthlete(true);
+        otherAthlete.grantTrainingConsent();
+        otherAthlete = userRepository.save(otherAthlete);
+
+        Reservation mine = reservationRepository.save(new Reservation(athlete, shared));
+        Reservation theirs = reservationRepository.save(new Reservation(otherAthlete, shared));
+
+        trainingCalendarService.addMySessionComment(athlete.getId(), mine.getId(), "Bolało kolano");
+
+        assertEquals(1, trainingCalendarService.getMySessionComments(athlete.getId(), mine.getId()).size());
+        assertTrue(trainingCalendarService.getMySessionComments(otherAthlete.getId(), theirs.getId()).isEmpty(),
+            "the other person on the same slot must not see this conversation");
+        // Nor by addressing the booking that is not theirs — answered as a made-up id
+        UUID otherId = otherAthlete.getId();
+        assertThrows(IllegalArgumentException.class,
+            () -> trainingCalendarService.getMySessionComments(otherId, mine.getId()));
+    }
+
     @Test
     void shouldRejectCalendarAccessForNonAthlete() {
         User regular = new User("user@example.com", "Jan", "Kowalski", "+48222222222", "jan");

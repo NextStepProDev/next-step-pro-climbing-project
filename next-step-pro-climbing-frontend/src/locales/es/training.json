@@ -195,7 +195,8 @@
   },
   "overlay": {
     "reservation": "Reserva",
-    "readonlyHint": "Esta es tu reserva del calendario general — gestiónala en la pestaña Reservas.",
+    "readonlyHint": "Una sesión del calendario general — la reserva se gestiona en la pestaña Reservas.",
+    "threadCoversEvent": "Esta conversación abarca todo el evento: el mismo hilo bajo cada uno de sus días.",
     "invitation": "Invitación — ¡reserva ya!",
     "viewDetails": "Ver detalles"
   },

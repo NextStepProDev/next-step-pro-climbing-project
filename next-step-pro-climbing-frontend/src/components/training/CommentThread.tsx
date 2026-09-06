@@ -18,7 +18,7 @@ import {
   validateImageFile,
 } from '../../utils/imageUtils'
 import type { TrainingCalendarAdapter } from './trainingCalendarAdapter'
-import type { TrainingCommentFile, TrainingCommentItem } from '../../types'
+import type { CommentTarget, TrainingCommentFile, TrainingCommentItem } from '../../types'
 
 /** Mirrors TrainingCommentFile.MAX_PER_COMMENT on the backend. */
 const MAX_FILES = 3
@@ -105,7 +105,13 @@ function handleMarkdownChange(
 }
 
 interface CommentThreadProps {
-  trainingId: string
+  /**
+   * Which conversation to show — a plan entry or a session booked in the public calendar. The
+   * component treats both identically on purpose: whether the pair can talk must not depend on
+   * which tool the coach happened to create the session with, and that difference is invisible
+   * from the athlete's side anyway.
+   */
+  target: CommentTarget
   api: TrainingCalendarAdapter
   // Invalidated after posting so unread badges on the other side stay honest
   onPosted?: () => void
@@ -118,8 +124,8 @@ interface CommentThreadProps {
   onDirtyChange?: (dirty: boolean) => void
 }
 
-// Chat-like athlete <-> coach thread of a single training.
-export function CommentThread({ trainingId, api, onPosted, onDirtyChange }: CommentThreadProps) {
+// Chat-like athlete <-> coach thread of a single plan entry or booked session.
+export function CommentThread({ target, api, onPosted, onDirtyChange }: CommentThreadProps) {
   const { t } = useTranslation('training')
   const queryClient = useQueryClient()
   const [draft, setDraft] = useState('')
@@ -137,23 +143,26 @@ export function CommentThread({ trainingId, api, onPosted, onDirtyChange }: Comm
   // this is the ref OBJECT and not its `.current`).
   const { ref: composerRef, applyEdit: applyComposerEdit } = useCaretRestore()
 
+  // Target kind is part of the key: a plan entry and a booked session are different conversations,
+  // and their ids come from different tables — an id alone could collide across the two.
+  const queryKey = ['trainingCalendar', 'comments', target.kind, target.id]
+
   const { data: comments, isLoading } = useQuery({
-    queryKey: ['trainingCalendar', 'comments', trainingId],
-    queryFn: () => api.getComments(trainingId),
+    queryKey,
+    queryFn: () => api.getComments(target),
     // Poll while the modal is open so the conversation feels live
     refetchInterval: 15_000,
   })
 
-  const invalidate = () =>
-    queryClient.invalidateQueries({ queryKey: ['trainingCalendar', 'comments', trainingId] })
+  const invalidate = () => queryClient.invalidateQueries({ queryKey })
 
   const postMutation = useMutation({
     // JSON when it is only words, multipart when anything is attached. The choice lives in the
     // adapter so this component never learns which role it is rendering for.
     mutationFn: ({ body, files }: { body: string; files: File[] }) =>
       files.length > 0
-        ? api.addCommentWithFiles(trainingId, body || null, files)
-        : api.addComment(trainingId, body),
+        ? api.addCommentWithFiles(target, body || null, files)
+        : api.addComment(target, body),
     onSuccess: () => {
       setDraft('')
       setStaged([])

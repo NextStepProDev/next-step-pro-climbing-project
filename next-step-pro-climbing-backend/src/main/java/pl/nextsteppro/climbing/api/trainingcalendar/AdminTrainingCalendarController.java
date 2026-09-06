@@ -129,6 +129,35 @@ public class AdminTrainingCalendarController {
         return ResponseEntity.ok(adminTrainingCalendarService.addCommentWithFiles(adminId, trainingId, body, files));
     }
 
+    @Operation(summary = "Thread of a booked session")
+    @GetMapping("/reservations/{reservationId}/comments")
+    public ResponseEntity<List<TrainingCommentDto>> getSessionComments(
+            @Parameter(hidden = true) @CurrentUserId UUID adminId,
+            @PathVariable UUID reservationId) {
+        return ResponseEntity.ok(adminTrainingCalendarService.getSessionComments(adminId, reservationId));
+    }
+
+    @Operation(summary = "Add a message under a booked session, as coach")
+    @PostMapping("/reservations/{reservationId}/comments")
+    public ResponseEntity<TrainingCommentDto> addSessionComment(
+            @Parameter(hidden = true) @CurrentUserId UUID adminId,
+            @PathVariable UUID reservationId,
+            @Valid @RequestBody CreateTrainingCommentRequest request) {
+        return ResponseEntity.ok(
+            adminTrainingCalendarService.addSessionComment(adminId, reservationId, request.body()));
+    }
+
+    @Operation(summary = "Add a message with attachments under a booked session, as coach")
+    @PostMapping(value = "/reservations/{reservationId}/comments/attachments", consumes = "multipart/form-data")
+    public ResponseEntity<TrainingCommentDto> addSessionCommentWithFiles(
+            @Parameter(hidden = true) @CurrentUserId UUID adminId,
+            @PathVariable UUID reservationId,
+            @RequestParam("files") List<MultipartFile> files,
+            @RequestParam(value = "body", required = false) @org.jspecify.annotations.Nullable String body) {
+        return ResponseEntity.ok(
+            adminTrainingCalendarService.addSessionCommentWithFiles(adminId, reservationId, body, files));
+    }
+
     @Operation(summary = "Mark athlete seen", description = "Called when the coach opens an athlete's calendar; resets that athlete's badge for this admin.")
     @PostMapping("/athletes/{athleteId}/seen")
     public ResponseEntity<Void> markSeen(

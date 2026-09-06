@@ -4,7 +4,7 @@ import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { CommentThread } from './CommentThread'
 import type { TrainingCalendarAdapter } from './trainingCalendarAdapter'
-import type { TrainingCommentItem } from '../../types'
+import type { CommentTarget, TrainingCommentItem } from '../../types'
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (key: string) => key, i18n: { language: 'pl' } }),
@@ -64,11 +64,11 @@ const attachment = {
   canDelete: true,
 }
 
-function renderThread(api: TrainingCalendarAdapter) {
+function renderThread(api: TrainingCalendarAdapter, target: CommentTarget = { kind: 'training', id: 't1' }) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   return render(
     <QueryClientProvider client={client}>
-      <CommentThread trainingId="t1" api={api} />
+      <CommentThread target={target} api={api} />
     </QueryClientProvider>,
   )
 }
@@ -91,8 +91,22 @@ describe('CommentThread', () => {
     await user.type(screen.getByPlaceholderText('comments.placeholder'), 'Nogi dziś martwe')
     await user.click(screen.getByLabelText('comments.send'))
 
-    await waitFor(() => expect(addComment).toHaveBeenCalledWith('t1', 'Nogi dziś martwe'))
+    await waitFor(() =>
+      expect(addComment).toHaveBeenCalledWith({ kind: 'training', id: 't1' }, 'Nogi dziś martwe'))
     expect(addCommentWithFiles).not.toHaveBeenCalled()
+  })
+
+  it('behaves identically under a booked session, passing the target straight through', async () => {
+    // The component must not learn what it is hanging under: whether the pair can talk cannot
+    // depend on which tool the coach used to create the session.
+    const user = userEvent.setup()
+    renderThread(makeApi(), { kind: 'reservation', id: 'r9' })
+
+    await user.type(screen.getByPlaceholderText('comments.placeholder'), 'Ciężko, ale dobrze')
+    await user.click(screen.getByLabelText('comments.send'))
+
+    await waitFor(() =>
+      expect(addComment).toHaveBeenCalledWith({ kind: 'reservation', id: 'r9' }, 'Ciężko, ale dobrze'))
   })
 
   it('switches to multipart as soon as something is attached', async () => {
@@ -125,7 +139,8 @@ describe('CommentThread', () => {
     // A photo of a route says everything the message needs to say.
     await waitFor(() => expect(send).not.toBeDisabled())
     await user.click(send)
-    await waitFor(() => expect(addCommentWithFiles).toHaveBeenCalledWith('t1', null, expect.any(Array)))
+    await waitFor(() => expect(addCommentWithFiles)
+      .toHaveBeenCalledWith({ kind: 'training', id: 't1' }, null, expect.any(Array)))
   })
 
   it('refuses a fourth file without calling the API', async () => {

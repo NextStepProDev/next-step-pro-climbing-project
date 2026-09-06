@@ -1678,6 +1678,9 @@ export interface ReservationOverlayItem {
   id: string
   // Slot behind the booking — used to open the full slot-detail modal in place
   slotId: string
+  // Set when the booking belongs to an event: every day of a multi-day course shares one
+  // conversation, hung on the event
+  eventId: string | null
   date: string
   startTime: string
   endTime: string
@@ -1689,7 +1692,23 @@ export interface ReservationOverlayItem {
   rpeNote: string | null
   // The booking is over → the athlete may rate it (UI also gates on !coach view)
   canRate: boolean
+  // Messages from the other side since the viewer's marker — the same signal a plan entry
+  // carries, so a booked session cannot become the one place a message goes unnoticed
+  hasUnreadActivity: boolean
 }
+
+/**
+ * Which conversation a thread is showing. A plan entry is addressed by its own id; a session
+ * booked in the public calendar by the BOOKING, which is the only id naming both the person and
+ * the session (the server stores the thread against the slot or the event).
+ *
+ * <p>Discriminated here rather than inside the thread component for the same reason the JSON /
+ * multipart split lives in the adapter: which endpoint carries a message is transport, and the
+ * thread must not branch on what it is hanging under.
+ */
+export type CommentTarget =
+  | { kind: 'training'; id: string }
+  | { kind: 'reservation'; id: string }
 
 // A future training removed by the other side since the viewer's last visit
 export interface TrainingDeletionItem {

@@ -239,11 +239,19 @@ record PersonalTrainingDto(
     long version
 ) {}
 
-/** Read-only overlay: the athlete's confirmed booking from the public reservation system. */
+/**
+ * The athlete's confirmed booking from the public reservation system, overlaid on the plan.
+ *
+ * <p>Read-only about the BOOKING — the calendar cannot move or cancel it — but no longer silent:
+ * the pair can hold the same conversation here as under a plan entry, addressed by {@code id}.
+ */
 record ReservationOverlayDto(
     UUID id,
     // Slot behind the booking — lets the UI open the full slot-detail modal in place
     UUID slotId,
+    // Set when the booking belongs to an event. Carried so the UI can say which conversation this
+    // is: every day of a multi-day course shares one thread, hung on the event.
+    @Nullable UUID eventId,
     LocalDate date,
     LocalTime startTime,
     LocalTime endTime,
@@ -254,7 +262,10 @@ record ReservationOverlayDto(
     // Athlete RPE rating for this attended booking (null = not rated); canRate = booking is past
     @Nullable Integer rpe,
     @Nullable String rpeNote,
-    boolean canRate
+    boolean canRate,
+    // Messages from the OTHER side since the viewer's marker — same signal PersonalTrainingDto
+    // carries, so a booked session cannot become the one place a message goes unnoticed
+    boolean hasUnreadActivity
 ) {}
 
 /** A future training removed by the OTHER side since the viewer's last visit ("deleted" strip). */

@@ -200,7 +200,8 @@
   },
   "overlay": {
     "reservation": "Rezerwacja",
-    "readonlyHint": "To Twoja rezerwacja z kalendarza ogólnego — zarządzaj nią w zakładce Rezerwacje.",
+    "readonlyHint": "Termin z kalendarza ogólnego — samą rezerwację zmienisz w zakładce Rezerwacje.",
+    "threadCoversEvent": "Rozmowa dotyczy całego wydarzenia — ta sama pod każdym jego dniem.",
     "invitation": "Zaproszenie — zarezerwuj!",
     "viewDetails": "Zobacz szczegóły"
   },

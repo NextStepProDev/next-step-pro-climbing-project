@@ -4,6 +4,7 @@ import type {
   AthleteGoals,
   AthleteStats,
   AttachmentUpload,
+  CommentTarget,
   CreatePersonalTraining,
   PersonalTraining,
   SaveGoal,
@@ -44,14 +45,19 @@ export interface TrainingCalendarAdapter {
   createTraining: (data: CreatePersonalTraining) => Promise<PersonalTraining>
   updateTraining: (trainingId: string, data: CreatePersonalTraining) => Promise<PersonalTraining>
   deleteTraining: (trainingId: string) => Promise<void>
-  getComments: (trainingId: string) => Promise<TrainingCommentItem[]>
-  addComment: (trainingId: string, body: string) => Promise<TrainingCommentItem>
+  /**
+   * Threads are addressed by a target, not a training id: the same conversation hangs under a plan
+   * entry or under a session booked in the public calendar. Which one it is stays out of the thread
+   * component for the same reason the role does — see addCommentWithFiles.
+   */
+  getComments: (target: CommentTarget) => Promise<TrainingCommentItem[]>
+  addComment: (target: CommentTarget, body: string) => Promise<TrainingCommentItem>
   /**
    * Multipart sibling of addComment, chosen HERE rather than in the thread component: whether a
    * message goes as JSON or as multipart is a transport detail, and the thread must not branch on
    * which role it is rendering for.
    */
-  addCommentWithFiles: (trainingId: string, body: string | null, files: File[]) => Promise<TrainingCommentItem>
+  addCommentWithFiles: (target: CommentTarget, body: string | null, files: File[]) => Promise<TrainingCommentItem>
   /** Corrects the text of a message the viewer wrote. Author-only on the server, both roles here. */
   editComment: (commentId: string, body: string) => Promise<TrainingCommentItem>
   deleteCommentFile: (fileId: string) => Promise<void>
