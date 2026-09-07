@@ -76,6 +76,9 @@ function minToTime(total: number): string {
 
 export function TrainingCalendarSection({ api, scopeKey, scopeLabel, isCoachView }: TrainingCalendarSectionProps) {
   const { t } = useTranslation('training')
+  // The unsaved-work wording is shared with Modal's own confirmation — one phrasing for
+  // one question, rather than a second copy that drifts.
+  const { t: tCommon } = useTranslation('common')
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const location = useLocation()
@@ -182,6 +185,11 @@ export function TrainingCalendarSection({ api, scopeKey, scopeLabel, isCoachView
   // correction. Read at click time rather than from a prop captured a render earlier — see
   // useChildDirty for why Modal takes a getter.
   const [reservationThreadDirty, reportReservationThreadDirty] = useChildDirty(reservationHint !== null)
+  // "View details" leaves this modal for the slot preview, so it discards the thread's composer
+  // just like the X does — but it calls onClose itself and therefore walks straight past
+  // `confirmClose`. Asked inline instead of through a second confirm modal: that would put a
+  // second Escape listener on `document`, and one keypress would fire both.
+  const [leavingForDetails, setLeavingForDetails] = useState(false)
   // Full official-slot preview opened from the hint modal ("Zobacz szczegóły")
   const [officialSlotId, setOfficialSlotId] = useState<string | null>(null)
   // One day's entries: the phone's only way into a day, and the desktop's way past "+N"
@@ -513,6 +521,28 @@ export function TrainingCalendarSection({ api, scopeKey, scopeLabel, isCoachView
   const invitations = rangeQuery.data?.invitations ?? []
   const deletions = rangeQuery.data?.deletions ?? []
 
+  /**
+   * The open booking, resolved against the CURRENT range rather than the snapshot that opened it.
+   *
+   * ⚠️ The modal no longer closes itself after a rating (a reply may be half-typed underneath), so
+   * the snapshot stops being a harmless copy: `ReservationRatingSection` decides between the
+   * summary and the form by reading `reservation.rpe` off its PROP, so a stale null renders the
+   * form again and a saved rating looks like a save that did nothing.
+   *
+   * Falls back to the snapshot rather than to null: a booking can leave the range while its modal
+   * is open (cancelled inside the slot preview), and a modal that blanks mid-sentence takes the
+   * message being typed with it.
+   */
+  const openReservation = reservationHint
+    ? reservations.find((r) => r.id === reservationHint.id) ?? reservationHint
+    : null
+
+  const openOfficialSlot = () => {
+    setLeavingForDetails(false)
+    setOfficialSlotId(openReservation!.slotId)
+    setReservationHint(null)
+  }
+
   // A held seat is booked in the PUBLIC calendar — deep-link straight into the
   // slot/event modal there, so "click the amber block" ends in an actual booking.
   // Coach view: carry a returnTo so closing that modal comes back to this athlete's
@@ -769,18 +799,18 @@ export function TrainingCalendarSection({ api, scopeKey, scopeLabel, isCoachView
       {/* The booking itself stays read-only here — but the conversation about it does not. */}
       <Modal
         isOpen={reservationHint !== null}
-        onClose={() => setReservationHint(null)}
-        title={reservationHint?.title || t('overlay.reservation')}
+        onClose={() => { setLeavingForDetails(false); setReservationHint(null) }}
+        title={openReservation?.title || t('overlay.reservation')}
         size="lg"
         confirmClose={reservationThreadDirty}
       >
         <div className="flex items-start gap-3">
           <Lock className="w-5 h-5 text-surface-400 shrink-0 mt-0.5" />
           <div>
-            {reservationHint && (
+            {openReservation && (
               <p className="text-sm text-surface-300 mb-2">
-                {format(parseCalendarDate(reservationHint.date), 'dd.MM.yyyy')}{' '}
-                {reservationHint.startTime.slice(0, 5)} - {reservationHint.endTime.slice(0, 5)}
+                {format(parseCalendarDate(openReservation.date), 'dd.MM.yyyy')}{' '}
+                {openReservation.startTime.slice(0, 5)} - {openReservation.endTime.slice(0, 5)}
               </p>
             )}
             <p className="text-sm text-surface-400">{t('overlay.readonlyHint')}</p>
@@ -788,15 +818,16 @@ export function TrainingCalendarSection({ api, scopeKey, scopeLabel, isCoachView
         </div>
 
         {/* Athlete rates an attended booking; the coach only reads it */}
-        {reservationHint && !isCoachView && reservationHint.canRate && (
+        {openReservation && !isCoachView && openReservation.canRate && (
           <ReservationRatingSection
-            key={reservationHint.id}
-            reservation={reservationHint}
+            key={openReservation.id}
+            reservation={openReservation}
             onRated={() => {
               queryClient.invalidateQueries({ queryKey: ['trainingCalendar', 'range', scopeKey] })
               queryClient.invalidateQueries({ queryKey: ['trainingCalendar', 'stats', scopeKey] })
               // Deliberately NOT closing the modal: the thread underneath may hold a half-typed
-              // reply, and rating is no longer the last thing there is to do here.
+              // reply, and rating is no longer the last thing there is to do here. The rating then
+              // has to redraw from the refreshed range — see openReservation.
             }}
           />
         )}
@@ -804,38 +835,46 @@ export function TrainingCalendarSection({ api, scopeKey, scopeLabel, isCoachView
         {/* Same conversation as under a plan entry. A multi-day course shares one thread, so the
             note above the composer says which days it covers — otherwise the second day looks like
             a thread that mysteriously already has messages in it. */}
-        {reservationHint && (
+        {openReservation && (
           <div className="mt-4 pt-4 border-t border-surface-700">
-            {reservationHint.eventId && (
+            {openReservation.eventId && (
               <p className="text-xs text-surface-400 mb-2">{t('overlay.threadCoversEvent')}</p>
             )}
             <CommentThread
-              key={reservationHint.id}
-              target={{ kind: 'reservation', id: reservationHint.id }}
+              key={openReservation.id}
+              target={{ kind: 'reservation', id: openReservation.id }}
               api={api}
-              onPosted={() => {
-                // The dot on the tile is computed server-side from this thread
-                queryClient.invalidateQueries({ queryKey: ['trainingCalendar', 'range', scopeKey] })
-                if (isCoachView) {
-                  queryClient.invalidateQueries({ queryKey: ['admin', 'trainingCalendar', 'athletes'] })
-                }
-              }}
+              // Only the roster, exactly as the plan-entry thread does: the dot on the tile marks
+              // messages from the OTHER side, so posting never changes what the poster sees and
+              // refetching the whole range here would buy nothing.
+              onPosted={isCoachView
+                ? () => queryClient.invalidateQueries({ queryKey: ['admin', 'trainingCalendar', 'athletes'] })
+                : undefined}
               onDirtyChange={reportReservationThreadDirty}
             />
           </div>
         )}
 
-        <div className="flex justify-end mt-4">
-          <Button
-            variant="primary"
-            size="sm"
-            onClick={() => {
-              setOfficialSlotId(reservationHint!.slotId)
-              setReservationHint(null)
-            }}
-          >
-            {t('overlay.viewDetails')}
-          </Button>
+        <div className="flex flex-wrap justify-end items-center gap-2 mt-4">
+          {leavingForDetails ? (
+            <>
+              <span className="mr-auto text-sm text-surface-400">{tCommon('unsaved.message')}</span>
+              <Button variant="ghost" size="sm" onClick={() => setLeavingForDetails(false)}>
+                {tCommon('unsaved.keep')}
+              </Button>
+              <Button variant="danger" size="sm" onClick={openOfficialSlot}>
+                {tCommon('unsaved.discard')}
+              </Button>
+            </>
+          ) : (
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => (reservationThreadDirty() ? setLeavingForDetails(true) : openOfficialSlot())}
+            >
+              {t('overlay.viewDetails')}
+            </Button>
+          )}
         </div>
       </Modal>
 
