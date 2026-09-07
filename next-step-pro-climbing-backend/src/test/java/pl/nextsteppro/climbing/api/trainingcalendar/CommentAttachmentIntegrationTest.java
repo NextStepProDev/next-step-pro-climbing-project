@@ -37,6 +37,10 @@ class CommentAttachmentIntegrationTest extends BaseIntegrationTest {
     @Autowired private TrainingCommentRepository trainingCommentRepository;
     @Autowired private TrainingCommentFileRepository commentFileRepository;
     @Autowired private pl.nextsteppro.climbing.infrastructure.storage.FileStorageService fileStorageService;
+    // Deleting a slot/event is the only path that has to unlink a session thread's files
+    @Autowired private pl.nextsteppro.climbing.api.admin.AdminService adminService;
+    // Account erasure names its files through the same component both delete paths use
+    @Autowired private CommentFileSupport commentFileSupport;
 
     private User athlete;
     private User otherAthlete;
@@ -280,6 +284,120 @@ class CommentAttachmentIntegrationTest extends BaseIntegrationTest {
 
         // An empty bubble would sit in the thread forever; body is nullable, so nothing else stops it.
         assertTrue(trainingCalendarService.getMyComments(athlete.getId(), trainingId).isEmpty());
+    }
+
+    // ---------- the same, under a session booked in the public calendar (V97) ----------
+
+    /**
+     * The attachment path for a session thread runs through queries no training-side test can
+     * reach: the per-thread cap counts by (slot, athlete) instead of by training, and the file
+     * lookup had to stop walking {@code comment.training} — an inner fetch join there would have
+     * dropped every session-thread file out of its own lookup, i.e. a 404 on a file that exists.
+     */
+    @Test
+    void shouldAttachAndServeAPhotoUnderABookedSession() {
+        var slot = timeSlotRepository.save(new pl.nextsteppro.climbing.domain.timeslot.TimeSlot(
+            LocalDate.now().minusDays(1), LocalTime.of(10, 0), LocalTime.of(12, 0), 4));
+        var booking = reservationRepository.save(
+            new pl.nextsteppro.climbing.domain.reservation.Reservation(athlete, slot));
+
+        TrainingCommentDto comment = trainingCalendarService.addMySessionCommentWithFiles(
+            athlete.getId(), booking.getId(), "Tak to wyglądało", List.of(jpeg("droga.jpg")));
+
+        assertEquals(1, comment.files().size());
+        UUID fileId = comment.files().getFirst().id();
+
+        // Read back through the private-file route, for both roles
+        assertNotNull(trainingCalendarService.openCommentFile(athlete.getId(), false, fileId));
+        assertNotNull(trainingCalendarService.openCommentFile(coach.getId(), true, fileId));
+        // ...and not for someone else's account
+        UUID intruderId = otherAthlete.getId();
+        assertThrows(IllegalArgumentException.class,
+            () -> trainingCalendarService.openCommentFile(intruderId, false, fileId));
+    }
+
+    /**
+     * ⚠️ Deleting a slot destroys conversations, which it did not do before V97. The comment rows
+     * go through the DB cascade without Hibernate ever loading them, so the files are reachable
+     * only from an explicit purge wired into the delete — this asserts the wiring, not just the
+     * query, because "did anyone remember to call it" is the half that rots silently.
+     */
+    @Test
+    void shouldUnlinkSessionThreadFilesWhenTheSlotIsDeleted() {
+        var slot = timeSlotRepository.save(new pl.nextsteppro.climbing.domain.timeslot.TimeSlot(
+            LocalDate.now().plusDays(2), LocalTime.of(10, 0), LocalTime.of(12, 0), 4));
+        var booking = reservationRepository.save(
+            new pl.nextsteppro.climbing.domain.reservation.Reservation(athlete, slot));
+        TrainingCommentDto comment = trainingCalendarService.addMySessionCommentWithFiles(
+            athlete.getId(), booking.getId(), null, List.of(jpeg("a.jpg")));
+        UUID fileId = comment.files().getFirst().id();
+        String filename = commentFileRepository.findAll().getFirst().getFilename();
+        assertTrue(fileStorageService.exists(filename, CommentFileSupport.FOLDER));
+
+        adminService.deleteTimeSlot(coach.getId(), slot.getId());
+
+        // Asserted row by row rather than on a table count: this suite shares one database, so a
+        // global count answers a question about every other test as well as this one.
+        assertFalse(timeSlotRepository.existsById(slot.getId()));
+        assertFalse(trainingCommentRepository.existsById(comment.id()), "the thread went with the slot");
+        assertFalse(commentFileRepository.existsById(fileId));
+        assertFalse(fileStorageService.exists(filename, CommentFileSupport.FOLDER));
+    }
+
+    /** Twin of the above: an event's conversation hangs on the event, not on its per-day slots. */
+    @Test
+    void shouldUnlinkSessionThreadFilesWhenTheEventIsDeleted() {
+        LocalDate start = LocalDate.now().plusDays(3);
+        var event = eventRepository.save(new pl.nextsteppro.climbing.domain.event.Event(
+            "Kurs skalny", pl.nextsteppro.climbing.domain.event.EventType.COURSE, start, start.plusDays(1), 8));
+        var day = timeSlotRepository.save(new pl.nextsteppro.climbing.domain.timeslot.TimeSlot(
+            event, start, LocalTime.of(10, 0), LocalTime.of(16, 0), 8));
+        var booking = reservationRepository.save(
+            new pl.nextsteppro.climbing.domain.reservation.Reservation(athlete, day));
+        TrainingCommentDto comment = trainingCalendarService.addMySessionCommentWithFiles(
+            athlete.getId(), booking.getId(), null, List.of(jpeg("a.jpg")));
+        UUID fileId = comment.files().getFirst().id();
+        String filename = commentFileRepository.findAll().getFirst().getFilename();
+        assertTrue(fileStorageService.exists(filename, CommentFileSupport.FOLDER));
+        // The thread hangs on the EVENT, so the per-day slot carries nothing to purge
+        assertNotNull(trainingCommentRepository.findAll().getFirst().eventId());
+
+        adminService.deleteEvent(coach.getId(), event.getId());
+
+        assertFalse(eventRepository.existsById(event.getId()));
+        assertFalse(trainingCommentRepository.existsById(comment.id()), "the thread went with the event");
+        assertFalse(commentFileRepository.existsById(fileId));
+        assertFalse(fileStorageService.exists(filename, CommentFileSupport.FOLDER));
+    }
+
+    /**
+     * Erasure has to reach a session thread too. The filename lookup used to walk
+     * {@code comment.training.athlete}, a road a session-attached message does not have — so
+     * without the switch to {@code comment.athlete} this person's photos would have survived the
+     * deletion of their account, and "eventually" (the orphan sweep) is the wrong answer to an
+     * erasure request.
+     */
+    @Test
+    void shouldUnlinkSessionThreadFilesWhenTheAccountIsErased() {
+        var slot = timeSlotRepository.save(new pl.nextsteppro.climbing.domain.timeslot.TimeSlot(
+            LocalDate.now().minusDays(1), LocalTime.of(10, 0), LocalTime.of(12, 0), 4));
+        var booking = reservationRepository.save(
+            new pl.nextsteppro.climbing.domain.reservation.Reservation(athlete, slot));
+        // One file from each side of the thread: erasure covers the calendar owner's own uploads
+        // AND what somebody else attached inside it.
+        trainingCalendarService.addMySessionCommentWithFiles(
+            athlete.getId(), booking.getId(), null, List.of(jpeg("mine.jpg")));
+        adminTrainingCalendarService.addSessionCommentWithFiles(
+            coach.getId(), booking.getId(), null, List.of(jpeg("coach.jpg")));
+        List<String> filenames = commentFileRepository.findAll().stream()
+            .map(f -> f.getFilename()).toList();
+        assertEquals(2, filenames.size());
+
+        commentFileSupport.purgeForUser(athlete.getId());
+
+        for (String filename : filenames) {
+            assertFalse(fileStorageService.exists(filename, CommentFileSupport.FOLDER), filename);
+        }
     }
 
     @Test
