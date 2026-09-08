@@ -27,6 +27,56 @@
     "team": "Team",
     "system": "System"
   },
+  "hub": {
+    "attention": "Needs attention",
+    "allClear": "Nothing needs your attention.",
+    "hints": {
+      "slots": "Bookable slots, availability windows and time off.",
+      "reservations": "Who is signed up for what, plus waitlists.",
+      "events": "Courses, workshops and trips — multi-day included.",
+      "requests": "Times proposed by users.",
+      "trainingCalendars": "Athletes' training plans, goals and weight.",
+      "settlements": "Amounts per session, debts, subscriptions and payouts.",
+      "news": "Articles and announcements in three languages.",
+      "courses": "The course offer: descriptions, prices and photos.",
+      "gallery": "Photos published in the gallery.",
+      "videos": "Clips embedded from YouTube and Instagram.",
+      "instructors": "Staff: bios, photos and order on the page.",
+      "competitors": "Athletes featured on the team page.",
+      "users": "Accounts, roles, the athlete flag and base stats.",
+      "mail": "Bulk sending and the newsletter.",
+      "activity": "A timeline of what happened in the system.",
+      "assets": "The shared file library for use inside content.",
+      "storage": "Disk usage and file housekeeping.",
+      "site": "Hero, badges, the location section and calendar promo."
+    }
+  },
+  "palette": {
+    "open": "Search the panel",
+    "placeholder": "Search for a tab…",
+    "empty": "No matches",
+    "hintKeys": "↑↓ move · Enter open · Esc close",
+    "keywords": {
+      "slots": "availability · unavailable · time off · hours",
+      "reservations": "signups · participants · waitlist · guests · cancellation",
+      "events": "courses · workshops · trips · multi-day · location",
+      "requests": "requests · suggested times · proposals",
+      "trainingCalendars": "training · plan · athletes · goals · weight · RPE · templates",
+      "settlements": "money · payments · debt · outstanding · subscription · payouts · revenue · pricing",
+      "news": "articles · blog · announcements",
+      "courses": "offer · pricing · programmes",
+      "gallery": "photos · pictures · album",
+      "videos": "youtube · instagram · clips",
+      "instructors": "coaches · staff · bio",
+      "competitors": "team · roster · squad",
+      "users": "accounts · clients · roles · admin · stats · athlete",
+      "mail": "newsletter · campaign · message · broadcast",
+      "activity": "log · history · audit · timeline",
+      "assets": "files · media · images · library",
+      "storage": "disk · space · capacity",
+      "site": "hero · homepage · badges · location · promo · settings"
+    }
+  },
   "team": {
     "language": "Language",
     "allLanguages": "All languages",

@@ -27,6 +27,56 @@
     "team": "Zespół",
     "system": "System"
   },
+  "hub": {
+    "attention": "Wymaga uwagi",
+    "allClear": "Nic nie wymaga uwagi.",
+    "hints": {
+      "slots": "Sloty na rezerwacje, okna dostępności i nieobecności.",
+      "reservations": "Kto i na co jest zapisany, plus listy rezerwowe.",
+      "events": "Kursy, warsztaty i wyjazdy — także kilkudniowe.",
+      "requests": "Terminy proponowane przez użytkowników.",
+      "trainingCalendars": "Plany treningowe zawodników, cele i waga.",
+      "settlements": "Kwoty za terminy, zaległości, abonamenty i wypłaty.",
+      "news": "Artykuły i ogłoszenia w trzech językach.",
+      "courses": "Oferta kursów: opisy, ceny i zdjęcia.",
+      "gallery": "Zdjęcia publikowane w galerii.",
+      "videos": "Filmy osadzane z YouTube i Instagrama.",
+      "instructors": "Kadra: bio, zdjęcia i kolejność na stronie.",
+      "competitors": "Zawodnicy prezentowani na stronie zespołu.",
+      "users": "Konta, role, flaga zawodnika i statystyki bazy.",
+      "mail": "Masowa wysyłka i newsletter.",
+      "activity": "Oś czasu tego, co działo się w systemie.",
+      "assets": "Wspólna biblioteka plików do wstawiania w treści.",
+      "storage": "Zajęte miejsce na dysku i porządki w plikach.",
+      "site": "Hero, plakietki, sekcja lokalizacji i promo kalendarza."
+    }
+  },
+  "palette": {
+    "open": "Szukaj w panelu",
+    "placeholder": "Szukaj zakładki…",
+    "empty": "Brak wyników",
+    "hintKeys": "↑↓ wybierz · Enter otwórz · Esc zamknij",
+    "keywords": {
+      "slots": "sloty · dostępność · nieobecność · urlop · godziny",
+      "reservations": "zapisy · uczestnicy · lista rezerwowa · goście · odwołanie",
+      "events": "kursy · warsztaty · wyjazdy · wielodniowe · lokalizacja",
+      "requests": "prośby · terminy od klientów · propozycje",
+      "trainingCalendars": "treningi · plan · zawodnicy · cele · waga · RPE · szablony",
+      "settlements": "pieniądze · płatności · dług · zaległości · abonament · wypłaty · przychód · cennik",
+      "news": "artykuły · blog · ogłoszenia",
+      "courses": "oferta · cennik · szkolenia",
+      "gallery": "zdjęcia · fotki · album",
+      "videos": "youtube · instagram · nagrania",
+      "instructors": "kadra · trenerzy · bio",
+      "competitors": "team · skład · reprezentacja",
+      "users": "konta · klienci · role · admin · statystyki · zawodnik",
+      "mail": "newsletter · wysyłka · wiadomość · kampania",
+      "activity": "log · historia · audyt · dziennik",
+      "assets": "pliki · media · obrazki · biblioteka",
+      "storage": "dysk · miejsce · pojemność",
+      "site": "hero · strona startowa · plakietki · lokalizacja · promo · ustawienia"
+    }
+  },
   "team": {
     "language": "Język",
     "allLanguages": "Wszystkie języki",

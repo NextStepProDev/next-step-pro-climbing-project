@@ -13,6 +13,14 @@ if (!Element.prototype.scrollTo) {
   Element.prototype.scrollTo = () => {}
 }
 
+// Nor `scrollIntoView`. The admin command palette keeps its highlighted row inside the scroll box
+// with it, so arrowing down would throw before any assertion ran. A no-op is honest here for the
+// same reason: jsdom has no layout, so there is no "inside the box" to compute — what the tests
+// assert is which option is selected, which lives in `aria-selected`, not in scroll offset.
+if (!Element.prototype.scrollIntoView) {
+  Element.prototype.scrollIntoView = () => {}
+}
+
 // jsdom implements no IntersectionObserver. Components that lazy-load on scroll (private file
 // thumbnails) would otherwise throw on mount, so the stub reports "already visible": a test that
 // cannot scroll should still see what a reader would.
