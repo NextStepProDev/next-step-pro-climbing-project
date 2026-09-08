@@ -1,21 +1,18 @@
-# ⚠️ 24, not the newer 26, and it is the tests that decide: node 26 ships its own global
-# localStorage, which shadows the one jsdom provides, and 32 tests fail on it under vitest 4 /
-# jsdom 30. Building on a version the suite cannot run on means shipping what nothing verified.
-# 24 is the active LTS; revisit 26 once vitest and jsdom handle that global (26 becomes LTS on
-# 2026-10-28). Keep this in step with .nvmrc, which CI reads.
-FROM node:24-alpine AS build
-WORKDIR /app
-ARG APP_VERSION=dev
-ENV VITE_APP_VERSION=$APP_VERSION
-
-COPY package.json package-lock.json ./
-RUN npm ci
-
-COPY . .
-RUN npm run build
-
+# This image PACKAGES a built artifact; it does not build one.
+#
+# `dist/` is produced by the lint-typecheck-build job (npm run build) and handed here as a
+# workflow artifact, so what ships is byte-for-byte the directory that passed eslint, tsc,
+# vitest, the America/New_York pass and Playwright — not a second, untested build of the same
+# source. It also stops the bundle from being rebuilt once per platform: dist is HTML, CSS and
+# JS, so the arm64 copy was Vite running under QEMU emulation to produce identical text files
+# (~11 minutes of the docker job).
+#
+# The node version that builds this now lives only in .nvmrc + ci-frontend.yml — see the note
+# there about why it is 24 and not 26.
+#
+# Building locally: run `npm run build` BEFORE `docker build .`.
 FROM nginx:alpine
-COPY --from=build /app/dist /usr/share/nginx/html
+COPY dist /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 80

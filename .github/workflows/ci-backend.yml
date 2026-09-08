@@ -6,11 +6,19 @@ on:
     paths:
       - next-step-pro-climbing-backend/**
       - VERSION
+      # The workflow file itself: without this a PR that only touches CI never runs CI,
+      # so the artifact plumbing below would merge having never been exercised.
+      # dependency-graph.yml already does this.
+      - .github/workflows/ci-backend.yml
   pull_request:
     branches: [main]
     paths:
       - next-step-pro-climbing-backend/**
       - VERSION
+      # The workflow file itself: without this a PR that only touches CI never runs CI,
+      # so the artifact plumbing below would merge having never been exercised.
+      # dependency-graph.yml already does this.
+      - .github/workflows/ci-backend.yml
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -47,6 +55,31 @@ jobs:
 
       - run: ./gradlew test
 
+      # Package the jar HERE, from the tree that just passed the suite, and hand it to the docker
+      # job. The image used to run `bootJar -x test` itself, so what shipped was a second
+      # compilation nothing had run; this closes that gap and drops ~12 minutes of QEMU-emulated
+      # Gradle from the docker job at the same time. Deliberately not gated on push: on a PR it
+      # costs seconds against a warm cache and catches a packaging failure before merge.
+      - name: Package the tested jar
+        run: |
+          ./gradlew bootJar
+          # Pin the name instead of globbing. bootJar leaves climbing-backend-<VERSION>.jar, but
+          # the `jar` task would drop a -plain.jar beside it and the old `COPY *.jar` said nothing
+          # about which one it meant. Fail loudly here rather than ship the wrong one.
+          test "$(ls build/libs/*.jar | wc -l)" -eq 1
+          mkdir -p build/artifact
+          cp build/libs/*.jar build/artifact/app.jar
+
+      - uses: actions/upload-artifact@v7
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        with:
+          name: backend-jar
+          path: next-step-pro-climbing-backend/build/artifact/app.jar
+          retention-days: 1
+          # Default is `warn`, which would upload nothing and let the docker job fail later
+          # with "artifact not found" — a failure two jobs away from its cause.
+          if-no-files-found: error
+
       - uses: actions/upload-artifact@v7
         if: always()
         with:
@@ -63,9 +96,22 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - name: Read version
+      - name: Read version and image owner
         id: version
-        run: echo "version=$(cat VERSION)" >> "$GITHUB_OUTPUT"
+        run: |
+          echo "version=$(cat VERSION)" >> "$GITHUB_OUTPUT"
+          # The Trivy steps below used to hardcode the owner in lowercase while metadata-action
+          # derived it from github.repository_owner — two sources of truth for one image name,
+          # agreeing only by luck. They cannot simply share the context value: GHCR requires a
+          # lowercase path and the owner is NextStepProDev, which is why the literal was there.
+          # Lowercase it once here instead, so a rename or a fork moves both together.
+          echo "owner=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
+
+      # The jar the previous job built and tested. The Dockerfile only copies it in.
+      - uses: actions/download-artifact@v7
+        with:
+          name: backend-jar
+          path: next-step-pro-climbing-backend
 
       - uses: docker/setup-qemu-action@v4
 
@@ -96,7 +142,10 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          build-args: APP_VERSION=${{ steps.version.outputs.version }}
+          # No build-args: the version is already baked into the jar's application.yml by
+          # processResources. build.gradle reads ../VERSION first and only falls back to the
+          # APP_VERSION env, and ../VERSION does not exist inside the docker context — which is
+          # the only reason that build-arg was ever load-bearing.
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -113,7 +162,7 @@ jobs:
       - name: Trivy image scan (SARIF do zakładki Security)
         uses: aquasecurity/trivy-action@v0.36.0
         with:
-          image-ref: ghcr.io/nextstepprodev/nextsteppro-backend:${{ steps.version.outputs.version }}
+          image-ref: ghcr.io/${{ steps.version.outputs.owner }}/nextsteppro-backend:${{ steps.version.outputs.version }}
           format: sarif
           output: trivy-backend.sarif
           severity: HIGH,CRITICAL
@@ -142,7 +191,7 @@ jobs:
       - name: Bramka CVE (CRITICAL blokuje)
         uses: aquasecurity/trivy-action@v0.36.0
         with:
-          image-ref: ghcr.io/nextstepprodev/nextsteppro-backend:${{ steps.version.outputs.version }}
+          image-ref: ghcr.io/${{ steps.version.outputs.owner }}/nextsteppro-backend:${{ steps.version.outputs.version }}
           format: table
           severity: CRITICAL
           ignore-unfixed: true
