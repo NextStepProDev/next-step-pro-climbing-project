@@ -1,0 +1,5 @@
+# Deny-by-default: the image packages a prebuilt jar, so app.jar is the only thing the build
+# context needs. Listing what to exclude would mean remembering src/, build/, .gradle/ and
+# uploads/ forever; listing the single include cannot rot.
+*
+!app.jar

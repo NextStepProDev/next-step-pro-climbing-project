@@ -6,11 +6,19 @@ on:
     paths:
       - next-step-pro-climbing-frontend/**
       - VERSION
+      # The workflow file itself: without this a PR that only touches CI never runs CI,
+      # so the artifact plumbing below would merge having never been exercised.
+      # dependency-graph.yml already does this.
+      - .github/workflows/ci-frontend.yml
   pull_request:
     branches: [main]
     paths:
       - next-step-pro-climbing-frontend/**
       - VERSION
+      # The workflow file itself: without this a PR that only touches CI never runs CI,
+      # so the artifact plumbing below would merge having never been exercised.
+      # dependency-graph.yml already does this.
+      - .github/workflows/ci-frontend.yml
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -38,6 +46,14 @@ jobs:
         with:
           # The version lives in .nvmrc, which `nvm use` reads too, so this job and a developer's
           # machine cannot drift apart by editing one of two copies of the same number.
+          #
+          # ⚠️ 24, not the newer 26, and it is the tests that decide: node 26 ships its own global
+          # localStorage, which shadows the one jsdom provides, and 32 tests fail on it under
+          # vitest 4 / jsdom 30. This used to be pinned in the Dockerfile too, but the image no
+          # longer contains node — this job builds the bundle that ships, so this is now the only
+          # place the number matters, and building on a version the suite cannot run on would mean
+          # shipping what nothing verified. 24 is the active LTS; revisit 26 once vitest and jsdom
+          # handle that global (26 becomes LTS on 2026-10-28).
           node-version-file: next-step-pro-climbing-frontend/.nvmrc
           cache: npm
           cache-dependency-path: next-step-pro-climbing-frontend/package-lock.json
@@ -80,6 +96,21 @@ jobs:
 
       - run: npm run build
 
+      # Hand the built bundle to the docker job instead of letting the image rebuild it. Two
+      # reasons, correctness first: what ships is then the exact directory this job linted,
+      # type-checked and tested, not a second build of the same source that nothing ran. And
+      # dist is architecture-independent, so building it once per platform meant Vite running
+      # under QEMU to produce identical text files — 11 of the docker job's 13 minutes.
+      - uses: actions/upload-artifact@v7
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        with:
+          name: frontend-dist
+          path: next-step-pro-climbing-frontend/dist
+          retention-days: 1
+          # Default is `warn`, which would upload nothing and let the docker job fail later
+          # with "artifact not found" — a failure two jobs away from its cause.
+          if-no-files-found: error
+
   docker:
     needs: lint-typecheck-build
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -89,9 +120,22 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - name: Read version
+      - name: Read version and image owner
         id: version
-        run: echo "version=$(cat VERSION)" >> "$GITHUB_OUTPUT"
+        run: |
+          echo "version=$(cat VERSION)" >> "$GITHUB_OUTPUT"
+          # The Trivy steps below used to hardcode the owner in lowercase while metadata-action
+          # derived it from github.repository_owner — two sources of truth for one image name,
+          # agreeing only by luck. They cannot simply share the context value: GHCR requires a
+          # lowercase path and the owner is NextStepProDev, which is why the literal was there.
+          # Lowercase it once here instead, so a rename or a fork moves both together.
+          echo "owner=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
+
+      # The bundle the previous job built and tested. The Dockerfile only copies it in.
+      - uses: actions/download-artifact@v7
+        with:
+          name: frontend-dist
+          path: next-step-pro-climbing-frontend/dist
 
       - uses: docker/setup-qemu-action@v4
 
@@ -122,7 +166,10 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          build-args: APP_VERSION=${{ steps.version.outputs.version }}
+          # No build-args: the version is baked into the bundle by the job that built it.
+          # vite.config.ts reads ../VERSION first and only falls back to VITE_APP_VERSION,
+          # and ../VERSION does not exist inside the docker context — which is the only
+          # reason that build-arg was ever load-bearing.
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -137,7 +184,7 @@ jobs:
       - name: Trivy image scan (SARIF do zakładki Security)
         uses: aquasecurity/trivy-action@v0.36.0
         with:
-          image-ref: ghcr.io/nextstepprodev/nextsteppro-frontend:${{ steps.version.outputs.version }}
+          image-ref: ghcr.io/${{ steps.version.outputs.owner }}/nextsteppro-frontend:${{ steps.version.outputs.version }}
           format: sarif
           output: trivy-frontend.sarif
           severity: HIGH,CRITICAL
@@ -166,7 +213,7 @@ jobs:
       - name: Bramka CVE (CRITICAL blokuje)
         uses: aquasecurity/trivy-action@v0.36.0
         with:
-          image-ref: ghcr.io/nextstepprodev/nextsteppro-frontend:${{ steps.version.outputs.version }}
+          image-ref: ghcr.io/${{ steps.version.outputs.owner }}/nextsteppro-frontend:${{ steps.version.outputs.version }}
           format: table
           severity: CRITICAL
           ignore-unfixed: true

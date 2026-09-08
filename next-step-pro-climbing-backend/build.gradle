@@ -98,6 +98,17 @@ tasks.named('bootRun') {
 }
 
 tasks.named('processResources') {
+    // ⚠️ Bez tej linii bump VERSION przemianowuje jara, ale NIE zmienia wersji w środku.
+    // `project.version` jest czytane w fazie konfiguracji, a `filter` to domknięcie — Gradle nie
+    // widzi tej wartości jako wejścia zadania, więc po samej zmianie ../VERSION processResources
+    // zostaje UP-TO-DATE i `application.yml` w build/resources/main niesie POPRZEDNI numer.
+    // Objaw jest cichy i mylący: plik nazywa się climbing-backend-4.50.1.jar (nazwa bierze się
+    // z project.version, nie z zasobów), a `app.version` w środku mówi 4.49.0 — czyli Swagger
+    // i każdy inny czytelnik tej właściwości kłamią o wersji, którą uruchamiasz.
+    // Do tej pory było to niewidoczne, bo obraz budował się od zera w świeżym kontenerze, gdzie
+    // nie ma czego uznać za aktualne. Odkąd na produkcję jedzie jar zbudowany w jobie CI, ta
+    // pułapka jest na ścieżce wydania.
+    inputs.property('appVersion', project.version.toString())
     filesMatching('application*.yml') {
         filter { line ->
             line.replace('@version@', project.version.toString())

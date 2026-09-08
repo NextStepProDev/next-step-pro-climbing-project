@@ -1,32 +1,43 @@
-# Etap 1: Budowanie (Build Stage)
-FROM eclipse-temurin:25-jdk-alpine AS build
-WORKDIR /app
-ARG APP_VERSION=dev
-
-# 1. Kopiujemy wrapper i konfigurację Gradle
-COPY gradlew .
-COPY gradle/ gradle/
-# Wersje zależności siedzą w gradle/libs.versions.toml, który wchodzi tu razem z katalogiem
-# gradle/ w linii wyżej — dlatego nie ma tu już gradle.properties.
-COPY build.gradle settings.gradle ./
-
-# 2. Kopiujemy kod źródłowy
-COPY src src
-
-# 3. Budujemy aplikację
-RUN chmod +x gradlew
-RUN APP_VERSION=$APP_VERSION ./gradlew bootJar -x test
-
-# Etap 2: Uruchamianie (Runtime Stage)
+# This image PACKAGES a built artifact; it does not build one.
+#
+# app.jar is produced by the build-and-test job (./gradlew bootJar, right after ./gradlew test)
+# and handed here as a workflow artifact. This image used to run `./gradlew bootJar -x test`
+# itself, which meant the jar on production was a SECOND compilation that no test had ever run —
+# the suite passed on one file and a different one shipped. Now the tested file is the shipped
+# file.
+#
+# It was also compiled once per platform, and the arm64 pass ran under QEMU emulation: ~12 of the
+# docker job's 15 minutes spent emulating a CPU to produce identical JVM bytecode. (The layer
+# cache could not help either — `COPY src src` sat above the build, so every commit invalidated
+# it and Gradle re-fetched every dependency from Maven Central, twice.)
+#
+# Building locally: `./gradlew clean bootJar && cp build/libs/*.jar app.jar` BEFORE
+# `docker build .`. The `clean` is not optional — build/libs keeps a jar for every version ever
+# built on that machine (plus a -plain.jar wherever the `jar` task has run), so the glob is
+# ambiguous exactly the way the old `COPY --from=build …/*.jar` was. CI never saw this: it
+# checks out a fresh tree, which is why the packaging step there asserts the count instead.
 FROM eclipse-temurin:25-jre-alpine
 RUN apk add --no-cache curl
 WORKDIR /app
 
-# Kopiujemy gotowy JAR (z obsługą wersji 2.1.0-SNAPSHOT)
-COPY --from=build /app/build/libs/*.jar app.jar
+# ⚠️ Must stay ABOVE the addgroup/chown block below: that is what makes the jar owned by `app`,
+# the user this container runs as.
+COPY app.jar app.jar
 
-# Ustawiamy profil 'docker' dla application-docker.yml
-ENV SPRING_PROFILES_ACTIVE=docker
+# This used to read `docker` — a profile no application-docker.yml has ever defined, and the
+# comment beside it named that file as if it existed. docker-compose.prod.yml sets no profile of
+# its own, so this ENV is what production actually runs on: the image has been starting on a
+# profile with no configuration behind it, and application-prod.yml has never been loaded.
+#
+# The damage was small, which is why nothing surfaced it: everything in application-prod.yml is
+# either the framework default already (show-sql: false) or driven by env vars compose does set
+# (MAIL_AUTH, MAIL_STARTTLS). The live delta is log level — org.springframework.security and
+# org.hibernate ran at INFO instead of WARN, so production has been paying for chatty logs on a
+# box where disk and rotation are budgeted.
+#
+# Nothing in the code branches on this profile: `dev` is the only one anyone reads
+# (SecurityConfig, DevAuthController, DevDataSeeder), so `prod` changes no code path.
+ENV SPRING_PROFILES_ACTIVE=prod
 
 # Uruchamiaj jako nieuprzywilejowany użytkownik (pinned uid 1001 → deterministyczny
 # chown wolumenu). /app/uploads jest pre-tworzony i nadany userowi: ŚWIEŻY named volume

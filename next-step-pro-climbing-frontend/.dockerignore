@@ -1,0 +1,7 @@
+# Deny-by-default, like the rate limiter. The image packages a prebuilt bundle, so the only
+# things the build context needs are the two paths the Dockerfile copies. Listing what to
+# EXCLUDE would mean editing this file every time the project grows a directory; listing what
+# to include cannot rot. Without it a local `docker build` uploads node_modules as context.
+*
+!dist
+!nginx.conf
