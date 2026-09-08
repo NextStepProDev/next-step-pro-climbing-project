@@ -4,9 +4,18 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: Image tag to deploy (e.g. main, sha-abc1234, 1.0.0)
-        required: true
-        default: main
+        # ⚠️ No default, and that is the whole point. This used to default to `main`, which made
+        # the fallback below unreachable: the input was never empty, so `cat VERSION` was computed
+        # and thrown away on every run, and every deploy shipped the floating `main` tag while the
+        # log said so in a way nobody read. Leave the field empty for the normal case.
+        #
+        # The cost of pinning, so nobody is surprised by it: a deploy clicked before the docker
+        # job has finished now FAILS at `compose pull`, because that version tag does not exist
+        # yet. Under `main` the same click quietly deployed the PREVIOUS build and stayed green
+        # through the healthcheck and the smoke tests. Loud beats silent; wait for CI and retry.
+        description: Image tag to deploy. Leave EMPTY to deploy the version in the VERSION file; fill in only to roll back or to pin a build (e.g. 4.49.0, sha-abc1234).
+        required: false
+        default: ''
 
 jobs:
   deploy:
@@ -24,12 +33,19 @@ jobs:
           else
             VERSION="main"
           fi
-          # Use input version if provided, otherwise use VERSION file
+          # Use input version if provided, otherwise use VERSION file. This branch was dead until
+          # the input lost its `main` default — see the note on the input above.
           if [ -n "${{ inputs.version }}" ]; then
             VERSION="${{ inputs.version }}"
           fi
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Deploying version: $VERSION"
+          # Deploying the floating tag is still allowed - it is the honest answer when you want
+          # whatever is newest - but it costs traceability, so name that here instead of letting
+          # the box report a branch name where a version belongs.
+          if [ "$VERSION" = "main" ]; then
+            echo "NOTE: deploying the floating 'main' tag - docker inspect will report ':main', not a version."
+          fi
 
       - name: Encode docker-compose.prod.yml
         id: compose
