@@ -27,6 +27,56 @@
     "team": "Equipo",
     "system": "Sistema"
   },
+  "hub": {
+    "attention": "Requiere atención",
+    "allClear": "Nada requiere tu atención.",
+    "hints": {
+      "slots": "Franjas reservables, ventanas de disponibilidad y ausencias.",
+      "reservations": "Quién está inscrito en qué, y las listas de espera.",
+      "events": "Cursos, talleres y viajes, también de varios días.",
+      "requests": "Horarios propuestos por los usuarios.",
+      "trainingCalendars": "Planes de entrenamiento, objetivos y peso.",
+      "settlements": "Importes por sesión, deudas, suscripciones y pagos.",
+      "news": "Artículos y anuncios en tres idiomas.",
+      "courses": "La oferta de cursos: descripciones, precios y fotos.",
+      "gallery": "Fotos publicadas en la galería.",
+      "videos": "Vídeos incrustados de YouTube e Instagram.",
+      "instructors": "Personal: biografías, fotos y orden en la página.",
+      "competitors": "Deportistas mostrados en la página del equipo.",
+      "users": "Cuentas, roles, la marca de deportista y estadísticas.",
+      "mail": "Envío masivo y boletín.",
+      "activity": "Cronología de lo que ha pasado en el sistema.",
+      "assets": "Biblioteca compartida de archivos para el contenido.",
+      "storage": "Espacio en disco y limpieza de archivos.",
+      "site": "Hero, insignias, sección de ubicación y promo del calendario."
+    }
+  },
+  "palette": {
+    "open": "Buscar en el panel",
+    "placeholder": "Buscar una pestaña…",
+    "empty": "Sin resultados",
+    "hintKeys": "↑↓ mover · Enter abrir · Esc cerrar",
+    "keywords": {
+      "slots": "disponibilidad · no disponible · ausencia · horas",
+      "reservations": "inscripciones · participantes · lista de espera · invitados · cancelación",
+      "events": "cursos · talleres · viajes · varios días · ubicación",
+      "requests": "solicitudes · horarios sugeridos · propuestas",
+      "trainingCalendars": "entrenamientos · plan · deportistas · objetivos · peso · RPE · plantillas",
+      "settlements": "dinero · pagos · deuda · pendiente · suscripción · ingresos · precios",
+      "news": "artículos · blog · anuncios",
+      "courses": "oferta · precios · formación",
+      "gallery": "fotos · imágenes · álbum",
+      "videos": "youtube · instagram · clips",
+      "instructors": "entrenadores · personal · biografía",
+      "competitors": "equipo · plantilla · selección",
+      "users": "cuentas · clientes · roles · admin · estadísticas · deportista",
+      "mail": "boletín · campaña · mensaje · envío",
+      "activity": "registro · historial · auditoría · cronología",
+      "assets": "archivos · medios · imágenes · biblioteca",
+      "storage": "disco · espacio · capacidad",
+      "site": "hero · página principal · insignias · ubicación · promo · ajustes"
+    }
+  },
   "team": {
     "language": "Idioma",
     "allLanguages": "Todos los idiomas",
