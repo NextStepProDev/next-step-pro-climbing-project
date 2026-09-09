@@ -2,6 +2,7 @@ package pl.nextsteppro.climbing.config;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
+import org.jspecify.annotations.Nullable;
 import org.springframework.core.MethodParameter;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -23,9 +24,13 @@ public class CurrentUserIdArgumentResolver implements HandlerMethodArgumentResol
             && parameter.getParameterType().equals(UUID.class);
     }
 
+    // Mirrors HandlerMethodArgumentResolver: Spring declares the return type and both of these
+    // parameters @Nullable, and a null return here is the normal "nobody is logged in" answer.
+    // Once this package is @NullMarked, leaving them bare narrows a contract Spring widened.
     @Override
-    public Object resolveArgument(MethodParameter parameter, ModelAndViewContainer mavContainer,
-                                  NativeWebRequest webRequest, WebDataBinderFactory binderFactory) {
+    @Nullable
+    public Object resolveArgument(MethodParameter parameter, @Nullable ModelAndViewContainer mavContainer,
+                                  NativeWebRequest webRequest, @Nullable WebDataBinderFactory binderFactory) {
         // Try JWT first
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth != null && auth.getPrincipal() instanceof JwtAuthenticatedUser jwtUser) {
