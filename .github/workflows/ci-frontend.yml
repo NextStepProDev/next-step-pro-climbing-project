@@ -48,12 +48,17 @@ jobs:
           # machine cannot drift apart by editing one of two copies of the same number.
           #
           # ⚠️ 24, not the newer 26, and it is the tests that decide: node 26 ships its own global
-          # localStorage, which shadows the one jsdom provides, and 32 tests fail on it under
-          # vitest 4 / jsdom 30. This used to be pinned in the Dockerfile too, but the image no
-          # longer contains node — this job builds the bundle that ships, so this is now the only
-          # place the number matters, and building on a version the suite cannot run on would mean
-          # shipping what nothing verified. 24 is the active LTS; revisit 26 once vitest and jsdom
-          # handle that global (26 becomes LTS on 2026-10-28).
+          # localStorage, which shadows the one jsdom provides, and 32 tests fail on it. This used
+          # to be pinned in the Dockerfile too, but the image no longer contains node — this job
+          # builds the bundle that ships, so this is now the only place the number matters, and
+          # building on a version the suite cannot run on would mean shipping what nothing
+          # verified.
+          #
+          # ⚠️ The blocker is VITEST 4, not node itself, and that distinction decides when this
+          # can move. Fire Academy runs the same suite shape on node 26 with no failures because
+          # it is on vitest 5 / jsdom 30 — so the trigger to revisit is our own upgrade to vitest
+          # 5, not the calendar and not node 26 becoming LTS (2026-10-28). Do not copy a node
+          # version between the two repos without checking which vitest each one is on.
           node-version-file: next-step-pro-climbing-frontend/.nvmrc
           cache: npm
           cache-dependency-path: next-step-pro-climbing-frontend/package-lock.json
@@ -106,7 +111,9 @@ jobs:
         with:
           name: frontend-dist
           path: next-step-pro-climbing-frontend/dist
-          retention-days: 1
+          # ⚠️ 7, not 1 — see the note in ci-backend.yml. The docker job downloads this instead
+          # of building it, so retention is now the lifetime of "Re-run failed jobs".
+          retention-days: 7
           # Default is `warn`, which would upload nothing and let the docker job fail later
           # with "artifact not found" — a failure two jobs away from its cause.
           if-no-files-found: error

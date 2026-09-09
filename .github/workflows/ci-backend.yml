@@ -75,7 +75,12 @@ jobs:
         with:
           name: backend-jar
           path: next-step-pro-climbing-backend/build/artifact/app.jar
-          retention-days: 1
+          # ⚠️ 7, not 1. The docker job no longer builds anything — it DOWNLOADS this — so the
+          # retention window is now how long "Re-run failed jobs" keeps working. At 1 day a
+          # re-run two days later fails with "artifact not found", which names neither the cause
+          # nor the fix, and that affordance worked unconditionally before the handoff existed.
+          # Storage is free on a public repo, so the short window bought nothing.
+          retention-days: 7
           # Default is `warn`, which would upload nothing and let the docker job fail later
           # with "artifact not found" — a failure two jobs away from its cause.
           if-no-files-found: error
