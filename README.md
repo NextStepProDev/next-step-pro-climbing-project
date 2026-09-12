@@ -73,7 +73,7 @@ Users can browse a public calendar, reserve time slots and sign up for events. A
 ### Backend
 - **Java 25** + **Spring Boot 4.1.0**
 - Spring Security + JWT + OAuth2 (Google)
-- Spring Data JPA + **PostgreSQL 17**
+- Spring Data JPA + **PostgreSQL 18**
 - **Flyway** (versioned migrations)
 - SpringDoc OpenAPI (Swagger UI)
 - Caffeine Cache (multi-tier TTL)
@@ -116,7 +116,7 @@ next-step-pro-climbing-project/
 - Java 25 (JDK)
 - Node.js 24+
 - Docker + Docker Compose
-- PostgreSQL 17 (via Docker)
+- PostgreSQL 18 (via Docker)
 
 ## Quick Start (Development)
 

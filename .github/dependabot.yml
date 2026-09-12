@@ -62,7 +62,7 @@ updates:
         update-types: ["version-update:semver-major"]
 
   # ⚠️ Compose produkcyjny, a nie kolejny Dockerfile — i dlatego ekosystem jest inny.
-  # Stoi tu postgres:17-alpine, czyli baza z danymi klientów, i do tej pory nie pilnował jej
+  # Stoi tu postgres:18-alpine, czyli baza z danymi klientów, i do tej pory nie pilnował jej
   # nikt: dependabot.yml wymieniał wyłącznie dwa katalogi z Dockerfile'ami.
   # ⚠️ MUSI być `docker-compose`, nie `docker`. Ten drugi szuka wyłącznie Dockerfile'ów i na
   # katalogu z samym compose przerywa zadanie błędem "No Dockerfiles" — czyli nie tylko nie
