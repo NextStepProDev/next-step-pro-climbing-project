@@ -5,7 +5,7 @@
 #   1. pg_dump of the database   -> /backups/db/<date>.sql.gz
 #   2. tar of the uploads volume -> /backups/files/<date>.tar.gz
 #   3. upload to the encrypted Google Drive remote (gdrive-crypt:)
-#   4. prune: 7 days locally, 90 days on the remote
+#   4. prune: 7 days locally, 90 days on the remote — /backups/milestones is exempt
 #
 # Every artefact is written as <name>.part, verified, and only then renamed.
 # A half-written dump therefore never occupies the name a restore would reach for.
@@ -19,6 +19,14 @@ set -Eeuo pipefail
 DATE=$(date +%Y-%m-%d)
 DB_DIR="/backups/db"
 FILES_DIR="/backups/files"
+# Dumps taken by hand before a risky operation (a major Postgres upgrade, a data
+# migration) live here and NO prune touches them, local or remote. They used to sit
+# in db/ next to the daily ones, where `-name '*.sql.gz' -mtime +7` cannot tell a
+# one-off safety net from yesterday's routine copy: the pre-upgrade dump of
+# 2026-09-05 was one night away from deletion while the rollback volume it backed up
+# had already been removed. A directory, not a filename convention — the person
+# dumping before a risky operation is exactly the one who will not remember a suffix.
+MILESTONE_DIR="/backups/milestones"
 DB_BACKUP="${DB_DIR}/${DATE}.sql.gz"
 FILES_BACKUP="${FILES_DIR}/${DATE}.tar.gz"
 COMPOSE_DIR="/home/ubuntu/nsp-app"
@@ -58,7 +66,7 @@ fail() { log "ERROR: $*"; notify_fail; exit 1; }
 trap 'code=$?; log "ERROR: unexpected failure at line ${LINENO} (exit ${code})"; notify_fail' ERR
 
 log "=== Backup start ==="
-mkdir -p "$DB_DIR" "$FILES_DIR"
+mkdir -p "$DB_DIR" "$FILES_DIR" "$MILESTONE_DIR"
 
 # --------------------------------------------------------------------------
 # 1. Database
@@ -107,7 +115,11 @@ rclone copy /backups "$REMOTE" --exclude "*.part" --log-file="$LOG" --log-level 
 # 4. Prune — the two archives age independently
 # --------------------------------------------------------------------------
 log "Prune remote older than ${REMOTE_RETENTION_DAYS}d"
-rclone delete "$REMOTE" --min-age "${REMOTE_RETENTION_DAYS}d" --log-file="$LOG" --log-level INFO
+# The exclude is the remote half of the milestone rule above. Without it the off-site
+# copy of a pre-upgrade dump expires 90 days after the upgrade — exactly when nobody
+# is watching it any more, and with no local copy left to notice it went.
+rclone delete "$REMOTE" --min-age "${REMOTE_RETENTION_DAYS}d" \
+  --exclude "milestones/**" --log-file="$LOG" --log-level INFO
 
 log "Prune local older than ${LOCAL_RETENTION_DAYS}d"
 find "$DB_DIR"    -name '*.sql.gz' -mtime "+${LOCAL_RETENTION_DAYS}" -delete

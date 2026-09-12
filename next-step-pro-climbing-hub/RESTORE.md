@@ -243,8 +243,8 @@ STAMP=$(date +%F-%H%M)
 
 # 1. Świeży zrzut ze starego serwera (jeszcze działającego)
 docker compose -f docker-compose.prod.yml exec -T postgres \
-  pg_dump -U nextsteppro nextsteppro | gzip > /backups/db/PRZED-MIGRACJA-${STAMP}.sql.gz
-gunzip -c /backups/db/PRZED-MIGRACJA-${STAMP}.sql.gz | tail -20 \
+  pg_dump -U nextsteppro nextsteppro | gzip > /backups/milestones/PRZED-MIGRACJA-${STAMP}.sql.gz
+gunzip -c /backups/milestones/PRZED-MIGRACJA-${STAMP}.sql.gz | tail -20 \
   | grep -q 'PostgreSQL database dump complete' && echo "OK: zrzut kompletny"
 
 # 2. PRÓBA GENERALNA — nowy major w tymczasowym kontenerze, produkcja nietknięta.
@@ -253,7 +253,7 @@ docker volume create nsp-migracja-drill
 docker run -d --rm --name nsp-migracja-drill -v nsp-migracja-drill:/var/lib/postgresql \
   -e POSTGRES_USER=nextsteppro -e POSTGRES_PASSWORD=drill -e POSTGRES_DB=nextsteppro postgres:18-alpine
 until docker exec nsp-migracja-drill pg_isready -U nextsteppro -q; do sleep 1; done
-gunzip -c /backups/db/PRZED-MIGRACJA-${STAMP}.sql.gz \
+gunzip -c /backups/milestones/PRZED-MIGRACJA-${STAMP}.sql.gz \
   | docker exec -i nsp-migracja-drill psql -U nextsteppro -d nextsteppro -v ON_ERROR_STOP=1 -q
 echo "psql zakończył się kodem: $?"   # musi być 0
 docker exec nsp-migracja-drill psql -U nextsteppro -d nextsteppro -c \
@@ -266,7 +266,7 @@ docker compose -f docker-compose.prod.yml up -d postgres     # initdb w nowym wo
 until docker exec nsp-postgres-prod pg_isready -U nextsteppro -q; do sleep 1; done
 
 # 4. Odtworzenie
-gunzip -c /backups/db/PRZED-MIGRACJA-${STAMP}.sql.gz | docker compose -f docker-compose.prod.yml \
+gunzip -c /backups/milestones/PRZED-MIGRACJA-${STAMP}.sql.gz | docker compose -f docker-compose.prod.yml \
   exec -T postgres psql -U nextsteppro -d nextsteppro -v ON_ERROR_STOP=1 -q
 echo "psql zakończył się kodem: $?"   # musi być 0
 
@@ -280,7 +280,14 @@ docker exec nsp-postgres-prod psql -U nextsteppro -d nextsteppro -c "SELECT vers
 przez cały czas.
 
 ⚠️ **Stary wolumen kasuj dopiero po kilku dniach** pracy na nowym majorze i po co najmniej jednej
-udanej kopii dobowej z niego. Do tego czasu jest Twoim jedynym wyjściem awaryjnym.
+udanej kopii dobowej z niego. Do tego czasu jest Twoim jedynym **szybkim** wyjściem awaryjnym.
+
+⚠️ **Gdy go skasujesz, wyjściem zostaje zrzut z kroku 1 — i dlatego leży w `/backups/milestones`,
+jedynym katalogu, którego retencja nie przycina** (ani siedmiodniowa lokalna, ani
+dziewięćdziesięciodniowa na Drive). Zapisany do `db/` obok kopii dobowych żył **siedem dni**: przy
+migracji na 18 stary wolumen zniknął wcześniej, niż minął ten tydzień, i zrzut był jedną nocą od
+skasowania razem z całą drogą powrotu. Tego katalogu nie zapełnia nic automatycznie i nic go nie
+czyści — wkładasz do niego ręcznie, kasujesz ręcznie, a jeden zrzut to ~150 kB.
 
 ---
 

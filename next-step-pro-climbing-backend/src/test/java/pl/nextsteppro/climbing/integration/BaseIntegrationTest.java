@@ -19,7 +19,7 @@ import pl.nextsteppro.climbing.domain.user.UserRepository;
  * Base class for integration tests with Testcontainers PostgreSQL setup.
  *
  * Provides:
- * - PostgreSQL 17 container
+ * - PostgreSQL 18 container
  * - All repositories auto-wired
  * - Transactional test isolation
  */

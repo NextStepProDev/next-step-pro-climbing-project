@@ -71,7 +71,7 @@ bash "${SCRIPT_DIR}/setup-swap.sh"
 log "5/7 backup script + 3:00 AM cron + log rotation"
 install -m 0755 "${SCRIPT_DIR}/nsp-backup.sh" /usr/local/bin/nsp-backup.sh
 install -m 0644 "${SCRIPT_DIR}/nsp-backup.logrotate" /etc/logrotate.d/nsp-backup
-mkdir -p /backups/db /backups/files
+mkdir -p /backups/db /backups/files /backups/milestones
 # root cron: daily backup at 3:00 AM (idempotent)
 ( crontab -l 2>/dev/null | grep -v "nsp-backup.sh"; echo "0 3 * * * /usr/local/bin/nsp-backup.sh" ) | crontab -
 systemctl enable --now cron
