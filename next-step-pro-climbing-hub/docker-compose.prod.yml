@@ -24,8 +24,13 @@ services:
       # VOLUME z /var/lib/postgresql/data na /var/lib/postgresql. Wolumen zamontowany pod
       # starą ścieżką nie jest więc już katalogiem danych: kontener WSTAJE, initdb tworzy
       # pusty klaster obok, Flyway przelatuje migracje od zera i aplikacja odpowiada 200 na
-      # pustej bazie — awaria wyglądająca na zdrowie. Nowa nazwa wolumenu jest celowa:
-      # postgres_data_prod ze starym klastrem 17 zostaje nietknięty i JEST planem wycofania.
+      # pustej bazie — awaria wyglądająca na zdrowie. Nowa nazwa wolumenu jest celowa: stary
+      # postgres_data_prod zostawał obok jako plan wycofania.
+      # ⚠️ Tego wolumenu NA PRODUKCJI JUŻ NIE MA (sprawdzone 2026-09-12: `docker volume ls`
+      # zna tylko *_pg18 i uploads). Wycofaniem jest dziś WYŁĄCZNIE zrzut sprzed migracji,
+      # a ten leży w /backups/milestones — czyli w jedynym katalogu, którego retencja nie
+      # przycina. Nie pisać tu ponownie o wolumenie 17: przy kolejnym majorze plan wycofania
+      # trzeba ZAŁOŻYĆ od nowa, a nie odziedziczyć po tym komentarzu.
       - postgres_data_prod_pg18:/var/lib/postgresql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
