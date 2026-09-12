@@ -116,6 +116,33 @@ class AdminSettlementIntegrationTest extends BaseIntegrationTest {
     }
 
     @Test
+    @DisplayName("shouldKeepAFreeSessionTickedAsSettledRatherThanDiscardingTheTick")
+    void shouldKeepAFreeSessionTickedAsSettledRatherThanDiscardingTheTick() {
+        // Zero of zero really is settled, and the client deliberately allows the tick here: its
+        // guard against "settled with nothing received" exempts a free row because zero is the
+        // honest figure there. The server dropped the date anyway, so the box came back unticked
+        // with nothing said — the exact silent swallow that guard exists to prevent.
+        save("slot", slot.getId(), "user", client.getId(), "0", date);
+
+        assertEquals(date, service.getSection("slot", slot.getId()).lines().getFirst().settledOn(),
+            "A free session has to be closable, otherwise it sits in the section forever");
+    }
+
+    @Test
+    @DisplayName("shouldRefuseMoneyCarryingNoPaymentDate")
+    void shouldRefuseMoneyCarryingNoPaymentDate() {
+        // Revenue is summed by settled_on, and a row with paid >= amount is not a debt either — so
+        // money recorded with no date appears in no figure anywhere while the client's card reads
+        // as settled. The coupling was enforced in one direction only.
+        assertThrows(IllegalArgumentException.class, () -> service.save(
+            "slot", slot.getId(), "user", client.getId(),
+            new SaveSettlementRequest(new BigDecimal("150"), new BigDecimal("150"), null)));
+
+        assertNull(service.getSection("slot", slot.getId()).lines().getFirst().amount(),
+            "And the refusal happens before anything is written");
+    }
+
+    @Test
     @DisplayName("shouldRemoveAnAmountIdempotently")
     void shouldRemoveAnAmountIdempotently() {
         save("slot", slot.getId(), "user", client.getId(), "150", null);
@@ -363,6 +390,43 @@ class AdminSettlementIntegrationTest extends BaseIntegrationTest {
             new SettleOutstandingRequest("user", client.getId(), date.plusDays(20), BigDecimal.ZERO)));
         assertEquals(date, service.getSection("slot", slot.getId()).lines().getFirst().settledOn(),
             "And the date somebody corrected by hand is untouched");
+    }
+
+    @Test
+    @DisplayName("shouldNotRewriteAnEarlierPaymentsDateWhenThereIsNothingLeftToSettle")
+    void shouldNotRewriteAnEarlierPaymentsDateWhenThereIsNothingLeftToSettle() {
+        // 150 charged, 200 handed over in July: a 50 credit and not a zloty owed.
+        service.save("slot", slot.getId(), "user", client.getId(),
+            new SaveSettlementRequest(new BigDecimal("150"), new BigDecimal("200"), date));
+
+        // Settling "everything owed" when nothing is owed used to do something worse than nothing:
+        // it pulled the credit back into the pool and re-concentrated it onto the same row, stamping
+        // it with the new date. The account netted to the identical figure while money paid in July
+        // became revenue of September — and the call reported one row settled for it.
+        assertThrows(IllegalArgumentException.class, () -> service.settleOutstanding(
+            new SettleOutstandingRequest("user", client.getId(), date.plusMonths(2), BigDecimal.ZERO)));
+
+        SettlementLineDto line = service.getSection("slot", slot.getId()).lines().getFirst();
+        assertEquals(date, line.settledOn(), "Revenue is summed by this date");
+        assertEquals(0, new BigDecimal("200").compareTo(line.paidAmount()), "And the money is untouched");
+    }
+
+    @Test
+    @DisplayName("shouldRefuseAPaymentFromSomebodyWhoOwesNothingEvenWhenTheyHoldCredit")
+    void shouldRefuseAPaymentFromSomebodyWhoOwesNothingEvenWhenTheyHoldCredit() {
+        service.save("slot", slot.getId(), "user", client.getId(),
+            new SaveSettlementRequest(new BigDecimal("150"), new BigDecimal("200"), date));
+
+        // A row carries ONE payment date, so piling a fresh payment onto a row that already holds
+        // money necessarily rewrites when the older money arrived. This endpoint settles debt; a
+        // prepayment from somebody who owes nothing belongs on its own session, where the admin
+        // picks the target and the date knowingly.
+        assertThrows(IllegalArgumentException.class, () -> service.settleOutstanding(
+            new SettleOutstandingRequest("user", client.getId(), date.plusMonths(2), new BigDecimal("200"))));
+
+        SettlementLineDto line = service.getSection("slot", slot.getId()).lines().getFirst();
+        assertEquals(date, line.settledOn());
+        assertEquals(0, new BigDecimal("200").compareTo(line.paidAmount()));
     }
 
     @Test

@@ -997,6 +997,10 @@
       "receivedHint": "recibido",
       "dueHint": "a pagar"
     },
+    "clearPaid": {
+      "title": "¿Eliminar el pago?",
+      "message": "La fila de «{{name}}» tiene registrados {{amount}}. Al eliminar la fila se elimina también ese pago: desaparecerá de los ingresos y del saldo del cliente, y nada registrará que llegó."
+    },
     "actions": {
       "setAll": "Aplicar a todos",
       "save": "Guardar"

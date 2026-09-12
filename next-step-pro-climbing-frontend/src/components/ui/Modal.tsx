@@ -58,9 +58,22 @@ export function Modal({ isOpen, onClose, title, children, size = 'md', confirmCl
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key !== 'Escape') return
-      // While confirming, Escape backs out of the confirmation, not the modal.
-      if (confirmingClose) setConfirmingClose(false)
-      else requestClose()
+      // While confirming, Escape backs out of the confirmation, not the modal. This comes first:
+      // that confirmation lives INSIDE this dialog and has no role of its own, so the topmost-dialog
+      // test below would not see it.
+      if (confirmingClose) {
+        setConfirmingClose(false)
+        return
+      }
+      // ⚠️ Escape belongs to the dialog on top, and when something is stacked over this one that is
+      // not us. Every modal in this app listens on `document`, so `stopPropagation` cannot separate
+      // two of them (the same reason the ⌘K palette checks for an open dialog instead) — a nested
+      // `ConfirmModal` used to cancel itself AND close this modal underneath it, taking whatever was
+      // typed into it along. Portals mount in order, so the deepest dialog is the last in the
+      // document; anything after us owns the key.
+      const dialogs = document.querySelectorAll('[role="dialog"]')
+      if (dialogs.length > 1 && dialogs[dialogs.length - 1] !== trapRef.current) return
+      requestClose()
     }
     if (isOpen) {
       document.addEventListener('keydown', handleEscape)

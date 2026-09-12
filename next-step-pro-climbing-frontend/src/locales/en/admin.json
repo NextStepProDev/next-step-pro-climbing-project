@@ -997,6 +997,10 @@
       "receivedHint": "received",
       "dueHint": "due"
     },
+    "clearPaid": {
+      "title": "Delete the payment?",
+      "message": "The row for “{{name}}” holds {{amount}}. Removing the row removes that payment too — it leaves revenue and the client's balance, and nothing will record that it ever arrived."
+    },
     "actions": {
       "setAll": "Apply to all",
       "save": "Save"
