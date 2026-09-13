@@ -36,6 +36,21 @@ export function Layout() {
 
   return (
     <div className="min-h-screen flex flex-col">
+      {/* ⚠️ First in the DOM on purpose: measured with a driven browser, the content of every page
+          sits 14 to 15 Tab presses behind the navbar, and a keyboard user pays that on every single
+          navigation. A screen reader can jump by landmark to <main>, so this is for the people
+          landmarks do not help — sighted, keyboard-only.
+
+          Hidden until focused. `sr-only` is `position: absolute`, which this codebase has been
+          bitten by before (inside a 940px-wide scroll container it resolved against the document
+          and widened the page); here it sits at the top of the layout with nothing wide around it,
+          so there is no track for it to stretch. */}
+      <a
+        href="#main"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-3 focus:top-3 focus:z-50 focus:rounded-lg focus:bg-primary-500 focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-black"
+      >
+        {t('skipToContent')}
+      </a>
       <GlobalLoadingBar />
       <Navbar />
       {pendingCount > 0 && (
@@ -49,7 +64,8 @@ export function Layout() {
           </span>
         </Link>
       )}
-      <main className="flex-1">
+      {/* tabIndex -1 so the jump actually moves focus, not just the scroll position. */}
+      <main id="main" tabIndex={-1} className="flex-1 focus:outline-none">
         <div key={location.pathname} className="animation-page-fade">
           <Outlet />
         </div>
