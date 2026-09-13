@@ -13,6 +13,30 @@ export const MAX_AMOUNT = 100000
 export const MAX_PAYOUT_AMOUNT = 1000000
 
 /**
+ * How far back a subscription may be said to have started. Mirrors
+ * `Subscription.MAX_BACKDATE_MONTHS`, and the two have to agree: the field's `min` is what stops the
+ * mistake, the server's check is what makes stopping it true.
+ *
+ * ⚠️ It exists because creating a subscription bills every month it already covers, so a slip of the
+ * year in a date field wrote 81 fee rows in one request.
+ */
+export const MAX_SUBSCRIPTION_BACKDATE_MONTHS = 24
+
+/**
+ * The earliest month a subscription may start, as `yyyy-MM-dd` for a date field's `min`.
+ *
+ * ⚠️ Counted from Warsaw's today, never the device's: the server compares against Warsaw's current
+ * month, so a browser a day behind would offer a month the save then refuses. Takes the day as a
+ * label so the caller passes `todayInWarsaw()` and this file needs no clock of its own.
+ */
+export function earliestSubscriptionStart(todayLabel: string): string {
+  const [year, month] = todayLabel.split('-').map(Number)
+  const zeroBased = year * 12 + (month - 1) - MAX_SUBSCRIPTION_BACKDATE_MONTHS
+  const earliestMonth = String((zeroBased % 12) + 1).padStart(2, '0')
+  return `${Math.floor(zeroBased / 12)}-${earliestMonth}-01`
+}
+
+/**
  * Renders an amount the way the viewer's language writes money.
  *
  * `Intl` rather than a hand-rolled `${n} zł`: Polish writes `150,00 zł` and English `PLN 150.00`,

@@ -627,7 +627,14 @@
           "reopen": "Reopen",
           "amount": "Amount / month",
           "from": "From month",
-          "endLabel": "Last month"
+          "endLabel": "Last month",
+          "newAmount": "New amount",
+          "saveAmount": "Change amount"
+        },
+        "fee": {
+          "remove": "Remove the fee for {{month}}",
+          "removeTitle": "Remove the monthly fee?",
+          "removeMessage": "The fee for {{month}} of {{amount}} goes, along with anything paid against it. Do this only when it was billed by mistake — a subscription entered with the wrong start date, for instance."
         }
       }
     },

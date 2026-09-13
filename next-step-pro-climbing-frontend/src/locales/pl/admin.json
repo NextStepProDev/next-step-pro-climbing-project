@@ -627,7 +627,14 @@
           "reopen": "Wznów",
           "amount": "Kwota / mies.",
           "from": "Od miesiąca",
-          "endLabel": "Ostatni miesiąc"
+          "endLabel": "Ostatni miesiąc",
+          "newAmount": "Nowa kwota",
+          "saveAmount": "Zmień kwotę"
+        },
+        "fee": {
+          "remove": "Usuń opłatę za {{month}}",
+          "removeTitle": "Usunąć opłatę abonamentową?",
+          "removeMessage": "Opłata za {{month}} na {{amount}} zniknie razem z tym, co wpłynęło na jej poczet. Rób to tylko wtedy, gdy została naliczona omyłkowo — np. abonament wpisano z błędną datą początku."
         }
       }
     },

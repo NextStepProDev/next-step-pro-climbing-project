@@ -28,6 +28,21 @@ public class Subscription {
     public static final BigDecimal MIN_AMOUNT = BigDecimal.ZERO;
     public static final BigDecimal MAX_AMOUNT = new BigDecimal("100000");
 
+    /**
+     * How far back a subscription may be said to have started.
+     *
+     * <p>⚠️ This is a brake on one keystroke, not a business rule about loyalty. Creating a
+     * subscription bills every month it already covers, so a slip of the year in the date field —
+     * 2020 for 2026 — produced <b>81 fee rows and 32 400 of debt</b> in a single request that
+     * answered 200 with nothing on screen to suggest it. Two years clears any retainer somebody
+     * plausibly forgot to enter while refusing a mistyped decade.
+     *
+     * <p>A policy constant rather than a validation annotation, for the reason spelled out on
+     * {@code BACKFILL_DAYS}: the field's own minimum in the browser has to be the same number, and
+     * two numbers that must agree belong in one place. The mirror is {@code money.ts}.
+     */
+    public static final int MAX_BACKDATE_MONTHS = 24;
+
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;

@@ -627,7 +627,14 @@
           "reopen": "Reanudar",
           "amount": "Importe / mes",
           "from": "Desde el mes",
-          "endLabel": "Último mes"
+          "endLabel": "Último mes",
+          "newAmount": "Nuevo importe",
+          "saveAmount": "Cambiar importe"
+        },
+        "fee": {
+          "remove": "Eliminar la cuota de {{month}}",
+          "removeTitle": "¿Eliminar la cuota mensual?",
+          "removeMessage": "La cuota de {{month}} por {{amount}} desaparecerá junto con lo que se haya pagado a cuenta. Hazlo solo si se facturó por error, por ejemplo si la suscripción se registró con una fecha de inicio equivocada."
         }
       }
     },

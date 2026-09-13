@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
@@ -165,7 +166,8 @@ public class AdminSettlementController {
             + "raise in June is not a claim about March.")
     @PutMapping("/subscriptions/{subscriptionId}/amount")
     public ResponseEntity<Void> changeSubscriptionAmount(
-            @PathVariable UUID subscriptionId, @Valid @RequestBody SaveSubscriptionRequest request) {
+            @PathVariable UUID subscriptionId,
+            @Valid @RequestBody ChangeSubscriptionAmountRequest request) {
         subscriptionService.changeAmount(subscriptionId, request);
         return ResponseEntity.noContent().build();
     }
@@ -178,6 +180,21 @@ public class AdminSettlementController {
     public ResponseEntity<Void> endSubscription(
             @PathVariable UUID subscriptionId, @Valid @RequestBody EndSubscriptionRequest request) {
         subscriptionService.end(subscriptionId, request);
+        return ResponseEntity.noContent().build();
+    }
+
+    @Operation(summary = "Delete one monthly coaching fee",
+        description = "The exit from a fee billed by mistake. A fee's target is a month rather than "
+            + "a calendar entry, so the per-participant delete cannot address it, and ending the "
+            + "subscription always leaves the month it ends in.")
+    @DeleteMapping("/monthly-fees/{userId}/{month}")
+    public ResponseEntity<Void> deleteMonthlyFee(@PathVariable UUID userId,
+                                                 @PathVariable LocalDate month) {
+        // Three segments after the base, so it cannot collide with the per-participant catch-all
+        // (`/{targetType}/{targetId}/{payerType}/{payerId}`, four) — the trap that made
+        // `/api/admin/user-stats` its own base and left `GET /subscriptions/{userId}` resolving on
+        // Spring's preference for a literal.
+        settlementService.deleteMonthlyFee(userId, month);
         return ResponseEntity.noContent().build();
     }
 

@@ -1130,11 +1130,27 @@ export const adminSettlementsApi = {
       body: JSON.stringify({ amount, startedOn, endedOn }),
     }),
 
-  changeSubscriptionAmount: (subscriptionId: string, amount: number, startedOn: string) =>
+  /**
+   * A raise, forward only: months already billed keep what they were billed at.
+   *
+   * ⚠️ Sends the amount and nothing else. It used to send `startedOn` as well, because the endpoint
+   * shared the create request — and that field was discarded server-side, so anybody trying to
+   * correct a mistyped start date got a 204 and no change.
+   */
+  changeSubscriptionAmount: (subscriptionId: string, amount: number) =>
     fetchApi<void>(`/admin/settlements/subscriptions/${subscriptionId}/amount`, {
       method: 'PUT',
-      body: JSON.stringify({ amount, startedOn, endedOn: null }),
+      body: JSON.stringify({ amount }),
     }),
+
+  /**
+   * Removes one monthly coaching fee — the way out of a fee billed by mistake.
+   *
+   * A fee's target is a month rather than a calendar entry, so `remove` above cannot address it, and
+   * ending the subscription always leaves the month it ends in.
+   */
+  deleteMonthlyFee: (userId: string, month: string) =>
+    fetchApi<void>(`/admin/settlements/monthly-fees/${userId}/${month}`, { method: 'DELETE' }),
 
   // Any day of the month; the server snaps it. A past month is allowed and expected.
   endSubscription: (subscriptionId: string, endedOn: string) =>

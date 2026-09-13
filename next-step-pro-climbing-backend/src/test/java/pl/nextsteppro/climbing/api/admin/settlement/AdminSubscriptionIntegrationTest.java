@@ -181,8 +181,7 @@ class AdminSubscriptionIntegrationTest extends BaseIntegrationTest {
         UUID id = subscriptions.create(client.getId(), new SaveSubscriptionRequest(
             new BigDecimal("400"), monthsAgo(1), null)).id();
 
-        subscriptions.changeAmount(id, new SaveSubscriptionRequest(
-            new BigDecimal("450"), monthsAgo(1), null));
+        subscriptions.changeAmount(id, new ChangeSubscriptionAmountRequest(new BigDecimal("450")));
 
         // A raise in June is not a claim about March.
         assertEquals(0, new BigDecimal("400.00").compareTo(jdbc.queryForObject(
@@ -333,6 +332,60 @@ class AdminSubscriptionIntegrationTest extends BaseIntegrationTest {
 
         assertThrows(IllegalArgumentException.class, () -> payouts.assignSource(
             "slot", slot.getId(), new AssignPayoutSourceRequest(UUID.randomUUID(), client.getId())));
+    }
+
+    @Test
+    @DisplayName("shouldRefuseAStartSoFarBackThatItBillsYearsOfFeesAtOnce")
+    void shouldRefuseAStartSoFarBackThatItBillsYearsOfFeesAtOnce() {
+        // A slip of the year in the date field is one keystroke, and the run that follows it bills
+        // every month since: six years produced 81 rows of debt in one 200 OK, and the only fee a
+        // backdated end cannot take away afterwards is the one in the month it starts in.
+        assertThrows(IllegalArgumentException.class, () -> subscriptions.create(client.getId(),
+            new SaveSubscriptionRequest(new BigDecimal("400"), monthsAgo(72), null)));
+
+        assertEquals(0, feeCount(), "And nothing is billed on the way to the refusal");
+    }
+
+    @Test
+    @DisplayName("shouldStillAllowABackdateSomebodyWouldPlausiblyType")
+    void shouldStillAllowABackdateSomebodyWouldPlausiblyType() {
+        // A retainer entered late is ordinary, so the limit has to be generous enough to clear a
+        // year and a half without an argument.
+        subscriptions.create(client.getId(), new SaveSubscriptionRequest(
+            new BigDecimal("400"), monthsAgo(18), null));
+
+        assertEquals(19, feeCount());
+    }
+
+    @Test
+    @DisplayName("shouldDeleteAMonthlyFeeBilledByMistake")
+    void shouldDeleteAMonthlyFeeBilledByMistake() {
+        subscriptions.create(client.getId(), new SaveSubscriptionRequest(
+            new BigDecimal("400"), monthsAgo(1), null));
+        assertEquals(2, feeCount());
+
+        // The one row the app could create and not remove: a fee has no calendar entry, so the
+        // per-participant delete cannot address it, and ending the rule leaves the month it started
+        // in. Without this there is no way out of a mistyped subscription except editing the
+        // database by hand.
+        settlements.deleteMonthlyFee(client.getId(), monthsAgo(1));
+
+        assertEquals(1, feeCount());
+    }
+
+    @Test
+    @DisplayName("shouldNotPretendToMoveTheStartDateWhenOnlyTheAmountCanChange")
+    void shouldNotPretendToMoveTheStartDateWhenOnlyTheAmountCanChange() {
+        UUID id = subscriptions.create(client.getId(), new SaveSubscriptionRequest(
+            new BigDecimal("400"), monthsAgo(1), null)).id();
+
+        // The request used to carry startedOn, which this operation ignores, and answered 204 — so
+        // an admin correcting a mistyped start date was told it worked.
+        subscriptions.changeAmount(id, new ChangeSubscriptionAmountRequest(new BigDecimal("500")));
+
+        SubscriptionDto after = subscriptions.forUser(client.getId()).getFirst();
+        assertEquals(monthsAgo(1), after.startedOn());
+        assertEquals(0, new BigDecimal("500.00").compareTo(after.amount()));
     }
 
     @Test
