@@ -1099,6 +1099,7 @@
         "colTitle": "Description",
         "colPayer": "Payer",
         "colAmount": "Amount (PLN)",
+        "colPaid": "Received (PLN)",
         "colSettledOn": "Payment date",
         "kindClient": "Client",
         "kindPayout": "Bulk payout",

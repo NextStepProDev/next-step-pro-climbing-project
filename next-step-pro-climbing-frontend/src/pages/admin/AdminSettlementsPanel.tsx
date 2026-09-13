@@ -155,6 +155,7 @@ function ExportButton({ year }: { year: number | null }) {
             t('settlements.tab.export.colTitle'),
             t('settlements.tab.export.colPayer'),
             t('settlements.tab.export.colAmount'),
+            t('settlements.tab.export.colPaid'),
             t('settlements.tab.export.colSettledOn'),
           ],
           unpaid: t('settlements.tab.export.unpaid'),

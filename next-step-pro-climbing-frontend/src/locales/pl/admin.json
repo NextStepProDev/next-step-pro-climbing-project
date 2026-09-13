@@ -1105,6 +1105,7 @@
         "colTitle": "Opis",
         "colPayer": "Płatnik",
         "colAmount": "Kwota (PLN)",
+        "colPaid": "Wpłacono (PLN)",
         "colSettledOn": "Data zapłaty",
         "kindClient": "Klient",
         "kindPayout": "Wypłata zbiorcza",
