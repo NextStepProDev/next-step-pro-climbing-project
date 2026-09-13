@@ -15,6 +15,8 @@ import pl.nextsteppro.climbing.domain.event.Event;
 import pl.nextsteppro.climbing.domain.event.EventRepository;
 import pl.nextsteppro.climbing.domain.event.EventType;
 import pl.nextsteppro.climbing.domain.reservation.GuestReservationRepository;
+import pl.nextsteppro.climbing.domain.reservation.Reservation;
+import pl.nextsteppro.climbing.domain.reservation.ReservationStatus;
 import pl.nextsteppro.climbing.domain.reservation.ReservationRepository;
 import pl.nextsteppro.climbing.domain.reservation.SlotParticipantCount;
 import pl.nextsteppro.climbing.domain.reservedseat.ReservedSeat;
@@ -98,6 +100,8 @@ class AdminServiceInviteSyncTest {
     private User admin;
     private User invitedUser;
     private User unverifiedUser;
+    /** Somebody other than the person being added — the one a held seat can belong to. */
+    private User otherUser;
     private TimeSlot slot;
     private Event event;
 
@@ -139,6 +143,10 @@ class AdminServiceInviteSyncTest {
         setId(invitedUser, UUID.randomUUID());
         // A real invitee has confirmed their address — the guard below refuses anyone who has not.
         invitedUser.setEmailVerified(true);
+
+        otherUser = new User("other@example.com", "Other", "Client", "+48333333333", "other");
+        setId(otherUser, UUID.randomUUID());
+        otherUser.setEmailVerified(true);
 
         unverifiedUser = new User("unverified@example.com", "Never", "Confirmed", "+48555555555", "never");
         setId(unverifiedUser, UUID.randomUUID());
@@ -245,6 +253,101 @@ class AdminServiceInviteSyncTest {
         // When & Then
         assertThrows(IllegalStateException.class, () ->
             adminService.updateEvent(adminId, eventId, eventRequestWithInvites(List.of(invitedUser.getId()))));
+    }
+
+    // ========== A held seat is a promise, and adding a participant must not spend it ==========
+
+    @Test
+    void shouldRefuseToAddAParticipantIntoASeatHeldForSomebodyElse() {
+        // Given: max 1, nobody booked, and that single seat is being held by an invitation.
+        //
+        // The inverse guard already exists: syncSlotInvites refuses to issue more invitations than
+        // there are seats. This direction had none, so the seat promised to the invitee could be
+        // handed to somebody else — after which the invitee sees FULL and "held for you" at once,
+        // booking answers "no seats free", their only route is the waitlist, and the panel still
+        // offers to mail them "a seat is being held for you".
+        when(timeSlotRepository.findById(slotId)).thenReturn(Optional.of(slot));
+        when(userRepository.findById(invitedUser.getId())).thenReturn(Optional.of(invitedUser));
+        when(reservationRepository.existsByUserIdAndTimeSlotIdAndStatus(
+            invitedUser.getId(), slotId, ReservationStatus.CONFIRMED)).thenReturn(false);
+        when(reservationRepository.countConfirmedByTimeSlotId(slotId)).thenReturn(0);
+        when(guestReservationRepository.sumParticipantsByTimeSlotId(slotId)).thenReturn(0);
+        when(reservationRepository.findConfirmedUserIdsByTimeSlotId(slotId)).thenReturn(List.of());
+        when(reservedSeatRepository.findBySlotIdWithUser(slotId))
+            .thenReturn(List.of(new ReservedSeat(slot, otherUser)));
+        when(msg.get(eq("admin.participant.seats.held"), any())).thenReturn("seat held by an invitation");
+
+        assertThrows(IllegalStateException.class, () -> adminService.addRegisteredParticipantToSlot(
+            slotId, new AddRegisteredParticipantRequest(invitedUser.getId(), 1, null)));
+
+        verify(reservationRepository, never()).save(any());
+    }
+
+    @Test
+    void shouldLetTheInviteeThemselvesTakeTheSeatBeingHeldForThem() {
+        // The seat exists FOR this person, so their own held seat cannot be what blocks them —
+        // otherwise an admin signing up the very guest they invited would be refused.
+        when(timeSlotRepository.findById(slotId)).thenReturn(Optional.of(slot));
+        when(userRepository.findById(invitedUser.getId())).thenReturn(Optional.of(invitedUser));
+        when(reservationRepository.existsByUserIdAndTimeSlotIdAndStatus(
+            invitedUser.getId(), slotId, ReservationStatus.CONFIRMED)).thenReturn(false);
+        when(reservationRepository.countConfirmedByTimeSlotId(slotId)).thenReturn(0);
+        when(guestReservationRepository.sumParticipantsByTimeSlotId(slotId)).thenReturn(0);
+        when(reservationRepository.findConfirmedUserIdsByTimeSlotId(slotId)).thenReturn(List.of());
+        when(reservedSeatRepository.findBySlotIdWithUser(slotId))
+            .thenReturn(List.of(new ReservedSeat(slot, invitedUser)));
+        when(reservationRepository.findByUserIdAndTimeSlotId(invitedUser.getId(), slotId)).thenReturn(null);
+        when(reservationRepository.save(any(Reservation.class))).thenAnswer(call -> call.getArgument(0));
+
+        assertDoesNotThrow(() -> adminService.addRegisteredParticipantToSlot(
+            slotId, new AddRegisteredParticipantRequest(invitedUser.getId(), 1, null)));
+    }
+
+    @Test
+    void shouldRefuseToAddAParticipantIntoAnEventSeatHeldForSomebodyElse() {
+        TimeSlot eventSlot = new TimeSlot(event, event.getStartDate(), LocalTime.of(10, 0), LocalTime.of(11, 0), 1);
+        setId(eventSlot, UUID.randomUUID());
+
+        when(eventRepository.findById(eventId)).thenReturn(Optional.of(event));
+        when(timeSlotRepository.findByEventId(eventId)).thenReturn(List.of(eventSlot));
+        when(userRepository.findById(invitedUser.getId())).thenReturn(Optional.of(invitedUser));
+        when(guestReservationRepository.sumParticipantsByEventId(eventId)).thenReturn(0);
+        when(reservationRepository.countConfirmedByTimeSlotIds(List.of(eventSlot.getId())))
+            .thenReturn(List.of(new SlotParticipantCount(eventSlot.getId(), 0)));
+        when(reservationRepository.findConfirmedUserIdsByEventId(eventId)).thenReturn(List.of());
+        when(reservedSeatRepository.findByEventIdWithUser(eventId))
+            .thenReturn(List.of(new ReservedSeat(event, otherUser)));
+        when(msg.get(eq("admin.participant.seats.held"), any())).thenReturn("seat held by an invitation");
+
+        assertThrows(IllegalStateException.class, () -> adminService.addRegisteredParticipantToEvent(
+            eventId, new AddRegisteredParticipantRequest(invitedUser.getId(), 1, null)));
+
+        verify(reservationRepository, never()).save(any());
+    }
+
+    @Test
+    void shouldIgnoreAHeldSeatWhoseOwnerHasAlreadyBooked() {
+        // An invitation whose holder is already confirmed is spent, not pending — counting it again
+        // would subtract the same person twice and lock a slot that genuinely has room. Same
+        // reasoning as syncSlotInvites, which filters exactly this case out of its own limit.
+        slot = new TimeSlot(LocalDate.now().minusDays(7), LocalTime.of(10, 0), LocalTime.of(11, 0), 2);
+        setId(slot, slotId);
+
+        when(timeSlotRepository.findById(slotId)).thenReturn(Optional.of(slot));
+        when(userRepository.findById(invitedUser.getId())).thenReturn(Optional.of(invitedUser));
+        when(reservationRepository.existsByUserIdAndTimeSlotIdAndStatus(
+            invitedUser.getId(), slotId, ReservationStatus.CONFIRMED)).thenReturn(false);
+        when(reservationRepository.countConfirmedByTimeSlotId(slotId)).thenReturn(1);
+        when(guestReservationRepository.sumParticipantsByTimeSlotId(slotId)).thenReturn(0);
+        when(reservationRepository.findConfirmedUserIdsByTimeSlotId(slotId))
+            .thenReturn(List.of(otherUser.getId()));
+        when(reservedSeatRepository.findBySlotIdWithUser(slotId))
+            .thenReturn(List.of(new ReservedSeat(slot, otherUser)));
+        when(reservationRepository.findByUserIdAndTimeSlotId(invitedUser.getId(), slotId)).thenReturn(null);
+        when(reservationRepository.save(any(Reservation.class))).thenAnswer(call -> call.getArgument(0));
+
+        assertDoesNotThrow(() -> adminService.addRegisteredParticipantToSlot(
+            slotId, new AddRegisteredParticipantRequest(invitedUser.getId(), 1, null)));
     }
 
     // ========== Unverified accounts cannot be bound to anything ==========
