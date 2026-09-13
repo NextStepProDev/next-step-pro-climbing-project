@@ -139,7 +139,7 @@ jobs:
           echo "owner=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
 
       # The bundle the previous job built and tested. The Dockerfile only copies it in.
-      - uses: actions/download-artifact@v7
+      - uses: actions/download-artifact@v8
         with:
           name: frontend-dist
           path: next-step-pro-climbing-frontend/dist
