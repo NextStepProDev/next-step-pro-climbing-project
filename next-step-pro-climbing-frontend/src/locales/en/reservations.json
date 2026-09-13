@@ -60,5 +60,6 @@
       "REJECTED": "Rejected",
       "EXPIRED": "Expired"
     }
-  }
+  },
+  "skipToContent": "Skip to content"
 }
