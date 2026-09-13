@@ -69,6 +69,14 @@ public class AdminSubscriptionService {
         if (end != null && end.isBefore(start)) {
             throw new IllegalArgumentException(msg.get("admin.subscription.end.before.start"));
         }
+        // ⚠️ Creating a subscription bills every month it already covers, so the start date is the
+        // one field here that can write dozens of rows. A mistyped year did: 2020 instead of 2026
+        // produced 81 fees in one request, and a backdated end cannot take back the month it starts
+        // in. The refusal is the cheap half of the fix — deleting a fee billed by mistake is the
+        // other, and neither is enough alone.
+        if (start.isBefore(currentMonth().minusMonths(Subscription.MAX_BACKDATE_MONTHS))) {
+            throw new IllegalArgumentException(msg.get("admin.subscription.start.too.old"));
+        }
         Subscription saved = subscriptionRepository.save(
             new Subscription(user, amountOf(request.amount()), start, end));
 
@@ -77,8 +85,16 @@ public class AdminSubscriptionService {
             saved.getEndedOn(), saved.isActive());
     }
 
-    /** Forward-only: months already billed keep what they were billed at. */
-    public void changeAmount(UUID subscriptionId, SaveSubscriptionRequest request) {
+    /**
+     * Forward-only: months already billed keep what they were billed at.
+     *
+     * <p>⚠️ Takes an amount and nothing else, deliberately. It used to accept the create request,
+     * which carries {@code startedOn} — a field this operation ignores — so an admin correcting a
+     * mistyped start date got 204 and no change. A request cannot carry what the handler discards.
+     * The start date is not editable at all: the months it billed already exist, and moving it would
+     * have to decide what happens to them.
+     */
+    public void changeAmount(UUID subscriptionId, ChangeSubscriptionAmountRequest request) {
         requireSubscription(subscriptionId).changeAmount(amountOf(request.amount()));
     }
 

@@ -497,5 +497,16 @@ record SaveSubscriptionRequest(
     @Nullable LocalDate endedOn
 ) {}
 
+/**
+ * A raise, and nothing else.
+ *
+ * <p>⚠️ Separate from {@link SaveSubscriptionRequest} on purpose. Reusing that one meant this
+ * endpoint required a {@code startedOn} it then ignored, so correcting a mistyped start date
+ * answered 204 and changed nothing.
+ */
+record ChangeSubscriptionAmountRequest(
+    @NotNull @DecimalMin("0") @DecimalMax("100000") BigDecimal amount
+) {}
+
 /** Any day of the month; the server snaps it, because a subscription ends in a month, not on a day. */
 record EndSubscriptionRequest(@NotNull LocalDate endedOn) {}

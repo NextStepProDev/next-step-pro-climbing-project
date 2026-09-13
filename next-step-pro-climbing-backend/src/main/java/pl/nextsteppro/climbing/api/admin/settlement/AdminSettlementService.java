@@ -18,6 +18,7 @@ import pl.nextsteppro.climbing.domain.settlement.SettlementRow;
 import pl.nextsteppro.climbing.domain.settlement.PayoutSourceRepository;
 import pl.nextsteppro.climbing.domain.settlement.SessionCoverage;
 import pl.nextsteppro.climbing.domain.settlement.SessionPayoutRepository;
+import pl.nextsteppro.climbing.domain.settlement.Subscription;
 import pl.nextsteppro.climbing.domain.timeslot.TimeSlot;
 import pl.nextsteppro.climbing.domain.timeslot.TimeSlotRepository;
 import pl.nextsteppro.climbing.domain.user.UserRepository;
@@ -188,6 +189,17 @@ public class AdminSettlementService {
                 }
             }
         }
+    }
+
+    /**
+     * Removes one monthly coaching fee — the exit from a fee billed by mistake.
+     *
+     * <p>Idempotent like the per-participant delete, and with no guard beyond the pair (payer,
+     * month) for the same reason: the statement cannot match anything else, and gating it would be
+     * the opposite of safety on a row whose whole problem is that it should not exist.
+     */
+    public void deleteMonthlyFee(UUID userId, LocalDate month) {
+        settlementRepository.deleteMonthlyFee(userId, Subscription.normalizeMonth(month));
     }
 
     /**

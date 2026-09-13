@@ -362,6 +362,24 @@ public interface SettlementRepository extends JpaRepository<Settlement, UUID> {
     int deleteForEventUser(@Param("eventId") UUID eventId, @Param("userId") UUID userId);
 
     /**
+     * Removes one monthly coaching fee.
+     *
+     * <p>⚠️ The only rows this feature could create and never remove. A fee's target is a month, not
+     * a calendar entry, so none of the deletes above can address it: the per-participant route is
+     * {@code /{slot|event}/{id}/{user|guest}/{id}} and there is no entry to name. Ending the
+     * subscription drops the unpaid months <em>after</em> its end date, which always leaves the month
+     * it ends in — so a subscription entered with the wrong start date left at least one fee that
+     * only SQL could take away.
+     *
+     * <p>Deletes it whatever has been paid against it, for the same reason the per-participant
+     * delete does: a figure nobody can correct is worse than one somebody can. The confirmation that
+     * names the amount lives in the client, exactly as it does there.
+     */
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("DELETE FROM Settlement s WHERE s.user.id = :userId AND s.periodMonth = :month")
+    int deleteMonthlyFee(@Param("userId") UUID userId, @Param("month") LocalDate month);
+
+    /**
      * Scoped to the target as well as the guest, even though the guest id is unique on its own.
      * The address the caller used claims a session; a statement that quietly ignores half of it
      * would delete a settlement belonging to a different one whenever the two ever disagree.

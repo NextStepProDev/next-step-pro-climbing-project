@@ -2,15 +2,16 @@ import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { format } from 'date-fns'
-import { Coins } from 'lucide-react'
+import { Coins, Trash2 } from 'lucide-react'
 import { adminSettlementsApi } from '../../../api/client'
 import { parseCalendarDate } from '../../../utils/calendarDate'
 import { useDateLocale } from '../../../utils/dateFnsLocale'
 import { DateInput } from '../../ui/DateInput'
 import { Button } from '../../ui/Button'
 import { getErrorMessage } from '../../../utils/errors'
-import { formatPln, parseAmount } from '../../../utils/money'
+import { earliestSubscriptionStart, formatPln, parseAmount } from '../../../utils/money'
 import { todayInWarsaw } from '../../../utils/calendarDate'
+import { ConfirmModal } from '../../ui/ConfirmModal'
 
 /**
  * What this client has paid and still owes.
@@ -24,10 +25,28 @@ import { todayInWarsaw } from '../../../utils/calendarDate'
 export function UserMoneyCard({ userId }: { userId: string }) {
   const { t, i18n } = useTranslation('admin')
   const locale = useDateLocale()
+  const queryClient = useQueryClient()
 
   const { data } = useQuery({
     queryKey: ['admin', 'settlements', 'payer', userId],
     queryFn: () => adminSettlementsApi.getPayerSummary(userId),
+  })
+
+  /**
+   * Removing a fee billed by mistake — the only money row the app could create and not delete.
+   *
+   * Asked for every time rather than only when money has arrived against it, unlike the session
+   * rows: a fee is produced by a rule the admin is not looking at, so there is no draft on screen
+   * whose absence would tell him something went. The amount is named in the question for the same
+   * reason it is there.
+   */
+  const [removing, setRemoving] = useState<{ month: string; amount: number } | null>(null)
+  const removeFee = useMutation({
+    mutationFn: (month: string) => adminSettlementsApi.deleteMonthlyFee(userId, month),
+    onSuccess: () => {
+      setRemoving(null)
+      queryClient.invalidateQueries({ queryKey: ['admin', 'settlements'] })
+    },
   })
 
   const money = (amount: number) => formatPln(amount, i18n.language)
@@ -111,11 +130,35 @@ export function UserMoneyCard({ userId }: { userId: string }) {
                     <span className="text-amber-500">{t('users.detail.money.unpaid')}</span>
                   )}
                 </span>
+                {line.monthlyFee && (
+                  <button
+                    type="button"
+                    onClick={() => setRemoving({ month: line.date, amount: line.amount })}
+                    aria-label={t('users.detail.money.fee.remove', {
+                      month: format(parseCalendarDate(line.date), 'LLLL yyyy', { locale }),
+                    })}
+                    className="shrink-0 p-1 rounded text-rose-400/70 hover:text-rose-400 transition-colors"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                )}
               </li>
             ))}
           </ul>
         </>
       )}
+
+      <ConfirmModal
+        isOpen={removing !== null}
+        onClose={() => setRemoving(null)}
+        onConfirm={() => removing && removeFee.mutate(removing.month)}
+        title={t('users.detail.money.fee.removeTitle')}
+        message={t('users.detail.money.fee.removeMessage', {
+          month: removing ? format(parseCalendarDate(removing.month), 'LLLL yyyy', { locale }) : '',
+          amount: money(removing?.amount ?? 0),
+        })}
+        variant="danger"
+      />
     </div>
   )
 }
@@ -158,6 +201,8 @@ function SubscriptionRow({ userId }: { userId: string }) {
   const [amount, setAmount] = useState('')
   const [startedOn, setStartedOn] = useState(() => todayInWarsaw())
   const [endedOn, setEndedOn] = useState(() => todayInWarsaw())
+  /** Kept apart from `amount`: that one starts a subscription, this one re-prices a running rule. */
+  const [raise, setRaise] = useState('')
 
   const { data: subs } = useQuery({
     queryKey: ['admin', 'settlements', 'subscriptions', userId],
@@ -180,6 +225,14 @@ function SubscriptionRow({ userId }: { userId: string }) {
   const end = useMutation({
     mutationFn: (id: string) => adminSettlementsApi.endSubscription(id, endedOn),
     onSuccess: refresh,
+  })
+  const changeAmount = useMutation({
+    mutationFn: (id: string) =>
+      adminSettlementsApi.changeSubscriptionAmount(id, parseAmount(raise) as number),
+    onSuccess: () => {
+      setRaise('')
+      refresh()
+    },
   })
   const reopen = useMutation({
     mutationFn: (id: string) => adminSettlementsApi.reopenSubscription(id),
@@ -207,6 +260,28 @@ function SubscriptionRow({ userId }: { userId: string }) {
           </span>
           {sub.active ? (
             <>
+              {/* A raise, and it works forward only: the months already billed keep what they were
+                  billed at, because June is not a claim about March. The endpoint existed from the
+                  start and no screen called it, so the only way to change a rate was to end the
+                  subscription and start another — which re-bills nothing but does clutter the list.
+                  ⚠️ The start date stays uneditable: the months it produced already exist. */}
+              <input
+                inputMode="decimal"
+                value={raise}
+                onChange={(e) => setRaise(e.target.value)}
+                placeholder={t('users.detail.money.subscription.newAmount')}
+                aria-label={t('users.detail.money.subscription.newAmount')}
+                className="w-24 bg-surface-800 border border-surface-600 rounded px-2 py-1 text-xs text-surface-100 focus:outline-none focus:border-primary-500"
+              />
+              <Button
+                size="sm"
+                variant="ghost"
+                disabled={parseAmount(raise) === null}
+                loading={changeAmount.isPending}
+                onClick={() => changeAmount.mutate(sub.id)}
+              >
+                {t('users.detail.money.subscription.saveAmount')}
+              </Button>
               <DateInput
                 value={endedOn}
                 onChange={setEndedOn}
@@ -235,9 +310,13 @@ function SubscriptionRow({ userId }: { userId: string }) {
             aria-label={t('users.detail.money.subscription.amount')}
             className="w-28 bg-surface-800 border border-surface-600 rounded px-2 py-1 text-sm text-surface-100 focus:outline-none focus:border-primary-500"
           />
+          {/* ⚠️ The `min` is the brake on a slip of the year. Creating a subscription bills every
+              month it already covers, so 2020 instead of 2026 wrote 81 fee rows in one request. The
+              server refuses the same boundary — this only means the field refuses it first. */}
           <DateInput
             value={startedOn}
             onChange={setStartedOn}
+            min={earliestSubscriptionStart(todayInWarsaw())}
             aria-label={t('users.detail.money.subscription.from')}
             className="bg-surface-800 border border-surface-600 rounded px-2 py-1 text-sm text-surface-100 focus:outline-none focus:border-primary-500"
           />
