@@ -58,6 +58,9 @@ uploads/
 claude/
 CLAUDE.md
 CLAUDE.md.backup
+# Rejestr pokrycia audytu: nazywa wprost obszary, w ktore nikt jeszcze nie zagladal,
+# a repo jest publiczne. Lokalny jak CLAUDE.md i docs/.
+AUDIT.md
 
 # ===== Personal notes =====
 I18N.md
