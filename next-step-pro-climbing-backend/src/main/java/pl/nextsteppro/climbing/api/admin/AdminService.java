@@ -1393,6 +1393,46 @@ public class AdminService {
         }
     }
 
+    /**
+     * Seats already promised to somebody else and not yet taken.
+     *
+     * <p>⚠️ Adding a participant has to subtract these, and used not to. The inverse guard has
+     * always existed — {@code syncSlotInvites} refuses to issue more invitations than there are
+     * seats — so the two directions disagreed: you could not over-invite, but you could hand an
+     * invitee's seat to somebody else. What that produced, reproduced on a two-seat slot: the
+     * invitee's own screen said FULL and "held for you" at the same time, booking answered "no
+     * seats free", their only remaining route was the waitlist for a seat they had been promised,
+     * and the panel still offered to mail them "a seat is being held for you". The application
+     * cannot send a promise it has already broken.
+     *
+     * <p>Two exclusions, both necessary. The person being added never blocks themselves: a seat
+     * held FOR them is exactly what they are taking, so an admin signing up the guest they invited
+     * must go through. And a holder who has already booked is counted in the confirmed figure —
+     * counting their invitation too would subtract one person twice, which is the double-count
+     * {@code syncSlotInvites} spells out on its own limit.
+     */
+    private int pendingSeatsHeldForOthers(List<ReservedSeat> heldSeats,
+                                          List<UUID> confirmedUserIds,
+                                          @Nullable UUID addedUserId) {
+        Set<UUID> confirmed = new HashSet<>(confirmedUserIds);
+        return (int) heldSeats.stream()
+            .map(seat -> seat.getUser().getId())
+            .filter(id -> !id.equals(addedUserId))
+            .filter(id -> !confirmed.contains(id))
+            .count();
+    }
+
+    /**
+     * Says WHY there is no room, because the two reasons need different actions from the admin: a
+     * genuinely full session is somebody else's booking, while a seat under an invitation is the
+     * admin's own decision and can be released by removing the invitation in the same modal.
+     */
+    private String seatsUnavailableMessage(int heldForOthers, int available, int requested) {
+        return heldForOthers > 0
+            ? msg.get("admin.participant.seats.held", String.valueOf(heldForOthers))
+            : msg.get("reservation.spots.available", available, requested);
+    }
+
     private void syncSlotInvites(TimeSlot slot, List<UUID> desiredUserIds) {
         Set<UUID> desired = new LinkedHashSet<>(desiredUserIds);
         int confirmed = reservationRepository.countConfirmedByTimeSlotId(slot.getId())
@@ -1641,9 +1681,17 @@ public class AdminService {
         int oldParticipants = reservation.getParticipants();
         int currentTotal = reservationRepository.countConfirmedByTimeSlotId(slot.getId())
             + guestReservationRepository.sumParticipantsByTimeSlotId(slot.getId());
-        int available = slot.getMaxParticipants() - currentTotal + oldParticipants;
+        // Growing a booking spends a seat exactly as adding a participant does, so it has to respect
+        // the ones held under an invitation for the same reason — see pendingSeatsHeldForOthers.
+        int heldForOthers = pendingSeatsHeldForOthers(
+            reservedSeatRepository.findBySlotIdWithUser(slot.getId()),
+            reservationRepository.findConfirmedUserIdsByTimeSlotId(slot.getId()),
+            reservation.getUser().getId());
+        int available = slot.getMaxParticipants() - currentTotal + oldParticipants - heldForOthers;
         if (newParticipants > available) {
-            throw new IllegalStateException(msg.get("admin.slot.capacity.too.low", String.valueOf(available)));
+            throw new IllegalStateException(heldForOthers > 0
+                ? msg.get("admin.participant.seats.held", String.valueOf(heldForOthers))
+                : msg.get("admin.slot.capacity.too.low", String.valueOf(available)));
         }
         reservation.setParticipants(newParticipants);
         reservationRepository.save(reservation);
@@ -1683,9 +1731,16 @@ public class AdminService {
         // Event guests are outside the per-slot counts — see createEventReservation.
         int currentMaxTotal = countMap.values().stream().mapToInt(Integer::intValue).max().orElse(0)
             + guestReservationRepository.sumParticipantsByEventId(eventId);
-        int available = event.getMaxParticipants() - currentMaxTotal + oldParticipants;
+        // Same rule as the slot twin: a seat held under an invitation is not free to grow into.
+        int heldForOthers = pendingSeatsHeldForOthers(
+            reservedSeatRepository.findByEventIdWithUser(eventId),
+            reservationRepository.findConfirmedUserIdsByEventId(eventId),
+            userId);
+        int available = event.getMaxParticipants() - currentMaxTotal + oldParticipants - heldForOthers;
         if (newParticipants > available) {
-            throw new IllegalStateException(msg.get("admin.slot.capacity.too.low", String.valueOf(available)));
+            throw new IllegalStateException(heldForOthers > 0
+                ? msg.get("admin.participant.seats.held", String.valueOf(heldForOthers))
+                : msg.get("admin.slot.capacity.too.low", String.valueOf(available)));
         }
 
         User user = userRepository.findById(userReservations.getFirst().getUser().getId())
@@ -1768,9 +1823,14 @@ public class AdminService {
 
         int regularCount = reservationRepository.countConfirmedByTimeSlotId(slotId);
         int guestCount = guestReservationRepository.sumParticipantsByTimeSlotId(slotId);
-        int available = slot.getMaxParticipants() - regularCount - guestCount;
+        int heldForOthers = pendingSeatsHeldForOthers(
+            reservedSeatRepository.findBySlotIdWithUser(slotId),
+            reservationRepository.findConfirmedUserIdsByTimeSlotId(slotId),
+            user.getId());
+        int available = slot.getMaxParticipants() - regularCount - guestCount - heldForOthers;
         if (request.participants() > available) {
-            throw new IllegalStateException(msg.get("reservation.spots.available", available, request.participants()));
+            throw new IllegalStateException(
+                seatsUnavailableMessage(heldForOthers, available, request.participants()));
         }
 
         Reservation existing = reservationRepository.findByUserIdAndTimeSlotId(user.getId(), slotId);
@@ -1812,9 +1872,16 @@ public class AdminService {
 
         int regularCount = reservationRepository.countConfirmedByTimeSlotId(slotId);
         int guestCount = guestReservationRepository.sumParticipantsByTimeSlotId(slotId);
-        int available = slot.getMaxParticipants() - regularCount - guestCount;
+        // No user to exclude: a guest never holds an invitation, so every pending seat is somebody
+        // else's promise.
+        int heldForOthers = pendingSeatsHeldForOthers(
+            reservedSeatRepository.findBySlotIdWithUser(slotId),
+            reservationRepository.findConfirmedUserIdsByTimeSlotId(slotId),
+            null);
+        int available = slot.getMaxParticipants() - regularCount - guestCount - heldForOthers;
         if (request.participants() > available) {
-            throw new IllegalStateException(msg.get("reservation.spots.available", available, request.participants()));
+            throw new IllegalStateException(
+                seatsUnavailableMessage(heldForOthers, available, request.participants()));
         }
 
         GuestReservation guest = new GuestReservation(slot, request.note().strip(), request.participants());
@@ -1871,9 +1938,14 @@ public class AdminService {
         Map<UUID, Integer> countMap = reservationRepository.countConfirmedByTimeSlotIds(slotIds).stream()
             .collect(Collectors.toMap(SlotParticipantCount::slotId, SlotParticipantCount::countAsInt));
         int maxConfirmed = countMap.values().stream().mapToInt(Integer::intValue).max().orElse(0);
-        int available = event.getMaxParticipants() - maxConfirmed - guestCount;
+        int heldForOthers = pendingSeatsHeldForOthers(
+            reservedSeatRepository.findByEventIdWithUser(eventId),
+            reservationRepository.findConfirmedUserIdsByEventId(eventId),
+            user.getId());
+        int available = event.getMaxParticipants() - maxConfirmed - guestCount - heldForOthers;
         if (request.participants() > available) {
-            throw new IllegalStateException(msg.get("reservation.spots.available", available, request.participants()));
+            throw new IllegalStateException(
+                seatsUnavailableMessage(heldForOthers, available, request.participants()));
         }
 
         if (!existingUserReservations.isEmpty()) {
@@ -2023,9 +2095,14 @@ public class AdminService {
             maxConfirmed = reservationRepository.countConfirmedByTimeSlotIds(slotIds).stream()
                 .mapToInt(SlotParticipantCount::countAsInt).max().orElse(0);
         }
-        int available = event.getMaxParticipants() - maxConfirmed - guestCount;
+        int heldForOthers = pendingSeatsHeldForOthers(
+            reservedSeatRepository.findByEventIdWithUser(eventId),
+            reservationRepository.findConfirmedUserIdsByEventId(eventId),
+            null);
+        int available = event.getMaxParticipants() - maxConfirmed - guestCount - heldForOthers;
         if (request.participants() > available) {
-            throw new IllegalStateException(msg.get("reservation.spots.available", available, request.participants()));
+            throw new IllegalStateException(
+                seatsUnavailableMessage(heldForOthers, available, request.participants()));
         }
 
         GuestReservation guest = new GuestReservation(event, request.note().strip(), request.participants());
