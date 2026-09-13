@@ -5,8 +5,10 @@ import org.junit.jupiter.api.Test;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -26,34 +28,74 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * nobody has written yet — this pins the reachability: the settlement types are visible only inside
  * their own two packages. A service that cannot read an amount cannot leak one.
  *
- * <p>To see this gate red: inject {@code SettlementRepository} into {@code CalendarService}.
+ * <p>To see this gate red, either shape works and both were checked when it was rewritten: inject
+ * {@code SettlementRepository} into {@code CalendarService}, or — the one an import search would
+ * miss entirely — put {@code "SELECT COUNT(s) FROM Settlement s"} in a repository of another
+ * package, where naming the entity needs no import at all.
  */
 class SettlementIsolationTest {
 
     private static final String SETTLEMENT_PACKAGE = "pl.nextsteppro.climbing.domain.settlement";
+    private static final String SETTLEMENT_API_PACKAGE = "pl.nextsteppro.climbing.api.admin.settlement";
+    private static final List<String> PACKAGE_NAMES =
+        List.of(SETTLEMENT_PACKAGE, SETTLEMENT_API_PACKAGE);
 
     /**
-     * Longest first, so an offending file is reported against the type it actually names —
+     * Matches a top-level public declaration: `public record PayerBalance(`, `public class …`.
+     *
+     * <p>⚠️ Any modifiers between {@code public} and the keyword, not a fixed pair. Spelling out
+     * {@code final|abstract} missed {@code sealed} and {@code non-sealed}, and a type this pattern
+     * misses is a type this gate silently stops guarding — the exact failure the derivation exists
+     * to prevent. Leading whitespace is allowed for the same reason: stripping a block comment that
+     * sat before the declaration leaves the line indented.
+     *
+     * <p>Anchored to the line so a nested or local class cannot enter the list; those are not
+     * reachable from another package anyway.
+     */
+    private static final Pattern PUBLIC_TYPE = Pattern.compile(
+        "(?m)^\\s*public\\s+(?:[\\w-]+\\s+)*(?:class|interface|enum|record)\\s+(\\w+)");
+
+    /**
+     * Every public type the two money packages declare, read from the sources at run time.
+     *
+     * <p>⚠️ Derived rather than written down, and that is the whole point of this version. The list
+     * used to be maintained by hand, and the gate's own note admitted the consequence: a type nobody
+     * remembered to add was protected by nothing. That was not theoretical — putting a
+     * {@code public record PayerDigest(UUID payerId, BigDecimal owed)} in {@code api/admin/settlement}
+     * and importing it into {@code CalendarService}, which serves the anonymous cached calendar, left
+     * this gate GREEN. Two public records had already been missed once before and added after the
+     * fact. Reading the packages means the next one is covered on the day it is written.
+     *
+     * <p>Package-private types need no entry: they cannot be named from another package at all, so
+     * the compiler is already the gate for them.
+     *
+     * <p>⚠️ If this gate ever lights up across half the codebase at once, read the name it reports
+     * before hunting for a leak: a public type in these packages called something ordinary — a
+     * {@code Period}, a {@code Line} — turns every file mentioning that word into an offender. The
+     * answer is to make it package-private, which the DTOs here already are, rather than to loosen
+     * the scan.
+     *
+     * <p>Sorted longest first so an offending file is reported against the type it actually names —
      * {@code \bSettlement\b} does not match inside {@code SettlementRepository}, but reporting the
      * wrong one would send the reader to the wrong file.
      */
-    private static final List<String> SETTLEMENT_TYPES = List.of(
-        // ⚠️ The services belong here even though they live in api/admin/settlement rather than the
-        // domain package. `\bSettlement\b` does NOT match inside `AdminSettlementService` — there is
-        // no word boundary in the middle of an identifier — so without naming them explicitly the
-        // whole service layer was reachable from anywhere with this gate still green, which is the
-        // opposite of what this class's own javadoc promises. Two of them are package-private as
-        // well, but AdminSettlementService and AdminSubscriptionService cannot be.
-        "AdminSettlementStatsService", "AdminSubscriptionService", "AdminSettlementService",
-        "AdminPayoutService",
-        "SettlementRepository", "SettlementRow", "SessionPayoutRepository", "SessionPayoutRow",
-        "SubscriptionRepository", "PayoutSourceRepository", "PayoutRepository", "PayerLastAmount", "UnpricedPayer",
-        // ⚠️ Public records carrying what one named person owes, holds, or is covered by — every bit
-        // as leakable as SettlementRow and, being public, reachable by a plain import from anywhere.
-        // They were missed when this list was written, which is the failure mode this gate has: a
-        // type nobody remembered to name is protected by nothing at all.
-        "PayerBalance", "SessionCoverage",
-        "SessionPayout", "PayoutSource", "PayoutRow", "Subscription", "Settlement", "Payout");
+    private static List<String> settlementTypes() {
+        List<String> types = new ArrayList<>();
+        for (Path file : SourceFiles.mainJavaFiles()) {
+            if (!isGuardedPackage(file)) continue;
+            Matcher matcher = PUBLIC_TYPE.matcher(SourceFiles.readWithoutComments(file));
+            while (matcher.find()) {
+                types.add(matcher.group(1));
+            }
+        }
+        types.sort(Comparator.comparingInt(String::length).reversed());
+        return types;
+    }
+
+    private static boolean isGuardedPackage(Path file) {
+        String path = file.toString().replace('\\', '/');
+        return ALLOWED_PACKAGE_PATHS.stream().anyMatch(path::contains);
+    }
 
     /**
      * The one file outside those packages allowed to name a settlement type, and only because the
@@ -78,22 +120,26 @@ class SettlementIsolationTest {
     @DisplayName("shouldKeepSettlementsUnreachableFromEveryOtherPackage")
     void shouldKeepSettlementsUnreachableFromEveryOtherPackage() {
         List<String> offenders = new ArrayList<>();
+        List<String> types = settlementTypes();
 
         for (Path file : SourceFiles.mainJavaFiles()) {
             String path = file.toString().replace('\\', '/');
-            if (ALLOWED_PACKAGE_PATHS.stream().anyMatch(path::contains)) continue;
+            if (isGuardedPackage(file)) continue;
             if (path.endsWith(SCHEDULER_EXCEPTION)) continue;
 
             String source = SourceFiles.readWithoutComments(file);
 
-            // The package in any import shape. `import ...domain.settlement.*;` is the local house
-            // style — several services import their own domain package that way — so keying only
-            // off fully qualified type names would leave the most likely bypass wide open.
-            if (source.contains(SETTLEMENT_PACKAGE)) {
-                offenders.add(path + " imports " + SETTLEMENT_PACKAGE);
+            // Either package in any import shape. `import ...domain.settlement.*;` is the local
+            // house style — several services import their own domain package that way — so keying
+            // only off fully qualified type names would leave the most likely bypass wide open. The
+            // api package is named here too: its DTOs are package-private today, but a wildcard
+            // import of it is the same gesture and deserves the same answer.
+            String importedPackage = PACKAGE_NAMES.stream().filter(source::contains).findFirst().orElse(null);
+            if (importedPackage != null) {
+                offenders.add(path + " imports " + importedPackage);
                 continue;
             }
-            for (String type : SETTLEMENT_TYPES) {
+            for (String type : types) {
                 // Word boundaries, not `type + " "`: a wildcard import followed by
                 // `Settlement.MAX_AMOUNT` or `List<SettlementRow>` puts a `.` or a `>` after the
                 // name, and a looser check waves both through.
@@ -109,6 +155,35 @@ class SettlementIsolationTest {
                 + "Every shape describing a session is shared with clients or the anonymous "
                 + "calendar cache, so a settlement reachable from one of those services is one "
                 + "field away from publishing what somebody paid.");
+    }
+
+    /**
+     * ⚠️ The derivation's own guard, and it matters more than it looks.
+     *
+     * <p>A list read from the sources fails in a way a written one cannot: a regex that stops
+     * matching returns an EMPTY list, every outside file then references none of nothing, and the
+     * gate goes green while guarding literally zero types. Green would mean "the scan broke", which
+     * is indistinguishable from "the code is clean" unless something checks the scan itself.
+     *
+     * <p>So it names the types it must find. Not a restatement of the derivation — these are the
+     * shapes carrying what a named person was charged, holds or is covered by, and each of them
+     * disappearing from the list would silently unguard the thing this whole class exists for.
+     */
+    @Test
+    @DisplayName("shouldDeriveTheTypesItGuardsInsteadOfGuardingNothing")
+    void shouldDeriveTheTypesItGuardsInsteadOfGuardingNothing() {
+        List<String> types = settlementTypes();
+
+        assertTrue(types.size() >= 17,
+            "The scan found only " + types.size() + " public types in the money packages. A broken "
+                + "pattern returns an empty list and this gate then passes by guarding nothing: "
+                + types);
+        for (String mustFind : List.of("Settlement", "SettlementRow", "PayerBalance",
+                "SessionCoverage", "Subscription", "Payout", "AdminSettlementService")) {
+            assertTrue(types.contains(mustFind),
+                "The scan no longer finds " + mustFind + ", so nothing stops another package from "
+                    + "reading it. Found: " + types);
+        }
     }
 
     @Test

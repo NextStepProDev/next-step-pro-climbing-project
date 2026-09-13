@@ -2,6 +2,7 @@ package pl.nextsteppro.climbing.api.calendar;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -17,10 +18,14 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.YearMonth;
+import java.util.List;
 import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -121,18 +126,61 @@ class SettlementNotInSharedPayloadTest extends BaseIntegrationTest {
             "The day view no longer carries the slot, so the leak assertion proves nothing: " + json);
     }
 
+    /**
+     * Every word this domain uses for money, matched against a field NAME rather than against the
+     * raw text.
+     *
+     * <p>⚠️ A plain substring search cannot be used for these. "rate" lives inside {@code
+     * generatedAt}, {@code separatedBy}, {@code moderatedAt} and {@code operatedBy}, and "fee"
+     * inside {@code coffeeBreak} — six ordinary field names that would light this gate up with
+     * nothing wrong, and a gate that cries wolf is one people learn to wave through. So the payload
+     * is read as keys, each key is split on its camel-case humps, and a hump is compared whole.
+     */
+    private static final List<String> MONEY_WORDS = List.of(
+        "settle", "amount", "balance", "credit", "paid", "owed", "debt", "remaining",
+        "fee", "rate", "payout", "subscription", "revenue", "price");
+
+    private static final Pattern JSON_KEY = Pattern.compile("\"(\\w+)\"\\s*:");
+
+    /** The money word this key carries, if any — `hourlyRate` yields "rate", `generatedAt` none. */
+    private static @Nullable String moneyWordIn(String key) {
+        // Camel humps and underscores both: Jackson writes camelCase here, but a key arriving as
+        // `hourly_rate` from a hand-built map would otherwise be one unsplittable hump and slip past.
+        for (String hump : key.split("(?<!^)(?=[A-Z])|_")) {
+            String lower = hump.toLowerCase();
+            for (String word : MONEY_WORDS) {
+                // startsWith, so "settled" matches "settle" and "amounts" matches "amount" — a
+                // plural or a past tense is the same field for this purpose.
+                if (lower.startsWith(word)) {
+                    return key;
+                }
+            }
+        }
+        return null;
+    }
+
     private void assertClean(String what, String json) {
-        String lower = json.toLowerCase();
         assertFalse(json.contains(SECRET_TEXT),
             "The " + what + " payload carries the amount a client was charged: " + json);
-        // ⚠️ "balance" and "credit" belong in this list as much as the first two do. They are what
-        // the section calls the money it holds on a named person's behalf, and neither contains the
-        // word "amount" — so a field copied onto a shared shape under either name would have sailed
-        // past a green gate. Every new word for money needs adding here the day it is coined.
-        assertFalse(lower.contains("settle") || lower.contains("amount")
-                || lower.contains("balance") || lower.contains("credit"),
-            "The " + what + " payload has grown a settlement field. Money must reach the admin "
-                + "through /api/admin/settlements — these shapes are served to anonymous visitors "
-                + "and cached under calendarMonth/Week/Day. Payload: " + json);
+        // ⚠️ The seeded amount above catches a leak of THAT row. This catches a field carrying some
+        // other figure — a rate, a fee, a remainder — which the value check cannot see at all,
+        // because the number in it was never planted.
+        //
+        // Checked by adding `BigDecimal hourlyRate` to TimeSlotDto, the shape served to anonymous
+        // visitors and cached: with only settle/amount/balance/credit listed, this gate passed it
+        // green. A name that is not in MONEY_WORDS is a name that can reach the calendar unnoticed,
+        // so the list grows the day a new one is coined.
+        Matcher keys = JSON_KEY.matcher(json);
+        String offending = null;
+        while (keys.find() && offending == null) {
+            offending = moneyWordIn(keys.group(1));
+        }
+        // The message is built once, on the way out. Passing it to assertNull inside the loop
+        // concatenated the whole payload onto a string for every key in it, on every view, for
+        // every viewer — a month of slots is a lot of megabytes to assemble and throw away.
+        assertNull(offending,
+            "The " + what + " payload has grown a settlement field (" + offending + "). Money must "
+                + "reach the admin through /api/admin/settlements — these shapes are served to "
+                + "anonymous visitors and cached under calendarMonth/Week/Day. Payload: " + json);
     }
 }
