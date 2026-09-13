@@ -711,7 +711,13 @@ export interface SettlementExportRow {
   date: string
   title: string | null
   payer: string
+  /** What it cost. */
   amount: number
+  /**
+   * What actually arrived against it. The server has always sent this; the export dropped it, so a
+   * row charged 150 with 100 paid left the file reading as settled in full.
+   */
+  paid: number
   settledOn: string | null
 }
 

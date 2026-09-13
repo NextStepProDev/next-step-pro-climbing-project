@@ -1099,6 +1099,7 @@
         "colTitle": "Descripción",
         "colPayer": "Pagador",
         "colAmount": "Importe (PLN)",
+        "colPaid": "Cobrado (PLN)",
         "colSettledOn": "Fecha de pago",
         "kindClient": "Cliente",
         "kindPayout": "Pago global",

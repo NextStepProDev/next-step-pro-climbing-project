@@ -28,15 +28,33 @@ export function exportFileName(year: number | null): string {
   return `rozliczenia_${year === null ? 'wszystkie' : year}_${todayInWarsaw()}.xlsx`
 }
 
-export function toExportRows(rows: SettlementExportRow[], unpaid: string): string[][] {
+/**
+ * One spreadsheet row. A cell is a number only where the column is arithmetic — everything else is
+ * text, and {@link exportSettlements} types the cells from that.
+ */
+export function toExportRows(
+  rows: SettlementExportRow[],
+  unpaid: string,
+): (string | number)[][] {
   return rows.map((row) => [
     row.kind,
+    // Left as text on purpose: ISO dates sort correctly as strings, and the payment column below
+    // carries a word as well as dates, so neither can be a date cell.
     row.date,
     row.title ?? '',
     row.payer,
-    // A plain number as text: Excel's own locale decides the separator, and forcing one here is how
-    // a Polish spreadsheet ends up reading 150,00 as a date.
-    row.amount.toFixed(2),
+    // ⚠️ A real number, not `toFixed(2)`. Written as text, Excel keeps it text: SUM over the column
+    // returns zero and sorting is alphabetical, so 1000.00 lands above 150.00 — in the one column
+    // this file exists to be added up by. The separator worry that put a string here was about
+    // writing a LOCALISED string ("150,00"); a numeric cell sidesteps it entirely, because Excel
+    // renders the number in whatever locale the reader has.
+    row.amount,
+    // ⚠️ What arrived, beside what was charged. Since part payments exist the two differ routinely,
+    // and the file used to carry only the charge — so 150 owed with 100 paid exported as "150" next
+    // to a payment date and read as settled in full, in the document somebody reconciles with their
+    // books. No third column for the remainder: two numeric columns let the spreadsheet subtract,
+    // and a stored difference is one more figure that can disagree with the other two.
+    row.paid,
     // Empty would read as missing data; the word says it is owed, which is a fact rather than a gap.
     row.settledOn ?? unpaid,
   ])
@@ -54,11 +72,20 @@ export async function exportSettlements(request: SettlementExportRequest): Promi
     type: String,
     fontWeight: 'bold' as const,
   }))
+  // The cell's type follows the value: a number becomes a numeric cell with two decimals, so the
+  // reader's Excel renders it in their own locale and the column still sums.
   const body = toExportRows(rows, labels.unpaid).map((row) =>
-    row.map((cell) => ({ value: cell, type: String })),
+    row.map((cell) =>
+      typeof cell === 'number'
+        ? { value: cell, type: Number, format: '#,##0.00' }
+        : { value: cell, type: String },
+    ),
   )
 
   await writeXlsxFile([summary, header, ...body], {
-    columns: [{ width: 18 }, { width: 12 }, { width: 32 }, { width: 26 }, { width: 12 }, { width: 14 }],
+    columns: [
+      { width: 18 }, { width: 12 }, { width: 32 }, { width: 26 },
+      { width: 12 }, { width: 12 }, { width: 14 },
+    ],
   }).toFile(exportFileName(request.year))
 }
