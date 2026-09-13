@@ -107,7 +107,6 @@ next-step-pro-climbing-project/
 ├── next-step-pro-climbing-hub/        # Docker Compose (dev/prod), .env, provisioning, load tests
 ├── .github/workflows/                 # CI/CD pipelines
 ├── docs/                              # Working notes (git workflow)
-├── AUDIT.md                           # Audit coverage ledger — where the next review starts
 └── VERSION                            # Application version
 ```
 
