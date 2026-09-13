@@ -157,6 +157,47 @@ describe('SettlementSection', () => {
     expect(save).not.toHaveBeenCalled()
   })
 
+  it('asks before the bin throws away a row that is holding money', async () => {
+    getSection.mockResolvedValue({
+      ...bulkOff,
+      targetDate: TARGET_DATE,
+      lines: [line({ amount: 150, paidAmount: 150, settledOn: TARGET_DATE })],
+    })
+    const user = userEvent.setup()
+
+    renderSection()
+
+    await user.click(await screen.findByRole('button', { name: 'settlements.line.clear' }))
+
+    // Nothing has happened yet: the payment leaves revenue and the client's balance with nothing
+    // anywhere recording that it arrived, which is the one irreversible thing this section does.
+    expect(screen.getByText('settlements.clearPaid.message')).toBeInTheDocument()
+    expect(screen.getByLabelText('settlements.line.amountLabel')).toHaveValue('150')
+
+    await user.click(screen.getByRole('button', { name: 'confirm' }))
+    await user.click(screen.getByRole('button', { name: 'settlements.actions.save' }))
+
+    await waitFor(() => expect(remove).toHaveBeenCalledWith('slot', 'target-1', 'user', 'user-1'))
+  })
+
+  it('clears a row with no money against it without asking anything', async () => {
+    getSection.mockResolvedValue({
+      ...bulkOff,
+      targetDate: TARGET_DATE,
+      lines: [line({ amount: 150, paidAmount: 0 })],
+    })
+    const user = userEvent.setup()
+
+    renderSection()
+
+    await user.click(await screen.findByRole('button', { name: 'settlements.line.clear' }))
+
+    // Correcting a price typed by mistake is the ordinary gesture here, and a confirmation on it
+    // would be noise on every one of them.
+    expect(screen.queryByText('settlements.clearPaid.message')).not.toBeInTheDocument()
+    expect(screen.getByLabelText('settlements.line.amountLabel')).toHaveValue('')
+  })
+
   it('offers the last amount charged to this person without applying it', async () => {
     getSection.mockResolvedValue({
       ...bulkOff,

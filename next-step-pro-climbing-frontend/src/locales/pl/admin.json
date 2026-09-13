@@ -1003,6 +1003,10 @@
       "receivedHint": "otrzymano",
       "dueHint": "należne"
     },
+    "clearPaid": {
+      "title": "Usunąć wpłatę?",
+      "message": "Na wierszu „{{name}}” jest zapisane {{amount}}. Usunięcie wiersza usuwa też tę wpłatę — zniknie z przychodu i z salda klienta, i nic nie zapisze, że kiedykolwiek wpłynęła."
+    },
     "actions": {
       "setAll": "Ustaw wszystkim",
       "save": "Zapisz"

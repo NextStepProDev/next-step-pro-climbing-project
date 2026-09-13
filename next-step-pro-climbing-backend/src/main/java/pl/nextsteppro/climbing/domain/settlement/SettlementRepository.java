@@ -300,13 +300,21 @@ public interface SettlementRepository extends JpaRepository<Settlement, UUID> {
      * <p>Only unsettled rows are touched, so running it twice is a no-op rather than a rewrite of
      * dates somebody already corrected by hand.
      */
-    /** One row of somebody's ledger, oldest first — the order money is applied in. */
+    /**
+     * One row of somebody's ledger, oldest first — the order money is applied in.
+     *
+     * <p>⚠️ Ordered down to the id, not just the date. Two sessions on the same day are ordinary
+     * (a morning and an evening slot), and on the date alone the database is free to return them
+     * either way round: the same payment would land on a different invoice from one call to the
+     * next, and a test asserting which row got the money would pass or fail by luck. The totals
+     * agree either way, which is exactly why nobody would notice.
+     */
     @Query(ROW_SELECT + " WHERE u.id = :userId AND s.paidAmount < s.amount "
-        + "ORDER BY COALESCE(ts.date, e.startDate, s.periodMonth)")
+        + "ORDER BY COALESCE(ts.date, e.startDate, s.periodMonth), s.createdAt, s.id")
     List<SettlementRow> findOpenRowsForUser(@Param("userId") UUID userId);
 
     @Query(ROW_SELECT + " WHERE g.id = :guestId AND s.paidAmount < s.amount "
-        + "ORDER BY COALESCE(ts.date, e.startDate, s.periodMonth)")
+        + "ORDER BY COALESCE(ts.date, e.startDate, s.periodMonth), s.createdAt, s.id")
     List<SettlementRow> findOpenRowsForGuest(@Param("guestId") UUID guestId);
 
     /** Records money against one row. Addressed by its id, which is why it is only ever called with

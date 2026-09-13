@@ -118,9 +118,27 @@ public class AdminSettlementService {
         BigDecimal paid = request.paidAmount() == null
             ? BigDecimal.ZERO
             : Settlement.normalizeAmount(request.paidAmount(), msg.get("admin.settlement.amount.invalid"));
-        // A date with no money behind it would read as paid on every screen while contributing
-        // nothing, so the two travel together or not at all.
-        LocalDate settledOn = paid.signum() == 0 ? null : request.settledOn();
+        // ⚠️ The date and the money travel together, and BOTH directions have their own failure —
+        // this used to enforce one of them.
+        //
+        // A date with no money behind it reads as paid on every screen while contributing nothing.
+        // Money with no date is worse, because it is invisible rather than wrong: revenue is summed
+        // by settled_on, and a row with paid >= amount is not a debt either, so 150 zl recorded that
+        // way shows up in no figure anywhere while the client's own card reads as settled.
+        //
+        // The exception is a row that costs nothing. Zero of zero really is settled, the client
+        // deliberately allows the tick there (its "settled with nothing received" guard exempts a
+        // free row, because zero is the honest figure), and clearing the date anyway sent the box
+        // back unticked with nothing said — the same silent swallow that guard was written against.
+        LocalDate settledOn;
+        if (paid.signum() > 0) {
+            settledOn = request.settledOn();
+            if (settledOn == null) {
+                throw new IllegalArgumentException(msg.get("admin.settlement.date.required"));
+            }
+        } else {
+            settledOn = amount.signum() == 0 ? request.settledOn() : null;
+        }
         Instant now = Instant.now();
 
         // Single statement rather than read-then-save: a second tab or a double-click loses the race
@@ -189,10 +207,21 @@ public class AdminSettlementService {
             case USER -> settlementRepository.findOpenRowsForUser(request.payerId());
             case GUEST -> settlementRepository.findOpenRowsForGuest(request.payerId());
         };
-        List<SettlementRow> credited = creditRows(payer, request.payerId());
-        if (open.isEmpty() && credited.isEmpty()) {
+        // ⚠️ This settles DEBT, and with nothing open there is nothing to settle. The old condition
+        // also let through the case "no debt, but credit on the account", where the code did
+        // something worse than nothing: it pulled that credit back into the pool and re-concentrated
+        // it onto one row, stamping that row with today's date. The account netted to the identical
+        // figure while money paid in July became revenue of September — across a year boundary it
+        // moved between years — and the call reported a row settled for it.
+        //
+        // It cannot be fixed by keeping the old date either: a row carries ONE settled_on, so adding
+        // money to a row that already holds some necessarily rewrites when the older money arrived.
+        // A prepayment from somebody who owes nothing therefore belongs on its own session, through
+        // the per-participant field, where the admin picks the target and the date knowingly.
+        if (open.isEmpty()) {
             throw new IllegalArgumentException(msg.get("admin.settlement.nothing.to.settle"));
         }
+        List<SettlementRow> credited = creditRows(payer, request.payerId());
 
         Instant now = Instant.now();
         LocalDate settledOn = request.settledOn();
@@ -222,8 +251,10 @@ public class AdminSettlementService {
         // Anything over what was owed is an overpayment and stays as one, on the row it landed
         // against. Refusing it would mean the change from a two-hundred note simply vanishes.
         if (pool.signum() > 0) {
-            SettlementRow holder = last != null ? last
-                : open.isEmpty() ? credited.getFirst() : open.getFirst();
+            // `last` is the row the pool ran out on; it can only be null if the loop never ran, and
+            // reaching here means the pool was positive, which makes the first row run. The fallback
+            // is belt and braces, not a reachable branch.
+            SettlementRow holder = last != null ? last : open.getFirst();
             // Every row the loop touched was brought up to exactly what it owed, and a row it never
             // reached is still at its own amount — so the carrier starts from `amount` either way.
             BigDecimal carried = holder.amount().add(pool);

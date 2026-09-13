@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Building2, Coins, Lock, Trash2 } from 'lucide-react'
 import { Button } from '../ui/Button'
+import { ConfirmModal } from '../ui/ConfirmModal'
 import { DateInput } from '../ui/DateInput'
 import { adminSettlementsApi } from '../../api/client'
 import { getErrorMessage } from '../../utils/errors'
@@ -227,6 +228,24 @@ export function SettlementSection({ target, targetId }: SettlementSectionProps) 
   })
 
   const clearRow = (line: SettlementLine) => patch(line, { amount: '', received: '', settled: false })
+
+  /**
+   * Clearing the amount deletes the row on save, and a row can be holding real money: a payment, or
+   * the credit somebody's overpayment left behind. That money then leaves revenue and leaves the
+   * client's balance with nothing anywhere recording that it ever arrived — the only irreversible
+   * thing this section can do, and it used to take one click and no question.
+   *
+   * <p>Asked only when there is money to lose. A confirmation on an empty row would be noise on the
+   * ordinary gesture of correcting a price that was typed by mistake.
+   */
+  const [clearingMoney, setClearingMoney] = useState<SettlementLine | null>(null)
+  const requestClear = (line: SettlementLine) => {
+    if (line.paidAmount > 0) {
+      setClearingMoney(line)
+      return
+    }
+    clearRow(line)
+  }
 
   /**
    * Writes the same amount into EVERY row, not only the blank ones — which is what the button says
@@ -549,7 +568,7 @@ export function SettlementSection({ target, targetId }: SettlementSectionProps) 
                   {saved[key].amount !== '' && (
                     <button
                       type="button"
-                      onClick={() => clearRow(line)}
+                      onClick={() => requestClear(line)}
                       aria-label={t('settlements.line.clear', { name: line.name })}
                       className="p-1.5 rounded text-rose-400/70 hover:text-rose-400 transition-colors"
                     >
@@ -584,6 +603,21 @@ export function SettlementSection({ target, targetId }: SettlementSectionProps) 
           </div>
         </>
       )}
+
+      <ConfirmModal
+        isOpen={clearingMoney !== null}
+        onClose={() => setClearingMoney(null)}
+        onConfirm={() => {
+          if (clearingMoney) clearRow(clearingMoney)
+          setClearingMoney(null)
+        }}
+        title={t('settlements.clearPaid.title')}
+        message={t('settlements.clearPaid.message', {
+          name: clearingMoney?.name ?? '',
+          amount: formatPln(clearingMoney?.paidAmount ?? 0, i18n.language),
+        })}
+        variant="danger"
+      />
     </div>
   )
 }

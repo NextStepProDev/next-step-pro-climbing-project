@@ -49,6 +49,38 @@ describe('Modal — guarding unsaved work', () => {
     })
   })
 
+  /**
+   * Every modal in this app listens for Escape on `document`, so two of them cannot be separated
+   * with `stopPropagation` — the same reason the ⌘K palette refuses to open while a dialog is up.
+   * A `ConfirmModal` rendered inside a modal (the settlement section's "this row is holding money",
+   * the private note's delete) therefore used to cancel itself AND close the modal under it, taking
+   * whatever had been typed in with it.
+   */
+  describe('with something stacked on top', () => {
+    it('should leave Escape to the dialog above it', async () => {
+      const onClose = vi.fn()
+      render(
+        <Modal isOpen onClose={onClose} title="Formularz" confirmClose={false}>
+          <p>treść</p>
+        </Modal>,
+      )
+      // Stands in for a nested ConfirmModal: its own role, mounted after ours, so it is last in the
+      // document — which is what "on top" means for portalled dialogs.
+      const stacked = document.createElement('div')
+      stacked.setAttribute('role', 'dialog')
+      document.body.appendChild(stacked)
+
+      await userEvent.keyboard('{Escape}')
+
+      expect(onClose).not.toHaveBeenCalled()
+      stacked.remove()
+
+      // And once it is gone the key is ours again.
+      await userEvent.keyboard('{Escape}')
+      expect(onClose).toHaveBeenCalledOnce()
+    })
+  })
+
   describe('with unsaved work', () => {
     it('should ask instead of closing on the X', async () => {
       const onClose = open(true)
