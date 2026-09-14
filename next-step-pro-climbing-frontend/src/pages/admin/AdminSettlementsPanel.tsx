@@ -685,7 +685,27 @@ function PayoutsCard({ payouts }: { payouts: PayoutsSummary }) {
   const active = payouts.sources.filter((source) => !source.archived)
   const refresh = () => queryClient.invalidateQueries({ queryKey: ['admin', 'settlements'] })
 
-  if (payouts.sources.length === 0 && payouts.periods.length === 0) return null
+  /**
+   * ⚠️ This used to `return null`, and that hid the ONLY way to add a first contractor: the
+   * manager that creates them lives inside this card. So the card disappeared exactly when it was
+   * needed, and bulk payouts could not be started at all.
+   *
+   * The whole-tab empty state has a second copy of the manager, which is why this looked fixed.
+   * It is not: that state requires the tab to be empty of *everything* — no settlement years, no
+   * debts, nothing awaiting pricing — so it only ever helped a brand-new install. Anybody already
+   * pricing sessions per participant (which is everybody using this) stayed locked out.
+   *
+   * Empty now means "introduce yourself once", not "hide". No table, no axis note — there is no
+   * data for either; just the sentence explaining what this is for and the way in.
+   */
+  if (payouts.sources.length === 0 && payouts.periods.length === 0) {
+    return (
+      <Card title={t('settlements.tab.payouts.title')} icon={Building2}>
+        <p className="text-xs text-surface-500">{t('settlements.tab.payouts.setupHint')}</p>
+        <SourceManager sources={payouts.sources} onChanged={refresh} />
+      </Card>
+    )
+  }
 
   return (
     <Card
