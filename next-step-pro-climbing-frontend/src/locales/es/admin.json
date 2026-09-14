@@ -446,7 +446,12 @@
     "templateAdd": "Añadir plantilla",
     "templateSave": "Guardar plantilla",
     "templateSaving": "Guardando...",
-    "templateRemove": "Eliminar plantilla"
+    "templateRemove": "Eliminar plantilla",
+    "archiveAllDay": "todo el día",
+    "archiveEventRange": "{{from}} – {{to}}",
+    "archiveEventBadge": "evento",
+    "archiveEventOpen": "Abrir en Eventos",
+    "archiveEventsUnavailable": "No se pudieron cargar los eventos — abajo solo hay franjas horarias."
   },
   "reservations": {
     "noUpcoming": "No hay reservas próximas",

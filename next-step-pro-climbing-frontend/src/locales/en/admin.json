@@ -446,7 +446,12 @@
     "templateAdd": "Add template",
     "templateSave": "Save template",
     "templateSaving": "Saving...",
-    "templateRemove": "Remove template"
+    "templateRemove": "Remove template",
+    "archiveAllDay": "all day",
+    "archiveEventRange": "{{from}} – {{to}}",
+    "archiveEventBadge": "event",
+    "archiveEventOpen": "Open in Events",
+    "archiveEventsUnavailable": "Events could not be loaded — the list below shows time slots only."
   },
   "reservations": {
     "noUpcoming": "No upcoming reservations",

@@ -446,7 +446,12 @@
     "templateAdd": "Dodaj szablon",
     "templateSave": "Zapisz szablon",
     "templateSaving": "Zapisywanie...",
-    "templateRemove": "Usuń szablon"
+    "templateRemove": "Usuń szablon",
+    "archiveAllDay": "cały dzień",
+    "archiveEventRange": "{{from}} – {{to}}",
+    "archiveEventBadge": "wydarzenie",
+    "archiveEventOpen": "Otwórz w Wydarzeniach",
+    "archiveEventsUnavailable": "Nie udało się wczytać wydarzeń — poniżej są wyłącznie terminy."
   },
   "reservations": {
     "noUpcoming": "Brak nadchodzących rezerwacji",

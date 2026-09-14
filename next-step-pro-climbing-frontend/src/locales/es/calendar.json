@@ -165,11 +165,22 @@
   },
   "addEntry": {
     "buttonTitle": "Añadir una franja horaria o un evento",
-    "title": "¿Qué añadir el {{day}}?",
-    "slot": "Franja horaria",
-    "slotHint": "Sesiones, ventana de contacto o ausencia — también de varios días.",
-    "event": "Evento",
-    "eventHint": "Un curso, un taller, un viaje — con descripción e inscripciones."
+    "title": "Nueva entrada — {{day}}",
+    "question": "¿Qué añades y cuánto dura?",
+    "group": {
+      "slot": "Franja horaria",
+      "slotHint": "Tiempo reservable — sin nombre ni descripción.",
+      "event": "Evento",
+      "eventHint": "Con nombre, descripción e inscripciones."
+    },
+    "slotHours": "Horas",
+    "slotHoursHint": "Una sesión, una ventana de contacto o una ausencia.",
+    "eventHours": "Horas",
+    "eventHoursHint": "Escalada recreativa, un taller de unas horas.",
+    "eventAllDay": "Todo el día",
+    "eventAllDayHint": "Una competición, una jornada de puertas abiertas — sin horas.",
+    "eventRange": "Varios días",
+    "eventRangeHint": "Un curso o un viaje repartido en días."
   },
   "createSlot": {
     "title": "Añadir nueva franja horaria",

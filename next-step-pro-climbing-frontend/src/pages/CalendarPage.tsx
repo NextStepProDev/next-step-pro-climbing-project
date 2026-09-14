@@ -79,10 +79,18 @@ export function CalendarPage() {
     searchParams.get("slot")
   );
   const [selectedEvent, setSelectedEvent] = useState<EventSummary | null>(null);
-  // "+" in the day view asks first, then opens one of the two forms.
+  // "+" in the day view asks how long the entry lasts, then opens the form that fits.
   const [showAddChoice, setShowAddChoice] = useState(false);
   const [showCreateSlotModal, setShowCreateSlotModal] = useState(false);
-  const [showCreateEventModal, setShowCreateEventModal] = useState(false);
+  /**
+   * The dates the "+" chooser worked out, or null when no event form is open.
+   *
+   * Carries the range rather than a bare boolean because the chooser now answers "how long",
+   * and that answer IS the prefill: "all day" arrives as one date, "several days" as two.
+   */
+  const [eventDraft, setEventDraft] = useState<
+    { startDate: string; endDate: string; startTime?: string; endTime?: string } | null
+  >(null);
   // Training request: start date + optional availability window (constrains the times)
   const [proposeContext, setProposeContext] = useState<{ date: string; window?: ProposeWindow } | null>(null);
   const [cutSlot, setCutSlot] = useState<{ id: string; date: string; startTime: string; endTime: string } | null>(null);
@@ -266,7 +274,7 @@ export function CalendarPage() {
     // form open again the next time any day is opened.
     setShowAddChoice(false);
     setShowCreateSlotModal(false);
-    setShowCreateEventModal(false);
+    setEventDraft(null);
     if (viewMode === 'week') {
       setSearchParams({ view: 'week' });
     } else {
@@ -993,8 +1001,13 @@ export function CalendarPage() {
             isOpen={showAddChoice}
             onClose={() => setShowAddChoice(false)}
             date={selectedDate}
-            onPickSlot={() => { setShowAddChoice(false); setShowCreateSlotModal(true); }}
-            onPickEvent={() => { setShowAddChoice(false); setShowCreateEventModal(true); }}
+            onPick={({ shape, ...draft }) => {
+              setShowAddChoice(false);
+              // One shape is a slot; the other three are events, and the chooser has already
+              // worked out the dates and — for an hourly event — the times they open with.
+              if (shape === 'slotHours') setShowCreateSlotModal(true);
+              else setEventDraft(draft);
+            }}
           />
 
           <CreateSlotModal
@@ -1016,12 +1029,15 @@ export function CalendarPage() {
               <LoadingSpinner size="lg" />
             </div>
           }>
-            {showCreateEventModal && (
+            {eventDraft && (
               <CreateEventModal
-                key={selectedDate}
+                // Keyed on the whole prefill, not just the day: picking "all day", backing out
+                // and then picking "hours" on the SAME day has to remount, or the form keeps the
+                // first prefill and opens without its clocks.
+                key={`${eventDraft.startDate}-${eventDraft.endDate}-${eventDraft.startTime ?? ''}`}
                 isOpen
-                onClose={() => setShowCreateEventModal(false)}
-                initial={{ startDate: selectedDate, endDate: selectedDate }}
+                onClose={() => setEventDraft(null)}
+                initial={eventDraft}
               />
             )}
           </Suspense>
