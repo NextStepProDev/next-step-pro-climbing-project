@@ -5,6 +5,8 @@ import { Building2, Coins, Lock, Trash2 } from 'lucide-react'
 import { Button } from '../ui/Button'
 import { ConfirmModal } from '../ui/ConfirmModal'
 import { DateInput } from '../ui/DateInput'
+import { useModalClose } from '../ui/modalClose'
+import { useToast } from '../../context/ToastContext'
 import { adminSettlementsApi } from '../../api/client'
 import { getErrorMessage } from '../../utils/errors'
 import { formatPln, parseAmount } from '../../utils/money'
@@ -46,6 +48,18 @@ const payerKey = (line: SettlementLine) => `${line.payerType}:${line.payerId}`
 export function SettlementSection({ target, targetId }: SettlementSectionProps) {
   const { t, i18n } = useTranslation('admin')
   const queryClient = useQueryClient()
+  /**
+   * Saving the amounts is the last thing anybody does on a session, so the modal gets out of the
+   * way — and when the admin arrived from the Settlements tab, the host modal's close is also what
+   * navigates back to the list they came from (`deepLinkReturnTo` in `CalendarPage`), which is why
+   * this goes through the modal rather than closing anything itself.
+   *
+   * `null` outside a `Modal`, and then nothing closes: the section is written to work anywhere,
+   * and a component that assumed its own host would be a lie the day somebody embeds it in a page.
+   */
+  const closeModal = useModalClose()
+  // A modal that vanishes is not, on its own, a confirmation that the money was written down.
+  const { showToast } = useToast()
   const [drafts, setDrafts] = useState<Record<string, Draft>>({})
   const [bulkAmount, setBulkAmount] = useState('')
   const [invalidKeys, setInvalidKeys] = useState<string[]>([])
@@ -193,7 +207,14 @@ export function SettlementSection({ target, targetId }: SettlementSectionProps) 
       setInvalidKeys([])
       // The whole ['admin','settlements'] prefix, not just this session's key: the Settlements tab
       // lives under it too, so a figure written here shows up there without a manual refresh.
+      // ⚠️ This has to happen even though the modal is about to close — the tab is unmounted at
+      // this moment, so the invalidation is what marks its cached page stale and makes React Query
+      // refetch it when it mounts again a tick later.
       queryClient.invalidateQueries({ queryKey: ['admin', 'settlements'] })
+      showToast(t('settlements.actions.saved'))
+      // Only here, never on the credit or bulk-payer mutations: those report a result the admin
+      // has to read on this screen, and closing would take the answer away with the question.
+      closeModal?.()
     },
   })
 
@@ -390,12 +411,19 @@ export function SettlementSection({ target, targetId }: SettlementSectionProps) 
             </div>
           )}
 
-          <ul className="space-y-2">
+          {/* One person is one block, and the rule separating them is doing real work: a row can
+              grow to four lines (a debt, an offer to spend a credit, what spending it did) while
+              the row under it is one line, and without a rule it stops being obvious where one
+              person's figures end. */}
+          <ul className="divide-y divide-surface-800">
             {lines.map((line) => {
               const key = payerKey(line)
               const draft = draftFor(line)
               return (
-                <li key={key} className="flex flex-wrap items-center gap-2">
+                /* `items-start`, not `items-center`: the name block is the tall one, and centring
+                   the fields against it floated the amount into the middle of somebody's balance
+                   notes instead of level with their name. */
+                <li key={key} className="flex flex-wrap items-start gap-2 py-2 first:pt-0 last:pb-0">
                   <span className="min-w-[9rem] flex-1 text-sm text-surface-200">
                     {line.name}
                     {line.participants > 1 && (
@@ -495,96 +523,146 @@ export function SettlementSection({ target, targetId }: SettlementSectionProps) 
                     )}
                   </span>
 
-                  <span className="flex flex-col">
-                    <input
-                      inputMode="decimal"
-                      value={draft.amount}
-                      onChange={(e) => patch(line, { amount: e.target.value })}
-                      placeholder={
-                        line.suggestedAmount !== null
-                          ? String(line.suggestedAmount)
-                          : t('settlements.line.amountPlaceholder')
-                      }
-                      aria-label={t('settlements.line.amountLabel', { name: line.name })}
-                      className={`w-24 bg-surface-800 border rounded px-2 py-1 text-sm text-surface-100 focus:outline-none focus:border-primary-500 ${
-                        invalidKeys.includes(key) ? 'border-rose-500' : 'border-surface-600'
-                      }`}
-                    />
-                    <span className="mt-0.5 text-[11px] text-surface-500">
-                      {t('settlements.line.dueHint')}
-                    </span>
-                    {line.suggestedAmount !== null && draft.amount.trim() === '' && (
-                      <button
-                        type="button"
-                        onClick={() => patch(line, { amount: String(line.suggestedAmount) })}
-                        className="mt-0.5 text-left text-[11px] text-primary-400 hover:text-primary-300 transition-colors"
-                      >
-                        {t('settlements.line.useLast', {
-                          amount: formatPln(line.suggestedAmount, i18n.language),
-                        })}
-                      </button>
-                    )}
-                  </span>
+                  {/* The fields, as a table that is the same table on every row.
 
-                  {draft.settled && (
-                    <span className="flex flex-col">
+                      They used to be siblings of the name in one wrapping flex line, and there is
+                      not enough width for them: measured inside this modal (452px of content) a
+                      settled row needs 482px, so it wrapped — and it wrapped at a different point
+                      on every row, because the number of controls differs per row (a settled row
+                      carries two more than an unsettled one, a never-priced row carries no bin).
+                      With four people booked, the amount column sat at three different x positions
+                      and the payment date dropped onto its own line UNDER somebody's name, where it
+                      reads as belonging to the person below.
+
+                      So the controls get their own box with fixed tracks, which makes their total
+                      width a constant and therefore the name column a constant too. Every cell is
+                      placed explicitly, which is what lets the conditional ones be absent rather
+                      than padded with empty boxes: with auto-placement, a row without a bin would
+                      slide its "received" field up into the bin's column.
+
+                      Two rows rather than one, because 482 > 452 however the columns are shared
+                      out. Amounts sit above each other in one column, and the payment date lands
+                      under the tick that reveals it. Below `sm` this is the old wrapping flex —
+                      there the modal is narrower than these tracks.
+
+                      ⚠️ The date spans the last two columns rather than sitting in one of its own,
+                      and that is what pays for the name. A native date field will not render much
+                      under 140px, so a column wide enough to hold it alone is 35px wider than the
+                      tick above it needs — width taken straight off the only column with words in
+                      it. Spanning puts the bin's column to work and buys the name back 32px, which
+                      is the difference between a full surname on one line and a hyphen break. */}
+                  <div className="flex flex-wrap items-start gap-2 sm:grid sm:grid-cols-[6rem_7rem_1.75rem] sm:gap-x-2 sm:gap-y-1">
+                    <span className="flex flex-col sm:col-start-1 sm:row-start-1">
                       <input
                         inputMode="decimal"
-                        value={draft.received}
-                        onChange={(e) => patch(line, { received: e.target.value })}
-                        placeholder={draft.amount || t('settlements.line.receivedPlaceholder')}
-                        aria-label={t('settlements.line.receivedLabel', { name: line.name })}
-                        className="w-24 bg-surface-800 border border-surface-600 rounded px-2 py-1 text-sm text-surface-100 focus:outline-none focus:border-primary-500"
+                        value={draft.amount}
+                        onChange={(e) => patch(line, { amount: e.target.value })}
+                        placeholder={
+                          line.suggestedAmount !== null
+                            ? String(line.suggestedAmount)
+                            : t('settlements.line.amountPlaceholder')
+                        }
+                        aria-label={t('settlements.line.amountLabel', { name: line.name })}
+                        className={`w-24 bg-surface-800 border rounded px-2 py-1 text-sm text-surface-100 focus:outline-none focus:border-primary-500 ${
+                          invalidKeys.includes(key) ? 'border-rose-500' : 'border-surface-600'
+                        }`}
                       />
                       <span className="mt-0.5 text-[11px] text-surface-500">
-                        {t('settlements.line.receivedHint')}
+                        {t('settlements.line.dueHint')}
                       </span>
+                      {line.suggestedAmount !== null && draft.amount.trim() === '' && (
+                        <button
+                          type="button"
+                          onClick={() => patch(line, { amount: String(line.suggestedAmount) })}
+                          className="mt-0.5 text-left text-[11px] text-primary-400 hover:text-primary-300 transition-colors"
+                        >
+                          {t('settlements.line.useLast', {
+                            amount: formatPln(line.suggestedAmount, i18n.language),
+                          })}
+                        </button>
+                      )}
                     </span>
-                  )}
 
-                  <label className="flex items-center gap-1.5 text-xs text-surface-300">
-                    <input
-                      type="checkbox"
-                      checked={draft.settled}
-                      onChange={(e) => patch(line, { settled: e.target.checked })}
-                      // The visible label is the same word on every row, so without this a screen
-                      // reader announces four identical "settled" checkboxes and the person they
-                      // belong to is only inferable from reading order.
-                      aria-label={t('settlements.line.settledLabel', { name: line.name })}
-                      className="accent-emerald-500"
-                    />
-                    {t('settlements.line.settled')}
-                  </label>
+                    {/* `min-h` so the word sits level with the middle of the input beside it rather
+                        than at the top of the row, which is where `items-start` would otherwise put
+                        a single line of 12px text. */}
+                    <label className="flex items-center gap-1.5 text-xs text-surface-300 sm:col-start-2 sm:row-start-1 sm:min-h-[1.875rem]">
+                      <input
+                        type="checkbox"
+                        checked={draft.settled}
+                        onChange={(e) => patch(line, { settled: e.target.checked })}
+                        // The visible label is the same word on every row, so without this a screen
+                        // reader announces four identical "settled" checkboxes and the person they
+                        // belong to is only inferable from reading order.
+                        aria-label={t('settlements.line.settledLabel', { name: line.name })}
+                        className="accent-emerald-500"
+                      />
+                      {t('settlements.line.settled')}
+                    </label>
 
-                  {draft.settled && (
-                    <DateInput
-                      value={draft.settledOn}
-                      onChange={(value) => patch(line, { settledOn: value })}
-                      aria-label={t('settlements.line.settledOnLabel', { name: line.name })}
-                      className="bg-surface-800 border border-surface-600 rounded px-2 py-1 text-sm text-surface-100 focus:outline-none focus:border-primary-500"
-                    />
-                  )}
+                    {saved[key].amount !== '' && (
+                      <button
+                        type="button"
+                        onClick={() => requestClear(line)}
+                        aria-label={t('settlements.line.clear', { name: line.name })}
+                        className="p-1.5 rounded text-rose-400/70 hover:text-rose-400 transition-colors sm:col-start-3 sm:row-start-1 sm:flex sm:items-center sm:justify-center sm:h-[1.875rem] sm:w-7 sm:p-0"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
 
-                  {saved[key].amount !== '' && (
-                    <button
-                      type="button"
-                      onClick={() => requestClear(line)}
-                      aria-label={t('settlements.line.clear', { name: line.name })}
-                      className="p-1.5 rounded text-rose-400/70 hover:text-rose-400 transition-colors"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  )}
+                    {/* Second row of the same table: what arrived, and when. Ordered after the tick
+                        in the DOM as well as on screen, so tabbing follows what the eye does — the
+                        two only agree because these cells are placed where the flow would put them
+                        anyway. */}
+                    {draft.settled && (
+                      <>
+                        <span className="flex flex-col sm:col-start-1 sm:row-start-2">
+                          <input
+                            inputMode="decimal"
+                            value={draft.received}
+                            onChange={(e) => patch(line, { received: e.target.value })}
+                            placeholder={draft.amount || t('settlements.line.receivedPlaceholder')}
+                            aria-label={t('settlements.line.receivedLabel', { name: line.name })}
+                            className="w-24 bg-surface-800 border border-surface-600 rounded px-2 py-1 text-sm text-surface-100 focus:outline-none focus:border-primary-500"
+                          />
+                          <span className="mt-0.5 text-[11px] text-surface-500">
+                            {t('settlements.line.receivedHint')}
+                          </span>
+                        </span>
+
+                        <span className="flex flex-col sm:col-start-2 sm:row-start-2 sm:col-span-2">
+                          <DateInput
+                            value={draft.settledOn}
+                            onChange={(value) => patch(line, { settledOn: value })}
+                            aria-label={t('settlements.line.settledOnLabel', { name: line.name })}
+                            className="bg-surface-800 border border-surface-600 rounded px-2 py-1 text-sm text-surface-100 focus:outline-none focus:border-primary-500 sm:w-full"
+                          />
+                          {/* The date used to sit next to the tick that explains it; on its own line
+                              it needs to say what it is. */}
+                          <span className="mt-0.5 text-[11px] text-surface-500">
+                            {t('settlements.line.settledOnHint')}
+                          </span>
+                        </span>
+                      </>
+                    )}
+                  </div>
                 </li>
               )
             })}
           </ul>
 
+          {/* `role="alert"`: this text appears in response to pressing Save, and a screen reader
+              otherwise gets nothing back from a button that refused. */}
           {saveMutation.isError && (
-            <p className="text-sm text-rose-400/80">{getErrorMessage(saveMutation.error)}</p>
+            <p role="alert" className="text-sm text-rose-400/80">
+              {getErrorMessage(saveMutation.error)}
+            </p>
           )}
           {spendCredit.isError && (
-            <p className="text-sm text-rose-400/80">{getErrorMessage(spendCredit.error)}</p>
+            <p role="alert" className="text-sm text-rose-400/80">
+              {getErrorMessage(spendCredit.error)}
+            </p>
           )}
 
           <div className="flex items-center justify-between gap-2">
