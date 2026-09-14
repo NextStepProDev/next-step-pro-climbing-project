@@ -473,6 +473,61 @@ describe('AdminSettlementsPanel', () => {
     expect(screen.queryByText('settlements.tab.revenue.title')).not.toBeInTheDocument()
   })
 
+  // ⚠️ The bug this card was hiding: the manager that creates a contractor lives INSIDE it, and
+  // the card used to `return null` when there were none — so the only door shut exactly when it
+  // was needed, and bulk payouts could not be started at all. The whole-tab empty state has a
+  // second copy of the manager, which is why this looked fixed; but that state needs the tab to
+  // be empty of everything, so it only ever helped a brand-new install. The default fixture here
+  // is the real case: settlement years present, zero contractors.
+  it('offers a way to add a first contractor even though the tab is already in use', async () => {
+    getOverview.mockResolvedValue(makeOverview())
+
+    renderPanel()
+
+    expect(await screen.findByText('settlements.tab.payouts.title')).toBeInTheDocument()
+    expect(screen.getByLabelText('settlements.tab.payouts.newPayer')).toBeInTheDocument()
+    expect(screen.getByText('settlements.tab.payouts.setupHint')).toBeInTheDocument()
+  })
+
+  it('actually creates the contractor it offered to create', async () => {
+    getOverview.mockResolvedValue(makeOverview())
+    const user = userEvent.setup()
+
+    renderPanel()
+
+    await user.type(await screen.findByLabelText('settlements.tab.payouts.newPayer'), 'Ściana XYZ')
+    await user.click(screen.getByRole('button', { name: 'settlements.tab.payouts.addPayer' }))
+
+    await waitFor(() => expect(createSource).toHaveBeenCalledWith('Ściana XYZ'))
+  })
+
+  // Two ways in on one screen would be worse than none: the admin fills one, nothing happens to
+  // the other, and both look broken.
+  it('does not put two contractor fields on a tab that is empty of everything', async () => {
+    getOverview.mockResolvedValue(makeOverview({
+      years: [],
+      year: 2026,
+      payouts: { sources: [], total: 0, periods: [] },
+    }))
+
+    renderPanel()
+
+    await screen.findByText('settlements.tab.empty')
+    expect(screen.getAllByLabelText('settlements.tab.payouts.newPayer')).toHaveLength(1)
+  })
+
+  // Empty is a setup prompt, not a table: neither the axis note nor a transfer button means
+  // anything before the first contractor exists.
+  it('shows no table and no transfer button until there is a contractor', async () => {
+    getOverview.mockResolvedValue(makeOverview())
+
+    renderPanel()
+
+    await screen.findByText('settlements.tab.payouts.title')
+    expect(screen.queryByText('settlements.tab.payouts.axis')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'settlements.tab.payouts.add' })).not.toBeInTheDocument()
+  })
+
   it('shows a month of work nobody has paid for yet, and no rate for it', async () => {
     getOverview.mockResolvedValue(makeOverview({
       payouts: {
@@ -572,12 +627,21 @@ describe('AdminSettlementsPanel', () => {
     await waitFor(() => expect(deletePayout).toHaveBeenCalledWith('p-2'))
   })
 
-  it('hides the bulk card entirely until there is a payer or a period', async () => {
+  /**
+   * ⚠️ This test used to assert the OPPOSITE — that the card stays hidden until a payer or a
+   * period exists — and it passed happily while making bulk payouts impossible to start, because
+   * the only control that creates a contractor lives inside that card.
+   *
+   * A green test asserting a defect is worse than no test at all: it argues against the fix and
+   * makes the next person assume the behaviour was deliberate. Kept and inverted rather than
+   * deleted, so the reason survives.
+   */
+  it('keeps the bulk card reachable even with no payer and no period', async () => {
     getOverview.mockResolvedValue(makeOverview())
 
     renderPanel()
 
     await screen.findByText('settlements.tab.revenue.title')
-    expect(screen.queryByText('settlements.tab.payouts.title')).not.toBeInTheDocument()
+    expect(screen.getByText('settlements.tab.payouts.title')).toBeInTheDocument()
   })
 })
