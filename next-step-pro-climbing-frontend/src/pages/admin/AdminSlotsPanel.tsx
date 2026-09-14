@@ -1,7 +1,9 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { format, parseISO } from 'date-fns'
+import type { Locale } from 'date-fns'
 import { Plus, Lock, LockOpen, Trash2, Users, Pencil, AlertTriangle, X, UserPlus, ChevronDown, ChevronRight, ChevronLeft, Save, Hourglass } from 'lucide-react'
 import { adminApi, adminSiteApi } from '../../api/client'
 import { getErrorMessage } from '../../utils/errors'
@@ -25,7 +27,8 @@ import { useInviteSentToast } from '../../hooks/useInviteSentToast'
 import { MailedInvitesWarning } from '../../components/ui/MailedInvitesWarning'
 import { canOfferSaveAndSend } from '../../utils/inviteStatus'
 import { todayInWarsaw } from '../../utils/calendarDate'
-import type { InvitedUser, SlotParticipants, SlotTemplate, TimeSlotAdmin } from '../../types'
+import { buildArchiveDays } from './archiveDays'
+import type { EventDetail, InvitedUser, SlotParticipants, SlotTemplate, TimeSlotAdmin } from '../../types'
 
 const ARCHIVE_PAGE_SIZE = 15
 
@@ -57,6 +60,24 @@ export function AdminSlotsPanel() {
   const { data: pastSlots, isLoading: pastLoading, isError: pastError, error: pastErrorObj } = useQuery({
     queryKey: ['admin', 'slots', 'past'],
     queryFn: () => adminApi.getPastSlots(),
+    enabled: showArchive,
+  })
+
+  /**
+   * What happened, regardless of which of the two rows recorded it.
+   *
+   * The archive used to answer "which slots did I have", which is a question about the database,
+   * not about the week that went by: a three-day course simply was not in it. Events are pulled
+   * from the key the events panel already fills, so opening this list costs nothing when that tab
+   * has been visited, and nothing at all until the archive is actually unfolded.
+   *
+   * ⚠️ Safe from double counting only because `getPastSlots` drops `belongsToEvent()` rows on the
+   * server. Without that filter a three-day event would appear here four times: once per day of
+   * the bookkeeping slots the first booking creates, plus itself.
+   */
+  const { data: allEvents, isLoading: eventsLoading, isError: eventsError } = useQuery({
+    queryKey: ['admin', 'events'],
+    queryFn: adminApi.getAllEvents,
     enabled: showArchive,
   })
 
@@ -105,12 +126,15 @@ export function AdminSlotsPanel() {
   }, {})
   const sortedDays = Object.keys(groupedByDate).sort()
 
-  // Group and paginate past slots
-  const pastGroupedByDate = (pastSlots ?? []).reduce<Record<string, TimeSlotAdmin[]>>((acc, slot) => {
-    acc[slot.date] = [...(acc[slot.date] ?? []), slot]
-    return acc
-  }, {})
-  const pastSortedDays = Object.keys(pastGroupedByDate).sort().reverse()
+  // Group and paginate the archive — slots and events together, one list of days. Every decision
+  // in here lives in `archiveDays.ts`, where it can be pinned by a test.
+  const {
+    days: pastSortedDays,
+    slotsByDate: pastGroupedByDate,
+    eventsByDate: pastEventsByDate,
+    empty: archiveEmpty,
+  } = buildArchiveDays(pastSlots, allEvents, todayInWarsaw())
+
   const pastTotalPages = Math.max(1, Math.ceil(pastSortedDays.length / ARCHIVE_PAGE_SIZE))
   const pastSafePage = Math.min(archivePage, pastTotalPages)
   const pastPagedDays = pastSortedDays.slice((pastSafePage - 1) * ARCHIVE_PAGE_SIZE, pastSafePage * ARCHIVE_PAGE_SIZE)
@@ -210,10 +234,19 @@ export function AdminSlotsPanel() {
                 {getErrorMessage(pastErrorObj)}
               </div>
             )}
-            {pastSlots && pastSlots.length === 0 && (
+            {/* ⚠️ Two queries feed this list, so "nothing here" is only true once BOTH have
+                answered. Reading the slots alone flashes "no past sessions" over a week that had
+                a course in it, for as long as the events request takes. */}
+            {pastSlots && !eventsLoading && archiveEmpty && (
               <p className="text-surface-500 text-sm">{t('slots.noPast')}</p>
             )}
-            {pastSlots && pastSlots.length > 0 && (
+            {/* The archive still lists its slots when the events request fails, but it must say
+                so: an incomplete list that looks complete is the failure this whole change was
+                meant to remove. */}
+            {eventsError && (
+              <p className="text-amber-500/90 text-sm mb-3">{t('slots.archiveEventsUnavailable')}</p>
+            )}
+            {pastSlots && !archiveEmpty && (
               <div className="space-y-6">
                 {pastPagedDays.map((date) => (
                   <div key={date}>
@@ -221,7 +254,10 @@ export function AdminSlotsPanel() {
                       {format(parseISO(date), 'EEEE, d MMMM', { locale })}
                     </h3>
                     <div className="space-y-2">
-                      {pastGroupedByDate[date].map((slot) => (
+                      {(pastEventsByDate[date] ?? []).map((event) => (
+                        <ArchivedEventRow key={event.id} event={event} t={t} locale={locale} />
+                      ))}
+                      {(pastGroupedByDate[date] ?? []).map((slot) => (
                         <SlotRow
                           key={slot.id}
                           slot={slot}
@@ -319,6 +355,65 @@ export function AdminSlotsPanel() {
 
       {/* Slot Templates */}
       <SlotTemplatesSection />
+    </div>
+  )
+}
+
+/**
+ * An event that has been and gone, shown in the slots archive so the list answers "what happened"
+ * rather than "which slots existed".
+ *
+ * ⚠️ Deliberately read-only, and that is a decision rather than an omission. The row actions
+ * around it target slot endpoints; wiring an event id into them is a mistake that would be found
+ * by whoever pressed the bin. Editing and deleting an event is one click away in its own tab,
+ * where the confirmations already know what a multi-day cancellation costs.
+ *
+ * Rendered here rather than by importing the events panel's own row on purpose: that module pulls
+ * `AdminReservationsPanel` behind it, and this tab is not where that weight belongs.
+ */
+function ArchivedEventRow({
+  event,
+  t,
+  locale,
+}: {
+  event: EventDetail
+  t: (key: string, opts?: Record<string, unknown>) => string
+  locale: Locale
+}) {
+  const multiDay = event.endDate > event.startDate
+  const times = event.startTime && event.endTime
+    ? `${event.startTime.slice(0, 5)} – ${event.endTime.slice(0, 5)}`
+    : t('slots.archiveAllDay')
+
+  return (
+    <div className="bg-surface-900 rounded-lg border border-surface-800 p-4 flex items-center justify-between opacity-60">
+      <div className="min-w-0">
+        <div className="font-medium text-surface-100 truncate">{event.title}</div>
+        <div className="text-sm text-surface-400">
+          {multiDay
+            ? t('slots.archiveEventRange', {
+                from: format(parseISO(event.startDate), 'd MMM', { locale }),
+                to: format(parseISO(event.endDate), 'd MMM', { locale }),
+              })
+            : times}
+        </div>
+        <div className="flex items-center gap-2 mt-1">
+          <span className="text-xs text-indigo-300 bg-indigo-500/10 px-2 py-0.5 rounded-full">
+            {t('slots.archiveEventBadge')}
+          </span>
+          <span className="text-xs text-surface-500">
+            {event.currentParticipants}/{event.maxParticipants}
+          </span>
+        </div>
+      </div>
+      {/* Not a button: every action on an event lives in its own tab, and a dead-looking control
+          here would be worse than none. */}
+      <Link
+        to="/admin/events"
+        className="text-xs text-primary-400 hover:text-primary-300 transition-colors shrink-0 ml-3"
+      >
+        {t('slots.archiveEventOpen')}
+      </Link>
     </div>
   )
 }

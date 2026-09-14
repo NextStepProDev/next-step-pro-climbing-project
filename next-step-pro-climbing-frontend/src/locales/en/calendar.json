@@ -165,11 +165,22 @@
   },
   "addEntry": {
     "buttonTitle": "Add a time slot or an event",
-    "title": "What to add on {{day}}?",
-    "slot": "Time slot",
-    "slotHint": "Sessions, a contact window or time off — several days too.",
-    "event": "Event",
-    "eventHint": "A course, a workshop, a trip — with a description and sign-ups."
+    "title": "New entry — {{day}}",
+    "question": "What are you adding, and how long does it last?",
+    "group": {
+      "slot": "Time slot",
+      "slotHint": "Time that can be booked — no name, no description.",
+      "event": "Event",
+      "eventHint": "With a name, a description and sign-ups."
+    },
+    "slotHours": "Hours",
+    "slotHoursHint": "A session, a contact window or time off.",
+    "eventHours": "Hours",
+    "eventHoursHint": "Recreational climbing, a workshop of a few hours.",
+    "eventAllDay": "All day",
+    "eventAllDayHint": "A competition, an open day — no times.",
+    "eventRange": "Several days",
+    "eventRangeHint": "A course or a trip spread over days."
   },
   "createSlot": {
     "title": "Add new time slot",

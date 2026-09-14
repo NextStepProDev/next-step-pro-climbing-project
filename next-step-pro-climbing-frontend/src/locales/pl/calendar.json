@@ -165,11 +165,22 @@
   },
   "addEntry": {
     "buttonTitle": "Dodaj termin lub wydarzenie",
-    "title": "Co dodać {{day}}?",
-    "slot": "Termin",
-    "slotHint": "Zajęcia, okno kontaktu lub nieobecność — też kilkudniowa.",
-    "event": "Wydarzenie",
-    "eventHint": "Kurs, warsztat, wyjazd — z opisem i zapisami."
+    "title": "Nowy wpis — {{day}}",
+    "question": "Co dodajesz i ile to trwa?",
+    "group": {
+      "slot": "Termin",
+      "slotHint": "Czas do zarezerwowania — bez nazwy i opisu.",
+      "event": "Wydarzenie",
+      "eventHint": "Z nazwą, opisem i zapisami."
+    },
+    "slotHours": "Godziny",
+    "slotHoursHint": "Zajęcia, okno kontaktu albo nieobecność.",
+    "eventHours": "Godziny",
+    "eventHoursHint": "Wspinanie rekreacyjne, warsztat na kilka godzin.",
+    "eventAllDay": "Cały dzień",
+    "eventAllDayHint": "Zawody, dzień otwarty — bez godzin.",
+    "eventRange": "Kilka dni",
+    "eventRangeHint": "Kurs albo wyjazd rozłożony na dni."
   },
   "createSlot": {
     "title": "Dodaj nowy termin",
