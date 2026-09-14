@@ -1008,7 +1008,8 @@
       "receivedPlaceholder": "otrzymano",
       "receivedLabel": "Otrzymano — {{name}}",
       "receivedHint": "otrzymano",
-      "dueHint": "należne"
+      "dueHint": "należne",
+      "settledOnHint": "data zapłaty"
     },
     "clearPaid": {
       "title": "Usunąć wpłatę?",
@@ -1016,7 +1017,8 @@
     },
     "actions": {
       "setAll": "Ustaw wszystkim",
-      "save": "Zapisz"
+      "save": "Zapisz",
+      "saved": "Zapisano rozliczenie."
     },
     "errors": {
       "invalidAmount": "Kwota musi być liczbą z przedziału od 0 do 100000.",

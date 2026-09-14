@@ -1002,7 +1002,8 @@
       "receivedPlaceholder": "recibido",
       "receivedLabel": "Recibido — {{name}}",
       "receivedHint": "recibido",
-      "dueHint": "a pagar"
+      "dueHint": "a pagar",
+      "settledOnHint": "fecha de pago"
     },
     "clearPaid": {
       "title": "¿Eliminar el pago?",
@@ -1010,7 +1011,8 @@
     },
     "actions": {
       "setAll": "Aplicar a todos",
-      "save": "Guardar"
+      "save": "Guardar",
+      "saved": "Liquidación guardada."
     },
     "errors": {
       "invalidAmount": "El importe debe ser un número entre 0 y 100000.",

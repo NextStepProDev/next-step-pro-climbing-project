@@ -3,6 +3,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { SettlementSection } from './SettlementSection'
+import { ModalCloseContext } from '../ui/modalClose'
+import { ToastProvider } from '../../context/ToastContext'
 import type { SettlementLine } from '../../types'
 
 vi.mock('react-i18next', () => ({
@@ -51,17 +53,41 @@ function line(overrides: Partial<SettlementLine> = {}): SettlementLine {
   }
 }
 
+/**
+ * The section always renders inside a `Modal` in the app, so the harness supplies what a modal
+ * supplies: the guarded close through context, and the toast host. `closeModal` is the spy the
+ * close-on-save tests read.
+ */
+const closeModal = vi.fn()
+
 function renderSection(target: 'slot' | 'event' = 'slot') {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   return render(
     <QueryClientProvider client={client}>
-      <SettlementSection target={target} targetId="target-1" />
+      <ToastProvider>
+        <ModalCloseContext.Provider value={closeModal}>
+          <SettlementSection target={target} targetId="target-1" />
+        </ModalCloseContext.Provider>
+      </ToastProvider>
+    </QueryClientProvider>,
+  )
+}
+
+/** Rendered with no modal around it, which is what `useModalClose` returning null has to survive. */
+function renderSectionWithoutModal() {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  return render(
+    <QueryClientProvider client={client}>
+      <ToastProvider>
+        <SettlementSection target="slot" targetId="target-1" />
+      </ToastProvider>
     </QueryClientProvider>,
   )
 }
 
 describe('SettlementSection', () => {
   beforeEach(() => {
+    closeModal.mockReset()
     getSection.mockReset()
     save.mockReset().mockResolvedValue(undefined)
     remove.mockReset().mockResolvedValue(undefined)
@@ -420,10 +446,81 @@ describe('SettlementSection', () => {
       expect(save).toHaveBeenCalledWith('slot', 'target-1', 'user', 'user-1', 0, 0, TARGET_DATE),
     )
   })
+
+  it('closes the modal once the money is written down, and says that it was', async () => {
+    // Pricing is the last thing done on a session, and the admin who arrived from the Settlements
+    // tab is sent back to it by the host modal's close — so this is also what refreshes that list.
+    getSection.mockResolvedValue({ ...bulkOff, targetDate: TARGET_DATE, lines: [line()] })
+    const user = userEvent.setup()
+
+    renderSection()
+
+    await user.type(await screen.findByLabelText('settlements.line.amountLabel'), '150')
+    await user.click(screen.getByRole('button', { name: 'settlements.actions.save' }))
+
+    await waitFor(() => expect(closeModal).toHaveBeenCalled())
+    // A modal that simply vanishes does not say whether anything was saved.
+    expect(await screen.findByText('settlements.actions.saved')).toBeInTheDocument()
+  })
+
+  it('stays open when the save was refused, or the reason goes with it', async () => {
+    getSection.mockResolvedValue({ ...bulkOff, targetDate: TARGET_DATE, lines: [line()] })
+    const user = userEvent.setup()
+
+    renderSection()
+
+    await user.type(await screen.findByLabelText('settlements.line.amountLabel'), '50')
+    await user.click(screen.getByRole('checkbox'))
+    await user.type(screen.getByLabelText('settlements.line.receivedLabel'), '0')
+    await user.click(screen.getByRole('button', { name: 'settlements.actions.save' }))
+
+    expect(await screen.findByText('settlements.errors.zeroReceived')).toBeInTheDocument()
+    expect(closeModal).not.toHaveBeenCalled()
+  })
+
+  it('keeps the modal open after spending a credit, which reports its result here', async () => {
+    // The credit pays the OLDEST debt first, so the sentence it leaves behind is the only place
+    // the admin learns where the money actually went.
+    getSection.mockResolvedValue({
+      ...bulkOff,
+      targetDate: TARGET_DATE,
+      lines: [line({ amount: 100, paidAmount: 0, credit: 40, balance: 40 })],
+    })
+    settleOutstanding.mockResolvedValue({ settled: 1, balance: 0 })
+    const user = userEvent.setup()
+
+    renderSection()
+
+    await user.click(await screen.findByRole('button', { name: 'settlements.line.spendCreditLabel' }))
+
+    expect(await screen.findByText('settlements.line.creditSpent')).toBeInTheDocument()
+    expect(closeModal).not.toHaveBeenCalled()
+  })
+
+  it('saves normally when nothing is hosting it, rather than assuming a modal is there', async () => {
+    getSection.mockResolvedValue({ ...bulkOff, targetDate: TARGET_DATE, lines: [line()] })
+    const user = userEvent.setup()
+
+    renderSectionWithoutModal()
+
+    await user.type(await screen.findByLabelText('settlements.line.amountLabel'), '150')
+    await user.click(screen.getByRole('button', { name: 'settlements.actions.save' }))
+
+    await waitFor(() =>
+      expect(save).toHaveBeenCalledWith('slot', 'target-1', 'user', 'user-1', 150, null, null),
+    )
+    // ⚠️ Asserting only that the write went out passes even when the close then throws: the
+    // request is made in `mutationFn`, before anything in `onSuccess` runs. What separates the two
+    // is whether the mutation ends in success, so the assertion has to be that nothing was
+    // reported as going wrong. Verified by deliberately calling the close unguarded.
+    expect(await screen.findByText('settlements.actions.saved')).toBeInTheDocument()
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  })
 })
 
 describe('SettlementSection — settled in bulk', () => {
   beforeEach(() => {
+    closeModal.mockReset()
     getSection.mockReset()
     listSources.mockReset().mockResolvedValue([{ id: 'src-1', name: 'SP nr 12', archived: false }])
     assignSource.mockReset().mockResolvedValue(undefined)

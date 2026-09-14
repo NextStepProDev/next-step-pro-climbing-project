@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { SlotDetailModal } from './SlotDetailModal'
+import { ToastProvider } from '../../context/ToastContext'
 import type { InvitedUser, TimeSlotDetail } from '../../types'
 
 vi.mock('react-i18next', async (importOriginal) => ({
@@ -88,9 +89,14 @@ function renderModal(s: TimeSlotDetail = slot()) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   return render(
     <QueryClientProvider client={client}>
-      <MemoryRouter>
-        <SlotDetailModal slot={s} isOpen onClose={vi.fn()} />
-      </MemoryRouter>
+      {/* The app mounts this above the router (`main.tsx`), and the admin sections inside this
+          modal report their results through it — `useToast` throws without it, so leaving it out
+          here would only ever mean the harness is less than the app. */}
+      <ToastProvider>
+        <MemoryRouter>
+          <SlotDetailModal slot={s} isOpen onClose={vi.fn()} />
+        </MemoryRouter>
+      </ToastProvider>
     </QueryClientProvider>,
   )
 }

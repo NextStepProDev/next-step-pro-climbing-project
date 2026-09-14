@@ -1002,7 +1002,8 @@
       "receivedPlaceholder": "received",
       "receivedLabel": "Received — {{name}}",
       "receivedHint": "received",
-      "dueHint": "due"
+      "dueHint": "due",
+      "settledOnHint": "payment date"
     },
     "clearPaid": {
       "title": "Delete the payment?",
@@ -1010,7 +1011,8 @@
     },
     "actions": {
       "setAll": "Apply to all",
-      "save": "Save"
+      "save": "Save",
+      "saved": "Settlement saved."
     },
     "errors": {
       "invalidAmount": "The amount must be a number between 0 and 100000.",
