@@ -91,11 +91,23 @@ export function SettlementSection({ target, targetId }: SettlementSectionProps) 
   })
 
   const assignMutation = useMutation({
-    mutationFn: (choice: { sourceId: string | null; subscriberId: string | null }) =>
+    mutationFn: (choice: { sourceId: string | null; subscriberId: string | null; name?: string }) =>
       adminSettlementsApi.assignSource(target, targetId, choice.sourceId, choice.subscriberId),
-    onSuccess: () => {
+    onSuccess: (_result, choice) => {
       setPicking(false)
       queryClient.invalidateQueries({ queryKey: ['admin', 'settlements'] })
+      // Naming a payer ENDS the work on this session, exactly like saving the amounts does, so it
+      // leaves the same way — one click back to wherever the admin came from, and a toast that
+      // says what was written, because a modal that simply vanishes confirms nothing.
+      //
+      // ⚠️ Only when a payer was named. Clearing one puts the session back into per-participant
+      // pricing, which is done HERE — closing then would take away the fields the admin just
+      // asked for. The credit button still keeps the modal open too: its answer (the money may
+      // have gone to an older session) has to be read on this screen.
+      if (choice.sourceId || choice.subscriberId) {
+        showToast(t('settlements.section.bulkSaved', { name: choice.name ?? '' }))
+        closeModal?.()
+      }
     },
   })
 
@@ -212,8 +224,10 @@ export function SettlementSection({ target, targetId }: SettlementSectionProps) 
       // refetch it when it mounts again a tick later.
       queryClient.invalidateQueries({ queryKey: ['admin', 'settlements'] })
       showToast(t('settlements.actions.saved'))
-      // Only here, never on the credit or bulk-payer mutations: those report a result the admin
-      // has to read on this screen, and closing would take the answer away with the question.
+      // Naming a bulk payer leaves the same way, for the same reason — both end the work on this
+      // session. What still stays open is the credit button, which reports a result the admin has
+      // to read here (the money may have gone to an older session), and clearing a payer, which
+      // hands the session back to the fields in this very section.
       closeModal?.()
     },
   })
@@ -353,6 +367,7 @@ export function SettlementSection({ target, targetId }: SettlementSectionProps) 
                   : data.coveredBy.id
               }
               pending={assignMutation.isPending}
+              error={assignMutation.error}
               onPick={(choice) => assignMutation.mutate(choice)}
               onCancel={() => setPicking(false)}
             />
@@ -385,6 +400,7 @@ export function SettlementSection({ target, targetId }: SettlementSectionProps) 
           participants={lines}
           current={null}
           pending={assignMutation.isPending}
+          error={assignMutation.error}
           onPick={(choice) => assignMutation.mutate(choice)}
           onCancel={() => setPicking(false)}
         />
@@ -711,6 +727,7 @@ function SourcePicker({
   participants,
   current,
   pending,
+  error,
   onPick,
   onCancel,
 }: {
@@ -718,7 +735,10 @@ function SourcePicker({
   participants: SettlementLine[]
   current: string | null
   pending: boolean
-  onPick: (choice: { sourceId: string | null; subscriberId: string | null }) => void
+  /** Why the server refused. Shown here, under the dropdown that caused it. */
+  error?: unknown
+  /** `name` never reaches the server — it is what the toast says was written down. */
+  onPick: (choice: { sourceId: string | null; subscriberId: string | null; name?: string }) => void
   onCancel: () => void
 }) {
   const { t } = useTranslation('admin')
@@ -786,8 +806,16 @@ function SourcePicker({
         onClick={() =>
           onPick(
             choice.startsWith('user:')
-              ? { sourceId: null, subscriberId: choice.slice(5) }
-              : { sourceId: choice, subscriberId: null },
+              ? {
+                  sourceId: null,
+                  subscriberId: choice.slice(5),
+                  name: subscribers.find((line) => line.payerId === choice.slice(5))?.name,
+                }
+              : {
+                  sourceId: choice,
+                  subscriberId: null,
+                  name: active.find((source) => source.id === choice)?.name,
+                },
           )
         }
       >
@@ -796,6 +824,14 @@ function SourcePicker({
       <Button size="sm" variant="ghost" onClick={onCancel}>
         {t('settlements.section.cancel')}
       </Button>
+      {/* ⚠️ The server refuses this for five real reasons (amounts already on the session, a payer
+          who is not on it, a retainer on a shared session, no retainer for that month, both kinds
+          at once) and none of them used to reach the screen: the picker simply stayed open, exactly
+          as it looks before the click. Now that a successful pick CLOSES the modal, silence would
+          be the only difference between "refused" and "saved". */}
+      {error != null && (
+        <p role="alert" className="w-full text-sm text-rose-400/80">{getErrorMessage(error)}</p>
+      )}
       {active.length === 0 && subscribers.length === 0 && (
         <span className="text-xs text-surface-500">{t('settlements.section.noPayers')}</span>
       )}

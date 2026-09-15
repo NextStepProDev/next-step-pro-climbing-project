@@ -557,6 +557,29 @@ describe('SettlementSection — settled in bulk', () => {
     await user.click(screen.getByRole('button', { name: 'settlements.actions.save' }))
 
     await waitFor(() => expect(assignSource).toHaveBeenCalledWith('slot', 'target-1', 'src-1', null))
+    // Naming a payer ends the work on this session exactly as saving the amounts does, so it leaves
+    // the same way — and the toast names who was written down, since a vanished modal confirms
+    // nothing. The two Save buttons of this section used to behave differently.
+    await waitFor(() => expect(closeModal).toHaveBeenCalled())
+    expect(await screen.findByText('settlements.section.bulkSaved')).toBeInTheDocument()
+  })
+
+  it('says why the payer was refused instead of leaving the picker as it was', async () => {
+    // Now that a successful pick closes the modal, silence is the only thing that would tell a
+    // refusal apart from a save — and the server refuses this for five real reasons.
+    getSection.mockResolvedValue({ ...bulkOff, targetDate: TARGET_DATE, lines: [line()] })
+    assignSource.mockRejectedValue(new Error('Ten termin ma już wpisane kwoty'))
+    const user = userEvent.setup()
+
+    renderSection()
+
+    await user.click(await screen.findByRole('button', { name: 'settlements.section.markBulk' }))
+    await waitFor(() => expect(listSources).toHaveBeenCalled())
+    await user.selectOptions(screen.getByLabelText('settlements.section.bulkPayer'), 'src-1')
+    await user.click(screen.getByRole('button', { name: 'settlements.actions.save' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Ten termin ma już wpisane kwoty')
+    expect(closeModal).not.toHaveBeenCalled()
   })
 
   it('puts the subscription out of reach when somebody else is on the session', async () => {
@@ -660,6 +683,10 @@ describe('SettlementSection — settled in bulk', () => {
 
     await user.click(await screen.findByRole('button', { name: 'settlements.section.clearBulk' }))
     await waitFor(() => expect(assignSource).toHaveBeenCalledWith('slot', 'target-1', null, null))
+    // ⚠️ Clearing does NOT close, unlike naming a payer: it hands the session back to
+    // per-participant pricing, which happens in this very section — closing would take away the
+    // fields it just asked for.
+    expect(closeModal).not.toHaveBeenCalled()
   })
   it('offers the participant\'s own subscription, not just institutions', async () => {
     getSection.mockResolvedValue({ ...bulkOff, targetDate: TARGET_DATE, lines: [line()] })

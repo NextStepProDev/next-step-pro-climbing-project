@@ -983,7 +983,8 @@
       "groupSubscription": "Participant's subscription",
       "groupSubscriptionShared": "Client subscription — single-payer sessions only",
       "subscriptionSharedHint": "A subscription covers one person and this session has more than one, so the others would have no way to pay. Price the participants individually, or pick a payer.",
-      "groupSource": "Institution"
+      "groupSource": "Institution",
+      "bulkSaved": "Settled in bulk by {{name}}."
     },
     "line": {
       "people": "({{n}} people)",
