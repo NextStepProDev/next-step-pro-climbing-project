@@ -19,6 +19,13 @@ interface ParticipantsSectionProps {
    * roster stays, because who WAS on it is exactly what the admin came to read.
    */
   canAdd?: boolean
+  /**
+   * Reports whether the "add somebody" form has anything typed into it, so the surrounding modal
+   * can ask before the backdrop, the X or Escape throws it away. Called during render, never from
+   * an effect — the guard is read by an event handler, and a report that costs a render arrives
+   * one tick too late (see {@link useChildDirty}).
+   */
+  onDirtyChange?: (dirty: boolean) => void
 }
 
 /**
@@ -38,7 +45,7 @@ interface ParticipantsSectionProps {
  * modals — pulling a panel into the `/kalendarz` chunk, which EVERY visitor downloads. The panels
  * keep rendering their own queue below their own copy of this list.
  */
-export function ParticipantsSection({ target, targetId, canAdd = true }: ParticipantsSectionProps) {
+export function ParticipantsSection({ target, targetId, canAdd = true, onDirtyChange }: ParticipantsSectionProps) {
   const { t } = useTranslation('admin')
   const queryClient = useQueryClient()
   const [showAddForm, setShowAddForm] = useState(false)
@@ -151,6 +158,14 @@ export function ParticipantsSection({ target, targetId, canAdd = true }: Partici
     mutationFn: (guestId: string) => ops.removeGuest(guestId),
     onSuccess: () => { refresh(); setConfirmDeleteGuestId(null) },
   })
+
+  // Reported during render on purpose — see the prop's doc and useChildDirty. Above the early
+  // return, so a refetch that flips `isLoading` cannot leave the host holding a stale `true`.
+  // The seat stepper alone does not count: a number with nobody attached to it is not work, and
+  // it resets with the form (closeAddForm clears all four fields together).
+  onDirtyChange?.(
+    showAddForm && (selectedUserId !== '' || addComment.trim() !== '' || guestNote.trim() !== '')
+  )
 
   if (isLoading || !data) return null
 

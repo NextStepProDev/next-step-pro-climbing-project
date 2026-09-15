@@ -16,6 +16,7 @@ import { saveRedirectPath } from '../../utils/redirect'
 import { adminApi, calendarApi, reservationApi } from '../../api/client'
 import { getErrorMessage } from '../../utils/errors'
 import { parseCalendarDate, todayInWarsaw } from '../../utils/calendarDate'
+import { useChildDirty } from '../../hooks/useChildDirty'
 import { formatEventWhen } from '../../utils/events'
 import { AdminPrivateNote } from '../admin/AdminPrivateNote'
 import { ParticipantsSection } from '../admin/ParticipantsSection'
@@ -62,6 +63,30 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
   const [showEditEvent, setShowEditEvent] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
   const pendingAction = useRef<(() => void) | null>(null)
+  // Three sections below own state this modal cannot see, and each of them is somebody's half-done
+  // work: a note being written, a person being added, a price being typed. They report during their
+  // own render and this reads the report at click time — see useChildDirty for why a getter.
+  const [noteDirty, reportNoteDirty] = useChildDirty(isOpen)
+  const [participantsDirty, reportParticipantsDirty] = useChildDirty(isOpen)
+  const [settlementsDirty, reportSettlementsDirty] = useChildDirty(isOpen)
+
+  /**
+   * The twin of the reset in `SlotDetailModal`, for the same reason: `MyReservationsPage` mounts
+   * this modal with no remount key, so the instance outlives the event it was opened on. Keyed on
+   * the PROP's id rather than `ev`, which flips to the freshly fetched copy of the same event.
+   */
+  const [prevEventId, setPrevEventId] = useState<string | null>(event?.id ?? null)
+  if ((event?.id ?? null) !== prevEventId) {
+    setPrevEventId(event?.id ?? null)
+    setComment('')
+    setParticipants(1)
+    setShowParticipants(false)
+    setUserEditParticipants(null)
+    setShowDeleteConfirm(false)
+    setShowEditEvent(false)
+    setShowSuccess(false)
+    setShowCompleteProfile(false)
+  }
 
   const requireProfile = (action: () => void) => {
     if (user?.firstName && user?.lastName && user?.phone) {
@@ -167,6 +192,25 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
   })
 
   if (!ev) return null
+
+  /**
+   * Everything on this screen that would be gone for good if the backdrop, the X or Escape closed
+   * it — asked at the moment of the click rather than read from a prop captured a render earlier
+   * (the reason `Modal` takes a getter at all, see useChildDirty).
+   *
+   * A changed seat count counts here and does not in `SlotDetailModal`, because these two steppers
+   * are not the same thing: this one edits a booking that already exists and waits behind its own
+   * Save button, where the other only fills in a form that has not been sent yet.
+   *
+   * The full event edit form is not listed: it lives in its own `Modal`, which carries its own
+   * guard.
+   */
+  const hasUnsavedWork = () =>
+    comment.trim() !== ''
+    || noteDirty()
+    || participantsDirty()
+    || settlementsDirty()
+    || (userEditParticipants !== null && userEditParticipants !== ev.userParticipants)
 
   const enrollmentClosed = !ev.enrollmentOpen
   // As in SlotDetailModal: editing only for future/ongoing dates (ISO dates compare as strings)
@@ -419,7 +463,12 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
   return (
     <>
     {showSuccess && <SuccessCheckmark onDone={() => { setShowSuccess(false); onClose(); }} />}
-    <Modal isOpen={isOpen} onClose={onClose} title={ev.eventType === 'UNAVAILABLE' ? tc('eventTypes.UNAVAILABLE') : t('event.title')}>
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={ev.eventType === 'UNAVAILABLE' ? tc('eventTypes.UNAVAILABLE') : t('event.title')}
+      confirmClose={hasUnsavedWork}
+    >
       <div className="space-y-6">
         {/* Event type badge */}
         <div>
@@ -649,18 +698,18 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
             reason the settlement below hangs on the event rather than on a reservation. An absence
             is skipped: nobody was ever going to be written down on it. */}
         {isAdmin && ev.eventType !== 'UNAVAILABLE' && (
-          <ParticipantsSection target="event" targetId={ev.id} />
+          <ParticipantsSection target="event" targetId={ev.id} onDirtyChange={reportParticipantsDirty} />
         )}
 
         {/* The owner's private note — one per event, however many days it spans. Not gated on
             the event being over: writing before is as legitimate as writing after. */}
-        {isAdmin && <AdminPrivateNote target="event" targetId={ev.id} />}
+        {isAdmin && <AdminPrivateNote target="event" targetId={ev.id} onDirtyChange={reportNoteDirty} />}
 
         {/* Per-participant price and payment status — one line per PERSON, however many days the
             event spans. That is the whole reason the settlement hangs on the event rather than on
             a reservation: booking a three-day course writes three reservation rows, and pricing
             those would charge it three times. */}
-        {isAdmin && <SettlementSection target="event" targetId={ev.id} />}
+        {isAdmin && <SettlementSection target="event" targetId={ev.id} onDirtyChange={reportSettlementsDirty} />}
 
         {/* Share */}
         <ShareButtons

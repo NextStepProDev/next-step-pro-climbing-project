@@ -80,9 +80,31 @@ export function TrainingDetailModal({
   const [rpe, setRpe] = useState<number | null>(null)
   // What the thread below would lose: a typed message, a staged file, an open correction.
   const [threadDirty, reportThreadDirty] = useChildDirty(!!training)
+  // The coach's note, which is the fourth thing on this screen somebody can be halfway through.
+  const [noteDirty, reportNoteDirty] = useChildDirty(!!training)
   // The completion form, snapshotted against the values it opened with — editing an existing
   // completion starts populated, so "opened" is not the same as "empty".
   const [completionBaseline, setCompletionBaseline] = useState({ feedback: '', rpe: null as number | null })
+
+  /**
+   * Everything above belongs to ONE entry, and this modal is rendered once by the section and
+   * handed a different entry each time — `training = null` makes it render nothing, it does not
+   * unmount it. Reproduced: a completion half filled in on one training came back over the next
+   * one with its RPE and notes already in the fields, one click from being filed against it.
+   *
+   * Render-phase reset, the supported way to adjust state when a prop changes — the same pattern
+   * `Modal` uses for its own pending confirmation, and the twin of the resets in the two calendar
+   * modals.
+   */
+  const [prevTrainingId, setPrevTrainingId] = useState<string | null>(training?.id ?? null)
+  if ((training?.id ?? null) !== prevTrainingId) {
+    setPrevTrainingId(training?.id ?? null)
+    setConfirmDelete(false)
+    setCompletionOpen(false)
+    setFeedback('')
+    setRpe(null)
+    setCompletionBaseline({ feedback: '', rpe: null })
+  }
 
   if (!training) return null
 
@@ -103,13 +125,13 @@ export function TrainingDetailModal({
    * Read at the moment of the click, not from a prop captured a render earlier — the reason
    * `Modal` takes a getter at all (see useChildDirty).
    *
-   * This modal is the only one in the feature that had no guard, and it hosts three separate
-   * pieces of unsaved work at once: a completion the athlete is filling in, a message being typed,
-   * and a correction to a message already sent. Escape, the backdrop and the X threw away all
-   * three without asking.
+   * This modal hosts four separate pieces of unsaved work at once: a completion the athlete is
+   * filling in, a message being typed, a correction to a message already sent, and the coach's
+   * private note. Escape, the backdrop and the X threw away all four without asking.
    */
   const hasUnsavedWork = () =>
     threadDirty()
+    || noteDirty()
     || (completionOpen && (feedback !== completionBaseline.feedback || rpe !== completionBaseline.rpe))
 
   const saveCompletion = async () => {
@@ -318,7 +340,9 @@ export function TrainingDetailModal({
       {/* The coach's private note about this entry. Gated on isCoachView, not on useAuth().isAdmin:
           the modal already carries the role as a prop, and that is its source of truth. The plan is
           shared with the athlete — this note is not, and never reaches the athlete's payload. */}
-      {isCoachView && <AdminPrivateNote target="training" targetId={training.id} />}
+      {isCoachView && (
+        <AdminPrivateNote target="training" targetId={training.id} onDirtyChange={reportNoteDirty} />
+      )}
 
       <ConfirmModal
         isOpen={confirmDelete}

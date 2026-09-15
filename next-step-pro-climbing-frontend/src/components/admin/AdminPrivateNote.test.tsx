@@ -22,14 +22,17 @@ vi.mock('../../api/client', () => ({
   },
 }))
 
-function renderNote() {
+function renderNote(onDirtyChange?: (dirty: boolean) => void) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   return render(
     <QueryClientProvider client={client}>
-      <AdminPrivateNote target="slot" targetId="slot-1" />
+      <AdminPrivateNote target="slot" targetId="slot-1" onDirtyChange={onDirtyChange} />
     </QueryClientProvider>,
   )
 }
+
+/** The last thing the note told its host, which is what the host's close guard reads. */
+const lastReport = (spy: ReturnType<typeof vi.fn>) => spy.mock.calls.at(-1)?.[0]
 
 describe('AdminPrivateNote', () => {
   beforeEach(() => {
@@ -89,5 +92,39 @@ describe('AdminPrivateNote', () => {
     // and the server rejects it too (@NotBlank + the CHECK in V89).
     expect(screen.getByRole('button', { name: 'privateNote.save' })).toBeDisabled()
     expect(savePrivateNote).not.toHaveBeenCalled()
+  })
+
+  /* The host modal closes on a backdrop click, and until it was told, the note went with it. */
+  it('tells the host modal there is something to lose while the note is being written', async () => {
+    getPrivateNote.mockResolvedValue({ body: null, updatedAt: null })
+    const onDirtyChange = vi.fn()
+    const user = userEvent.setup()
+
+    renderNote(onDirtyChange)
+
+    // Nothing open, nothing typed — closing the modal must not stop to ask
+    await screen.findByText('privateNote.add')
+    expect(lastReport(onDirtyChange)).toBe(false)
+
+    // An editor opened on an empty note is still not work anybody loses
+    await user.click(screen.getByText('privateNote.add'))
+    expect(lastReport(onDirtyChange)).toBe(false)
+
+    await user.type(screen.getByRole('textbox'), 'Kolano, bez dropów')
+    expect(lastReport(onDirtyChange)).toBe(true)
+  })
+
+  it('stops claiming to hold anything once the note is saved', async () => {
+    getPrivateNote.mockResolvedValue({ body: null, updatedAt: null })
+    const onDirtyChange = vi.fn()
+    const user = userEvent.setup()
+
+    renderNote(onDirtyChange)
+    await user.click(await screen.findByText('privateNote.add'))
+    await user.type(screen.getByRole('textbox'), 'Zapisane')
+    await user.click(screen.getByRole('button', { name: 'privateNote.save' }))
+
+    // Otherwise finishing the work and closing the modal would ask whether to discard it
+    await waitFor(() => expect(lastReport(onDirtyChange)).toBe(false))
   })
 })
