@@ -568,6 +568,84 @@ class AdminSettlementStatsTest extends BaseIntegrationTest {
         assertEquals(0, after.unassigned().count());
     }
 
+    // -------------------------------------------------------- one payer's history
+
+    /**
+     * ⚠️ The chart is bucketed by the month the work was FOR, not by the day the money landed —
+     * unlike revenue everywhere else here. It sits directly above rows that are period months, and
+     * two axes on one screen disagree with each other in front of the reader.
+     */
+    @Test
+    @DisplayName("shouldTellOnePayersHistoryOnTheSameAxisAsTheRowsBelowIt")
+    void shouldTellOnePayersHistoryOnTheSameAxisAsTheRowsBelowIt() {
+        UUID sourceId = createSource("Chwyciarnia");
+        assignToSource(contractorSlot(LocalDate.of(2026, 3, 10)), sourceId);   // 90 min
+        assignToSource(contractorSlot(LocalDate.of(2026, 3, 17)), sourceId);   // 90 min
+        assignToSource(contractorSlot(LocalDate.of(2026, 5, 12)), sourceId);   // 90 min
+        // Work of March, paid in April: the chart bar belongs to MARCH.
+        payout(sourceId, LocalDate.of(2026, 3, 1), "300", LocalDate.of(2026, 4, 6));
+
+        PayoutSourceHistoryDto history = stats.sourceHistory(sourceId);
+
+        assertEquals("Chwyciarnia", history.name());
+        assertEquals(3, history.totalSessions());
+        assertEquals(270, history.totalMinutes());
+        assertEquals(0, new BigDecimal("300.00").compareTo(history.totalAmount()));
+        // 300 zł over 4.5 h of work.
+        assertEquals(0, new BigDecimal("66.67").compareTo(history.averageRatePerHour()));
+
+        assertEquals(LocalDate.of(2026, 3, 1), history.firstActivity());
+        assertEquals(LocalDate.of(2026, 5, 1), history.lastActivity());
+        assertEquals(3, history.months(), "March to May inclusive — the span, not the busy months");
+
+        // ⚠️ April is in the chart at zero: a month with nothing in it is a fact about the
+        // collaboration, and closing the gap would draw a busier partner than the data has.
+        assertEquals(3, history.chart().size());
+        assertEquals(LocalDate.of(2026, 3, 1), history.chart().getFirst().month());
+        assertEquals(0, new BigDecimal("300.00").compareTo(history.chart().getFirst().amount()));
+        assertEquals(0, BigDecimal.ZERO.compareTo(history.chart().get(1).amount()));
+
+        // Newest first, like every list on this tab.
+        assertEquals(LocalDate.of(2026, 5, 1), history.periods().getFirst().month());
+        assertEquals(2, history.periods().getLast().sessions());
+        assertEquals(2, history.periods().getLast().heldSessions().size(),
+            "the month rows carry their own sessions, same as on the tab");
+    }
+
+    @Test
+    @DisplayName("shouldBreakOnePayersHistoryIntoYears")
+    void shouldBreakOnePayersHistoryIntoYears() {
+        UUID sourceId = createSource("Chwyciarnia");
+        assignToSource(contractorSlot(LocalDate.of(2025, 11, 4)), sourceId);
+        assignToSource(contractorSlot(LocalDate.of(2026, 2, 3)), sourceId);
+        payout(sourceId, LocalDate.of(2025, 11, 1), "150", LocalDate.of(2025, 12, 1));
+
+        List<PayoutYearDto> years = stats.sourceHistory(sourceId).years();
+
+        assertEquals(2, years.size());
+        assertEquals(2026, years.getFirst().year(), "Newest year first");
+        assertNull(years.getFirst().ratePerHour(),
+            "A year of work with no transfer has no rate — a zero would be a claim");
+        assertEquals(2025, years.get(1).year());
+        assertEquals(0, new BigDecimal("100.00").compareTo(years.get(1).ratePerHour()),
+            "150 zł over an hour and a half");
+    }
+
+    /** A payer who has just been created is a real state, and the screen has to survive it. */
+    @Test
+    @DisplayName("shouldSurviveAPayerWithNoHistoryAtAll")
+    void shouldSurviveAPayerWithNoHistoryAtAll() {
+        PayoutSourceHistoryDto history = stats.sourceHistory(createSource("Nowy klub"));
+
+        assertEquals(0, history.totalSessions());
+        assertEquals(0, history.months());
+        assertNull(history.firstActivity());
+        assertNull(history.averageRatePerHour());
+        assertTrue(history.chart().isEmpty());
+        assertTrue(history.years().isEmpty());
+        assertTrue(history.periods().isEmpty());
+    }
+
     // ------------------------------------------------------------------ fixtures
 
     /** How the owner records work done for somebody else: a normal slot nobody can book. */
@@ -577,10 +655,23 @@ class AdminSettlementStatsTest extends BaseIntegrationTest {
     }
 
     private void assignToSource(TimeSlot slot, String name) {
-        UUID sourceId = UUID.randomUUID();
-        jdbc.update("INSERT INTO payout_sources (id, name) VALUES (?, ?)", sourceId, name);
+        assignToSource(slot, createSource(name));
+    }
+
+    private void assignToSource(TimeSlot slot, UUID sourceId) {
         jdbc.update("INSERT INTO session_payouts (time_slot_id, payout_source_id) VALUES (?, ?)",
             slot.getId(), sourceId);
+    }
+
+    private UUID createSource(String name) {
+        UUID sourceId = UUID.randomUUID();
+        jdbc.update("INSERT INTO payout_sources (id, name) VALUES (?, ?)", sourceId, name);
+        return sourceId;
+    }
+
+    private void payout(UUID sourceId, LocalDate periodMonth, String amount, LocalDate receivedOn) {
+        jdbc.update("INSERT INTO payouts (payout_source_id, period_month, amount, received_on) "
+            + "VALUES (?, ?, ?, ?)", sourceId, periodMonth, new BigDecimal(amount), receivedOn);
     }
 
     private TimeSlot pastSlot(LocalDate on) {

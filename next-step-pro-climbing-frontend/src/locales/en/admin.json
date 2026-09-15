@@ -1121,6 +1121,21 @@
         "kindPayout": "Bulk payout",
         "unpaid": "outstanding"
       }
+    },
+    "source": {
+      "archived": "archived",
+      "since": "working together since {{date}} · {{months}} months",
+      "received": "received",
+      "hours": "hours",
+      "sessions": "sessions",
+      "averageRate": "avg rate / h",
+      "chart": "Money by month",
+      "chartAxis": "Counted on the month the work was for — the same axis as the table below.",
+      "years": "Years",
+      "year": "Year",
+      "months": "Months",
+      "empty": "This contractor has no history yet.",
+      "emptyHint": "Mark their sessions in the calendar and the months will show up here."
     }
   }
 }

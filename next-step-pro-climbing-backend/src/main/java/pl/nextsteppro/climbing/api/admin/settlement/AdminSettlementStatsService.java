@@ -639,12 +639,130 @@ class AdminSettlementStatsService {
          * needs a numerator and a denominator, and a zero would be a claim rather than a gap.
          */
         private @Nullable BigDecimal rate() {
-            if (minutes == 0 || amount.signum() == 0) {
-                return null;
-            }
-            return amount.multiply(BigDecimal.valueOf(60))
-                .divide(BigDecimal.valueOf(minutes), Settlement.AMOUNT_SCALE, RoundingMode.HALF_UP);
+            return hourlyRate(amount, minutes);
         }
+    }
+
+    // ----------------------------------------------------- one payer's history
+
+    /**
+     * Everything one institution ever held and paid — see {@link PayoutSourceHistoryDto}.
+     *
+     * <p>Two reads plus the payer's own row, then one pass in Java, the same shape as the tab. The
+     * month rows are built by the very same accumulator the tab uses, so a figure cannot mean one
+     * thing on the list and another on the screen you reach by clicking it.
+     */
+    public PayoutSourceHistoryDto sourceHistory(UUID sourceId) {
+        PayoutSourceDto source = payoutService.requireSourceDto(sourceId);
+        List<SessionPayoutRow> sessions = sessionPayoutRepository.findSessionsForSource(sourceId);
+        List<PayoutRow> payouts = payoutRepository.findBySourceId(sourceId);
+
+        Map<String, Period> byKey = new LinkedHashMap<>();
+        Map<UUID, String> names = Map.of(source.id(), source.name());
+        for (PayoutRow payout : payouts) {
+            periodOf(byKey, names, sourceId, payout.periodMonth()).add(payout);
+        }
+        for (SessionPayoutRow session : sessions) {
+            periodOf(byKey, names, sourceId, session.date().withDayOfMonth(1)).addSession(session);
+        }
+
+        List<Period> periods = byKey.values().stream()
+            .sorted(Comparator.comparing((Period period) -> period.month).reversed())
+            .toList();
+
+        BigDecimal totalAmount = BigDecimal.ZERO;
+        int totalSessions = 0;
+        int totalMinutes = 0;
+        int withoutHours = 0;
+        for (Period period : periods) {
+            totalAmount = totalAmount.add(period.amount);
+            totalSessions += period.sessions;
+            totalMinutes += period.minutes;
+            withoutHours += period.sessionsWithoutHours;
+        }
+
+        return new PayoutSourceHistoryDto(
+            source.id(), source.name(), source.archived(),
+            periods.isEmpty() ? null : periods.getLast().month,
+            periods.isEmpty() ? null : periods.getFirst().month,
+            span(periods),
+            totalSessions, totalMinutes, withoutHours,
+            scale(totalAmount),
+            hourlyRate(totalAmount, totalMinutes),
+            chart(periods),
+            years(periods),
+            periods.stream()
+                .map(period -> new PayoutPeriodDto(period.sourceId, period.sourceName, period.month,
+                    period.sessions, period.minutes, period.sessionsWithoutHours,
+                    scale(period.amount), period.rate(), period.transfers, period.heldSessions()))
+                .toList());
+    }
+
+    /** Months from the first activity to the last, inclusive — the span, not a count of busy ones. */
+    private int span(List<Period> periods) {
+        if (periods.isEmpty()) {
+            return 0;
+        }
+        return (int) ChronoUnit.MONTHS.between(
+            YearMonth.from(periods.getLast().month), YearMonth.from(periods.getFirst().month)) + 1;
+    }
+
+    /**
+     * A bar per month of the collaboration, oldest first, <b>gaps included</b>: a month with nothing
+     * in it is a fact about the collaboration, and closing the gaps would draw a busier partner than
+     * the one in the data.
+     */
+    private List<MonthlyRevenueDto> chart(List<Period> periods) {
+        if (periods.isEmpty()) {
+            return List.of();
+        }
+        Map<YearMonth, BigDecimal> byMonth = new LinkedHashMap<>();
+        for (YearMonth month = YearMonth.from(periods.getLast().month);
+             !month.isAfter(YearMonth.from(periods.getFirst().month));
+             month = month.plusMonths(1)) {
+            byMonth.put(month, BigDecimal.ZERO);
+        }
+        for (Period period : periods) {
+            byMonth.computeIfPresent(YearMonth.from(period.month), (month, sum) -> sum.add(period.amount));
+        }
+        return byMonth.entrySet().stream()
+            .map(entry -> new MonthlyRevenueDto(entry.getKey().atDay(1), scale(entry.getValue())))
+            .toList();
+    }
+
+    /** Newest year first, like every other list on this tab. */
+    private List<PayoutYearDto> years(List<Period> periods) {
+        Map<Integer, Period> byYear = new LinkedHashMap<>();
+        for (Period period : periods) {
+            Period year = byYear.computeIfAbsent(period.month.getYear(),
+                ignored -> new Period(period.sourceId, period.sourceName, period.month));
+            year.amount = year.amount.add(period.amount);
+            year.sessions += period.sessions;
+            year.minutes += period.minutes;
+            year.sessionsWithoutHours += period.sessionsWithoutHours;
+        }
+        return byYear.entrySet().stream()
+            .sorted(Map.Entry.<Integer, Period>comparingByKey().reversed())
+            .map(entry -> new PayoutYearDto(entry.getKey(), entry.getValue().sessions,
+                entry.getValue().minutes, entry.getValue().sessionsWithoutHours,
+                scale(entry.getValue().amount),
+                hourlyRate(entry.getValue().amount, entry.getValue().minutes)))
+            .toList();
+    }
+
+    /**
+     * What an amount works out to per hour, or {@code null} when either half is missing.
+     *
+     * <p>The one arithmetic behind every rate on this feature, written once: hours are the unit
+     * (a 45-minute school hour and a ninety-minute block are not interchangeable), and a missing
+     * half is a gap rather than a zero.
+     */
+    private static @Nullable BigDecimal hourlyRate(BigDecimal amount, int minutes) {
+        if (minutes == 0 || amount.signum() == 0) {
+            return null;
+        }
+        return amount.multiply(BigDecimal.valueOf(60))
+            .divide(BigDecimal.valueOf(minutes), Settlement.AMOUNT_SCALE, RoundingMode.HALF_UP);
     }
 
     // ------------------------------------------------------------------ people

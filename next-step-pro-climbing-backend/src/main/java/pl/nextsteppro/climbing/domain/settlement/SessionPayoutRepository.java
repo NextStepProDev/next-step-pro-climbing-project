@@ -51,6 +51,22 @@ public interface SessionPayoutRepository extends JpaRepository<SessionPayout, UU
                                                @Param("to") LocalDate to);
 
     /**
+     * Every session ever run for one institution, for their own screen — all-time, for the reason
+     * spelled out on {@code PayoutRepository.findBySourceId}.
+     */
+    @Query("""
+        SELECT new pl.nextsteppro.climbing.domain.settlement.SessionPayoutRow(
+            sp.source.id, ts.id, e.id, COALESCE(ts.title, e.title),
+            COALESCE(ts.date, e.startDate), e.endDate,
+            COALESCE(ts.startTime, e.startTime), COALESCE(ts.endTime, e.endTime))
+        FROM SessionPayout sp
+        LEFT JOIN sp.timeSlot ts
+        LEFT JOIN sp.event e
+        WHERE sp.source.id = :sourceId
+        """)
+    List<SessionPayoutRow> findSessionsForSource(@Param("sourceId") UUID sourceId);
+
+    /**
      * ⚠️ Every upsert sets BOTH payer columns, one of them to NULL. Setting only the one being
      * assigned would leave the previous payer of the other kind in place — tripping
      * {@code chk_session_payouts_single_payer}, or worse, quietly keeping a session marked for a

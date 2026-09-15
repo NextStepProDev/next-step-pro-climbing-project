@@ -11,6 +11,7 @@ import { AdminHubPanel } from './admin/AdminHubPanel'
 import { AdminSlotsPanel } from './admin/AdminSlotsPanel'
 import { AdminEventsPanel } from './admin/AdminEventsPanel'
 import { AdminUsersPanel } from './admin/AdminUsersPanel'
+import { AdminPayoutSourcePanel } from './admin/AdminPayoutSourcePanel'
 import { AdminUserDetailPanel } from './admin/AdminUserDetailPanel'
 import { AdminReservationsPanel } from './admin/AdminReservationsPanel'
 import { AdminActivityPanel } from './admin/AdminActivityPanel'
@@ -33,14 +34,15 @@ export function AdminPage() {
   const { t } = useTranslation('admin')
   const [paletteOpen, setPaletteOpen] = useState(false)
 
-  // The two sub-routes that are about ONE person, not about the panel: entering somebody's card
-  // should open on that person, so below `sm` the panel-wide title and subtitle step aside. The
-  // navigation itself stays — it is one row of four buttons now, not the four wrapped groups of
-  // pills that used to eat the whole first screen. Each panel still carries its own back arrow.
-  // Both matches are read into locals: `||` between two hook calls short-circuits the second one.
+  // The sub-routes that are about ONE subject, not about the panel: entering somebody's card — or
+  // one payer's history — should open on them, so below `sm` the panel-wide title and subtitle step
+  // aside. The navigation itself stays — it is one row of four buttons now, not the four wrapped
+  // groups of pills that used to eat the whole first screen. Each panel carries its own back arrow.
+  // Every match is read into a local: `||` between hook calls would short-circuit the later ones.
   const userCardMatch = useMatch('/admin/users/:userId')
   const athleteCardMatch = useMatch('/admin/training-calendars/:athleteId')
-  const isPersonRoute = !!userCardMatch || !!athleteCardMatch
+  const payerCardMatch = useMatch('/admin/settlements/sources/:sourceId')
+  const isPersonRoute = !!userCardMatch || !!athleteCardMatch || !!payerCardMatch
 
   // Notification counters: badges on the group menus, the tabs inside them and the hub tiles.
   // The same endpoint feeds the dot on the Admin navbar link.
@@ -108,6 +110,7 @@ export function AdminPage() {
         <Route path="events" element={<AdminEventsPanel />} />
         <Route path="requests" element={<AdminRequestsPanel />} />
         <Route path="settlements" element={<AdminSettlementsPanel />} />
+        <Route path="settlements/sources/:sourceId" element={<AdminPayoutSourcePanel />} />
         <Route path="training-calendars" element={<AdminTrainingCalendarsPanel />} />
         <Route path="training-calendars/:athleteId" element={<AdminAthleteCalendarPanel />} />
         <Route path="instructors" element={<AdminInstructorsPanel />} />

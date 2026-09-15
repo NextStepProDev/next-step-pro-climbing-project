@@ -450,6 +450,56 @@ record PayoutPeriodDto(
 record PayoutEntryDto(UUID id, BigDecimal amount, LocalDate receivedOn) {}
 
 /**
+ * One institution's whole history: what they had, what they paid, and how that moved.
+ *
+ * <p><b>All-time, and deliberately deaf to the tab's year picker</b> — "what do I have with this
+ * place" has no year in it, the same reasoning as the money block on a client's card. The years are
+ * broken out below anyway, so nothing is lost by not filtering.
+ *
+ * <p>⚠️ <b>The chart is bucketed by the month the work was FOR, not by the day the money landed</b>,
+ * unlike revenue everywhere else in this feature. It sits directly above rows that are period
+ * months, and two axes stacked on one screen would disagree with each other in front of the reader
+ * — which is worse than either axis being the wrong choice.
+ *
+ * @param months        how long the collaboration spans, first activity to last, inclusive — the
+ *                      denominator behind "14 months" rather than a count of months that had work.
+ * @param periods       the same month rows the tab draws, so the screen reuses one renderer and one
+ *                      set of rules — expandable into their sessions and transfers, and their
+ *                      transfers stay deletable here.
+ */
+record PayoutSourceHistoryDto(
+    UUID id,
+    String name,
+    boolean archived,
+    @Nullable LocalDate firstActivity,
+    @Nullable LocalDate lastActivity,
+    int months,
+    int totalSessions,
+    int totalMinutes,
+    int sessionsWithoutHours,
+    BigDecimal totalAmount,
+    @Nullable BigDecimal averageRatePerHour,
+    List<MonthlyRevenueDto> chart,
+    List<PayoutYearDto> years,
+    List<PayoutPeriodDto> periods
+) {}
+
+/**
+ * One year of one institution.
+ *
+ * @param ratePerHour null when the year is missing either half — hours with no transfer yet, or a
+ *                    transfer against work whose length is unknown. A zero would be a claim.
+ */
+record PayoutYearDto(
+    int year,
+    int sessions,
+    int minutes,
+    int sessionsWithoutHours,
+    BigDecimal amount,
+    @Nullable BigDecimal ratePerHour
+) {}
+
+/**
  * One session counted in a month of bulk work.
  *
  * <p>The row above is an aggregate of two things — a count of sessions and a sum of hours — and

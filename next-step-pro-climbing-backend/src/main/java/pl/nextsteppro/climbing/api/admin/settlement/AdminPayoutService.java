@@ -64,6 +64,13 @@ class AdminPayoutService {
             .toList();
     }
 
+    /** One payer by id, for their own screen. Archived ones included — history does not expire. */
+    @Transactional(readOnly = true)
+    public PayoutSourceDto requireSourceDto(UUID sourceId) {
+        PayoutSource source = requireSource(sourceId);
+        return new PayoutSourceDto(source.getId(), source.getName(), source.isArchived());
+    }
+
     public PayoutSourceDto createSource(SavePayoutSourceRequest request) {
         String name = requireName(request.name());
         // Mirrors uq_payout_sources_active_name so the caller gets a sentence instead of a

@@ -1121,6 +1121,21 @@
         "kindPayout": "Pago global",
         "unpaid": "pendiente"
       }
+    },
+    "source": {
+      "archived": "archivado",
+      "since": "colaboración desde {{date}} · {{months}} meses",
+      "received": "recibido",
+      "hours": "horas",
+      "sessions": "sesiones",
+      "averageRate": "tarifa media / h",
+      "chart": "Ingresos por mes",
+      "chartAxis": "Contado por el mes al que corresponde el trabajo: el mismo eje que la tabla de abajo.",
+      "years": "Años",
+      "year": "Año",
+      "months": "Meses",
+      "empty": "Este contratista todavía no tiene historial.",
+      "emptyHint": "Marca sus sesiones en el calendario y los meses aparecerán aquí."
     }
   }
 }
