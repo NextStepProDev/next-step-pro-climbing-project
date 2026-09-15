@@ -1034,6 +1034,12 @@
       "year": "Rok:",
       "allYears": "wszystko",
       "empty": "Nie ma jeszcze żadnych rozliczeń. Kwoty wpisuje się przy slocie lub wydarzeniu w kalendarzu.",
+      "unassigned": {
+        "title": "Terminy bez płatnika",
+        "count": "{{n}} poz.",
+        "scope": "Odbyte terminy bez miejsc, bez uczestników i bez kontrahenta — czyli praca, której nikt nie policzy. Ta lista nie zmienia się z wyborem roku i sięga {{days}} dni wstecz.",
+        "open": "Otwórz termin z {{date}} i wskaż kontrahenta"
+      },
       "unpriced": {
         "title": "Do wyceny",
         "count": "{{n}} zajęć",

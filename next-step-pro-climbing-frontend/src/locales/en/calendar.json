@@ -207,7 +207,11 @@
     "templateLabel": "Template",
     "templatePlaceholder": "— custom name —",
     "submit": "Create slot",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "contractor": "Contractor (required)",
+    "contractorPlaceholder": "Choose a contractor",
+    "contractorNone": "You have no contractors yet.",
+    "contractorManage": "Add one in Settlements"
   },
   "customSlot": {
     "title": "Can't find a suitable time?",

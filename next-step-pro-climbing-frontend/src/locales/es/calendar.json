@@ -207,7 +207,11 @@
     "templateLabel": "Plantilla",
     "templatePlaceholder": "— nombre personalizado —",
     "submit": "Crear franja horaria",
-    "cancel": "Cancelar"
+    "cancel": "Cancelar",
+    "contractor": "Contratista (obligatorio)",
+    "contractorPlaceholder": "Elige un contratista",
+    "contractorNone": "Todavía no tienes ningún contratista.",
+    "contractorManage": "Añádelo en Liquidaciones"
   },
   "customSlot": {
     "title": "¿No encuentras un horario adecuado?",

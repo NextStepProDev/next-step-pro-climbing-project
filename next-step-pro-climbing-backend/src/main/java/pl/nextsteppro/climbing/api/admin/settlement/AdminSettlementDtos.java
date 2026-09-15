@@ -143,11 +143,46 @@ record SettleOutstandingResultDto(int settled, BigDecimal balance) {}
 record SettlementOverviewDto(
     List<Integer> years,
     @Nullable Integer year,
+    UnassignedDto unassigned,
     UnpricedDto unpriced,
     OutstandingDto outstanding,
     RevenueDto revenue,
     List<PersonRevenueDto> people,
     PayoutsDto payouts
+) {}
+
+/**
+ * Sessions that were worked and have <b>nobody to bill at all</b>.
+ *
+ * <p>One step further out than {@link UnpricedDto}, and invisible to it by construction: that queue
+ * is driven by reservations and guests, so a session with zero people on it produces no rows in any
+ * of its reads. The cost of the gap is quiet and lands on the one figure this feature exists for —
+ * an unassigned session is missing from the hourly rate's denominator, so one transfer spread over
+ * ten sessions instead of twelve reads <em>high</em>, and nothing on the screen says why.
+ *
+ * <p>⚠️ Same two policies as the unpriced queue, and the screen states both: it ignores the year
+ * picker, and it is bounded to the same rolling window — one constant, not two that can drift.
+ *
+ * @param windowDays how far back the list looks, sent so the screen can name the rule it applies.
+ */
+record UnassignedDto(
+    int count,
+    int windowDays,
+    List<UnassignedSessionDto> sessions
+) {}
+
+/**
+ * One session with no payer.
+ *
+ * <p>@param targetType always {@code "slot"} today, and sent rather than assumed: the row is drawn
+ * by the same component as an unpriced one, which builds a calendar deep link from it. A literal
+ * {@code slot=} baked into that link would be a silent wrong link the day events join this list.
+ */
+record UnassignedSessionDto(
+    String targetType,
+    UUID targetId,
+    LocalDate date,
+    @Nullable String title
 ) {}
 
 /**

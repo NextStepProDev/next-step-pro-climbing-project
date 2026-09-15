@@ -388,7 +388,118 @@ class AdminSettlementStatsTest extends BaseIntegrationTest {
         }
     }
 
+    // ------------------------------------------------------- sessions with no payer
+
+    /**
+     * The gap this list exists for: a session with nobody on it cannot reach the unpriced queue,
+     * because that queue is built from reservations and guests. Its cost is quiet — the hourly rate
+     * divides one transfer by fewer sessions and reads high, with nothing saying the denominator is
+     * short.
+     */
+    @Test
+    @DisplayName("shouldReportAWorkedSessionThatHasNobodyToBillAtAll")
+    void shouldReportAWorkedSessionThatHasNobodyToBillAtAll() {
+        TimeSlot worked = contractorSlot(TODAY.minusDays(4));
+
+        SettlementOverviewDto overview = stats.buildOverview("2026", TODAY);
+
+        assertEquals(1, overview.unassigned().count(),
+            "Zero participants means the unpriced queue can never see it, so this list is the only "
+                + "place it can appear at all");
+        UnassignedSessionDto session = overview.unassigned().sessions().getFirst();
+        assertEquals("slot", session.targetType());
+        assertEquals(worked.getId(), session.targetId());
+        assertEquals(AdminSettlementStatsService.UNPRICED_WINDOW_DAYS, overview.unassigned().windowDays(),
+            "The screen states the window it applies, so it has to be told what it is");
+
+        assignToSource(worked, "SP nr 5");
+
+        assertEquals(0, stats.buildOverview("2026", TODAY).unassigned().count(),
+            "Naming the payer is what takes it off the queue — nothing else should");
+    }
+
+    /**
+     * ⚠️ The exclusions are the whole feature. Zero seats is what separates work from an unsold
+     * hour, and an absence has zero seats by construction — so without these the list is a wall of
+     * holiday and empty offers, which is the same as not having the list.
+     */
+    @Test
+    @DisplayName("shouldNotReportTimeThatWasNeverWorkedOrHoursNobodyTookUp")
+    void shouldNotReportTimeThatWasNeverWorkedOrHoursNobodyTookUp() {
+        TimeSlot absence = timeSlotRepository.saveAndFlush(
+            new TimeSlot(TODAY.minusDays(3), LocalTime.of(9, 0), LocalTime.of(17, 0), 4));
+        absence.setUnavailable(true);
+        timeSlotRepository.saveAndFlush(absence);
+
+        TimeSlot cancelled = contractorSlot(TODAY.minusDays(3));
+        cancelled.block("odwołane");
+        timeSlotRepository.saveAndFlush(cancelled);
+
+        TimeSlot window = timeSlotRepository.saveAndFlush(
+            new TimeSlot(TODAY.minusDays(3), LocalTime.of(12, 0), LocalTime.of(13, 0), 0));
+        window.setAvailabilityWindow(true);
+        timeSlotRepository.saveAndFlush(window);
+
+        // An hour that was on offer and nobody took: not work, and by far the most common empty slot.
+        pastSlot(TODAY.minusDays(3));
+        // Still to come, and older than the window.
+        contractorSlot(TODAY.plusDays(3));
+        contractorSlot(TODAY.minusDays(AdminSettlementStatsService.UNPRICED_WINDOW_DAYS + 1L));
+
+        assertEquals(0, stats.buildOverview("2026", TODAY).unassigned().count(),
+            "An absence, a cancelled session, an availability window, an unsold hour, a future one "
+                + "and an archived one are each a different reason this list must stay quiet");
+    }
+
+    /**
+     * ⚠️ The two queues must never report the same session: two counts of one backlog can only
+     * disagree, and the admin has no way to tell which one is lying.
+     */
+    @Test
+    @DisplayName("shouldHandASessionToExactlyOneOfTheTwoQueues")
+    void shouldHandASessionToExactlyOneOfTheTwoQueues() {
+        TimeSlot withGuest = contractorSlot(TODAY.minusDays(5));
+        guestReservationRepository.saveAndFlush(new GuestReservation(withGuest, "Ekipa ze szkoły", 8));
+
+        TimeSlot priced = contractorSlot(TODAY.minusDays(6));
+        jdbc.update("INSERT INTO settlements (time_slot_id, user_id, amount) VALUES (?, ?, 150)",
+            priced.getId(), client.getId());
+
+        SettlementOverviewDto overview = stats.buildOverview("2026", TODAY);
+
+        assertEquals(0, overview.unassigned().count(),
+            "A session with somebody on it belongs to the pricing queue, and one already priced "
+                + "belongs to neither — reporting either here would count one backlog twice");
+        assertEquals(1, overview.unpriced().count(),
+            "And the guest's session must still be asking to be priced");
+    }
+
+    @Test
+    @DisplayName("shouldKeepTheNoPayerListUnchangedByTheYearPicker")
+    void shouldKeepTheNoPayerListUnchangedByTheYearPicker() {
+        contractorSlot(TODAY.minusDays(7));
+
+        for (String year : new String[]{"2024", "2026", "all"}) {
+            assertEquals(1, stats.buildOverview(year, TODAY).unassigned().count(),
+                "Work with no payer does not acquire one because you looked at another year "
+                    + "(year=" + year + ")");
+        }
+    }
+
     // ------------------------------------------------------------------ fixtures
+
+    /** How the owner records work done for somebody else: a normal slot nobody can book. */
+    private TimeSlot contractorSlot(LocalDate on) {
+        return timeSlotRepository.saveAndFlush(
+            new TimeSlot(on, LocalTime.of(16, 0), LocalTime.of(17, 30), 0));
+    }
+
+    private void assignToSource(TimeSlot slot, String name) {
+        UUID sourceId = UUID.randomUUID();
+        jdbc.update("INSERT INTO payout_sources (id, name) VALUES (?, ?)", sourceId, name);
+        jdbc.update("INSERT INTO session_payouts (time_slot_id, payout_source_id) VALUES (?, ?)",
+            slot.getId(), sourceId);
+    }
 
     private TimeSlot pastSlot(LocalDate on) {
         return timeSlotRepository.saveAndFlush(

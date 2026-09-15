@@ -182,7 +182,9 @@
     "UNAVAILABLE": "Niedostępność",
     "REGULARHint": "Klienci rezerwują miejsca w tych godzinach.",
     "WINDOWHint": "Klienci nie rezerwują — proponują termin w tych godzinach.",
-    "UNAVAILABLEHint": "Godziny zamknięte: bez miejsc, bez zapisów i listy rezerwowej."
+    "UNAVAILABLEHint": "Godziny zamknięte: bez miejsc, bez zapisów i listy rezerwowej.",
+    "CONTRACTOR": "Zajęcia dla kontrahenta",
+    "CONTRACTORHint": "Zajęcia rozliczane przez szkołę lub klub. Bez miejsc — nikt się nie zapisuje, a termin od razu wie, czyją jest pracą."
   },
   "notFound": {
     "title": "Nie ma takiej strony",

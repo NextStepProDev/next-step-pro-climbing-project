@@ -46,15 +46,16 @@ class AdminSettlementQueryCountTest extends BaseIntegrationTest {
 
     /**
      * Rows of the year, the outstanding history, the two distinct-date reads behind the year picker,
-     * the four reads behind the "to be priced" queue (two session kinds x two payer kinds) and the
-     * four behind bulk payouts (the payer list, transfers by arrival, transfers by work month, and
-     * the sessions they cover) — one query each, plus slack for Spring Data's own round trips.
+     * the four reads behind the "to be priced" queue (two session kinds x two payer kinds), the one
+     * behind "no payer at all", and the four behind bulk payouts (the payer list, transfers by
+     * arrival, transfers by work month, and the sessions they cover) — one query each, plus slack
+     * for Spring Data's own round trips.
      *
-     * <p>Twelve is a lot for one endpoint and it is deliberate: the tab answers four independent
+     * <p>A dozen is a lot for one endpoint and it is deliberate: the tab answers several independent
      * questions in one read so its figures cannot disagree with each other. What matters is that the
      * number does not move with the data, which is what this gate holds.
      */
-    private static final int MAX_QUERIES = 14;
+    private static final int MAX_QUERIES = 15;
 
     private static final LocalDate TODAY = LocalDate.of(2026, 8, 31);
 
@@ -121,6 +122,14 @@ class AdminSettlementQueryCountTest extends BaseIntegrationTest {
         jdbc.update("INSERT INTO settlements (time_slot_id, guest_reservation_id, amount, paid_amount, settled_on) "
                 + "VALUES (?, ?, ?, ?, ?)",
             guestSlot.getId(), guest.getId(), new BigDecimal("150.00"), BigDecimal.ZERO, null);
+
+        // Sessions worked for somebody who was never named: zero seats, nobody on them, no amount.
+        // They cost a read of their own, and a fixture without them would let that read come back
+        // empty while still meeting the budget.
+        for (int i = 0; i < 2; i++) {
+            timeSlotRepository.saveAndFlush(
+                new TimeSlot(TODAY.minusDays(2L + i * 7L), LocalTime.of(16, 0), LocalTime.of(17, 30), 0));
+        }
 
         entityManager.flush();
         entityManager.clear();
@@ -201,6 +210,8 @@ class AdminSettlementQueryCountTest extends BaseIntegrationTest {
             "The per-person breakdown must actually be populated, or the budget proves nothing");
         assertTrue(overview.outstanding().count() > 0,
             "The outstanding list must actually be populated, or the budget proves nothing");
+        assertTrue(overview.unassigned().count() > 0,
+            "The no-payer list must actually be populated, or its read is free and proves nothing");
 
         assertTrue(queries <= MAX_QUERIES,
             "The Settlements overview took " + queries + " queries for " + SETTLEMENTS

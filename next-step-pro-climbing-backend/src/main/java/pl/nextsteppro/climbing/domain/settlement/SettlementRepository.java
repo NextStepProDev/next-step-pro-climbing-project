@@ -197,6 +197,51 @@ public interface SettlementRepository extends JpaRepository<Settlement, UUID> {
     List<UnpricedPayer> findUnpricedEventGuests(@Param("from") LocalDate from,
                                                 @Param("today") LocalDate today);
 
+    /**
+     * Sessions that were worked and have <b>no payer of any kind</b> — see {@link UnassignedSession}
+     * for why the four reads above cannot find them.
+     *
+     * <p>Every condition here is load-bearing, and none of them is visible after the fact:
+     *
+     * <ul>
+     *   <li><b>{@code maxParticipants = 0}</b> — the only thing separating work from an unsold
+     *       offer. A slot nobody could book, on a day that has passed, happened for somebody.</li>
+     *   <li><b>not unavailable</b> — an absence has zero seats <em>by construction</em>
+     *       ({@code setUnavailable} zeroes them), so without this a week of holiday floods the
+     *       list with rows that are its exact opposite: time deliberately not worked.</li>
+     *   <li><b>not blocked</b> — a cancelled session was not worked either.</li>
+     *   <li><b>not an availability window</b> — that is an invitation to propose a time, not a
+     *       session.</li>
+     *   <li><b>no settlement, no confirmed reservation, no guest</b> — this keeps the list
+     *       <em>disjoint</em> from the "to be priced" queue. A session with somebody on it belongs
+     *       there; reporting it twice would make two counts that can only disagree.</li>
+     * </ul>
+     *
+     * <p>The past predicate and the window are the ones the unpriced reads use, deliberately: two
+     * policies for "recent enough to still be work" would be two numbers to keep in step.
+     */
+    @Query("""
+        SELECT new pl.nextsteppro.climbing.domain.settlement.UnassignedSession(
+            ts.id, ts.date, ts.title)
+        FROM TimeSlot ts
+        WHERE ts.event IS NULL
+          AND ts.maxParticipants = 0
+          AND ts.availabilityWindow = false
+          AND ts.unavailable = false
+          AND ts.blocked = false
+          AND ts.date >= :from
+          AND (ts.date < :today OR (ts.date = :today AND ts.endTime <= :now))
+          AND NOT EXISTS (SELECT 1 FROM SessionPayout sp WHERE sp.timeSlot.id = ts.id)
+          AND NOT EXISTS (SELECT 1 FROM Settlement s WHERE s.timeSlot.id = ts.id)
+          AND NOT EXISTS (
+            SELECT 1 FROM Reservation r WHERE r.timeSlot.id = ts.id AND r.status = 'CONFIRMED')
+          AND NOT EXISTS (SELECT 1 FROM GuestReservation g WHERE g.timeSlot.id = ts.id)
+        ORDER BY ts.date, ts.startTime
+        """)
+    List<UnassignedSession> findUnassignedPastSlots(@Param("from") LocalDate from,
+                                                    @Param("today") LocalDate today,
+                                                    @Param("now") LocalTime now);
+
     @Query("SELECT COUNT(s) > 0 FROM Settlement s WHERE s.timeSlot.id = :slotId AND s.user.id = :userId")
     boolean existsForSlotUser(@Param("slotId") UUID slotId, @Param("userId") UUID userId);
 

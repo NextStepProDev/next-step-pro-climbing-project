@@ -1028,6 +1028,12 @@
       "year": "Year:",
       "allYears": "everything",
       "empty": "No settlements yet. Amounts are entered on a slot or an event in the calendar.",
+      "unassigned": {
+        "title": "Sessions with no payer",
+        "count": "{{n}} sessions",
+        "scope": "Sessions that have happened with no seats, nobody on them and no contractor — work nothing else will count. This list does not follow the year picker and reaches {{days}} days back.",
+        "open": "Open the session of {{date}} and name the contractor"
+      },
       "unpriced": {
         "title": "To be priced",
         "count": "{{n}} sessions",

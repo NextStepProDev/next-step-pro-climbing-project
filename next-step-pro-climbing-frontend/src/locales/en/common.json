@@ -182,7 +182,9 @@
     "UNAVAILABLE": "Unavailable",
     "REGULARHint": "Clients book seats in these hours.",
     "WINDOWHint": "Clients do not book — they propose a time inside these hours.",
-    "UNAVAILABLEHint": "Hours closed off: no seats, no sign-ups, no waitlist."
+    "UNAVAILABLEHint": "Hours closed off: no seats, no sign-ups, no waitlist.",
+    "CONTRACTOR": "Contractor session",
+    "CONTRACTORHint": "Work settled by a school or a club. No seats — nobody books it, and the session knows whose work it is from the start."
   },
   "notFound": {
     "title": "This page does not exist",

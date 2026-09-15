@@ -182,7 +182,9 @@
     "UNAVAILABLE": "No disponible",
     "REGULARHint": "Los clientes reservan plazas en estas horas.",
     "WINDOWHint": "Los clientes no reservan — proponen una hora dentro de estas horas.",
-    "UNAVAILABLEHint": "Horas cerradas: sin plazas, sin inscripciones ni lista de espera."
+    "UNAVAILABLEHint": "Horas cerradas: sin plazas, sin inscripciones ni lista de espera.",
+    "CONTRACTOR": "Sesión para contratista",
+    "CONTRACTORHint": "Trabajo que liquida una escuela o un club. Sin plazas: nadie la reserva y la sesión sabe de quién es el trabajo desde el principio."
   },
   "notFound": {
     "title": "Esta página no existe",
