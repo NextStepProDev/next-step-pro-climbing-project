@@ -109,6 +109,36 @@ body {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
 }
 
+/* ⚠️ Na dotyku pola formularza NIE MOGĄ mieć mniej niż 16 px — inaczej iOS sam przybliża stronę
+   i nigdy jej nie oddala.
+
+   Safari na iOS powiększa widok przy wejściu w dowolne `input`/`select`/`textarea` o czcionce
+   poniżej 16 px. Powrotu nie ma: po opuszczeniu pola, po zamknięciu modala i po przejściu na inny
+   ekran strona zostaje przybliżona, aż użytkownik ręcznie ją uszczypnie. Objawem nie jest błąd,
+   tylko „aplikacja mi się rozjechała" — zgłoszone po serii rozliczeń, gdzie każdy zapis kończył
+   się szczypaniem ekranu. Cała aplikacja pisze pola jako `text-sm`/`text-xs` (45 plików), więc to
+   nie jest usterka jednego ekranu.
+
+   Trzy decyzje, każda z powodem:
+   - `pointer: coarse`, a nie szerokość ekranu — problem dotyczy dotyku, nie wąskiego okna, więc
+     gęstość na desktopie zostaje nietknięta.
+   - **Nie** `maximum-scale=1` w meta viewport: to odbiera szczypanie do powiększenia, czyli psuje
+     dostępność, żeby naprawić wygodę. Od iOS 10 Safari i tak to ignoruje — wyglądałoby na
+     naprawione i nie działało.
+   - Reguła stoi POZA warstwami Tailwinda i to jest warunek jej działania: `.text-sm` z warstwy
+     `utilities` ma wyższą specyficzność niż selektor elementu, ale styl bez warstwy wygrywa
+     z warstwowym niezależnie od specyficzności. Wersja wewnątrz `@layer` po cichu nic nie robi.
+
+   Checkbox i radio wyłączone — czcionka nie ma tam wpływu na przybliżanie, a bywa jednostką
+   rozmiaru samego pola. */
+@media (pointer: coarse) {
+  input:not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}
+
 /* Space Grotesk dla nagłówków (+ .font-display); tekst pozostaje na Inter */
 h1, h2, h3, h4, h5, h6, .font-display {
   font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif;
