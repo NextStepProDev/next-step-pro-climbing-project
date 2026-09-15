@@ -989,7 +989,8 @@
       "groupSubscription": "Abonament uczestnika",
       "groupSubscriptionShared": "Abonament uczestnika — tylko przy jednej osobie",
       "subscriptionSharedHint": "Abonament obejmuje jedną osobę, a na tym terminie jest ich więcej — pozostali nie mieliby jak zapłacić. Wyceń uczestników pojedynczo albo wskaż kontrahenta.",
-      "groupSource": "Kontrahent"
+      "groupSource": "Kontrahent",
+      "bulkSaved": "Rozliczane zbiorczo: {{name}}."
     },
     "line": {
       "people": "({{n}} os.)",
