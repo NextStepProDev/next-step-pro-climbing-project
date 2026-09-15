@@ -40,21 +40,25 @@ export function AdminEventsPanel() {
     queryFn: adminApi.getAllEvents,
   })
 
+  // ⚠️ An event carries money the same way a slot does: amounts per participant and, when a school
+  // settles it, one row in the bulk assignment. Deleting takes both by cascade, and editing the
+  // DATES moves the session into another month of that payer's rate — so both writes have to mark
+  // the Settlements tab stale, or it serves its cached page for five minutes and disagrees.
+  const invalidateEvents = () => {
+    queryClient.invalidateQueries({ queryKey: ['admin', 'events'] })
+    queryClient.invalidateQueries({ queryKey: ['calendar'] })
+    queryClient.invalidateQueries({ queryKey: ['admin', 'settlements'] })
+  }
+
   const deleteMutation = useMutation({
     mutationFn: adminApi.deleteEvent,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin', 'events'] })
-      queryClient.invalidateQueries({ queryKey: ['calendar'] })
-    },
+    onSuccess: invalidateEvents,
   })
 
   const updateMutation = useMutation({
     mutationFn: ({ eventId, data }: { eventId: string; data: Partial<CreateEventRequest> & { active?: boolean } }) =>
       adminApi.updateEvent(eventId, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin', 'events'] })
-      queryClient.invalidateQueries({ queryKey: ['calendar'] })
-    },
+    onSuccess: invalidateEvents,
   })
 
   const now = nowInWarsaw()
@@ -890,6 +894,8 @@ export function EditEventModal({
       queryClient.invalidateQueries({ queryKey: ['courseEvents'] })
       queryClient.invalidateQueries({ queryKey: ['eventSummary', event?.id] })
       queryClient.invalidateQueries({ queryKey: ['admin', 'eventInvites', event?.id] })
+      // Editing the dates moves the session into another month of its payer's rate.
+      queryClient.invalidateQueries({ queryKey: ['admin', 'settlements'] })
       onClose()
       if (notified) inviteSent(notified)
       else editSaved(result)
@@ -1158,6 +1164,8 @@ export function CreateEventModal({
       queryClient.invalidateQueries({ queryKey: ['admin', 'events'] })
       queryClient.invalidateQueries({ queryKey: ['admin', 'trainingRequests'] })
       queryClient.invalidateQueries({ queryKey: ['admin', 'notifications'] })
+      // A new event is a new session the pricing queue will ask about the day after it happens.
+      queryClient.invalidateQueries({ queryKey: ['admin', 'settlements'] })
       queryClient.invalidateQueries({ queryKey: ['calendar'] })
       queryClient.invalidateQueries({ queryKey: ['courseEvents'] })
       onClose()

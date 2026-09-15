@@ -334,6 +334,9 @@ export function CalendarPage() {
       }
       void queryClient.invalidateQueries({ queryKey: ['calendar'] });
       void queryClient.invalidateQueries({ queryKey: ['admin', 'slots'] });
+      // ⚠️ A drag changes the DATE, and for a session somebody settles in bulk the date decides
+      // which month of theirs it counts in — so this moves a figure two screens away.
+      void queryClient.invalidateQueries({ queryKey: ['admin', 'settlements'] });
     },
     onError: (_err, variables) => {
       lastSlotMoveRef.current.delete(variables.slotId);

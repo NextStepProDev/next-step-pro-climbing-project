@@ -666,6 +666,21 @@ export interface PayoutPeriod {
   // The individual arrivals this row adds up. Carried so a mistyped figure can be removed —
   // without them the feature is write-only and a 14000 entered for 1400 would be permanent.
   transfers: PayoutEntry[]
+  // The sessions behind the count and the hours, oldest first. Same read as the totals above them,
+  // so the list and the figures cannot disagree — without it a wrong rate is a dead end: you can
+  // see that "12 sessions, 14 h" is off and have nowhere to go to find which of the twelve is.
+  heldSessions: PayoutSession[]
+}
+
+// One session counted in a month of bulk work. `minutes` is null when the length is not knowable
+// (all-day, or multi-day with start and end on different days) — the same entries the row counts
+// apart as "+N without hours", named here so the gap in the denominator has faces.
+export interface PayoutSession {
+  targetType: SettlementTarget
+  targetId: string
+  date: string
+  title: string | null
+  minutes: number | null
 }
 
 // A standing monthly coaching fee — the rule, not the money. What it produces is an ordinary

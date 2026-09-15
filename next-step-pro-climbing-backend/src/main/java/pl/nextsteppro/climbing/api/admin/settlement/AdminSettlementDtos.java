@@ -442,11 +442,32 @@ record PayoutPeriodDto(
     int sessionsWithoutHours,
     BigDecimal amount,
     @Nullable BigDecimal ratePerHour,
-    List<PayoutEntryDto> transfers
+    List<PayoutEntryDto> transfers,
+    List<PayoutSessionDto> heldSessions
 ) {}
 
 /** One arrival, addressable so it can be deleted. */
 record PayoutEntryDto(UUID id, BigDecimal amount, LocalDate receivedOn) {}
+
+/**
+ * One session counted in a month of bulk work.
+ *
+ * <p>The row above is an aggregate of two things — a count of sessions and a sum of hours — and
+ * both feed the rate, which is the figure the whole feature exists for. Without a way down to the
+ * sessions themselves, a wrong rate is a dead end: you can see that "12 sessions, 14 h" is off and
+ * have nowhere to go to find out which of the twelve is wrong.
+ *
+ * @param minutes {@code null} when the length is not knowable (an all-day entry, or a multi-day
+ *                event whose start and end are on different days) — the same sessions the row
+ *                counts apart as "+N without hours", named here so the gap has faces.
+ */
+record PayoutSessionDto(
+    String targetType,
+    UUID targetId,
+    LocalDate date,
+    @Nullable String title,
+    @Nullable Integer minutes
+) {}
 
 /**
  * One line of income for the year, flattened for an accountant.

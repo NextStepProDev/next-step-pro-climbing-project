@@ -140,6 +140,10 @@ export function CreateSlotModal({
     },
     onSuccess: (_result, request) => {
       void queryClient.invalidateQueries({ queryKey: ['calendar'] })
+      // A new entry can show up on the money screens before anybody prices anything: a contractor
+      // session arrives already assigned, and a zero-seat slot created any other way arrives on the
+      // "no payer" queue and its calendar marker.
+      void queryClient.invalidateQueries({ queryKey: ['admin', 'settlements'] })
       // An event shows up in two more places than a slot does — the same three keys the
       // clipboard paste in CalendarPage refreshes.
       if (request.target === 'event') {

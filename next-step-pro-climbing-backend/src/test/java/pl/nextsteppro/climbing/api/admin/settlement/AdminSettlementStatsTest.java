@@ -537,6 +537,37 @@ class AdminSettlementStatsTest extends BaseIntegrationTest {
             () -> stats.getUnassignedMarkers(TODAY, TODAY.minusDays(1)));
     }
 
+    /**
+     * Deleting a session takes its money with it — every figure on the tab, not just the amounts.
+     *
+     * <p>The cascade lives in the schema (V92, V93), so nothing in Java would notice a migration
+     * that changed those foreign keys to SET NULL: the rows would survive as orphans pointing at
+     * nothing, and revenue would keep counting a session that is gone while the rate kept dividing
+     * by it. Deleting through the repository rather than the admin service on purpose — this pins
+     * the schema's promise, which is what every delete path in the app relies on.
+     */
+    @Test
+    @DisplayName("shouldTakeTheMoneyWithASessionThatIsDeleted")
+    void shouldTakeTheMoneyWithASessionThatIsDeleted() {
+        settleSlot(LocalDate.of(2026, 5, 4), client, "150", LocalDate.of(2026, 5, 4));
+        TimeSlot forSchool = contractorSlot(LocalDate.of(2026, 5, 11));
+        assignToSource(forSchool, "SP nr 5");
+
+        SettlementOverviewDto before = stats.buildOverview("2026", TODAY);
+        assertEquals(0, new BigDecimal("150.00").compareTo(before.revenue().total()));
+        assertEquals(1, before.payouts().periods().size(), "the school's May is on the table");
+
+        timeSlotRepository.deleteAll();
+
+        SettlementOverviewDto after = stats.buildOverview("2026", TODAY);
+        assertEquals(0, BigDecimal.ZERO.compareTo(after.revenue().total()),
+            "Revenue counted a session that no longer exists");
+        assertTrue(after.payouts().periods().isEmpty(),
+            "The rate went on dividing by a session that was deleted");
+        assertEquals(0, after.outstanding().count());
+        assertEquals(0, after.unassigned().count());
+    }
+
     // ------------------------------------------------------------------ fixtures
 
     /** How the owner records work done for somebody else: a normal slot nobody can book. */

@@ -158,6 +158,9 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
       queryClient.invalidateQueries({ queryKey: ['reservations'] })
       queryClient.invalidateQueries({ queryKey: ['eventSummary', event?.id] })
       queryClient.invalidateQueries({ queryKey: ['admin', 'events'] })
+      // ⚠️ Deleting takes the amounts and any bulk assignment with it, by cascade — the Settlements
+      // tab would otherwise keep counting money for a session that no longer exists.
+      queryClient.invalidateQueries({ queryKey: ['admin', 'settlements'] })
       setShowDeleteConfirm(false)
       onClose()
     },

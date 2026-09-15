@@ -38,7 +38,8 @@ public interface SessionPayoutRepository extends JpaRepository<SessionPayout, UU
      */
     @Query("""
         SELECT new pl.nextsteppro.climbing.domain.settlement.SessionPayoutRow(
-            sp.source.id, COALESCE(ts.date, e.startDate), e.endDate,
+            sp.source.id, ts.id, e.id, COALESCE(ts.title, e.title),
+            COALESCE(ts.date, e.startDate), e.endDate,
             COALESCE(ts.startTime, e.startTime), COALESCE(ts.endTime, e.endTime))
         FROM SessionPayout sp
         LEFT JOIN sp.timeSlot ts

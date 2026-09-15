@@ -582,12 +582,12 @@ describe('AdminSettlementsPanel', () => {
             sourceId: 'src-1', sourceName: 'SP nr 12', month: '2026-10-01',
             sessions: 12, minutes: 1080, sessionsWithoutHours: 0,
             amount: 1400, ratePerHour: 77.78,
-            transfers: [{ id: 'p-1', amount: 1400, receivedOn: '2026-11-08' }],
+            transfers: [{ id: 'p-1', amount: 1400, receivedOn: '2026-11-08' }], heldSessions: [],
           },
           {
             sourceId: 'src-1', sourceName: 'SP nr 12', month: '2026-11-01',
             sessions: 4, minutes: 240, sessionsWithoutHours: 0,
-            amount: 0, ratePerHour: null, transfers: [],
+            amount: 0, ratePerHour: null, transfers: [], heldSessions: [],
           },
         ],
       },
@@ -644,6 +644,47 @@ describe('AdminSettlementsPanel', () => {
     await waitFor(() => expect(createSource).toHaveBeenCalledWith('SP nr 12'))
   })
 
+  it('opens a month nobody has paid for yet and lists the sessions behind its figures', async () => {
+    // The row this table is worth having — work done, no transfer — was the one row that could not
+    // be opened, because opening was gated on transfers. The sessions are what the count and the
+    // hours are made of, so when the rate looks wrong this is the way down to why.
+    getOverview.mockResolvedValue(makeOverview({
+      payouts: {
+        sources: [{ id: 'src-1', name: 'Chwyciarnia', archived: false }],
+        total: 0,
+        periods: [{
+          sourceId: 'src-1', sourceName: 'Chwyciarnia', month: '2026-09-01',
+          sessions: 2, minutes: 180, sessionsWithoutHours: 1,
+          amount: 0, ratePerHour: null,
+          transfers: [],
+          heldSessions: [
+            { targetType: 'slot', targetId: 'slot-1', date: '2026-09-08', title: 'Grupa A', minutes: 90 },
+            { targetType: 'slot', targetId: 'slot-2', date: '2026-09-15', title: null, minutes: 90 },
+            { targetType: 'event', targetId: 'ev-1', date: '2026-09-20', title: 'Wyjazd', minutes: null },
+          ],
+        }],
+      },
+    }))
+    const user = userEvent.setup()
+
+    renderPanel()
+
+    await user.click(await screen.findByRole('button', { name: /2026/ }))
+
+    expect(screen.getByText('Grupa A')).toBeInTheDocument()
+    // An untitled session is the ordinary case here, so the row still has to be openable.
+    expect(screen.getByText('settlements.tab.outstanding.untitled.slot')).toBeInTheDocument()
+    // The entry with no knowable length is named rather than folded in at zero — it is the "+N
+    // without hours" from the row above, given a face.
+    expect(screen.getByText('settlements.tab.payouts.noHours')).toBeInTheDocument()
+
+    const links = screen.getAllByRole('link')
+    expect(links[0]).toHaveAttribute('href', '/calendar?date=2026-09-08&slot=slot-1')
+    // ⚠️ An event links as an event: a deep link built from the wrong kind opens the wrong screen
+    // while looking perfectly right in the table it came from.
+    expect(links[2]).toHaveAttribute('href', '/calendar?date=2026-09-20&event=ev-1')
+  })
+
   it('lets a mistyped transfer be deleted', async () => {
     getOverview.mockResolvedValue(makeOverview({
       payouts: {
@@ -657,6 +698,7 @@ describe('AdminSettlementsPanel', () => {
             { id: 'p-1', amount: 1400, receivedOn: '2026-11-08' },
             { id: 'p-2', amount: 14000, receivedOn: '2026-11-09' },
           ],
+          heldSessions: [],
         }],
       },
     }))

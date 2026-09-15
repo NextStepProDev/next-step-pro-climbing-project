@@ -160,6 +160,10 @@ export function SlotDetailModal({
       queryClient.invalidateQueries({ queryKey: ["slot"] });
       queryClient.invalidateQueries({ queryKey: ["reservations"] });
       queryClient.invalidateQueries({ queryKey: ["admin", "slots"] });
+      // ⚠️ Deleting a slot takes its money with it: the amounts and any bulk assignment go by
+      // cascade. Without this the Settlements tab keeps serving its cached page for five minutes —
+      // revenue that no longer exists, a rate divided by a session that is gone.
+      queryClient.invalidateQueries({ queryKey: ["admin", "settlements"] });
       setShowDeleteConfirm(false);
       onClose();
     },
@@ -180,6 +184,9 @@ export function SlotDetailModal({
       queryClient.invalidateQueries({ queryKey: ["slot"] });
       queryClient.invalidateQueries({ queryKey: ["admin", "slots"] });
       queryClient.invalidateQueries({ queryKey: ["admin", "slotInvites", slot!.id] });
+      // Editing moves money figures too: the hours are the rate's denominator, and the seat count
+      // is what puts a session on (or takes it off) the "no payer" queue.
+      queryClient.invalidateQueries({ queryKey: ["admin", "settlements"] });
       // Drop the local override so the refetched baseline is what the form reopens with.
       setEditedInvited(null);
       setEditMode(false);
