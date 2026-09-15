@@ -19,6 +19,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -474,6 +475,25 @@ class AdminSettlementStatsTest extends BaseIntegrationTest {
             "And the guest's session must still be asking to be priced");
     }
 
+    /**
+     * Oldest first, like the debts and the pricing queue: the useful order for a backlog is the
+     * order it accumulated in. The ordering lives in the query, so nothing in Java would notice it
+     * being dropped — the list would simply come back in whatever order Postgres felt like.
+     */
+    @Test
+    @DisplayName("shouldListSessionsWithNoPayerOldestFirst")
+    void shouldListSessionsWithNoPayerOldestFirst() {
+        contractorSlot(TODAY.minusDays(2));
+        contractorSlot(TODAY.minusDays(30));
+        contractorSlot(TODAY.minusDays(16));
+
+        List<LocalDate> dates = stats.buildOverview("2026", TODAY).unassigned().sessions().stream()
+            .map(UnassignedSessionDto::date)
+            .toList();
+
+        assertEquals(List.of(TODAY.minusDays(30), TODAY.minusDays(16), TODAY.minusDays(2)), dates);
+    }
+
     @Test
     @DisplayName("shouldKeepTheNoPayerListUnchangedByTheYearPicker")
     void shouldKeepTheNoPayerListUnchangedByTheYearPicker() {
@@ -484,6 +504,37 @@ class AdminSettlementStatsTest extends BaseIntegrationTest {
                 "Work with no payer does not acquire one because you looked at another year "
                     + "(year=" + year + ")");
         }
+    }
+
+    /**
+     * The same question the backlog list answers, asked about a visible calendar range — including
+     * sessions still ahead, which is the point: the reminder is worth more while the week is being
+     * planned than a month later, when the only fix left is remembering what happened.
+     */
+    @Test
+    @DisplayName("shouldMarkClosedSessionsWithNoPayerAcrossTheVisibleRange")
+    void shouldMarkClosedSessionsWithNoPayerAcrossTheVisibleRange() {
+        TimeSlot upcoming = contractorSlot(TODAY.plusDays(2));
+        TimeSlot done = contractorSlot(TODAY.minusDays(2));
+        TimeSlot assigned = contractorSlot(TODAY.plusDays(3));
+        assignToSource(assigned, "SP nr 5");
+        // An ordinary hour on offer that nobody took is not this list's business, here either.
+        pastSlot(TODAY.minusDays(1));
+
+        UnassignedMarkersDto markers = stats.getUnassignedMarkers(TODAY.minusDays(7), TODAY.plusDays(7));
+
+        assertEquals(Set.of(upcoming.getId(), done.getId()), Set.copyOf(markers.slotIds()));
+        assertEquals(Set.of(TODAY.plusDays(2), TODAY.minusDays(2)), Set.copyOf(markers.slotDates()));
+    }
+
+    /** Ids and days, never a name: the payer is what a calendar payload must not learn. */
+    @Test
+    @DisplayName("shouldRefuseAMarkerRangeWiderThanOneScreenCanShow")
+    void shouldRefuseAMarkerRangeWiderThanOneScreenCanShow() {
+        assertThrows(IllegalArgumentException.class,
+            () -> stats.getUnassignedMarkers(TODAY, TODAY.plusDays(400)));
+        assertThrows(IllegalArgumentException.class,
+            () -> stats.getUnassignedMarkers(TODAY, TODAY.minusDays(1)));
     }
 
     // ------------------------------------------------------------------ fixtures

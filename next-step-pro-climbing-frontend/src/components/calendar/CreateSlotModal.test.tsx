@@ -266,6 +266,28 @@ describe('CreateSlotModal — a session somebody else settles', () => {
     expect(screen.queryByLabelText('createSlot.contractor')).not.toBeInTheDocument()
   })
 
+  it('should not offer the contractor tile while answering somebody’s proposal', () => {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    render(
+      <QueryClientProvider client={client}>
+        <MemoryRouter>
+          <CreateSlotModal
+            isOpen
+            onClose={vi.fn()}
+            defaultDate="2030-06-10"
+            initial={{ trainingRequestId: 'request-1' }}
+          />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    )
+
+    // Creating the slot marks the proposal ACCEPTED, and a contractor session has no seats and
+    // drops the invitation — so the client would be told "accepted" with nowhere to sit, and the
+    // request already spent.
+    expect(screen.queryByRole('radio', { name: 'slotKind.CONTRACTOR' })).not.toBeInTheDocument()
+    expect(screen.getByRole('radio', { name: 'slotKind.REGULAR' })).toBeInTheDocument()
+  })
+
   it('should keep an archived contractor out of the list', async () => {
     listSources.mockResolvedValue([
       { id: 'source-1', name: 'SP nr 5', archived: false },

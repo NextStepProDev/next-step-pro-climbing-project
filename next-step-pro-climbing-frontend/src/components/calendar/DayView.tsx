@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { format } from "date-fns";
-import { ArrowLeft, Clock, Calendar, CalendarPlus, Users, Plus, ExternalLink, X, Phone, Ban, NotebookPen } from "lucide-react";
+import { ArrowLeft, Building2, Clock, Calendar, CalendarPlus, Users, Plus, ExternalLink, X, Phone, Ban, NotebookPen } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import clsx from "clsx";
 import type { TimeSlot, EventSummary } from "../../types";
@@ -10,6 +10,7 @@ import { useDateLocale } from "../../utils/dateFnsLocale";
 import { useAuth } from "../../context/AuthContext";
 import { parseCalendarDate } from '../../utils/calendarDate'
 import type { NoteMarks } from '../admin/useNoteMarks'
+import type { UnassignedMarks } from '../admin/useUnassignedMarks'
 
 interface DayViewProps {
   date: string;
@@ -25,6 +26,8 @@ interface DayViewProps {
   onProposeTraining?: () => void;
   /** Admin only. Undefined for everybody else, so the marker cannot render by accident. */
   noteMarks?: NoteMarks;
+  /** Closed sessions with nobody to bill — admin only, ids only. */
+  unassignedMarks?: UnassignedMarks;
 }
 
 /* ===============================
@@ -35,18 +38,25 @@ function SlotButton({
   onSlotClick,
   showTitle = false,
   hasNote = false,
+  hasNoPayer = false,
 }: {
   slot: TimeSlot;
   onSlotClick: (slotId: string) => void;
   showTitle?: boolean;
   hasNote?: boolean;
+  /** Admin only: a closed session nobody has been billed for. */
+  hasNoPayer?: boolean;
 }) {
   const { t } = useTranslation('calendar');
   const { isAdmin, isAuthenticated } = useAuth();
 
   const isAvailabilityWindow = slot.status === "AVAILABILITY_WINDOW";
   const isUnavailable = slot.status === "UNAVAILABLE";
-  const isDisabled = !isAdmin && (slot.status === "BLOCKED" || slot.status === "UNAVAILABLE" || slot.status === "PAST");
+  // No seats at all: work run for somebody else, or an hour deliberately made unbookable. Its own
+  // look rather than the amber of "full" — nothing was ever on offer here to sell out.
+  const isClosed = slot.status === "CLOSED";
+  const isDisabled = !isAdmin && (slot.status === "BLOCKED" || slot.status === "UNAVAILABLE"
+    || slot.status === "CLOSED" || slot.status === "PAST");
   // "By invitation" is shown ONLY to anonymous users — an unrecognized invitee may be among them.
   // A logged-in non-invitee sees a plain "full" (no need to know about invitations).
   const invitedOnly = !isAuthenticated && slot.status === "FULL" && slot.reservedSeats > 0 && !slot.isReservedForUser && !slot.isUserRegistered;
@@ -79,6 +89,10 @@ function SlotButton({
           "border-surface-700 hover:border-amber-500 hover:bg-surface-800",
         isAvailabilityWindow &&
           "border-teal-500/50 bg-teal-500/5 hover:bg-teal-500/10",
+        isClosed && !isAdmin &&
+          "border-indigo-400/40 bg-indigo-500/10 cursor-not-allowed",
+        isClosed && isAdmin &&
+          "border-indigo-400/40 bg-indigo-500/10 hover:border-indigo-400",
         slot.isUserRegistered && "border-primary-500 bg-primary-500/10",
       )}
     >
@@ -88,10 +102,12 @@ function SlotButton({
             ? <Phone className="w-5 h-5 text-teal-400" />
             : isUnavailable
             ? <Ban className="w-5 h-5 text-slate-400" />
+            : isClosed
+            ? <Building2 className="w-5 h-5 text-indigo-400" />
             : <Clock className="w-5 h-5 text-surface-400" />
           }
           <div>
-            <span className={clsx("font-medium", isAvailabilityWindow ? "text-teal-300" : isUnavailable ? "text-slate-300" : "text-surface-100")}>
+            <span className={clsx("font-medium", isAvailabilityWindow ? "text-teal-300" : isUnavailable ? "text-slate-300" : isClosed ? "text-indigo-300" : "text-surface-100")}>
               {slot.startTime.slice(0, 5)} - {slot.endTime.slice(0, 5)}
             </span>
             {showTitle && slot.eventTitle && (
@@ -105,6 +121,13 @@ function SlotButton({
               squeezing in beside the time the way it has to in the week grid. */}
           {hasNote && (
             <NotebookPen className="w-4 h-4 text-amber-500" aria-label={t('slot.hasPrivateNote')} />
+          )}
+          {/* Amber, like every other "still to do" signal here. The hour was worked and nothing in
+              the app knows who owes for it — the backlog list says the same thing a week later. */}
+          {hasNoPayer && (
+            <span className="px-2 py-1 text-xs font-medium bg-amber-500/15 text-amber-400 rounded">
+              {t('day.closedSessionNoPayer')}
+            </span>
           )}
           {isAvailabilityWindow && (
             <span className="px-2 py-1 text-xs font-medium bg-teal-500/20 text-teal-400 rounded">
@@ -146,6 +169,11 @@ function SlotButton({
               {t('day.unavailable')}
             </span>
           )}
+          {isClosed && (
+            <span className="px-2 py-1 text-xs font-medium bg-indigo-500/15 text-indigo-300 rounded">
+              {t('day.closedSession')}
+            </span>
+          )}
           {slot.status === "BOOKING_CLOSED" && !slot.isUserRegistered && (
             <span className="px-2 py-1 text-xs font-medium bg-amber-500/10 text-amber-400 rounded">
               {t('day.bookingClosed')}
@@ -176,6 +204,7 @@ export function DayView({
   onAddEntry,
   onProposeTraining,
   noteMarks,
+  unassignedMarks,
 }: DayViewProps) {
   const { t } = useTranslation('calendar');
   const locale = useDateLocale();
@@ -415,6 +444,7 @@ export function DayView({
                           slot={slot}
                           onSlotClick={onSlotClick}
                           hasNote={!!noteMarks?.slots.has(slot.id)}
+                          hasNoPayer={!!unassignedMarks?.slots.has(slot.id)}
                         />
                       ))}
                     </div>
@@ -519,6 +549,7 @@ export function DayView({
                       onSlotClick={onSlotClick}
                       showTitle={true}
                       hasNote={!!noteMarks?.slots.has(slot.id)}
+                          hasNoPayer={!!unassignedMarks?.slots.has(slot.id)}
                     />
                   ))}
                 </div>
@@ -540,6 +571,7 @@ export function DayView({
                       onSlotClick={onSlotClick}
                       showTitle={true}
                       hasNote={!!noteMarks?.slots.has(slot.id)}
+                          hasNoPayer={!!unassignedMarks?.slots.has(slot.id)}
                     />
                   ))}
                 </div>

@@ -7,6 +7,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
@@ -252,6 +253,25 @@ public class AdminSettlementController {
             @Parameter(description = "A four-digit year, 'all' for everything, or omitted for the newest year holding data")
             @RequestParam(required = false) String year) {
         return ResponseEntity.ok(statsService.getOverview(year));
+    }
+
+    @Operation(summary = "Closed sessions with no payer, for the calendar",
+        description = "Ids and days only — never who the payer would have been. A closed session "
+            + "(zero seats) that nobody settles is invisible on every other screen, so the calendar "
+            + "marks it while the week is still being planned rather than waiting for the backlog "
+            + "list. Range capped at 62 days.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Slot ids and their days"),
+        @ApiResponse(responseCode = "400", description = "Inverted or over-long range")
+    })
+    // ⚠️ ONE path segment. Two literal segments here would have the same shape as the
+    // /{targetType}/{targetId} catch-all below and would resolve only by Spring's preference for
+    // literals — the trap documented on GET /subscriptions/{userId}.
+    @GetMapping("/unassigned-markers")
+    public ResponseEntity<UnassignedMarkersDto> getUnassignedMarkers(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
+        return ResponseEntity.ok(statsService.getUnassignedMarkers(from, to));
     }
 
     @Operation(summary = "Who can be charged for this session, and for how much",

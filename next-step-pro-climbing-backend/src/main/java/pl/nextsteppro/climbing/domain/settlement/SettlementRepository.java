@@ -220,27 +220,57 @@ public interface SettlementRepository extends JpaRepository<Settlement, UUID> {
      * <p>The past predicate and the window are the ones the unpriced reads use, deliberately: two
      * policies for "recent enough to still be work" would be two numbers to keep in step.
      */
-    @Query("""
-        SELECT new pl.nextsteppro.climbing.domain.settlement.UnassignedSession(
-            ts.id, ts.date, ts.title)
-        FROM TimeSlot ts
-        WHERE ts.event IS NULL
+    /**
+     * What makes a slot "worked for somebody nobody named", written once.
+     *
+     * <p>⚠️ Shared by the backlog list and the calendar markers <b>on purpose</b>. The two answer the
+     * same question at two moments, and a copy that drifted would put a marker on a session the list
+     * does not report (or the reverse) — a disagreement nobody can resolve by looking.
+     */
+    String UNASSIGNED_WHERE = """
+         ts.event IS NULL
           AND ts.maxParticipants = 0
           AND ts.availabilityWindow = false
           AND ts.unavailable = false
           AND ts.blocked = false
-          AND ts.date >= :from
-          AND (ts.date < :today OR (ts.date = :today AND ts.endTime <= :now))
           AND NOT EXISTS (SELECT 1 FROM SessionPayout sp WHERE sp.timeSlot.id = ts.id)
           AND NOT EXISTS (SELECT 1 FROM Settlement s WHERE s.timeSlot.id = ts.id)
           AND NOT EXISTS (
             SELECT 1 FROM Reservation r WHERE r.timeSlot.id = ts.id AND r.status = 'CONFIRMED')
           AND NOT EXISTS (SELECT 1 FROM GuestReservation g WHERE g.timeSlot.id = ts.id)
+        """;
+
+    @Query("""
+        SELECT new pl.nextsteppro.climbing.domain.settlement.UnassignedSession(
+            ts.id, ts.date, ts.title)
+        FROM TimeSlot ts
+        WHERE
+        """ + UNASSIGNED_WHERE + """
+          AND ts.date >= :from
+          AND (ts.date < :today OR (ts.date = :today AND ts.endTime <= :now))
         ORDER BY ts.date, ts.startTime
         """)
     List<UnassignedSession> findUnassignedPastSlots(@Param("from") LocalDate from,
                                                     @Param("today") LocalDate today,
                                                     @Param("now") LocalTime now);
+
+    /**
+     * The same sessions inside a visible calendar range, ids only — the calendar marker.
+     *
+     * <p>No past predicate here, and that is the point: the marker is a reminder while you are
+     * still planning the week, not a report on what you already failed to write down.
+     *
+     * <p>Ids and days, never content: the marker answers "is anything missing here", and the name
+     * of the payer that is missing is not a thing this endpoint could return anyway.
+     */
+    @Query("SELECT ts.id FROM TimeSlot ts WHERE " + UNASSIGNED_WHERE
+        + " AND ts.date BETWEEN :from AND :to")
+    List<UUID> findUnassignedSlotIdsBetween(@Param("from") LocalDate from, @Param("to") LocalDate to);
+
+    @Query("SELECT DISTINCT ts.date FROM TimeSlot ts WHERE " + UNASSIGNED_WHERE
+        + " AND ts.date BETWEEN :from AND :to")
+    List<LocalDate> findUnassignedSlotDatesBetween(@Param("from") LocalDate from,
+                                                   @Param("to") LocalDate to);
 
     @Query("SELECT COUNT(s) > 0 FROM Settlement s WHERE s.timeSlot.id = :slotId AND s.user.id = :userId")
     boolean existsForSlotUser(@Param("slotId") UUID slotId, @Param("userId") UUID userId);

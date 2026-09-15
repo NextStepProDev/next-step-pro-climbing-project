@@ -186,6 +186,18 @@ record UnassignedSessionDto(
 ) {}
 
 /**
+ * Where a closed session still has nobody to bill, as membership tests — the only question a
+ * calendar cell ever asks. Same shape and same discipline as the private-note markers.
+ *
+ * @param slotDates the month cell knows its day but not which slots sit on it: the month payload
+ *                  carries counts, not slot ids.
+ */
+record UnassignedMarkersDto(
+    List<UUID> slotIds,
+    List<LocalDate> slotDates
+) {}
+
+/**
  * Sessions that are over and were never priced at all.
  *
  * <p>The gap this closes is that such a session <b>cannot ask for itself</b>. An unpaid amount is at

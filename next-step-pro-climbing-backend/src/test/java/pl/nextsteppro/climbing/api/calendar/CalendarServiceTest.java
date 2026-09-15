@@ -793,4 +793,60 @@ class CalendarServiceTest {
         // Verify no unnecessary repository calls
         verify(reservationRepository, never()).countConfirmedByTimeSlotIds(any());
     }
+
+    // ---------------------------------------------------------- closed sessions
+
+    /**
+     * A slot with no seats is work run for somebody else (a school, a club) or an hour deliberately
+     * made unbookable. It used to report as FULL, because "0 confirmed of 0 seats" satisfies the
+     * arithmetic — and that told the public calendar a training had sold out where nothing was ever
+     * on offer.
+     */
+    @Test
+    void shouldReportASlotWithNoSeatsAsClosedRatherThanFull() {
+        LocalDate date = LocalDate.now().plusDays(3);
+        TimeSlot closed = slotWithId(new TimeSlot(date, LocalTime.of(16, 0), LocalTime.of(17, 30), 0));
+        when(timeSlotRepository.findByDateSorted(eq(date))).thenReturn(List.of(closed));
+        when(eventRepository.findActiveEventsOnDate(eq(date))).thenReturn(List.of());
+
+        DayViewDto result = calendarService.getDayView(date, null);
+
+        assertEquals(SlotStatus.CLOSED, result.slots().getFirst().status());
+    }
+
+    /**
+     * And it is not "0 of 1 free" either: counting it would advertise a day of school work as a day
+     * of sold-out trainings. Same rule the absence slots already follow — it is announced by its own
+     * hours instead.
+     */
+    @Test
+    void shouldKeepAClosedSessionOutOfTheDayCountersAndNameItsHours() {
+        YearMonth month = YearMonth.now();
+        LocalDate date = LocalDate.now().plusDays(3);
+        TimeSlot closed = slotWithId(new TimeSlot(date, LocalTime.of(16, 0), LocalTime.of(17, 30), 0));
+        when(timeSlotRepository.findByDateRangeOrdered(any(), any())).thenReturn(List.of(closed));
+        when(eventRepository.findActiveEventsBetween(any(), any())).thenReturn(List.of());
+
+        MonthViewDto result = calendarService.getMonthView(month, null);
+        DaySummaryDto day = result.days().stream()
+            .filter(candidate -> candidate.date().equals(date))
+            .findFirst()
+            .orElseThrow();
+
+        assertEquals(0, day.totalSlots(), "A closed session is not a slot anybody could have taken");
+        assertEquals(0, day.availableSlots());
+        assertEquals(1, day.closedRanges().size(), "but the day still has to say the hours are gone");
+        assertEquals(LocalTime.of(16, 0), day.closedRanges().getFirst().startTime());
+    }
+
+    private TimeSlot slotWithId(TimeSlot slot) {
+        try {
+            var idField = TimeSlot.class.getDeclaredField("id");
+            idField.setAccessible(true);
+            idField.set(slot, UUID.randomUUID());
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to set slot id", e);
+        }
+        return slot;
+    }
 }

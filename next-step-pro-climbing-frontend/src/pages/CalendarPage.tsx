@@ -8,6 +8,7 @@ import { calendarApi, reservationApi, adminApi, adminSettlementsApi } from "../a
 import { getAccessToken } from "../utils/tokenStorage";
 import { useAuth } from "../context/AuthContext";
 import { useNoteMarks } from "../components/admin/useNoteMarks";
+import { useUnassignedMarks } from "../components/admin/useUnassignedMarks";
 import { MonthCalendar } from "../components/calendar/MonthCalendar";
 import { WeekCalendar } from "../components/calendar/WeekCalendar";
 import { DayView } from "../components/calendar/DayView";
@@ -23,6 +24,7 @@ import { formatAvailability, buildEventColorMap } from "../utils/events";
 import { useCalendarPromo } from "../hooks/useCalendarPromo";
 import { nowInWarsaw, parseCalendarDate, todayInWarsaw } from '../utils/calendarDate';
 import { travellingPayoutSource } from '../utils/slotClipboard';
+import { getErrorMessage } from '../utils/errors';
 import type { CreateEventRequest, CreateTimeSlotRequest, EventSummary, TimeSlot } from "../types";
 
 // The full event form from the admin panel — the same one the events panel and the training
@@ -172,6 +174,10 @@ export function CalendarPage() {
   }, [viewMode, weekStartString, currentWeekStart, currentMonth]);
 
   const noteMarks = useNoteMarks(isAdmin, markerRange.from, markerRange.to);
+  // Which closed sessions still have nobody to bill. Same range, same admin-only reasoning — and
+  // the reminder belongs here rather than only in the settlements backlog, because this is where
+  // the week is planned and where a forgotten payer is still cheap to fix.
+  const unassignedMarks = useUnassignedMarks(isAdmin, markerRange.from, markerRange.to);
 
   const { data: slotDetail } = useQuery({
     queryKey: ["slot", selectedSlotId],
@@ -474,6 +480,11 @@ export function CalendarPage() {
       payoutSource = travellingPayoutSource(await queryClient.fetchQuery({
         queryKey: ['admin', 'settlements', 'slot', slot.id],
         queryFn: () => adminSettlementsApi.getSection('slot', slot.id),
+        // No retry, unlike every other query here: the clipboard is not armed until this returns,
+        // so the global one-retry-with-backoff would leave the copy button looking dead for
+        // seconds. Failing fast costs at most a copy that does not carry its contractor — which
+        // the "no payer" queue then reports.
+        retry: false,
       }));
     } catch {
       payoutSource = null;
@@ -506,10 +517,19 @@ export function CalendarPage() {
         await adminSettlementsApi.assignSource('slot', created.id, payoutSourceId, null);
       }
     },
-    onSuccess: () => {
+    // ⚠️ `onSettled`, not `onSuccess`: the slot is created by the FIRST call, so a failure of the
+    // second one still leaves a new row in the calendar. Refreshing only on success left it
+    // invisible until a reload — and an admin who sees nothing happen pastes again, which is how
+    // one forgotten assignment turns into two duplicate sessions.
+    onSettled: () => {
       void queryClient.invalidateQueries({ queryKey: ['calendar'] });
       void queryClient.invalidateQueries({ queryKey: ['admin', 'slots'] });
+      void queryClient.invalidateQueries({ queryKey: ['admin', 'settlements'] });
     },
+    // Silence here is the worst possible answer: the failure this reports is precisely a session
+    // that exists with no payer on it, which is what the whole feature is about. No auto-dismiss
+    // either, unlike the notification toast — this one has to be read, and it has a close button.
+    onError: (error) => setNotifyToast({ type: 'error', message: getErrorMessage(error) }),
   });
 
   const copyEventMutation = useMutation({
@@ -698,6 +718,7 @@ export function CalendarPage() {
             ? () => setProposeContext({ date: selectedDate })
             : undefined}
           noteMarks={isAdmin ? noteMarks : undefined}
+          unassignedMarks={isAdmin ? unassignedMarks : undefined}
         />
       ) : viewMode === 'week' ? (
         weekLoading ? (
@@ -809,6 +830,7 @@ export function CalendarPage() {
               onSlotCopy={isAdmin ? handleSlotCopy : undefined}
               onEventCopy={isAdmin ? handleEventCopy : undefined}
               noteMarks={isAdmin ? noteMarks : undefined}
+          unassignedMarks={isAdmin ? unassignedMarks : undefined}
               cutSlotId={cutSlot?.id}
               copiedSlotId={copiedSlot?.id}
               copiedEventId={copiedEvent?.id}
@@ -914,6 +936,7 @@ export function CalendarPage() {
               allDaysClickable={isAdmin}
               eventColorMap={monthColorMap}
               noteMarks={isAdmin ? noteMarks : undefined}
+          unassignedMarks={isAdmin ? unassignedMarks : undefined}
             />
           </div>
 

@@ -54,7 +54,9 @@
     "training": "Training",
     "callToBook": "Call to arrange",
     "availabilityWindows": "Available to arrange",
-    "proposeTraining": "Propose a time"
+    "proposeTraining": "Propose a time",
+    "closedSession": "Closed session",
+    "closedSessionNoPayer": "No contractor"
   },
   "invites": {
     "label": "Invited — seats reserved only for them",
@@ -103,6 +105,10 @@
     "unavailable": {
       "title": "Slot unavailable",
       "body": "We are not running any sessions in these hours. Check the other slots in the calendar."
+    },
+    "closedSession": {
+      "title": "Closed session",
+      "body": "This session is not open for booking — the hours are already taken."
     }
   },
   "event": {

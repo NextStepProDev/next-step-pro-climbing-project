@@ -71,6 +71,7 @@ import type {
   PayerSummary,
   Subscription,
   PayoutSource,
+  UnassignedMarkers,
   EventDetail,
   EventParticipants,
   ReservationAdmin,
@@ -1223,6 +1224,10 @@ export const adminSettlementsApi = {
   // shape would collide with the per-payer write and resolve only by Spring's specificity rules.
   // Exactly one of sourceId / subscriberId, or both null to detach. Its own path segment rather
   // than a fourth {payerType} slot: that shape would collide with the per-payer write.
+  // Ids only, and admin-only: see UnassignedMarkers.
+  getUnassignedMarkers: (from: string, to: string) =>
+    fetchApi<UnassignedMarkers>(`/admin/settlements/unassigned-markers?from=${from}&to=${to}`),
+
   assignSource: (
     target: SettlementTarget,
     targetId: string,

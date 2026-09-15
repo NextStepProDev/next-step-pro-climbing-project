@@ -79,6 +79,13 @@ class AdminSettlementStatsService {
      */
     static final int UNPRICED_WINDOW_DAYS = 90;
 
+    /**
+     * Widest calendar range the "no payer" markers will answer for — the same cap as the private
+     * note markers and the training calendar, because all three are driven by what one screen can
+     * show. Without it, a client asking for five years reads the whole table.
+     */
+    static final int MAX_MARKER_RANGE_DAYS = 62;
+
     private final SettlementRepository settlementRepository;
     private final PayoutRepository payoutRepository;
     private final SessionPayoutRepository sessionPayoutRepository;
@@ -241,6 +248,22 @@ class AdminSettlementStatsService {
             .map(row -> new UnassignedSessionDto("slot", row.targetId(), row.targetDate(), row.title()))
             .toList();
         return new UnassignedDto(sessions.size(), UNPRICED_WINDOW_DAYS, sessions);
+    }
+
+    /**
+     * Where the calendar should warn that a closed session has nobody to bill.
+     *
+     * <p>Bounded like every other range read in this app, and for the same reason: a client asking
+     * for five years would read the whole table. The cap matches the note markers', because both
+     * are driven by the same visible calendar range.
+     */
+    public UnassignedMarkersDto getUnassignedMarkers(LocalDate from, LocalDate to) {
+        if (to.isBefore(from) || ChronoUnit.DAYS.between(from, to) > MAX_MARKER_RANGE_DAYS) {
+            throw new IllegalArgumentException(msg.get("admin.settlement.range.invalid"));
+        }
+        return new UnassignedMarkersDto(
+            settlementRepository.findUnassignedSlotIdsBetween(from, to),
+            settlementRepository.findUnassignedSlotDatesBetween(from, to));
     }
 
     // ---------------------------------------------------------------- unpriced

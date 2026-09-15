@@ -29,11 +29,12 @@ function makeDay(date: string, overrides: Partial<DaySummary> = {}): DaySummary 
     hasAvailabilityWindow: false,
     hasReservedSeats: false,
     unavailableRanges: [],
+    closedRanges: [],
     ...overrides,
   }
 }
 
-function renderMonth(days: DaySummary[]) {
+function renderMonth(days: DaySummary[], unassignedDates: string[] = []) {
   const view = render(
     <MonthCalendar
       currentMonth={JUNE_2030}
@@ -42,6 +43,7 @@ function renderMonth(days: DaySummary[]) {
       events={[]}
       onDayClick={vi.fn()}
       eventColorMap={new Map()}
+      unassignedMarks={{ slots: new Set(), dates: new Set(unassignedDates) }}
     />,
   )
   const cellFor = (dayNumber: string) =>
@@ -103,5 +105,50 @@ describe('MonthCalendar — instructor absence', () => {
     const cell = renderMonth([makeDay('2030-06-10')]).cellFor('10')
 
     expect(cell.textContent).not.toContain('day.unavailable')
+  })
+})
+
+describe('MonthCalendar — a session nobody can book', () => {
+  it('should name the hours a closed session holds instead of dropping the day', () => {
+    const cell = renderMonth([
+      makeDay('2030-06-10', { closedRanges: [{ startTime: '16:00:00', endTime: '17:30:00' }] }),
+    ]).cellFor('10')
+
+    expect(cell.textContent).toContain('16–17:30')
+  })
+
+  it('should still announce the free sessions of a day that also holds a closed one', () => {
+    // A school session at 16:00 does not close the morning. (That the counters no longer count the
+    // closed session at all is the server's half — see CalendarServiceTest.)
+    const cell = renderMonth([
+      makeDay('2030-06-10', {
+        totalSlots: 2,
+        availableSlots: 2,
+        closedRanges: [{ startTime: '16:00:00', endTime: '17:30:00' }],
+      }),
+    ]).cellFor('10')
+
+    expect(cell.textContent).toContain('16–17:30')
+    expect(cell.textContent).not.toContain('noSpots')
+  })
+
+  it('should warn on a day whose closed session has nobody to bill', () => {
+    const cell = renderMonth(
+      [makeDay('2030-06-10', { closedRanges: [{ startTime: '16:00:00', endTime: '17:30:00' }] })],
+      ['2030-06-10'],
+    ).cellFor('10')
+
+    // Amber is what this app uses for "still to do"; the plain state stays indigo.
+    expect(cell.innerHTML).toContain('amber')
+    expect(cell.textContent).toContain('day.closedSessionNoPayer')
+  })
+
+  it('should leave a closed session that has a payer in its own colour', () => {
+    const cell = renderMonth([
+      makeDay('2030-06-10', { closedRanges: [{ startTime: '16:00:00', endTime: '17:30:00' }] }),
+    ]).cellFor('10')
+
+    expect(cell.innerHTML).toContain('indigo')
+    expect(cell.textContent).not.toContain('day.closedSessionNoPayer')
   })
 })

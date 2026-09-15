@@ -54,7 +54,9 @@
     "training": "Entrenamiento",
     "callToBook": "Llama para concertar",
     "availabilityWindows": "Disponible para concertar",
-    "proposeTraining": "Propón un horario"
+    "proposeTraining": "Propón un horario",
+    "closedSession": "Sesión cerrada",
+    "closedSessionNoPayer": "Sin contratista"
   },
   "invites": {
     "label": "Invitados — plazas reservadas solo para ellos",
@@ -103,6 +105,10 @@
     "unavailable": {
       "title": "Horario no disponible",
       "body": "No impartimos clases en estas horas. Consulta los demás horarios del calendario."
+    },
+    "closedSession": {
+      "title": "Sesión cerrada",
+      "body": "Esta sesión no admite reservas: las horas ya están ocupadas."
     }
   },
   "event": {

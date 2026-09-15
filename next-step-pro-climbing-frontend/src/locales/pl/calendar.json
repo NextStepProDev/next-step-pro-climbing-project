@@ -54,7 +54,9 @@
     "training": "Trening",
     "callToBook": "Dostępny — umów godzinę",
     "availabilityWindows": "Dostępne terminy do umówienia",
-    "proposeTraining": "Zaproponuj termin nie do odrzucenia"
+    "proposeTraining": "Zaproponuj termin nie do odrzucenia",
+    "closedSession": "Zajęcia zamknięte",
+    "closedSessionNoPayer": "Brak kontrahenta"
   },
   "invites": {
     "label": "Zaproszeni — miejsca zarezerwowane tylko dla nich",
@@ -103,6 +105,10 @@
     "unavailable": {
       "title": "Termin niedostępny",
       "body": "W tych godzinach nie prowadzimy zajęć. Sprawdź pozostałe terminy w kalendarzu."
+    },
+    "closedSession": {
+      "title": "Zajęcia zamknięte",
+      "body": "Ten termin nie jest otwarty na zapisy — godziny są już zajęte."
     }
   },
   "event": {
