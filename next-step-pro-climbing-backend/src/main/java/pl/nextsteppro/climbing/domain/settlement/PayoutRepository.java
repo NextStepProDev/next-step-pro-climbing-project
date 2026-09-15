@@ -24,6 +24,16 @@ public interface PayoutRepository extends JpaRepository<Payout, UUID> {
     List<PayoutRow> findByPeriodBetween(@Param("from") LocalDate from, @Param("to") LocalDate to);
 
     /**
+     * Everything one payer ever sent, for their own screen.
+     *
+     * <p>All-time and unbounded on purpose: "what do I have with this place" has no year in it, the
+     * same reasoning as the money block on a client's card. A collaboration is measured in dozens of
+     * transfers, not thousands, so the range that bounds the tab's reads would only hide history.
+     */
+    @Query(ROW_SELECT + " WHERE src.id = :sourceId ORDER BY p.periodMonth DESC")
+    List<PayoutRow> findBySourceId(@Param("sourceId") UUID sourceId);
+
+    /**
      * Payouts that ARRIVED in a range. Drives revenue, which counts on the day money landed —
      * the same axis as {@code settlements.settled_on}, so the monthly total stays one number.
      */

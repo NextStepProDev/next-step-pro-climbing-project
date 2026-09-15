@@ -76,6 +76,22 @@ public class AdminSettlementController {
         return ResponseEntity.ok(payoutService.createSource(request));
     }
 
+    @Operation(summary = "One bulk payer's whole history",
+        description = "Everything they ever held and paid: totals, a bar per month of the "
+            + "collaboration, a breakdown by year, and the month rows the tab draws — expandable "
+            + "into their sessions and transfers. All-time, and deliberately deaf to the tab's year "
+            + "picker: \"what do I have with this place\" has no year in it.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "The history"),
+        @ApiResponse(responseCode = "400", description = "Unknown payer")
+    })
+    // Three segments, so it cannot be confused with the /{targetType}/{targetId} catch-all the way
+    // a /payers/{id} would have been — the trap documented on GET /subscriptions/{userId}.
+    @GetMapping("/sources/{sourceId}/history")
+    public ResponseEntity<PayoutSourceHistoryDto> sourceHistory(@PathVariable UUID sourceId) {
+        return ResponseEntity.ok(statsService.sourceHistory(sourceId));
+    }
+
     @Operation(summary = "Rename a bulk payer")
     @PutMapping("/sources/{sourceId}")
     public ResponseEntity<Void> renameSource(@PathVariable UUID sourceId,

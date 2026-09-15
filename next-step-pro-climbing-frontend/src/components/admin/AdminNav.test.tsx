@@ -60,6 +60,16 @@ describe('AdminNav', () => {
     )
   })
 
+  it('keeps the Settlements tab lit on one payer’s own screen', () => {
+    // A sub-route two levels deep, unlike the person cards: without the boundary match the nav
+    // would go blank exactly where the admin most needs to know which part of the panel they are in.
+    renderNav('/admin/settlements/sources/src-1')
+
+    expect(screen.getByRole('button', { name: /tabGroups.calendar/ })).toHaveTextContent(
+      'tabGroups.calendar: tabs.settlements',
+    )
+  })
+
   it('does not let /admin/slots light up a second group', () => {
     // The boundary slash in `isTabActive` is what keeps one path from matching another's prefix.
     renderNav('/admin/slots')

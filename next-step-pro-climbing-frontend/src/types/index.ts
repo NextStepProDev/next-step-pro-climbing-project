@@ -683,6 +683,42 @@ export interface PayoutSession {
   minutes: number | null
 }
 
+// One institution's whole history: what they had, what they paid, and how that moved.
+// ⚠️ All-time and deliberately deaf to the tab's year picker — "what do I have with this place" has
+// no year in it, the same reasoning as the money block on a client's card.
+// ⚠️ `chart` is bucketed by the month the work was FOR, not by the day the money landed, unlike
+// revenue elsewhere in this feature: it sits directly above rows that are period months, and two
+// axes on one screen disagree with each other in front of the reader.
+export interface PayoutSourceHistory {
+  id: string
+  name: string
+  archived: boolean
+  firstActivity: string | null
+  lastActivity: string | null
+  // First activity to last, inclusive — the span of the collaboration, not a count of busy months.
+  months: number
+  totalSessions: number
+  totalMinutes: number
+  sessionsWithoutHours: number
+  totalAmount: number
+  averageRatePerHour: number | null
+  // A bar per month of the span, gaps included: an empty month is a fact about the collaboration.
+  chart: MonthlyRevenue[]
+  years: PayoutYear[]
+  // The same month rows the tab draws, so one renderer serves both screens.
+  periods: PayoutPeriod[]
+}
+
+export interface PayoutYear {
+  year: number
+  sessions: number
+  minutes: number
+  sessionsWithoutHours: number
+  amount: number
+  // Null when the year is missing either half — a zero would be a claim rather than a gap.
+  ratePerHour: number | null
+}
+
 // A standing monthly coaching fee — the rule, not the money. What it produces is an ordinary
 // settlement with a month for its target, which is why an unpaid fee queues and settles with
 // everything else that person owes.

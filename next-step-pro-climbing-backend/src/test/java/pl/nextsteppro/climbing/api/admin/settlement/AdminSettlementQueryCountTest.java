@@ -24,6 +24,7 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -72,6 +73,13 @@ class AdminSettlementQueryCountTest extends BaseIntegrationTest {
      * behind a bigger fixture.
      */
     private static final int MAX_SECTION_QUERIES = 12;
+
+    /**
+     * The payer's own screen: their row, their sessions, their transfers — all-time and unbounded,
+     * so this is the one read in the feature whose input grows with the length of a collaboration.
+     * A constant here is what says the growth is in the ROWS returned and not in the queries asked.
+     */
+    private static final int MAX_HISTORY_QUERIES = 6;
 
     @Autowired private AdminSettlementStatsService service;
     @Autowired private AdminSettlementService settlementService;
@@ -190,6 +198,43 @@ class AdminSettlementQueryCountTest extends BaseIntegrationTest {
                 + " participants over three days; the budget is " + MAX_SECTION_QUERIES
                 + " regardless of either number. A per-person lookup in a loop reads well and costs "
                 + "one query each.");
+    }
+
+    @Test
+    @DisplayName("shouldBuildOnePayersHistoryInAConstantNumberOfQueries")
+    void shouldBuildOnePayersHistoryInAConstantNumberOfQueries() {
+        UUID sourceId = UUID.randomUUID();
+        jdbc.update("INSERT INTO payout_sources (id, name) VALUES (?, ?)", sourceId, "SP nr 12");
+        for (int i = 0; i < 24; i++) {
+            TimeSlot slot = timeSlotRepository.saveAndFlush(
+                new TimeSlot(TODAY.minusDays(i * 14L), LocalTime.of(16, 0), LocalTime.of(17, 30), 0));
+            jdbc.update("INSERT INTO session_payouts (time_slot_id, payout_source_id) VALUES (?, ?)",
+                slot.getId(), sourceId);
+            jdbc.update("INSERT INTO payouts (payout_source_id, period_month, amount, received_on) "
+                    + "VALUES (?, ?, ?, ?)",
+                sourceId, TODAY.minusDays(i * 14L).withDayOfMonth(1), new BigDecimal("300.00"),
+                TODAY.minusDays(i * 14L));
+        }
+        entityManager.flush();
+        entityManager.clear();
+
+        Statistics stats = statistics();
+        stats.setStatisticsEnabled(true);
+        stats.clear();
+
+        PayoutSourceHistoryDto history = service.sourceHistory(sourceId);
+
+        long queries = stats.getPrepareStatementCount();
+        assertTrue(queries > 0, "Hibernate statistics collected nothing — the measurement is broken");
+        // Counter-assertion: an empty history would meet any budget.
+        assertEquals(24, history.totalSessions(),
+            "The history must actually be populated, or the budget proves nothing");
+        assertTrue(history.periods().size() > 1, "and spread over months, not collapsed into one");
+
+        assertTrue(queries <= MAX_HISTORY_QUERIES,
+            "One payer's history took " + queries + " queries over 24 sessions and 24 transfers; "
+                + "the budget is " + MAX_HISTORY_QUERIES + " regardless of how long the "
+                + "collaboration is. Dereferencing a session's slot per row is what this keeps out.");
     }
 
     @Test

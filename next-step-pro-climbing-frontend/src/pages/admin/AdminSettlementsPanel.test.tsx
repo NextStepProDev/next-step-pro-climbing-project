@@ -678,11 +678,35 @@ describe('AdminSettlementsPanel', () => {
     // without hours" from the row above, given a face.
     expect(screen.getByText('settlements.tab.payouts.noHours')).toBeInTheDocument()
 
-    const links = screen.getAllByRole('link')
-    expect(links[0]).toHaveAttribute('href', '/calendar?date=2026-09-08&slot=slot-1')
+    // By name rather than by position: the payer's own name is a link too, so an index here would
+    // silently start asserting about a different row the next time one is added.
+    expect(screen.getByRole('link', { name: 'Grupa A' }))
+      .toHaveAttribute('href', '/calendar?date=2026-09-08&slot=slot-1')
     // ⚠️ An event links as an event: a deep link built from the wrong kind opens the wrong screen
     // while looking perfectly right in the table it came from.
-    expect(links[2]).toHaveAttribute('href', '/calendar?date=2026-09-20&event=ev-1')
+    expect(screen.getByRole('link', { name: 'Wyjazd' }))
+      .toHaveAttribute('href', '/calendar?date=2026-09-20&event=ev-1')
+  })
+
+  it('opens the payer itself from the table that names them', async () => {
+    getOverview.mockResolvedValue(makeOverview({
+      year: 2025,
+      payouts: {
+        sources: [{ id: 'src-1', name: 'Chwyciarnia', archived: false }],
+        total: 0,
+        periods: [{
+          sourceId: 'src-1', sourceName: 'Chwyciarnia', month: '2026-09-01',
+          sessions: 1, minutes: 90, sessionsWithoutHours: 0,
+          amount: 0, ratePerHour: null, transfers: [], heldSessions: [],
+        }],
+      },
+    }))
+
+    renderPanel('/admin/settlements?year=2025')
+
+    // The year travels with the link, so the back arrow returns to the tab as it was left.
+    expect(await screen.findByRole('link', { name: 'Chwyciarnia' }))
+      .toHaveAttribute('href', '/admin/settlements/sources/src-1?year=2025')
   })
 
   it('lets a mistyped transfer be deleted', async () => {

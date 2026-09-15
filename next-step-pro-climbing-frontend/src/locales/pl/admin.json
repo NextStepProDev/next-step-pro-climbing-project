@@ -1127,6 +1127,21 @@
         "kindPayout": "Wypłata zbiorcza",
         "unpaid": "nierozliczone"
       }
+    },
+    "source": {
+      "archived": "zarchiwizowany",
+      "since": "współpraca od {{date}} · {{months}} mies.",
+      "received": "wpłynęło",
+      "hours": "godzin",
+      "sessions": "zajęć",
+      "averageRate": "śr. stawka / h",
+      "chart": "Wpływy miesięcznie",
+      "chartAxis": "Kwota przypisana do miesiąca, za który była praca — tak jak w tabeli niżej.",
+      "years": "Lata",
+      "year": "Rok",
+      "months": "Miesiące",
+      "empty": "Ten kontrahent nie ma jeszcze historii.",
+      "emptyHint": "Oznacz jego zajęcia w kalendarzu, a miesiące pojawią się tutaj."
     }
   }
 }
