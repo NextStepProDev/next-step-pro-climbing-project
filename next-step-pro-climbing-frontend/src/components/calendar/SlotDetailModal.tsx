@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { format } from "date-fns";
-import { Clock, Users, Calendar, Clock3, Phone, Trash2, AlertTriangle, Pencil, Ban } from "lucide-react";
+import { Building2, Clock, Users, Calendar, Clock3, Phone, Trash2, AlertTriangle, Pencil, Ban } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { Modal } from "../ui/Modal";
@@ -192,9 +192,17 @@ export function SlotDetailModal({
 
   const isAvailabilityWindow = slot.isAvailabilityWindow;
   const isUnavailable = slot.isUnavailable;
-  // Neither kind can be booked, so every seat/waitlist/reservation block hangs off this one flag
-  // instead of each of them remembering both shapes.
-  const isBookable = !isAvailabilityWindow && !isUnavailable;
+  // A session with no seats: work run for somebody else, or an hour deliberately made unbookable.
+  // ⚠️ Read from the seat count, not from a payer — who settles it is admin-only data that reaches
+  // this modal through its own request, and this branch renders for visitors too.
+  // ⚠️ And not from `status === 'CLOSED'` either, tempting as that looks: a session that has
+  // already happened reports PAST, so the status test would quietly hand a past school session
+  // back the booking layout — "0 / 0 seats", a waitlist and the participant form.
+  const isClosedSession = !isAvailabilityWindow && !isUnavailable && (slot.maxParticipants ?? 0) === 0;
+  // None of the three can be booked, so every seat/waitlist/reservation block hangs off this one
+  // flag instead of each of them remembering all the shapes. It also takes the admin's participant
+  // form off a closed session, where the server refuses every write anyway (no seats to fill).
+  const isBookable = !isAvailabilityWindow && !isUnavailable && !isClosedSession;
   const dateObj = parseCalendarDate(slot.date);
   // Invitation-held seats: unavailable to non-invitees. The viewer's own invitation does not
   // block — that is why we subtract only OTHER people's invitations.
@@ -343,6 +351,18 @@ export function SlotDetailModal({
             {/* No action row here: an availability window has nothing to do but read and
                 (for a client) propose a time. Dismissing lives in the pinned header. */}
           </>
+        )}
+
+        {/* A closed session — the hours are worked, they were simply never on offer. Whoever
+            settles it is not named here: this modal is what a visitor opens too. */}
+        {isClosedSession && (
+          <div className="p-4 bg-indigo-500/10 border border-indigo-400/25 rounded-lg space-y-2">
+            <div className="flex items-center gap-2">
+              <Building2 className="w-5 h-5 text-indigo-400 shrink-0" />
+              <span className="text-indigo-200 font-semibold">{t('slot.closedSession.title')}</span>
+            </div>
+            <p className="text-indigo-200/80 text-sm">{t('slot.closedSession.body')}</p>
+          </div>
         )}
 
         {/* Unavailable — instructor absence, nothing to book here */}

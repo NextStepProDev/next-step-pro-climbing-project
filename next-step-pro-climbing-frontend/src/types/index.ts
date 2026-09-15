@@ -270,6 +270,9 @@ export interface DaySummary {
   // hours of instructor absence, sorted — an absence covers PART of a day, so the month cell
   // names the hours instead of colouring the whole cell
   unavailableRanges: UnavailableRange[]
+  // hours held by a closed session (zero seats) — same treatment as an absence, because the
+  // counters above deliberately ignore it and the cell must not read as an empty day
+  closedRanges: UnavailableRange[]
 }
 
 export interface UnavailableRange {
@@ -337,7 +340,9 @@ export interface TimeSlotDetail {
   isReservedForUser: boolean
 }
 
-export type SlotStatus = 'AVAILABLE' | 'FULL' | 'BLOCKED' | 'PAST' | 'BOOKING_CLOSED' | 'AVAILABILITY_WINDOW' | 'UNAVAILABLE'
+// CLOSED = no seats at all: work run for somebody else, or an hour deliberately made unbookable.
+// Derived from the seat count alone — who settles it never travels in a payload served to visitors.
+export type SlotStatus = 'AVAILABLE' | 'FULL' | 'BLOCKED' | 'PAST' | 'BOOKING_CLOSED' | 'AVAILABILITY_WINDOW' | 'UNAVAILABLE' | 'CLOSED'
 
 export type WaitlistStatus = 'WAITING' | 'PENDING_CONFIRMATION'
 
@@ -746,6 +751,13 @@ export interface SettlementOverview {
 // built from reservations and guests, so a session with zero people on it produces no rows in it at
 // all. What it costs is quiet: an unassigned session is missing from the hourly rate's denominator,
 // so one transfer over ten sessions instead of twelve reads high and nothing says why.
+// Where a closed session still has nobody to bill. Ids and days only — the payer's NAME is exactly
+// what must not reach a calendar payload, so the marker says "something is missing here" and stops.
+export interface UnassignedMarkers {
+  slotIds: string[]
+  slotDates: string[]
+}
+
 export interface UnassignedSummary {
   count: number
   windowDays: number

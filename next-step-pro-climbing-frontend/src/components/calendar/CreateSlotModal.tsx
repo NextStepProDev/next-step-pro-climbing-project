@@ -20,6 +20,16 @@ import type { CreateEventRequest, CreateTimeSlotRequest, InvitedUser } from '../
 const CREATE_KINDS: CreateSlotKind[] = ['REGULAR', 'WINDOW', 'UNAVAILABLE', 'CONTRACTOR']
 
 /**
+ * ⚠️ Answering somebody's proposal cannot be a contractor session.
+ *
+ * The requests panel opens this form with the requester invited and the proposal linked, and
+ * creating the slot marks that proposal ACCEPTED. A contractor session has no seats and drops the
+ * invitations, so the pair would tell the client "accepted" and leave them with nowhere to sit —
+ * and the request is spent, so they cannot even ask again.
+ */
+const KINDS_FOR_REQUEST: CreateSlotKind[] = ['REGULAR', 'WINDOW', 'UNAVAILABLE']
+
+/**
  * Which of the two rows this form is about to create — see the note on the component.
  *
  * `payoutSourceId` rides along on the slot branch rather than in `CreateTimeSlotRequest` because
@@ -294,7 +304,11 @@ export function CreateSlotModal({
         </div>
 
         {/* Above the dates and times, because the kind decides which of them are even asked for. */}
-        <SlotKindPicker value={kind} onChange={changeKind} options={CREATE_KINDS} />
+        <SlotKindPicker
+          value={kind}
+          onChange={changeKind}
+          options={initial?.trainingRequestId ? KINDS_FOR_REQUEST : CREATE_KINDS}
+        />
 
         {isContractor && (
           <div>

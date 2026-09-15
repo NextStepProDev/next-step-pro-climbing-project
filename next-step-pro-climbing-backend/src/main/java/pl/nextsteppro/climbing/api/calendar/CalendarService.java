@@ -7,7 +7,6 @@ import org.springframework.transaction.annotation.Transactional;
 import pl.nextsteppro.climbing.domain.course.Course;
 import pl.nextsteppro.climbing.domain.event.Event;
 import pl.nextsteppro.climbing.domain.event.EventRepository;
-import pl.nextsteppro.climbing.domain.event.EventType;
 import pl.nextsteppro.climbing.domain.reservation.GuestReservationRepository;
 import pl.nextsteppro.climbing.domain.reservation.Reservation;
 import pl.nextsteppro.climbing.domain.reservation.ReservationRepository;
@@ -413,11 +412,25 @@ public class CalendarService {
             .map(slot -> new UnavailableRangeDto(slot.getStartTime(), slot.getEndTime()))
             .toList();
 
+        // Hours held by a closed session (zero seats) — the same shape as an absence, announced by
+        // its own list rather than by the counters.
+        List<UnavailableRangeDto> closedRanges = standaloneSlots.stream()
+            .filter(slot -> !slot.isAvailabilityWindow() && !slot.isUnavailable() && !slot.isBlocked())
+            .filter(slot -> slot.getMaxParticipants() == 0)
+            .sorted(Comparator.comparing(TimeSlot::getStartTime))
+            .map(slot -> new UnavailableRangeDto(slot.getStartTime(), slot.getEndTime()))
+            .toList();
+
         // Unavailable slots are not "0 of N free" — counting them would report a day off
         // as a day of full slots. They are announced by their own flag instead.
+        //
+        // ⚠️ A slot with ZERO SEATS is the same case and was missing from this rule: it can never be
+        // available, so it only ever added to the denominator, and a day whose single entry was a
+        // closed session advertised "no seats left" to the public. Bookable means seats exist.
         List<TimeSlot> bookableSlots = standaloneSlots.stream()
             .filter(slot -> !slot.isAvailabilityWindow())
             .filter(slot -> !slot.isUnavailable())
+            .filter(slot -> slot.getMaxParticipants() > 0)
             .toList();
 
         int totalSlots = bookableSlots.size();
@@ -447,7 +460,7 @@ public class CalendarService {
         }
 
         return new DaySummaryDto(date, totalSlots, availableSlots, hasUserReservation, hasAvailabilityWindow,
-            hasReservedSeats, unavailableRanges);
+            hasReservedSeats, unavailableRanges, closedRanges);
     }
 
     private TimeSlotDto toTimeSlotDto(TimeSlot slot, int confirmedCount, boolean isUserRegistered,
@@ -491,6 +504,11 @@ public class CalendarService {
         }
         if (slot.isBlocked()) {
             return SlotStatus.BLOCKED;
+        }
+        // ⚠️ Before the FULL test, which zero seats would otherwise always satisfy: "0 confirmed of
+        // 0 seats" is arithmetically full and factually a lie — nothing was ever on offer here.
+        if (slot.getMaxParticipants() == 0) {
+            return SlotStatus.CLOSED;
         }
         // Seats held for other invitees are unavailable to this viewer (FULL with reservedSeats>0 →
         // the frontend shows "reserved for invitees"). The viewer's own invitation does not block.

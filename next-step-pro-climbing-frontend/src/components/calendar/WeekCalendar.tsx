@@ -1,6 +1,6 @@
 import { useMemo, useRef, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ChevronLeft, ChevronRight, Scissors, Copy, Bell, Check, X, NotebookPen } from 'lucide-react'
+import { ChevronLeft, ChevronRight, CircleAlert, Scissors, Copy, Bell, Check, X, NotebookPen } from 'lucide-react'
 import { format, isBefore, startOfDay } from 'date-fns'
 import clsx from 'clsx'
 import type { WeekDay, TimeSlot, EventSummary } from '../../types'
@@ -11,6 +11,7 @@ import { isTodayInWarsaw, nowInWarsaw, parseCalendarDate, parseCalendarDateTime 
 import { useSlotDrag } from '../../hooks/useSlotDrag'
 import { useAuth } from '../../context/AuthContext'
 import type { NoteMarks } from '../admin/useNoteMarks'
+import type { UnassignedMarks } from '../admin/useUnassignedMarks'
 
 const HOUR_HEIGHT = 40
 const START_HOUR = 7
@@ -36,6 +37,8 @@ interface WeekCalendarProps {
   onEventCopy?: (event: EventSummary) => void
   // Admin only. Undefined for everybody else, so the marker cannot render by accident.
   noteMarks?: NoteMarks
+  /** Closed sessions with nobody to bill — admin only, ids only. */
+  unassignedMarks?: UnassignedMarks
   cutSlotId?: string
   copiedSlotId?: string
   copiedEventId?: string
@@ -92,6 +95,11 @@ function getSlotColors(status: string): string {
     case 'BLOCKED':
     case 'UNAVAILABLE':
       return 'bg-slate-600/25 border-slate-500/40 text-slate-300'
+    // Indigo, and deliberately none of the four already in use: green means bookable, amber means
+    // sold out (which this is not), slate means away, teal means "propose a time". A closed session
+    // is a fifth thing — the hour is worked, just not by anybody who books here.
+    case 'CLOSED':
+      return 'bg-indigo-500/20 border-indigo-400/45 text-indigo-300'
     case 'BOOKING_CLOSED':
       return 'bg-surface-700/40 border-surface-600/40 text-surface-400'
     case 'PAST':
@@ -114,6 +122,8 @@ function getStatusLabel(status: string, t: (key: string) => string): string {
       // Blocked and unavailable are different admin actions, but to a client they mean the
       // same thing — one word, so the calendar does not explain the back office.
       return t('day.unavailable')
+    case 'CLOSED':
+      return t('day.closedSession')
     case 'BOOKING_CLOSED':
       return t('day.bookingClosed')
     case 'PAST':
@@ -149,6 +159,7 @@ export function WeekCalendar({
   onSlotCopy,
   onEventCopy,
   noteMarks,
+  unassignedMarks,
   cutSlotId,
   copiedSlotId,
   copiedEventId,
@@ -577,6 +588,14 @@ export function WeekCalendar({
                               <NotebookPen
                                 className="w-2.5 h-2.5 shrink-0 text-amber-500"
                                 aria-label={t('slot.hasPrivateNote')}
+                              />
+                            )}
+                            {/* Amber, like every other "this is a task" signal here: the hour was
+                                worked and nothing in the app knows who owes for it. */}
+                            {unassignedMarks?.slots.has(slot.id) && (
+                              <CircleAlert
+                                className="w-2.5 h-2.5 shrink-0 text-amber-500"
+                                aria-label={t('day.closedSessionNoPayer')}
                               />
                             )}
                             <span className="truncate">

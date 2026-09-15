@@ -29,7 +29,11 @@ record DaySummaryDto(
     // hours the instructor is away, sorted — an absence covers PART of a day, so the month cell
     // has to name the hours instead of colouring the whole cell (a whole day off is an
     // UNAVAILABLE event, and that path tints the cell on its own)
-    List<UnavailableRangeDto> unavailableRanges
+    List<UnavailableRangeDto> unavailableRanges,
+    // hours held by a closed session (zero seats), sorted — same treatment as an absence and for
+    // the same reason: it takes part of a day, and the counters above deliberately ignore it, so
+    // without this the month cell would show an afternoon of work as an empty day
+    List<UnavailableRangeDto> closedRanges
 ) implements CalendarDtos {}
 
 record UnavailableRangeDto(
@@ -143,5 +147,17 @@ enum SlotStatus {
     BOOKING_CLOSED,
     AVAILABILITY_WINDOW,
     // Instructor absence — nothing to book, and nothing was ever booked here
-    UNAVAILABLE
+    UNAVAILABLE,
+    /**
+     * A session with no seats at all: work run for somebody else (a school, a club), or any other
+     * hour deliberately created as unbookable.
+     *
+     * <p>⚠️ Derived from the slot's own seat count and NOTHING else. Who settles it lives in
+     * {@code session_payouts}, and this payload is served to anonymous visitors and cached — the
+     * school's name has no business in it. Zero seats is the part a visitor is entitled to know.
+     *
+     * <p>Its own status rather than FULL, which is what it used to report: nothing was ever
+     * available here, so "sold out" was a small lie told on the public calendar every week.
+     */
+    CLOSED
 }

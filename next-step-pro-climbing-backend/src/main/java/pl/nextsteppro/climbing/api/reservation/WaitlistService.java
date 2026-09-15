@@ -87,6 +87,14 @@ public class WaitlistService {
         if (slot.isAvailabilityWindow()) {
             throw new IllegalStateException(msg.get("reservation.slot.availability.window"));
         }
+        // ⚠️ Same reason as the absence above, and it was missing: a slot with NO SEATS is full by
+        // arithmetic (0 of 0), so the "is it full?" test below waved it through and somebody could
+        // queue — with a confirmation email — for a seat that cannot ever exist. That shape is a
+        // session run for somebody else, which is why it never frees up. Reuses the absence's
+        // wording on purpose: to a client both mean "there is nothing to book here".
+        if (slot.getMaxParticipants() == 0) {
+            throw new IllegalStateException(msg.get("reservation.slot.unavailable"));
+        }
 
         User user = userRepository.findById(userId)
             .orElseThrow(() -> new IllegalArgumentException("User not found"));

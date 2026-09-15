@@ -216,6 +216,28 @@ class WaitlistServiceTest {
         assertThrows(IllegalArgumentException.class, () -> waitlistService.joinWaitlist(slotId, userId));
     }
 
+    /**
+     * ⚠️ A slot with no seats is full by arithmetic (0 of 0), so the "has it any spots left?" test
+     * waves it through. Without this guard somebody could queue — and get a confirmation email —
+     * for a seat that cannot ever come free: a session with no seats is work run for somebody else,
+     * not a training that might sell one back.
+     */
+    @Test
+    void joinWaitlist_shouldFailWhenSlotHasNoSeatsAtAll() {
+        UUID slotId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+        TimeSlot closed = new TimeSlot(null, LocalDate.now().plusDays(7), LocalTime.of(16, 0),
+            LocalTime.of(17, 30), 0);
+        setField(closed, "id", slotId);
+
+        when(timeSlotRepository.findById(slotId)).thenReturn(Optional.of(closed));
+        lenient().when(msg.get("reservation.slot.unavailable")).thenReturn("Slot unavailable");
+
+        assertThrows(IllegalStateException.class, () -> waitlistService.joinWaitlist(slotId, userId));
+        verify(waitlistRepository, never()).save(any(Waitlist.class));
+        verify(waitlistMailService, never()).sendWaitlistJoinedConfirmation(any(), any());
+    }
+
     // ========== leaveWaitlist ==========
 
     @Test

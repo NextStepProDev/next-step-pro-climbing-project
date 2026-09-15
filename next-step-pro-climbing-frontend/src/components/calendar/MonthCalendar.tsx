@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Ban, ChevronLeft, ChevronRight, NotebookPen } from 'lucide-react'
+import { Ban, Building2, ChevronLeft, ChevronRight, NotebookPen } from 'lucide-react'
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isBefore, startOfDay } from 'date-fns'
 import clsx from 'clsx'
 import type { DaySummary, EventSummary } from '../../types'
@@ -10,6 +10,7 @@ import { useDateLocale } from '../../utils/dateFnsLocale'
 import { useAuth } from '../../context/AuthContext'
 import { isTodayInWarsaw, nowInWarsaw, parseCalendarDate } from '../../utils/calendarDate'
 import type { NoteMarks } from '../admin/useNoteMarks'
+import type { UnassignedMarks } from '../admin/useUnassignedMarks'
 
 // A month cell is ~50 px wide on a phone, so a full "18:00–20:00" does not fit. Whole hours drop
 // their ":00" the way printed timetables do; a half hour keeps its minutes, because that is the
@@ -29,9 +30,11 @@ interface MonthCalendarProps {
   eventColorMap: EventColorMap
   // Admin only. Undefined for everybody else, so the marker cannot render by accident.
   noteMarks?: NoteMarks
+  /** Closed sessions with nobody to bill — admin only, ids only. */
+  unassignedMarks?: UnassignedMarks
 }
 
-export function MonthCalendar({ currentMonth, onMonthChange, days, events, onDayClick, allDaysClickable, eventColorMap, noteMarks }: MonthCalendarProps) {
+export function MonthCalendar({ currentMonth, onMonthChange, days, events, onDayClick, allDaysClickable, eventColorMap, noteMarks, unassignedMarks }: MonthCalendarProps) {
   const { t } = useTranslation('calendar')
   const { isAuthenticated } = useAuth()
   const locale = useDateLocale()
@@ -138,6 +141,7 @@ export function MonthCalendar({ currentMonth, onMonthChange, days, events, onDay
           const isPast = isBefore(day, startOfDay(nowInWarsaw()))
           const hasAvailabilityWindow = dayData?.hasAvailabilityWindow ?? false
           const unavailableRanges = dayData?.unavailableRanges ?? []
+          const closedRanges = dayData?.closedRanges ?? []
           const hasUserReservation = dayData?.hasUserReservation
           const hasEvents = dayEvents.length > 0
           // Future days are clickable even when EMPTY — they open the day view with the "Propose a time"
@@ -228,6 +232,37 @@ export function MonthCalendar({ currentMonth, onMonthChange, days, events, onDay
                     <Ban className="hidden sm:block w-2.5 h-2.5 shrink-0" aria-hidden="true" />
                     <span className="sr-only">{t('day.unavailable')} </span>
                     <span className="truncate line-through decoration-slate-500">{compactTime(from)}–{compactTime(to)}</span>
+                  </div>
+                )
+              })}
+
+              {/* A closed session takes hours the same way an absence does, and the counters above
+                  ignore both — so without this the afternoon simply vanishes from the cell. Indigo
+                  rather than slate: the hour is worked, it just is not open to anybody here. */}
+              {!isPast && closedRanges.map((range) => {
+                const noPayerHere = !!unassignedMarks?.dates.has(dateString)
+                const from = range.startTime.slice(0, 5)
+                const to = range.endTime.slice(0, 5)
+                return (
+                  <div
+                    key={`closed-${from}-${to}`}
+                    title={noPayerHere ? `${t('day.closedSessionNoPayer')} ${from}–${to}` : `${t('day.closedSession')} ${from}–${to}`}
+                    className={clsx(
+                      'flex items-center gap-0.5 text-[10px] sm:text-[11px] leading-snug font-medium truncate rounded border px-0.5 sm:px-1 py-0 sm:py-0.5 mb-0.5',
+                      // ⚠️ Matched by DAY, not by slot: the month cell holds counts, never slot ids
+                      // (the same reason the note marker carries dates). Two closed sessions on one
+                      // day therefore both take the warning when either lacks a payer — a warning
+                      // one hour too wide is the safe direction for a reminder to err in.
+                      noPayerHere
+                        ? 'bg-amber-500/10 border-amber-500/30 text-amber-300'
+                        : 'bg-indigo-500/10 border-indigo-400/30 text-indigo-300',
+                    )}
+                  >
+                    <Building2 className="hidden sm:block w-2.5 h-2.5 shrink-0" aria-hidden="true" />
+                    <span className="sr-only">
+                      {noPayerHere ? t('day.closedSessionNoPayer') : t('day.closedSession')}{' '}
+                    </span>
+                    <span className="truncate">{compactTime(from)}–{compactTime(to)}</span>
                   </div>
                 )
               })}
