@@ -60,13 +60,16 @@ function line(overrides: Partial<SettlementLine> = {}): SettlementLine {
  */
 const closeModal = vi.fn()
 
-function renderSection(target: 'slot' | 'event' = 'slot') {
+function renderSection(
+  target: 'slot' | 'event' = 'slot',
+  onDirtyChange?: (dirty: boolean) => void,
+) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   return render(
     <QueryClientProvider client={client}>
       <ToastProvider>
         <ModalCloseContext.Provider value={closeModal}>
-          <SettlementSection target={target} targetId="target-1" />
+          <SettlementSection target={target} targetId="target-1" onDirtyChange={onDirtyChange} />
         </ModalCloseContext.Provider>
       </ToastProvider>
     </QueryClientProvider>,
@@ -461,6 +464,28 @@ describe('SettlementSection', () => {
     await waitFor(() => expect(closeModal).toHaveBeenCalled())
     // A modal that simply vanishes does not say whether anything was saved.
     expect(await screen.findByText('settlements.actions.saved')).toBeInTheDocument()
+  })
+
+  /* The host modal's unsaved-work guard reads the LAST thing this section reported, and after a
+     save that report is still the one from before it: `setDrafts({})` has not rendered by the time
+     the close is called. Without the push, finishing the work asked whether to discard it. */
+  it('reports itself clean before it closes, so the guard does not ask about saved money', async () => {
+    getSection.mockResolvedValue({ ...bulkOff, targetDate: TARGET_DATE, lines: [line()] })
+    const reports: boolean[] = []
+    // What the guard would have seen at the instant the close was requested
+    let dirtyWhenClosed: boolean | undefined
+    closeModal.mockImplementation(() => { dirtyWhenClosed = reports.at(-1) })
+    const user = userEvent.setup()
+
+    renderSection('slot', (dirty) => reports.push(dirty))
+
+    await user.type(await screen.findByLabelText('settlements.line.amountLabel'), '150')
+    expect(reports.at(-1)).toBe(true)
+
+    await user.click(screen.getByRole('button', { name: 'settlements.actions.save' }))
+
+    await waitFor(() => expect(closeModal).toHaveBeenCalled())
+    expect(dirtyWhenClosed).toBe(false)
   })
 
   it('stays open when the save was refused, or the reason goes with it', async () => {

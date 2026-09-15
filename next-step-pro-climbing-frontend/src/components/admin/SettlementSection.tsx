@@ -15,6 +15,13 @@ import type { PayoutSource, SettlementLine, SettlementTarget } from '../../types
 interface SettlementSectionProps {
   target: SettlementTarget
   targetId: string
+  /**
+   * Reports whether any amount has been typed and not yet saved, so the surrounding modal can ask
+   * before the backdrop, the X or Escape throws it away. Called during render, never from an
+   * effect — the guard is read by an event handler, and a report that costs a render arrives one
+   * tick too late (see {@link useChildDirty}).
+   */
+  onDirtyChange?: (dirty: boolean) => void
 }
 
 /** Local edits, keyed by payer. The amount stays a string until save — see `parseAmount`. */
@@ -45,7 +52,7 @@ const payerKey = (line: SettlementLine) => `${line.payerType}:${line.payerId}`
  * of the work: pricing a course means typing the same number three times, so one button that
  * writes every changed row is the difference between one click and six.
  */
-export function SettlementSection({ target, targetId }: SettlementSectionProps) {
+export function SettlementSection({ target, targetId, onDirtyChange }: SettlementSectionProps) {
   const { t, i18n } = useTranslation('admin')
   const queryClient = useQueryClient()
   /**
@@ -106,6 +113,11 @@ export function SettlementSection({ target, targetId }: SettlementSectionProps) 
       // have gone to an older session) has to be read on this screen.
       if (choice.sourceId || choice.subscriberId) {
         showToast(t('settlements.section.bulkSaved', { name: choice.name ?? '' }))
+        // ⚠️ Pushed before closing, not left to the next render. This section's close is now the
+        // modal's GUARDED close, and the guard reads the last value reported — which is still the
+        // one from before this write. Without this, finishing the work would ask whether to
+        // discard it.
+        onDirtyChange?.(false)
         closeModal?.()
       }
     },
@@ -228,6 +240,10 @@ export function SettlementSection({ target, targetId }: SettlementSectionProps) 
       // session. What still stays open is the credit button, which reports a result the admin has
       // to read here (the money may have gone to an older session), and clearing a payer, which
       // hands the session back to the fields in this very section.
+      // ⚠️ The report is pushed first: `setDrafts({})` above has not rendered yet, so the guard
+      // behind that close would still be holding `true` and would ask whether to discard the very
+      // thing just written.
+      onDirtyChange?.(false)
       closeModal?.()
     },
   })
@@ -314,6 +330,12 @@ export function SettlementSection({ target, targetId }: SettlementSectionProps) 
     }
     return { total, paid }
   }, [lines, drafts, saved])
+
+  // Reported during render on purpose — see the prop's doc and useChildDirty. Above the early
+  // return, so a refetch that flips `isLoading` cannot leave the host holding a stale `true`.
+  // The bulk field counts even before it is applied: a price typed there and nowhere else is the
+  // whole of what the admin has done so far.
+  onDirtyChange?.(dirtyLines.length > 0 || bulkAmount.trim() !== '')
 
   if (isLoading) return null
 

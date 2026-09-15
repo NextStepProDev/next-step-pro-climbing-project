@@ -16,6 +16,13 @@ const MAX_BODY_LENGTH = 4000
 interface AdminPrivateNoteProps {
   target: AdminNoteTarget
   targetId: string
+  /**
+   * Reports whether an open note has unsaved text, so the surrounding modal can ask before the
+   * backdrop, the X or Escape throws it away. Called during render, never from an effect — the
+   * guard is read by an event handler, and a report that costs a render arrives one tick too late
+   * (see {@link useChildDirty}).
+   */
+  onDirtyChange?: (dirty: boolean) => void
 }
 
 /**
@@ -32,7 +39,7 @@ interface AdminPrivateNoteProps {
  * would happily render its "add a note" button for anybody, and the 403 would come too late to
  * be good UX.
  */
-export function AdminPrivateNote({ target, targetId }: AdminPrivateNoteProps) {
+export function AdminPrivateNote({ target, targetId, onDirtyChange }: AdminPrivateNoteProps) {
   const { t } = useTranslation('admin')
   const queryClient = useQueryClient()
   const [editing, setEditing] = useState(false)
@@ -90,6 +97,10 @@ export function AdminPrivateNote({ target, targetId }: AdminPrivateNoteProps) {
     if (!el || expanded) return
     setIsClamped(el.scrollHeight > el.clientHeight + 1)
   }, [expanded])
+
+  // Reported during render on purpose — see the prop's doc and useChildDirty. Above the early
+  // return, so a refetch that flips `isLoading` cannot leave the host holding a stale `true`.
+  onDirtyChange?.(editing && isDirty)
 
   if (isLoading) return null
 

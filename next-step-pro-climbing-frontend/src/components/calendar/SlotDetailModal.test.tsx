@@ -85,7 +85,7 @@ function slot(overrides: Partial<TimeSlotDetail> = {}): TimeSlotDetail {
   } as TimeSlotDetail
 }
 
-function renderModal(s: TimeSlotDetail = slot()) {
+function renderModal(s: TimeSlotDetail = slot(), onClose: () => void = vi.fn()) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   return render(
     <QueryClientProvider client={client}>
@@ -94,7 +94,7 @@ function renderModal(s: TimeSlotDetail = slot()) {
           here would only ever mean the harness is less than the app. */}
       <ToastProvider>
         <MemoryRouter>
-          <SlotDetailModal slot={s} isOpen onClose={vi.fn()} />
+          <SlotDetailModal slot={s} isOpen onClose={onClose} />
         </MemoryRouter>
       </ToastProvider>
     </QueryClientProvider>,
@@ -158,5 +158,79 @@ describe('SlotDetailModal — inviting people onto a slot from the calendar', ()
     await user.click(screen.getByText('slots.saveChanges'))
     await waitFor(() => expect(updateTimeSlot).toHaveBeenCalled())
     expect(updateTimeSlot.mock.calls[0][1]).toMatchObject({ invitedUserIds: [] })
+  })
+})
+
+/* Every one of these fields used to be one stray click on the backdrop away from being gone, with
+   nothing said. The modal carries a booking comment, an admin edit form, a participant form, a
+   price list and the owner's private note — five places to be halfway through something. */
+describe('SlotDetailModal — closing on top of unfinished work', () => {
+  it('asks before Escape throws away a half-typed edit', async () => {
+    const user = userEvent.setup()
+    const onClose = vi.fn()
+    renderModal(slot(), onClose)
+
+    await openEditAndTypeTitle(user)
+    await user.keyboard('{Escape}')
+
+    expect(screen.getByText('unsaved.title')).toBeInTheDocument()
+    expect(onClose).not.toHaveBeenCalled()
+
+    await user.click(screen.getByText('unsaved.discard'))
+    expect(onClose).toHaveBeenCalled()
+  })
+
+  it('asks before the backdrop throws away a comment written with the booking', async () => {
+    const user = userEvent.setup()
+    const onClose = vi.fn()
+    const { container } = renderModal(slot(), onClose)
+
+    await user.type(screen.getByPlaceholderText('slot.commentPlaceholder'), 'Będę 10 minut później')
+    // The backdrop is the one way out with no button to hang a guard on
+    await user.click(container.ownerDocument.querySelector('.absolute.inset-0')!)
+
+    expect(screen.getByText('unsaved.title')).toBeInTheDocument()
+    expect(onClose).not.toHaveBeenCalled()
+  })
+
+  it('closes straight away when nothing has been typed', async () => {
+    const user = userEvent.setup()
+    const onClose = vi.fn()
+    renderModal(slot(), onClose)
+
+    // Opening the edit form is not, on its own, work anybody loses — asking there would teach
+    // the admin to click past the question, which is how a guard stops working.
+    await user.click(screen.getByText('slots.editSlot'))
+    await user.keyboard('{Escape}')
+
+    expect(screen.queryByText('unsaved.title')).not.toBeInTheDocument()
+    expect(onClose).toHaveBeenCalled()
+  })
+})
+
+describe('SlotDetailModal — reopened on a different slot', () => {
+  it('does not carry a half-typed edit from one slot onto the next', async () => {
+    const user = userEvent.setup()
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    const view = (s: TimeSlotDetail, isOpen: boolean) => (
+      <QueryClientProvider client={client}>
+        <ToastProvider>
+          <MemoryRouter>
+            <SlotDetailModal slot={s} isOpen={isOpen} onClose={vi.fn()} />
+          </MemoryRouter>
+        </ToastProvider>
+      </QueryClientProvider>
+    )
+
+    // Three of the four call sites mount this without a remount key, so the instance survives
+    const { rerender } = render(view(slot(), true))
+    await openEditAndTypeTitle(user)
+    rerender(view(slot(), false))
+    rerender(view(slot({ id: 'slot-2', title: 'Inny trening' }), true))
+
+    // Otherwise the admin is looking at slot 2 with slot 1's title in an already-open form, and
+    // Save writes the first slot's hours onto the second.
+    expect(screen.queryByPlaceholderText('slots.titlePlaceholder')).not.toBeInTheDocument()
+    expect(screen.getByText('slots.editSlot')).toBeInTheDocument()
   })
 })

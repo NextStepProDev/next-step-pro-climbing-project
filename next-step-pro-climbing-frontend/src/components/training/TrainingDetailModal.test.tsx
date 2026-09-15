@@ -329,3 +329,42 @@ describe('TrainingDetailModal — an entry leaving the range does not close the 
     expect(screen.getByText('detail.duplicate')).toBeEnabled()
   })
 })
+
+/* The section renders this modal once and hands it a different entry each time, so its own state
+   outlives the entry it was typed for — `training = null` only makes it render nothing. */
+describe('TrainingDetailModal — reopened on a different entry', () => {
+  function tree(training: PersonalTraining | null, client: QueryClient) {
+    return (
+      <QueryClientProvider client={client}>
+        <TrainingDetailModal
+          training={training}
+          onClose={vi.fn()}
+          api={api}
+          onEdit={vi.fn()}
+          onDuplicate={vi.fn()}
+          onDelete={vi.fn()}
+          onComplete={vi.fn()}
+        />
+      </QueryClientProvider>
+    )
+  }
+
+  it('does not carry a half-filled completion onto the next training', async () => {
+    const user = userEvent.setup()
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    const first = makeTraining({ date: yesterday() })
+
+    const { rerender } = render(tree(first, client))
+    await user.click(screen.getByText('completion.markDone'))
+    await user.click(screen.getByRole('button', { name: '7' }))
+    await user.type(screen.getByPlaceholderText('completion.feedbackPlaceholder'), 'Nogi martwe')
+
+    rerender(tree(null, client))
+    rerender(tree(makeTraining({ date: yesterday() }), client))
+
+    // Otherwise the next training opens with somebody else's RPE and notes already in the form,
+    // and one click files them against it.
+    expect(screen.queryByPlaceholderText('completion.feedbackPlaceholder')).not.toBeInTheDocument()
+    expect(screen.getByText('completion.markDone')).toBeInTheDocument()
+  })
+})

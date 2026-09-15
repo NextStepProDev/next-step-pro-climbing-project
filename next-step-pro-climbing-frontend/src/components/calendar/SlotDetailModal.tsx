@@ -29,6 +29,7 @@ import { nowInWarsaw, parseCalendarDate, parseCalendarDateTime } from '../../uti
 import { AdminPrivateNote } from '../admin/AdminPrivateNote'
 import { ParticipantsSection } from '../admin/ParticipantsSection'
 import { SettlementSection } from '../admin/SettlementSection'
+import { useChildDirty } from "../../hooks/useChildDirty";
 import type { InvitedUser, TimeSlotDetail } from "../../types";
 
 interface SlotDetailModalProps {
@@ -71,6 +72,37 @@ export function SlotDetailModal({
     kind: 'REGULAR' as SlotKind,
   });
   const pendingAction = useRef<(() => void) | null>(null);
+  // Three sections below own state this modal cannot see, and each of them is somebody's half-done
+  // work: a note being written, a person being added, a price being typed. They report during their
+  // own render and this reads the report at click time — see useChildDirty for why a getter.
+  const [noteDirty, reportNoteDirty] = useChildDirty(isOpen);
+  const [participantsDirty, reportParticipantsDirty] = useChildDirty(isOpen);
+  const [settlementsDirty, reportSettlementsDirty] = useChildDirty(isOpen);
+
+  /**
+   * Everything below belongs to ONE slot — and three of the four call sites mount this modal
+   * without a remount key, so the instance survives being closed and reopened on the next slot.
+   * Reproduced: an edit left open on slot A came back over slot B with A's title and hours already
+   * in the fields, and Save wrote them onto B. Closing the profile prompt is what disarms the
+   * parked action, which is a closure over the slot that was on screen when it was made — the ref
+   * itself must not be written during render, and with the prompt shut nothing can fire it.
+   *
+   * A render-phase reset (the supported way to adjust state when a prop changes, and what `Modal`
+   * does for its own pending confirmation) rather than a `key` at every call site — `CalendarPage`
+   * remembered that key and the other three did not.
+   */
+  const [prevSlotId, setPrevSlotId] = useState<string | null>(slot?.id ?? null);
+  if ((slot?.id ?? null) !== prevSlotId) {
+    setPrevSlotId(slot?.id ?? null);
+    setComment("");
+    setParticipants(1);
+    setShowParticipants(false);
+    setEditMode(false);
+    setEditedInvited(null);
+    setShowDeleteConfirm(false);
+    setShowSuccess(false);
+    setShowCompleteProfile(false);
+  }
 
   const requireProfile = (action: () => void) => {
     if (user?.firstName && user?.lastName && user?.phone) {
@@ -197,6 +229,30 @@ export function SlotDetailModal({
 
   if (!slot) return null;
 
+  /**
+   * Everything on this screen that would be gone for good if the backdrop, the X or Escape closed
+   * it — asked at the moment of the click rather than read from a prop captured a render earlier
+   * (the reason `Modal` takes a getter at all, see useChildDirty).
+   *
+   * The admin edit form is compared against the slot it was seeded from rather than snapshotted:
+   * it is filled in when edit mode opens, so a snapshot taken at mount would call an untouched
+   * form dirty. Booking's own stepper is left out on purpose — a seat count with nothing typed
+   * beside it is not work somebody loses.
+   */
+  const hasUnsavedWork = () =>
+    comment.trim() !== ''
+    || noteDirty()
+    || participantsDirty()
+    || settlementsDirty()
+    || (editMode && (
+      editForm.title !== (slot.title ?? '')
+      || editForm.startTime !== slot.startTime.slice(0, 5)
+      || editForm.endTime !== slot.endTime.slice(0, 5)
+      || editForm.maxParticipants !== slot.maxParticipants
+      || editForm.kind !== slotKindOf(slot)
+      || editedInvited !== null
+    ));
+
   const isAvailabilityWindow = slot.isAvailabilityWindow;
   const isUnavailable = slot.isUnavailable;
   // A session with no seats: work run for somebody else, or an hour deliberately made unbookable.
@@ -295,7 +351,7 @@ export function SlotDetailModal({
   return (
     <>
     {showSuccess && <SuccessCheckmark onDone={() => { setShowSuccess(false); onClose(); }} />}
-    <Modal isOpen={isOpen} onClose={onClose} title={t('slot.title')}>
+    <Modal isOpen={isOpen} onClose={onClose} title={t('slot.title')} confirmClose={hasUnsavedWork}>
       <div className="space-y-6">
         {/* Date and time */}
         <div className="flex items-center gap-4 text-surface-300">
@@ -686,19 +742,28 @@ export function SlotDetailModal({
             past date (BookingTimeValidator). A blocked slot keeps its roster but loses the form:
             the server refuses the write, so offering it would only ever produce an error. */}
         {isAdmin && !slot.eventId && isBookable && (
-          <ParticipantsSection target="slot" targetId={slot.id} canAdd={slot.status !== 'BLOCKED'} />
+          <ParticipantsSection
+            target="slot"
+            targetId={slot.id}
+            canAdd={slot.status !== 'BLOCKED'}
+            onDirtyChange={reportParticipantsDirty}
+          />
         )}
 
         {/* The owner's private note. Not gated on `hasEnded` — a session that is over is exactly
             what there is something to write about. A slot belonging to an event is skipped: the
             event carries one note for all its days, and the server refuses this address anyway. */}
-        {isAdmin && !slot.eventId && <AdminPrivateNote target="slot" targetId={slot.id} />}
+        {isAdmin && !slot.eventId && (
+          <AdminPrivateNote target="slot" targetId={slot.id} onDirtyChange={reportNoteDirty} />
+        )}
 
         {/* Per-participant price and payment status. Same two gates as the note above, and the
             second one for the same reason: an event is priced ONCE however many days it spans, so
             its per-day slots — bookkeeping the first booking creates — are not an address money
             can be written to. The server refuses this one too. */}
-        {isAdmin && !slot.eventId && <SettlementSection target="slot" targetId={slot.id} />}
+        {isAdmin && !slot.eventId && (
+          <SettlementSection target="slot" targetId={slot.id} onDirtyChange={reportSettlementsDirty} />
+        )}
 
         {/* Actions */}
         {isBookable && <div className="flex gap-3 pt-4 border-t border-surface-800">
