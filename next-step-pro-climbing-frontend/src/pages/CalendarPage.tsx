@@ -4,7 +4,7 @@ import { useSearchParams, useLocation, useNavigate, Link } from "react-router-do
 import { useTranslation } from "react-i18next";
 import { PageHead } from "../components/ui/PageHead";
 import { format, startOfWeek, addWeeks, subWeeks, addDays, differenceInCalendarDays, startOfMonth, endOfMonth } from "date-fns";
-import { calendarApi, reservationApi, adminApi } from "../api/client";
+import { calendarApi, reservationApi, adminApi, adminSettlementsApi } from "../api/client";
 import { getAccessToken } from "../utils/tokenStorage";
 import { useAuth } from "../context/AuthContext";
 import { useNoteMarks } from "../components/admin/useNoteMarks";
@@ -22,7 +22,8 @@ import { Phone, Mail, ExternalLink, Scissors, Copy, X, Bell, CalendarPlus } from
 import { formatAvailability, buildEventColorMap } from "../utils/events";
 import { useCalendarPromo } from "../hooks/useCalendarPromo";
 import { nowInWarsaw, parseCalendarDate, todayInWarsaw } from '../utils/calendarDate';
-import type { CreateEventRequest, EventSummary, TimeSlot } from "../types";
+import { travellingPayoutSource } from '../utils/slotClipboard';
+import type { CreateEventRequest, CreateTimeSlotRequest, EventSummary, TimeSlot } from "../types";
 
 // The full event form from the admin panel — the same one the events panel and the training
 // requests panel open, so a course added from the calendar asks for exactly the same fields.
@@ -94,7 +95,13 @@ export function CalendarPage() {
   // Training request: start date + optional availability window (constrains the times)
   const [proposeContext, setProposeContext] = useState<{ date: string; window?: ProposeWindow } | null>(null);
   const [cutSlot, setCutSlot] = useState<{ id: string; date: string; startTime: string; endTime: string } | null>(null);
-  const [copiedSlot, setCopiedSlot] = useState<{ id: string; date: string; startTime: string; endTime: string; title?: string; maxParticipants: number; isAvailabilityWindow: boolean; isUnavailable: boolean } | null>(null);
+  /**
+   * ⚠️ `payoutSource` is looked up when the copy is armed, never read off the slot on screen: the
+   * calendar payloads are served to anonymous visitors and cached, so the school's name is exactly
+   * the field that must not be on them. It is part of the PLAN (whose work this is), which is why
+   * it travels at all — people, money and invitations still stay behind.
+   */
+  const [copiedSlot, setCopiedSlot] = useState<{ id: string; date: string; startTime: string; endTime: string; title?: string; maxParticipants: number; isAvailabilityWindow: boolean; isUnavailable: boolean; payoutSource: { id: string; name: string } | null } | null>(null);
   // The whole summary travels: it already carries every field createEvent asks for.
   const [copiedEvent, setCopiedEvent] = useState<EventSummary | null>(null);
   const [notifyToast, setNotifyToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
@@ -448,9 +455,30 @@ export function CalendarPage() {
     setCutSlot({ id: slot.id, date, startTime: slot.startTime, endTime: slot.endTime });
   }, []);
 
-  const handleSlotCopy = useCallback((slot: TimeSlot, date: string) => {
+  const handleSlotCopy = useCallback(async (slot: TimeSlot, date: string) => {
     setCutSlot(null);
     setCopiedEvent(null);
+
+    // ⚠️ Asked for BEFORE the clipboard is armed, not after. Arming first would leave a window in
+    // which the banner says "copied" and the assignment has not arrived — and a quick paste inside
+    // it silently produces exactly the unassigned session this is meant to prevent.
+    //
+    // Only a bulk payer travels: a subscription covers one PERSON, and the person is not on the
+    // slot we are about to create, so the server would refuse it.
+    //
+    // The same cache key the settlement section uses, so a modal opened a moment ago pays nothing.
+    // A failure leaves the copy unassigned rather than blocking it: copying must not stop working
+    // because a money read did not come back.
+    let payoutSource: { id: string; name: string } | null;
+    try {
+      payoutSource = travellingPayoutSource(await queryClient.fetchQuery({
+        queryKey: ['admin', 'settlements', 'slot', slot.id],
+        queryFn: () => adminSettlementsApi.getSection('slot', slot.id),
+      }));
+    } catch {
+      payoutSource = null;
+    }
+
     setCopiedSlot({
       id: slot.id, date, startTime: slot.startTime, endTime: slot.endTime,
       title: slot.eventTitle ?? undefined,
@@ -459,8 +487,9 @@ export function CalendarPage() {
       // A slot has exactly one shape — dropping this flag pasted an absence back as a
       // bookable slot with zero seats, which the calendar then reads as "full".
       isUnavailable: slot.isUnavailable,
+      payoutSource,
     });
-  }, []);
+  }, [queryClient]);
 
   const handleEventCopy = useCallback((event: EventSummary) => {
     setCutSlot(null);
@@ -469,7 +498,14 @@ export function CalendarPage() {
   }, []);
 
   const copySlotMutation = useMutation({
-    mutationFn: adminApi.createTimeSlot,
+    // The assignment rides in the same mutation, for the reason spelled out in CreateSlotModal:
+    // the order is guaranteed and both failures surface once, on one mutation.
+    mutationFn: async ({ payoutSourceId, ...data }: CreateTimeSlotRequest & { payoutSourceId?: string }) => {
+      const created = await adminApi.createTimeSlot(data);
+      if (payoutSourceId) {
+        await adminSettlementsApi.assignSource('slot', created.id, payoutSourceId, null);
+      }
+    },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['calendar'] });
       void queryClient.invalidateQueries({ queryKey: ['admin', 'slots'] });
@@ -541,6 +577,9 @@ export function CalendarPage() {
         title: copiedSlot.title,
         isAvailabilityWindow: copiedSlot.isAvailabilityWindow,
         isUnavailable: copiedSlot.isUnavailable,
+        // Weekly school sessions are the case this whole thing exists for: a copy without the
+        // contractor recreates the unassigned session once a week, quietly.
+        payoutSourceId: copiedSlot.payoutSource?.id,
       });
       setCopiedSlot(null);
     }
@@ -715,7 +754,10 @@ export function CalendarPage() {
               <div className="mb-3 flex items-center gap-3 px-4 py-2.5 bg-primary-500/10 border border-primary-500/30 rounded-lg">
                 <Copy className="w-4 h-4 text-primary-400 shrink-0" />
                 <span className="text-sm text-primary-300 flex-1">
-                  Slot <strong>{copiedSlot.startTime.slice(0, 5)}–{copiedSlot.endTime.slice(0, 5)}</strong> skopiowany — kliknij w wolne miejsce w kalendarzu, aby wkleić kopię
+                  Slot <strong>{copiedSlot.startTime.slice(0, 5)}–{copiedSlot.endTime.slice(0, 5)}</strong>
+                  {/* Named, because the copy carries it: pasting a session under a contractor is
+                      a decision, and one made silently is one nobody can correct. */}
+                  {copiedSlot.payoutSource && <> ({copiedSlot.payoutSource.name})</>} skopiowany — kliknij w wolne miejsce w kalendarzu, aby wkleić kopię
                 </span>
                 <button
                   onClick={() => setCopiedSlot(null)}

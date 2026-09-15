@@ -35,6 +35,7 @@ function makeOverview(overrides: Partial<SettlementOverview> = {}): SettlementOv
   return {
     years: [2026, 2025],
     year: 2026,
+    unassigned: { count: 0, windowDays: 90, sessions: [] },
     unpriced: { count: 0, windowDays: 90, sessions: [] },
     outstanding: { total: 0, count: 0, oldest: null, items: [], credits: [] },
     revenue: {
@@ -156,6 +157,49 @@ describe('AdminSettlementsPanel', () => {
     // Nothing has been priced yet, so there are no settlements and no years — but the queue is
     // exactly the work the admin came here to do.
     expect(await screen.findByText('settlements.tab.unpriced.title')).toBeInTheDocument()
+    expect(screen.queryByText('settlements.tab.empty')).not.toBeInTheDocument()
+  })
+
+  it('lists sessions that have nobody to bill and links each one straight in', async () => {
+    getOverview.mockResolvedValue(makeOverview({
+      unassigned: {
+        count: 2,
+        windowDays: 90,
+        sessions: [
+          { targetType: 'slot', targetId: 'slot-1', date: '2026-08-18', title: 'SP nr 5' },
+          // The untitled one is the whole point: nothing on the calendar names this as work.
+          { targetType: 'slot', targetId: 'slot-2', date: '2026-08-25', title: null },
+        ],
+      },
+    }))
+
+    renderPanel()
+
+    expect(await screen.findByText('settlements.tab.unassigned.title')).toBeInTheDocument()
+    expect(screen.getByText('settlements.tab.unassigned.scope')).toBeInTheDocument()
+
+    const links = screen.getAllByRole('link', { name: 'settlements.tab.unassigned.open' })
+    expect(links[0]).toHaveAttribute('href', '/calendar?date=2026-08-18&slot=slot-1')
+    expect(links[1]).toHaveTextContent('settlements.tab.outstanding.untitled.slot')
+  })
+
+  it('does not claim the tab is empty while sessions are waiting for a payer', async () => {
+    // The shape this catches: somebody who only ever teaches for a school has no settlements, no
+    // years and no debts, so every other source of content is zero — and the queue below is the
+    // only reason they opened the tab.
+    getOverview.mockResolvedValue(makeOverview({
+      years: [],
+      year: 2026,
+      unassigned: {
+        count: 1,
+        windowDays: 90,
+        sessions: [{ targetType: 'slot', targetId: 'slot-1', date: '2026-08-18', title: null }],
+      },
+    }))
+
+    renderPanel()
+
+    expect(await screen.findByText('settlements.tab.unassigned.title')).toBeInTheDocument()
     expect(screen.queryByText('settlements.tab.empty')).not.toBeInTheDocument()
   })
 

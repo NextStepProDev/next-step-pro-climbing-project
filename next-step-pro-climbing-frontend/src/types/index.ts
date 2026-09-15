@@ -733,11 +733,30 @@ export interface PayoutEntry {
 export interface SettlementOverview {
   years: number[]
   year: number | null
+  unassigned: UnassignedSummary
   unpriced: UnpricedSummary
   outstanding: OutstandingSummary
   revenue: RevenueSummary
   people: PersonRevenue[]
   payouts: PayoutsSummary
+}
+
+// Sessions that were worked and have NOBODY TO BILL — no participant, no amount, no bulk payer.
+// One step further out than `UnpricedSummary` and invisible to it by construction: that queue is
+// built from reservations and guests, so a session with zero people on it produces no rows in it at
+// all. What it costs is quiet: an unassigned session is missing from the hourly rate's denominator,
+// so one transfer over ten sessions instead of twelve reads high and nothing says why.
+export interface UnassignedSummary {
+  count: number
+  windowDays: number
+  sessions: UnassignedSession[]
+}
+
+export interface UnassignedSession {
+  targetType: SettlementTarget
+  targetId: string
+  date: string
+  title: string | null
 }
 
 // Sessions that are over and were never priced at all. The gap this closes is that such a session

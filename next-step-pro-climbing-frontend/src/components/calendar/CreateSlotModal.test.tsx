@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { MemoryRouter } from 'react-router-dom'
 import { CreateSlotModal } from './CreateSlotModal'
 
 // jsdom implements no Element.scrollTo, and the time picker scrolls its columns to the selected
@@ -18,8 +19,10 @@ vi.mock('react-i18next', async (importOriginal) => ({
   }),
 }))
 
-const createTimeSlot = vi.fn().mockResolvedValue({})
+const createTimeSlot = vi.fn().mockResolvedValue({ id: 'slot-new' })
 const createEvent = vi.fn().mockResolvedValue({})
+const listSources = vi.fn().mockResolvedValue([])
+const assignSource = vi.fn().mockResolvedValue(undefined)
 
 vi.mock('../../api/client', () => ({
   adminApi: {
@@ -30,13 +33,20 @@ vi.mock('../../api/client', () => ({
   adminSiteApi: {
     getSlotTemplates: () => Promise.resolve([]),
   },
+  adminSettlementsApi: {
+    listSources: () => listSources(),
+    assignSource: (...args: unknown[]) => assignSource(...args),
+  },
 }))
 
 function renderModal() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   return render(
     <QueryClientProvider client={client}>
-      <CreateSlotModal isOpen onClose={vi.fn()} defaultDate="2030-06-10" />
+      {/* The contractor branch offers a way out to the settlements tab, and a Link needs a router. */}
+      <MemoryRouter>
+        <CreateSlotModal isOpen onClose={vi.fn()} defaultDate="2030-06-10" />
+      </MemoryRouter>
     </QueryClientProvider>,
   )
 }
@@ -52,6 +62,8 @@ describe('CreateSlotModal — one form, two kinds of row', () => {
   beforeEach(() => {
     createTimeSlot.mockClear()
     createEvent.mockClear()
+    assignSource.mockClear()
+    listSources.mockResolvedValue([])
   })
 
   it('should still create a plain slot when the absence lasts hours of one day', async () => {
@@ -180,5 +192,96 @@ describe('CreateSlotModal — one form, two kinds of row', () => {
     await waitFor(() => expect(createTimeSlot).toHaveBeenCalledTimes(1))
     expect(createEvent).not.toHaveBeenCalled()
     expect(createTimeSlot.mock.calls[0][0]).toMatchObject({ isUnavailable: false })
+  })
+})
+
+describe('CreateSlotModal — a session somebody else settles', () => {
+  const chooseContractor = (user: ReturnType<typeof userEvent.setup>) =>
+    user.click(screen.getByRole('radio', { name: 'slotKind.CONTRACTOR' }))
+
+  beforeEach(() => {
+    createTimeSlot.mockClear()
+    createEvent.mockClear()
+    assignSource.mockClear()
+    listSources.mockResolvedValue([{ id: 'source-1', name: 'SP nr 5', archived: false }])
+  })
+
+  it('should name the payer in the same breath as creating the session', async () => {
+    const user = userEvent.setup()
+    renderModal()
+
+    await chooseContractor(user)
+    await user.selectOptions(await screen.findByLabelText('createSlot.contractor'), 'source-1')
+    await submit(user)
+
+    await waitFor(() => expect(createTimeSlot).toHaveBeenCalledTimes(1))
+    // Zero seats: nobody can book work already sold, and once the session is over that zero is
+    // the only thing separating it from an hour nobody took up.
+    expect(createTimeSlot.mock.calls[0][0]).toMatchObject({
+      maxParticipants: 0,
+      isUnavailable: false,
+      isAvailabilityWindow: false,
+    })
+    // ⚠️ Assigned to the row that was just created, not to some id the form guessed — this is the
+    // half that keeps the session out of the "no payer" queue in the first place.
+    await waitFor(() => expect(assignSource).toHaveBeenCalledWith('slot', 'slot-new', 'source-1', null))
+  })
+
+  it('should refuse to create a contractor session with nobody to bill', async () => {
+    const user = userEvent.setup()
+    renderModal()
+
+    await chooseContractor(user)
+    await submit(user)
+
+    expect(createTimeSlot).not.toHaveBeenCalled()
+    expect(assignSource).not.toHaveBeenCalled()
+  })
+
+  it('should forget the payer when the kind changes back', async () => {
+    const user = userEvent.setup()
+    renderModal()
+
+    await chooseContractor(user)
+    await user.selectOptions(await screen.findByLabelText('createSlot.contractor'), 'source-1')
+    await user.click(screen.getByRole('radio', { name: 'slotKind.REGULAR' }))
+    await submit(user)
+
+    await waitFor(() => expect(createTimeSlot).toHaveBeenCalledTimes(1))
+    // A payer left behind a hidden field would file an ordinary slot under a school.
+    expect(assignSource).not.toHaveBeenCalled()
+  })
+
+  it('should point at where contractors are made rather than offering an empty list', async () => {
+    listSources.mockResolvedValue([])
+    const user = userEvent.setup()
+    renderModal()
+
+    await chooseContractor(user)
+
+    // An empty required dropdown is a tile that cannot be used and does not say why.
+    expect(await screen.findByText('createSlot.contractorNone')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'createSlot.contractorManage' }))
+      .toHaveAttribute('href', '/admin/settlements')
+    expect(screen.queryByLabelText('createSlot.contractor')).not.toBeInTheDocument()
+  })
+
+  it('should keep an archived contractor out of the list', async () => {
+    listSources.mockResolvedValue([
+      { id: 'source-1', name: 'SP nr 5', archived: false },
+      { id: 'source-2', name: 'Klub, który już nie współpracuje', archived: true },
+    ])
+    const user = userEvent.setup()
+    renderModal()
+
+    await chooseContractor(user)
+
+    // Archived payers exist so old money keeps a name, not so new work can be filed under a
+    // collaboration that ended — the same rule the settlement section's picker follows.
+    const options = await screen.findAllByRole('option')
+    expect(options.map((option) => option.textContent)).toEqual([
+      'createSlot.contractorPlaceholder',
+      'SP nr 5',
+    ])
   })
 })

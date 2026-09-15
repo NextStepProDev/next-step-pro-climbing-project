@@ -207,7 +207,11 @@
     "templateLabel": "Szablon",
     "templatePlaceholder": "— własna nazwa —",
     "submit": "Utwórz termin",
-    "cancel": "Anuluj"
+    "cancel": "Anuluj",
+    "contractor": "Kontrahent (wymagany)",
+    "contractorPlaceholder": "Wybierz kontrahenta",
+    "contractorNone": "Nie masz jeszcze żadnego kontrahenta.",
+    "contractorManage": "Dodaj go w Rozliczeniach"
   },
   "customSlot": {
     "title": "Nie znalazłeś odpowiedniego terminu?",

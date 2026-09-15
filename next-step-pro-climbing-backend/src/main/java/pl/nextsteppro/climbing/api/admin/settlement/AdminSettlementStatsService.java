@@ -65,7 +65,11 @@ class AdminSettlementStatsService {
     static final int REVENUE_MONTHS = 12;
 
     /**
-     * How far back the "to be priced" queue looks. A fixed policy, NOT the selected range, so the
+     * How far back the two work queues look — "to be priced" and "no payer at all". <b>One constant
+     * for both on purpose:</b> they answer the same question about the same backlog ("recent enough
+     * to still be worth chasing"), and two numbers here would be two headings that can disagree.
+     *
+     * <p>A fixed policy, NOT the selected range, so the
      * heading can name it and stay true when the year picker moves — the same rule as
      * {@code LOWEST_WINDOW_DAYS} on the weight tile.
      *
@@ -131,6 +135,7 @@ class AdminSettlementStatsService {
         return new SettlementOverviewDto(
             years,
             year,
+            unassigned(today),
             unpriced(today),
             outstanding(unsettled),
             revenue(rows, receivedPayouts, from, to, buckets, year),
@@ -217,6 +222,25 @@ class AdminSettlementStatsService {
         lines.sort(Comparator.comparing(PayerLineDto::date).reversed());
         return new PayerSummaryDto(scale(paid), scale(outstanding), scale(credit), count, lastPayment,
             lines.stream().limit(recentLimit).toList());
+    }
+
+    // -------------------------------------------------------------- unassigned
+
+    /**
+     * Sessions that were worked and have nobody to bill — see {@code UnassignedSession} for why the
+     * unpriced queue cannot reach them and what makes this list quiet enough to be a work queue.
+     *
+     * <p>One read, already ordered and already free of everything the unpriced queue reports, so
+     * there is nothing to group or de-duplicate here: the two lists are disjoint by their WHERE
+     * clauses rather than by a filter somebody has to remember.
+     */
+    private UnassignedDto unassigned(LocalDate today) {
+        List<UnassignedSessionDto> sessions = settlementRepository
+            .findUnassignedPastSlots(today.minusDays(UNPRICED_WINDOW_DAYS), today, LocalTime.MAX)
+            .stream()
+            .map(row -> new UnassignedSessionDto("slot", row.targetId(), row.targetDate(), row.title()))
+            .toList();
+        return new UnassignedDto(sessions.size(), UNPRICED_WINDOW_DAYS, sessions);
     }
 
     // ---------------------------------------------------------------- unpriced

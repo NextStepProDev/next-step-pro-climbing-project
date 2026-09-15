@@ -2,7 +2,8 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { differenceInCalendarDays, format } from 'date-fns'
-import { adminApi, adminSiteApi } from '../../api/client'
+import { Link } from 'react-router-dom'
+import { adminApi, adminSettlementsApi, adminSiteApi } from '../../api/client'
 import { getErrorMessage } from '../../utils/errors'
 import { parseCalendarDate } from '../../utils/calendarDate'
 import { useDateLocale } from '../../utils/dateFnsLocale'
@@ -12,12 +13,22 @@ import { DateInput } from '../ui/DateInput'
 import { TimeScrollPicker } from '../ui/TimeScrollPicker'
 import { InvitedUsersPicker } from '../ui/InvitedUsersPicker'
 import { SlotKindPicker } from './SlotKindPicker'
-import { slotKindFlags, type SlotKind } from '../../utils/slotKind'
+import { CONTRACTOR_SEATS, slotKindFlags, type CreateSlotKind } from '../../utils/slotKind'
 import type { CreateEventRequest, CreateTimeSlotRequest, InvitedUser } from '../../types'
 
-/** Which of the two rows this form is about to create — see the note on the component. */
+/** Every kind this form can create, unlike the edit forms — see `CreateSlotKind`. */
+const CREATE_KINDS: CreateSlotKind[] = ['REGULAR', 'WINDOW', 'UNAVAILABLE', 'CONTRACTOR']
+
+/**
+ * Which of the two rows this form is about to create — see the note on the component.
+ *
+ * `payoutSourceId` rides along on the slot branch rather than in `CreateTimeSlotRequest` because
+ * the server cannot take it there: `AdminService` is outside the settlement packages, and naming a
+ * type from them fails the isolation gate (the payout service is package-private, so it would not
+ * even compile). The assignment is therefore a second call, made from the same mutation.
+ */
 type CreateRequest =
-  | { target: 'slot'; data: CreateTimeSlotRequest }
+  | { target: 'slot'; data: CreateTimeSlotRequest; payoutSourceId?: string }
   | { target: 'event'; data: CreateEventRequest }
 
 interface CreateSlotModalProps {
@@ -76,7 +87,9 @@ export function CreateSlotModal({
   })
   // The kind lives outside `form`: it is one choice, and the request carries it as two booleans
   // that must never disagree (see slotKindFlags).
-  const [kind, setKind] = useState<SlotKind>('REGULAR')
+  const [kind, setKind] = useState<CreateSlotKind>('REGULAR')
+  /** Who settles a contractor session. Required for that kind and meaningless for the others. */
+  const [payoutSourceId, setPayoutSourceId] = useState('')
   // How long the absence lasts. Both flags stay on screen whenever they can change the outcome,
   // so no hidden state decides what the submit button creates.
   const [multiDay, setMultiDay] = useState(false)
@@ -86,12 +99,31 @@ export function CreateSlotModal({
 
   const queryClient = useQueryClient()
 
+  const isContractor = kind === 'CONTRACTOR'
+
+  // Only once the contractor tile is chosen. This form opens on every "+" in the calendar, and the
+  // payer list is of no use to the far more common slot nobody else settles — the same reasoning as
+  // `enabled: picking` in the settlement section.
+  const { data: payoutSources } = useQuery({
+    queryKey: ['admin', 'settlements', 'sources'],
+    queryFn: () => adminSettlementsApi.listSources(),
+    enabled: isContractor,
+  })
+  const activeSources = (payoutSources ?? []).filter((source) => !source.archived)
+
   const createMutation = useMutation({
     // Nothing here reads the created row, so the two endpoints are collapsed to one void result
     // instead of a union the caller would have to narrow for no reason.
     mutationFn: async (request: CreateRequest) => {
       if (request.target === 'slot') {
-        await adminApi.createTimeSlot(request.data)
+        const slot = await adminApi.createTimeSlot(request.data)
+        // ⚠️ In the mutationFn, not onSuccess — the same shape as "save and send invitations": the
+        // order is guaranteed and both failures surface on one mutation. A slot that got created
+        // and then failed to be assigned is loud here, and lands in "sessions with no payer" if it
+        // is missed anyway.
+        if (request.payoutSourceId) {
+          await adminSettlementsApi.assignSource('slot', slot.id, request.payoutSourceId, null)
+        }
         return
       }
       await adminApi.createEvent(request.data)
@@ -129,13 +161,16 @@ export function CreateSlotModal({
     ? t('createSlot.endAfterStart')
     : null
 
-  const changeKind = (next: SlotKind) => {
+  const changeKind = (next: CreateSlotKind) => {
     setKind(next)
     // Leaving a range armed behind a hidden field would change what the button creates.
     if (next !== 'UNAVAILABLE') {
       setMultiDay(false)
       setAllDay(false)
     }
+    // Same rule for the payer: a contractor left chosen behind a hidden field would file a session
+    // under a school that has nothing to do with it.
+    if (next !== 'CONTRACTOR') setPayoutSourceId('')
   }
 
   const changeStartDate = (date: string) => {
@@ -172,6 +207,9 @@ export function CreateSlotModal({
 
   const submitForm = () => {
     if (timeError || dateError || !datesFilled) return
+    // Naming the payer is the whole point of this kind: a contractor session created without one
+    // is exactly the invisible row this tile exists to stop producing.
+    if (isContractor && !payoutSourceId) return
     const { title, ...rest } = form
 
     if (asEvent) {
@@ -199,12 +237,15 @@ export function CreateSlotModal({
       data: {
         ...rest,
         ...slotKindFlags(kind),
-        // Only a regular slot carries seats; the backend zeroes an unavailable one anyway.
-        maxParticipants: isRegular ? form.maxParticipants : 1,
+        // Only a regular slot carries seats; the backend zeroes an unavailable one anyway. A
+        // contractor session is stored with none: that is what keeps a client from booking into
+        // work already sold, and what makes the session findable afterwards if the payer is lost.
+        maxParticipants: isRegular ? form.maxParticipants : isContractor ? CONTRACTOR_SEATS : 1,
         title: title || undefined,
         invitedUserIds: isRegular ? invited.map((u) => u.userId) : [],
         trainingRequestId: initial?.trainingRequestId,
       },
+      payoutSourceId: isContractor ? payoutSourceId : undefined,
     })
   }
 
@@ -253,7 +294,37 @@ export function CreateSlotModal({
         </div>
 
         {/* Above the dates and times, because the kind decides which of them are even asked for. */}
-        <SlotKindPicker value={kind} onChange={changeKind} />
+        <SlotKindPicker value={kind} onChange={changeKind} options={CREATE_KINDS} />
+
+        {isContractor && (
+          <div>
+            <label htmlFor="create-slot-payout-source" className="block text-sm text-surface-400 mb-1">
+              {t('createSlot.contractor')}
+            </label>
+            {activeSources.length > 0 ? (
+              <select
+                id="create-slot-payout-source"
+                value={payoutSourceId}
+                onChange={(e) => setPayoutSourceId(e.target.value)}
+                className="w-full bg-surface-800 border border-surface-700 rounded-lg px-4 py-2 text-surface-100"
+              >
+                <option value="">{t('createSlot.contractorPlaceholder')}</option>
+                {activeSources.map((source) => (
+                  <option key={source.id} value={source.id}>{source.name}</option>
+                ))}
+              </select>
+            ) : (
+              /* Never a dead end: an empty dropdown on a required field is a tile that cannot be
+                 used and does not say why. The way out is where contractors are actually made. */
+              <p className="text-sm text-surface-400">
+                {t('createSlot.contractorNone')}{' '}
+                <Link to="/admin/settlements" className="text-primary-400 hover:text-primary-300">
+                  {t('createSlot.contractorManage')}
+                </Link>
+              </p>
+            )}
+          </div>
+        )}
 
         <div>
           <div className={multiDay ? 'grid grid-cols-2 gap-4' : undefined}>
@@ -360,7 +431,12 @@ export function CreateSlotModal({
         )}
 
         <div className="flex gap-3 pt-4">
-          <Button type="submit" loading={createMutation.isPending} className="flex-1">
+          <Button
+            type="submit"
+            loading={createMutation.isPending}
+            disabled={isContractor && !payoutSourceId}
+            className="flex-1"
+          >
             {t('createSlot.submit')}
           </Button>
           <Button type="button" variant="ghost" onClick={onClose}>

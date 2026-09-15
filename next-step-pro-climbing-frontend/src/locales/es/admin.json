@@ -1028,6 +1028,12 @@
       "year": "Año:",
       "allYears": "todo",
       "empty": "Todavía no hay liquidaciones. Los importes se introducen en una sesión o un evento del calendario.",
+      "unassigned": {
+        "title": "Sesiones sin pagador",
+        "count": "{{n}} sesiones",
+        "scope": "Sesiones ya celebradas sin plazas, sin asistentes y sin contratista: trabajo que nada más contabiliza. Esta lista no sigue al selector de año y alcanza {{days}} días atrás.",
+        "open": "Abrir la sesión del {{date}} e indicar el contratista"
+      },
       "unpriced": {
         "title": "Por valorar",
         "count": "{{n}} sesiones",

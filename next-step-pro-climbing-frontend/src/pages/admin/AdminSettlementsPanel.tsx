@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Link, useLocation, useSearchParams } from 'react-router-dom'
 import { format } from 'date-fns'
-import { AlertTriangle, Building2, ChevronDown, ChevronRight, CircleHelp, Coins, Download, TrendingUp, Users } from 'lucide-react'
+import { AlertTriangle, Building2, ChevronDown, ChevronRight, CircleHelp, Coins, Download, TrendingUp, UserX, Users } from 'lucide-react'
 import { Button } from '../../components/ui/Button'
 import { DateInput } from '../../components/ui/DateInput'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
@@ -22,6 +22,8 @@ import type {
   PayoutSource,
   PayoutsSummary,
   SettlementOverview,
+  SettlementTarget,
+  UnassignedSummary,
   UnpricedSummary,
 } from '../../types'
 
@@ -70,6 +72,7 @@ export function AdminSettlementsPanel() {
   // years and no debts, and would otherwise announce itself as empty over a full payouts table.
   const nothingAtAll =
     data.years.length === 0 && data.outstanding.count === 0 && data.unpriced.count === 0
+    && data.unassigned.count === 0
     && data.payouts.periods.length === 0 && data.payouts.sources.length === 0
 
   return (
@@ -105,8 +108,12 @@ export function AdminSettlementsPanel() {
         </div>
       ) : (
         <>
-          {/* First, because it is the half that cannot ask for itself: an unpaid amount at least
-              exists as a debt, a session nobody priced is invisible everywhere else. */}
+          {/* First, because it is the furthest out of reach: a session nobody priced is at least
+              known to the pricing queue through the people on it, while one with nobody on it is
+              not visible to any other screen in the app. */}
+          <UnassignedCard unassigned={data.unassigned} />
+          {/* Then the half that cannot ask for itself either: an unpaid amount at least exists as
+              a debt, a session nobody priced is invisible everywhere else. */}
           <UnpricedCard unpriced={data.unpriced} />
           <OutstandingCard overview={data} />
           <RevenueCard overview={data} />
@@ -206,6 +213,102 @@ function useMoney() {
   return (amount: number) => formatPln(amount, i18n.language)
 }
 
+// ---------- work queues ----------
+
+/**
+ * One row of either work queue: a date, a link into the session, and whatever the queue counts.
+ *
+ * Shared because the two lists differ in what is missing, not in how a row behaves — and the link
+ * is the part worth writing once, since a wrong `targetType` in it opens the wrong modal and only
+ * says so when somebody presses it.
+ */
+function SessionRow({
+  targetType,
+  targetId,
+  date,
+  title,
+  openLabel,
+  aside,
+}: {
+  targetType: SettlementTarget
+  targetId: string
+  date: string
+  title: string | null
+  openLabel: string
+  aside?: string
+}) {
+  const { t } = useTranslation('admin')
+  const locale = useDateLocale()
+  const location = useLocation()
+
+  return (
+    <li className="flex items-center gap-3 py-2">
+      <span className="w-24 shrink-0 text-xs text-surface-400 tabular-nums">
+        {format(parseCalendarDate(date), 'dd.MM.yyyy', { locale })}
+      </span>
+      <Link
+        to={`/calendar?date=${date}&${targetType}=${targetId}`}
+        state={{ returnTo: location.pathname + location.search }}
+        aria-label={openLabel}
+        className="flex-1 min-w-0 text-sm text-surface-300 truncate hover:text-primary-300 transition-colors"
+      >
+        {title ?? t(`settlements.tab.outstanding.untitled.${targetType}`)}
+      </Link>
+      {aside && (
+        <span className="shrink-0 text-xs text-surface-500 tabular-nums">{aside}</span>
+      )}
+    </li>
+  )
+}
+
+/**
+ * Sessions that were worked and have nobody to bill at all.
+ *
+ * The one queue no other screen can stand in for: a session with zero people on it produces no
+ * rows in the pricing queue's reads, is neither revenue nor debt, and is missing from the hourly
+ * rate's denominator — so forgetting to name the payer makes the rate read high, silently and for
+ * good. The row links into the same modal that already has "mark as settled in bulk" on it.
+ */
+function UnassignedCard({ unassigned }: { unassigned: UnassignedSummary }) {
+  const { t } = useTranslation('admin')
+
+  if (unassigned.count === 0) return null
+
+  return (
+    <Card
+      title={t('settlements.tab.unassigned.title')}
+      icon={UserX}
+      aside={
+        <span className="text-sm font-semibold text-surface-200 tabular-nums">
+          {t('settlements.tab.unassigned.count', { n: unassigned.count })}
+        </span>
+      }
+    >
+      {/* Three rules stated rather than guessed: what puts a session here, that the list disobeys
+          the year picker, and where it stops. */}
+      <p className="text-xs text-surface-500">
+        {t('settlements.tab.unassigned.scope', { days: unassigned.windowDays })}
+      </p>
+      <div className="overflow-x-auto">
+        <ul className="min-w-[28rem] divide-y divide-surface-800">
+          {unassigned.sessions.map((session) => (
+            <SessionRow
+              key={`${session.targetType}:${session.targetId}`}
+              targetType={session.targetType}
+              targetId={session.targetId}
+              date={session.date}
+              title={session.title}
+              openLabel={t('settlements.tab.unassigned.open', {
+                date: format(parseCalendarDate(session.date), 'dd.MM.yyyy'),
+              })}
+            />
+          ))}
+        </ul>
+      </div>
+    </Card>
+  )
+}
+
 // ---------- to be priced ----------
 
 /**
@@ -217,9 +320,6 @@ function useMoney() {
  */
 function UnpricedCard({ unpriced }: { unpriced: UnpricedSummary }) {
   const { t } = useTranslation('admin')
-  const locale = useDateLocale()
-  const location = useLocation()
-  const backHere = location.pathname + location.search
 
   if (unpriced.count === 0) return null
 
@@ -242,24 +342,17 @@ function UnpricedCard({ unpriced }: { unpriced: UnpricedSummary }) {
       <div className="overflow-x-auto">
         <ul className="min-w-[28rem] divide-y divide-surface-800">
           {unpriced.sessions.map((session) => (
-            <li key={`${session.targetType}:${session.targetId}`} className="flex items-center gap-3 py-2">
-              <span className="w-24 shrink-0 text-xs text-surface-400 tabular-nums">
-                {format(parseCalendarDate(session.date), 'dd.MM.yyyy', { locale })}
-              </span>
-              <Link
-                to={`/calendar?date=${session.date}&${session.targetType}=${session.targetId}`}
-                state={{ returnTo: backHere }}
-                aria-label={t('settlements.tab.unpriced.open', {
-                  date: format(parseCalendarDate(session.date), 'dd.MM.yyyy'),
-                })}
-                className="flex-1 min-w-0 text-sm text-surface-300 truncate hover:text-primary-300 transition-colors"
-              >
-                {session.title ?? t(`settlements.tab.outstanding.untitled.${session.targetType}`)}
-              </Link>
-              <span className="shrink-0 text-xs text-surface-500 tabular-nums">
-                {t('settlements.tab.unpriced.people', { n: session.payerCount })}
-              </span>
-            </li>
+            <SessionRow
+              key={`${session.targetType}:${session.targetId}`}
+              targetType={session.targetType}
+              targetId={session.targetId}
+              date={session.date}
+              title={session.title}
+              openLabel={t('settlements.tab.unpriced.open', {
+                date: format(parseCalendarDate(session.date), 'dd.MM.yyyy'),
+              })}
+              aside={t('settlements.tab.unpriced.people', { n: session.payerCount })}
+            />
           ))}
         </ul>
       </div>
