@@ -5,6 +5,7 @@ import org.jspecify.annotations.Nullable;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.Objects;
 import java.util.UUID;
 
 /**
@@ -21,11 +22,29 @@ import java.util.UUID;
  */
 public record SessionPayoutRow(
     UUID sourceId,
+    @Nullable UUID slotId,
+    @Nullable UUID eventId,
+    @Nullable String title,
     LocalDate date,
     @Nullable LocalDate endDate,
     @Nullable LocalTime startTime,
     @Nullable LocalTime endTime
 ) {
+
+    /**
+     * Which session this is, as the calendar addresses it.
+     *
+     * <p>Both halves are carried rather than one id plus a flag: the assignment is a slot XOR an
+     * event by construction, and a deep link built from the wrong kind opens the wrong screen while
+     * looking perfectly correct in the table it came from.
+     */
+    public UUID targetId() {
+        return eventId != null ? eventId : Objects.requireNonNull(slotId);
+    }
+
+    public String targetType() {
+        return eventId != null ? "event" : "slot";
+    }
 
     /**
      * How long the session ran, or {@code null} when that is not knowable.

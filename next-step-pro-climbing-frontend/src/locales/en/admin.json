@@ -1103,7 +1103,9 @@
         "restore": "Restore — {{name}}",
         "rename": "Name — {{name}}",
         "hours": "hours",
-        "withoutHours": "(+{{n}} without hours)"
+        "withoutHours": "(+{{n}} without hours)",
+        "noHours": "no hours",
+        "sessionHours": "{{hours}} h"
       },
       "export": {
         "action": "Export XLSX",

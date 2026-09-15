@@ -554,7 +554,7 @@ class AdminSettlementStatsService {
         }
         for (SessionPayoutRow session : sessionPayoutRepository.findSessionsBetween(windowFrom, windowTo)) {
             periodOf(byKey, names, session.sourceId(), session.date().withDayOfMonth(1))
-                .addSession(session.minutes());
+                .addSession(session);
         }
 
         BigDecimal total = BigDecimal.ZERO;
@@ -567,7 +567,7 @@ class AdminSettlementStatsService {
                 .thenComparing(period -> period.sourceName, String.CASE_INSENSITIVE_ORDER))
             .map(period -> new PayoutPeriodDto(period.sourceId, period.sourceName, period.month,
                 period.sessions, period.minutes, period.sessionsWithoutHours,
-                scale(period.amount), period.rate(), period.transfers))
+                scale(period.amount), period.rate(), period.transfers, period.heldSessions()))
             .toList();
 
         return new PayoutsDto(sources, scale(total), periods);
@@ -588,6 +588,7 @@ class AdminSettlementStatsService {
         private int minutes;
         private int sessionsWithoutHours;
         private final List<PayoutEntryDto> transfers = new ArrayList<>();
+        private final List<SessionPayoutRow> rows = new ArrayList<>();
 
         private Period(UUID sourceId, String sourceName, LocalDate month) {
             this.sourceId = sourceId;
@@ -600,13 +601,31 @@ class AdminSettlementStatsService {
             transfers.add(new PayoutEntryDto(payout.id(), payout.amount(), payout.receivedOn()));
         }
 
-        private void addSession(@Nullable Integer sessionMinutes) {
+        private void addSession(SessionPayoutRow row) {
+            rows.add(row);
             sessions++;
+            Integer sessionMinutes = row.minutes();
             if (sessionMinutes == null) {
                 sessionsWithoutHours++;
             } else {
                 minutes += sessionMinutes;
             }
+        }
+
+        /**
+         * The sessions behind the count and the hours, oldest first.
+         *
+         * <p>Built here rather than queried again: the read this comes from is the same one the
+         * totals are made of, so the list and the figures above it cannot disagree — which is the
+         * entire point of being able to open the row.
+         */
+        private List<PayoutSessionDto> heldSessions() {
+            return rows.stream()
+                .sorted(Comparator.comparing(SessionPayoutRow::date)
+                    .thenComparing(row -> row.startTime() == null ? LocalTime.MIN : row.startTime()))
+                .map(row -> new PayoutSessionDto(row.targetType(), row.targetId(), row.date(),
+                    row.title(), row.minutes()))
+                .toList();
         }
 
         /**
