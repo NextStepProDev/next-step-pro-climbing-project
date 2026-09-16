@@ -1,10 +1,11 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { FileText, Image as ImageIcon, Link2, Loader2, Plus, Upload, X } from 'lucide-react'
 import { getErrorMessage } from '../../utils/errors'
 import type { AttachmentInput } from '../../types'
 
-const MAX_ATTACHMENTS = 3
+/** Mirrors TrainingAttachment.MAX_PER_TRAINING on the backend. */
+const MAX_ATTACHMENTS = 6
 const ACCEPT = 'application/pdf,image/jpeg,image/png,image/webp'
 
 interface AttachmentEditorProps {
@@ -15,49 +16,83 @@ interface AttachmentEditorProps {
 }
 
 /**
- * Up to 3 materials per training: pasted links (label + URL) and/or uploaded files (PDF/image).
- * Files are uploaded immediately and referenced by their stored filename on save. URL validity
- * is checked on submit in the parent.
+ * Up to MAX_ATTACHMENTS materials per training: pasted links (label + URL) and/or uploaded files
+ * (PDF/image). Several files can be picked at once; each is uploaded immediately and referenced by
+ * its stored filename on save. URL validity is checked on submit in the parent.
  */
 export function AttachmentEditor({ value, onChange, onUpload }: AttachmentEditorProps) {
   const { t } = useTranslation('training')
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const [uploading, setUploading] = useState(false)
+  // null while idle; counts files, not bytes — six photos are a dozen silent seconds otherwise.
+  const [progress, setProgress] = useState<{ done: number; total: number } | null>(null)
   const [uploadError, setUploadError] = useState<string | null>(null)
+  const uploading = progress !== null
+
+  // Six files take seconds, and the rows already on screen stay live meanwhile — a material removed
+  // or a label retyped mid-upload must survive the merge below, which would otherwise write back
+  // the list as it looked when the picker closed.
+  const valueRef = useRef(value)
+  useEffect(() => { valueRef.current = value }, [value])
 
   const update = (index: number, patch: Partial<AttachmentInput>) => {
     onChange(value.map((a, i) => (i === index ? { ...a, ...patch } : a)))
   }
-  const remove = (index: number) => onChange(value.filter((_, i) => i !== index))
-  const addLink = () => onChange([...value, { kind: 'LINK', url: '', label: '' }])
-
-  const pickFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    e.target.value = '' // allow re-picking the same file
-    if (!file) return
+  // Both change the free-slot count, and a refusal message names it ("free slots: 1") — so the
+  // message stops being true the moment either runs.
+  const remove = (index: number) => {
     setUploadError(null)
-    setUploading(true)
+    onChange(value.filter((_, i) => i !== index))
+  }
+  const addLink = () => {
+    setUploadError(null)
+    onChange([...value, { kind: 'LINK', url: '', label: '' }])
+  }
+
+  const pickFiles = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const picked = Array.from(e.target.files ?? [])
+    e.target.value = '' // allow re-picking the same file
+    if (picked.length === 0) return
+
+    const free = MAX_ATTACHMENTS - value.length
+    if (picked.length > free) {
+      // Refuse the whole pick rather than silently keeping the first `free` files: a list quietly
+      // shorter than what was selected is discovered after saving, if at all.
+      setUploadError(t('form.attachmentTooMany', { max: MAX_ATTACHMENTS, free }))
+      return
+    }
+
+    setUploadError(null)
+    setProgress({ done: 0, total: picked.length })
+    // Collected locally and merged once. Appending per file would write back the list as it was
+    // BEFORE the first upload each time, so every file but the last would vanish.
+    const uploaded: AttachmentInput[] = []
     try {
-      const up = await onUpload(file)
-      onChange([...value, {
-        kind: 'FILE',
-        filename: up.filename,
-        originalName: up.originalName,
-        mimeType: up.mimeType,
-        sizeBytes: up.sizeBytes,
-        label: '',
-      }])
+      for (const file of picked) {
+        const up = await onUpload(file)
+        uploaded.push({
+          kind: 'FILE',
+          filename: up.filename,
+          originalName: up.originalName,
+          mimeType: up.mimeType,
+          sizeBytes: up.sizeBytes,
+          label: '',
+        })
+        setProgress({ done: uploaded.length, total: picked.length })
+      }
     } catch (err) {
       setUploadError(getErrorMessage(err))
     } finally {
-      setUploading(false)
+      // Keep whatever already reached the server, even when a later file failed: those bytes are
+      // on disk, and dropping the rows here would leave orphans the user cannot see or remove.
+      if (uploaded.length > 0) onChange([...valueRef.current, ...uploaded])
+      setProgress(null)
     }
   }
 
   return (
     <div>
       <label className="block text-sm text-surface-400 mb-1">{t('form.attachments')}</label>
-      <p className="text-xs text-surface-500 mb-2">{t('form.attachmentsHint')}</p>
+      <p className="text-xs text-surface-500 mb-2">{t('form.attachmentsHint', { max: MAX_ATTACHMENTS })}</p>
 
       <div className="space-y-2">
         {value.map((att, i) => (
@@ -106,14 +141,17 @@ export function AttachmentEditor({ value, onChange, onUpload }: AttachmentEditor
         ))}
       </div>
 
-      {uploadError && <p className="text-sm text-rose-400/80 mt-2">{uploadError}</p>}
+      {uploadError && <p className="text-sm text-rose-400/80 mt-2" role="alert">{uploadError}</p>}
 
       {value.length < MAX_ATTACHMENTS && (
         <div className="mt-2 flex flex-wrap gap-4">
           <button
             type="button"
             onClick={addLink}
-            className="inline-flex items-center gap-1.5 text-sm font-medium text-primary-400 hover:text-primary-300 transition-colors"
+            // Slots taken by files still in flight are not visible in `value` yet, so without this
+            // a link pasted mid-upload merges into a list past the cap that the server refuses.
+            disabled={uploading}
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-primary-400 hover:text-primary-300 transition-colors disabled:opacity-60"
           >
             <Plus className="w-4 h-4" />
             {t('form.attachmentAdd')}
@@ -125,13 +163,16 @@ export function AttachmentEditor({ value, onChange, onUpload }: AttachmentEditor
             className="inline-flex items-center gap-1.5 text-sm font-medium text-primary-400 hover:text-primary-300 transition-colors disabled:opacity-60"
           >
             {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-            {t('form.attachmentUpload')}
+            {progress && progress.total > 1
+              ? t('form.attachmentUploading', { done: progress.done, total: progress.total })
+              : t('form.attachmentUpload')}
           </button>
           <input
             ref={fileInputRef}
             type="file"
+            multiple
             accept={ACCEPT}
-            onChange={pickFile}
+            onChange={pickFiles}
             className="hidden"
           />
         </div>

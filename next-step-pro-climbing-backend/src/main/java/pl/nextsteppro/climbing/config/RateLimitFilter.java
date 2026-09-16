@@ -64,8 +64,11 @@ public class RateLimitFilter extends OncePerRequestFilter {
     // "3 PENDING per user" rule caps what survives, not what the endpoint has to process.
     private static final int TRAINING_REQUEST_LIMIT = 20;
     // Material uploads store a 10MB file on disk each; the endpoint is otherwise unthrottled, so a
-    // tight per-IP cap bounds a disk-fill flood (orphans are also swept by the cleanup scheduler).
-    private static final int UPLOAD_LIMIT = 12;
+    // per-IP cap bounds a disk-fill flood (orphans are also swept by the cleanup scheduler). The
+    // ceiling has to clear ordinary work, though: one file is one request, a training now holds six
+    // materials, and comment attachments share this bucket — so filling one entry and swapping a
+    // photo used to be enough to hit a 429 whose only symptom is "the upload does nothing".
+    private static final int UPLOAD_LIMIT = 24;
     // Reading a private file is one request per image, and a thread can hold dozens. Sharing the
     // 40/min calendar bucket would have a coach opening a long conversation throttled by their own
     // photos; these are cheap streamed reads, so they get their own, roomier bucket.

@@ -19,6 +19,7 @@ import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -72,10 +73,13 @@ class TrainingTemplateServiceTest {
     }
 
     @Test
-    void shouldRejectWhenMoreThanThreeAttachments() {
-        SaveTemplateRequest request = new SaveTemplateRequest(TrainingKind.TRAINING, "T", null, 60, null, List.of(
-            new AttachmentRequest("https://a.com", null), new AttachmentRequest("https://b.com", null),
-            new AttachmentRequest("https://c.com", null), new AttachmentRequest("https://d.com", null)));
+    void shouldRejectWhenMoreAttachmentsThanTheLimit() {
+        // One past the cap, derived from the constant so raising it cannot leave this test quietly
+        // asserting on a number the code no longer uses.
+        List<AttachmentRequest> tooMany = IntStream.rangeClosed(0, TrainingAttachment.MAX_PER_TRAINING)
+            .mapToObj(i -> new AttachmentRequest("https://a" + i + ".com", null))
+            .toList();
+        SaveTemplateRequest request = new SaveTemplateRequest(TrainingKind.TRAINING, "T", null, 60, null, tooMany);
         assertThrows(IllegalArgumentException.class, () -> service.create(request));
         verify(templateRepository, never()).save(any());
     }
