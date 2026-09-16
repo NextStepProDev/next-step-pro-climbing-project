@@ -1,8 +1,8 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { ReservationBlock, TrainingBlock } from './TrainingBlock'
-import { makeAttachment, makeReservation, makeTask, makeTraining } from '../../test/factories'
+import { InvitationBlock, ReservationBlock, TrainingBlock } from './TrainingBlock'
+import { makeAttachment, makeInvitation, makeReservation, makeTask, makeTraining } from '../../test/factories'
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (key: string) => key, i18n: { language: 'pl' } }),
@@ -199,8 +199,16 @@ describe('TrainingBlock — a task is its own kind of entry', () => {
   })
 })
 
-describe('TrainingBlock — armed clipboard (Fire Academy 129f7a7)', () => {
-  it('should be a button that opens the detail while the clipboard is idle', async () => {
+/**
+ * An entry stays a control no matter what is on the clipboard.
+ *
+ * It used to stop being one so the click could fall through to the day cell and paste — which
+ * made every entry on screen a paste target. An athlete who armed the clipboard by accident
+ * found that each further tap produced another copy and opened nothing she could delete.
+ * Pasting now happens only where a "paste here" strip says it does.
+ */
+describe('TrainingBlock — an entry is always a control', () => {
+  it('should open the detail at tile density', async () => {
     const onClick = vi.fn()
     render(<TrainingBlock training={makeTraining()} onClick={onClick} density="tile" />)
 
@@ -209,48 +217,115 @@ describe('TrainingBlock — armed clipboard (Fire Academy 129f7a7)', () => {
     expect(onClick).toHaveBeenCalledTimes(1)
   })
 
-  it('should stop being a control while the clipboard is armed', () => {
-    // Not a DISABLED button — a disabled control swallows the click and the tap does
-    // nothing. It has to leave the keyboard path entirely so the click reaches the day
-    // cell underneath, which is the paste target.
-    render(<TrainingBlock training={makeTraining()} onClick={vi.fn()} density="tile" pasteActive />)
-
-    expect(screen.queryByRole('button')).not.toBeInTheDocument()
-  })
-
-  it('should not open the detail when the armed tile is clicked', async () => {
+  it('should open the detail at chip density', async () => {
     const onClick = vi.fn()
-    const { container } = render(
-      <TrainingBlock training={makeTraining({ title: 'Strength' })} onClick={onClick} density="tile" pasteActive />,
+    render(
+      <TrainingBlock training={makeTraining({ startTime: null, endTime: null, title: 'Strength' })}
+        onClick={onClick} density="chip" />,
     )
 
     await userEvent.click(screen.getByText('Strength'))
 
-    expect(onClick).not.toHaveBeenCalled()
-    expect(container.firstElementChild!.tagName).toBe('DIV')
+    expect(onClick).toHaveBeenCalledTimes(1)
+  })
+
+  it('should leave no dead area inside a chip that carries clipboard controls', async () => {
+    // The controls used to sit in a full-width row whose empty half was a plain div: a click
+    // there found no button, fell through to the day cell and opened the CREATE form. Every
+    // pixel of the chip that is not a control has to belong to the body button.
+    const onClick = vi.fn()
+    const { container } = render(
+      <TrainingBlock training={makeTraining({ startTime: null, endTime: null, title: 'Strength' })}
+        onClick={onClick} density="chip" onCopy={vi.fn()} onCut={vi.fn()} />,
+    )
+
+    const chip = container.firstElementChild!
+    const body = screen.getByTitle('Strength')
+    // Everything under the chip is either the body button or the (absolutely positioned) actions
+    const strays = [...chip.children].filter((c) => c !== body && !c.hasAttribute('data-admin-action'))
+    expect(strays).toEqual([])
+    expect(body.className).toContain('flex-1')
+  })
+})
+
+/**
+ * The all-day chip used to be ~20px tall with an 18px copy button wedged into the very strip
+ * you tap to open the card — and the 24px floor above was only ever checked at `full` density.
+ * An athlete armed the clipboard by accident that way, and from then on every tap pasted
+ * another copy instead of opening anything she could delete.
+ */
+describe('TrainingBlock — the all-day chip is not a trap', () => {
+  const untimed = makeTraining({ startTime: null, endTime: null, title: 'Mobility' })
+  const minHeightOf = (container: HTMLElement) =>
+    container.firstElementChild!.className.split(/\s+/).find((c) => c.startsWith('min-h-'))
+
+  it('should give the chip actions the same 24px tap target as every other density', () => {
+    render(<TrainingBlock training={untimed} onClick={vi.fn()} density="chip" onCopy={vi.fn()} onCut={vi.fn()} />)
+
+    expect(tapTargetPx(screen.getByLabelText('clipboard.copy'))).toBeGreaterThanOrEqual(24)
+    expect(tapTargetPx(screen.getByLabelText('clipboard.cut'))).toBeGreaterThanOrEqual(24)
+  })
+
+  it('should keep the actions outside the element that opens the card', () => {
+    render(<TrainingBlock training={untimed} onClick={vi.fn()} density="chip" onCopy={vi.fn()} onCut={vi.fn()} />)
+
+    expect(screen.getByTitle('Mobility').contains(screen.getByLabelText('clipboard.copy'))).toBe(false)
   })
 
   /**
-   * The chip density used to ignore pasteActive entirely, and it is the density the week view's
-   * all-day lane renders — the only place an untimed entry or a task can be pasted. A chip left
-   * as a button made the lane's closest('button') guard swallow the paste and open the card.
+   * Both kinds of entry share the all-day lane, so a height changed on one and not the other
+   * leaves the lane ragged — the slot/event twinning failure mode, one floor down.
    */
-  it('should stop being a control at chip density too', () => {
-    render(
-      <TrainingBlock training={makeTraining({ startTime: null, endTime: null })}
-        onClick={vi.fn()} density="chip" pasteActive />,
+  it('should stand as tall as the invitation chip it shares the lane with', () => {
+    const training = render(<TrainingBlock training={untimed} onClick={vi.fn()} density="chip" />)
+    const invitation = render(
+      <InvitationBlock invitation={makeInvitation({ startTime: null, endTime: null })}
+        label="overlay.invitation" onClick={vi.fn()} density="chip" />,
     )
 
-    expect(screen.queryByRole('button')).not.toBeInTheDocument()
+    expect(minHeightOf(invitation.container)).toBe(minHeightOf(training.container))
   })
 
-  it('should stay a control at chip density when nothing is on the clipboard', () => {
-    render(
-      <TrainingBlock training={makeTraining({ startTime: null, endTime: null })}
-        onClick={vi.fn()} density="chip" />,
+  it('should stand the same height with and without the clipboard controls', () => {
+    // The controls exist on a mouse and not on touch, so a height that depended on them would
+    // give the two devices two different lanes — and the hover reveal would reflow the row
+    // under the cursor. The overlay keeps the body button the full size of the chip either way.
+    const withControls = render(
+      <TrainingBlock training={untimed} onClick={vi.fn()} density="chip" onCopy={vi.fn()} onCut={vi.fn()} />,
     )
+    const bare = render(<TrainingBlock training={untimed} onClick={vi.fn()} density="chip" />)
 
-    expect(screen.getByRole('button')).toBeInTheDocument()
+    expect(minHeightOf(bare.container)).toBe('min-h-12')
+    expect(minHeightOf(withControls.container)).toBe(minHeightOf(bare.container))
+  })
+})
+
+describe('TrainingBlock — deleting from the day sheet', () => {
+  const training = makeTraining({ title: 'Endurance circuits' })
+
+  it('should offer delete at tile density when the sheet passes a handler', async () => {
+    const onDelete = vi.fn()
+    const onClick = vi.fn()
+    render(<TrainingBlock training={training} onClick={onClick} density="tile" onDelete={onDelete} />)
+
+    await userEvent.click(screen.getByLabelText('detail.delete'))
+
+    expect(onDelete).toHaveBeenCalledTimes(1)
+    expect(onClick).not.toHaveBeenCalled()
+  })
+
+  /**
+   * Only the day sheet gets it. A third micro-button in the all-day lane or on the hour grid
+   * is exactly the crowding that made an accidental copy so easy in the first place.
+   */
+  it('should not offer delete at chip or full density', () => {
+    const { rerender } = render(
+      <TrainingBlock training={training} onClick={vi.fn()} density="chip" onDelete={vi.fn()} />,
+    )
+    expect(screen.queryByLabelText('detail.delete')).not.toBeInTheDocument()
+
+    rerender(<TrainingBlock training={training} onClick={vi.fn()} density="full" onDelete={vi.fn()} />)
+    expect(screen.queryByLabelText('detail.delete')).not.toBeInTheDocument()
   })
 })
 

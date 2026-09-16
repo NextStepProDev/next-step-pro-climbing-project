@@ -7,6 +7,9 @@
     "month": "Mes",
     "week": "Semana"
   },
+  "week": {
+    "addAllDay": "Añadir una entrada de todo el día"
+  },
   "month": {
     "more": "+{{count}}",
     "moreAria_one": "Mostrar {{count}} entrada más",
@@ -14,8 +17,7 @@
     "showDay": "Mostrar el día {{date}}",
     "addOnDay": "Añadir una entrada",
     "emptyDay": "Nada planificado para este día",
-    "addOnDate": "Añadir una entrada el {{date}}",
-    "pasteHere": "Pegar aquí"
+    "addOnDate": "Añadir una entrada el {{date}}"
   },
   "nav": {
     "today": "Hoy",
@@ -150,11 +152,12 @@
   "clipboard": {
     "copy": "Copiar entrenamiento",
     "cut": "Cortar entrenamiento",
-    "copiedBanner": "Copiado \"{{title}}\" — haz clic en un hueco libre del calendario para pegar una copia (Esc cancela)",
-    "cutBanner": "Cortado \"{{title}}\" — haz clic en un hueco libre del calendario para moverlo (Esc cancela)",
+    "copiedBanner": "Copiado \"{{title}}\" — elige \"Pegar aquí\" en un día o haz clic en una hora libre (Esc cancela)",
+    "cutBanner": "Cortado \"{{title}}\" — elige \"Pegar aquí\" en un día o haz clic en una hora libre (Esc cancela)",
     "cancel": "Cancelar",
     "fromAthlete": "del calendario de {{name}}",
-    "fromOwnCalendar": "de tu propio calendario"
+    "fromOwnCalendar": "de tu propio calendario",
+    "pasteHere": "Pegar aquí"
   },
   "completion": {
     "markDone": "Marcar como completado",

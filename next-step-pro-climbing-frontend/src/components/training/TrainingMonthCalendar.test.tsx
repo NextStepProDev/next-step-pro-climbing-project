@@ -183,23 +183,34 @@ describe('TrainingMonthCalendar — the per-day add button (Fire Academy 35924b8
     const view = renderMonth({ pasteActive: true })
 
     expect(view.queryByLabelText(/^month\.addOnDate:/)).not.toBeInTheDocument()
-    expect(view.getAllByText('month.pasteHere')).toHaveLength(MONTH_GRID_DAYS)
+    expect(view.getAllByText('clipboard.pasteHere')).toHaveLength(MONTH_GRID_DAYS)
   })
 })
 
-describe('TrainingMonthCalendar — armed clipboard (Fire Academy 129f7a7)', () => {
-  it('should paste into the cell instead of opening the add form', () => {
+describe('TrainingMonthCalendar — an armed clipboard changes one thing, not the cell', () => {
+  it('should paste from the strip at the foot of the cell', () => {
+    // One named target per cell. The strip was dead text relying on the cell underneath;
+    // now it is the button, and the cell is not a target at all.
+    const { cellFor, onPasteAt } = renderMonth({ pasteActive: true })
+
+    within(cellFor('12')).getByLabelText('clipboard.pasteHere').click()
+
+    expect(onPasteAt).toHaveBeenCalledWith('2026-08-12')
+  })
+
+  it('should not paste when the cell itself is clicked', () => {
+    // A whole cell that pastes puts every entry in it one near-miss from an unwanted copy.
     const { cellFor, onPasteAt, onDayClick } = renderMonth({ pasteActive: true })
 
     cellFor('12').click()
 
-    expect(onPasteAt).toHaveBeenCalledWith('2026-08-12')
-    expect(onDayClick).not.toHaveBeenCalled()
+    expect(onPasteAt).not.toHaveBeenCalled()
+    expect(onDayClick).toHaveBeenCalledWith('2026-08-12')
   })
 
-  it('should let a click on a training reach the cell underneath', async () => {
-    // The bug: the tile stayed a <button>, so one tap both pasted and opened the detail.
-    // The cell's closest('button') guard only works because the tile stops being one.
+  it('should open the detail when a training is clicked, clipboard or not', async () => {
+    // The entry someone was aiming at. It used to stop being a control so the click would fall
+    // through and paste — the tap that was meant to open a card produced another copy instead.
     const { onPasteAt, onTrainingClick } = renderMonth({
       pasteActive: true,
       trainings: [makeTraining({ date: '2026-08-12', title: 'Strength' })],
@@ -207,12 +218,12 @@ describe('TrainingMonthCalendar — armed clipboard (Fire Academy 129f7a7)', () 
 
     await userEvent.click(screen.getByText('Strength'))
 
-    expect(onPasteAt).toHaveBeenCalledWith('2026-08-12')
-    expect(onTrainingClick).not.toHaveBeenCalled()
+    expect(onTrainingClick).toHaveBeenCalledTimes(1)
+    expect(onPasteAt).not.toHaveBeenCalled()
   })
 
-  it('should let a click on the overflow button paste rather than expand', () => {
-    // "+N" is a real button, so the cell guard would swallow the paste unless it handles it
+  it('should let the overflow button open the day even while armed', () => {
+    // "+N" is the only way to the hidden entries; making it paste took that way in away.
     const { cellFor, onPasteAt, onDayExpand } = renderMonth({
       pasteActive: true,
       trainings: Array.from({ length: 6 }, () => makeTraining({ date: '2026-08-12' })),
@@ -220,11 +231,13 @@ describe('TrainingMonthCalendar — armed clipboard (Fire Academy 129f7a7)', () 
 
     within(cellFor('12')).getByText('month.more:2').click()
 
-    expect(onPasteAt).toHaveBeenCalledWith('2026-08-12')
-    expect(onDayExpand).not.toHaveBeenCalled()
+    expect(onDayExpand).toHaveBeenCalledWith('2026-08-12')
+    expect(onPasteAt).not.toHaveBeenCalled()
   })
 
-  it('should open the detail again once the clipboard is disarmed', async () => {
+  it('should open the detail with an empty clipboard too', async () => {
+    // The twin of the armed case above: the entry behaves the same either way, which is the
+    // whole point — nothing about an entry depends on what is on the clipboard.
     const { onTrainingClick } = renderMonth({
       trainings: [makeTraining({ date: '2026-08-12', title: 'Strength' })],
     })

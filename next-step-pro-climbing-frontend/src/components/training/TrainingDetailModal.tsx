@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Check, CopyPlus, ExternalLink, FileText, LayoutTemplate, Paperclip, Pencil, Trash2, RotateCcw, UserCog, User as UserIcon } from 'lucide-react'
+import { Check, Copy, CopyPlus, ExternalLink, FileText, LayoutTemplate, Paperclip, Pencil, Scissors, Trash2, RotateCcw, UserCog, User as UserIcon } from 'lucide-react'
 import { format } from 'date-fns'
 import clsx from 'clsx'
 import { Modal } from '../ui/Modal'
@@ -28,6 +28,10 @@ interface TrainingDetailModalProps {
   isCoachView?: boolean
   onEdit: (training: PersonalTraining) => void
   onDuplicate: (training: PersonalTraining) => void
+  // Arm the calendar clipboard from the card. Always offered here — on touch it is the only
+  // place these live, and on a mouse it is a second, deliberate path next to the hover chips.
+  onCopy?: (training: PersonalTraining) => void
+  onCut?: (training: PersonalTraining) => void
   // Coach only: the template library is theirs, so the athlete is never offered this
   onSaveAsTemplate?: (training: PersonalTraining) => void
   onDelete: (training: PersonalTraining) => void
@@ -68,7 +72,7 @@ function statusChip(status: PersonalTrainingStatus): string {
 }
 
 export function TrainingDetailModal({
-  training, onClose, api, isCoachView, onEdit, onDuplicate, onSaveAsTemplate, onDelete,
+  training, onClose, api, isCoachView, onEdit, onDuplicate, onCopy, onCut, onSaveAsTemplate, onDelete,
   onComplete, onUncomplete, mutating, vanished, onCommentPosted, errorMessage,
 }: TrainingDetailModalProps) {
   const { t } = useTranslation('training')
@@ -320,6 +324,22 @@ export function TrainingDetailModal({
             <CopyPlus className="w-3.5 h-3.5 mr-1" />
             {t('detail.duplicate')}
           </Button>
+          {/* The clipboard, from inside the card. On a touch screen this is the ONLY way to arm
+              it: the micro-buttons that used to sit on the entry were tapped by people aiming at
+              the entry itself, and an armed clipboard used to swallow every following tap. */}
+          {onCopy && (
+            <Button variant="secondary" size="sm" onClick={() => onCopy(training)}>
+              <Copy className="w-3.5 h-3.5 mr-1" />
+              {t('clipboard.copy')}
+            </Button>
+          )}
+          {/* Completed entries are history: they may be re-planned forward, never moved away */}
+          {onCut && training.status !== 'COMPLETED' && (
+            <Button variant="secondary" size="sm" onClick={() => onCut(training)}>
+              <Scissors className="w-3.5 h-3.5 mr-1" />
+              {t('clipboard.cut')}
+            </Button>
+          )}
           {onSaveAsTemplate && (
             <Button variant="secondary" size="sm" onClick={() => onSaveAsTemplate(training)}>
               <LayoutTemplate className="w-3.5 h-3.5 mr-1" />

@@ -136,9 +136,14 @@ describe('TrainingFormModal — Cancel is guarded too', () => {
 })
 
 /**
- * A fresh create with no clicked hour opens in all-day mode, and submit() drops both times there.
- * Applying a TRAINING template therefore has to switch all-day OFF, or the duration — the one
- * thing such a template carries beyond its text — is thrown away without a word.
+ * A template carries a DEFAULT duration, not a decision about the shape of this entry.
+ *
+ * Applying one used to force all-day off — and since a fresh create with no clicked hour has no
+ * chosen hour either, the entry landed at DEFAULT_START (17:00), an hour nobody picked, on the
+ * hour grid. Losing a default duration is a smaller loss than planting a made-up time: the
+ * all-day toggle is the coach's own answer, the duration is the template's suggestion. The
+ * duration is still prefilled into the end picker, so switching to a timed entry afterwards
+ * gives the template's span without retyping it.
  */
 describe('TrainingFormModal — applying a template that carries a duration', () => {
   const TEMPLATE = {
@@ -171,7 +176,7 @@ describe('TrainingFormModal — applying a template that carries a duration', ()
     return { onSubmit }
   }
 
-  it('should turn all-day off and submit the template span', async () => {
+  it('should leave an all-day entry all-day rather than planting a made-up hour', async () => {
     const { adminTrainingCalendarApi } = await import('../../api/client')
     vi.mocked(adminTrainingCalendarApi.getTemplates).mockResolvedValue([TEMPLATE])
     const user = userEvent.setup()
@@ -181,11 +186,30 @@ describe('TrainingFormModal — applying a template that carries a duration', ()
     await user.selectOptions(picker, 'tpl-1')
 
     // The checkbox is the visible half of the same decision
-    expect(screen.getByRole('checkbox', { name: /form.allDay/ })).not.toBeChecked()
+    expect(screen.getByRole('checkbox', { name: /form.allDay/ })).toBeChecked()
 
     await user.click(screen.getByText('form.save'))
 
     expect(onSubmit).toHaveBeenCalledTimes(1)
+    const payload = onSubmit.mock.calls[0][0]
+    expect(payload.startTime).toBeUndefined()
+    expect(payload.endTime).toBeUndefined()
+  })
+
+  it('should still prefill the end picker, so switching to a timed entry gives the template span', async () => {
+    // The duration is not thrown away — it is waiting in the picker for the coach who does want
+    // an hour, which is what makes leaving all-day alone cheap.
+    const { adminTrainingCalendarApi } = await import('../../api/client')
+    vi.mocked(adminTrainingCalendarApi.getTemplates).mockResolvedValue([TEMPLATE])
+    const user = userEvent.setup()
+    const { onSubmit } = renderWithTemplates()
+
+    const picker = await screen.findByRole('combobox')
+    await user.selectOptions(picker, 'tpl-1')
+    await user.click(screen.getByRole('checkbox', { name: /form.allDay/ }))
+
+    await user.click(screen.getByText('form.save'))
+
     const payload = onSubmit.mock.calls[0][0]
     expect(payload.startTime).toBe('17:00')
     expect(payload.endTime).toBe('18:30')

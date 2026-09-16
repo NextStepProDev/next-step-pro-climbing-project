@@ -26,6 +26,7 @@ import { SaveAsTemplateModal } from './SaveAsTemplateModal'
 import type { TemplateDraft } from './TrainingTemplateForm'
 import { monthGridRange, resolveInitialView, stepWeek, weekRange } from './monthGrid'
 import { useCompactViewport } from '../../hooks/useCompactViewport'
+import { usePointerFine } from '../../hooks/usePointerFine'
 import { useChildDirty } from '../../hooks/useChildDirty'
 import { trainingCalendarApi, calendarApi } from '../../api/client'
 import { useTrainingClipboard, type TrainingClipboardEntry } from '../../context/TrainingClipboardContext'
@@ -86,6 +87,8 @@ export function TrainingCalendarSection({ api, scopeKey, scopeLabel, isCoachView
 
   // Reactive: decides WHICH month component renders, so it must follow a resize.
   const compactViewport = useCompactViewport()
+  // Decides whether the clipboard chips exist on an entry at all — see usePointerFine.
+  const pointerFine = usePointerFine()
   // Frozen at first render: the DEFAULT view must not follow a resize. Reading the live
   // value here would flip the calendar under someone rotating their phone. Keep these two
   // reads apart — collapsing them into one restores exactly that bug. (State rather than a
@@ -577,14 +580,21 @@ export function TrainingCalendarSection({ api, scopeKey, scopeLabel, isCoachView
           </ul>
         </div>
       )}
-      {/* Armed clipboard: instruction banner (amber = cut/move, primary = copy) */}
+      {/* Armed clipboard: instruction banner (amber = cut/move, primary = copy).
+          ⚠️ Sticky because a COPY stays armed after a paste — deliberately, so one session can
+          be handed to five days — and this banner holds the only way to end that. Scrolled off
+          the top it left an athlete with an armed clipboard and nothing on screen saying so.
+          ⚠️ The offset is the navbar's height, not 0: the navbar is `sticky top-0 z-50` and
+          `h-18` (Navbar.tsx), so at top-0 it would cover this every time it slides back in. */}
       {armed && (
         <div
           className={clsx(
-            'flex items-center justify-between gap-3 p-3 border rounded-lg',
+            // Near-opaque, unlike the /10 tint it replaces: the calendar now scrolls UNDER this
+            // bar, and a 10%-alpha banner with a week grid sliding through it is unreadable.
+            'sticky top-18 z-40 flex items-center justify-between gap-3 p-3 border rounded-lg shadow-lg bg-surface-900/95 backdrop-blur-sm',
             armed.mode === 'cut'
-              ? 'bg-amber-500/10 border-amber-500/30 text-amber-300'
-              : 'bg-primary-500/10 border-primary-500/30 text-primary-300',
+              ? 'border-amber-500/40 text-amber-300'
+              : 'border-primary-500/40 text-primary-300',
           )}
         >
           <span className="text-sm">
@@ -599,12 +609,15 @@ export function TrainingCalendarSection({ api, scopeKey, scopeLabel, isCoachView
               </span>
             )}
           </span>
+          {/* Named, not a bare 16px X. This is the exit from a mode that swallows every tap,
+              so it has to read as a button and be big enough to hit with a thumb — the Esc
+              hint in the banner text does not exist on a phone. */}
           <button
             onClick={() => setClipboard(null)}
-            className="p-1 rounded hover:bg-surface-800 transition-colors shrink-0"
-            title={t('clipboard.cancel')}
+            className="flex items-center gap-1.5 shrink-0 px-3 py-2 rounded-lg border border-surface-600 text-sm font-medium hover:bg-surface-800 transition-colors"
           >
             <X className="w-4 h-4" />
+            {t('clipboard.cancel')}
           </button>
         </div>
       )}
@@ -665,8 +678,11 @@ export function TrainingCalendarSection({ api, scopeKey, scopeLabel, isCoachView
           onInvitationClick={openInvitation}
           onDayClick={openCreate}
           onTrainingMove={handleTrainingMove}
-          onTrainingCopy={armClipboard('copy')}
-          onTrainingCut={armClipboard('cut')}
+          // ⚠️ Mouse only. On touch these are the buttons an athlete hit while aiming at the
+          // entry; there the card carries copy and cut instead. Gated by handler, not by CSS —
+          // a hidden button is still tappable and still on the keyboard path.
+          onTrainingCopy={pointerFine ? armClipboard('copy') : undefined}
+          onTrainingCut={pointerFine ? armClipboard('cut') : undefined}
           cutTrainingId={armed?.mode === 'cut' ? armed.trainingId : null}
           copiedTrainingId={armed?.mode === 'copy' ? armed.trainingId : null}
           pasteActive={!!armed}
@@ -685,7 +701,6 @@ export function TrainingCalendarSection({ api, scopeKey, scopeLabel, isCoachView
           invitations={invitations}
           onDayExpand={setDaySheetDate}
           pasteActive={!!armed}
-          onPasteAt={handlePasteAt}
         />
       ) : (
         <TrainingMonthCalendar
@@ -720,8 +735,23 @@ export function TrainingCalendarSection({ api, scopeKey, scopeLabel, isCoachView
           onReservationClick={setReservationHint}
           onInvitationClick={openInvitation}
           onAdd={openCreate}
-          onTrainingCopy={armClipboard('copy')}
-          onTrainingCut={armClipboard('cut')}
+          onTrainingCopy={pointerFine ? armClipboard('copy') : undefined}
+          onTrainingCut={pointerFine ? armClipboard('cut') : undefined}
+          // The phone month is a dot grid with nowhere to name a paste target, so the sheet
+          // carries it: keeps the source's own hour, the way the month cell does.
+          pasteActive={!!armed}
+          onPaste={(d) => handlePasteAt(d)}
+          // Same mutation the detail modal's Delete uses — clearing a run of accidental
+          // entries should not mean opening each card in turn. mutateAsync, so a rejection
+          // can be reported INSIDE the sheet: the detail modal's error line is behind it.
+          // ⚠️ ...and then reset, because the two surfaces now SHARE one mutation: a failure
+          // raised here would otherwise sit in `deleteMutation.isError` and reappear at the
+          // bottom of the next training card opened — an error about a different entry, on a
+          // screen that had nothing to do with it. The sheet has already taken it by then.
+          onTrainingDelete={(tr) => deleteMutation.mutateAsync(tr.id).catch((err) => {
+            deleteMutation.reset()
+            throw err
+          })}
           isCoachView={isCoachView}
         />
       )}
@@ -776,6 +806,8 @@ export function TrainingCalendarSection({ api, scopeKey, scopeLabel, isCoachView
         isCoachView={isCoachView}
         onEdit={(tr) => { setDetailId(null); openEdit(tr) }}
         onDuplicate={openDuplicate}
+        onCopy={(tr) => { setDetailId(null); armClipboard('copy')(tr) }}
+        onCut={(tr) => { setDetailId(null); armClipboard('cut')(tr) }}
         // The library belongs to the coach; the athlete never sees templates at all
         onSaveAsTemplate={isCoachView ? openSaveAsTemplate : undefined}
         onDelete={(tr) => deleteMutation.mutate(tr.id)}

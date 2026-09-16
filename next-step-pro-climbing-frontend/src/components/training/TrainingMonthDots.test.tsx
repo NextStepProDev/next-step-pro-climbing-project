@@ -16,7 +16,7 @@ vi.mock('react-i18next', () => ({
 const AUGUST = new Date(2026, 7, 10)
 
 function renderDots(props: Partial<React.ComponentProps<typeof TrainingMonthDots>> = {}) {
-  const handlers = { onMonthChange: vi.fn(), onDayExpand: vi.fn(), onPasteAt: vi.fn() }
+  const handlers = { onMonthChange: vi.fn(), onDayExpand: vi.fn() }
   const view = render(
     <TrainingMonthDots
       currentMonth={AUGUST}
@@ -128,12 +128,19 @@ describe('TrainingMonthDots — what a dot says', () => {
 })
 
 describe('TrainingMonthDots — armed clipboard', () => {
-  it('should paste into the day instead of opening the sheet', () => {
-    const { cell, onPasteAt, onDayExpand } = renderDots({ pasteActive: true })
+  it('should open the day rather than paste into it', () => {
+    // Six pixels of dot have no room to name a paste target, and a cell that pastes silently
+    // is the trap this view would otherwise keep: the day sheet carries "paste here" instead.
+    const { cell, onDayExpand } = renderDots({ pasteActive: true })
 
     cell('2026-08-12').click()
 
-    expect(onPasteAt).toHaveBeenCalledWith('2026-08-12')
-    expect(onDayExpand).not.toHaveBeenCalled()
+    expect(onDayExpand).toHaveBeenCalledWith('2026-08-12')
+  })
+
+  it('should still mark the days so the clipboard is visibly armed', () => {
+    const { cell } = renderDots({ pasteActive: true })
+
+    expect(cell('2026-08-12').className).toContain('ring-primary-500/50')
   })
 })

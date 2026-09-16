@@ -409,3 +409,58 @@ describe('TrainingDetailModal — materials say how long they stay', () => {
     expect(screen.queryByText('detail.materialExpires')).not.toBeInTheDocument()
   })
 })
+
+/**
+ * The card is where the clipboard is armed on a touch screen — the only place, in fact. The
+ * micro-buttons that used to sit on the entry were hit by people aiming at the entry itself,
+ * and an armed clipboard then answered every following tap with another pasted copy.
+ */
+describe('TrainingDetailModal — arming the clipboard from the card', () => {
+  const client = () => new QueryClient({ defaultOptions: { queries: { retry: false } } })
+
+  function renderCard(training = makeTraining(), handlers: {
+    onCopy?: (t: PersonalTraining) => void
+    onCut?: (t: PersonalTraining) => void
+  } = {}) {
+    render(
+      <QueryClientProvider client={client()}>
+        <TrainingDetailModal
+          training={training}
+          onClose={vi.fn()}
+          api={api}
+          onEdit={vi.fn()}
+          onDuplicate={vi.fn()}
+          onDelete={vi.fn()}
+          {...handlers}
+        />
+      </QueryClientProvider>,
+    )
+  }
+
+  it('should copy the entry it is showing', async () => {
+    const onCopy = vi.fn()
+    const training = makeTraining({ title: 'Strength' })
+    renderCard(training, { onCopy, onCut: vi.fn() })
+
+    await userEvent.click(screen.getByText('clipboard.copy'))
+
+    expect(onCopy).toHaveBeenCalledTimes(1)
+    expect(onCopy.mock.calls[0][0].id).toBe(training.id)
+  })
+
+  it('should offer copy but not cut for a completed entry', () => {
+    // Completed entries are history: they may be re-planned forward, never moved away —
+    // the same rule the grid applies, and the backend behind it.
+    renderCard(makeTraining({ status: 'COMPLETED' }), { onCopy: vi.fn(), onCut: vi.fn() })
+
+    expect(screen.getByText('clipboard.copy')).toBeInTheDocument()
+    expect(screen.queryByText('clipboard.cut')).not.toBeInTheDocument()
+  })
+
+  it('should show neither when the host offers no clipboard', () => {
+    renderCard()
+
+    expect(screen.queryByText('clipboard.copy')).not.toBeInTheDocument()
+    expect(screen.queryByText('clipboard.cut')).not.toBeInTheDocument()
+  })
+})
