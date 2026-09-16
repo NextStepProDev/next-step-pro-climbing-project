@@ -118,19 +118,21 @@ export function TrainingMonthCalendar({
             <div
               key={dateStr}
               onClick={(e) => {
-                // A real control inside the cell handles its own click. While the clipboard
-                // is armed the tiles are not controls, so the click reaches this handler.
+                // A real control inside the cell handles its own click.
                 if ((e.target as HTMLElement).closest('button')) return
-                if (pasteActive) onPasteAt?.(dateStr)
-                else onDayClick(dateStr)
+                // ⚠️ The cell never pastes, armed or not — only the strip at its foot does.
+                // A whole cell that pastes makes every entry in it a near-miss away from an
+                // unwanted copy, which is exactly how a calendar turns into a trap.
+                onDayClick(dateStr)
               }}
               className={clsx(
                 'group flex flex-col min-h-32 min-w-0 p-1 border-b border-l border-surface-800/50 transition-colors',
                 outside && 'opacity-40',
                 today && 'bg-primary-500/10',
-                pasteActive
-                  ? 'cursor-copy ring-1 ring-inset ring-primary-500/40 hover:bg-primary-500/10'
-                  : 'cursor-pointer hover:bg-surface-800/40',
+                'cursor-pointer hover:bg-surface-800/40',
+                // Still marked while armed, so the eye can find the day it is aiming at —
+                // but the mark is a hint, not a hit area.
+                pasteActive && 'ring-1 ring-inset ring-primary-500/40',
               )}
             >
               <div className={clsx(
@@ -147,7 +149,6 @@ export function TrainingMonthCalendar({
                       training={entry.training}
                       onClick={() => onTrainingClick(entry.training!)}
                       density="tile"
-                      pasteActive={pasteActive}
                       isCut={cutTrainingId === entry.training.id}
                       isCopied={copiedTrainingId === entry.training.id}
                     />
@@ -158,7 +159,6 @@ export function TrainingMonthCalendar({
                       label={invitationLabel}
                       onClick={() => onInvitationClick(entry.invitation!)}
                       density="tile"
-                      pasteActive={pasteActive}
                     />
                   ) : (
                     <ReservationBlock
@@ -167,18 +167,17 @@ export function TrainingMonthCalendar({
                       label={t('overlay.reservation')}
                       onClick={() => onReservationClick(entry.reservation!)}
                       density="tile"
-                      pasteActive={pasteActive}
                       isCoachView={isCoachView}
                     />
                   ),
                 )}
                 {overflow > 0 && (
                   <button
-                    // A real control, not the dead text it used to be: without it the
-                    // hidden entries were unreachable. While armed it pastes like the rest
-                    // of the cell, because a button would otherwise block the cell handler.
-                    onClick={() => (pasteActive ? onPasteAt?.(dateStr) : onDayExpand(dateStr))}
-                    aria-label={pasteActive ? undefined : t('month.moreAria', { count: overflow })}
+                    // A real control, not the dead text it used to be: without it the hidden
+                    // entries were unreachable. It opens the day whether or not something is
+                    // on the clipboard — "+2 more" is a way in, never a paste target.
+                    onClick={() => onDayExpand(dateStr)}
+                    aria-label={t('month.moreAria', { count: overflow })}
                     className="w-full px-1.5 py-0.5 text-left text-[10px] text-surface-400 hover:text-primary-300 transition-colors"
                   >
                     {t('month.more', { count: overflow })}
@@ -187,9 +186,15 @@ export function TrainingMonthCalendar({
               </div>
 
               {pasteActive ? (
-                <span className="mt-auto px-1 py-1 text-center text-[10px] text-primary-300 border border-dashed border-primary-500/50 rounded">
-                  {t('month.pasteHere')}
-                </span>
+                // The cell's one paste target, and a real button now: it used to be dead text
+                // that relied on the cell underneath to catch the click.
+                <button
+                  onClick={() => onPasteAt?.(dateStr)}
+                  aria-label={t('clipboard.pasteHere')}
+                  className="mt-auto px-1 py-1 text-center text-[10px] text-primary-300 border border-dashed border-primary-500/50 rounded hover:bg-primary-500/10 transition-colors"
+                >
+                  {t('clipboard.pasteHere')}
+                </button>
               ) : (
                 <button
                   onClick={() => onDayClick(dateStr)}

@@ -1,4 +1,4 @@
-import { Check, ClipboardList, Copy, Gauge, Lock, NotebookPen, Paperclip, Scissors, Star } from 'lucide-react'
+import { Check, ClipboardList, Copy, Gauge, Lock, NotebookPen, Paperclip, Scissors, Star, Trash2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import clsx from 'clsx'
 import type { InvitationOverlayItem, PersonalTraining, ReservationOverlayItem } from '../../types'
@@ -55,14 +55,15 @@ interface TrainingBlockProps {
   density?: BlockDensity
   clampedTop?: boolean
   clampedBottom?: boolean
-  /**
-   * The clipboard is armed and the day underneath is the paste target, so this entry
-   * must stop being a control. See renderPassive below.
-   */
-  pasteActive?: boolean
   // Week-view clipboard + drag&drop (both roles); all optional so the month view stays untouched
   onCopy?: () => void
   onCut?: () => void
+  /**
+   * Tile density only (the day sheet). Cleaning up a run of mistakes should not mean opening
+   * each card in turn — but the chip and the hour grid do NOT get this: a third micro-button
+   * there is the very thing that made an accidental copy so easy in the first place.
+   */
+  onDelete?: () => void
   isCut?: boolean
   isCopied?: boolean
   onPointerDown?: (e: React.PointerEvent<HTMLElement>) => void
@@ -72,21 +73,19 @@ interface TrainingBlockProps {
 }
 
 /**
- * While the clipboard is armed an entry is genuinely not a control — the day cell beneath
- * it is the paste target — so it stops being a <button> rather than becoming a disabled
- * one. That keeps the markup honest, keeps it off the keyboard path, and lets the click
- * reach the cell, which is what the cell's closest('button') guard relies on. Leaving it a
- * button means one tap both pastes and opens the card; disabling it means the tap does
- * nothing at all.
+ * An entry is ALWAYS a control, armed clipboard or not.
+ *
+ * It used to stop being one while the clipboard was armed, so that a click would fall through
+ * to the day cell and paste. That made every entry on screen a paste target — and the calendar
+ * a mode with one exit: an athlete who armed the clipboard by accident found that each further
+ * tap produced another copy and opened nothing she could delete. Pasting now happens only where
+ * the "paste here" strip says it does (and on empty hour-grid space, where the click carries an
+ * hour). Clicking an entry means what it looks like it means.
  */
-function renderPassive(
-  passive: boolean,
+function renderBlock(
   props: { className: string; title: string; onClick: () => void; style?: React.CSSProperties },
   children: React.ReactNode,
 ) {
-  if (passive) {
-    return <div className={props.className} title={props.title} style={props.style}>{children}</div>
-  }
   return (
     <button onClick={props.onClick} className={props.className} title={props.title} style={props.style}>
       {children}
@@ -95,8 +94,8 @@ function renderPassive(
 }
 
 export function TrainingBlock({
-  training, onClick, style, density = 'full', clampedTop, clampedBottom, pasteActive,
-  onCopy, onCut, isCut, isCopied, onPointerDown, onResizePointerDown, isDragging, isLongPressing,
+  training, onClick, style, density = 'full', clampedTop, clampedBottom,
+  onCopy, onCut, onDelete, isCut, isCopied, onPointerDown, onResizePointerDown, isDragging, isLongPressing,
 }: TrainingBlockProps) {
   const { t } = useTranslation('training')
   const isTask = training.kind === 'TASK'
@@ -105,7 +104,7 @@ export function TrainingBlock({
     const tileClass = clsx(
       TILE_BASE,
       'bg-surface-800/70 text-surface-200',
-      !pasteActive && 'hover:bg-surface-800 transition-colors',
+      'hover:bg-surface-800 transition-colors',
       trainingTileBorder(training.status),
       // A dashed outline for a task. The left border still carries the status, so the two say
       // different things and neither has to give up its colour to the other.
@@ -154,10 +153,10 @@ export function TrainingBlock({
       </>
     )
 
-    // With clipboard controls (the day sheet) the row has to become a container so the
-    // controls are siblings of the body button rather than buttons nested inside one.
-    // The month grid passes neither handler and keeps the cheap single-element tile.
-    if (onCopy || onCut) {
+    // With any row action (the day sheet: copy, cut, delete) the row has to become a container
+    // so the controls are siblings of the body button rather than buttons nested inside one.
+    // The month grid passes no handler at all and keeps the cheap single-element tile.
+    if (onCopy || onCut || onDelete) {
       return (
         <div className={tileClass}>
           <button onClick={onClick} className="flex-1 flex items-center gap-1 min-w-0 text-left" title={training.title}>
@@ -183,11 +182,21 @@ export function TrainingBlock({
               <Scissors className="w-3.5 h-3.5" />
             </button>
           )}
+          {onDelete && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onDelete() }}
+              className="shrink-0 p-1 rounded-md border border-surface-600 bg-surface-950/80 text-surface-200 hover:text-rose-300 hover:border-rose-400 transition-colors"
+              title={t('detail.delete')}
+              aria-label={t('detail.delete')}
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+          )}
         </div>
       )
     }
 
-    return renderPassive(!!pasteActive, { className: tileClass, title: training.title, onClick }, tileBody)
+    return renderBlock({ className: tileClass, title: training.title, onClick }, tileBody)
   }
 
   const content = (
@@ -201,7 +210,12 @@ export function TrainingBlock({
         {training.hasPrivateNote && (
           <NotebookPen className="w-3 h-3 shrink-0 text-amber-500" aria-label={t('privateNote.marker')} />
         )}
-        <span className="font-medium truncate">{training.title}</span>
+        {/* The chip is two lines tall now, so it can afford to wrap instead of cutting a title
+            off mid-word in a ~120px day column. The hour grid keeps one truncated line: there
+            the height is the entry's duration, not something the text may spend. */}
+        <span className={clsx('font-medium min-w-0', density === 'chip' ? 'line-clamp-2' : 'truncate')}>
+          {training.title}
+        </span>
       </span>
       {density === 'full' && training.targetCalories != null && (
         <span className="inline-flex items-center mt-0.5 px-1 py-px rounded bg-sky-500/15 text-[9px] font-medium text-sky-300">
@@ -219,58 +233,65 @@ export function TrainingBlock({
   )
 
   if (density === 'chip') {
-    // Through renderPassive like every other density. The all-day lane is the ONLY place an
-    // untimed entry or a task can be pasted, and while the clipboard was armed the chips sitting
-    // in it stayed <button>s — so the lane's own closest('button') guard swallowed the click and
-    // the card opened instead of the paste landing. The one drop target was blocked by its
-    // own contents.
-    const chipClass = clsx(
+    const chipBase = clsx(
       // 'relative' (needed by the unread dot) must NOT coexist with 'absolute' —
       // whichever wins in the stylesheet breaks week-grid positioning
-      'border rounded-md text-left overflow-hidden',
-      !pasteActive && 'transition-colors',
+      'relative w-full min-h-12 border rounded-md overflow-hidden text-left text-[11px] transition-colors',
       trainingColors(training.status),
-      'relative w-full px-1.5 py-0.5 text-[11px] truncate block',
       isCut && 'opacity-50',
       isCopied && 'ring-1 ring-primary-400/60',
     )
 
-    // Clipboard controls, same container shape as the tile density. Skipped entirely while the
-    // clipboard is armed: the lane underneath is then the drop target, and leaving buttons in it
-    // would put back the very thing renderPassive is here to remove.
-    if ((onCopy || onCut) && !pasteActive) {
+    /* Clipboard controls as an OVERLAY, not a row of their own.
+       ⚠️ A row made the chip a container with a hole in it: the row spanned the full width but
+       held its buttons at the end, so the click on its empty half found no <button>, fell
+       through to the day cell and opened the create form — tapping an entry answered with
+       "New entry". An overlay lets the body button fill the whole chip, so every pixel that
+       is not a control opens the card.
+       The handlers only arrive on a hovering pointer (see usePointerFine at the host), which is
+       what makes hover-reveal honest here: on touch these do not exist at all and copy/cut live
+       in the open card instead. */
+    if (onCopy || onCut) {
       return (
-        <div className={clsx(chipClass, 'flex items-center gap-1')} style={style}>
-          <button onClick={onClick} className="flex-1 min-w-0 truncate text-left" title={training.title}>
+        <div className={clsx(chipBase, 'group flex')} style={style}>
+          <button
+            onClick={onClick}
+            className="flex-1 min-w-0 px-1.5 py-1 flex items-center text-left"
+            title={training.title}
+          >
             {content}
           </button>
-          {onCopy && (
-            <button
-              onClick={(e) => { e.stopPropagation(); onCopy() }}
-              className="shrink-0 p-0.5 rounded border border-surface-600 bg-surface-950/80 text-surface-200 hover:text-primary-300 hover:border-primary-400 transition-colors"
-              title={t('clipboard.copy')}
-              aria-label={t('clipboard.copy')}
-            >
-              <Copy className="w-3 h-3" />
-            </button>
-          )}
-          {onCut && (
-            <button
-              onClick={(e) => { e.stopPropagation(); onCut() }}
-              className="shrink-0 p-0.5 rounded border border-surface-600 bg-surface-950/80 text-surface-200 hover:text-amber-300 hover:border-amber-400 transition-colors"
-              title={t('clipboard.cut')}
-              aria-label={t('clipboard.cut')}
-            >
-              <Scissors className="w-3 h-3" />
-            </button>
-          )}
+          <div
+            data-admin-action
+            className="absolute top-1 right-1 flex gap-1 z-20 opacity-100 transition-opacity [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 [@media(hover:hover)]:group-focus-within:opacity-100"
+          >
+            {onCopy && (
+              <button
+                onClick={(e) => { e.stopPropagation(); onCopy() }}
+                className="shrink-0 p-1 rounded border border-surface-600 bg-surface-950/90 text-surface-200 shadow-sm hover:text-primary-300 hover:border-primary-400 transition-colors"
+                title={t('clipboard.copy')}
+                aria-label={t('clipboard.copy')}
+              >
+                <Copy className="w-3.5 h-3.5" />
+              </button>
+            )}
+            {onCut && (
+              <button
+                onClick={(e) => { e.stopPropagation(); onCut() }}
+                className="shrink-0 p-1 rounded border border-surface-600 bg-surface-950/90 text-surface-200 shadow-sm hover:text-amber-300 hover:border-amber-400 transition-colors"
+                title={t('clipboard.cut')}
+                aria-label={t('clipboard.cut')}
+              >
+                <Scissors className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
         </div>
       )
     }
 
-    return renderPassive(
-      !!pasteActive,
-      { className: chipClass, title: training.title, onClick, style },
+    return renderBlock(
+      { className: clsx(chipBase, 'px-1.5 py-1 flex items-center'), title: training.title, onClick, style },
       content,
     )
   }
@@ -351,7 +372,6 @@ interface ReservationBlockProps {
   onClick: () => void
   style?: React.CSSProperties
   density?: BlockDensity
-  pasteActive?: boolean
   // Coach view hides the "rate" CTA (only the athlete rates)
   isCoachView?: boolean
 }
@@ -362,24 +382,22 @@ interface InvitationBlockProps {
   onClick: () => void
   style?: React.CSSProperties
   density?: BlockDensity
-  pasteActive?: boolean
 }
 
 // Held seat the athlete has NOT booked yet: amber call-to-action with a pulsing dot —
 // deliberately nothing like the calm gray reservation, so it cannot pass for "already booked".
-export function InvitationBlock({ invitation, label, onClick, style, density = 'full', pasteActive }: InvitationBlockProps) {
+export function InvitationBlock({ invitation, label, onClick, style, density = 'full' }: InvitationBlockProps) {
   const title = invitation.title || label
 
   if (density === 'tile') {
     // Keeps its fill even at tile density: this is the one entry that needs an action from
     // the athlete, so it has to survive a glance across 42 cells.
-    return renderPassive(
-      !!pasteActive,
+    return renderBlock(
       {
         className: clsx(
           TILE_BASE,
           'bg-amber-500/15 border-l-amber-400 text-amber-300',
-          !pasteActive && 'hover:bg-amber-500/25 transition-colors',
+          'hover:bg-amber-500/25 transition-colors',
         ),
         title: `${label}: ${title}`,
         onClick,
@@ -397,16 +415,19 @@ export function InvitationBlock({ invitation, label, onClick, style, density = '
     )
   }
 
-  // Passive while the clipboard is armed, for the same reason as the training chip: an all-day
-  // invitation sits in the very lane a task has to be pasted into.
-  return renderPassive(
-    !!pasteActive,
+  // A control like every other entry, clipboard or not — the held seat it points at is the one
+  // thing on this calendar that needs an action from the athlete, so it must always be openable.
+  return renderBlock(
     {
       className: clsx(
         'border rounded-md text-left overflow-hidden',
-        !pasteActive && 'transition-colors hover:bg-amber-500/35',
+        'transition-colors hover:bg-amber-500/35',
         'bg-amber-500/20 border-amber-500/70 text-amber-300',
-        density === 'chip' ? 'relative w-full px-1.5 py-0.5 text-[11px] truncate block' : 'absolute px-1.5 py-1 text-xs',
+        // Same height as the training chip: two kinds of entry sharing one lane must not
+        // stack at two different heights.
+        density === 'chip'
+          ? 'relative w-full min-h-12 px-1.5 py-1 text-[11px] flex items-center'
+          : 'absolute px-1.5 py-1 text-xs',
       ),
       title: `${label}: ${title}`,
       onClick,
@@ -430,7 +451,7 @@ export function InvitationBlock({ invitation, label, onClick, style, density = '
 }
 
 // Read-only overlay of a confirmed booking from the public reservation system.
-export function ReservationBlock({ reservation, label, onClick, style, density = 'full', pasteActive, isCoachView }: ReservationBlockProps) {
+export function ReservationBlock({ reservation, label, onClick, style, density = 'full', isCoachView }: ReservationBlockProps) {
   const { t } = useTranslation('training')
   const title = reservation.title || label
   // Rated → show the value; past & unrated & athlete → prompt to rate
@@ -442,15 +463,14 @@ export function ReservationBlock({ reservation, label, onClick, style, density =
   const unseen = reservation.isNew || reservation.hasUnreadActivity
 
   if (density === 'tile') {
-    return renderPassive(
-      !!pasteActive,
+    return renderBlock(
       {
         className: clsx(
           TILE_BASE,
           // Dashed left bar: a booking is not part of the plan the coach writes, and the
           // border style says so without spending a second colour.
           'border-dashed border-l-surface-500 bg-surface-800/40 text-surface-400',
-          !pasteActive && 'hover:bg-surface-800/70 transition-colors',
+          'hover:bg-surface-800/70 transition-colors',
         ),
         title,
         onClick,

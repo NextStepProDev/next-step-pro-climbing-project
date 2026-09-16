@@ -186,34 +186,60 @@ describe('TrainingWeekCalendar — clicking empty space', () => {
     expect(onDayClick).toHaveBeenCalledWith(MONDAY)
   })
 
-  it('should paste into the all-day lane instead of opening the create form', () => {
-    // This lane is the only place an untimed entry — and every task — can land, so while the
-    // clipboard is armed it has to be a drop target, not an add target
+  /**
+   * Adding an all-day entry used to depend on hitting the EMPTY part of the cell, so a day that
+   * already held a few entries had no empty part left and could not take another one at all.
+   * The strip is that empty part, made explicit.
+   */
+  it('should add an all-day entry on a day whose lane is already full', () => {
+    const busy = ['Mobility', 'Diet', 'Sleep'].map((title) =>
+      makeTraining({ date: MONDAY, startTime: null, endTime: null, title }))
+    const { onDayClick } = renderWeek({ trainings: busy })
+
+    // One strip per day; the first column is Monday
+    fireEvent.click(screen.getAllByLabelText('week.addAllDay')[0])
+
+    expect(onDayClick).toHaveBeenCalledWith(MONDAY)
+  })
+
+  it('should turn the add strip into the lane\'s one paste target', () => {
+    // Naming the single spot that pastes is what lets everything around it stay itself.
     const onPasteAt = vi.fn()
     const { onDayClick } = renderWeek({ pasteActive: true, onPasteAt })
 
-    fireEvent.click(screen.getByText('detail.allDay').nextElementSibling!)
+    fireEvent.click(screen.getAllByLabelText('clipboard.pasteHere')[0])
 
     // Explicit null, not undefined: dropping here means "no hour", not "keep the source's hour"
     expect(onPasteAt).toHaveBeenCalledWith(MONDAY, null)
     expect(onDayClick).not.toHaveBeenCalled()
   })
 
+  it('should not paste when the lane itself is clicked', () => {
+    // The cell used to be a drop target too, so every near-miss around an entry produced
+    // another copy. It adds, armed or not.
+    const onPasteAt = vi.fn()
+    const { onDayClick } = renderWeek({ pasteActive: true, onPasteAt })
+
+    fireEvent.click(screen.getByText('detail.allDay').nextElementSibling!)
+
+    expect(onPasteAt).not.toHaveBeenCalled()
+    expect(onDayClick).toHaveBeenCalledWith(MONDAY)
+  })
+
   /**
-   * ...including when the lane already holds something. The chips render at `chip` density, which
-   * used to ignore pasteActive, so they stayed <button>s — the cell's closest('button') guard bailed
-   * out and the training card opened instead. The one drop target an untimed entry has was blocked
-   * by its own contents.
+   * The entry an athlete was aiming at. Clicking it used to paste — the chips stopped being
+   * controls while the clipboard was armed, so the click fell through to the cell and produced
+   * a copy instead of opening the card she wanted to delete.
    */
-  it('should paste through an all-day chip that already occupies the lane', () => {
+  it('should open the card when an all-day chip is clicked, clipboard or not', () => {
     const resting = makeTraining({ date: MONDAY, startTime: null, endTime: null, title: 'Rest day' })
     const onPasteAt = vi.fn()
     const { onTrainingClick } = renderWeek({ trainings: [resting], pasteActive: true, onPasteAt })
 
     fireEvent.click(screen.getByText('Rest day'))
 
-    expect(onPasteAt).toHaveBeenCalledWith(MONDAY, null)
-    expect(onTrainingClick).not.toHaveBeenCalled()
+    expect(onTrainingClick).toHaveBeenCalledTimes(1)
+    expect(onPasteAt).not.toHaveBeenCalled()
   })
 
   /**
@@ -242,12 +268,23 @@ describe('TrainingWeekCalendar — clicking empty space', () => {
     expect(screen.queryByRole('button', { name: 'clipboard.cut' })).not.toBeInTheDocument()
   })
 
-  it('should hide the chip controls while the clipboard is armed', () => {
+  it('should keep the chip controls while the clipboard is armed', () => {
+    // They used to vanish, because the chip stopped being a control at all. Copying a second
+    // entry while one is already on the clipboard is ordinary work, not an edge case.
     const resting = makeTraining({ date: MONDAY, startTime: null, endTime: null, title: 'Rest day' })
     renderWeek({ trainings: [resting], onTrainingCopy: vi.fn(), pasteActive: true, onPasteAt: vi.fn() })
 
-    // Leaving them would put back exactly what blocks the lane from receiving the paste
-    expect(screen.queryByRole('button', { name: 'clipboard.copy' })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'clipboard.copy' })).toBeInTheDocument()
+  })
+
+  it('should render no chip controls at all when the host passes no handlers', () => {
+    // How touch gets a clean lane: the section withholds the handlers there (usePointerFine),
+    // so the buttons do not exist rather than being hidden with CSS and still tappable.
+    const resting = makeTraining({ date: MONDAY, startTime: null, endTime: null, title: 'Rest day' })
+    renderWeek({ trainings: [resting] })
+
+    expect(screen.queryByLabelText('clipboard.copy')).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('clipboard.cut')).not.toBeInTheDocument()
   })
 
   it('should open the card from an all-day chip when the clipboard is empty', () => {

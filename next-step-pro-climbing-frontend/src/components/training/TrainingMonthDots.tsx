@@ -15,8 +15,8 @@ interface TrainingMonthDotsProps {
   invitations: InvitationOverlayItem[]
   // Tapping a day opens the sheet — at this width a cell cannot hold the content itself
   onDayExpand: (date: string) => void
+  // Marks the days while something is on the clipboard; the paste itself happens in the day sheet
   pasteActive?: boolean
-  onPasteAt?: (date: string) => void
 }
 
 /**
@@ -59,7 +59,7 @@ type Entry = {
 
 export function TrainingMonthDots({
   currentMonth, onMonthChange, trainings, reservations, invitations,
-  onDayExpand, pasteActive, onPasteAt,
+  onDayExpand, pasteActive,
 }: TrainingMonthDotsProps) {
   const { t } = useTranslation('training')
   const { t: tCal } = useTranslation('calendar')
@@ -110,7 +110,10 @@ export function TrainingMonthDots({
           return (
             <button
               key={dateStr}
-              onClick={() => (pasteActive ? onPasteAt?.(dateStr) : onDayExpand(dateStr))}
+              // Always opens the day, clipboard or not. A six-pixel dot grid has no room to
+              // name a paste target, and a cell that pastes silently is the trap this whole
+              // change removes — on a phone the paste lands in the day sheet instead.
+              onClick={() => onDayExpand(dateStr)}
               aria-label={t('month.showDay', { date: dateStr })}
               className={clsx(
                 'relative aspect-square flex flex-col items-center justify-start gap-0.5 p-1 rounded-lg transition-colors',

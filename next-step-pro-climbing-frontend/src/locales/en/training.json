@@ -7,6 +7,9 @@
     "month": "Month",
     "week": "Week"
   },
+  "week": {
+    "addAllDay": "Add an all-day entry"
+  },
   "month": {
     "more": "+{{count}}",
     "moreAria_one": "Show {{count}} more entry",
@@ -14,8 +17,7 @@
     "showDay": "Show day {{date}}",
     "addOnDay": "Add an entry",
     "emptyDay": "Nothing planned for this day",
-    "addOnDate": "Add an entry on {{date}}",
-    "pasteHere": "Paste here"
+    "addOnDate": "Add an entry on {{date}}"
   },
   "nav": {
     "today": "Today",
@@ -149,11 +151,12 @@
   "clipboard": {
     "copy": "Copy training",
     "cut": "Cut training",
-    "copiedBanner": "Copied \"{{title}}\" — click an empty spot in the calendar to paste a copy (Esc cancels)",
-    "cutBanner": "Cut \"{{title}}\" — click an empty spot in the calendar to move it (Esc cancels)",
+    "copiedBanner": "Copied \"{{title}}\" — choose \"Paste here\" on a day, or click a free hour (Esc cancels)",
+    "cutBanner": "Cut \"{{title}}\" — choose \"Paste here\" on a day, or click a free hour (Esc cancels)",
     "cancel": "Cancel",
     "fromAthlete": "from {{name}}'s calendar",
-    "fromOwnCalendar": "from your own calendar"
+    "fromOwnCalendar": "from your own calendar",
+    "pasteHere": "Paste here"
   },
   "completion": {
     "markDone": "Mark as completed",

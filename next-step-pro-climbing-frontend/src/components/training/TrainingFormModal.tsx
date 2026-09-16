@@ -236,13 +236,15 @@ function TrainingForm({ onDirtyChange, training, initialDate, initialTime, prefi
       return
     }
     setCalories('')
-    // Only a training has a span to prefill; a task never reaches the time pickers.
-    // Turning "all day" OFF is half of that and used to be missing: a fresh create with no clicked
-    // hour opens all-day, and submit() drops both times in that mode — so picking "Siła · 90 min"
-    // saved an all-day entry and silently threw away the one thing a TRAINING template carries
-    // beyond its text.
+    /* Only a training has a span to prefill; a task never reaches the time pickers.
+       ⚠️ The end picker, and NOTHING else — in particular not the all-day toggle. The duration on
+       a template is a DEFAULT, while all-day is the coach's answer for this entry, and this used
+       to force all-day off. A fresh create with no clicked hour has no chosen hour either, so the
+       entry landed at DEFAULT_START: picking "Siła · 90 min" on an all-day form planted a training
+       at 17:00 on the hour grid, an hour nobody named. Losing a suggested duration is the smaller
+       loss, and it is not even lost — it sits in the picker for whoever does switch to a timed
+       entry, which is exactly the case that wanted it. */
     if (tpl.defaultDurationMinutes != null) {
-      setAllDay(false)
       setEndTime(addMinutesTo(startTime, tpl.defaultDurationMinutes))
     }
   }

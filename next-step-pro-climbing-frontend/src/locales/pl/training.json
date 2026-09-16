@@ -7,6 +7,9 @@
     "month": "Miesiąc",
     "week": "Tydzień"
   },
+  "week": {
+    "addAllDay": "Dodaj wpis całodniowy"
+  },
   "month": {
     "more": "+{{count}}",
     "moreAria_one": "Pokaż jeszcze {{count}} wpis",
@@ -16,8 +19,7 @@
     "showDay": "Pokaż dzień {{date}}",
     "addOnDay": "Dodaj wpis",
     "emptyDay": "Nic zaplanowanego na ten dzień",
-    "addOnDate": "Dodaj wpis w dniu {{date}}",
-    "pasteHere": "Wklej tutaj"
+    "addOnDate": "Dodaj wpis w dniu {{date}}"
   },
   "nav": {
     "today": "Dziś",
@@ -155,11 +157,12 @@
   "clipboard": {
     "copy": "Kopiuj trening",
     "cut": "Wytnij trening",
-    "copiedBanner": "Skopiowano „{{title}}\" — kliknij wolne miejsce w kalendarzu, aby wkleić kopię (Esc anuluje)",
-    "cutBanner": "Wycięto „{{title}}\" — kliknij wolne miejsce w kalendarzu, aby przenieść (Esc anuluje)",
+    "copiedBanner": "Skopiowano „{{title}}\" — wybierz „Wklej tutaj\" w dniu albo kliknij wolną godzinę (Esc anuluje)",
+    "cutBanner": "Wycięto „{{title}}\" — wybierz „Wklej tutaj\" w dniu albo kliknij wolną godzinę (Esc anuluje)",
     "cancel": "Anuluj",
     "fromAthlete": "z kalendarza: {{name}}",
-    "fromOwnCalendar": "z Twojego kalendarza"
+    "fromOwnCalendar": "z Twojego kalendarza",
+    "pasteHere": "Wklej tutaj"
   },
   "completion": {
     "markDone": "Oznacz jako wykonany",

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Plus } from 'lucide-react'
 import { format, addDays } from 'date-fns'
 import clsx from 'clsx'
 import { TrainingBlock, ReservationBlock, InvitationBlock } from './TrainingBlock'
@@ -161,9 +161,10 @@ export function TrainingWeekCalendar({
           </div>
 
           {/* All-day lane: untimed trainings + all-day invitations, pinned above the hour grid.
-              Untimed is common here, so the lane is sized for two chips without growing, and the
-              gutter uses the SHORT label with bottom clearance — the first hour label ("7:00")
-              is shifted 8px up into this row, and the long form wording collided with it. */}
+              `min-h-14` now sizes the EMPTY lane only — one chip is 48px and the add strip
+              another 24, so any day with content is past it long before. The gutter uses the
+              SHORT label with bottom clearance — the first hour label ("7:00") is shifted 8px
+              up into this row, and the long form wording collided with it. */}
           <div className="grid border-b border-surface-800" style={{ gridTemplateColumns: '60px repeat(7, minmax(0, 1fr))' }}>
             <div className="flex items-start justify-end pr-2 pt-1.5 pb-3 text-[10px] leading-tight text-surface-500">
               {t('detail.allDay')}
@@ -177,32 +178,22 @@ export function TrainingWeekCalendar({
                   className={clsx(
                     'relative min-h-14 p-1 pb-3 space-y-0.5 border-l border-surface-800 transition-colors',
                     today && 'bg-primary-500/5',
-                    pasteActive ? 'cursor-copy hover:bg-primary-500/10' : 'cursor-pointer hover:bg-surface-800/40',
+                    'cursor-pointer hover:bg-surface-800/40',
                   )}
                   onClick={(e) => {
                     if ((e.target as HTMLElement).closest('button')) return
-                    // An armed clipboard makes this a drop target, not an add target — without
-                    // it, the one place an untimed entry (and every task) can land was the one
-                    // place that opened the create form instead of pasting.
-                    // Explicit null: dropping here means "no hour", not "keep the source's".
-                    if (pasteActive && onPasteAt) {
-                      onPasteAt(date, null)
-                      return
-                    }
-                    // All-day cell → add an untimed training (no time passed)
+                    // ⚠️ The CELL never pastes, even with the clipboard armed — only the strip
+                    // below does. The lane is full of entries, and a cell that pastes turns
+                    // every near-miss into another copy nobody asked for.
                     onDayClick(date)
                   }}
                 >
-                  {/* pasteActive is load-bearing here, not decoration: this lane is the only
-                      drop target an untimed entry or a task has, and a chip left as a <button>
-                      makes the cell's closest('button') guard swallow the paste. */}
                   {allDay?.allDayTrainings.map((tr) => (
                     <TrainingBlock
                       key={tr.id}
                       training={tr}
                       onClick={() => onTrainingClick(tr)}
                       density="chip"
-                      pasteActive={pasteActive}
                       // The all-day lane is the only place an untimed entry shows up in this view,
                       // so without these it was the one entry that could be seen but not copied.
                       // Cut follows the hour grid: history stays where it happened.
@@ -219,9 +210,36 @@ export function TrainingWeekCalendar({
                       label={invitationLabel}
                       onClick={() => onInvitationClick(inv)}
                       density="chip"
-                      pasteActive={pasteActive}
                     />
                   ))}
+
+                  {/* Adding an all-day entry used to depend on hitting the EMPTY part of this
+                      cell — so a day that already held three entries had no empty part left and
+                      could not take a fourth. This strip is that empty part, made explicit.
+                      Always visible, never behind a hover: it is the only way in on a touch
+                      screen, where a hover-revealed affordance never appears at all.
+                      ⚠️ With the clipboard armed it becomes the lane's ONLY paste target and
+                      says so, the same swap the month cell makes. Naming the one spot that
+                      pastes is what lets every entry around it stay an entry. h-6, not
+                      narrower: it clears the same 24px tap floor as the clipboard buttons. */}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      // Explicit null: dropping here means "no hour", not "keep the source's"
+                      if (pasteActive && onPasteAt) onPasteAt(date, null)
+                      else onDayClick(date)
+                    }}
+                    className={clsx(
+                      'flex items-center justify-center w-full h-6 rounded border border-dashed transition-colors',
+                      pasteActive
+                        ? 'border-primary-500/50 text-primary-300 text-[10px] hover:bg-primary-500/10'
+                        : 'border-surface-700/60 text-surface-500 hover:border-primary-500 hover:text-primary-300',
+                    )}
+                    title={pasteActive ? t('clipboard.pasteHere') : t('week.addAllDay')}
+                    aria-label={pasteActive ? t('clipboard.pasteHere') : t('week.addAllDay')}
+                  >
+                    {pasteActive ? t('clipboard.pasteHere') : <Plus className="w-3 h-3" />}
+                  </button>
                 </div>
               )
             })}
