@@ -10,6 +10,7 @@ import pl.nextsteppro.climbing.domain.personaltraining.AttachmentKind;
 import pl.nextsteppro.climbing.domain.personaltraining.PersonalTraining;
 import pl.nextsteppro.climbing.domain.personaltraining.TrainingAttachment;
 import pl.nextsteppro.climbing.domain.personaltraining.TrainingAttachmentRepository;
+import pl.nextsteppro.climbing.domain.trainingtemplate.TrainingTemplate;
 import pl.nextsteppro.climbing.infrastructure.i18n.MessageService;
 import pl.nextsteppro.climbing.infrastructure.storage.FileStorageService;
 
@@ -87,7 +88,8 @@ class AttachmentSupportTest {
 
     private static TrainingAttachment fileAttachment(String filename) {
         return TrainingAttachment.file(
-            mock(PersonalTraining.class), filename, "plan.pdf", "application/pdf", 1024L, null, 0);
+            mock(PersonalTraining.class), filename, "plan.pdf", "application/pdf", 1024L, null, 0,
+            Instant.now().plus(TrainingAttachment.RETENTION));
     }
 
     @Test
@@ -148,6 +150,121 @@ class AttachmentSupportTest {
         assertEquals("application/pdf", saved.getMimeType(), "type derived from filename, not client");
         assertEquals(4242L, saved.getSizeBytes(), "real disk size, not client-claimed");
         assertEquals("plan.pdf", saved.getOriginalName(), "display name kept from client");
+    }
+
+    // ---------- retention (a file on a training lives a year; see V99) ----------
+
+    @Test
+    void shouldStampARetentionDateOnAFileAttachedToATraining() {
+        PersonalTraining training = mock(PersonalTraining.class);
+        String filename = "11111111-1111-1111-1111-111111111111.jpg";
+        when(fileStorageService.getFileSize(filename, "training")).thenReturn(10L);
+
+        support.persistForTraining(training, List.of(fileRequest(filename)));
+
+        Instant expected = Instant.now().plus(TrainingAttachment.RETENTION);
+        Instant actual = savedAttachment().getExpiresAt();
+        assertNotNull(actual);
+        assertTrue(Math.abs(Duration.between(expected, actual).toSeconds()) < 5,
+            "expected roughly " + expected + " but was " + actual);
+    }
+
+    /** A link holds none of our bytes, so there is nothing for the sweep to reclaim. */
+    @Test
+    void shouldLeaveALinkWithoutARetentionDate() {
+        support.persistForTraining(mock(PersonalTraining.class),
+            List.of(new AttachmentRequest("https://youtu.be/x", "Wideo")));
+
+        assertNull(savedAttachment().getExpiresAt());
+    }
+
+    /**
+     * A template is a library handed out for years. A PDF expiring underneath it would leave the
+     * template silently incomplete, and the coach would find out while giving it to an athlete.
+     */
+    @Test
+    void shouldLeaveATemplateMaterialWithoutARetentionDate() {
+        String filename = "22222222-2222-2222-2222-222222222222.pdf";
+        when(fileStorageService.getFileSize(filename, "training")).thenReturn(10L);
+
+        support.persistForTemplate(mock(TrainingTemplate.class), List.of(fileRequest(filename)));
+
+        assertNull(savedAttachment().getExpiresAt());
+    }
+
+    /**
+     * A save rewrites every row of a training, so a file that was already there has to carry its own
+     * date across. Otherwise fixing a typo in the title would hand every photo another year, and
+     * the promise would only ever bind trainings nobody edits.
+     */
+    @Test
+    void shouldKeepTheOriginalDateWhenAnEditRewritesTheSameFile() {
+        PersonalTraining training = mock(PersonalTraining.class);
+        String filename = "33333333-3333-3333-3333-333333333333.jpg";
+        Instant stampedLastYear = Instant.now().minus(Duration.ofDays(300));
+        when(attachmentRepository.findByTrainingIdOrderByPositionAsc(training.getId()))
+            .thenReturn(List.of(TrainingAttachment.file(training, filename, "a.jpg", "image/jpeg", 1L,
+                null, 0, stampedLastYear)));
+        when(fileStorageService.getFileSize(filename, "training")).thenReturn(10L);
+
+        support.replaceForTraining(training, List.of(fileRequest(filename)));
+
+        assertEquals(stampedLastYear, savedAttachment().getExpiresAt());
+    }
+
+    @Test
+    void shouldRemoveAMaterialPastItsRetentionWindow() throws Exception {
+        String file = "44444444-4444-4444-4444-444444444444.jpg";
+        Instant now = Instant.now();
+        TrainingAttachment expired = TrainingAttachment.file(mock(PersonalTraining.class), file,
+            "a.jpg", "image/jpeg", 1L, null, 0, now.minus(Duration.ofDays(1)));
+        when(attachmentRepository.findByExpiresAtLessThanEqual(now)).thenReturn(List.of(expired));
+        when(attachmentRepository.countByFilename(file)).thenReturn(0L);
+
+        assertEquals(1, support.deleteExpired(now));
+
+        verify(attachmentRepository).deleteAllInBatch(List.of(expired));
+        verify(fileStorageService).delete(file, "training");
+    }
+
+    /**
+     * Copies share one file on purpose (duplicate, paste, "use template"), and each copy carries its
+     * own date — so the row goes and the bytes stay until the last one expires.
+     */
+    @Test
+    void shouldKeepTheBytesOfAnExpiredCopyAnotherRowStillPointsAt() throws Exception {
+        String shared = "55555555-5555-5555-5555-555555555555.jpg";
+        Instant now = Instant.now();
+        TrainingAttachment expired = TrainingAttachment.file(mock(PersonalTraining.class), shared,
+            "a.jpg", "image/jpeg", 1L, null, 0, now.minus(Duration.ofDays(1)));
+        when(attachmentRepository.findByExpiresAtLessThanEqual(now)).thenReturn(List.of(expired));
+        when(attachmentRepository.countByFilename(shared)).thenReturn(1L);
+
+        assertEquals(1, support.deleteExpired(now));
+
+        verify(attachmentRepository).deleteAllInBatch(List.of(expired));
+        verify(fileStorageService, never()).delete(eq(shared), anyString());
+    }
+
+    @Test
+    void shouldTouchNothingWhenNoMaterialHasExpired() {
+        Instant now = Instant.now();
+        when(attachmentRepository.findByExpiresAtLessThanEqual(now)).thenReturn(List.of());
+
+        assertEquals(0, support.deleteExpired(now));
+
+        verify(attachmentRepository, never()).deleteAllInBatch(anyList());
+        verify(attachmentRepository, never()).flush();
+    }
+
+    private static AttachmentRequest fileRequest(String filename) {
+        return new AttachmentRequest(AttachmentKind.FILE, null, filename, "a.jpg", "image/jpeg", 1L, null);
+    }
+
+    private TrainingAttachment savedAttachment() {
+        ArgumentCaptor<TrainingAttachment> captor = ArgumentCaptor.forClass(TrainingAttachment.class);
+        verify(attachmentRepository).save(captor.capture());
+        return captor.getValue();
     }
 
     @Test

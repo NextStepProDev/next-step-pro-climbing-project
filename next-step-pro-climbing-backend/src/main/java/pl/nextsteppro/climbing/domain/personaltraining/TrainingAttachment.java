@@ -5,6 +5,7 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.web.util.HtmlUtils;
 import pl.nextsteppro.climbing.domain.trainingtemplate.TrainingTemplate;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -25,6 +26,14 @@ public class TrainingAttachment {
     public static final int MAX_LABEL_LENGTH = 120;
     public static final int MAX_URL_LENGTH = 2048;
     public static final int MAX_PER_TRAINING = 6;
+
+    /**
+     * How long a FILE attached to a training survives. Deliberately its own constant rather than a
+     * reference to the comment-thread window: the two happen to be a year apiece today, but they
+     * answer to different things — one is a coach's material, the other a photo somebody sent in a
+     * conversation — and tying them together would move both the next time one is reconsidered.
+     */
+    public static final Duration RETENTION = Duration.ofDays(365);
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -76,6 +85,15 @@ public class TrainingAttachment {
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
+    /**
+     * When the retention sweep may remove this row and (if nothing else points at it) its file.
+     * NULL means "never": a LINK holds no bytes, and a template's material is a library item that
+     * has to stay whole. The DB CHECK keeps those two out of the sweep's reach structurally.
+     */
+    @Column(name = "expires_at")
+    @Nullable
+    private Instant expiresAt;
+
     protected TrainingAttachment() {}
 
     private TrainingAttachment(AttachmentKind kind, int position, @Nullable String label) {
@@ -102,12 +120,19 @@ public class TrainingAttachment {
         return a;
     }
 
+    /**
+     * @param expiresAt when the retention sweep may take it. Passed in rather than computed here
+     *                  because an edit rewrites every row of a training (replace-all), and a file
+     *                  that was already attached keeps the date it was first given — otherwise
+     *                  renaming a training would silently restart its year.
+     */
     public static TrainingAttachment file(PersonalTraining training, String filename, @Nullable String originalName,
                                           @Nullable String mimeType, @Nullable Long sizeBytes,
-                                          @Nullable String label, int position) {
+                                          @Nullable String label, int position, Instant expiresAt) {
         TrainingAttachment a = new TrainingAttachment(AttachmentKind.FILE, position, label);
         a.training = training;
         a.asFile(filename, originalName, mimeType, sizeBytes);
+        a.expiresAt = expiresAt;
         return a;
     }
 
@@ -207,5 +232,10 @@ public class TrainingAttachment {
 
     public Instant getCreatedAt() {
         return createdAt;
+    }
+
+    @Nullable
+    public Instant getExpiresAt() {
+        return expiresAt;
     }
 }

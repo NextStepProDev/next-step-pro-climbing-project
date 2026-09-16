@@ -987,7 +987,7 @@ class TrainingCalendarServiceTest {
         // be checked against who owns the training.
         TrainingAttachment a = TrainingAttachment.file(
             buildTraining(athlete, false), "33333333-3333-3333-3333-333333333333.pdf", "Plan.pdf",
-            "application/pdf", 1024L, "Plan", 0);
+            "application/pdf", 1024L, "Plan", 0, Instant.now().plus(TrainingAttachment.RETENTION));
         TrainingAttachmentDto dto = AttachmentSupport.toDto(a);
         assertEquals("FILE", dto.kind());
         assertTrue(dto.url().startsWith("/api/training-calendar/files/"));
@@ -1004,7 +1004,8 @@ class TrainingCalendarServiceTest {
         setField(training, "id", trainingId);
         when(trainingRepository.findById(trainingId)).thenReturn(Optional.of(training));
         when(attachmentRepository.findByTrainingIdOrderByPositionAsc(trainingId)).thenReturn(List.of(
-            TrainingAttachment.file(training, "44444444-4444-4444-4444-444444444444.pdf", "a.pdf", "application/pdf", 1L, null, 0)));
+            TrainingAttachment.file(training, "44444444-4444-4444-4444-444444444444.pdf", "a.pdf", "application/pdf", 1L, null, 0,
+                Instant.now().plus(TrainingAttachment.RETENTION))));
 
         // When
         service.deleteMy(athleteId, trainingId);
@@ -1021,7 +1022,8 @@ class TrainingCalendarServiceTest {
         setField(training, "id", trainingId);
         when(trainingRepository.findById(trainingId)).thenReturn(Optional.of(training));
         when(attachmentRepository.findByTrainingIdOrderByPositionAsc(trainingId)).thenReturn(List.of(
-            TrainingAttachment.file(training, "55555555-5555-5555-5555-555555555555.pdf", "old.pdf", "application/pdf", 1L, null, 0)));
+            TrainingAttachment.file(training, "55555555-5555-5555-5555-555555555555.pdf", "old.pdf", "application/pdf", 1L, null, 0,
+                Instant.now().plus(TrainingAttachment.RETENTION))));
         CreatePersonalTrainingRequest request = new CreatePersonalTrainingRequest(
             LocalDate.now().plusDays(2), LocalTime.of(18, 0), LocalTime.of(19, 30), "T", null,
             List.of(link("https://a.com")));

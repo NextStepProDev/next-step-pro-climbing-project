@@ -42,4 +42,24 @@ public class TrainingAttachmentCleanupScheduler {
             log.debug("No abandoned training-material uploads to sweep");
         }
     }
+
+    /**
+     * Daily at 3:45 — the retention promise: a file attached to a training goes a year after it was
+     * attached. Ten minutes after the comment-file sweep at 3:35 rather than alongside it, so the
+     * two deletions are told apart in the log instead of arriving in the same second.
+     *
+     * <p>Separate from the orphan sweep above even though both end in a delete: that one answers
+     * "nobody ever saved this", this one "its year is up", and the day one of those windows is
+     * reconsidered the other must not move with it.
+     */
+    @Scheduled(cron = "0 45 3 * * *")
+    @Transactional
+    public void sweepExpiredMaterials() {
+        int deleted = attachmentSupport.deleteExpired();
+        if (deleted > 0) {
+            log.info("Removed {} expired training material(s)", deleted);
+        } else {
+            log.debug("No training materials past their retention window");
+        }
+    }
 }

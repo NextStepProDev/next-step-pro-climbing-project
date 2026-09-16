@@ -361,8 +361,18 @@ export function TrainingDetailModal({
 
 // One material: an embedded YouTube/Instagram player, an inline image, a PDF/file card, or a link card.
 function MaterialItem({ attachment }: { attachment: TrainingAttachment }) {
-  const { url, label, embedUrl, kind, mimeType, fileName } = attachment
+  const { t } = useTranslation('training')
+  const { url, label, embedUrl, kind, mimeType, fileName, expiresAt } = attachment
   const decodedLabel = label ? decodeHtmlEntities(label) : null
+
+  // A file attached to a training is kept for a year. Saying so next to the file is the whole
+  // point of storing the date rather than computing it: a photo that vanishes unannounced reads
+  // as a bug, and by then there is nothing left to download.
+  const expiry = expiresAt ? (
+    <p className="text-[10px] text-surface-500">
+      {t('detail.materialExpires', { date: format(new Date(expiresAt), 'dd.MM.yyyy') })}
+    </p>
+  ) : null
 
   // LINK → embedded YouTube/Instagram player
   if (kind === 'LINK' && embedUrl) {
@@ -394,6 +404,7 @@ function MaterialItem({ attachment }: { attachment: TrainingAttachment }) {
       <figure className="space-y-1">
         {decodedLabel && <figcaption className="text-xs text-surface-400">{decodedLabel}</figcaption>}
         <PrivateImage url={url} alt={decodedLabel ?? fileName ?? 'image'} className="max-w-sm" />
+        {expiry}
       </figure>
     )
   }
@@ -404,6 +415,7 @@ function MaterialItem({ attachment }: { attachment: TrainingAttachment }) {
       <figure className="space-y-1">
         {decodedLabel && <figcaption className="text-xs text-surface-400">{decodedLabel}</figcaption>}
         <PrivateFileCard url={url} fileName={fileName ?? null} />
+        {expiry}
       </figure>
     )
   }

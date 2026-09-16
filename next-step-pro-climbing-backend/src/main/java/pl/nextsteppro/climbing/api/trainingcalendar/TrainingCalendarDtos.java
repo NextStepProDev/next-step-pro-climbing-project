@@ -123,7 +123,10 @@ record TrainingAttachmentDto(
     @Nullable String filename,
     @Nullable String fileName,
     @Nullable String mimeType,
-    @Nullable Long sizeBytes
+    @Nullable Long sizeBytes,
+    // FILE on a training only: when the retention sweep takes it. null = never (a link holds no
+    // bytes, a template's material is a library item). Shown next to the file, like in the thread.
+    @Nullable Instant expiresAt
 ) {}
 
 /**

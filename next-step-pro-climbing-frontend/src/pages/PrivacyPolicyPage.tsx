@@ -172,7 +172,7 @@ function PrivacyPolicyPl({ logo }: { logo: string }) {
               'Pomiary porannej wagi wraz z datami (jeden pomiar na dzień) oraz wyliczany z nich trend',
               'Cele treningowe i wagowe zakładane przez trenera — w tym waga startowa i docelowa oraz data osiągnięcia',
               'Komentarze w rozmowie z trenerem przy każdym treningu',
-              'Materiały treningowe — linki oraz przesłane pliki (PDF, obrazy)',
+              'Materiały treningowe — linki oraz przesłane pliki (PDF, obrazy); wgrane pliki kasowane automatycznie po roku od dołączenia, linki zostają',
               'Zdjęcia i pliki PDF załączane przez Ciebie do wiadomości w rozmowie — kasowane automatycznie po roku',
               'Rejestr usunięć zaplanowanych treningów (tytuł i termin usuniętego wpisu) — służy wyłącznie do powiadomienia drugiej strony',
             ]} />
@@ -409,7 +409,9 @@ function PrivacyPolicyPl({ logo }: { logo: string }) {
               i wagowe najpóźniej w ciągu 30 dni. Poszczególne wpisy — treningi, pomiary wagi, materiały —
               możesz usuwać samodzielnie w każdej chwili. Rejestr usunięć zaplanowanych treningów kasuje się
               sam po 60 dniach. Przesłane pliki znikają z serwera razem z wpisem, do którego były dołączone,
-              a załączniki wysłane w rozmowie kasują się dodatkowo same po roku od wysłania.
+              a dodatkowo kasują się same po roku: materiały dołączone do treningu — rok od dołączenia
+              (datę widzisz przy pliku), załączniki wysłane w rozmowie — rok od wysłania. Linki nie znikają,
+              bo nie są plikiem na serwerze.
             </p>
           </div>
         </Section>
@@ -636,7 +638,7 @@ function PrivacyPolicyEn({ logo }: { logo: string }) {
               'Morning weigh-ins with their dates (one reading per day) and the trend calculated from them',
               'Training and weight goals set by your coach — including starting weight, target weight and the date achieved',
               'Messages in the thread with your coach on each training session',
-              'Training materials — links and uploaded files (PDF, images)',
+              'Training materials — links and uploaded files (PDF, images); uploaded files are deleted automatically a year after they are attached, links stay',
               'Photos and PDFs you attach to messages in the conversation — deleted automatically after a year',
               'A register of deleted upcoming sessions (title and date of the removed entry) — used solely to notify the other side',
             ]} />
@@ -871,8 +873,10 @@ function PrivacyPolicyEn({ logo }: { logo: string }) {
               coaching arrangement. Once it ends, or once consent is withdrawn, I delete the training and weight
               data within 30 days at the latest. Individual entries — sessions, weigh-ins, materials — can be
               deleted by you at any time. The register of deleted upcoming sessions clears itself after 60 days.
-              Uploaded files are removed from the server together with the entry they were attached to, and
-              attachments sent in a conversation additionally delete themselves a year after they were sent.
+              Uploaded files are removed from the server together with the entry they were attached to, and they
+              also delete themselves after a year: materials attached to a session a year after they were
+              attached (the date is shown next to the file), attachments sent in a conversation a year after
+              they were sent. Links do not disappear, because they are not a file on the server.
             </p>
           </div>
         </Section>
