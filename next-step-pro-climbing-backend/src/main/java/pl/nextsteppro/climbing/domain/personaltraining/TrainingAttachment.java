@@ -24,7 +24,7 @@ public class TrainingAttachment {
 
     public static final int MAX_LABEL_LENGTH = 120;
     public static final int MAX_URL_LENGTH = 2048;
-    public static final int MAX_PER_TRAINING = 3;
+    public static final int MAX_PER_TRAINING = 6;
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)

@@ -47,7 +47,7 @@ record CreatePersonalTrainingRequest(
     @Nullable @Min(PersonalTraining.MIN_TARGET_CALORIES) @Max(PersonalTraining.MAX_TARGET_CALORIES)
     Integer targetCalories,
     // null = leave attachments untouched (so a move/drag PUT keeps them);
-    // [] = clear; a list = replace. Max 3.
+    // [] = clear; a list = replace. Bounded by TrainingAttachment.MAX_PER_TRAINING.
     @Nullable @Size(max = TrainingAttachment.MAX_PER_TRAINING) List<@Valid AttachmentRequest> attachments,
     // Optimistic lock, IGNORED on create. null = "do not check", and that is load-bearing rather
     // than lax: the PUTs that carry no version are real ones — a drag, a paste of a cut entry, and

@@ -39,6 +39,7 @@ import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -810,11 +811,14 @@ class TrainingCalendarServiceTest {
     }
 
     @Test
-    void shouldRejectWhenMoreThanThreeAttachments() {
-        // Given
+    void shouldRejectWhenMoreAttachmentsThanTheLimit() {
+        // Given: one past the cap, derived from the constant so raising it cannot leave this test
+        // quietly asserting on a number the code no longer uses
+        List<AttachmentRequest> tooMany = IntStream.rangeClosed(0, TrainingAttachment.MAX_PER_TRAINING)
+            .mapToObj(i -> link("https://a" + i + ".com"))
+            .toList();
         CreatePersonalTrainingRequest request = new CreatePersonalTrainingRequest(
-            LocalDate.now().plusDays(2), LocalTime.of(18, 0), LocalTime.of(19, 30), "T", null,
-            List.of(link("https://a.com"), link("https://b.com"), link("https://c.com"), link("https://d.com")));
+            LocalDate.now().plusDays(2), LocalTime.of(18, 0), LocalTime.of(19, 30), "T", null, tooMany);
 
         // When / Then
         IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
