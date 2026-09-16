@@ -206,7 +206,10 @@ jobs:
         uses: github/codeql-action/upload-sarif@v4
         # Wgraj także wtedy, gdy bramka niżej wywali build — inaczej dokładnie w sytuacji,
         # w której raport jest najbardziej potrzebny, nie ma go nigdzie.
-        if: always()
+        # ⚠️ ...ale TYLKO gdy plik naprawdę powstał — patrz bliźniaczy krok w ci-backend.yml,
+        # gdzie samo `always()` zamieniło padnięty build obrazu w mylący komunikat o brakującym
+        # SARIF-ie i to on trafił do adnotacji przebiegu zamiast prawdziwej przyczyny.
+        if: always() && hashFiles('trivy-frontend.sarif') != ''
         with:
           sarif_file: trivy-frontend.sarif
           category: trivy-frontend
