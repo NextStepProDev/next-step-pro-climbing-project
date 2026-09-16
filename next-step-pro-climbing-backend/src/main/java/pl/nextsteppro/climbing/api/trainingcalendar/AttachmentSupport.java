@@ -17,6 +17,7 @@ import pl.nextsteppro.climbing.infrastructure.storage.FileStorageService;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -101,12 +102,25 @@ public class AttachmentSupport {
     // ---------- persistence ----------
 
     void persistForTraining(PersonalTraining training, List<AttachmentRequest> requests) {
+        persistForTraining(training, requests, java.util.Map.of());
+    }
+
+    /**
+     * @param keepExpiry retention dates of the files that were already on this training, by
+     *                   filename. A save rewrites every row, so without this an edit as small as a
+     *                   title fix would hand each photo a fresh year and the promise would only
+     *                   ever bind trainings nobody touches.
+     */
+    private void persistForTraining(PersonalTraining training, List<AttachmentRequest> requests,
+                                    java.util.Map<String, Instant> keepExpiry) {
+        Instant fresh = Instant.now().plus(TrainingAttachment.RETENTION);
         int position = 0;
         for (AttachmentRequest req : requests) {
             String label = TrainingAttachment.sanitizeLabel(req.label());
             attachmentRepository.save(req.isFile()
                 ? TrainingAttachment.file(training, req.filename(), sanitizeName(req.originalName()),
-                    mimeTypeForFilename(req.filename()), realSizeBytes(req.filename()), label, position++)
+                    mimeTypeForFilename(req.filename()), realSizeBytes(req.filename()), label, position++,
+                    keepExpiry.getOrDefault(req.filename(), fresh))
                 : TrainingAttachment.link(training, req.url().trim(), label, position++));
         }
     }
@@ -115,6 +129,8 @@ public class AttachmentSupport {
         int position = 0;
         for (AttachmentRequest req : requests) {
             String label = TrainingAttachment.sanitizeLabel(req.label());
+            // No retention date on this branch: a template is a library meant to be handed out for
+            // years, and a PDF that expired under it would leave the template silently incomplete.
             attachmentRepository.save(req.isFile()
                 ? TrainingAttachment.file(template, req.filename(), sanitizeName(req.originalName()),
                     mimeTypeForFilename(req.filename()), realSizeBytes(req.filename()), label, position++)
@@ -148,10 +164,23 @@ public class AttachmentSupport {
 
     /** Replace-all for a training: wipe old rows, persist new, drop now-unreferenced files. */
     void replaceForTraining(PersonalTraining training, List<AttachmentRequest> requests) {
-        List<String> oldFiles = fileFilenames(attachmentRepository.findByTrainingIdOrderByPositionAsc(training.getId()));
+        List<TrainingAttachment> old = attachmentRepository.findByTrainingIdOrderByPositionAsc(training.getId());
+        java.util.Map<String, Instant> keepExpiry = expiryByFilename(old);
+        List<String> oldFiles = fileFilenames(old);
         attachmentRepository.deleteByTrainingId(training.getId());
-        persistForTraining(training, requests);
+        persistForTraining(training, requests, keepExpiry);
         deleteFilesIfUnreferenced(oldFiles);
+    }
+
+    /** Retention dates of the FILE rows being replaced, so a file that stays keeps its own clock. */
+    private static java.util.Map<String, Instant> expiryByFilename(List<TrainingAttachment> attachments) {
+        java.util.Map<String, Instant> byFilename = new java.util.HashMap<>();
+        for (TrainingAttachment a : attachments) {
+            if (a.getFilename() != null && a.getExpiresAt() != null) {
+                byFilename.put(a.getFilename(), a.getExpiresAt());
+            }
+        }
+        return byFilename;
     }
 
     void replaceForTemplate(TrainingTemplate template, List<AttachmentRequest> requests) {
@@ -193,11 +222,12 @@ public class AttachmentSupport {
         if (a.getKind() == pl.nextsteppro.climbing.domain.personaltraining.AttachmentKind.FILE) {
             String serveUrl = serveUrl(a.getId());
             return new TrainingAttachmentDto(a.getId(), "FILE", serveUrl, a.getLabel(),
-                null, a.getFilename(), a.getOriginalName(), a.getMimeType(), a.getSizeBytes());
+                null, a.getFilename(), a.getOriginalName(), a.getMimeType(), a.getSizeBytes(),
+                a.getExpiresAt());
         }
         String url = a.getUrl();
         return new TrainingAttachmentDto(a.getId(), "LINK", url, a.getLabel(),
-            url != null ? VideoEmbedUrls.toEmbedUrlOrNull(url) : null, null, null, null, null);
+            url != null ? VideoEmbedUrls.toEmbedUrlOrNull(url) : null, null, null, null, null, null);
     }
 
     static String serveUrl(UUID attachmentId) {
@@ -341,6 +371,31 @@ public class AttachmentSupport {
             }
         }
         return deleted;
+    }
+
+    /**
+     * Remove the materials whose retention window has passed, and the bytes behind them once no
+     * other row points there. Returns how many rows went.
+     *
+     * <p>Reference counting is the whole reason this cannot simply unlink the file: a duplicate, a
+     * paste onto somebody else's plan and "use template" all deliberately share one file, and each
+     * copy carries its own date. The last row to expire is the one that frees the disk.
+     */
+    public int deleteExpired() {
+        return deleteExpired(Instant.now());
+    }
+
+    /** Overload with an explicit "now", so a test can age a row without touching the clock. */
+    public int deleteExpired(Instant now) {
+        List<TrainingAttachment> expired = attachmentRepository.findByExpiresAtLessThanEqual(now);
+        if (expired.isEmpty()) return 0;
+        List<String> files = fileFilenames(expired);
+        // Bulk delete BEFORE counting references, then flush: countByFilename must not still see
+        // the rows it is counting (the same order purgeTrainingAttachments relies on).
+        attachmentRepository.deleteAllInBatch(expired);
+        attachmentRepository.flush();
+        deleteFilesIfUnreferenced(files);
+        return expired.size();
     }
 
     /** Delete each file from disk only if NO attachment (any owner) still references it. */

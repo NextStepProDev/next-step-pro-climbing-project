@@ -56,6 +56,8 @@ export function makeAttachment(overrides: Partial<TrainingAttachment> = {}): Tra
     fileName: null,
     mimeType: null,
     sizeBytes: null,
+    // A LINK by default, and a link never expires — retention only ever touches uploaded files.
+    expiresAt: null,
     ...overrides,
   }
 }

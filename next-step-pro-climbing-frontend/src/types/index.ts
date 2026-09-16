@@ -1706,6 +1706,8 @@ export interface TrainingAttachment {
   fileName: string | null
   mimeType: string | null
   sizeBytes: number | null
+  /** FILE on a training only: when retention removes it. null = never (links, template materials). */
+  expiresAt: string | null
 }
 
 // One material as sent to the API: either a link (url) or a file (uploaded filename + metadata)

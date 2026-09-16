@@ -4,6 +4,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
@@ -48,6 +49,13 @@ public interface TrainingAttachmentRepository extends JpaRepository<TrainingAtta
     /** Reference count of a stored file across ALL attachments (training + template) —
      * a physical file must not be deleted from disk while another row still points at it. */
     long countByFilename(String filename);
+
+    /**
+     * Rows whose retention window has passed. Only FILE rows on a training ever carry a date (DB
+     * CHECK), so links and template materials are out of reach here by construction rather than by
+     * a predicate somebody has to remember to repeat.
+     */
+    List<TrainingAttachment> findByExpiresAtLessThanEqual(Instant cutoff);
 
     /** All uploaded files with their owner (training or template) — admin materials management. */
     @Query("""

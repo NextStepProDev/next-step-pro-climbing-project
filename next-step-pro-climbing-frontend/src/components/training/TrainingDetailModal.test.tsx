@@ -6,7 +6,7 @@ import userEvent from '@testing-library/user-event'
 import { format, subDays } from 'date-fns'
 import { TrainingDetailModal } from './TrainingDetailModal'
 import type { TrainingCalendarAdapter } from './trainingCalendarAdapter'
-import { makeTraining } from '../../test/factories'
+import { makeAttachment, makeTraining } from '../../test/factories'
 import type { PersonalTraining } from '../../types'
 
 vi.mock('react-i18next', () => ({
@@ -366,5 +366,46 @@ describe('TrainingDetailModal — reopened on a different entry', () => {
     // and one click files them against it.
     expect(screen.queryByPlaceholderText('completion.feedbackPlaceholder')).not.toBeInTheDocument()
     expect(screen.getByText('completion.markDone')).toBeInTheDocument()
+  })
+})
+
+describe('TrainingDetailModal — materials say how long they stay', () => {
+  function open(training: PersonalTraining) {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    return render(
+      <QueryClientProvider client={client}>
+        <TrainingDetailModal
+          training={training}
+          onClose={vi.fn()}
+          api={api}
+          onEdit={vi.fn()}
+          onDuplicate={vi.fn()}
+          onDelete={vi.fn()}
+          onComplete={vi.fn()}
+        />
+      </QueryClientProvider>
+    )
+  }
+
+  it('names the date an uploaded file will be removed', () => {
+    open(makeTraining({
+      attachments: [makeAttachment({
+        kind: 'FILE',
+        url: '/api/training-calendar/files/f1',
+        fileName: 'rozpiska.pdf',
+        mimeType: 'application/pdf',
+        expiresAt: '2027-09-16T10:00:00Z',
+      })],
+    }))
+
+    // Storing the date is only worth it if it is shown: a photo that vanishes unannounced reads
+    // as a bug, and by then there is nothing left to download.
+    expect(screen.getByText('detail.materialExpires')).toBeInTheDocument()
+  })
+
+  it('says nothing of the sort about a link', () => {
+    open(makeTraining({ attachments: [makeAttachment({ url: 'https://example.com/plan' })] }))
+
+    expect(screen.queryByText('detail.materialExpires')).not.toBeInTheDocument()
   })
 })
