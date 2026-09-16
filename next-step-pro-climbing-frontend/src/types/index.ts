@@ -792,6 +792,7 @@ export interface SettlementOverview {
   unassigned: UnassignedSummary
   unpriced: UnpricedSummary
   outstanding: OutstandingSummary
+  credits: CreditsSummary
   revenue: RevenueSummary
   people: PersonRevenue[]
   payouts: PayoutsSummary
@@ -874,6 +875,35 @@ export interface OutstandingCredit {
 export interface OutstandingItem {
   // 'month' is a standing coaching fee, which has no calendar entry behind it — hence the nullable
   // targetId. The null IS the signal not to offer a link, not an omission.
+  targetType: SettlementTarget | 'month'
+  targetId: string | null
+  date: string
+  title: string | null
+  payerType: SettlementPayer
+  payerId: string
+  name: string
+  amount: number
+}
+
+// The other half of OutstandingSummary: people holding money of yours with nothing owing.
+//
+// ⚠️ Anyone with an open debt is deliberately ABSENT — their credit is already named beside their
+// debt, where settling spends it. Listing them here too would total money you hold about somebody
+// who is, on net, short. The card states the omission, because a section that quietly drops people
+// is indistinguishable from a broken one.
+//
+// Whole history, ignoring the year picker, for the same reason debts do.
+export interface CreditsSummary {
+  total: number
+  // How many people the items group into — sent rather than derived so the heading and the rows
+  // cannot disagree, and so the card can hide itself without grouping first.
+  payers: number
+  items: CreditItem[]
+}
+
+// Same shape as OutstandingItem on purpose: two lists about the same money, one grouping routine.
+// `amount` is what this row holds OVER its price, always positive.
+export interface CreditItem {
   targetType: SettlementTarget | 'month'
   targetId: string | null
   date: string

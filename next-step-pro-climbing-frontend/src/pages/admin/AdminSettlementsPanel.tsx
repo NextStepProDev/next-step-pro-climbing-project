@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Link, useLocation, useSearchParams } from 'react-router-dom'
 import { format } from 'date-fns'
-import { AlertTriangle, Building2, ChevronDown, ChevronRight, CircleHelp, Coins, Download, TrendingUp, UserX, Users } from 'lucide-react'
+import { AlertTriangle, Building2, ChevronDown, ChevronRight, CircleHelp, Coins, Download, PiggyBank, TrendingUp, UserX, Users } from 'lucide-react'
 import { Button } from '../../components/ui/Button'
 import { DateInput } from '../../components/ui/DateInput'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
@@ -17,6 +17,8 @@ import { parseCalendarDate, todayInWarsaw } from '../../utils/calendarDate'
 import { useDateLocale } from '../../utils/dateFnsLocale'
 import { MAX_PAYOUT_AMOUNT, parseAmount } from '../../utils/money'
 import type {
+  CreditItem,
+  CreditsSummary,
   MonthlyRevenue,
   OutstandingItem,
   PersonRevenue,
@@ -117,6 +119,7 @@ export function AdminSettlementsPanel() {
               a debt, a session nobody priced is invisible everywhere else. */}
           <UnpricedCard unpriced={data.unpriced} />
           <OutstandingCard overview={data} />
+          <CreditsCard credits={data.credits} />
           <RevenueCard overview={data} />
           <PayoutsCard payouts={data.payouts} />
           <PeopleCard people={data.people} />
@@ -406,7 +409,7 @@ function OutstandingCard({ overview }: { overview: SettlementOverview }) {
             <span className="font-semibold text-amber-500">{money(outstanding.total)}</span>
             <span className="text-surface-500">
               {' · '}
-              {t('settlements.tab.outstanding.count', { n: outstanding.count })}
+              {t('settlements.tab.outstanding.count', { count: outstanding.count })}
               {outstanding.oldest && (
                 <>
                   {' · '}
@@ -504,7 +507,7 @@ function PayerDebtGroup({ group }: { group: PayerDebt }) {
           {open ? <ChevronDown className="w-4 h-4 shrink-0" /> : <ChevronRight className="w-4 h-4 shrink-0" />}
           <span className="truncate">{group.name}</span>
           <span className="text-surface-500 shrink-0">
-            · {t('settlements.tab.outstanding.sessions', { n: group.items.length })}
+            · {t('settlements.tab.outstanding.sessions', { count: group.items.length })}
           </span>
         </button>
         <span className="shrink-0 text-sm font-semibold text-amber-500 tabular-nums">
@@ -552,7 +555,11 @@ function PayerDebtGroup({ group }: { group: PayerDebt }) {
         <ul className="pl-6 space-y-1">
           {group.items.map((item) => (
             <li
-              key={`${item.targetType}:${item.targetId}`}
+              // ⚠️ The date belongs in the key. A standing fee has no calendar entry, so it
+              // travels with a null targetId, and one person can hold several of them —
+              // target alone collapses every month onto "month:null", and duplicate keys
+              // among siblings let React reuse the wrong node on the next render.
+              key={`${item.targetType}:${item.targetId}:${item.date}`}
               className="flex flex-wrap items-center gap-2 text-xs"
             >
               <span className="w-24 shrink-0 text-surface-400 tabular-nums">
@@ -585,6 +592,183 @@ function PayerDebtGroup({ group }: { group: PayerDebt }) {
 
       {settleAll.isError && (
         <p className="text-sm text-rose-400/80">{getErrorMessage(settleAll.error)}</p>
+      )}
+    </li>
+  )
+}
+
+// ---------- credits ----------
+
+/** One person and every session parking money of theirs. */
+interface PayerCredit {
+  key: string
+  name: string
+  isGuest: boolean
+  payerId: string
+  items: CreditItem[]
+  total: number
+}
+
+/**
+ * People holding money of yours with nothing owing — the half of the ledger that had nowhere to be
+ * seen.
+ *
+ * Credit used to be computed only for people who also owed something, so somebody who overpaid once
+ * and owes nothing appeared in no figure on this tab: not in revenue (it did arrive), not in debt
+ * (he owes nothing), not in the credit note (which only annotates debtors). His money was visible
+ * solely by opening the session it sits on.
+ *
+ * ⚠️ Neutral, never green or amber. Amber is work to do and this is not work; green means "done"
+ * and a credit is not done either. The WORD carries the meaning here, the colour only says whether
+ * something is a task.
+ *
+ * ⚠️ Read-only on purpose. A credit is spent at a session, by the "settle from credit" button in
+ * the settlement section — there is nothing to settle from this list, so it names WHERE the money
+ * is parked and links there.
+ */
+function CreditsCard({ credits }: { credits: CreditsSummary | undefined }) {
+  const { t } = useTranslation('admin')
+  const money = useMoney()
+
+  // Grouped by payer, same routine as the debt list and on the same key: the server sends flat
+  // items so that two lists about the same money have one shape on the wire.
+  const groups = useMemo(() => {
+    const byPayer = new Map<string, PayerCredit>()
+    // ⚠️ Defensive on a field the type says is always there, and here the exposure is worse than
+    // on the debt list: `credits` is a WHOLE new top-level field, so a browser holding the new
+    // bundle while the previous backend still answers gets `undefined` rather than an empty list —
+    // and dereferencing it inside a useMemo is a white screen, not a missing card.
+    for (const item of credits?.items ?? []) {
+      const key = `${item.payerType}:${item.payerId}`
+      const group = byPayer.get(key) ?? {
+        key,
+        name: item.name,
+        isGuest: item.payerType === 'guest',
+        payerId: item.payerId,
+        items: [],
+        total: 0,
+      }
+      group.items.push(item)
+      group.total += item.amount
+      byPayer.set(key, group)
+    }
+    // Server order is biggest credit first — the one worth remembering when pricing the next
+    // session. Kept, not recomputed: re-sorting here on a float sum is how the card and the
+    // heading start disagreeing about who is top of the list.
+    return [...byPayer.values()]
+  }, [credits?.items])
+
+  // Same reason as the loop above: an absent field is not a zero, and both have to draw nothing.
+  if (!credits || credits.payers === 0) return null
+
+  return (
+    <Card
+      title={t('settlements.tab.credits.title')}
+      icon={PiggyBank}
+      aside={
+        <span className="text-sm text-surface-200 tabular-nums">
+          <span className="font-semibold">{money(credits.total)}</span>
+          <span className="text-surface-500">
+            {' · '}
+            {t('settlements.tab.credits.payers', { count: credits.payers })}
+          </span>
+        </span>
+      }
+    >
+      <p className="text-xs text-surface-500">{t('settlements.tab.credits.ignoresYear')}</p>
+      {/* Says out loud who is NOT here. A debtor's credit is named beside their debt, where
+          settling spends it; repeating them under a heading that totals money you hold would
+          state the opposite of their net position on the same screen. */}
+      <p className="text-xs text-surface-500">{t('settlements.tab.credits.excludesDebtors')}</p>
+      <ul className="divide-y divide-surface-800">
+        {groups.map((group) => (
+          <PayerCreditGroup key={group.key} group={group} />
+        ))}
+      </ul>
+    </Card>
+  )
+}
+
+function PayerCreditGroup({ group }: { group: PayerCredit }) {
+  const { t } = useTranslation('admin')
+  const money = useMoney()
+  const locale = useDateLocale()
+  const location = useLocation()
+  const [open, setOpen] = useState(false)
+
+  const backHere = location.pathname + location.search
+
+  return (
+    <li className="py-2 space-y-2">
+      <div className="flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          aria-expanded={open}
+          className="flex flex-1 min-w-0 items-center gap-1.5 text-left text-sm text-surface-200 hover:text-surface-100 transition-colors"
+        >
+          {open ? <ChevronDown className="w-4 h-4 shrink-0" /> : <ChevronRight className="w-4 h-4 shrink-0" />}
+          <span className="truncate">{group.name}</span>
+          <span className="text-surface-500 shrink-0">
+            {group.isGuest && <> · {t('settlements.line.guest')}</>}
+            {' · '}
+            {t('settlements.tab.credits.sessions', { count: group.items.length })}
+          </span>
+        </button>
+        <span className="shrink-0 text-sm font-semibold text-surface-200 tabular-nums">
+          {money(group.total)}
+        </span>
+      </div>
+
+      {open && (
+        <ul className="pl-6 space-y-1">
+          {group.items.map((item) => (
+            <li
+              // ⚠️ The date belongs in the key. A standing fee has no calendar entry, so it
+              // travels with a null targetId, and one person can hold several of them —
+              // target alone collapses every month onto "month:null", and duplicate keys
+              // among siblings let React reuse the wrong node on the next render.
+              key={`${item.targetType}:${item.targetId}:${item.date}`}
+              className="flex flex-wrap items-center gap-2 text-xs"
+            >
+              <span className="w-24 shrink-0 text-surface-400 tabular-nums">
+                {format(parseCalendarDate(item.date), 'dd.MM.yyyy', { locale })}
+              </span>
+              {/* A standing fee has no calendar entry behind it, so it is text — a link that goes
+                  nowhere is worse than no link. */}
+              {item.targetId === null ? (
+                <span className="flex-1 min-w-0 truncate text-surface-300">
+                  {t('settlements.tab.credits.untitled.month')}
+                </span>
+              ) : (
+                <Link
+                  to={`/calendar?date=${item.date}&${item.targetType}=${item.targetId}`}
+                  state={{ returnTo: backHere }}
+                  aria-label={t('settlements.tab.credits.open', {
+                    name: item.name,
+                    date: format(parseCalendarDate(item.date), 'dd.MM.yyyy'),
+                  })}
+                  className="flex-1 min-w-0 truncate text-surface-300 hover:text-primary-300 transition-colors"
+                >
+                  {item.title ?? t(`settlements.tab.credits.untitled.${item.targetType}`)}
+                </Link>
+              )}
+              <span className="shrink-0 text-surface-300 tabular-nums">{money(item.amount)}</span>
+            </li>
+          ))}
+          {/* A guest has no card to open — the session above is the only place their figure can be
+              corrected, which is what a guest is: a booking with no continuity behind it. */}
+          {!group.isGuest && (
+            <li className="pt-1">
+              <Link
+                to={`/admin/users/${group.payerId}`}
+                className="text-xs text-primary-400 hover:text-primary-300 transition-colors"
+              >
+                {t('settlements.tab.credits.openUser')}
+              </Link>
+            </li>
+          )}
+        </ul>
       )}
     </li>
   )

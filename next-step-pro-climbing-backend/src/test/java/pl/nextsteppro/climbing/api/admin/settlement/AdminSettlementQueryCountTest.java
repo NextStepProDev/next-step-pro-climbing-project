@@ -46,15 +46,21 @@ class AdminSettlementQueryCountTest extends BaseIntegrationTest {
     private static final int SETTLEMENTS = 30;
 
     /**
-     * Rows of the year, the outstanding history, the two distinct-date reads behind the year picker,
-     * the four reads behind the "to be priced" queue (two session kinds x two payer kinds), the one
-     * behind "no payer at all", and the four behind bulk payouts (the payer list, transfers by
-     * arrival, transfers by work month, and the sessions they cover) — one query each, plus slack
-     * for Spring Data's own round trips.
+     * Rows of the year, the outstanding history, the overpaid history, the two distinct-date reads
+     * behind the year picker, the four reads behind the "to be priced" queue (two session kinds x
+     * two payer kinds), the one behind "no payer at all", and the four behind bulk payouts (the
+     * payer list, transfers by arrival, transfers by work month, and the sessions they cover) —
+     * one query each, plus slack for Spring Data's own round trips.
      *
      * <p>A dozen is a lot for one endpoint and it is deliberate: the tab answers several independent
      * questions in one read so its figures cannot disagree with each other. What matters is that the
      * number does not move with the data, which is what this gate holds.
+     *
+     * <p>⚠️ The overpaid history did not raise this ceiling, and that is worth keeping true. It
+     * REPLACED the per-debtor balance read that used to annotate debts with their credit, so one
+     * read now answers both questions — which is also why the two screens cannot disagree about one
+     * person. If this number ever measures higher after touching credit, the old read is still in
+     * there somewhere; the answer is to find it, not to raise the ceiling.
      */
     private static final int MAX_QUERIES = 15;
 
@@ -130,6 +136,21 @@ class AdminSettlementQueryCountTest extends BaseIntegrationTest {
         jdbc.update("INSERT INTO settlements (time_slot_id, guest_reservation_id, amount, paid_amount, settled_on) "
                 + "VALUES (?, ?, ?, ?, ?)",
             guestSlot.getId(), guest.getId(), new BigDecimal("150.00"), BigDecimal.ZERO, null);
+
+        // Somebody holding a credit with nothing owing. The overpaid read is unconditional, so a
+        // fixture without one would let it come back empty and still meet the budget — and this is
+        // also the row that proves the credit note beside a debt no longer costs a query of its own.
+        User overpayer = new User("credit@example.com", "Klient", "Nadplata",
+            "+48123456789", "credit");
+        overpayer.setRole(UserRole.USER);
+        overpayer.setEmailVerified(true);
+        overpayer = userRepository.saveAndFlush(overpayer);
+        TimeSlot creditSlot = timeSlotRepository.saveAndFlush(
+            new TimeSlot(TODAY.minusDays(5), LocalTime.of(10, 0), LocalTime.of(12, 0), 4));
+        jdbc.update("INSERT INTO settlements (time_slot_id, user_id, amount, paid_amount, settled_on) "
+                + "VALUES (?, ?, ?, ?, ?)",
+            creditSlot.getId(), overpayer.getId(), new BigDecimal("150.00"),
+            new BigDecimal("200.00"), TODAY.minusDays(5));
 
         // Sessions worked for somebody who was never named: zero seats, nobody on them, no amount.
         // They cost a read of their own, and a fixture without them would let that read come back
@@ -255,6 +276,8 @@ class AdminSettlementQueryCountTest extends BaseIntegrationTest {
             "The per-person breakdown must actually be populated, or the budget proves nothing");
         assertTrue(overview.outstanding().count() > 0,
             "The outstanding list must actually be populated, or the budget proves nothing");
+        assertTrue(overview.credits().payers() > 0,
+            "The overpayments list must actually be populated, or its read is free and proves nothing");
         assertTrue(overview.unassigned().count() > 0,
             "The no-payer list must actually be populated, or its read is free and proves nothing");
 
