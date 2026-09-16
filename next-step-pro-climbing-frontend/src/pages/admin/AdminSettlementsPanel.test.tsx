@@ -38,6 +38,7 @@ function makeOverview(overrides: Partial<SettlementOverview> = {}): SettlementOv
     unassigned: { count: 0, windowDays: 90, sessions: [] },
     unpriced: { count: 0, windowDays: 90, sessions: [] },
     outstanding: { total: 0, count: 0, oldest: null, items: [], credits: [] },
+    credits: { total: 0, payers: 0, items: [] },
     revenue: {
       total: 0,
       monthlyAverage: null,
@@ -403,6 +404,155 @@ describe('AdminSettlementsPanel', () => {
     expect(screen.getByText('Kurs skalny')).toBeInTheDocument()
     const links = screen.getAllByRole('link', { name: 'settlements.tab.outstanding.open' })
     expect(links[1]).toHaveAttribute('href', '/calendar?date=2026-08-12&event=event-2')
+  })
+
+  it('keeps two standing fees of one person apart, in both money lists', async () => {
+    // ⚠️ A monthly coaching fee has no calendar entry, so it travels with `targetId: null` — and
+    // `uq_settlements_monthly` is unique on (user, month), so one person can hold several. Keying a
+    // row by target alone collapses every one of them onto "month:null": React sees duplicate keys
+    // among siblings and is free to reuse the wrong node, so two months render as one.
+    const months = (payerId: string) => [
+      {
+        targetType: 'month' as const, targetId: null, date: '2026-01-01', title: null,
+        payerType: 'user' as const, payerId, name: 'Anna Kowalska', amount: 120,
+      },
+      {
+        targetType: 'month' as const, targetId: null, date: '2026-02-01', title: null,
+        payerType: 'user' as const, payerId, name: 'Anna Kowalska', amount: 120,
+      },
+    ]
+    getOverview.mockResolvedValue(makeOverview({
+      outstanding: {
+        total: 240, count: 2, oldest: '2026-01-01', credits: [], items: months('anna'),
+      },
+      credits: { total: 240, payers: 1, items: months('piotr') },
+    }))
+    const user = userEvent.setup()
+    // The damage is in reconciliation, not in the first paint — duplicates still render, and React
+    // reports the broken contract here rather than by dropping a row. Asserting on the warning is
+    // what makes this test fail while the bug is present.
+    const errors: string[] = []
+    const spy = vi.spyOn(console, 'error').mockImplementation((...args) => {
+      errors.push(args.map(String).join(' '))
+    })
+
+    try {
+      renderPanel()
+
+      await screen.findByText('settlements.tab.outstanding.title')
+      for (const group of screen.getAllByRole('button', { expanded: false })) {
+        await user.click(group)
+      }
+
+      expect(screen.getAllByText('settlements.tab.outstanding.untitled.month')).toHaveLength(2)
+      expect(screen.getAllByText('settlements.tab.credits.untitled.month')).toHaveLength(2)
+      expect(errors.filter((line) => /same key/i.test(line))).toEqual([])
+    } finally {
+      spy.mockRestore()
+    }
+  })
+
+  it('says nothing about overpayments when nobody is holding your money', async () => {
+    // The ordinary state. Debt says "all settled" when it is empty because zero there is news;
+    // an empty overpayments card would be a heading about nothing.
+    getOverview.mockResolvedValue(makeOverview())
+
+    renderPanel()
+
+    await screen.findByText('settlements.tab.title')
+    expect(screen.queryByText('settlements.tab.credits.title')).not.toBeInTheDocument()
+  })
+
+  it('survives a backend that predates the overpayments field', async () => {
+    // ⚠️ `credits` is a whole new TOP-LEVEL field, so during a deploy a browser holding the new
+    // bundle against the previous backend gets undefined, not an empty list. Dereferencing it in
+    // a useMemo is a white screen for the entire tab, not one missing card.
+    const withoutCredits: Partial<SettlementOverview> = makeOverview()
+    delete withoutCredits.credits
+    getOverview.mockResolvedValue(withoutCredits)
+
+    renderPanel()
+
+    // The rest of the tab still renders, which is the whole point.
+    expect(await screen.findByText('settlements.tab.title')).toBeInTheDocument()
+    expect(screen.queryByText('settlements.tab.credits.title')).not.toBeInTheDocument()
+  })
+
+  it('names somebody in credit with nothing owing, and the session parking the money', async () => {
+    // ⚠️ The case that started this: credit used to be computed only for debtors, so this person
+    // appeared in no figure on the tab at all — not revenue (it did arrive), not debt (he owes
+    // nothing), not the credit note (which only annotates debtors).
+    getOverview.mockResolvedValue(makeOverview({
+      credits: {
+        total: 150,
+        payers: 1,
+        items: [{
+          targetType: 'slot', targetId: 'slot-9', date: '2026-09-12', title: 'Trening 1:1',
+          payerType: 'user', payerId: 'piotr', name: 'Piotr Zieliński', amount: 150,
+        }],
+      },
+    }))
+    const user = userEvent.setup()
+
+    renderPanel()
+
+    expect(await screen.findByText('Piotr Zieliński')).toBeInTheDocument()
+    // Closed, the card says who and how much; the session is the answer to "where is it", which
+    // is the only place the figure can be corrected.
+    expect(screen.queryByText('Trening 1:1')).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { expanded: false }))
+
+    expect(screen.getByRole('link', { name: 'settlements.tab.credits.open' }))
+      .toHaveAttribute('href', '/calendar?date=2026-09-12&slot=slot-9')
+    expect(screen.getByText('settlements.tab.credits.openUser')).toBeInTheDocument()
+  })
+
+  it('states both rules it quietly follows: the whole history, and debtors listed elsewhere', async () => {
+    // A section that disobeys the filter above it, or drops people from itself, is otherwise
+    // indistinguishable from a broken one.
+    getOverview.mockResolvedValue(makeOverview({
+      credits: {
+        total: 40,
+        payers: 1,
+        items: [{
+          targetType: 'slot', targetId: 'slot-4', date: '2025-11-02', title: 'Trening 1:1',
+          payerType: 'user', payerId: 'piotr', name: 'Piotr Zieliński', amount: 40,
+        }],
+      },
+    }))
+
+    renderPanel()
+
+    expect(await screen.findByText('settlements.tab.credits.ignoresYear')).toBeInTheDocument()
+    expect(screen.getByText('settlements.tab.credits.excludesDebtors')).toBeInTheDocument()
+  })
+
+  it('marks a guest as one and offers them no client card, because they have none', async () => {
+    getOverview.mockResolvedValue(makeOverview({
+      credits: {
+        total: 30,
+        payers: 1,
+        items: [{
+          targetType: 'event', targetId: 'event-3', date: '2026-09-02', title: 'Wspinanie',
+          payerType: 'guest', payerId: 'guest-1', name: 'Marek (600…)', amount: 30,
+        }],
+      },
+    }))
+    const user = userEvent.setup()
+
+    renderPanel()
+
+    // The label rides in the row's own name, so a reader sees it without opening anything.
+    expect(await screen.findByRole('button', { name: /settlements\.line\.guest/ }))
+      .toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { expanded: false }))
+
+    // The session is still reachable — it is where a guest's figure gets corrected.
+    expect(screen.getByRole('link', { name: 'settlements.tab.credits.open' }))
+      .toHaveAttribute('href', '/calendar?date=2026-09-02&event=event-3')
+    expect(screen.queryByText('settlements.tab.credits.openUser')).not.toBeInTheDocument()
   })
 
   it('accounts for every source of revenue in the split, not just the two from sessions', async () => {

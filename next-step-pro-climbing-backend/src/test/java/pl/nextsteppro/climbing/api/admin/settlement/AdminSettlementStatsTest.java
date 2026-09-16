@@ -882,6 +882,110 @@ class AdminSettlementStatsTest extends BaseIntegrationTest {
     }
 
     @Test
+    @DisplayName("shouldListSomebodyHoldingACreditWithNothingOwing")
+    void shouldListSomebodyHoldingACreditWithNothingOwing() {
+        // ⚠️ The reported gap. Credit used to be computed for debtors only, so this client appeared
+        // in NO figure on the tab: not revenue (his money did arrive), not debt (he owes nothing),
+        // not the credit note (which only annotates debtors). His fifty was visible solely by
+        // opening the session it sits on.
+        partiallyPaidSlot(LocalDate.of(2026, 3, 12), client, "150", "200", LocalDate.of(2026, 3, 12));
+
+        CreditsDto credits = stats.buildOverview("2026", TODAY).credits();
+
+        assertEquals(1, credits.payers());
+        assertEquals(0, new BigDecimal("50.00").compareTo(credits.total()));
+        CreditItemDto item = credits.items().getFirst();
+        assertEquals("user", item.payerType());
+        assertEquals(client.getId(), item.payerId());
+        assertEquals(LocalDate.of(2026, 3, 12), item.date(),
+            "Naming the session is the point: it is the only place the figure can be corrected");
+        assertEquals("slot", item.targetType());
+        assertEquals(0, new BigDecimal("50.00").compareTo(item.amount()),
+            "What the row holds OVER its price, not what was paid");
+    }
+
+    @Test
+    @DisplayName("shouldKeepADebtorOutOfTheOverpaymentsListWhileStillNamingTheirCredit")
+    void shouldKeepADebtorOutOfTheOverpaymentsListWhileStillNamingTheirCredit() {
+        // A hundred for a fifty session, then an unpaid fifty. Net he is square, but his credit is
+        // about to be spent by his own debt — so listing him under a heading that totals money we
+        // HOLD would state the opposite of his position on the same screen.
+        partiallyPaidSlot(LocalDate.of(2026, 3, 12), client, "50", "100", LocalDate.of(2026, 3, 12));
+        partiallyPaidSlot(LocalDate.of(2026, 5, 7), client, "50", "0", null);
+
+        SettlementOverviewDto overview = stats.buildOverview("2026", TODAY);
+
+        assertTrue(overview.credits().items().isEmpty(),
+            "He is on the debt list, and that is where his credit is named");
+        assertEquals(0, overview.credits().total().compareTo(BigDecimal.ZERO));
+        assertEquals(0, credits(overview).compareTo(BigDecimal.ZERO));
+
+        // ⚠️ And the other half of the same read must still work. Both lists come from one query
+        // now, so "tidying up" the debtor branch would silently empty the note beside every debt.
+        assertEquals(1, overview.outstanding().credits().size(),
+            "The note beside his debt still has to say he is holding fifty of ours");
+        assertEquals(0, new BigDecimal("50.00")
+            .compareTo(overview.outstanding().credits().getFirst().credit()));
+    }
+
+    @Test
+    @DisplayName("shouldShowAGuestWhoPaidMoreThanTheirSessionCost")
+    void shouldShowAGuestWhoPaidMoreThanTheirSessionCost() {
+        // A guest's change has nowhere to go — that is what a guest is — but it is still real money
+        // we are holding, and the debt list names guests too. Leaving them out here would be the
+        // one asymmetry between the two halves of the ledger.
+        GuestReservation guest = guestReservationRepository.saveAndFlush(
+            new GuestReservation(pastSlot(LocalDate.of(2026, 3, 12)), "Ekipa z Krakowa", 2));
+        guestSettlement(guest, "50", "80", LocalDate.of(2026, 3, 12));
+
+        CreditsDto credits = stats.buildOverview("2026", TODAY).credits();
+
+        assertEquals(1, credits.payers());
+        assertEquals("guest", credits.items().getFirst().payerType());
+        assertEquals(guest.getId(), credits.items().getFirst().payerId());
+        assertEquals(0, new BigDecimal("30.00").compareTo(credits.total()));
+    }
+
+    @Test
+    @DisplayName("shouldListOverpaymentsRegardlessOfTheSelectedYear")
+    void shouldListOverpaymentsRegardlessOfTheSelectedYear() {
+        // Same policy as the debt list, and for the same reason: money left last December is still
+        // sitting here. The card says so above the rows.
+        partiallyPaidSlot(LocalDate.of(2024, 11, 4), client, "50", "100", LocalDate.of(2024, 11, 4));
+
+        for (String year : new String[]{"2024", "2026", "all"}) {
+            CreditsDto credits = stats.buildOverview(year, TODAY).credits();
+            assertEquals(0, new BigDecimal("50.00").compareTo(credits.total()),
+                "A credit left in " + year + "'s view is the same credit");
+        }
+    }
+
+    @Test
+    @DisplayName("shouldRankPeopleHoldingTheMostFirst")
+    void shouldRankPeopleHoldingTheMostFirst() {
+        // The list is a memo to consult when pricing the next session, so the largest sum is the one
+        // worth reading first.
+        partiallyPaidSlot(LocalDate.of(2026, 3, 12), client, "50", "70", LocalDate.of(2026, 3, 12));
+        partiallyPaidSlot(LocalDate.of(2026, 4, 2), other, "50", "200", LocalDate.of(2026, 4, 2));
+
+        CreditsDto credits = stats.buildOverview("2026", TODAY).credits();
+
+        assertEquals(2, credits.payers());
+        assertEquals(other.getId(), credits.items().getFirst().payerId(),
+            "150 outranks 20");
+        assertEquals(0, new BigDecimal("170.00").compareTo(credits.total()));
+    }
+
+    /** Sum of the per-payer credit the card would draw, to check the header against the rows. */
+    private BigDecimal credits(SettlementOverviewDto overview) {
+        BigDecimal sum = BigDecimal.ZERO;
+        for (CreditItemDto item : overview.credits().items()) {
+            sum = sum.add(item.amount());
+        }
+        return sum;
+    }
+
+    @Test
     @DisplayName("shouldAgreeWithTheSettlementsTabAboutWhatOneClientOwes")
     void shouldAgreeWithTheSettlementsTabAboutWhatOneClientOwes() {
         // The point is not either figure on its own — it is that the two screens cannot disagree.

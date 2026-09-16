@@ -146,6 +146,7 @@ record SettlementOverviewDto(
     UnassignedDto unassigned,
     UnpricedDto unpriced,
     OutstandingDto outstanding,
+    CreditsDto credits,
     RevenueDto revenue,
     List<PersonRevenueDto> people,
     PayoutsDto payouts
@@ -280,6 +281,52 @@ record OutstandingCreditDto(String payerType, UUID payerId, BigDecimal credit) {
  *                   row has no payment date to be counted on.
  */
 record OutstandingItemDto(
+    String targetType,
+    @Nullable UUID targetId,
+    LocalDate date,
+    @Nullable String title,
+    String payerType,
+    UUID payerId,
+    String name,
+    BigDecimal amount
+) {}
+
+/**
+ * Money we are holding that nobody is currently working off — the other half of {@link OutstandingDto},
+ * and the half that had nowhere to be seen.
+ *
+ * <p>Credit was only ever computed for people who also owed something, so somebody who overpaid once
+ * and owes nothing appeared in no figure on the tab at all: not in revenue (which counts what
+ * arrived, and it did arrive), not in debt (he owes nothing), not in the credit note (which only
+ * annotates debtors). His money was visible solely by opening the session it sits on.
+ *
+ * <p>⚠️ <b>Anyone with an open debt is deliberately left out</b>, and the card says so. Their credit
+ * is already stated beside their debt, where it is also actionable — pressing "settle everything"
+ * spends it. Listing them here as well would tell two contradictory stories about one person on one
+ * screen: net they are short, yet they would appear under a heading totalling money we hold.
+ *
+ * <p>Whole history, ignoring the year picker, for the reason {@link OutstandingDto} gives.
+ *
+ * @param payers how many people the items group into. Sent rather than derived so the heading and
+ *               the rows cannot disagree, and so the client can hide the card without grouping first.
+ */
+record CreditsDto(
+    BigDecimal total,
+    int payers,
+    List<CreditItemDto> items
+) {}
+
+/**
+ * One overpaid row: what is parked, and which session is parking it.
+ *
+ * <p>Shaped exactly like {@link OutstandingItemDto} — not out of convenience, but so that two lists
+ * about the same money have one shape on the wire and one grouping routine in the client.
+ *
+ * @param targetId ⚠️ null for a monthly coaching fee, the same signal it carries on a debt: there is
+ *                 no calendar entry to link into.
+ * @param amount   what this row holds over its price, always positive.
+ */
+record CreditItemDto(
     String targetType,
     @Nullable UUID targetId,
     LocalDate date,

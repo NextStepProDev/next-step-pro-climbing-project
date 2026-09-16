@@ -3,7 +3,6 @@ package pl.nextsteppro.climbing.api.admin.settlement;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import pl.nextsteppro.climbing.domain.settlement.PayerBalance;
 import pl.nextsteppro.climbing.domain.settlement.Settlement;
 import pl.nextsteppro.climbing.domain.settlement.SettlementRepository;
 import pl.nextsteppro.climbing.domain.settlement.SettlementRow;
@@ -27,7 +26,6 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.UUID;
@@ -124,6 +122,10 @@ class AdminSettlementStatsService {
             : settlementRepository.findRowsInRange(
                 LocalDate.of(year - 1, 1, 1), LocalDate.of(year, 12, 31));
         List<SettlementRow> unsettled = settlementRepository.findUnsettledRows();
+        // One read behind both halves of the same money: the credit note beside each debt, and the
+        // Overpayments card. Splitting them would be a second query for a sum we already hold, and
+        // two sums that can disagree about one person.
+        List<SettlementRow> overpaid = settlementRepository.findOverpaidRows();
 
         LocalDate from = year == null ? LocalDate.MIN : LocalDate.of(year, 1, 1);
         LocalDate to = year == null ? LocalDate.MAX : LocalDate.of(year, 12, 31);
@@ -144,7 +146,8 @@ class AdminSettlementStatsService {
             year,
             unassigned(today),
             unpriced(today),
-            outstanding(unsettled),
+            outstanding(unsettled, overpaid),
+            credits(overpaid, unsettled),
             revenue(rows, receivedPayouts, from, to, buckets, year),
             people(rows, from, to),
             payouts(receivedPayouts, windowFrom, windowTo));
@@ -328,18 +331,16 @@ class AdminSettlementStatsService {
      * ⚠️ Whole history on purpose — see {@link OutstandingDto}. Oldest first, because the useful
      * order for a list of debts is the order in which they have been owed the longest.
      */
-    private OutstandingDto outstanding(List<SettlementRow> unsettled) {
+    private OutstandingDto outstanding(List<SettlementRow> unsettled, List<SettlementRow> overpaid) {
         List<SettlementRow> sorted = unsettled.stream()
             .sorted(Comparator.comparing(SettlementRow::targetDate))
             .toList();
 
         BigDecimal total = BigDecimal.ZERO;
-        Set<UUID> debtorUserIds = new LinkedHashSet<>();
+        Set<String> debtors = new LinkedHashSet<>();
         List<OutstandingItemDto> items = new ArrayList<>(sorted.size());
         for (SettlementRow row : sorted) {
-            if (!row.isGuest()) {
-                debtorUserIds.add(Objects.requireNonNull(row.userId()));
-            }
+            debtors.add(row.payerKey());
             total = total.add(row.remaining());
             items.add(new OutstandingItemDto(
                 row.isMonthlyFee() ? "month" : row.eventId() != null ? "event" : "slot",
@@ -354,43 +355,106 @@ class AdminSettlementStatsService {
         return new OutstandingDto(
             scale(total), items.size(),
             sorted.isEmpty() ? null : sorted.getFirst().targetDate(),
-            items, creditsOf(debtorUserIds));
+            items, creditsOf(debtors, overpaid));
     }
 
     /**
      * What the people on the outstanding list are already holding to their name.
      *
-     * <p>⚠️ A read of its own, because nothing already in hand can stand in for it.
-     * {@code findUnsettledRows} is by definition free of credit — a row holding an overpayment is
-     * not unpaid — and {@code findRowsInRange} obeys the year picker, which this list deliberately
-     * does not, so a credit left two Decembers ago would simply not be there. Batched over every
-     * debtor rather than asked per person: that is the per-payer loop
-     * {@code AdminSettlementQueryCountTest} exists to keep out, and the loop the modal's section was
-     * already caught building.
-     *
-     * <p>⚠️ <b>Registered payers only, and the schema is the reason.</b>
-     * {@code uq_settlements_guest} makes a guest's settlement unique on the guest alone, so one
-     * guest reservation is one row: a guest cannot be short on one and in credit on another, and
-     * asking would be a query that can only ever come back empty. That also means a guest's change
-     * has nowhere to go — which is what a guest is, a booking with no continuity behind it. The day
-     * that unique index goes, this needs the guest half back.
+     * <p>⚠️ It cannot be read off the debts themselves: {@code findUnsettledRows} is by definition
+     * free of credit — a row holding an overpayment is not unpaid — and {@code findRowsInRange}
+     * obeys the year picker, which this list deliberately does not, so a credit left two Decembers
+     * ago would simply not be there. It comes instead from {@code findOverpaidRows}, the one read
+     * that also feeds the Overpayments card, so the two screens sum the same rows and cannot
+     * disagree about one person. Never a query per payer: that is the loop
+     * {@code AdminSettlementQueryCountTest} exists to keep out.
      *
      * <p>⚠️ The CREDIT, not the balance — the difference is the whole reported case. A client who
      * overpaid fifty and then attended an unpaid fifty session nets to zero, so the net figure would
      * report no credit for precisely the person this list needs to stop chasing. What sits on his
      * overpaid row is fifty, and that is what settling him would spend.
+     *
+     * <p>Guests are not filtered out here and do not need to be: {@code uq_settlements_guest} makes
+     * a guest's settlement unique on the guest alone, so one guest reservation is one row and a
+     * guest can never be short on one and in credit on another. That used to be enforced by asking
+     * only about registered payers; it is now simply what the data can produce, which is the right
+     * place for it — the day that unique index goes, this keeps working.
      */
-    private List<OutstandingCreditDto> creditsOf(Set<UUID> userIds) {
-        if (userIds.isEmpty()) {
-            return List.of();
-        }
-        List<OutstandingCreditDto> credits = new ArrayList<>();
-        for (PayerBalance balance : settlementRepository.balancesForUsers(userIds)) {
-            if (balance.credit().signum() > 0) {
-                credits.add(new OutstandingCreditDto("user", balance.payerId(), scale(balance.credit())));
+    private List<OutstandingCreditDto> creditsOf(Set<String> debtors, List<SettlementRow> overpaid) {
+        Map<String, BigDecimal> byPayer = new LinkedHashMap<>();
+        Map<String, SettlementRow> firstRow = new LinkedHashMap<>();
+        for (SettlementRow row : overpaid) {
+            if (!debtors.contains(row.payerKey())) {
+                continue;
             }
+            byPayer.merge(row.payerKey(), row.balanceDelta(), BigDecimal::add);
+            firstRow.putIfAbsent(row.payerKey(), row);
         }
+
+        List<OutstandingCreditDto> credits = new ArrayList<>(byPayer.size());
+        byPayer.forEach((payerKey, credit) -> {
+            SettlementRow row = firstRow.get(payerKey);
+            credits.add(new OutstandingCreditDto(
+                row.isGuest() ? "guest" : "user",
+                row.isGuest() ? row.guestId() : row.userId(),
+                scale(credit)));
+        });
         return credits;
+    }
+
+    // ---------------------------------------------------------------- credits
+
+    /**
+     * People holding money of ours with nothing currently owing — see {@link CreditsDto}.
+     *
+     * <p>⚠️ <b>Debtors are removed on purpose, and the card says so out loud.</b> Their credit is
+     * already named beside their debt, where pressing "settle everything" spends it; repeating them
+     * under a heading that totals money we hold would state the opposite of their net position on
+     * the same screen. A section that quietly drops people is otherwise indistinguishable from a
+     * broken one, which is why the omission is written on the card rather than left to be noticed.
+     *
+     * <p>Biggest first: this list is a memo to consult when pricing the next session, and the
+     * hundred and fifty somebody left behind is the one worth remembering. Within a person the
+     * sessions run oldest first, as they do on a debt.
+     */
+    private CreditsDto credits(List<SettlementRow> overpaid, List<SettlementRow> unsettled) {
+        Set<String> debtors = new LinkedHashSet<>();
+        for (SettlementRow row : unsettled) {
+            debtors.add(row.payerKey());
+        }
+
+        Map<String, BigDecimal> byPayer = new LinkedHashMap<>();
+        List<SettlementRow> kept = new ArrayList<>();
+        for (SettlementRow row : overpaid) {
+            if (debtors.contains(row.payerKey())) {
+                continue;
+            }
+            kept.add(row);
+            byPayer.merge(row.payerKey(), row.balanceDelta(), BigDecimal::add);
+        }
+
+        BigDecimal total = BigDecimal.ZERO;
+        for (BigDecimal credit : byPayer.values()) {
+            total = total.add(credit);
+        }
+
+        List<CreditItemDto> items = kept.stream()
+            .sorted(Comparator
+                .comparing((SettlementRow row) -> byPayer.get(row.payerKey()), Comparator.reverseOrder())
+                .thenComparing(SettlementRow::payerKey)
+                .thenComparing(SettlementRow::targetDate))
+            .map(row -> new CreditItemDto(
+                row.isMonthlyFee() ? "month" : row.eventId() != null ? "event" : "slot",
+                row.isMonthlyFee() ? null : row.eventId() != null ? row.eventId() : row.slotId(),
+                row.targetDate(),
+                row.targetTitle(),
+                row.isGuest() ? "guest" : "user",
+                row.isGuest() ? row.guestId() : row.userId(),
+                nameOf(row),
+                scale(row.balanceDelta())))
+            .toList();
+
+        return new CreditsDto(scale(total), byPayer.size(), items);
     }
 
     // ----------------------------------------------------------------- revenue

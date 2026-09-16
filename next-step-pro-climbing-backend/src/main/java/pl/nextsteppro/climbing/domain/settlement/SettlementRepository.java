@@ -87,10 +87,29 @@ public interface SettlementRepository extends JpaRepository<Settlement, UUID> {
      *
      * <p>⚠️ It is also, by its own condition, free of credit — a row holding an overpayment has
      * {@code paidAmount > amount} and is not here. Anything that wants to know what a debtor has
-     * already left with us has to ask {@link #balancesForUsers} separately.
+     * already left with us has to ask {@link #findOverpaidRows} separately.
      */
     @Query(ROW_SELECT + " WHERE s.paidAmount < s.amount")
     List<SettlementRow> findUnsettledRows();
+
+    /**
+     * The mirror of {@link #findUnsettledRows}: every row holding money we were not owed, whole
+     * history, deliberately deaf to the year filter for the same reason — cash left last December
+     * is still sitting here.
+     *
+     * <p>⚠️ <b>One read, two screens, and that is the point.</b> It answers both "who is holding a
+     * credit with nothing owing" (the Overpayments card) and "what has this debtor already left
+     * with us" (the note beside their debt). Grouped by payer, the sum of these rows' deltas is by
+     * construction the same number {@link PayerBalance#credit()} computes, so the two lists cannot
+     * disagree about one person — and asking twice would have cost a second query for an answer we
+     * already hold.
+     *
+     * <p>⚠️ Rows only, never a grouped projection. The cards name the <em>session</em> the money is
+     * parked on, because that is the only place an admin can correct the figure; a {@code SUM} per
+     * payer would have to be followed by a second read to find out where it came from.
+     */
+    @Query(ROW_SELECT + " WHERE s.paidAmount > s.amount")
+    List<SettlementRow> findOverpaidRows();
 
     /** Distinct session days, for the year picker. */
     @Query("SELECT DISTINCT COALESCE(ts.date, e.startDate, s.periodMonth) FROM Settlement s "

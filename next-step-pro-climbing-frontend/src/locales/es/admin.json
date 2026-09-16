@@ -1044,7 +1044,8 @@
       },
       "outstanding": {
         "title": "Pendiente de cobro",
-        "count": "{{n}} elementos",
+        "count_one": "{{count}} elemento",
+        "count_other": "{{count}} elementos",
         "oldest": "más antigua: {{date}}",
         "none": "Todo está liquidado.",
         "ignoresYear": "Esta lista cubre TODO el historial y no sigue al selector de año — una deuda de hace dos años sigue siendo una deuda.",
@@ -1054,11 +1055,28 @@
           "month": "Cuota de seguimiento"
         },
         "open": "Abrir la sesión — {{name}}, {{date}}",
-        "sessions": "{{n}} sesiones",
+        "sessions_one": "{{count}} sesión",
+        "sessions_other": "{{count}} sesiones",
         "settleAll": "Liquidar todo — {{amount}}",
         "paidOnLabel": "Fecha de pago — {{name}}",
         "receivedLabel": "Recibido — {{name}}",
         "credit": "Tiene {{credit}} a su favor contigo — quedan {{toCollect}} por cobrar."
+      },
+      "credits": {
+        "title": "Pagos de más",
+        "payers_one": "{{count}} persona",
+        "payers_other": "{{count}} personas",
+        "ignoresYear": "Esta lista muestra TODO el historial y no sigue al selector de año — el dinero dejado el año pasado sigue en tu poder.",
+        "excludesDebtors": "Quien además debe algo está arriba: allí su saldo a favor figura junto a la deuda y se usa al liquidar.",
+        "sessions_one": "{{count}} sesión",
+        "sessions_other": "{{count}} sesiones",
+        "open": "Abrir sesión — {{name}}, {{date}}",
+        "openUser": "Abrir ficha del cliente",
+        "untitled": {
+          "slot": "Entrenamiento 1:1",
+          "event": "Evento",
+          "month": "Cuota de seguimiento"
+        }
       },
       "revenue": {
         "title": "Ingresos",

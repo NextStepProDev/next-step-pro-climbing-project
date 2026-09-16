@@ -1050,7 +1050,9 @@
       },
       "outstanding": {
         "title": "Do odzyskania",
-        "count": "{{n}} poz.",
+        "count_one": "{{count}} poz.",
+        "count_few": "{{count}} poz.",
+        "count_many": "{{count}} poz.",
         "oldest": "najstarsza: {{date}}",
         "none": "Wszystko rozliczone.",
         "ignoresYear": "Ta lista pokazuje CAŁĄ historię i nie zmienia się z wyborem roku — dług sprzed dwóch lat nadal jest długiem.",
@@ -1060,11 +1062,31 @@
           "month": "Abonament (prowadzenie)"
         },
         "open": "Otwórz termin — {{name}}, {{date}}",
-        "sessions": "{{n}} zajęć",
+        "sessions_one": "{{count}} termin",
+        "sessions_few": "{{count}} terminy",
+        "sessions_many": "{{count}} terminów",
         "settleAll": "Rozlicz wszystko — {{amount}}",
         "paidOnLabel": "Data wpłaty — {{name}}",
         "receivedLabel": "Otrzymano — {{name}}",
         "credit": "Ma u Ciebie {{credit}} nadpłaty — do dobrania {{toCollect}}."
+      },
+      "credits": {
+        "title": "Nadpłaty",
+        "payers_one": "{{count}} os.",
+        "payers_few": "{{count}} os.",
+        "payers_many": "{{count}} os.",
+        "ignoresYear": "Ta lista pokazuje CAŁĄ historię i nie zmienia się z wyborem roku — pieniądze zostawione w zeszłym roku nadal leżą u Ciebie.",
+        "excludesDebtors": "Kto ma też zaległość, jest wyżej: tam jego nadpłata stoi obok długu i zostanie nią rozliczona.",
+        "sessions_one": "{{count}} termin",
+        "sessions_few": "{{count}} terminy",
+        "sessions_many": "{{count}} terminów",
+        "open": "Otwórz termin — {{name}}, {{date}}",
+        "openUser": "Otwórz kartę klienta",
+        "untitled": {
+          "slot": "Trening 1:1",
+          "event": "Wydarzenie",
+          "month": "Abonament (prowadzenie)"
+        }
       },
       "revenue": {
         "title": "Przychód",

@@ -1044,7 +1044,8 @@
       },
       "outstanding": {
         "title": "Outstanding",
-        "count": "{{n}} items",
+        "count_one": "{{count}} item",
+        "count_other": "{{count}} items",
         "oldest": "oldest: {{date}}",
         "none": "Everything is settled.",
         "ignoresYear": "This list covers the WHOLE history and does not follow the year picker — a debt from two years ago is still a debt.",
@@ -1054,11 +1055,28 @@
           "month": "Coaching fee"
         },
         "open": "Open the session — {{name}}, {{date}}",
-        "sessions": "{{n}} sessions",
+        "sessions_one": "{{count}} session",
+        "sessions_other": "{{count}} sessions",
         "settleAll": "Settle all — {{amount}}",
         "paidOnLabel": "Payment date — {{name}}",
         "receivedLabel": "Received — {{name}}",
         "credit": "Holding {{credit}} of theirs — {{toCollect}} left to collect."
+      },
+      "credits": {
+        "title": "Overpayments",
+        "payers_one": "{{count}} person",
+        "payers_other": "{{count}} people",
+        "ignoresYear": "This list shows the WHOLE history and does not follow the year picker — money left last year is still sitting with you.",
+        "excludesDebtors": "Anyone who also owes something is above: their credit is named beside their debt, and settling spends it.",
+        "sessions_one": "{{count}} session",
+        "sessions_other": "{{count}} sessions",
+        "open": "Open session — {{name}}, {{date}}",
+        "openUser": "Open client card",
+        "untitled": {
+          "slot": "1:1 training",
+          "event": "Event",
+          "month": "Coaching fee"
+        }
       },
       "revenue": {
         "title": "Revenue",
