@@ -200,7 +200,11 @@ export function TrainingMonthCalendar({
                   onClick={() => onDayClick(dateStr)}
                   aria-label={t('month.addOnDate', { date: dateStr })}
                   className={clsx(
-                    'mt-auto flex items-center justify-center h-6 rounded border border-dashed border-surface-700',
+                    // ⚠️ The BASE height is the touch one (44px, the floor a thumb needs); the
+                    // compact 24px hides behind `pointer-fine:`, same direction as the fade
+                    // below. On touch this button is fully visible and is the only discoverable
+                    // way to add anything to the day, so its default size has to be usable there.
+                    'mt-auto flex items-center justify-center h-11 pointer-fine:h-6 rounded border border-dashed border-surface-700',
                     // One `transition` for colour and opacity alike: two transition-* utilities
                     // fight over the same property and the winner depends on stylesheet order
                     // rather than on the order written here.

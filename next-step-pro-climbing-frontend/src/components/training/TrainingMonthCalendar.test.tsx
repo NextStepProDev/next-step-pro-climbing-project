@@ -158,6 +158,26 @@ describe('TrainingMonthCalendar — the per-day add button (Fire Academy 35924b8
     expect(hiding.every((c) => c.startsWith('pointer-fine:'))).toBe(true)
   })
 
+  /**
+   * The twin of the week lane's add strip, and it carries the same rule: on a touch screen this
+   * button is fully visible (the fade above is gated on `pointer-fine:`), so its BASE height has
+   * to be the one a thumb can hit. 24px is the floor for a mouse.
+   */
+  it('should give the add button a thumb-sized target and shrink it only for a fine pointer', () => {
+    const view = renderMonth()
+
+    const classes = addButton(view, '2026-08-12').className.split(/\s+/)
+    // Tailwind spacing unit = 0.25rem = 4px
+    const heightPx = (cls: string) => Number(/(?:^|:)h-(\d+(?:\.\d+)?)$/.exec(cls)?.[1] ?? 0) * 4
+
+    const base = classes.filter((c) => /^h-\d/.test(c))
+    expect(base).toHaveLength(1)
+    expect(heightPx(base[0])).toBeGreaterThanOrEqual(44)
+
+    const smaller = classes.filter((c) => c.includes(':h-') && heightPx(c) < 44)
+    expect(smaller.every((c) => c.startsWith('pointer-fine:'))).toBe(true)
+  })
+
   it('should fade rather than unmount, so the grid never twitches', () => {
     // Opacity keeps the slot's height and keeps the button tabbable, which
     // group-focus-within then reveals

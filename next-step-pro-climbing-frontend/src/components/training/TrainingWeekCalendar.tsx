@@ -220,8 +220,12 @@ export function TrainingWeekCalendar({
                       screen, where a hover-revealed affordance never appears at all.
                       ⚠️ With the clipboard armed it becomes the lane's ONLY paste target and
                       says so, the same swap the month cell makes. Naming the one spot that
-                      pastes is what lets every entry around it stay an entry. h-6, not
-                      narrower: it clears the same 24px tap floor as the clipboard buttons. */}
+                      pastes is what lets every entry around it stay an entry.
+                      ⚠️ The BASE height is the touch one (44px, the floor a thumb needs) and the
+                      compact 24px hides behind `pointer-fine:` — never the other way round. 24px
+                      is the floor for a MOUSE; on a phone this strip is the only way into a day
+                      whose lane is full, and a base state only a mouse can use is the same
+                      mistake as a `hover:`-only affordance. */}
                   <button
                     onClick={(e) => {
                       e.stopPropagation()
@@ -230,7 +234,7 @@ export function TrainingWeekCalendar({
                       else onDayClick(date)
                     }}
                     className={clsx(
-                      'flex items-center justify-center w-full h-6 rounded border border-dashed transition-colors',
+                      'flex items-center justify-center w-full h-11 pointer-fine:h-6 rounded border border-dashed transition-colors',
                       pasteActive
                         ? 'border-primary-500/50 text-primary-300 text-[10px] hover:bg-primary-500/10'
                         : 'border-surface-700/60 text-surface-500 hover:border-primary-500 hover:text-primary-300',

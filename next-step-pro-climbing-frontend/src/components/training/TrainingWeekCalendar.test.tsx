@@ -202,6 +202,30 @@ describe('TrainingWeekCalendar — clicking empty space', () => {
     expect(onDayClick).toHaveBeenCalledWith(MONDAY)
   })
 
+  /**
+   * The strip is the only way into a day whose lane is full, and on a phone it is reached with a
+   * thumb. 24px is the floor for a mouse, not for a finger.
+   *
+   * ⚠️ The BASE height is the touch one and the compact height hides behind `pointer-fine:` —
+   * never the other way round. A base state that only a mouse can use is the same mistake as the
+   * `hover:`-only "+" in the month cell: if the variant does not apply, the affordance is gone for
+   * exactly the people who cannot bring it back.
+   */
+  it('should give the add strip a thumb-sized target and shrink it only for a fine pointer', () => {
+    renderWeek()
+
+    const classes = screen.getAllByLabelText('week.addAllDay')[0].className.split(/\s+/)
+    // Tailwind spacing unit = 0.25rem = 4px
+    const heightPx = (cls: string) => Number(/(?:^|:)h-(\d+(?:\.\d+)?)$/.exec(cls)?.[1] ?? 0) * 4
+
+    const base = classes.filter((c) => /^h-\d/.test(c))
+    expect(base).toHaveLength(1)
+    expect(heightPx(base[0])).toBeGreaterThanOrEqual(44)
+
+    const smaller = classes.filter((c) => c.includes(':h-') && heightPx(c) < 44)
+    expect(smaller.every((c) => c.startsWith('pointer-fine:'))).toBe(true)
+  })
+
   it('should turn the add strip into the lane\'s one paste target', () => {
     // Naming the single spot that pastes is what lets everything around it stay itself.
     const onPasteAt = vi.fn()
