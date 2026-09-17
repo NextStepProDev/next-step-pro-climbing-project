@@ -8,7 +8,7 @@
     "week": "Tydzień"
   },
   "week": {
-    "addAllDay": "Dodaj wpis całodniowy"
+    "addAllDay": "Dodaj wpis bez godziny"
   },
   "month": {
     "more": "+{{count}}",
@@ -39,7 +39,7 @@
     "editTitle": "Edytuj wpis",
     "duplicateTitle": "Duplikuj wpis",
     "date": "Data",
-    "allDay": "Cały dzień (bez godziny)",
+    "allDay": "Bez godziny",
     "startTime": "Początek",
     "endTime": "Koniec",
     "title": "Tytuł",
@@ -73,7 +73,7 @@
     "caloriesRange": "Limit kalorii musi mieścić się w zakresie {{min}}–{{max}} kcal"
   },
   "detail": {
-    "allDay": "Cały dzień",
+    "allDay": "Bez godziny",
     "vanished": "Ten wpis zniknął z kalendarza — druga strona mogła go przenieść albo usunąć. Poniżej ostatnia wersja, którą widzieliśmy.",
     "addedByCoach": "Dodany przez trenera",
     "addedByAthlete": "Dodany przez zawodnika",

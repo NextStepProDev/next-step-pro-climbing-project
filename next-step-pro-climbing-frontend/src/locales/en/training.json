@@ -8,7 +8,7 @@
     "week": "Week"
   },
   "week": {
-    "addAllDay": "Add an all-day entry"
+    "addAllDay": "Add an entry with no set time"
   },
   "month": {
     "more": "+{{count}}",
@@ -37,7 +37,7 @@
     "editTitle": "Edit entry",
     "duplicateTitle": "Duplicate entry",
     "date": "Date",
-    "allDay": "All day (no time)",
+    "allDay": "No set time",
     "startTime": "Start",
     "endTime": "End",
     "title": "Title",
@@ -71,7 +71,7 @@
     "caloriesRange": "A calorie ceiling must be between {{min}} and {{max}} kcal"
   },
   "detail": {
-    "allDay": "All day",
+    "allDay": "No set time",
     "vanished": "This entry is no longer in the calendar — the other side may have moved or removed it. Below is the last version we saw.",
     "addedByCoach": "Added by coach",
     "addedByAthlete": "Added by athlete",
