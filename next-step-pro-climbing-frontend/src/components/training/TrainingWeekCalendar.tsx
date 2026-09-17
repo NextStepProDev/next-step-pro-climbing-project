@@ -160,11 +160,14 @@ export function TrainingWeekCalendar({
             })}
           </div>
 
-          {/* All-day lane: untimed trainings + all-day invitations, pinned above the hour grid.
-              `min-h-14` now sizes the EMPTY lane only — one chip is 48px and the add strip
-              another 24, so any day with content is past it long before. The gutter uses the
-              SHORT label with bottom clearance — the first hour label ("7:00") is shifted 8px
-              up into this row, and the long form wording collided with it. */}
+          {/* The lane for entries with NO HOUR: untimed trainings, every task, and invitations to
+              all-day events. It is not "all day" in the sense of duration — that wording implied
+              the athlete should be at it from morning to night, which is what the label says now
+              ("Bez godziny" / "No set time"). The code still says allDay throughout; renaming
+              `allDayTrainings` and friends is a separate sweep.
+              `min-h-14` sizes the EMPTY lane only — one chip is 48px and the add strip 44 on
+              touch, so any day with content is past it long before. The gutter keeps its bottom
+              clearance because the first hour label ("7:00") is shifted 8px up into this row. */}
           <div className="grid border-b border-surface-800" style={{ gridTemplateColumns: '60px repeat(7, minmax(0, 1fr))' }}>
             <div className="flex items-start justify-end pr-2 pt-1.5 pb-3 text-[10px] leading-tight text-surface-500">
               {t('detail.allDay')}

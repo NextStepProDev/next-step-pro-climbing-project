@@ -8,7 +8,7 @@
     "week": "Semana"
   },
   "week": {
-    "addAllDay": "Añadir una entrada de todo el día"
+    "addAllDay": "Añadir una entrada sin hora"
   },
   "month": {
     "more": "+{{count}}",
@@ -37,7 +37,7 @@
     "editTitle": "Editar entrada",
     "duplicateTitle": "Duplicar entrada",
     "date": "Fecha",
-    "allDay": "Todo el día (sin hora)",
+    "allDay": "Sin hora",
     "startTime": "Inicio",
     "endTime": "Fin",
     "title": "Título",
@@ -71,7 +71,7 @@
     "caloriesRange": "El límite de calorías debe estar entre {{min}} y {{max}} kcal"
   },
   "detail": {
-    "allDay": "Todo el día",
+    "allDay": "Sin hora",
     "vanished": "Esta entrada ya no está en el calendario: la otra parte pudo moverla o eliminarla. Abajo está la última versión que vimos.",
     "addedByCoach": "Añadido por el entrenador",
     "addedByAthlete": "Añadido por el atleta",
