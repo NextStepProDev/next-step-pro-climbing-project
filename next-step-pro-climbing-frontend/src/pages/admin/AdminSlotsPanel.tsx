@@ -546,6 +546,7 @@ function EditSlotModal({
   const editSaved = useEditSavedToast()
   const inviteSent = useInviteSentToast()
   const [form, setForm] = useState({
+    date: slot?.date ?? '',
     startTime: slot?.startTime.slice(0, 5) ?? '',
     endTime: slot?.endTime.slice(0, 5) ?? '',
     maxParticipants: slot?.maxParticipants ?? 1,
@@ -570,7 +571,7 @@ function EditSlotModal({
   // form, which closes on save, so the two-step flow was easy to abandon halfway. Chained inside
   // mutationFn rather than onSuccess so the order is guaranteed and both errors land on one call.
   const updateMutation = useMutation({
-    mutationFn: async ({ sendInvites, ...data }: { startTime?: string; endTime?: string; maxParticipants?: number; title?: string; isAvailabilityWindow?: boolean; isUnavailable?: boolean; invitedUserIds?: string[]; sendInvites?: boolean }) => {
+    mutationFn: async ({ sendInvites, ...data }: { date?: string; startTime?: string; endTime?: string; maxParticipants?: number; title?: string; isAvailabilityWindow?: boolean; isUnavailable?: boolean; invitedUserIds?: string[]; sendInvites?: boolean }) => {
       const result = await adminApi.updateTimeSlot(slot!.id, data)
       const notified = sendInvites ? await adminApi.notifySlotInvites(slot!.id) : null
       return { result, notified }
@@ -589,6 +590,7 @@ function EditSlotModal({
   const submitEdit = (sendInvites: boolean) => {
     if (timeError) return
     updateMutation.mutate({
+      date: form.date,
       startTime: form.startTime,
       endTime: form.endTime,
       // Capacity is left out for an absence so a slot that still has people booked
@@ -633,6 +635,16 @@ function EditSlotModal({
             onChange={(e) => setForm({ ...form, title: e.target.value })}
             placeholder={t('slots.titlePlaceholder')}
             maxLength={200}
+            className="w-full bg-surface-800 border border-surface-700 rounded-lg px-4 py-2 text-surface-100"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm text-surface-400 mb-1">{t('slots.dateLabel')}</label>
+          <DateInput
+            required
+            value={form.date}
+            onChange={(v) => setForm({ ...form, date: v })}
             className="w-full bg-surface-800 border border-surface-700 rounded-lg px-4 py-2 text-surface-100"
           />
         </div>
