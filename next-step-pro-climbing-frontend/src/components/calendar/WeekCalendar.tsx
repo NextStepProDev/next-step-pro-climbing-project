@@ -214,14 +214,15 @@ export function WeekCalendar({
     return map
   }, [events])
 
-  // Auto-scroll to today's column on mobile
+  // Auto-scroll to today's column on mobile. Reset to the start (Monday) otherwise — without
+  // an explicit reset, paging to a week that doesn't contain today leaves the horizontal scroll
+  // wherever it was left (e.g. scrolled to Sunday on a Sunday), so the next week opens already
+  // scrolled into its own weekend instead of its Monday.
   useEffect(() => {
     if (scrollRef.current) {
       const todayIndex = days.findIndex(d => isTodayInWarsaw(d.date))
-      if (todayIndex > 0) {
-        const columnWidth = 130
-        scrollRef.current.scrollLeft = todayIndex * columnWidth - 20
-      }
+      const columnWidth = 130
+      scrollRef.current.scrollLeft = todayIndex > 0 ? todayIndex * columnWidth - 20 : 0
     }
   }, [days])
 
