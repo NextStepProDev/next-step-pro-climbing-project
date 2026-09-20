@@ -396,6 +396,7 @@
     "availableClickToBlock": "Disponible — haz clic para bloquear",
     "deleteSlot": "Eliminar franja horaria",
     "editTitle": "Editar franja horaria",
+    "dateLabel": "Fecha",
     "titleLabel": "Título",
     "titlePlaceholder": "Título de la franja horaria (opcional)",
     "maxParticipants": "Máx. participantes",

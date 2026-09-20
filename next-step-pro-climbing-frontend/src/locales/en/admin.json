@@ -396,6 +396,7 @@
     "availableClickToBlock": "Available - click to block",
     "deleteSlot": "Delete slot",
     "editTitle": "Edit slot",
+    "dateLabel": "Date",
     "titleLabel": "Title",
     "titlePlaceholder": "Slot title (optional)",
     "maxParticipants": "Max. participants",

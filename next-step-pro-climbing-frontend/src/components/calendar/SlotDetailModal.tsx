@@ -13,6 +13,7 @@ import { slotKindOf, slotKindFlags, type SlotKind } from "../../utils/slotKind";
 import { renderRichText } from "../../utils/renderRichText";
 import { AddToCalendarButton } from "../ui/AddToCalendarButton";
 import { CompleteProfileModal } from "../ui/CompleteProfileModal";
+import { DateInput } from "../ui/DateInput";
 import { TimeScrollPicker } from "../ui/TimeScrollPicker";
 import { InvitedUsersPicker } from "../ui/InvitedUsersPicker";
 import { InviteNotifySection } from "../ui/InviteNotifySection";
@@ -66,6 +67,7 @@ export function SlotDetailModal({
   const [editedInvited, setEditedInvited] = useState<InvitedUser[] | null>(null);
   const [editForm, setEditForm] = useState({
     title: '',
+    date: '',
     startTime: '',
     endTime: '',
     maxParticipants: 1,
@@ -206,7 +208,7 @@ export function SlotDetailModal({
   // save — so the two-step flow was easy to walk away from halfway. Chaining inside mutationFn
   // rather than in onSuccess keeps the order guaranteed and both errors on one mutation.
   const editSlotMutation = useMutation({
-    mutationFn: async ({ sendInvites, ...data }: { startTime: string; endTime: string; maxParticipants?: number; title: string; isAvailabilityWindow: boolean; isUnavailable: boolean; invitedUserIds?: string[]; sendInvites?: boolean }) => {
+    mutationFn: async ({ sendInvites, ...data }: { date: string; startTime: string; endTime: string; maxParticipants?: number; title: string; isAvailabilityWindow: boolean; isUnavailable: boolean; invitedUserIds?: string[]; sendInvites?: boolean }) => {
       const result = await adminApi.updateTimeSlot(slot!.id, data);
       const notified = sendInvites ? await adminApi.notifySlotInvites(slot!.id) : null;
       return { result, notified };
@@ -246,6 +248,7 @@ export function SlotDetailModal({
     || settlementsDirty()
     || (editMode && (
       editForm.title !== (slot.title ?? '')
+      || editForm.date !== slot.date
       || editForm.startTime !== slot.startTime.slice(0, 5)
       || editForm.endTime !== slot.endTime.slice(0, 5)
       || editForm.maxParticipants !== slot.maxParticipants
@@ -295,6 +298,7 @@ export function SlotDetailModal({
   // differs from the slot's current values (baseline set when entering edit mode).
   const editBaseline = {
     title: slot.title ?? '',
+    date: slot.date,
     startTime: slot.startTime.slice(0, 5),
     endTime: slot.endTime.slice(0, 5),
     maxParticipants: slot.maxParticipants,
@@ -329,6 +333,7 @@ export function SlotDetailModal({
   const saveEdit = (sendInvites: boolean) => {
     if (editForm.endTime <= editForm.startTime) return;
     editSlotMutation.mutate({
+      date: editForm.date,
       startTime: editForm.startTime,
       endTime: editForm.endTime,
       // Capacity is omitted for an absence: a slot that still has people
@@ -629,6 +634,15 @@ export function SlotDetailModal({
                     className="w-full bg-surface-800 border border-surface-700 rounded-lg px-4 py-2 text-surface-100 text-sm"
                   />
                 </div>
+                <div>
+                  <label className="block text-sm text-surface-400 mb-1">{ta('slots.dateLabel')}</label>
+                  <DateInput
+                    required
+                    value={editForm.date}
+                    onChange={(v) => setEditForm({ ...editForm, date: v })}
+                    className="w-full bg-surface-800 border border-surface-700 rounded-lg px-4 py-2 text-surface-100 text-sm"
+                  />
+                </div>
                 <div className="grid grid-cols-2 gap-4">
                   <TimeScrollPicker
                     label={ta('slots.from')}
@@ -707,6 +721,7 @@ export function SlotDetailModal({
                 onClick={() => {
                   setEditForm({
                     title: slot.title ?? '',
+                    date: slot.date,
                     startTime: slot.startTime.slice(0, 5),
                     endTime: slot.endTime.slice(0, 5),
                     maxParticipants: slot.maxParticipants,

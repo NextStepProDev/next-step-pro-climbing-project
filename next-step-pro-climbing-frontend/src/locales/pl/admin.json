@@ -396,6 +396,7 @@
     "availableClickToBlock": "Dostępny — kliknij aby zablokować",
     "deleteSlot": "Usuń termin",
     "editTitle": "Edytuj termin",
+    "dateLabel": "Data",
     "titleLabel": "Tytuł",
     "titlePlaceholder": "Tytuł terminu (opcjonalny)",
     "maxParticipants": "Maks. uczestników",
