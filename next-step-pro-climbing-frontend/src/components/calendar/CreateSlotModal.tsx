@@ -14,6 +14,7 @@ import { TimeScrollPicker } from '../ui/TimeScrollPicker'
 import { InvitedUsersPicker } from '../ui/InvitedUsersPicker'
 import { SlotKindPicker } from './SlotKindPicker'
 import { CONTRACTOR_SEATS, slotKindFlags, type CreateSlotKind } from '../../utils/slotKind'
+import type { CreatedCalendarEntry } from '../../utils/createdEntry'
 import type { CreateEventRequest, CreateTimeSlotRequest, InvitedUser } from '../../types'
 
 /** Every kind this form can create, unlike the edit forms — see `CreateSlotKind`. */
@@ -46,6 +47,12 @@ interface CreateSlotModalProps {
   onClose: () => void
   defaultDate: string
   onSuccess?: () => void
+  /**
+   * The row that was just written, for a caller that wants to show it — the calendar opens its
+   * detail modal so a client who is already coming can be written down without hunting for the
+   * new entry first. Fired only after a successful create, and before `onClose`.
+   */
+  onCreated?: (created: CreatedCalendarEntry) => void
   /** Prefill from a training request: times, seats, the requester invited + a link to the request. */
   initial?: {
     startTime?: string
@@ -77,6 +84,7 @@ export function CreateSlotModal({
   onClose,
   defaultDate,
   onSuccess,
+  onCreated,
   initial,
 }: CreateSlotModalProps) {
   const { t } = useTranslation('calendar')
@@ -122,9 +130,10 @@ export function CreateSlotModal({
   const activeSources = (payoutSources ?? []).filter((source) => !source.archived)
 
   const createMutation = useMutation({
-    // Nothing here reads the created row, so the two endpoints are collapsed to one void result
-    // instead of a union the caller would have to narrow for no reason.
-    mutationFn: async (request: CreateRequest) => {
+    // Both endpoints answer with the row they wrote, and the caller needs it: the calendar opens
+    // the new entry so people can be added to it straight away, and the fields that decide
+    // whether there IS a roster (seats, kind, event type) are already in these responses.
+    mutationFn: async (request: CreateRequest): Promise<CreatedCalendarEntry> => {
       if (request.target === 'slot') {
         const slot = await adminApi.createTimeSlot(request.data)
         // ⚠️ In the mutationFn, not onSuccess — the same shape as "save and send invitations": the
@@ -134,11 +143,11 @@ export function CreateSlotModal({
         if (request.payoutSourceId) {
           await adminSettlementsApi.assignSource('slot', slot.id, request.payoutSourceId, null)
         }
-        return
+        return { target: 'slot', slot }
       }
-      await adminApi.createEvent(request.data)
+      return { target: 'event', event: await adminApi.createEvent(request.data) }
     },
-    onSuccess: (_result, request) => {
+    onSuccess: (created, request) => {
       void queryClient.invalidateQueries({ queryKey: ['calendar'] })
       // A new entry can show up on the money screens before anybody prices anything: a contractor
       // session arrives already assigned, and a zero-seat slot created any other way arrives on the
@@ -150,6 +159,7 @@ export function CreateSlotModal({
         void queryClient.invalidateQueries({ queryKey: ['admin', 'events'] })
         void queryClient.invalidateQueries({ queryKey: ['courseEvents'] })
       }
+      onCreated?.(created)
       onSuccess?.()
       onClose()
     },

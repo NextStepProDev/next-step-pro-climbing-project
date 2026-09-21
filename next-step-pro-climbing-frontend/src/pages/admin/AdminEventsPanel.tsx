@@ -1116,10 +1116,19 @@ export function EditEventModal({
 export function CreateEventModal({
   isOpen,
   onClose,
+  onCreated,
   initial,
 }: {
   isOpen: boolean
   onClose: () => void
+  /**
+   * The event that was just written, for a caller that wants to show it — the calendar opens its
+   * signup modal so participants can be added straight away, instead of leaving the admin to find
+   * the new event first. The two panels that also open this form pass nothing: in the events
+   * panel the new row lands on the list already on screen, with its own participants button, and
+   * the requests panel is answering a proposal, where the next step is the next request.
+   */
+  onCreated?: (event: EventDetail) => void
   /** Prefill from a training request: dates, times, seats, course, the requester invited + a link to the request. */
   initial?: {
     startDate?: string
@@ -1160,7 +1169,7 @@ export function CreateEventModal({
 
   const createMutation = useMutation({
     mutationFn: adminApi.createEvent,
-    onSuccess: () => {
+    onSuccess: (created) => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'events'] })
       queryClient.invalidateQueries({ queryKey: ['admin', 'trainingRequests'] })
       queryClient.invalidateQueries({ queryKey: ['admin', 'notifications'] })
@@ -1168,6 +1177,7 @@ export function CreateEventModal({
       queryClient.invalidateQueries({ queryKey: ['admin', 'settlements'] })
       queryClient.invalidateQueries({ queryKey: ['calendar'] })
       queryClient.invalidateQueries({ queryKey: ['courseEvents'] })
+      onCreated?.(created)
       onClose()
       setAllDay(true)
       setCourseId(undefined)

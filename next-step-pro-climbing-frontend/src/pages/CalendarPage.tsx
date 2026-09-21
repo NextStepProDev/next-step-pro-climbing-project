@@ -24,6 +24,7 @@ import { formatAvailability, buildEventColorMap } from "../utils/events";
 import { useCalendarPromo } from "../hooks/useCalendarPromo";
 import { nowInWarsaw, parseCalendarDate, todayInWarsaw } from '../utils/calendarDate';
 import { travellingPayoutSource } from '../utils/slotClipboard';
+import { takesParticipants, type CreatedCalendarEntry } from '../utils/createdEntry';
 import { getErrorMessage } from '../utils/errors';
 import type { CreateEventRequest, CreateTimeSlotRequest, EventSummary, TimeSlot } from "../types";
 
@@ -253,6 +254,43 @@ export function CalendarPage() {
   const handleSlotClick = useCallback((slotId: string) => {
     setSelectedSlotId(slotId);
   }, []);
+
+  /**
+   * Show what was just created, so somebody who is already coming can be written down without
+   * hunting the new entry down in the calendar first.
+   *
+   * The create forms offer invitations only, and an invitation is a different promise: it holds a
+   * seat and waits for the person to take it, while adding a participant books them in and mails
+   * them a confirmation on the spot. Both belong on the detail modal, which is where they already
+   * live — hence opening it rather than growing a second roster inside the forms.
+   *
+   * Nothing opens when there would be nothing to do (see `takesParticipants`). The event branch
+   * needs one read: the signup modal takes the visitor-facing summary, not the admin shape the
+   * create call answered with. That read failing stays silent on purpose — the entry WAS created,
+   * and an error here would say otherwise about the one thing that did work.
+   *
+   * ⚠️ Known and accepted: that read is the one gap between the two branches. Opening something
+   * else while it is in flight (a slot chip, another event) leaves the new event's modal to land
+   * on top of it. It costs one dismissal and no data, and closing it uncovers what was underneath
+   * — cheaper than the state a page-wide "what did the admin ask for last" token would add here.
+   */
+  const handleEntryCreated = useCallback((created: CreatedCalendarEntry) => {
+    if (!takesParticipants(created)) return;
+    if (created.target === 'slot') {
+      setSelectedSlotId(created.slot.id);
+      return;
+    }
+    const eventId = created.event.id;
+    queryClient
+      .fetchQuery({
+        queryKey: ["event", eventId],
+        queryFn: () => calendarApi.getEventSummary(eventId),
+      })
+      .then(setSelectedEvent)
+      .catch(() => {
+        // Created all the same — the calendar underneath has already refreshed and shows it.
+      });
+  }, [queryClient]);
 
   const handleViewModeChange = useCallback((mode: 'month' | 'week') => {
     setViewMode(mode);
@@ -1083,6 +1121,7 @@ export function CalendarPage() {
             isOpen={showCreateSlotModal}
             onClose={() => setShowCreateSlotModal(false)}
             defaultDate={selectedDate}
+            onCreated={handleEntryCreated}
           />
 
           {/* Mounted only once picked, so the panel chunk downloads on the choice and not on
@@ -1105,6 +1144,7 @@ export function CalendarPage() {
                 key={`${eventDraft.startDate}-${eventDraft.endDate}-${eventDraft.startTime ?? ''}`}
                 isOpen
                 onClose={() => setEventDraft(null)}
+                onCreated={(event) => handleEntryCreated({ target: 'event', event })}
                 initial={eventDraft}
               />
             )}

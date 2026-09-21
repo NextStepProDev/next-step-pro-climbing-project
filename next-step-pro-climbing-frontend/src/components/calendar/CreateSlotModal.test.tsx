@@ -39,13 +39,13 @@ vi.mock('../../api/client', () => ({
   },
 }))
 
-function renderModal() {
+function renderModal(props: { onCreated?: (created: unknown) => void } = {}) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   return render(
     <QueryClientProvider client={client}>
       {/* The contractor branch offers a way out to the settlements tab, and a Link needs a router. */}
       <MemoryRouter>
-        <CreateSlotModal isOpen onClose={vi.fn()} defaultDate="2030-06-10" />
+        <CreateSlotModal isOpen onClose={vi.fn()} defaultDate="2030-06-10" {...props} />
       </MemoryRouter>
     </QueryClientProvider>,
   )
@@ -305,5 +305,60 @@ describe('CreateSlotModal — a session somebody else settles', () => {
       'createSlot.contractorPlaceholder',
       'SP nr 5',
     ])
+  })
+})
+
+/* The form only holds seats for invited people; writing a client down happens on the detail modal
+ * afterwards. Handing the created row back is what lets the calendar open that modal on the spot,
+ * so the report has to carry the row itself — not a bare id — because the decision to open it is
+ * made from the row's seats and kind (see `takesParticipants`). */
+describe('CreateSlotModal — reporting what was created', () => {
+  beforeEach(() => {
+    createTimeSlot.mockClear()
+    createEvent.mockClear()
+    createTimeSlot.mockResolvedValue({ id: 'slot-new', maxParticipants: 4 })
+    createEvent.mockResolvedValue({ id: 'event-new', eventType: 'UNAVAILABLE', maxParticipants: 0 })
+  })
+
+  it('should hand back the slot it just created', async () => {
+    const onCreated = vi.fn()
+    const user = userEvent.setup()
+    renderModal({ onCreated })
+
+    await submit(user)
+
+    await waitFor(() => expect(onCreated).toHaveBeenCalledTimes(1))
+    expect(onCreated).toHaveBeenCalledWith({
+      target: 'slot',
+      slot: { id: 'slot-new', maxParticipants: 4 },
+    })
+  })
+
+  it('should hand back the event when the absence turned out to need one', async () => {
+    const onCreated = vi.fn()
+    const user = userEvent.setup()
+    renderModal({ onCreated })
+
+    await chooseUnavailable(user)
+    await user.click(screen.getByLabelText('createSlot.multiDay'))
+    await submit(user)
+
+    await waitFor(() => expect(onCreated).toHaveBeenCalledTimes(1))
+    expect(onCreated).toHaveBeenCalledWith({
+      target: 'event',
+      event: { id: 'event-new', eventType: 'UNAVAILABLE', maxParticipants: 0 },
+    })
+  })
+
+  it('should say nothing when the create failed', async () => {
+    createTimeSlot.mockRejectedValue(new Error('nope'))
+    const onCreated = vi.fn()
+    const user = userEvent.setup()
+    renderModal({ onCreated })
+
+    await submit(user)
+
+    await waitFor(() => expect(createTimeSlot).toHaveBeenCalledTimes(1))
+    expect(onCreated).not.toHaveBeenCalled()
   })
 })
