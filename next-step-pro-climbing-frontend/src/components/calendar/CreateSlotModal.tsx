@@ -13,6 +13,7 @@ import { DateInput } from '../ui/DateInput'
 import { TimeScrollPicker } from '../ui/TimeScrollPicker'
 import { InvitedUsersPicker } from '../ui/InvitedUsersPicker'
 import { SlotKindPicker } from './SlotKindPicker'
+import { DayAgendaPreview } from './DayAgendaPreview'
 import { CONTRACTOR_SEATS, slotKindFlags, type CreateSlotKind } from '../../utils/slotKind'
 import type { CreatedCalendarEntry } from '../../utils/createdEntry'
 import type { CreateEventRequest, CreateTimeSlotRequest, InvitedUser } from '../../types'
@@ -439,6 +440,16 @@ export function CreateSlotModal({
           <p className="text-sm text-slate-300 bg-slate-500/10 border border-slate-500/20 rounded-lg px-3 py-2">
             {summary}
           </p>
+        )}
+
+        {/* Answering a proposal: what already sits on that day, against the hours as they stand in
+            the pickers — so the decision (and the "move it an hour" fix) happens without a second
+            tab. Only here: the calendar's own "+" is opened from the day itself. */}
+        {initial?.trainingRequestId && !multiDay && (
+          <DayAgendaPreview
+            date={form.date}
+            proposed={showTimes ? { start: form.startTime, end: form.endTime } : null}
+          />
         )}
 
         {isRegular && (

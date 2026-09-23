@@ -37,6 +37,10 @@ vi.mock('../../api/client', () => ({
     listSources: () => listSources(),
     assignSource: (...args: unknown[]) => assignSource(...args),
   },
+  // Opened from a proposal, the form shows the day it falls on.
+  calendarApi: {
+    getDayView: (date: string) => Promise.resolve({ date, slots: [], events: [] }),
+  },
 }))
 
 function renderModal(props: { onCreated?: (created: unknown) => void } = {}) {

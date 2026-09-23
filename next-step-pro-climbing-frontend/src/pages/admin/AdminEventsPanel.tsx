@@ -9,6 +9,7 @@ import { UserSearchSelect } from '../../components/ui/UserSearchSelect'
 import { InvitedUsersPicker } from '../../components/ui/InvitedUsersPicker'
 import { InviteNotifySection } from '../../components/ui/InviteNotifySection'
 import { EventTypePicker } from '../../components/calendar/EventTypePicker'
+import { DayAgendaPreview } from '../../components/calendar/DayAgendaPreview'
 import { WaitlistEntryList } from './AdminReservationsPanel'
 import { getErrorMessage } from '../../utils/errors'
 import { useDirty } from '../../hooks/useDirty'
@@ -1329,6 +1330,15 @@ export function CreateEventModal({
             </div>
           )}
         </div>
+
+        {/* Answering a proposal — the same day check as the slot form. One day only: over a range
+            there is no single day to show, and the proposal itself is always one. */}
+        {initial?.trainingRequestId && form.startDate === form.endDate && (
+          <DayAgendaPreview
+            date={form.startDate}
+            proposed={!allDay && form.startTime && form.endTime ? { start: form.startTime, end: form.endTime } : null}
+          />
+        )}
 
         <div>
           <label className="block text-sm text-surface-400 mb-1">{t('events.maxParticipantsLabel')}</label>

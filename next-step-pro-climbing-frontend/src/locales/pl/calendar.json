@@ -188,6 +188,25 @@
     "eventRange": "Kilka dni",
     "eventRangeHint": "Kurs albo wyjazd rozłożony na dni."
   },
+  "dayAgenda": {
+    "title": "Tego dnia w kalendarzu",
+    "openDay": "Otwórz dzień",
+    "loading": "Sprawdzam kalendarz…",
+    "error": "Nie udało się wczytać kalendarza tego dnia.",
+    "retry": "Spróbuj ponownie",
+    "empty": "Nic tego dnia — masz wolne.",
+    "proposed": "Proponowany termin",
+    "allDay": "cały dzień",
+    "conflict": "koliduje",
+    "untitledSlot": "Termin",
+    "unavailable": "Niedostępność",
+    "closed": "Zajęcia zamknięte",
+    "window": "Okno dostępności",
+    "summaryConflict": "Koliduje: {{what}}",
+    "summaryConflictMore": "Koliduje: {{what}} (+{{count}})",
+    "summaryFreeOthers": "Wolne w tych godzinach · wpisy tego dnia: {{count}}",
+    "summaryEmpty": "Wolny dzień"
+  },
   "createSlot": {
     "title": "Dodaj nowy termin",
     "slotTitle": "Tytuł (np. \"Trening na ściance\")",

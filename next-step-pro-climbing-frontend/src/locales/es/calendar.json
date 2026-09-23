@@ -188,6 +188,25 @@
     "eventRange": "Varios días",
     "eventRangeHint": "Un curso o un viaje repartido en días."
   },
+  "dayAgenda": {
+    "title": "Ese día en el calendario",
+    "openDay": "Abrir el día",
+    "loading": "Comprobando el calendario…",
+    "error": "No se pudo cargar el calendario de ese día.",
+    "retry": "Reintentar",
+    "empty": "Nada ese día — estás libre.",
+    "proposed": "Horario propuesto",
+    "allDay": "todo el día",
+    "conflict": "coincide",
+    "untitledSlot": "Sesión",
+    "unavailable": "No disponible",
+    "closed": "Sesión cerrada",
+    "window": "Ventana de disponibilidad",
+    "summaryConflict": "Coincide con: {{what}}",
+    "summaryConflictMore": "Coincide con: {{what}} (+{{count}})",
+    "summaryFreeOthers": "Libre en ese horario · entradas ese día: {{count}}",
+    "summaryEmpty": "Día libre"
+  },
   "createSlot": {
     "title": "Añadir nueva franja horaria",
     "slotTitle": "Título (ej. \"Entrenamiento en rocódromo\")",
