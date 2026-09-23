@@ -7,9 +7,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import pl.nextsteppro.climbing.domain.auth.AuthToken;
 import pl.nextsteppro.climbing.domain.auth.AuthTokenRepository;
-import pl.nextsteppro.climbing.domain.auth.TokenType;
 import pl.nextsteppro.climbing.api.reservation.UserSeatReleaseService;
 import pl.nextsteppro.climbing.domain.newsletter.NewsletterConsentLog;
 import pl.nextsteppro.climbing.domain.newsletter.NewsletterConsentLogRepository;
@@ -17,10 +15,8 @@ import pl.nextsteppro.climbing.domain.user.User;
 import pl.nextsteppro.climbing.domain.user.UserRepository;
 import pl.nextsteppro.climbing.infrastructure.i18n.MessageService;
 import pl.nextsteppro.climbing.infrastructure.mail.AuthMailService;
-import pl.nextsteppro.climbing.infrastructure.security.JwtService;
 
 import java.time.Instant;
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -55,8 +51,6 @@ class UserServiceTest {
     @Mock
     private AuthTokenRepository authTokenRepository;
     @Mock
-    private JwtService jwtService;
-    @Mock
     private MessageService msg;
     @Mock
     private NewsletterConsentLogRepository consentLogRepository;
@@ -82,7 +76,6 @@ class UserServiceTest {
             passwordEncoder,
             authMailService,
             authTokenRepository,
-            jwtService,
             msg,
             consentLogRepository,
             userSeatReleaseService,
@@ -312,9 +305,7 @@ class UserServiceTest {
 
     @Test
     void shouldNotifyWaitlistsAndAdminWhenDeletingAccountWithReservations() {
-        // Given — user has a confirmed standalone slot reservation and an event reservation
-        UUID slotId = UUID.randomUUID();
-        UUID eventId = UUID.randomUUID();
+        // Given — user holds one reservation, released through the shared collaborator
         when(userRepository.findById(userId)).thenReturn(Optional.of(testUser));
         when(passwordEncoder.matches("correctPassword", "hashedPassword")).thenReturn(true);
         when(userSeatReleaseService.releaseSeatsAndNotifyWaitlists(userId)).thenReturn(1);

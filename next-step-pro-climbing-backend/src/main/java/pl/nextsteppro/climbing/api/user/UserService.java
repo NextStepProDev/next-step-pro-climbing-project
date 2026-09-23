@@ -11,26 +11,21 @@ import org.springframework.web.multipart.MultipartFile;
 import pl.nextsteppro.climbing.api.reservation.UserSeatReleaseService;
 import pl.nextsteppro.climbing.api.trainingcalendar.CommentFileSupport;
 import pl.nextsteppro.climbing.api.trainingcalendar.AttachmentSupport;
-import pl.nextsteppro.climbing.domain.auth.AuthToken;
 import pl.nextsteppro.climbing.domain.auth.AuthTokenRepository;
 import pl.nextsteppro.climbing.domain.auth.TokenType;
 import pl.nextsteppro.climbing.domain.newsletter.NewsletterConsentLog;
 import pl.nextsteppro.climbing.domain.newsletter.NewsletterConsentLogRepository;
-import pl.nextsteppro.climbing.domain.reservation.ReservationRepository;
 import pl.nextsteppro.climbing.domain.user.User;
 import pl.nextsteppro.climbing.domain.user.UserRepository;
 import pl.nextsteppro.climbing.infrastructure.i18n.MessageService;
 import pl.nextsteppro.climbing.infrastructure.mail.AuthMailService;
-import pl.nextsteppro.climbing.infrastructure.security.JwtService;
 import pl.nextsteppro.climbing.infrastructure.security.PasswordPolicyValidator;
 import pl.nextsteppro.climbing.infrastructure.storage.FileStorageService;
 
 import org.jspecify.annotations.Nullable;
 
 import java.io.IOException;
-import java.time.Duration;
 import java.time.Instant;
-import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -44,7 +39,6 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final AuthMailService authMailService;
     private final AuthTokenRepository authTokenRepository;
-    private final JwtService jwtService;
     private final MessageService msg;
     private final NewsletterConsentLogRepository consentLogRepository;
     private final UserSeatReleaseService userSeatReleaseService;
@@ -57,7 +51,6 @@ public class UserService {
                        PasswordEncoder passwordEncoder,
                        AuthMailService authMailService,
                        AuthTokenRepository authTokenRepository,
-                       JwtService jwtService,
                        MessageService msg,
                        NewsletterConsentLogRepository consentLogRepository,
                        UserSeatReleaseService userSeatReleaseService,
@@ -69,7 +62,6 @@ public class UserService {
         this.passwordEncoder = passwordEncoder;
         this.authMailService = authMailService;
         this.authTokenRepository = authTokenRepository;
-        this.jwtService = jwtService;
         this.msg = msg;
         this.consentLogRepository = consentLogRepository;
         this.userSeatReleaseService = userSeatReleaseService;
