@@ -21,14 +21,12 @@ public class NewsletterMailService {
     private static final Logger log = LoggerFactory.getLogger(NewsletterMailService.class);
 
     private final MailDispatcher mailDispatcher;
-    private final AppConfig appConfig;
     private final MessageService msg;
     private final UserService userService;
     private final String siteUrl;
 
     public NewsletterMailService(MailDispatcher mailDispatcher, AppConfig appConfig, MessageService msg, UserService userService) {
         this.mailDispatcher = mailDispatcher;
-        this.appConfig = appConfig;
         this.msg = msg;
         this.userService = userService;
         this.siteUrl = appConfig.getSiteUrl();
