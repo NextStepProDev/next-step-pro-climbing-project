@@ -71,18 +71,18 @@ Users can browse a public calendar, reserve time slots and sign up for events. A
 ## Tech Stack
 
 ### Backend
-- **Java 25** + **Spring Boot 4.1.0**
+- **Java 25** + **Spring Boot 4.1.1**
 - Spring Security + JWT + OAuth2 (Google)
 - Spring Data JPA + **PostgreSQL 18**
 - **Flyway** (versioned migrations)
 - SpringDoc OpenAPI (Swagger UI)
 - Caffeine Cache (multi-tier TTL)
 - Spring Boot Starter Mail
-- JSpecify 1.0.0 (null-safety)
+- JSpecify 1.0.1 (null-safety)
 - Testcontainers + JUnit 5
 
 ### Frontend
-- **React 19.2** + **TypeScript 6.0**
+- **React 19.3** + **TypeScript 6.0**
 - **Vite 8**
 - **Tailwind CSS 4**
 - TanStack React Query 5
