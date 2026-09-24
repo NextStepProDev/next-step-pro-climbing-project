@@ -72,6 +72,9 @@ class ReservationServiceTest {
     @Mock
     private pl.nextsteppro.climbing.domain.reservedseat.ReservedSeatRepository reservedSeatRepository;
 
+    @Mock
+    private pl.nextsteppro.climbing.domain.trainingrequest.TrainingRequestRepository trainingRequestRepository;
+
     private ReservationService reservationService;
     private User testUser;
     private TimeSlot testSlot;
@@ -93,7 +96,8 @@ class ReservationServiceTest {
             msg,
             waitlistService,
             eventWaitlistService,
-            reservedSeatRepository
+            reservedSeatRepository,
+            trainingRequestRepository
         );
 
         userId = UUID.randomUUID();

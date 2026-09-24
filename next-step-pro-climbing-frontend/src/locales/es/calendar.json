@@ -209,6 +209,8 @@
   },
   "createSlot": {
     "title": "Añadir nueva franja horaria",
+    "proposalMoved": "El cliente propuso {{proposal}}. Crear la franja no le envía nada — envía la invitación o no se enterará del cambio.",
+    "submitAndSend": "Crear y enviar invitación",
     "slotTitle": "Título (ej. \"Entrenamiento en rocódromo\")",
     "slotTitlePlaceholder": "Título de la franja horaria (visible para los clientes)",
     "absenceTitle": "Etiqueta (opcional, visible para los clientes)",

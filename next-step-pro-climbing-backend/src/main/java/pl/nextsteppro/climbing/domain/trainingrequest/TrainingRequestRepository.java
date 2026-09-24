@@ -62,6 +62,31 @@ public interface TrainingRequestRepository extends JpaRepository<TrainingRequest
 
     int countByStatus(TrainingRequestStatus status);
 
+    /** The user's accepted requests with what was created from them — to tell an invitation apart. */
+    @Query("""
+        SELECT tr FROM TrainingRequest tr
+        LEFT JOIN FETCH tr.createdSlot
+        LEFT JOIN FETCH tr.createdEvent
+        WHERE tr.user.id = :userId AND tr.status = 'ACCEPTED'
+        """)
+    List<TrainingRequest> findAcceptedByUserId(UUID userId);
+
+    /** Accepted requests answered with this slot — the invitation mail names the proposal it moved. */
+    @Query("""
+        SELECT tr FROM TrainingRequest tr
+        JOIN FETCH tr.createdSlot
+        WHERE tr.createdSlot.id = :slotId AND tr.status = 'ACCEPTED'
+        """)
+    List<TrainingRequest> findAcceptedBySlotId(UUID slotId);
+
+    /** Like {@link #findAcceptedBySlotId}, for an event. */
+    @Query("""
+        SELECT tr FROM TrainingRequest tr
+        JOIN FETCH tr.createdEvent
+        WHERE tr.createdEvent.id = :eventId AND tr.status = 'ACCEPTED'
+        """)
+    List<TrainingRequest> findAcceptedByEventId(UUID eventId);
+
     /** Scheduler: PENDING requests whose date has already passed → EXPIRED. */
     @Modifying
     @Query("""

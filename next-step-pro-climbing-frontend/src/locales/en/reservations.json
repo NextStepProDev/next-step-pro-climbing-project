@@ -9,7 +9,8 @@
   "invitations": {
     "title": "Invitations",
     "heldForYou": "The coach is holding a spot for you — book it before the date passes.",
-    "book": "Book your spot"
+    "book": "Book your spot",
+    "moved": "Different time from your proposal ({{proposal}}) — please check the date and time before booking."
   },
   "events": "Events",
   "trainings": "Training sessions",
@@ -49,6 +50,11 @@
   "trainingRequests": {
     "title": "My time proposals",
     "adminNote": "From the trainer:",
+    "acceptedChanged": "Accepted — different time",
+    "changedHint": "The trainer accepted your proposal at a different time. Come at the agreed time, not your own.",
+    "agreedTerm": "Agreed time:",
+    "yourProposal": "Your proposal:",
+    "allDay": "all day",
     "viewInCalendar": "View in calendar",
     "withdraw": "Withdraw",
     "withdrawConfirmTitle": "Withdraw the proposal?",

@@ -1,7 +1,11 @@
 package pl.nextsteppro.climbing.infrastructure.mail;
 
+import jakarta.mail.Multipart;
+import jakarta.mail.Part;
 import jakarta.mail.Session;
 import jakarta.mail.internet.MimeMessage;
+import org.mockito.ArgumentCaptor;
+import pl.nextsteppro.climbing.domain.trainingrequest.ProposedTerm;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -22,6 +26,8 @@ import java.time.LocalTime;
 import java.util.List;
 import java.util.Set;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
@@ -244,6 +250,60 @@ class MailServiceTest {
     // ============================================================
     // Helpers
     // ============================================================
+
+    // ============================================================
+    // Invitation answering a proposal at other hours
+    // ============================================================
+
+    @Test
+    void shouldNameTheClientsOwnProposalWhenTheInvitationMovedIt() throws Exception {
+        // Given: the client proposed 17:00-19:00, the slot they are invited to is 18:00-20:00
+        User user = createUser("user@example.com", true);
+        TimeSlot slot = new TimeSlot(LocalDate.of(2026, 10, 14), LocalTime.of(18, 0), LocalTime.of(20, 0), 2);
+        doAnswer(inv -> "MOVED-NOTICE").when(msg)
+            .getForLang(eq("email.invitation.moved"), anyString(), any(), any(), any());
+        ProposedTerm proposal = new ProposedTerm(LocalDate.of(2026, 10, 14), LocalTime.of(17, 0), LocalTime.of(19, 0));
+
+        // When
+        mailService.sendSlotInvitationNotification(user, slot, "Trening", proposal);
+
+        // Then: the mail carries the notice, filled with the proposal the client typed
+        ArgumentCaptor<MimeMessage> sent = ArgumentCaptor.forClass(MimeMessage.class);
+        verify(mailSender).send(sent.capture());
+        assertTrue(htmlOf(sent.getValue()).contains("MOVED-NOTICE"));
+        verify(msg).getForLang(eq("email.invitation.moved"), anyString(), eq("14.10.2026"), eq("17:00"), eq("19:00"));
+    }
+
+    @Test
+    void shouldNotMentionAProposalWhenTheInvitationKeptItsHours() throws Exception {
+        // Given
+        User user = createUser("user@example.com", true);
+        TimeSlot slot = new TimeSlot(LocalDate.of(2026, 10, 14), LocalTime.of(17, 0), LocalTime.of(19, 0), 2);
+        doAnswer(inv -> "MOVED-NOTICE").when(msg)
+            .getForLang(eq("email.invitation.moved"), anyString(), any(), any(), any());
+
+        // When
+        mailService.sendSlotInvitationNotification(user, slot, "Trening", null);
+
+        // Then
+        ArgumentCaptor<MimeMessage> sent = ArgumentCaptor.forClass(MimeMessage.class);
+        verify(mailSender).send(sent.capture());
+        assertFalse(htmlOf(sent.getValue()).contains("MOVED-NOTICE"));
+    }
+
+    /** The HTML part of a sent message, wherever the multipart structure put it. */
+    private static String htmlOf(Part part) throws Exception {
+        Object content = part.getContent();
+        if (content instanceof String text) return text;
+        if (content instanceof Multipart multipart) {
+            StringBuilder all = new StringBuilder();
+            for (int i = 0; i < multipart.getCount(); i++) {
+                all.append(htmlOf(multipart.getBodyPart(i)));
+            }
+            return all.toString();
+        }
+        return "";
+    }
 
     private User createUser(String email, boolean emailNotificationsEnabled) {
         User user = new User(email, "Jan", "Kowalski", "+48123456789", "jankowalski");

@@ -209,6 +209,8 @@
   },
   "createSlot": {
     "title": "Add new time slot",
+    "proposalMoved": "The client proposed {{proposal}}. Creating the slot sends them nothing — send the invitation, or they won't learn about the change.",
+    "submitAndSend": "Create and send invitation",
     "slotTitle": "Title (e.g. \"Climbing wall training\")",
     "slotTitlePlaceholder": "Slot title (visible to clients)",
     "absenceTitle": "Label (optional, visible to clients)",

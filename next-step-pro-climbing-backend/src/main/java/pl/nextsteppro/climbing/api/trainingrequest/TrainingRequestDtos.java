@@ -37,6 +37,13 @@ record TrainingRequestDto(
     @Nullable LocalDate createdSlotDate,
     @Nullable UUID createdEventId,
     @Nullable LocalDate createdEventStartDate,
+    // When the created entry actually takes place — null until something is created
+    @Nullable LocalDate agreedDate,
+    @Nullable LocalDate agreedEndDate,
+    @Nullable LocalTime agreedStartTime,
+    @Nullable LocalTime agreedEndTime,
+    // The entry landed on another date or time than proposed (TrainingRequest#agreedTermDiffers)
+    boolean termChanged,
     Instant createdAt
 ) {}
 

@@ -19,6 +19,7 @@ import { SlotDetailModal } from '../components/calendar/SlotDetailModal'
 import { EventSignupModal } from '../components/calendar/EventSignupModal'
 import { AddToCalendarButton } from '../components/ui/AddToCalendarButton'
 import { parseCalendarDate } from '../utils/calendarDate'
+import { AcceptedAtOtherTimeNotice, InvitationMovedNotice } from '../components/calendar/ProposalMovedNotice'
 import type { MyReservations, MyInvitation, WaitlistEntry, EventWaitlistEntry, TrainingRequest } from '../types'
 
 const TrainingCalendarSection = lazy(() =>
@@ -1012,7 +1013,13 @@ function InvitationsSection({
                     <span>{inv.location}</span>
                   </div>
                 )}
-                <p className="mt-2 text-primary-300/80 text-sm">{t('invitations.heldForYou')}</p>
+                {/* The "book" button sits right here, so this is the last place a client can still
+                    notice they are booking other hours than the ones they asked for. */}
+                {inv.proposedDate ? (
+                  <InvitationMovedNotice invitation={inv} />
+                ) : (
+                  <p className="mt-2 text-primary-300/80 text-sm">{t('invitations.heldForYou')}</p>
+                )}
               </div>
               <div className="flex items-center">
                 <Button
@@ -1324,13 +1331,16 @@ function TrainingRequestsSection({ requests }: { requests: TrainingRequest[] }) 
       <div className="space-y-3">
         {requests.map((req) => {
           const linkDate = req.createdSlotDate ?? req.createdEventStartDate
+          // Accepted at other hours: the header keeps the client's own hours, so they are struck
+          // through and the green chip gives way — see AcceptedAtOtherTimeNotice.
+          const moved = req.status === 'ACCEPTED' && req.termChanged && !!req.agreedDate
           return (
             <div
               key={req.id}
               className="bg-surface-900 rounded-xl border border-surface-800 p-4"
             >
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <div className="flex items-center gap-3 text-surface-200">
+                <div className={`flex items-center gap-3 ${moved ? 'text-surface-500 line-through' : 'text-surface-200'}`}>
                   <Calendar className="w-4 h-4 text-surface-400" />
                   <span className="font-medium capitalize">
                     {format(parseCalendarDate(req.requestedDate), 'EEEE, d MMMM yyyy', { locale })}
@@ -1340,8 +1350,14 @@ function TrainingRequestsSection({ requests }: { requests: TrainingRequest[] }) 
                     {req.startTime.slice(0, 5)} - {req.endTime.slice(0, 5)}
                   </span>
                 </div>
-                {statusChip(req.status)}
+                {moved ? (
+                  <span className="px-2 py-1 rounded-full text-xs font-medium bg-amber-500/15 text-amber-400">
+                    {t('trainingRequests.acceptedChanged')}
+                  </span>
+                ) : statusChip(req.status)}
               </div>
+
+              <AcceptedAtOtherTimeNotice request={req} />
 
               <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-surface-400">
                 <span className="flex items-center gap-1">

@@ -15,6 +15,8 @@ import { getErrorMessage } from '../../utils/errors'
 import { useDirty } from '../../hooks/useDirty'
 import { useEditSavedToast } from '../../hooks/useEditSavedToast'
 import { useInviteSentToast } from '../../hooks/useInviteSentToast'
+import { useDateLocale } from '../../utils/dateFnsLocale'
+import { formatTerm } from '../../utils/proposalTerm'
 import { MailedInvitesWarning } from '../../components/ui/MailedInvitesWarning'
 import { canOfferSaveAndSend } from '../../utils/inviteStatus'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
@@ -1144,6 +1146,7 @@ export function CreateEventModal({
   }
 }) {
   const { t } = useTranslation('admin')
+  const dateLocale = useDateLocale()
   const [allDay, setAllDay] = useState(!(initial?.startTime && initial?.endTime))
   const [courseId, setCourseId] = useState<string | undefined>(initial?.courseId)
   const [form, setForm] = useState<CreateEventRequest>({
@@ -1168,9 +1171,18 @@ export function CreateEventModal({
 
   const queryClient = useQueryClient()
 
+  const showInviteSent = useInviteSentToast()
+
   const createMutation = useMutation({
-    mutationFn: adminApi.createEvent,
-    onSuccess: (created) => {
+    // ⚠️ Sending in the mutationFn, not onSuccess — the same shape as "save and send" in the edit
+    // form: the order is guaranteed and a failed send surfaces on the one mutation.
+    mutationFn: async ({ payload, sendInvites }: { payload: CreateEventRequest; sendInvites: boolean }) => {
+      const created = await adminApi.createEvent(payload)
+      const invites = sendInvites ? await adminApi.notifyEventInvites(created.id) : null
+      return { created, invites }
+    },
+    onSuccess: ({ created, invites }) => {
+      if (invites) showInviteSent(invites)
       queryClient.invalidateQueries({ queryKey: ['admin', 'events'] })
       queryClient.invalidateQueries({ queryKey: ['admin', 'trainingRequests'] })
       queryClient.invalidateQueries({ queryKey: ['admin', 'notifications'] })
@@ -1197,7 +1209,16 @@ export function CreateEventModal({
 
   const isDirty = useDirty({ form, courseId, allDay, invited })
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // ⚠️ Answering a proposal at other hours — see the same guard in CreateSlotModal. The proposal is
+  // always one day with hours, so a range is a change too, and so is "all day" (ticking it clears
+  // the times, which the comparison below then sees).
+  const takesInvites = form.eventType !== 'UNAVAILABLE'
+  const proposalMoved = !!initial?.trainingRequestId && takesInvites
+    && (form.startDate !== initial.startDate || form.endDate !== form.startDate
+      || form.startTime !== initial.startTime || form.endTime !== initial.endTime)
+  const canSendInvites = !!initial?.trainingRequestId && takesInvites && invited.length > 0
+
+  const handleSubmit = (e: React.FormEvent, sendInvites = false) => {
     e.preventDefault()
     const payload: CreateEventRequest = { ...form }
     if (allDay) {
@@ -1207,7 +1228,7 @@ export function CreateEventModal({
     if (courseId) payload.courseId = courseId
     payload.invitedUserIds = form.eventType === 'UNAVAILABLE' ? [] : invited.map((u) => u.userId)
     payload.trainingRequestId = initial?.trainingRequestId
-    createMutation.mutate(payload)
+    createMutation.mutate({ payload, sendInvites: sendInvites && canSendInvites })
   }
 
   return (
@@ -1356,13 +1377,33 @@ export function CreateEventModal({
           <InvitedUsersPicker value={invited} onChange={setInvited} maxSeats={form.maxParticipants} />
         )}
 
-        <div className="flex gap-3 pt-4">
+        {proposalMoved && initial?.startDate && initial.startTime && initial.endTime && (
+          <p className="flex items-start gap-1.5 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-amber-300">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+            {t('events.proposalMoved', {
+              proposal: formatTerm({ date: initial.startDate, startTime: initial.startTime, endTime: initial.endTime }, dateLocale, ''),
+            })}
+          </p>
+        )}
+
+        <div className="flex flex-wrap gap-3 pt-4">
           <Button type="submit" loading={createMutation.isPending} className="flex-1">
             {t('events.createEvent')}
           </Button>
           <Button type="button" variant="ghost" onClick={onClose}>
             {t('events.cancel')}
           </Button>
+          {canSendInvites && (
+            <Button
+              type="button"
+              variant={proposalMoved ? 'primary' : 'secondary'}
+              loading={createMutation.isPending}
+              className="w-full"
+              onClick={(e) => handleSubmit(e, true)}
+            >
+              {t('events.createAndSend')}
+            </Button>
+          )}
         </div>
 
         {createMutation.isError && (

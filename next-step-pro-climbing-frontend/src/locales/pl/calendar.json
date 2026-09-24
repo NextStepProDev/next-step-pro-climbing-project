@@ -209,6 +209,8 @@
   },
   "createSlot": {
     "title": "Dodaj nowy termin",
+    "proposalMoved": "Klient proponował {{proposal}}. Utworzenie terminu nie wysyła mu nic — wyślij zaproszenie, inaczej nie dowie się o zmianie.",
+    "submitAndSend": "Utwórz i wyślij zaproszenie",
     "slotTitle": "Tytuł (np. \"Trening na ściance\")",
     "slotTitlePlaceholder": "Tytuł terminu (widoczny dla klientów)",
     "absenceTitle": "Podpis (opcjonalny, widoczny dla klientów)",

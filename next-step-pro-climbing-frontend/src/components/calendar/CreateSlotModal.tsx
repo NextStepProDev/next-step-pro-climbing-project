@@ -14,9 +14,12 @@ import { TimeScrollPicker } from '../ui/TimeScrollPicker'
 import { InvitedUsersPicker } from '../ui/InvitedUsersPicker'
 import { SlotKindPicker } from './SlotKindPicker'
 import { DayAgendaPreview } from './DayAgendaPreview'
+import { AlertTriangle } from 'lucide-react'
+import { formatTerm } from '../../utils/proposalTerm'
+import { useInviteSentToast } from '../../hooks/useInviteSentToast'
 import { CONTRACTOR_SEATS, slotKindFlags, type CreateSlotKind } from '../../utils/slotKind'
 import type { CreatedCalendarEntry } from '../../utils/createdEntry'
-import type { CreateEventRequest, CreateTimeSlotRequest, InvitedUser } from '../../types'
+import type { CreateEventRequest, CreateTimeSlotRequest, InvitedUser, NotifyInvitesResult } from '../../types'
 
 /** Every kind this form can create, unlike the edit forms — see `CreateSlotKind`. */
 const CREATE_KINDS: CreateSlotKind[] = ['REGULAR', 'WINDOW', 'UNAVAILABLE', 'CONTRACTOR']
@@ -40,8 +43,14 @@ const KINDS_FOR_REQUEST: CreateSlotKind[] = ['REGULAR', 'WINDOW', 'UNAVAILABLE']
  * even compile). The assignment is therefore a second call, made from the same mutation.
  */
 type CreateRequest =
-  | { target: 'slot'; data: CreateTimeSlotRequest; payoutSourceId?: string }
+  | { target: 'slot'; data: CreateTimeSlotRequest; payoutSourceId?: string; sendInvites?: boolean }
   | { target: 'event'; data: CreateEventRequest }
+
+interface CreateOutcome {
+  created: CreatedCalendarEntry
+  /** Present only when the admin asked to mail the invitations together with creating the slot. */
+  invites: NotifyInvitesResult | null
+}
 
 interface CreateSlotModalProps {
   isOpen: boolean
@@ -117,6 +126,7 @@ export function CreateSlotModal({
   const [invited, setInvited] = useState<InvitedUser[]>(initial?.invited ?? [])
 
   const queryClient = useQueryClient()
+  const showInviteSent = useInviteSentToast()
 
   const isContractor = kind === 'CONTRACTOR'
 
@@ -134,7 +144,7 @@ export function CreateSlotModal({
     // Both endpoints answer with the row they wrote, and the caller needs it: the calendar opens
     // the new entry so people can be added to it straight away, and the fields that decide
     // whether there IS a roster (seats, kind, event type) are already in these responses.
-    mutationFn: async (request: CreateRequest): Promise<CreatedCalendarEntry> => {
+    mutationFn: async (request: CreateRequest): Promise<CreateOutcome> => {
       if (request.target === 'slot') {
         const slot = await adminApi.createTimeSlot(request.data)
         // ⚠️ In the mutationFn, not onSuccess — the same shape as "save and send invitations": the
@@ -144,11 +154,12 @@ export function CreateSlotModal({
         if (request.payoutSourceId) {
           await adminSettlementsApi.assignSource('slot', slot.id, request.payoutSourceId, null)
         }
-        return { target: 'slot', slot }
+        const invites = request.sendInvites ? await adminApi.notifySlotInvites(slot.id) : null
+        return { created: { target: 'slot', slot }, invites }
       }
-      return { target: 'event', event: await adminApi.createEvent(request.data) }
+      return { created: { target: 'event', event: await adminApi.createEvent(request.data) }, invites: null }
     },
-    onSuccess: (created, request) => {
+    onSuccess: ({ created, invites }, request) => {
       void queryClient.invalidateQueries({ queryKey: ['calendar'] })
       // A new entry can show up on the money screens before anybody prices anything: a contractor
       // session arrives already assigned, and a zero-seat slot created any other way arrives on the
@@ -160,6 +171,7 @@ export function CreateSlotModal({
         void queryClient.invalidateQueries({ queryKey: ['admin', 'events'] })
         void queryClient.invalidateQueries({ queryKey: ['courseEvents'] })
       }
+      if (invites) showInviteSent(invites)
       onCreated?.(created)
       onSuccess?.()
       onClose()
@@ -230,7 +242,14 @@ export function CreateSlotModal({
         ? t('createSlot.summaryAllDay', { day: formatDay(form.date) })
         : null
 
-  const submitForm = () => {
+  // ⚠️ Answering a proposal at other hours. Creating the slot marks the proposal accepted and mails
+  // nobody, so unless the invitation goes out the client learns of the change only by opening the
+  // app — and "accepted" next to the hours they typed reads as "come then".
+  const proposalMoved = !!initial?.trainingRequestId && isRegular && datesFilled
+    && (form.date !== defaultDate || form.startTime !== initial.startTime || form.endTime !== initial.endTime)
+  const canSendInvites = !!initial?.trainingRequestId && isRegular && invited.length > 0
+
+  const submitForm = (sendInvites = false) => {
     if (timeError || dateError || !datesFilled) return
     // Naming the payer is the whole point of this kind: a contractor session created without one
     // is exactly the invisible row this tile exists to stop producing.
@@ -271,6 +290,7 @@ export function CreateSlotModal({
         trainingRequestId: initial?.trainingRequestId,
       },
       payoutSourceId: isContractor ? payoutSourceId : undefined,
+      sendInvites: sendInvites && canSendInvites,
     })
   }
 
@@ -469,7 +489,16 @@ export function CreateSlotModal({
           <InvitedUsersPicker value={invited} onChange={setInvited} maxSeats={form.maxParticipants} />
         )}
 
-        <div className="flex gap-3 pt-4">
+        {proposalMoved && initial?.startTime && initial.endTime && (
+          <p className="flex items-start gap-1.5 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-amber-300">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+            {t('createSlot.proposalMoved', {
+              proposal: formatTerm({ date: defaultDate, startTime: initial.startTime, endTime: initial.endTime }, locale, ''),
+            })}
+          </p>
+        )}
+
+        <div className="flex flex-wrap gap-3 pt-4">
           <Button
             type="submit"
             loading={createMutation.isPending}
@@ -481,6 +510,19 @@ export function CreateSlotModal({
           <Button type="button" variant="ghost" onClick={onClose}>
             {t('createSlot.cancel')}
           </Button>
+          {/* A second action, not a checkbox on the first — the same split as "save and send" in
+              the edit forms: mailing is not a property of creating, and creating quietly stays. */}
+          {canSendInvites && (
+            <Button
+              type="button"
+              variant={proposalMoved ? 'primary' : 'secondary'}
+              loading={createMutation.isPending}
+              className="w-full"
+              onClick={() => submitForm(true)}
+            >
+              {t('createSlot.submitAndSend')}
+            </Button>
+          )}
         </div>
 
         {createMutation.isError && (

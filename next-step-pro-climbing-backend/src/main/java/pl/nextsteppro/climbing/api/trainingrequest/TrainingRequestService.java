@@ -8,6 +8,7 @@ import pl.nextsteppro.climbing.domain.course.Course;
 import pl.nextsteppro.climbing.domain.course.CourseRepository;
 import pl.nextsteppro.climbing.domain.timeslot.TimeSlot;
 import pl.nextsteppro.climbing.domain.timeslot.TimeSlotRepository;
+import pl.nextsteppro.climbing.domain.trainingrequest.AgreedTerm;
 import pl.nextsteppro.climbing.domain.trainingrequest.TrainingRequest;
 import pl.nextsteppro.climbing.domain.trainingrequest.TrainingRequestRepository;
 import pl.nextsteppro.climbing.domain.trainingrequest.TrainingRequestStatus;
@@ -123,6 +124,7 @@ public class TrainingRequestService {
         Course course = tr.getCourse();
         TimeSlot createdSlot = tr.getCreatedSlot();
         var createdEvent = tr.getCreatedEvent();
+        AgreedTerm agreed = tr.agreedTerm();
         return new TrainingRequestDto(
             tr.getId(),
             tr.getRequestedDate(),
@@ -137,6 +139,11 @@ public class TrainingRequestService {
             createdSlot != null ? createdSlot.getDate() : null,
             createdEvent != null ? createdEvent.getId() : null,
             createdEvent != null ? createdEvent.getStartDate() : null,
+            agreed != null ? agreed.date() : null,
+            agreed != null ? agreed.endDate() : null,
+            agreed != null ? agreed.startTime() : null,
+            agreed != null ? agreed.endTime() : null,
+            tr.agreedTermDiffers(),
             tr.getCreatedAt()
         );
     }
