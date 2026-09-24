@@ -56,10 +56,9 @@ uploads/
 # ===== Claude Code =====
 .claude/
 claude/
-CLAUDE.md
 CLAUDE.md.backup
 # Rejestr pokrycia audytu: nazywa wprost obszary, w ktore nikt jeszcze nie zagladal,
-# a repo jest publiczne. Lokalny jak CLAUDE.md i docs/.
+# a repo jest publiczne. Lokalny jak docs/.
 AUDIT.md
 
 # ===== Personal notes =====
