@@ -480,6 +480,8 @@
   },
   "events": {
     "addEvent": "Dodaj wydarzenie",
+    "proposalMoved": "Klient proponował {{proposal}}. Utworzenie wydarzenia nie wysyła mu nic — wyślij zaproszenie, inaczej nie dowie się o zmianie.",
+    "createAndSend": "Utwórz i wyślij zaproszenie",
     "noUpcoming": "Brak nadchodzących wydarzeń",
     "upcoming": "Nadchodzące ({{count}})",
     "archive": "Archiwum ({{count}})",

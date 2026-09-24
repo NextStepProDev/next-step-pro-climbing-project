@@ -480,6 +480,8 @@
   },
   "events": {
     "addEvent": "Añadir evento",
+    "proposalMoved": "El cliente propuso {{proposal}}. Crear el evento no le envía nada — envía la invitación o no se enterará del cambio.",
+    "createAndSend": "Crear y enviar invitación",
     "noUpcoming": "No hay eventos próximos",
     "upcoming": "Próximos ({{count}})",
     "archive": "Archivo ({{count}})",

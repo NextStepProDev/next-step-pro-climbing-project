@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { ToastProvider } from '../../context/ToastContext'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter } from 'react-router-dom'
@@ -23,11 +24,13 @@ const createTimeSlot = vi.fn().mockResolvedValue({ id: 'slot-new' })
 const createEvent = vi.fn().mockResolvedValue({})
 const listSources = vi.fn().mockResolvedValue([])
 const assignSource = vi.fn().mockResolvedValue(undefined)
+const notifySlotInvites = vi.fn().mockResolvedValue({ notifiedCount: 1, skippedNotificationsOff: 0 })
 
 vi.mock('../../api/client', () => ({
   adminApi: {
     createTimeSlot: (data: unknown) => createTimeSlot(data),
     createEvent: (data: unknown) => createEvent(data),
+    notifySlotInvites: (slotId: string) => notifySlotInvites(slotId),
     getAllUsers: () => Promise.resolve([]),
   },
   adminSiteApi: {
@@ -37,15 +40,22 @@ vi.mock('../../api/client', () => ({
     listSources: () => listSources(),
     assignSource: (...args: unknown[]) => assignSource(...args),
   },
+  // Opened from a proposal, the form shows the day it falls on.
+  calendarApi: {
+    getDayView: (date: string) => Promise.resolve({ date, slots: [], events: [] }),
+  },
 }))
 
-function renderModal(props: { onCreated?: (created: unknown) => void } = {}) {
+function renderModal(props: Partial<React.ComponentProps<typeof CreateSlotModal>> = {}) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   return render(
     <QueryClientProvider client={client}>
       {/* The contractor branch offers a way out to the settlements tab, and a Link needs a router. */}
       <MemoryRouter>
-        <CreateSlotModal isOpen onClose={vi.fn()} defaultDate="2030-06-10" {...props} />
+        {/* "Create and send" reports the mails that left through a toast; useToast throws without it. */}
+        <ToastProvider>
+          <CreateSlotModal isOpen onClose={vi.fn()} defaultDate="2030-06-10" {...props} />
+        </ToastProvider>
       </MemoryRouter>
     </QueryClientProvider>,
   )
@@ -267,19 +277,7 @@ describe('CreateSlotModal — a session somebody else settles', () => {
   })
 
   it('should not offer the contractor tile while answering somebody’s proposal', () => {
-    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
-    render(
-      <QueryClientProvider client={client}>
-        <MemoryRouter>
-          <CreateSlotModal
-            isOpen
-            onClose={vi.fn()}
-            defaultDate="2030-06-10"
-            initial={{ trainingRequestId: 'request-1' }}
-          />
-        </MemoryRouter>
-      </QueryClientProvider>,
-    )
+    renderModal({ initial: { trainingRequestId: 'request-1' } })
 
     // Creating the slot marks the proposal ACCEPTED, and a contractor session has no seats and
     // drops the invitation — so the client would be told "accepted" with nowhere to sit, and the
@@ -351,7 +349,7 @@ describe('CreateSlotModal — reporting what was created', () => {
   })
 
   it('should say nothing when the create failed', async () => {
-    createTimeSlot.mockRejectedValue(new Error('nope'))
+    createTimeSlot.mockRejectedValueOnce(new Error('nope'))
     const onCreated = vi.fn()
     const user = userEvent.setup()
     renderModal({ onCreated })
@@ -360,5 +358,63 @@ describe('CreateSlotModal — reporting what was created', () => {
 
     await waitFor(() => expect(createTimeSlot).toHaveBeenCalledTimes(1))
     expect(onCreated).not.toHaveBeenCalled()
+  })
+})
+
+/* Answering a proposal at other hours: creating the slot marks it accepted and mails nobody, so the
+   form has to say so — and offer the mail in the same click. */
+describe('CreateSlotModal — answering a proposal at other hours', () => {
+  const requester = { userId: 'user-1', fullName: 'Ala Nowak', email: 'ala@example.com' }
+  const proposal = {
+    startTime: '17:00',
+    endTime: '19:00',
+    maxParticipants: 1,
+    invited: [requester],
+    trainingRequestId: 'request-1',
+  }
+
+  beforeEach(() => {
+    createTimeSlot.mockClear()
+    createTimeSlot.mockResolvedValue({ id: 'slot-new', maxParticipants: 1 })
+    notifySlotInvites.mockClear()
+  })
+
+  const dateField = () => document.querySelector<HTMLInputElement>('input[type="date"]')!
+
+  it('should stay quiet while the slot keeps the proposed hours', () => {
+    renderModal({ initial: proposal })
+    expect(screen.queryByText(/createSlot.proposalMoved/)).not.toBeInTheDocument()
+  })
+
+  it('should name the proposal once the slot moves off it', () => {
+    renderModal({ initial: proposal })
+    fireEvent.change(dateField(), { target: { value: '2030-06-11' } })
+    expect(screen.getByText(/createSlot.proposalMoved:.*17:00–19:00/)).toBeInTheDocument()
+  })
+
+  it('should create the slot first and then mail the invitation, in one click', async () => {
+    const user = userEvent.setup()
+    renderModal({ initial: proposal })
+
+    await user.click(screen.getByRole('button', { name: 'createSlot.submitAndSend' }))
+
+    await waitFor(() => expect(notifySlotInvites).toHaveBeenCalledWith('slot-new'))
+    expect(createTimeSlot).toHaveBeenCalledTimes(1)
+    expect(createTimeSlot.mock.invocationCallOrder[0]).toBeLessThan(notifySlotInvites.mock.invocationCallOrder[0])
+  })
+
+  it('should not mail anything on a plain create', async () => {
+    const user = userEvent.setup()
+    renderModal({ initial: proposal })
+
+    await submit(user)
+
+    await waitFor(() => expect(createTimeSlot).toHaveBeenCalledTimes(1))
+    expect(notifySlotInvites).not.toHaveBeenCalled()
+  })
+
+  it('should not offer the mail when nobody is invited', () => {
+    renderModal({ initial: { ...proposal, invited: [] } })
+    expect(screen.queryByRole('button', { name: 'createSlot.submitAndSend' })).not.toBeInTheDocument()
   })
 })

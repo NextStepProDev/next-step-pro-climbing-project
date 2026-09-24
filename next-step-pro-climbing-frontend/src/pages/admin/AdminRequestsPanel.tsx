@@ -16,6 +16,7 @@ import { Modal } from '../../components/ui/Modal'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
 import { QueryError } from '../../components/ui/QueryError'
 import { CreateSlotModal } from '../../components/calendar/CreateSlotModal'
+import { DayAgendaSummary } from '../../components/calendar/DayAgendaPreview'
 import { CreateEventModal } from './AdminEventsPanel'
 import { parseCalendarDate } from '../../utils/calendarDate'
 import type { AdminTrainingRequest, TrainingRequestStatus } from '../../types'
@@ -331,6 +332,15 @@ function RequestCard({
           </span>
         )}
       </div>
+
+      {/* The verdict on the day, so most proposals are decided without opening a second tab.
+          Pending only: an answered request has nothing left to decide. */}
+      {isPending && (
+        <DayAgendaSummary
+          date={req.requestedDate}
+          proposed={{ start: req.startTime.slice(0, 5), end: req.endTime.slice(0, 5) }}
+        />
+      )}
 
       {/* Dane klienta */}
       <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-surface-300">

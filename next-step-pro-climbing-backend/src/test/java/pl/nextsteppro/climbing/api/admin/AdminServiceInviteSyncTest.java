@@ -23,6 +23,7 @@ import pl.nextsteppro.climbing.domain.reservedseat.ReservedSeat;
 import pl.nextsteppro.climbing.domain.reservedseat.ReservedSeatRepository;
 import pl.nextsteppro.climbing.domain.timeslot.TimeSlot;
 import pl.nextsteppro.climbing.domain.timeslot.TimeSlotRepository;
+import pl.nextsteppro.climbing.domain.trainingrequest.TrainingRequest;
 import pl.nextsteppro.climbing.domain.trainingrequest.TrainingRequestRepository;
 import pl.nextsteppro.climbing.domain.user.User;
 import pl.nextsteppro.climbing.domain.user.UserRole;
@@ -48,6 +49,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -534,6 +536,49 @@ class AdminServiceInviteSyncTest {
     // ========== INVITATION MAILS ==========
 
     @Test
+    void shouldTellOnlyTheClientWhoseProposalWasMovedWhatTheyHadProposed() {
+        // Given: the slot answers invitedUser's proposal an hour later than they asked for;
+        // a second invitee never proposed anything
+        User other = new User("other@example.com", "Other", "Guest", "+48555555555", "other");
+        setId(other, UUID.randomUUID());
+        other.setEmailVerified(true);
+        TrainingRequest proposal = new TrainingRequest(invitedUser, slot.getDate(),
+            slot.getStartTime().minusHours(1), slot.getEndTime().minusHours(1), 1);
+        proposal.setCreatedSlot(slot);
+
+        when(timeSlotRepository.findById(slotId)).thenReturn(Optional.of(slot));
+        when(reservationRepository.findConfirmedUserIdsByTimeSlotId(slotId)).thenReturn(List.of());
+        when(trainingRequestRepository.findAcceptedBySlotId(slotId)).thenReturn(List.of(proposal));
+        when(reservedSeatRepository.findBySlotIdWithUser(slotId))
+            .thenReturn(List.of(new ReservedSeat(slot, invitedUser), new ReservedSeat(slot, other)));
+
+        // When
+        adminService.notifySlotInvites(slotId, true);
+
+        // Then
+        verify(mailService).sendSlotInvitationNotification(eq(invitedUser), eq(slot), any(), eq(proposal.proposedTerm()));
+        verify(mailService).sendSlotInvitationNotification(eq(other), eq(slot), any(), isNull());
+    }
+
+    @Test
+    void shouldNotMentionAProposalTheSlotKeptTheHoursOf() {
+        // Given: the slot answers invitedUser's proposal exactly as they asked for it
+        TrainingRequest proposal = new TrainingRequest(invitedUser, slot.getDate(), slot.getStartTime(), slot.getEndTime(), 1);
+        proposal.setCreatedSlot(slot);
+
+        when(timeSlotRepository.findById(slotId)).thenReturn(Optional.of(slot));
+        when(reservationRepository.findConfirmedUserIdsByTimeSlotId(slotId)).thenReturn(List.of());
+        when(trainingRequestRepository.findAcceptedBySlotId(slotId)).thenReturn(List.of(proposal));
+        when(reservedSeatRepository.findBySlotIdWithUser(slotId)).thenReturn(List.of(new ReservedSeat(slot, invitedUser)));
+
+        // When
+        adminService.notifySlotInvites(slotId, true);
+
+        // Then: nothing moved, so the mail must not claim it did
+        verify(mailService).sendSlotInvitationNotification(eq(invitedUser), eq(slot), any(), isNull());
+    }
+
+    @Test
     void shouldSkipInvitationMailForSomeoneWhoTurnedEmailsOff() {
         // Given: two pending invitations, one of them belongs to someone who switched emails off
         User optedOut = new User("quiet@example.com", "Quiet", "User", "+48333333333", "quiet");
@@ -553,8 +598,8 @@ class AdminServiceInviteSyncTest {
         // who will never receive one is named as skipped rather than silently dropped.
         assertEquals(1, result.notifiedCount());
         assertEquals(1, result.skippedNotificationsOff());
-        verify(mailService).sendSlotInvitationNotification(eq(invitedUser), eq(slot), any());
-        verify(mailService, never()).sendSlotInvitationNotification(eq(optedOut), any(), any());
+        verify(mailService).sendSlotInvitationNotification(eq(invitedUser), eq(slot), any(), any());
+        verify(mailService, never()).sendSlotInvitationNotification(eq(optedOut), any(), any(), any());
     }
 
     @Test
@@ -573,7 +618,7 @@ class AdminServiceInviteSyncTest {
         // which is the only skip the admin can act on.
         assertEquals(0, result.notifiedCount());
         assertEquals(0, result.skippedNotificationsOff());
-        verify(mailService, never()).sendSlotInvitationNotification(any(), any(), any());
+        verify(mailService, never()).sendSlotInvitationNotification(any(), any(), any(), any());
     }
 
     @Test
@@ -595,7 +640,7 @@ class AdminServiceInviteSyncTest {
         // so the list goes back to "not sent" and the send button counts this person again.
         // Deliberately no mail from here — re-sending is the admin's call, one click away.
         assertNull(seat.getNotifiedAt());
-        verify(mailService, never()).sendSlotInvitationNotification(any(), any(), any());
+        verify(mailService, never()).sendSlotInvitationNotification(any(), any(), any(), any());
     }
 
     @Test
@@ -636,7 +681,7 @@ class AdminServiceInviteSyncTest {
 
         // Then: same rule as the slot twin
         assertNull(seat.getNotifiedAt());
-        verify(mailService, never()).sendEventInvitationNotification(any(), any());
+        verify(mailService, never()).sendEventInvitationNotification(any(), any(), any());
     }
 
     private void setId(Object entity, UUID id) {

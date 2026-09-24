@@ -9,7 +9,8 @@
   "invitations": {
     "title": "Zaproszenia",
     "heldForYou": "Trener trzyma dla Ciebie miejsce — zarezerwuj, zanim termin minie.",
-    "book": "Zarezerwuj miejsce"
+    "book": "Zarezerwuj miejsce",
+    "moved": "Inny termin niż Twoja propozycja ({{proposal}}) — sprawdź datę i godzinę przed rezerwacją."
   },
   "events": "Wydarzenia",
   "trainings": "Treningi",
@@ -49,6 +50,11 @@
   "trainingRequests": {
     "title": "Moje propozycje terminów",
     "adminNote": "Od trenera:",
+    "acceptedChanged": "Zaakceptowana — inny termin",
+    "changedHint": "Trener przyjął propozycję w innym terminie. Przyjdź na ustalony termin, nie na swój.",
+    "agreedTerm": "Ustalony termin:",
+    "yourProposal": "Twoja propozycja:",
+    "allDay": "cały dzień",
     "viewInCalendar": "Zobacz w kalendarzu",
     "withdraw": "Wycofaj",
     "withdrawConfirmTitle": "Wycofać propozycję?",

@@ -411,6 +411,10 @@ export interface MyInvitation {
   startTime: string | null
   endTime: string | null
   location: string | null
+  // The recipient's own proposal this answers — set only when the entry moved away from it
+  proposedDate: string | null
+  proposedStartTime: string | null
+  proposedEndTime: string | null
 }
 
 export interface EventDetail {
@@ -1046,6 +1050,13 @@ export interface TrainingRequest {
   createdSlotDate: string | null
   createdEventId: string | null
   createdEventStartDate: string | null
+  // When the created entry actually takes place — null until something is created
+  agreedDate: string | null
+  agreedEndDate: string | null
+  agreedStartTime: string | null
+  agreedEndTime: string | null
+  // The entry landed on another date or time than proposed — computed by the server, not here
+  termChanged: boolean
   createdAt: string
 }
 

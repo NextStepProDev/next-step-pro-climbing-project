@@ -9,7 +9,8 @@
   "invitations": {
     "title": "Invitaciones",
     "heldForYou": "El entrenador guarda una plaza para ti — resérvala antes de que pase la fecha.",
-    "book": "Reserva tu plaza"
+    "book": "Reserva tu plaza",
+    "moved": "Horario distinto de tu propuesta ({{proposal}}) — revisa la fecha y la hora antes de reservar."
   },
   "events": "Eventos",
   "trainings": "Entrenamientos",
@@ -49,6 +50,11 @@
   "trainingRequests": {
     "title": "Mis propuestas de horario",
     "adminNote": "Del entrenador:",
+    "acceptedChanged": "Aceptada — otro horario",
+    "changedHint": "El entrenador aceptó tu propuesta en otro horario. Ven a la hora acordada, no a la tuya.",
+    "agreedTerm": "Horario acordado:",
+    "yourProposal": "Tu propuesta:",
+    "allDay": "todo el día",
     "viewInCalendar": "Ver en el calendario",
     "withdraw": "Retirar",
     "withdrawConfirmTitle": "¿Retirar la propuesta?",

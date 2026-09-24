@@ -21,6 +21,8 @@ import pl.nextsteppro.climbing.domain.reservedseat.ReservedSeat;
 import pl.nextsteppro.climbing.domain.reservedseat.ReservedSeatRepository;
 import pl.nextsteppro.climbing.domain.timeslot.TimeSlot;
 import pl.nextsteppro.climbing.domain.timeslot.TimeSlotRepository;
+import pl.nextsteppro.climbing.domain.trainingrequest.ProposedTerm;
+import pl.nextsteppro.climbing.domain.trainingrequest.TrainingRequest;
 import pl.nextsteppro.climbing.domain.trainingrequest.TrainingRequestRepository;
 import pl.nextsteppro.climbing.domain.trainingrequest.TrainingRequestStatus;
 import pl.nextsteppro.climbing.domain.auth.AuthTokenRepository;
@@ -1273,6 +1275,7 @@ public class AdminService {
         // Hoisted out of the loop, as the event twin already was: this ran one existence query per
         // invitee on a single button press.
         Set<UUID> confirmedUserIds = new HashSet<>(reservationRepository.findConfirmedUserIdsByTimeSlotId(slotId));
+        Map<UUID, ProposedTerm> movedProposals = movedProposalsByUser(trainingRequestRepository.findAcceptedBySlotId(slotId));
         int sent = 0;
         int skipped = 0;
         for (ReservedSeat rs : reservedSeatRepository.findBySlotIdWithUser(slotId)) {
@@ -1282,7 +1285,7 @@ public class AdminService {
                 skipped++;
                 continue;
             }
-            mailService.sendSlotInvitationNotification(rs.getUser(), slot, displayTitle);
+            mailService.sendSlotInvitationNotification(rs.getUser(), slot, displayTitle, movedProposals.get(rs.getUser().getId()));
             rs.markNotified();
             sent++;
         }
@@ -1297,6 +1300,7 @@ public class AdminService {
         // reservation of the event once per invitee — 20 invitees meant 20 identical queries on
         // one button press. Same projection syncEventInvites already uses.
         Set<UUID> confirmedUserIds = new HashSet<>(reservationRepository.findConfirmedUserIdsByEventId(eventId));
+        Map<UUID, ProposedTerm> movedProposals = movedProposalsByUser(trainingRequestRepository.findAcceptedByEventId(eventId));
         int sent = 0;
         int skipped = 0;
         for (ReservedSeat rs : reservedSeatRepository.findByEventIdWithUser(eventId)) {
@@ -1306,11 +1310,26 @@ public class AdminService {
                 skipped++;
                 continue;
             }
-            mailService.sendEventInvitationNotification(rs.getUser(), event);
+            mailService.sendEventInvitationNotification(rs.getUser(), event, movedProposals.get(rs.getUser().getId()));
             rs.markNotified();
             sent++;
         }
         return new NotifyInvitesResult(sent, skipped);
+    }
+
+    /**
+     * Whose invitation answers their own proposal at other hours than they asked for — the mail
+     * then says so ({@link TrainingRequest#agreedTermDiffers}). Resolved to plain values here,
+     * before the {@code @Async} hand-off, where the request's persistence context is still open.
+     */
+    private static Map<UUID, ProposedTerm> movedProposalsByUser(List<TrainingRequest> accepted) {
+        Map<UUID, ProposedTerm> moved = new HashMap<>();
+        for (TrainingRequest tr : accepted) {
+            if (tr.agreedTermDiffers()) {
+                moved.putIfAbsent(tr.getUser().getId(), tr.proposedTerm());
+            }
+        }
+        return moved;
     }
 
     /**

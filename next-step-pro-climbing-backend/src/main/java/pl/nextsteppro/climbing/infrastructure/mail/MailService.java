@@ -11,6 +11,7 @@ import pl.nextsteppro.climbing.config.AppConfig;
 import pl.nextsteppro.climbing.domain.event.Event;
 import pl.nextsteppro.climbing.domain.reservation.Reservation;
 import pl.nextsteppro.climbing.domain.timeslot.TimeSlot;
+import pl.nextsteppro.climbing.domain.trainingrequest.ProposedTerm;
 import pl.nextsteppro.climbing.domain.user.User;
 import pl.nextsteppro.climbing.api.user.UserService;
 import pl.nextsteppro.climbing.infrastructure.i18n.MessageService;
@@ -254,7 +255,8 @@ public class MailService {
     // ---- Invitations (held seats, sent manually by the admin) ----
 
     @Async("mailExecutor")
-    public void sendSlotInvitationNotification(User user, TimeSlot slot, @Nullable String displayTitle) {
+    public void sendSlotInvitationNotification(User user, TimeSlot slot, @Nullable String displayTitle,
+                                               @Nullable ProposedTerm movedFrom) {
         String lang = user.getPreferredLanguage();
         String title = displayTitle != null ? displayTitle : "Next Step Pro Climbing";
         String googleUrl = CalendarUtils.buildGoogleCalendarUrl(title, slot.getDate(), null, slot.getStartTime(), slot.getEndTime(), null);
@@ -273,12 +275,12 @@ public class MailService {
             msg.getForLang("email.reservation.date", lang), slot.getDate().format(DATE_FORMAT),
             msg.getForLang("email.reservation.time", lang), slot.getStartTime().format(TIME_FORMAT), slot.getEndTime().format(TIME_FORMAT)
         );
-        String body = buildInvitationBody(lang, user, msg.getForLang("email.invitation.slot.body", lang), detailsBox, bookUrl, googleUrl);
+        String body = buildInvitationBody(lang, user, msg.getForLang("email.invitation.slot.body", lang), movedFrom, detailsBox, bookUrl, googleUrl);
         sendEmail(user.getEmail(), subject, body, ics);
     }
 
     @Async("mailExecutor")
-    public void sendEventInvitationNotification(User user, Event event) {
+    public void sendEventInvitationNotification(User user, Event event, @Nullable ProposedTerm movedFrom) {
         String lang = user.getPreferredLanguage();
         String googleUrl = CalendarUtils.buildGoogleCalendarUrl(event.getTitle(), event.getStartDate(), event.getEndDate(), event.getStartTime(), event.getEndTime(), event.getLocation());
         byte[] ics = CalendarUtils.buildIcsFile(event.getTitle(), event.getStartDate(), event.getEndDate(), event.getStartTime(), event.getEndTime(), event.getLocation(), event.getDescription());
@@ -297,11 +299,25 @@ public class MailService {
             msg.getForLang("email.event.reservation.dates", lang), event.getStartDate().format(DATE_FORMAT), event.getEndDate().format(DATE_FORMAT),
             locationLine
         );
-        String body = buildInvitationBody(lang, user, msg.getForLang("email.invitation.event.body", lang), detailsBox, bookUrl, googleUrl);
+        String body = buildInvitationBody(lang, user, msg.getForLang("email.invitation.event.body", lang), movedFrom, detailsBox, bookUrl, googleUrl);
         sendEmail(user.getEmail(), subject, body, ics);
     }
 
-    private String buildInvitationBody(String lang, User user, String intro, String detailsBox, String bookUrl, String googleCalendarUrl) {
+    /**
+     * ⚠️ The entry answering a client's proposal can sit at other hours than they asked for, and the
+     * mail is the one place they reach without logging in. Said above the details, in amber, so the
+     * term they typed themselves cannot be what they read into the box below.
+     */
+    private String buildInvitationBody(String lang, User user, String intro, @Nullable ProposedTerm movedFrom,
+                                       String detailsBox, String bookUrl, String googleCalendarUrl) {
+        String movedNotice = movedFrom == null ? "" : """
+                        <div style="background: #fffbeb; border: 1px solid #f59e0b; padding: 14px 16px; border-radius: 8px; margin-bottom: 16px; color: #78350f;">
+                            %s
+                        </div>
+            """.formatted(msg.getForLang("email.invitation.moved", lang,
+                movedFrom.date().format(DATE_FORMAT),
+                movedFrom.startTime().format(TIME_FORMAT),
+                movedFrom.endTime().format(TIME_FORMAT)));
         return """
             <html>
             <body style="font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5;">
@@ -312,6 +328,7 @@ public class MailService {
                     <div style="padding: 30px;">
                         <h2 style="color: #312e2b; margin-top: 0;">%s</h2>
                         <p style="color: #333;">%s</p>
+                        %s
                         <div style="background: #f5f3ff; border: 1px solid #ddd6fe; padding: 20px; border-radius: 8px;">
                             %s
                         </div>
@@ -329,6 +346,7 @@ public class MailService {
             siteUrl,
             msg.getForLang("email.invitation.greeting", lang, user.getFirstName()),
             intro,
+            movedNotice,
             detailsBox,
             bookUrl,
             msg.getForLang("email.invitation.cta", lang),

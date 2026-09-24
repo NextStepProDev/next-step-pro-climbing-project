@@ -127,6 +127,46 @@ public class TrainingRequest {
         this.createdEvent = null;
     }
 
+    /** When the entry created from this request takes place, or null while nothing is created. */
+    @Nullable
+    public AgreedTerm agreedTerm() {
+        if (createdSlot != null) {
+            return new AgreedTerm(createdSlot.getDate(), null, createdSlot.getStartTime(), createdSlot.getEndTime());
+        }
+        if (createdEvent != null) {
+            LocalDate end = createdEvent.getEndDate();
+            return new AgreedTerm(
+                createdEvent.getStartDate(),
+                end.equals(createdEvent.getStartDate()) ? null : end,
+                createdEvent.getStartTime(),
+                createdEvent.getEndTime());
+        }
+        return null;
+    }
+
+    /** The hours the client proposed, as a plain value that can cross into an {@code @Async} mail. */
+    public ProposedTerm proposedTerm() {
+        return new ProposedTerm(requestedDate, startTime, endTime);
+    }
+
+    /**
+     * ⚠️ Accepting a proposal at another time must never read as accepting it as proposed.
+     *
+     * The admin answers a proposal by creating an entry, and nothing stops that entry from landing
+     * an hour later or on another day. The client, who only ever sees "accepted" next to the hours
+     * they typed, would then turn up at their own time. Every place that tells the client about the
+     * outcome — their request list, their invitation, the invitation mail — asks here, so the answer
+     * is computed once, from the live entry (a later edit counts too).
+     */
+    public boolean agreedTermDiffers() {
+        AgreedTerm agreed = agreedTerm();
+        if (agreed == null) return false;
+        return !agreed.date().equals(requestedDate)
+            || agreed.endDate() != null
+            || !startTime.equals(agreed.startTime())
+            || !endTime.equals(agreed.endTime());
+    }
+
     public UUID getId() {
         return id;
     }

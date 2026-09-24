@@ -78,5 +78,10 @@ record MyInvitationDto(
     @Nullable LocalDate endDate,  // multi-day events only
     @Nullable LocalTime startTime,
     @Nullable LocalTime endTime,
-    @Nullable String location
+    @Nullable String location,
+    // The recipient's own proposal this entry answers — set ONLY when the entry landed on another
+    // date or time, so the card can say "not the hours you asked for" before they book
+    @Nullable LocalDate proposedDate,
+    @Nullable LocalTime proposedStartTime,
+    @Nullable LocalTime proposedEndTime
 ) {}

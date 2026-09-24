@@ -18,6 +18,8 @@ import pl.nextsteppro.climbing.domain.reservedseat.ReservedSeat;
 import pl.nextsteppro.climbing.domain.reservedseat.ReservedSeatRepository;
 import pl.nextsteppro.climbing.domain.timeslot.TimeSlot;
 import pl.nextsteppro.climbing.domain.timeslot.TimeSlotRepository;
+import pl.nextsteppro.climbing.domain.trainingrequest.TrainingRequest;
+import pl.nextsteppro.climbing.domain.trainingrequest.TrainingRequestRepository;
 import pl.nextsteppro.climbing.domain.user.User;
 import pl.nextsteppro.climbing.domain.user.UserRepository;
 import pl.nextsteppro.climbing.infrastructure.i18n.MessageService;
@@ -49,6 +51,7 @@ public class ReservationService {
     private final WaitlistService waitlistService;
     private final EventWaitlistService eventWaitlistService;
     private final ReservedSeatRepository reservedSeatRepository;
+    private final TrainingRequestRepository trainingRequestRepository;
 
     public ReservationService(ReservationRepository reservationRepository,
                              GuestReservationRepository guestReservationRepository,
@@ -60,7 +63,9 @@ public class ReservationService {
                              MessageService msg,
                              WaitlistService waitlistService,
                              EventWaitlistService eventWaitlistService,
-                             ReservedSeatRepository reservedSeatRepository) {
+                             ReservedSeatRepository reservedSeatRepository,
+                             TrainingRequestRepository trainingRequestRepository) {
+        this.trainingRequestRepository = trainingRequestRepository;
         this.reservationRepository = reservationRepository;
         this.guestReservationRepository = guestReservationRepository;
         this.timeSlotRepository = timeSlotRepository;
@@ -312,9 +317,22 @@ public class ReservationService {
         LocalDate today = LocalDate.now(WARSAW);
         List<MyInvitationDto> invitations = new ArrayList<>();
 
+        // An invitation born from this user's own proposal, at other hours than they asked for.
+        // Keyed by what was created; only the moved ones, so an unmoved answer carries nothing.
+        Map<UUID, TrainingRequest> movedBySlot = new HashMap<>();
+        Map<UUID, TrainingRequest> movedByEvent = new HashMap<>();
+        for (TrainingRequest tr : trainingRequestRepository.findAcceptedByUserId(userId)) {
+            if (!tr.agreedTermDiffers()) continue;
+            TimeSlot createdSlot = tr.getCreatedSlot();
+            Event createdEvent = tr.getCreatedEvent();
+            if (createdSlot != null) movedBySlot.put(createdSlot.getId(), tr);
+            if (createdEvent != null) movedByEvent.put(createdEvent.getId(), tr);
+        }
+
         for (ReservedSeat rs : reservedSeatRepository.findUpcomingPendingSlotInvitesByUserId(userId, today, LocalTime.now(WARSAW))) {
             TimeSlot slot = Objects.requireNonNull(rs.getTimeSlot());
             Event event = slot.getEvent();
+            TrainingRequest moved = movedBySlot.get(slot.getId());
             invitations.add(new MyInvitationDto(
                 "SLOT",
                 slot.getId(),
@@ -325,12 +343,16 @@ public class ReservationService {
                 null,
                 slot.getStartTime(),
                 slot.getEndTime(),
-                event != null ? event.getLocation() : null
+                event != null ? event.getLocation() : null,
+                moved != null ? moved.getRequestedDate() : null,
+                moved != null ? moved.getStartTime() : null,
+                moved != null ? moved.getEndTime() : null
             ));
         }
 
         for (ReservedSeat rs : reservedSeatRepository.findUpcomingPendingEventInvitesByUserId(userId, today)) {
             Event event = Objects.requireNonNull(rs.getEvent());
+            TrainingRequest moved = movedByEvent.get(event.getId());
             invitations.add(new MyInvitationDto(
                 "EVENT",
                 null,
@@ -341,7 +363,10 @@ public class ReservationService {
                 event.getEndDate(),
                 event.getStartTime(),
                 event.getEndTime(),
-                event.getLocation()
+                event.getLocation(),
+                moved != null ? moved.getRequestedDate() : null,
+                moved != null ? moved.getStartTime() : null,
+                moved != null ? moved.getEndTime() : null
             ));
         }
 
