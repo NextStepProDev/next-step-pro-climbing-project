@@ -1010,6 +1010,7 @@
       "spendCredit": "→ Rozlicz z nadpłaty ({{amount}})",
       "spendCreditLabel": "Rozlicz z nadpłaty — {{name}}",
       "saveFirst": "Zapisz kwotę, żeby rozliczyć ją z nadpłaty.",
+      "spendOnSave": "Ma nadpłatę — „Zapisz i rozlicz z nadpłaty” na dole od razu ją zużyje (razem z tym, co wpiszesz jako otrzymane).",
       "creditSpent": "Zużyto nadpłatę — najstarszy dług pierwszy. Saldo: {{balance}}.",
       "creditSpentOwing": "Zużyto nadpłatę — najstarszy dług pierwszy. Zostaje zaległość {{amount}}.",
       "creditGone": "Nic nie zostało do zużycia — nadpłata poszła gdzie indziej. Odśwież widok.",
@@ -1027,11 +1028,13 @@
     "actions": {
       "setAll": "Ustaw wszystkim",
       "save": "Zapisz",
+      "saveAndSpendCredit": "Zapisz i rozlicz z nadpłaty",
       "saved": "Zapisano rozliczenie."
     },
     "errors": {
       "invalidAmount": "Kwota musi być liczbą z przedziału od 0 do 100000.",
-      "zeroReceived": "Zero nie rozlicza wiersza — użyj „Rozlicz z nadpłaty” albo odznacz „rozliczone”."
+      "zeroReceived": "Zero nie rozlicza wiersza — użyj „Rozlicz z nadpłaty” albo odznacz „rozliczone”.",
+      "receivedRequired": "Wpisz, ile faktycznie otrzymałeś (także 0) — przy nadpłacie „rozliczone” bez kwoty jest niejednoznaczne."
     },
     "tab": {
       "title": "Rozliczenia",
@@ -1068,10 +1071,12 @@
         "sessions_one": "{{count}} termin",
         "sessions_few": "{{count}} terminy",
         "sessions_many": "{{count}} terminów",
-        "settleAll": "Rozlicz wszystko — {{amount}}",
+        "settleAll": "Rozlicz — przyjmij {{amount}}",
+        "settleFromCredit": "Rozlicz z nadpłaty",
         "paidOnLabel": "Data wpłaty — {{name}}",
         "receivedLabel": "Otrzymano — {{name}}",
-        "credit": "Ma u Ciebie {{credit}} nadpłaty — do dobrania {{toCollect}}."
+        "credit": "{{gross}} zajęć − {{credit}} nadpłaty",
+        "grossTotal": "przed nadpłatami {{amount}}"
       },
       "credits": {
         "title": "Nadpłaty",

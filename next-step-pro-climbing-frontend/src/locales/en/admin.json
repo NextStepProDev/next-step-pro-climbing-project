@@ -1004,6 +1004,7 @@
       "spendCredit": "→ Pay from credit ({{amount}})",
       "spendCreditLabel": "Pay from credit — {{name}}",
       "saveFirst": "Save the amount first, then pay it from the credit.",
+      "spendOnSave": "Holds a credit — “Save and pay from credit” below spends it straight away (together with whatever you enter as received).",
       "creditSpent": "Credit spent — oldest debt first. Balance: {{balance}}.",
       "creditSpentOwing": "Credit spent — oldest debt first. {{amount}} still owed.",
       "creditGone": "There was nothing left to spend — the credit went elsewhere. Reload the view.",
@@ -1021,11 +1022,13 @@
     "actions": {
       "setAll": "Apply to all",
       "save": "Save",
+      "saveAndSpendCredit": "Save and pay from credit",
       "saved": "Settlement saved."
     },
     "errors": {
       "invalidAmount": "The amount must be a number between 0 and 100000.",
-      "zeroReceived": "A zero does not settle the row — use “Pay from credit” or untick “settled”."
+      "zeroReceived": "A zero does not settle the row — use “Pay from credit” or untick “settled”.",
+      "receivedRequired": "Enter what you actually received (0 counts) — with a credit in play, “settled” without an amount is ambiguous."
     },
     "tab": {
       "title": "Settlements",
@@ -1060,10 +1063,12 @@
         "open": "Open the session — {{name}}, {{date}}",
         "sessions_one": "{{count}} session",
         "sessions_other": "{{count}} sessions",
-        "settleAll": "Settle all — {{amount}}",
+        "settleAll": "Settle — receive {{amount}}",
+        "settleFromCredit": "Settle from credit",
         "paidOnLabel": "Payment date — {{name}}",
         "receivedLabel": "Received — {{name}}",
-        "credit": "Holding {{credit}} of theirs — {{toCollect}} left to collect."
+        "credit": "{{gross}} of sessions − {{credit}} credit",
+        "grossTotal": "before credits {{amount}}"
       },
       "credits": {
         "title": "Overpayments",
