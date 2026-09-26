@@ -90,7 +90,12 @@ i18n
       escapeValue: false,
     },
     detection: {
-      order: ['localStorage', 'navigator'],
+      // 'querystring' must lead: PageHead emits hreflang alternates as
+      // ?language=xx (NewsPage/CoursesPage/TeamPage), and without this, visiting
+      // that URL rendered whatever localStorage/navigator picked — i.e. never the
+      // language the link promised. Google flagged those alternates as soft 404s.
+      order: ['querystring', 'localStorage', 'navigator'],
+      lookupQuerystring: 'language',
       caches: ['localStorage'],
       lookupLocalStorage: 'i18nextLng',
     },

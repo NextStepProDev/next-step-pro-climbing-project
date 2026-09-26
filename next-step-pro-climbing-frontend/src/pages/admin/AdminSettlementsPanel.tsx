@@ -399,6 +399,13 @@ function OutstandingCard({ overview }: { overview: SettlementOverview }) {
     return [...byPayer.values()]
   }, [outstanding.items, outstanding.credits])
 
+  // ⚠️ The headline is what is left to COLLECT, not the sum of open rows. Gross, it said "100 zł"
+  // about somebody holding 90 of yours, and the owner read it as her owing 100. Summed from the
+  // groups, never from `outstanding.total` minus all credits: a credit bigger than its owner's debt
+  // must not eat into somebody else's. The gross figure stays beside it whenever the two differ,
+  // so the heading still visibly adds up to the rows below.
+  const toCollect = groups.reduce((sum, group) => sum + collectable(group), 0)
+
   return (
     <Card
       title={t('settlements.tab.outstanding.title')}
@@ -406,8 +413,14 @@ function OutstandingCard({ overview }: { overview: SettlementOverview }) {
       aside={
         outstanding.count > 0 ? (
           <span className="text-sm text-surface-200 tabular-nums">
-            <span className="font-semibold text-amber-500">{money(outstanding.total)}</span>
+            <span className="font-semibold text-amber-500">{money(toCollect)}</span>
             <span className="text-surface-500">
+              {toCollect < outstanding.total - 0.005 && (
+                <>
+                  {' · '}
+                  {t('settlements.tab.outstanding.grossTotal', { amount: money(outstanding.total) })}
+                </>
+              )}
               {' · '}
               {t('settlements.tab.outstanding.count', { count: outstanding.count })}
               {outstanding.oldest && (
@@ -449,6 +462,11 @@ interface PayerDebt {
   credit: number
 }
 
+/** What is genuinely left to collect from one payer once the money they left with you is spent. */
+function collectable(group: PayerDebt): number {
+  return Math.max(0, group.total - group.credit)
+}
+
 /**
  * One person and everything they owe.
  *
@@ -479,8 +497,12 @@ function PayerDebtGroup({ group }: { group: PayerDebt }) {
   // the pool before it starts paying rows off, so typing the gross figure over a credit hands the
   // person a second overpayment of exactly that size — and the ordinary case, where the credit
   // covers the lot, is a zero somebody would otherwise have to know to type.
-  const toCollect = Math.max(0, group.total - group.credit)
+  const toCollect = collectable(group)
   const [received, setReceived] = useState(() => toCollect.toFixed(2))
+  const receivedAmount = parseAmount(received)
+  // Nothing changes hands, the credit pays: say so, instead of "receive 0 zł" — the same endpoint
+  // the "settle from credit" button in the session modal uses.
+  const fromCreditOnly = receivedAmount === 0 && group.credit > 0
 
   const first = group.items[0]
   const backHere = location.pathname + location.search
@@ -491,13 +513,13 @@ function PayerDebtGroup({ group }: { group: PayerDebt }) {
       // server caps at MAX_AMOUNT. Passing the higher transfer ceiling here left Save enabled on an
       // amount the server then rejected — the mirror image of the bug that ceiling was added for.
       adminSettlementsApi.settleOutstanding(
-        first.payerType, first.payerId, paidOn, parseAmount(received) ?? 0),
+        first.payerType, first.payerId, paidOn, receivedAmount ?? 0),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin', 'settlements'] }),
   })
 
   return (
     <li className="py-2 space-y-2">
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex items-start justify-between gap-2">
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
@@ -510,9 +532,28 @@ function PayerDebtGroup({ group }: { group: PayerDebt }) {
             · {t('settlements.tab.outstanding.sessions', { count: group.items.length })}
           </span>
         </button>
-        <span className="shrink-0 text-sm font-semibold text-amber-500 tabular-nums">
-          {money(group.total)}
-        </span>
+        {/* ⚠️ The row's figure is what is left AFTER the credit — the gross sum of the open rows is
+            the smaller line under it. Gross on top read as a demand for money the person had
+            already handed over. Neutral, not green, for the credit: green means "done" in this app,
+            and a credit is not done. */}
+        <div className="shrink-0 text-right tabular-nums">
+          <div className="text-sm font-semibold text-amber-500">{money(toCollect)}</div>
+          {group.credit > 0 && (
+            <div className="text-xs text-surface-400">
+              {t('settlements.tab.outstanding.credit', {
+                gross: money(group.total),
+                credit: money(group.credit),
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* The controls get their own row. Sharing one wrapping row with the name and the figure put a
+          native iOS date field beside them, and Safari draws that control wider than the box it is
+          given — so it painted over the amount. `min-w-0` + a fixed width + `appearance-none` is
+          what makes WebKit keep it inside its box. */}
+      <div className="flex flex-wrap items-center gap-2">
         <input
           inputMode="decimal"
           value={received}
@@ -524,32 +565,22 @@ function PayerDebtGroup({ group }: { group: PayerDebt }) {
           value={paidOn}
           onChange={setPaidOn}
           aria-label={t('settlements.tab.outstanding.paidOnLabel', { name: group.name })}
-          className="bg-surface-800 border border-surface-600 rounded px-2 py-1 text-sm text-surface-100 focus:outline-none focus:border-primary-500"
+          className="w-36 min-w-0 appearance-none bg-surface-800 border border-surface-600 rounded px-2 py-1 text-sm text-surface-100 focus:outline-none focus:border-primary-500"
         />
+        {/* The label names the money that ARRIVES, read from the field — it used to name the gross
+            debt, so "Settle all — 100 zł" sat over a field holding 10. */}
         <Button
           size="sm"
           variant="primary"
           loading={settleAll.isPending}
-          disabled={paidOn === '' || parseAmount(received) === null}
+          disabled={paidOn === '' || receivedAmount === null}
           onClick={() => settleAll.mutate()}
         >
-          {t('settlements.tab.outstanding.settleAll', { amount: money(group.total) })}
+          {fromCreditOnly
+            ? t('settlements.tab.outstanding.settleFromCredit')
+            : t('settlements.tab.outstanding.settleAll', { amount: money(receivedAmount ?? 0) })}
         </Button>
       </div>
-
-      {/* ⚠️ The figures above stay GROSS — the rows really are open, and a heading that quietly
-          nets them would stop matching the items under it. This line is what keeps the screen from
-          reading as a demand for money the person has already handed over: it names the credit and
-          what is genuinely left to collect, which is also what the field beside it is prefilled
-          with. Neutral, not green: green means "done" in this app, and a credit is not done. */}
-      {group.credit > 0 && (
-        <p className="text-xs text-surface-400">
-          {t('settlements.tab.outstanding.credit', {
-            credit: money(group.credit),
-            toCollect: money(toCollect),
-          })}
-        </p>
-      )}
 
       {open && (
         <ul className="pl-6 space-y-1">

@@ -1004,6 +1004,7 @@
       "spendCredit": "→ Usar el saldo a favor ({{amount}})",
       "spendCreditLabel": "Usar el saldo a favor — {{name}}",
       "saveFirst": "Guarda el importe para poder usar el saldo a favor.",
+      "spendOnSave": "Tiene saldo a favor: «Guardar y usar el saldo a favor» abajo lo aplica en el acto (junto con lo que indiques como recibido).",
       "creditSpent": "Saldo usado — primero la deuda más antigua. Saldo: {{balance}}.",
       "creditSpentOwing": "Saldo usado — primero la deuda más antigua. Quedan {{amount}} por pagar.",
       "creditGone": "No quedaba nada que usar: el saldo se ha ido a otra parte. Recarga la vista.",
@@ -1021,11 +1022,13 @@
     "actions": {
       "setAll": "Aplicar a todos",
       "save": "Guardar",
+      "saveAndSpendCredit": "Guardar y usar el saldo a favor",
       "saved": "Liquidación guardada."
     },
     "errors": {
       "invalidAmount": "El importe debe ser un número entre 0 y 100000.",
-      "zeroReceived": "Un cero no liquida la línea: usa «Usar el saldo a favor» o desmarca «liquidado»."
+      "zeroReceived": "Un cero no liquida la línea: usa «Usar el saldo a favor» o desmarca «liquidado».",
+      "receivedRequired": "Indica lo que recibiste de verdad (0 también vale): con saldo a favor, «liquidado» sin importe es ambiguo."
     },
     "tab": {
       "title": "Liquidaciones",
@@ -1060,10 +1063,12 @@
         "open": "Abrir la sesión — {{name}}, {{date}}",
         "sessions_one": "{{count}} sesión",
         "sessions_other": "{{count}} sesiones",
-        "settleAll": "Liquidar todo — {{amount}}",
+        "settleAll": "Liquidar — recibir {{amount}}",
+        "settleFromCredit": "Liquidar con el saldo a favor",
         "paidOnLabel": "Fecha de pago — {{name}}",
         "receivedLabel": "Recibido — {{name}}",
-        "credit": "Tiene {{credit}} a su favor contigo — quedan {{toCollect}} por cobrar."
+        "credit": "{{gross}} de sesiones − {{credit}} a su favor",
+        "grossTotal": "antes de saldos a favor {{amount}}"
       },
       "credits": {
         "title": "Pagos de más",

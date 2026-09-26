@@ -170,63 +170,140 @@ export function SettlementSection({ target, targetId, onDirtyChange }: Settlemen
 
   const dirtyLines = lines.filter(isRowDirty)
 
-  const saveMutation = useMutation({
-    mutationFn: async () => {
-      const invalid: string[] = []
-      // ⚠️ Ticking "settled" and typing a zero cannot be saved, and used to be swallowed. The server
-      // drops the payment date whenever nothing arrived — a date with no money behind it would read
-      // as paid on every screen while contributing nothing to revenue — so the row came back
-      // unsettled with the box unticked and nothing said why. The case behind it is real and has
-      // its own answer: the client owes nothing because he is spending an overpayment, and that is
-      // the "spend credit" button, which actually moves the money.
-      const zeroed = dirtyLines.filter((line) => {
-        const draft = draftFor(line)
-        const amount = parseAmount(draft.amount.trim())
-        // A zero-amount row is free of charge, where a zero received is the honest figure.
-        return draft.settled && amount !== null && amount > 0 && parseAmount(draft.received) === 0
+  /**
+   * Rows where "Save and settle from credit" can do its job in one click: a person holding a credit
+   * is being charged, and nothing has been received on this row yet.
+   *
+   * ⚠️ `paidAmount === 0` is load-bearing. That path writes the charge FIRST with nothing received
+   * and only then pays it from the pool — so on a row already holding a payment, the first write
+   * would erase money that had arrived. Such a row keeps the ordinary save and the per-row button.
+   */
+  const spendableLines = dirtyLines.filter((line) => {
+    const amount = parseAmount(draftFor(line).amount.trim())
+    return line.credit > 0 && line.paidAmount === 0 && amount !== null && amount > 0
+  })
+
+  /**
+   * Writes every changed row. Rows in `spendFor` are written as the charge alone and then settled
+   * through the same pool endpoint as the per-row "settle from credit" button, with whatever the
+   * admin typed as received: 10 zł handed over plus a 90 zł credit pays a 100 zł session, where the
+   * ordinary save would record 10 of 100 and leave the 90 parked on an older session — the screen
+   * would then say "owes 90" and "holds 90" about the same person at once.
+   *
+   * Returns one sentence per settled person, for the toast.
+   */
+  const writeDrafts = async (spendFor: Set<string>): Promise<string[]> => {
+    const invalid: string[] = []
+    // ⚠️ Ticking "settled" and typing a zero cannot be saved, and used to be swallowed. The server
+    // drops the payment date whenever nothing arrived — a date with no money behind it would read
+    // as paid on every screen while contributing nothing to revenue — so the row came back
+    // unsettled with the box unticked and nothing said why. The case behind it is real and has
+    // its own answer: the client owes nothing because he is spending an overpayment, and that is
+    // the "spend credit" button, which actually moves the money. On the spending path a zero is
+    // exactly that case, so it is allowed there.
+    const zeroed = dirtyLines.filter((line) => {
+      if (spendFor.has(payerKey(line))) return false
+      const draft = draftFor(line)
+      const amount = parseAmount(draft.amount.trim())
+      // A zero-amount row is free of charge, where a zero received is the honest figure.
+      return draft.settled && amount !== null && amount > 0 && parseAmount(draft.received) === 0
+    })
+    if (zeroed.length > 0) {
+      setInvalidKeys(zeroed.map(payerKey))
+      throw new Error(t('settlements.errors.zeroReceived'))
+    }
+    // ⚠️ On the spending path an empty "received" under a ticked box is refused, not read as "paid
+    // in full" the way the ordinary save reads it. With a credit in play "in full" is ambiguous —
+    // the whole charge again on top of the credit hands the person a fresh overpayment of exactly
+    // the credit — and money is the one place this section must not guess.
+    const unstated = dirtyLines.filter((line) => {
+      const draft = draftFor(line)
+      return spendFor.has(payerKey(line)) && draft.settled && draft.received.trim() === ''
+    })
+    if (unstated.length > 0) {
+      setInvalidKeys(unstated.map(payerKey))
+      throw new Error(t('settlements.errors.receivedRequired'))
+    }
+    for (const line of dirtyLines) {
+      const draft = draftFor(line)
+      const key = payerKey(line)
+      const raw = draft.amount.trim()
+      if (raw === '') {
+        // Clearing the field removes the row: back to "not priced", which is a different state
+        // from priced at zero.
+        if (saved[key].amount !== '') {
+          await adminSettlementsApi.remove(target, targetId, line.payerType, line.payerId)
+        }
+        continue
+      }
+      const amount = parseAmount(raw)
+      if (amount === null) {
+        invalid.push(key)
+        continue
+      }
+      // The charge alone when the pool pays it below; the payment would otherwise be counted twice.
+      const deferred = spendFor.has(key)
+      // Ticking "settled" without touching the received field means the charge arrived in full,
+      // which is the ordinary case and must stay a single click.
+      const received = draft.settled && !deferred
+        ? (parseAmount(draft.received) ?? amount)
+        : null
+      await adminSettlementsApi.save(
+        target,
+        targetId,
+        line.payerType,
+        line.payerId,
+        amount,
+        received,
+        draft.settled && !deferred ? draft.settledOn : null,
+      )
+    }
+    if (invalid.length > 0) {
+      setInvalidKeys(invalid)
+      throw new Error(t('settlements.errors.invalidAmount'))
+    }
+
+    const reports: string[] = []
+    for (const line of dirtyLines) {
+      const key = payerKey(line)
+      if (!spendFor.has(key)) continue
+      const draft = draftFor(line)
+      const result = await adminSettlementsApi.settleOutstanding(
+        line.payerType,
+        line.payerId,
+        // The date the admin picked when money changed hands; otherwise the session's own day,
+        // the same default the per-row button uses.
+        draft.settled && draft.settledOn !== '' ? draft.settledOn : targetDate,
+        draft.settled ? (parseAmount(draft.received) ?? 0) : 0,
+      )
+      // ⚠️ Dropped from the drafts the moment its money moved. Should a LATER person's call fail,
+      // retrying would otherwise write this row again as "charge, nothing received" — wiping the
+      // payment the pool just recorded on it.
+      setDrafts((prev) => {
+        const next = { ...prev }
+        delete next[key]
+        return next
       })
-      if (zeroed.length > 0) {
-        setInvalidKeys(zeroed.map(payerKey))
-        throw new Error(t('settlements.errors.zeroReceived'))
-      }
-      for (const line of dirtyLines) {
-        const draft = draftFor(line)
-        const key = payerKey(line)
-        const raw = draft.amount.trim()
-        if (raw === '') {
-          // Clearing the field removes the row: back to "not priced", which is a different state
-          // from priced at zero.
-          if (saved[key].amount !== '') {
-            await adminSettlementsApi.remove(target, targetId, line.payerType, line.payerId)
-          }
-          continue
-        }
-        const amount = parseAmount(raw)
-        if (amount === null) {
-          invalid.push(key)
-          continue
-        }
-        // Ticking "settled" without touching the received field means the charge arrived in full,
-        // which is the ordinary case and must stay a single click.
-        const received = draft.settled
-          ? (parseAmount(draft.received) ?? amount)
-          : null
-        await adminSettlementsApi.save(
-          target,
-          targetId,
-          line.payerType,
-          line.payerId,
-          amount,
-          received,
-          draft.settled ? draft.settledOn : null,
-        )
-      }
-      if (invalid.length > 0) {
-        setInvalidKeys(invalid)
-        throw new Error(t('settlements.errors.invalidAmount'))
-      }
-    },
-    onSuccess: () => {
+      reports.push(`${line.name}: ${
+        result.balance < 0
+          ? t('settlements.line.creditSpentOwing', {
+              amount: formatPln(-result.balance, i18n.language),
+            })
+          : t('settlements.line.creditSpent', {
+              balance: formatPln(result.balance, i18n.language),
+            })
+      }`)
+    }
+    return reports
+  }
+
+  const saveMutation = useMutation({
+    mutationFn: (spend: boolean) =>
+      writeDrafts(new Set(spend ? spendableLines.map(payerKey) : [])),
+    // Money may have moved before a failure (the charge written, an earlier person settled), so the
+    // figures on screen are refreshed either way.
+    onError: () => queryClient.invalidateQueries({ queryKey: ['admin', 'settlements'] }),
+    onSuccess: (reports) => {
       setDrafts({})
       setInvalidKeys([])
       // The whole ['admin','settlements'] prefix, not just this session's key: the Settlements tab
@@ -235,7 +312,9 @@ export function SettlementSection({ target, targetId, onDirtyChange }: Settlemen
       // this moment, so the invalidation is what marks its cached page stale and makes React Query
       // refetch it when it mounts again a tick later.
       queryClient.invalidateQueries({ queryKey: ['admin', 'settlements'] })
-      showToast(t('settlements.actions.saved'))
+      // What the credit did travels in the toast, because the modal is about to close — and it is
+      // the balance, not "paid": the pool pays the OLDEST debt first, which need not be this one.
+      showToast([t('settlements.actions.saved'), ...reports].join(' '))
       // Naming a bulk payer leaves the same way, for the same reason — both end the work on this
       // session. What still stays open is the credit button, which reports a result the admin has
       // to read here (the money may have gone to an older session), and clearing a payer, which
@@ -513,7 +592,15 @@ export function SettlementSection({ target, targetId, onDirtyChange }: Settlemen
                         rows already in the database, so a figure still sitting in the draft has
                         nothing for the credit to land on — hence the hint rather than a button that
                         would silently pay off some other session instead. */}
-                    {line.credit > 0 && line.amount !== null && line.paidAmount < line.amount && (
+                    {/* A row being priced right now points at the combined button below — this is
+                        the case that used to have nothing at all: an unsaved row fails the
+                        condition under it, so pricing somebody's first session over a credit said
+                        nothing about the credit until the modal was saved, closed and reopened. */}
+                    {spendableLines.includes(line) ? (
+                      <span className="block text-[11px] text-surface-400">
+                        {t('settlements.line.spendOnSave')}
+                      </span>
+                    ) : line.credit > 0 && line.amount !== null && line.paidAmount < line.amount && (
                       isRowDirty(line) ? (
                         <span className="block text-[11px] text-surface-500">
                           {t('settlements.line.saveFirst')}
@@ -707,15 +794,32 @@ export function SettlementSection({ target, targetId, onDirtyChange }: Settlemen
             <Button size="sm" variant="ghost" onClick={() => setPicking(true)}>
               {t('settlements.section.markBulk')}
             </Button>
-            <Button
-              size="sm"
-              variant="primary"
-              onClick={() => saveMutation.mutate()}
-              loading={saveMutation.isPending}
-              disabled={dirtyLines.length === 0}
-            >
-              {t('settlements.actions.save')}
-            </Button>
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              <Button
+                size="sm"
+                variant={spendableLines.length > 0 ? 'secondary' : 'primary'}
+                onClick={() => saveMutation.mutate(false)}
+                loading={saveMutation.isPending && saveMutation.variables === false}
+                disabled={dirtyLines.length === 0 || saveMutation.isPending}
+              >
+                {t('settlements.actions.save')}
+              </Button>
+              {/* A separate action, not a checkbox beside Save — same reasoning as "Save and send
+                  invitations": spending a credit is not a property of saving. Offered only where it
+                  can work in one step (see `spendableLines`), and primary when offered, because a
+                  priced session for somebody holding a credit is exactly when it is wanted. */}
+              {spendableLines.length > 0 && (
+                <Button
+                  size="sm"
+                  variant="primary"
+                  onClick={() => saveMutation.mutate(true)}
+                  loading={saveMutation.isPending && saveMutation.variables === true}
+                  disabled={saveMutation.isPending}
+                >
+                  {t('settlements.actions.saveAndSpendCredit')}
+                </Button>
+              )}
+            </div>
           </div>
         </>
       )}

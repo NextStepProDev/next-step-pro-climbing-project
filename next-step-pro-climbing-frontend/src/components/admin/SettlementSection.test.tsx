@@ -397,10 +397,12 @@ describe('SettlementSection', () => {
   })
 
   it('asks for the amount to be saved before it can be paid from the credit', async () => {
+    // Something already arrived on this row, so the one-click path is not offered (it writes the
+    // charge with nothing received first, which would erase that payment).
     getSection.mockResolvedValue({
       ...bulkOff,
       targetDate: TARGET_DATE,
-      lines: [line({ amount: 50, paidAmount: 0, balance: 0, credit: 50 })],
+      lines: [line({ amount: 50, paidAmount: 20, balance: -30, credit: 50, settledOn: TARGET_DATE })],
     })
     const user = userEvent.setup()
 
@@ -416,6 +418,101 @@ describe('SettlementSection', () => {
       screen.queryByRole('button', { name: 'settlements.line.spendCreditLabel' }),
     ).not.toBeInTheDocument()
     expect(screen.getByText('settlements.line.saveFirst')).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'settlements.actions.saveAndSpendCredit' }),
+    ).not.toBeInTheDocument()
+  })
+
+  it('prices a session and spends the credit in one click', async () => {
+    // The reported case: 90 left over, a 100 session, nothing handed over. The ordinary Save closes
+    // the modal, and the per-row button only appears on a saved row — so this used to take a save,
+    // a reopen and a second click, and the hint pointing at it was on a screen that then vanished.
+    getSection.mockResolvedValue({
+      ...bulkOff,
+      targetDate: TARGET_DATE,
+      lines: [line({ name: 'Bernadeta M.', balance: 90, credit: 90 })],
+    })
+    settleOutstanding.mockResolvedValue({ settled: 2, balance: -10 })
+    const user = userEvent.setup()
+
+    renderSection()
+
+    await user.type(await screen.findByLabelText('settlements.line.amountLabel'), '100')
+    expect(screen.getByText('settlements.line.spendOnSave')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'settlements.actions.saveAndSpendCredit' }))
+
+    // The charge alone first — the payment is the pool's to record, or it would count twice.
+    await waitFor(() =>
+      expect(settleOutstanding).toHaveBeenCalledWith('user', 'user-1', TARGET_DATE, 0),
+    )
+    expect(save).toHaveBeenCalledWith('slot', 'target-1', 'user', 'user-1', 100, null, null)
+    expect(save.mock.invocationCallOrder[0]).toBeLessThan(
+      settleOutstanding.mock.invocationCallOrder[0],
+    )
+    // The modal closes, so what the credit did has to travel in the toast.
+    expect(
+      await screen.findByText(/Bernadeta M\.: settlements\.line\.creditSpentOwing/),
+    ).toBeInTheDocument()
+    expect(closeModal).toHaveBeenCalled()
+  })
+
+  it('adds what was handed over to the credit, on the date it was handed over', async () => {
+    getSection.mockResolvedValue({
+      ...bulkOff,
+      targetDate: TARGET_DATE,
+      lines: [line({ balance: 90, credit: 90 })],
+    })
+    const user = userEvent.setup()
+
+    renderSection()
+
+    await user.type(await screen.findByLabelText('settlements.line.amountLabel'), '100')
+    await user.click(screen.getByLabelText('settlements.line.settledLabel'))
+    await user.type(screen.getByLabelText('settlements.line.receivedLabel'), '10')
+    const date = screen.getByLabelText('settlements.line.settledOnLabel')
+    await user.clear(date)
+    await user.type(date, '2026-08-20')
+    await user.click(screen.getByRole('button', { name: 'settlements.actions.saveAndSpendCredit' }))
+
+    // 10 + 90 pays the 100. The ordinary save would have written 10 of 100 and left the 90 parked
+    // on an older session: "owes 90" and "holds 90" about one person at once.
+    await waitFor(() =>
+      expect(settleOutstanding).toHaveBeenCalledWith('user', 'user-1', '2026-08-20', 10),
+    )
+    expect(save).toHaveBeenCalledWith('slot', 'target-1', 'user', 'user-1', 100, null, null)
+  })
+
+  it('will not guess what arrived when the box is ticked over a credit', async () => {
+    getSection.mockResolvedValue({
+      ...bulkOff,
+      targetDate: TARGET_DATE,
+      lines: [line({ balance: 90, credit: 90 })],
+    })
+    const user = userEvent.setup()
+
+    renderSection()
+
+    await user.type(await screen.findByLabelText('settlements.line.amountLabel'), '100')
+    await user.click(screen.getByLabelText('settlements.line.settledLabel'))
+    await user.click(screen.getByRole('button', { name: 'settlements.actions.saveAndSpendCredit' }))
+
+    // "Paid in full" on top of a credit would hand the credit straight back as a new overpayment.
+    expect(await screen.findByText('settlements.errors.receivedRequired')).toBeInTheDocument()
+    expect(save).not.toHaveBeenCalled()
+    expect(settleOutstanding).not.toHaveBeenCalled()
+  })
+
+  it('does not offer the combined save to somebody holding no credit', async () => {
+    getSection.mockResolvedValue({ ...bulkOff, targetDate: TARGET_DATE, lines: [line()] })
+    const user = userEvent.setup()
+
+    renderSection()
+
+    await user.type(await screen.findByLabelText('settlements.line.amountLabel'), '100')
+    expect(
+      screen.queryByRole('button', { name: 'settlements.actions.saveAndSpendCredit' }),
+    ).not.toBeInTheDocument()
+    expect(screen.queryByText('settlements.line.spendOnSave')).not.toBeInTheDocument()
   })
 
   it('refuses to save a settled row with nothing received instead of silently dropping the tick', async () => {

@@ -295,17 +295,68 @@ describe('AdminSettlementsPanel', () => {
 
     renderPanel()
 
-    // The row is genuinely open, so the figures above stay gross — but a screen that says only
-    // "owes 50" about somebody who already handed the money over is a demand for it twice.
+    // A screen that says only "owes 50" about somebody who already handed the money over is a
+    // demand for it twice: the gross figure is named as gross, beside the credit that covers it.
     expect(await screen.findByText('settlements.tab.outstanding.credit')).toBeInTheDocument()
 
     // And the field asks for what is actually left: the server pulls the credit into the pool
     // before paying rows off, so typing the gross figure would hand him a second overpayment.
-    await user.click(screen.getByRole('button', { name: 'settlements.tab.outstanding.settleAll' }))
+    // Nothing changes hands, so the button says the credit pays rather than "receive 0".
+    await user.click(
+      screen.getByRole('button', { name: 'settlements.tab.outstanding.settleFromCredit' }),
+    )
 
     await waitFor(() =>
       expect(settleOutstanding).toHaveBeenCalledWith('user', 'anna', expect.any(String), 0),
     )
+  })
+
+  it('leads with what is left to collect, not with the gross debt', async () => {
+    // The case that was reported: 90 left over from before, a 100 session priced, nothing paid.
+    // Gross on top, the row read as "she owes me 100" and the button promised to settle 100.
+    getOverview.mockResolvedValue(makeOverview({
+      outstanding: {
+        total: 100,
+        count: 1,
+        oldest: '2026-09-25',
+        credits: [{ payerType: 'user', payerId: 'bernadeta', credit: 90 }],
+        items: [{
+          targetType: 'slot', targetId: 'slot-1', date: '2026-09-25', title: 'Trening 1:1',
+          payerType: 'user', payerId: 'bernadeta', name: 'Bernadeta M.', amount: 100,
+        }],
+      },
+    }))
+
+    renderPanel()
+
+    const received = await screen.findByLabelText('settlements.tab.outstanding.receivedLabel')
+    expect(received).toHaveValue('10.00')
+    // Both the section heading and the row lead with the net; the heading names the gross apart.
+    expect(screen.getAllByText(/10,00/).length).toBeGreaterThanOrEqual(2)
+    expect(screen.getByText(/settlements\.tab\.outstanding\.grossTotal/)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'settlements.tab.outstanding.settleAll' }))
+      .toBeEnabled()
+  })
+
+  it('does not mention a gross total when nobody holds a credit', async () => {
+    getOverview.mockResolvedValue(makeOverview({
+      outstanding: {
+        total: 150,
+        count: 1,
+        oldest: '2026-08-05',
+        credits: [],
+        items: [{
+          targetType: 'slot', targetId: 'slot-1', date: '2026-08-05', title: 'Trening 1:1',
+          payerType: 'user', payerId: 'anna', name: 'Anna Kowalska', amount: 150,
+        }],
+      },
+    }))
+
+    renderPanel()
+
+    await screen.findByLabelText('settlements.tab.outstanding.receivedLabel')
+    expect(screen.queryByText(/settlements\.tab\.outstanding\.grossTotal/)).not.toBeInTheDocument()
+    expect(screen.queryByText('settlements.tab.outstanding.credit')).not.toBeInTheDocument()
   })
 
   it('offers a round amount even when the debts add up to a float tail', async () => {
