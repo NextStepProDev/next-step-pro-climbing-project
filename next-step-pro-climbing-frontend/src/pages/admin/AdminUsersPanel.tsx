@@ -11,6 +11,7 @@ import { Button } from '../../components/ui/Button'
 import { ConfirmModal } from '../../components/ui/ConfirmModal'
 import { UserStatsView } from '../../components/admin/userstats/UserStatsView'
 import { getErrorMessage } from '../../utils/errors'
+import { matchesPersonQuery } from '../../utils/personSearch'
 
 const PAGE_SIZE = 50
 
@@ -132,16 +133,7 @@ export function AdminUsersPanel() {
       ? byNewsletter.filter((u) => !u.emailVerified)
       : byNewsletter
 
-    if (!search.trim()) return byVerification
-
-    const q = search.toLowerCase().trim()
-    return byVerification.filter(
-      (u) =>
-        u.firstName.toLowerCase().includes(q) ||
-        u.lastName.toLowerCase().includes(q) ||
-        u.email.toLowerCase().includes(q) ||
-        `${u.firstName} ${u.lastName}`.toLowerCase().includes(q),
-    )
+    return byVerification.filter((u) => matchesPersonQuery(u, search))
   }, [users, search, newsletterFilter, unverifiedOnly])
 
   const sorted = useMemo(() => {

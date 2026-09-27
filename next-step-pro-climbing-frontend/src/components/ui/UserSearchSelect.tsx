@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Search, X, MailWarning } from 'lucide-react'
 import type { AdminUser } from '../../types'
+import { matchesPersonQuery } from '../../utils/personSearch'
 
 interface UserSearchSelectProps {
   users: AdminUser[]
@@ -17,17 +18,8 @@ export function UserSearchSelect({ users, value, onChange, placeholder }: UserSe
   const [open, setOpen] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
 
-  const normalized = query.trim().toLowerCase()
-  const filtered = normalized
-    ? users.filter((u) => {
-        const full = `${u.firstName} ${u.lastName}`.toLowerCase()
-        return (
-          full.includes(normalized) ||
-          u.firstName.toLowerCase().includes(normalized) ||
-          u.lastName.toLowerCase().includes(normalized) ||
-          u.email.toLowerCase().includes(normalized)
-        )
-      })
+  const filtered = query.trim()
+    ? users.filter((u) => matchesPersonQuery(u, query))
     : users.slice(0, 8)
 
   // Close dropdown when clicking outside

@@ -957,7 +957,9 @@
     "emptyHint": "Oznacz użytkownika ikoną hantli w zakładce Użytkownicy, aby dostał osobisty kalendarz treningowy.",
     "lastActivity": "Ostatnia aktywność: {{date}}",
     "noActivity": "Brak aktywności",
-    "back": "Wróć do listy zawodników"
+    "back": "Wróć do listy zawodników",
+    "searchPlaceholder": "Szukaj zawodnika po imieniu, nazwisku lub pseudonimie...",
+    "noMatches": "Brak zawodników pasujących do „{{query}}”"
   },
   "privateNote": {
     "title": "Notatka prywatna",

@@ -1,6 +1,6 @@
 import { describe, it, expect, afterEach } from 'vitest'
 import { Clock } from 'lucide-react'
-import { filterAdminTabs, foldForSearch, canOpenPalette, type PaletteEntry } from './adminPaletteSearch'
+import { filterAdminTabs, canOpenPalette, type PaletteEntry } from './adminPaletteSearch'
 import type { AdminTab } from '../../pages/admin/adminTabs'
 
 function entry(path: string, label: string, keywords: string): PaletteEntry {
@@ -25,16 +25,6 @@ const ENTRIES: PaletteEntry[] = [
 function labels(results: PaletteEntry[]): string[] {
   return results.map((r) => r.label)
 }
-
-describe('foldForSearch', () => {
-  it('strips Polish diacritics, including the one NFD cannot decompose', () => {
-    // `ł` is a letter in its own right with no combining form, so NFD leaves it untouched — the
-    // one accent that would silently escape a generic diacritic strip.
-    expect(foldForSearch('Zgłoszenia')).toBe('zgloszenia')
-    expect(foldForSearch('Użytkownicy')).toBe('uzytkownicy')
-    expect(foldForSearch('Pieniądze')).toBe('pieniadze')
-  })
-})
 
 describe('filterAdminTabs', () => {
   it('lists the whole panel when nothing has been typed', () => {

@@ -951,7 +951,9 @@
     "emptyHint": "Flag a user with the dumbbell icon in the Users tab to give them a personal training calendar.",
     "lastActivity": "Last activity: {{date}}",
     "noActivity": "No activity",
-    "back": "Back to athlete list"
+    "back": "Back to athlete list",
+    "searchPlaceholder": "Search athletes by first name, last name, or nickname...",
+    "noMatches": "No athletes match “{{query}}”"
   },
   "privateNote": {
     "title": "Private note",
