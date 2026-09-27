@@ -161,6 +161,35 @@ describe('SlotDetailModal — inviting people onto a slot from the calendar', ()
   })
 })
 
+/* The calendar used to say nothing about WHO a held seat was for until the admin opened the edit
+   form — reading the answer meant starting an edit or going to the admin panel. */
+describe('SlotDetailModal — who the held seats are for', () => {
+  it('names the invitees without opening the edit form', async () => {
+    invitesPromise = Promise.resolve([
+      { userId: 'u-1', fullName: 'Ala Kot', email: 'ala@example.com', notifiedAt: null },
+    ])
+    renderModal(slot({ reservedSeats: 1 }))
+
+    expect(await screen.findByText('Ala Kot')).toBeInTheDocument()
+    expect(screen.getByText('slots.editSlot')).toBeInTheDocument()
+  })
+
+  it('does not ask the server when the slot holds no seats', async () => {
+    const spy = vi.fn(() => Promise.resolve([] as InvitedUser[]))
+    invitesPromise = new Promise(() => {})
+    const { adminApi } = await import('../../api/client')
+    const original = adminApi.getSlotInvites
+    adminApi.getSlotInvites = spy
+    try {
+      renderModal(slot({ reservedSeats: 0 }))
+      await screen.findByText('slots.editSlot')
+      expect(spy).not.toHaveBeenCalled()
+    } finally {
+      adminApi.getSlotInvites = original
+    }
+  })
+})
+
 /* Every one of these fields used to be one stray click on the backdrop away from being gone, with
    nothing said. The modal carries a booking comment, an admin edit form, a participant form, a
    price list and the owner's private note — five places to be halfway through something. */

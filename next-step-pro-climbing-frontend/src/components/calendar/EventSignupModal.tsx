@@ -21,6 +21,7 @@ import { formatEventWhen } from '../../utils/events'
 import { AdminPrivateNote } from '../admin/AdminPrivateNote'
 import { ParticipantsSection } from '../admin/ParticipantsSection'
 import { MailedInvitesWarning } from '../ui/MailedInvitesWarning'
+import { InviteNotifySection } from '../ui/InviteNotifySection'
 import { SettlementSection } from '../admin/SettlementSection'
 import type { EventSummary } from '../../types'
 
@@ -174,6 +175,15 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
     queryKey: ['admin', 'events', event?.id, 'participants'],
     queryFn: () => adminApi.getEventParticipants(event!.id),
     enabled: isAdmin && showDeleteConfirm && !!event,
+  })
+
+  // Who the held seats are for — same key as the edit form in the events panel, so either side's
+  // save refreshes the other. Admin-only and skipped for an event holding nothing: this modal is
+  // what every visitor opens. `reservedSeats` counts pending invitations only.
+  const { data: invitesData } = useQuery({
+    queryKey: ['admin', 'eventInvites', event?.id],
+    queryFn: () => adminApi.getEventInvites(event!.id),
+    enabled: isAdmin && !!event && (ev?.reservedSeats ?? 0) > 0,
   })
 
   const deleteEventMutation = useMutation({
@@ -699,6 +709,12 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
             is skipped: nobody was ever going to be written down on it. */}
         {isAdmin && ev.eventType !== 'UNAVAILABLE' && (
           <ParticipantsSection target="event" targetId={ev.id} onDirtyChange={reportParticipantsDirty} />
+        )}
+
+        {/* Who the held seats are for, readable without opening the edit form. Not once the event
+            is over — the send button would only mail about the past. */}
+        {isAdmin && !isPastEvent && reservedSeats > 0 && (
+          <InviteNotifySection target={{ type: 'event', eventId: ev.id }} invites={invitesData ?? []} />
         )}
 
         {/* The owner's private note — one per event, however many days it spans. Not gated on

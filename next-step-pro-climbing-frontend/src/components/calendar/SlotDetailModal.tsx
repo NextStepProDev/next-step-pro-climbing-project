@@ -177,14 +177,16 @@ export function SlotDetailModal({
     enabled: isAdmin && showDeleteConfirm && !!slot,
   });
 
-  // Fetched only once the admin actually opens the edit form: this modal is what EVERY visitor
-  // sees after tapping a slot, and an admin-only list has no business being requested for a slot
-  // nobody is editing. A slot belonging to an event is skipped — held seats hang off the event
-  // there, so its invitations are managed in the events panel.
+  // Fetched when the admin opens the edit form, or when the slot holds seats for somebody — the
+  // admin reading the calendar has to see WHO those are without going through the edit form (the
+  // count alone says "somebody", which is the question, not the answer). This modal is what EVERY
+  // visitor sees after tapping a slot, so the request stays admin-only and skips slots holding
+  // nothing. `reservedSeats` counts pending invitations only; an invitee who booked is on the
+  // roster. A slot belonging to an event is skipped — held seats hang off the event there.
   const { data: invitesData } = useQuery({
     queryKey: ['admin', 'slotInvites', slot?.id],
     queryFn: () => adminApi.getSlotInvites(slot!.id),
-    enabled: isAdmin && editMode && !!slot && !slot.eventId,
+    enabled: isAdmin && !!slot && !slot.eventId && (editMode || (slot.reservedSeats ?? 0) > 0),
   });
 
   const deleteSlotMutation = useMutation({
@@ -763,6 +765,13 @@ export function SlotDetailModal({
             canAdd={slot.status !== 'BLOCKED'}
             onDirtyChange={reportParticipantsDirty}
           />
+        )}
+
+        {/* Who the held seats are for, readable without the edit form. Hidden in edit mode — the
+            form renders the same section under its picker — and once the slot has ended, when a
+            send button would only mail about the past. */}
+        {isAdmin && !slot.eventId && isBookable && !editMode && !hasEnded && reservedSeats > 0 && (
+          <InviteNotifySection target={{ type: 'slot', slotId: slot.id }} invites={baselineInvited} />
         )}
 
         {/* The owner's private note. Not gated on `hasEnded` — a session that is over is exactly
