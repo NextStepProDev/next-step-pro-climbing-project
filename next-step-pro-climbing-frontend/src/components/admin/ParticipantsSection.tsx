@@ -73,6 +73,7 @@ export function ParticipantsSection({ target, targetId, canAdd = true, onDirtyCh
         queryKey: ['admin', 'participants', targetId],
         hostKey: ['slot'],
         adminListKey: ['admin', 'slots'],
+        invitesKey: ['admin', 'slotInvites', targetId],
         confirmRemoveKey: 'slots.confirmCancelReservation',
         removeActionKey: 'slots.cancelReservation',
         list: (): Promise<SlotParticipants | EventParticipants> =>
@@ -89,6 +90,7 @@ export function ParticipantsSection({ target, targetId, canAdd = true, onDirtyCh
       queryKey: ['admin', 'events', targetId, 'participants'],
       hostKey: ['eventSummary'],
       adminListKey: ['admin', 'events'],
+      invitesKey: ['admin', 'eventInvites', targetId],
       confirmRemoveKey: 'events.confirmCancelParticipant',
       removeActionKey: 'events.cancelParticipant',
       list: (): Promise<SlotParticipants | EventParticipants> =>
@@ -124,6 +126,9 @@ export function ParticipantsSection({ target, targetId, canAdd = true, onDirtyCh
     queryClient.invalidateQueries({ queryKey: ops.queryKey })
     queryClient.invalidateQueries({ queryKey: ops.hostKey })
     queryClient.invalidateQueries({ queryKey: ops.adminListKey })
+    // An invitee written down here stops being a pending invitation: the list of invitees shown
+    // next to this section would otherwise still offer to mail them.
+    queryClient.invalidateQueries({ queryKey: ops.invitesKey })
     queryClient.invalidateQueries({ queryKey: ['calendar'] })
     // The admin writing themselves down (or off) is an ordinary thing to do from here, and their
     // own "my reservations" list is the one screen that would otherwise still say otherwise.
