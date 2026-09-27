@@ -1,8 +1,8 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { ChevronRight, Dumbbell, FolderOpen, LayoutTemplate } from 'lucide-react'
+import { ChevronRight, Dumbbell, FolderOpen, LayoutTemplate, Search } from 'lucide-react'
 import { format } from 'date-fns'
 import { adminTrainingCalendarApi } from '../../api/client'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
@@ -10,6 +10,7 @@ import { QueryError } from '../../components/ui/QueryError'
 import { Avatar } from '../../components/ui/Avatar'
 import { TrainingTemplatesModal } from '../../components/training/TrainingTemplatesModal'
 import { TrainingMaterialsModal } from '../../components/training/TrainingMaterialsModal'
+import { matchesPersonQuery } from '../../utils/personSearch'
 
 /**
  * Coach's roster: flagged athletes with per-athlete unread badges (new trainings,
@@ -34,6 +35,19 @@ export function AdminTrainingCalendarsPanel() {
   })
 
   const athletes = athletesQuery.data ?? []
+
+  // The query lives in the URL so opening an athlete and pressing Back keeps the filter —
+  // going through several matched athletes one by one must not mean retyping it each time
+  const [searchParams, setSearchParams] = useSearchParams()
+  const search = searchParams.get('q') ?? ''
+  const setSearch = (value: string) => {
+    const params = new URLSearchParams(searchParams)
+    if (value) params.set('q', value)
+    else params.delete('q')
+    setSearchParams(params, { replace: true })
+  }
+  // Filtering keeps the server's order: unread first, then most recent activity
+  const filtered = athletes.filter((a) => matchesPersonQuery(a, search))
 
   const headerButtons = (
     <div className="flex gap-2">
@@ -69,10 +83,16 @@ export function AdminTrainingCalendarsPanel() {
         <p className="text-surface-500">{t('trainingCalendars.emptyHint')}</p>
       </div>
     )
+  } else if (filtered.length === 0) {
+    content = (
+      <p className="py-8 text-center text-surface-500">
+        {t('trainingCalendars.noMatches', { query: search.trim() })}
+      </p>
+    )
   } else {
     content = (
       <div className="space-y-2">
-        {athletes.map((athlete) => (
+        {filtered.map((athlete) => (
         <Link
           key={athlete.id}
           to={`/admin/training-calendars/${athlete.id}`}
@@ -107,7 +127,22 @@ export function AdminTrainingCalendarsPanel() {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-end">{headerButtons}</div>
+      <div className="flex flex-col-reverse sm:flex-row sm:items-center gap-3">
+        {athletes.length > 0 && (
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-surface-500" />
+            <input
+              type="search"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder={t('trainingCalendars.searchPlaceholder')}
+              aria-label={t('trainingCalendars.searchPlaceholder')}
+              className="w-full bg-surface-800 border border-surface-700 rounded-lg pl-10 pr-4 py-2 text-surface-100 placeholder:text-surface-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
+            />
+          </div>
+        )}
+        <div className="flex justify-end sm:ml-auto">{headerButtons}</div>
+      </div>
       {content}
       <TrainingTemplatesModal isOpen={templatesOpen} onClose={() => setTemplatesOpen(false)} />
       <TrainingMaterialsModal isOpen={materialsOpen} onClose={() => setMaterialsOpen(false)} />

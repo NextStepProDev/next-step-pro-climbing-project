@@ -951,7 +951,9 @@
     "emptyHint": "Marca a un usuario con el icono de mancuerna en la pestaña Usuarios para darle un calendario de entrenamiento personal.",
     "lastActivity": "Última actividad: {{date}}",
     "noActivity": "Sin actividad",
-    "back": "Volver a la lista de atletas"
+    "back": "Volver a la lista de atletas",
+    "searchPlaceholder": "Buscar atleta por nombre, apellido o apodo...",
+    "noMatches": "Ningún atleta coincide con «{{query}}»"
   },
   "privateNote": {
     "title": "Nota privada",

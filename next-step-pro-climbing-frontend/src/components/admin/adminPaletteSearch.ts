@@ -1,4 +1,5 @@
 import type { AdminTab } from '../../pages/admin/adminTabs'
+import { foldForSearch } from '../../utils/personSearch'
 
 /** One searchable row: the tab plus its already-translated label and keyword list. */
 export interface PaletteEntry {
@@ -6,21 +7,6 @@ export interface PaletteEntry {
   label: string
   /** Synonyms the label does not contain ("hero", "cennik"), separated by `·`. */
   keywords: string
-}
-
-/**
- * Fold a string down to what a hurried admin actually types: lowercase, no accents.
- *
- * NFD decomposition handles ó/ą/ę/ś/ż/ź/ć/ń, but **not `ł`** — it is a distinct letter with no
- * combining form, so it survives the strip and "zgloszenia" would miss "zgłoszenia". It gets its
- * own replacement.
- */
-export function foldForSearch(value: string): string {
-  return value
-    .toLowerCase()
-    .replace(/ł/g, 'l')
-    .normalize('NFD')
-    .replace(/\p{Diacritic}/gu, '')
 }
 
 /**

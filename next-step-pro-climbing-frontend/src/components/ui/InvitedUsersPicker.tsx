@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import { X, MailWarning } from 'lucide-react'
 import { adminApi } from '../../api/client'
 import type { AdminUser, InvitedUser } from '../../types'
+import { matchesPersonQuery } from '../../utils/personSearch'
 
 interface InvitedUsersPickerProps {
   value: InvitedUser[]
@@ -31,11 +32,10 @@ export function InvitedUsersPicker({ value, onChange, maxSeats }: InvitedUsersPi
   const selectedIds = useMemo(() => new Set(value.map((u) => u.userId)), [value])
 
   const results = useMemo(() => {
-    const q = search.trim().toLowerCase()
-    if (!q) return []
+    if (!search.trim()) return []
     return users
       .filter((u) => !selectedIds.has(u.id))
-      .filter((u) => `${u.firstName} ${u.lastName} ${u.email}`.toLowerCase().includes(q))
+      .filter((u) => matchesPersonQuery(u, search))
       .slice(0, 6)
   }, [search, users, selectedIds])
 
