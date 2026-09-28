@@ -181,14 +181,6 @@ h1, h2, h3, h4, h5, h6, .font-display {
   animation: fade-in-up 0.15s ease-out;
 }
 
-@keyframes ken-burns {
-  from { transform: scale(1); }
-  to { transform: scale(1.15); }
-}
-.animation-ken-burns {
-  animation: ken-burns 30s ease-out forwards;
-}
-
 @keyframes page-fade {
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
@@ -609,10 +601,8 @@ h1, h2, h3, h4, h5, h6, .font-display {
 [data-theme="light"] .bg-indigo-500\/5 { background-color: color-mix(in srgb, var(--color-indigo-500) 12%, transparent); }
 [data-theme="light"] .bg-indigo-500\/10 { background-color: color-mix(in srgb, var(--color-indigo-500) 20%, transparent); }
 [data-theme="light"] .bg-indigo-500\/20 { background-color: color-mix(in srgb, var(--color-indigo-500) 30%, transparent); }
-[data-theme="light"] .bg-indigo-600\/30 { background-color: color-mix(in srgb, var(--color-indigo-500) 25%, transparent); }
 [data-theme="light"] .bg-indigo-600\/40 { background-color: color-mix(in srgb, var(--color-indigo-500) 35%, transparent); }
 [data-theme="light"] .hover\:bg-indigo-500\/10:hover { background-color: color-mix(in srgb, var(--color-indigo-500) 25%, transparent); }
-[data-theme="light"] .hover\:bg-indigo-600\/40:hover { background-color: color-mix(in srgb, var(--color-indigo-500) 40%, transparent); }
 [data-theme="light"] .hover\:bg-indigo-600\/50:hover { background-color: color-mix(in srgb, var(--color-indigo-500) 50%, transparent); }
 
 [data-theme="light"] .bg-teal-500\/5 { background-color: color-mix(in srgb, var(--color-teal-500) 12%, transparent); }

@@ -123,18 +123,6 @@ public class CalendarController {
     }
 
     @Operation(
-        summary = "Course dates",
-        description = "Returns upcoming events linked to the given course"
-    )
-    @GetMapping("/course/{courseId}/events")
-    public ResponseEntity<List<CourseEventDto>> getCourseEvents(
-            @Parameter(description = "Course UUID") @PathVariable UUID courseId) {
-
-        List<CourseEventDto> events = calendarService.getCourseEvents(courseId);
-        return ResponseEntity.ok(events);
-    }
-
-    @Operation(
         summary = "Course translation group dates",
         description = "Returns upcoming events for all language versions of the course"
     )

@@ -316,46 +316,6 @@ public class CalendarService {
         );
     }
 
-    public List<CourseEventDto> getCourseEvents(UUID courseId) {
-        List<Event> events = eventRepository.findUpcomingByCourseId(courseId, LocalDate.now(WARSAW));
-        if (events.isEmpty()) return List.of();
-
-        EventData eventData = computeEventData(events, null);
-
-        return events.stream()
-            .map(event -> {
-                int participants = eventData.participantsMap().getOrDefault(event.getId(), 0);
-                int availableSpots = Math.max(0, event.getMaxParticipants() - participants);
-
-                LocalDateTime eventStart = LocalDateTime.of(
-                    event.getStartDate(),
-                    event.getStartTime() != null ? event.getStartTime() : LocalTime.of(0, 0)
-                );
-                LocalDateTime now = LocalDateTime.now(WARSAW);
-                SlotStatus status;
-                if (eventStart.isBefore(now)) {
-                    status = SlotStatus.PAST;
-                } else if (participants >= event.getMaxParticipants()) {
-                    status = SlotStatus.FULL;
-                } else if (eventStart.isBefore(now.plusHours(BOOKING_CUTOFF_HOURS))) {
-                    status = SlotStatus.BOOKING_CLOSED;
-                } else {
-                    status = SlotStatus.AVAILABLE;
-                }
-
-                return new CourseEventDto(
-                    event.getId(),
-                    event.getStartDate(),
-                    event.getEndDate(),
-                    event.getStartTime(),
-                    event.getEndTime(),
-                    status,
-                    availableSpots
-                );
-            })
-            .toList();
-    }
-
     public List<CourseEventDto> getCourseEventsByTranslationGroup(UUID translationGroupId) {
         List<Event> events = eventRepository.findUpcomingByTranslationGroupId(translationGroupId, LocalDate.now(WARSAW));
         if (events.isEmpty()) return List.of();

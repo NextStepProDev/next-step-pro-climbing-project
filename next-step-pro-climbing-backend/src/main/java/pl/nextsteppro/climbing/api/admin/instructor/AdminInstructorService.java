@@ -44,12 +44,6 @@ public class AdminInstructorService {
                 .toList();
     }
 
-    public InstructorAdminDto getInstructor(UUID id) {
-        Instructor instructor = instructorRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Instructor not found"));
-        return toAdminDto(instructor);
-    }
-
     @CacheEvict(value = "instructorList", allEntries = true)
     public InstructorAdminDto createInstructor(CreateInstructorRequest request) {
         Instructor instructor = new Instructor(request.firstName(), request.lastName());

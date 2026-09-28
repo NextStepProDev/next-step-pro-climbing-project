@@ -12,7 +12,6 @@ import org.springframework.web.bind.annotation.*;
 import pl.nextsteppro.climbing.api.instructor.InstructorDtos.InstructorPublicDto;
 
 import java.util.List;
-import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/instructors")
@@ -39,21 +38,5 @@ public class InstructorController {
             @RequestParam(defaultValue = "pl") String language) {
         List<InstructorPublicDto> instructors = instructorService.getAllActiveInstructors(language);
         return ResponseEntity.ok(instructors);
-    }
-
-    @Operation(
-        summary = "Get instructor details",
-        description = "Returns detailed information about a specific instructor"
-    )
-    @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Instructor details",
-            content = @Content(schema = @Schema(implementation = InstructorPublicDto.class))),
-        @ApiResponse(responseCode = "404", description = "Instructor not found")
-    })
-    @GetMapping("/{id}")
-    public ResponseEntity<InstructorPublicDto> getInstructor(
-            @Parameter(description = "ID instruktora") @PathVariable UUID id) {
-        InstructorPublicDto instructor = instructorService.getInstructor(id);
-        return ResponseEntity.ok(instructor);
     }
 }

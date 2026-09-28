@@ -339,10 +339,6 @@ public class ClimbingAscent {
         this.areaKey = AscentTextKey.normalize(area);
     }
 
-    public String getAreaKey() {
-        return areaKey;
-    }
-
     public String getCrag() {
         return crag;
     }
@@ -350,10 +346,6 @@ public class ClimbingAscent {
     public void setCrag(String crag) {
         this.crag = crag.trim();
         this.cragKey = AscentTextKey.normalize(crag);
-    }
-
-    public String getCragKey() {
-        return cragKey;
     }
 
     public String getRouteName() {

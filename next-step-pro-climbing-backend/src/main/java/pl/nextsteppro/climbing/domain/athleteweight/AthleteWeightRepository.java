@@ -9,13 +9,9 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 public interface AthleteWeightRepository extends JpaRepository<AthleteWeight, UUID> {
-
-    /** Upsert lookup: one reading per day, so this either corrects or creates. */
-    Optional<AthleteWeight> findByAthleteIdAndMeasuredOn(UUID athleteId, LocalDate measuredOn);
 
     /**
      * Race-free weigh-in: a read-then-save pair lost to a double tap or a second tab, and

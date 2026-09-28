@@ -821,8 +821,10 @@ class CalendarServiceTest {
      */
     @Test
     void shouldKeepAClosedSessionOutOfTheDayCountersAndNameItsHours() {
-        YearMonth month = YearMonth.now();
-        LocalDate date = LocalDate.now().plusDays(3);
+        // Next month, not "today + 3": in the last days of a month that date falls outside the
+        // month being asked for, and the test failed on the calendar rather than on the code.
+        YearMonth month = YearMonth.now().plusMonths(1);
+        LocalDate date = month.atDay(15);
         TimeSlot closed = slotWithId(new TimeSlot(date, LocalTime.of(16, 0), LocalTime.of(17, 30), 0));
         when(timeSlotRepository.findByDateRangeOrdered(any(), any())).thenReturn(List.of(closed));
         when(eventRepository.findActiveEventsBetween(any(), any())).thenReturn(List.of());

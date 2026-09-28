@@ -2,7 +2,6 @@
   "network": "Could not connect to the server. Check your internet connection.",
   "sessionExpired": "Your session has expired. Please log in again.",
   "server": "Server error. Please try again later.",
-  "serviceUnavailable": "The server is temporarily unavailable. Please try again in a moment.",
   "serviceUpdating": "The service is being updated. Please refresh in a moment.",
   "notFound": "Resource not found.",
   "forbidden": "You do not have permission to perform this action.",
@@ -23,7 +22,6 @@
     "phoneInvalid": "Invalid format. Required: +[country code][9 digits], e.g. +48123456789",
     "nameTooShort": "Name must be at least 3 characters long"
   },
-  "uploadFailed": "Failed to upload file. Please try again.",
   "fileTooLarge": "File is too large ({{size}} MB). Maximum size is 50 MB.",
   "fileInvalidType": "Unsupported file format. Allowed: JPG, PNG, WebP, HEIC, PDF.",
   "imageLoadFailed": "Failed to load image.",

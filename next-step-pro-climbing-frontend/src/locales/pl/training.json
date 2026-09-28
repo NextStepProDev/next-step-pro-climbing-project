@@ -211,13 +211,6 @@
     "invitation": "Zaproszenie — zarezerwuj!",
     "viewDetails": "Zobacz szczegóły"
   },
-  "badge": {
-    "new": "nowe"
-  },
-  "clamp": {
-    "startsEarlier": "zaczyna się wcześniej",
-    "endsLater": "kończy się później"
-  },
   "empty": {
     "title": "Brak treningów w tym okresie",
     "hint": "Dodaj trening przyciskiem powyżej albo kliknij dzień w kalendarzu."

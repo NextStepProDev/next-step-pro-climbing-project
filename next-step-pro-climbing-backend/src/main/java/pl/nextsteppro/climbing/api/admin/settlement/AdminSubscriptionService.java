@@ -1,6 +1,5 @@
 package pl.nextsteppro.climbing.api.admin.settlement;
 
-import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pl.nextsteppro.climbing.domain.settlement.Subscription;
@@ -186,13 +185,5 @@ public class AdminSubscriptionService {
     private Subscription requireSubscription(UUID subscriptionId) {
         return subscriptionRepository.findById(subscriptionId)
             .orElseThrow(() -> new IllegalArgumentException(msg.get("admin.subscription.not.found")));
-    }
-
-    @Nullable
-    @Transactional(readOnly = true)
-    public SubscriptionDto activeFor(UUID userId) {
-        return subscriptionRepository.findActiveByUserId(userId)
-            .map(s -> new SubscriptionDto(s.getId(), s.getAmount(), s.getStartedOn(), s.getEndedOn(), true))
-            .orElse(null);
     }
 }

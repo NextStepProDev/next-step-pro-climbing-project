@@ -16,8 +16,6 @@ interface TypewriterProps {
   speed?: number;
   /** delay before the first character (ms) */
   startDelay?: number;
-  /** whether to keep the blinking cursor after finishing (true for the last element) */
-  keepCaretWhenDone?: boolean;
   /** called once the whole text has been typed out */
   onDone?: () => void;
   /** text fragment (e.g. a keyword) styled FROM THE START of typing, not after finishing */
@@ -37,7 +35,6 @@ export function Typewriter({
   active = true,
   speed = 30,
   startDelay = 0,
-  keepCaretWhenDone = false,
   onDone,
   highlight,
   highlightClassName,
@@ -72,7 +69,7 @@ export function Typewriter({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active, done]);
 
-  const showCaret = active && !reduced && (!done || keepCaretWhenDone);
+  const showCaret = active && !reduced && !done;
 
   // renders the first `upto` characters, wrapping the part belonging to `highlight` in a classed span
   const renderPortion = (upto: number) => {

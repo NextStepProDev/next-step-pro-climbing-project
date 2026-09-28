@@ -82,12 +82,8 @@
     "UNAVAILABLEHint": "Dni zamknięte: zero miejsc, bez zapisów i listy rezerwowej."
   },
   "allDay": "Cały dzień",
-  "participants_one": "{{count}} uczestnik",
-  "participants_few": "{{count}} uczestników",
-  "participants_many": "{{count}} uczestników",
   "maxParticipants": "Maks. {{count}} uczestników",
   "team": {
-    "title": "Team",
     "instructors": "Instruktorzy",
     "competitors": "Zawodnicy",
     "noMembers": "Brak członków do wyświetlenia",
@@ -120,15 +116,10 @@
     "spots": "{{count}} miejsc",
     "spotsOne": "{{count}} miejsce",
     "spotsFull": "Brak miejsc",
-    "contentLanguage": "Język kursu",
     "backToCourses": "Powrót do kursów",
     "back": "Wróć",
     "viewDetails": "Zobacz szczegóły",
-    "courseNotFound": "Nie znaleziono kursu",
-    "noTranslation": "Brak tłumaczenia w tym języku"
-  },
-  "pza": {
-    "recommended": "Szkoła rekomendowana przez PZA"
+    "courseNotFound": "Nie znaleziono kursu"
   },
   "contact": {
     "title": "Kontakt",
@@ -164,7 +155,6 @@
     "myStars": "Moje gwiazdki",
     "starAdd": "Dodaj do ulubionych",
     "starRemove": "Usuń z ulubionych",
-    "loginToStar": "Zaloguj się, aby zapisywać artykuły",
     "share": {
       "shareOn": "Udostępnij:",
       "copy": "Kopiuj link",

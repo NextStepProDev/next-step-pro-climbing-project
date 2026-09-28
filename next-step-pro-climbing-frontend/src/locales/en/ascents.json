@@ -44,7 +44,6 @@
   "add": "Log an ascent",
   "edit": "Edit",
   "delete": "Delete",
-  "loadError": "Could not load the logbook",
   "empty": {
     "title": "The logbook is still empty",
     "hint": "Log your first ascent — area, route, grade and style. The statistics take care of themselves.",
@@ -115,7 +114,6 @@
     "save": "Save",
     "saving": "Saving...",
     "cancel": "Cancel",
-    "required": "Fill in every required field",
     "gradeCleared": "Changing the discipline changes the scale — pick the grade again.",
     "starsClear": "Clear rating",
     "season": "Season",
@@ -155,15 +153,12 @@
     "pyramid": "Grade pyramid",
     "hardest": "Hardest",
     "onsightRate": "Onsight",
-    "styleDistribution": "Styles",
     "progression": "Year by year",
     "progressionBest": "Best",
     "progressionOnsight": "Best OS",
-    "noOnsight": "none",
     "scaleNote": "The scales are separate — route and boulder grades are never put side by side."
   },
   "export": {
-    "label": "Export",
     "xlsx": "Excel",
     "pdf": "PDF",
     "failed": "Could not prepare the file",

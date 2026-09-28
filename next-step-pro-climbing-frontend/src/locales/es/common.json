@@ -82,12 +82,8 @@
     "UNAVAILABLEHint": "Días cerrados: sin plazas, sin inscripciones ni lista de espera."
   },
   "allDay": "Todo el día",
-  "participants_one": "{{count}} participante",
-  "participants_few": "{{count}} participantes",
-  "participants_many": "{{count}} participantes",
   "maxParticipants": "Máx. {{count}} participantes",
   "team": {
-    "title": "Team",
     "instructors": "Instructores",
     "competitors": "Competidores",
     "noMembers": "No hay miembros para mostrar",
@@ -106,7 +102,7 @@
     "backToGallery": "Volver a la galería",
     "noPhotos": "Este álbum aún no contiene fotos",
     "photo_one": "foto",
-    "photo_few": "fotos",
+    "photo_other": "fotos",
     "photo_many": "fotos"
   },
   "courses": {
@@ -120,15 +116,10 @@
     "spots": "{{count}} plazas",
     "spotsOne": "{{count}} plaza",
     "spotsFull": "Sin plazas",
-    "contentLanguage": "Idioma del curso",
     "backToCourses": "Volver a cursos",
     "back": "Volver",
     "viewDetails": "Ver detalles",
-    "courseNotFound": "Curso no encontrado",
-    "noTranslation": "No hay traducción disponible en este idioma"
-  },
-  "pza": {
-    "recommended": "Escuela recomendada por PZA"
+    "courseNotFound": "Curso no encontrado"
   },
   "contact": {
     "title": "Contacto",
@@ -164,7 +155,6 @@
     "myStars": "Mis favoritos",
     "starAdd": "Añadir a favoritos",
     "starRemove": "Quitar de favoritos",
-    "loginToStar": "Inicia sesión para guardar artículos",
     "share": {
       "shareOn": "Compartir:",
       "copy": "Copiar enlace",

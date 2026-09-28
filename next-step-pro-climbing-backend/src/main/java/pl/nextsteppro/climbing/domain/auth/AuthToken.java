@@ -62,10 +62,6 @@ public class AuthToken {
         return tokenHash;
     }
 
-    public TokenType getTokenType() {
-        return tokenType;
-    }
-
     public Instant getExpiresAt() {
         return expiresAt;
     }

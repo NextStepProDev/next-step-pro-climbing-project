@@ -1469,11 +1469,6 @@ export interface UploadBlockImageResponse {
   displayOrder: number
 }
 
-export interface UploadThumbnailResponse {
-  filename: string
-  url: string
-}
-
 export interface NewsPageDto {
   content: NewsSummary[]
   page: number

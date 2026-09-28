@@ -44,7 +44,6 @@
   "add": "Dodaj przejście",
   "edit": "Edytuj",
   "delete": "Usuń",
-  "loadError": "Nie udało się wczytać dziennika",
   "empty": {
     "title": "Dziennik jest jeszcze pusty",
     "hint": "Dodaj pierwsze przejście — rejon, drogę, wycenę i styl. Statystyki policzą się same.",
@@ -117,7 +116,6 @@
     "save": "Zapisz",
     "saving": "Zapisywanie...",
     "cancel": "Anuluj",
-    "required": "Uzupełnij wszystkie wymagane pola",
     "gradeCleared": "Zmiana dyscypliny zmienia skalę — wybierz wycenę jeszcze raz.",
     "starsClear": "Wyczyść ocenę",
     "season": "Sezon",
@@ -161,15 +159,12 @@
     "pyramid": "Piramida trudności",
     "hardest": "Najtrudniejsze",
     "onsightRate": "Onsight",
-    "styleDistribution": "Style",
     "progression": "Progresja rok po roku",
     "progressionBest": "Najlepsze",
     "progressionOnsight": "Najlepszy OS",
-    "noOnsight": "brak",
     "scaleNote": "Skale są osobne — wycen drogowych i bulderowych nigdy się nie zestawia."
   },
   "export": {
-    "label": "Eksport",
     "xlsx": "Excel",
     "pdf": "PDF",
     "failed": "Nie udało się przygotować pliku",

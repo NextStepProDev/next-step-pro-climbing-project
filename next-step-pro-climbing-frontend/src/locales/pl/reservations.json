@@ -35,6 +35,8 @@
   },
   "waitlist": {
     "banner": "Zwolniło się miejsce na liście rezerwowej — potwierdź zapis! →",
+    "banner_few": "Zwolniły się miejsca ({{count}}) na listach rezerwowych — potwierdź zapisy! →",
+    "banner_many": "Zwolniły się miejsca ({{count}}) na listach rezerwowych — potwierdź zapisy! →",
     "banner_other": "Zwolniły się miejsca ({{count}}) na listach rezerwowych — potwierdź zapisy! →",
     "pending": {
       "title": "Do potwierdzenia — zwolniło się miejsce!",

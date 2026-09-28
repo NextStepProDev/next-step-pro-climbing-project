@@ -15,9 +15,6 @@ public interface VideoRepository extends JpaRepository<Video, UUID> {
 
     List<Video> findAllByOrderByDisplayOrderAsc();
 
-    @Query("SELECT COALESCE(MAX(v.displayOrder), -1) FROM Video v")
-    Optional<Integer> findMaxDisplayOrder();
-
     @Query("SELECT COALESCE(MIN(v.displayOrder), 1) FROM Video v")
     Optional<Integer> findMinDisplayOrder();
 }
