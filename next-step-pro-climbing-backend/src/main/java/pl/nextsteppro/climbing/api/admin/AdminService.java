@@ -937,40 +937,6 @@ public class AdminService {
             .toList();
     }
 
-    @Transactional(readOnly = true)
-    public EventDetailAdminDto getEventDetails(UUID eventId) {
-        Event event = eventRepository.findById(eventId)
-            .orElseThrow(() -> new IllegalArgumentException("Event not found"));
-
-        List<TimeSlot> slots = timeSlotRepository.findByEventId(eventId);
-        Map<UUID, Integer> countMap = buildCountMap(slots);
-        List<TimeSlotAdminDto> slotDtos = slots.stream()
-            .map(slot -> toTimeSlotAdminDto(slot, countMap.getOrDefault(slot.getId(), 0)))
-            .toList();
-
-        int currentParticipants = slotDtos.stream()
-            .mapToInt(TimeSlotAdminDto::currentParticipants)
-            .reduce(0, Math::max);
-
-        return new EventDetailAdminDto(
-            event.getId(),
-            event.getTitle(),
-            event.getDescription(),
-            event.getLocation(),
-            event.getEventType().name(),
-            event.getStartDate(),
-            event.getEndDate(),
-            event.getMaxParticipants(),
-            currentParticipants,
-            event.isActive(),
-            event.getStartTime(),
-            event.getEndTime(),
-            event.belongsToCourse() ? event.getCourse().getId() : null,
-            event.belongsToCourse() ? event.getCourse().getTitle() : null,
-            slotDtos
-        );
-    }
-
     /**
      * Upcoming reservations for the panel, each row flagged {@code isNew} when created since
      * this admin's previous read (the reservations the badge was alerting about). The read
@@ -993,16 +959,10 @@ public class AdminService {
         return buildReservationAdminDtos(slots, null);
     }
 
-    @Transactional(readOnly = true)
-    public List<ReservationAdminDto> getReservationsByDate(LocalDate date) {
-        List<TimeSlot> slots = timeSlotRepository.findByDateSorted(date);
-        return buildReservationAdminDtos(slots, null);
-    }
-
     /**
      * @param newSince marker for the "new" flag: reservations created after it (and not
      *                 created by an admin) are flagged {@code isNew}; pass {@code null} to
-     *                 flag nothing (past / by-date listings).
+     *                 flag nothing (the past listing).
      */
     private List<ReservationAdminDto> buildReservationAdminDtos(List<TimeSlot> slots, @Nullable Instant newSince) {
         if (slots.isEmpty()) return List.of();

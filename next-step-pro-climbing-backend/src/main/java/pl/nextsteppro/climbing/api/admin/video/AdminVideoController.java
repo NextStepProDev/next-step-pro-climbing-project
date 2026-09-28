@@ -36,18 +36,6 @@ public class AdminVideoController {
         return ResponseEntity.ok(adminVideoService.getAllVideos());
     }
 
-    @Operation(summary = "Get video details")
-    @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Video details"),
-        @ApiResponse(responseCode = "400", description = "Video not found"),
-        @ApiResponse(responseCode = "403", description = "Admin privileges required")
-    })
-    @GetMapping("/{id}")
-    public ResponseEntity<VideoAdminDto> getById(
-            @Parameter(description = "ID filmu") @PathVariable UUID id) {
-        return ResponseEntity.ok(adminVideoService.getVideo(id));
-    }
-
     @Operation(summary = "Create new video (draft)")
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "Video created"),

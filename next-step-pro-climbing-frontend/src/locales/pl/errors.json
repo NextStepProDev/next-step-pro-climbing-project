@@ -2,7 +2,6 @@
   "network": "Nie udało się połączyć z serwerem. Sprawdź połączenie internetowe.",
   "sessionExpired": "Sesja wygasła. Zaloguj się ponownie.",
   "server": "Błąd serwera. Spróbuj ponownie później.",
-  "serviceUnavailable": "Serwer jest tymczasowo niedostępny. Spróbuj ponownie za chwilę.",
   "serviceUpdating": "Trwa aktualizacja serwisu. Odśwież stronę za chwilę.",
   "notFound": "Nie znaleziono zasobu.",
   "forbidden": "Brak uprawnień do wykonania tej operacji.",
@@ -23,7 +22,6 @@
     "phoneInvalid": "Nieprawidłowy format. Wymagany: +[kierunkowy][9 cyfr], np. +48123456789",
     "nameTooShort": "Imię/nazwisko musi mieć co najmniej 3 znaki"
   },
-  "uploadFailed": "Nie udało się wgrać pliku. Spróbuj ponownie.",
   "fileTooLarge": "Plik jest za duży ({{size}} MB). Maksymalny rozmiar to 50 MB.",
   "fileInvalidType": "Niedozwolony format pliku. Dozwolone: JPG, PNG, WebP, HEIC, PDF.",
   "imageLoadFailed": "Nie udało się wczytać obrazu.",

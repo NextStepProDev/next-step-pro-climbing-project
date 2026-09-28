@@ -29,11 +29,6 @@ public class AdminVideoService {
                 .toList();
     }
 
-    @Transactional(readOnly = true)
-    public VideoAdminDto getVideo(UUID id) {
-        return toAdminDto(findVideo(id));
-    }
-
     @CacheEvict(value = "videoList", allEntries = true)
     public VideoAdminDto createVideo(CreateVideoRequest request) {
         Video video = new Video(request.title(), request.youtubeUrl());

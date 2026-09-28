@@ -75,23 +75,6 @@ public class ReservationController {
     }
 
     @Operation(
-        summary = "My reservations",
-        description = "Returns all reservations of the logged-in user (past and future)"
-    )
-    @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "List of reservations",
-            content = @Content(array = @ArraySchema(schema = @Schema(implementation = UserReservationDto.class)))),
-        @ApiResponse(responseCode = "401", description = "User not authenticated")
-    })
-    @GetMapping("/my")
-    public ResponseEntity<List<UserReservationDto>> getMyReservations(
-            @Parameter(hidden = true) @CurrentUserId UUID userId) {
-
-        List<UserReservationDto> reservations = reservationService.getUserReservations(userId);
-        return ResponseEntity.ok(reservations);
-    }
-
-    @Operation(
         summary = "My upcoming reservations",
         description = "Returns future reservations split into single slots and events"
     )

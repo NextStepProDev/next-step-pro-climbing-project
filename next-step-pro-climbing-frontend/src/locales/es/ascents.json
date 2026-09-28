@@ -44,7 +44,6 @@
   "add": "Registrar ascensión",
   "edit": "Editar",
   "delete": "Eliminar",
-  "loadError": "No se pudo cargar el cuaderno",
   "empty": {
     "title": "El cuaderno todavía está vacío",
     "hint": "Registra tu primera ascensión: zona, vía, grado y estilo. Las estadísticas se calculan solas.",
@@ -115,7 +114,6 @@
     "save": "Guardar",
     "saving": "Guardando...",
     "cancel": "Cancelar",
-    "required": "Completa todos los campos obligatorios",
     "gradeCleared": "Cambiar de disciplina cambia la escala: elige el grado de nuevo.",
     "starsClear": "Borrar valoración",
     "season": "Temporada",
@@ -155,15 +153,12 @@
     "pyramid": "Pirámide de grados",
     "hardest": "Lo más duro",
     "onsightRate": "A vista",
-    "styleDistribution": "Estilos",
     "progression": "Año a año",
     "progressionBest": "Mejor",
     "progressionOnsight": "Mejor OS",
-    "noOnsight": "ninguna",
     "scaleNote": "Las escalas son independientes: los grados de vía y de boulder nunca se comparan."
   },
   "export": {
-    "label": "Exportar",
     "xlsx": "Excel",
     "pdf": "PDF",
     "failed": "No se pudo preparar el archivo",

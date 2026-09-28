@@ -913,9 +913,6 @@ function EditView({
         {duplicateMutation.isError && (
           <p className="text-sm text-red-400 mt-2">{getErrorMessage(duplicateMutation.error)}</p>
         )}
-        {duplicateMutation.isSuccess && (
-          <p className="text-sm text-green-400 mt-2">{t('news.duplicateSuccess')}</p>
-        )}
         {hasTranslationSiblings && (
           <div className="mt-4 pt-4 border-t border-surface-600">
             <button

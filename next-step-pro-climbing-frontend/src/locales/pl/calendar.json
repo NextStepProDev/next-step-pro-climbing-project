@@ -75,7 +75,6 @@
     "spotsOf": "z {{count}} wolnych",
     "addMoreParticipants": "Chcę zarezerwować więcej niż 1 miejsce",
     "commentPlaceholder": "Komentarz dla instruktora (opcjonalny)...",
-    "commentCount": "{{count}}/500",
     "loginToBook": "Zaloguj się, aby zarezerwować",
     "cancelReservation": "Anuluj rezerwację",
     "noSpots": "Brak dostępnych miejsc",
@@ -124,14 +123,12 @@
     "spotsOf": "z {{count}} wolnych",
     "addMoreParticipants": "Chcę zarezerwować więcej niż 1 miejsce",
     "commentPlaceholder": "Komentarz dla instruktora (opcjonalny)...",
-    "commentCount": "{{count}}/500",
     "loginToBook": "Zaloguj się, aby zarezerwować",
     "cancelSignup": "Anuluj zapis na wydarzenie",
     "cancel": "Anuluj",
     "discardChanges": "Cofnij zmiany",
     "confirmCancelParticipants": "Potwierdź anulowanie",
     "zeroParticipantsHint": "Ustawienie 0 uczestników anuluje rezerwację",
-    "noSpots": "Brak miejsc",
     "full": "Brak miejsc",
     "bookMultiple": "{{count}} osoby",
     "bookSingle": "Zapisz się",
@@ -154,8 +151,7 @@
       "offerTitle": "Zwolniło się miejsce — bądź pierwszy/a!",
       "offerBody": "Wszyscy oczekujący dostali tę informację jednocześnie. Kto pierwszy potwierdzi — ten dostaje miejsce!",
       "deadline": "Potwierdź do: {{deadline}}",
-      "confirmOffer": "Potwierdź zapis",
-      "raceLost": "Niestety ktoś był szybszy. Zostałeś/aś zwrócony/a na listę."
+      "confirmOffer": "Potwierdź zapis"
     }
   },
   "eventPage": {
@@ -164,7 +160,6 @@
     "backToCalendar": "Wróć do kalendarza",
     "maxParticipants": "Maks. {{count}} uczestników",
     "description": "Opis",
-    "viewSlots": "Zobacz dostępne terminy",
     "signUp": "Zapisz się",
     "partOfCourse": "To wydarzenie jest częścią kursu",
     "viewCourse": "Zobacz kurs"

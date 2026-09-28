@@ -36,7 +36,7 @@
   },
   "noSpots": "Sin plazas",
   "training_one": "{{count}} entrenamiento",
-  "training_few": "{{count}} entrenamientos",
+  "training_other": "{{count}} entrenamientos",
   "training_many": "{{count}} entrenamientos",
   "day": {
     "back": "Volver",
@@ -75,7 +75,6 @@
     "spotsLabel": "Número de plazas",
     "spotsOf": "de {{count}} libres",
     "commentPlaceholder": "Comentario para el instructor (opcional)...",
-    "commentCount": "{{count}}/500",
     "loginToBook": "Inicia sesión para reservar",
     "cancelReservation": "Cancelar reserva",
     "noSpots": "No hay plazas disponibles",
@@ -124,14 +123,12 @@
     "spotsLabel": "Número de plazas",
     "spotsOf": "de {{count}} libres",
     "commentPlaceholder": "Comentario para el instructor (opcional)...",
-    "commentCount": "{{count}}/500",
     "loginToBook": "Inicia sesión para reservar",
     "cancelSignup": "Cancelar inscripción en el evento",
     "cancel": "Cancelar",
     "discardChanges": "Descartar cambios",
     "confirmCancelParticipants": "Confirmar cancelación",
     "zeroParticipantsHint": "Establecer 0 participantes cancela la reserva",
-    "noSpots": "Sin plazas",
     "full": "Completo",
     "bookMultiple": "{{count}} personas",
     "bookSingle": "Inscribirse",
@@ -154,8 +151,7 @@
       "offerTitle": "¡Se liberó una plaza — sé el primero/a!",
       "offerBody": "Todos los que esperaban han sido notificados al mismo tiempo. ¡El primero en confirmar consigue la plaza!",
       "deadline": "Confirma antes de: {{deadline}}",
-      "confirmOffer": "Confirmar inscripción",
-      "raceLost": "Desafortunadamente alguien fue más rápido. Has sido devuelto/a a la lista de espera."
+      "confirmOffer": "Confirmar inscripción"
     }
   },
   "eventPage": {
@@ -164,7 +160,6 @@
     "backToCalendar": "Volver al calendario",
     "maxParticipants": "Máx. {{count}} participantes",
     "description": "Descripción",
-    "viewSlots": "Ver franjas horarias disponibles",
     "signUp": "Inscríbete",
     "partOfCourse": "Este evento forma parte de un curso",
     "viewCourse": "Ver curso"

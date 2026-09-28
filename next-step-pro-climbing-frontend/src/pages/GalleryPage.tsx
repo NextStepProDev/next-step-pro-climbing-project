@@ -80,7 +80,7 @@ export function GalleryPage() {
                 </div>
               )}
               <div className="absolute top-2 right-2 bg-surface-900/80 px-2 py-1 rounded text-sm text-surface-200">
-                {album.photoCount} {t(`gallery.photo_${album.photoCount === 1 ? 'one' : 'many'}`)}
+                {album.photoCount} {t('gallery.photo', { count: album.photoCount })}
               </div>
             </div>
 

@@ -36,8 +36,7 @@
   },
   "noSpots": "No spots",
   "training_one": "{{count}} training",
-  "training_few": "{{count}} trainings",
-  "training_many": "{{count}} trainings",
+  "training_other": "{{count}} trainings",
   "day": {
     "back": "Back",
     "available": "Available",
@@ -75,7 +74,6 @@
     "spotsLabel": "Number of spots",
     "spotsOf": "of {{count}} available",
     "commentPlaceholder": "Comment for the instructor (optional)...",
-    "commentCount": "{{count}}/500",
     "loginToBook": "Log in to book",
     "cancelReservation": "Cancel reservation",
     "noSpots": "No available spots",
@@ -124,14 +122,12 @@
     "spotsLabel": "Number of spots",
     "spotsOf": "of {{count}} available",
     "commentPlaceholder": "Comment for the instructor (optional)...",
-    "commentCount": "{{count}}/500",
     "loginToBook": "Log in to book",
     "cancelSignup": "Cancel event signup",
     "cancel": "Cancel",
     "discardChanges": "Discard changes",
     "confirmCancelParticipants": "Confirm cancellation",
     "zeroParticipantsHint": "Setting 0 participants cancels the reservation",
-    "noSpots": "No spots",
     "full": "Full",
     "bookMultiple": "{{count}} people",
     "bookSingle": "Sign up",
@@ -154,8 +150,7 @@
       "offerTitle": "A spot opened up — be first!",
       "offerBody": "Everyone on the waitlist was notified at the same time. First to confirm gets the spot!",
       "deadline": "Confirm by: {{deadline}}",
-      "confirmOffer": "Confirm registration",
-      "raceLost": "Unfortunately someone was faster. You've been returned to the waitlist."
+      "confirmOffer": "Confirm registration"
     }
   },
   "eventPage": {
@@ -164,7 +159,6 @@
     "backToCalendar": "Back to calendar",
     "maxParticipants": "Max. {{count}} participants",
     "description": "Description",
-    "viewSlots": "View available time slots",
     "signUp": "Sign up",
     "partOfCourse": "This event is part of a course",
     "viewCourse": "View course"

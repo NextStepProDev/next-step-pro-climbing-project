@@ -13,7 +13,6 @@ interface ConfirmModalProps {
   title: string
   message: string
   confirmText?: string
-  cancelText?: string
   saveText?: string
   variant?: 'danger' | 'primary'
 }
@@ -26,7 +25,6 @@ export function ConfirmModal({
   title,
   message,
   confirmText,
-  cancelText,
   saveText,
   variant = 'danger',
 }: ConfirmModalProps) {
@@ -79,7 +77,7 @@ export function ConfirmModal({
           </div>
           <div className="flex gap-3 justify-end">
             <Button variant="ghost" size="sm" onClick={onClose}>
-              {cancelText ?? t('cancel')}
+              {t('cancel')}
             </Button>
             <Button
               variant={variant === 'danger' ? 'danger' : 'primary'}

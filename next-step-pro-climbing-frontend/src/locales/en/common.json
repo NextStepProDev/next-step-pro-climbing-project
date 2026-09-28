@@ -82,12 +82,8 @@
     "UNAVAILABLEHint": "Days closed off: no seats, no sign-ups, no waitlist."
   },
   "allDay": "All day",
-  "participants_one": "{{count}} participant",
-  "participants_few": "{{count}} participants",
-  "participants_many": "{{count}} participants",
   "maxParticipants": "Max. {{count}} participants",
   "team": {
-    "title": "Team",
     "instructors": "Instructors",
     "competitors": "Competitors",
     "noMembers": "No members to display",
@@ -106,8 +102,7 @@
     "backToGallery": "Back to gallery",
     "noPhotos": "This album doesn't contain any photos yet",
     "photo_one": "photo",
-    "photo_few": "photos",
-    "photo_many": "photos"
+    "photo_other": "photos"
   },
   "courses": {
     "title": "Courses",
@@ -120,15 +115,10 @@
     "spots": "{{count}} spots",
     "spotsOne": "{{count}} spot",
     "spotsFull": "No spots left",
-    "contentLanguage": "Course language",
     "backToCourses": "Back to courses",
     "back": "Back",
     "viewDetails": "View details",
-    "courseNotFound": "Course not found",
-    "noTranslation": "No translation available in this language"
-  },
-  "pza": {
-    "recommended": "School recommended by PZA"
+    "courseNotFound": "Course not found"
   },
   "contact": {
     "title": "Contact",
@@ -164,7 +154,6 @@
     "myStars": "My stars",
     "starAdd": "Add to favourites",
     "starRemove": "Remove from favourites",
-    "loginToStar": "Log in to save articles",
     "share": {
       "shareOn": "Share:",
       "copy": "Copy link",

@@ -114,11 +114,6 @@ public class AdminNewsDtos {
             int displayOrder
     ) {}
 
-    public record UploadThumbnailResponse(
-            String filename,
-            String url
-    ) {}
-
     public record UpdateThumbnailFocalPointRequest(
             @Nullable Float focalPointX,
             @Nullable Float focalPointY

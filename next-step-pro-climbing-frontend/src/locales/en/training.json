@@ -205,13 +205,6 @@
     "invitation": "Invitation — book now!",
     "viewDetails": "View details"
   },
-  "badge": {
-    "new": "new"
-  },
-  "clamp": {
-    "startsEarlier": "starts earlier",
-    "endsLater": "ends later"
-  },
   "empty": {
     "title": "No trainings in this period",
     "hint": "Add a training with the button above or click a day in the calendar."

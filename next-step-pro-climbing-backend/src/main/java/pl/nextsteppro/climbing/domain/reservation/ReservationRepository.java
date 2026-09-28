@@ -43,8 +43,6 @@ public interface ReservationRepository extends JpaRepository<Reservation, UUID> 
         """)
     List<AthleteActivityCount> countNewReservationsPerAthlete(UUID adminId);
 
-    List<Reservation> findByTimeSlotId(UUID timeSlotId);
-
     @Query("SELECT r FROM Reservation r WHERE r.timeSlot.id = :timeSlotId AND r.status = 'CONFIRMED'")
     List<Reservation> findConfirmedByTimeSlotId(UUID timeSlotId);
 

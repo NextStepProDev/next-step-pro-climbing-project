@@ -237,24 +237,6 @@ record EventAdminDto(
     @Nullable String courseTitle
 ) {}
 
-record EventDetailAdminDto(
-    UUID id,
-    String title,
-    @Nullable String description,
-    @Nullable String location,
-    String eventType,
-    LocalDate startDate,
-    LocalDate endDate,
-    int maxParticipants,
-    int currentParticipants,
-    boolean active,
-    @Nullable LocalTime startTime,
-    @Nullable LocalTime endTime,
-    @Nullable UUID courseId,
-    @Nullable String courseTitle,
-    List<TimeSlotAdminDto> slots
-) {}
-
 record EventParticipantsDto(
     UUID eventId,
     int maxParticipants,

@@ -2,7 +2,6 @@
   "network": "No se pudo conectar con el servidor. Comprueba tu conexión a internet.",
   "sessionExpired": "La sesión ha expirado. Inicia sesión de nuevo.",
   "server": "Error del servidor. Inténtalo de nuevo más tarde.",
-  "serviceUnavailable": "El servidor no está disponible temporalmente. Inténtalo de nuevo en unos momentos.",
   "serviceUpdating": "El servicio se está actualizando. Actualiza en un momento.",
   "notFound": "Recurso no encontrado.",
   "forbidden": "No tienes permisos para realizar esta operación.",
@@ -23,7 +22,6 @@
     "phoneInvalid": "Formato inválido. Requerido: +[código de país][9 dígitos], p. ej. +48123456789",
     "nameTooShort": "El nombre debe tener al menos 3 caracteres"
   },
-  "uploadFailed": "No se pudo subir el archivo. Inténtalo de nuevo.",
   "fileTooLarge": "El archivo es demasiado grande ({{size}} MB). El tamaño máximo es 50 MB.",
   "fileInvalidType": "Formato de archivo no admitido. Permitidos: JPG, PNG, WebP, HEIC, PDF.",
   "imageLoadFailed": "No se pudo cargar la imagen.",

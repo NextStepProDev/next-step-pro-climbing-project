@@ -102,7 +102,6 @@ import type {
   UpdateTextBlockRequest,
   UpdateImageBlockRequest,
   UploadBlockImageResponse,
-  UploadThumbnailResponse,
   NewsPageDto,
   AdminNewsPageDto,
   CourseSummary,
@@ -1421,13 +1420,13 @@ export const adminNewsApi = {
   delete: (id: string) =>
     fetchApi<void>(`/admin/news/${id}`, { method: 'DELETE' }),
 
-  uploadThumbnail: async (id: string, file: File): Promise<UploadThumbnailResponse> => {
+  uploadThumbnail: async (id: string, file: File): Promise<NewsDetailAdmin> => {
     const error = validateImageFile(file)
     if (error) throw new Error(error)
     const compressed = await compressImage(file)
     const formData = new FormData()
     formData.append('file', compressed)
-    return uploadApi<UploadThumbnailResponse>(`/admin/news/${id}/thumbnail`, formData)
+    return uploadApi<NewsDetailAdmin>(`/admin/news/${id}/thumbnail`, formData)
   },
 
   deleteThumbnail: (id: string) =>
@@ -1556,13 +1555,13 @@ export const adminCoursesApi = {
       body: JSON.stringify({ orderedIds }),
     }),
 
-  uploadThumbnail: async (id: string, file: File): Promise<UploadThumbnailResponse> => {
+  uploadThumbnail: async (id: string, file: File): Promise<CourseDetailAdmin> => {
     const error = validateImageFile(file)
     if (error) throw new Error(error)
     const compressed = await compressImage(file)
     const formData = new FormData()
     formData.append('file', compressed)
-    return uploadApi<UploadThumbnailResponse>(`/admin/courses/${id}/thumbnail`, formData)
+    return uploadApi<CourseDetailAdmin>(`/admin/courses/${id}/thumbnail`, formData)
   },
 
   deleteThumbnail: (id: string) =>

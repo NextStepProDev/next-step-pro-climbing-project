@@ -66,7 +66,7 @@ export function AlbumPage() {
           <p className="text-surface-300">{album.description}</p>
         )}
         <p className="text-sm text-surface-400 mt-2">
-          {album.photos.length} {t(`gallery.photo_${album.photos.length === 1 ? 'one' : 'many'}`)}
+          {album.photos.length} {t('gallery.photo', { count: album.photos.length })}
         </p>
       </div>
 

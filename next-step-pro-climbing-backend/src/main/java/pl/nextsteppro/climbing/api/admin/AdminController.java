@@ -372,24 +372,6 @@ public class AdminController {
 
     @Tag(name = "Admin - Events")
     @Operation(
-        summary = "Event details",
-        description = "Returns full event data along with its slots and participants"
-    )
-    @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Event details",
-            content = @Content(schema = @Schema(implementation = EventDetailAdminDto.class))),
-        @ApiResponse(responseCode = "404", description = "Event not found"),
-        @ApiResponse(responseCode = "403", description = "Admin privileges required")
-    })
-    @GetMapping("/events/{eventId}")
-    public ResponseEntity<EventDetailAdminDto> getEventDetails(
-            @Parameter(description = "Event UUID") @PathVariable UUID eventId) {
-        EventDetailAdminDto event = adminService.getEventDetails(eventId);
-        return ResponseEntity.ok(event);
-    }
-
-    @Tag(name = "Admin - Events")
-    @Operation(
         summary = "Event participant list",
         description = "Returns unique participants registered for the event (deduplicated per user)"
     )
@@ -457,24 +439,6 @@ public class AdminController {
     @GetMapping("/reservations/past")
     public ResponseEntity<List<ReservationAdminDto>> getAllPastReservations() {
         List<ReservationAdminDto> reservations = adminService.getAllPastReservations();
-        return ResponseEntity.ok(reservations);
-    }
-
-    @Tag(name = "Admin - Reservations")
-    @Operation(
-        summary = "Reservations for a day",
-        description = "Returns all reservations for the chosen day with full participant details"
-    )
-    @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "List of reservations",
-            content = @Content(array = @ArraySchema(schema = @Schema(implementation = ReservationAdminDto.class)))),
-        @ApiResponse(responseCode = "403", description = "Admin privileges required")
-    })
-    @GetMapping("/reservations/date/{date}")
-    public ResponseEntity<List<ReservationAdminDto>> getReservationsByDate(
-            @Parameter(description = "Date in yyyy-MM-dd format", example = "2026-02-07")
-            @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
-        List<ReservationAdminDto> reservations = adminService.getReservationsByDate(date);
         return ResponseEntity.ok(reservations);
     }
 

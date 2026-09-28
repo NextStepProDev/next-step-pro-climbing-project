@@ -23,10 +23,6 @@ public interface GuestReservationRepository extends JpaRepository<GuestReservati
     @Query("SELECT g FROM GuestReservation g WHERE g.timeSlot.id IN :slotIds")
     List<GuestReservation> findByTimeSlotIds(@Param("slotIds") Collection<UUID> slotIds);
 
-    void deleteByTimeSlotId(UUID slotId);
-
-    void deleteByEventId(UUID eventId);
-
     @Query("SELECT COALESCE(SUM(g.participants), 0) FROM GuestReservation g WHERE g.timeSlot.id = :slotId")
     int sumParticipantsByTimeSlotId(@Param("slotId") UUID slotId);
 

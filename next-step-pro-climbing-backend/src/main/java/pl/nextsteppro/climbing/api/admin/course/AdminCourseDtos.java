@@ -112,10 +112,5 @@ public class AdminCourseDtos {
             int displayOrder
     ) {}
 
-    public record UploadThumbnailResponse(
-            String filename,
-            String url
-    ) {}
-
     public record SyncMediaResultDto(int blocksAdded) {}
 }

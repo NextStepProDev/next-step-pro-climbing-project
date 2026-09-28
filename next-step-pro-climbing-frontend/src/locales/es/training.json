@@ -206,13 +206,6 @@
     "invitation": "Invitación — ¡reserva ya!",
     "viewDetails": "Ver detalles"
   },
-  "badge": {
-    "new": "nuevo"
-  },
-  "clamp": {
-    "startsEarlier": "empieza antes",
-    "endsLater": "termina después"
-  },
   "empty": {
     "title": "No hay entrenamientos en este período",
     "hint": "Añade un entrenamiento con el botón de arriba o haz clic en un día del calendario."

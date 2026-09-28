@@ -226,14 +226,6 @@ public class ReservationService {
     }
 
     @Transactional(readOnly = true)
-    public List<UserReservationDto> getUserReservations(UUID userId) {
-        return reservationRepository.findByUserId(userId).stream()
-            .filter(Reservation::isConfirmed)
-            .map(r -> toUserReservationDto(r, 0))
-            .toList();
-    }
-
-    @Transactional(readOnly = true)
     public MyReservationsDto getUserUpcomingReservations(UUID userId) {
         List<Reservation> allReservations = reservationRepository.findUpcomingByUserIdIncludingAdminCancelled(userId, LocalDate.now(WARSAW), LocalTime.now(WARSAW));
 

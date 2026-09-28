@@ -114,9 +114,6 @@ public interface AlbumRepository extends JpaRepository<Album, UUID> {
         """, nativeQuery = true)
     List<AlbumSummaryProjection> findAllPublishedAlbumSummaries();
 
-    @Query("SELECT COALESCE(MAX(a.displayOrder), -1) FROM Album a")
-    Optional<Integer> findMaxDisplayOrder();
-
     @Query("SELECT COALESCE(MIN(a.displayOrder), 1) FROM Album a")
     Optional<Integer> findMinDisplayOrder();
 }

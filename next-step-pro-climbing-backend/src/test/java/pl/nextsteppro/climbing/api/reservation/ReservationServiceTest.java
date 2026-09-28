@@ -902,22 +902,6 @@ class ReservationServiceTest {
     // ========== USER RESERVATIONS RETRIEVAL TESTS ==========
 
     @Test
-    void shouldGetUserReservations() {
-        // Given
-        Reservation reservation = new Reservation(testUser, testSlot);
-        setEntityIdViaReflection(reservation, UUID.randomUUID());
-
-        when(reservationRepository.findByUserId(userId)).thenReturn(List.of(reservation));
-
-        // When
-        List<UserReservationDto> result = reservationService.getUserReservations(userId);
-
-        // Then
-        assertNotNull(result);
-        assertEquals(1, result.size());
-    }
-
-    @Test
     void shouldGetUpcomingReservationsSeparatedByStandaloneAndEvent() {
         // Given
         Reservation standaloneReservation = new Reservation(testUser, testSlot);

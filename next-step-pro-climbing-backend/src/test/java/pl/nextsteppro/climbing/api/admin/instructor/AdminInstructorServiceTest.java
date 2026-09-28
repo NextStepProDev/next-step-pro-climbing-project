@@ -136,36 +136,6 @@ class AdminInstructorServiceTest {
     // ========== GET INSTRUCTOR TESTS ==========
 
     @Test
-    void shouldGetInstructorById() {
-        // Given
-        when(instructorRepository.findById(instructorId)).thenReturn(Optional.of(testInstructor));
-
-        // When
-        InstructorAdminDto result = adminInstructorService.getInstructor(instructorId);
-
-        // Then
-        assertNotNull(result);
-        assertEquals(instructorId, result.id());
-        assertEquals("John", result.firstName());
-        assertEquals("Doe", result.lastName());
-        assertEquals("Experienced climbing instructor", result.bio());
-        assertEquals("UIAA, IFSC", result.certifications());
-    }
-
-    @Test
-    void shouldThrowExceptionWhenInstructorNotFound() {
-        // Given
-        when(instructorRepository.findById(instructorId)).thenReturn(Optional.empty());
-
-        // When & Then
-        IllegalArgumentException exception = assertThrows(
-            IllegalArgumentException.class,
-            () -> adminInstructorService.getInstructor(instructorId)
-        );
-        assertEquals("Instructor not found", exception.getMessage());
-    }
-
-    @Test
     void shouldGetAllInstructorsOrderedByDisplayOrder() {
         // Given
         Instructor instructor1 = new Instructor("Alice", "Brown");
@@ -661,14 +631,19 @@ class AdminInstructorServiceTest {
     // ========== DTO CONVERSION TESTS ==========
 
     @Test
-    void shouldConvertInstructorToDtoWithoutPhoto() {
+    void shouldConvertInstructorToDto() {
         // Given
-        when(instructorRepository.findById(instructorId)).thenReturn(Optional.of(testInstructor));
+        when(instructorRepository.findAllByOrderByDisplayOrderAscCreatedAtAsc()).thenReturn(List.of(testInstructor));
 
         // When
-        InstructorAdminDto result = adminInstructorService.getInstructor(instructorId);
+        InstructorAdminDto result = adminInstructorService.getAllInstructors().getFirst();
 
         // Then
+        assertEquals(instructorId, result.id());
+        assertEquals("John", result.firstName());
+        assertEquals("Doe", result.lastName());
+        assertEquals("Experienced climbing instructor", result.bio());
+        assertEquals("UIAA, IFSC", result.certifications());
         assertNull(result.photoFilename());
         assertNull(result.photoUrl());
     }
@@ -677,10 +652,10 @@ class AdminInstructorServiceTest {
     void shouldConvertInstructorToDtoWithPhoto() {
         // Given
         testInstructor.setPhotoFilename("photo123.jpg");
-        when(instructorRepository.findById(instructorId)).thenReturn(Optional.of(testInstructor));
+        when(instructorRepository.findAllByOrderByDisplayOrderAscCreatedAtAsc()).thenReturn(List.of(testInstructor));
 
         // When
-        InstructorAdminDto result = adminInstructorService.getInstructor(instructorId);
+        InstructorAdminDto result = adminInstructorService.getAllInstructors().getFirst();
 
         // Then
         assertEquals("photo123.jpg", result.photoFilename());
@@ -691,10 +666,10 @@ class AdminInstructorServiceTest {
     void shouldBuildCorrectPhotoUrl() {
         // Given
         testInstructor.setPhotoFilename("test-photo.png");
-        when(instructorRepository.findById(instructorId)).thenReturn(Optional.of(testInstructor));
+        when(instructorRepository.findAllByOrderByDisplayOrderAscCreatedAtAsc()).thenReturn(List.of(testInstructor));
 
         // When
-        InstructorAdminDto result = adminInstructorService.getInstructor(instructorId);
+        InstructorAdminDto result = adminInstructorService.getAllInstructors().getFirst();
 
         // Then
         assertTrue(result.photoUrl().startsWith(BASE_URL));

@@ -46,23 +46,6 @@ public class AdminInstructorController {
     }
 
     @Operation(
-        summary = "Get instructor details",
-        description = "Returns detailed instructor information"
-    )
-    @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Instructor details",
-            content = @Content(schema = @Schema(implementation = InstructorAdminDto.class))),
-        @ApiResponse(responseCode = "404", description = "Instructor not found"),
-        @ApiResponse(responseCode = "403", description = "Admin privileges required")
-    })
-    @GetMapping("/{id}")
-    public ResponseEntity<InstructorAdminDto> getInstructor(
-            @Parameter(description = "ID instruktora") @PathVariable UUID id) {
-        InstructorAdminDto instructor = adminInstructorService.getInstructor(id);
-        return ResponseEntity.ok(instructor);
-    }
-
-    @Operation(
         summary = "Create instructor",
         description = "Adds a new instructor to the system"
     )

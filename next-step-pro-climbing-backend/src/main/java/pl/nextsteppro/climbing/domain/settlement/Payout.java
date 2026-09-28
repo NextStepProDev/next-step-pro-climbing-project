@@ -1,7 +1,6 @@
 package pl.nextsteppro.climbing.domain.settlement;
 
 import jakarta.persistence.*;
-import org.jspecify.annotations.Nullable;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -96,10 +95,5 @@ public class Payout {
 
     public UUID getId() {
         return id;
-    }
-
-    @Nullable
-    public LocalDate getPeriodMonth() {
-        return periodMonth;
     }
 }
