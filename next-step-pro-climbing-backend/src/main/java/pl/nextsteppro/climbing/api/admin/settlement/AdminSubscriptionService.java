@@ -174,12 +174,7 @@ public class AdminSubscriptionService {
     }
 
     private BigDecimal amountOf(BigDecimal raw) {
-        BigDecimal scaled = raw.setScale(2, java.math.RoundingMode.HALF_UP);
-        if (scaled.compareTo(Subscription.MIN_AMOUNT) < 0
-            || scaled.compareTo(Subscription.MAX_AMOUNT) > 0) {
-            throw new IllegalArgumentException(msg.get("admin.subscription.amount.invalid"));
-        }
-        return scaled;
+        return Subscription.normalizeAmount(raw, msg.get("admin.subscription.amount.invalid"));
     }
 
     private Subscription requireSubscription(UUID subscriptionId) {

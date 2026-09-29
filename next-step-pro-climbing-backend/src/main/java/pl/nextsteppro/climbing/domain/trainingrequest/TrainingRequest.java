@@ -6,7 +6,7 @@ import pl.nextsteppro.climbing.domain.course.Course;
 import pl.nextsteppro.climbing.domain.event.Event;
 import pl.nextsteppro.climbing.domain.timeslot.TimeSlot;
 import pl.nextsteppro.climbing.domain.user.User;
-import org.springframework.web.util.HtmlUtils;
+import pl.nextsteppro.climbing.domain.StoredText;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -103,16 +103,9 @@ public class TrainingRequest {
         createdAt = Instant.now();
     }
 
-    /**
-     * HTML-escapes and trims the user comment (same pattern as Reservation.sanitizeComment).
-     * The UTF-8 variant escapes only dangerous characters (&lt; &gt; " &amp; '); the one-arg variant
-     * assumes ISO-8859-1 and would turn diacritics into entities (ó → &amp;oacute;), mangling Polish comments.
-     */
     @Nullable
     public static String sanitizeComment(@Nullable String comment) {
-        if (comment == null || comment.isBlank()) return null;
-        String escaped = HtmlUtils.htmlEscape(comment.trim(), java.nio.charset.StandardCharsets.UTF_8.name());
-        return escaped.length() > MAX_COMMENT_LENGTH ? escaped.substring(0, MAX_COMMENT_LENGTH) : escaped;
+        return StoredText.escapeAndCap(comment, MAX_COMMENT_LENGTH);
     }
 
     public void resolve(TrainingRequestStatus newStatus) {

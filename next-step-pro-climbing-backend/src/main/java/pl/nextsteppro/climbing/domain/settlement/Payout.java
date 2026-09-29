@@ -3,7 +3,6 @@ package pl.nextsteppro.climbing.domain.settlement;
 import jakarta.persistence.*;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.UUID;
@@ -25,7 +24,7 @@ public class Payout {
 
     public static final BigDecimal MIN_AMOUNT = BigDecimal.ZERO;
     public static final BigDecimal MAX_AMOUNT = new BigDecimal("1000000");
-    public static final int AMOUNT_SCALE = 2;
+    public static final int AMOUNT_SCALE = Amounts.SCALE;
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -75,11 +74,7 @@ public class Payout {
      * comes back as a translated message rather than a constraint name.
      */
     public static BigDecimal normalizeAmount(BigDecimal amount, String outOfRangeMessage) {
-        BigDecimal scaled = amount.setScale(AMOUNT_SCALE, RoundingMode.HALF_UP);
-        if (scaled.compareTo(MIN_AMOUNT) < 0 || scaled.compareTo(MAX_AMOUNT) > 0) {
-            throw new IllegalArgumentException(outOfRangeMessage);
-        }
-        return scaled;
+        return Amounts.normalize(amount, MIN_AMOUNT, MAX_AMOUNT, outOfRangeMessage);
     }
 
     /** Any day of the month snaps to its first, which is what the CHECK in V93 stores. */

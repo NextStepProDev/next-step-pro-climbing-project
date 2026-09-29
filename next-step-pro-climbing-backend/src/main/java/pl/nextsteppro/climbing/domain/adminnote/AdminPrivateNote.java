@@ -2,6 +2,7 @@ package pl.nextsteppro.climbing.domain.adminnote;
 
 import jakarta.persistence.*;
 import org.jspecify.annotations.Nullable;
+import pl.nextsteppro.climbing.domain.StoredText;
 import pl.nextsteppro.climbing.domain.event.Event;
 import pl.nextsteppro.climbing.domain.personaltraining.PersonalTraining;
 import pl.nextsteppro.climbing.domain.timeslot.TimeSlot;
@@ -89,9 +90,7 @@ public class AdminPrivateNote {
      */
     @Nullable
     public static String sanitizeBody(@Nullable String body) {
-        if (body == null || body.isBlank()) return null;
-        String trimmed = body.trim();
-        return trimmed.length() > MAX_BODY_LENGTH ? trimmed.substring(0, MAX_BODY_LENGTH) : trimmed;
+        return StoredText.trimAndCap(body, MAX_BODY_LENGTH);
     }
 
     public UUID getId() {

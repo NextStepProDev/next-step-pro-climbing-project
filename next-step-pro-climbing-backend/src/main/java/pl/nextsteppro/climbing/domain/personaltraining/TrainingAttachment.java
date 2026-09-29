@@ -2,7 +2,7 @@ package pl.nextsteppro.climbing.domain.personaltraining;
 
 import jakarta.persistence.*;
 import org.jspecify.annotations.Nullable;
-import org.springframework.web.util.HtmlUtils;
+import pl.nextsteppro.climbing.domain.StoredText;
 import pl.nextsteppro.climbing.domain.trainingtemplate.TrainingTemplate;
 
 import java.time.Duration;
@@ -157,12 +157,9 @@ public class TrainingAttachment {
         createdAt = Instant.now();
     }
 
-    /** Same UTF-8 HTML-escape as PersonalTraining.sanitizeText; null/blank label is allowed. */
     @Nullable
     public static String sanitizeLabel(@Nullable String label) {
-        if (label == null || label.isBlank()) return null;
-        String escaped = HtmlUtils.htmlEscape(label.trim(), java.nio.charset.StandardCharsets.UTF_8.name());
-        return escaped.length() > MAX_LABEL_LENGTH ? escaped.substring(0, MAX_LABEL_LENGTH) : escaped;
+        return StoredText.escapeAndCap(label, MAX_LABEL_LENGTH);
     }
 
     public UUID getId() {

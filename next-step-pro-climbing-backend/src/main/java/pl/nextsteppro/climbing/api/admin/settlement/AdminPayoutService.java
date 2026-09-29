@@ -1,5 +1,6 @@
 package pl.nextsteppro.climbing.api.admin.settlement;
 
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pl.nextsteppro.climbing.domain.settlement.Payout;
@@ -13,7 +14,6 @@ import pl.nextsteppro.climbing.infrastructure.i18n.MessageService;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -75,9 +75,7 @@ class AdminPayoutService {
         String name = requireName(request.name());
         // Mirrors uq_payout_sources_active_name so the caller gets a sentence instead of a
         // constraint name. Archived namesakes are allowed through on purpose.
-        if (sourceRepository.findActiveByName(name).isPresent()) {
-            throw new IllegalArgumentException(msg.get("admin.payout.source.exists"));
-        }
+        requireNameFree(name, null);
         PayoutSource saved = sourceRepository.save(new PayoutSource(name));
         return new PayoutSourceDto(saved.getId(), saved.getName(), saved.isArchived());
     }
@@ -85,10 +83,7 @@ class AdminPayoutService {
     public void renameSource(UUID sourceId, SavePayoutSourceRequest request) {
         PayoutSource source = requireSource(sourceId);
         String name = requireName(request.name());
-        Optional<PayoutSource> clash = sourceRepository.findActiveByName(name);
-        if (clash.isPresent() && !clash.get().getId().equals(sourceId)) {
-            throw new IllegalArgumentException(msg.get("admin.payout.source.exists"));
-        }
+        requireNameFree(name, sourceId);
         source.rename(name);
     }
 
@@ -101,11 +96,15 @@ class AdminPayoutService {
         if (archived) {
             source.archive();
         } else {
-            if (sourceRepository.findActiveByName(source.getName())
-                .filter(other -> !other.getId().equals(sourceId)).isPresent()) {
-                throw new IllegalArgumentException(msg.get("admin.payout.source.exists"));
-            }
+            requireNameFree(source.getName(), sourceId);
             source.restore();
+        }
+    }
+
+    /** No two ACTIVE payers share a name; the payer being renamed or restored may keep its own. */
+    private void requireNameFree(String name, @Nullable UUID sourceId) {
+        if (sourceRepository.findActiveByName(name).filter(other -> !other.getId().equals(sourceId)).isPresent()) {
+            throw new IllegalArgumentException(msg.get("admin.payout.source.exists"));
         }
     }
 

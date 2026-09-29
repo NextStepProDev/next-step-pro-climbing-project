@@ -798,7 +798,6 @@ class ReservationServiceTest {
     void shouldThrowExceptionWhenEventIsFull() {
         // Given
         List<TimeSlot> eventSlots = List.of(createEventSlot(eventId, LocalDate.now().plusDays(5)));
-        UUID slotId = eventSlots.get(0).getId();
 
         when(eventRepository.findByIdForUpdate(eventId)).thenReturn(Optional.of(testEvent));
         when(userRepository.findById(userId)).thenReturn(Optional.of(testUser));
@@ -808,7 +807,6 @@ class ReservationServiceTest {
 
         // Create mock projection - only stub methods that are actually called
         SlotParticipantCount mockProjection = mock(SlotParticipantCount.class);
-        when(mockProjection.slotId()).thenReturn(slotId);
         when(mockProjection.countAsInt()).thenReturn(20); // Event max is 20
 
         when(reservationRepository.countConfirmedByTimeSlotIds(anyList()))

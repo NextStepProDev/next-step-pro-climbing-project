@@ -13,7 +13,6 @@ import pl.nextsteppro.climbing.domain.reservation.GuestReservationRepository;
 import pl.nextsteppro.climbing.domain.reservation.Reservation;
 import pl.nextsteppro.climbing.domain.reservation.ReservationRepository;
 import pl.nextsteppro.climbing.domain.reservation.ReservationStatus;
-import pl.nextsteppro.climbing.domain.reservation.SlotParticipantCount;
 import pl.nextsteppro.climbing.domain.reservedseat.ReservedSeatRepository;
 import pl.nextsteppro.climbing.domain.timeslot.TimeSlot;
 import pl.nextsteppro.climbing.domain.timeslot.TimeSlotRepository;
@@ -47,7 +46,7 @@ public class EventWaitlistService {
     private final TimeSlotRepository timeSlotRepository;
     private final ReservationRepository reservationRepository;
     private final ReservedSeatRepository reservedSeatRepository;
-    private final GuestReservationRepository guestReservationRepository;
+    private final Occupancy occupancy;
     private final UserRepository userRepository;
     private final WaitlistMailService waitlistMailService;
     private final ActivityLogService activityLogService;
@@ -68,7 +67,7 @@ public class EventWaitlistService {
         this.timeSlotRepository = timeSlotRepository;
         this.reservationRepository = reservationRepository;
         this.reservedSeatRepository = reservedSeatRepository;
-        this.guestReservationRepository = guestReservationRepository;
+        this.occupancy = new Occupancy(reservationRepository, guestReservationRepository);
         this.userRepository = userRepository;
         this.waitlistMailService = waitlistMailService;
         this.activityLogService = activityLogService;
@@ -110,7 +109,7 @@ public class EventWaitlistService {
 
         // The event must be effectively full. Seats held by invitation for OTHER people also
         // consume availability (one's own invitation does not block — we subtract only others').
-        int currentParticipants = computeCurrentParticipants(event, slots);
+        int currentParticipants = occupancy.ofEvent(event.getId(), slots);
         int pendingCount = eventWaitlistRepository.countPendingConfirmationByEventId(eventId);
         int reservedForOthers = reservedSeatRepository.countPendingByEventIdExcludingUser(eventId, userId);
         if (currentParticipants + pendingCount + reservedForOthers < event.getMaxParticipants()) {
@@ -157,7 +156,7 @@ public class EventWaitlistService {
             Event event = eventRepository.findById(eventId).orElse(null);
             if (event != null) {
                 List<TimeSlot> slots = timeSlotRepository.findByEventId(eventId);
-                int confirmed = computeCurrentParticipants(event, slots);
+                int confirmed = occupancy.ofEvent(event.getId(), slots);
                 int pending = eventWaitlistRepository.countPendingConfirmationByEventId(eventId);
                 int reserved = reservedSeatRepository.countPendingByEventId(eventId);
                 if (confirmed + pending + reserved < event.getMaxParticipants()) {
@@ -206,7 +205,7 @@ public class EventWaitlistService {
         User user = entry.getUser();
 
         List<TimeSlot> slots = timeSlotRepository.findByEventId(eventId);
-        int currentParticipants = computeCurrentParticipants(event, slots);
+        int currentParticipants = occupancy.ofEvent(event.getId(), slots);
         // Seats held for other invitees still block — protects against confirming past the
         // limit when several queued people were offered at once and some seats are invitation-held.
         int reservedForOthers = reservedSeatRepository.countPendingByEventIdExcludingUser(eventId, userId);
@@ -333,21 +332,5 @@ public class EventWaitlistService {
             entry.getConfirmationDeadline(),
             Math.max(1, position)
         );
-    }
-
-    /**
-     * Occupancy of an event: the busiest of its day-slots, plus the guests booked against the event
-     * itself. Guests hang off the EVENT rather than its slots, so the per-slot counts never see them —
-     * leaving them out here made the queue believe a seat was free when walk-ins already filled it,
-     * both when joining and when confirming an offer.
-     */
-    private int computeCurrentParticipants(Event event, List<TimeSlot> slots) {
-        int guests = guestReservationRepository.sumParticipantsByEventId(event.getId());
-        if (slots.isEmpty()) return guests;
-        List<UUID> slotIds = slots.stream().map(TimeSlot::getId).toList();
-        return reservationRepository.countConfirmedByTimeSlotIds(slotIds).stream()
-            .mapToInt(SlotParticipantCount::countAsInt)
-            .max()
-            .orElse(0) + guests;
     }
 }

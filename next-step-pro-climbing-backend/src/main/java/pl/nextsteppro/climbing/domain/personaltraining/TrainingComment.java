@@ -5,7 +5,7 @@ import org.jspecify.annotations.Nullable;
 import pl.nextsteppro.climbing.domain.event.Event;
 import pl.nextsteppro.climbing.domain.timeslot.TimeSlot;
 import pl.nextsteppro.climbing.domain.user.User;
-import org.springframework.web.util.HtmlUtils;
+import pl.nextsteppro.climbing.domain.StoredText;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -151,12 +151,9 @@ public class TrainingComment {
         this.editedAt = Instant.now();
     }
 
-    /** HTML-escapes and trims the message (UTF-8 variant — keeps Polish diacritics intact). */
     @Nullable
     public static String sanitizeBody(@Nullable String body) {
-        if (body == null || body.isBlank()) return null;
-        String escaped = HtmlUtils.htmlEscape(body.trim(), java.nio.charset.StandardCharsets.UTF_8.name());
-        return escaped.length() > MAX_BODY_LENGTH ? escaped.substring(0, MAX_BODY_LENGTH) : escaped;
+        return StoredText.escapeAndCap(body, MAX_BODY_LENGTH);
     }
 
     public UUID getId() {

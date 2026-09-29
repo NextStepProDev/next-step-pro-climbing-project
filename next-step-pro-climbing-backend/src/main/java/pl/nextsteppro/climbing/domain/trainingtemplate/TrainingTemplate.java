@@ -2,7 +2,7 @@ package pl.nextsteppro.climbing.domain.trainingtemplate;
 
 import jakarta.persistence.*;
 import org.jspecify.annotations.Nullable;
-import org.springframework.web.util.HtmlUtils;
+import pl.nextsteppro.climbing.domain.StoredText;
 import pl.nextsteppro.climbing.domain.personaltraining.TrainingKind;
 
 import java.time.Instant;
@@ -81,12 +81,9 @@ public class TrainingTemplate {
         updatedAt = Instant.now();
     }
 
-    /** Same UTF-8 HTML-escape as PersonalTraining.sanitizeText (keeps Polish diacritics). */
     @Nullable
     public static String sanitizeText(@Nullable String text, int maxLength) {
-        if (text == null || text.isBlank()) return null;
-        String escaped = HtmlUtils.htmlEscape(text.trim(), java.nio.charset.StandardCharsets.UTF_8.name());
-        return escaped.length() > maxLength ? escaped.substring(0, maxLength) : escaped;
+        return StoredText.escapeAndCap(text, maxLength);
     }
 
     /**

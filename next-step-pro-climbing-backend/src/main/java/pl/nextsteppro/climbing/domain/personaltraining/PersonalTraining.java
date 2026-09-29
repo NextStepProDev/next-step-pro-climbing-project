@@ -3,7 +3,7 @@ package pl.nextsteppro.climbing.domain.personaltraining;
 import jakarta.persistence.*;
 import org.jspecify.annotations.Nullable;
 import pl.nextsteppro.climbing.domain.user.User;
-import org.springframework.web.util.HtmlUtils;
+import pl.nextsteppro.climbing.domain.StoredText;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -133,16 +133,9 @@ public class PersonalTraining {
         updatedAt = Instant.now();
     }
 
-    /**
-     * HTML-escapes and trims free text (same pattern as TrainingRequest.sanitizeComment).
-     * The UTF-8 variant escapes only dangerous characters (&lt; &gt; " &amp; '); the one-arg variant
-     * assumes ISO-8859-1 and would turn diacritics into entities (ó → &amp;oacute;), mangling Polish text.
-     */
     @Nullable
     public static String sanitizeText(@Nullable String text, int maxLength) {
-        if (text == null || text.isBlank()) return null;
-        String escaped = HtmlUtils.htmlEscape(text.trim(), java.nio.charset.StandardCharsets.UTF_8.name());
-        return escaped.length() > maxLength ? escaped.substring(0, maxLength) : escaped;
+        return StoredText.escapeAndCap(text, maxLength);
     }
 
     // No `kind` parameter, on purpose: an entry is a training or a task from birth. Everything else

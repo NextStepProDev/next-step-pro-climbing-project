@@ -1,5 +1,6 @@
 package pl.nextsteppro.climbing.api.course;
 
+import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
@@ -9,6 +10,7 @@ import pl.nextsteppro.climbing.domain.course.CourseContentBlock;
 import pl.nextsteppro.climbing.domain.course.CourseContentBlockRepository;
 import pl.nextsteppro.climbing.domain.course.CourseRepository;
 import pl.nextsteppro.climbing.domain.course.CourseSummaryProjection;
+import pl.nextsteppro.climbing.infrastructure.storage.FileUrls;
 
 import java.util.List;
 import java.util.UUID;
@@ -52,7 +54,7 @@ public class CourseService {
                 course.getId(),
                 course.getTitle(),
                 course.getPrice(),
-                buildThumbnailUrl(course.getThumbnailUrl(), course.getThumbnailFilename()),
+                imageUrl(course.getThumbnailUrl(), course.getThumbnailFilename()),
                 course.getThumbnailFocalPointX(),
                 course.getThumbnailFocalPointY(),
                 course.getLanguage(),
@@ -74,7 +76,7 @@ public class CourseService {
                 projection.getId(),
                 projection.getTitle(),
                 projection.getPrice(),
-                buildThumbnailUrl(projection.getThumbnailUrl(), projection.getThumbnailFilename()),
+                imageUrl(projection.getThumbnailUrl(), projection.getThumbnailFilename()),
                 projection.getThumbnailFocalPointX(),
                 projection.getThumbnailFocalPointY(),
                 projection.getLanguage(),
@@ -84,26 +86,17 @@ public class CourseService {
     }
 
     private ContentBlockDto toBlockDto(CourseContentBlock block) {
-        String imageUrl = block.getImageUrl() != null
-                ? block.getImageUrl()
-                : (block.getImageFilename() != null ? buildFileUrl(block.getImageFilename()) : null);
         return new ContentBlockDto(
                 block.getId(),
                 block.getBlockType().name(),
                 block.getContent(),
-                imageUrl,
+                imageUrl(block.getImageUrl(), block.getImageFilename()),
                 block.getCaption(),
                 block.getDisplayOrder()
         );
     }
 
-    private String buildThumbnailUrl(String thumbnailUrl, String thumbnailFilename) {
-        if (thumbnailUrl != null) return thumbnailUrl;
-        if (thumbnailFilename != null) return buildFileUrl(thumbnailFilename);
-        return null;
-    }
-
-    private String buildFileUrl(String filename) {
-        return baseUrl + "/api/files/courses/" + filename;
+    private @Nullable String imageUrl(@Nullable String externalUrl, @Nullable String filename) {
+        return FileUrls.preferExternal(externalUrl, baseUrl, "courses", filename);
     }
 }

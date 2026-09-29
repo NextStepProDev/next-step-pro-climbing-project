@@ -1,6 +1,7 @@
 package pl.nextsteppro.climbing.api.admin.trainingrequest;
 
 import org.jspecify.annotations.Nullable;
+import pl.nextsteppro.climbing.domain.StoredText;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -90,11 +91,7 @@ public class AdminTrainingRequestService {
 
     @Nullable
     private static String sanitizeNote(@Nullable String note) {
-        if (note == null || note.isBlank()) return null;
-        String trimmed = note.trim();
-        return trimmed.length() > TrainingRequest.MAX_ADMIN_NOTE_LENGTH
-            ? trimmed.substring(0, TrainingRequest.MAX_ADMIN_NOTE_LENGTH)
-            : trimmed;
+        return StoredText.trimAndCap(note, TrainingRequest.MAX_ADMIN_NOTE_LENGTH);
     }
 
     static AdminTrainingRequestDto toDto(TrainingRequest tr) {

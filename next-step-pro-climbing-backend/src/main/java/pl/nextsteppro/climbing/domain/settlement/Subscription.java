@@ -28,6 +28,11 @@ public class Subscription {
     public static final BigDecimal MIN_AMOUNT = BigDecimal.ZERO;
     public static final BigDecimal MAX_AMOUNT = new BigDecimal("100000");
 
+    /** Scaled and checked against {@code chk_subscriptions_amount_range}. */
+    public static BigDecimal normalizeAmount(BigDecimal amount, String outOfRangeMessage) {
+        return Amounts.normalize(amount, MIN_AMOUNT, MAX_AMOUNT, outOfRangeMessage);
+    }
+
     /**
      * How far back a subscription may be said to have started.
      *

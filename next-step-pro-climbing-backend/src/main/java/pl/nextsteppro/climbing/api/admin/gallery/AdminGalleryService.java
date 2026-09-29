@@ -14,6 +14,7 @@ import pl.nextsteppro.climbing.domain.gallery.AlbumSummaryProjection;
 import pl.nextsteppro.climbing.domain.gallery.Photo;
 import pl.nextsteppro.climbing.domain.gallery.PhotoRepository;
 import pl.nextsteppro.climbing.infrastructure.storage.FileStorageService;
+import pl.nextsteppro.climbing.infrastructure.storage.FileUrls;
 
 import java.io.IOException;
 import java.time.Instant;
@@ -281,6 +282,6 @@ public class AdminGalleryService {
     }
 
     private String buildPhotoUrl(String filename) {
-        return baseUrl + "/api/files/gallery/" + filename;
+        return FileUrls.of(baseUrl, "gallery", filename);
     }
 }
