@@ -524,11 +524,7 @@ public class MailService {
     }
 
     private String buildCustomAdminMailBody(String subject, String body, @Nullable String unsubscribeText) {
-        String escaped = body
-            .replace("&", "&amp;")
-            .replace("<", "&lt;")
-            .replace(">", "&gt;");
-        String htmlBody = richTextToHtml(escaped);
+        String htmlBody = MailRichText.toHtml(body, "#312e2b");
         String unsubscribeSection = unsubscribeText != null
             ? "<div style=\"margin-top: 24px; padding-top: 16px; border-top: 1px solid #e0e0e0; font-size: 12px; color: #888;\">%s</div>".formatted(unsubscribeText)
             : "";
@@ -551,68 +547,6 @@ public class MailService {
             </body>
             </html>
             """.formatted(siteUrl, subject, htmlBody, unsubscribeSection);
-    }
-
-    /**
-     * Server-side twin of the frontend's renderRichText, for the one body the admin writes and the
-     * server turns into HTML (mass mail and newsletters).
-     *
-     * ⚠️ The two MUST accept the same markers, because the same RichTextEditor writes both — and
-     * this is the one place where a gap is invisible before it ships: AdminMailPanel has no
-     * preview, so an unsupported marker is first seen by the recipients, in a mass send that
-     * cannot be recalled. Heading, strikethrough and the hand-typed bullets were added here for
-     * exactly that reason; anything added to the editor has to land in both files.
-     */
-    private String richTextToHtml(String text) {
-        String[] lines = text.split("\n", -1);
-        StringBuilder sb = new StringBuilder();
-        int i = 0;
-        while (i < lines.length) {
-            String line = lines[i];
-            if (line.matches("^#{1,3} .*")) {
-                sb.append("<h3 style=\"margin:16px 0 4px 0;font-size:16px;color:#312e2b;\">")
-                    .append(inlineFormat(line.replaceFirst("^#{1,3} ", "")))
-                    .append("</h3>");
-                i++;
-            } else if (line.matches("^[•\\-*] .*")) {
-                sb.append("<ul style=\"margin:8px 0;padding-left:20px;\">");
-                while (i < lines.length && lines[i].matches("^[•\\-*] .*")) {
-                    sb.append("<li>").append(inlineFormat(lines[i].replaceFirst("^[•\\-*] ", ""))).append("</li>");
-                    i++;
-                }
-                sb.append("</ul>");
-            } else if (line.matches("^\\d+\\. .*")) {
-                sb.append("<ol style=\"margin:8px 0;padding-left:20px;\">");
-                while (i < lines.length && lines[i].matches("^\\d+\\. .*")) {
-                    sb.append("<li>").append(inlineFormat(lines[i].replaceFirst("^\\d+\\. ", ""))).append("</li>");
-                    i++;
-                }
-                sb.append("</ol>");
-            } else if (line.matches("^[a-z]\\) .*")) {
-                sb.append("<ol type=\"a\" style=\"margin:8px 0;padding-left:20px;\">");
-                while (i < lines.length && lines[i].matches("^[a-z]\\) .*")) {
-                    sb.append("<li>").append(inlineFormat(lines[i].replaceFirst("^[a-z]\\) ", ""))).append("</li>");
-                    i++;
-                }
-                sb.append("</ol>");
-            } else if (line.isBlank()) {
-                sb.append("<br/>");
-                i++;
-            } else {
-                sb.append("<p style=\"margin:4px 0;\">").append(inlineFormat(line)).append("</p>");
-                i++;
-            }
-        }
-        return sb.toString();
-    }
-
-    private String inlineFormat(String text) {
-        text = text.replaceAll("\\*\\*(.+?)\\*\\*", "<strong>$1</strong>");
-        text = text.replaceAll("__(.+?)__", "<u>$1</u>");
-        text = text.replaceAll("\\*(.+?)\\*", "<em>$1</em>");
-        // A styled span rather than <s>: Outlook renders the CSS reliably, the tag less so.
-        text = text.replaceAll("~~(.+?)~~", "<span style=\"text-decoration: line-through;\">$1</span>");
-        return text;
     }
 
     /**

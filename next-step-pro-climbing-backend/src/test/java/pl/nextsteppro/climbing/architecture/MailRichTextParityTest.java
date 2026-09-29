@@ -16,13 +16,14 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /**
  * The pseudo-markdown written in {@code RichTextEditor} is rendered by TWO independent renderers:
- * {@code utils/renderRichText.ts} for everything on screen, and {@code MailService.richTextToHtml}
- * for the one body the server turns into HTML — mass mail and newsletters.
+ * {@code utils/renderRichText.ts} for everything on screen, and {@code MailRichText} for the bodies
+ * the server turns into HTML — the admin's mass mail and the article newsletter.
  *
  * <p>A marker added to the editor but not to the mail renderer reaches subscribers as literal
- * characters ("## Zapraszamy", "~~stara cena~~"). That gap is invisible before it ships:
- * AdminMailPanel has no preview, so the first person to see the mistake is the recipient, in a
- * send that cannot be recalled. It happened when heading and strikethrough were added.
+ * characters ("## Zapraszamy", "~~stara cena~~"). That gap is invisible before it ships: neither
+ * mail has a preview, so the first person to see the mistake is the recipient, in a send that
+ * cannot be recalled. It happened when heading and strikethrough were added, and the article
+ * newsletter skipped the renderer altogether until it was moved out of MailService.
  *
  * <p>Every marker must emit an HTML element, so comparing the ELEMENTS the two renderers produce
  * catches a new marker without this gate having to understand markers at all. A tag the frontend
@@ -35,8 +36,8 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 class MailRichTextParityTest {
 
     private static final Path FRONTEND_RENDERER = SourceFiles.frontendFile("utils/renderRichText.ts");
-    private static final Path MAIL_SERVICE =
-        Path.of("src/main/java/pl/nextsteppro/climbing/infrastructure/mail/MailService.java");
+    private static final Path MAIL_RENDERER =
+        Path.of("src/main/java/pl/nextsteppro/climbing/infrastructure/mail/MailRichText.java");
 
     /**
      * A block tag as it appears in the renderer's template literals: '<name>' or '<name attr='.
@@ -112,12 +113,12 @@ class MailRichTextParityTest {
         unmapped.removeAll(MAIL_EQUIVALENT.keySet());
         assertTrue(unmapped.isEmpty(),
             "renderRichText.ts emits " + unmapped + ", which MailRichTextParityTest has no mail "
-                + "equivalent for. A new marker was added to RichTextEditor: decide how the mass "
-                + "mail body should render it (MailService.richTextToHtml / inlineFormat), then "
-                + "add the mapping here. AdminMailPanel has no preview — an unhandled marker is "
-                + "first seen by the recipients.");
+                + "equivalent for. A new marker was added to RichTextEditor: decide how mail "
+                + "should render it (MailRichText.toHtml / inlineFormat), then add the mapping "
+                + "here. Neither mail has a preview — an unhandled marker is first seen by the "
+                + "recipients.");
 
-        String mail = SourceFiles.read(MAIL_SERVICE);
+        String mail = SourceFiles.read(MAIL_RENDERER);
         Set<String> missing = new LinkedHashSet<>();
         for (String tag : emitted) {
             if (!mail.contains(MAIL_EQUIVALENT.get(tag))) {
@@ -126,7 +127,7 @@ class MailRichTextParityTest {
         }
 
         assertTrue(missing.isEmpty(),
-            "MailService renders no equivalent for " + missing + ". The same RichTextEditor writes "
+            "MailRichText renders no equivalent for " + missing + ". The same RichTextEditor writes "
                 + "both bodies, so a marker the screen understands and the mail does not ships as "
                 + "raw characters to every subscriber.");
     }

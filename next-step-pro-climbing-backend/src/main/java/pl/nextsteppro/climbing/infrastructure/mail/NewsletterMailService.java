@@ -16,8 +16,8 @@ import pl.nextsteppro.climbing.infrastructure.i18n.MessageService;
 import pl.nextsteppro.climbing.infrastructure.storage.FileUrls;
 
 import java.nio.charset.StandardCharsets;
-
 import java.util.List;
+import java.util.Locale;
 
 @Service
 public class NewsletterMailService {
@@ -58,7 +58,7 @@ public class NewsletterMailService {
     private String buildBody(News news, List<NewsContentBlock> blocks, User subscriber, String baseUrl, String lang, String unsubscribeUrl) {
         String settingsUrl = baseUrl + "/settings";
         String newsUrl = baseUrl + "/news/" + news.getId();
-        String thumbnailHtml = buildThumbnailHtml(news);
+        String thumbnailHtml = buildThumbnailHtml(news, baseUrl);
         String blocksHtml = buildBlocksHtml(blocks, baseUrl);
 
         String footerText = msg.getForLang("email.newsletter.footer", lang, unsubscribeUrl, settingsUrl);
@@ -95,16 +95,29 @@ public class NewsletterMailService {
         );
     }
 
-    private String buildThumbnailHtml(News news) {
-        // Only an EXTERNAL thumbnail reaches the mail; an uploaded one never has. Changing that
-        // changes what every subscriber receives, so it is a decision, not a cleanup.
-        String url = news.getThumbnailUrl();
+    /**
+     * The article's cover, uploaded or external — the same rule the site uses. Only the external
+     * one used to get through, so the usual case (uploaded in the panel) sent the mail without it.
+     *
+     * <p>Cropped around the focal point the admin set, like the site does. Clients that honour
+     * {@code object-fit} honour {@code object-position} too; the rest ignore both.
+     */
+    private String buildThumbnailHtml(News news, String baseUrl) {
+        String url = FileUrls.preferExternal(news.getThumbnailUrl(), baseUrl, "news", news.getThumbnailFilename());
         if (url == null) return "";
         return """
             <div style="margin-bottom: 20px; border-radius: 8px; overflow: hidden;">
-                <img src="%s" alt="" style="width: 100%%; display: block; max-height: 340px; object-fit: cover;" />
+                <img src="%s" alt="" style="width: 100%%; display: block; max-height: 340px; object-fit: cover; object-position: %s;" />
             </div>
-            """.formatted(url);
+            """.formatted(escapeHtml(url), focalPosition(news));
+    }
+
+    private static String focalPosition(News news) {
+        Float x = news.getThumbnailFocalPointX();
+        Float y = news.getThumbnailFocalPointY();
+        if (x == null || y == null) return "50% 50%";
+        // Locale.ROOT is habit, not load-bearing: %.0f prints no decimal separator in any locale.
+        return String.format(Locale.ROOT, "%.0f%% %.0f%%", x * 100, y * 100);
     }
 
     private String buildBlocksHtml(List<NewsContentBlock> blocks, String baseUrl) {
@@ -117,7 +130,7 @@ public class NewsletterMailService {
                     <div style="font-size: 16px; line-height: 1.7; color: #d1d5db; margin-bottom: 18px;">
                         %s
                     </div>
-                    """.formatted(block.getContent()));
+                    """.formatted(MailRichText.toHtml(block.getContent(), "#f3f4f6")));
             } else if (block.getBlockType() == BlockType.IMAGE) {
                 String imgUrl = FileUrls.preferExternal(block.getImageUrl(), baseUrl, "news", block.getImageFilename());
                 if (imgUrl != null) {
