@@ -37,6 +37,17 @@ repositories {
 // spring-boot-dependencies-<wersja>.pom, klucz <tomcat.version>.
 ext['tomcat.version'] = '11.0.25'
 
+// Jackson, z tego samego powodu i tym samym sposobem. Spring Boot 4.1.1 zarządza 3.1.5 (tools.jackson)
+// i 2.21.5 (com.fasterxml, ciągnięte przez biblioteki zewnętrzne), a trzy advisory na jackson-databind
+// — w tym DoS przy parsowaniu Duration/XMLGregorianCalendar — są łatane w 3.1.6 i 2.21.6.
+// ⚠️ Dependabot NIE umie tego zrobić sam: security update dla zależności zarządzanej przez BOM pada
+// na czerwono bez PR-a ("Dependabot encountered 1 error"), bo w żadnym pliku nie ma czego podbić.
+// Czerwone joby "Dependabot Updates" dla jackson-databind to właśnie ten przypadek.
+//
+// Znika, gdy BOM Boota da jackson-bom ≥ 3.1.6 i jackson-2-bom ≥ 2.21.6 (klucze w tym samym pom-ie).
+ext['jackson-bom.version'] = '3.1.7'
+ext['jackson-2-bom.version'] = '2.21.7'
+
 dependencies {
     // Spring Boot Starters
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
