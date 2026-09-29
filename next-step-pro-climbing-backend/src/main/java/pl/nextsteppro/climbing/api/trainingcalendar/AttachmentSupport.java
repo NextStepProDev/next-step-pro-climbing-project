@@ -5,7 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.util.HtmlUtils;
+import pl.nextsteppro.climbing.domain.StoredText;
 import pl.nextsteppro.climbing.domain.personaltraining.PersonalTraining;
 import pl.nextsteppro.climbing.domain.personaltraining.TrainingAttachment;
 import pl.nextsteppro.climbing.domain.personaltraining.TrainingAttachmentRepository;
@@ -16,7 +16,6 @@ import pl.nextsteppro.climbing.infrastructure.storage.FileStorageService;
 
 import java.io.IOException;
 import java.net.URI;
-import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -413,8 +412,6 @@ public class AttachmentSupport {
 
     @Nullable
     static String sanitizeName(@Nullable String name) {
-        if (name == null || name.isBlank()) return null;
-        String escaped = HtmlUtils.htmlEscape(name.trim(), StandardCharsets.UTF_8.name());
-        return escaped.length() > 255 ? escaped.substring(0, 255) : escaped;
+        return StoredText.escapeAndCap(name, 255);
     }
 }

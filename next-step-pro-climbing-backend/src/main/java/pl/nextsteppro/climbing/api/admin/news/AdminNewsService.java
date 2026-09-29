@@ -17,6 +17,7 @@ import pl.nextsteppro.climbing.domain.user.UserRepository;
 import pl.nextsteppro.climbing.infrastructure.mail.NewsletterMailService;
 import pl.nextsteppro.climbing.infrastructure.media.VideoEmbedUrls;
 import pl.nextsteppro.climbing.infrastructure.storage.FileStorageService;
+import pl.nextsteppro.climbing.infrastructure.storage.FileUrls;
 
 import java.io.IOException;
 import java.time.Instant;
@@ -288,7 +289,7 @@ public class AdminNewsService {
         return new UploadBlockImageResponse(
                 block.getId(),
                 filename,
-                buildFileUrl(filename),
+                FileUrls.of(baseUrl, "news", filename),
                 block.getDisplayOrder()
         );
     }
@@ -553,7 +554,7 @@ public class AdminNewsService {
                 projection.getId(),
                 projection.getTitle(),
                 projection.getExcerpt(),
-                buildThumbnailUrl(projection.getThumbnailUrl(), projection.getThumbnailFilename()),
+                imageUrl(projection.getThumbnailUrl(), projection.getThumbnailFilename()),
                 projection.isPublished(),
                 projection.getPublishedAt(),
                 projection.getLanguage(),
@@ -568,7 +569,7 @@ public class AdminNewsService {
                 news.getId(),
                 news.getTitle(),
                 news.getExcerpt(),
-                buildThumbnailUrl(news.getThumbnailUrl(), news.getThumbnailFilename()),
+                imageUrl(news.getThumbnailUrl(), news.getThumbnailFilename()),
                 news.isPublished(),
                 news.getPublishedAt(),
                 news.getLanguage(),
@@ -594,7 +595,7 @@ public class AdminNewsService {
                 news.getTitle(),
                 news.getExcerpt(),
                 news.getThumbnailFilename(),
-                buildThumbnailUrl(news.getThumbnailUrl(), news.getThumbnailFilename()),
+                imageUrl(news.getThumbnailUrl(), news.getThumbnailFilename()),
                 news.getThumbnailFocalPointX(),
                 news.getThumbnailFocalPointY(),
                 news.isPublished(),
@@ -608,29 +609,19 @@ public class AdminNewsService {
     }
 
     private ContentBlockAdminDto toBlockAdminDto(NewsContentBlock block) {
-        String resolvedImageUrl = block.getImageUrl() != null
-                ? block.getImageUrl()
-                : (block.getImageFilename() != null ? buildFileUrl(block.getImageFilename()) : null);
         return new ContentBlockAdminDto(
                 block.getId(),
                 block.getBlockType().name(),
                 block.getContent(),
                 block.getImageFilename(),
-                resolvedImageUrl,
+                imageUrl(block.getImageUrl(), block.getImageFilename()),
                 block.getCaption(),
                 block.getDisplayOrder()
         );
     }
 
-    @Nullable
-    private String buildThumbnailUrl(@Nullable String thumbnailUrl, @Nullable String thumbnailFilename) {
-        if (thumbnailUrl != null) return thumbnailUrl;
-        if (thumbnailFilename != null) return buildFileUrl(thumbnailFilename);
-        return null;
-    }
-
-    private String buildFileUrl(String filename) {
-        return baseUrl + "/api/files/news/" + filename;
+    private @Nullable String imageUrl(@Nullable String externalUrl, @Nullable String filename) {
+        return FileUrls.preferExternal(externalUrl, baseUrl, "news", filename);
     }
 
     private String normalizeVideoEmbedUrl(String inputUrl) {

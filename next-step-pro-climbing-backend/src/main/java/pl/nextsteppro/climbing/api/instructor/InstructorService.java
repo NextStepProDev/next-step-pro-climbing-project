@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 import pl.nextsteppro.climbing.api.instructor.InstructorDtos.InstructorPublicDto;
 import pl.nextsteppro.climbing.domain.instructor.Instructor;
 import pl.nextsteppro.climbing.domain.instructor.InstructorRepository;
+import pl.nextsteppro.climbing.infrastructure.storage.FileUrls;
 
 import java.util.List;
 import java.util.UUID;
@@ -65,12 +66,6 @@ public class InstructorService {
 
     @Nullable
     private String buildPhotoUrl(Instructor instructor) {
-        if (instructor.getPhotoExternalUrl() != null) {
-            return instructor.getPhotoExternalUrl();
-        }
-        if (instructor.getPhotoFilename() == null) {
-            return null;
-        }
-        return baseUrl + "/api/files/instructors/" + instructor.getPhotoFilename();
+        return FileUrls.preferExternal(instructor.getPhotoExternalUrl(), baseUrl, "instructors", instructor.getPhotoFilename());
     }
 }

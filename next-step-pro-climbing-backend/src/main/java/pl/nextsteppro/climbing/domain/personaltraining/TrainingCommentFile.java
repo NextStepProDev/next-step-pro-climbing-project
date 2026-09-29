@@ -2,9 +2,8 @@ package pl.nextsteppro.climbing.domain.personaltraining;
 
 import jakarta.persistence.*;
 import org.jspecify.annotations.Nullable;
-import org.springframework.web.util.HtmlUtils;
+import pl.nextsteppro.climbing.domain.StoredText;
 
-import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -104,14 +103,11 @@ public class TrainingCommentFile {
 
     /**
      * The only client-supplied string that survives to display: the original filename cannot be
-     * recovered from the UUID on disk. Escaped and capped, exactly like
-     * {@link TrainingAttachment#sanitizeLabel}.
+     * recovered from the UUID on disk.
      */
     @Nullable
     public static String sanitizeName(@Nullable String name) {
-        if (name == null || name.isBlank()) return null;
-        String escaped = HtmlUtils.htmlEscape(name.trim(), StandardCharsets.UTF_8.name());
-        return escaped.length() > 255 ? escaped.substring(0, 255) : escaped;
+        return StoredText.escapeAndCap(name, 255);
     }
 
     public UUID getId() {

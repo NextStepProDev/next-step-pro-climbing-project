@@ -7,6 +7,8 @@ import pl.nextsteppro.climbing.domain.event.Event;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.Comparator;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -59,6 +61,9 @@ public class TimeSlot {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
+    public static final Comparator<TimeSlot> CHRONOLOGICAL =
+        Comparator.comparing(TimeSlot::getDate).thenComparing(TimeSlot::getStartTime);
+
     protected TimeSlot() {}
 
     public TimeSlot(LocalDate date, LocalTime startTime, LocalTime endTime, int maxParticipants) {
@@ -71,6 +76,24 @@ public class TimeSlot {
     public TimeSlot(Event event, LocalDate date, LocalTime startTime, LocalTime endTime, int maxParticipants) {
         this(date, startTime, endTime, maxParticipants);
         this.event = event;
+    }
+
+    /**
+     * The bookkeeping slot a reservation needs on one day of an event: a reservation hangs off a
+     * slot, not an event, so the first signup creates one per day. It carries the event's hours,
+     * and an all-day event gets the whole day (00:00–23:59). Not saved.
+     */
+    public static TimeSlot forEventDay(Event event, LocalDate date) {
+        LocalTime start = event.getStartTime() != null ? event.getStartTime() : LocalTime.MIN;
+        LocalTime end = event.getEndTime() != null ? event.getEndTime() : LocalTime.of(23, 59);
+        return new TimeSlot(event, date, start, end, event.getMaxParticipants());
+    }
+
+    /** {@link #forEventDay} for every day of the event, first to last. Not saved. */
+    public static List<TimeSlot> forEventDays(Event event) {
+        return event.getStartDate().datesUntil(event.getEndDate().plusDays(1))
+            .map(date -> forEventDay(event, date))
+            .toList();
     }
 
     @PrePersist

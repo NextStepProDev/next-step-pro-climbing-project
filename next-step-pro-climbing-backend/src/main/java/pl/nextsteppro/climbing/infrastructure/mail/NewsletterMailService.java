@@ -5,6 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.web.util.HtmlUtils;
 import pl.nextsteppro.climbing.api.user.UserService;
 import pl.nextsteppro.climbing.config.AppConfig;
 import pl.nextsteppro.climbing.domain.news.BlockType;
@@ -12,6 +13,9 @@ import pl.nextsteppro.climbing.domain.news.News;
 import pl.nextsteppro.climbing.domain.news.NewsContentBlock;
 import pl.nextsteppro.climbing.domain.user.User;
 import pl.nextsteppro.climbing.infrastructure.i18n.MessageService;
+import pl.nextsteppro.climbing.infrastructure.storage.FileUrls;
+
+import java.nio.charset.StandardCharsets;
 
 import java.util.List;
 
@@ -92,7 +96,9 @@ public class NewsletterMailService {
     }
 
     private String buildThumbnailHtml(News news) {
-        String url = resolveImageUrl(news.getThumbnailUrl(), news.getThumbnailFilename(), null);
+        // Only an EXTERNAL thumbnail reaches the mail; an uploaded one never has. Changing that
+        // changes what every subscriber receives, so it is a decision, not a cleanup.
+        String url = news.getThumbnailUrl();
         if (url == null) return "";
         return """
             <div style="margin-bottom: 20px; border-radius: 8px; overflow: hidden;">
@@ -113,7 +119,7 @@ public class NewsletterMailService {
                     </div>
                     """.formatted(block.getContent()));
             } else if (block.getBlockType() == BlockType.IMAGE) {
-                String imgUrl = resolveImageUrl(block.getImageUrl(), block.getImageFilename(), baseUrl);
+                String imgUrl = FileUrls.preferExternal(block.getImageUrl(), baseUrl, "news", block.getImageFilename());
                 if (imgUrl != null) {
                     sb.append("""
                         <div style="margin: 20px 0; border-radius: 8px; overflow: hidden;">
@@ -133,18 +139,7 @@ public class NewsletterMailService {
                 .formatted(escapeHtml(caption));
     }
 
-    @Nullable
-    private String resolveImageUrl(@Nullable String imageUrl, @Nullable String imageFilename, @Nullable String baseUrl) {
-        if (imageUrl != null) return imageUrl;
-        if (imageFilename != null && baseUrl != null) return baseUrl + "/api/files/news/" + imageFilename;
-        return null;
-    }
-
-    private String escapeHtml(String text) {
-        return text
-                .replace("&", "&amp;")
-                .replace("<", "&lt;")
-                .replace(">", "&gt;")
-                .replace("\"", "&quot;");
+    private static String escapeHtml(String text) {
+        return HtmlUtils.htmlEscape(text, StandardCharsets.UTF_8.name());
     }
 }

@@ -3,6 +3,7 @@ package pl.nextsteppro.climbing.api.admin.settlement;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import pl.nextsteppro.climbing.domain.settlement.Amounts;
 import pl.nextsteppro.climbing.domain.settlement.Settlement;
 import pl.nextsteppro.climbing.domain.settlement.SettlementRepository;
 import pl.nextsteppro.climbing.domain.settlement.SettlementRow;
@@ -939,7 +940,7 @@ class AdminSettlementStatsService {
 
     /** Every figure leaves at the column's scale, so the client never has to round money itself. */
     private static BigDecimal scale(BigDecimal value) {
-        return value.setScale(Settlement.AMOUNT_SCALE, RoundingMode.HALF_UP);
+        return Amounts.scale(value);
     }
 
     /**

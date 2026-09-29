@@ -32,6 +32,7 @@ import pl.nextsteppro.climbing.domain.timeslot.TimeSlot;
 import pl.nextsteppro.climbing.domain.user.User;
 import pl.nextsteppro.climbing.domain.user.UserRepository;
 import pl.nextsteppro.climbing.infrastructure.i18n.MessageService;
+import pl.nextsteppro.climbing.infrastructure.storage.FileUrls;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -289,7 +290,7 @@ public class TrainingCalendarService {
         return athletes.stream()
             .map(a -> new AthleteSummaryDto(
                 a.getId(), a.getFirstName(), a.getLastName(), a.getNickname(),
-                avatarUrl(a), counts.getOrDefault(a.getId(), 0L), lastActivity.get(a.getId())))
+                FileUrls.avatar(a.getAvatarFilename()), counts.getOrDefault(a.getId(), 0L), lastActivity.get(a.getId())))
             // Athletes with unread activity first, then by most recent activity
             .sorted(java.util.Comparator
                 .comparing((AthleteSummaryDto s) -> s.newCount() > 0 ? 0 : 1)
@@ -959,8 +960,7 @@ public class TrainingCalendarService {
      * athlete's browser with 409s while the consent screen is still on their table.
      */
     User requireAthleteIgnoringConsent(UUID userId) {
-        User user = userRepository.findById(userId)
-            .orElseThrow(() -> new IllegalArgumentException("User not found"));
+        User user = requireUser(userId);
         if (!user.isAthlete()) {
             throw new IllegalStateException(msg.get("training.calendar.not.athlete"));
         }
@@ -1025,7 +1025,7 @@ public class TrainingCalendarService {
             c.getBody(),
             c.isAuthorIsAdmin(),
             c.getAuthor().getFullName(),
-            avatarUrl(c.getAuthor()),
+            FileUrls.avatar(c.getAuthor().getAvatarFilename()),
             c.getCreatedAt(),
             c.getEditedAt(),
             c.getAuthor().getId().equals(viewerId),
@@ -1105,13 +1105,6 @@ public class TrainingCalendarService {
             rpe != null ? rpe.getNote() : null,
             past,
             unread);
-    }
-
-    @Nullable
-    private static String avatarUrl(User user) {
-        return user.getAvatarFilename() != null
-            ? "/api/files/avatars/" + user.getAvatarFilename()
-            : null;
     }
 
     private static LocalDateTime nowWarsaw() {

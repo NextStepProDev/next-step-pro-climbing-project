@@ -2,11 +2,10 @@ package pl.nextsteppro.climbing.domain.reservation;
 
 import jakarta.persistence.*;
 import org.jspecify.annotations.Nullable;
-import org.springframework.web.util.HtmlUtils;
+import pl.nextsteppro.climbing.domain.StoredText;
 import pl.nextsteppro.climbing.domain.timeslot.TimeSlot;
 import pl.nextsteppro.climbing.domain.user.User;
 
-import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -162,15 +161,6 @@ public class Reservation {
 
     @Nullable
     public static String sanitizeComment(@Nullable String comment) {
-        if (comment == null || comment.isBlank()) {
-            return null;
-        }
-        // Escape HTML/JS to prevent XSS attacks (defense in depth).
-        // UTF-8 encoding escapes only the dangerous chars (< > " & '); the default
-        // single-arg overload assumes ISO-8859-1 and would turn accented Latin-1 letters
-        // into named entities (e.g. ó -> &oacute;), mangling Polish/Spanish comments.
-        String escaped = HtmlUtils.htmlEscape(comment, StandardCharsets.UTF_8.name());
-        // Limit length after escaping (escaped content can be longer)
-        return escaped.length() > 500 ? escaped.substring(0, 500) : escaped;
+        return StoredText.escapeAndCap(comment, 500);
     }
 }

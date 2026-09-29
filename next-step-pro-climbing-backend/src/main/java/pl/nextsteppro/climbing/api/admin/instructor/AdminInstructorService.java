@@ -14,6 +14,7 @@ import pl.nextsteppro.climbing.domain.instructor.Instructor;
 import pl.nextsteppro.climbing.domain.instructor.InstructorRepository;
 import pl.nextsteppro.climbing.domain.instructor.InstructorType;
 import pl.nextsteppro.climbing.infrastructure.storage.FileStorageService;
+import pl.nextsteppro.climbing.infrastructure.storage.FileUrls;
 
 import java.io.IOException;
 import java.util.List;
@@ -352,12 +353,6 @@ public class AdminInstructorService {
 
     @Nullable
     private String buildPhotoUrl(Instructor instructor) {
-        if (instructor.getPhotoExternalUrl() != null) {
-            return instructor.getPhotoExternalUrl();
-        }
-        if (instructor.getPhotoFilename() == null) {
-            return null;
-        }
-        return baseUrl + "/api/files/instructors/" + instructor.getPhotoFilename();
+        return FileUrls.preferExternal(instructor.getPhotoExternalUrl(), baseUrl, "instructors", instructor.getPhotoFilename());
     }
 }

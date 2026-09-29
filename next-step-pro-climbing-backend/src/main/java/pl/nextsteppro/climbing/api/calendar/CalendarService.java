@@ -4,6 +4,7 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import pl.nextsteppro.climbing.api.reservation.Occupancy;
 import pl.nextsteppro.climbing.domain.course.Course;
 import pl.nextsteppro.climbing.domain.event.Event;
 import pl.nextsteppro.climbing.domain.event.EventRepository;
@@ -11,7 +12,6 @@ import pl.nextsteppro.climbing.domain.reservation.GuestReservationRepository;
 import pl.nextsteppro.climbing.domain.reservation.Reservation;
 import pl.nextsteppro.climbing.domain.reservation.ReservationRepository;
 import pl.nextsteppro.climbing.domain.reservation.ReservationStatus;
-import pl.nextsteppro.climbing.domain.reservation.SlotParticipantCount;
 import pl.nextsteppro.climbing.domain.reservedseat.ReservedSeatCount;
 import pl.nextsteppro.climbing.domain.reservedseat.ReservedSeatRepository;
 import pl.nextsteppro.climbing.domain.timeslot.TimeSlot;
@@ -37,6 +37,7 @@ public class CalendarService {
     private final TimeSlotRepository timeSlotRepository;
     private final ReservationRepository reservationRepository;
     private final GuestReservationRepository guestReservationRepository;
+    private final Occupancy occupancy;
     private final EventRepository eventRepository;
     private final WaitlistRepository waitlistRepository;
     private final EventWaitlistRepository eventWaitlistRepository;
@@ -52,6 +53,7 @@ public class CalendarService {
         this.timeSlotRepository = timeSlotRepository;
         this.reservationRepository = reservationRepository;
         this.guestReservationRepository = guestReservationRepository;
+        this.occupancy = new Occupancy(reservationRepository, guestReservationRepository);
         this.eventRepository = eventRepository;
         this.waitlistRepository = waitlistRepository;
         this.eventWaitlistRepository = eventWaitlistRepository;
@@ -68,7 +70,7 @@ public class CalendarService {
 
         // Batch: load all confirmed counts at once
         List<UUID> allSlotIds = slots.stream().map(TimeSlot::getId).toList();
-        Map<UUID, Integer> countMap = buildCountMap(allSlotIds);
+        Map<UUID, Integer> countMap = occupancy.perSlot(allSlotIds);
         Map<UUID, Integer> inviteMap = buildSlotInviteMap(allSlotIds);
 
         // Batch: load user's confirmed slot IDs at once
@@ -109,7 +111,7 @@ public class CalendarService {
         List<Event> events = eventRepository.findActiveEventsBetween(startDate, endDate);
 
         List<UUID> allSlotIds = slots.stream().map(TimeSlot::getId).toList();
-        Map<UUID, Integer> countMap = buildCountMap(allSlotIds);
+        Map<UUID, Integer> countMap = occupancy.perSlot(allSlotIds);
         Map<UUID, Integer> inviteMap = buildSlotInviteMap(allSlotIds);
         Set<UUID> userConfirmedSlotIds = userId != null && !allSlotIds.isEmpty()
             ? new HashSet<>(reservationRepository.findUserConfirmedSlotIds(userId, allSlotIds))
@@ -151,7 +153,7 @@ public class CalendarService {
         List<Event> events = eventRepository.findActiveEventsOnDate(date);
 
         List<UUID> slotIds = slots.stream().map(TimeSlot::getId).toList();
-        Map<UUID, Integer> countMap = buildCountMap(slotIds);
+        Map<UUID, Integer> countMap = occupancy.perSlot(slotIds);
         Map<UUID, Integer> inviteMap = buildSlotInviteMap(slotIds);
         Set<UUID> userConfirmedSlotIds = userId != null && !slotIds.isEmpty()
             ? new HashSet<>(reservationRepository.findUserConfirmedSlotIds(userId, slotIds))
@@ -518,7 +520,7 @@ public class CalendarService {
         List<UUID> eventIds = events.stream().map(Event::getId).toList();
         List<TimeSlot> allEventSlots = timeSlotRepository.findByEventIdIn(eventIds);
         List<UUID> allEventSlotIds = allEventSlots.stream().map(TimeSlot::getId).toList();
-        Map<UUID, Integer> countMap = buildCountMap(allEventSlotIds);
+        Map<UUID, Integer> countMap = occupancy.perSlot(allEventSlotIds);
 
         Map<UUID, Integer> participantsMap = new HashMap<>();
         for (TimeSlot slot : allEventSlots) {
@@ -550,17 +552,6 @@ public class CalendarService {
             : Set.of();
 
         return new EventData(participantsMap, userRegisteredEventIds, inviteMap, userInvitedEventIds);
-    }
-
-    private Map<UUID, Integer> buildCountMap(List<UUID> slotIds) {
-        if (slotIds.isEmpty()) return Map.of();
-        Map<UUID, Integer> countMap = new HashMap<>(
-            reservationRepository.countConfirmedByTimeSlotIds(slotIds).stream()
-                .collect(Collectors.toMap(SlotParticipantCount::slotId, SlotParticipantCount::countAsInt))
-        );
-        guestReservationRepository.sumParticipantsByTimeSlotIds(slotIds)
-            .forEach(g -> countMap.merge(g.slotId(), g.countAsInt(), Integer::sum));
-        return countMap;
     }
 
     private Map<UUID, Integer> buildSlotInviteMap(List<UUID> slotIds) {

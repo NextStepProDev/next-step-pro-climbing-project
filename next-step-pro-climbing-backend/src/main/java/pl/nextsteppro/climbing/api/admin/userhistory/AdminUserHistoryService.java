@@ -1,6 +1,5 @@
 package pl.nextsteppro.climbing.api.admin.userhistory;
 
-import org.jspecify.annotations.Nullable;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -24,6 +23,7 @@ import pl.nextsteppro.climbing.domain.waitlist.EventWaitlist;
 import pl.nextsteppro.climbing.domain.waitlist.EventWaitlistRepository;
 import pl.nextsteppro.climbing.domain.waitlist.Waitlist;
 import pl.nextsteppro.climbing.domain.waitlist.WaitlistRepository;
+import pl.nextsteppro.climbing.infrastructure.storage.FileUrls;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -174,7 +174,7 @@ public class AdminUserHistoryService {
             user.getNickname(),
             user.getEmail(),
             user.getPhone(),
-            avatarUrl(user),
+            FileUrls.avatar(user.getAvatarFilename()),
             user.getRole().name(),
             user.isAthlete(),
             logbookReadable,
@@ -286,12 +286,5 @@ public class AdminUserHistoryService {
             course != null ? course.getTitle() : null,
             request.getResolvedAt(),
             request.getCreatedAt());
-    }
-
-    @Nullable
-    private static String avatarUrl(User user) {
-        return user.getAvatarFilename() != null
-            ? "/api/files/avatars/" + user.getAvatarFilename()
-            : null;
     }
 }

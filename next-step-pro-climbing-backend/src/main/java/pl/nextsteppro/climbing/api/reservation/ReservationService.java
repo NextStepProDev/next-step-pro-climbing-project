@@ -42,6 +42,7 @@ public class ReservationService {
 
     private final ReservationRepository reservationRepository;
     private final GuestReservationRepository guestReservationRepository;
+    private final Occupancy occupancy;
     private final TimeSlotRepository timeSlotRepository;
     private final UserRepository userRepository;
     private final EventRepository eventRepository;
@@ -68,6 +69,7 @@ public class ReservationService {
         this.trainingRequestRepository = trainingRequestRepository;
         this.reservationRepository = reservationRepository;
         this.guestReservationRepository = guestReservationRepository;
+        this.occupancy = new Occupancy(reservationRepository, guestReservationRepository);
         this.timeSlotRepository = timeSlotRepository;
         this.userRepository = userRepository;
         this.eventRepository = eventRepository;
@@ -468,18 +470,7 @@ public class ReservationService {
             throw new IllegalStateException(msg.get("reservation.event.already.registered"));
         }
 
-        List<UUID> activeSlotIds = activeSlots.stream().map(TimeSlot::getId).toList();
-        Map<UUID, Integer> countMap = reservationRepository.countConfirmedByTimeSlotIds(activeSlotIds).stream()
-            .collect(Collectors.toMap(
-                SlotParticipantCount::slotId,
-                SlotParticipantCount::countAsInt
-            ));
-        // Guests are booked against the EVENT, not its slots, so they never show up in the
-        // per-slot confirmed counts. The slot twin adds them (createReservation) and so does the
-        // public calendar (CalendarService.computeEventData) — omitting them here let the calendar
-        // read "full" while this endpoint happily accepted more people.
-        int currentParticipants = countMap.values().stream().mapToInt(Integer::intValue).max().orElse(0)
-            + guestReservationRepository.sumParticipantsByEventId(eventId);
+        int currentParticipants = occupancy.ofEvent(eventId, activeSlots);
 
         int reservedForOthers = reservedSeatRepository.countPendingByEventIdExcludingUser(eventId, userId);
         int spotsLeft = event.getMaxParticipants() - currentParticipants - reservedForOthers;
@@ -530,10 +521,7 @@ public class ReservationService {
             throw new IllegalArgumentException(msg.get("reservation.event.no.slots"));
         }
 
-        TimeSlot earliestSlot = slots.stream()
-            .min((a, b) -> LocalDateTime.of(a.getDate(), a.getStartTime())
-                .compareTo(LocalDateTime.of(b.getDate(), b.getStartTime())))
-            .orElseThrow();
+        TimeSlot earliestSlot = slots.stream().min(TimeSlot.CHRONOLOGICAL).orElseThrow();
         if (!BookingTimeValidator.isWithinBookingWindow(earliestSlot.getDate(), earliestSlot.getStartTime())) {
             throw new IllegalStateException(msg.get("reservation.cancel.window"));
         }
@@ -645,10 +633,7 @@ public class ReservationService {
             throw new IllegalStateException(msg.get("reservation.event.no.slots"));
         }
 
-        TimeSlot earliestSlot = slots.stream()
-            .min((a, b) -> LocalDateTime.of(a.getDate(), a.getStartTime())
-                .compareTo(LocalDateTime.of(b.getDate(), b.getStartTime())))
-            .orElseThrow();
+        TimeSlot earliestSlot = slots.stream().min(TimeSlot.CHRONOLOGICAL).orElseThrow();
         if (!BookingTimeValidator.isWithinBookingWindow(earliestSlot.getDate(), earliestSlot.getStartTime())) {
             throw new IllegalStateException(msg.get("reservation.cancel.window"));
         }
@@ -660,16 +645,8 @@ public class ReservationService {
             throw new IllegalStateException(msg.get("reservation.event.not.registered"));
         }
 
-        Map<UUID, Integer> countMap = reservationRepository.countConfirmedByTimeSlotIds(slotIds).stream()
-            .collect(Collectors.toMap(
-                SlotParticipantCount::slotId,
-                SlotParticipantCount::countAsInt
-            ));
-
         int currentUserParticipants = userReservations.getFirst().getParticipants();
-        // Event guests sit outside the per-slot counts — see createEventReservation.
-        int currentMaxTotal = countMap.values().stream().mapToInt(Integer::intValue).max().orElse(0)
-            + guestReservationRepository.sumParticipantsByEventId(eventId);
+        int currentMaxTotal = occupancy.ofEvent(eventId, slots);
         int availableForThisGroup = event.getMaxParticipants() - currentMaxTotal + currentUserParticipants;
         if (participants > availableForThisGroup) {
             throw new IllegalStateException(msg.get("reservation.event.spots.available", availableForThisGroup, participants));
@@ -698,16 +675,7 @@ public class ReservationService {
     }
 
     private List<TimeSlot> createDefaultSlotsForEvent(Event event) {
-        List<TimeSlot> slots = new ArrayList<>();
-        LocalTime slotStart = event.getStartTime() != null ? event.getStartTime() : LocalTime.of(0, 0);
-        LocalTime slotEnd = event.getEndTime() != null ? event.getEndTime() : LocalTime.of(23, 59);
-        LocalDate date = event.getStartDate();
-        while (!date.isAfter(event.getEndDate())) {
-            TimeSlot slot = new TimeSlot(event, date, slotStart, slotEnd, event.getMaxParticipants());
-            slots.add(timeSlotRepository.save(slot));
-            date = date.plusDays(1);
-        }
-        return slots;
+        return TimeSlot.forEventDays(event).stream().map(timeSlotRepository::save).toList();
     }
 
     private UserReservationDto toUserReservationDto(Reservation reservation, int spotsAvailable) {

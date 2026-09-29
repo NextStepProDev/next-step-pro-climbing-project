@@ -22,6 +22,7 @@ import pl.nextsteppro.climbing.api.settings.SiteSettingsDtos.SlotTemplateDto;
 import pl.nextsteppro.climbing.domain.settings.SiteSetting;
 import pl.nextsteppro.climbing.domain.settings.SiteSettingsRepository;
 import pl.nextsteppro.climbing.infrastructure.storage.FileStorageService;
+import pl.nextsteppro.climbing.infrastructure.storage.FileUrls;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -145,7 +146,7 @@ public class AdminSiteSettingsService {
         deleteExistingFileIfPresent(filenameKey);
 
         String filename = fileStorageService.store(file, FOLDER);
-        String imageUrl = baseUrl + "/api/files/" + FOLDER + "/" + filename;
+        String imageUrl = FileUrls.of(baseUrl, FOLDER, filename);
 
         save(urlKey, imageUrl);
         save(filenameKey, filename);

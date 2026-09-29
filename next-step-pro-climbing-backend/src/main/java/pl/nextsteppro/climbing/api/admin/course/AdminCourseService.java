@@ -14,6 +14,7 @@ import pl.nextsteppro.climbing.domain.course.*;
 import pl.nextsteppro.climbing.domain.event.Event;
 import pl.nextsteppro.climbing.domain.event.EventRepository;
 import pl.nextsteppro.climbing.infrastructure.storage.FileStorageService;
+import pl.nextsteppro.climbing.infrastructure.storage.FileUrls;
 
 import java.io.IOException;
 import java.time.Instant;
@@ -346,7 +347,7 @@ public class AdminCourseService {
         return new UploadBlockImageResponse(
                 block.getId(),
                 filename,
-                buildFileUrl(filename),
+                FileUrls.of(baseUrl, "courses", filename),
                 block.getDisplayOrder()
         );
     }
@@ -546,7 +547,7 @@ public class AdminCourseService {
                 projection.getId(),
                 projection.getTitle(),
                 projection.getPrice(),
-                buildThumbnailUrl(projection.getThumbnailUrl(), projection.getThumbnailFilename()),
+                imageUrl(projection.getThumbnailUrl(), projection.getThumbnailFilename()),
                 projection.getDisplayOrder(),
                 projection.isPublished(),
                 projection.getLanguage(),
@@ -562,7 +563,7 @@ public class AdminCourseService {
                 course.getId(),
                 course.getTitle(),
                 course.getPrice(),
-                buildThumbnailUrl(course.getThumbnailUrl(), course.getThumbnailFilename()),
+                imageUrl(course.getThumbnailUrl(), course.getThumbnailFilename()),
                 course.getDisplayOrder(),
                 course.isPublished(),
                 course.getLanguage(),
@@ -579,7 +580,7 @@ public class AdminCourseService {
                 course.getTitle(),
                 course.getPrice(),
                 course.getThumbnailFilename(),
-                buildThumbnailUrl(course.getThumbnailUrl(), course.getThumbnailFilename()),
+                imageUrl(course.getThumbnailUrl(), course.getThumbnailFilename()),
                 course.getThumbnailFocalPointX(),
                 course.getThumbnailFocalPointY(),
                 course.isPublished(),
@@ -593,28 +594,18 @@ public class AdminCourseService {
     }
 
     private ContentBlockAdminDto toBlockAdminDto(CourseContentBlock block) {
-        String resolvedImageUrl = block.getImageUrl() != null
-                ? block.getImageUrl()
-                : (block.getImageFilename() != null ? buildFileUrl(block.getImageFilename()) : null);
         return new ContentBlockAdminDto(
                 block.getId(),
                 block.getBlockType().name(),
                 block.getContent(),
                 block.getImageFilename(),
-                resolvedImageUrl,
+                imageUrl(block.getImageUrl(), block.getImageFilename()),
                 block.getCaption(),
                 block.getDisplayOrder()
         );
     }
 
-    @Nullable
-    private String buildThumbnailUrl(@Nullable String thumbnailUrl, @Nullable String thumbnailFilename) {
-        if (thumbnailUrl != null) return thumbnailUrl;
-        if (thumbnailFilename != null) return buildFileUrl(thumbnailFilename);
-        return null;
-    }
-
-    private String buildFileUrl(String filename) {
-        return baseUrl + "/api/files/courses/" + filename;
+    private @Nullable String imageUrl(@Nullable String externalUrl, @Nullable String filename) {
+        return FileUrls.preferExternal(externalUrl, baseUrl, "courses", filename);
     }
 }

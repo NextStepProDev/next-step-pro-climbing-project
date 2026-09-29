@@ -2,7 +2,7 @@ package pl.nextsteppro.climbing.domain.reservation;
 
 import jakarta.persistence.*;
 import org.jspecify.annotations.Nullable;
-import org.springframework.web.util.HtmlUtils;
+import pl.nextsteppro.climbing.domain.StoredText;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -58,12 +58,9 @@ public class ReservationRpe {
         updatedAt = Instant.now();
     }
 
-    /** Same UTF-8 HTML-escape as elsewhere (keeps Polish diacritics); null/blank allowed. */
     @Nullable
     public static String sanitizeNote(@Nullable String note) {
-        if (note == null || note.isBlank()) return null;
-        String escaped = HtmlUtils.htmlEscape(note.trim(), java.nio.charset.StandardCharsets.UTF_8.name());
-        return escaped.length() > MAX_NOTE_LENGTH ? escaped.substring(0, MAX_NOTE_LENGTH) : escaped;
+        return StoredText.escapeAndCap(note, MAX_NOTE_LENGTH);
     }
 
     public void update(int rpe, @Nullable String note) {

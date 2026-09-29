@@ -8,7 +8,6 @@ import pl.nextsteppro.climbing.domain.timeslot.TimeSlot;
 import pl.nextsteppro.climbing.domain.user.User;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.UUID;
@@ -48,7 +47,7 @@ public class Settlement {
     public static final BigDecimal MAX_AMOUNT = new BigDecimal("100000");
 
     /** Money, so two decimal places — the column is {@code NUMERIC(10,2)}. */
-    public static final int AMOUNT_SCALE = 2;
+    public static final int AMOUNT_SCALE = Amounts.SCALE;
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -129,11 +128,7 @@ public class Settlement {
      * @throws IllegalArgumentException when the amount falls outside the allowed range
      */
     public static BigDecimal normalizeAmount(BigDecimal amount, String outOfRangeMessage) {
-        BigDecimal scaled = amount.setScale(AMOUNT_SCALE, RoundingMode.HALF_UP);
-        if (scaled.compareTo(MIN_AMOUNT) < 0 || scaled.compareTo(MAX_AMOUNT) > 0) {
-            throw new IllegalArgumentException(outOfRangeMessage);
-        }
-        return scaled;
+        return Amounts.normalize(amount, MIN_AMOUNT, MAX_AMOUNT, outOfRangeMessage);
     }
 
     // No accessors, deliberately, and it is not an oversight. This entity is never loaded: writes go

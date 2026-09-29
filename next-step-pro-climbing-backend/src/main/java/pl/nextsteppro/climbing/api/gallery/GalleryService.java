@@ -8,6 +8,7 @@ import pl.nextsteppro.climbing.domain.gallery.Album;
 import pl.nextsteppro.climbing.domain.gallery.AlbumRepository;
 import pl.nextsteppro.climbing.domain.gallery.Photo;
 import pl.nextsteppro.climbing.domain.gallery.PhotoRepository;
+import pl.nextsteppro.climbing.infrastructure.storage.FileUrls;
 
 import java.util.List;
 import java.util.UUID;
@@ -85,6 +86,6 @@ public class GalleryService {
     }
 
     private String buildPhotoUrl(String filename) {
-        return baseUrl + "/api/files/gallery/" + filename;
+        return FileUrls.of(baseUrl, "gallery", filename);
     }
 }

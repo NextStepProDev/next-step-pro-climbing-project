@@ -2,7 +2,7 @@ package pl.nextsteppro.climbing.domain.athletegoal;
 
 import jakarta.persistence.*;
 import org.jspecify.annotations.Nullable;
-import org.springframework.web.util.HtmlUtils;
+import pl.nextsteppro.climbing.domain.StoredText;
 import pl.nextsteppro.climbing.domain.athleteweight.AthleteWeight;
 import pl.nextsteppro.climbing.domain.athleteweight.WeightTrendCalculator.ConfirmedTrend;
 import pl.nextsteppro.climbing.domain.user.User;
@@ -114,12 +114,9 @@ public class AthleteGoal {
         updatedAt = Instant.now();
     }
 
-    /** Same UTF-8 HTML-escape pattern as PersonalTraining.sanitizeText (keeps Polish diacritics). */
     @Nullable
     public static String sanitizeContent(@Nullable String content) {
-        if (content == null || content.isBlank()) return null;
-        String escaped = HtmlUtils.htmlEscape(content.trim(), java.nio.charset.StandardCharsets.UTF_8.name());
-        return escaped.length() > MAX_CONTENT_LENGTH ? escaped.substring(0, MAX_CONTENT_LENGTH) : escaped;
+        return StoredText.escapeAndCap(content, MAX_CONTENT_LENGTH);
     }
 
     /** Horizon is fixed for an active goal — replacing the horizon means replacing the goal. */

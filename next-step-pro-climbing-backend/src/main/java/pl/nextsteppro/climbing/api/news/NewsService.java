@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pl.nextsteppro.climbing.api.news.NewsDtos.*;
 import pl.nextsteppro.climbing.domain.news.*;
+import pl.nextsteppro.climbing.infrastructure.storage.FileUrls;
 
 import java.util.List;
 import java.util.Set;
@@ -93,7 +94,7 @@ public class NewsService {
                 news.getId(),
                 news.getTitle(),
                 news.getExcerpt(),
-                buildThumbnailUrl(news.getThumbnailUrl(), news.getThumbnailFilename()),
+                imageUrl(news.getThumbnailUrl(), news.getThumbnailFilename()),
                 news.getThumbnailFocalPointX(),
                 news.getThumbnailFocalPointY(),
                 blocks.stream().map(this::toBlockDto).toList(),
@@ -133,7 +134,7 @@ public class NewsService {
                 projection.getId(),
                 projection.getTitle(),
                 projection.getExcerpt(),
-                buildThumbnailUrl(projection.getThumbnailUrl(), projection.getThumbnailFilename()),
+                imageUrl(projection.getThumbnailUrl(), projection.getThumbnailFilename()),
                 projection.getThumbnailFocalPointX(),
                 projection.getThumbnailFocalPointY(),
                 projection.getPublishedAt(),
@@ -144,26 +145,17 @@ public class NewsService {
     }
 
     private ContentBlockDto toBlockDto(NewsContentBlock block) {
-        String imageUrl = block.getImageUrl() != null
-                ? block.getImageUrl()
-                : (block.getImageFilename() != null ? buildFileUrl(block.getImageFilename()) : null);
         return new ContentBlockDto(
                 block.getId(),
                 block.getBlockType().name(),
                 block.getContent(),
-                imageUrl,
+                imageUrl(block.getImageUrl(), block.getImageFilename()),
                 block.getCaption(),
                 block.getDisplayOrder()
         );
     }
 
-    private String buildThumbnailUrl(@Nullable String thumbnailUrl, @Nullable String thumbnailFilename) {
-        if (thumbnailUrl != null) return thumbnailUrl;
-        if (thumbnailFilename != null) return buildFileUrl(thumbnailFilename);
-        return null;
-    }
-
-    private String buildFileUrl(String filename) {
-        return baseUrl + "/api/files/news/" + filename;
+    private @Nullable String imageUrl(@Nullable String externalUrl, @Nullable String filename) {
+        return FileUrls.preferExternal(externalUrl, baseUrl, "news", filename);
     }
 }

@@ -10,6 +10,7 @@ import pl.nextsteppro.climbing.api.admin.assets.AdminAssetsDtos.AssetDto;
 import pl.nextsteppro.climbing.domain.assets.SharedAsset;
 import pl.nextsteppro.climbing.domain.assets.SharedAssetRepository;
 import pl.nextsteppro.climbing.infrastructure.storage.FileStorageService;
+import pl.nextsteppro.climbing.infrastructure.storage.FileUrls;
 
 import java.io.IOException;
 import java.util.List;
@@ -73,7 +74,7 @@ public class AdminAssetsService {
                 asset.getOriginalName(),
                 asset.getMimeType(),
                 asset.getSizeBytes(),
-                baseUrl + "/api/files/" + FOLDER + "/" + asset.getFilename(),
+                FileUrls.of(baseUrl, FOLDER, asset.getFilename()),
                 asset.getCreatedAt()
         );
     }

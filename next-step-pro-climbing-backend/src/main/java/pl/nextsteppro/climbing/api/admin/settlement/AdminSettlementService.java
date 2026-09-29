@@ -10,6 +10,7 @@ import pl.nextsteppro.climbing.domain.reservation.GuestReservationRepository;
 import pl.nextsteppro.climbing.domain.reservation.Reservation;
 import pl.nextsteppro.climbing.domain.reservation.ReservationRepository;
 import pl.nextsteppro.climbing.domain.reservation.ReservationStatus;
+import pl.nextsteppro.climbing.domain.settlement.Amounts;
 import pl.nextsteppro.climbing.domain.settlement.PayerLastAmount;
 import pl.nextsteppro.climbing.domain.settlement.Settlement;
 import pl.nextsteppro.climbing.domain.settlement.SettlementRepository;
@@ -284,7 +285,7 @@ public class AdminSettlementService {
             }
         }
 
-        return new SettleOutstandingResultDto(touched, scaleAmount(balanceOf(payer, request.payerId())));
+        return new SettleOutstandingResultDto(touched, Amounts.scale(balanceOf(payer, request.payerId())));
     }
 
     private List<SettlementRow> creditRows(SettlementPayer payer, UUID payerId) {
@@ -306,10 +307,6 @@ public class AdminSettlementService {
             case USER -> settlementRepository.balanceForUser(payerId);
             case GUEST -> settlementRepository.balanceForGuest(payerId);
         };
-    }
-
-    private static BigDecimal scaleAmount(BigDecimal value) {
-        return value.setScale(Settlement.AMOUNT_SCALE, java.math.RoundingMode.HALF_UP);
     }
 
     // ---------------------------------------------------------------- sections

@@ -2,6 +2,7 @@ package pl.nextsteppro.climbing.domain.settlement;
 
 import jakarta.persistence.*;
 import org.jspecify.annotations.Nullable;
+import pl.nextsteppro.climbing.domain.StoredText;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -60,9 +61,7 @@ public class PayoutSource {
     /** Trims and truncates; {@code null} for blank, mirroring the CHECK in V93. */
     @Nullable
     public static String sanitizeName(@Nullable String name) {
-        if (name == null || name.isBlank()) return null;
-        String trimmed = name.trim();
-        return trimmed.length() > MAX_NAME_LENGTH ? trimmed.substring(0, MAX_NAME_LENGTH) : trimmed;
+        return StoredText.trimAndCap(name, MAX_NAME_LENGTH);
     }
 
     public void rename(String name) {
