@@ -961,6 +961,10 @@
       "creditSpent": "Saldo usado — primero la deuda más antigua. Saldo: {{balance}}.",
       "creditSpentOwing": "Saldo usado — primero la deuda más antigua. Quedan {{amount}} por pagar.",
       "creditGone": "No quedaba nada que usar: el saldo se ha ido a otra parte. Recarga la vista.",
+      "alreadySaved": "Ya está guardado: no hace falta pulsar nada más.",
+      "payDebtOnSave": "Debe {{debt}} de otras sesiones: «Guardar y saldar la deuda» abajo la cubre con el excedente, y el resto queda como saldo a favor.",
+      "debtPaid": "Deuda saldada — primero la más antigua. Saldo: {{balance}}.",
+      "debtPaidOwing": "Deuda saldada en parte — primero la más antigua. Quedan {{amount}} por pagar.",
       "debt": "debe {{amount}}",
       "receivedPlaceholder": "recibido",
       "receivedLabel": "Recibido — {{name}}",
@@ -976,6 +980,8 @@
       "setAll": "Aplicar a todos",
       "save": "Guardar",
       "saveAndSpendCredit": "Guardar y usar el saldo a favor",
+      "saveAndPayDebt": "Guardar y saldar la deuda",
+      "saveAndSettle": "Guardar y liquidar saldos y deudas",
       "saved": "Liquidación guardada."
     },
     "errors": {

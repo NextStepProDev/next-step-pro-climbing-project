@@ -602,6 +602,9 @@ export interface SettlementLine {
   // row — so the net figure says "no credit" about exactly the client whose session is covered.
   // This is what the "pay from credit" action can spend; `balance` is what the line states.
   credit: number
+  // What they still owe on OTHER sessions — this row's own shortfall excluded. An overpayment typed
+  // on this row can pay it off, which is what "Save and pay off the debt" offers.
+  otherDebt: number
   settledOn: string | null
   // What this person was last charged, offered as a prefill and never applied on its own. This is
   // what stands in for a default-rate column on the slot: the price follows the person (a pass, a

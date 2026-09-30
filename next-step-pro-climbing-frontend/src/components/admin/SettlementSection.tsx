@@ -173,6 +173,29 @@ export function SettlementSection({ target, targetId, onDirtyChange }: Settlemen
   const dirtyLines = lines.filter(isRowDirty)
 
   /**
+   * Rows where "Save and pay off the debt" applies: more is being recorded as received than this
+   * session costs, and the person still owes for another one.
+   *
+   * The reported case: ten owed from earlier, a 360 session paid with 400. The plain save records
+   * exactly that on this row and nothing else, so the old debt stays open beside a credit that
+   * could pay it — the account nets correctly while the screens show a debt and a credit instead
+   * of the one figure the owner expects. Offered, not automatic: an overpayment can also be a typo,
+   * or a prepayment the client meant for next time, and money moving as a side effect of Save is
+   * the one thing this section must not do.
+   *
+   * Unlike the credit path this one is safe on a row that already holds money — it saves the row
+   * as typed and only then runs the pool, so nothing written is ever overwritten with less.
+   */
+  const debtPayingLines = dirtyLines.filter((line) => {
+    if (line.otherDebt <= 0) return false
+    const draft = draftFor(line)
+    if (!draft.settled) return false
+    const amount = parseAmount(draft.amount.trim())
+    const received = parseAmount(draft.received.trim())
+    return amount !== null && received !== null && received > amount
+  })
+
+  /**
    * Rows where "Save and settle from credit" can do its job in one click: a person holding a credit
    * is being charged, and nothing has been received on this row yet.
    *
@@ -181,9 +204,28 @@ export function SettlementSection({ target, targetId, onDirtyChange }: Settlemen
    * would erase money that had arrived. Such a row keeps the ordinary save and the per-row button.
    */
   const spendableLines = dirtyLines.filter((line) => {
+    // One path per row. The debt path already pulls every credit into the pool, so running the
+    // credit path as well would only be a second, differently-shaped route to the same figure.
+    if (debtPayingLines.includes(line)) return false
     const amount = parseAmount(draftFor(line).amount.trim())
     return line.credit > 0 && line.paidAmount === 0 && amount !== null && amount > 0
   })
+
+  /** The combined button names what it will do; `null` hides it. */
+  const settleLabel =
+    debtPayingLines.length > 0 && spendableLines.length > 0
+      ? 'settlements.actions.saveAndSettle'
+      : debtPayingLines.length > 0
+        ? 'settlements.actions.saveAndPayDebt'
+        : spendableLines.length > 0
+          ? 'settlements.actions.saveAndSpendCredit'
+          : null
+
+  /** What the pool did, stated as where the account now stands — see `spendCredit`. */
+  const describeResult = (balance: number, owingKey: string, squareKey: string) =>
+    balance < 0
+      ? t(owingKey, { amount: money(-balance) })
+      : t(squareKey, { balance: money(balance) })
 
   /**
    * Writes every changed row. Rows in `spendFor` are written as the charge alone and then settled
@@ -192,9 +234,12 @@ export function SettlementSection({ target, targetId, onDirtyChange }: Settlemen
    * ordinary save would record 10 of 100 and leave the 90 parked on an older session — the screen
    * would then say "owes 90" and "holds 90" about the same person at once.
    *
+   * Rows in `payDebtFor` are saved exactly as typed and then run through the same pool with nothing
+   * further received, which spends the overpayment (and any other credit) on the oldest debt.
+   *
    * Returns one sentence per settled person, for the toast.
    */
-  const writeDrafts = async (spendFor: Set<string>): Promise<string[]> => {
+  const writeDrafts = async (spendFor: Set<string>, payDebtFor: Set<string>): Promise<string[]> => {
     const invalid: string[] = []
     // ⚠️ Ticking "settled" and typing a zero cannot be saved, and used to be swallowed. The server
     // drops the payment date whenever nothing arrived — a date with no money behind it would read
@@ -286,22 +331,43 @@ export function SettlementSection({ target, targetId, onDirtyChange }: Settlemen
         delete next[key]
         return next
       })
-      reports.push(`${line.name}: ${
-        result.balance < 0
-          ? t('settlements.line.creditSpentOwing', {
-              amount: money(-result.balance),
-            })
-          : t('settlements.line.creditSpent', {
-              balance: money(result.balance),
-            })
-      }`)
+      reports.push(`${line.name}: ${describeResult(
+        result.balance, 'settlements.line.creditSpentOwing', 'settlements.line.creditSpent',
+      )}`)
+    }
+
+    for (const line of dirtyLines) {
+      const key = payerKey(line)
+      if (!payDebtFor.has(key)) continue
+      const draft = draftFor(line)
+      const result = await adminSettlementsApi.settleOutstanding(
+        line.payerType,
+        line.payerId,
+        // The day the money was handed over — that is when the old debt stopped being owed.
+        draft.settledOn !== '' ? draft.settledOn : targetDate,
+        // Nothing on top: the overpayment is already on this row, and the pool collects it from
+        // there. Passing the received figure again would count the same banknotes twice.
+        0,
+      )
+      // Same reason as above: once the pool has run, a retry must not rewrite this row.
+      setDrafts((prev) => {
+        const next = { ...prev }
+        delete next[key]
+        return next
+      })
+      reports.push(`${line.name}: ${describeResult(
+        result.balance, 'settlements.line.debtPaidOwing', 'settlements.line.debtPaid',
+      )}`)
     }
     return reports
   }
 
   const saveMutation = useMutation({
-    mutationFn: (spend: boolean) =>
-      writeDrafts(new Set(spend ? spendableLines.map(payerKey) : [])),
+    mutationFn: (settle: boolean) =>
+      writeDrafts(
+        new Set(settle ? spendableLines.map(payerKey) : []),
+        new Set(settle ? debtPayingLines.map(payerKey) : []),
+      ),
     // Money may have moved before a failure (the charge written, an earlier person settled), so the
     // figures on screen are refreshed either way.
     onError: () => queryClient.invalidateQueries({ queryKey: ['admin', 'settlements'] }),
@@ -356,6 +422,10 @@ export function SettlementSection({ target, targetId, onDirtyChange }: Settlemen
     onSuccess: (result) => {
       setCreditResult(result)
       queryClient.invalidateQueries({ queryKey: ['admin', 'settlements'] })
+      // ⚠️ This button writes on its own, and the only visible sign used to be a greyed-out Save —
+      // which the owner read as "it won't let me save", not as "already saved". Nothing moved, so
+      // nothing is confirmed; the row's own line reports that case.
+      if (result.settled > 0) showToast(t('settlements.actions.saved'))
     },
   })
 
@@ -598,7 +668,13 @@ export function SettlementSection({ target, targetId, onDirtyChange }: Settlemen
                         the case that used to have nothing at all: an unsaved row fails the
                         condition under it, so pricing somebody's first session over a credit said
                         nothing about the credit until the modal was saved, closed and reopened. */}
-                    {spendableLines.includes(line) ? (
+                    {debtPayingLines.includes(line) ? (
+                      <span className="block text-[11px] text-surface-400">
+                        {t('settlements.line.payDebtOnSave', {
+                          debt: money(line.otherDebt),
+                        })}
+                      </span>
+                    ) : spendableLines.includes(line) ? (
                       <span className="block text-[11px] text-surface-400">
                         {t('settlements.line.spendOnSave')}
                       </span>
@@ -636,13 +712,11 @@ export function SettlementSection({ target, targetId, onDirtyChange }: Settlemen
                       <span className="block text-[11px] text-surface-400">
                         {creditResult.settled === 0
                           ? t('settlements.line.creditGone')
-                          : creditResult.balance < 0
-                            ? t('settlements.line.creditSpentOwing', {
-                                amount: money(-creditResult.balance),
-                              })
-                            : t('settlements.line.creditSpent', {
-                                balance: money(creditResult.balance),
-                              })}
+                          : `${describeResult(
+                              creditResult.balance,
+                              'settlements.line.creditSpentOwing',
+                              'settlements.line.creditSpent',
+                            )} ${t('settlements.line.alreadySaved')}`}
                       </span>
                     )}
                   </span>
@@ -796,7 +870,7 @@ export function SettlementSection({ target, targetId, onDirtyChange }: Settlemen
             <div className="flex flex-wrap items-center justify-end gap-2">
               <Button
                 size="sm"
-                variant={spendableLines.length > 0 ? 'secondary' : 'primary'}
+                variant={settleLabel ? 'secondary' : 'primary'}
                 onClick={() => saveMutation.mutate(false)}
                 loading={saveMutation.isPending && saveMutation.variables === false}
                 disabled={dirtyLines.length === 0 || saveMutation.isPending}
@@ -805,9 +879,11 @@ export function SettlementSection({ target, targetId, onDirtyChange }: Settlemen
               </Button>
               {/* A separate action, not a checkbox beside Save — same reasoning as "Save and send
                   invitations": spending a credit is not a property of saving. Offered only where it
-                  can work in one step (see `spendableLines`), and primary when offered, because a
-                  priced session for somebody holding a credit is exactly when it is wanted. */}
-              {spendableLines.length > 0 && (
+                  can work in one step (see `spendableLines` / `debtPayingLines`), and primary when
+                  offered, because that is exactly when it is wanted. ONE button for both paths: two
+                  would each have to save the other person's row plainly, and the choice between
+                  them would be a question about the pool, not about the money. */}
+              {settleLabel && (
                 <Button
                   size="sm"
                   variant="primary"
@@ -815,7 +891,7 @@ export function SettlementSection({ target, targetId, onDirtyChange }: Settlemen
                   loading={saveMutation.isPending && saveMutation.variables === true}
                   disabled={saveMutation.isPending}
                 >
-                  {t('settlements.actions.saveAndSpendCredit')}
+                  {t(settleLabel)}
                 </Button>
               )}
             </div>

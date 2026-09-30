@@ -84,6 +84,14 @@ record SettlementLineDto(
      * can spend; {@code balance} is the summary the line states.
      */
     BigDecimal credit,
+    /**
+     * What this person still owes on OTHER sessions — their whole open debt minus whatever this
+     * row itself is short. It is what an overpayment typed on this row can pay off, and it is the
+     * figure behind "Save and pay off the debt": without it the admin who records 400 for a 360
+     * session is left with the old debt still open and the 40 parked here, the account netting
+     * correctly while two screens tell two different stories.
+     */
+    BigDecimal otherDebt,
     @Nullable LocalDate settledOn,
     @Nullable BigDecimal suggestedAmount
 ) {}

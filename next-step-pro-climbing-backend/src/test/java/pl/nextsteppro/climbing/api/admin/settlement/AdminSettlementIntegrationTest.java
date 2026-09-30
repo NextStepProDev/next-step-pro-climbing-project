@@ -589,6 +589,45 @@ class AdminSettlementIntegrationTest extends BaseIntegrationTest {
     }
 
     @Test
+    @DisplayName("shouldTellTheSectionWhatIsOwedElsewhereSoAnOverpaymentCanPayItOff")
+    void shouldTellTheSectionWhatIsOwedElsewhereSoAnOverpaymentCanPayItOff() {
+        // The reported case, in its original numbers: a hundred-zloty session left unpaid, credit of
+        // ninety parked on older rows (net: ten owing), then a 360 session paid with 400. The owner
+        // expected thirty of credit and saw a hundred of debt beside a hundred and thirty of credit.
+        TimeSlot overpaid = timeSlotRepository.saveAndFlush(
+            new TimeSlot(date.minusDays(10), LocalTime.of(18, 0), LocalTime.of(20, 0), 4));
+        TimeSlot unpaid = timeSlotRepository.saveAndFlush(
+            new TimeSlot(date.minusDays(3), LocalTime.of(18, 0), LocalTime.of(20, 0), 4));
+        reservationRepository.saveAndFlush(new Reservation(client, overpaid));
+        reservationRepository.saveAndFlush(new Reservation(client, unpaid));
+        service.save("slot", overpaid.getId(), "user", client.getId(),
+            new SaveSettlementRequest(new BigDecimal("140"), new BigDecimal("230"), overpaid.getDate()));
+        save("slot", unpaid.getId(), "user", client.getId(), "100", null);
+
+        assertEquals(0, new BigDecimal("100.00").compareTo(lineFor(slot, client).otherDebt()),
+            "Before this session is priced, the whole open debt is somewhere else");
+        assertEquals(0, BigDecimal.ZERO.compareTo(lineFor(unpaid, client).otherDebt()),
+            "⚠️ A row's own shortfall is not debt 'elsewhere' — offering it would pay the session with itself");
+
+        // What the plain Save writes, which is the first half of "Save and pay off the debt".
+        service.save("slot", slot.getId(), "user", client.getId(),
+            new SaveSettlementRequest(new BigDecimal("360"), new BigDecimal("400"), date));
+        assertEquals(0, new BigDecimal("100.00").compareTo(lineFor(slot, client).otherDebt()),
+            "The overpayment alone does not touch the old debt — which is the gap the button closes");
+
+        // The second half: the same pool as "pay from credit", with nothing further received.
+        SettleOutstandingResultDto result = service.settleOutstanding(new SettleOutstandingRequest(
+            "user", client.getId(), date, BigDecimal.ZERO));
+
+        assertEquals(0, new BigDecimal("30.00").compareTo(result.balance()), "Thirty, as the owner expected");
+        assertEquals(0, stats().outstanding().count(), "And nothing reads as owed any more");
+        SettlementLineDto line = lineFor(slot, client);
+        assertEquals(0, BigDecimal.ZERO.compareTo(line.otherDebt()));
+        assertEquals(0, new BigDecimal("30.00").compareTo(line.credit()),
+            "The thirty is still hers, one number rather than a debt and a credit side by side");
+    }
+
+    @Test
     @DisplayName("shouldKeepChasingTheRemainderWhenSomebodyPaysTooLittle")
     void shouldKeepChasingTheRemainderWhenSomebodyPaysTooLittle() {
         save("slot", slot.getId(), "user", client.getId(), "150", null);
