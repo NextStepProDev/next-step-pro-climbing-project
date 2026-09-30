@@ -18,7 +18,7 @@ import { useInviteSentToast } from '../../hooks/useInviteSentToast'
 import { useDateLocale } from '../../utils/dateFnsLocale'
 import { formatTerm } from '../../utils/proposalTerm'
 import { MailedInvitesWarning } from '../../components/ui/MailedInvitesWarning'
-import { canOfferSaveAndSend } from '../../utils/inviteStatus'
+import { canOfferSaveAndSend, sameInvitees } from '../../utils/inviteStatus'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
 import { QueryError } from '../../components/ui/QueryError'
 import { Button } from '../../components/ui/Button'
@@ -877,8 +877,7 @@ export function EditEventModal({
   })
   const baselineInvited = invitesData ?? []
   const invited = editedInvited ?? baselineInvited
-  const invitedKey = (list: InvitedUser[]) => list.map((u) => u.userId).sort().join(',')
-  const invitedDirty = invitedKey(invited) !== invitedKey(baselineInvited)
+  const invitedDirty = !sameInvitees(invited, baselineInvited)
 
   const queryClient = useQueryClient()
 

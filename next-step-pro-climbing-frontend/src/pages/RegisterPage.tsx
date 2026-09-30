@@ -7,13 +7,11 @@ import { getErrorMessage } from '../utils/errors'
 import { Button } from '../components/ui/Button'
 import { SuccessCheckmark } from '../components/ui/SuccessCheckmark'
 import { PasswordStrengthMeter } from '../components/ui/PasswordStrengthMeter'
-import { useTheme } from '../context/ThemeContext'
-import logoWhite from '../assets/logo/logo-white.png'
-import logoBlack from '../assets/logo/logo-black.png'
+import { useThemeLogo } from '../hooks/useThemeLogo'
 
 export function RegisterPage() {
   const { t, i18n } = useTranslation('auth')
-  const { theme } = useTheme()
+  const logo = useThemeLogo()
   const [form, setForm] = useState({
     email: '',
     password: '',
@@ -77,7 +75,7 @@ export function RegisterPage() {
   }
 
   if (showCheckmark) {
-    return <SuccessCheckmark onDone={() => setSuccess(true)} />
+    return <SuccessCheckmark onDone={() => { setShowCheckmark(false); setSuccess(true) }} />
   }
 
   if (success) {
@@ -116,7 +114,7 @@ export function RegisterPage() {
     <div className="flex flex-col items-center justify-center min-h-[60vh] px-4 py-8">
       <div className="bg-surface-900 rounded-xl p-8 max-w-md w-full border border-surface-800">
         <div className="text-center mb-6">
-          <img src={theme === 'dark' ? logoWhite : logoBlack} alt="Next Step Pro Climbing" className="h-16 mx-auto mb-4" />
+          <img src={logo} alt="Next Step Pro Climbing" className="h-16 mx-auto mb-4" />
           <h1 className="text-2xl font-bold text-surface-100">{t('register.title')}</h1>
         </div>
 

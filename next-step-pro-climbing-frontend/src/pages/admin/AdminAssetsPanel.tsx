@@ -10,13 +10,8 @@ import { FileUpload } from '../../components/ui/FileUpload'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
 import { QueryError } from '../../components/ui/QueryError'
 import { getErrorMessage } from '../../utils/errors'
+import { formatBytes } from '../../utils/formatBytes'
 import type { AssetDto } from '../../types'
-
-function formatBytes(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
-}
 
 export function AdminAssetsPanel() {
   const { t } = useTranslation('admin')

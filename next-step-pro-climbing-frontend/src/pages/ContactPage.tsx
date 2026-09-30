@@ -2,16 +2,14 @@ import { useTranslation } from 'react-i18next'
 import { PageHead } from '../components/ui/PageHead'
 import { Mail, Phone, User, ExternalLink } from 'lucide-react'
 import { Facebook, Youtube, Instagram } from '../components/ui/BrandIcons'
-import { useTheme } from '../context/ThemeContext'
-import logoWhite from '../assets/logo/logo-white.png'
-import logoBlack from '../assets/logo/logo-black.png'
+import { useThemeLogo } from '../hooks/useThemeLogo'
 import { pzaLogo } from '../assets'
 import { CONTACT } from '../constants/contact'
 import { useState } from 'react'
 
 export function ContactPage() {
   const { t } = useTranslation('common')
-  const { theme } = useTheme()
+  const logo = useThemeLogo()
 
   return (
     <div className="min-h-screen bg-surface-950">
@@ -24,7 +22,7 @@ export function ContactPage() {
         </div>
         <div className="relative max-w-4xl mx-auto px-4 py-16 sm:py-24 text-center">
           <img
-            src={theme === 'dark' ? logoWhite : logoBlack}
+            src={logo}
             alt={CONTACT.clubName}
             className="h-20 sm:h-24 mx-auto mb-6 drop-shadow-lg"
           />

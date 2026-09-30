@@ -214,4 +214,25 @@ describe('TrainingFormModal — applying a template that carries a duration', ()
     expect(payload.startTime).toBe('17:00')
     expect(payload.endTime).toBe('18:30')
   })
+
+  it('should stop a late template at an end time the picker can show', async () => {
+    // The picker steps by 5 minutes. The template path used to stop at 23:59, which the picker
+    // rounds to a minute of 60 it does not have, so the end column showed nothing selected.
+    const { adminTrainingCalendarApi } = await import('../../api/client')
+    vi.mocked(adminTrainingCalendarApi.getTemplates).mockResolvedValue([TEMPLATE])
+    const onSubmit = vi.fn()
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    const user = userEvent.setup()
+    render(
+      <QueryClientProvider client={client}>
+        <TrainingFormModal isOpen onClose={vi.fn()} initialDate="2026-09-01" initialTime="23:00"
+          onSubmit={onSubmit} saving={false} onUpload={vi.fn()} templatesEnabled />
+      </QueryClientProvider>,
+    )
+
+    await user.selectOptions(await screen.findByRole('combobox'), 'tpl-1')
+    await user.click(screen.getByText('form.save'))
+
+    expect(onSubmit.mock.calls[0][0].endTime).toBe('23:55')
+  })
 })

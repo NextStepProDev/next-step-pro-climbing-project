@@ -25,7 +25,7 @@ import { useDateLocale } from "../../utils/dateFnsLocale";
 import { useEditSavedToast } from "../../hooks/useEditSavedToast";
 import { useInviteSentToast } from "../../hooks/useInviteSentToast";
 import { MailedInvitesWarning } from "../ui/MailedInvitesWarning";
-import { canOfferSaveAndSend } from "../../utils/inviteStatus";
+import { canOfferSaveAndSend, sameInvitees } from "../../utils/inviteStatus";
 import { nowInWarsaw, parseCalendarDate, parseCalendarDateTime } from '../../utils/calendarDate'
 import { AdminPrivateNote } from '../admin/AdminPrivateNote'
 import { ParticipantsSection } from '../admin/ParticipantsSection'
@@ -310,8 +310,7 @@ export function SlotDetailModal({
 
   const baselineInvited = invitesData ?? [];
   const invited = editedInvited ?? baselineInvited;
-  const invitedKey = (list: InvitedUser[]) => list.map((u) => u.userId).sort().join(',');
-  const invitedDirty = invitedKey(invited) !== invitedKey(baselineInvited);
+  const invitedDirty = !sameInvitees(invited, baselineInvited);
   // Held seats belong to a bookable slot only; an event's own slot keeps them on the event.
   const canManageInvites = editForm.kind === 'REGULAR' && !slot.eventId;
   // `undefined` means "leave the invitations alone" — which is exactly what an unresolved query

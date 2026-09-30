@@ -10,22 +10,15 @@ import { LoadingSpinner } from '../components/ui/LoadingSpinner'
 import { AccordionSkeleton } from '../components/ui/CardSkeleton'
 import { QueryError } from '../components/ui/QueryError'
 import { CourseContentBlocks, CourseEventsList } from '../components/courses/CourseContentBlocks'
-import { COURSE_CONTENT_LANGUAGES, getDefaultCourseContentLanguage } from '../constants/courseLanguages'
+import { COURSE_CONTENT_LANGUAGES } from '../constants/courseLanguages'
+import { useContentLanguage } from '../hooks/useContentLanguage'
 import clsx from 'clsx'
 
 export function CoursesPage() {
-  const { t, i18n } = useTranslation('common')
+  const { t } = useTranslation('common')
   const { hash } = useLocation()
   const scrolledRef = useRef('')
-  const [contentLanguage, setContentLanguage] = useState(() =>
-    getDefaultCourseContentLanguage(i18n.language)
-  )
-
-  useEffect(() => {
-    const handler = (lng: string) => setContentLanguage(getDefaultCourseContentLanguage(lng))
-    i18n.on('languageChanged', handler)
-    return () => { i18n.off('languageChanged', handler) }
-  }, [i18n])
+  const [contentLanguage, setContentLanguage] = useContentLanguage()
 
   const { data: courses, isLoading, isFetching, error } = useQuery({
     queryKey: ['courses', contentLanguage],

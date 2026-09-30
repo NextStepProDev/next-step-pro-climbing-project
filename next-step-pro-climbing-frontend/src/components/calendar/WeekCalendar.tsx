@@ -8,6 +8,7 @@ import type { EventColorMap } from '../../utils/events'
 import { getEventColorByIndex } from '../../utils/events'
 import { useDateLocale } from '../../utils/dateFnsLocale'
 import { isTodayInWarsaw, nowInWarsaw, parseCalendarDate, parseCalendarDateTime } from '../../utils/calendarDate'
+import { minutesToTime, timeToMinutes } from '../../utils/timeOfDay'
 import { useSlotDrag } from '../../hooks/useSlotDrag'
 import { useAuth } from '../../context/AuthContext'
 import type { NoteMarks } from '../admin/useNoteMarks'
@@ -49,21 +50,16 @@ interface WeekCalendarProps {
   onCancelSlotMove?: (slotId: string) => void
 }
 
-function getSlotPosition(startTime: string, endTime: string) {
-  const [startH, startM] = startTime.split(':').map(Number)
-  const [endH, endM] = endTime.split(':').map(Number)
-  return {
-    top: ((startH - START_HOUR) + startM / 60) * HOUR_HEIGHT,
-    height: Math.max(((endH - startH) + (endM - startM) / 60) * HOUR_HEIGHT, 30),
-  }
-}
-
 const GRID_START_MIN = START_HOUR * 60
 const GRID_END_MIN = END_HOUR * 60
 
-function timeToMin(time: string): number {
-  const [h, m] = time.split(':').map(Number)
-  return h * 60 + m
+function getSlotPosition(startTime: string, endTime: string) {
+  const start = timeToMinutes(startTime)
+  const end = timeToMinutes(endTime)
+  return {
+    top: ((start - GRID_START_MIN) / 60) * HOUR_HEIGHT,
+    height: Math.max(((end - start) / 60) * HOUR_HEIGHT, 30),
+  }
 }
 
 /** Returns the segments of [start, end] (in minutes, clamped to the grid) NOT covered by any
@@ -136,10 +132,7 @@ function getStatusLabel(status: string, t: (key: string) => string): string {
 }
 
 function snapMinutesToTime(relativeMinutes: number): string {
-  const absMinutes = START_HOUR * 60 + Math.max(0, Math.min(relativeMinutes, TOTAL_HOURS * 60))
-  const h = Math.floor(absMinutes / 60)
-  const m = absMinutes % 60
-  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
+  return minutesToTime(START_HOUR * 60 + Math.max(0, Math.min(relativeMinutes, TOTAL_HOURS * 60)))
 }
 
 export function WeekCalendar({
@@ -368,9 +361,9 @@ export function WeekCalendar({
                   {dayEvents.filter((event) => event.eventType === 'UNAVAILABLE').flatMap((event) => {
                     const isFirst = day.date === event.startDate
                     const isLast = day.date === event.endDate
-                    const rangeStart = event.startTime && isFirst ? timeToMin(event.startTime) : GRID_START_MIN
-                    const rangeEnd = event.endTime && isLast ? timeToMin(event.endTime) : GRID_END_MIN
-                    const slotCovers = day.slots.map((s) => [timeToMin(s.startTime), timeToMin(s.endTime)] as [number, number])
+                    const rangeStart = event.startTime && isFirst ? timeToMinutes(event.startTime) : GRID_START_MIN
+                    const rangeEnd = event.endTime && isLast ? timeToMinutes(event.endTime) : GRID_END_MIN
+                    const slotCovers = day.slots.map((s) => [timeToMinutes(s.startTime), timeToMinutes(s.endTime)] as [number, number])
                     const segments = subtractIntervals(rangeStart, rangeEnd, slotCovers)
                     // Label goes on the tallest segment so it stays visible even when a slot
                     // covers the spot where it would normally sit (the natural top of the range).
@@ -434,8 +427,8 @@ export function WeekCalendar({
                     .map((event) => {
                       const isFirst = day.date === event.startDate
                       const isLast = day.date === event.endDate
-                      const rangeStart = event.startTime && isFirst ? timeToMin(event.startTime) : GRID_START_MIN
-                      const rangeEnd = event.endTime && isLast ? timeToMin(event.endTime) : GRID_END_MIN
+                      const rangeStart = event.startTime && isFirst ? timeToMinutes(event.startTime) : GRID_START_MIN
+                      const rangeEnd = event.endTime && isLast ? timeToMinutes(event.endTime) : GRID_END_MIN
                       const from = Math.max(rangeStart, GRID_START_MIN)
                       const to = Math.min(rangeEnd, GRID_END_MIN)
                       if (to <= from) return null
@@ -476,7 +469,7 @@ export function WeekCalendar({
                     return dayEvents.filter((event) => event.eventType !== 'UNAVAILABLE').map((event) => {
                       const isFirst = day.date === event.startDate
                       const anchorMin = event.startTime && isFirst
-                        ? Math.max(timeToMin(event.startTime), GRID_START_MIN)
+                        ? Math.max(timeToMinutes(event.startTime), GRID_START_MIN)
                         : GRID_START_MIN
                       const baseTop = (anchorMin - GRID_START_MIN) / 60 * HOUR_HEIGHT
                       const stackIdx = stackByTop.get(baseTop) ?? 0

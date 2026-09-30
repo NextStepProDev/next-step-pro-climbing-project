@@ -73,7 +73,7 @@ function LanguageBadge({ language }: { language: string }) {
   )
 }
 
-const LANG_ORDER = ['pl', 'en', 'es'] as const
+const LANG_ORDER = COURSE_CONTENT_LANGUAGES.map((l) => l.code)
 
 interface Props { memberType: InstructorType }
 

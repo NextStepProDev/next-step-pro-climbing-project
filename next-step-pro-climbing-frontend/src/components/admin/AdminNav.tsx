@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
+import { useClickOutside } from '../../hooks/useClickOutside'
 import { Link, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { ChevronDown, Search } from 'lucide-react'
@@ -49,18 +50,7 @@ export function AdminNav({ notifications, onOpenPalette }: AdminNavProps) {
     .flatMap((group) => group.tabs)
     .find((tab) => isTabActive(location.pathname, tab.path))
 
-  // Close on click outside — the same pattern as the public navbar's dropdowns and
-  // `UserSearchSelect`.
-  useEffect(() => {
-    if (!openGroup) return
-    function handleClickOutside(e: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setOpened(null)
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [openGroup])
+  useClickOutside(containerRef, () => setOpened(null), !!openGroup)
 
   return (
     <div

@@ -25,7 +25,7 @@ import { useDirty } from '../../hooks/useDirty'
 import { useEditSavedToast } from '../../hooks/useEditSavedToast'
 import { useInviteSentToast } from '../../hooks/useInviteSentToast'
 import { MailedInvitesWarning } from '../../components/ui/MailedInvitesWarning'
-import { canOfferSaveAndSend } from '../../utils/inviteStatus'
+import { canOfferSaveAndSend, sameInvitees } from '../../utils/inviteStatus'
 import { todayInWarsaw } from '../../utils/calendarDate'
 import { buildArchiveDays } from './archiveDays'
 import type { EventDetail, InvitedUser, SlotParticipants, SlotTemplate, TimeSlotAdmin } from '../../types'
@@ -564,8 +564,7 @@ function EditSlotModal({
   })
   const baselineInvited = invitesData ?? []
   const invited = editedInvited ?? baselineInvited
-  const invitedKey = (list: InvitedUser[]) => list.map((u) => u.userId).sort().join(',')
-  const invitedDirty = invitedKey(invited) !== invitedKey(baselineInvited)
+  const invitedDirty = !sameInvitees(invited, baselineInvited)
 
   // `sendInvites` chains the manual invitation send onto the save — the send button lives in this
   // form, which closes on save, so the two-step flow was easy to abandon halfway. Chained inside

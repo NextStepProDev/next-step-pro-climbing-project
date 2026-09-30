@@ -5,15 +5,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { adminStorageApi } from '../../api/client'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
 import { ConfirmModal } from '../../components/ui/ConfirmModal'
+import { formatBytes } from '../../utils/formatBytes'
 import type { StorageAuditResult } from '../../types'
-
-function formatBytes(bytes: number): string {
-  if (bytes === 0) return '0 B'
-  const k = 1024
-  const sizes = ['B', 'KB', 'MB', 'GB']
-  const i = Math.floor(Math.log(bytes) / Math.log(k))
-  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`
-}
 
 export function AdminStoragePanel() {
   const { t } = useTranslation('admin')

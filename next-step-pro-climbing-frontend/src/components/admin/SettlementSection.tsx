@@ -9,7 +9,8 @@ import { useModalClose } from '../ui/modalClose'
 import { useToast } from '../../context/ToastContext'
 import { adminSettlementsApi } from '../../api/client'
 import { getErrorMessage } from '../../utils/errors'
-import { formatPln, parseAmount } from '../../utils/money'
+import { parseAmount } from '../../utils/money'
+import { useMoney } from './useMoney'
 import type { PayoutSource, SettlementLine, SettlementTarget } from '../../types'
 
 interface SettlementSectionProps {
@@ -53,7 +54,8 @@ const payerKey = (line: SettlementLine) => `${line.payerType}:${line.payerId}`
  * writes every changed row is the difference between one click and six.
  */
 export function SettlementSection({ target, targetId, onDirtyChange }: SettlementSectionProps) {
-  const { t, i18n } = useTranslation('admin')
+  const { t } = useTranslation('admin')
+  const money = useMoney()
   const queryClient = useQueryClient()
   /**
    * Saving the amounts is the last thing anybody does on a session, so the modal gets out of the
@@ -287,10 +289,10 @@ export function SettlementSection({ target, targetId, onDirtyChange }: Settlemen
       reports.push(`${line.name}: ${
         result.balance < 0
           ? t('settlements.line.creditSpentOwing', {
-              amount: formatPln(-result.balance, i18n.language),
+              amount: money(-result.balance),
             })
           : t('settlements.line.creditSpent', {
-              balance: formatPln(result.balance, i18n.language),
+              balance: money(result.balance),
             })
       }`)
     }
@@ -428,8 +430,8 @@ export function SettlementSection({ target, targetId, onDirtyChange }: Settlemen
         {lines.length > 0 && (
           <span className="text-xs text-surface-400">
             {t('settlements.section.totals', {
-              total: formatPln(totals.total, i18n.language),
-              paid: formatPln(totals.paid, i18n.language),
+              total: money(totals.total),
+              paid: money(totals.paid),
             })}
           </span>
         )}
@@ -580,7 +582,7 @@ export function SettlementSection({ target, targetId, onDirtyChange }: Settlemen
                           line.balance > 0
                             ? 'settlements.line.credit'
                             : 'settlements.line.debt',
-                          { amount: formatPln(Math.abs(line.balance), i18n.language) },
+                          { amount: money(Math.abs(line.balance)) },
                         )}
                       </span>
                     )}
@@ -618,10 +620,7 @@ export function SettlementSection({ target, targetId, onDirtyChange }: Settlemen
                           className="mt-0.5 block text-left text-[11px] text-primary-400 hover:text-primary-300 disabled:text-surface-500 transition-colors"
                         >
                           {t('settlements.line.spendCredit', {
-                            amount: formatPln(
-                              Math.min(line.credit, line.amount - line.paidAmount),
-                              i18n.language,
-                            ),
+                            amount: money(Math.min(line.credit, line.amount - line.paidAmount)),
                           })}
                         </button>
                       )
@@ -639,10 +638,10 @@ export function SettlementSection({ target, targetId, onDirtyChange }: Settlemen
                           ? t('settlements.line.creditGone')
                           : creditResult.balance < 0
                             ? t('settlements.line.creditSpentOwing', {
-                                amount: formatPln(-creditResult.balance, i18n.language),
+                                amount: money(-creditResult.balance),
                               })
                             : t('settlements.line.creditSpent', {
-                                balance: formatPln(creditResult.balance, i18n.language),
+                                balance: money(creditResult.balance),
                               })}
                       </span>
                     )}
@@ -702,7 +701,7 @@ export function SettlementSection({ target, targetId, onDirtyChange }: Settlemen
                           className="mt-0.5 text-left text-[11px] text-primary-400 hover:text-primary-300 transition-colors"
                         >
                           {t('settlements.line.useLast', {
-                            amount: formatPln(line.suggestedAmount, i18n.language),
+                            amount: money(line.suggestedAmount),
                           })}
                         </button>
                       )}
@@ -834,7 +833,7 @@ export function SettlementSection({ target, targetId, onDirtyChange }: Settlemen
         title={t('settlements.clearPaid.title')}
         message={t('settlements.clearPaid.message', {
           name: clearingMoney?.name ?? '',
-          amount: formatPln(clearingMoney?.paidAmount ?? 0, i18n.language),
+          amount: money(clearingMoney?.paidAmount ?? 0),
         })}
         variant="danger"
       />

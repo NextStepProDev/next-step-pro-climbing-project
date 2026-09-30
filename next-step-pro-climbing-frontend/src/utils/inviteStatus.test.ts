@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { inviteStatus, invitesAwaitingMail, invitesAlreadyMailed, canOfferSaveAndSend } from './inviteStatus'
+import { inviteStatus, invitesAwaitingMail, invitesAlreadyMailed, canOfferSaveAndSend, sameInvitees } from './inviteStatus'
 import type { InvitedUser } from '../types'
 
 function invitee(overrides: Partial<InvitedUser> = {}): InvitedUser {
@@ -93,5 +93,23 @@ describe('canOfferSaveAndSend', () => {
 
   it('should stay hidden with no invitees at all', () => {
     expect(canOfferSaveAndSend([], true)).toBe(false)
+  })
+})
+
+describe('sameInvitees', () => {
+  const anna = invitee({ userId: 'u1' })
+  const piotr = invitee({ userId: 'u2' })
+
+  it('treats the same people in another order as unchanged', () => {
+    expect(sameInvitees([anna, piotr], [piotr, anna])).toBe(true)
+  })
+
+  it('sees an added or removed person', () => {
+    expect(sameInvitees([anna], [anna, piotr])).toBe(false)
+    expect(sameInvitees([anna, piotr], [piotr])).toBe(false)
+  })
+
+  it('ignores fields that are not who is invited', () => {
+    expect(sameInvitees([anna], [invitee({ userId: 'u1', notifiedAt: '2026-09-01T10:00:00Z' })])).toBe(true)
   })
 })

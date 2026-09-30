@@ -30,6 +30,7 @@ import {
 } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
+import { useClickOutside } from "../../hooks/useClickOutside";
 import { adminApi, reservationApi, trainingCalendarApi } from "../../api/client";
 import { useAuth } from "../../context/AuthContext";
 import { useTheme } from "../../context/ThemeContext";
@@ -39,8 +40,7 @@ import { SuccessCheckmark } from "../ui/SuccessCheckmark";
 import { LanguageSwitcher } from "../ui/LanguageSwitcher";
 import { MobileNavPanel, type MobileNavSection } from "./MobileNavPanel";
 import clsx from "clsx";
-import logoWhite from "../../assets/logo/logo-white.png";
-import logoBlack from "../../assets/logo/logo-black.png";
+import { useThemeLogo } from "../../hooks/useThemeLogo";
 
 /**
  * `icon` is required even though the desktop bar never draws one: the mobile drawer does, and a
@@ -59,6 +59,7 @@ export function Navbar() {
   const { t } = useTranslation('common');
   const { user, isAuthenticated, isAdmin, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
+  const logo = useThemeLogo();
   const location = useLocation();
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -177,30 +178,9 @@ export function Navbar() {
   const isMediaActive = mediaLinks.some((l) => isLinkActive(l.to));
   const isTeamActive = teamLinks.some((l) => isLinkActive(l.to));
 
-  useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (
-        userMenuRef.current &&
-        !userMenuRef.current.contains(e.target as Node)
-      ) {
-        setUserMenuOpen(false);
-      }
-      if (
-        mediaMenuRef.current &&
-        !mediaMenuRef.current.contains(e.target as Node)
-      ) {
-        setMediaMenuOpen(false);
-      }
-      if (
-        teamMenuRef.current &&
-        !teamMenuRef.current.contains(e.target as Node)
-      ) {
-        setTeamMenuOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+  useClickOutside(userMenuRef, () => setUserMenuOpen(false), userMenuOpen);
+  useClickOutside(mediaMenuRef, () => setMediaMenuOpen(false), mediaMenuOpen);
+  useClickOutside(teamMenuRef, () => setTeamMenuOpen(false), teamMenuOpen);
 
   // Mobile Safari/Chrome render this `position: sticky` navbar overlapping the
   // page content on the very first paint (before any scroll), tucking the top
@@ -386,7 +366,7 @@ export function Navbar() {
             className="flex items-center shrink-0 hover:opacity-80 transition-opacity"
           >
             <img
-              src={theme === 'dark' ? logoWhite : logoBlack}
+              src={logo}
               alt="Next Step Pro Climbing"
               className="h-10 w-auto cursor-pointer"
             />

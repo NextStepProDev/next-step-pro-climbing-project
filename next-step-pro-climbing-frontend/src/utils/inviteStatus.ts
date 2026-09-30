@@ -50,3 +50,9 @@ export function canOfferSaveAndSend(invites: InvitedUser[], termChanged: boolean
   if (invitesAwaitingMail(invites).length > 0) return true
   return termChanged && invitesAlreadyMailed(invites).length > 0
 }
+
+/** The same people, in any order — what "the invitation list was edited" means for a dirty check. */
+export function sameInvitees(a: InvitedUser[], b: InvitedUser[]): boolean {
+  const key = (list: InvitedUser[]) => list.map((u) => u.userId).sort().join(',')
+  return key(a) === key(b)
+}

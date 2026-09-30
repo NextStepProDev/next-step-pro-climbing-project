@@ -10,13 +10,14 @@ import { CardSkeleton } from '../components/ui/CardSkeleton'
 import { QueryError } from '../components/ui/QueryError'
 import { renderRichText } from '../utils/renderRichText'
 import { useAuth } from '../context/AuthContext'
-import { COURSE_CONTENT_LANGUAGES, getDefaultCourseContentLanguage } from '../constants/courseLanguages'
+import { COURSE_CONTENT_LANGUAGES } from '../constants/courseLanguages'
+import { useContentLanguage } from '../hooks/useContentLanguage'
 import clsx from 'clsx'
 import { useSearchParams } from 'react-router-dom'
 import { RecentAscentsFeed } from '../components/ascents/RecentAscentsFeed'
 
 export function NewsPage() {
-  const { t, i18n } = useTranslation('common')
+  const { t } = useTranslation('common')
   const { t: tAscents } = useTranslation('ascents')
   const { isAuthenticated } = useAuth()
   const queryClient = useQueryClient()
@@ -35,15 +36,7 @@ export function NewsPage() {
   const [searchInput, setSearchInput] = useState('')
   const [q, setQ] = useState('')
   const [starredOnly, setStarredOnly] = useState(false)
-  const [contentLanguage, setContentLanguage] = useState(() =>
-    getDefaultCourseContentLanguage(i18n.language)
-  )
-
-  useEffect(() => {
-    const handler = (lng: string) => setContentLanguage(getDefaultCourseContentLanguage(lng))
-    i18n.on('languageChanged', handler)
-    return () => { i18n.off('languageChanged', handler) }
-  }, [i18n])
+  const [contentLanguage, setContentLanguage] = useContentLanguage()
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
