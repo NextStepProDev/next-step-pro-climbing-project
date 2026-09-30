@@ -1,9 +1,7 @@
 import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useLocation } from 'react-router-dom'
-import { useTheme } from '../context/ThemeContext'
-import logoWhite from '../assets/logo/logo-white.png'
-import logoBlack from '../assets/logo/logo-black.png'
+import { useThemeLogo } from '../hooks/useThemeLogo'
 import { CONTACT } from '../constants/contact'
 
 const LAST_UPDATED_PL = '21 sierpnia 2026'
@@ -11,10 +9,9 @@ const LAST_UPDATED_EN = '21 August 2026'
 
 export function PrivacyPolicyPage() {
   const { i18n } = useTranslation()
-  const { theme } = useTheme()
+  const logo = useThemeLogo()
   const { hash } = useLocation()
   const isPl = i18n.language.startsWith('pl')
-  const logo = theme === 'dark' ? logoWhite : logoBlack
 
   // The training-calendar consent screen links straight at #kalendarz-treningowy: someone
   // about to tick a consent box must land on the paragraph describing what they consent to,

@@ -1,4 +1,5 @@
 import type { InvitationOverlayItem, PersonalTraining, ReservationOverlayItem } from '../../types'
+import { minutesToTime, timeToMinutes } from '../../utils/timeOfDay'
 
 // Same grid math as the public WeekCalendar (components/calendar/WeekCalendar.tsx) —
 // copied constants, not the component: that one is welded to booking logic.
@@ -7,16 +8,10 @@ export const START_HOUR = 7
 export const END_HOUR = 23
 export const TOTAL_HOURS = END_HOUR - START_HOUR
 
-export function timeToMin(time: string): number {
-  const [h, m] = time.split(':').map(Number)
-  return h * 60 + m
-}
-
 /** Click position in a day column -> "HH:mm" snapped to 30 min, clamped to the grid. */
 export function clickToTime(relY: number): string {
   const raw = Math.round(((relY / HOUR_HEIGHT) * 60) / 30) * 30
-  const abs = START_HOUR * 60 + Math.max(0, Math.min(raw, TOTAL_HOURS * 60 - 30))
-  return `${String(Math.floor(abs / 60)).padStart(2, '0')}:${String(abs % 60).padStart(2, '0')}`
+  return minutesToTime(START_HOUR * 60 + Math.max(0, Math.min(raw, TOTAL_HOURS * 60 - 30)))
 }
 
 export interface PositionedItem {
@@ -36,8 +31,8 @@ function baseItem(key: string, startTime: string, endTime: string,
                   refs: { training?: PersonalTraining; reservation?: ReservationOverlayItem; invitation?: InvitationOverlayItem }): PositionedItem {
   const GRID_START = START_HOUR * 60
   const GRID_END = END_HOUR * 60
-  const rawStart = timeToMin(startTime)
-  const rawEnd = timeToMin(endTime)
+  const rawStart = timeToMinutes(startTime)
+  const rawEnd = timeToMinutes(endTime)
   // Clamp fully inside the grid with a minimum 30-min visible height — an entry entirely
   // outside 7:00-23:00 pins to the nearest edge with a clamp arrow instead of overflowing
   const startMin = Math.min(Math.max(rawStart, GRID_START), GRID_END - 30)

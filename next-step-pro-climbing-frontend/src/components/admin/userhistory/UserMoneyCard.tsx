@@ -9,7 +9,8 @@ import { useDateLocale } from '../../../utils/dateFnsLocale'
 import { DateInput } from '../../ui/DateInput'
 import { Button } from '../../ui/Button'
 import { getErrorMessage } from '../../../utils/errors'
-import { earliestSubscriptionStart, formatPln, parseAmount } from '../../../utils/money'
+import { earliestSubscriptionStart, parseAmount } from '../../../utils/money'
+import { useMoney } from '../useMoney'
 import { todayInWarsaw } from '../../../utils/calendarDate'
 import { ConfirmModal } from '../../ui/ConfirmModal'
 
@@ -23,7 +24,7 @@ import { ConfirmModal } from '../../ui/ConfirmModal'
  * year in it.
  */
 export function UserMoneyCard({ userId }: { userId: string }) {
-  const { t, i18n } = useTranslation('admin')
+  const { t } = useTranslation('admin')
   const locale = useDateLocale()
   const queryClient = useQueryClient()
 
@@ -49,7 +50,7 @@ export function UserMoneyCard({ userId }: { userId: string }) {
     },
   })
 
-  const money = (amount: number) => formatPln(amount, i18n.language)
+  const money = useMoney()
 
   // Nothing recorded is not a zero balance — rendering "0 zł paid" would state something about
   // somebody nobody has ever priced.
@@ -194,7 +195,8 @@ function Figure({
  * the ordinary case, not the exception.
  */
 function SubscriptionRow({ userId }: { userId: string }) {
-  const { t, i18n } = useTranslation('admin')
+  const { t } = useTranslation('admin')
+  const money = useMoney()
   const locale = useDateLocale()
   const queryClient = useQueryClient()
   const [adding, setAdding] = useState(false)
@@ -240,7 +242,6 @@ function SubscriptionRow({ userId }: { userId: string }) {
   })
 
   if (!subs) return null
-  const money = (value: number) => formatPln(value, i18n.language)
   const active = subs.find((s) => s.active)
 
   return (

@@ -12,33 +12,23 @@ import { TimeScrollPicker } from '../ui/TimeScrollPicker'
 import { RichTextEditor } from '../ui/RichTextEditor'
 import { RpePicker } from './RpePicker'
 import { AttachmentEditor } from './AttachmentEditor'
+import { templateToInputs } from './templateAttachments'
 import { adminTrainingCalendarApi } from '../../api/client'
 import { decodeHtmlEntities } from '../../utils/htmlEntities'
 import { useDirty } from '../../hooks/useDirty'
 import { useChildDirty } from '../../hooks/useChildDirty'
 import { useUnsavedChangesWarning } from '../../hooks/useUnsavedChangesWarning'
 import { nowInWarsaw } from '../../utils/calendarDate'
-import type { AttachmentInput, CreatePersonalTraining, PersonalTraining, TrainingKind, TrainingTemplate } from '../../types'
+import { addMinutes } from '../../utils/timeOfDay'
+import type { AttachmentInput, CreatePersonalTraining, PersonalTraining, TrainingKind } from '../../types'
 
 // Mirrors the CHECK in V77: below 500 and above 10000 is a slipped digit, not a diet.
 const MIN_CALORIES = 500
 const MAX_CALORIES = 10000
 
-function addMinutesTo(time: string, minutes: number): string {
-  const [h, m] = time.split(':').map(Number)
-  const total = Math.min(h * 60 + m + minutes, 23 * 60 + 59)
-  return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`
-}
-
-function templateToInputs(tpl: TrainingTemplate): AttachmentInput[] {
-  return tpl.attachments.map((a): AttachmentInput => {
-    const label = a.label ? decodeHtmlEntities(a.label) : ''
-    return a.kind === 'FILE'
-      ? { kind: 'FILE', filename: a.filename ?? undefined, originalName: a.fileName ?? undefined,
-          mimeType: a.mimeType ?? undefined, sizeBytes: a.sizeBytes ?? undefined, label }
-      : { kind: 'LINK', url: a.url ?? '', label }
-  })
-}
+// The last end time the TimeScrollPicker can show: it steps by 5 minutes, and a value like
+// 23:59 rounds to a minute of 60 that is not in its list — the column shows nothing selected.
+const LATEST_END = 23 * 60 + 55
 
 export interface InstantCompletion {
   feedback?: string
@@ -121,12 +111,6 @@ export function TrainingFormModal({ isOpen, onClose, training, initialDate, init
 const DEFAULT_START = '17:00'
 const DEFAULT_DURATION_MIN = 90
 
-function addMinutes(time: string, minutes: number): string {
-  const [h, m] = time.split(':').map(Number)
-  const total = Math.min(h * 60 + m + minutes, 23 * 60 + 55)
-  return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`
-}
-
 function TrainingForm({ onDirtyChange, training, initialDate, initialTime, prefill, onClose, onSubmit, saving, allowInstantComplete, onUpload, templatesEnabled, submitError }: {
   onDirtyChange: (dirty: boolean) => void
   training?: PersonalTraining | null
@@ -157,7 +141,7 @@ function TrainingForm({ onDirtyChange, training, initialDate, initialTime, prefi
   // Pickers stay populated even in all-day mode so toggling to timed has sensible values.
   const [startTime, setStartTime] = useState(training?.startTime ? training.startTime.slice(0, 5) : defaultStart)
   const [endTime, setEndTime] = useState(
-    training?.endTime ? training.endTime.slice(0, 5) : prefill?.endTime ?? addMinutes(defaultStart, DEFAULT_DURATION_MIN))
+    training?.endTime ? training.endTime.slice(0, 5) : prefill?.endTime ?? addMinutes(defaultStart, DEFAULT_DURATION_MIN, LATEST_END))
   const [title, setTitle] = useState(training ? decodeHtmlEntities(training.title) : prefill?.title ?? '')
   const [description, setDescription] = useState(
     training?.description ? decodeHtmlEntities(training.description) : prefill?.description ?? '')
@@ -245,7 +229,7 @@ function TrainingForm({ onDirtyChange, training, initialDate, initialTime, prefi
        loss, and it is not even lost — it sits in the picker for whoever does switch to a timed
        entry, which is exactly the case that wanted it. */
     if (tpl.defaultDurationMinutes != null) {
-      setEndTime(addMinutesTo(startTime, tpl.defaultDurationMinutes))
+      setEndTime(addMinutes(startTime, tpl.defaultDurationMinutes, LATEST_END))
     }
   }
 

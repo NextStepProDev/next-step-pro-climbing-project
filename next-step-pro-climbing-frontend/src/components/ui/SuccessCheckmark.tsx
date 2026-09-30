@@ -1,18 +1,25 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef } from 'react'
 import { Check } from 'lucide-react'
 
-export function SuccessCheckmark({ onDone }: { onDone?: () => void }) {
-  const [visible, setVisible] = useState(true)
+/**
+ * A 1.5 s "done" checkmark, then `onDone`. The caller unmounts it there — it does not hide
+ * itself, because a checkmark that turned itself into nothing while the caller still rendered
+ * it left the registration page blank. Hence `onDone` is required: without it the dimmed
+ * overlay would stay up for good.
+ *
+ * The timer starts once, on mount. Every caller passes an inline arrow, and with `onDone` as an
+ * effect dependency any re-render of the parent restarted the 1.5 s.
+ */
+export function SuccessCheckmark({ onDone }: { onDone: () => void }) {
+  const done = useRef(onDone)
+  useLayoutEffect(() => {
+    done.current = onDone
+  })
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setVisible(false)
-      onDone?.()
-    }, 1500)
+    const timer = setTimeout(() => done.current(), 1500)
     return () => clearTimeout(timer)
-  }, [onDone])
-
-  if (!visible) return null
+  }, [])
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center pointer-events-none">

@@ -15,6 +15,7 @@ import { trainingRequestApi, coursesApi } from '../../api/client'
 import { getErrorMessage } from '../../utils/errors'
 import { useDateLocale } from '../../utils/dateFnsLocale'
 import { nowInWarsaw, parseCalendarDate, todayInWarsaw } from '../../utils/calendarDate'
+import { minutesToTime, timeToMinutes } from '../../utils/timeOfDay'
 
 /** Availability window the request is submitted in — constrains the date and times. */
 export interface ProposeWindow {
@@ -33,9 +34,6 @@ interface ProposeTrainingModalProps {
   window?: ProposeWindow
 }
 
-const toMinutes = (t: string) => parseInt(t.slice(0, 2), 10) * 60 + parseInt(t.slice(3, 5), 10)
-const toHHMM = (m: number) => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`
-
 /**
  * Start time to prefill the form within an availability window. For a window ongoing today
  * (start already passed) it suggests the nearest quarter-hour instead of the window start —
@@ -46,8 +44,8 @@ function initialWindowStart(win: ProposeWindow): string {
   if (win.date !== todayInWarsaw()) return start
   const now = nowInWarsaw()
   const nowMin = Math.ceil((now.getHours() * 60 + now.getMinutes()) / 15) * 15
-  if (nowMin <= toMinutes(start)) return start
-  return nowMin < toMinutes(win.endTime.slice(0, 5)) ? toHHMM(nowMin) : start
+  if (nowMin <= timeToMinutes(start)) return start
+  return nowMin < timeToMinutes(win.endTime) ? minutesToTime(nowMin) : start
 }
 
 /**

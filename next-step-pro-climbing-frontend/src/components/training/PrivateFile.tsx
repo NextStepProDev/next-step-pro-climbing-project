@@ -5,6 +5,7 @@ import clsx from 'clsx'
 import { usePrivateFile } from '../../hooks/usePrivateFile'
 import { useInView } from '../../hooks/useInView'
 import { Modal } from '../ui/Modal'
+import { formatBytes } from '../../utils/formatBytes'
 
 interface PrivateImageProps {
   url: string
@@ -155,8 +156,3 @@ export function PrivateDownloadButton({ url, fileName }: { url: string; fileName
   )
 }
 
-function formatBytes(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`
-  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
-}

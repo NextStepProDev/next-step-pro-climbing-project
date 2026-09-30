@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "../context/AuthContext";
-import { useTheme } from "../context/ThemeContext";
+import { useThemeLogo } from "../hooks/useThemeLogo";
 import { trainingCalendarApi } from "../api/client";
 import { Button } from "../components/ui/Button";
 import { AnimatedCounter } from "../components/ui/AnimatedCounter";
@@ -29,7 +29,6 @@ import { CurrentLocationSection } from "../components/ui/CurrentLocationSection"
 import { useLocationContent } from "../hooks/useLocationContent";
 import { useInView } from "../hooks/useInView";
 import { siteSettingsApi } from "../api/client";
-import logoWhite from "../assets/logo/logo-white.png";
 import logoBlack from "../assets/logo/logo-black.png";
 import heroDefault from "../assets/hero-default.jpg";
 import heroDefaultMobile from "../assets/hero-default-mobile.jpg";
@@ -71,7 +70,7 @@ function BadgeImg({ src, href, className }: { src: string; href?: string | null;
 export function HomePage() {
   const { t } = useTranslation("home");
   const { isAuthenticated, user } = useAuth();
-  const { theme } = useTheme();
+  const logo = useThemeLogo();
   const isAthlete = !!user?.isAthlete;
 
   // Unread badge on the hero "Athlete zone" button — same cache as the navbar poll
@@ -255,7 +254,7 @@ export function HomePage() {
                 logo washes out into it — and it was the last white element left among dark text.
                 It "pops in" (hero-logo-in) as the FINALE — only after the heading is typed out (titleTyped). */}
             <img
-              src={theme === 'dark' ? logoWhite : logoBlack}
+              src={logo}
               alt="Next Step Pro Climbing"
               style={{ animationDelay: '1100ms' }}
               className={`h-20 sm:h-36 lg:h-40 mx-auto mb-4 sm:mb-6 drop-shadow-[0_0_30px_rgba(59,130,246,0.3)] ${titleTyped ? 'hero-logo-in' : 'opacity-0'}`}

@@ -1,4 +1,5 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef } from 'react'
+import { useClickOutside } from '../../hooks/useClickOutside'
 import { useTranslation } from 'react-i18next'
 import { Search, X, MailWarning } from 'lucide-react'
 import type { AdminUser } from '../../types'
@@ -22,16 +23,7 @@ export function UserSearchSelect({ users, value, onChange, placeholder }: UserSe
     ? users.filter((u) => matchesPersonQuery(u, query))
     : users.slice(0, 8)
 
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setOpen(false)
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
+  useClickOutside(containerRef, () => setOpen(false), open)
 
   function handleSelect(user: AdminUser) {
     if (!user.emailVerified) return

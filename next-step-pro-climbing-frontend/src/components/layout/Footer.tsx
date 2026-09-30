@@ -2,14 +2,12 @@ import { Phone, Mail, User } from 'lucide-react'
 import { Facebook, Youtube, Instagram } from '../ui/BrandIcons'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
-import { useTheme } from '../../context/ThemeContext'
-import logoWhite from '../../assets/logo/logo-white.png'
-import logoBlack from '../../assets/logo/logo-black.png'
+import { useThemeLogo } from '../../hooks/useThemeLogo'
 import { CONTACT } from '../../constants/contact'
 
 export function Footer() {
   const { t } = useTranslation('common')
-  const { theme } = useTheme()
+  const logo = useThemeLogo()
 
   return (
     <footer className="bg-surface-900">
@@ -18,7 +16,7 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
           {/* Brand */}
           <div>
-            <img src={theme === 'dark' ? logoWhite : logoBlack} alt="Next Step Pro Climbing" className="h-12 mb-3" />
+            <img src={logo} alt="Next Step Pro Climbing" className="h-12 mb-3" />
             <p className="text-surface-400 text-sm">
               {t('footer.description')}
             </p>

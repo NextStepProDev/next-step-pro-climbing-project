@@ -34,6 +34,7 @@ import { getErrorMessage } from '../../utils/errors'
 import { decodeHtmlEntities } from '../../utils/htmlEntities'
 import { keepWithinEntity } from '../../utils/queryEntity'
 import { nowInWarsaw, parseCalendarDate } from '../../utils/calendarDate'
+import { addMinutes, timeToMinutes } from '../../utils/timeOfDay'
 import type { TrainingCalendarAdapter } from './trainingCalendarAdapter'
 import type { AttachmentInput, CreatePersonalTraining, InvitationOverlayItem, PersonalTraining, ReservationOverlayItem } from '../../types'
 
@@ -64,15 +65,6 @@ function toAttachmentInputs(tr: PersonalTraining): AttachmentInput[] {
         }
       : { kind: 'LINK', url: a.url ?? undefined, label }
   })
-}
-
-function timeToMin(time: string): number {
-  const [h, m] = time.split(':').map(Number)
-  return h * 60 + m
-}
-
-function minToTime(total: number): string {
-  return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`
 }
 
 export function TrainingCalendarSection({ api, scopeKey, scopeLabel, isCoachView }: TrainingCalendarSectionProps) {
@@ -341,7 +333,7 @@ export function TrainingCalendarSection({ api, scopeKey, scopeLabel, isCoachView
       description: tr.description ? decodeHtmlEntities(tr.description) : undefined,
       defaultDurationMinutes: tr.kind === 'TASK'
         ? null
-        : (timed ? timeToMin(tr.endTime!.slice(0, 5)) - timeToMin(tr.startTime!.slice(0, 5)) : null),
+        : (timed ? timeToMinutes(tr.endTime!) - timeToMinutes(tr.startTime!) : null),
       targetCalories: tr.targetCalories,
       attachments: toAttachmentInputs(tr),
     })
@@ -415,7 +407,7 @@ export function TrainingCalendarSection({ api, scopeKey, scopeLabel, isCoachView
       description: tr.description ? decodeHtmlEntities(tr.description) : undefined,
       startTime: timed ? tr.startTime!.slice(0, 5) : null,
       durationMin: timed
-        ? timeToMin(tr.endTime!.slice(0, 5)) - timeToMin(tr.startTime!.slice(0, 5))
+        ? timeToMinutes(tr.endTime!) - timeToMinutes(tr.startTime!)
         : 90,
       attachments: toAttachmentInputs(tr),
     })
@@ -431,7 +423,7 @@ export function TrainingCalendarSection({ api, scopeKey, scopeLabel, isCoachView
         // Both omitted = untimed, which is a legal training here and the default case
         startTime: time ?? undefined,
         endTime: time
-          ? minToTime(Math.min(timeToMin(time) + clip.durationMin, 23 * 60 + 59))
+          ? addMinutes(time, clip.durationMin, 23 * 60 + 59)
           : undefined,
         title: clip.title,
         description: clip.description,

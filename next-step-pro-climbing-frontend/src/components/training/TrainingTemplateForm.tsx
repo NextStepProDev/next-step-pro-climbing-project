@@ -6,6 +6,7 @@ import { ClipboardList, Dumbbell } from 'lucide-react'
 import { Button } from '../ui/Button'
 import { RichTextEditor } from '../ui/RichTextEditor'
 import { AttachmentEditor } from './AttachmentEditor'
+import { templateToInputs } from './templateAttachments'
 import { adminTrainingCalendarApi } from '../../api/client'
 import { getErrorMessage } from '../../utils/errors'
 import { decodeHtmlEntities } from '../../utils/htmlEntities'
@@ -28,22 +29,6 @@ export interface TemplateDraft {
   defaultDurationMinutes?: number | null
   targetCalories?: number | null
   attachments: AttachmentInput[]
-}
-
-function templateToInputs(tpl: TrainingTemplate): AttachmentInput[] {
-  return tpl.attachments.map((a): AttachmentInput => {
-    const label = a.label ? decodeHtmlEntities(a.label) : ''
-    return a.kind === 'FILE'
-      ? {
-          kind: 'FILE',
-          filename: a.filename ?? undefined,
-          originalName: a.fileName ?? undefined,
-          mimeType: a.mimeType ?? undefined,
-          sizeBytes: a.sizeBytes ?? undefined,
-          label,
-        }
-      : { kind: 'LINK', url: a.url ?? '', label }
-  })
 }
 
 /**

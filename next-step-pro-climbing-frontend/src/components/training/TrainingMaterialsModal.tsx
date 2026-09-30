@@ -8,16 +8,11 @@ import { ConfirmModal } from '../ui/ConfirmModal'
 import { LoadingSpinner } from '../ui/LoadingSpinner'
 import { adminTrainingCalendarApi } from '../../api/client'
 import { decodeHtmlEntities } from '../../utils/htmlEntities'
+import { formatBytes } from '../../utils/formatBytes'
+import { isImageType } from '../../utils/mediaTypes'
 import type { TrainingMaterial } from '../../types'
 
 const MATERIALS_KEY = ['admin', 'trainingMaterials']
-
-function formatSize(bytes: number | null): string {
-  if (bytes == null) return ''
-  if (bytes < 1024) return `${bytes} B`
-  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
-}
 
 interface TrainingMaterialsModalProps {
   isOpen: boolean
@@ -62,11 +57,11 @@ export function TrainingMaterialsModal({ isOpen, onClose }: TrainingMaterialsMod
       ) : (
         <div className="space-y-3">
           <p className="text-xs text-surface-500">
-            {t('materials.summary', { count: materials.length, size: formatSize(totalBytes) })}
+            {t('materials.summary', { count: materials.length, size: formatBytes(totalBytes) })}
           </p>
           <ul className="space-y-2 max-h-[60vh] overflow-y-auto pr-1">
             {materials.map((m) => {
-              const isImage = m.mimeType?.startsWith('image/')
+              const isImage = isImageType(m.mimeType)
               return (
                 <li key={m.id} className="flex items-center gap-3 p-3 rounded-lg border border-surface-800 bg-surface-900">
                   {isImage
@@ -88,7 +83,7 @@ export function TrainingMaterialsModal({ isOpen, onClose }: TrainingMaterialsMod
                           : <CalendarDays className="w-3 h-3" />}
                       </span>
                       <span className="truncate">{decodeHtmlEntities(m.ownerLabel)}</span>
-                      {m.sizeBytes != null && <span className="shrink-0">· {formatSize(m.sizeBytes)}</span>}
+                      {m.sizeBytes != null && <span className="shrink-0">· {formatBytes(m.sizeBytes)}</span>}
                     </p>
                   </div>
                   <button

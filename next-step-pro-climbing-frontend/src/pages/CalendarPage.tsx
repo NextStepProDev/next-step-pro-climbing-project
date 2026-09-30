@@ -26,6 +26,7 @@ import { nowInWarsaw, parseCalendarDate, todayInWarsaw } from '../utils/calendar
 import { travellingPayoutSource } from '../utils/slotClipboard';
 import { takesParticipants, type CreatedCalendarEntry } from '../utils/createdEntry';
 import { getErrorMessage } from '../utils/errors';
+import { minutesToTime, timeToMinutes } from '../utils/timeOfDay';
 import type { CreateEventRequest, CreateTimeSlotRequest, EventSummary, TimeSlot } from "../types";
 
 // The full event form from the admin panel — the same one the events panel and the training
@@ -36,17 +37,9 @@ const CreateEventModal = lazy(() =>
   import("./admin/AdminEventsPanel").then((m) => ({ default: m.CreateEventModal }))
 );
 
-const timeToMin = (time: string): number => {
-  const [h, m] = time.split(':').map(Number);
-  return h * 60 + m;
-};
-
-const minToTime = (minutes: number): string =>
-  `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`;
-
 /** The pasted copy keeps the source's length and starts where the admin clicked. */
 const shiftedEndTime = (newStart: string, sourceStart: string, sourceEnd: string): string =>
-  minToTime(timeToMin(newStart) + (timeToMin(sourceEnd) - timeToMin(sourceStart)));
+  minutesToTime(timeToMinutes(newStart) + (timeToMinutes(sourceEnd) - timeToMinutes(sourceStart)));
 
 export function CalendarPage() {
   const { t } = useTranslation('calendar');

@@ -1,24 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { clickToTime, layoutDay, splitDay, timeToMin, HOUR_HEIGHT } from './weekLayout'
+import { clickToTime, layoutDay, splitDay, HOUR_HEIGHT } from './weekLayout'
 import { makeInvitation, makeReservation, makeTraining } from '../../test/factories'
-
-describe('timeToMin', () => {
-  it('should convert midnight to zero', () => {
-    expect(timeToMin('00:00')).toBe(0)
-  })
-
-  it('should convert a half-hour time', () => {
-    expect(timeToMin('07:30')).toBe(450)
-  })
-
-  it('should convert the grid end hour', () => {
-    expect(timeToMin('23:00')).toBe(1380)
-  })
-
-  it('should ignore seconds sent by the API (HH:mm:ss)', () => {
-    expect(timeToMin('10:15:00')).toBe(615)
-  })
-})
 
 describe('clickToTime', () => {
   it('should map the top of the grid to the start hour', () => {

@@ -1,4 +1,5 @@
 import { useRef, useState, useCallback, useEffect } from 'react'
+import { minutesToTime, timeToMinutes } from '../utils/timeOfDay'
 
 const HOUR_HEIGHT = 40
 const START_HOUR = 7
@@ -11,17 +12,6 @@ const LONG_PRESS_TOLERANCE_PX = 10
 
 function snapTo(minutes: number, step: number): number {
   return Math.round(minutes / step) * step
-}
-
-function minutesToTime(totalMinutes: number): string {
-  const h = Math.floor(totalMinutes / 60)
-  const m = totalMinutes % 60
-  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
-}
-
-function timeToMinutes(time: string): number {
-  const [h, m] = time.split(':').map(Number)
-  return h * 60 + m
 }
 
 interface GestureState {

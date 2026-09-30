@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import { useFocusTrap } from '../utils/useFocusTrap'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
@@ -224,24 +224,8 @@ export function TeamPage({ memberType }: { memberType: InstructorType }) {
       ? langParam
       : getDefaultCourseContentLanguage(i18n.language)
 
-  const setContentLanguage = (code: string) =>
-    setSearchParams(
-      (prev) => {
-        const next = new URLSearchParams(prev)
-        next.set('lang', code)
-        return next
-      },
-      { replace: true }
-    )
-
-  // Routes keep the chosen language in the query so it survives remounts/navigation.
-  const memberUrl = (id: string) => `${basePath}/${id}?lang=${contentLanguage}`
-  const listUrl = `${basePath}?lang=${contentLanguage}`
-
-  // The global language switcher also updates the team content.
-  useEffect(() => {
-    const handler = (lng: string) => {
-      const code = getDefaultCourseContentLanguage(lng)
+  const setContentLanguage = useCallback(
+    (code: string) =>
       setSearchParams(
         (prev) => {
           const next = new URLSearchParams(prev)
@@ -249,11 +233,20 @@ export function TeamPage({ memberType }: { memberType: InstructorType }) {
           return next
         },
         { replace: true }
-      )
-    }
+      ),
+    [setSearchParams]
+  )
+
+  // Routes keep the chosen language in the query so it survives remounts/navigation.
+  const memberUrl = (id: string) => `${basePath}/${id}?lang=${contentLanguage}`
+  const listUrl = `${basePath}?lang=${contentLanguage}`
+
+  // The global language switcher also updates the team content.
+  useEffect(() => {
+    const handler = (lng: string) => setContentLanguage(getDefaultCourseContentLanguage(lng))
     i18n.on('languageChanged', handler)
     return () => { i18n.off('languageChanged', handler) }
-  }, [i18n, setSearchParams])
+  }, [i18n, setContentLanguage])
 
   const { data: allMembers, isLoading, isFetching, error } = useQuery({
     queryKey: ['instructors', contentLanguage],

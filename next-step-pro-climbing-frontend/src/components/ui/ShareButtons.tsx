@@ -1,4 +1,5 @@
-import { useState, useCallback, useRef, useEffect } from 'react'
+import { useState, useCallback, useRef } from 'react'
+import { useClickOutside } from '../../hooks/useClickOutside'
 import { useTranslation } from 'react-i18next'
 import { Copy, Check, Share2 } from 'lucide-react'
 
@@ -25,16 +26,7 @@ export function ShareButtons({ title, url: urlProp, description, compact }: { ti
     }
   }, [url])
 
-  useEffect(() => {
-    if (!open) return
-    function handleClickOutside(e: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setOpen(false)
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [open])
+  useClickOutside(containerRef, () => setOpen(false), open)
 
   if (compact) {
     return (
