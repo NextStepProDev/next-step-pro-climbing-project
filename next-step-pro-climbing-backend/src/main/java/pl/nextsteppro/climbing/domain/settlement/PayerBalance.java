@@ -19,4 +19,15 @@ import java.util.UUID;
  *                whose next session is already covered, which is precisely the case this exists for.
  *                Mirrors what {@code AdminSettlementService.settleOutstanding} pulls into its pool.
  */
-public record PayerBalance(UUID payerId, BigDecimal balance, BigDecimal credit) {}
+public record PayerBalance(UUID payerId, BigDecimal balance, BigDecimal credit) {
+
+    /**
+     * What is still owed across all of this payer's rows — the sum of the NEGATIVE deltas, where
+     * {@code credit} is the sum of the positive ones. Derived rather than read: the net balance is
+     * exactly their difference, so a third SUM in the query could only ever agree with this, or
+     * disagree and be the bug.
+     */
+    public BigDecimal debt() {
+        return credit.subtract(balance);
+    }
+}

@@ -960,6 +960,10 @@
       "creditSpent": "Credit spent — oldest debt first. Balance: {{balance}}.",
       "creditSpentOwing": "Credit spent — oldest debt first. {{amount}} still owed.",
       "creditGone": "There was nothing left to spend — the credit went elsewhere. Reload the view.",
+      "alreadySaved": "Already saved — nothing else to click.",
+      "payDebtOnSave": "Owes {{debt}} for other sessions — “Save and pay off the debt” below covers it from the surplus, and the rest stays as credit.",
+      "debtPaid": "Debt paid off — oldest first. Balance: {{balance}}.",
+      "debtPaidOwing": "Debt partly paid off — oldest first. {{amount}} still owed.",
       "debt": "owes {{amount}}",
       "receivedPlaceholder": "received",
       "receivedLabel": "Received — {{name}}",
@@ -975,6 +979,8 @@
       "setAll": "Apply to all",
       "save": "Save",
       "saveAndSpendCredit": "Save and pay from credit",
+      "saveAndPayDebt": "Save and pay off the debt",
+      "saveAndSettle": "Save and settle credits and debts",
       "saved": "Settlement saved."
     },
     "errors": {

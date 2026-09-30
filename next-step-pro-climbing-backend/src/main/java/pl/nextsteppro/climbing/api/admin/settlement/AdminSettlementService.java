@@ -413,6 +413,7 @@ public class AdminSettlementService {
                 row == null ? BigDecimal.ZERO : row.paidAmount(),
                 balanceOf(balances, line.payerId()),
                 creditOf(balances, line.payerId()),
+                otherDebtOf(balances, line.payerId(), row),
                 row == null ? null : row.settledOn(),
                 // Only offered where there is nothing yet — a prefill next to a figure the admin
                 // already wrote reads as a second, competing amount.
@@ -430,6 +431,7 @@ public class AdminSettlementService {
                 segment(orphanPayer), Objects.requireNonNull(payerId), name, 1, true,
                 orphan.amount(), orphan.paidAmount(),
                 balanceOf(balances, payerId), creditOf(balances, payerId),
+                otherDebtOf(balances, payerId, orphan),
                 orphan.settledOn(), null));
         }
         // A session settled in bulk has nobody to charge per head, so the section switches mode
@@ -476,6 +478,21 @@ public class AdminSettlementService {
     private static BigDecimal creditOf(Map<UUID, PayerBalance> balances, UUID payerId) {
         PayerBalance found = balances.get(payerId);
         return found == null ? BigDecimal.ZERO : found.credit();
+    }
+
+    /**
+     * What this person owes on sessions other than the one on screen. Their whole open debt minus
+     * whatever this row is short — the row's own shortfall is what its fields are already asking
+     * for, so counting it here would offer to pay the session off with itself.
+     */
+    private static BigDecimal otherDebtOf(Map<UUID, PayerBalance> balances, UUID payerId,
+                                          @Nullable SettlementRow row) {
+        PayerBalance found = balances.get(payerId);
+        if (found == null) {
+            return BigDecimal.ZERO;
+        }
+        BigDecimal own = row == null ? BigDecimal.ZERO : row.remaining();
+        return found.debt().subtract(own).max(BigDecimal.ZERO);
     }
 
     /**

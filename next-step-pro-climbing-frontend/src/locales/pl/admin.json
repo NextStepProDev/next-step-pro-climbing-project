@@ -967,6 +967,10 @@
       "creditSpent": "Zużyto nadpłatę — najstarszy dług pierwszy. Saldo: {{balance}}.",
       "creditSpentOwing": "Zużyto nadpłatę — najstarszy dług pierwszy. Zostaje zaległość {{amount}}.",
       "creditGone": "Nic nie zostało do zużycia — nadpłata poszła gdzie indziej. Odśwież widok.",
+      "alreadySaved": "Już zapisane — nic więcej nie trzeba klikać.",
+      "payDebtOnSave": "Ma zaległość {{debt}} za inne zajęcia — „Zapisz i spłać zaległość” na dole pokryje ją z nadwyżki, reszta zostanie jako nadpłata.",
+      "debtPaid": "Spłacono zaległość — najstarszy dług pierwszy. Saldo: {{balance}}.",
+      "debtPaidOwing": "Spłacono część zaległości — najstarszy dług pierwszy. Zostaje {{amount}}.",
       "debt": "zaległość {{amount}}",
       "receivedPlaceholder": "otrzymano",
       "receivedLabel": "Otrzymano — {{name}}",
@@ -982,6 +986,8 @@
       "setAll": "Ustaw wszystkim",
       "save": "Zapisz",
       "saveAndSpendCredit": "Zapisz i rozlicz z nadpłaty",
+      "saveAndPayDebt": "Zapisz i spłać zaległość",
+      "saveAndSettle": "Zapisz i rozlicz nadpłaty oraz zaległości",
       "saved": "Zapisano rozliczenie."
     },
     "errors": {
