@@ -443,13 +443,45 @@ class AdminSettlementStatsTest extends BaseIntegrationTest {
 
         // An hour that was on offer and nobody took: not work, and by far the most common empty slot.
         pastSlot(TODAY.minusDays(3));
-        // Still to come, and older than the window.
-        contractorSlot(TODAY.plusDays(3));
+        // Older than the window.
         contractorSlot(TODAY.minusDays(AdminSettlementStatsService.UNPRICED_WINDOW_DAYS + 1L));
+        // The same exclusions hold ahead of today, now that the list reaches there.
+        TimeSlot futureAbsence = timeSlotRepository.saveAndFlush(
+            new TimeSlot(TODAY.plusDays(3), LocalTime.of(9, 0), LocalTime.of(17, 0), 4));
+        futureAbsence.setUnavailable(true);
+        timeSlotRepository.saveAndFlush(futureAbsence);
 
         assertEquals(0, stats.buildOverview("2026", TODAY).unassigned().count(),
-            "An absence, a cancelled session, an availability window, an unsold hour, a future one "
-                + "and an archived one are each a different reason this list must stay quiet");
+            "An absence, a cancelled session, an availability window, an unsold hour and an "
+                + "archived one are each a different reason this list must stay quiet");
+        assertEquals(0, stats.countUnassigned(TODAY), "and the nav dot with it");
+    }
+
+    /**
+     * The list is where the admin-nav dot leads, and the dot is there so a session planned without
+     * a payer is caught while it is still cheap to fix — so the list must hold upcoming sessions too,
+     * and the two counts must be the same number.
+     */
+    @Test
+    @DisplayName("shouldListUpcomingSessionsWithNoPayerAndCountThemForTheNavDot")
+    void shouldListUpcomingSessionsWithNoPayerAndCountThemForTheNavDot() {
+        TimeSlot done = contractorSlot(TODAY.minusDays(2));
+        TimeSlot today = contractorSlot(TODAY);
+        TimeSlot planned = contractorSlot(TODAY.plusDays(40));
+
+        SettlementOverviewDto overview = stats.buildOverview("2026", TODAY);
+
+        assertEquals(List.of(done.getId(), today.getId(), planned.getId()),
+            overview.unassigned().sessions().stream().map(UnassignedSessionDto::targetId).toList());
+        assertEquals(List.of(false, false, true),
+            overview.unassigned().sessions().stream().map(UnassignedSessionDto::upcoming).toList(),
+            "Today sits with the past, at day resolution like the window; only later days are 'upcoming'");
+        assertEquals(overview.unassigned().count(), stats.countUnassigned(TODAY),
+            "A dot and the list it opens that disagree by one look like a bug nobody can resolve");
+
+        assignToSource(planned, "SP nr 5");
+
+        assertEquals(2, stats.countUnassigned(TODAY), "Naming the payer is what puts the dot out");
     }
 
     /**

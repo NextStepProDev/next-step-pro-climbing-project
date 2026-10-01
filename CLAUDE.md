@@ -21,7 +21,7 @@ Dokładne wersje: `gradle.properties` + `frontend/package.json`. Nie duplikować
 
 **Repo:** `next-step-pro-climbing-backend/` · `next-step-pro-climbing-frontend/` · `next-step-pro-climbing-hub/` (Docker Compose dev/prod, `.env`, `loadtest/`) · `.github/workflows/` · `VERSION`.
 
-📄 Serwera, deployu, kopii zapasowych i profilu wydajności **nie ma w tym pliku** — są w `docs/OPERATIONS.md` (patrz ramka na górze). Nie przenosić ich z powrotem: wyleciały stąd, żeby CLAUDE.md mieścił się w limicie.
+📄 Serwera, deployu, kopii zapasowych i profilu wydajności **nie ma w tym pliku** — są w `docs/OPERATIONS.md` (patrz ramka na górze) — i tam zostają, ze względu na limit.
 
 ---
 
@@ -354,7 +354,8 @@ Przy odrzuceniu użyć `findByIdWithUser` (JOIN FETCH) — mail leci async i czy
 
 ### Powiadomienia admina
 
-`GET /api/admin/notifications` → jeden cache `['admin','notifications']` (polling 60 s) zasila badge zakładek Propozycje/Rezerwacje/Kalendarze/Użytkownicy **i** czerwoną kropkę na linku Admin w navbarze (desktop + mobile + hamburger). Kropka to **suma wszystkich** liczników z tego DTO, więc nowy licznik propaguje się na hamburger sam — pamiętać o `Navbar.tsx`, nie o trzech miejscach renderu.
+`GET /api/admin/notifications` → jeden cache `['admin','notifications']` (polling 60 s) zasila badge zakładek **i** czerwoną kropkę na linku Admin w navbarze. Kropka to **suma wszystkich** liczników z tego DTO, więc nowy licznik propaguje się na hamburger sam — pamiętać o `Navbar.tsx`, nie o trzech miejscach renderu.
+- ⚠️ **`unassignedSessions` to licznik STANU, bez „seen"** (gaśnie po przypisaniu kontrahenta) — `docs/MONEY.md`.
 Wejście w zakładkę Rezerwacje → `POST /notifications/reservations-seen` (per-admin `admin_reservations_seen_at`). Licznik = CONFIRMED utworzone po znaczniku, **bez** `created_by_admin`.
 
 **Nowe potwierdzone konta (`newUsers`) mają WŁASNY znacznik** `admin_users_seen_at` (V88), gaszony wejściem w listę Użytkowników. Osobny, bo gasi go inna zakładka. Zapytanie o widok statystyk jest `enabled: view === 'list'`, więc wejście prosto w `?view=stats` **nie** gasi kropki: znacznik ma znaczyć „zobaczyłem konta", a tamten ekran ich nie pokazuje.

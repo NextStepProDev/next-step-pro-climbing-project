@@ -94,6 +94,7 @@ public class AdminService {
     private final ReservedSeatRepository reservedSeatRepository;
     private final TrainingRequestRepository trainingRequestRepository;
     private final pl.nextsteppro.climbing.api.trainingcalendar.TrainingCalendarService trainingCalendarService;
+    private final UnassignedSessionCounter unassignedSessionCounter;
 
     public AdminService(TimeSlotRepository timeSlotRepository,
                        EventRepository eventRepository,
@@ -116,7 +117,8 @@ public class AdminService {
                        AttachmentSupport attachmentSupport,
                        ReservedSeatRepository reservedSeatRepository,
                        TrainingRequestRepository trainingRequestRepository,
-                       pl.nextsteppro.climbing.api.trainingcalendar.TrainingCalendarService trainingCalendarService) {
+                       pl.nextsteppro.climbing.api.trainingcalendar.TrainingCalendarService trainingCalendarService,
+                       UnassignedSessionCounter unassignedSessionCounter) {
         this.timeSlotRepository = timeSlotRepository;
         this.eventRepository = eventRepository;
         this.courseRepository = courseRepository;
@@ -140,6 +142,7 @@ public class AdminService {
         this.reservedSeatRepository = reservedSeatRepository;
         this.trainingRequestRepository = trainingRequestRepository;
         this.trainingCalendarService = trainingCalendarService;
+        this.unassignedSessionCounter = unassignedSessionCounter;
     }
 
     @Caching(evict = {
@@ -1289,8 +1292,9 @@ public class AdminService {
         // Deliberately unfiltered by role: an admin auto-promoted at registration is still a new
         // confirmed account, and the badge clears on the first visit to the Users list anyway.
         int newUsers = userRepository.countByEmailVerifiedAtAfter(admin.getAdminUsersSeenAt());
-        return new AdminNotificationsDto(
-            pendingRequests, newReservations, newWaitlistEntries, athleteActivity, newUsers);
+        int unassignedSessions = unassignedSessionCounter.countUnassigned(LocalDate.now(WARSAW));
+        return new AdminNotificationsDto(pendingRequests, newReservations, newWaitlistEntries,
+            athleteActivity, newUsers, unassignedSessions);
     }
 
     public void markReservationsSeen(UUID adminId) {

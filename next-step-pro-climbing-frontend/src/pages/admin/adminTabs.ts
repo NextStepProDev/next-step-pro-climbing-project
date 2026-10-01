@@ -115,6 +115,8 @@ export function adminTabBadges(notifications: AdminNotifications | undefined): R
     '/admin/training-calendars': notifications?.athleteActivity ?? 0,
     // Accounts confirmed since this admin last opened the Users list
     '/admin/users': notifications?.newUsers ?? 0,
+    // Closed sessions with no contractor — a state count, so entering the tab does not clear it
+    '/admin/settlements': notifications?.unassignedSessions ?? 0,
   }
 }
 

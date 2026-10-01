@@ -300,6 +300,7 @@ function UnassignedCard({ unassigned }: { unassigned: UnassignedSummary }) {
               openLabel={t('settlements.tab.unassigned.open', {
                 date: format(parseCalendarDate(session.date), 'dd.MM.yyyy'),
               })}
+              aside={session.upcoming ? t('settlements.tab.unassigned.upcoming') : undefined}
             />
           ))}
         </ul>

@@ -236,8 +236,9 @@ public interface SettlementRepository extends JpaRepository<Settlement, UUID> {
      *       there; reporting it twice would make two counts that can only disagree.</li>
      * </ul>
      *
-     * <p>The past predicate and the window are the ones the unpriced reads use, deliberately: two
-     * policies for "recent enough to still be work" would be two numbers to keep in step.
+     * <p>The window's lower bound is the one the unpriced reads use, deliberately: two policies for
+     * "recent enough to still be work" would be two numbers to keep in step. Unlike those reads there
+     * is no past predicate — a session planned without a payer is the cheapest one to fix.
      */
     /**
      * What makes a slot "worked for somebody nobody named", written once.
@@ -259,6 +260,14 @@ public interface SettlementRepository extends JpaRepository<Settlement, UUID> {
           AND NOT EXISTS (SELECT 1 FROM GuestReservation g WHERE g.timeSlot.id = ts.id)
         """;
 
+    /**
+     * The backlog list: everything from the start of the window onwards, <b>upcoming included</b>.
+     *
+     * <p>No upper bound and no past predicate, because this list is where the admin-nav dot leads
+     * ({@link #countUnassignedSlotsFrom}) — a dot counting a session the list it opens does not
+     * show is a count nobody can act on. The future is finite and small: it holds what has been
+     * planned, not history.
+     */
     @Query("""
         SELECT new pl.nextsteppro.climbing.domain.settlement.UnassignedSession(
             ts.id, ts.date, ts.title)
@@ -266,12 +275,17 @@ public interface SettlementRepository extends JpaRepository<Settlement, UUID> {
         WHERE
         """ + UNASSIGNED_WHERE + """
           AND ts.date >= :from
-          AND (ts.date < :today OR (ts.date = :today AND ts.endTime <= :now))
         ORDER BY ts.date, ts.startTime
         """)
-    List<UnassignedSession> findUnassignedPastSlots(@Param("from") LocalDate from,
-                                                    @Param("today") LocalDate today,
-                                                    @Param("now") LocalTime now);
+    List<UnassignedSession> findUnassignedSlotsFrom(@Param("from") LocalDate from);
+
+    /**
+     * The admin-nav dot: the size of {@link #findUnassignedSlotsFrom} without loading it, polled every
+     * minute from every admin page. ⚠️ Same predicate, same lower bound — a dot and the list it opens
+     * that disagree by one look like a bug long before anyone guesses which one is right.
+     */
+    @Query("SELECT COUNT(ts) FROM TimeSlot ts WHERE " + UNASSIGNED_WHERE + " AND ts.date >= :from")
+    long countUnassignedSlotsFrom(@Param("from") LocalDate from);
 
     /**
      * The same sessions inside a visible calendar range, ids only — the calendar marker.

@@ -159,6 +159,12 @@ export function CreateSlotModal({
       }
       return { created: { target: 'event', event: await adminApi.createEvent(request.data) }, invites: null }
     },
+    // ⚠️ Settled, not success: the case the nav dot exists for is a slot that WAS created and then
+    // failed to be assigned — that rejects this mutation, and the dot has to light up right then.
+    // (No onError on purpose: the global handler in main.tsx is what reports the failure.)
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: ['admin', 'notifications'] })
+    },
     onSuccess: ({ created, invites }, request) => {
       void queryClient.invalidateQueries({ queryKey: ['calendar'] })
       // A new entry can show up on the money screens before anybody prices anything: a contractor

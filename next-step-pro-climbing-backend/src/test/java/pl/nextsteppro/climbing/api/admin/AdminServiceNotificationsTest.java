@@ -14,11 +14,16 @@ import pl.nextsteppro.climbing.domain.waitlist.EventWaitlistRepository;
 import pl.nextsteppro.climbing.domain.waitlist.WaitlistRepository;
 
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
@@ -34,6 +39,7 @@ class AdminServiceNotificationsTest {
     @Mock private EventWaitlistRepository eventWaitlistRepository;
     @Mock private TrainingRequestRepository trainingRequestRepository;
     @Mock private pl.nextsteppro.climbing.api.trainingcalendar.TrainingCalendarService trainingCalendarService;
+    @Mock private UnassignedSessionCounter unassignedSessionCounter;
 
     private AdminService adminService;
 
@@ -43,7 +49,31 @@ class AdminServiceNotificationsTest {
             null, null, null, reservationRepository, null,
             userRepository, null, null, null, null, null,
             waitlistRepository, eventWaitlistRepository, null, null, null, null, null, null, null,
-            trainingRequestRepository, trainingCalendarService);
+            trainingRequestRepository, trainingCalendarService, unassignedSessionCounter);
+    }
+
+    /**
+     * The dot exists so a forgotten contractor cannot go unnoticed, so it is a STATE count: it
+     * ignores both "seen" markers and asks about today in Warsaw, the same window the settlements
+     * list applies — the container's own clock is UTC and is two hours off in summer.
+     */
+    @Test
+    void shouldReportSessionsWithNoPayerRegardlessOfAnySeenMarker() {
+        // Given
+        UUID adminId = UUID.randomUUID();
+        User admin = mock(User.class);
+        when(userRepository.findById(adminId)).thenReturn(Optional.of(admin));
+        LocalDate todayInWarsaw = LocalDate.now(ZoneId.of("Europe/Warsaw"));
+        when(unassignedSessionCounter.countUnassigned(any())).thenReturn(2);
+
+        // When
+        AdminNotificationsDto notifications = adminService.getNotifications(adminId);
+
+        // Then
+        assertEquals(2, notifications.unassignedSessions());
+        verify(unassignedSessionCounter).countUnassigned(argThat(day ->
+            // Tolerates the run straddling midnight in Warsaw, nothing wider
+            !day.isBefore(todayInWarsaw) && !day.isAfter(todayInWarsaw.plusDays(1))));
     }
 
     @Test

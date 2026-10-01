@@ -311,7 +311,10 @@ record AdminNotificationsDto(
     long athleteActivity,
     // Accounts confirmed since last "read" — its own marker (admin_users_seen_at), cleared by
     // opening the Users list, not the Reservations tab
-    int newUsers
+    int newUsers,
+    // Closed sessions with no payer named (see UnassignedSessionCounter). A STATE count with no
+    // "seen" marker: it stays lit until the payer is assigned, because visiting the tab fixes nothing
+    int unassignedSessions
 ) {}
 
 record NotifyParticipantsResult(int notifiedCount) {}

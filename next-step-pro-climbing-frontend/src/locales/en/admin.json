@@ -996,7 +996,8 @@
       "unassigned": {
         "title": "Sessions with no payer",
         "count": "{{n}} sessions",
-        "scope": "Sessions that have happened with no seats, nobody on them and no contractor — work nothing else will count. This list does not follow the year picker and reaches {{days}} days back.",
+        "scope": "Sessions with no seats, nobody on them and no contractor — work nothing else will count. Covers everything upcoming and the past {{days}} days; it does not follow the year picker. While anything is here, the Admin link shows a dot.",
+        "upcoming": "upcoming",
         "open": "Open the session of {{date}} and name the contractor"
       },
       "unpriced": {

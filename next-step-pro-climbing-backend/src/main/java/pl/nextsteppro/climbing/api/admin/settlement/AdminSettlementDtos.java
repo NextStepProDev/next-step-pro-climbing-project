@@ -170,7 +170,9 @@ record SettlementOverviewDto(
  * ten sessions instead of twelve reads <em>high</em>, and nothing on the screen says why.
  *
  * <p>⚠️ Same two policies as the unpriced queue, and the screen states both: it ignores the year
- * picker, and it is bounded to the same rolling window — one constant, not two that can drift.
+ * picker, and it looks back over the same rolling window — one constant, not two that can drift.
+ * Unlike that queue it also holds every <b>upcoming</b> session: this list is where the admin-nav
+ * dot leads, and the dot counts sessions planned without a payer — the cheapest moment to fix one.
  *
  * @param windowDays how far back the list looks, sent so the screen can name the rule it applies.
  */
@@ -191,7 +193,9 @@ record UnassignedSessionDto(
     String targetType,
     UUID targetId,
     LocalDate date,
-    @Nullable String title
+    @Nullable String title,
+    // After today (Warsaw). A label only: the list counts both, because the admin-nav dot does
+    boolean upcoming
 ) {}
 
 /**

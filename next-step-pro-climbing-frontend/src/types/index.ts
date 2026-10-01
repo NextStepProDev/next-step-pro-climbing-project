@@ -828,6 +828,8 @@ export interface UnassignedSession {
   targetId: string
   date: string
   title: string | null
+  // After today (Warsaw) — a label only; the list and the nav dot count both
+  upcoming: boolean
 }
 
 // Sessions that are over and were never priced at all. The gap this closes is that such a session
@@ -1073,6 +1075,9 @@ export interface AdminNotifications {
   athleteActivity: number
   // Accounts confirmed since last "read" — its own marker, cleared by the Users list
   newUsers: number
+  // Closed sessions with no contractor named. A STATE count with no "seen" marker — it stays lit
+  // until the payer is assigned, because opening the Settlements tab fixes nothing
+  unassignedSessions: number
 }
 
 // Waitlist entry in admin views (participants modal + Reservations tab)
