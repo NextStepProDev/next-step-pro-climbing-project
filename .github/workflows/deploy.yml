@@ -121,8 +121,9 @@ jobs:
           BASE="https://nextsteppro.pl"
           MONTH=$(date +%Y-%m)
           # Read-only GETs the live frontend actually uses; covers nginx routing
-          # + backend + DB across several modules. Skips bare /api/settings (it
-          # returns 500 by design — unused path with no sub-resource).
+          # + backend + DB across several modules. Every path here must exist in
+          # SiteSettingsController & co. — removing an endpoint means removing it
+          # here too, or the deploy goes red on a healthy release.
           PATHS=(
             "/"
             "/api/courses?language=pl"
@@ -130,7 +131,6 @@ jobs:
             "/api/instructors?language=pl"
             "/api/calendar/month/${MONTH}"
             "/api/settings/home"
-            "/api/settings/hero"
             "/api/settings/calendar-promo"
           )
           FAILED=0
