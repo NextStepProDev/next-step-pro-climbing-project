@@ -997,7 +997,8 @@
       "unassigned": {
         "title": "Sesiones sin pagador",
         "count": "{{n}} sesiones",
-        "scope": "Sesiones ya celebradas sin plazas, sin asistentes y sin contratista: trabajo que nada más contabiliza. Esta lista no sigue al selector de año y alcanza {{days}} días atrás.",
+        "scope": "Sesiones sin plazas, sin asistentes y sin contratista: trabajo que nada más contabiliza. Incluye todas las próximas y las de los últimos {{days}} días; no sigue al selector de año. Mientras haya algo aquí, el enlace Admin muestra un punto.",
+        "upcoming": "próxima",
         "open": "Abrir la sesión del {{date}} e indicar el contratista"
       },
       "unpriced": {

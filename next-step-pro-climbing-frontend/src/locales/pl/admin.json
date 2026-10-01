@@ -1003,7 +1003,8 @@
       "unassigned": {
         "title": "Terminy bez płatnika",
         "count": "{{n}} poz.",
-        "scope": "Odbyte terminy bez miejsc, bez uczestników i bez kontrahenta — czyli praca, której nikt nie policzy. Ta lista nie zmienia się z wyborem roku i sięga {{days}} dni wstecz.",
+        "scope": "Terminy bez miejsc, bez uczestników i bez kontrahenta — czyli praca, której nikt nie policzy. Obejmuje wszystkie nadchodzące i odbyte z ostatnich {{days}} dni; nie zmienia się z wyborem roku. Dopóki coś tu jest, przy „Admin” świeci kropka.",
+        "upcoming": "nadchodzący",
         "open": "Otwórz termin z {{date}} i wskaż kontrahenta"
       },
       "unpriced": {

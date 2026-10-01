@@ -55,6 +55,8 @@ export function AdminSlotsPanel() {
     // the hours changes the rate's denominator; blocking takes the session off the "no payer"
     // queue. Without this the tab serves its cached page for five minutes and quietly disagrees.
     queryClient.invalidateQueries({ queryKey: ['admin', 'settlements'] })
+    // …and the nav dot, which counts that "no payer" queue.
+    queryClient.invalidateQueries({ queryKey: ['admin', 'notifications'] })
   }
 
   const { data: upcomingSlots, isLoading, isError, error, refetch } = useQuery({

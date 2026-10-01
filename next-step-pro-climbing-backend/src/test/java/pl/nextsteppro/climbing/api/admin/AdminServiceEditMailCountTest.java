@@ -113,7 +113,8 @@ class AdminServiceEditMailCountTest {
             null, // training materials: not exercised here
             reservedSeatRepository,
             trainingRequestRepository,
-            trainingCalendarService
+            trainingCalendarService,
+            null // unassigned-session count: notifications only, not exercised here
         );
 
         adminId = UUID.randomUUID();

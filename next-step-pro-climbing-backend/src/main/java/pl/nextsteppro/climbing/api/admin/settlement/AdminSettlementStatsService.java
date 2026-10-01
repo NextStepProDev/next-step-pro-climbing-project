@@ -11,6 +11,7 @@ import pl.nextsteppro.climbing.domain.settlement.PayoutRepository;
 import pl.nextsteppro.climbing.domain.settlement.PayoutRow;
 import pl.nextsteppro.climbing.domain.settlement.SessionPayoutRepository;
 import pl.nextsteppro.climbing.domain.settlement.SessionPayoutRow;
+import pl.nextsteppro.climbing.api.admin.UnassignedSessionCounter;
 import pl.nextsteppro.climbing.domain.settlement.UnpricedPayer;
 import pl.nextsteppro.climbing.infrastructure.i18n.MessageService;
 
@@ -56,7 +57,11 @@ import java.util.UUID;
 // were charged, and Java is a stronger gate than a source-scanning test. A future service that tries
 // to pull revenue into a shared DTO now fails to COMPILE rather than needing somebody to notice it
 // in review. Spring proxies package-private classes fine — the proxy is generated in this package.
-class AdminSettlementStatsService {
+//
+// The one thing that leaves this package is a bare count, through UnassignedSessionCounter: the
+// interface lives beside AdminService, so the notifications DTO learns "N sessions have no payer"
+// without the admin package naming a single money type — the isolation gate stays the rule.
+class AdminSettlementStatsService implements UnassignedSessionCounter {
 
     static final ZoneId WARSAW = ZoneId.of("Europe/Warsaw");
 
@@ -247,11 +252,28 @@ class AdminSettlementStatsService {
      */
     private UnassignedDto unassigned(LocalDate today) {
         List<UnassignedSessionDto> sessions = settlementRepository
-            .findUnassignedPastSlots(today.minusDays(UNPRICED_WINDOW_DAYS), today, LocalTime.MAX)
+            .findUnassignedSlotsFrom(unassignedWindowStart(today))
             .stream()
-            .map(row -> new UnassignedSessionDto("slot", row.targetId(), row.targetDate(), row.title()))
+            // Day resolution, like the window: today's session sits with the past ones, as it did
+            // when this list was past-only. "Upcoming" only labels the row; it changes no count.
+            .map(row -> new UnassignedSessionDto("slot", row.targetId(), row.targetDate(), row.title(),
+                row.targetDate().isAfter(today)))
             .toList();
         return new UnassignedDto(sessions.size(), UNPRICED_WINDOW_DAYS, sessions);
+    }
+
+    /**
+     * The admin-nav dot: the size of the list above, counted rather than loaded.
+     *
+     * <p>⚠️ Same lower bound through one helper, so the dot and the list it opens cannot disagree.
+     */
+    @Override
+    public int countUnassigned(LocalDate today) {
+        return Math.toIntExact(settlementRepository.countUnassignedSlotsFrom(unassignedWindowStart(today)));
+    }
+
+    private static LocalDate unassignedWindowStart(LocalDate today) {
+        return today.minusDays(UNPRICED_WINDOW_DAYS);
     }
 
     /**

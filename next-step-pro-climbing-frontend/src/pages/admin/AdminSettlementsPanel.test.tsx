@@ -167,9 +167,9 @@ describe('AdminSettlementsPanel', () => {
         count: 2,
         windowDays: 90,
         sessions: [
-          { targetType: 'slot', targetId: 'slot-1', date: '2026-08-18', title: 'SP nr 5' },
+          { targetType: 'slot', targetId: 'slot-1', date: '2026-08-18', title: 'SP nr 5', upcoming: false },
           // The untitled one is the whole point: nothing on the calendar names this as work.
-          { targetType: 'slot', targetId: 'slot-2', date: '2026-08-25', title: null },
+          { targetType: 'slot', targetId: 'slot-2', date: '2026-08-25', title: null, upcoming: true },
         ],
       },
     }))
@@ -182,6 +182,8 @@ describe('AdminSettlementsPanel', () => {
     const links = screen.getAllByRole('link', { name: 'settlements.tab.unassigned.open' })
     expect(links[0]).toHaveAttribute('href', '/calendar?date=2026-08-18&slot=slot-1')
     expect(links[1]).toHaveTextContent('settlements.tab.outstanding.untitled.slot')
+    // Only the session still ahead says so — it is the one that can be fixed before it happens.
+    expect(screen.getAllByText('settlements.tab.unassigned.upcoming')).toHaveLength(1)
   })
 
   it('does not claim the tab is empty while sessions are waiting for a payer', async () => {
@@ -194,7 +196,7 @@ describe('AdminSettlementsPanel', () => {
       unassigned: {
         count: 1,
         windowDays: 90,
-        sessions: [{ targetType: 'slot', targetId: 'slot-1', date: '2026-08-18', title: null }],
+        sessions: [{ targetType: 'slot', targetId: 'slot-1', date: '2026-08-18', title: null, upcoming: false }],
       },
     }))
 

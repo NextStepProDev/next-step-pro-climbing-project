@@ -105,6 +105,9 @@ export function SettlementSection({ target, targetId, onDirtyChange }: Settlemen
     onSuccess: (_result, choice) => {
       setPicking(false)
       queryClient.invalidateQueries({ queryKey: ['admin', 'settlements'] })
+      // The nav dot counts sessions with no payer — naming one has to put it out now, not on the
+      // next poll, or the admin who just fixed it sees the dot still lit and goes looking again.
+      queryClient.invalidateQueries({ queryKey: ['admin', 'notifications'] })
       // Naming a payer ENDS the work on this session, exactly like saving the amounts does, so it
       // leaves the same way — one click back to wherever the admin came from, and a toast that
       // says what was written, because a modal that simply vanishes confirms nothing.

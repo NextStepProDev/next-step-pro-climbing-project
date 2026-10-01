@@ -131,7 +131,8 @@ class AdminServiceInviteSyncTest {
             attachmentSupport,
             reservedSeatRepository,
             trainingRequestRepository,
-            trainingCalendarService
+            trainingCalendarService,
+            null // unassigned-session count: notifications only, not exercised here
         );
 
         adminId = UUID.randomUUID();

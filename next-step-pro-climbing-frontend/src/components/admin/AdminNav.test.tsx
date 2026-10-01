@@ -16,6 +16,7 @@ const NOTHING_PENDING: AdminNotifications = {
   newWaitlistEntries: 0,
   athleteActivity: 0,
   newUsers: 0,
+  unassignedSessions: 0,
 }
 
 function renderNav(pathname: string, notifications: AdminNotifications = NOTHING_PENDING) {
@@ -95,7 +96,8 @@ describe('AdminNav', () => {
 
   it('carries its tabs badges on the collapsed group', async () => {
     const user = userEvent.setup()
-    // Calendar: 1 proposal + (2 reservations + 1 waitlist) + 0 athlete activity = 4.
+    // Calendar: 1 proposal + (2 reservations + 1 waitlist) + 0 athlete activity
+    //   + 2 sessions with no contractor = 6.
     // System: 3 new accounts.
     renderNav('/admin', {
       pendingRequests: 1,
@@ -103,15 +105,18 @@ describe('AdminNav', () => {
       newWaitlistEntries: 1,
       athleteActivity: 0,
       newUsers: 3,
+      unassignedSessions: 2,
     })
 
-    expect(screen.getByRole('button', { name: /tabGroups.calendar/ })).toHaveTextContent('4')
+    expect(screen.getByRole('button', { name: /tabGroups.calendar/ })).toHaveTextContent('6')
     expect(screen.getByRole('button', { name: /tabGroups.system/ })).toHaveTextContent('3')
 
     // …and the individual tabs still carry their own once the group is open.
     await user.click(screen.getByRole('button', { name: /tabGroups.calendar/ }))
     expect(screen.getByRole('link', { name: /tabs.reservations/ })).toHaveTextContent('3')
     expect(screen.getByRole('link', { name: /tabs.requests/ })).toHaveTextContent('1')
+    // A forgotten contractor is the one thing on this list nobody else will ever report.
+    expect(screen.getByRole('link', { name: /tabs.settlements/ })).toHaveTextContent('2')
   })
 
   it('keeps Escape from reaching a modal listening on the document', async () => {

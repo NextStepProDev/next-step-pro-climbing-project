@@ -559,6 +559,8 @@ export function CalendarPage() {
       void queryClient.invalidateQueries({ queryKey: ['calendar'] });
       void queryClient.invalidateQueries({ queryKey: ['admin', 'slots'] });
       void queryClient.invalidateQueries({ queryKey: ['admin', 'settlements'] });
+      // A paste that lost its contractor is exactly what the nav dot counts — light it now.
+      void queryClient.invalidateQueries({ queryKey: ['admin', 'notifications'] });
     },
     // Silence here is the worst possible answer: the failure this reports is precisely a session
     // that exists with no payer on it, which is what the whole feature is about. No auto-dismiss
