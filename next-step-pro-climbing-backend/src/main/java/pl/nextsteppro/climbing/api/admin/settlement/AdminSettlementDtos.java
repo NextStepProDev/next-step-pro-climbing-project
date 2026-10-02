@@ -23,9 +23,9 @@ import java.util.UUID;
  * who opens the calendar. Living in a type nothing else returns means no shared shape and no cache
  * has anything to leak — the same argument as {@code AdminNoteDto}, with a worse failure mode.
  *
- * @param targetDate the session's day — the slot's date, or the event's first day. Sent so the date
- *                   picker can prefill it when the admin ticks "settled": the money then lands in
- *                   the month the session happened, not the month somebody got round to clicking.
+ * @param targetDate the session's day — the slot's date, or the event's first day. Sent so the
+ *                   payment's date picker can prefill it: the money then lands in the month the
+ *                   session happened, not the month somebody got round to clicking.
  */
 record SettlementSectionDto(
     LocalDate targetDate,
@@ -50,14 +50,21 @@ record SettlementCoverageDto(String kind, UUID id, String name) {}
  * @param participants how many people this booking covers. Shown next to the name because the
  *                     amount prices the whole row, not a head — "Piotr Nowak (2 osoby)" is
  *                     otherwise indistinguishable from a single seat at double the rate.
+ * <p>⚠️ Everything about money on this line except {@code amount} and {@code payments} is DERIVED
+ * by {@code PaymentAllocator} from the person's whole ledger (V100). None of it is typed in, so
+ * none of it can be "corrected" into disagreeing with the payments it came from.
+ *
  * @param amount       what it costs. {@code null} when nothing has been priced yet — a different
  *                     state from {@code 0}, which means free of charge: only the second is a
  *                     decision, and only the second belongs in the totals.
- * @param paidAmount   what actually arrived against it. Cash rarely equals the charge, so these are
- *                     two figures and the screen shows both side by side.
- * @param balance      where this payer's whole account stands: positive means we are holding their
- *                     money. Carried on the line so the figure is in front of you at the moment you
- *                     type the next amount — which is the only moment it is any use.
+ * @param covered      how much of {@code amount} the person's payments cover, oldest debt first.
+ * @param remaining    {@code amount − covered}; zero means paid.
+ * @param paidOn       the day of the payment that completed this charge, if it is complete.
+ * @param accountDebt  what the person owes across ALL their charges.
+ * @param accountCredit money they left with us that no charge has used yet. At most one of the two
+ *                     is non-zero: money always pays the oldest debt first.
+ * @param payments     payments typed in at this entry, plus payments typed elsewhere that cover this
+ *                     charge — each with how it was split, so "she gave 200" stays readable as 200.
  * @param orphaned     true when a settlement exists but the booking behind it does not any more.
  *                     The row stays visible rather than dropping out of the list: money that
  *                     changed hands does not stop having changed hands because somebody cancelled.
@@ -74,67 +81,82 @@ record SettlementLineDto(
     int participants,
     boolean orphaned,
     @Nullable BigDecimal amount,
-    BigDecimal paidAmount,
-    BigDecimal balance,
-    /**
-     * ⚠️ What is parked on this person's overpaid rows, which is <b>not</b> {@code balance}. Somebody
-     * who overpaid fifty and then attended an unpaid fifty session nets to zero while fifty of his
-     * money still sits on the older row — so the net figure would say "no credit" about exactly the
-     * client whose next session is already covered. This is the figure the "pay from credit" action
-     * can spend; {@code balance} is the summary the line states.
-     */
-    BigDecimal credit,
-    /**
-     * What this person still owes on OTHER sessions — their whole open debt minus whatever this
-     * row itself is short. It is what an overpayment typed on this row can pay off, and it is the
-     * figure behind "Save and pay off the debt": without it the admin who records 400 for a 360
-     * session is left with the old debt still open and the 40 parked here, the account netting
-     * correctly while two screens tell two different stories.
-     */
-    BigDecimal otherDebt,
-    @Nullable LocalDate settledOn,
+    BigDecimal covered,
+    BigDecimal remaining,
+    @Nullable LocalDate paidOn,
+    BigDecimal accountDebt,
+    BigDecimal accountCredit,
+    List<LinePaymentDto> payments,
     @Nullable BigDecimal suggestedAmount
 ) {}
 
 /**
- * Upsert payload.
+ * One payment as the modal shows it: what was handed over, unchanged, and where it went.
  *
- * <p>{@code settledOn} null means "not settled yet" and is the whole status field — there is no
- * separate boolean, so there is no way to be marked paid without a date to count the money into.
- * Deliberately <b>not</b> bounded to the past: prepaying next month's course is ordinary, and the
- * client's own default is the session date, which for an upcoming session is in the future.
+ * @param enteredHere true when it was typed in at this entry — false when it was typed elsewhere and
+ *                    is listed only because part of it covers this charge.
+ * @param unallocated the part no charge has used yet — the client's credit, from this payment.
+ */
+record LinePaymentDto(
+    UUID id,
+    BigDecimal amount,
+    LocalDate receivedOn,
+    boolean enteredHere,
+    List<PaymentShareDto> shares,
+    BigDecimal unallocated
+) {}
+
+/**
+ * A slice of a payment applied to one charge.
+ *
+ * @param thisEntry  true when the charge is the one on screen
+ * @param monthlyFee true for a standing coaching fee, which has no calendar entry and no title —
+ *                   without the flag the screen would fall back to a session title it never had
+ */
+record PaymentShareDto(
+    @Nullable String targetTitle,
+    LocalDate targetDate,
+    boolean thisEntry,
+    boolean monthlyFee,
+    BigDecimal amount
+) {}
+
+/**
+ * Upsert payload — the charge alone. Money arrives through {@link AddPaymentRequest}, never here:
+ * until V100 this carried {@code paidAmount}/{@code settledOn}, and one row answering both "what it
+ * costs" and "what was handed over" is what lost the second.
  */
 record SaveSettlementRequest(
-    @NotNull @DecimalMin("0") @DecimalMax("100000") BigDecimal amount,
-    /**
-     * What arrived against this row. Null is read as nothing yet — the same meaning a missing
-     * {@code settledOn} carries, kept together so a row cannot claim a payment date with no money
-     * behind it.
-     */
-    @Nullable @DecimalMin("0") @DecimalMax("100000") BigDecimal paidAmount,
-    @Nullable LocalDate settledOn
+    @NotNull @DecimalMin("0") @DecimalMax("100000") BigDecimal amount
 ) {}
 
 /**
- * Settles everything one payer still owes, in one go and on one date.
+ * Money one person handed over.
  *
- * <p>⚠️ The date is NOT defaulted from the sessions here, unlike the per-participant field. One
- * transfer covered a month of them, so the day it arrived is the only date that is true of all of
- * them; taking each session's own day would scatter a single payment across the months it paid for.
+ * <p>The target is optional and is CONTEXT, not where the money goes: allocation is always oldest
+ * debt first. It only lets the modal show the payment where it was typed in. Without it the
+ * payment came from the "to collect" list, which is about the person, not a session.
+ *
+ * <p>⚠️ {@code receivedOn} is deliberately <b>not</b> bounded to the past: prepaying next month's
+ * course is ordinary. The modal defaults it to the session's day, the outstanding list to today —
+ * the reasons are on those screens.
  */
-record SettleOutstandingRequest(
+record AddPaymentRequest(
     @NotNull String payerType,
     @NotNull UUID payerId,
-    @NotNull LocalDate settledOn,
-    /** What actually changed hands. May be less than owed, or more — cash rarely has change. */
-    @NotNull @DecimalMin("0") @DecimalMax("100000") BigDecimal received
+    @NotNull @DecimalMin("0.01") @DecimalMax("100000") BigDecimal amount,
+    @NotNull LocalDate receivedOn,
+    @Nullable String targetType,
+    @Nullable UUID targetId
 ) {}
 
 /**
- * @param settled how many rows the money reached
- * @param balance where the account stands afterwards: positive means we are holding their money.
+ * Where the account stands after a payment was added or removed.
+ *
+ * @param debt   what the person still owes in total
+ * @param credit what they have left with us that no charge has used. At most one is non-zero.
  */
-record SettleOutstandingResultDto(int settled, BigDecimal balance) {}
+record PaymentResultDto(BigDecimal debt, BigDecimal credit) {}
 
 /**
  * Everything the Settlements tab draws, from one read.
@@ -257,29 +279,17 @@ record UnpricedSessionDto(
  * list, because a section that quietly disobeys the filter above it is otherwise indistinguishable
  * from a broken filter.
  *
+ * <p>Already net of anything the person paid: payments cover the oldest debt first (V100), so a
+ * debtor cannot also be holding credit, and there is no "before overpayments" figure to show.
+ *
  * @param oldest  the earliest session with an unpaid amount, or {@code null} when nothing is owed.
- * @param credits what the people on this list have already left with us. ⚠️ The totals above stay
- *                <b>gross</b>: a debt is a debt, and netting it would make the heading disagree
- *                with the rows beneath it while those rows are still genuinely open. The credit
- *                rides alongside so the screen can say how much actually needs collecting, and so
- *                that a client whose account nets to zero is not chased for money he already paid.
  */
 record OutstandingDto(
     BigDecimal total,
     int count,
     @Nullable LocalDate oldest,
-    List<OutstandingItemDto> items,
-    List<OutstandingCreditDto> credits
+    List<OutstandingItemDto> items
 ) {}
-
-/**
- * What one payer on the outstanding list is holding to their name, always positive.
- *
- * <p>Keyed by the payer rather than repeated on every item, because that is what it belongs to: one
- * credit spread across a person's four debts would be added up four times by anything summing a
- * group, and nothing on screen would show it.
- */
-record OutstandingCreditDto(String payerType, UUID payerId, BigDecimal credit) {}
 
 /**
  * One unpaid amount, addressed so the tab can settle it in place.
@@ -304,18 +314,10 @@ record OutstandingItemDto(
 ) {}
 
 /**
- * Money we are holding that nobody is currently working off — the other half of {@link OutstandingDto},
- * and the half that had nowhere to be seen.
+ * Money we are holding that no charge has used yet — the other half of {@link OutstandingDto}.
  *
- * <p>Credit was only ever computed for people who also owed something, so somebody who overpaid once
- * and owes nothing appeared in no figure on the tab at all: not in revenue (which counts what
- * arrived, and it did arrive), not in debt (he owes nothing), not in the credit note (which only
- * annotates debtors). His money was visible solely by opening the session it sits on.
- *
- * <p>⚠️ <b>Anyone with an open debt is deliberately left out</b>, and the card says so. Their credit
- * is already stated beside their debt, where it is also actionable — pressing "settle everything"
- * spends it. Listing them here as well would tell two contradictory stories about one person on one
- * screen: net they are short, yet they would appear under a heading totalling money we hold.
+ * <p>Since V100 a debtor cannot appear here: money always covers the oldest debt first, so credit
+ * exists only once everything is paid. The two lists are disjoint by construction, not by a filter.
  *
  * <p>Whole history, ignoring the year picker, for the reason {@link OutstandingDto} gives.
  *
@@ -329,18 +331,19 @@ record CreditsDto(
 ) {}
 
 /**
- * One overpaid row: what is parked, and which session is parking it.
+ * The unused part of one payment: how much, when it arrived, and where it was typed in.
  *
- * <p>Shaped exactly like {@link OutstandingItemDto} — not out of convenience, but so that two lists
- * about the same money have one shape on the wire and one grouping routine in the client.
- *
- * @param targetId ⚠️ null for a monthly coaching fee, the same signal it carries on a debt: there is
- *                 no calendar entry to link into.
- * @param amount   what this row holds over its price, always positive.
+ * @param targetType {@code slot} / {@code event} where the payment was typed in, or {@code null}
+ *                   when it was taken from the outstanding list — then there is nothing to link.
+ * @param targetDate that session's day, for the calendar link — not the same as {@code date}
+ * @param date       the day the money arrived
+ * @param title      the session it was typed in at, when there is one
+ * @param amount     the part of this payment no charge has used, always positive
  */
 record CreditItemDto(
-    String targetType,
+    @Nullable String targetType,
     @Nullable UUID targetId,
+    @Nullable LocalDate targetDate,
     LocalDate date,
     @Nullable String title,
     String payerType,
@@ -350,7 +353,7 @@ record CreditItemDto(
 ) {}
 
 /**
- * Money that arrived, counted on {@code settledOn} — the axis the tab labels.
+ * Money that arrived, counted on the payment's day — the axis the tab labels.
  *
  * @param months         twelve buckets: the calendar months of the selected year, or the last twelve
  *                       ending this month when no year is selected. Always twelve, so the chart does
@@ -370,6 +373,10 @@ record CreditItemDto(
  *                       particular is NOT slot income — the sessions it covers are deliberately left
  *                       unpriced, so filing it under slots claims session earnings for a client
  *                       whose sessions all earned nothing.
+ * @param fromCredit     the part of payments in range that no charge has used yet — money in hand
+ *                       ahead of the work (a prepayment, change left from a big note). It is revenue
+ *                       by date like any other, but it has no source to file it under until a charge
+ *                       uses it, and the five buckets must still add up to {@code total}.
  * @param previousMonths the SAME twelve months a year earlier, or empty in the "everything" view,
  *                       which has no previous to compare against.
  *                       <p>⚠️ This is the only honest comparison this business has. Climbing is
@@ -388,6 +395,7 @@ record RevenueDto(
     BigDecimal fromEvents,
     BigDecimal fromSubscriptions,
     BigDecimal fromPayouts,
+    BigDecimal fromCredit,
     List<MonthlyRevenueDto> previousMonths,
     BigDecimal previousTotal
 ) {}
@@ -407,15 +415,16 @@ record MonthlyRevenueDto(LocalDate month, BigDecimal amount) {}
  *
  * @param userId {@code null} for a guest — no account, so no user card to link to. That is the whole
  *               reason the type is nullable, and the client uses it as exactly that signal.
- * @param paid   settled within the selected range; {@code outstanding} is unpaid work whose session
- *               falls in it. Two axes, as everywhere else here — and the two never double-count,
- *               because a row is either settled or it is not.
+ * @param paid         payments received within the selected range; {@code outstanding} is the
+ *                     uncovered part of charges whose session falls in it. Two axes, as everywhere
+ *                     else here.
+ * @param paymentCount how many payments those were
  */
 record PersonRevenueDto(
     String payerType,
     @Nullable UUID userId,
     String name,
-    int settlementCount,
+    int paymentCount,
     BigDecimal paid,
     BigDecimal outstanding,
     @Nullable LocalDate lastPayment
@@ -585,26 +594,46 @@ record PayoutSessionDto(
  * aggregates. Loading every row of a year into a response that renders four cards would make the
  * common read pay for the rare one.
  *
- * <p>Unpaid lines are included with an empty {@code settledOn} on purpose. What was received is the
+ * <p>Unpaid lines are included with an empty {@code paidOn} on purpose. What was received is the
  * question most of the time, but "what is still owed for this year" is the other half of the same
  * conversation, and dropping those rows would make the file impossible to reconcile against the
  * screen it came from.
  *
- * @param kind  which money model the line came from, because they are chased differently: a client's
- *              own fee versus a transfer from a school.
- * @param payer the person or the institution. Guests appear under whatever name was written down —
- *              it is the only one there is.
+ * @param kind    which money model the line came from, because they are chased differently: a
+ *                client's own fee versus a transfer from a school.
+ * @param payer   the person or the institution. Guests appear under whatever name was written down
+ *                — it is the only one there is.
+ * @param amount  what it cost
+ * @param covered how much of it the person's payments cover (derived, oldest debt first)
+ * @param paidOn  the day the payment that completed it arrived; empty while something is owed
  */
 record SettlementExportRowDto(
     String kind,
     LocalDate date,
     @Nullable String title,
     String payer,
-    /** What it cost. */
     BigDecimal amount,
-    /** What actually arrived. Less than the charge leaves a remainder; more is an overpayment. */
-    BigDecimal paid,
-    @Nullable LocalDate settledOn
+    BigDecimal covered,
+    @Nullable LocalDate paidOn
+) {}
+
+/**
+ * One payment, exactly as it was handed over — the cash sheet of the export. The charges sheet says
+ * what was owed; this one says what arrived and when, which is what an accountant reconciles.
+ *
+ * @param enteredAt the session it was typed in at, if any
+ */
+record PaymentExportRowDto(
+    LocalDate receivedOn,
+    String payer,
+    BigDecimal amount,
+    @Nullable String enteredAt
+) {}
+
+/** The export: what was owed (and transfers from schools), and what clients handed over. */
+record SettlementExportDto(
+    List<SettlementExportRowDto> lines,
+    List<PaymentExportRowDto> payments
 ) {}
 
 /**
@@ -617,28 +646,27 @@ record SettlementExportRowDto(
  *
  * @param recent  the last few lines, newest first. Enough to answer "what is this made of" without
  *                turning the card into a second Settlements tab.
- * @param credit  what is sitting on their overpaid rows — the money we are holding on their behalf.
- *                Shown beside {@code outstanding} rather than subtracted from it: the two answer
- *                different questions ("what is still open" against "what have they left with me"),
- *                and the card has to agree with the Settlements tab, which keeps its debts gross and
- *                names the credit alongside them. ⚠️ The pair is the whole story and either alone is
- *                misleading: a client owing 50 while holding 50 of ours is square, and a card
- *                showing only one of those figures says the opposite of the tab about him.
+ * @param paid        everything they have ever handed over
+ * @param outstanding what their payments do not cover yet
+ * @param credit      what they left with us that no charge has used yet. At most one of
+ *                    {@code outstanding} / {@code credit} is non-zero — money covers the oldest debt
+ *                    first, by the same allocation the Settlements tab uses, so the two screens
+ *                    cannot disagree about one person.
  */
 record PayerSummaryDto(
     BigDecimal paid,
     BigDecimal outstanding,
     BigDecimal credit,
-    int settlementCount,
+    int paymentCount,
     @Nullable LocalDate lastPayment,
     List<PayerLineDto> recent
 ) {}
 
 /**
- * @param amount     what this session cost
- * @param paidAmount what actually arrived against it. Carried beside {@code amount} rather than
- *                   folded into it, because a line showing only the charge next to a payment date
- *                   reads as paid in full — which a part payment is not.
+ * @param amount  what this session cost
+ * @param covered how much of it is paid. Carried beside {@code amount} because a line showing only
+ *                the charge next to a date reads as paid in full — which a part payment is not.
+ * @param paidOn  the day the payment that completed it arrived; {@code null} while short
  */
 record PayerLineDto(
     LocalDate date,
@@ -650,8 +678,8 @@ record PayerLineDto(
      */
     boolean monthlyFee,
     BigDecimal amount,
-    BigDecimal paidAmount,
-    @Nullable LocalDate settledOn
+    BigDecimal covered,
+    @Nullable LocalDate paidOn
 ) {}
 
 /**

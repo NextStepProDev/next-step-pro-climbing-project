@@ -1,5 +1,5 @@
 import { todayInWarsaw } from '../../utils/calendarDate'
-import type { SettlementExportRow } from '../../types'
+import type { PaymentExportRow, SettlementExportRow } from '../../types'
 
 /**
  * The file an accountant asks for in January.
@@ -13,12 +13,21 @@ import type { SettlementExportRow } from '../../types'
  */
 export interface SettlementExportRequest {
   rows: SettlementExportRow[]
+  /**
+   * The cash sheet: every payment exactly as handed over. The charges sheet says what is covered,
+   * which is DERIVED (oldest debt first); this one is the record an accountant reconciles against
+   * the bank and the till.
+   */
+  payments: PaymentExportRow[]
   year: number | null
   labels: {
     /** One line saying what this file is — a week later nobody remembers which year produced it. */
     summary: string
     columns: string[]
     unpaid: string
+    chargesSheet: string
+    paymentsSheet: string
+    paymentColumns: string[]
   }
 }
 
@@ -49,15 +58,35 @@ export function toExportRows(
     // writing a LOCALISED string ("150,00"); a numeric cell sidesteps it entirely, because Excel
     // renders the number in whatever locale the reader has.
     row.amount,
-    // ⚠️ What arrived, beside what was charged. Since part payments exist the two differ routinely,
-    // and the file used to carry only the charge — so 150 owed with 100 paid exported as "150" next
-    // to a payment date and read as settled in full, in the document somebody reconciles with their
-    // books. No third column for the remainder: two numeric columns let the spreadsheet subtract,
-    // and a stored difference is one more figure that can disagree with the other two.
-    row.paid,
+    // ⚠️ How much of it is covered, beside what was charged. The two differ routinely, and a file
+    // carrying only the charge next to a date read as settled in full. No third column for the
+    // remainder: two numeric columns let the spreadsheet subtract, and a stored difference is one
+    // more figure that can disagree with the other two.
+    row.covered,
     // Empty would read as missing data; the word says it is owed, which is a fact rather than a gap.
-    row.settledOn ?? unpaid,
+    row.paidOn ?? unpaid,
   ])
+}
+
+/** One row of the cash sheet — a payment as handed over. */
+export function toPaymentRows(payments: PaymentExportRow[]): (string | number)[][] {
+  return payments.map((payment) => [
+    payment.receivedOn,
+    payment.payer,
+    payment.amount,
+    payment.enteredAt ?? '',
+  ])
+}
+
+/** The cell's type follows the value, so amounts stay numeric and the column still sums. */
+function toCells(rows: (string | number)[][]) {
+  return rows.map((row) =>
+    row.map((cell) =>
+      typeof cell === 'number'
+        ? { value: cell, type: Number, format: '#,##0.00' }
+        : { value: cell, type: String },
+    ),
+  )
 }
 
 export async function exportSettlements(request: SettlementExportRequest): Promise<void> {
@@ -65,27 +94,27 @@ export async function exportSettlements(request: SettlementExportRequest): Promi
   // at build time.
   const { default: writeXlsxFile } = await import('write-excel-file/browser')
 
-  const { labels, rows } = request
+  const { labels, rows, payments } = request
   const summary = [{ value: labels.summary, type: String }]
-  const header = labels.columns.map((column) => ({
+  const headerOf = (columns: string[]) => columns.map((column) => ({
     value: column,
     type: String,
     fontWeight: 'bold' as const,
   }))
-  // The cell's type follows the value: a number becomes a numeric cell with two decimals, so the
-  // reader's Excel renders it in their own locale and the column still sums.
-  const body = toExportRows(rows, labels.unpaid).map((row) =>
-    row.map((cell) =>
-      typeof cell === 'number'
-        ? { value: cell, type: Number, format: '#,##0.00' }
-        : { value: cell, type: String },
-    ),
-  )
 
-  await writeXlsxFile([summary, header, ...body], {
-    columns: [
-      { width: 18 }, { width: 12 }, { width: 32 }, { width: 26 },
-      { width: 12 }, { width: 12 }, { width: 14 },
-    ],
-  }).toFile(exportFileName(request.year))
+  await writeXlsxFile([
+    {
+      data: [summary, headerOf(labels.columns), ...toCells(toExportRows(rows, labels.unpaid))],
+      sheet: labels.chargesSheet,
+      columns: [
+        { width: 18 }, { width: 12 }, { width: 32 }, { width: 26 },
+        { width: 12 }, { width: 12 }, { width: 14 },
+      ],
+    },
+    {
+      data: [summary, headerOf(labels.paymentColumns), ...toCells(toPaymentRows(payments))],
+      sheet: labels.paymentsSheet,
+      columns: [{ width: 12 }, { width: 26 }, { width: 12 }, { width: 32 }],
+    },
+  ]).toFile(exportFileName(request.year))
 }

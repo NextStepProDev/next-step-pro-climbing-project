@@ -591,26 +591,51 @@ export interface SettlementLine {
   orphaned: boolean
   // What it costs.
   amount: number | null
-  // What actually arrived against it. Cash rarely equals the charge, so these are two numbers and
-  // the screen shows both.
-  paidAmount: number
-  // Where this payer's whole account stands: positive means you are holding their money. Carried on
-  // the line so it is in front of you at the moment you type the next amount.
-  balance: number
-  // ⚠️ What is parked on their overpaid rows, which is NOT `balance`. Somebody who overpaid 50 and
-  // then attended an unpaid 50 session nets to zero while 50 of his money still sits on the older
-  // row — so the net figure says "no credit" about exactly the client whose session is covered.
-  // This is what the "pay from credit" action can spend; `balance` is what the line states.
-  credit: number
-  // What they still owe on OTHER sessions — this row's own shortfall excluded. An overpayment typed
-  // on this row can pay it off, which is what "Save and pay off the debt" offers.
-  otherDebt: number
-  settledOn: string | null
+  // ⚠️ Everything below except `payments` is DERIVED on the server from the person's whole ledger:
+  // payments cover the oldest debt first. Nothing here is typed in, so nothing can be "corrected"
+  // into disagreeing with the payments it came from — which is what went wrong before V100.
+  covered: number
+  remaining: number
+  // The day the payment that completed this charge arrived; null while something is owed.
+  paidOn: string | null
+  // Across ALL their charges. At most one of the two is non-zero.
+  accountDebt: number
+  accountCredit: number
+  // Payments typed in here, plus payments typed elsewhere that cover part of this charge — each
+  // exactly as handed over, with how it was split.
+  payments: LinePayment[]
   // What this person was last charged, offered as a prefill and never applied on its own. This is
   // what stands in for a default-rate column on the slot: the price follows the person (a pass, a
   // discount, gear), not the hour. Only sent for a line that has no amount yet, and never for a
   // guest — a guest row is a one-off with no history to draw on.
   suggestedAmount: number | null
+}
+
+// One payment as handed over — never edited; a correction is delete and enter again.
+export interface LinePayment {
+  id: string
+  amount: number
+  receivedOn: string
+  // false = typed in at another session and listed here only because part of it covers this one.
+  enteredHere: boolean
+  shares: PaymentShare[]
+  // The part no charge has used yet — credit, from this payment.
+  unallocated: number
+}
+
+export interface PaymentShare {
+  targetTitle: string | null
+  targetDate: string
+  thisEntry: boolean
+  // A standing fee has no title; never fall back to the untitled-session label for it.
+  monthlyFee: boolean
+  amount: number
+}
+
+// Where the account stands after a payment was added. At most one of the two is non-zero.
+export interface PaymentResult {
+  debt: number
+  credit: number
 }
 
 // Admin-only. Deliberately not folded into TimeSlot/EventSummary: those shapes are served to
@@ -740,14 +765,13 @@ export interface Subscription {
 // One client's money, for their card in the Users panel. Whole history, not the tab's selected
 // year: "what do I have with this person" has no year in it.
 export interface PayerSummary {
+  // Everything they ever handed over.
   paid: number
   outstanding: number
-  // What is sitting on their overpaid rows — money you are holding on their behalf. Beside
-  // `outstanding` rather than subtracted from it: the debts stay gross here exactly as they do on
-  // the tab, and the pair is the whole story. Somebody owing 50 while holding 50 of yours is square,
-  // and a card showing only one of those figures says the opposite of the tab about him.
+  // What they left with you that no charge has used yet. At most one of `outstanding`/`credit` is
+  // non-zero — the same allocation the tab runs, so the two screens cannot disagree about one person.
   credit: number
-  settlementCount: number
+  paymentCount: number
   lastPayment: string | null
   recent: PayerLine[]
 }
@@ -762,13 +786,14 @@ export interface PayerLine {
    */
   monthlyFee: boolean
   amount: number
-  /** What actually arrived. Below `amount` the rest is still owed, above it the change is credit. */
-  paidAmount: number
-  settledOn: string | null
+  /** How much of it is paid. Below `amount` the rest is still owed. */
+  covered: number
+  /** When the payment that completed it arrived; null while short. */
+  paidOn: string | null
 }
 
-// One income line for the accountant. Unpaid lines come through with settledOn null on purpose —
-// "what is still owed for this year" is the other half of the same conversation.
+// One charge for the accountant. Unpaid lines come through with paidOn null on purpose — "what is
+// still owed for this year" is the other half of the same conversation.
 export interface SettlementExportRow {
   kind: string
   date: string
@@ -776,12 +801,22 @@ export interface SettlementExportRow {
   payer: string
   /** What it cost. */
   amount: number
-  /**
-   * What actually arrived against it. The server has always sent this; the export dropped it, so a
-   * row charged 150 with 100 paid left the file reading as settled in full.
-   */
-  paid: number
-  settledOn: string | null
+  /** How much of it is paid — a row charged 150 with 100 covered must not read as settled. */
+  covered: number
+  paidOn: string | null
+}
+
+// What was handed over, exactly as typed — the cash sheet of the export.
+export interface PaymentExportRow {
+  receivedOn: string
+  payer: string
+  amount: number
+  enteredAt: string | null
+}
+
+export interface SettlementExport {
+  lines: SettlementExportRow[]
+  payments: PaymentExportRow[]
 }
 
 export interface PayoutEntry {
@@ -862,19 +897,9 @@ export interface OutstandingSummary {
   total: number
   count: number
   oldest: string | null
+  // Already net of anything the person paid: payments cover the oldest debt first, so nobody on
+  // this list is also holding credit.
   items: OutstandingItem[]
-  // What the people on this list have already left with you. The totals above stay GROSS — netting
-  // them would make the heading disagree with the rows under it while those rows are still open —
-  // so the credit rides alongside and the screen says how much actually needs collecting.
-  credits: OutstandingCredit[]
-}
-
-// Keyed by the payer, not repeated on each item: one credit spread over somebody's four debts would
-// be counted four times by anything summing a group.
-export interface OutstandingCredit {
-  payerType: SettlementPayer
-  payerId: string
-  credit: number
 }
 
 // Carries its own address (targetType/targetId + payerType/payerId), so the tab can settle a debt
@@ -894,12 +919,8 @@ export interface OutstandingItem {
   amount: number
 }
 
-// The other half of OutstandingSummary: people holding money of yours with nothing owing.
-//
-// ⚠️ Anyone with an open debt is deliberately ABSENT — their credit is already named beside their
-// debt, where settling spends it. Listing them here too would total money you hold about somebody
-// who is, on net, short. The card states the omission, because a section that quietly drops people
-// is indistinguishable from a broken one.
+// The other half of OutstandingSummary: money of yours that no charge has used yet. Nobody here
+// owes anything — payments cover the oldest debt first, so credit exists only once all is paid.
 //
 // Whole history, ignoring the year picker, for the same reason debts do.
 export interface CreditsSummary {
@@ -910,11 +931,13 @@ export interface CreditsSummary {
   items: CreditItem[]
 }
 
-// Same shape as OutstandingItem on purpose: two lists about the same money, one grouping routine.
-// `amount` is what this row holds OVER its price, always positive.
+// The unused part of one payment. `date` is when the money arrived; `targetType/targetId/targetDate`
+// name the session it was typed in at (null when it came from the outstanding list — nothing to
+// link). `amount` is the unused part, always positive.
 export interface CreditItem {
-  targetType: SettlementTarget | 'month'
+  targetType: SettlementTarget | null
   targetId: string | null
+  targetDate: string | null
   date: string
   title: string | null
   payerType: SettlementPayer
@@ -935,9 +958,11 @@ export interface RevenueSummary {
   // unpriced on purpose, so filing it under slots claims earnings for sessions that earned nothing.
   fromSubscriptions: number
   // Work somebody else settled in bulk. Four genuinely different ways of earning, and this is the
-  // one whose price you do not set. All four must add up to `total` — the client draws them against
-  // it, so a missing source is an unexplained gap in the bar.
+  // one whose price you do not set.
   fromPayouts: number
+  // Money in hand that no charge has used yet (a prepayment, change from a big note). All five must
+  // add up to `total` — the client draws them against it, so a missing source is an unexplained gap.
+  fromCredit: number
   // ⚠️ The same twelve months a year earlier — empty in the "everything" view, which has no
   // previous. This is the only honest comparison this business has: climbing is seasonal, so month
   // against previous month calls a quiet October a bad month when it is simply October.
@@ -957,7 +982,7 @@ export interface PersonRevenue {
   payerType: SettlementPayer
   userId: string | null
   name: string
-  settlementCount: number
+  paymentCount: number
   paid: number
   outstanding: number
   lastPayment: string | null

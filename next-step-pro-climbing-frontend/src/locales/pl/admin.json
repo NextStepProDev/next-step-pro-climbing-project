@@ -952,48 +952,50 @@
       "people": "({{n}} os.)",
       "guest": "gość",
       "orphaned": "rezerwacja anulowana",
-      "settled": "rozliczone",
       "amountPlaceholder": "kwota",
       "amountLabel": "Kwota — {{name}}",
-      "settledOnLabel": "Data zapłaty — {{name}}",
       "useLast": "ostatnio: {{amount}}",
       "clear": "Usuń kwotę — {{name}}",
-      "settledLabel": "Rozliczone — {{name}}",
-      "credit": "nadpłata {{amount}}",
-      "spendCredit": "→ Rozlicz z nadpłaty ({{amount}})",
-      "spendCreditLabel": "Rozlicz z nadpłaty — {{name}}",
-      "saveFirst": "Zapisz kwotę, żeby rozliczyć ją z nadpłaty.",
-      "spendOnSave": "Ma nadpłatę — „Zapisz i rozlicz z nadpłaty” na dole od razu ją zużyje (razem z tym, co wpiszesz jako otrzymane).",
-      "creditSpent": "Zużyto nadpłatę — najstarszy dług pierwszy. Saldo: {{balance}}.",
-      "creditSpentOwing": "Zużyto nadpłatę — najstarszy dług pierwszy. Zostaje zaległość {{amount}}.",
-      "creditGone": "Nic nie zostało do zużycia — nadpłata poszła gdzie indziej. Odśwież widok.",
-      "alreadySaved": "Już zapisane — nic więcej nie trzeba klikać.",
-      "payDebtOnSave": "Ma zaległość {{debt}} za inne zajęcia — „Zapisz i spłać zaległość” na dole pokryje ją z nadwyżki, reszta zostanie jako nadpłata.",
-      "debtPaid": "Spłacono zaległość — najstarszy dług pierwszy. Saldo: {{balance}}.",
-      "debtPaidOwing": "Spłacono część zaległości — najstarszy dług pierwszy. Zostaje {{amount}}.",
-      "debt": "zaległość {{amount}}",
-      "receivedPlaceholder": "otrzymano",
-      "receivedLabel": "Otrzymano — {{name}}",
-      "receivedHint": "otrzymano",
       "dueHint": "należne",
-      "settledOnHint": "data zapłaty"
+      "statusPaid": "✓ opłacone {{date}}",
+      "statusPaidNoDate": "✓ opłacone",
+      "statusFree": "✓ gratis",
+      "statusShort": "brakuje {{amount}}",
+      "statusUnpaid": "nieopłacone",
+      "otherDebt": "zaległość z innych terminów {{amount}} — wpłata najpierw pokryje najstarszą",
+      "accountCredit": "nadpłata na koncie {{amount}} — pokryje kolejne zajęcia",
+      "paymentPlaceholder": "kwota",
+      "paymentLabel": "Wpłata teraz — {{name}}",
+      "paymentHint": "wpłata teraz",
+      "paymentDateLabel": "Data wpłaty — {{name}}",
+      "paymentDateHint": "data wpłaty"
     },
-    "clearPaid": {
+    "payment": {
+      "entry": "{{date}} · wpłata {{amount}}",
+      "elsewhere": "(wpisana przy innym terminie)",
+      "shareThis": "{{amount}} te zajęcia",
+      "shareOther": "{{amount}} {{title}} {{date}}",
+      "shareFee": "{{amount}} abonament {{month}}",
+      "shareCredit": "{{amount}} nadpłata",
+      "untitled": "zajęcia",
+      "delete": "Usuń wpłatę {{amount}} z {{date}}"
+    },
+    "deletePayment": {
       "title": "Usunąć wpłatę?",
-      "message": "Na wierszu „{{name}}” jest zapisane {{amount}}. Usunięcie wiersza usuwa też tę wpłatę — zniknie z przychodu i z salda klienta, i nic nie zapisze, że kiedykolwiek wpłynęła."
+      "message": "{{name}}: {{amount}} z {{date}}. Wpłat się nie edytuje — jeśli kwota była zła, usuń ją i wpisz poprawną. Zajęcia, które pokrywała, wrócą do zapłaty.",
+      "done": "Usunięto wpłatę."
     },
     "actions": {
       "setAll": "Ustaw wszystkim",
       "save": "Zapisz",
-      "saveAndSpendCredit": "Zapisz i rozlicz z nadpłaty",
-      "saveAndPayDebt": "Zapisz i spłać zaległość",
-      "saveAndSettle": "Zapisz i rozlicz nadpłaty oraz zaległości",
-      "saved": "Zapisano rozliczenie."
+      "saved": "Zapisano rozliczenie.",
+      "resultSquare": "{{name}}: rozliczone.",
+      "resultCredit": "{{name}}: rozliczone, nadpłata {{amount}}.",
+      "resultDebt": "{{name}}: zostaje do zapłaty {{amount}}."
     },
     "errors": {
       "invalidAmount": "Kwota musi być liczbą z przedziału od 0 do 100000.",
-      "zeroReceived": "Zero nie rozlicza wiersza — użyj „Rozlicz z nadpłaty” albo odznacz „rozliczone”.",
-      "receivedRequired": "Wpisz, ile faktycznie otrzymałeś (także 0) — przy nadpłacie „rozliczone” bez kwoty jest niejednoznaczne."
+      "invalidPayment": "Wpłata musi być kwotą większą od zera (do 100000)."
     },
     "tab": {
       "title": "Rozliczenia",
@@ -1031,12 +1033,9 @@
         "sessions_one": "{{count}} termin",
         "sessions_few": "{{count}} terminy",
         "sessions_many": "{{count}} terminów",
-        "settleAll": "Rozlicz — przyjmij {{amount}}",
-        "settleFromCredit": "Rozlicz z nadpłaty",
+        "settleAll": "Przyjmij wpłatę {{amount}}",
         "paidOnLabel": "Data wpłaty — {{name}}",
-        "receivedLabel": "Otrzymano — {{name}}",
-        "credit": "{{gross}} zajęć − {{credit}} nadpłaty",
-        "grossTotal": "przed nadpłatami {{amount}}"
+        "receivedLabel": "Wpłata — {{name}}"
       },
       "credits": {
         "title": "Nadpłaty",
@@ -1044,16 +1043,15 @@
         "payers_few": "{{count}} os.",
         "payers_many": "{{count}} os.",
         "ignoresYear": "Ta lista pokazuje CAŁĄ historię i nie zmienia się z wyborem roku — pieniądze zostawione w zeszłym roku nadal leżą u Ciebie.",
-        "excludesDebtors": "Kto ma też zaległość, jest wyżej: tam jego nadpłata stoi obok długu i zostanie nią rozliczona.",
-        "sessions_one": "{{count}} termin",
-        "sessions_few": "{{count}} terminy",
-        "sessions_many": "{{count}} terminów",
+        "payments_one": "{{count}} wpłata",
+        "payments_few": "{{count}} wpłaty",
+        "payments_many": "{{count}} wpłat",
+        "noSession": "wpłata przyjęta z listy „Do odzyskania”",
         "open": "Otwórz termin — {{name}}, {{date}}",
         "openUser": "Otwórz kartę klienta",
         "untitled": {
           "slot": "Trening 1:1",
-          "event": "Wydarzenie",
-          "month": "Abonament (prowadzenie)"
+          "event": "Wydarzenie"
         }
       },
       "revenue": {
@@ -1065,6 +1063,7 @@
         "fromEvents": "Wydarzenia",
         "fromSubscriptions": "Abonamenty",
         "fromPayouts": "Wypłaty zbiorcze",
+        "fromCredit": "Nadpłaty (jeszcze niewykorzystane)",
         "vsLastYear": "wobec tego samego okresu rok wcześniej ({{previous}})",
         "lastYearTooltip": "rok wcześniej: {{amount}}"
       },
@@ -1111,11 +1110,16 @@
         "colTitle": "Opis",
         "colPayer": "Płatnik",
         "colAmount": "Kwota (PLN)",
-        "colPaid": "Wpłacono (PLN)",
-        "colSettledOn": "Data zapłaty",
+        "colPaid": "Pokryte (PLN)",
+        "colSettledOn": "Data opłacenia",
         "kindClient": "Klient",
         "kindPayout": "Wypłata zbiorcza",
-        "unpaid": "nierozliczone"
+        "unpaid": "nierozliczone",
+        "chargesSheet": "Należności",
+        "paymentsSheet": "Wpłaty",
+        "colReceivedOn": "Data wpłaty",
+        "colPaymentAmount": "Wpłata (PLN)",
+        "colEnteredAt": "Wpisana przy"
       }
     },
     "source": {

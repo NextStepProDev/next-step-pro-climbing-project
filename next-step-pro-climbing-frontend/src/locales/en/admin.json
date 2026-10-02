@@ -945,48 +945,50 @@
       "people": "({{n}} people)",
       "guest": "guest",
       "orphaned": "booking cancelled",
-      "settled": "settled",
       "amountPlaceholder": "amount",
       "amountLabel": "Amount — {{name}}",
-      "settledOnLabel": "Payment date — {{name}}",
       "useLast": "last time: {{amount}}",
       "clear": "Remove amount — {{name}}",
-      "settledLabel": "Settled — {{name}}",
-      "credit": "credit {{amount}}",
-      "spendCredit": "→ Pay from credit ({{amount}})",
-      "spendCreditLabel": "Pay from credit — {{name}}",
-      "saveFirst": "Save the amount first, then pay it from the credit.",
-      "spendOnSave": "Holds a credit — “Save and pay from credit” below spends it straight away (together with whatever you enter as received).",
-      "creditSpent": "Credit spent — oldest debt first. Balance: {{balance}}.",
-      "creditSpentOwing": "Credit spent — oldest debt first. {{amount}} still owed.",
-      "creditGone": "There was nothing left to spend — the credit went elsewhere. Reload the view.",
-      "alreadySaved": "Already saved — nothing else to click.",
-      "payDebtOnSave": "Owes {{debt}} for other sessions — “Save and pay off the debt” below covers it from the surplus, and the rest stays as credit.",
-      "debtPaid": "Debt paid off — oldest first. Balance: {{balance}}.",
-      "debtPaidOwing": "Debt partly paid off — oldest first. {{amount}} still owed.",
-      "debt": "owes {{amount}}",
-      "receivedPlaceholder": "received",
-      "receivedLabel": "Received — {{name}}",
-      "receivedHint": "received",
       "dueHint": "due",
-      "settledOnHint": "payment date"
+      "statusPaid": "✓ paid {{date}}",
+      "statusPaidNoDate": "✓ paid",
+      "statusFree": "✓ free",
+      "statusShort": "{{amount}} short",
+      "statusUnpaid": "unpaid",
+      "otherDebt": "owes {{amount}} for other sessions — a payment covers the oldest first",
+      "accountCredit": "credit on account {{amount}} — covers the next sessions",
+      "paymentPlaceholder": "amount",
+      "paymentLabel": "Payment now — {{name}}",
+      "paymentHint": "payment now",
+      "paymentDateLabel": "Payment date — {{name}}",
+      "paymentDateHint": "payment date"
     },
-    "clearPaid": {
+    "payment": {
+      "entry": "{{date}} · paid {{amount}}",
+      "elsewhere": "(entered at another session)",
+      "shareThis": "{{amount}} this session",
+      "shareOther": "{{amount}} {{title}} {{date}}",
+      "shareFee": "{{amount}} subscription {{month}}",
+      "shareCredit": "{{amount}} credit",
+      "untitled": "session",
+      "delete": "Delete payment {{amount}} from {{date}}"
+    },
+    "deletePayment": {
       "title": "Delete the payment?",
-      "message": "The row for “{{name}}” holds {{amount}}. Removing the row removes that payment too — it leaves revenue and the client's balance, and nothing will record that it ever arrived."
+      "message": "{{name}}: {{amount}} on {{date}}. Payments are never edited — if the amount was wrong, delete it and enter the right one. Sessions it was covering become unpaid again.",
+      "done": "Payment deleted."
     },
     "actions": {
       "setAll": "Apply to all",
       "save": "Save",
-      "saveAndSpendCredit": "Save and pay from credit",
-      "saveAndPayDebt": "Save and pay off the debt",
-      "saveAndSettle": "Save and settle credits and debts",
-      "saved": "Settlement saved."
+      "saved": "Settlement saved.",
+      "resultSquare": "{{name}}: settled.",
+      "resultCredit": "{{name}}: settled, {{amount}} credit.",
+      "resultDebt": "{{name}}: {{amount}} still owed."
     },
     "errors": {
       "invalidAmount": "The amount must be a number between 0 and 100000.",
-      "zeroReceived": "A zero does not settle the row — use “Pay from credit” or untick “settled”.",
-      "receivedRequired": "Enter what you actually received (0 counts) — with a credit in play, “settled” without an amount is ambiguous."
+      "invalidPayment": "A payment must be an amount above zero (up to 100000)."
     },
     "tab": {
       "title": "Settlements",
@@ -1022,27 +1024,23 @@
         "open": "Open the session — {{name}}, {{date}}",
         "sessions_one": "{{count}} session",
         "sessions_other": "{{count}} sessions",
-        "settleAll": "Settle — receive {{amount}}",
-        "settleFromCredit": "Settle from credit",
+        "settleAll": "Record payment {{amount}}",
         "paidOnLabel": "Payment date — {{name}}",
-        "receivedLabel": "Received — {{name}}",
-        "credit": "{{gross}} of sessions − {{credit}} credit",
-        "grossTotal": "before credits {{amount}}"
+        "receivedLabel": "Payment — {{name}}"
       },
       "credits": {
         "title": "Overpayments",
         "payers_one": "{{count}} person",
         "payers_other": "{{count}} people",
         "ignoresYear": "This list shows the WHOLE history and does not follow the year picker — money left last year is still sitting with you.",
-        "excludesDebtors": "Anyone who also owes something is above: their credit is named beside their debt, and settling spends it.",
-        "sessions_one": "{{count}} session",
-        "sessions_other": "{{count}} sessions",
+        "payments_one": "{{count}} payment",
+        "payments_other": "{{count}} payments",
+        "noSession": "payment taken from the “Outstanding” list",
         "open": "Open session — {{name}}, {{date}}",
         "openUser": "Open client card",
         "untitled": {
           "slot": "1:1 training",
-          "event": "Event",
-          "month": "Coaching fee"
+          "event": "Event"
         }
       },
       "revenue": {
@@ -1054,6 +1052,7 @@
         "fromEvents": "Events",
         "fromSubscriptions": "Subscriptions",
         "fromPayouts": "Bulk payouts",
+        "fromCredit": "Credit (not used yet)",
         "vsLastYear": "against the same period a year earlier ({{previous}})",
         "lastYearTooltip": "a year earlier: {{amount}}"
       },
@@ -1100,11 +1099,16 @@
         "colTitle": "Description",
         "colPayer": "Payer",
         "colAmount": "Amount (PLN)",
-        "colPaid": "Received (PLN)",
-        "colSettledOn": "Payment date",
+        "colPaid": "Covered (PLN)",
+        "colSettledOn": "Paid in full on",
         "kindClient": "Client",
         "kindPayout": "Bulk payout",
-        "unpaid": "outstanding"
+        "unpaid": "outstanding",
+        "chargesSheet": "Charges",
+        "paymentsSheet": "Payments",
+        "colReceivedOn": "Payment date",
+        "colPaymentAmount": "Payment (PLN)",
+        "colEnteredAt": "Entered at"
       }
     },
     "source": {

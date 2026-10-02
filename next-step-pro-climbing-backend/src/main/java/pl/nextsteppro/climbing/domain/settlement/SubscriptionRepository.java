@@ -8,6 +8,7 @@ import org.springframework.data.repository.query.Param;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -36,15 +37,13 @@ public interface SubscriptionRepository extends JpaRepository<Subscription, UUID
     List<LocalDate> findBilledMonths(@Param("userId") UUID userId);
 
     /**
-     * Drops fees for months beginning after a backdated end — but only the UNPAID ones.
-     *
-     * <p>A paid fee stays whatever the dates say afterwards: the money arrived, and rewriting that
-     * because a date was corrected a week later would be the application overruling the bank.
+     * Drops the given fees. Which ones is decided by the caller from the allocation — whether a fee
+     * is paid is no longer a column this statement could test (V100). Scoped to fees (the
+     * {@code periodMonth} predicate), so an id of a session charge cannot slip through.
      */
     @Modifying(clearAutomatically = true, flushAutomatically = true)
-    @Query("DELETE FROM Settlement s WHERE s.user.id = :userId AND s.periodMonth > :lastBilled "
-        + "AND s.settledOn IS NULL")
-    int deleteUnpaidFeesAfter(@Param("userId") UUID userId, @Param("lastBilled") LocalDate lastBilled);
+    @Query("DELETE FROM Settlement s WHERE s.id IN :ids AND s.periodMonth IS NOT NULL")
+    int deleteFees(@Param("ids") Collection<UUID> ids);
 
     /**
      * Creates one month's fee, or leaves an existing one alone.

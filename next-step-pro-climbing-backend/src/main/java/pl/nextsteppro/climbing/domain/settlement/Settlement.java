@@ -13,7 +13,7 @@ import java.time.LocalDate;
 import java.util.UUID;
 
 /**
- * What one participant owes for one calendar entry, and whether they have paid.
+ * What one participant owes for one calendar entry. What they paid is in {@link Payment}.
  *
  * <p><b>Admin-only, and the privacy does not depend on remembering.</b> Money about named people
  * never travels in a shared DTO: the calendar shapes are served to anonymous visitors and cached
@@ -73,19 +73,14 @@ public class Settlement {
     @Nullable
     private GuestReservation guest;
 
-    /** What it costs. */
+    /**
+     * What it costs. Whether it is paid is NOT on this row: money lives in {@link Payment}, and
+     * which payment covers which charge is derived by {@link PaymentAllocator}. Until V100 this row
+     * carried its own {@code paid_amount}, and paying off a backlog had to rewrite it — losing the
+     * record of what the client actually handed over.
+     */
     @Column(nullable = false, precision = 10, scale = AMOUNT_SCALE)
     private BigDecimal amount;
-
-    /**
-     * What actually arrived against this row. Less than {@link #amount} leaves the remainder owed;
-     * more is an overpayment that raises the client's balance — which happens with cash constantly.
-     *
-     * <p>⚠️ The balance itself is NOT stored anywhere. It is the sum of this minus the sum of amount
-     * across the person's rows, so there is nothing to keep in step and nothing to drift.
-     */
-    @Column(name = "paid_amount", nullable = false, precision = 10, scale = AMOUNT_SCALE)
-    private BigDecimal paidAmount = BigDecimal.ZERO;
 
     /**
      * Third kind of target: the month a standing coaching fee is owed for. Not a foreign key — the
@@ -95,11 +90,6 @@ public class Settlement {
     @Column(name = "period_month")
     @Nullable
     private LocalDate periodMonth;
-
-    /** {@code null} = not settled. A day label in Poland, not an instant — like {@code training_date}. */
-    @Column(name = "settled_on")
-    @Nullable
-    private LocalDate settledOn;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;

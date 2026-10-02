@@ -946,48 +946,50 @@
       "people": "({{n}} pers.)",
       "guest": "invitado",
       "orphaned": "reserva cancelada",
-      "settled": "liquidado",
       "amountPlaceholder": "importe",
       "amountLabel": "Importe — {{name}}",
-      "settledOnLabel": "Fecha de pago — {{name}}",
       "useLast": "la última vez: {{amount}}",
       "clear": "Eliminar importe — {{name}}",
-      "settledLabel": "Liquidado — {{name}}",
-      "credit": "saldo a favor {{amount}}",
-      "spendCredit": "→ Usar el saldo a favor ({{amount}})",
-      "spendCreditLabel": "Usar el saldo a favor — {{name}}",
-      "saveFirst": "Guarda el importe para poder usar el saldo a favor.",
-      "spendOnSave": "Tiene saldo a favor: «Guardar y usar el saldo a favor» abajo lo aplica en el acto (junto con lo que indiques como recibido).",
-      "creditSpent": "Saldo usado — primero la deuda más antigua. Saldo: {{balance}}.",
-      "creditSpentOwing": "Saldo usado — primero la deuda más antigua. Quedan {{amount}} por pagar.",
-      "creditGone": "No quedaba nada que usar: el saldo se ha ido a otra parte. Recarga la vista.",
-      "alreadySaved": "Ya está guardado: no hace falta pulsar nada más.",
-      "payDebtOnSave": "Debe {{debt}} de otras sesiones: «Guardar y saldar la deuda» abajo la cubre con el excedente, y el resto queda como saldo a favor.",
-      "debtPaid": "Deuda saldada — primero la más antigua. Saldo: {{balance}}.",
-      "debtPaidOwing": "Deuda saldada en parte — primero la más antigua. Quedan {{amount}} por pagar.",
-      "debt": "debe {{amount}}",
-      "receivedPlaceholder": "recibido",
-      "receivedLabel": "Recibido — {{name}}",
-      "receivedHint": "recibido",
       "dueHint": "a pagar",
-      "settledOnHint": "fecha de pago"
+      "statusPaid": "✓ pagado {{date}}",
+      "statusPaidNoDate": "✓ pagado",
+      "statusFree": "✓ gratis",
+      "statusShort": "faltan {{amount}}",
+      "statusUnpaid": "sin pagar",
+      "otherDebt": "debe {{amount}} de otras sesiones — un pago cubre primero la más antigua",
+      "accountCredit": "saldo a favor {{amount}} — cubrirá las próximas sesiones",
+      "paymentPlaceholder": "importe",
+      "paymentLabel": "Pago ahora — {{name}}",
+      "paymentHint": "pago ahora",
+      "paymentDateLabel": "Fecha de pago — {{name}}",
+      "paymentDateHint": "fecha de pago"
     },
-    "clearPaid": {
+    "payment": {
+      "entry": "{{date}} · pago {{amount}}",
+      "elsewhere": "(registrado en otra sesión)",
+      "shareThis": "{{amount}} esta sesión",
+      "shareOther": "{{amount}} {{title}} {{date}}",
+      "shareFee": "{{amount}} cuota {{month}}",
+      "shareCredit": "{{amount}} saldo a favor",
+      "untitled": "sesión",
+      "delete": "Eliminar el pago de {{amount}} del {{date}}"
+    },
+    "deletePayment": {
       "title": "¿Eliminar el pago?",
-      "message": "La fila de «{{name}}» tiene registrados {{amount}}. Al eliminar la fila se elimina también ese pago: desaparecerá de los ingresos y del saldo del cliente, y nada registrará que llegó."
+      "message": "{{name}}: {{amount}} del {{date}}. Los pagos no se editan: si el importe era incorrecto, elimínalo y registra el correcto. Las sesiones que cubría vuelven a quedar pendientes.",
+      "done": "Pago eliminado."
     },
     "actions": {
       "setAll": "Aplicar a todos",
       "save": "Guardar",
-      "saveAndSpendCredit": "Guardar y usar el saldo a favor",
-      "saveAndPayDebt": "Guardar y saldar la deuda",
-      "saveAndSettle": "Guardar y liquidar saldos y deudas",
-      "saved": "Liquidación guardada."
+      "saved": "Liquidación guardada.",
+      "resultSquare": "{{name}}: liquidado.",
+      "resultCredit": "{{name}}: liquidado, saldo a favor {{amount}}.",
+      "resultDebt": "{{name}}: quedan {{amount}} por pagar."
     },
     "errors": {
       "invalidAmount": "El importe debe ser un número entre 0 y 100000.",
-      "zeroReceived": "Un cero no liquida la línea: usa «Usar el saldo a favor» o desmarca «liquidado».",
-      "receivedRequired": "Indica lo que recibiste de verdad (0 también vale): con saldo a favor, «liquidado» sin importe es ambiguo."
+      "invalidPayment": "Un pago debe ser un importe mayor que cero (hasta 100000)."
     },
     "tab": {
       "title": "Liquidaciones",
@@ -1023,27 +1025,23 @@
         "open": "Abrir la sesión — {{name}}, {{date}}",
         "sessions_one": "{{count}} sesión",
         "sessions_other": "{{count}} sesiones",
-        "settleAll": "Liquidar — recibir {{amount}}",
-        "settleFromCredit": "Liquidar con el saldo a favor",
+        "settleAll": "Registrar pago de {{amount}}",
         "paidOnLabel": "Fecha de pago — {{name}}",
-        "receivedLabel": "Recibido — {{name}}",
-        "credit": "{{gross}} de sesiones − {{credit}} a su favor",
-        "grossTotal": "antes de saldos a favor {{amount}}"
+        "receivedLabel": "Pago — {{name}}"
       },
       "credits": {
         "title": "Pagos de más",
         "payers_one": "{{count}} persona",
         "payers_other": "{{count}} personas",
         "ignoresYear": "Esta lista muestra TODO el historial y no sigue al selector de año — el dinero dejado el año pasado sigue en tu poder.",
-        "excludesDebtors": "Quien además debe algo está arriba: allí su saldo a favor figura junto a la deuda y se usa al liquidar.",
-        "sessions_one": "{{count}} sesión",
-        "sessions_other": "{{count}} sesiones",
+        "payments_one": "{{count}} pago",
+        "payments_other": "{{count}} pagos",
+        "noSession": "pago registrado desde la lista «Pendiente de cobro»",
         "open": "Abrir sesión — {{name}}, {{date}}",
         "openUser": "Abrir ficha del cliente",
         "untitled": {
           "slot": "Entrenamiento 1:1",
-          "event": "Evento",
-          "month": "Cuota de seguimiento"
+          "event": "Evento"
         }
       },
       "revenue": {
@@ -1055,6 +1053,7 @@
         "fromEvents": "Eventos",
         "fromSubscriptions": "Suscripciones",
         "fromPayouts": "Pagos globales",
+        "fromCredit": "Saldo a favor (aún sin usar)",
         "vsLastYear": "frente al mismo periodo del año anterior ({{previous}})",
         "lastYearTooltip": "un año antes: {{amount}}"
       },
@@ -1101,11 +1100,16 @@
         "colTitle": "Descripción",
         "colPayer": "Pagador",
         "colAmount": "Importe (PLN)",
-        "colPaid": "Cobrado (PLN)",
-        "colSettledOn": "Fecha de pago",
+        "colPaid": "Cubierto (PLN)",
+        "colSettledOn": "Pagado del todo el",
         "kindClient": "Cliente",
         "kindPayout": "Pago global",
-        "unpaid": "pendiente"
+        "unpaid": "pendiente",
+        "chargesSheet": "Importes",
+        "paymentsSheet": "Pagos",
+        "colReceivedOn": "Fecha de pago",
+        "colPaymentAmount": "Pago (PLN)",
+        "colEnteredAt": "Registrado en"
       }
     },
     "source": {

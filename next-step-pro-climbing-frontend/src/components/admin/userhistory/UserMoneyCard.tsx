@@ -55,7 +55,7 @@ export function UserMoneyCard({ userId }: { userId: string }) {
   // Nothing recorded is not a zero balance — rendering "0 zł paid" would state something about
   // somebody nobody has ever priced.
   if (!data) return null
-  const empty = data.settlementCount === 0 && data.outstanding === 0 && data.recent.length === 0
+  const empty = data.paymentCount === 0 && data.outstanding === 0 && data.recent.length === 0
 
   return (
     <div className="bg-surface-900 rounded-xl border border-surface-800 p-4 space-y-3">
@@ -76,19 +76,17 @@ export function UserMoneyCard({ userId }: { userId: string }) {
               label={t('users.detail.money.owed')}
               value={data.outstanding > 0 ? money(data.outstanding) : '—'}
               tone={data.outstanding > 0 ? 'text-amber-500' : 'text-surface-500'}
-              /* ⚠️ Beside the debt, never subtracted from it: this card and the Settlements tab are
-                 about the same client and both keep debts gross, and the one time they were allowed
-                 to do the arithmetic differently the client read as square here while the tab
-                 chased him. The pair is the story — 50 owed against 50 of his held here is square,
-                 and either figure alone says the opposite. Neutral tone, because a credit is a
-                 thing to remember while pricing: not work outstanding (amber), not done (green). */
+              /* At most one of the two is ever non-zero — payments cover the oldest debt first, by
+                 the same allocation the Settlements tab runs, so this card cannot disagree with it.
+                 Neutral tone for credit, because it is a thing to remember while pricing: not work
+                 outstanding (amber), not done (green). */
               hint={
                 data.credit > 0
                   ? t('users.detail.money.credit', { amount: money(data.credit) })
                   : undefined
               }
             />
-            <Figure label={t('users.detail.money.count')} value={String(data.settlementCount)} />
+            <Figure label={t('users.detail.money.count')} value={String(data.paymentCount)} />
             <Figure
               label={t('users.detail.money.last')}
               value={
@@ -114,18 +112,20 @@ export function UserMoneyCard({ userId }: { userId: string }) {
                 </span>
                 <span className="shrink-0 text-surface-200 tabular-nums">{money(line.amount)}</span>
                 <span className="w-24 shrink-0 text-right tabular-nums">
-                  {/* A part payment is neither of the two old states. Showing only the charge beside
-                      a payment date read as settled in full, which is how somebody stops chasing a
-                      remainder they never knew about. */}
-                  {line.settledOn && line.paidAmount < line.amount ? (
+                  {/* A part payment is neither paid nor unpaid. Showing only the charge beside a
+                      date read as settled in full, which is how somebody stops chasing a remainder
+                      they never knew about. */}
+                  {line.covered >= line.amount ? (
+                    <span className="text-surface-500">
+                      {line.paidOn
+                        ? format(parseCalendarDate(line.paidOn), 'dd.MM.yyyy', { locale })
+                        : '✓'}
+                    </span>
+                  ) : line.covered > 0 ? (
                     <span className="text-amber-500">
                       {t('users.detail.money.short', {
-                        amount: money(line.amount - line.paidAmount),
+                        amount: money(line.amount - line.covered),
                       })}
-                    </span>
-                  ) : line.settledOn ? (
-                    <span className="text-surface-500">
-                      {format(parseCalendarDate(line.settledOn), 'dd.MM.yyyy', { locale })}
                     </span>
                   ) : (
                     <span className="text-amber-500">{t('users.detail.money.unpaid')}</span>

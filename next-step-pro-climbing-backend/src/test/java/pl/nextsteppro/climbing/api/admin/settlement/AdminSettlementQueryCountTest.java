@@ -46,21 +46,21 @@ class AdminSettlementQueryCountTest extends BaseIntegrationTest {
     private static final int SETTLEMENTS = 30;
 
     /**
-     * Rows of the year, the outstanding history, the overpaid history, the two distinct-date reads
-     * behind the year picker, the four reads behind the "to be priced" queue (two session kinds x
-     * two payer kinds), the one behind "no payer at all", and the four behind bulk payouts (the
-     * payer list, transfers by arrival, transfers by work month, and the sessions they cover) —
-     * one query each, plus slack for Spring Data's own round trips.
+     * All charges, all payments (the allocation needs each person's whole ledger), the two
+     * distinct-date reads behind the year picker, the four reads behind the "to be priced" queue
+     * (two session kinds x two payer kinds), the one behind "no payer at all", and the four behind
+     * bulk payouts (the payer list, transfers by arrival, transfers by work month, and the sessions
+     * they cover) — one query each, plus slack for Spring Data's own round trips. Measured 13 after
+     * V100 (it was 14 before: two ledger reads replaced the year's rows, the outstanding history and
+     * the overpaid history).
      *
      * <p>A dozen is a lot for one endpoint and it is deliberate: the tab answers several independent
      * questions in one read so its figures cannot disagree with each other. What matters is that the
      * number does not move with the data, which is what this gate holds.
      *
-     * <p>⚠️ The overpaid history did not raise this ceiling, and that is worth keeping true. It
-     * REPLACED the per-debtor balance read that used to annotate debts with their credit, so one
-     * read now answers both questions — which is also why the two screens cannot disagree about one
-     * person. If this number ever measures higher after touching credit, the old read is still in
-     * there somewhere; the answer is to find it, not to raise the ceiling.
+     * <p>⚠️ The allocation runs in Java over those two reads. A per-payer allocation that fetched
+     * each person's payments in a loop reads naturally and costs one query each — if this number
+     * ever climbs, look for that, not for a reason to raise the ceiling.
      */
     private static final int MAX_QUERIES = 15;
 
@@ -71,8 +71,9 @@ class AdminSettlementQueryCountTest extends BaseIntegrationTest {
 
     /**
      * Event, its days, their confirmed bookings, guests on the event, guests on its days, the saved
-     * amounts, the prefill, who settles it in bulk, and the two balance reads (one for registered
-     * payers, one for guests) — one query each, plus slack for Spring Data's own round trips.
+     * amounts, the prefill, who settles it in bulk, and the ledger reads behind the allocation (the
+     * registered payers' charges, their payments, the guests' payments) — one query each, plus slack
+     * for Spring Data's own round trips. Measured 11 after V100.
      *
      * <p>The balances were briefly a query PER PAYER, which took this to nineteen on a fixture of
      * ten. This gate is what caught it; the ceiling stays a constant so the same mistake cannot hide
@@ -100,6 +101,7 @@ class AdminSettlementQueryCountTest extends BaseIntegrationTest {
 
     @BeforeEach
     void setUp() {
+        jdbc.update("DELETE FROM payments");
         jdbc.update("DELETE FROM settlements");
         guestReservationRepository.deleteAll();
         reservationRepository.deleteAll();
@@ -120,11 +122,13 @@ class AdminSettlementQueryCountTest extends BaseIntegrationTest {
                 new TimeSlot(date, LocalTime.of(18, 0), LocalTime.of(20, 0), 4));
 
             // Every third one left unpaid, so the outstanding read has work to do as well.
-            jdbc.update("INSERT INTO settlements (time_slot_id, user_id, amount, paid_amount, settled_on) "
-                    + "VALUES (?, ?, ?, ?, ?)",
-                slot.getId(), payer.getId(), new BigDecimal("150.00"),
-                i % 3 == 0 ? BigDecimal.ZERO : new BigDecimal("150.00"),
-                i % 3 == 0 ? null : date);
+            jdbc.update("INSERT INTO settlements (time_slot_id, user_id, amount) VALUES (?, ?, ?)",
+                slot.getId(), payer.getId(), new BigDecimal("150.00"));
+            if (i % 3 != 0) {
+                jdbc.update("INSERT INTO payments (user_id, amount, received_on, entered_slot_id) "
+                        + "VALUES (?, ?, ?, ?)",
+                    payer.getId(), new BigDecimal("150.00"), date, slot.getId());
+            }
         }
 
         // A guest who owes, as well as the registered ones: the outstanding list mixes both kinds
@@ -133,13 +137,11 @@ class AdminSettlementQueryCountTest extends BaseIntegrationTest {
             new TimeSlot(TODAY.minusDays(3), LocalTime.of(17, 0), LocalTime.of(19, 0), 4));
         GuestReservation guest = guestReservationRepository.saveAndFlush(
             new GuestReservation(guestSlot, "Ekipa z Krakowa", 2));
-        jdbc.update("INSERT INTO settlements (time_slot_id, guest_reservation_id, amount, paid_amount, settled_on) "
-                + "VALUES (?, ?, ?, ?, ?)",
-            guestSlot.getId(), guest.getId(), new BigDecimal("150.00"), BigDecimal.ZERO, null);
+        jdbc.update("INSERT INTO settlements (time_slot_id, guest_reservation_id, amount) VALUES (?, ?, ?)",
+            guestSlot.getId(), guest.getId(), new BigDecimal("150.00"));
 
-        // Somebody holding a credit with nothing owing. The overpaid read is unconditional, so a
-        // fixture without one would let it come back empty and still meet the budget — and this is
-        // also the row that proves the credit note beside a debt no longer costs a query of its own.
+        // Somebody holding a credit with nothing owing, so the allocation has a payment with an
+        // unused part to report and the credits card is not empty.
         User overpayer = new User("credit@example.com", "Klient", "Nadplata",
             "+48123456789", "credit");
         overpayer.setRole(UserRole.USER);
@@ -147,10 +149,10 @@ class AdminSettlementQueryCountTest extends BaseIntegrationTest {
         overpayer = userRepository.saveAndFlush(overpayer);
         TimeSlot creditSlot = timeSlotRepository.saveAndFlush(
             new TimeSlot(TODAY.minusDays(5), LocalTime.of(10, 0), LocalTime.of(12, 0), 4));
-        jdbc.update("INSERT INTO settlements (time_slot_id, user_id, amount, paid_amount, settled_on) "
-                + "VALUES (?, ?, ?, ?, ?)",
-            creditSlot.getId(), overpayer.getId(), new BigDecimal("150.00"),
-            new BigDecimal("200.00"), TODAY.minusDays(5));
+        jdbc.update("INSERT INTO settlements (time_slot_id, user_id, amount) VALUES (?, ?, ?)",
+            creditSlot.getId(), overpayer.getId(), new BigDecimal("150.00"));
+        jdbc.update("INSERT INTO payments (user_id, amount, received_on, entered_slot_id) VALUES (?, ?, ?, ?)",
+            overpayer.getId(), new BigDecimal("200.00"), TODAY.minusDays(5), creditSlot.getId());
 
         // Sessions worked for somebody who was never named: zero seats, nobody on them, no amount.
         // They cost a read of their own, and a fixture without them would let that read come back

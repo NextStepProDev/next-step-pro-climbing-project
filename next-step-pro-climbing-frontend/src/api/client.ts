@@ -67,7 +67,8 @@ import type {
   SettlementPayer,
   SettlementSection,
   SettlementOverview,
-  SettlementExportRow,
+  SettlementExport,
+  PaymentResult,
   PayerSummary,
   Subscription,
   PayoutSource,
@@ -1102,13 +1103,33 @@ export const adminSettlementsApi = {
     payerType: SettlementPayer,
     payerId: string,
     amount: number,
-    paidAmount: number | null,
-    settledOn: string | null,
   ) =>
+    // The charge alone. Money goes through addPayment and is never touched by a price correction.
     fetchApi<void>(`/admin/settlements/${target}/${targetId}/${payerType}/${payerId}`, {
       method: 'PUT',
-      body: JSON.stringify({ amount, paidAmount, settledOn }),
+      body: JSON.stringify({ amount }),
     }),
+
+  // Money one person handed over, stored exactly as given. Which charges it covers the server
+  // derives on every read, oldest debt first. The target is context only — where it was typed in.
+  addPayment: (
+    payerType: SettlementPayer,
+    payerId: string,
+    amount: number,
+    receivedOn: string,
+    target: { type: SettlementTarget; id: string } | null,
+  ) =>
+    fetchApi<PaymentResult>('/admin/settlements/payments', {
+      method: 'POST',
+      body: JSON.stringify({
+        payerType, payerId, amount, receivedOn,
+        targetType: target?.type ?? null, targetId: target?.id ?? null,
+      }),
+    }),
+
+  // The only correction a payment has: remove it and enter it again.
+  deletePayment: (paymentId: string) =>
+    fetchApi<void>(`/admin/settlements/payments/${paymentId}`, { method: 'DELETE' }),
 
   remove: (
     target: SettlementTarget,
@@ -1174,26 +1195,10 @@ export const adminSettlementsApi = {
   // Line items for the accountant. Its own endpoint: the tab needs aggregates, and making the
   // common read carry a year of rows would be paying for the rare case every time.
   getExportRows: (year: string | undefined, clientKind: string, payoutKind: string) =>
-    fetchApi<SettlementExportRow[]>(
+    fetchApi<SettlementExport>(
       `/admin/settlements/export?clientKind=${encodeURIComponent(clientKind)}`
       + `&payoutKind=${encodeURIComponent(payoutKind)}${year ? `&year=${year}` : ''}`,
     ),
-
-  // Everything one payer still owes, on one date. A loop of per-row saves would be twenty round
-  // trips for a month of sessions, twenty chances to fail halfway, and twenty different dates.
-  // `received` is what actually changed hands, which cash rarely makes equal to what was owed. The
-  // server applies it oldest first, pulls in any credit the person already had, and keeps anything
-  // over as an overpayment.
-  settleOutstanding: (
-    payerType: SettlementPayer,
-    payerId: string,
-    settledOn: string,
-    received: number,
-  ) =>
-    fetchApi<{ settled: number; balance: number }>('/admin/settlements/settle-outstanding', {
-      method: 'POST',
-      body: JSON.stringify({ payerType, payerId, settledOn, received }),
-    }),
 
   // The Settlements tab. Omit the year for the newest one holding data — not the current one, which
   // would make an empty January look like lost history. 'all' for everything.
