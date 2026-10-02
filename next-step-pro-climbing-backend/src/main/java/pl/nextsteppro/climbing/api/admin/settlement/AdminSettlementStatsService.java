@@ -4,6 +4,9 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pl.nextsteppro.climbing.domain.settlement.Amounts;
+import pl.nextsteppro.climbing.domain.settlement.PaymentAllocator;
+import pl.nextsteppro.climbing.domain.settlement.PaymentRepository;
+import pl.nextsteppro.climbing.domain.settlement.PaymentRow;
 import pl.nextsteppro.climbing.domain.settlement.Settlement;
 import pl.nextsteppro.climbing.domain.settlement.SettlementRepository;
 import pl.nextsteppro.climbing.domain.settlement.SettlementRow;
@@ -28,6 +31,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.UUID;
@@ -46,10 +50,12 @@ import java.util.UUID;
  * {@code ['admin','settlements']} on every write.
  *
  * <p><b>Two axes, and the screen names them</b> — the same discipline as the "active user" rule on
- * the user-base tab. Revenue is counted on {@code settledOn}, because that is when the money arrived.
- * Debt has no payment date, so it is counted on the session's own date. In practice the two agree,
- * because the client's default payment date is the session date; they part only when the admin
- * deliberately overrides it, and then neither figure is lying.
+ * the user-base tab. Revenue is counted on the payment's day, because that is when the money
+ * arrived. Debt has no payment date, so it is counted on the session's own date. In practice the two
+ * agree, because the modal's default payment date is the session date.
+ *
+ * <p>Since V100 both screens run the same {@code PaymentAllocator} over the same two reads (all
+ * charges, all payments), so no figure here can disagree with another about one person.
  */
 @Service
 @Transactional(readOnly = true)
@@ -91,17 +97,20 @@ class AdminSettlementStatsService implements UnassignedSessionCounter {
     static final int MAX_MARKER_RANGE_DAYS = 62;
 
     private final SettlementRepository settlementRepository;
+    private final PaymentRepository paymentRepository;
     private final PayoutRepository payoutRepository;
     private final SessionPayoutRepository sessionPayoutRepository;
     private final AdminPayoutService payoutService;
     private final MessageService msg;
 
     public AdminSettlementStatsService(SettlementRepository settlementRepository,
+                                       PaymentRepository paymentRepository,
                                        PayoutRepository payoutRepository,
                                        SessionPayoutRepository sessionPayoutRepository,
                                        AdminPayoutService payoutService,
                                        MessageService msg) {
         this.settlementRepository = settlementRepository;
+        this.paymentRepository = paymentRepository;
         this.payoutRepository = payoutRepository;
         this.sessionPayoutRepository = sessionPayoutRepository;
         this.payoutService = payoutService;
@@ -123,15 +132,10 @@ class AdminSettlementStatsService implements UnassignedSessionCounter {
         List<Integer> years = availableYears();
         Integer year = resolveYear(yearParam, years, today);
 
-        List<SettlementRow> rows = year == null
-            ? settlementRepository.findAllRows()
-            : settlementRepository.findRowsInRange(
-                LocalDate.of(year - 1, 1, 1), LocalDate.of(year, 12, 31));
-        List<SettlementRow> unsettled = settlementRepository.findUnsettledRows();
-        // One read behind both halves of the same money: the credit note beside each debt, and the
-        // Overpayments card. Splitting them would be a second query for a sum we already hold, and
-        // two sums that can disagree about one person.
-        List<SettlementRow> overpaid = settlementRepository.findOverpaidRows();
+        // ⚠️ The whole ledger, whatever the year. Which payment covers which charge depends on each
+        // person's complete history (oldest debt first), so a year's slice cannot be allocated on its
+        // own — and one read of each side replaced the three slices this used to take.
+        Ledger ledger = readLedger();
 
         LocalDate from = year == null ? LocalDate.MIN : LocalDate.of(year, 1, 1);
         LocalDate to = year == null ? LocalDate.MAX : LocalDate.of(year, 12, 31);
@@ -152,22 +156,45 @@ class AdminSettlementStatsService implements UnassignedSessionCounter {
             year,
             unassigned(today),
             unpriced(today),
-            outstanding(unsettled, overpaid),
-            credits(overpaid, unsettled),
-            revenue(rows, receivedPayouts, from, to, buckets, year),
-            people(rows, from, to),
+            outstanding(ledger),
+            credits(ledger),
+            revenue(ledger, receivedPayouts, from, to, buckets, year),
+            people(ledger, from, to),
             payouts(receivedPayouts, windowFrom, windowTo));
+    }
+
+    /** Both sides of the clients' ledger and the allocation between them — two reads, any size. */
+    private Ledger readLedger() {
+        List<SettlementRow> charges = settlementRepository.findAllRows();
+        List<PaymentRow> payments = paymentRepository.findAllRows();
+        Map<UUID, SettlementRow> chargeById = new LinkedHashMap<>();
+        charges.forEach(row -> chargeById.put(row.id(), row));
+        return new Ledger(charges, chargeById, payments, PaymentAllocator.byPayer(charges, payments));
+    }
+
+    private record Ledger(List<SettlementRow> charges,
+                          Map<UUID, SettlementRow> chargeById,
+                          List<PaymentRow> payments,
+                          Map<String, PaymentAllocator.Allocation> allocations) {
+
+        PaymentAllocator.Allocation of(String payerKey) {
+            return allocations.getOrDefault(payerKey, PaymentAllocator.EMPTY);
+        }
+
+        PaymentAllocator.ChargeState stateOf(SettlementRow row) {
+            return of(row.payerKey()).chargeState(row.id());
+        }
     }
 
     /**
      * Every income line of a year, flattened — the file an accountant asks for in January.
      *
-     * <p>Reuses the same two reads the tab does, so the export can never disagree with the screen it
-     * was taken from. Sorted by the day the money is attributed to: the payment date where there is
-     * one, the session's own date where there is not.
+     * <p>Two sheets: what was owed (with how much of it is covered) and what was handed over. Built
+     * from the same reads and the same allocation the tab uses, so the file can never disagree with
+     * the screen it was taken from.
      */
-    public List<SettlementExportRowDto> exportRows(@Nullable String yearParam, String clientKindParam,
-                                                   String payoutKindParam) {
+    public SettlementExportDto exportRows(@Nullable String yearParam, String clientKindParam,
+                                          String payoutKindParam) {
         // These two are display labels the caller translates and hands us, so they are the only
         // free text on this endpoint — and each is copied onto EVERY row of the export. Capping the
         // length here rather than with @Size on the parameter is deliberate: nothing in this
@@ -181,12 +208,15 @@ class AdminSettlementStatsService implements UnassignedSessionCounter {
         LocalDate from = year == null ? LocalDate.of(1970, 1, 1) : LocalDate.of(year, 1, 1);
         LocalDate to = year == null ? LocalDate.of(2999, 12, 31) : LocalDate.of(year, 12, 31);
 
+        Ledger ledger = readLedger();
         List<SettlementExportRowDto> lines = new ArrayList<>();
-        for (SettlementRow row : year == null
-                ? settlementRepository.findAllRows()
-                : settlementRepository.findRowsInRange(from, to)) {
+        for (SettlementRow row : ledger.charges()) {
+            if (row.targetDate().isBefore(from) || row.targetDate().isAfter(to)) {
+                continue;
+            }
+            PaymentAllocator.ChargeState state = ledger.stateOf(row);
             lines.add(new SettlementExportRowDto(clientKind, row.targetDate(), row.targetTitle(),
-                nameOf(row), row.amount(), row.paidAmount(), row.settledOn()));
+                nameOf(row), row.amount(), state.covered(), state.paidOn()));
         }
         for (PayoutRow payout : year == null
                 ? payoutRepository.findAllRows()
@@ -194,10 +224,15 @@ class AdminSettlementStatsService implements UnassignedSessionCounter {
             lines.add(new SettlementExportRowDto(payoutKind, payout.periodMonth(), null,
                 payout.sourceName(), payout.amount(), payout.amount(), payout.receivedOn()));
         }
+        lines.sort(Comparator.comparing(SettlementExportRowDto::date));
 
-        lines.sort(Comparator.comparing(
-            line -> line.settledOn() == null ? line.date() : line.settledOn()));
-        return lines;
+        List<PaymentExportRowDto> payments = ledger.payments().stream()
+            .filter(row -> !row.receivedOn().isBefore(from) && !row.receivedOn().isAfter(to))
+            .sorted(Comparator.comparing(PaymentRow::receivedOn).thenComparing(PaymentRow::createdAt))
+            .map(row -> new PaymentExportRowDto(row.receivedOn(), row.payerName(), row.amount(),
+                row.enteredTitle()))
+            .toList();
+        return new SettlementExportDto(lines, payments);
     }
 
     /**
@@ -207,37 +242,32 @@ class AdminSettlementStatsService implements UnassignedSessionCounter {
      * with this person" has no year in it.
      */
     public PayerSummaryDto payerSummary(UUID userId, int recentLimit) {
-        BigDecimal paid = BigDecimal.ZERO;
-        BigDecimal outstanding = BigDecimal.ZERO;
-        // In the same pass, not a second read: the credit is a sum over exactly these rows. Positive
-        // deltas only, mirroring what the tab reports and what settling this person would spend —
-        // netting it against the debts would make the card disagree with the tab about him.
-        BigDecimal credit = BigDecimal.ZERO;
-        int count = 0;
-        LocalDate lastPayment = null;
-        List<PayerLineDto> lines = new ArrayList<>();
+        List<SettlementRow> charges = settlementRepository.findRowsForUser(userId);
+        List<PaymentRow> payments = paymentRepository.findRowsForUsers(List.of(userId));
+        // ⚠️ The same allocation the tab runs, so the card and the tab cannot disagree about one
+        // person — the failure this block used to have, when each screen did its own arithmetic.
+        PaymentAllocator.Allocation allocation = PaymentAllocator.allocate(
+            charges.stream().map(SettlementRow::toCharge).toList(),
+            payments.stream().map(PaymentRow::toReceipt).toList());
 
-        for (SettlementRow row : settlementRepository.findRowsForUser(userId)) {
-            // ⚠️ What ARRIVED and what is STILL SHORT, on the same two axes the tab uses. Reading
-            // settled_on as "paid in full" — which it stopped meaning in V96 — told the owner a
-            // client who had handed over 100 of 150 was square, while the tab went on chasing the
-            // 50. Both screens are about the same person, so they cannot be allowed to disagree.
-            paid = paid.add(row.paidAmount());
-            outstanding = outstanding.add(row.remaining());
-            credit = credit.add(row.balanceDelta().max(BigDecimal.ZERO));
-            if (row.settledOn() != null) {
-                count++;
-                if (lastPayment == null || row.settledOn().isAfter(lastPayment)) {
-                    lastPayment = row.settledOn();
-                }
+        BigDecimal paid = BigDecimal.ZERO;
+        LocalDate lastPayment = null;
+        for (PaymentRow payment : payments) {
+            paid = paid.add(payment.amount());
+            if (lastPayment == null || payment.receivedOn().isAfter(lastPayment)) {
+                lastPayment = payment.receivedOn();
             }
-            lines.add(new PayerLineDto(row.targetDate(), row.targetTitle(), row.isMonthlyFee(),
-                row.amount(), row.paidAmount(), row.settledOn()));
         }
 
+        List<PayerLineDto> lines = new ArrayList<>();
+        for (SettlementRow row : charges) {
+            PaymentAllocator.ChargeState state = allocation.chargeState(row.id());
+            lines.add(new PayerLineDto(row.targetDate(), row.targetTitle(), row.isMonthlyFee(),
+                row.amount(), state.covered(), state.paidOn()));
+        }
         lines.sort(Comparator.comparing(PayerLineDto::date).reversed());
-        return new PayerSummaryDto(scale(paid), scale(outstanding), scale(credit), count, lastPayment,
-            lines.stream().limit(recentLimit).toList());
+        return new PayerSummaryDto(scale(paid), allocation.debt(), allocation.credit(), payments.size(),
+            lastPayment, lines.stream().limit(recentLimit).toList());
     }
 
     // -------------------------------------------------------------- unassigned
@@ -354,17 +384,22 @@ class AdminSettlementStatsService implements UnassignedSessionCounter {
      * ⚠️ Whole history on purpose — see {@link OutstandingDto}. Oldest first, because the useful
      * order for a list of debts is the order in which they have been owed the longest.
      */
-    private OutstandingDto outstanding(List<SettlementRow> unsettled, List<SettlementRow> overpaid) {
-        List<SettlementRow> sorted = unsettled.stream()
+    private OutstandingDto outstanding(Ledger ledger) {
+        BigDecimal total = BigDecimal.ZERO;
+        List<OutstandingItemDto> items = new ArrayList<>();
+        LocalDate oldest = null;
+        List<SettlementRow> sorted = ledger.charges().stream()
             .sorted(Comparator.comparing(SettlementRow::targetDate))
             .toList();
-
-        BigDecimal total = BigDecimal.ZERO;
-        Set<String> debtors = new LinkedHashSet<>();
-        List<OutstandingItemDto> items = new ArrayList<>(sorted.size());
         for (SettlementRow row : sorted) {
-            debtors.add(row.payerKey());
-            total = total.add(row.remaining());
+            BigDecimal remaining = ledger.stateOf(row).remaining();
+            if (remaining.signum() == 0) {
+                continue;
+            }
+            if (oldest == null) {
+                oldest = row.targetDate();
+            }
+            total = total.add(remaining);
             items.add(new OutstandingItemDto(
                 row.isMonthlyFee() ? "month" : row.eventId() != null ? "event" : "slot",
                 row.isMonthlyFee() ? null : row.eventId() != null ? row.eventId() : row.slotId(),
@@ -373,108 +408,51 @@ class AdminSettlementStatsService implements UnassignedSessionCounter {
                 row.isGuest() ? "guest" : "user",
                 row.isGuest() ? row.guestId() : row.userId(),
                 nameOf(row),
-                row.remaining()));
+                remaining));
         }
-        return new OutstandingDto(
-            scale(total), items.size(),
-            sorted.isEmpty() ? null : sorted.getFirst().targetDate(),
-            items, creditsOf(debtors, overpaid));
-    }
-
-    /**
-     * What the people on the outstanding list are already holding to their name.
-     *
-     * <p>⚠️ It cannot be read off the debts themselves: {@code findUnsettledRows} is by definition
-     * free of credit — a row holding an overpayment is not unpaid — and {@code findRowsInRange}
-     * obeys the year picker, which this list deliberately does not, so a credit left two Decembers
-     * ago would simply not be there. It comes instead from {@code findOverpaidRows}, the one read
-     * that also feeds the Overpayments card, so the two screens sum the same rows and cannot
-     * disagree about one person. Never a query per payer: that is the loop
-     * {@code AdminSettlementQueryCountTest} exists to keep out.
-     *
-     * <p>⚠️ The CREDIT, not the balance — the difference is the whole reported case. A client who
-     * overpaid fifty and then attended an unpaid fifty session nets to zero, so the net figure would
-     * report no credit for precisely the person this list needs to stop chasing. What sits on his
-     * overpaid row is fifty, and that is what settling him would spend.
-     *
-     * <p>Guests are not filtered out here and do not need to be: {@code uq_settlements_guest} makes
-     * a guest's settlement unique on the guest alone, so one guest reservation is one row and a
-     * guest can never be short on one and in credit on another. That used to be enforced by asking
-     * only about registered payers; it is now simply what the data can produce, which is the right
-     * place for it — the day that unique index goes, this keeps working.
-     */
-    private List<OutstandingCreditDto> creditsOf(Set<String> debtors, List<SettlementRow> overpaid) {
-        Map<String, BigDecimal> byPayer = new LinkedHashMap<>();
-        Map<String, SettlementRow> firstRow = new LinkedHashMap<>();
-        for (SettlementRow row : overpaid) {
-            if (!debtors.contains(row.payerKey())) {
-                continue;
-            }
-            byPayer.merge(row.payerKey(), row.balanceDelta(), BigDecimal::add);
-            firstRow.putIfAbsent(row.payerKey(), row);
-        }
-
-        List<OutstandingCreditDto> credits = new ArrayList<>(byPayer.size());
-        byPayer.forEach((payerKey, credit) -> {
-            SettlementRow row = firstRow.get(payerKey);
-            credits.add(new OutstandingCreditDto(
-                row.isGuest() ? "guest" : "user",
-                row.isGuest() ? row.guestId() : row.userId(),
-                scale(credit)));
-        });
-        return credits;
+        return new OutstandingDto(scale(total), items.size(), oldest, items);
     }
 
     // ---------------------------------------------------------------- credits
 
     /**
-     * People holding money of ours with nothing currently owing — see {@link CreditsDto}.
+     * People holding money of ours that no charge has used yet — see {@link CreditsDto}.
      *
-     * <p>⚠️ <b>Debtors are removed on purpose, and the card says so out loud.</b> Their credit is
-     * already named beside their debt, where pressing "settle everything" spends it; repeating them
-     * under a heading that totals money we hold would state the opposite of their net position on
-     * the same screen. A section that quietly drops people is otherwise indistinguishable from a
-     * broken one, which is why the omission is written on the card rather than left to be noticed.
+     * <p>One item per payment that still has an unused part, named by when it arrived and where it
+     * was typed in: that is what the owner remembers ("the 200 from the 2nd"), and the payment is
+     * where a mistake is corrected. Nobody here owes anything — allocation pays the oldest debt
+     * first, so credit only exists once everything is covered.
      *
      * <p>Biggest first: this list is a memo to consult when pricing the next session, and the
-     * hundred and fifty somebody left behind is the one worth remembering. Within a person the
-     * sessions run oldest first, as they do on a debt.
+     * hundred and fifty somebody left behind is the one worth remembering.
      */
-    private CreditsDto credits(List<SettlementRow> overpaid, List<SettlementRow> unsettled) {
-        Set<String> debtors = new LinkedHashSet<>();
-        for (SettlementRow row : unsettled) {
-            debtors.add(row.payerKey());
-        }
-
+    private CreditsDto credits(Ledger ledger) {
         Map<String, BigDecimal> byPayer = new LinkedHashMap<>();
-        List<SettlementRow> kept = new ArrayList<>();
-        for (SettlementRow row : overpaid) {
-            if (debtors.contains(row.payerKey())) {
-                continue;
+        List<PaymentRow> kept = new ArrayList<>();
+        for (PaymentRow payment : ledger.payments()) {
+            BigDecimal unused = ledger.of(payment.payerKey()).unallocatedOf(payment.id());
+            if (unused.signum() > 0) {
+                kept.add(payment);
+                byPayer.merge(payment.payerKey(), unused, BigDecimal::add);
             }
-            kept.add(row);
-            byPayer.merge(row.payerKey(), row.balanceDelta(), BigDecimal::add);
         }
-
-        BigDecimal total = BigDecimal.ZERO;
-        for (BigDecimal credit : byPayer.values()) {
-            total = total.add(credit);
-        }
+        BigDecimal total = byPayer.values().stream().reduce(BigDecimal.ZERO, BigDecimal::add);
 
         List<CreditItemDto> items = kept.stream()
             .sorted(Comparator
-                .comparing((SettlementRow row) -> byPayer.get(row.payerKey()), Comparator.reverseOrder())
-                .thenComparing(SettlementRow::payerKey)
-                .thenComparing(SettlementRow::targetDate))
+                .comparing((PaymentRow row) -> byPayer.get(row.payerKey()), Comparator.reverseOrder())
+                .thenComparing(PaymentRow::payerKey)
+                .thenComparing(PaymentRow::receivedOn))
             .map(row -> new CreditItemDto(
-                row.isMonthlyFee() ? "month" : row.eventId() != null ? "event" : "slot",
-                row.isMonthlyFee() ? null : row.eventId() != null ? row.eventId() : row.slotId(),
-                row.targetDate(),
-                row.targetTitle(),
+                row.enteredEventId() != null ? "event" : row.enteredSlotId() != null ? "slot" : null,
+                row.enteredEventId() != null ? row.enteredEventId() : row.enteredSlotId(),
+                row.enteredDate(),
+                row.receivedOn(),
+                row.enteredTitle(),
                 row.isGuest() ? "guest" : "user",
-                row.isGuest() ? row.guestId() : row.userId(),
-                nameOf(row),
-                scale(row.balanceDelta())))
+                Objects.requireNonNull(row.isGuest() ? row.guestId() : row.userId()),
+                row.payerName(),
+                ledger.of(row.payerKey()).unallocatedOf(row.id())))
             .toList();
 
         return new CreditsDto(scale(total), byPayer.size(), items);
@@ -482,7 +460,7 @@ class AdminSettlementStatsService implements UnassignedSessionCounter {
 
     // ----------------------------------------------------------------- revenue
 
-    private RevenueDto revenue(List<SettlementRow> rows, List<PayoutRow> receivedPayouts,
+    private RevenueDto revenue(Ledger ledger, List<PayoutRow> receivedPayouts,
                                LocalDate from, LocalDate to, List<YearMonth> buckets,
                                @Nullable Integer year) {
         Map<YearMonth, BigDecimal> byMonth = new LinkedHashMap<>();
@@ -495,26 +473,32 @@ class AdminSettlementStatsService implements UnassignedSessionCounter {
         BigDecimal fromEvents = BigDecimal.ZERO;
         BigDecimal fromSubscriptions = BigDecimal.ZERO;
         BigDecimal fromPayouts = BigDecimal.ZERO;
-        for (SettlementRow row : rows) {
-            LocalDate paidOn = row.settledOn();
-            if (paidOn == null || paidOn.isBefore(from) || paidOn.isAfter(to)) {
+        BigDecimal fromCredit = BigDecimal.ZERO;
+        for (PaymentRow payment : ledger.payments()) {
+            LocalDate paidOn = payment.receivedOn();
+            if (paidOn.isBefore(from) || paidOn.isAfter(to)) {
                 continue;
             }
-            // ⚠️ What arrived, not what was charged. A row paid 100 of 150 is 100 of revenue, and
-            // one paid 200 of 150 is 200 — the overpayment is money in hand like any other.
-            total = total.add(row.paidAmount());
-            // ⚠️ Three targets, three buckets — a monthly fee has neither a slot nor an event, so an
-            // "else" here quietly filed retainers under session income.
-            if (row.isMonthlyFee()) {
-                fromSubscriptions = fromSubscriptions.add(row.paidAmount());
-            } else if (row.eventId() != null) {
-                fromEvents = fromEvents.add(row.paidAmount());
-            } else {
-                fromSlots = fromSlots.add(row.paidAmount());
+            // ⚠️ What arrived, not what was charged — cash basis, on the day it arrived.
+            total = total.add(payment.amount());
+            // The split follows where the money WENT. ⚠️ Three targets, three buckets — a monthly
+            // fee has neither a slot nor an event, so an "else" here quietly filed retainers under
+            // session income — plus a fourth for the part nothing has used yet.
+            PaymentAllocator.Allocation allocation = ledger.of(payment.payerKey());
+            for (PaymentAllocator.Share share : allocation.sharesOf(payment.id())) {
+                SettlementRow charge = Objects.requireNonNull(ledger.chargeById().get(share.chargeId()));
+                if (charge.isMonthlyFee()) {
+                    fromSubscriptions = fromSubscriptions.add(share.amount());
+                } else if (charge.eventId() != null) {
+                    fromEvents = fromEvents.add(share.amount());
+                } else {
+                    fromSlots = fromSlots.add(share.amount());
+                }
             }
+            fromCredit = fromCredit.add(allocation.unallocatedOf(payment.id()));
             // A payment can fall inside the selected year and outside the twelve drawn buckets only
             // in the "everything" view, where the chart is a rolling window rather than a year.
-            byMonth.computeIfPresent(YearMonth.from(paidOn), (month, sum) -> sum.add(row.paidAmount()));
+            byMonth.computeIfPresent(YearMonth.from(paidOn), (month, sum) -> sum.add(payment.amount()));
         }
 
         for (PayoutRow payout : receivedPayouts) {
@@ -540,7 +524,7 @@ class AdminSettlementStatsService implements UnassignedSessionCounter {
             for (YearMonth bucket : buckets) {
                 lastYear.put(bucket.minusYears(1), BigDecimal.ZERO);
             }
-            previousTotal = fill(lastYear, rows, receivedPayouts,
+            previousTotal = fill(lastYear, ledger.payments(), receivedPayouts,
                 LocalDate.of(year - 1, 1, 1), LocalDate.of(year - 1, 12, 31));
             previousMonths = lastYear.entrySet().stream()
                 .map(entry -> new MonthlyRevenueDto(entry.getKey().atDay(1), scale(entry.getValue())))
@@ -549,18 +533,18 @@ class AdminSettlementStatsService implements UnassignedSessionCounter {
 
         return new RevenueDto(scale(total), monthlyAverage(byMonth), months,
             scale(fromSlots), scale(fromEvents), scale(fromSubscriptions), scale(fromPayouts),
-            previousMonths, scale(previousTotal));
+            scale(fromCredit), previousMonths, scale(previousTotal));
     }
 
     /** Buckets both money sources into a prepared month map and returns what landed in the range. */
-    private BigDecimal fill(Map<YearMonth, BigDecimal> byMonth, List<SettlementRow> rows,
+    private BigDecimal fill(Map<YearMonth, BigDecimal> byMonth, List<PaymentRow> payments,
                             List<PayoutRow> payouts, LocalDate from, LocalDate to) {
         BigDecimal total = BigDecimal.ZERO;
-        for (SettlementRow row : rows) {
-            LocalDate paidOn = row.settledOn();
-            if (paidOn == null || paidOn.isBefore(from) || paidOn.isAfter(to)) continue;
-            total = total.add(row.paidAmount());
-            byMonth.computeIfPresent(YearMonth.from(paidOn), (month, sum) -> sum.add(row.paidAmount()));
+        for (PaymentRow payment : payments) {
+            LocalDate paidOn = payment.receivedOn();
+            if (paidOn.isBefore(from) || paidOn.isAfter(to)) continue;
+            total = total.add(payment.amount());
+            byMonth.computeIfPresent(YearMonth.from(paidOn), (month, sum) -> sum.add(payment.amount()));
         }
         for (PayoutRow payout : payouts) {
             LocalDate paidOn = payout.receivedOn();
@@ -859,35 +843,36 @@ class AdminSettlementStatsService implements UnassignedSessionCounter {
      * name: two guests called "Ekipa z Krakowa" on different trips are two payers, and merging them
      * would invent a returning client out of a coincidence.
      */
-    private List<PersonRevenueDto> people(List<SettlementRow> rows, LocalDate from, LocalDate to) {
+    private List<PersonRevenueDto> people(Ledger ledger, LocalDate from, LocalDate to) {
         Map<String, Accumulator> byPayer = new LinkedHashMap<>();
-        for (SettlementRow row : rows) {
-            LocalDate paidOn = row.settledOn();
-            boolean paidInRange = paidOn != null && !paidOn.isBefore(from) && !paidOn.isAfter(to);
-            // A row paid in part is BOTH: money that arrived, and a remainder still owed. It is
-            // counted on the payment axis above and, when still short, on the session axis here.
-            boolean owedInRange = !row.isFullyPaid()
-                && !row.targetDate().isBefore(from) && !row.targetDate().isAfter(to);
-            // ⚠️ The accumulator is created only by a row that actually contributes. Creating it
-            // first and then testing the range put payers into the ranking with 0 paid and 0 owed:
-            // rows reach here matched on EITHER axis, so a session held this year but settled next
-            // one already produced a phantom, and widening the read to two years for the
-            // year-over-year comparison would have filled the table with last year's clients.
-            if (!paidInRange && !owedInRange) {
+        // ⚠️ An accumulator is created only by something that actually contributes in range — the
+        // whole ledger is read regardless of the year, so creating one per payer up front would
+        // fill the ranking with every client ever, at 0 paid and 0 owed.
+        for (PaymentRow payment : ledger.payments()) {
+            LocalDate paidOn = payment.receivedOn();
+            if (paidOn.isBefore(from) || paidOn.isAfter(to)) {
+                continue;
+            }
+            Accumulator acc = byPayer.computeIfAbsent(payment.payerKey(),
+                key -> new Accumulator(payment.isGuest() ? "guest" : "user", payment.userId(),
+                    payment.payerName()));
+            acc.paid = acc.paid.add(payment.amount());
+            acc.count++;
+            if (acc.lastPayment == null || paidOn.isAfter(acc.lastPayment)) {
+                acc.lastPayment = paidOn;
+            }
+        }
+        for (SettlementRow row : ledger.charges()) {
+            if (row.targetDate().isBefore(from) || row.targetDate().isAfter(to)) {
+                continue;
+            }
+            BigDecimal remaining = ledger.stateOf(row).remaining();
+            if (remaining.signum() == 0) {
                 continue;
             }
             Accumulator acc = byPayer.computeIfAbsent(row.payerKey(),
                 key -> new Accumulator(row.isGuest() ? "guest" : "user", row.userId(), nameOf(row)));
-            if (paidInRange) {
-                acc.paid = acc.paid.add(row.paidAmount());
-                acc.count++;
-                if (acc.lastPayment == null || paidOn.isAfter(acc.lastPayment)) {
-                    acc.lastPayment = paidOn;
-                }
-            }
-            if (owedInRange) {
-                acc.outstanding = acc.outstanding.add(row.remaining());
-            }
+            acc.outstanding = acc.outstanding.add(remaining);
         }
 
         return byPayer.values().stream()
@@ -923,7 +908,7 @@ class AdminSettlementStatsService implements UnassignedSessionCounter {
         for (LocalDate date : settlementRepository.findDistinctTargetDates()) {
             years.add(date.getYear());
         }
-        for (LocalDate date : settlementRepository.findDistinctSettledDates()) {
+        for (LocalDate date : paymentRepository.findDistinctReceivedDates()) {
             years.add(date.getYear());
         }
         return List.copyOf(years);

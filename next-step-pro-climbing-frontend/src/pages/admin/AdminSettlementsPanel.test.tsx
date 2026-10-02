@@ -14,7 +14,7 @@ vi.mock('react-i18next', () => ({
 const getOverview = vi.fn()
 const save = vi.fn()
 const createPayout = vi.fn()
-const settleOutstanding = vi.fn()
+const addPayment = vi.fn()
 const createSource = vi.fn()
 const deletePayout = vi.fn()
 const setSourceArchived = vi.fn()
@@ -24,7 +24,7 @@ vi.mock('../../api/client', () => ({
     getOverview: (...args: unknown[]) => getOverview(...args),
     save: (...args: unknown[]) => save(...args),
     createPayout: (...args: unknown[]) => createPayout(...args),
-    settleOutstanding: (...args: unknown[]) => settleOutstanding(...args),
+    addPayment: (...args: unknown[]) => addPayment(...args),
     createSource: (...args: unknown[]) => createSource(...args),
     deletePayout: (...args: unknown[]) => deletePayout(...args),
     setSourceArchived: (...args: unknown[]) => setSourceArchived(...args),
@@ -37,7 +37,7 @@ function makeOverview(overrides: Partial<SettlementOverview> = {}): SettlementOv
     year: 2026,
     unassigned: { count: 0, windowDays: 90, sessions: [] },
     unpriced: { count: 0, windowDays: 90, sessions: [] },
-    outstanding: { total: 0, count: 0, oldest: null, items: [], credits: [] },
+    outstanding: { total: 0, count: 0, oldest: null, items: [] },
     credits: { total: 0, payers: 0, items: [] },
     revenue: {
       total: 0,
@@ -50,6 +50,7 @@ function makeOverview(overrides: Partial<SettlementOverview> = {}): SettlementOv
       fromEvents: 0,
       fromSubscriptions: 0,
       fromPayouts: 0,
+      fromCredit: 0,
       previousMonths: [],
       previousTotal: 0,
     },
@@ -75,7 +76,7 @@ describe('AdminSettlementsPanel', () => {
     getOverview.mockReset()
     save.mockReset().mockResolvedValue(undefined)
     createPayout.mockReset().mockResolvedValue('payout-1')
-    settleOutstanding.mockReset().mockResolvedValue({ settled: 2, balance: 0 })
+    addPayment.mockReset().mockResolvedValue({ debt: 0, credit: 0 })
     createSource.mockReset().mockResolvedValue({ id: 'src-2', name: 'Klub XYZ', archived: false })
     deletePayout.mockReset().mockResolvedValue(undefined)
     setSourceArchived.mockReset().mockResolvedValue(undefined)
@@ -212,7 +213,6 @@ describe('AdminSettlementsPanel', () => {
         total: 450,
         count: 1,
         oldest: '2026-03-12',
-        credits: [],
         items: [{
           targetType: 'slot',
           targetId: 'slot-1',
@@ -239,7 +239,6 @@ describe('AdminSettlementsPanel', () => {
         total: 680,
         count: 3,
         oldest: '2026-08-05',
-        credits: [],
         items: [
           {
             targetType: 'slot', targetId: 'slot-1', date: '2026-08-05', title: 'Trening 1:1',
@@ -273,23 +272,23 @@ describe('AdminSettlementsPanel', () => {
     await user.type(dateFields[0], '2026-08-31')
     await user.click(settleButtons[0])
 
+    // ONE payment for the person, attached to no session — which debts it covers is the server's
+    // split, oldest first, the same one the session modal shows.
     await waitFor(() =>
-      expect(settleOutstanding).toHaveBeenCalledWith('user', 'anna', '2026-08-31', 230),
+      expect(addPayment).toHaveBeenCalledWith('user', 'anna', 230, '2026-08-31', null),
     )
-    expect(settleOutstanding).toHaveBeenCalledTimes(1)
+    expect(addPayment).toHaveBeenCalledTimes(1)
   })
 
-  it('says a debtor is holding your money, and asks only for the rest', async () => {
+  it('will not record a zero as a payment', async () => {
     getOverview.mockResolvedValue(makeOverview({
       outstanding: {
-        total: 50,
+        total: 150,
         count: 1,
-        oldest: '2026-08-19',
-        // He paid 100 for a 50 session two months ago, so the next 50 is already covered.
-        credits: [{ payerType: 'user', payerId: 'anna', credit: 50 }],
+        oldest: '2026-08-05',
         items: [{
-          targetType: 'slot', targetId: 'slot-1', date: '2026-08-19', title: 'Trening 1:1',
-          payerType: 'user', payerId: 'anna', name: 'Anna Kowalska', amount: 50,
+          targetType: 'slot', targetId: 'slot-1', date: '2026-08-05', title: 'Trening 1:1',
+          payerType: 'user', payerId: 'anna', name: 'Anna Kowalska', amount: 150,
         }],
       },
     }))
@@ -297,68 +296,13 @@ describe('AdminSettlementsPanel', () => {
 
     renderPanel()
 
-    // A screen that says only "owes 50" about somebody who already handed the money over is a
-    // demand for it twice: the gross figure is named as gross, beside the credit that covers it.
-    expect(await screen.findByText('settlements.tab.outstanding.credit')).toBeInTheDocument()
-
-    // And the field asks for what is actually left: the server pulls the credit into the pool
-    // before paying rows off, so typing the gross figure would hand him a second overpayment.
-    // Nothing changes hands, so the button says the credit pays rather than "receive 0".
-    await user.click(
-      screen.getByRole('button', { name: 'settlements.tab.outstanding.settleFromCredit' }),
-    )
-
-    await waitFor(() =>
-      expect(settleOutstanding).toHaveBeenCalledWith('user', 'anna', expect.any(String), 0),
-    )
-  })
-
-  it('leads with what is left to collect, not with the gross debt', async () => {
-    // The case that was reported: 90 left over from before, a 100 session priced, nothing paid.
-    // Gross on top, the row read as "she owes me 100" and the button promised to settle 100.
-    getOverview.mockResolvedValue(makeOverview({
-      outstanding: {
-        total: 100,
-        count: 1,
-        oldest: '2026-09-25',
-        credits: [{ payerType: 'user', payerId: 'bernadeta', credit: 90 }],
-        items: [{
-          targetType: 'slot', targetId: 'slot-1', date: '2026-09-25', title: 'Trening 1:1',
-          payerType: 'user', payerId: 'bernadeta', name: 'Bernadeta M.', amount: 100,
-        }],
-      },
-    }))
-
-    renderPanel()
-
     const received = await screen.findByLabelText('settlements.tab.outstanding.receivedLabel')
-    expect(received).toHaveValue('10.00')
-    // Both the section heading and the row lead with the net; the heading names the gross apart.
-    expect(screen.getAllByText(/10,00/).length).toBeGreaterThanOrEqual(2)
-    expect(screen.getByText(/settlements\.tab\.outstanding\.grossTotal/)).toBeInTheDocument()
+    expect(received).toHaveValue('150.00')
+    await user.clear(received)
+    await user.type(received, '0')
+
     expect(screen.getByRole('button', { name: 'settlements.tab.outstanding.settleAll' }))
-      .toBeEnabled()
-  })
-
-  it('does not mention a gross total when nobody holds a credit', async () => {
-    getOverview.mockResolvedValue(makeOverview({
-      outstanding: {
-        total: 150,
-        count: 1,
-        oldest: '2026-08-05',
-        credits: [],
-        items: [{
-          targetType: 'slot', targetId: 'slot-1', date: '2026-08-05', title: 'Trening 1:1',
-          payerType: 'user', payerId: 'anna', name: 'Anna Kowalska', amount: 150,
-        }],
-      },
-    }))
-
-    renderPanel()
-
-    await screen.findByLabelText('settlements.tab.outstanding.receivedLabel')
-    expect(screen.queryByText(/settlements\.tab\.outstanding\.grossTotal/)).not.toBeInTheDocument()
-    expect(screen.queryByText('settlements.tab.outstanding.credit')).not.toBeInTheDocument()
+      .toBeDisabled()
   })
 
   it('offers a round amount even when the debts add up to a float tail', async () => {
@@ -370,7 +314,6 @@ describe('AdminSettlementsPanel', () => {
         total: 671.16,
         count: 3,
         oldest: '2026-08-05',
-        credits: [],
         items: [
           {
             targetType: 'slot', targetId: 'slot-1', date: '2026-08-05', title: 'Trening 1:1',
@@ -403,7 +346,6 @@ describe('AdminSettlementsPanel', () => {
         total: 150,
         count: 1,
         oldest: '2026-08-05',
-        credits: [],
         items: [{
           targetType: 'slot', targetId: 'slot-1', date: '2026-08-05', title: 'Trening 1:1',
           payerType: 'user', payerId: 'anna', name: 'Anna Kowalska', amount: 150,
@@ -422,7 +364,7 @@ describe('AdminSettlementsPanel', () => {
     await user.type(received, '200000')
 
     expect(settle).toBeDisabled()
-    expect(settleOutstanding).not.toHaveBeenCalled()
+    expect(addPayment).not.toHaveBeenCalled()
   })
 
   it('shows what a person owes it for only once the group is opened', async () => {
@@ -431,7 +373,6 @@ describe('AdminSettlementsPanel', () => {
         total: 230,
         count: 2,
         oldest: '2026-08-05',
-        credits: [],
         items: [
           {
             targetType: 'slot', targetId: 'slot-1', date: '2026-08-05', title: 'Trening 1:1',
@@ -459,11 +400,11 @@ describe('AdminSettlementsPanel', () => {
     expect(links[1]).toHaveAttribute('href', '/calendar?date=2026-08-12&event=event-2')
   })
 
-  it('keeps two standing fees of one person apart, in both money lists', async () => {
+  it('keeps rows with no calendar entry apart, in both money lists', async () => {
     // ⚠️ A monthly coaching fee has no calendar entry, so it travels with `targetId: null` — and
-    // `uq_settlements_monthly` is unique on (user, month), so one person can hold several. Keying a
-    // row by target alone collapses every one of them onto "month:null": React sees duplicate keys
-    // among siblings and is free to reuse the wrong node, so two months render as one.
+    // one person can hold several. The same goes for credit from payments taken off the outstanding
+    // list, which were typed in at no session. Keying a row by target alone collapses them onto one
+    // key: React sees duplicates among siblings and is free to reuse the wrong node.
     const months = (payerId: string) => [
       {
         targetType: 'month' as const, targetId: null, date: '2026-01-01', title: null,
@@ -474,11 +415,15 @@ describe('AdminSettlementsPanel', () => {
         payerType: 'user' as const, payerId, name: 'Anna Kowalska', amount: 120,
       },
     ]
+    const loosePayments = [1, 2].map(() => ({
+      targetType: null, targetId: null, targetDate: null, date: '2026-03-01', title: null,
+      payerType: 'user' as const, payerId: 'piotr', name: 'Piotr Nowak', amount: 50,
+    }))
     getOverview.mockResolvedValue(makeOverview({
       outstanding: {
-        total: 240, count: 2, oldest: '2026-01-01', credits: [], items: months('anna'),
+        total: 240, count: 2, oldest: '2026-01-01', items: months('anna'),
       },
-      credits: { total: 240, payers: 1, items: months('piotr') },
+      credits: { total: 100, payers: 1, items: loosePayments },
     }))
     const user = userEvent.setup()
     // The damage is in reconciliation, not in the first paint — duplicates still render, and React
@@ -498,7 +443,7 @@ describe('AdminSettlementsPanel', () => {
       }
 
       expect(screen.getAllByText('settlements.tab.outstanding.untitled.month')).toHaveLength(2)
-      expect(screen.getAllByText('settlements.tab.credits.untitled.month')).toHaveLength(2)
+      expect(screen.getAllByText('settlements.tab.credits.noSession')).toHaveLength(2)
       expect(errors.filter((line) => /same key/i.test(line))).toEqual([])
     } finally {
       spy.mockRestore()
@@ -531,17 +476,15 @@ describe('AdminSettlementsPanel', () => {
     expect(screen.queryByText('settlements.tab.credits.title')).not.toBeInTheDocument()
   })
 
-  it('names somebody in credit with nothing owing, and the session parking the money', async () => {
-    // ⚠️ The case that started this: credit used to be computed only for debtors, so this person
-    // appeared in no figure on the tab at all — not revenue (it did arrive), not debt (he owes
-    // nothing), not the credit note (which only annotates debtors).
+  it('names somebody in credit, and links the session the payment was typed in at', async () => {
     getOverview.mockResolvedValue(makeOverview({
       credits: {
         total: 150,
         payers: 1,
         items: [{
-          targetType: 'slot', targetId: 'slot-9', date: '2026-09-12', title: 'Trening 1:1',
-          payerType: 'user', payerId: 'piotr', name: 'Piotr Zieliński', amount: 150,
+          // Paid on the 14th at the session of the 12th: the link goes to the SESSION's day.
+          targetType: 'slot', targetId: 'slot-9', targetDate: '2026-09-12', date: '2026-09-14',
+          title: 'Trening 1:1', payerType: 'user', payerId: 'piotr', name: 'Piotr Zieliński', amount: 150,
         }],
       },
     }))
@@ -561,16 +504,15 @@ describe('AdminSettlementsPanel', () => {
     expect(screen.getByText('settlements.tab.credits.openUser')).toBeInTheDocument()
   })
 
-  it('states both rules it quietly follows: the whole history, and debtors listed elsewhere', async () => {
-    // A section that disobeys the filter above it, or drops people from itself, is otherwise
-    // indistinguishable from a broken one.
+  it('says out loud that it ignores the year picker', async () => {
+    // A section that disobeys the filter above it is otherwise indistinguishable from a broken one.
     getOverview.mockResolvedValue(makeOverview({
       credits: {
         total: 40,
         payers: 1,
         items: [{
-          targetType: 'slot', targetId: 'slot-4', date: '2025-11-02', title: 'Trening 1:1',
-          payerType: 'user', payerId: 'piotr', name: 'Piotr Zieliński', amount: 40,
+          targetType: 'slot', targetId: 'slot-4', targetDate: '2025-11-02', date: '2025-11-02',
+          title: 'Trening 1:1', payerType: 'user', payerId: 'piotr', name: 'Piotr Zieliński', amount: 40,
         }],
       },
     }))
@@ -578,7 +520,6 @@ describe('AdminSettlementsPanel', () => {
     renderPanel()
 
     expect(await screen.findByText('settlements.tab.credits.ignoresYear')).toBeInTheDocument()
-    expect(screen.getByText('settlements.tab.credits.excludesDebtors')).toBeInTheDocument()
   })
 
   it('marks a guest as one and offers them no client card, because they have none', async () => {
@@ -587,8 +528,8 @@ describe('AdminSettlementsPanel', () => {
         total: 30,
         payers: 1,
         items: [{
-          targetType: 'event', targetId: 'event-3', date: '2026-09-02', title: 'Wspinanie',
-          payerType: 'guest', payerId: 'guest-1', name: 'Marek (600…)', amount: 30,
+          targetType: 'event', targetId: 'event-3', targetDate: '2026-09-02', date: '2026-09-02',
+          title: 'Wspinanie', payerType: 'guest', payerId: 'guest-1', name: 'Marek (600…)', amount: 30,
         }],
       },
     }))
@@ -616,11 +557,13 @@ describe('AdminSettlementsPanel', () => {
     getOverview.mockResolvedValue(makeOverview({
       revenue: {
         ...makeOverview().revenue,
-        total: 3050,
+        total: 3090,
         fromSlots: 150,
         fromEvents: 600,
         fromSubscriptions: 900,
         fromPayouts: 1400,
+        // Money handed over ahead of the work: revenue by date, with no session to file it under yet.
+        fromCredit: 40,
       },
     }))
 
@@ -630,6 +573,7 @@ describe('AdminSettlementsPanel', () => {
     expect(screen.getByText('settlements.tab.revenue.fromEvents')).toBeInTheDocument()
     expect(screen.getByText('settlements.tab.revenue.fromSubscriptions')).toBeInTheDocument()
     expect(screen.getByText('settlements.tab.revenue.fromPayouts')).toBeInTheDocument()
+    expect(screen.getByText('settlements.tab.revenue.fromCredit')).toBeInTheDocument()
   })
 
   it('leaves out a source that earned nothing rather than drawing an empty row', async () => {
@@ -649,11 +593,11 @@ describe('AdminSettlementsPanel', () => {
       people: [
         {
           payerType: 'user', userId: 'user-1', name: 'Anna Kowalska',
-          settlementCount: 2, paid: 300, outstanding: 0, lastPayment: '2026-03-01',
+          paymentCount: 2, paid: 300, outstanding: 0, lastPayment: '2026-03-01',
         },
         {
           payerType: 'guest', userId: null, name: 'Ekipa z Krakowa',
-          settlementCount: 1, paid: 600, outstanding: 0, lastPayment: '2026-07-01',
+          paymentCount: 1, paid: 600, outstanding: 0, lastPayment: '2026-07-01',
         },
       ],
     }))

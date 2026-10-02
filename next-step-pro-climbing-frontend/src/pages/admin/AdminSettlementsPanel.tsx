@@ -142,7 +142,7 @@ function ExportButton({ year }: { year: number | null }) {
 
   const run = useMutation({
     mutationFn: async () => {
-      const [{ exportSettlements }, rows] = await Promise.all([
+      const [{ exportSettlements }, { lines: rows, payments }] = await Promise.all([
         // Two levels of laziness, like the logbook export: the module, and the library inside it.
         import('./settlementExport'),
         adminSettlementsApi.getExportRows(
@@ -153,6 +153,7 @@ function ExportButton({ year }: { year: number | null }) {
       ])
       await exportSettlements({
         rows,
+        payments,
         year,
         labels: {
           summary: t('settlements.tab.export.summary', {
@@ -170,6 +171,14 @@ function ExportButton({ year }: { year: number | null }) {
             t('settlements.tab.export.colSettledOn'),
           ],
           unpaid: t('settlements.tab.export.unpaid'),
+          chargesSheet: t('settlements.tab.export.chargesSheet'),
+          paymentsSheet: t('settlements.tab.export.paymentsSheet'),
+          paymentColumns: [
+            t('settlements.tab.export.colReceivedOn'),
+            t('settlements.tab.export.colPayer'),
+            t('settlements.tab.export.colPaymentAmount'),
+            t('settlements.tab.export.colEnteredAt'),
+          ],
         },
       })
     },
@@ -376,36 +385,20 @@ function OutstandingCard({ overview }: { overview: SettlementOverview }) {
   // Grouped by payer, because that is how the money arrives: one person settles a month at a time,
   // and their four debts scattered among everybody else's by date cannot be acted on as one.
   //
-  // The credit joins the group here rather than the item, which is where the server sends it: one
-  // overpayment spread over somebody's four debts would be added to the group total four times.
+  // No credit to net against any more: payments cover the oldest debt first on the server, so
+  // nobody on this list is also holding money of yours, and every figure here is already net.
   const groups = useMemo(() => {
-    // ⚠️ Defensive on a field the type says is always there: during a deploy the new bundle can be
-    // served for a few seconds while the previous backend still answers, and `.map` of undefined in
-    // a useMemo throws during render — which in this panel is a white screen, not a missing line.
-    const credits = new Map<string, number>(
-      (outstanding.credits ?? []).map(
-        (credit) => [`${credit.payerType}:${credit.payerId}`, credit.credit],
-      ),
-    )
     const byPayer = new Map<string, PayerDebt>()
     for (const item of outstanding.items) {
       const key = `${item.payerType}:${item.payerId}`
-      const group = byPayer.get(key)
-        ?? { key, name: item.name, items: [], total: 0, credit: credits.get(key) ?? 0 }
+      const group = byPayer.get(key) ?? { key, name: item.name, items: [], total: 0 }
       group.items.push(item)
       group.total += item.amount
       byPayer.set(key, group)
     }
     // Oldest debt first, same order as the flat list had — a backlog reads in the order it grew.
     return [...byPayer.values()]
-  }, [outstanding.items, outstanding.credits])
-
-  // ⚠️ The headline is what is left to COLLECT, not the sum of open rows. Gross, it said "100 zł"
-  // about somebody holding 90 of yours, and the owner read it as her owing 100. Summed from the
-  // groups, never from `outstanding.total` minus all credits: a credit bigger than its owner's debt
-  // must not eat into somebody else's. The gross figure stays beside it whenever the two differ,
-  // so the heading still visibly adds up to the rows below.
-  const toCollect = groups.reduce((sum, group) => sum + collectable(group), 0)
+  }, [outstanding.items])
 
   return (
     <Card
@@ -414,14 +407,8 @@ function OutstandingCard({ overview }: { overview: SettlementOverview }) {
       aside={
         outstanding.count > 0 ? (
           <span className="text-sm text-surface-200 tabular-nums">
-            <span className="font-semibold text-amber-500">{money(toCollect)}</span>
+            <span className="font-semibold text-amber-500">{money(outstanding.total)}</span>
             <span className="text-surface-500">
-              {toCollect < outstanding.total - 0.005 && (
-                <>
-                  {' · '}
-                  {t('settlements.tab.outstanding.grossTotal', { amount: money(outstanding.total) })}
-                </>
-              )}
               {' · '}
               {t('settlements.tab.outstanding.count', { count: outstanding.count })}
               {outstanding.oldest && (
@@ -453,29 +440,24 @@ function OutstandingCard({ overview }: { overview: SettlementOverview }) {
   )
 }
 
-/** One payer's debts, plus whatever they have already left with you against them. */
+/** One payer's debts. */
 interface PayerDebt {
   key: string
   name: string
   items: OutstandingItem[]
   total: number
-  /** Always positive, and 0 for the ordinary case where they are holding nothing of yours. */
-  credit: number
-}
-
-/** What is genuinely left to collect from one payer once the money they left with you is spent. */
-function collectable(group: PayerDebt): number {
-  return Math.max(0, group.total - group.credit)
 }
 
 /**
  * One person and everything they owe.
  *
- * ⚠️ The payment date defaults to TODAY here, not to each session's own day as the modal does — and
- * the difference is the point. In the modal one amount belongs to one session, so its date is the
- * honest default. Here one transfer covered a month of them, so the only date true of all of them
- * is the day it arrived. Defaulting to the sessions would scatter a single payment across the
- * months it paid for.
+ * ⚠️ The payment date defaults to TODAY here, not to the session's own day as the modal does — and
+ * the difference is the point. In the modal money is usually handed over at that session. Here one
+ * transfer covered a month of them, so the only date true of it is the day it arrived.
+ *
+ * The button records ONE payment for the person, with no session attached. Which debts it covers
+ * is the server's split, oldest first — the same one the modal shows — so there is nothing to
+ * choose here and nothing that can disagree with the modal afterwards.
  */
 function PayerDebtGroup({ group }: { group: PayerDebt }) {
   const { t } = useTranslation('admin')
@@ -486,35 +468,23 @@ function PayerDebtGroup({ group }: { group: PayerDebt }) {
   const [open, setOpen] = useState(false)
   const [paidOn, setPaidOn] = useState(() => todayInWarsaw())
   // What actually changed hands, defaulting to what is owed — the common case is one click, and the
-  // field is there for the times a note is bigger than the bill.
+  // field is there for the times a note is bigger or smaller than the bill.
   //
   // ⚠️ `toFixed(2)`, never `String()`. The total is accumulated with `+=` over floats, so about
   // three groups in ten land on something like `671.1600000000001` — while the heading right beside
-  // this field renders the same number as `671,16 zł` through `Intl`. The stored value would still
-  // be right (the server rounds to the column's scale), but a money screen that disagrees with
-  // itself by eleven decimal places is not one anybody should have to trust.
-  //
-  // ⚠️ What is left AFTER the credit, not the whole debt. The server pulls an overpayment back into
-  // the pool before it starts paying rows off, so typing the gross figure over a credit hands the
-  // person a second overpayment of exactly that size — and the ordinary case, where the credit
-  // covers the lot, is a zero somebody would otherwise have to know to type.
-  const toCollect = collectable(group)
-  const [received, setReceived] = useState(() => toCollect.toFixed(2))
+  // this field renders the same number as `671,16 zł` through `Intl`. A money screen that disagrees
+  // with itself by eleven decimal places is not one anybody should have to trust.
+  const [received, setReceived] = useState(() => group.total.toFixed(2))
+  // `parseAmount` with the settlement ceiling, NOT the payout one: a payment is capped like a
+  // charge. The higher transfer ceiling would leave the button live on an amount the server refuses.
   const receivedAmount = parseAmount(received)
-  // Nothing changes hands, the credit pays: say so, instead of "receive 0 zł" — the same endpoint
-  // the "settle from credit" button in the session modal uses.
-  const fromCreditOnly = receivedAmount === 0 && group.credit > 0
 
   const first = group.items[0]
   const backHere = location.pathname + location.search
 
   const settleAll = useMutation({
     mutationFn: () =>
-      // The settlement ceiling, NOT the payout one: this money lands on a settlement row, which the
-      // server caps at MAX_AMOUNT. Passing the higher transfer ceiling here left Save enabled on an
-      // amount the server then rejected — the mirror image of the bug that ceiling was added for.
-      adminSettlementsApi.settleOutstanding(
-        first.payerType, first.payerId, paidOn, receivedAmount ?? 0),
+      adminSettlementsApi.addPayment(first.payerType, first.payerId, receivedAmount ?? 0, paidOn, null),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin', 'settlements'] }),
   })
 
@@ -533,20 +503,8 @@ function PayerDebtGroup({ group }: { group: PayerDebt }) {
             · {t('settlements.tab.outstanding.sessions', { count: group.items.length })}
           </span>
         </button>
-        {/* ⚠️ The row's figure is what is left AFTER the credit — the gross sum of the open rows is
-            the smaller line under it. Gross on top read as a demand for money the person had
-            already handed over. Neutral, not green, for the credit: green means "done" in this app,
-            and a credit is not done. */}
         <div className="shrink-0 text-right tabular-nums">
-          <div className="text-sm font-semibold text-amber-500">{money(toCollect)}</div>
-          {group.credit > 0 && (
-            <div className="text-xs text-surface-400">
-              {t('settlements.tab.outstanding.credit', {
-                gross: money(group.total),
-                credit: money(group.credit),
-              })}
-            </div>
-          )}
+          <div className="text-sm font-semibold text-amber-500">{money(group.total)}</div>
         </div>
       </div>
 
@@ -569,17 +527,15 @@ function PayerDebtGroup({ group }: { group: PayerDebt }) {
           className="w-36 min-w-0 appearance-none bg-surface-800 border border-surface-600 rounded px-2 py-1 text-sm text-surface-100 focus:outline-none focus:border-primary-500"
         />
         {/* The label names the money that ARRIVES, read from the field — it used to name the gross
-            debt, so "Settle all — 100 zł" sat over a field holding 10. */}
+            debt, so "Settle all — 100 zł" sat over a field holding 10. Zero is not a payment. */}
         <Button
           size="sm"
           variant="primary"
           loading={settleAll.isPending}
-          disabled={paidOn === '' || receivedAmount === null}
+          disabled={paidOn === '' || receivedAmount === null || receivedAmount <= 0}
           onClick={() => settleAll.mutate()}
         >
-          {fromCreditOnly
-            ? t('settlements.tab.outstanding.settleFromCredit')
-            : t('settlements.tab.outstanding.settleAll', { amount: money(receivedAmount ?? 0) })}
+          {t('settlements.tab.outstanding.settleAll', { amount: money(receivedAmount ?? 0) })}
         </Button>
       </div>
 
@@ -631,7 +587,7 @@ function PayerDebtGroup({ group }: { group: PayerDebt }) {
 
 // ---------- credits ----------
 
-/** One person and every session parking money of theirs. */
+/** One person and every payment of theirs with an unused part. */
 interface PayerCredit {
   key: string
   name: string
@@ -642,21 +598,17 @@ interface PayerCredit {
 }
 
 /**
- * People holding money of yours with nothing owing — the half of the ledger that had nowhere to be
- * seen.
+ * People holding money of yours that no charge has used yet — the other half of the ledger.
  *
- * Credit used to be computed only for people who also owed something, so somebody who overpaid once
- * and owes nothing appeared in no figure on this tab: not in revenue (it did arrive), not in debt
- * (he owes nothing), not in the credit note (which only annotates debtors). His money was visible
- * solely by opening the session it sits on.
+ * Nobody here owes anything: payments cover the oldest debt first, so credit only exists once all
+ * of a person's sessions are paid. It is spent on its own the moment their next session is priced.
  *
  * ⚠️ Neutral, never green or amber. Amber is work to do and this is not work; green means "done"
  * and a credit is not done either. The WORD carries the meaning here, the colour only says whether
  * something is a task.
  *
- * ⚠️ Read-only on purpose. A credit is spent at a session, by the "settle from credit" button in
- * the settlement section — there is nothing to settle from this list, so it names WHERE the money
- * is parked and links there.
+ * Read-only: each row is the unused part of one payment, named by when it arrived and linked to
+ * the session it was typed in at — where it can be deleted if it was a mistake.
  */
 function CreditsCard({ credits }: { credits: CreditsSummary | undefined }) {
   const { t } = useTranslation('admin')
@@ -708,10 +660,6 @@ function CreditsCard({ credits }: { credits: CreditsSummary | undefined }) {
       }
     >
       <p className="text-xs text-surface-500">{t('settlements.tab.credits.ignoresYear')}</p>
-      {/* Says out loud who is NOT here. A debtor's credit is named beside their debt, where
-          settling spends it; repeating them under a heading that totals money you hold would
-          state the opposite of their net position on the same screen. */}
-      <p className="text-xs text-surface-500">{t('settlements.tab.credits.excludesDebtors')}</p>
       <ul className="divide-y divide-surface-800">
         {groups.map((group) => (
           <PayerCreditGroup key={group.key} group={group} />
@@ -744,7 +692,7 @@ function PayerCreditGroup({ group }: { group: PayerCredit }) {
           <span className="text-surface-500 shrink-0">
             {group.isGuest && <> · {t('settlements.line.guest')}</>}
             {' · '}
-            {t('settlements.tab.credits.sessions', { count: group.items.length })}
+            {t('settlements.tab.credits.payments', { count: group.items.length })}
           </span>
         </button>
         <span className="shrink-0 text-sm font-semibold text-surface-200 tabular-nums">
@@ -754,31 +702,30 @@ function PayerCreditGroup({ group }: { group: PayerCredit }) {
 
       {open && (
         <ul className="pl-6 space-y-1">
-          {group.items.map((item) => (
+          {group.items.map((item, index) => (
             <li
-              // ⚠️ The date belongs in the key. A standing fee has no calendar entry, so it
-              // travels with a null targetId, and one person can hold several of them —
-              // target alone collapses every month onto "month:null", and duplicate keys
-              // among siblings let React reuse the wrong node on the next render.
-              key={`${item.targetType}:${item.targetId}:${item.date}`}
+              // Two payments can share a day and a session, so the position breaks the tie — the
+              // list is rebuilt from the server on every change, never reordered in place.
+              key={`${item.targetId}:${item.date}:${index}`}
               className="flex flex-wrap items-center gap-2 text-xs"
             >
+              {/* When the money arrived — that is what the owner remembers ("the 200 from the 2nd"). */}
               <span className="w-24 shrink-0 text-surface-400 tabular-nums">
                 {format(parseCalendarDate(item.date), 'dd.MM.yyyy', { locale })}
               </span>
-              {/* A standing fee has no calendar entry behind it, so it is text — a link that goes
-                  nowhere is worse than no link. */}
-              {item.targetId === null ? (
+              {/* Taken from the outstanding list, so not typed in at any session: text, because a
+                  link that goes nowhere is worse than no link. */}
+              {item.targetId === null || item.targetType === null || item.targetDate === null ? (
                 <span className="flex-1 min-w-0 truncate text-surface-300">
-                  {t('settlements.tab.credits.untitled.month')}
+                  {t('settlements.tab.credits.noSession')}
                 </span>
               ) : (
                 <Link
-                  to={`/calendar?date=${item.date}&${item.targetType}=${item.targetId}`}
+                  to={`/calendar?date=${item.targetDate}&${item.targetType}=${item.targetId}`}
                   state={{ returnTo: backHere }}
                   aria-label={t('settlements.tab.credits.open', {
                     name: item.name,
-                    date: format(parseCalendarDate(item.date), 'dd.MM.yyyy'),
+                    date: format(parseCalendarDate(item.targetDate), 'dd.MM.yyyy'),
                   })}
                   className="flex-1 min-w-0 truncate text-surface-300 hover:text-primary-300 transition-colors"
                 >
@@ -788,7 +735,7 @@ function PayerCreditGroup({ group }: { group: PayerCredit }) {
               <span className="shrink-0 text-surface-300 tabular-nums">{money(item.amount)}</span>
             </li>
           ))}
-          {/* A guest has no card to open — the session above is the only place their figure can be
+          {/* A guest has no card to open — the session above is the only place their payment can be
               corrected, which is what a guest is: a booking with no continuity behind it. */}
           {!group.isGuest && (
             <li className="pt-1">
@@ -855,14 +802,15 @@ function RevenueCard({ overview }: { overview: SettlementOverview }) {
 
       <RevenueChart months={revenue.months} previousMonths={revenue.previousMonths} />
 
-      {/* ⚠️ ALL FOUR sources, and one row each rather than one stacked bar.
+      {/* ⚠️ ALL FIVE sources, and one row each rather than one stacked bar.
           Two reasons. The split is read against the headline total, so a source left out is an
           unexplained gap in it — bulk transfers were computed and never drawn, and a retainer was
           counted as slot income, which claims session earnings for a client whose sessions are
-          deliberately unpriced. And four categories need four fills that hold up in BOTH themes,
-          which the three-fill semantic palette does not have and must not be guessed at (see
-          statsPalette: the obvious green/amber-400 pairing is unreadable in the light theme). A row
-          per source carries identity in the label, so colour is left saying only "money in". */}
+          deliberately unpriced. The fifth, credit, is money that arrived ahead of the work it pays
+          for — it is revenue by date and has no session to be filed under yet. And five categories
+          would need five fills that hold up in BOTH themes, which the three-fill semantic palette
+          does not have and must not be guessed at (see statsPalette). A row per source carries
+          identity in the label, so colour is left saying only "money in". */}
       {revenue.total > 0 && (
         <div className="space-y-1.5">
           {([
@@ -870,6 +818,9 @@ function RevenueCard({ overview }: { overview: SettlementOverview }) {
             ['fromEvents', revenue.fromEvents],
             ['fromSubscriptions', revenue.fromSubscriptions],
             ['fromPayouts', revenue.fromPayouts],
+            // `?? 0`: during a deploy the new bundle can meet the previous backend for a few
+            // seconds, and the row would otherwise render NaN.
+            ['fromCredit', revenue.fromCredit ?? 0],
           ] as const)
             .filter(([, value]) => value > 0)
             .map(([key, value]) => (
@@ -1319,7 +1270,7 @@ function PeopleCard({ people }: { people: PersonRevenue[] }) {
                     </>
                   )}
                 </td>
-                <td className="py-2 text-right text-surface-400 tabular-nums">{person.settlementCount}</td>
+                <td className="py-2 text-right text-surface-400 tabular-nums">{person.paymentCount}</td>
                 <td className="py-2 text-right text-surface-200 tabular-nums">
                   {person.paid > 0 ? money(person.paid) : '—'}
                 </td>

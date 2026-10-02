@@ -4,6 +4,7 @@ import org.jspecify.annotations.Nullable;
 import pl.nextsteppro.climbing.domain.event.EventType;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.UUID;
 
@@ -19,11 +20,12 @@ import java.util.UUID;
  * {@code guestId} — the CHECKs in V92 guarantee it, so a reader may branch on {@code eventId != null}
  * without a third case.
  *
+ * <p>A charge only — whether it is paid comes from {@link PaymentAllocator}, never from this row.
+ *
  * @param targetDate when the session is or was: the slot's date, or the event's first day. This is
- *                   the axis outstanding debt is counted on, because unpaid rows have no
- *                   {@code settledOn} to count on.
- * @param settledOn  when the money arrived, or {@code null} while it has not. Revenue is counted on
- *                   this axis.
+ *                   the axis outstanding debt is counted on, and the order payments are applied in.
+ * @param createdAt  the tie-break between two charges on one day, so the same payment lands on the
+ *                   same charge on every read.
  */
 public record SettlementRow(
     UUID id,
@@ -39,22 +41,12 @@ public record SettlementRow(
     @Nullable String targetTitle,
     @Nullable EventType eventType,
     BigDecimal amount,
-    BigDecimal paidAmount,
-    @Nullable LocalDate settledOn
+    Instant createdAt
 ) {
 
-    /** What is still owed on this row — never negative, because an overpayment is not a debt. */
-    public BigDecimal remaining() {
-        return amount.subtract(paidAmount).max(BigDecimal.ZERO);
-    }
-
-    /** Signed contribution to the payer's balance: positive when they gave more than they owed. */
-    public BigDecimal balanceDelta() {
-        return paidAmount.subtract(amount);
-    }
-
-    public boolean isFullyPaid() {
-        return paidAmount.compareTo(amount) >= 0;
+    /** This row as the allocator sees it. */
+    public PaymentAllocator.Charge toCharge() {
+        return new PaymentAllocator.Charge(id, amount, targetDate, createdAt);
     }
 
     /**

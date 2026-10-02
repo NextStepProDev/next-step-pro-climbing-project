@@ -44,7 +44,7 @@ public interface SettlementRepository extends JpaRepository<Settlement, UUID> {
         SELECT new pl.nextsteppro.climbing.domain.settlement.SettlementRow(
             s.id, ts.id, e.id, s.periodMonth, u.id, u.firstName, u.lastName, g.id, g.note,
             COALESCE(ts.date, e.startDate, s.periodMonth), COALESCE(ts.title, e.title), e.eventType,
-            s.amount, s.paidAmount, s.settledOn)
+            s.amount, s.createdAt)
         FROM Settlement s
         LEFT JOIN s.timeSlot ts
         LEFT JOIN s.event e
@@ -59,17 +59,10 @@ public interface SettlementRepository extends JpaRepository<Settlement, UUID> {
     List<SettlementRow> findRowsForEvent(@Param("eventId") UUID eventId);
 
     /**
-     * Everything touching a year on <em>either</em> axis: sessions held in it and money that arrived
-     * in it. A row can belong to two years at once — a December session paid in January is revenue
-     * of January and a session of December — and both readings are wanted, so the filter is an OR
-     * and the tab labels which axis each figure uses.
+     * Every charge ever made. The tab reads the whole ledger because which payment covers which
+     * charge depends on each person's complete history — a year's slice of charges cannot be
+     * allocated on its own. Charges are counted in hundreds, not millions.
      */
-    @Query(ROW_SELECT + """
-        WHERE (COALESCE(ts.date, e.startDate, s.periodMonth) BETWEEN :from AND :to)
-           OR (s.settledOn BETWEEN :from AND :to)
-        """)
-    List<SettlementRow> findRowsInRange(@Param("from") LocalDate from, @Param("to") LocalDate to);
-
     @Query(ROW_SELECT)
     List<SettlementRow> findAllRows();
 
@@ -80,45 +73,10 @@ public interface SettlementRepository extends JpaRepository<Settlement, UUID> {
     @Query(ROW_SELECT + " WHERE g.id = :guestId")
     List<SettlementRow> findRowsForGuest(@Param("guestId") UUID guestId);
 
-    /**
-     * Outstanding debt, whole history. ⚠️ This is the one read that deliberately ignores the year
-     * filter: a debt from two years ago is still a debt, and hiding it behind a year picker is how
-     * it stops being collected.
-     *
-     * <p>⚠️ It is also, by its own condition, free of credit — a row holding an overpayment has
-     * {@code paidAmount > amount} and is not here. Anything that wants to know what a debtor has
-     * already left with us has to ask {@link #findOverpaidRows} separately.
-     */
-    @Query(ROW_SELECT + " WHERE s.paidAmount < s.amount")
-    List<SettlementRow> findUnsettledRows();
-
-    /**
-     * The mirror of {@link #findUnsettledRows}: every row holding money we were not owed, whole
-     * history, deliberately deaf to the year filter for the same reason — cash left last December
-     * is still sitting here.
-     *
-     * <p>⚠️ <b>One read, two screens, and that is the point.</b> It answers both "who is holding a
-     * credit with nothing owing" (the Overpayments card) and "what has this debtor already left
-     * with us" (the note beside their debt). Grouped by payer, the sum of these rows' deltas is by
-     * construction the same number {@link PayerBalance#credit()} computes, so the two lists cannot
-     * disagree about one person — and asking twice would have cost a second query for an answer we
-     * already hold.
-     *
-     * <p>⚠️ Rows only, never a grouped projection. The cards name the <em>session</em> the money is
-     * parked on, because that is the only place an admin can correct the figure; a {@code SUM} per
-     * payer would have to be followed by a second read to find out where it came from.
-     */
-    @Query(ROW_SELECT + " WHERE s.paidAmount > s.amount")
-    List<SettlementRow> findOverpaidRows();
-
     /** Distinct session days, for the year picker. */
     @Query("SELECT DISTINCT COALESCE(ts.date, e.startDate, s.periodMonth) FROM Settlement s "
         + "LEFT JOIN s.timeSlot ts LEFT JOIN s.event e")
     List<LocalDate> findDistinctTargetDates();
-
-    /** Distinct payment days, for the year picker — a year can hold money without holding sessions. */
-    @Query("SELECT DISTINCT s.settledOn FROM Settlement s WHERE s.settledOn IS NOT NULL")
-    List<LocalDate> findDistinctSettledDates();
 
     /**
      * The most recent amount charged to each of these people, for prefilling the field.
@@ -313,38 +271,28 @@ public interface SettlementRepository extends JpaRepository<Settlement, UUID> {
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query(value = """
-        INSERT INTO settlements (time_slot_id, user_id, amount, paid_amount, settled_on, updated_at)
-        VALUES (:slotId, :userId, CAST(:amount AS NUMERIC), CAST(:paid AS NUMERIC),
-                CAST(:settledOn AS DATE), :updatedAt)
+        INSERT INTO settlements (time_slot_id, user_id, amount, updated_at)
+        VALUES (:slotId, :userId, CAST(:amount AS NUMERIC), :updatedAt)
         ON CONFLICT (time_slot_id, user_id) WHERE time_slot_id IS NOT NULL AND user_id IS NOT NULL
         DO UPDATE SET amount = CAST(:amount AS NUMERIC),
-                      paid_amount = CAST(:paid AS NUMERIC),
-                      settled_on = CAST(:settledOn AS DATE),
                       updated_at = :updatedAt
         """, nativeQuery = true)
     void upsertForSlotUser(@Param("slotId") UUID slotId,
                            @Param("userId") UUID userId,
                            @Param("amount") BigDecimal amount,
-                           @Param("paid") BigDecimal paid,
-                           @Param("settledOn") @Nullable LocalDate settledOn,
                            @Param("updatedAt") Instant updatedAt);
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query(value = """
-        INSERT INTO settlements (event_id, user_id, amount, paid_amount, settled_on, updated_at)
-        VALUES (:eventId, :userId, CAST(:amount AS NUMERIC), CAST(:paid AS NUMERIC),
-                CAST(:settledOn AS DATE), :updatedAt)
+        INSERT INTO settlements (event_id, user_id, amount, updated_at)
+        VALUES (:eventId, :userId, CAST(:amount AS NUMERIC), :updatedAt)
         ON CONFLICT (event_id, user_id) WHERE event_id IS NOT NULL AND user_id IS NOT NULL
         DO UPDATE SET amount = CAST(:amount AS NUMERIC),
-                      paid_amount = CAST(:paid AS NUMERIC),
-                      settled_on = CAST(:settledOn AS DATE),
                       updated_at = :updatedAt
         """, nativeQuery = true)
     void upsertForEventUser(@Param("eventId") UUID eventId,
                             @Param("userId") UUID userId,
                             @Param("amount") BigDecimal amount,
-                            @Param("paid") BigDecimal paid,
-                            @Param("settledOn") @Nullable LocalDate settledOn,
                             @Param("updatedAt") Instant updatedAt);
 
     /**
@@ -359,107 +307,45 @@ public interface SettlementRepository extends JpaRepository<Settlement, UUID> {
      */
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query(value = """
-        INSERT INTO settlements (time_slot_id, guest_reservation_id, amount, paid_amount, settled_on, updated_at)
-        VALUES (:slotId, :guestId, CAST(:amount AS NUMERIC), CAST(:paid AS NUMERIC),
-                CAST(:settledOn AS DATE), :updatedAt)
+        INSERT INTO settlements (time_slot_id, guest_reservation_id, amount, updated_at)
+        VALUES (:slotId, :guestId, CAST(:amount AS NUMERIC), :updatedAt)
         ON CONFLICT (guest_reservation_id) WHERE guest_reservation_id IS NOT NULL
         DO UPDATE SET time_slot_id = :slotId,
                       event_id = NULL,
                       amount = CAST(:amount AS NUMERIC),
-                      paid_amount = CAST(:paid AS NUMERIC),
-                      settled_on = CAST(:settledOn AS DATE),
                       updated_at = :updatedAt
         """, nativeQuery = true)
     void upsertForSlotGuest(@Param("slotId") UUID slotId,
                             @Param("guestId") UUID guestId,
                             @Param("amount") BigDecimal amount,
-                            @Param("paid") BigDecimal paid,
-                            @Param("settledOn") @Nullable LocalDate settledOn,
                             @Param("updatedAt") Instant updatedAt);
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query(value = """
-        INSERT INTO settlements (event_id, guest_reservation_id, amount, paid_amount, settled_on, updated_at)
-        VALUES (:eventId, :guestId, CAST(:amount AS NUMERIC), CAST(:paid AS NUMERIC),
-                CAST(:settledOn AS DATE), :updatedAt)
+        INSERT INTO settlements (event_id, guest_reservation_id, amount, updated_at)
+        VALUES (:eventId, :guestId, CAST(:amount AS NUMERIC), :updatedAt)
         ON CONFLICT (guest_reservation_id) WHERE guest_reservation_id IS NOT NULL
         DO UPDATE SET event_id = :eventId,
                       time_slot_id = NULL,
                       amount = CAST(:amount AS NUMERIC),
-                      paid_amount = CAST(:paid AS NUMERIC),
-                      settled_on = CAST(:settledOn AS DATE),
                       updated_at = :updatedAt
         """, nativeQuery = true)
     void upsertForEventGuest(@Param("eventId") UUID eventId,
                              @Param("guestId") UUID guestId,
                              @Param("amount") BigDecimal amount,
-                             @Param("paid") BigDecimal paid,
-                             @Param("settledOn") @Nullable LocalDate settledOn,
                              @Param("updatedAt") Instant updatedAt);
 
     /**
-     * Settles everything this payer still owes, on one date.
-     *
-     * <p>One statement rather than a loop of upserts: a regular client can owe a month of sessions,
-     * and issuing one request each would be twenty round trips, twenty chances to fail halfway, and
-     * a real dent in the admin rate-limit bucket. It also means all of it carries the SAME payment
-     * date, which is the whole point — one transfer covered them, so one day did.
-     *
-     * <p>Only unsettled rows are touched, so running it twice is a no-op rather than a rewrite of
-     * dates somebody already corrected by hand.
+     * Every charge of a whole section's payers in one read — the allocation of their payments needs
+     * each person's complete history, not just the row on screen, because money covers the oldest
+     * debt first. One read for all of them rather than one per person: the per-payer loop is the
+     * shape {@code AdminSettlementQueryCountTest} exists to keep out.
      */
-    /**
-     * One row of somebody's ledger, oldest first — the order money is applied in.
-     *
-     * <p>⚠️ Ordered down to the id, not just the date. Two sessions on the same day are ordinary
-     * (a morning and an evening slot), and on the date alone the database is free to return them
-     * either way round: the same payment would land on a different invoice from one call to the
-     * next, and a test asserting which row got the money would pass or fail by luck. The totals
-     * agree either way, which is exactly why nobody would notice.
-     */
-    @Query(ROW_SELECT + " WHERE u.id = :userId AND s.paidAmount < s.amount "
-        + "ORDER BY COALESCE(ts.date, e.startDate, s.periodMonth), s.createdAt, s.id")
-    List<SettlementRow> findOpenRowsForUser(@Param("userId") UUID userId);
+    @Query(ROW_SELECT + " WHERE u.id IN :ids")
+    List<SettlementRow> findRowsForUsers(@Param("ids") Collection<UUID> ids);
 
-    @Query(ROW_SELECT + " WHERE g.id = :guestId AND s.paidAmount < s.amount "
-        + "ORDER BY COALESCE(ts.date, e.startDate, s.periodMonth), s.createdAt, s.id")
-    List<SettlementRow> findOpenRowsForGuest(@Param("guestId") UUID guestId);
-
-    /** Records money against one row. Addressed by its id, which is why it is only ever called with
-     * an id that came out of one of the reads above. */
-    @Modifying(clearAutomatically = true, flushAutomatically = true)
-    @Query("UPDATE Settlement s SET s.paidAmount = :paidAmount, s.settledOn = :settledOn, "
-        + "s.updatedAt = :now WHERE s.id = :id")
-    int recordPayment(@Param("id") UUID id,
-                      @Param("paidAmount") BigDecimal paidAmount,
-                      @Param("settledOn") LocalDate settledOn,
-                      @Param("now") Instant now);
-
-    /**
-     * Balances for a whole section in one read — see {@link PayerBalance}.
-     *
-     * <p>Both figures in the same statement, because they are two sums over the same rows and the
-     * screen needs them together: the net position to state, and the credit actually sitting on
-     * overpaid rows to offer for spending. Splitting them would double the reads for nothing.
-     */
-    @Query("SELECT new pl.nextsteppro.climbing.domain.settlement.PayerBalance("
-        + "s.user.id, COALESCE(SUM(s.paidAmount - s.amount), 0), "
-        + "COALESCE(SUM(CASE WHEN s.paidAmount > s.amount THEN s.paidAmount - s.amount ELSE 0 END), 0)) "
-        + "FROM Settlement s WHERE s.user.id IN :ids GROUP BY s.user.id")
-    List<PayerBalance> balancesForUsers(@Param("ids") Collection<UUID> ids);
-
-    @Query("SELECT new pl.nextsteppro.climbing.domain.settlement.PayerBalance("
-        + "s.guest.id, COALESCE(SUM(s.paidAmount - s.amount), 0), "
-        + "COALESCE(SUM(CASE WHEN s.paidAmount > s.amount THEN s.paidAmount - s.amount ELSE 0 END), 0)) "
-        + "FROM Settlement s WHERE s.guest.id IN :ids GROUP BY s.guest.id")
-    List<PayerBalance> balancesForGuests(@Param("ids") Collection<UUID> ids);
-
-    /** Everything this person has ever been charged and has ever paid — the balance derives from it. */
-    @Query("SELECT COALESCE(SUM(s.paidAmount - s.amount), 0) FROM Settlement s WHERE s.user.id = :userId")
-    BigDecimal balanceForUser(@Param("userId") UUID userId);
-
-    @Query("SELECT COALESCE(SUM(s.paidAmount - s.amount), 0) FROM Settlement s WHERE s.guest.id = :guestId")
-    BigDecimal balanceForGuest(@Param("guestId") UUID guestId);
+    @Query(ROW_SELECT + " WHERE g.id IN :ids")
+    List<SettlementRow> findRowsForGuests(@Param("ids") Collection<UUID> ids);
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("DELETE FROM Settlement s WHERE s.timeSlot.id = :slotId AND s.user.id = :userId")

@@ -24,18 +24,18 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * The settlement feature end to end: pricing a session per participant, and the rules that keep
- * those figures honest.
+ * The settlement feature end to end: pricing a session per participant, recording the money people
+ * hand over, and the rules that keep those figures honest.
  *
- * <p>The test this file exists for is
- * {@code shouldPriceAMultiDayEventOncePerPersonRatherThanOncePerDay} — everything else here is
- * ordinary coverage, but that one guards the decision the whole table shape was chosen for.
+ * <p>Two tests carry the decisions the tables were shaped for:
+ * {@code shouldPriceAMultiDayEventOncePerPersonRatherThanOncePerDay} (why the target is never a
+ * reservation) and {@code shouldKeepWhatWasHandedOverExactlyAsTypedWhileItPaysOffTheBacklog} (why
+ * a payment is a row of its own since V100).
  */
 class AdminSettlementIntegrationTest extends BaseIntegrationTest {
 
@@ -50,6 +50,7 @@ class AdminSettlementIntegrationTest extends BaseIntegrationTest {
 
     @BeforeEach
     void setUp() {
+        jdbc.update("DELETE FROM payments");
         jdbc.update("DELETE FROM settlements");
         guestReservationRepository.deleteAll();
         reservationRepository.deleteAll();
@@ -79,91 +80,84 @@ class AdminSettlementIntegrationTest extends BaseIntegrationTest {
         assertEquals("Anna Kowalska", line.name());
         assertNull(line.amount(), "Not priced yet is a different state from priced at zero");
         assertFalse(line.orphaned());
+        assertTrue(line.payments().isEmpty());
     }
 
     @Test
     @DisplayName("shouldUpsertAnAmountAndThenCorrectIt")
     void shouldUpsertAnAmountAndThenCorrectIt() {
-        save("slot", slot.getId(), "user", client.getId(), "150", null);
-        assertEquals(0, new BigDecimal("150.00").compareTo(amountOf(service.getSection("slot", slot.getId()))));
+        charge(slot, client, "150");
+        assertMoney("150", amountOf(service.getSection("slot", slot.getId())));
 
-        save("slot", slot.getId(), "user", client.getId(), "180", date);
-        SettlementSectionDto section = service.getSection("slot", slot.getId());
-        assertEquals(0, new BigDecimal("180.00").compareTo(amountOf(section)));
-        assertEquals(date, section.lines().getFirst().settledOn());
+        charge(slot, client, "180");
+        assertMoney("180", amountOf(service.getSection("slot", slot.getId())));
         assertEquals(1, jdbc.queryForObject("SELECT COUNT(*) FROM settlements", Integer.class),
             "A correction must overwrite the row, not add a second one");
     }
 
     @Test
-    @DisplayName("shouldTreatAMissingPaymentDateAsOutstandingBecausePutReplacesTheWholeRow")
-    void shouldTreatAMissingPaymentDateAsOutstandingBecausePutReplacesTheWholeRow() {
-        save("slot", slot.getId(), "user", client.getId(), "150", date);
-        save("slot", slot.getId(), "user", client.getId(), "150", null);
+    @DisplayName("shouldNeverTouchAPaymentWhenTheChargeIsCorrected")
+    void shouldNeverTouchAPaymentWhenTheChargeIsCorrected() {
+        // Until V100 the price and the money were one PUT, so correcting the price rewrote what was
+        // received. Now they are two facts: the payment survives every correction of the charge.
+        charge(slot, client, "150");
+        pay(client, "150", date, slot);
 
-        assertNull(service.getSection("slot", slot.getId()).lines().getFirst().settledOn(),
-            "PUT is a full replace: there is no separate 'paid' flag to leave behind");
+        charge(slot, client, "180");
+
+        SettlementLineDto line = lineFor(slot, client);
+        assertMoney("150", line.payments().getFirst().amount());
+        assertMoney("150", line.covered());
+        assertMoney("30", line.remaining(), "The new price is short by the difference, nothing more");
+        assertNull(line.paidOn());
     }
 
     @Test
-    @DisplayName("shouldAllowZeroAsADeliberateFreeOfCharge")
-    void shouldAllowZeroAsADeliberateFreeOfCharge() {
-        save("slot", slot.getId(), "user", client.getId(), "0", date);
+    @DisplayName("shouldAllowZeroAsADeliberateFreeOfChargeAndCountItAsPaid")
+    void shouldAllowZeroAsADeliberateFreeOfChargeAndCountItAsPaid() {
+        charge(slot, client, "0");
 
-        SettlementLineDto line = service.getSection("slot", slot.getId()).lines().getFirst();
+        SettlementLineDto line = lineFor(slot, client);
         assertEquals(0, BigDecimal.ZERO.compareTo(line.amount()),
             "Zero is a decision — the state that means 'not priced' is the absence of a row");
-    }
-
-    @Test
-    @DisplayName("shouldKeepAFreeSessionTickedAsSettledRatherThanDiscardingTheTick")
-    void shouldKeepAFreeSessionTickedAsSettledRatherThanDiscardingTheTick() {
-        // Zero of zero really is settled, and the client deliberately allows the tick here: its
-        // guard against "settled with nothing received" exempts a free row because zero is the
-        // honest figure there. The server dropped the date anyway, so the box came back unticked
-        // with nothing said — the exact silent swallow that guard exists to prevent.
-        save("slot", slot.getId(), "user", client.getId(), "0", date);
-
-        assertEquals(date, service.getSection("slot", slot.getId()).lines().getFirst().settledOn(),
-            "A free session has to be closable, otherwise it sits in the section forever");
-    }
-
-    @Test
-    @DisplayName("shouldRefuseMoneyCarryingNoPaymentDate")
-    void shouldRefuseMoneyCarryingNoPaymentDate() {
-        // Revenue is summed by settled_on, and a row with paid >= amount is not a debt either — so
-        // money recorded with no date appears in no figure anywhere while the client's card reads
-        // as settled. The coupling was enforced in one direction only.
-        assertThrows(IllegalArgumentException.class, () -> service.save(
-            "slot", slot.getId(), "user", client.getId(),
-            new SaveSettlementRequest(new BigDecimal("150"), new BigDecimal("150"), null)));
-
-        assertNull(service.getSection("slot", slot.getId()).lines().getFirst().amount(),
-            "And the refusal happens before anything is written");
+        assertMoney("0", line.remaining(), "Nothing is owed for a free session");
+        assertEquals(0, stats().outstanding().count());
     }
 
     @Test
     @DisplayName("shouldRemoveAnAmountIdempotently")
     void shouldRemoveAnAmountIdempotently() {
-        save("slot", slot.getId(), "user", client.getId(), "150", null);
+        charge(slot, client, "150");
         service.delete("slot", slot.getId(), "user", client.getId());
         service.delete("slot", slot.getId(), "user", client.getId());
 
-        assertNull(service.getSection("slot", slot.getId()).lines().getFirst().amount());
+        assertNull(lineFor(slot, client).amount());
+    }
+
+    @Test
+    @DisplayName("shouldTurnThePaymentIntoCreditRatherThanLoseItWhenTheChargeIsRemoved")
+    void shouldTurnThePaymentIntoCreditRatherThanLoseItWhenTheChargeIsRemoved() {
+        charge(slot, client, "150");
+        pay(client, "150", date, slot);
+
+        service.delete("slot", slot.getId(), "user", client.getId());
+
+        SettlementLineDto line = lineFor(slot, client);
+        assertMoney("150", line.accountCredit(),
+            "The money was handed over; removing a price cannot make it un-happen");
+        assertEquals(1, line.payments().size(), "And it still shows where it was typed in");
     }
 
     @Test
     @DisplayName("shouldSuggestWhatThisPersonWasLastChargedButNotApplyIt")
     void shouldSuggestWhatThisPersonWasLastChargedButNotApplyIt() {
-        save("slot", slot.getId(), "user", client.getId(), "150", date);
+        charge(slot, client, "150");
 
-        TimeSlot next = timeSlotRepository.saveAndFlush(
-            new TimeSlot(date.plusDays(7), LocalTime.of(18, 0), LocalTime.of(20, 0), 4));
-        reservationRepository.saveAndFlush(new Reservation(client, next));
+        TimeSlot next = bookedSlot(date.plusDays(7));
 
-        SettlementLineDto line = service.getSection("slot", next.getId()).lines().getFirst();
+        SettlementLineDto line = lineFor(next, client);
         assertNull(line.amount(), "A suggestion is an offer, never a saved amount");
-        assertEquals(0, new BigDecimal("150.00").compareTo(line.suggestedAmount()));
+        assertMoney("150", line.suggestedAmount());
     }
 
     // ------------------------------------------------------------ the whole point
@@ -187,11 +181,186 @@ class AdminSettlementIntegrationTest extends BaseIntegrationTest {
                 + "shows three fields and counts as 1800 zl of revenue");
         assertEquals(date, section.targetDate(), "The event's first day is the payment-date prefill");
 
-        save("event", event.getId(), "user", client.getId(), "600", date);
+        save("event", event.getId(), "user", client.getId(), "600");
         assertEquals(1, jdbc.queryForObject("SELECT COUNT(*) FROM settlements", Integer.class));
-        assertEquals(0, new BigDecimal("600.00")
-            .compareTo(amountOf(service.getSection("event", event.getId()))));
+        assertMoney("600", amountOf(service.getSection("event", event.getId())));
     }
+
+    @Test
+    @DisplayName("shouldKeepWhatWasHandedOverExactlyAsTypedWhileItPaysOffTheBacklog")
+    void shouldKeepWhatWasHandedOverExactlyAsTypedWhileItPaysOffTheBacklog() {
+        // The owner's report (2026-10-02), in its own numbers: 20 still owed from an earlier session,
+        // 140 today, 200 handed over. The old pool rewrote today's "received" to 140 and parked +40
+        // on the OLD row with today's date — the balance was right and both rows lied, and
+        // "correcting" 140 back to 200 counted the same notes twice.
+        TimeSlot earlier = bookedSlot(date.minusDays(7));
+        charge(earlier, client, "120");
+        pay(client, "100", earlier.getDate(), earlier);
+        charge(slot, client, "140");
+
+        PaymentResultDto result = pay(client, "200", date, slot);
+
+        assertMoney("0", result.debt());
+        assertMoney("40", result.credit());
+
+        SettlementLineDto today = lineFor(slot, client);
+        assertEquals(1, today.payments().size());
+        LinePaymentDto payment = today.payments().getFirst();
+        assertMoney("200", payment.amount(), "⚠️ The record of what she handed over, unchanged");
+        assertTrue(payment.enteredHere());
+        assertEquals(date, payment.receivedOn());
+        assertEquals(2, payment.shares().size(), "20 to the old session, 140 to this one");
+        assertMoney("20", payment.shares().get(0).amount());
+        assertFalse(payment.shares().get(0).thisEntry());
+        assertMoney("140", payment.shares().get(1).amount());
+        assertTrue(payment.shares().get(1).thisEntry());
+        assertMoney("40", payment.unallocated(), "And 40 waits as credit");
+        assertMoney("0", today.remaining());
+        assertEquals(date, today.paidOn());
+
+        SettlementLineDto old = lineFor(earlier, client);
+        assertMoney("120", old.covered(), "The old session is paid — by its own 100 and 20 of today's");
+        assertEquals(date, old.paidOn(), "Completed on the day the 200 arrived");
+        assertEquals(2, old.payments().size(),
+            "Its own payment and today's, which covers part of it — both listed where they matter");
+        assertEquals(1, jdbc.queryForObject("SELECT COUNT(*) FROM payments WHERE amount = 200", Integer.class));
+
+        assertMoney("300", stats().revenue().total(), "100 + 200 arrived, and that is what was earned");
+    }
+
+    @Test
+    @DisplayName("shouldSpendCreditOnTheNextSessionWithNothingChangingHands")
+    void shouldSpendCreditOnTheNextSessionWithNothingChangingHands() {
+        // A hundred handed over for a fifty session; the change covers the next one by itself.
+        charge(slot, client, "50");
+        pay(client, "100", date, slot);
+
+        TimeSlot next = bookedSlot(date.plusMonths(2));
+        charge(next, client, "50");
+
+        SettlementLineDto line = lineFor(next, client);
+        assertMoney("0", line.remaining(), "Covered without anybody pressing a button");
+        assertEquals(date, line.paidOn(), "By the payment that actually paid for it");
+        assertEquals(0, stats().outstanding().count());
+        assertMoney("100", stats().revenue().total(),
+            "Spending a credit moves nothing between months: a hundred arrived, a hundred is counted");
+    }
+
+    @Test
+    @DisplayName("shouldKeepChasingTheRemainderWhenSomebodyPaysTooLittle")
+    void shouldKeepChasingTheRemainderWhenSomebodyPaysTooLittle() {
+        charge(slot, client, "150");
+
+        PaymentResultDto result = pay(client, "100", date, slot);
+
+        assertMoney("50", result.debt());
+        assertEquals(1, stats().outstanding().count());
+        assertMoney("50", stats().outstanding().total(), "Fifty still owed, not the whole hundred and fifty");
+    }
+
+    @Test
+    @DisplayName("shouldPayOffTheOldestDebtFirstWhenTheMoneyDoesNotCoverEverything")
+    void shouldPayOffTheOldestDebtFirstWhenTheMoneyDoesNotCoverEverything() {
+        // ⚠️ The order is not cosmetic. A backlog is paid off the way it accumulated, and the client
+        // asking "so which sessions am I straight for?" has to get the same answer the screen gives.
+        TimeSlot later = bookedSlot(date.plusDays(7));
+        charge(slot, client, "150");
+        charge(later, client, "80");
+
+        // Typed in at the NEWER session — still pays the older one first.
+        pay(client, "150", date.plusDays(20), later);
+
+        assertMoney("0", lineFor(slot, client).remaining(), "The older session is the one that closes");
+        assertMoney("80", lineFor(later, client).remaining(), "And the newer one is still open");
+        assertMoney("80", stats().outstanding().total());
+    }
+
+    @Test
+    @DisplayName("shouldSplitAPartPaymentAcrossDebtsInsteadOfPickingOne")
+    void shouldSplitAPartPaymentAcrossDebtsInsteadOfPickingOne() {
+        TimeSlot later = bookedSlot(date.plusDays(7));
+        charge(slot, client, "150");
+        charge(later, client, "80");
+
+        PaymentResultDto result = payWithoutTarget(client, "200", date.plusDays(20));
+
+        assertMoney("30", result.debt());
+        assertMoney("30", stats().outstanding().total(),
+            "Thirty of the second session is still owed — not eighty, and not nothing");
+        assertEquals(1, stats().outstanding().count(), "And only the part-paid row is still listed");
+    }
+
+    @Test
+    @DisplayName("shouldSettleAGuestsOwnDebtsOnly")
+    void shouldSettleAGuestsOwnDebtsOnly() {
+        GuestReservation guest = guestReservationRepository.saveAndFlush(
+            new GuestReservation(slot, "Marek — kolega Ani", 1));
+        save("slot", slot.getId(), "guest", guest.getId(), "150");
+        charge(slot, client, "150");
+
+        service.addPayment(new AddPaymentRequest("guest", guest.getId(), new BigDecimal("150"), date,
+            "slot", slot.getId()));
+
+        assertMoney("150", lineFor(slot, client).remaining(),
+            "Somebody else's debt on the same session must not be paid by it");
+        SettlementLineDto guestLine = service.getSection("slot", slot.getId()).lines().stream()
+            .filter(line -> line.payerId().equals(guest.getId())).findFirst().orElseThrow();
+        assertMoney("0", guestLine.remaining());
+    }
+
+    @Test
+    @DisplayName("shouldUndoAPaymentByDeletingItAndPutTheDebtBack")
+    void shouldUndoAPaymentByDeletingItAndPutTheDebtBack() {
+        charge(slot, client, "150");
+        pay(client, "150", date, slot);
+        UUID paymentId = lineFor(slot, client).payments().getFirst().id();
+
+        service.deletePayment(paymentId);
+        service.deletePayment(paymentId);
+
+        assertMoney("150", lineFor(slot, client).remaining(), "Idempotent, and the debt is back");
+        assertEquals(0, jdbc.queryForObject("SELECT COUNT(*) FROM payments", Integer.class));
+    }
+
+    @Test
+    @DisplayName("shouldAcceptAPrepaymentAndHoldItAsCredit")
+    void shouldAcceptAPrepaymentAndHoldItAsCredit() {
+        // Before V100 a payment from somebody who owed nothing was refused — a row carried one date,
+        // so piling money onto it rewrote when the older money arrived. A payment is its own row now,
+        // so a prepayment is simply credit that covers the next charge.
+        charge(slot, client, "0");
+
+        PaymentResultDto result = pay(client, "300", date, slot);
+
+        assertMoney("300", result.credit());
+        assertEquals(1, stats().credits().payers());
+    }
+
+    @Test
+    @DisplayName("shouldRefuseAPaymentFromSomebodyThisLedgerDoesNotKnow")
+    void shouldRefuseAPaymentFromSomebodyThisLedgerDoesNotKnow() {
+        User stranger = saveUser("stranger@example.com", "Nikt", "Obcy");
+
+        assertThrows(IllegalArgumentException.class,
+            () -> payWithoutTarget(stranger, "100", date), "No charge anywhere: a phantom client");
+        assertThrows(IllegalArgumentException.class,
+            () -> pay(stranger, "100", date, slot), "Not booked on the session it names");
+        assertEquals(0, jdbc.queryForObject("SELECT COUNT(*) FROM payments", Integer.class));
+    }
+
+    @Test
+    @DisplayName("shouldRejectAPaymentOutsideTheAllowedRange")
+    void shouldRejectAPaymentOutsideTheAllowedRange() {
+        charge(slot, client, "150");
+
+        assertThrows(IllegalArgumentException.class, () -> pay(client, "0", date, slot),
+            "Zero is not a payment — a free session is a charge of zero");
+        assertThrows(IllegalArgumentException.class, () -> pay(client, "100000.01", date, slot));
+        assertThrows(IllegalArgumentException.class, () -> service.addPayment(new AddPaymentRequest(
+            "sponsor", client.getId(), new BigDecimal("10"), date, null, null)));
+    }
+
+    // ------------------------------------------------------------------- guests
 
     @Test
     @DisplayName("shouldRefuseToPriceASingleDayOfAnEvent")
@@ -202,7 +371,7 @@ class AdminSettlementIntegrationTest extends BaseIntegrationTest {
             new TimeSlot(event, date, LocalTime.of(9, 0), LocalTime.of(17, 0), 8));
 
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-            () -> save("slot", eventSlot.getId(), "user", client.getId(), "300", null));
+            () -> save("slot", eventSlot.getId(), "user", client.getId(), "300"));
         assertTrue(ex.getMessage().toLowerCase().contains("wydarzen")
                 || ex.getMessage().toLowerCase().contains("event"),
             "The refusal must name the reason, not a constraint: " + ex.getMessage());
@@ -210,8 +379,6 @@ class AdminSettlementIntegrationTest extends BaseIntegrationTest {
         assertThrows(IllegalArgumentException.class,
             () -> service.getSection("slot", eventSlot.getId()));
     }
-
-    // ------------------------------------------------------------------- guests
 
     @Test
     @DisplayName("shouldChargeAGuestAttachedToTheEventAndOneAttachedToOneOfItsDays")
@@ -233,8 +400,8 @@ class AdminSettlementIntegrationTest extends BaseIntegrationTest {
         assertTrue(lines.stream().anyMatch(line -> line.participants() == 3),
             "The headcount is shown because the amount prices the whole booking, not a head");
 
-        save("event", event.getId(), "guest", onEvent.getId(), "1800", date);
-        save("event", event.getId(), "guest", onDay.getId(), "600", null);
+        save("event", event.getId(), "guest", onEvent.getId(), "1800");
+        save("event", event.getId(), "guest", onDay.getId(), "600");
 
         assertEquals(2, jdbc.queryForObject("SELECT COUNT(*) FROM settlements", Integer.class));
         // ⚠️ BOTH hang on the EVENT, including the guest whose own row points at a day slot. The
@@ -256,7 +423,9 @@ class AdminSettlementIntegrationTest extends BaseIntegrationTest {
         GuestReservation onDay = guestReservationRepository.saveAndFlush(
             new GuestReservation(eventSlot, "Marek dopisany z widoku dnia", 1));
 
-        save("event", event.getId(), "guest", onDay.getId(), "600", date);
+        save("event", event.getId(), "guest", onDay.getId(), "600");
+        service.addPayment(new AddPaymentRequest("guest", onDay.getId(), new BigDecimal("600"), date,
+            "event", event.getId()));
 
         // Writing to an address the read cannot reach is worse than refusing the write: the admin
         // sees the amount accepted, comes back, and finds the line blank again.
@@ -264,10 +433,9 @@ class AdminSettlementIntegrationTest extends BaseIntegrationTest {
             .filter(candidate -> candidate.payerId().equals(onDay.getId()))
             .findFirst()
             .orElseThrow(() -> new AssertionError("the guest vanished from the section"));
-        assertEquals(0, new BigDecimal("600.00").compareTo(line.amount()),
-            "The amount was written onto the event's per-day slot, which no read of the event ever "
-                + "looks at — so it is invisible everywhere the admin typed it");
-        assertEquals(date, line.settledOn());
+        assertMoney("600", line.amount());
+        assertEquals(date, line.paidOn());
+        assertTrue(line.payments().getFirst().enteredHere());
     }
 
     @Test
@@ -279,7 +447,7 @@ class AdminSettlementIntegrationTest extends BaseIntegrationTest {
             new GuestReservation(other, "Ktos zupelnie inny", 1));
 
         assertThrows(IllegalArgumentException.class,
-            () -> save("slot", slot.getId(), "guest", guest.getId(), "150", null));
+            () -> save("slot", slot.getId(), "guest", guest.getId(), "150"));
     }
 
     // ---------------------------------------------- guards reject change, not state
@@ -290,7 +458,7 @@ class AdminSettlementIntegrationTest extends BaseIntegrationTest {
         User stranger = saveUser("stranger@example.com", "Nikt", "Obcy");
 
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-            () -> save("slot", slot.getId(), "user", stranger.getId(), "150", null));
+            () -> charge(slot, stranger, "150"));
         assertTrue(ex.getMessage().length() > 0);
         assertEquals(0, jdbc.queryForObject("SELECT COUNT(*) FROM settlements", Integer.class));
     }
@@ -298,16 +466,14 @@ class AdminSettlementIntegrationTest extends BaseIntegrationTest {
     @Test
     @DisplayName("shouldKeepAnExistingAmountEditableAfterTheBookingIsCancelled")
     void shouldKeepAnExistingAmountEditableAfterTheBookingIsCancelled() {
-        save("slot", slot.getId(), "user", client.getId(), "150", date);
-
-        Reservation reservation = reservationRepository.findByUserIdAndTimeSlotId(client.getId(), slot.getId());
-        reservation.cancel();
-        reservationRepository.saveAndFlush(reservation);
+        charge(slot, client, "150");
+        cancelBooking();
 
         // The guard rejects the CHANGE (a brand-new amount for a stranger), never the STATE. Money
         // that changed hands must stay correctable after somebody cancels.
-        save("slot", slot.getId(), "user", client.getId(), "120", date);
-        assertEquals(0, new BigDecimal("120.00").compareTo(amountOf(service.getSection("slot", slot.getId()))));
+        charge(slot, client, "120");
+        assertMoney("120", amountOf(service.getSection("slot", slot.getId())));
+        pay(client, "120", date, slot);
 
         service.delete("slot", slot.getId(), "user", client.getId());
         assertEquals(0, jdbc.queryForObject("SELECT COUNT(*) FROM settlements", Integer.class));
@@ -316,18 +482,17 @@ class AdminSettlementIntegrationTest extends BaseIntegrationTest {
     @Test
     @DisplayName("shouldStillShowAPaidClientWhoLaterCancelledFlaggedAsOrphaned")
     void shouldStillShowAPaidClientWhoLaterCancelledFlaggedAsOrphaned() {
-        save("slot", slot.getId(), "user", client.getId(), "150", date);
-
-        Reservation reservation = reservationRepository.findByUserIdAndTimeSlotId(client.getId(), slot.getId());
-        reservation.cancel();
-        reservationRepository.saveAndFlush(reservation);
+        charge(slot, client, "150");
+        pay(client, "150", date, slot);
+        cancelBooking();
 
         List<SettlementLineDto> lines = service.getSection("slot", slot.getId()).lines();
         assertEquals(1, lines.size(),
             "Dropping the row would make the money vanish from the screen while it still counts "
                 + "in the monthly total");
         assertTrue(lines.getFirst().orphaned());
-        assertEquals(0, new BigDecimal("150.00").compareTo(lines.getFirst().amount()));
+        assertMoney("150", lines.getFirst().amount());
+        assertEquals(1, lines.getFirst().payments().size());
     }
 
     @Test
@@ -336,7 +501,7 @@ class AdminSettlementIntegrationTest extends BaseIntegrationTest {
         assertThrows(IllegalArgumentException.class,
             () -> service.getSection("reservation", slot.getId()));
         assertThrows(IllegalArgumentException.class,
-            () -> save("slot", slot.getId(), "sponsor", client.getId(), "150", null));
+            () -> save("slot", slot.getId(), "sponsor", client.getId(), "150"));
         assertThrows(IllegalArgumentException.class,
             () -> service.getSection("slot", UUID.randomUUID()));
     }
@@ -344,402 +509,39 @@ class AdminSettlementIntegrationTest extends BaseIntegrationTest {
     @Test
     @DisplayName("shouldRejectAnAmountOutsideTheAllowedRange")
     void shouldRejectAnAmountOutsideTheAllowedRange() {
-        assertThrows(IllegalArgumentException.class,
-            () -> save("slot", slot.getId(), "user", client.getId(), "-1", null));
-        assertThrows(IllegalArgumentException.class,
-            () -> save("slot", slot.getId(), "user", client.getId(), "100000.01", null));
-    }
-
-    // -------------------------------------------- settling a month in one go
-
-    @Test
-    @DisplayName("shouldSettleAWholeMonthOfOnePersonOnTheDayTheyActuallyPaid")
-    void shouldSettleAWholeMonthOfOnePersonOnTheDayTheyActuallyPaid() {
-        User other = saveUser("other@example.com", "Piotr", "Nowak");
-        TimeSlot second = timeSlotRepository.saveAndFlush(
-            new TimeSlot(date.plusDays(7), LocalTime.of(18, 0), LocalTime.of(20, 0), 4));
-        reservationRepository.saveAndFlush(new Reservation(client, second));
-        reservationRepository.saveAndFlush(new Reservation(other, second));
-
-        save("slot", slot.getId(), "user", client.getId(), "150", null);
-        save("slot", second.getId(), "user", client.getId(), "80", null);
-        save("slot", second.getId(), "user", other.getId(), "150", null);
-
-        LocalDate paidOn = date.plusDays(20);
-        int settled = service.settleOutstanding(
-            new SettleOutstandingRequest("user", client.getId(), paidOn, new BigDecimal("230")))
-            .settled();
-
-        assertEquals(2, settled, "Both of hers, and only hers");
-        // One transfer covered the month, so one date is true of all of it — taking each session's
-        // own day would scatter a single payment across the months it paid for.
-        assertEquals(paidOn, service.getSection("slot", slot.getId()).lines().getFirst().settledOn());
-        assertEquals(paidOn, lineFor(second, client).settledOn());
-        assertNull(lineFor(second, other).settledOn(),
-            "Somebody else's debt on the same session must not be settled by it");
-    }
-
-    @Test
-    @DisplayName("shouldRefuseToRecordMoneyAgainstAnAccountThatOwesNothing")
-    void shouldRefuseToRecordMoneyAgainstAnAccountThatOwesNothing() {
-        save("slot", slot.getId(), "user", client.getId(), "150", date);
-
-        // Nothing open and no credit to draw on: there is no row for the money to land against, and
-        // silently doing nothing would look like it had been recorded.
-        assertThrows(IllegalArgumentException.class, () -> service.settleOutstanding(
-            new SettleOutstandingRequest("user", client.getId(), date.plusDays(20), BigDecimal.ZERO)));
-        assertEquals(date, service.getSection("slot", slot.getId()).lines().getFirst().settledOn(),
-            "And the date somebody corrected by hand is untouched");
-    }
-
-    @Test
-    @DisplayName("shouldNotRewriteAnEarlierPaymentsDateWhenThereIsNothingLeftToSettle")
-    void shouldNotRewriteAnEarlierPaymentsDateWhenThereIsNothingLeftToSettle() {
-        // 150 charged, 200 handed over in July: a 50 credit and not a zloty owed.
-        service.save("slot", slot.getId(), "user", client.getId(),
-            new SaveSettlementRequest(new BigDecimal("150"), new BigDecimal("200"), date));
-
-        // Settling "everything owed" when nothing is owed used to do something worse than nothing:
-        // it pulled the credit back into the pool and re-concentrated it onto the same row, stamping
-        // it with the new date. The account netted to the identical figure while money paid in July
-        // became revenue of September — and the call reported one row settled for it.
-        assertThrows(IllegalArgumentException.class, () -> service.settleOutstanding(
-            new SettleOutstandingRequest("user", client.getId(), date.plusMonths(2), BigDecimal.ZERO)));
-
-        SettlementLineDto line = service.getSection("slot", slot.getId()).lines().getFirst();
-        assertEquals(date, line.settledOn(), "Revenue is summed by this date");
-        assertEquals(0, new BigDecimal("200").compareTo(line.paidAmount()), "And the money is untouched");
-    }
-
-    @Test
-    @DisplayName("shouldRefuseAPaymentFromSomebodyWhoOwesNothingEvenWhenTheyHoldCredit")
-    void shouldRefuseAPaymentFromSomebodyWhoOwesNothingEvenWhenTheyHoldCredit() {
-        service.save("slot", slot.getId(), "user", client.getId(),
-            new SaveSettlementRequest(new BigDecimal("150"), new BigDecimal("200"), date));
-
-        // A row carries ONE payment date, so piling a fresh payment onto a row that already holds
-        // money necessarily rewrites when the older money arrived. This endpoint settles debt; a
-        // prepayment from somebody who owes nothing belongs on its own session, where the admin
-        // picks the target and the date knowingly.
-        assertThrows(IllegalArgumentException.class, () -> service.settleOutstanding(
-            new SettleOutstandingRequest("user", client.getId(), date.plusMonths(2), new BigDecimal("200"))));
-
-        SettlementLineDto line = service.getSection("slot", slot.getId()).lines().getFirst();
-        assertEquals(date, line.settledOn());
-        assertEquals(0, new BigDecimal("200").compareTo(line.paidAmount()));
-    }
-
-    @Test
-    @DisplayName("shouldKeepTheChangeAsCreditWhenSomebodyPaysMoreThanTheyOwe")
-    void shouldKeepTheChangeAsCreditWhenSomebodyPaysMoreThanTheyOwe() {
-        save("slot", slot.getId(), "user", client.getId(), "150", null);
-
-        // A two-hundred note against a hundred-and-fifty session, which is how cash usually goes.
-        SettleOutstandingResultDto result = service.settleOutstanding(new SettleOutstandingRequest(
-            "user", client.getId(), date, new BigDecimal("200")));
-
-        assertEquals(1, result.settled());
-        assertEquals(0, new BigDecimal("50.00").compareTo(result.balance()),
-            "The change does not vanish — it stays on their account");
-        assertEquals(0, service.getSection("slot", slot.getId()).lines().getFirst()
-            .balance().compareTo(new BigDecimal("50.00")),
-            "And it is in front of you at the moment you type the next amount");
-    }
-
-    @Test
-    @DisplayName("shouldSpendThatCreditOnTheNextSessionInsteadOfLeavingItStranded")
-    void shouldSpendThatCreditOnTheNextSessionInsteadOfLeavingItStranded() {
-        save("slot", slot.getId(), "user", client.getId(), "150", null);
-        service.settleOutstanding(new SettleOutstandingRequest(
-            "user", client.getId(), date, new BigDecimal("200")));
-
-        TimeSlot next = timeSlotRepository.saveAndFlush(
-            new TimeSlot(date.plusDays(7), LocalTime.of(18, 0), LocalTime.of(20, 0), 4));
-        reservationRepository.saveAndFlush(new Reservation(client, next));
-        save("slot", next.getId(), "user", client.getId(), "150", null);
-
-        // He hands over 100 and the 50 already held covers the rest.
-        SettleOutstandingResultDto result = service.settleOutstanding(new SettleOutstandingRequest(
-            "user", client.getId(), date.plusDays(7), new BigDecimal("100")));
-
-        assertEquals(0, BigDecimal.ZERO.compareTo(result.balance()), "Square");
-        // ⚠️ And the rows agree with the balance. Leaving the credit where it was would net to zero
-        // while the second session still read as owing 50 — two true-looking figures disagreeing.
-        assertEquals(0, stats().outstanding().count(),
-            "Nothing is owed, so nothing is listed");
-    }
-
-    @Test
-    @DisplayName("shouldCloseASessionThatTheCreditAlonePaysForWithNothingChangingHands")
-    void shouldCloseASessionThatTheCreditAlonePaysForWithNothingChangingHands() {
-        // The reported case, and the one the per-participant fields cannot express: a hundred handed
-        // over for a fifty session, then a session two months later that the change already covers.
-        // Writing "charged 50, received 0" on that second row is true and settles nothing — the row
-        // stays open while the balance reads zero, which is the disagreement this whole mechanism
-        // exists to prevent. Only spending the credit moves both figures at once.
-        save("slot", slot.getId(), "user", client.getId(), "50", null);
-        service.settleOutstanding(new SettleOutstandingRequest(
-            "user", client.getId(), date, new BigDecimal("100")));
-
-        TimeSlot next = timeSlotRepository.saveAndFlush(
-            new TimeSlot(date.plusMonths(2), LocalTime.of(18, 0), LocalTime.of(20, 0), 4));
-        reservationRepository.saveAndFlush(new Reservation(client, next));
-        save("slot", next.getId(), "user", client.getId(), "50", null);
-
-        // Nothing changed hands this time, which is the whole point of the zero.
-        SettleOutstandingResultDto result = service.settleOutstanding(new SettleOutstandingRequest(
-            "user", client.getId(), date.plusMonths(2), BigDecimal.ZERO));
-
-        assertEquals(1, result.settled(), "The credit reached the open session");
-        assertEquals(0, BigDecimal.ZERO.compareTo(result.balance()), "Square");
-        assertEquals(0, stats().outstanding().count(),
-            "And the session no longer reads as owed, because it is not");
-        assertEquals(date.plusMonths(2), lineFor(next, client).settledOn(),
-            "The session it paid for is the one that carries the date");
-        // ⚠️ The property the owner's books depend on: spending a credit MOVES revenue between
-        // months, it does not mint or destroy any. A hundred came through the door and a hundred is
-        // still counted — fifty of it now attributed to the session it actually paid for. Getting
-        // this wrong would be invisible on every screen except the yearly total.
-        assertEquals(0, new BigDecimal("100.00").compareTo(stats().revenue().total()),
-            "One hundred arrived in total, so one hundred is the revenue however it was allocated");
-        assertEquals(0, new BigDecimal("50.00").compareTo(lineFor(slot, client).paidAmount()),
-            "And the row that was holding the change is back to exactly what it charged");
-    }
-
-    @Test
-    @DisplayName("shouldLeaveTheRestOfAnOverpaymentOnAccountWhenItOutrunsTheSession")
-    void shouldLeaveTheRestOfAnOverpaymentOnAccountWhenItOutrunsTheSession() {
-        // Eighty of credit against a fifty session: the fifty closes, and the remaining thirty has
-        // to stay his — spending a credit must never round somebody's money away.
-        save("slot", slot.getId(), "user", client.getId(), "50", null);
-        service.settleOutstanding(new SettleOutstandingRequest(
-            "user", client.getId(), date, new BigDecimal("130")));
-
-        TimeSlot next = timeSlotRepository.saveAndFlush(
-            new TimeSlot(date.plusDays(7), LocalTime.of(18, 0), LocalTime.of(20, 0), 4));
-        reservationRepository.saveAndFlush(new Reservation(client, next));
-        save("slot", next.getId(), "user", client.getId(), "50", null);
-
-        SettleOutstandingResultDto result = service.settleOutstanding(new SettleOutstandingRequest(
-            "user", client.getId(), date.plusDays(7), BigDecimal.ZERO));
-
-        assertEquals(0, new BigDecimal("30.00").compareTo(result.balance()),
-            "Thirty of his is still here, ready for the session after this one");
-        assertEquals(0, stats().outstanding().count(), "And nothing is owed");
-        SettlementLineDto line = lineFor(next, client);
-        assertEquals(0, new BigDecimal("80.00").compareTo(line.paidAmount()),
-            "The change rides on the row it landed against — 50 charged, 80 held");
-        assertEquals(0, new BigDecimal("30.00").compareTo(line.credit()),
-            "So the section offers that thirty next time, and no button while nothing is owed");
-    }
-
-    @Test
-    @DisplayName("shouldPayWhatItCanAndKeepChasingTheRestWhenTheCreditFallsShort")
-    void shouldPayWhatItCanAndKeepChasingTheRestWhenTheCreditFallsShort() {
-        // Thirty of credit against a fifty session: the twenty short stays a debt, on the same row,
-        // rather than the session dropping off the list as though it had been dealt with.
-        save("slot", slot.getId(), "user", client.getId(), "50", null);
-        service.settleOutstanding(new SettleOutstandingRequest(
-            "user", client.getId(), date, new BigDecimal("80")));
-
-        TimeSlot next = timeSlotRepository.saveAndFlush(
-            new TimeSlot(date.plusDays(7), LocalTime.of(18, 0), LocalTime.of(20, 0), 4));
-        reservationRepository.saveAndFlush(new Reservation(client, next));
-        save("slot", next.getId(), "user", client.getId(), "50", null);
-
-        SettleOutstandingResultDto result = service.settleOutstanding(new SettleOutstandingRequest(
-            "user", client.getId(), date.plusDays(7), BigDecimal.ZERO));
-
-        assertEquals(0, new BigDecimal("-20.00").compareTo(result.balance()),
-            "Twenty short, and the screen says so rather than showing a negative balance");
-        assertEquals(1, stats().outstanding().count(), "The session is still owed for");
-        assertEquals(0, new BigDecimal("20.00").compareTo(stats().outstanding().total()),
-            "Twenty, not the whole fifty — the credit really did land");
-        SettlementLineDto line = lineFor(next, client);
-        assertEquals(0, new BigDecimal("30.00").compareTo(line.paidAmount()));
-        assertEquals(0, BigDecimal.ZERO.compareTo(line.credit()),
-            "Nothing left to spend, so the button is gone and the row is simply short");
-    }
-
-    @Test
-    @DisplayName("shouldSpendACreditOnTheOldestDebtFirstEvenFromANewerSession")
-    void shouldSpendACreditOnTheOldestDebtFirstEvenFromANewerSession() {
-        // Clicking on today's session does not make today's session the one that gets paid: a
-        // backlog is paid off in the order it accumulated, which is why the button reports the
-        // balance instead of claiming the row in front of you is now settled.
-        save("slot", slot.getId(), "user", client.getId(), "50", null);
-        service.settleOutstanding(new SettleOutstandingRequest(
-            "user", client.getId(), date, new BigDecimal("100")));
-
-        TimeSlot older = timeSlotRepository.saveAndFlush(
-            new TimeSlot(date.plusDays(3), LocalTime.of(18, 0), LocalTime.of(20, 0), 4));
-        TimeSlot newer = timeSlotRepository.saveAndFlush(
-            new TimeSlot(date.plusDays(9), LocalTime.of(18, 0), LocalTime.of(20, 0), 4));
-        reservationRepository.saveAndFlush(new Reservation(client, older));
-        reservationRepository.saveAndFlush(new Reservation(client, newer));
-        save("slot", older.getId(), "user", client.getId(), "50", null);
-        save("slot", newer.getId(), "user", client.getId(), "50", null);
-
-        service.settleOutstanding(new SettleOutstandingRequest(
-            "user", client.getId(), date.plusDays(9), BigDecimal.ZERO));
-
-        assertNotNull(lineFor(older, client).settledOn(), "The older session is the one it paid");
-        assertNull(lineFor(newer, client).settledOn(),
-            "And the one on screen is still owed for, which the result message reports");
-    }
-
-    @Test
-    @DisplayName("shouldTellTheSectionWhatIsOwedElsewhereSoAnOverpaymentCanPayItOff")
-    void shouldTellTheSectionWhatIsOwedElsewhereSoAnOverpaymentCanPayItOff() {
-        // The reported case, in its original numbers: a hundred-zloty session left unpaid, credit of
-        // ninety parked on older rows (net: ten owing), then a 360 session paid with 400. The owner
-        // expected thirty of credit and saw a hundred of debt beside a hundred and thirty of credit.
-        TimeSlot overpaid = timeSlotRepository.saveAndFlush(
-            new TimeSlot(date.minusDays(10), LocalTime.of(18, 0), LocalTime.of(20, 0), 4));
-        TimeSlot unpaid = timeSlotRepository.saveAndFlush(
-            new TimeSlot(date.minusDays(3), LocalTime.of(18, 0), LocalTime.of(20, 0), 4));
-        reservationRepository.saveAndFlush(new Reservation(client, overpaid));
-        reservationRepository.saveAndFlush(new Reservation(client, unpaid));
-        service.save("slot", overpaid.getId(), "user", client.getId(),
-            new SaveSettlementRequest(new BigDecimal("140"), new BigDecimal("230"), overpaid.getDate()));
-        save("slot", unpaid.getId(), "user", client.getId(), "100", null);
-
-        assertEquals(0, new BigDecimal("100.00").compareTo(lineFor(slot, client).otherDebt()),
-            "Before this session is priced, the whole open debt is somewhere else");
-        assertEquals(0, BigDecimal.ZERO.compareTo(lineFor(unpaid, client).otherDebt()),
-            "⚠️ A row's own shortfall is not debt 'elsewhere' — offering it would pay the session with itself");
-
-        // What the plain Save writes, which is the first half of "Save and pay off the debt".
-        service.save("slot", slot.getId(), "user", client.getId(),
-            new SaveSettlementRequest(new BigDecimal("360"), new BigDecimal("400"), date));
-        assertEquals(0, new BigDecimal("100.00").compareTo(lineFor(slot, client).otherDebt()),
-            "The overpayment alone does not touch the old debt — which is the gap the button closes");
-
-        // The second half: the same pool as "pay from credit", with nothing further received.
-        SettleOutstandingResultDto result = service.settleOutstanding(new SettleOutstandingRequest(
-            "user", client.getId(), date, BigDecimal.ZERO));
-
-        assertEquals(0, new BigDecimal("30.00").compareTo(result.balance()), "Thirty, as the owner expected");
-        assertEquals(0, stats().outstanding().count(), "And nothing reads as owed any more");
-        SettlementLineDto line = lineFor(slot, client);
-        assertEquals(0, BigDecimal.ZERO.compareTo(line.otherDebt()));
-        assertEquals(0, new BigDecimal("30.00").compareTo(line.credit()),
-            "The thirty is still hers, one number rather than a debt and a credit side by side");
-    }
-
-    @Test
-    @DisplayName("shouldKeepChasingTheRemainderWhenSomebodyPaysTooLittle")
-    void shouldKeepChasingTheRemainderWhenSomebodyPaysTooLittle() {
-        save("slot", slot.getId(), "user", client.getId(), "150", null);
-
-        SettleOutstandingResultDto result = service.settleOutstanding(new SettleOutstandingRequest(
-            "user", client.getId(), date, new BigDecimal("100")));
-
-        assertEquals(0, new BigDecimal("-50.00").compareTo(result.balance()));
-        assertEquals(1, stats().outstanding().count());
-        assertEquals(0, new BigDecimal("50.00").compareTo(stats().outstanding().total()),
-            "Fifty still owed, not the whole hundred and fifty");
-    }
-
-    @Test
-    @DisplayName("shouldSettleAGuestsOwnDebtsOnly")
-    void shouldSettleAGuestsOwnDebtsOnly() {
-        GuestReservation guest = guestReservationRepository.saveAndFlush(
-            new GuestReservation(slot, "Marek — kolega Ani", 1));
-        save("slot", slot.getId(), "guest", guest.getId(), "150", null);
-        save("slot", slot.getId(), "user", client.getId(), "150", null);
-
-        assertEquals(1, service.settleOutstanding(
-            new SettleOutstandingRequest("guest", guest.getId(), date, new BigDecimal("150"))).settled());
-        assertNull(service.getSection("slot", slot.getId()).lines().stream()
-            .filter(line -> line.payerId().equals(client.getId()))
-            .findFirst().orElseThrow().settledOn());
-    }
-
-    @Test
-    @DisplayName("shouldRejectAnUnknownPayerTypeForABatch")
-    void shouldRejectAnUnknownPayerTypeForABatch() {
-        assertThrows(IllegalArgumentException.class, () -> service.settleOutstanding(
-            new SettleOutstandingRequest("sponsor", client.getId(), date, new BigDecimal("150"))));
-    }
-
-    @Test
-    @DisplayName("shouldPayOffTheOldestDebtFirstWhenTheMoneyDoesNotCoverEverything")
-    void shouldPayOffTheOldestDebtFirstWhenTheMoneyDoesNotCoverEverything() {
-        // ⚠️ The order is not cosmetic. A backlog is paid off the way it accumulated, and the client
-        // asking "so which sessions am I straight for?" has to get the same answer the screen gives.
-        // With the order reversed both totals stay right and every individual row is wrong.
-        TimeSlot later = timeSlotRepository.saveAndFlush(
-            new TimeSlot(date.plusDays(7), LocalTime.of(18, 0), LocalTime.of(20, 0), 4));
-        reservationRepository.saveAndFlush(new Reservation(client, later));
-        save("slot", slot.getId(), "user", client.getId(), "150", null);
-        save("slot", later.getId(), "user", client.getId(), "80", null);
-
-        // Enough for the older one only.
-        int settled = service.settleOutstanding(new SettleOutstandingRequest(
-            "user", client.getId(), date.plusDays(20), new BigDecimal("150"))).settled();
-
-        assertEquals(1, settled);
-        assertNotNull(lineFor(slot, client).settledOn(), "The older session is the one that closes");
-        assertNull(lineFor(later, client).settledOn(), "And the newer one is still open");
-        assertEquals(0, new BigDecimal("80.00").compareTo(stats().outstanding().total()));
-    }
-
-    @Test
-    @DisplayName("shouldSplitAPartPaymentAcrossDebtsInsteadOfPickingOne")
-    void shouldSplitAPartPaymentAcrossDebtsInsteadOfPickingOne() {
-        // 200 against 150 + 80: the first closes and the second takes the remaining 50, leaving 30.
-        // Money that stopped at a row boundary would leave the client credited and still in debt.
-        TimeSlot later = timeSlotRepository.saveAndFlush(
-            new TimeSlot(date.plusDays(7), LocalTime.of(18, 0), LocalTime.of(20, 0), 4));
-        reservationRepository.saveAndFlush(new Reservation(client, later));
-        save("slot", slot.getId(), "user", client.getId(), "150", null);
-        save("slot", later.getId(), "user", client.getId(), "80", null);
-
-        SettleOutstandingResultDto result = service.settleOutstanding(new SettleOutstandingRequest(
-            "user", client.getId(), date.plusDays(20), new BigDecimal("200")));
-
-        assertEquals(2, result.settled(), "The money reached both rows");
-        assertEquals(0, new BigDecimal("-30.00").compareTo(result.balance()));
-        assertEquals(0, new BigDecimal("30.00").compareTo(stats().outstanding().total()),
-            "Thirty of the second session is still owed — not eighty, and not nothing");
-        assertEquals(1, stats().outstanding().count(),
-            "And only the part-paid row is still listed");
-    }
-
-    @Test
-    @DisplayName("shouldRefuseAnOverpaymentTooBigToLandOnOneRow")
-    void shouldRefuseAnOverpaymentTooBigToLandOnOneRow() {
-        // ⚠️ The leftover of a batch lands on ONE row, and the pool it comes from is not just what
-        // was handed over — it also absorbs credit the person had already left on other rows. So the
-        // carrier can breach that row's ceiling while every individual figure was in range. It takes
-        // credit spread across several rows to get there, which is why one overpaid row cannot do
-        // it. Left to the database this came back as a bare 409 naming no field.
-        TimeSlot second = timeSlotRepository.saveAndFlush(
-            new TimeSlot(date.plusDays(7), LocalTime.of(18, 0), LocalTime.of(20, 0), 4));
-        reservationRepository.saveAndFlush(new Reservation(client, second));
-
-        service.save("slot", slot.getId(), "user", client.getId(),
-            new SaveSettlementRequest(BigDecimal.ONE, new BigDecimal("100000"), date));
-        service.save("slot", second.getId(), "user", client.getId(),
-            new SaveSettlementRequest(BigDecimal.ONE, new BigDecimal("100000"), date));
-
-        assertThrows(IllegalArgumentException.class, () -> service.settleOutstanding(
-            new SettleOutstandingRequest("user", client.getId(), date, BigDecimal.ZERO)));
+        assertThrows(IllegalArgumentException.class, () -> charge(slot, client, "-1"));
+        assertThrows(IllegalArgumentException.class, () -> charge(slot, client, "100000.01"));
     }
 
     // ------------------------------------------------------------ database rules
 
     @Test
-    @DisplayName("shouldDropTheSettlementWhenItsSessionOrItsPayerGoesAway")
-    void shouldDropTheSettlementWhenItsSessionOrItsPayerGoesAway() {
-        save("slot", slot.getId(), "user", client.getId(), "150", date);
+    @DisplayName("shouldDropTheChargeButKeepTheMoneyWhenItsSessionGoesAway")
+    void shouldDropTheChargeButKeepTheMoneyWhenItsSessionGoesAway() {
+        charge(slot, client, "150");
+        pay(client, "150", date, slot);
 
         jdbc.update("DELETE FROM reservations WHERE time_slot_id = ?", slot.getId());
         jdbc.update("DELETE FROM time_slots WHERE id = ?", slot.getId());
 
         assertEquals(0, jdbc.queryForObject("SELECT COUNT(*) FROM settlements", Integer.class),
             "The foreign keys are the mechanism: an amount must not outlive the session it prices");
+        assertEquals(1, jdbc.queryForObject(
+                "SELECT COUNT(*) FROM payments WHERE entered_slot_id IS NULL", Integer.class),
+            "⚠️ But the money stays: it was handed over by a person, and the session was only where "
+                + "it was typed in (SET NULL, not CASCADE)");
+    }
+
+    @Test
+    @DisplayName("shouldDropThePaymentsWithTheirPayer")
+    void shouldDropThePaymentsWithTheirPayer() {
+        charge(slot, client, "150");
+        pay(client, "150", date, slot);
+
+        jdbc.update("DELETE FROM reservations WHERE user_id = ?", client.getId());
+        jdbc.update("DELETE FROM users WHERE id = ?", client.getId());
+
+        assertEquals(0, jdbc.queryForObject("SELECT COUNT(*) FROM payments", Integer.class));
     }
 
     // One violation per test on purpose: a failed statement aborts the surrounding transaction, so
@@ -781,11 +583,26 @@ class AdminSettlementIntegrationTest extends BaseIntegrationTest {
     @Test
     @DisplayName("shouldRefuseASecondAmountForTheSamePairOfSessionAndPayer")
     void shouldRefuseASecondAmountForTheSamePairOfSessionAndPayer() {
-        save("slot", slot.getId(), "user", client.getId(), "150", null);
+        charge(slot, client, "150");
 
         assertThrows(DataIntegrityViolationException.class, () -> jdbc.update(
             "INSERT INTO settlements (time_slot_id, user_id, amount) VALUES (?, ?, 200)",
             slot.getId(), client.getId()));
+    }
+
+    @Test
+    @DisplayName("shouldRefuseAZeroPaymentAtTheDatabaseLevelToo")
+    void shouldRefuseAZeroPaymentAtTheDatabaseLevelToo() {
+        assertThrows(DataIntegrityViolationException.class, () -> jdbc.update(
+            "INSERT INTO payments (user_id, amount, received_on) VALUES (?, 0, ?)",
+            client.getId(), date));
+    }
+
+    @Test
+    @DisplayName("shouldRefuseAPaymentWithNoPayer")
+    void shouldRefuseAPaymentWithNoPayer() {
+        assertThrows(DataIntegrityViolationException.class, () -> jdbc.update(
+            "INSERT INTO payments (amount, received_on) VALUES (10, ?)", date));
     }
 
     // ------------------------------------------------------------------ fixtures
@@ -797,10 +614,35 @@ class AdminSettlementIntegrationTest extends BaseIntegrationTest {
         return userRepository.saveAndFlush(user);
     }
 
-    private void save(String target, UUID targetId, String payer, UUID payerId,
-                      String amount, LocalDate settledOn) {
-        service.save(target, targetId, payer, payerId, new SaveSettlementRequest(
-            new BigDecimal(amount), settledOn == null ? null : new BigDecimal(amount), settledOn));
+    private TimeSlot bookedSlot(LocalDate on) {
+        TimeSlot booked = timeSlotRepository.saveAndFlush(
+            new TimeSlot(on, LocalTime.of(18, 0), LocalTime.of(20, 0), 4));
+        reservationRepository.saveAndFlush(new Reservation(client, booked));
+        return booked;
+    }
+
+    private void cancelBooking() {
+        Reservation reservation = reservationRepository.findByUserIdAndTimeSlotId(client.getId(), slot.getId());
+        reservation.cancel();
+        reservationRepository.saveAndFlush(reservation);
+    }
+
+    private void save(String target, UUID targetId, String payer, UUID payerId, String amount) {
+        service.save(target, targetId, payer, payerId, new SaveSettlementRequest(new BigDecimal(amount)));
+    }
+
+    private void charge(TimeSlot on, User payer, String amount) {
+        save("slot", on.getId(), "user", payer.getId(), amount);
+    }
+
+    private PaymentResultDto pay(User payer, String amount, LocalDate on, TimeSlot at) {
+        return service.addPayment(new AddPaymentRequest(
+            "user", payer.getId(), new BigDecimal(amount), on, "slot", at.getId()));
+    }
+
+    private PaymentResultDto payWithoutTarget(User payer, String amount, LocalDate on) {
+        return service.addPayment(new AddPaymentRequest(
+            "user", payer.getId(), new BigDecimal(amount), on, null, null));
     }
 
     private SettlementOverviewDto stats() {
@@ -816,5 +658,13 @@ class AdminSettlementIntegrationTest extends BaseIntegrationTest {
 
     private BigDecimal amountOf(SettlementSectionDto section) {
         return section.lines().getFirst().amount();
+    }
+
+    private static void assertMoney(String expected, BigDecimal actual) {
+        assertMoney(expected, actual, "expected " + expected + " but was " + actual);
+    }
+
+    private static void assertMoney(String expected, BigDecimal actual, String message) {
+        assertEquals(0, new BigDecimal(expected).compareTo(actual), message + " (was " + actual + ")");
     }
 }

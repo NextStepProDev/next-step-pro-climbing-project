@@ -141,19 +141,25 @@ public class AdminSettlementController {
         return ResponseEntity.noContent().build();
     }
 
-    @Operation(summary = "Settle everything one payer owes",
-        description = "Takes what actually changed hands, which cash rarely makes equal to what was "
-            + "owed. The money is applied oldest first, any credit the person already had is pulled "
-            + "in first, and anything over stays as an overpayment on their account. One date for "
-            + "the whole batch, because one payment covered it.")
+    @Operation(summary = "Record money one person handed over",
+        description = "Stored exactly as given and never rewritten. Which charges it covers is "
+            + "derived on every read, oldest debt first; anything over stays as credit and covers "
+            + "the next charge on its own. The target is optional context — where it was typed in.")
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "How many amounts were settled"),
-        @ApiResponse(responseCode = "400", description = "Unknown payer type")
+        @ApiResponse(responseCode = "200", description = "Where the account stands afterwards"),
+        @ApiResponse(responseCode = "400", description = "Amount out of range, unknown payer or target, or a payer with nothing on this ledger")
     })
-    @PostMapping("/settle-outstanding")
-    public ResponseEntity<SettleOutstandingResultDto> settleOutstanding(
-            @Valid @RequestBody SettleOutstandingRequest request) {
-        return ResponseEntity.ok(settlementService.settleOutstanding(request));
+    @PostMapping("/payments")
+    public ResponseEntity<PaymentResultDto> addPayment(@Valid @RequestBody AddPaymentRequest request) {
+        return ResponseEntity.ok(settlementService.addPayment(request));
+    }
+
+    @Operation(summary = "Delete a payment",
+        description = "The only correction: a payment is never edited, it is removed and entered again.")
+    @DeleteMapping("/payments/{paymentId}")
+    public ResponseEntity<Void> deletePayment(@PathVariable UUID paymentId) {
+        settlementService.deletePayment(paymentId);
+        return ResponseEntity.noContent().build();
     }
 
     // ----- standing monthly coaching fees -----
@@ -244,9 +250,10 @@ public class AdminSettlementController {
     @Operation(summary = "Every income line of a year, for the accountant",
         description = "Line items rather than the tab's aggregates, and its own endpoint so the "
             + "common read does not pay for the rare one. Unpaid lines are included with an empty "
-            + "payment date — what is still owed is the other half of the same conversation.")
+            + "payment date — what is still owed is the other half of the same conversation. "
+            + "Payments come as a separate list, exactly as they were handed over.")
     @GetMapping("/export")
-    public ResponseEntity<List<SettlementExportRowDto>> exportRows(
+    public ResponseEntity<SettlementExportDto> exportRows(
             @Parameter(description = "A four-digit year, 'all', or omitted for the newest year holding data")
             @RequestParam(required = false) String year,
             @Parameter(description = "Label for a client's own fee, translated by the caller")
@@ -306,10 +313,10 @@ public class AdminSettlementController {
         return ResponseEntity.ok(settlementService.getSection(targetType, targetId));
     }
 
-    @Operation(summary = "Set what one payer owes, and whether they have paid",
-        description = "Idempotent upsert. Omit settledOn to leave the amount outstanding; send a "
-            + "date to record the payment into that month. An event is priced once however many "
-            + "days it spans, so a slot that belongs to an event is refused — price the event.")
+    @Operation(summary = "Set what one payer owes",
+        description = "Idempotent upsert of the charge alone — money is recorded through POST "
+            + "/payments. An event is priced once however many days it spans, so a slot that "
+            + "belongs to an event is refused — price the event.")
     @ApiResponses({
         @ApiResponse(responseCode = "204", description = "Saved"),
         @ApiResponse(responseCode = "400", description = "Amount out of range, unknown target or payer type, a slot that belongs to an event, or a payer with no booking on this session")

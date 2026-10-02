@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { Building2, Coins, Lock, Trash2 } from 'lucide-react'
+import { format } from 'date-fns'
+import { Building2, Coins, Lock, Trash2, X } from 'lucide-react'
 import { Button } from '../ui/Button'
 import { ConfirmModal } from '../ui/ConfirmModal'
 import { DateInput } from '../ui/DateInput'
@@ -10,14 +11,22 @@ import { useToast } from '../../context/ToastContext'
 import { adminSettlementsApi } from '../../api/client'
 import { getErrorMessage } from '../../utils/errors'
 import { parseAmount } from '../../utils/money'
+import { parseCalendarDate } from '../../utils/calendarDate'
+import { useDateLocale } from '../../utils/dateFnsLocale'
 import { useMoney } from './useMoney'
-import type { PayoutSource, SettlementLine, SettlementTarget } from '../../types'
+import type {
+  LinePayment,
+  PayoutSource,
+  PaymentShare,
+  SettlementLine,
+  SettlementTarget,
+} from '../../types'
 
 interface SettlementSectionProps {
   target: SettlementTarget
   targetId: string
   /**
-   * Reports whether any amount has been typed and not yet saved, so the surrounding modal can ask
+   * Reports whether anything has been typed and not yet saved, so the surrounding modal can ask
    * before the backdrop, the X or Escape throws it away. Called during render, never from an
    * effect — the guard is read by an event handler, and a report that costs a render arrives one
    * tick too late (see {@link useChildDirty}).
@@ -25,20 +34,25 @@ interface SettlementSectionProps {
   onDirtyChange?: (dirty: boolean) => void
 }
 
-/** Local edits, keyed by payer. The amount stays a string until save — see `parseAmount`. */
+/**
+ * Local edits, keyed by payer. Amounts stay strings until save — see `parseAmount`.
+ *
+ * ⚠️ Two different things, and they are never merged again: `amount` is the CHARGE (what the session
+ * costs this person) and `payment` is MONEY HANDED OVER NOW. Until V100 the second was a "received"
+ * figure stored on the charge's own row, and paying off a backlog had to rewrite it — a 200 handed
+ * over came back as 140, and "correcting" it counted the same notes twice. A payment is now its own
+ * record, added and never edited.
+ */
 interface Draft {
-  /** What it costs. */
   amount: string
-  /** What actually arrived. Kept apart from the charge, because cash rarely makes them equal. */
-  received: string
-  settled: boolean
-  settledOn: string
+  payment: string
+  paidOn: string
 }
 
 const payerKey = (line: SettlementLine) => `${line.payerType}:${line.payerId}`
 
 /**
- * What each participant owes for one session, and whether they have paid. Admin-only.
+ * What each participant owes for one session, and the money they hand over. Admin-only.
  *
  * ONE component for both call sites (slot and event), the same reason `AdminPrivateNote` is one:
  * a change to how money behaves is one edit, not two. It owns its own query and mutations, so the
@@ -49,6 +63,11 @@ const payerKey = (line: SettlementLine) => `${line.payerType}:${line.payerId}`
  * and cached under calendarMonth/Week/Day. Callers must still gate on the admin role — this
  * component would happily render for anybody, and the 403 would arrive too late to be good UX.
  *
+ * Nothing here decides which session a payment pays for. The server does that on every read,
+ * oldest debt first, and sends back the split — so the screen only ever SHOWS where money went and
+ * never moves it. That is what replaced the three "settle from credit / pay off the debt" buttons:
+ * each of them existed to move money between rows by hand.
+ *
  * Saving is batched. A per-row Save button would be the obvious build and is wrong for the shape
  * of the work: pricing a course means typing the same number three times, so one button that
  * writes every changed row is the difference between one click and six.
@@ -56,12 +75,13 @@ const payerKey = (line: SettlementLine) => `${line.payerType}:${line.payerId}`
 export function SettlementSection({ target, targetId, onDirtyChange }: SettlementSectionProps) {
   const { t } = useTranslation('admin')
   const money = useMoney()
+  const locale = useDateLocale()
   const queryClient = useQueryClient()
   /**
-   * Saving the amounts is the last thing anybody does on a session, so the modal gets out of the
-   * way — and when the admin arrived from the Settlements tab, the host modal's close is also what
-   * navigates back to the list they came from (`deepLinkReturnTo` in `CalendarPage`), which is why
-   * this goes through the modal rather than closing anything itself.
+   * Saving is the last thing anybody does on a session, so the modal gets out of the way — and
+   * when the admin arrived from the Settlements tab, the host modal's close is also what navigates
+   * back to the list they came from (`deepLinkReturnTo` in `CalendarPage`), which is why this goes
+   * through the modal rather than closing anything itself.
    *
    * `null` outside a `Modal`, and then nothing closes: the section is written to work anywhere,
    * and a component that assumed its own host would be a lie the day somebody embeds it in a page.
@@ -72,18 +92,10 @@ export function SettlementSection({ target, targetId, onDirtyChange }: Settlemen
   const [drafts, setDrafts] = useState<Record<string, Draft>>({})
   const [bulkAmount, setBulkAmount] = useState('')
   const [invalidKeys, setInvalidKeys] = useState<string[]>([])
+  // Apart from the charge's, so the field that is actually wrong is the one that turns red.
+  const [invalidPaymentKeys, setInvalidPaymentKeys] = useState<string[]>([])
   const [picking, setPicking] = useState(false)
-  /**
-   * What came of the last "pay from credit", so the row can report it.
-   *
-   * ⚠️ `settled` is carried, not just the balance: the endpoint reaches nothing when the credit has
-   * been spent from another tab since this section loaded, and a row that announced "credit spent"
-   * on a request that moved no money would be a lie about money — the one kind this feature cannot
-   * afford. The stale figure is on screen for as long as the query cache holds it, so the race is
-   * ordinary rather than exotic.
-   */
-  const [creditResult, setCreditResult] =
-    useState<{ key: string; settled: number; balance: number } | null>(null)
+  const [deleting, setDeleting] = useState<{ line: SettlementLine; payment: LinePayment } | null>(null)
 
   const queryKey = ['admin', 'settlements', target, targetId]
   const { data, isLoading } = useQuery({
@@ -114,11 +126,10 @@ export function SettlementSection({ target, targetId, onDirtyChange }: Settlemen
       //
       // ⚠️ Only when a payer was named. Clearing one puts the session back into per-participant
       // pricing, which is done HERE — closing then would take away the fields the admin just
-      // asked for. The credit button still keeps the modal open too: its answer (the money may
-      // have gone to an older session) has to be read on this screen.
+      // asked for.
       if (choice.sourceId || choice.subscriberId) {
         showToast(t('settlements.section.bulkSaved', { name: choice.name ?? '' }))
-        // ⚠️ Pushed before closing, not left to the next render. This section's close is now the
+        // ⚠️ Pushed before closing, not left to the next render. This section's close is the
         // modal's GUARDED close, and the guard reads the last value reported — which is still the
         // one from before this write. Without this, finishing the work would ask whether to
         // discard it.
@@ -132,18 +143,17 @@ export function SettlementSection({ target, targetId, onDirtyChange }: Settlemen
   const lines = useMemo(() => data?.lines ?? [], [data])
 
   /**
-   * The saved state of one row expressed as a draft, so that "changed" is one comparison instead of
-   * three nullable ones. The payment date falls back to the SESSION's date, not today: money then
-   * lands in the month the session happened rather than the month somebody got round to ticking it.
+   * The saved state of one row expressed as a draft, so "changed" is one comparison. The payment
+   * date defaults to the SESSION's date, not today: money then lands in the month the session
+   * happened rather than the month somebody got round to typing it in.
    */
   const saved = useMemo(() => {
     const map: Record<string, Draft> = {}
     for (const line of lines) {
       map[payerKey(line)] = {
         amount: line.amount === null ? '' : String(line.amount),
-        received: line.paidAmount === 0 ? '' : String(line.paidAmount),
-        settled: line.settledOn !== null,
-        settledOn: line.settledOn ?? targetDate,
+        payment: '',
+        paidOn: targetDate,
       }
     }
     return map
@@ -154,136 +164,54 @@ export function SettlementSection({ target, targetId, onDirtyChange }: Settlemen
   const patch = (line: SettlementLine, change: Partial<Draft>) => {
     const key = payerKey(line)
     setInvalidKeys((keys) => keys.filter((k) => k !== key))
-    // The report of a spent credit is about the figure that was there when it was spent; leaving it
-    // above a row somebody is now retyping would make it a claim about the new one.
-    setCreditResult((result) => (result?.key === key ? null : result))
+    setInvalidPaymentKeys((keys) => keys.filter((k) => k !== key))
     setDrafts((prev) => ({ ...prev, [key]: { ...(prev[key] ?? saved[key]), ...change } }))
   }
 
   const isRowDirty = (line: SettlementLine) => {
-    const key = payerKey(line)
-    const draft = drafts[key]
+    const draft = drafts[payerKey(line)]
     if (!draft) return false
-    const base = saved[key]
-    if (draft.amount.trim() !== base.amount) return true
-    if (draft.received.trim() !== base.received) return true
-    if (draft.settled !== base.settled) return true
-    // The date only counts while the row claims to be settled; an untouched picker behind an
-    // unchecked box is not a change anybody made.
-    return draft.settled && draft.settledOn !== base.settledOn
+    // The date alone is not a change: an untouched picker beside an empty payment field is not
+    // something anybody did.
+    return draft.amount.trim() !== saved[payerKey(line)].amount || draft.payment.trim() !== ''
   }
 
   const dirtyLines = lines.filter(isRowDirty)
 
   /**
-   * Rows where "Save and pay off the debt" applies: more is being recorded as received than this
-   * session costs, and the person still owes for another one.
+   * Writes every changed row: charges first, then the money. The order is not load-bearing for the
+   * figures (the split is derived on read), but it is for the guard — a payment typed beside a
+   * first-ever price would otherwise be checked against a ledger that has no charge for it yet.
    *
-   * The reported case: ten owed from earlier, a 360 session paid with 400. The plain save records
-   * exactly that on this row and nothing else, so the old debt stays open beside a credit that
-   * could pay it — the account nets correctly while the screens show a debt and a credit instead
-   * of the one figure the owner expects. Offered, not automatic: an overpayment can also be a typo,
-   * or a prepayment the client meant for next time, and money moving as a side effect of Save is
-   * the one thing this section must not do.
-   *
-   * Unlike the credit path this one is safe on a row that already holds money — it saves the row
-   * as typed and only then runs the pool, so nothing written is ever overwritten with less.
+   * Returns one sentence per person who handed something over, for the toast.
    */
-  const debtPayingLines = dirtyLines.filter((line) => {
-    if (line.otherDebt <= 0) return false
-    const draft = draftFor(line)
-    if (!draft.settled) return false
-    const amount = parseAmount(draft.amount.trim())
-    const received = parseAmount(draft.received.trim())
-    return amount !== null && received !== null && received > amount
-  })
-
-  /**
-   * Rows where "Save and settle from credit" can do its job in one click: a person holding a credit
-   * is being charged, and nothing has been received on this row yet.
-   *
-   * ⚠️ `paidAmount === 0` is load-bearing. That path writes the charge FIRST with nothing received
-   * and only then pays it from the pool — so on a row already holding a payment, the first write
-   * would erase money that had arrived. Such a row keeps the ordinary save and the per-row button.
-   */
-  const spendableLines = dirtyLines.filter((line) => {
-    // One path per row. The debt path already pulls every credit into the pool, so running the
-    // credit path as well would only be a second, differently-shaped route to the same figure.
-    if (debtPayingLines.includes(line)) return false
-    const amount = parseAmount(draftFor(line).amount.trim())
-    return line.credit > 0 && line.paidAmount === 0 && amount !== null && amount > 0
-  })
-
-  /** The combined button names what it will do; `null` hides it. */
-  const settleLabel =
-    debtPayingLines.length > 0 && spendableLines.length > 0
-      ? 'settlements.actions.saveAndSettle'
-      : debtPayingLines.length > 0
-        ? 'settlements.actions.saveAndPayDebt'
-        : spendableLines.length > 0
-          ? 'settlements.actions.saveAndSpendCredit'
-          : null
-
-  /** What the pool did, stated as where the account now stands — see `spendCredit`. */
-  const describeResult = (balance: number, owingKey: string, squareKey: string) =>
-    balance < 0
-      ? t(owingKey, { amount: money(-balance) })
-      : t(squareKey, { balance: money(balance) })
-
-  /**
-   * Writes every changed row. Rows in `spendFor` are written as the charge alone and then settled
-   * through the same pool endpoint as the per-row "settle from credit" button, with whatever the
-   * admin typed as received: 10 zł handed over plus a 90 zł credit pays a 100 zł session, where the
-   * ordinary save would record 10 of 100 and leave the 90 parked on an older session — the screen
-   * would then say "owes 90" and "holds 90" about the same person at once.
-   *
-   * Rows in `payDebtFor` are saved exactly as typed and then run through the same pool with nothing
-   * further received, which spends the overpayment (and any other credit) on the oldest debt.
-   *
-   * Returns one sentence per settled person, for the toast.
-   */
-  const writeDrafts = async (spendFor: Set<string>, payDebtFor: Set<string>): Promise<string[]> => {
+  const writeDrafts = async (): Promise<string[]> => {
     const invalid: string[] = []
-    // ⚠️ Ticking "settled" and typing a zero cannot be saved, and used to be swallowed. The server
-    // drops the payment date whenever nothing arrived — a date with no money behind it would read
-    // as paid on every screen while contributing nothing to revenue — so the row came back
-    // unsettled with the box unticked and nothing said why. The case behind it is real and has
-    // its own answer: the client owes nothing because he is spending an overpayment, and that is
-    // the "spend credit" button, which actually moves the money. On the spending path a zero is
-    // exactly that case, so it is allowed there.
-    const zeroed = dirtyLines.filter((line) => {
-      if (spendFor.has(payerKey(line))) return false
+    const payments: { line: SettlementLine; amount: number; paidOn: string }[] = []
+    for (const line of dirtyLines) {
       const draft = draftFor(line)
-      const amount = parseAmount(draft.amount.trim())
-      // A zero-amount row is free of charge, where a zero received is the honest figure.
-      return draft.settled && amount !== null && amount > 0 && parseAmount(draft.received) === 0
-    })
-    if (zeroed.length > 0) {
-      setInvalidKeys(zeroed.map(payerKey))
-      throw new Error(t('settlements.errors.zeroReceived'))
+      const raw = draft.payment.trim()
+      if (raw === '') continue
+      const amount = parseAmount(raw)
+      // Zero is not a payment: "free" is a charge of 0, and a zero receipt would be a record of
+      // nothing that still shows up in the list.
+      if (amount === null || amount <= 0) invalid.push(payerKey(line))
+      else payments.push({ line, amount, paidOn: draft.paidOn !== '' ? draft.paidOn : targetDate })
     }
-    // ⚠️ On the spending path an empty "received" under a ticked box is refused, not read as "paid
-    // in full" the way the ordinary save reads it. With a credit in play "in full" is ambiguous —
-    // the whole charge again on top of the credit hands the person a fresh overpayment of exactly
-    // the credit — and money is the one place this section must not guess.
-    const unstated = dirtyLines.filter((line) => {
-      const draft = draftFor(line)
-      return spendFor.has(payerKey(line)) && draft.settled && draft.received.trim() === ''
-    })
-    if (unstated.length > 0) {
-      setInvalidKeys(unstated.map(payerKey))
-      throw new Error(t('settlements.errors.receivedRequired'))
+    if (invalid.length > 0) {
+      setInvalidPaymentKeys(invalid)
+      throw new Error(t('settlements.errors.invalidPayment'))
     }
+
     for (const line of dirtyLines) {
       const draft = draftFor(line)
       const key = payerKey(line)
       const raw = draft.amount.trim()
+      if (raw === saved[key].amount) continue
       if (raw === '') {
-        // Clearing the field removes the row: back to "not priced", which is a different state
-        // from priced at zero.
-        if (saved[key].amount !== '') {
-          await adminSettlementsApi.remove(target, targetId, line.payerType, line.payerId)
-        }
+        // Clearing the field removes the charge: back to "not priced", a different state from
+        // priced at zero. Any money it was covering is NOT lost — it becomes credit.
+        await adminSettlementsApi.remove(target, targetId, line.payerType, line.payerId)
         continue
       }
       const amount = parseAmount(raw)
@@ -291,22 +219,7 @@ export function SettlementSection({ target, targetId, onDirtyChange }: Settlemen
         invalid.push(key)
         continue
       }
-      // The charge alone when the pool pays it below; the payment would otherwise be counted twice.
-      const deferred = spendFor.has(key)
-      // Ticking "settled" without touching the received field means the charge arrived in full,
-      // which is the ordinary case and must stay a single click.
-      const received = draft.settled && !deferred
-        ? (parseAmount(draft.received) ?? amount)
-        : null
-      await adminSettlementsApi.save(
-        target,
-        targetId,
-        line.payerType,
-        line.payerId,
-        amount,
-        received,
-        draft.settled && !deferred ? draft.settledOn : null,
-      )
+      await adminSettlementsApi.save(target, targetId, line.payerType, line.payerId, amount)
     }
     if (invalid.length > 0) {
       setInvalidKeys(invalid)
@@ -314,82 +227,44 @@ export function SettlementSection({ target, targetId, onDirtyChange }: Settlemen
     }
 
     const reports: string[] = []
-    for (const line of dirtyLines) {
-      const key = payerKey(line)
-      if (!spendFor.has(key)) continue
-      const draft = draftFor(line)
-      const result = await adminSettlementsApi.settleOutstanding(
-        line.payerType,
-        line.payerId,
-        // The date the admin picked when money changed hands; otherwise the session's own day,
-        // the same default the per-row button uses.
-        draft.settled && draft.settledOn !== '' ? draft.settledOn : targetDate,
-        draft.settled ? (parseAmount(draft.received) ?? 0) : 0,
+    for (const { line, amount, paidOn } of payments) {
+      const result = await adminSettlementsApi.addPayment(
+        line.payerType, line.payerId, amount, paidOn, { type: target, id: targetId },
       )
-      // ⚠️ Dropped from the drafts the moment its money moved. Should a LATER person's call fail,
-      // retrying would otherwise write this row again as "charge, nothing received" — wiping the
-      // payment the pool just recorded on it.
+      // ⚠️ Dropped from the drafts the moment it is recorded. Should a LATER person's call fail,
+      // retrying would otherwise enter this payment a second time.
       setDrafts((prev) => {
         const next = { ...prev }
-        delete next[key]
+        delete next[payerKey(line)]
         return next
       })
-      reports.push(`${line.name}: ${describeResult(
-        result.balance, 'settlements.line.creditSpentOwing', 'settlements.line.creditSpent',
-      )}`)
-    }
-
-    for (const line of dirtyLines) {
-      const key = payerKey(line)
-      if (!payDebtFor.has(key)) continue
-      const draft = draftFor(line)
-      const result = await adminSettlementsApi.settleOutstanding(
-        line.payerType,
-        line.payerId,
-        // The day the money was handed over — that is when the old debt stopped being owed.
-        draft.settledOn !== '' ? draft.settledOn : targetDate,
-        // Nothing on top: the overpayment is already on this row, and the pool collects it from
-        // there. Passing the received figure again would count the same banknotes twice.
-        0,
+      reports.push(
+        result.debt > 0
+          ? t('settlements.actions.resultDebt', { name: line.name, amount: money(result.debt) })
+          : result.credit > 0
+            ? t('settlements.actions.resultCredit', { name: line.name, amount: money(result.credit) })
+            : t('settlements.actions.resultSquare', { name: line.name }),
       )
-      // Same reason as above: once the pool has run, a retry must not rewrite this row.
-      setDrafts((prev) => {
-        const next = { ...prev }
-        delete next[key]
-        return next
-      })
-      reports.push(`${line.name}: ${describeResult(
-        result.balance, 'settlements.line.debtPaidOwing', 'settlements.line.debtPaid',
-      )}`)
     }
     return reports
   }
 
   const saveMutation = useMutation({
-    mutationFn: (settle: boolean) =>
-      writeDrafts(
-        new Set(settle ? spendableLines.map(payerKey) : []),
-        new Set(settle ? debtPayingLines.map(payerKey) : []),
-      ),
-    // Money may have moved before a failure (the charge written, an earlier person settled), so the
-    // figures on screen are refreshed either way.
+    mutationFn: writeDrafts,
+    // Money may have been recorded before a failure, so the figures on screen are refreshed either way.
     onError: () => queryClient.invalidateQueries({ queryKey: ['admin', 'settlements'] }),
     onSuccess: (reports) => {
       setDrafts({})
       setInvalidKeys([])
+      setInvalidPaymentKeys([])
       // The whole ['admin','settlements'] prefix, not just this session's key: the Settlements tab
       // lives under it too, so a figure written here shows up there without a manual refresh.
       // ⚠️ This has to happen even though the modal is about to close — the tab is unmounted at
-      // this moment, so the invalidation is what marks its cached page stale and makes React Query
-      // refetch it when it mounts again a tick later.
+      // this moment, so the invalidation is what marks its cached page stale.
       queryClient.invalidateQueries({ queryKey: ['admin', 'settlements'] })
-      // What the credit did travels in the toast, because the modal is about to close — and it is
-      // the balance, not "paid": the pool pays the OLDEST debt first, which need not be this one.
+      // Where each account now stands travels in the toast, because the modal is about to close —
+      // and it is the account, not "paid": money covers the OLDEST debt first.
       showToast([t('settlements.actions.saved'), ...reports].join(' '))
-      // Naming a bulk payer leaves the same way, for the same reason — both end the work on this
-      // session. What still stays open is the credit button, which reports a result the admin has
-      // to read here (the money may have gone to an older session), and clearing a payer, which
-      // hands the session back to the fields in this very section.
       // ⚠️ The report is pushed first: `setDrafts({})` above has not rendered yet, so the guard
       // behind that close would still be holding `true` and would ask whether to discard the very
       // thing just written.
@@ -399,58 +274,17 @@ export function SettlementSection({ target, targetId, onDirtyChange }: Settlemen
   })
 
   /**
-   * Spends what this person already left with you on what they still owe.
-   *
-   * The same endpoint the Settlements tab uses, called with nothing received: the server pulls the
-   * credit back into a pool, resets the rows that were holding it to exact, and pays off the open
-   * debts oldest first. Reusing it rather than adding a "pay this one row from credit" route is
-   * deliberate — a second route would be a second copy of that pool loop, and it would have to
-   * disagree with the oldest-first rule to do anything different.
-   *
-   * ⚠️ So the money may well land on an OLDER session than the one on screen, which is correct and
-   * is why the button reports the resulting balance instead of claiming this row is now paid.
+   * The only correction a payment has. Stays in the modal: the admin is usually about to type the
+   * right figure, and the rows have to show the debt the removal put back.
    */
-  const spendCredit = useMutation({
-    mutationFn: async (line: SettlementLine) => {
-      const result = await adminSettlementsApi.settleOutstanding(
-        line.payerType,
-        line.payerId,
-        // The session's own date, matching what this row suggests as a payment date. The tab
-        // defaults to today instead, because there one transfer covers a month of sessions.
-        targetDate,
-        0,
-      )
-      return { key: payerKey(line), settled: result.settled, balance: result.balance }
-    },
-    onSuccess: (result) => {
-      setCreditResult(result)
+  const deletePayment = useMutation({
+    mutationFn: (paymentId: string) => adminSettlementsApi.deletePayment(paymentId),
+    onSuccess: () => {
+      setDeleting(null)
       queryClient.invalidateQueries({ queryKey: ['admin', 'settlements'] })
-      // ⚠️ This button writes on its own, and the only visible sign used to be a greyed-out Save —
-      // which the owner read as "it won't let me save", not as "already saved". Nothing moved, so
-      // nothing is confirmed; the row's own line reports that case.
-      if (result.settled > 0) showToast(t('settlements.actions.saved'))
+      showToast(t('settlements.deletePayment.done'))
     },
   })
-
-  const clearRow = (line: SettlementLine) => patch(line, { amount: '', received: '', settled: false })
-
-  /**
-   * Clearing the amount deletes the row on save, and a row can be holding real money: a payment, or
-   * the credit somebody's overpayment left behind. That money then leaves revenue and leaves the
-   * client's balance with nothing anywhere recording that it ever arrived — the only irreversible
-   * thing this section can do, and it used to take one click and no question.
-   *
-   * <p>Asked only when there is money to lose. A confirmation on an empty row would be noise on the
-   * ordinary gesture of correcting a price that was typed by mistake.
-   */
-  const [clearingMoney, setClearingMoney] = useState<SettlementLine | null>(null)
-  const requestClear = (line: SettlementLine) => {
-    if (line.paidAmount > 0) {
-      setClearingMoney(line)
-      return
-    }
-    clearRow(line)
-  }
 
   /**
    * Writes the same amount into EVERY row, not only the blank ones — which is what the button says
@@ -475,15 +309,31 @@ export function SettlementSection({ target, targetId, onDirtyChange }: Settlemen
     let total = 0
     let paid = 0
     for (const line of lines) {
-      const draft = drafts[payerKey(line)] ?? saved[payerKey(line)]
-      const amount = parseAmount(draft.amount)
+      const amount = parseAmount((drafts[payerKey(line)] ?? saved[payerKey(line)]).amount)
       if (amount === null) continue
       total += amount
-      // What arrived, not what was charged — the two are the whole point of the second field.
-      if (draft.settled) paid += parseAmount(draft.received) ?? amount
+      // What the server says is covered, from the saved figures — the split is never guessed here.
+      paid += line.covered
     }
     return { total, paid }
   }, [lines, drafts, saved])
+
+  const day = (date: string) => format(parseCalendarDate(date), 'dd.MM.yyyy', { locale })
+
+  const describeShare = (share: PaymentShare) => {
+    if (share.thisEntry) return t('settlements.payment.shareThis', { amount: money(share.amount) })
+    if (share.monthlyFee) {
+      return t('settlements.payment.shareFee', {
+        amount: money(share.amount),
+        month: format(parseCalendarDate(share.targetDate), 'LLLL yyyy', { locale }),
+      })
+    }
+    return t('settlements.payment.shareOther', {
+      amount: money(share.amount),
+      title: share.targetTitle ?? t('settlements.payment.untitled'),
+      date: day(share.targetDate),
+    })
+  }
 
   // Reported during render on purpose — see the prop's doc and useChildDirty. Above the early
   // return, so a refetch that flips `isLoading` cannot leave the host holding a stale `true`.
@@ -604,17 +454,17 @@ export function SettlementSection({ target, targetId, onDirtyChange }: Settlemen
           )}
 
           {/* One person is one block, and the rule separating them is doing real work: a row can
-              grow to four lines (a debt, an offer to spend a credit, what spending it did) while
-              the row under it is one line, and without a rule it stops being obvious where one
-              person's figures end. */}
+              grow by a status line and a list of payments while the row under it is one line, and
+              without a rule it stops being obvious where one person's figures end. */}
           <ul className="divide-y divide-surface-800">
             {lines.map((line) => {
               const key = payerKey(line)
               const draft = draftFor(line)
+              const otherDebt = Math.max(line.accountDebt - line.remaining, 0)
               return (
                 /* `items-start`, not `items-center`: the name block is the tall one, and centring
-                   the fields against it floated the amount into the middle of somebody's balance
-                   notes instead of level with their name. */
+                   the fields against it floated the amount into the middle of somebody's notes
+                   instead of level with their name. */
                 <li key={key} className="flex flex-wrap items-start gap-2 py-2 first:pt-0 last:pb-0">
                   <span className="min-w-[9rem] flex-1 text-sm text-surface-200">
                     {line.name}
@@ -635,123 +485,60 @@ export function SettlementSection({ target, targetId, onDirtyChange }: Settlemen
                         {t('settlements.line.orphaned')}
                       </span>
                     )}
-                    {/* The standing balance, in front of you at the moment you type the next
-                        amount — which is the only moment it is any use.
+                    {/* Where this charge stands, as the SERVER worked it out from all of this
+                        person's payments. Nothing on this screen can set it.
 
-                        ⚠️ The two states are NOT a plus and a minus on one scale, and colouring
-                        them as if they were was wrong. A debt is a task: chase it, so it takes
-                        amber, which already means "outstanding" in seven other places here. A
-                        credit is only something to remember while pricing, so it stays neutral —
-                        green in this app means "done", which a credit is not, and red means "broken
-                        or destructive", which a debt is not either. The word carries the meaning;
-                        the colour only says whether it is work. */}
-                    {line.balance !== 0 && (
-                      <span
-                        className={`block text-xs ${
-                          line.balance > 0 ? 'text-surface-300' : 'text-amber-500'
-                        }`}
-                      >
-                        {t(
-                          line.balance > 0
-                            ? 'settlements.line.credit'
-                            : 'settlements.line.debt',
-                          { amount: money(Math.abs(line.balance)) },
-                        )}
-                      </span>
-                    )}
-
-                    {/* Spending that credit, offered where the pricing happens. Driven by `credit`
-                        and NOT by `balance`: once this session is priced the two debts cancel and
-                        the net figure reads zero, which is the exact moment the offer is wanted.
-                        Only against a SAVED row with something still owed: the endpoint works on
-                        rows already in the database, so a figure still sitting in the draft has
-                        nothing for the credit to land on — hence the hint rather than a button that
-                        would silently pay off some other session instead. */}
-                    {/* A row being priced right now points at the combined button below — this is
-                        the case that used to have nothing at all: an unsaved row fails the
-                        condition under it, so pricing somebody's first session over a credit said
-                        nothing about the credit until the modal was saved, closed and reopened. */}
-                    {debtPayingLines.includes(line) ? (
-                      <span className="block text-[11px] text-surface-400">
-                        {t('settlements.line.payDebtOnSave', {
-                          debt: money(line.otherDebt),
-                        })}
-                      </span>
-                    ) : spendableLines.includes(line) ? (
-                      <span className="block text-[11px] text-surface-400">
-                        {t('settlements.line.spendOnSave')}
-                      </span>
-                    ) : line.credit > 0 && line.amount !== null && line.paidAmount < line.amount && (
-                      isRowDirty(line) ? (
-                        <span className="block text-[11px] text-surface-500">
-                          {t('settlements.line.saveFirst')}
+                        ⚠️ Colours: amber is work (chase it), green is done, and a credit stays
+                        neutral — it is a memo for pricing, not a task and not an achievement. The
+                        word carries the meaning; the colour only says whether it is work. */}
+                    {line.amount !== null && (
+                      line.remaining === 0 ? (
+                        <span className="block text-xs text-emerald-400">
+                          {line.amount === 0
+                            ? t('settlements.line.statusFree')
+                            : line.paidOn
+                              ? t('settlements.line.statusPaid', { date: day(line.paidOn) })
+                              : t('settlements.line.statusPaidNoDate')}
                         </span>
                       ) : (
-                        <button
-                          type="button"
-                          onClick={() => spendCredit.mutate(line)}
-                          disabled={spendCredit.isPending}
-                          // Same reasoning as the "settled" checkbox below: the visible text is the
-                          // same sentence on every row, so without this a screen reader announces
-                          // two identical "pay from credit" buttons and the person they belong to
-                          // is only inferable from reading order.
-                          aria-label={t('settlements.line.spendCreditLabel', { name: line.name })}
-                          className="mt-0.5 block text-left text-[11px] text-primary-400 hover:text-primary-300 disabled:text-surface-500 transition-colors"
-                        >
-                          {t('settlements.line.spendCredit', {
-                            amount: money(Math.min(line.credit, line.amount - line.paidAmount)),
-                          })}
-                        </button>
+                        <span className="block text-xs text-amber-500">
+                          {line.covered > 0
+                            ? t('settlements.line.statusShort', { amount: money(line.remaining) })
+                            : t('settlements.line.statusUnpaid')}
+                        </span>
                       )
                     )}
-
-                    {/* What actually happened, because it need not be this row: the credit pays the
-                        OLDEST debt first, so the honest report is where the account now stands.
-
-                        Three outcomes, three sentences. A leftover debt is named as a debt rather
-                        than shown as a negative balance — "saldo: -150,00 zł" is arithmetic, and the
-                        line already has a word for that state two rows up. */}
-                    {creditResult?.key === key && (
-                      <span className="block text-[11px] text-surface-400">
-                        {creditResult.settled === 0
-                          ? t('settlements.line.creditGone')
-                          : `${describeResult(
-                              creditResult.balance,
-                              'settlements.line.creditSpentOwing',
-                              'settlements.line.creditSpent',
-                            )} ${t('settlements.line.alreadySaved')}`}
+                    {/* The rest of the account, because a payment typed here pays the OLDEST debt
+                        first — the admin has to know that before the toast tells him. */}
+                    {otherDebt > 0 && (
+                      <span className="block text-[11px] text-amber-500">
+                        {t('settlements.line.otherDebt', { amount: money(otherDebt) })}
+                      </span>
+                    )}
+                    {line.accountCredit > 0 && (
+                      <span className="block text-[11px] text-surface-300">
+                        {t('settlements.line.accountCredit', { amount: money(line.accountCredit) })}
                       </span>
                     )}
                   </span>
 
                   {/* The fields, as a table that is the same table on every row.
 
-                      They used to be siblings of the name in one wrapping flex line, and there is
-                      not enough width for them: measured inside this modal (452px of content) a
-                      settled row needs 482px, so it wrapped — and it wrapped at a different point
-                      on every row, because the number of controls differs per row (a settled row
-                      carries two more than an unsettled one, a never-priced row carries no bin).
-                      With four people booked, the amount column sat at three different x positions
-                      and the payment date dropped onto its own line UNDER somebody's name, where it
-                      reads as belonging to the person below.
+                      They used to be siblings of the name in one wrapping flex line, and there was
+                      not enough width for them: inside this modal (452px of content) the controls
+                      wrapped at a different point on every row, so the amount column sat at three
+                      different x positions with four people booked.
 
                       So the controls get their own box with fixed tracks, which makes their total
                       width a constant and therefore the name column a constant too. Every cell is
-                      placed explicitly, which is what lets the conditional ones be absent rather
-                      than padded with empty boxes: with auto-placement, a row without a bin would
-                      slide its "received" field up into the bin's column.
+                      placed explicitly, which is what lets the conditional bin be absent rather
+                      than padded: with auto-placement a row without it would shift the next cell
+                      up into its column.
 
-                      Two rows rather than one, because 482 > 452 however the columns are shared
-                      out. Amounts sit above each other in one column, and the payment date lands
-                      under the tick that reveals it. Below `sm` this is the old wrapping flex —
-                      there the modal is narrower than these tracks.
-
-                      ⚠️ The date spans the last two columns rather than sitting in one of its own,
-                      and that is what pays for the name. A native date field will not render much
-                      under 140px, so a column wide enough to hold it alone is 35px wider than the
-                      tick above it needs — width taken straight off the only column with words in
-                      it. Spanning puts the bin's column to work and buys the name back 32px, which
-                      is the difference between a full surname on one line and a hyphen break. */}
+                      Row 1 is the charge (and its bin), row 2 is money handed over now. The date
+                      spans the last two columns: a native date field will not render much under
+                      140px, and spanning puts the bin's column to work instead of widening the
+                      grid at the name's expense. Below `sm` this is a plain wrapping flex. */}
                   <div className="flex flex-wrap items-start gap-2 sm:grid sm:grid-cols-[6rem_7rem_1.75rem] sm:gap-x-2 sm:gap-y-1">
                     <span className="flex flex-col sm:col-start-1 sm:row-start-1">
                       <input
@@ -784,27 +571,10 @@ export function SettlementSection({ target, targetId, onDirtyChange }: Settlemen
                       )}
                     </span>
 
-                    {/* `min-h` so the word sits level with the middle of the input beside it rather
-                        than at the top of the row, which is where `items-start` would otherwise put
-                        a single line of 12px text. */}
-                    <label className="flex items-center gap-1.5 text-xs text-surface-300 sm:col-start-2 sm:row-start-1 sm:min-h-[1.875rem]">
-                      <input
-                        type="checkbox"
-                        checked={draft.settled}
-                        onChange={(e) => patch(line, { settled: e.target.checked })}
-                        // The visible label is the same word on every row, so without this a screen
-                        // reader announces four identical "settled" checkboxes and the person they
-                        // belong to is only inferable from reading order.
-                        aria-label={t('settlements.line.settledLabel', { name: line.name })}
-                        className="accent-emerald-500"
-                      />
-                      {t('settlements.line.settled')}
-                    </label>
-
                     {saved[key].amount !== '' && (
                       <button
                         type="button"
-                        onClick={() => requestClear(line)}
+                        onClick={() => patch(line, { amount: '' })}
                         aria-label={t('settlements.line.clear', { name: line.name })}
                         className="p-1.5 rounded text-rose-400/70 hover:text-rose-400 transition-colors sm:col-start-3 sm:row-start-1 sm:flex sm:items-center sm:justify-center sm:h-[1.875rem] sm:w-7 sm:p-0"
                       >
@@ -812,42 +582,89 @@ export function SettlementSection({ target, targetId, onDirtyChange }: Settlemen
                       </button>
                     )}
 
-                    {/* Second row of the same table: what arrived, and when. Ordered after the tick
-                        in the DOM as well as on screen, so tabbing follows what the eye does — the
-                        two only agree because these cells are placed where the flow would put them
-                        anyway. */}
-                    {draft.settled && (
-                      <>
-                        <span className="flex flex-col sm:col-start-1 sm:row-start-2">
-                          <input
-                            inputMode="decimal"
-                            value={draft.received}
-                            onChange={(e) => patch(line, { received: e.target.value })}
-                            placeholder={draft.amount || t('settlements.line.receivedPlaceholder')}
-                            aria-label={t('settlements.line.receivedLabel', { name: line.name })}
-                            className="w-24 bg-surface-800 border border-surface-600 rounded px-2 py-1 text-sm text-surface-100 focus:outline-none focus:border-primary-500"
-                          />
-                          <span className="mt-0.5 text-[11px] text-surface-500">
-                            {t('settlements.line.receivedHint')}
-                          </span>
-                        </span>
+                    <span className="flex flex-col sm:col-start-1 sm:row-start-2">
+                      <input
+                        inputMode="decimal"
+                        value={draft.payment}
+                        onChange={(e) => patch(line, { payment: e.target.value })}
+                        placeholder={t('settlements.line.paymentPlaceholder')}
+                        aria-label={t('settlements.line.paymentLabel', { name: line.name })}
+                        className={`w-24 bg-surface-800 border rounded px-2 py-1 text-sm text-surface-100 focus:outline-none focus:border-primary-500 ${
+                          invalidPaymentKeys.includes(key) ? 'border-rose-500' : 'border-surface-600'
+                        }`}
+                      />
+                      <span className="mt-0.5 text-[11px] text-surface-500">
+                        {t('settlements.line.paymentHint')}
+                      </span>
+                    </span>
 
-                        <span className="flex flex-col sm:col-start-2 sm:row-start-2 sm:col-span-2">
-                          <DateInput
-                            value={draft.settledOn}
-                            onChange={(value) => patch(line, { settledOn: value })}
-                            aria-label={t('settlements.line.settledOnLabel', { name: line.name })}
-                            className="bg-surface-800 border border-surface-600 rounded px-2 py-1 text-sm text-surface-100 focus:outline-none focus:border-primary-500 sm:w-full"
-                          />
-                          {/* The date used to sit next to the tick that explains it; on its own line
-                              it needs to say what it is. */}
-                          <span className="mt-0.5 text-[11px] text-surface-500">
-                            {t('settlements.line.settledOnHint')}
-                          </span>
+                    {/* Only once there is money to date — a picker beside an empty field invites a
+                        date with nothing behind it. */}
+                    {draft.payment.trim() !== '' && (
+                      <span className="flex flex-col sm:col-start-2 sm:row-start-2 sm:col-span-2">
+                        <DateInput
+                          value={draft.paidOn}
+                          onChange={(value) => patch(line, { paidOn: value })}
+                          aria-label={t('settlements.line.paymentDateLabel', { name: line.name })}
+                          className="bg-surface-800 border border-surface-600 rounded px-2 py-1 text-sm text-surface-100 focus:outline-none focus:border-primary-500 sm:w-full"
+                        />
+                        <span className="mt-0.5 text-[11px] text-surface-500">
+                          {t('settlements.line.paymentDateHint')}
                         </span>
-                      </>
+                      </span>
                     )}
                   </div>
+
+                  {/* Every payment exactly as it was handed over, with where it went. This list is
+                      the answer to "she paid 200, why does it say 140?" — it says 200, always. */}
+                  {line.payments.length > 0 && (
+                    <ul className="w-full space-y-1">
+                      {line.payments.map((payment) => (
+                        <li
+                          key={payment.id}
+                          className="flex items-start gap-2 rounded bg-surface-900/40 px-2 py-1 text-[11px] text-surface-300"
+                        >
+                          <span className="flex-1">
+                            <span className="font-medium text-surface-200">
+                              {t('settlements.payment.entry', {
+                                date: day(payment.receivedOn),
+                                amount: money(payment.amount),
+                              })}
+                            </span>
+                            {!payment.enteredHere && (
+                              <span className="text-surface-500">
+                                {' '}{t('settlements.payment.elsewhere')}
+                              </span>
+                            )}
+                            {(payment.shares.length > 0 || payment.unallocated > 0) && (
+                              <span className="text-surface-400">
+                                {' → '}
+                                {[
+                                  ...payment.shares.map(describeShare),
+                                  ...(payment.unallocated > 0
+                                    ? [t('settlements.payment.shareCredit', {
+                                        amount: money(payment.unallocated),
+                                      })]
+                                    : []),
+                                ].join(' · ')}
+                              </span>
+                            )}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => setDeleting({ line, payment })}
+                            aria-label={t('settlements.payment.delete', {
+                              amount: money(payment.amount),
+                              date: day(payment.receivedOn),
+                            })}
+                            className="shrink-0 rounded p-0.5 text-rose-400/70 hover:text-rose-400 transition-colors"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </li>
               )
             })}
@@ -860,62 +677,43 @@ export function SettlementSection({ target, targetId, onDirtyChange }: Settlemen
               {getErrorMessage(saveMutation.error)}
             </p>
           )}
-          {spendCredit.isError && (
-            <p role="alert" className="text-sm text-rose-400/80">
-              {getErrorMessage(spendCredit.error)}
-            </p>
-          )}
 
           <div className="flex items-center justify-between gap-2">
             <Button size="sm" variant="ghost" onClick={() => setPicking(true)}>
               {t('settlements.section.markBulk')}
             </Button>
-            <div className="flex flex-wrap items-center justify-end gap-2">
-              <Button
-                size="sm"
-                variant={settleLabel ? 'secondary' : 'primary'}
-                onClick={() => saveMutation.mutate(false)}
-                loading={saveMutation.isPending && saveMutation.variables === false}
-                disabled={dirtyLines.length === 0 || saveMutation.isPending}
-              >
-                {t('settlements.actions.save')}
-              </Button>
-              {/* A separate action, not a checkbox beside Save — same reasoning as "Save and send
-                  invitations": spending a credit is not a property of saving. Offered only where it
-                  can work in one step (see `spendableLines` / `debtPayingLines`), and primary when
-                  offered, because that is exactly when it is wanted. ONE button for both paths: two
-                  would each have to save the other person's row plainly, and the choice between
-                  them would be a question about the pool, not about the money. */}
-              {settleLabel && (
-                <Button
-                  size="sm"
-                  variant="primary"
-                  onClick={() => saveMutation.mutate(true)}
-                  loading={saveMutation.isPending && saveMutation.variables === true}
-                  disabled={saveMutation.isPending}
-                >
-                  {t(settleLabel)}
-                </Button>
-              )}
-            </div>
+            <Button
+              size="sm"
+              variant="primary"
+              onClick={() => saveMutation.mutate()}
+              loading={saveMutation.isPending}
+              disabled={dirtyLines.length === 0 || saveMutation.isPending}
+            >
+              {t('settlements.actions.save')}
+            </Button>
           </div>
         </>
       )}
 
       <ConfirmModal
-        isOpen={clearingMoney !== null}
-        onClose={() => setClearingMoney(null)}
+        isOpen={deleting !== null}
+        onClose={() => setDeleting(null)}
         onConfirm={() => {
-          if (clearingMoney) clearRow(clearingMoney)
-          setClearingMoney(null)
+          if (deleting) deletePayment.mutate(deleting.payment.id)
         }}
-        title={t('settlements.clearPaid.title')}
-        message={t('settlements.clearPaid.message', {
-          name: clearingMoney?.name ?? '',
-          amount: money(clearingMoney?.paidAmount ?? 0),
+        title={t('settlements.deletePayment.title')}
+        message={t('settlements.deletePayment.message', {
+          name: deleting?.line.name ?? '',
+          amount: money(deleting?.payment.amount ?? 0),
+          date: deleting ? day(deleting.payment.receivedOn) : '',
         })}
         variant="danger"
       />
+      {deletePayment.isError && (
+        <p role="alert" className="text-sm text-rose-400/80">
+          {getErrorMessage(deletePayment.error)}
+        </p>
+      )}
     </div>
   )
 }

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { exportFileName, toExportRows } from './settlementExport'
+import { exportFileName, toExportRows, toPaymentRows } from './settlementExport'
 import type { SettlementExportRow } from '../../types'
 
 function row(overrides: Partial<SettlementExportRow> = {}): SettlementExportRow {
@@ -9,8 +9,8 @@ function row(overrides: Partial<SettlementExportRow> = {}): SettlementExportRow 
     title: 'Trening 1:1',
     payer: 'Anna Kowalska',
     amount: 150,
-    paid: 150,
-    settledOn: '2026-08-14',
+    covered: 150,
+    paidOn: '2026-08-14',
     ...overrides,
   }
 }
@@ -25,12 +25,11 @@ describe('settlementExport', () => {
     expect(typeof amount).toBe('number')
   })
 
-  it('carries what actually arrived beside what was charged', () => {
-    // ⚠️ The file used to hold the charge alone. Since part payments exist, a row charged 150 with
-    // 100 against it exported as "150" next to a payment date — which reads as settled in full, in
-    // the one document somebody reconciles with their books. The same disagreement the user card
-    // was fixed for, reappearing here.
-    const row0 = toExportRows([row({ amount: 150, paid: 100 })], 'nierozliczone')[0]
+  it('carries how much is covered beside what was charged', () => {
+    // ⚠️ The file used to hold the charge alone. A row charged 150 with 100 against it exported as
+    // "150" next to a date — which reads as settled in full, in the one document somebody
+    // reconciles with their books.
+    const row0 = toExportRows([row({ amount: 150, covered: 100 })], 'nierozliczone')[0]
 
     expect(row0[4]).toBe(150)
     expect(row0[5]).toBe(100)
@@ -47,7 +46,19 @@ describe('settlementExport', () => {
 
   it('says outstanding rather than leaving the payment date blank', () => {
     // An empty cell reads as missing data; the word says it is owed, which is a fact, not a gap.
-    expect(toExportRows([row({ settledOn: null })], 'nierozliczone')[0][6]).toBe('nierozliczone')
+    expect(toExportRows([row({ paidOn: null })], 'nierozliczone')[0][6]).toBe('nierozliczone')
+  })
+
+  it('lists every payment exactly as handed over on its own sheet, the amount as a number', () => {
+    // The charges sheet says what is covered, which is derived; this is the record of what
+    // actually arrived — the one an accountant matches against the till.
+    const [payment] = toPaymentRows([
+      { receivedOn: '2026-10-02', payer: 'Beta', amount: 200, enteredAt: 'Trening 1:1' },
+    ])
+    expect(payment).toEqual(['2026-10-02', 'Beta', 200, 'Trening 1:1'])
+    expect(toPaymentRows([
+      { receivedOn: '2026-10-02', payer: 'Beta', amount: 50, enteredAt: null },
+    ])[0][3]).toBe('')
   })
 
   it('leaves a missing title empty rather than inventing one', () => {

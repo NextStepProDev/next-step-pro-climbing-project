@@ -178,7 +178,8 @@ class SettlementIsolationTest {
             "The scan found only " + types.size() + " public types in the money packages. A broken "
                 + "pattern returns an empty list and this gate then passes by guarding nothing: "
                 + types);
-        for (String mustFind : List.of("Settlement", "SettlementRow", "PayerBalance",
+        for (String mustFind : List.of("Settlement", "SettlementRow", "Payment", "PaymentRow",
+                "PaymentAllocator",
                 "SessionCoverage", "Subscription", "Payout", "AdminSettlementService")) {
             assertTrue(types.contains(mustFind),
                 "The scan no longer finds " + mustFind + ", so nothing stops another package from "

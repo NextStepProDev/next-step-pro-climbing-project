@@ -42,6 +42,7 @@ class AdminSubscriptionIntegrationTest extends BaseIntegrationTest {
     void setUp() {
         jdbc.update("DELETE FROM session_payouts");
         jdbc.update("DELETE FROM subscriptions");
+        jdbc.update("DELETE FROM payments");
         jdbc.update("DELETE FROM settlements");
         reservationRepository.deleteAll();
         timeSlotRepository.deleteAll();
@@ -136,16 +137,16 @@ class AdminSubscriptionIntegrationTest extends BaseIntegrationTest {
     void shouldDropUnpaidFeesAfterABackdatedEndButKeepThePaidOnes() {
         UUID id = subscriptions.create(client.getId(), new SaveSubscriptionRequest(
             new BigDecimal("400"), monthsAgo(3), null)).id();
-        // She paid for the month after the one they actually stopped in.
-        jdbc.update("UPDATE settlements SET settled_on = ?, paid_amount = amount WHERE period_month = ?",
-            monthsAgo(1), monthsAgo(1));
+        // She had paid up to the month after the one they actually stopped in: three fees of 400,
+        // covered oldest first.
+        settlements.addPayment(new AddPaymentRequest("user", client.getId(), new BigDecimal("1200"),
+            monthsAgo(1), null, null));
 
         subscriptions.end(id, new EndSubscriptionRequest(monthsAgo(2)));
 
         // The money arrived; a date written down a week late does not overrule the bank.
         assertEquals(1, jdbc.queryForObject(
-            "SELECT COUNT(*) FROM settlements WHERE period_month = ? AND settled_on IS NOT NULL",
-            Integer.class, monthsAgo(1)));
+            "SELECT COUNT(*) FROM settlements WHERE period_month = ?", Integer.class, monthsAgo(1)));
         // The unpaid one after the end is gone.
         assertEquals(0, jdbc.queryForObject(
             "SELECT COUNT(*) FROM settlements WHERE period_month = ?", Integer.class, monthsAgo(0)));
@@ -220,14 +221,15 @@ class AdminSubscriptionIntegrationTest extends BaseIntegrationTest {
             new TimeSlot(sessionDay, LocalTime.of(18, 0), LocalTime.of(20, 0), 4));
         reservationRepository.saveAndFlush(new Reservation(client, extra));
         settlements.save("slot", extra.getId(), "user", client.getId(),
-            new SaveSettlementRequest(new BigDecimal("150"), null, null));
+            new SaveSettlementRequest(new BigDecimal("150")));
 
-        var result = settlements.settleOutstanding(new SettleOutstandingRequest(
-            "user", client.getId(), LocalDate.now(AdminSubscriptionService.WARSAW),
-            new BigDecimal("550")));
+        var result = settlements.addPayment(new AddPaymentRequest(
+            "user", client.getId(), new BigDecimal("550"),
+            LocalDate.now(AdminSubscriptionService.WARSAW), null, null));
 
-        assertEquals(2, result.settled(), "The retainer and the session, from one payment");
-        assertEquals(0, BigDecimal.ZERO.compareTo(result.balance()));
+        assertEquals(0, BigDecimal.ZERO.compareTo(result.debt()),
+            "The retainer and the session, from one payment");
+        assertEquals(0, BigDecimal.ZERO.compareTo(result.credit()));
         assertEquals(0, stats.buildOverview("all",
             LocalDate.now(AdminSubscriptionService.WARSAW)).outstanding().count(),
             "Nothing of hers is left open, fee or session");
@@ -285,7 +287,7 @@ class AdminSubscriptionIntegrationTest extends BaseIntegrationTest {
 
         // And the other participant can still be priced, which is the point of refusing.
         settlements.save("slot", group.getId(), "user", cashPayer.getId(),
-            new SaveSettlementRequest(new BigDecimal("150"), null, null));
+            new SaveSettlementRequest(new BigDecimal("150")));
     }
 
     @Test

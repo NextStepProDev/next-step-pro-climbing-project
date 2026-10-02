@@ -10,11 +10,13 @@ import pl.nextsteppro.climbing.domain.reservation.GuestReservationRepository;
 import pl.nextsteppro.climbing.domain.reservation.Reservation;
 import pl.nextsteppro.climbing.domain.reservation.ReservationRepository;
 import pl.nextsteppro.climbing.domain.reservation.ReservationStatus;
-import pl.nextsteppro.climbing.domain.settlement.Amounts;
 import pl.nextsteppro.climbing.domain.settlement.PayerLastAmount;
+import pl.nextsteppro.climbing.domain.settlement.Payment;
+import pl.nextsteppro.climbing.domain.settlement.PaymentAllocator;
+import pl.nextsteppro.climbing.domain.settlement.PaymentRepository;
+import pl.nextsteppro.climbing.domain.settlement.PaymentRow;
 import pl.nextsteppro.climbing.domain.settlement.Settlement;
 import pl.nextsteppro.climbing.domain.settlement.SettlementRepository;
-import pl.nextsteppro.climbing.domain.settlement.PayerBalance;
 import pl.nextsteppro.climbing.domain.settlement.SettlementRow;
 import pl.nextsteppro.climbing.domain.settlement.PayoutSourceRepository;
 import pl.nextsteppro.climbing.domain.settlement.SessionCoverage;
@@ -42,7 +44,10 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * Prices a calendar entry per participant and records who has paid.
+ * Prices a calendar entry per participant and records the money people hand over.
+ *
+ * <p>Two separate facts since V100: a charge (settlements) and a payment (payments). Which payment
+ * covers which charge is derived on every read by {@code PaymentAllocator}, never written.
  *
  * <p>Every operation is scoped to the pair (target, payer); no settlement is ever addressed by its
  * own id, so there is no branch in which the "does this row belong to this slot" comparison could
@@ -59,6 +64,7 @@ import java.util.UUID;
 public class AdminSettlementService {
 
     private final SettlementRepository settlementRepository;
+    private final PaymentRepository paymentRepository;
     private final TimeSlotRepository timeSlotRepository;
     private final EventRepository eventRepository;
     private final ReservationRepository reservationRepository;
@@ -69,6 +75,7 @@ public class AdminSettlementService {
     private final MessageService msg;
 
     public AdminSettlementService(SettlementRepository settlementRepository,
+                                  PaymentRepository paymentRepository,
                                   TimeSlotRepository timeSlotRepository,
                                   EventRepository eventRepository,
                                   ReservationRepository reservationRepository,
@@ -78,6 +85,7 @@ public class AdminSettlementService {
                                   PayoutSourceRepository payoutSourceRepository,
                                   MessageService msg) {
         this.settlementRepository = settlementRepository;
+        this.paymentRepository = paymentRepository;
         this.timeSlotRepository = timeSlotRepository;
         this.eventRepository = eventRepository;
         this.reservationRepository = reservationRepository;
@@ -117,48 +125,25 @@ public class AdminSettlementService {
         }
         BigDecimal amount = Settlement.normalizeAmount(
             request.amount(), msg.get("admin.settlement.amount.invalid"));
-        BigDecimal paid = request.paidAmount() == null
-            ? BigDecimal.ZERO
-            : Settlement.normalizeAmount(request.paidAmount(), msg.get("admin.settlement.amount.invalid"));
-        // ⚠️ The date and the money travel together, and BOTH directions have their own failure —
-        // this used to enforce one of them.
-        //
-        // A date with no money behind it reads as paid on every screen while contributing nothing.
-        // Money with no date is worse, because it is invisible rather than wrong: revenue is summed
-        // by settled_on, and a row with paid >= amount is not a debt either, so 150 zl recorded that
-        // way shows up in no figure anywhere while the client's own card reads as settled.
-        //
-        // The exception is a row that costs nothing. Zero of zero really is settled, the client
-        // deliberately allows the tick there (its "settled with nothing received" guard exempts a
-        // free row, because zero is the honest figure), and clearing the date anyway sent the box
-        // back unticked with nothing said — the same silent swallow that guard was written against.
-        LocalDate settledOn;
-        if (paid.signum() > 0) {
-            settledOn = request.settledOn();
-            if (settledOn == null) {
-                throw new IllegalArgumentException(msg.get("admin.settlement.date.required"));
-            }
-        } else {
-            settledOn = amount.signum() == 0 ? request.settledOn() : null;
-        }
         Instant now = Instant.now();
 
         // Single statement rather than read-then-save: a second tab or a double-click loses the race
         // on the partial unique index and surfaces as a 500. Overwriting is correct — the admin is
-        // correcting his own figure.
+        // correcting his own figure. Only the CHARGE is written: what was paid lives in `payments`
+        // and is never touched by a correction of the price.
         switch (payer) {
             case USER -> {
                 requireChargeableUser(target, targetId, payerId);
                 switch (target) {
-                    case SLOT -> settlementRepository.upsertForSlotUser(targetId, payerId, amount, paid, settledOn, now);
-                    case EVENT -> settlementRepository.upsertForEventUser(targetId, payerId, amount, paid, settledOn, now);
+                    case SLOT -> settlementRepository.upsertForSlotUser(targetId, payerId, amount, now);
+                    case EVENT -> settlementRepository.upsertForEventUser(targetId, payerId, amount, now);
                 }
             }
             case GUEST -> {
                 requireGuestOfTarget(target, targetId, payerId);
                 switch (target) {
-                    case SLOT -> settlementRepository.upsertForSlotGuest(targetId, payerId, amount, paid, settledOn, now);
-                    case EVENT -> settlementRepository.upsertForEventGuest(targetId, payerId, amount, paid, settledOn, now);
+                    case SLOT -> settlementRepository.upsertForSlotGuest(targetId, payerId, amount, now);
+                    case EVENT -> settlementRepository.upsertForEventGuest(targetId, payerId, amount, now);
                 }
             }
         }
@@ -204,108 +189,78 @@ public class AdminSettlementService {
     }
 
     /**
-     * Settles a whole month of one person's sessions on the day they actually paid.
+     * Records money one person handed over. Nothing else is written: which of their charges it
+     * covers is derived on every read, oldest debt first (see {@code PaymentAllocator}).
      *
-     * <p>Covers everything they owe, not just what one screen listed — which is the same set, since
-     * the outstanding list deliberately spans the whole history. Deliberately NO participation
-     * guard: it can only touch rows that already exist, and a person who has since cancelled still
-     * owes for the sessions they attended.
+     * <p>This single operation replaces the three paths that used to move money between rows by hand
+     * ("pay off the debt", "spend the credit", "settle all"). Each of them existed because a row's
+     * {@code paid_amount} had to be rewritten for the split to come out right — and the rewrite is
+     * what lost the record of what was actually handed over.
+     *
+     * <p>Guard, rejecting the change and never the state: the payer must be somebody this ledger
+     * knows — booked on the given entry, or already charged for something. A payment from nobody
+     * would be a phantom client in the revenue ranking.
      */
-    public SettleOutstandingResultDto settleOutstanding(SettleOutstandingRequest request) {
+    public PaymentResultDto addPayment(AddPaymentRequest request) {
         SettlementPayer payer = parsePayer(request.payerType());
-        BigDecimal received = Settlement.normalizeAmount(
-            request.received(), msg.get("admin.settlement.amount.invalid"));
+        UUID payerId = request.payerId();
+        BigDecimal amount = Payment.normalizeAmount(request.amount(), msg.get("admin.settlement.amount.invalid"));
 
-        List<SettlementRow> open = switch (payer) {
-            case USER -> settlementRepository.findOpenRowsForUser(request.payerId());
-            case GUEST -> settlementRepository.findOpenRowsForGuest(request.payerId());
-        };
-        // ⚠️ This settles DEBT, and with nothing open there is nothing to settle. The old condition
-        // also let through the case "no debt, but credit on the account", where the code did
-        // something worse than nothing: it pulled that credit back into the pool and re-concentrated
-        // it onto one row, stamping that row with today's date. The account netted to the identical
-        // figure while money paid in July became revenue of September — across a year boundary it
-        // moved between years — and the call reported a row settled for it.
-        //
-        // It cannot be fixed by keeping the old date either: a row carries ONE settled_on, so adding
-        // money to a row that already holds some necessarily rewrites when the older money arrived.
-        // A prepayment from somebody who owes nothing therefore belongs on its own session, through
-        // the per-participant field, where the admin picks the target and the date knowingly.
-        if (open.isEmpty()) {
-            throw new IllegalArgumentException(msg.get("admin.settlement.nothing.to.settle"));
-        }
-        List<SettlementRow> credited = creditRows(payer, request.payerId());
-
-        Instant now = Instant.now();
-        LocalDate settledOn = request.settledOn();
-
-        // ⚠️ Money the person already left with us is pulled back into the pool first, and the rows
-        // holding it are reset to exact. Without this the balance and the rows tell different
-        // stories: the ledger nets to zero while an invoice still reads as open, and neither figure
-        // is wrong on its own — which is the worst kind of disagreement to debug.
-        BigDecimal pool = received;
-        for (SettlementRow row : credited) {
-            pool = pool.add(row.paidAmount().subtract(row.amount()));
-            settlementRepository.recordPayment(row.id(), row.amount(), row.settledOn(), now);
-        }
-
-        // Oldest first: a backlog is paid off in the order it accumulated.
-        int touched = 0;
-        SettlementRow last = null;
-        for (SettlementRow row : open) {
-            if (pool.signum() <= 0) break;
-            BigDecimal applied = pool.min(row.remaining());
-            settlementRepository.recordPayment(row.id(), row.paidAmount().add(applied), settledOn, now);
-            pool = pool.subtract(applied);
-            last = row;
-            touched++;
-        }
-
-        // Anything over what was owed is an overpayment and stays as one, on the row it landed
-        // against. Refusing it would mean the change from a two-hundred note simply vanishes.
-        if (pool.signum() > 0) {
-            // `last` is the row the pool ran out on; it can only be null if the loop never ran, and
-            // reaching here means the pool was positive, which makes the first row run. The fallback
-            // is belt and braces, not a reachable branch.
-            SettlementRow holder = last != null ? last : open.getFirst();
-            // Every row the loop touched was brought up to exactly what it owed, and a row it never
-            // reached is still at its own amount — so the carrier starts from `amount` either way.
-            BigDecimal carried = holder.amount().add(pool);
-            // ⚠️ The column is NUMERIC(10,2) with chk_settlements_paid_range behind it. Landing the
-            // whole remainder on one row can exceed that ceiling even though `received` itself was
-            // in range, because the pool also absorbs credit the person had already left with us.
-            // Without this the write dies as a DataIntegrityViolation and surfaces as a bare 409
-            // naming no field — a translated message beats a constraint name.
-            if (carried.compareTo(Settlement.MAX_AMOUNT) > 0) {
-                throw new IllegalArgumentException(msg.get("admin.settlement.amount.invalid"));
+        UUID slotId = null;
+        UUID eventId = null;
+        if (request.targetType() != null || request.targetId() != null) {
+            if (request.targetType() == null || request.targetId() == null) {
+                throw new IllegalArgumentException(msg.get("admin.settlement.target.unknown"));
             }
-            settlementRepository.recordPayment(holder.id(), carried, settledOn, now);
-            if (last == null) {
-                touched++;
+            SettlementTarget target = requireAddressableTarget(request.targetType(), request.targetId());
+            if (isSettledInBulk(target, request.targetId())) {
+                throw new IllegalArgumentException(msg.get("admin.settlement.session.settled.in.bulk"));
             }
+            switch (payer) {
+                case USER -> requireChargeableUser(target, request.targetId(), payerId);
+                case GUEST -> requireGuestOfTarget(target, request.targetId(), payerId);
+            }
+            switch (target) {
+                case SLOT -> slotId = request.targetId();
+                case EVENT -> eventId = request.targetId();
+            }
+        } else if (chargesOf(payer, payerId).isEmpty()) {
+            throw new IllegalArgumentException(msg.get("admin.settlement.payer.not.found"));
         }
 
-        return new SettleOutstandingResultDto(touched, Amounts.scale(balanceOf(payer, request.payerId())));
-    }
-
-    private List<SettlementRow> creditRows(SettlementPayer payer, UUID payerId) {
-        List<SettlementRow> all = switch (payer) {
-            case USER -> settlementRepository.findRowsForUser(payerId);
-            case GUEST -> settlementRepository.findRowsForGuest(payerId);
-        };
-        return all.stream().filter(row -> row.balanceDelta().signum() > 0).toList();
+        switch (payer) {
+            case USER -> paymentRepository.insert(payerId, null, amount, request.receivedOn(), slotId, eventId);
+            case GUEST -> paymentRepository.insert(null, payerId, amount, request.receivedOn(), slotId, eventId);
+        }
+        return accountOf(payer, payerId);
     }
 
     /**
-     * What this person's account nets to: positive when we are holding their money, negative when
-     * they are holding ours. Derived, never stored — a column beside it would be a second truth to
-     * keep in step through every correction.
+     * Removes a payment typed in by mistake. Idempotent, and with no gate beyond the id for the same
+     * reason as {@link #delete}: removing a record cannot leak anything, and a gate would leave a
+     * mistaken payment unremovable once the booking behind it was cancelled. Correcting an amount is
+     * a delete and a new entry — there is no update, see {@code Payment}.
      */
+    public void deletePayment(UUID paymentId) {
+        paymentRepository.deleteRow(paymentId);
+    }
+
+    /** Where one person's account stands, derived from their whole ledger. */
     @Transactional(readOnly = true)
-    public BigDecimal balanceOf(SettlementPayer payer, UUID payerId) {
+    public PaymentResultDto accountOf(SettlementPayer payer, UUID payerId) {
+        PaymentAllocator.Allocation allocation = PaymentAllocator.allocate(
+            chargesOf(payer, payerId).stream().map(SettlementRow::toCharge).toList(),
+            (switch (payer) {
+                case USER -> paymentRepository.findRowsForUsers(List.of(payerId));
+                case GUEST -> paymentRepository.findRowsForGuests(List.of(payerId));
+            }).stream().map(PaymentRow::toReceipt).toList());
+        return new PaymentResultDto(allocation.debt(), allocation.credit());
+    }
+
+    private List<SettlementRow> chargesOf(SettlementPayer payer, UUID payerId) {
         return switch (payer) {
-            case USER -> settlementRepository.balanceForUser(payerId);
-            case GUEST -> settlementRepository.balanceForGuest(payerId);
+            case USER -> settlementRepository.findRowsForUser(payerId);
+            case GUEST -> settlementRepository.findRowsForGuest(payerId);
         };
     }
 
@@ -399,48 +354,88 @@ public class AdminSettlementService {
             }
         }
         Map<UUID, BigDecimal> suggestions = lastAmountsFor(participants, byPayer.keySet());
-        // ⚠️ Two reads for the whole section, not one per payer. The balance spans a person's whole
-        // history so it cannot come from these rows — but asking for it inside the loop is the
-        // per-person query the count gate exists to stop, and it caught exactly that here.
-        Map<UUID, PayerBalance> balances = balancesFor(participants, byPayer.values());
+        Ledgers ledgers = ledgersFor(participants, byPayer.values(), saved);
 
         List<SettlementLineDto> result = new ArrayList<>();
         for (Line line : participants) {
             SettlementRow row = byPayer.remove(line.payerId());
-            result.add(new SettlementLineDto(
-                segment(line.payer()), line.payerId(), line.name(), line.participants(), false,
-                row == null ? null : row.amount(),
-                row == null ? BigDecimal.ZERO : row.paidAmount(),
-                balanceOf(balances, line.payerId()),
-                creditOf(balances, line.payerId()),
-                otherDebtOf(balances, line.payerId(), row),
-                row == null ? null : row.settledOn(),
+            result.add(lineOf(line.payer(), line.payerId(), line.name(), line.participants(), false,
+                row, target, targetId, ledgers,
                 // Only offered where there is nothing yet — a prefill next to a figure the admin
                 // already wrote reads as a second, competing amount.
                 row == null ? suggestions.get(line.payerId()) : null));
         }
         for (SettlementRow orphan : byPayer.values()) {
             boolean guest = orphan.isGuest();
-            UUID payerId = guest ? orphan.guestId() : orphan.userId();
+            UUID payerId = Objects.requireNonNull(guest ? orphan.guestId() : orphan.userId());
             String note = orphan.guestNote();
             String name = guest
                 ? (note == null ? "" : note)
                 : displayName(orphan.firstName(), orphan.lastName());
-            SettlementPayer orphanPayer = guest ? SettlementPayer.GUEST : SettlementPayer.USER;
-            result.add(new SettlementLineDto(
-                segment(orphanPayer), Objects.requireNonNull(payerId), name, 1, true,
-                orphan.amount(), orphan.paidAmount(),
-                balanceOf(balances, payerId), creditOf(balances, payerId),
-                otherDebtOf(balances, payerId, orphan),
-                orphan.settledOn(), null));
+            result.add(lineOf(guest ? SettlementPayer.GUEST : SettlementPayer.USER, payerId, name, 1, true,
+                orphan, target, targetId, ledgers, null));
         }
         // A session settled in bulk has nobody to charge per head, so the section switches mode
         // rather than offering fields that would invent an amount.
         return new SettlementSectionDto(targetDate, result, coverageOf(target, targetId));
     }
 
-    /** Balances for everyone on this section, in two reads regardless of how many people there are. */
-    private Map<UUID, PayerBalance> balancesFor(List<Line> participants, Collection<SettlementRow> orphans) {
+    private SettlementLineDto lineOf(SettlementPayer payer, UUID payerId, String name, int participants,
+                                     boolean orphaned, @Nullable SettlementRow row,
+                                     SettlementTarget target, UUID targetId, Ledgers ledgers,
+                                     @Nullable BigDecimal suggested) {
+        String key = payerKey(payer, payerId);
+        PaymentAllocator.Allocation allocation = ledgers.allocations().getOrDefault(key, PaymentAllocator.EMPTY);
+        PaymentAllocator.ChargeState state = row == null ? null : allocation.chargeState(row.id());
+
+        List<LinePaymentDto> payments = new ArrayList<>();
+        for (PaymentRow payment : ledgers.payments().getOrDefault(key, List.of())) {
+            boolean enteredHere = switch (target) {
+                case SLOT -> targetId.equals(payment.enteredSlotId());
+                case EVENT -> targetId.equals(payment.enteredEventId());
+            };
+            List<PaymentAllocator.Share> shares = allocation.sharesOf(payment.id());
+            boolean coversThis = row != null && shares.stream().anyMatch(s -> s.chargeId().equals(row.id()));
+            if (!enteredHere && !coversThis) {
+                continue;
+            }
+            List<PaymentShareDto> shareDtos = shares.stream().map(share -> {
+                SettlementRow charge = ledgers.charges().get(share.chargeId());
+                return new PaymentShareDto(
+                    charge == null ? null : charge.targetTitle(),
+                    charge == null ? payment.receivedOn() : charge.targetDate(),
+                    row != null && share.chargeId().equals(row.id()),
+                    charge != null && charge.isMonthlyFee(),
+                    share.amount());
+            }).toList();
+            payments.add(new LinePaymentDto(payment.id(), payment.amount(), payment.receivedOn(),
+                enteredHere, shareDtos, allocation.unallocatedOf(payment.id())));
+        }
+        payments.sort(Comparator.comparing(LinePaymentDto::receivedOn).thenComparing(LinePaymentDto::id));
+
+        return new SettlementLineDto(
+            segment(payer), payerId, name, participants, orphaned,
+            row == null ? null : row.amount(),
+            state == null ? BigDecimal.ZERO : state.covered(),
+            state == null ? BigDecimal.ZERO : state.remaining(),
+            state == null ? null : state.paidOn(),
+            allocation.debt(),
+            allocation.credit(),
+            payments,
+            suggested);
+    }
+
+    /**
+     * Every ledger the section needs, in at most three reads however many people are on it.
+     *
+     * <p>⚠️ The allocation needs each person's WHOLE history — money covers the oldest debt first,
+     * so what a payment did here depends on what they owed elsewhere. Asking per person inside the
+     * loop is the shape {@code AdminSettlementQueryCountTest} exists to stop. Guests need no charge
+     * read: {@code uq_settlements_guest} gives a guest exactly one charge, which is on this entry
+     * and already in {@code saved}.
+     */
+    private Ledgers ledgersFor(List<Line> participants, Collection<SettlementRow> orphans,
+                               List<SettlementRow> saved) {
         Set<UUID> userIds = new LinkedHashSet<>();
         Set<UUID> guestIds = new LinkedHashSet<>();
         for (Line line : participants) {
@@ -453,46 +448,30 @@ public class AdminSettlementService {
                 userIds.add(orphan.userId());
             }
         }
-        Map<UUID, PayerBalance> balances = new LinkedHashMap<>();
+        List<SettlementRow> charges = new ArrayList<>();
+        List<PaymentRow> payments = new ArrayList<>();
         if (!userIds.isEmpty()) {
-            settlementRepository.balancesForUsers(userIds)
-                .forEach(row -> balances.put(row.payerId(), row));
+            charges.addAll(settlementRepository.findRowsForUsers(userIds));
+            payments.addAll(paymentRepository.findRowsForUsers(userIds));
         }
         if (!guestIds.isEmpty()) {
-            settlementRepository.balancesForGuests(guestIds)
-                .forEach(row -> balances.put(row.payerId(), row));
+            saved.stream().filter(SettlementRow::isGuest).forEach(charges::add);
+            payments.addAll(paymentRepository.findRowsForGuests(guestIds));
         }
-        return balances;
+        Map<UUID, SettlementRow> chargeById = new LinkedHashMap<>();
+        charges.forEach(row -> chargeById.put(row.id(), row));
+        Map<String, List<PaymentRow>> paymentsByPayer = new LinkedHashMap<>();
+        payments.forEach(row -> paymentsByPayer.computeIfAbsent(row.payerKey(), k -> new ArrayList<>()).add(row));
+        return new Ledgers(chargeById, paymentsByPayer, PaymentAllocator.byPayer(chargeById.values(), payments));
     }
 
-    /** Where the account nets out — the figure the line states. Nobody with no rows has a balance. */
-    private static BigDecimal balanceOf(Map<UUID, PayerBalance> balances, UUID payerId) {
-        PayerBalance found = balances.get(payerId);
-        return found == null ? BigDecimal.ZERO : found.balance();
-    }
+    private record Ledgers(Map<UUID, SettlementRow> charges,
+                           Map<String, List<PaymentRow>> payments,
+                           Map<String, PaymentAllocator.Allocation> allocations) {}
 
-    /**
-     * What can actually be spent on this person's behalf, which is a different question from where
-     * their account nets out — see {@link PayerBalance}.
-     */
-    private static BigDecimal creditOf(Map<UUID, PayerBalance> balances, UUID payerId) {
-        PayerBalance found = balances.get(payerId);
-        return found == null ? BigDecimal.ZERO : found.credit();
-    }
-
-    /**
-     * What this person owes on sessions other than the one on screen. Their whole open debt minus
-     * whatever this row is short — the row's own shortfall is what its fields are already asking
-     * for, so counting it here would offer to pay the session off with itself.
-     */
-    private static BigDecimal otherDebtOf(Map<UUID, PayerBalance> balances, UUID payerId,
-                                          @Nullable SettlementRow row) {
-        PayerBalance found = balances.get(payerId);
-        if (found == null) {
-            return BigDecimal.ZERO;
-        }
-        BigDecimal own = row == null ? BigDecimal.ZERO : row.remaining();
-        return found.debt().subtract(own).max(BigDecimal.ZERO);
+    /** The same key {@link SettlementRow#payerKey()} and {@link PaymentRow#payerKey()} produce. */
+    private static String payerKey(SettlementPayer payer, UUID payerId) {
+        return (payer == SettlementPayer.USER ? "u:" : "g:") + payerId;
     }
 
     /**

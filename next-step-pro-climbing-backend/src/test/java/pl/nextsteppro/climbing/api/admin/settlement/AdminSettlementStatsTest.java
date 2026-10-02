@@ -47,6 +47,7 @@ class AdminSettlementStatsTest extends BaseIntegrationTest {
 
     @BeforeEach
     void setUp() {
+        jdbc.update("DELETE FROM payments");
         jdbc.update("DELETE FROM settlements");
         guestReservationRepository.deleteAll();
         reservationRepository.deleteAll();
@@ -147,7 +148,7 @@ class AdminSettlementStatsTest extends BaseIntegrationTest {
         PersonRevenueDto top = overview.people().getFirst();
         assertEquals("Anna Kowalska", top.name());
         assertEquals(client.getId(), top.userId(), "A registered payer links to their user card");
-        assertEquals(2, top.settlementCount());
+        assertEquals(2, top.paymentCount());
         assertEquals(0, new BigDecimal("300.00").compareTo(top.paid()));
         assertEquals(LocalDate.of(2026, 3, 1), top.lastPayment());
 
@@ -163,8 +164,10 @@ class AdminSettlementStatsTest extends BaseIntegrationTest {
             new Event("Wyjazd", EventType.WORKSHOP, LocalDate.of(2026, 7, 1), LocalDate.of(2026, 7, 3), 8));
         UUID guestId = guestReservationRepository.saveAndFlush(
             new GuestReservation(event, "Ekipa z Krakowa", 3)).getId();
-        jdbc.update("INSERT INTO settlements (event_id, guest_reservation_id, amount, paid_amount, settled_on) "
-            + "VALUES (?, ?, 1800, 1800, ?)", event.getId(), guestId, LocalDate.of(2026, 7, 1));
+        jdbc.update("INSERT INTO settlements (event_id, guest_reservation_id, amount) VALUES (?, ?, 1800)",
+            event.getId(), guestId);
+        jdbc.update("INSERT INTO payments (guest_reservation_id, amount, received_on, entered_event_id) "
+            + "VALUES (?, 1800, ?, ?)", guestId, LocalDate.of(2026, 7, 1), event.getId());
 
         PersonRevenueDto guest = stats.buildOverview("2026", TODAY).people().getFirst();
 
@@ -263,22 +266,26 @@ class AdminSettlementStatsTest extends BaseIntegrationTest {
     }
 
     @Test
-    @DisplayName("shouldExportBothMoneyModelsAsOneOrderedListOfLines")
-    void shouldExportBothMoneyModelsAsOneOrderedListOfLines() {
+    @DisplayName("shouldExportWhatWasOwedAndWhatWasHandedOverAsTwoLists")
+    void shouldExportWhatWasOwedAndWhatWasHandedOverAsTwoLists() {
         settleSlot(LocalDate.of(2026, 3, 4), client, "150", LocalDate.of(2026, 3, 4));
         settleSlot(LocalDate.of(2026, 5, 1), other, "450", null);
 
-        List<SettlementExportRowDto> lines = stats.exportRows("2026", "Klient", "Wyplata");
+        SettlementExportDto export = stats.exportRows("2026", "Klient", "Wyplata");
+        List<SettlementExportRowDto> lines = export.lines();
 
         assertEquals(2, lines.size());
-        // Ordered by the day the money is attributed to: the payment date where there is one, the
-        // session's own date where there is not.
-        assertEquals(LocalDate.of(2026, 3, 4), lines.getFirst().settledOn());
+        assertEquals(LocalDate.of(2026, 3, 4), lines.getFirst().paidOn());
         assertEquals("Anna Kowalska", lines.getFirst().payer());
+        assertEquals(0, new BigDecimal("150.00").compareTo(lines.getFirst().covered()));
         // ⚠️ The unpaid line is present with an empty payment date — dropping it would make the file
         // impossible to reconcile against the screen it came from.
-        assertNull(lines.get(1).settledOn());
+        assertNull(lines.get(1).paidOn());
         assertEquals(0, new BigDecimal("450.00").compareTo(lines.get(1).amount()));
+
+        assertEquals(1, export.payments().size(), "One payment arrived, and it is listed as it was handed over");
+        assertEquals(0, new BigDecimal("150.00").compareTo(export.payments().getFirst().amount()));
+        assertEquals("Anna Kowalska", export.payments().getFirst().payer());
     }
 
     // ------------------------------------------------- sessions nobody priced yet
@@ -570,34 +577,42 @@ class AdminSettlementStatsTest extends BaseIntegrationTest {
     }
 
     /**
-     * Deleting a session takes its money with it — every figure on the tab, not just the amounts.
+     * Deleting a session takes what it CHARGED with it, but not the money somebody handed over.
      *
      * <p>The cascade lives in the schema (V92, V93), so nothing in Java would notice a migration
-     * that changed those foreign keys to SET NULL: the rows would survive as orphans pointing at
-     * nothing, and revenue would keep counting a session that is gone while the rate kept dividing
-     * by it. Deleting through the repository rather than the admin service on purpose — this pins
-     * the schema's promise, which is what every delete path in the app relies on.
+     * that changed those foreign keys to SET NULL: the charges would survive as orphans pointing at
+     * nothing, and the debt list would keep chasing a session that is gone while the rate kept
+     * dividing by it. ⚠️ The payment is the opposite on purpose (V100, {@code ON DELETE SET NULL}):
+     * it was handed over by a person, the session was only where it was typed in, so it stays as
+     * their credit instead of vanishing from revenue. Deleting through the repository rather than
+     * the admin service on purpose — this pins the schema's promise, which every delete path relies on.
      */
     @Test
-    @DisplayName("shouldTakeTheMoneyWithASessionThatIsDeleted")
-    void shouldTakeTheMoneyWithASessionThatIsDeleted() {
+    @DisplayName("shouldTakeTheChargeWithADeletedSessionButKeepTheMoneyHandedOver")
+    void shouldTakeTheChargeWithADeletedSessionButKeepTheMoneyHandedOver() {
         settleSlot(LocalDate.of(2026, 5, 4), client, "150", LocalDate.of(2026, 5, 4));
+        settleSlot(LocalDate.of(2026, 5, 6), other, "90", null);
         TimeSlot forSchool = contractorSlot(LocalDate.of(2026, 5, 11));
         assignToSource(forSchool, "SP nr 5");
 
         SettlementOverviewDto before = stats.buildOverview("2026", TODAY);
-        assertEquals(0, new BigDecimal("150.00").compareTo(before.revenue().total()));
+        assertEquals(0, new BigDecimal("150.00").compareTo(before.revenue().fromSlots()));
         assertEquals(1, before.payouts().periods().size(), "the school's May is on the table");
+        assertEquals(1, before.outstanding().count());
 
         timeSlotRepository.deleteAll();
 
         SettlementOverviewDto after = stats.buildOverview("2026", TODAY);
-        assertEquals(0, BigDecimal.ZERO.compareTo(after.revenue().total()),
-            "Revenue counted a session that no longer exists");
         assertTrue(after.payouts().periods().isEmpty(),
             "The rate went on dividing by a session that was deleted");
-        assertEquals(0, after.outstanding().count());
+        assertEquals(0, after.outstanding().count(), "Nobody is chased for a session that is gone");
         assertEquals(0, after.unassigned().count());
+        assertEquals(0, new BigDecimal("150.00").compareTo(after.revenue().total()),
+            "The 150 still arrived");
+        assertEquals(0, BigDecimal.ZERO.compareTo(after.revenue().fromSlots()),
+            "but no session earned it any more");
+        assertEquals(0, new BigDecimal("150.00").compareTo(after.credits().total()),
+            "so it is her credit, waiting for the next session");
     }
 
     // -------------------------------------------------------- one payer's history
@@ -751,7 +766,8 @@ class AdminSettlementStatsTest extends BaseIntegrationTest {
         BigDecimal parts = revenue.fromSlots()
             .add(revenue.fromEvents())
             .add(revenue.fromSubscriptions())
-            .add(revenue.fromPayouts());
+            .add(revenue.fromPayouts())
+            .add(revenue.fromCredit());
         assertEquals(0, revenue.total().compareTo(parts),
             "The parts of the split must add up to the total they are drawn against");
     }
@@ -822,45 +838,23 @@ class AdminSettlementStatsTest extends BaseIntegrationTest {
     }
 
     @Test
-    @DisplayName("shouldTellTheCardAndTheTabTheSameThingAboutAClientWhoIsSquare")
-    void shouldTellTheCardAndTheTabTheSameThingAboutAClientWhoIsSquare() {
-        // ⚠️ The reported case seen from the client's own card. He owes 50 on paper and is holding
-        // 50 of ours, so the pair is the whole story — and the card has to tell it the same way the
-        // tab does. Reporting the NET position here instead would say "no credit" beside a debt the
-        // tab has already annotated as covered, about the same person, on two screens.
+    @DisplayName("shouldCoverALaterSessionWithTheChangeFromAnEarlierOneOnBothScreens")
+    void shouldCoverALaterSessionWithTheChangeFromAnEarlierOneOnBothScreens() {
+        // The case the old model needed a "credit note beside the debt" for: a hundred handed over
+        // for a fifty session, then a second fifty. Since V100 the change simply covers it — nobody
+        // is chased for money already handed over, and the card and the tab say the same thing.
         partiallyPaidSlot(LocalDate.of(2026, 3, 12), client, "50", "100", LocalDate.of(2026, 3, 12));
         partiallyPaidSlot(LocalDate.of(2026, 5, 7), client, "50", "0", null);
 
         PayerSummaryDto card = stats.payerSummary(client.getId(), 10);
-        OutstandingDto tab = stats.buildOverview("2026", TODAY).outstanding();
+        SettlementOverviewDto tab = stats.buildOverview("2026", TODAY);
 
-        assertEquals(0, tab.total().compareTo(card.outstanding()),
-            "Both say fifty is open");
-        assertEquals(0, tab.credits().getFirst().credit().compareTo(card.credit()),
-            "And both say fifty of his is already here");
-    }
-
-    @Test
-    @DisplayName("shouldSayThatADebtorIsAlreadyHoldingMoneyOfOurs")
-    void shouldSayThatADebtorIsAlreadyHoldingMoneyOfOurs() {
-        // The reported case: a hundred handed over for a fifty session, then a second session at
-        // fifty that he has not paid for because he does not have to. The row is genuinely open, so
-        // it stays on the list at its gross figure — but a list that says only "owes 50" about
-        // somebody whose account nets to zero is a demand for money already handed over.
-        partiallyPaidSlot(LocalDate.of(2026, 3, 12), client, "50", "100", LocalDate.of(2026, 3, 12));
-        partiallyPaidSlot(LocalDate.of(2026, 5, 7), client, "50", "0", null);
-
-        OutstandingDto outstanding = stats.buildOverview("2026", TODAY).outstanding();
-
-        assertEquals(0, new BigDecimal("50.00").compareTo(outstanding.total()),
-            "The debt stays gross: the row really is open");
-        OutstandingCreditDto credit = outstanding.credits().stream()
-            .filter(row -> row.payerId().equals(client.getId()))
-            .findFirst()
-            .orElseThrow(() -> new AssertionError("The credit that covers this debt has to travel with it"));
-        assertEquals("user", credit.payerType());
-        assertEquals(0, new BigDecimal("50.00").compareTo(credit.credit()),
-            "Which is exactly what he already left with us");
+        assertEquals(0, tab.outstanding().count(), "Nothing is owed");
+        assertEquals(0, tab.credits().payers(), "And nothing is held");
+        assertEquals(0, BigDecimal.ZERO.compareTo(card.outstanding()));
+        assertEquals(0, BigDecimal.ZERO.compareTo(card.credit()));
+        assertEquals(LocalDate.of(2026, 3, 12), card.recent().getFirst().paidOn(),
+            "The May session was completed by the March payment, and says so");
     }
 
     @Test
@@ -868,20 +862,17 @@ class AdminSettlementStatsTest extends BaseIntegrationTest {
     void shouldNotReportACreditForSomebodyWhoIsSimplyBehind() {
         partiallyPaidSlot(LocalDate.of(2026, 3, 12), client, "150", "100", LocalDate.of(2026, 3, 12));
 
-        OutstandingDto outstanding = stats.buildOverview("2026", TODAY).outstanding();
+        SettlementOverviewDto overview = stats.buildOverview("2026", TODAY);
 
-        assertTrue(outstanding.credits().isEmpty(),
-            "A negative balance is the debt already listed above, under its own name");
+        assertEquals(0, overview.credits().payers());
+        assertEquals(0, new BigDecimal("50.00").compareTo(overview.outstanding().total()));
     }
 
     @Test
-    @DisplayName("shouldNotPretendAGuestCanCarryCreditBetweenSessions")
-    void shouldNotPretendAGuestCanCarryCreditBetweenSessions() {
-        // ⚠️ {@code uq_settlements_guest} is unique on the guest alone, so one guest reservation is
-        // one settlement row: a guest cannot be short on one and in credit on another, and the
-        // credit lookup therefore asks about registered payers only. Their change has nowhere to go,
-        // which is what a guest is — a booking with no continuity behind it. If this test ever fails
-        // because a guest DID accumulate two rows, the lookup needs its guest half back.
+    @DisplayName("shouldNotSpendOneGuestsChangeOnAnotherGuestsDebt")
+    void shouldNotSpendOneGuestsChangeOnAnotherGuestsDebt() {
+        // Two guest bookings are two payers, even under the same written name: a guest has no
+        // continuity, so their change has nowhere to go and must not pay a stranger's debt.
         GuestReservation overpaid = guestReservationRepository.saveAndFlush(
             new GuestReservation(pastSlot(LocalDate.of(2026, 3, 12)), "Ekipa z Krakowa", 2));
         guestSettlement(overpaid, "50", "80", LocalDate.of(2026, 3, 12));
@@ -889,28 +880,26 @@ class AdminSettlementStatsTest extends BaseIntegrationTest {
             new GuestReservation(pastSlot(LocalDate.of(2026, 5, 7)), "Ekipa z Krakowa", 2));
         guestSettlement(owing, "200", "0", null);
 
-        OutstandingDto outstanding = stats.buildOverview("2026", TODAY).outstanding();
+        SettlementOverviewDto overview = stats.buildOverview("2026", TODAY);
 
-        assertEquals(0, new BigDecimal("200.00").compareTo(outstanding.total()),
+        assertEquals(0, new BigDecimal("200.00").compareTo(overview.outstanding().total()),
             "The guest who owes is listed for the whole two hundred");
-        assertTrue(outstanding.credits().isEmpty(),
-            "And the other guest's change is not theirs to spend — two bookings are two payers");
+        assertEquals(0, new BigDecimal("30.00").compareTo(overview.credits().total()),
+            "And the other guest's thirty stays theirs");
     }
 
     @Test
-    @DisplayName("shouldFindACreditLeftInAYearTheTabIsNotShowing")
-    void shouldFindACreditLeftInAYearTheTabIsNotShowing() {
-        // ⚠️ The debt list spans the whole history on purpose, so the credit against it has to as
-        // well. Deriving it from the rows the tab read for its charts would lose exactly this one,
-        // because those obey the year picker.
+    @DisplayName("shouldSpendChangeLeftInAYearTheTabIsNotShowing")
+    void shouldSpendChangeLeftInAYearTheTabIsNotShowing() {
+        // ⚠️ The allocation runs over the whole ledger, never over the year the picker shows —
+        // otherwise change left last November would not cover this May's session.
         partiallyPaidSlot(LocalDate.of(2025, 11, 4), client, "50", "100", LocalDate.of(2025, 11, 4));
         partiallyPaidSlot(LocalDate.of(2026, 5, 7), client, "50", "0", null);
 
-        OutstandingDto outstanding = stats.buildOverview("2026", TODAY).outstanding();
+        SettlementOverviewDto overview = stats.buildOverview("2026", TODAY);
 
-        assertEquals(1, outstanding.credits().size(),
+        assertEquals(0, overview.outstanding().count(),
             "A credit left two Decembers ago still covers today's session");
-        assertEquals(0, new BigDecimal("50.00").compareTo(outstanding.credits().getFirst().credit()));
     }
 
     @Test
@@ -929,35 +918,14 @@ class AdminSettlementStatsTest extends BaseIntegrationTest {
         CreditItemDto item = credits.items().getFirst();
         assertEquals("user", item.payerType());
         assertEquals(client.getId(), item.payerId());
-        assertEquals(LocalDate.of(2026, 3, 12), item.date(),
-            "Naming the session is the point: it is the only place the figure can be corrected");
+        assertEquals(LocalDate.of(2026, 3, 12), item.date(), "The day the money arrived");
+        assertEquals(LocalDate.of(2026, 3, 12), item.targetDate(),
+            "And the session it was typed in at — where the owner remembers taking it");
         assertEquals("slot", item.targetType());
         assertEquals(0, new BigDecimal("50.00").compareTo(item.amount()),
-            "What the row holds OVER its price, not what was paid");
-    }
-
-    @Test
-    @DisplayName("shouldKeepADebtorOutOfTheOverpaymentsListWhileStillNamingTheirCredit")
-    void shouldKeepADebtorOutOfTheOverpaymentsListWhileStillNamingTheirCredit() {
-        // A hundred for a fifty session, then an unpaid fifty. Net he is square, but his credit is
-        // about to be spent by his own debt — so listing him under a heading that totals money we
-        // HOLD would state the opposite of his position on the same screen.
-        partiallyPaidSlot(LocalDate.of(2026, 3, 12), client, "50", "100", LocalDate.of(2026, 3, 12));
-        partiallyPaidSlot(LocalDate.of(2026, 5, 7), client, "50", "0", null);
-
-        SettlementOverviewDto overview = stats.buildOverview("2026", TODAY);
-
-        assertTrue(overview.credits().items().isEmpty(),
-            "He is on the debt list, and that is where his credit is named");
-        assertEquals(0, overview.credits().total().compareTo(BigDecimal.ZERO));
-        assertEquals(0, credits(overview).compareTo(BigDecimal.ZERO));
-
-        // ⚠️ And the other half of the same read must still work. Both lists come from one query
-        // now, so "tidying up" the debtor branch would silently empty the note beside every debt.
-        assertEquals(1, overview.outstanding().credits().size(),
-            "The note beside his debt still has to say he is holding fifty of ours");
-        assertEquals(0, new BigDecimal("50.00")
-            .compareTo(overview.outstanding().credits().getFirst().credit()));
+            "The unused part of the payment, not what was paid");
+        assertEquals(0, credits(stats.buildOverview("2026", TODAY)).compareTo(credits.total()),
+            "The heading and the rows add up to the same figure");
     }
 
     @Test
@@ -1033,51 +1001,60 @@ class AdminSettlementStatsTest extends BaseIntegrationTest {
             "And they agree on what came in, too");
     }
 
-    /**
-     * Written straight into the table: these tests are about the arithmetic on top, and the write
+    /*
+     * Written straight into the tables: these tests are about the arithmetic on top, and the write
      * path has its own coverage in {@code AdminSettlementIntegrationTest}. Going through the service
-     * would also mean fabricating a confirmed booking for every row.
+     * would also mean fabricating a confirmed booking for every row. Each helper writes the CHARGE and,
+     * when money arrived, one PAYMENT typed in at the same target — the shape the modal produces.
      */
+
     /** A standing coaching fee: a settlement whose target is a month, with no calendar entry at all. */
-    private void monthlyFee(LocalDate month, User payer, String amount, LocalDate settledOn) {
-        jdbc.update("INSERT INTO settlements (period_month, user_id, amount, paid_amount, settled_on) "
-                + "VALUES (?, ?, ?, ?, ?)",
-            month, payer.getId(), new BigDecimal(amount),
-            settledOn == null ? BigDecimal.ZERO : new BigDecimal(amount), settledOn);
+    private void monthlyFee(LocalDate month, User payer, String amount, LocalDate paidOn) {
+        jdbc.update("INSERT INTO settlements (period_month, user_id, amount) VALUES (?, ?, ?)",
+            month, payer.getId(), new BigDecimal(amount));
+        if (paidOn != null) {
+            jdbc.update("INSERT INTO payments (user_id, amount, received_on) VALUES (?, ?, ?)",
+                payer.getId(), new BigDecimal(amount), paidOn);
+        }
     }
 
-    private void partiallyPaidSlot(LocalDate on, User payer, String amount, String paid,
-                                   LocalDate settledOn) {
+    private void partiallyPaidSlot(LocalDate on, User payer, String amount, String paid, LocalDate paidOn) {
         TimeSlot slot = timeSlotRepository.saveAndFlush(
             new TimeSlot(on, LocalTime.of(18, 0), LocalTime.of(20, 0), 4));
-        jdbc.update("INSERT INTO settlements (time_slot_id, user_id, amount, paid_amount, settled_on) "
-                + "VALUES (?, ?, ?, ?, ?)",
-            slot.getId(), payer.getId(), new BigDecimal(amount), new BigDecimal(paid), settledOn);
+        jdbc.update("INSERT INTO settlements (time_slot_id, user_id, amount) VALUES (?, ?, ?)",
+            slot.getId(), payer.getId(), new BigDecimal(amount));
+        if (paidOn != null && new BigDecimal(paid).signum() > 0) {
+            jdbc.update("INSERT INTO payments (user_id, amount, received_on, entered_slot_id) "
+                    + "VALUES (?, ?, ?, ?)",
+                payer.getId(), new BigDecimal(paid), paidOn, slot.getId());
+        }
     }
 
     /** A guest's own row. Unique on the guest alone, so there is never a second one to pair it with. */
-    private void guestSettlement(GuestReservation guest, String amount, String paid, LocalDate settledOn) {
-        jdbc.update("INSERT INTO settlements (time_slot_id, guest_reservation_id, amount, paid_amount, settled_on) "
-                + "VALUES (?, ?, ?, ?, ?)",
-            guest.getTimeSlot().getId(), guest.getId(), new BigDecimal(amount), new BigDecimal(paid), settledOn);
+    private void guestSettlement(GuestReservation guest, String amount, String paid, LocalDate paidOn) {
+        jdbc.update("INSERT INTO settlements (time_slot_id, guest_reservation_id, amount) VALUES (?, ?, ?)",
+            guest.getTimeSlot().getId(), guest.getId(), new BigDecimal(amount));
+        if (paidOn != null && new BigDecimal(paid).signum() > 0) {
+            jdbc.update("INSERT INTO payments (guest_reservation_id, amount, received_on, entered_slot_id) "
+                    + "VALUES (?, ?, ?, ?)",
+                guest.getId(), new BigDecimal(paid), paidOn, guest.getTimeSlot().getId());
+        }
     }
 
-    private void settleSlot(LocalDate on, User payer, String amount, LocalDate settledOn) {
-        TimeSlot slot = timeSlotRepository.saveAndFlush(
-            new TimeSlot(on, LocalTime.of(18, 0), LocalTime.of(20, 0), 4));
-        jdbc.update("INSERT INTO settlements (time_slot_id, user_id, amount, paid_amount, settled_on) "
-                + "VALUES (?, ?, ?, ?, ?)",
-            slot.getId(), payer.getId(), new BigDecimal(amount),
-            settledOn == null ? BigDecimal.ZERO : new BigDecimal(amount), settledOn);
+    private void settleSlot(LocalDate on, User payer, String amount, LocalDate paidOn) {
+        partiallyPaidSlot(on, payer, amount, amount, paidOn);
     }
 
-    private void settleEvent(LocalDate from, LocalDate to, User payer, String amount, LocalDate settledOn) {
+    private void settleEvent(LocalDate from, LocalDate to, User payer, String amount, LocalDate paidOn) {
         Event event = eventRepository.saveAndFlush(
             new Event("Kurs", EventType.COURSE, from, to, 8));
-        jdbc.update("INSERT INTO settlements (event_id, user_id, amount, paid_amount, settled_on) "
-                + "VALUES (?, ?, ?, ?, ?)",
-            event.getId(), payer.getId(), new BigDecimal(amount),
-            settledOn == null ? BigDecimal.ZERO : new BigDecimal(amount), settledOn);
+        jdbc.update("INSERT INTO settlements (event_id, user_id, amount) VALUES (?, ?, ?)",
+            event.getId(), payer.getId(), new BigDecimal(amount));
+        if (paidOn != null) {
+            jdbc.update("INSERT INTO payments (user_id, amount, received_on, entered_event_id) "
+                    + "VALUES (?, ?, ?, ?)",
+                payer.getId(), new BigDecimal(amount), paidOn, event.getId());
+        }
     }
 
     private BigDecimal monthOf(SettlementOverviewDto overview, LocalDate month) {

@@ -2,6 +2,11 @@ package pl.nextsteppro.climbing.api.admin.settlement;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import pl.nextsteppro.climbing.domain.settlement.PaymentAllocator;
+import pl.nextsteppro.climbing.domain.settlement.PaymentRepository;
+import pl.nextsteppro.climbing.domain.settlement.PaymentRow;
+import pl.nextsteppro.climbing.domain.settlement.SettlementRepository;
+import pl.nextsteppro.climbing.domain.settlement.SettlementRow;
 import pl.nextsteppro.climbing.domain.settlement.Subscription;
 import pl.nextsteppro.climbing.domain.settlement.SubscriptionRepository;
 import pl.nextsteppro.climbing.domain.user.User;
@@ -31,13 +36,19 @@ public class AdminSubscriptionService {
     static final ZoneId WARSAW = ZoneId.of("Europe/Warsaw");
 
     private final SubscriptionRepository subscriptionRepository;
+    private final SettlementRepository settlementRepository;
+    private final PaymentRepository paymentRepository;
     private final UserRepository userRepository;
     private final MessageService msg;
 
     public AdminSubscriptionService(SubscriptionRepository subscriptionRepository,
+                                    SettlementRepository settlementRepository,
+                                    PaymentRepository paymentRepository,
                                     UserRepository userRepository,
                                     MessageService msg) {
         this.subscriptionRepository = subscriptionRepository;
+        this.settlementRepository = settlementRepository;
+        this.paymentRepository = paymentRepository;
         this.userRepository = userRepository;
         this.msg = msg;
     }
@@ -104,6 +115,10 @@ public class AdminSubscriptionService {
      * A paid fee stays: the money arrived, and rewriting that because a date was written down a week
      * late would be the application overruling the bank. The owner can still delete such a row by
      * hand if it really was a mistake.
+     *
+     * <p>"Unpaid" means the allocation covered NOTHING of it. A partly covered fee stays too — part
+     * of the money arrived for it. (Deleting it would not lose the money, which lives in
+     * {@code payments}, but it would turn a payment made for that month into loose credit.)
      */
     public void end(UUID subscriptionId, EndSubscriptionRequest request) {
         Subscription subscription = requireSubscription(subscriptionId);
@@ -112,7 +127,20 @@ public class AdminSubscriptionService {
             throw new IllegalArgumentException(msg.get("admin.subscription.end.before.start"));
         }
         subscription.endOn(end);
-        subscriptionRepository.deleteUnpaidFeesAfter(subscription.getUserId(), end);
+
+        UUID userId = subscription.getUserId();
+        List<SettlementRow> charges = settlementRepository.findRowsForUser(userId);
+        PaymentAllocator.Allocation allocation = PaymentAllocator.allocate(
+            charges.stream().map(SettlementRow::toCharge).toList(),
+            paymentRepository.findRowsForUsers(List.of(userId)).stream().map(PaymentRow::toReceipt).toList());
+        List<UUID> unpaidAfterEnd = charges.stream()
+            .filter(row -> row.periodMonth() != null && row.periodMonth().isAfter(end))
+            .filter(row -> allocation.chargeState(row.id()).covered().signum() == 0)
+            .map(SettlementRow::id)
+            .toList();
+        if (!unpaidAfterEnd.isEmpty()) {
+            subscriptionRepository.deleteFees(unpaidAfterEnd);
+        }
     }
 
     /** Reopening an ended one, for the case where it was closed by mistake. */
