@@ -6,6 +6,7 @@ import clsx from 'clsx'
 import { TrainingBlock, ReservationBlock, InvitationBlock } from './TrainingBlock'
 import { useSlotDrag } from '../../hooks/useSlotDrag'
 import { isTodayInWarsaw, parseCalendarDate } from '../../utils/calendarDate'
+import { scrollLeftForDayColumn, WEEK_GUTTER_PX } from '../../utils/weekScroll'
 import { useDateLocale } from '../../utils/dateFnsLocale'
 import {
   HOUR_HEIGHT, START_HOUR, TOTAL_HOURS,
@@ -96,7 +97,7 @@ export function TrainingWeekCalendar({
     if (scrollRef.current) {
       const todayIndex = days.findIndex((d) => isTodayInWarsaw(d))
       if (todayIndex > 0) {
-        scrollRef.current.scrollLeft = todayIndex * 130 - 20
+        scrollRef.current.scrollLeft = scrollLeftForDayColumn(dayColumnRefs.current[todayIndex])
       }
     }
   }, [days])
@@ -141,8 +142,9 @@ export function TrainingWeekCalendar({
       <div ref={scrollRef} className="overflow-x-auto">
         <div className="min-w-[900px]">
           {/* Column headers */}
-          <div className="grid border-b border-surface-800" style={{ gridTemplateColumns: '60px repeat(7, minmax(0, 1fr))' }}>
-            <div className="py-2" />
+          <div className="grid border-b border-surface-800" style={{ gridTemplateColumns: `${WEEK_GUTTER_PX}px repeat(7, minmax(0, 1fr))` }}>
+            {/* Sticky like the hour labels — see the time grid below */}
+            <div className="sticky left-0 z-[35] bg-surface-900 py-2" />
             {days.map((date, i) => {
               const d = parseCalendarDate(date)
               const today = isTodayInWarsaw(date)
@@ -168,8 +170,8 @@ export function TrainingWeekCalendar({
               `min-h-14` sizes the EMPTY lane only — one chip is 48px and the add strip 44 on
               touch, so any day with content is past it long before. The gutter keeps its bottom
               clearance because the first hour label ("7:00") is shifted 8px up into this row. */}
-          <div className="grid border-b border-surface-800" style={{ gridTemplateColumns: '60px repeat(7, minmax(0, 1fr))' }}>
-            <div className="flex items-start justify-end pr-2 pt-1.5 pb-3 text-[10px] leading-tight text-surface-500">
+          <div className="grid border-b border-surface-800" style={{ gridTemplateColumns: `${WEEK_GUTTER_PX}px repeat(7, minmax(0, 1fr))` }}>
+            <div className="sticky left-0 z-[35] bg-surface-900 flex items-start justify-end pr-2 pt-1.5 pb-3 text-[10px] leading-tight text-surface-500">
               {t('detail.allDay')}
             </div>
             {days.map((date) => {
@@ -253,9 +255,12 @@ export function TrainingWeekCalendar({
           </div>
 
           {/* Time grid */}
-          <div className="relative grid" style={{ gridTemplateColumns: '60px repeat(7, minmax(0, 1fr))' }}>
-            {/* Hour labels */}
-            <div className="sticky left-0 z-10 bg-surface-900">
+          <div className="relative grid" style={{ gridTemplateColumns: `${WEEK_GUTTER_PX}px repeat(7, minmax(0, 1fr))` }}>
+            {/* Hour labels. z-[35]: above everything inside a day column (block actions
+                z-20, long-press ring z-30) — at z-10 today's entries were painted over the
+                labels when scrolled under them on a phone. Not 40: the clipboard banner is
+                `sticky z-40` earlier in the DOM, so a tie would paint the labels over it. */}
+            <div className="sticky left-0 z-[35] bg-surface-900">
               {hours.map((hour) => (
                 <div
                   key={hour}

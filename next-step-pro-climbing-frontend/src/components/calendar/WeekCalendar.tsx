@@ -8,6 +8,7 @@ import type { EventColorMap } from '../../utils/events'
 import { getEventColorByIndex } from '../../utils/events'
 import { useDateLocale } from '../../utils/dateFnsLocale'
 import { isTodayInWarsaw, nowInWarsaw, parseCalendarDate, parseCalendarDateTime } from '../../utils/calendarDate'
+import { scrollLeftForDayColumn, WEEK_GUTTER_PX } from '../../utils/weekScroll'
 import { minutesToTime, timeToMinutes } from '../../utils/timeOfDay'
 import { useSlotDrag } from '../../hooks/useSlotDrag'
 import { useAuth } from '../../context/AuthContext'
@@ -214,8 +215,7 @@ export function WeekCalendar({
   useEffect(() => {
     if (scrollRef.current) {
       const todayIndex = days.findIndex(d => isTodayInWarsaw(d.date))
-      const columnWidth = 130
-      scrollRef.current.scrollLeft = todayIndex > 0 ? todayIndex * columnWidth - 20 : 0
+      scrollRef.current.scrollLeft = todayIndex > 0 ? scrollLeftForDayColumn(dayColumnRefs.current[todayIndex]) : 0
     }
   }, [days])
 
@@ -260,8 +260,10 @@ export function WeekCalendar({
       <div ref={scrollRef} className="overflow-x-auto">
         <div className="min-w-[900px]">
           {/* Column headers */}
-          <div className="grid border-b border-surface-800" style={{ gridTemplateColumns: '60px repeat(7, minmax(0, 1fr))' }}>
-            <div className="py-2" />
+          <div className="grid border-b border-surface-800" style={{ gridTemplateColumns: `${WEEK_GUTTER_PX}px repeat(7, minmax(0, 1fr))` }}>
+            {/* Sticky like the hour labels below — otherwise the header scrolls under nothing
+                and today's header sits over the gutter while its column is hidden under it */}
+            <div className="sticky left-0 z-[35] bg-surface-900 py-2" />
             {days.map((day, i) => {
               const date = parseCalendarDate(day.date)
               const today = isTodayInWarsaw(day.date)
@@ -300,9 +302,13 @@ export function WeekCalendar({
           </div>
 
           {/* Time grid */}
-          <div className="relative grid" style={{ gridTemplateColumns: '60px repeat(7, minmax(0, 1fr))' }}>
-            {/* Hour labels (sticky left) */}
-            <div className="sticky left-0 z-10 bg-surface-900">
+          <div className="relative grid" style={{ gridTemplateColumns: `${WEEK_GUTTER_PX}px repeat(7, minmax(0, 1fr))` }}>
+            {/* Hour labels (sticky left). z-[35]: above everything inside a day column
+                (slots z-10, events z-20, long-press ring z-30) — at z-10 today's entries
+                were painted over the labels when scrolled under them on a phone. Same value as
+                the training week view, which has a `sticky z-40` banner the labels must stay
+                under; the navbar is z-50. */}
+            <div className="sticky left-0 z-[35] bg-surface-900">
               {hours.map((hour) => (
                 <div
                   key={hour}
