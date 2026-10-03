@@ -16,11 +16,12 @@ import { SlotDetailModal } from "../components/calendar/SlotDetailModal";
 import { EventSignupModal } from "../components/calendar/EventSignupModal";
 import { CreateSlotModal } from "../components/calendar/CreateSlotModal";
 import { AddEntryModal } from "../components/calendar/AddEntryModal";
+import { EventListItem } from "../components/calendar/EventListItem";
 import { ProposeTrainingModal, type ProposeWindow } from "../components/calendar/ProposeTrainingModal";
 import { LoadingSpinner } from "../components/ui/LoadingSpinner";
 import { QueryError } from "../components/ui/QueryError";
 import { Phone, Mail, ExternalLink, Scissors, Copy, X, Bell, CalendarPlus } from "lucide-react";
-import { formatAvailability, buildEventColorMap } from "../utils/events";
+import { buildEventColorMap } from "../utils/events";
 import { useCalendarPromo } from "../hooks/useCalendarPromo";
 import { nowInWarsaw, parseCalendarDate, todayInWarsaw } from '../utils/calendarDate';
 import { travellingPayoutSource } from '../utils/slotClipboard';
@@ -885,70 +886,15 @@ export function CalendarPage() {
                   {t('week.events')}
                 </h3>
                 <div className="space-y-2">
-                  {weekData.events.map((event) => {
-                    const { label, badgeClass } = formatAvailability(event);
-                    // Full also when other people's invitations hold the remaining seats — then the waitlist.
-                    const reservedForOthers = Math.max(0, (event.reservedSeats ?? 0) - (event.isReservedForUser ? 1 : 0));
-                    const isFull = event.currentParticipants + reservedForOthers >= event.maxParticipants;
-                    const color = weekColorMap.get(event.id)!;
-                    return (
-                      <div
-                        key={event.id}
-                        className="text-sm bg-surface-800/40 rounded-lg px-3 py-2 cursor-pointer hover:bg-surface-800/70 transition-colors"
-                        onClick={() => setSelectedEvent(event)}
-                      >
-                        <div className="flex items-center justify-between">
-                          <span className="flex items-center gap-2 text-surface-100 font-medium min-w-0">
-                            <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${color.dot}`} />
-                            {event.title}
-                          </span>
-                          <div className="flex items-center gap-3">
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${badgeClass}`}>
-                              {label}
-                            </span>
-                            <span className="text-surface-400 text-xs">
-                              {format(parseCalendarDate(event.startDate), "dd.MM")}
-                              {event.isMultiDay && (
-                                <> - {format(parseCalendarDate(event.endDate), "dd.MM")}</>
-                              )}
-                            </span>
-                            {event.eventType === 'UNAVAILABLE' ? (
-                              <span className="px-3 py-1 text-xs font-medium rounded-full bg-slate-500/20 text-slate-300">
-                                {t('event.unavailable')}
-                              </span>
-                            ) : event.isUserRegistered ? (
-                              <span className="px-3 py-1 text-xs font-medium rounded-full bg-primary-500/20 text-primary-400">
-                                {t('signedUp')}
-                              </span>
-                            ) : !event.enrollmentOpen ? (
-                              <span className="px-3 py-1 text-xs font-medium rounded-full bg-surface-700 text-surface-400">
-                                {t('common:callPhone')}
-                              </span>
-                            ) : isFull ? (
-                              <span className="px-3 py-1 text-xs font-medium rounded-full bg-amber-500/20 text-amber-400">
-                                {t('event.waitlist.join')}
-                              </span>
-                            ) : (
-                              <span className="px-3 py-1 text-xs font-medium rounded-full bg-primary-600 text-white">
-                                {t('signUp')}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                        {event.courseId && (
-                          <Link
-                            to={`/kursy/${event.courseId}`}
-                            state={{ returnTo: courseReturnTo }}
-                            onClick={(e) => e.stopPropagation()}
-                            className="mt-1.5 flex items-center gap-1 text-xs text-primary-400 hover:text-primary-300 transition-colors"
-                          >
-                            <ExternalLink className="w-3 h-3" />
-                            {t('event.courseDetails')}
-                          </Link>
-                        )}
-                      </div>
-                    );
-                  })}
+                  {weekData.events.map((event) => (
+                    <EventListItem
+                      key={event.id}
+                      event={event}
+                      dotClass={weekColorMap.get(event.id)!.dot}
+                      courseReturnTo={courseReturnTo}
+                      onSelect={setSelectedEvent}
+                    />
+                  ))}
                 </div>
               </div>
             )}
@@ -987,85 +933,15 @@ export function CalendarPage() {
               </h3>
 
               <div className="space-y-2">
-                {monthData.events.map((event) => {
-                  const { label, badgeClass } = formatAvailability(event);
-                  // Full also when other people's invitations hold the remaining seats — then the waitlist.
-                  const reservedForOthers = Math.max(0, (event.reservedSeats ?? 0) - (event.isReservedForUser ? 1 : 0));
-                  const isFull = event.currentParticipants + reservedForOthers >= event.maxParticipants;
-                  const color = monthColorMap.get(event.id)!;
-
-                  return (
-                    <div
-                      key={event.id}
-                      className="text-sm bg-surface-800/40 rounded-lg px-3 py-2 cursor-pointer hover:bg-surface-800/70 transition-colors"
-                      onClick={() => setSelectedEvent(event)}
-                    >
-                      <div className="flex items-center justify-between">
-                      <span className="flex items-center gap-2 text-surface-100 font-medium min-w-0">
-                        <span
-                          className={`w-2.5 h-2.5 rounded-full shrink-0 ${color.dot}`}
-                        />
-                        {event.title}
-                      </span>
-
-                      <div className="flex items-center gap-3">
-                        {/* availability badge */}
-                        <span
-                          className={`px-2 py-1 rounded-full text-xs font-medium ${badgeClass}`}
-                        >
-                          {label}
-                        </span>
-
-                        {/* date */}
-                        <span className="text-surface-400 text-xs">
-                          {format(parseCalendarDate(event.startDate), "dd.MM")}
-                          {event.isMultiDay && (
-                            <> - {format(parseCalendarDate(event.endDate), "dd.MM")}</>
-                          )}
-                        </span>
-
-                        {/* status indicator */}
-                        {event.eventType === 'UNAVAILABLE' ? (
-                          <span className="px-3 py-1 text-xs font-medium rounded bg-slate-500/20 text-slate-300">
-                            {t('event.unavailable')}
-                          </span>
-                        ) : event.isUserRegistered ? (
-                          <span className="px-3 py-1 text-xs font-medium rounded bg-primary-500/20 text-primary-400">
-                            {t('signedUp')}
-                          </span>
-                        ) : event.eventType === 'CONTACT_DAY' ? (
-                          <span className="px-3 py-1 text-xs font-medium rounded bg-indigo-500/20 text-indigo-400">
-                            {t('common:callPhone')}
-                          </span>
-                        ) : !event.enrollmentOpen ? (
-                          <span className="px-3 py-1 text-xs font-medium rounded bg-surface-700 text-surface-400">
-                            {t('common:callPhone')}
-                          </span>
-                        ) : isFull ? (
-                          <span className="px-3 py-1 text-xs font-medium rounded bg-amber-500/20 text-amber-400">
-                            {t('event.waitlist.join')}
-                          </span>
-                        ) : (
-                          <span className="px-3 py-1 text-xs font-medium rounded bg-primary-600 text-white">
-                            {t('signUp')}
-                          </span>
-                        )}
-                      </div>
-                      </div>
-                      {event.courseId && (
-                        <Link
-                          to={`/kursy/${event.courseId}`}
-                          state={{ returnTo: courseReturnTo }}
-                          onClick={(e) => e.stopPropagation()}
-                          className="mt-1.5 flex items-center gap-1 text-xs text-primary-400 hover:text-primary-300 transition-colors"
-                        >
-                          <ExternalLink className="w-3 h-3" />
-                          {t('event.courseDetails')}
-                        </Link>
-                      )}
-                    </div>
-                  );
-                })}
+                {monthData.events.map((event) => (
+                  <EventListItem
+                    key={event.id}
+                    event={event}
+                    dotClass={monthColorMap.get(event.id)!.dot}
+                    courseReturnTo={courseReturnTo}
+                    onSelect={setSelectedEvent}
+                  />
+                ))}
               </div>
             </div>
           )}
