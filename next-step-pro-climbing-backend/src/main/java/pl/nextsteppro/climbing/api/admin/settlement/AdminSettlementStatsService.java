@@ -160,7 +160,7 @@ class AdminSettlementStatsService implements UnassignedSessionCounter {
             credits(ledger),
             revenue(ledger, receivedPayouts, from, to, buckets, year),
             people(ledger, from, to),
-            payouts(receivedPayouts, windowFrom, windowTo));
+            payouts(receivedPayouts, windowFrom, windowTo, today));
     }
 
     /** Both sides of the clients' ledger and the allocation between them — two reads, any size. */
@@ -610,7 +610,8 @@ class AdminSettlementStatsService implements UnassignedSessionCounter {
      * is what the place actually pays. Null whenever either half is missing, because a rate needs
      * both and a zero would be a claim rather than a gap.
      */
-    private PayoutsDto payouts(List<PayoutRow> receivedPayouts, LocalDate windowFrom, LocalDate windowTo) {
+    private PayoutsDto payouts(List<PayoutRow> receivedPayouts, LocalDate windowFrom, LocalDate windowTo,
+                               LocalDate today) {
         // Once, up front. Resolving a name per session row would be a query inside a loop — the
         // exact shape the query-count gates on this tab exist to keep out.
         List<PayoutSourceDto> sources = payoutService.listSources();
@@ -636,9 +637,7 @@ class AdminSettlementStatsService implements UnassignedSessionCounter {
         List<PayoutPeriodDto> periods = byKey.values().stream()
             .sorted(Comparator.comparing((Period period) -> period.month).reversed()
                 .thenComparing(period -> period.sourceName, String.CASE_INSENSITIVE_ORDER))
-            .map(period -> new PayoutPeriodDto(period.sourceId, period.sourceName, period.month,
-                period.sessions, period.minutes, period.sessionsWithoutHours,
-                scale(period.amount), period.rate(), period.transfers, period.heldSessions()))
+            .map(period -> period.toDto(today))
             .toList();
 
         return new PayoutsDto(sources, scale(total), periods);
@@ -712,6 +711,29 @@ class AdminSettlementStatsService implements UnassignedSessionCounter {
         private @Nullable BigDecimal rate() {
             return hourlyRate(amount, minutes);
         }
+
+        /**
+         * Paid, still running, or overdue — see {@link PayoutPeriodStatus}.
+         *
+         * <p>Any transfer settles the month, a zero included: the payer decides the figure, and a
+         * transfer on the books is the owner's statement that this month is dealt with. Without one,
+         * the month is overdue only once its last day in Warsaw has passed — the month still being
+         * worked must not wear the same warning as the one the payer forgot.
+         */
+        private PayoutPeriodStatus status(LocalDate today) {
+            if (!transfers.isEmpty()) {
+                return PayoutPeriodStatus.SETTLED;
+            }
+            return YearMonth.from(month).isBefore(YearMonth.from(today))
+                ? PayoutPeriodStatus.AWAITING
+                : PayoutPeriodStatus.IN_PROGRESS;
+        }
+
+        /** One mapping for both screens that list months, so a row cannot mean two things. */
+        private PayoutPeriodDto toDto(LocalDate today) {
+            return new PayoutPeriodDto(sourceId, sourceName, month, sessions, minutes,
+                sessionsWithoutHours, scale(amount), rate(), transfers, heldSessions(), status(today));
+        }
     }
 
     // ----------------------------------------------------- one payer's history
@@ -724,6 +746,10 @@ class AdminSettlementStatsService implements UnassignedSessionCounter {
      * thing on the list and another on the screen you reach by clicking it.
      */
     public PayoutSourceHistoryDto sourceHistory(UUID sourceId) {
+        return sourceHistory(sourceId, LocalDate.now(WARSAW));
+    }
+
+    PayoutSourceHistoryDto sourceHistory(UUID sourceId, LocalDate today) {
         PayoutSourceDto source = payoutService.requireSourceDto(sourceId);
         List<SessionPayoutRow> sessions = sessionPayoutRepository.findSessionsForSource(sourceId);
         List<PayoutRow> payouts = payoutRepository.findBySourceId(sourceId);
@@ -763,9 +789,7 @@ class AdminSettlementStatsService implements UnassignedSessionCounter {
             chart(periods),
             years(periods),
             periods.stream()
-                .map(period -> new PayoutPeriodDto(period.sourceId, period.sourceName, period.month,
-                    period.sessions, period.minutes, period.sessionsWithoutHours,
-                    scale(period.amount), period.rate(), period.transfers, period.heldSessions()))
+                .map(period -> period.toDto(today))
                 .toList());
     }
 

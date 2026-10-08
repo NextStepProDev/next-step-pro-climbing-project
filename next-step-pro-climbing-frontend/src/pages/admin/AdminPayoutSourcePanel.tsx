@@ -280,13 +280,14 @@ function PeriodTable({ history, onChanged }: { history: PayoutSourceHistory; onC
     <div className="bg-surface-900 rounded-xl border border-surface-800 p-4 space-y-3">
       <h3 className="text-sm font-medium text-surface-300">{t('settlements.source.months')}</h3>
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[32rem] text-sm">
+        <table className="w-full min-w-[38rem] text-sm">
           <thead>
             <tr className="text-left text-xs text-surface-500 border-b border-surface-800">
               <th className="py-1 font-normal">{t('settlements.tab.payouts.payer')}</th>
               <th className="py-1 font-normal">{t('settlements.tab.payouts.period')}</th>
               <th className="py-1 font-normal text-right">{t('settlements.tab.payouts.sessions')}</th>
               <th className="py-1 font-normal text-right">{t('settlements.tab.payouts.hours')}</th>
+              <th className="py-1 pl-3 font-normal">{t('settlements.tab.payouts.statusHeader')}</th>
               <th className="py-1 font-normal text-right">{t('settlements.tab.payouts.amount')}</th>
               <th className="py-1 font-normal text-right">{t('settlements.tab.payouts.rate')}</th>
             </tr>

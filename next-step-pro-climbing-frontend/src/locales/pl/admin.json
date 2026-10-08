@@ -1085,6 +1085,17 @@
         "amount": "wypłata",
         "rate": "stawka / h",
         "awaiting": "brak wypłaty",
+        "statusHeader": "status",
+        "status": {
+          "SETTLED": "rozliczony",
+          "IN_PROGRESS": "w toku",
+          "AWAITING": "czeka na wypłatę"
+        },
+        "awaitingCount_one": "{{count}} miesiąc czeka na wypłatę",
+        "awaitingCount_few": "{{count}} miesiące czekają na wypłatę",
+        "awaitingCount_many": "{{count}} miesięcy czeka na wypłatę",
+        "confirmDeleteTitle": "Usunąć wypłatę?",
+        "confirmDelete": "Wypłata {{amount}} z {{date}} zniknie z tego miesiąca. Jeśli to była pomyłka w kwocie, dodaj ją potem od nowa.",
         "add": "Dodaj wypłatę",
         "periodField": "Za miesiąc (dowolny dzień)",
         "amountField": "Kwota (netto)",

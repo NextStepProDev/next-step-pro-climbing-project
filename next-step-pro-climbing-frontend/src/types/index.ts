@@ -702,7 +702,12 @@ export interface PayoutPeriod {
   // so the list and the figures cannot disagree — without it a wrong rate is a dead end: you can
   // see that "12 sessions, 14 h" is off and have nowhere to go to find which of the twelve is.
   heldSessions: PayoutSession[]
+  // Computed by the server (Warsaw clock). SETTLED = any transfer arrived; IN_PROGRESS = nothing yet
+  // and the month has not ended; AWAITING = nothing and the month is over.
+  status: PayoutPeriodStatus
 }
+
+export type PayoutPeriodStatus = 'SETTLED' | 'IN_PROGRESS' | 'AWAITING'
 
 // One session counted in a month of bulk work. `minutes` is null when the length is not knowable
 // (all-day, or multi-day with start and end on different days) — the same entries the row counts

@@ -939,6 +939,7 @@ function PayoutsCard({ payouts }: { payouts: PayoutsSummary }) {
   const [adding, setAdding] = useState(false)
 
   const active = payouts.sources.filter((source) => !source.archived)
+  const awaiting = payouts.periods.filter((period) => period.status === 'AWAITING').length
   const refresh = () => queryClient.invalidateQueries({ queryKey: ['admin', 'settlements'] })
 
   /**
@@ -975,15 +976,25 @@ function PayoutsCard({ payouts }: { payouts: PayoutsSummary }) {
     >
       <p className="text-xs text-surface-500">{t('settlements.tab.payouts.axis')}</p>
 
+      {/* The one figure worth chasing, said once above the table rather than left for the reader to
+          count amber rows. Counts only the rows shown, so it follows the year filter like them. */}
+      {awaiting > 0 && (
+        <p className="flex items-center gap-1.5 text-sm text-amber-500">
+          <AlertTriangle className="w-4 h-4 shrink-0" aria-hidden="true" />
+          {t('settlements.tab.payouts.awaitingCount', { count: awaiting })}
+        </p>
+      )}
+
       {payouts.periods.length > 0 && (
         <div className="relative overflow-x-auto">
-          <table className="min-w-[34rem] w-full text-sm">
+          <table className="min-w-[40rem] w-full text-sm">
             <thead>
               <tr className="text-xs text-surface-500 text-left">
                 <th className="py-1 font-normal">{t('settlements.tab.payouts.payer')}</th>
                 <th className="py-1 font-normal">{t('settlements.tab.payouts.period')}</th>
                 <th className="py-1 font-normal text-right">{t('settlements.tab.payouts.sessions')}</th>
                 <th className="py-1 font-normal text-right">{t('settlements.tab.payouts.hours')}</th>
+                <th className="py-1 pl-3 font-normal">{t('settlements.tab.payouts.statusHeader')}</th>
                 <th className="py-1 font-normal text-right">{t('settlements.tab.payouts.amount')}</th>
                 <th className="py-1 font-normal text-right">{t('settlements.tab.payouts.rate')}</th>
               </tr>

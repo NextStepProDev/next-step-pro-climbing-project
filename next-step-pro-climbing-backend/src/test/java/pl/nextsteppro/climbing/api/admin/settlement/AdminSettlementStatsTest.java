@@ -19,8 +19,10 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -613,6 +615,41 @@ class AdminSettlementStatsTest extends BaseIntegrationTest {
             "but no session earned it any more");
         assertEquals(0, new BigDecimal("150.00").compareTo(after.credits().total()),
             "so it is her credit, waiting for the next session");
+    }
+
+    /**
+     * Which months are paid has to be readable without reading the amount column as a status.
+     *
+     * <p>⚠️ The month still being worked is IN_PROGRESS, not overdue — it used to wear the same amber
+     * "no payout" as a month the payer forgot, which made the warning noise for most of every month.
+     * The boundary is the month's last day in Warsaw ({@code TODAY} is 31 August).
+     */
+    @Test
+    @DisplayName("shouldTellAPaidMonthFromARunningOneFromAnOverdueOne")
+    void shouldTellAPaidMonthFromARunningOneFromAnOverdueOne() {
+        UUID sourceId = createSource("Chwyciarnia");
+        assignToSource(contractorSlot(LocalDate.of(2026, 6, 9)), sourceId);
+        assignToSource(contractorSlot(LocalDate.of(2026, 7, 14)), sourceId);
+        assignToSource(contractorSlot(LocalDate.of(2026, 8, 11)), sourceId);
+        payout(sourceId, LocalDate.of(2026, 6, 1), "414", LocalDate.of(2026, 7, 7));
+
+        Map<LocalDate, PayoutPeriodStatus> onTheTab = stats.buildOverview("2026", TODAY).payouts().periods()
+            .stream().collect(Collectors.toMap(PayoutPeriodDto::month, PayoutPeriodDto::status));
+
+        assertEquals(PayoutPeriodStatus.SETTLED, onTheTab.get(LocalDate.of(2026, 6, 1)));
+        assertEquals(PayoutPeriodStatus.AWAITING, onTheTab.get(LocalDate.of(2026, 7, 1)),
+            "July is over and nothing came: the invoice nobody has paid");
+        assertEquals(PayoutPeriodStatus.IN_PROGRESS, onTheTab.get(LocalDate.of(2026, 8, 1)),
+            "On its last day August is still being worked, not overdue");
+
+        assertEquals(PayoutPeriodStatus.AWAITING,
+            stats.sourceHistory(sourceId, TODAY.plusDays(1)).periods().getFirst().status(),
+            "From the first of September August is overdue — on the payer's own screen too");
+
+        // A second tranche only adds to the figure; a transfer of any size settles the month.
+        payout(sourceId, LocalDate.of(2026, 7, 1), "0", LocalDate.of(2026, 8, 20));
+        assertEquals(PayoutPeriodStatus.SETTLED,
+            stats.sourceHistory(sourceId, TODAY).periods().get(1).status());
     }
 
     // -------------------------------------------------------- one payer's history

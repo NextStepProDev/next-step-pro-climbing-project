@@ -1075,6 +1075,16 @@
         "amount": "pago",
         "rate": "tarifa / h",
         "awaiting": "sin pago",
+        "statusHeader": "estado",
+        "status": {
+          "SETTLED": "liquidado",
+          "IN_PROGRESS": "en curso",
+          "AWAITING": "pendiente de pago"
+        },
+        "awaitingCount_one": "{{count}} mes pendiente de pago",
+        "awaitingCount_other": "{{count}} meses pendientes de pago",
+        "confirmDeleteTitle": "¿Eliminar el pago?",
+        "confirmDelete": "El pago de {{amount}} recibido el {{date}} se eliminará de este mes. Si el importe era un error, vuelve a añadirlo después.",
         "add": "Añadir pago",
         "periodField": "Del mes (cualquier día)",
         "amountField": "Importe (neto)",
