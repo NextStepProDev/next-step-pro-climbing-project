@@ -719,7 +719,7 @@ describe('AdminSettlementsPanel', () => {
     expect(screen.queryByRole('button', { name: 'settlements.tab.payouts.add' })).not.toBeInTheDocument()
   })
 
-  it('shows a month of work nobody has paid for yet, and no rate for it', async () => {
+  it('says in words which months are paid, running, or overdue', async () => {
     getOverview.mockResolvedValue(makeOverview({
       payouts: {
         sources: [{ id: 'src-1', name: 'SP nr 12', archived: false }],
@@ -730,11 +730,19 @@ describe('AdminSettlementsPanel', () => {
             sessions: 12, minutes: 1080, sessionsWithoutHours: 0,
             amount: 1400, ratePerHour: 77.78,
             transfers: [{ id: 'p-1', amount: 1400, receivedOn: '2026-11-08' }], heldSessions: [],
+            status: 'SETTLED',
           },
           {
             sourceId: 'src-1', sourceName: 'SP nr 12', month: '2026-11-01',
             sessions: 4, minutes: 240, sessionsWithoutHours: 0,
             amount: 0, ratePerHour: null, transfers: [], heldSessions: [],
+            status: 'AWAITING',
+          },
+          {
+            sourceId: 'src-1', sourceName: 'SP nr 12', month: '2026-12-01',
+            sessions: 2, minutes: 120, sessionsWithoutHours: 0,
+            amount: 0, ratePerHour: null, transfers: [], heldSessions: [],
+            status: 'IN_PROGRESS',
           },
         ],
       },
@@ -743,10 +751,38 @@ describe('AdminSettlementsPanel', () => {
     renderPanel()
 
     expect(await screen.findByText('settlements.tab.payouts.title')).toBeInTheDocument()
-    // The invoice nobody has paid — the row this table is worth having for.
-    expect(screen.getByText('settlements.tab.payouts.awaiting')).toBeInTheDocument()
+    // The status is a word on every row, not something read off whether the amount column holds a
+    // figure — that inference is what made the paid months impossible to spot.
+    expect(screen.getByText('settlements.tab.payouts.status.SETTLED')).toBeInTheDocument()
+    expect(screen.getByText('settlements.tab.payouts.status.AWAITING')).toBeInTheDocument()
+    expect(screen.getByText('settlements.tab.payouts.status.IN_PROGRESS')).toBeInTheDocument()
+    expect(screen.getByText('settlements.tab.payouts.awaitingCount')).toBeInTheDocument()
     // And the one figure that exists nowhere else: 1400 over eighteen HOURS, not twelve sessions.
     expect(screen.getByText(/77[.,]78/)).toBeInTheDocument()
+  })
+
+  /**
+   * ⚠️ The month still being worked is not overdue, so it must not raise the warning above the
+   * table. Before the status existed, it wore the same amber as a month the payer forgot.
+   */
+  it('raises no awaiting warning for a month that is still running', async () => {
+    getOverview.mockResolvedValue(makeOverview({
+      payouts: {
+        sources: [{ id: 'src-1', name: 'SP nr 12', archived: false }],
+        total: 0,
+        periods: [{
+          sourceId: 'src-1', sourceName: 'SP nr 12', month: '2026-12-01',
+          sessions: 2, minutes: 120, sessionsWithoutHours: 0,
+          amount: 0, ratePerHour: null, transfers: [], heldSessions: [],
+          status: 'IN_PROGRESS',
+        }],
+      },
+    }))
+
+    renderPanel()
+
+    expect(await screen.findByText('settlements.tab.payouts.status.IN_PROGRESS')).toBeInTheDocument()
+    expect(screen.queryByText('settlements.tab.payouts.awaitingCount')).not.toBeInTheDocument()
   })
 
   it('records a transfer with both of its dates', async () => {
@@ -804,6 +840,7 @@ describe('AdminSettlementsPanel', () => {
           sessions: 2, minutes: 180, sessionsWithoutHours: 1,
           amount: 0, ratePerHour: null,
           transfers: [],
+          status: 'AWAITING',
           heldSessions: [
             { targetType: 'slot', targetId: 'slot-1', date: '2026-09-08', title: 'Grupa A', minutes: 90 },
             { targetType: 'slot', targetId: 'slot-2', date: '2026-09-15', title: null, minutes: 90 },
@@ -845,6 +882,7 @@ describe('AdminSettlementsPanel', () => {
           sourceId: 'src-1', sourceName: 'Chwyciarnia', month: '2026-09-01',
           sessions: 1, minutes: 90, sessionsWithoutHours: 0,
           amount: 0, ratePerHour: null, transfers: [], heldSessions: [],
+          status: 'AWAITING',
         }],
       },
     }))
@@ -870,6 +908,7 @@ describe('AdminSettlementsPanel', () => {
             { id: 'p-2', amount: 14000, receivedOn: '2026-11-09' },
           ],
           heldSessions: [],
+          status: 'SETTLED',
         }],
       },
     }))
@@ -881,7 +920,17 @@ describe('AdminSettlementsPanel', () => {
     await user.click(await screen.findByRole('button', { expanded: false }))
     await user.click(screen.getAllByRole('button', { name: 'settlements.tab.payouts.deleteTransfer' })[1])
 
+    // Deleting is the only way to correct a transfer, so it must not be one stray tap: the cross
+    // only asks, and backing out leaves the money where it was.
+    expect(deletePayout).not.toHaveBeenCalled()
+    await user.click(screen.getByRole('button', { name: 'cancel' }))
+    expect(deletePayout).not.toHaveBeenCalled()
+
+    await user.click(screen.getAllByRole('button', { name: 'settlements.tab.payouts.deleteTransfer' })[1])
+    await user.click(screen.getByRole('button', { name: 'confirm' }))
+
     await waitFor(() => expect(deletePayout).toHaveBeenCalledWith('p-2'))
+    expect(deletePayout).toHaveBeenCalledTimes(1)
   })
 
   /**

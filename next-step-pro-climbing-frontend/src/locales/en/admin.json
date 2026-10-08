@@ -1074,6 +1074,16 @@
         "amount": "transfer",
         "rate": "rate / h",
         "awaiting": "not paid yet",
+        "statusHeader": "status",
+        "status": {
+          "SETTLED": "settled",
+          "IN_PROGRESS": "in progress",
+          "AWAITING": "awaiting payout"
+        },
+        "awaitingCount_one": "{{count}} month is awaiting payout",
+        "awaitingCount_other": "{{count}} months are awaiting payout",
+        "confirmDeleteTitle": "Delete this transfer?",
+        "confirmDelete": "The transfer of {{amount}} received on {{date}} will be removed from this month. If the amount was a typo, add it again afterwards.",
         "add": "Add a transfer",
         "periodField": "For month (any day)",
         "amountField": "Amount (net)",

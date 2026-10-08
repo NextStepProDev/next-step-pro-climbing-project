@@ -45,6 +45,7 @@ function history(overrides: Partial<PayoutSourceHistory> = {}): PayoutSourceHist
       heldSessions: [
         { targetType: 'slot', targetId: 'slot-9', date: '2026-05-12', title: 'Grupa A', minutes: 90 },
       ],
+      status: 'AWAITING',
     }],
     ...overrides,
   }
@@ -142,7 +143,7 @@ describe('AdminPayoutSourcePanel', () => {
 
     // A rate needs both halves; hours with no transfer yet is a gap, and a zero would be a claim.
     expect(await screen.findAllByText('—')).not.toHaveLength(0)
-    expect(screen.getAllByText('settlements.tab.payouts.awaiting').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('settlements.tab.payouts.status.AWAITING').length).toBeGreaterThan(0)
   })
 
   it('tells a payer with no history what to do instead of drawing empty axes', async () => {

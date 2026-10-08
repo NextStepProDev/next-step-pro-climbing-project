@@ -500,6 +500,9 @@ record PayoutsDto(
  * @param transfers      the individual arrivals this row adds up. Carried so a mistyped figure can
  *                       be removed: without them the feature is write-only, and a 14000 entered for
  *                       1400 would be permanent.
+ * @param status         whether this month is paid — see {@link PayoutPeriodStatus}. Computed here
+ *                       rather than on the screen, because "has the month ended" is a Warsaw-clock
+ *                       question and the browser's clock answers a different one.
  */
 record PayoutPeriodDto(
     UUID sourceId,
@@ -511,8 +514,29 @@ record PayoutPeriodDto(
     BigDecimal amount,
     @Nullable BigDecimal ratePerHour,
     List<PayoutEntryDto> transfers,
-    List<PayoutSessionDto> heldSessions
+    List<PayoutSessionDto> heldSessions,
+    PayoutPeriodStatus status
 ) {}
+
+/**
+ * Is one month of bulk work paid.
+ *
+ * <p>"Paid" means a transfer arrived — any transfer. There is no expected amount to compare it with
+ * (the payer prices the work after the fact), so a second tranche simply adds to the figure; it does
+ * not turn a settled month back into an open one.
+ *
+ * <p>⚠️ IN_PROGRESS exists so the month still being worked is not announced as overdue. Before it,
+ * the current month carried the same amber "no payout" as a month the payer had forgotten, which made
+ * the warning noise for most of every month.
+ */
+enum PayoutPeriodStatus {
+    /** At least one transfer arrived for the month. */
+    SETTLED,
+    /** Nothing arrived yet, and the month has not ended. */
+    IN_PROGRESS,
+    /** Nothing arrived, and the month is over: the invoice nobody has paid. */
+    AWAITING
+}
 
 /** One arrival, addressable so it can be deleted. */
 record PayoutEntryDto(UUID id, BigDecimal amount, LocalDate receivedOn) {}

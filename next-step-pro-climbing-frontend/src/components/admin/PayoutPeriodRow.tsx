@@ -3,12 +3,24 @@ import { useMutation } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Link, useLocation } from 'react-router-dom'
 import { format } from 'date-fns'
-import { ChevronDown, ChevronRight } from 'lucide-react'
+import { AlertTriangle, CheckCircle2, ChevronDown, ChevronRight, Clock } from 'lucide-react'
 import { adminSettlementsApi } from '../../api/client'
 import { parseCalendarDate } from '../../utils/calendarDate'
 import { useDateLocale } from '../../utils/dateFnsLocale'
+import { ConfirmModal } from '../ui/ConfirmModal'
 import { useMoney } from './useMoney'
-import type { PayoutPeriod } from '../../types'
+import type { PayoutEntry, PayoutPeriod, PayoutPeriodStatus } from '../../types'
+
+/**
+ * Icon and colour per status. Amber only on AWAITING: the running month used to wear the same
+ * warning as a forgotten one, which made it noise for most of every month. `amber-500`, not 400 —
+ * 400 turns into a brown indistinguishable from green in the light theme.
+ */
+const STATUS_LOOK: Record<PayoutPeriodStatus, { icon: typeof CheckCircle2; className: string }> = {
+  SETTLED: { icon: CheckCircle2, className: 'text-green-400' },
+  IN_PROGRESS: { icon: Clock, className: 'text-surface-400' },
+  AWAITING: { icon: AlertTriangle, className: 'text-amber-500' },
+}
 
 /**
  * One month of one payer, expandable into everything it adds up: the sessions it counted and the
@@ -39,6 +51,10 @@ export function PayoutPeriodRow({
   const location = useLocation()
   const year = new URLSearchParams(location.search).get('year')
   const [open, setOpen] = useState(false)
+  // A transfer is only ever corrected by deleting it, so the delete must not be one stray tap.
+  const [pendingDelete, setPendingDelete] = useState<PayoutEntry | null>(null)
+  const status = STATUS_LOOK[period.status]
+  const StatusIcon = status.icon
   const expandable = period.transfers.length > 0 || period.heldSessions.length > 0
 
   const remove = useMutation({
@@ -91,12 +107,19 @@ export function PayoutPeriodRow({
             </span>
           )}
         </td>
+        {/* The answer to "is this month paid" in words, not inferred from whether the amount column
+            holds a figure. Computed by the server, which knows when a month ends in Warsaw. */}
+        <td className="py-2 pl-3">
+          <span className={`inline-flex items-center gap-1 whitespace-nowrap text-xs ${status.className}`}>
+            <StatusIcon className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+            {t(`settlements.tab.payouts.status.${period.status}`)}
+          </span>
+        </td>
         <td className="py-2 text-right tabular-nums">
-          {period.amount > 0 ? (
+          {period.transfers.length > 0 ? (
             <span className="text-surface-200">{money(period.amount)}</span>
           ) : (
-            /* Work done, nothing received: the row people actually come here for. */
-            <span className="text-amber-500">{t('settlements.tab.payouts.awaiting')}</span>
+            <span className="text-surface-500">—</span>
           )}
         </td>
         <td className="py-2 text-right text-surface-200 tabular-nums">
@@ -116,7 +139,7 @@ export function PayoutPeriodRow({
           <td className="py-1 pl-4 text-surface-500 tabular-nums">
             {format(parseCalendarDate(session.date), 'dd.MM.yyyy', { locale })}
           </td>
-          <td className="py-1 text-surface-400" colSpan={2}>
+          <td className="py-1 text-surface-400" colSpan={3}>
             <Link
               to={`/calendar?date=${session.date}&${session.targetType}=${session.targetId}`}
               state={{ returnTo: location.pathname + location.search }}
@@ -142,9 +165,9 @@ export function PayoutPeriodRow({
       {open && period.transfers.map((transfer) => (
         <tr key={transfer.id} className="text-xs">
           <td />
-          {/* ⚠️ Three, not two: the table has six columns and this row had five, so every transfer
-              rendered its amount under "hours" and left the rate column empty. */}
-          <td className="py-1 pl-4 text-surface-500" colSpan={3}>
+          {/* ⚠️ Four: the table has seven columns, and a row one short renders its amount under the
+              wrong header and leaves the rate column empty — it happened once already. */}
+          <td className="py-1 pl-4 text-surface-500" colSpan={4}>
             {t('settlements.tab.payouts.received', {
               date: format(parseCalendarDate(transfer.receivedOn), 'dd.MM.yyyy', { locale }),
             })}
@@ -153,7 +176,7 @@ export function PayoutPeriodRow({
           <td className="py-1 text-right">
             <button
               type="button"
-              onClick={() => remove.mutate(transfer.id)}
+              onClick={() => setPendingDelete(transfer)}
               aria-label={t('settlements.tab.payouts.deleteTransfer', {
                 amount: money(transfer.amount),
               })}
@@ -164,6 +187,21 @@ export function PayoutPeriodRow({
           </td>
         </tr>
       ))}
+      <ConfirmModal
+        isOpen={pendingDelete !== null}
+        onClose={() => setPendingDelete(null)}
+        onConfirm={() => {
+          if (pendingDelete) remove.mutate(pendingDelete.id)
+        }}
+        title={t('settlements.tab.payouts.confirmDeleteTitle')}
+        message={pendingDelete
+          ? t('settlements.tab.payouts.confirmDelete', {
+              amount: money(pendingDelete.amount),
+              date: format(parseCalendarDate(pendingDelete.receivedOn), 'dd.MM.yyyy', { locale }),
+            })
+          : ''}
+        variant="danger"
+      />
     </>
   )
 }
