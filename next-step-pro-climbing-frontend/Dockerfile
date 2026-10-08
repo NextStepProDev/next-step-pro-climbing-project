@@ -12,6 +12,10 @@
 #
 # Building locally: run `npm run build` BEFORE `docker build .`.
 FROM nginx:alpine
+# Same reasoning as the backend image: the base ships whatever Alpine packages it was built with and
+# is rebuilt on its own schedule, so fixes already published in the Alpine repo sit unapplied until
+# then. Nothing here is pinned by name, so tomorrow's advisory needs no edit to this line.
+RUN apk upgrade --no-cache
 COPY dist /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 

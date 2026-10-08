@@ -17,7 +17,13 @@
 # ambiguous exactly the way the old `COPY --from=build …/*.jar` was. CI never saw this: it
 # checks out a fresh tree, which is why the packaging step there asserts the count instead.
 FROM eclipse-temurin:25-jre-alpine
-RUN apk add --no-cache curl
+# curl is for the container healthcheck. The upgrade is because the base image ships whatever Alpine
+# packages it was built with and is rebuilt on its own schedule, not ours — so fixes that already
+# exist in the Alpine repo sat unapplied here for weeks while Trivy kept reporting them. Upgrading
+# everything on top of the base pulls those in at build time and keeps the image current between
+# base bumps. `apk upgrade` (not a list of package names) on purpose: naming today's offenders
+# means coming back to edit this line for tomorrow's, which is the maintenance nobody does.
+RUN apk upgrade --no-cache && apk add --no-cache curl
 WORKDIR /app
 
 # ⚠️ Must stay ABOVE the addgroup/chown block below: that is what makes the jar owned by `app`,
