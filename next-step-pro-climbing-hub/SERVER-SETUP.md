@@ -20,7 +20,7 @@ Warstwę systemową stawia automat `provision-server.sh`; sekrety i dane wgrywa 
 
 - **`provision-server.sh`** — orkiestrator całości (idempotentny, `sudo bash`)
 - **`setup-swap.sh`** — 2 GB swap, swappiness 10
-- **`nsp-backup.sh`** + **`nsp-backup.logrotate`** — codzienny backup: `pg_dump` + tar uploadów → `rclone copy` na zaszyfrowany Google Drive (`gdrive-crypt:`). Retencja **7 dni lokalnie, 90 dni na GDrive** (archiwa starzeją się niezależnie). Każdy artefakt jest weryfikowany przed nadaniem właściwej nazwy, a wynik przebiegu raportowany do healthchecks.io. Cron root `0 3 * * *`. **Odtwarzanie: `RESTORE.md`.**
+- **`nsp-backup.sh`** + **`nsp-backup.logrotate`** — codzienny backup: `pg_dump` + tar uploadów (tylko gdy pliki się zmieniły, najrzadziej co 30 dni) → `rclone copy` na zaszyfrowany Google Drive (`gdrive-crypt:`). Retencja **7 dni lokalnie, 40 dni na GDrive** (archiwa starzeją się niezależnie; najnowsze archiwum plików zostaje lokalnie zawsze). Każdy artefakt jest weryfikowany przed nadaniem właściwej nazwy, a wynik przebiegu raportowany do healthchecks.io. Cron root `0 3 * * *`. **Odtwarzanie: `RESTORE.md`.**
 - **`cf-origin-firewall.sh`** + **`cf-origin-firewall.service`** — hardening: port 443 tylko z zakresów IP Cloudflare, 81 (panel NPM) zablokowany, 80 otwarty (renewal certów). Reaplikuje się przy każdym boocie (usługa `After=docker`).
 
 ---
@@ -142,7 +142,7 @@ logrotate -d /etc/logrotate.d/nsp-backup 2>&1 | tail -3
 
 - **`rules.v4` NIE kopiować między serwerami** — zawiera host-specific nazwy mostków Docker (`br-...`). Firewall CF odtwarza reguły dynamicznie przez usługę systemd; `netfilter-persistent` trzyma tylko baseline INPUT.
 - **NPM przed aplikacją** — frontend podpina się do sieci `first-aid-kit_default`, którą tworzy NPM (`external: true` w compose aplikacji).
-- **Kopie idą na GDrive przez `rclone copy`, nigdy `sync`** — `sync` mirroruje lokalny katalog, więc lokalne przycinanie po 7 dniach kasowałoby też zdalne archiwum i 90-dniowa retencja nie mogłaby istnieć. Skutek uboczny: seed `/backups` na nowym serwerze przestał być krokiem krytycznym (pusty katalog nie kasuje już niczego zdalnie), ale nadal warto go zrobić, żeby mieć z czego odtwarzać lokalnie.
+- **Kopie idą na GDrive przez `rclone copy`, nigdy `sync`** — `sync` mirroruje lokalny katalog, więc lokalne przycinanie po 7 dniach kasowałoby też zdalne archiwum i 40-dniowa retencja nie mogłaby istnieć. Skutek uboczny: seed `/backups` na nowym serwerze przestał być krokiem krytycznym (pusty katalog nie kasuje już niczego zdalnie), ale nadal warto go zrobić, żeby mieć z czego odtwarzać lokalnie.
 - **Cloudflare proxy ON** → cutover = zmiana rekordu A na nowe IP (TTL nieistotny, edge przełącza się od razu). Origin przyjmuje 443 tylko od Cloudflare (firewall).
 - **A1 to ARM** — obrazy z GHCR muszą być multi-arch (CI z `platforms: linux/amd64,linux/arm64`).
 - **Obraz A1 nie ma `cron`** domyślnie — `provision-server.sh` go instaluje.

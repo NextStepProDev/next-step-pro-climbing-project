@@ -11,10 +11,21 @@ Odtworzenie całego serwera od zera (Docker, NPM, firewall) — `SERVER-SETUP.md
 
 ## 0. Co gdzie leży
 
-| Co | Gdzie lokalnie (7 dni) | Gdzie zdalnie (90 dni) |
+| Co | Gdzie lokalnie (7 dni) | Gdzie zdalnie (40 dni) |
 |---|---|---|
-| Baza | `/backups/db/<RRRR-MM-DD>.sql.gz` | `gdrive-crypt:db/` |
-| Pliki (`/app/uploads`) | `/backups/files/<RRRR-MM-DD>.tar.gz` | `gdrive-crypt:files/` |
+| Baza (co noc) | `/backups/db/<RRRR-MM-DD>.sql.gz` | `gdrive-crypt:db/` |
+| Pliki (`/app/uploads`) — **tylko gdy się zmieniły**, najrzadziej co 30 dni; najnowsze zostaje lokalnie zawsze | `/backups/files/<RRRR-MM-DD>.tar.gz` | `gdrive-crypt:files/` |
+
+- **Archiwum plików nie powstaje co noc.** Skrypt porównuje listę plików (nazwa, rozmiar,
+  data modyfikacji) z poprzednią (`/var/lib/nsp-backup/files-state`) i pakuje je tylko przy
+  zmianie albo gdy ostatnie archiwum ma 30 dni — żeby przycinanie GDrive po 40 dniach nigdy
+  nie zostawiło go bez archiwum. **Każde archiwum jest pełne**, nie przyrostowe. Do zrzutu
+  bazy z dnia `DATE` pasuje **najnowsze archiwum plików z dnia `DATE` albo wcześniejszego**
+  (`FILES_DATE` w komendach niżej) — brak nowszego znaczy dokładnie tyle, że pliki od tamtej
+  pory się nie zmieniły. Skasowanie pliku stanu wymusza archiwum przy najbliższym przebiegu.
+- 40 dni, nie 90: GDrive (15 GB) dzielą climbing, fire-academy i anovastudio, a ~150 MB
+  archiwum plików co noc przy 90 dniach zapełniłoby konto w listopadzie 2026 (policzone
+  2026-10-09). Polityka prywatności obiecuje „do 90 dni” — 40 mieści się w tej obietnicy.
 
 - Zdalny remote jest typu `crypt` — pliki są zaszyfrowane **przed** wysłaniem. Bez
   `/root/.config/rclone/rclone.conf` (hasła crypt) **nie odczytasz ich w żaden sposób**,
@@ -38,17 +49,20 @@ problemu — reguła działa w jedną stronę. Odwrotnie nie: zrzutu z 18 nie wl
 # Co jest lokalnie
 sudo ls -la /backups/db /backups/files
 
-# Co jest zdalnie (90 dni wstecz)
+# Co jest zdalnie (40 dni wstecz; pliki tylko z dni, w których się zmieniły)
 sudo rclone lsl gdrive-crypt:db
 sudo rclone lsl gdrive-crypt:files
 ```
 
-Jeśli potrzebnej daty nie ma lokalnie, ściągnij ją z GDrive (pobranie, nic nie kasuje):
+Ustal dwie daty: `DATE` — dzień zrzutu bazy, `FILES_DATE` — **najnowsze archiwum plików
+nie późniejsze niż `DATE`** (zwykle wcześniejsze, bo archiwum powstaje tylko przy zmianie).
+Jeśli którejś nie ma lokalnie, ściągnij ją z GDrive (pobranie, nic nie kasuje):
 
 ```bash
 DATE=2026-08-21
-sudo rclone copy "gdrive-crypt:db/${DATE}.sql.gz"    /backups/db/
-sudo rclone copy "gdrive-crypt:files/${DATE}.tar.gz" /backups/files/
+FILES_DATE=2026-08-14
+sudo rclone copy "gdrive-crypt:db/${DATE}.sql.gz"          /backups/db/
+sudo rclone copy "gdrive-crypt:files/${FILES_DATE}.tar.gz" /backups/files/
 ```
 
 **Sprawdź kopię, ZANIM na niej cokolwiek oprzesz** — dokładnie tym testem, którym
@@ -58,7 +72,7 @@ sprawdza ją skrypt kopii (`gunzip -t` tu nie wystarcza, patrz `CLAUDE.md`):
 sudo gunzip -c /backups/db/${DATE}.sql.gz | tail -20 | grep -q 'PostgreSQL database dump complete' \
   && echo "OK: zrzut kompletny" || echo "UWAGA: zrzut obcięty — weź inną datę"
 
-sudo tar tzf /backups/files/${DATE}.tar.gz >/dev/null \
+sudo tar tzf /backups/files/${FILES_DATE}.tar.gz >/dev/null \
   && echo "OK: archiwum czytelne" || echo "UWAGA: archiwum uszkodzone — weź inną datę"
 ```
 
@@ -102,7 +116,7 @@ docker compose -f docker-compose.prod.yml start backend
 ## 3. Odtworzenie plików (zdjęcia, załączniki, materiały)
 
 ```bash
-DATE=2026-08-21
+FILES_DATE=2026-08-14     # najnowsze archiwum plików ≤ dzień zrzutu bazy (sekcja 1)
 cd /home/ubuntu/nsp-app
 
 # 3.1 Backend musi stać — trzyma pliki otwarte
@@ -118,7 +132,7 @@ docker run --rm -v nsp-app_uploads_data_prod:/data:ro -v /backups/files:/backup 
 docker run --rm -v nsp-app_uploads_data_prod:/data alpine \
   sh -c 'rm -rf /data/* /data/.[!.]* 2>/dev/null; true'
 docker run --rm -v nsp-app_uploads_data_prod:/data -v /backups/files:/backup:ro alpine \
-  tar xzf "/backup/${DATE}.tar.gz" -C /data
+  tar xzf "/backup/${FILES_DATE}.tar.gz" -C /data
 
 # 3.4 Właściciel plików musi zgadzać się z UID backendu: 1001:1001 (użytkownik `app`).
 #     tar rozpakowany jako root zwykle odtwarza właściciela sam — to jest zabezpieczenie
@@ -173,8 +187,10 @@ done
 ```
 
 I ręcznie w przeglądarce: **otwórz galerię i jedno zdjęcie kursu** — to jedyny sposób
-sprawdzenia, że baza i wolumen plików pochodzą ze spójnej pary. Baza odtworzona z 21., a pliki
-z 14. dadzą komplet zielonych odpowiedzi wyżej i połamane obrazki na stronie.
+sprawdzenia, że baza i wolumen plików pochodzą ze spójnej pary. Baza z 21. i pliki z 14. są
+spójną parą **tylko wtedy**, gdy między 14. a 21. nie powstało żadne nowsze archiwum plików;
+pominięcie nowszego (np. z 18.) da komplet zielonych odpowiedzi wyżej i połamane obrazki
+na stronie.
 
 ---
 
@@ -216,8 +232,8 @@ docker stop nsp-restore-drill
 Archiwum plików sprawdzisz bez rozpakowywania czegokolwiek:
 
 ```bash
-tar tzf /backups/files/${DATE}.tar.gz | head -20
-tar tzf /backups/files/${DATE}.tar.gz | wc -l    # liczba plików w archiwum
+tar tzf /backups/files/${FILES_DATE}.tar.gz | head -20
+tar tzf /backups/files/${FILES_DATE}.tar.gz | wc -l    # liczba plików w archiwum
 ```
 
 **Zapisz wynik ćwiczenia** (data, wersja kopii, liczby wierszy) — przy następnej awarii
@@ -284,7 +300,7 @@ udanej kopii dobowej z niego. Do tego czasu jest Twoim jedynym **szybkim** wyjś
 
 ⚠️ **Gdy go skasujesz, wyjściem zostaje zrzut z kroku 1 — i dlatego leży w `/backups/milestones`,
 jedynym katalogu, którego retencja nie przycina** (ani siedmiodniowa lokalna, ani
-dziewięćdziesięciodniowa na Drive). Zapisany do `db/` obok kopii dobowych żył **siedem dni**: przy
+czterdziestodniowa na Drive). Zapisany do `db/` obok kopii dobowych żył **siedem dni**: przy
 migracji na 18 stary wolumen zniknął wcześniej, niż minął ten tydzień, i zrzut był jedną nocą od
 skasowania razem z całą drogą powrotu. Tego katalogu nie zapełnia nic automatycznie i nic go nie
 czyści — wkładasz do niego ręcznie, kasujesz ręcznie, a jeden zrzut to ~150 kB.
@@ -298,7 +314,7 @@ czyści — wkładasz do niego ręcznie, kasujesz ręcznie, a jeden zrzut to ~15
 | `syntax error at or near "\restrict"` | `psql` starszy niż serwer, który robił zrzut | Odtwarzaj `psql`-em w kontenerze `postgres:18-alpine` (sekcja 2.4) |
 | `database "nextsteppro" is being accessed by other users` | Backend trzyma połączenia | `docker compose -f docker-compose.prod.yml stop backend` przed DROP |
 | `psql` kończy 0, ale aplikacja rzuca błędami schematu | Zrzut wlany bez `ON_ERROR_STOP=1` — połowa poleceń przepadła | Powtórz od 2.3 z `ON_ERROR_STOP=1` |
-| Strona działa, obrazki połamane | Baza i pliki z różnych dni | Odtwórz oba z **tej samej daty** |
+| Strona działa, obrazki połamane | Archiwum plików starsze niż najnowsze ≤ dzień zrzutu | Weź **najnowsze** archiwum z `gdrive-crypt:files` nie późniejsze niż zrzut (sekcja 1) |
 | Strona działa, ale wgranie nowego pliku rzuca błędem | Zły właściciel wolumenu | `chown -R 1001:1001` (3.4) |
 | `rclone` nie widzi plików na GDrive | Brak `rclone.conf` z hasłami crypt | Wgraj `/root/.config/rclone/rclone.conf` z managera haseł, `chmod 600` |
 | Kopii z potrzebnego dnia nie ma nigdzie | Kopie milczały od dłuższego czasu | Sprawdź `/var/log/nsp-backup.log` i monitor healthchecks.io — patrz `CLAUDE.md`, „Cisza jest awarią" |
