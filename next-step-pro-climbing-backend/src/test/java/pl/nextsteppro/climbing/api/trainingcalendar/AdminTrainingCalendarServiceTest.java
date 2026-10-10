@@ -116,7 +116,7 @@ class AdminTrainingCalendarServiceTest {
             LocalDate.of(2026, 9, 15), null);
         AthleteGoalDto dto = new AthleteGoalDto(
             UUID.randomUUID(), "GENERAL", "SHORT", "Przejść 7a", LocalDate.of(2026, 9, 15),
-            null, null, false, null, Instant.now());
+            null, null, false, null, null, Instant.now());
         when(goalService.createGoal(athleteId, request)).thenReturn(dto);
 
         // When
@@ -135,7 +135,7 @@ class AdminTrainingCalendarServiceTest {
             LocalDate.of(2027, 3, 1));
         AthleteGoalDto dto = new AthleteGoalDto(
             goalId, "GENERAL", "LONG", "7c przed 30-tką", LocalDate.of(2027, 3, 1),
-            null, null, false, Instant.now(), Instant.now());
+            null, null, false, Instant.now(), Instant.now(), Instant.now());
         when(goalService.requireGoal(goalId)).thenReturn(goal);
         when(goalService.achieveGoal(eq(goalId), any())).thenReturn(dto);
 

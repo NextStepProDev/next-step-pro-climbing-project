@@ -261,6 +261,7 @@ public class AthleteGoalService {
             goal.getStartWeightKg(),
             goal.isAchievedAutomatically(),
             goal.getAchievedAt(),
+            goal.getAchievementRecordedAt(),
             goal.getCreatedAt()
         );
     }

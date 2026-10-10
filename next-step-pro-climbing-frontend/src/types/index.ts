@@ -1962,6 +1962,8 @@ export interface AthleteGoal {
   // Closed by a weigh-in rather than by the coach — the only case that may be reopened
   achievedAutomatically: boolean
   achievedAt: string | null
+  // When the achievement was recorded — achievedAt is backdatable, the celebration runs from this
+  achievementRecordedAt: string | null
   createdAt: string
 }
 

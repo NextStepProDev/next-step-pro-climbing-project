@@ -247,11 +247,15 @@ class AthleteGoalServiceTest {
         when(goalRepository.findById(goalId)).thenReturn(Optional.of(goal));
 
         // When: coach records the achievement a few days late
+        Instant before = Instant.now();
         AthleteGoalDto dto = service.achieveGoal(goalId, LocalDate.of(2026, 7, 10));
 
-        // Then: achievedAt lands on that day's start in Warsaw time
+        // Then: achievedAt lands on that day's start in Warsaw time...
         Instant expected = LocalDate.of(2026, 7, 10).atStartOfDay(java.time.ZoneId.of("Europe/Warsaw")).toInstant();
         assertEquals(expected, dto.achievedAt());
+        // ...while the celebration window starts from the moment it was recorded
+        assertNotNull(dto.achievementRecordedAt());
+        assertFalse(dto.achievementRecordedAt().isBefore(before));
     }
 
     @Test
@@ -513,6 +517,7 @@ class AthleteGoalServiceTest {
 
         // Then
         assertNull(dto.achievedAt());
+        assertNull(dto.achievementRecordedAt());
         assertFalse(dto.achievedAutomatically());
         assertFalse(goal.isAchieved());
     }

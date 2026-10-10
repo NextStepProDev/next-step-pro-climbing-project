@@ -23,8 +23,12 @@ const SECTIONS: { kind: GoalKind; titleKey: string }[] = [
 ]
 
 // A freshly achieved goal celebrates in its slot for a while before the slot
-// goes back to "add a goal" (coach) / disappears (athlete)
+// goes back to "add a goal" (coach) / disappears (athlete). Counted from when the achievement
+// was RECORDED, not from achievedAt: the coach backdates goals ticked off weeks late, and the
+// true date in the trophy chest must not cost the athlete their week on the profile.
 const CELEBRATION_DAYS = 7
+
+const recordedAt = (g: AthleteGoal): string | null => g.achievementRecordedAt ?? g.achievedAt
 
 /**
  * One card slot is identified by kind AND horizon: an athlete may chase a technique goal and
@@ -106,12 +110,17 @@ export function GoalsBanner({ api, scopeKey, isCoachView }: GoalsBannerProps) {
   if (!goals) return null
 
   const activeBySlot = new Map(goals.active.map((g) => [slotKey(g.kind, g.horizon), g]))
-  // Slot celebration: latest achieved goal per slot, if fresh and the slot is free
+  // Slot celebration: the most recently RECORDED achievement per slot, if fresh and the slot is
+  // free. The list is ordered by achievedAt, so "first in the list" would let a backdated goal
+  // hide behind an older recording with a later achievement date.
   const celebrating = new Map<SlotKey, AthleteGoal>()
   for (const g of goals.achieved) {
     const key = slotKey(g.kind, g.horizon)
-    if (activeBySlot.has(key) || celebrating.has(key)) continue
-    if (g.achievedAt && differenceInCalendarDays(nowInWarsaw(), toWarsawWallClock(new Date(g.achievedAt))) <= CELEBRATION_DAYS) {
+    const recorded = recordedAt(g)
+    if (activeBySlot.has(key) || !recorded) continue
+    if (differenceInCalendarDays(nowInWarsaw(), toWarsawWallClock(new Date(recorded))) > CELEBRATION_DAYS) continue
+    const current = celebrating.get(key)
+    if (!current || new Date(recorded) > new Date(recordedAt(current)!)) {
       celebrating.set(key, g)
     }
   }
