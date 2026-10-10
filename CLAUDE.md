@@ -47,7 +47,7 @@ Aktualna zawartość — `ls`, nie ten plik. Dwa wyjątki warte zapamiętania, b
 
 ## Baza danych — Flyway
 
-**Stan: V100. Następna migracja: V101.** V92–V97 są na `main` (scalone 2026-09-01 i 09-07) i na produkcji — 97 wierszy w `flyway_schema_history`, sprawdzone 2026-09-12; V98–V100 czekają na wdrożenie (⚠️ V100 **usuwa** `settlements.paid_amount` — przed nim kopia bazy).
+**Stan: V101. Następna migracja: V102.** V92–V97 są na `main` (scalone 2026-09-01 i 09-07) i na produkcji — 97 wierszy w `flyway_schema_history`, sprawdzone 2026-09-12; V98–V101 czekają na wdrożenie (⚠️ V100 **usuwa** `settlements.paid_amount` — przed nim kopia bazy).
 Lista migracji: `ls backend/src/main/resources/db/migration/` — poniżej tylko to, czego ze schematu nie widać.
 
 ⚠️ **Nigdy nie modyfikuj zastosowanej migracji** — nawet zmiana komentarza łamie checksum na produkcji.
@@ -243,6 +243,7 @@ Zadanie to zobowiązanie na dany dzień: limit kalorii, woda, sen. **Osobny wier
 ### Cele i waga
 
 - Cel osiągnięty **ręcznie** przez trenera jest nieedytowalny i nieodwracalny — można go tylko **usunąć** ze skrzyni trofeów (inaczej pomyłkowe odhaczenie zostaje na zawsze). Data osiągnięcia może być wsteczna, nie przyszła.
+- **Zielona karta „Osiągnięty" (7 dni w banerze) liczy się od `achievement_recorded_at` (V101), nie od `achieved_at`.** Trener zalicza cele z opóźnieniem i cofa datę do prawdziwej — liczone od `achieved_at` świętowanie przepadało wtedy w całości. Skrzynia trofeów dalej sortuje po `achieved_at`, więc w slocie świeci cel **najpóźniej zapisany**, nie pierwszy z listy. Obie kolumny ustawione albo obie NULL (CHECK; reopen czyści obie).
 - Cel WEIGHT zamyka się **sam** przy ważeniu i **tylko wtedy** (`achieved_automatically`) trener może go cofnąć — **bez limitu czasu**, bo zmyślony pomiar wykrywa się zwykle po tygodniach.
 - **Regułę zamykania wymusza TYP, nie warunek if.** `WeightTrendCalculator` (czysty, bez Springa i bez zegara — dzień zawsze przekazywany jawnie) ma dwie ścieżki: `trendOn` → `TrendPoint` (wyświetlanie, działa od 1 pomiaru) i `confirmedTrendOn` → `ConfirmedTrend` (zamykanie celu, `null` poniżej 3 pomiarów). `isMetBy` przyjmuje **wyłącznie** `ConfirmedTrend`, więc zamknięcie celu z 2 pomiarów to błąd kompilacji, nie bug do wyłapania w review.
 - **Wagę zapisuje wyłącznie zawodnik.** Endpointu zapisu po stronie admina nie ma i to jest decyzja. Trener ma odczyt + flagę `rapidLoss` (>1%/tydz.), pokazywaną **tylko jemu**.

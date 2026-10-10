@@ -20,6 +20,7 @@ function makeGoal(overrides: Partial<AthleteGoal> & { kind: GoalKind; horizon: G
     startWeightKg: null,
     achievedAutomatically: false,
     achievedAt: null,
+    achievementRecordedAt: null,
     createdAt: '2026-01-01T00:00:00Z',
     ...overrides,
   }
@@ -229,6 +230,47 @@ describe('GoalsBanner', () => {
     await userEvent.click(screen.getByRole('button', { name: /confirm|potwierd|tak/i }))
 
     await waitFor(() => expect(remove).toHaveBeenCalledWith(freshlyClosed.id))
+  })
+
+  it('celebrates a goal ticked off late from the day it was recorded, not the backdated day', async () => {
+    // The coach backdates to the true date weeks ago; the athlete still gets the green card
+    const backdated = makeGoal({
+      kind: 'GENERAL',
+      horizon: 'SHORT',
+      content: '7a zrobione',
+      achievedAt: '2026-01-15T00:00:00Z',
+      achievementRecordedAt: new Date().toISOString(),
+    })
+
+    renderBanner(makeApi([], [backdated]))
+
+    expect(await screen.findByText('goals.achieved')).toBeInTheDocument()
+    expect(screen.getByText('7a zrobione')).toBeInTheDocument()
+  })
+
+  it('celebrates the latest recording in a slot even when the list puts an older one first', async () => {
+    // The chest is ordered by achievedAt, so a backdated recording sits BEHIND an older one
+    const recordedEarlier = makeGoal({
+      id: 'earlier',
+      kind: 'GENERAL',
+      horizon: 'SHORT',
+      content: 'Starszy wpis',
+      achievedAt: new Date(Date.now() - 2 * 86_400_000).toISOString(),
+      achievementRecordedAt: new Date(Date.now() - 2 * 86_400_000).toISOString(),
+    })
+    const backdatedJustNow = makeGoal({
+      id: 'just-now',
+      kind: 'GENERAL',
+      horizon: 'SHORT',
+      content: 'Zaliczony przed chwilą',
+      achievedAt: '2026-01-15T00:00:00Z',
+      achievementRecordedAt: new Date().toISOString(),
+    })
+
+    renderBanner(makeApi([], [recordedEarlier, backdatedJustNow]))
+
+    expect(await screen.findByText('Zaliczony przed chwilą')).toBeInTheDocument()
+    expect(screen.queryByText('Starszy wpis')).not.toBeInTheDocument()
   })
 
   it('never offers the undo for a goal the coach closed by hand', async () => {

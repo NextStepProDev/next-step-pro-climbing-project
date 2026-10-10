@@ -457,6 +457,8 @@ record AthleteGoalDto(
     // Closed by a weigh-in rather than by the coach — the only case that may be reopened
     boolean achievedAutomatically,
     @Nullable Instant achievedAt,
+    // When the achievement was recorded (achievedAt is backdatable) — starts the celebration window
+    @Nullable Instant achievementRecordedAt,
     Instant createdAt
 ) {}
 

@@ -20,6 +20,7 @@ function makeGoal(id: string, content: string): AthleteGoal {
     startWeightKg: null,
     achievedAutomatically: false,
     achievedAt: null,
+    achievementRecordedAt: null,
     createdAt: '2026-01-01T00:00:00Z',
   }
 }

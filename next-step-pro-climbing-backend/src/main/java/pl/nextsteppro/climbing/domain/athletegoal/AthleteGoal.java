@@ -70,6 +70,15 @@ public class AthleteGoal {
     @Nullable
     private Instant achievedAt;
 
+    /**
+     * When the achievement was RECORDED, as opposed to {@code achievedAt} (when it happened, and
+     * backdatable). The banner's celebration window runs from this one, so a goal ticked off
+     * weeks late still gets its week on the profile while the trophy chest keeps the true date.
+     */
+    @Column(name = "achievement_recorded_at")
+    @Nullable
+    private Instant achievementRecordedAt;
+
     /** True only when a weigh-in closed this goal — the sole case the coach may reopen. */
     @Column(name = "achieved_automatically", nullable = false)
     private boolean achievedAutomatically;
@@ -128,18 +137,21 @@ public class AthleteGoal {
     /** The coach may backdate the achievement (goals often fall days before the visit). */
     public void markAchieved(Instant achievedAt) {
         this.achievedAt = achievedAt;
+        this.achievementRecordedAt = Instant.now();
         this.achievedAutomatically = false;
     }
 
     /** Closed by a weigh-in rather than by a person — and therefore reversible. */
     public void markAchievedAutomatically(Instant achievedAt) {
         this.achievedAt = achievedAt;
+        this.achievementRecordedAt = Instant.now();
         this.achievedAutomatically = true;
     }
 
     /** Undo of an automatic closure only; the caller enforces that (see AthleteGoalService). */
     public void reopen() {
         this.achievedAt = null;
+        this.achievementRecordedAt = null;
         this.achievedAutomatically = false;
     }
 
@@ -211,6 +223,11 @@ public class AthleteGoal {
     @Nullable
     public Instant getAchievedAt() {
         return achievedAt;
+    }
+
+    @Nullable
+    public Instant getAchievementRecordedAt() {
+        return achievementRecordedAt;
     }
 
     public Instant getCreatedAt() {
