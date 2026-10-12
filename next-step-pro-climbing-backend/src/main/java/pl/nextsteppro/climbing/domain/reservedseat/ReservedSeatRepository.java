@@ -136,4 +136,15 @@ public interface ReservedSeatRepository extends JpaRepository<ReservedSeat, UUID
         ORDER BY e.startDate
         """)
     List<ReservedSeat> findUpcomingPendingEventInvitesByUserId(UUID userId, LocalDate today);
+
+    /** Every seat held for the user, past and used ones included — the personal-data export. */
+    @Query("""
+        SELECT rs FROM ReservedSeat rs
+        LEFT JOIN FETCH rs.timeSlot ts
+        LEFT JOIN FETCH ts.event
+        LEFT JOIN FETCH rs.event
+        WHERE rs.user.id = :userId
+        ORDER BY rs.createdAt
+        """)
+    List<ReservedSeat> findAllByUserIdWithTarget(UUID userId);
 }

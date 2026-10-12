@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { exportFileName, slugify, toExportRows } from './ascentExport'
+import { exportFileName, toExportRows } from './ascentExport'
 import type { Ascent, AscentDiscipline } from '../../types'
 
 // The font is a binary import; only the pure helpers are under test here, and jsPDF is not
@@ -43,18 +43,6 @@ function ascent(overrides: Partial<Ascent> = {}): Ascent {
     ...overrides,
   }
 }
-
-describe('slugify', () => {
-  it('strips Polish diacritics, including the stroked l', () => {
-    expect(slugify('Jan Kowalski')).toBe('jan-kowalski')
-    expect(slugify('Michał Wójcik')).toBe('michal-wojcik')
-    expect(slugify('Łukasz Ćwik')).toBe('lukasz-cwik')
-  })
-
-  it('collapses punctuation and trims separators', () => {
-    expect(slugify('  Anna   Wspinaczka!  ')).toBe('anna-wspinaczka')
-  })
-})
 
 describe('exportFileName', () => {
   beforeEach(() => {

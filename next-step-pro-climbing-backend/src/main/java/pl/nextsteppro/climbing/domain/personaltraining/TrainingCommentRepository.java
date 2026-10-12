@@ -120,4 +120,10 @@ public interface TrainingCommentRepository extends JpaRepository<TrainingComment
         GROUP BY a.id
         """)
     List<AthleteLastActivity> findLastCommentActivityPerAthlete();
+
+    /**
+     * Every message in every thread of one athlete — plan entries and booked sessions alike, the
+     * coach's side included, because the conversation is with this person. The personal-data export.
+     */
+    List<TrainingComment> findByAthleteIdOrderByCreatedAtAsc(UUID athleteId);
 }

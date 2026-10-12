@@ -1079,6 +1079,12 @@ export const adminUserHistoryApi = {
     fetchApi<UserReservationHistory>(
       `/admin/users/${userId}/reservations?pastPage=${pastPage}&pastSize=${pastSize}`,
     ),
+
+  // Everything held about the person, for a GDPR access request. Untyped on purpose: the browser
+  // only writes it to a file, and a TS mirror of every section would be a second schema to keep
+  // in step. Each call is logged server-side under the calling admin.
+  exportData: (userId: string) =>
+    fetchApi<Record<string, unknown>>(`/admin/users/${userId}/export`),
 }
 
 // Aggregate statistics about the whole user base (Users panel → Statistics).
@@ -1191,6 +1197,11 @@ export const adminSettlementsApi = {
   // own DTO: the settlement types are deliberately unreachable from that package.
   getPayerSummary: (userId: string) =>
     fetchApi<PayerSummary>(`/admin/settlements/payers/user/${userId}`),
+
+  // The money half of the personal-data export — every line, payment and subscription. Joined
+  // with `adminUserHistoryApi.exportData` into one file by `userDataExport.ts`.
+  getPayerExport: (userId: string) =>
+    fetchApi<Record<string, unknown>>(`/admin/settlements/payers/user/${userId}/export`),
 
   // Line items for the accountant. Its own endpoint: the tab needs aggregates, and making the
   // common read carry a year of rows would be paying for the rare case every time.

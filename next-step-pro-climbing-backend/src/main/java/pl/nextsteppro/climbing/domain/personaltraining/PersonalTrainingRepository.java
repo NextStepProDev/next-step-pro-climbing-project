@@ -14,6 +14,9 @@ public interface PersonalTrainingRepository extends JpaRepository<PersonalTraini
     List<PersonalTraining> findByAthleteIdAndTrainingDateBetweenOrderByTrainingDateAscStartTimeAsc(
         UUID athleteId, LocalDate from, LocalDate to);
 
+    /** The whole plan, unbounded — the personal-data export, not a calendar view. */
+    List<PersonalTraining> findByAthleteIdOrderByTrainingDateAscStartTimeAsc(UUID athleteId);
+
     /** Admin user card headline count. TRAINING only — a month of kept calorie limits is not
      * a month of training, the same split {@code TrainingStatsService} makes on the way in. */
     @Query("""

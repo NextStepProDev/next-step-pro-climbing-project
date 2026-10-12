@@ -270,6 +270,14 @@ class AdminSettlementStatsService implements UnassignedSessionCounter {
             lastPayment, lines.stream().limit(recentLimit).toList());
     }
 
+    /** Every payment one client made, oldest first — the cash half of the personal-data export. */
+    public List<PayerPaymentDto> payerPayments(UUID userId) {
+        return paymentRepository.findRowsForUsers(List.of(userId)).stream()
+            .sorted(Comparator.comparing(PaymentRow::receivedOn).thenComparing(PaymentRow::createdAt))
+            .map(row -> new PayerPaymentDto(row.receivedOn(), row.amount(), row.createdAt()))
+            .toList();
+    }
+
     // -------------------------------------------------------------- unassigned
 
     /**
