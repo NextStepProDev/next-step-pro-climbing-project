@@ -112,4 +112,7 @@ public interface ClimbingAscentRepository extends JpaRepository<ClimbingAscent, 
     /** Admin user card headline count: both terrains, since the card counts logged ascents,
      * not rock ones. */
     long countByAthleteId(UUID athleteId);
+
+    /** Both terrains, unbounded — the personal-data export. */
+    List<ClimbingAscent> findByAthleteIdOrderByClimbedOnAscCreatedAtAsc(UUID athleteId);
 }

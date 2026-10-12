@@ -9,6 +9,7 @@ import org.jspecify.annotations.Nullable;
 import pl.nextsteppro.climbing.domain.settlement.PayoutSource;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
@@ -719,6 +720,23 @@ record SubscriptionDto(
     @Nullable LocalDate endedOn,
     boolean active
 ) {}
+
+/**
+ * One client's money for the personal-data export (GDPR art. 15/20). The browser adds it to the
+ * file from {@code /api/admin/users/{id}/export}; it lives here because the settlement types may
+ * not leave this package.
+ *
+ * @param summary       the card's summary with EVERY line, not the last few
+ * @param payments      each payment exactly as handed over
+ * @param subscriptions standing monthly fees, past and current
+ */
+record PayerExportDto(
+    PayerSummaryDto summary,
+    List<PayerPaymentDto> payments,
+    List<SubscriptionDto> subscriptions
+) {}
+
+record PayerPaymentDto(LocalDate receivedOn, BigDecimal amount, Instant enteredAt) {}
 
 record SaveSubscriptionRequest(
     @NotNull @DecimalMin("0") @DecimalMax("100000") BigDecimal amount,

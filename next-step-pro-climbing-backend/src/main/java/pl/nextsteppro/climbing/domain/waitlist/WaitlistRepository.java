@@ -38,6 +38,10 @@ public interface WaitlistRepository extends JpaRepository<Waitlist, UUID> {
     @Query("SELECT w FROM Waitlist w JOIN FETCH w.timeSlot ts LEFT JOIN FETCH ts.event WHERE w.user.id = :userId AND w.status IN ('WAITING', 'PENDING_CONFIRMATION') ORDER BY ts.date ASC, ts.startTime ASC")
     List<Waitlist> findActiveByUserId(UUID userId);
 
+    /** Every queue entry, any status — the personal-data export. */
+    @Query("SELECT w FROM Waitlist w JOIN FETCH w.timeSlot ts LEFT JOIN FETCH ts.event WHERE w.user.id = :userId ORDER BY w.createdAt ASC")
+    List<Waitlist> findAllByUserIdWithSlot(UUID userId);
+
     @Query("SELECT COUNT(w) > 0 FROM Waitlist w WHERE w.user.id = :userId AND w.timeSlot.id = :slotId AND w.status IN :statuses")
     boolean existsByUserAndSlotAndStatuses(UUID userId, UUID slotId, List<WaitlistStatus> statuses);
 

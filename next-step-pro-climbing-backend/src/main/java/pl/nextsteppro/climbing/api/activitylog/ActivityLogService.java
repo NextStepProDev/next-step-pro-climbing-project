@@ -125,6 +125,10 @@ public class ActivityLogService {
         save(admin, ActivityActionType.ADMIN_USER_ATHLETE_TOGGLED, null, null, null, description);
     }
 
+    public void logAdminUserDataExported(User admin, String description) {
+        save(admin, ActivityActionType.ADMIN_USER_DATA_EXPORTED, null, null, null, description);
+    }
+
     // Personal training calendar: no slot/event FK on ActivityLog — context goes into description
     public void logAdminTrainingCreated(User admin, String description) {
         save(admin, ActivityActionType.ADMIN_TRAINING_CREATED, null, null, null, description);

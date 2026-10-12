@@ -15,4 +15,7 @@ public interface AthleteGoalRepository extends JpaRepository<AthleteGoal, UUID> 
 
     /** Trophy chest: full achievement history, newest first. */
     List<AthleteGoal> findByAthleteIdAndAchievedAtIsNotNullOrderByAchievedAtDesc(UUID athleteId);
+
+    /** Every goal, open and achieved — the personal-data export. */
+    List<AthleteGoal> findByAthleteIdOrderByCreatedAtAsc(UUID athleteId);
 }
