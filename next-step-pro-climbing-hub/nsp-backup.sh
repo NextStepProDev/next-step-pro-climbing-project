@@ -171,7 +171,12 @@ log "Prune remote older than ${REMOTE_RETENTION_DAYS}d"
 # The exclude is the remote half of the milestone rule above. Without it the off-site
 # copy of a pre-upgrade dump expires 40 days after the upgrade — exactly when nobody
 # is watching it any more, and with no local copy left to notice it went.
-rclone delete "$REMOTE" --min-age "${REMOTE_RETENTION_DAYS}d" \
+# --drive-use-trash=false deletes for good instead of moving to the Drive trash. The
+# trash counts against the account's 15 GB and Google empties it only after 30 days,
+# so every ~150 MB uploads archive held space for 70 days, not 40 — 13.2 GB of 15 in
+# the worst case across the three projects sharing the account (measured 2026-10-12).
+# An expired backup has nothing worth undeleting.
+rclone delete "$REMOTE" --min-age "${REMOTE_RETENTION_DAYS}d" --drive-use-trash=false \
   --exclude "milestones/**" --log-file="$LOG" --log-level INFO
 
 log "Prune local older than ${LOCAL_RETENTION_DAYS}d"
