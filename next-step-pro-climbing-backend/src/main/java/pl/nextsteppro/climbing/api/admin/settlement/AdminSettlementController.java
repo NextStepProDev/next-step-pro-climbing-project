@@ -6,6 +6,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import org.springframework.http.CacheControl;
 import org.springframework.http.ResponseEntity;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -245,6 +246,19 @@ public class AdminSettlementController {
     @GetMapping("/payers/user/{userId}")
     public ResponseEntity<PayerSummaryDto> payerSummary(@PathVariable UUID userId) {
         return ResponseEntity.ok(statsService.payerSummary(userId, RECENT_PAYER_LINES));
+    }
+
+    @Operation(summary = "One client's money, all of it, for a personal-data export",
+        description = "Every line, every payment and every subscription. The browser adds this to "
+            + "the file from /api/admin/users/{userId}/export — a second request for the same reason "
+            + "the card's money block is one: the settlement types do not leave this package.")
+    @GetMapping("/payers/user/{userId}/export")
+    public ResponseEntity<PayerExportDto> payerExport(@PathVariable UUID userId) {
+        PayerExportDto export = new PayerExportDto(
+            statsService.payerSummary(userId, Integer.MAX_VALUE),
+            statsService.payerPayments(userId),
+            subscriptionService.forUser(userId));
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(export);
     }
 
     @Operation(summary = "Every income line of a year, for the accountant",

@@ -511,6 +511,9 @@
       "notified": "Notificado",
       "notNotified": "Sin notificar",
       "adminNote": "Nota del administrador",
+      "exportData": "Descargar datos (JSON)",
+      "exportHint": "Todos los datos de esta persona en un solo archivo — la respuesta a una solicitud del RGPD (art. 15/20). La descarga queda registrada en la pestaña Actividad.",
+      "exportFailed": "No se pudieron descargar los datos — no se guardó ningún archivo.",
       "tabs": {
         "overview": "Resumen",
         "reservations": "Reservas",
@@ -722,6 +725,7 @@
       "ADMIN_USER_DELETED": "Usuario eliminado",
       "ADMIN_USER_FORCE_LOGOUT": "Sesión cerrada en todos los dispositivos",
       "ADMIN_USER_ATHLETE_TOGGLED": "Estado de atleta cambiado",
+      "ADMIN_USER_DATA_EXPORTED": "Datos del usuario exportados (RGPD)",
       "ADMIN_TRAINING_CREATED": "Entrenamiento añadido para el atleta",
       "ADMIN_TRAINING_UPDATED": "Entrenamiento del atleta editado",
       "ADMIN_TRAINING_DELETED": "Entrenamiento del atleta eliminado",

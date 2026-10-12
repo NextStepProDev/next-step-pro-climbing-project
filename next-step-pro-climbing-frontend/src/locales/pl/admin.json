@@ -511,6 +511,9 @@
       "notified": "Powiadomiony",
       "notNotified": "Bez powiadomienia",
       "adminNote": "Notatka admina",
+      "exportData": "Pobierz dane (JSON)",
+      "exportHint": "Wszystkie dane tej osoby w jednym pliku — odpowiedź na żądanie z RODO (art. 15/20). Pobranie zapisuje się w zakładce Aktywność.",
+      "exportFailed": "Nie udało się pobrać danych — plik nie został zapisany.",
       "tabs": {
         "overview": "Przegląd",
         "reservations": "Rezerwacje",
@@ -723,6 +726,7 @@
       "ADMIN_USER_DELETED": "Użytkownik usunięty",
       "ADMIN_USER_FORCE_LOGOUT": "Wylogowano ze wszystkich urządzeń",
       "ADMIN_USER_ATHLETE_TOGGLED": "Zmieniono status zawodnika",
+      "ADMIN_USER_DATA_EXPORTED": "Wydano dane użytkownika (RODO)",
       "ADMIN_TRAINING_CREATED": "Dodano trening zawodnikowi",
       "ADMIN_TRAINING_UPDATED": "Edytowano trening zawodnika",
       "ADMIN_TRAINING_DELETED": "Usunięto trening zawodnika",

@@ -27,6 +27,8 @@ public enum ActivityActionType {
     ADMIN_USER_DELETED,
     ADMIN_USER_FORCE_LOGOUT,
     ADMIN_USER_ATHLETE_TOGGLED,
+    // Somebody's personal data handed out (GDPR art. 15/20) — accountability, art. 5(2)
+    ADMIN_USER_DATA_EXPORTED,
     ADMIN_TRAINING_CREATED,
     ADMIN_TRAINING_UPDATED,
     ADMIN_TRAINING_DELETED,

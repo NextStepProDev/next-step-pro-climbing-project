@@ -1,6 +1,7 @@
 import fontDataUri from '../../assets/fonts/NotoSans-Regular.ttf?inline'
 import { toPlainText } from '../../utils/renderRichText'
 import { todayInWarsaw } from '../../utils/calendarDate'
+import { slugify } from '../../utils/slugify'
 import type { AscentFilterState } from './ascentFiltering'
 import type { Ascent, AscentDiscipline, AscentStyle, AscentTerrain } from '../../types'
 
@@ -39,17 +40,6 @@ export async function exportAscents(kind: 'xlsx' | 'pdf', request: AscentExportR
   return exportPdf(request)
 }
 
-/** ASCII slug — diacritics in a filename are a needless risk on a FAT-formatted stick. */
-export function slugify(value: string): string {
-  return value
-    .normalize('NFD')
-    .replace(/\p{M}+/gu, '')
-    .replace(/ł/g, 'l')
-    .replace(/Ł/g, 'L')
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-}
 
 export function exportFileName(extension: string, year: number | null, athleteName?: string,
                                request?: { terrain?: AscentTerrain }): string {

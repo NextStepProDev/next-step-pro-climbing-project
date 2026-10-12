@@ -47,4 +47,7 @@ public interface AthleteWeightRepository extends JpaRepository<AthleteWeight, UU
                                   @Param("to") LocalDate to);
 
     void deleteByAthleteIdAndMeasuredOn(UUID athleteId, LocalDate measuredOn);
+
+    /** Every reading, unbounded — the personal-data export, not a chart. */
+    List<AthleteWeight> findByAthleteIdOrderByMeasuredOnAsc(UUID athleteId);
 }

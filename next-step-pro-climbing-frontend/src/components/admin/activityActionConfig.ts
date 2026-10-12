@@ -3,6 +3,7 @@ import {
   CalendarPlus,
   CalendarX,
   CalendarCheck,
+  Download,
   ShieldAlert,
   Settings,
   Trash2,
@@ -161,6 +162,11 @@ export const ACTION_CONFIG: Record<
     icon: UserCheck,
     color: 'text-indigo-400',
     bgColor: 'bg-indigo-500/10',
+  },
+  ADMIN_USER_DATA_EXPORTED: {
+    icon: Download,
+    color: 'text-amber-500',
+    bgColor: 'bg-amber-500/10',
   },
   ADMIN_TRAINING_CREATED: {
     icon: CalendarPlus,

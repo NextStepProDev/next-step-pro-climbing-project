@@ -10,6 +10,7 @@ import { QueryError } from '../../components/ui/QueryError'
 import { UserOverviewTab } from '../../components/admin/userhistory/UserOverviewTab'
 import { UserReservationsTab } from '../../components/admin/userhistory/UserReservationsTab'
 import { UserAccountTab } from '../../components/admin/userhistory/UserAccountTab'
+import { UserDataExportButton } from '../../components/admin/userhistory/UserDataExportButton'
 import { TrainingCalendarSection } from '../../components/training/TrainingCalendarSection'
 import { coachAdapter } from '../../components/training/trainingCalendarAdapter'
 import { AscentsSection } from '../../components/ascents/AscentsSection'
@@ -120,6 +121,7 @@ export function AdminUserDetailPanel() {
                   {t('users.detail.athleteBadge')}
                 </span>
               )}
+              <UserDataExportButton userId={userId} fullName={fullName ?? ''} />
             </div>
           </>
         )}

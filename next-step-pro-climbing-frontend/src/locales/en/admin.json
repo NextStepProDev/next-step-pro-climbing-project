@@ -511,6 +511,9 @@
       "notified": "Notified",
       "notNotified": "Not notified",
       "adminNote": "Admin note",
+      "exportData": "Download data (JSON)",
+      "exportHint": "Everything held about this person in one file — the answer to a GDPR request (art. 15/20). The download is recorded in the Activity tab.",
+      "exportFailed": "Could not download the data — no file was saved.",
       "tabs": {
         "overview": "Overview",
         "reservations": "Bookings",
@@ -721,6 +724,7 @@
       "ADMIN_USER_DELETED": "User deleted",
       "ADMIN_USER_FORCE_LOGOUT": "Signed out from all devices",
       "ADMIN_USER_ATHLETE_TOGGLED": "Athlete status changed",
+      "ADMIN_USER_DATA_EXPORTED": "User data exported (GDPR)",
       "ADMIN_TRAINING_CREATED": "Training added for athlete",
       "ADMIN_TRAINING_UPDATED": "Athlete training edited",
       "ADMIN_TRAINING_DELETED": "Athlete training deleted",
