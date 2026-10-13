@@ -105,62 +105,71 @@ public class ActivityLogService {
         save(admin, ActivityActionType.ADMIN_EVENT_DELETED, null, null, null, description);
     }
 
-    public void logAdminUserMakeAdmin(User admin, String description) {
-        save(admin, ActivityActionType.ADMIN_USER_MAKE_ADMIN, null, null, null, description);
+    // Actions taken ON a person: the person goes in as the subject, never into the description —
+    // see ActivityLog.subject. The description carries only context that names nobody.
+
+    public void logAdminUserMakeAdmin(User admin, User subject) {
+        saveAbout(admin, ActivityActionType.ADMIN_USER_MAKE_ADMIN, subject, null);
     }
 
-    public void logAdminUserAdminRemoved(User admin, String description) {
-        save(admin, ActivityActionType.ADMIN_USER_ADMIN_REMOVED, null, null, null, description);
+    public void logAdminUserAdminRemoved(User admin, User subject) {
+        saveAbout(admin, ActivityActionType.ADMIN_USER_ADMIN_REMOVED, subject, null);
     }
 
-    public void logAdminUserDeleted(User admin, String description) {
-        save(admin, ActivityActionType.ADMIN_USER_DELETED, null, null, null, description);
+    /**
+     * No subject and no description, deliberately: the account is deleted in the same transaction,
+     * so the entry records THAT an admin erased an account (accountability, art. 5(2)) and nothing
+     * about whose it was (art. 17).
+     */
+    public void logAdminUserDeleted(User admin) {
+        saveAbout(admin, ActivityActionType.ADMIN_USER_DELETED, null, null);
     }
 
-    public void logAdminUserForceLogout(User admin, String description) {
-        save(admin, ActivityActionType.ADMIN_USER_FORCE_LOGOUT, null, null, null, description);
+    public void logAdminUserForceLogout(User admin, User subject) {
+        saveAbout(admin, ActivityActionType.ADMIN_USER_FORCE_LOGOUT, subject, null);
     }
 
-    public void logAdminUserAthleteToggled(User admin, String description) {
-        save(admin, ActivityActionType.ADMIN_USER_ATHLETE_TOGGLED, null, null, null, description);
+    public void logAdminUserAthleteToggled(User admin, User subject, boolean athlete) {
+        saveAbout(admin, ActivityActionType.ADMIN_USER_ATHLETE_TOGGLED, subject,
+            athlete ? "athlete" : "not athlete");
     }
 
-    public void logAdminUserDataExported(User admin, String description) {
-        save(admin, ActivityActionType.ADMIN_USER_DATA_EXPORTED, null, null, null, description);
+    public void logAdminUserDataExported(User admin, User subject) {
+        saveAbout(admin, ActivityActionType.ADMIN_USER_DATA_EXPORTED, subject, null);
     }
 
     // Personal training calendar: no slot/event FK on ActivityLog — context goes into description
-    public void logAdminTrainingCreated(User admin, String description) {
-        save(admin, ActivityActionType.ADMIN_TRAINING_CREATED, null, null, null, description);
+    public void logAdminTrainingCreated(User admin, User athlete, String context) {
+        saveAbout(admin, ActivityActionType.ADMIN_TRAINING_CREATED, athlete, context);
     }
 
-    public void logAdminTrainingUpdated(User admin, String description) {
-        save(admin, ActivityActionType.ADMIN_TRAINING_UPDATED, null, null, null, description);
+    public void logAdminTrainingUpdated(User admin, User athlete, String context) {
+        saveAbout(admin, ActivityActionType.ADMIN_TRAINING_UPDATED, athlete, context);
     }
 
-    public void logAdminTrainingDeleted(User admin, String description) {
-        save(admin, ActivityActionType.ADMIN_TRAINING_DELETED, null, null, null, description);
+    public void logAdminTrainingDeleted(User admin, User athlete, String context) {
+        saveAbout(admin, ActivityActionType.ADMIN_TRAINING_DELETED, athlete, context);
     }
 
     // Athlete goals (banner above the training calendar): context goes into description
-    public void logAdminGoalCreated(User admin, String description) {
-        save(admin, ActivityActionType.ADMIN_GOAL_CREATED, null, null, null, description);
+    public void logAdminGoalCreated(User admin, User athlete, String context) {
+        saveAbout(admin, ActivityActionType.ADMIN_GOAL_CREATED, athlete, context);
     }
 
-    public void logAdminGoalUpdated(User admin, String description) {
-        save(admin, ActivityActionType.ADMIN_GOAL_UPDATED, null, null, null, description);
+    public void logAdminGoalUpdated(User admin, User athlete, String context) {
+        saveAbout(admin, ActivityActionType.ADMIN_GOAL_UPDATED, athlete, context);
     }
 
-    public void logAdminGoalDeleted(User admin, String description) {
-        save(admin, ActivityActionType.ADMIN_GOAL_DELETED, null, null, null, description);
+    public void logAdminGoalDeleted(User admin, User athlete, String context) {
+        saveAbout(admin, ActivityActionType.ADMIN_GOAL_DELETED, athlete, context);
     }
 
-    public void logAdminGoalAchieved(User admin, String description) {
-        save(admin, ActivityActionType.ADMIN_GOAL_ACHIEVED, null, null, null, description);
+    public void logAdminGoalAchieved(User admin, User athlete, String context) {
+        saveAbout(admin, ActivityActionType.ADMIN_GOAL_ACHIEVED, athlete, context);
     }
 
-    public void logAdminGoalReopened(User admin, String description) {
-        save(admin, ActivityActionType.ADMIN_GOAL_REOPENED, null, null, null, description);
+    public void logAdminGoalReopened(User admin, User athlete, String context) {
+        saveAbout(admin, ActivityActionType.ADMIN_GOAL_REOPENED, athlete, context);
     }
 
     @Transactional(readOnly = true)
@@ -191,9 +200,19 @@ public class ActivityLogService {
         activityLogRepository.save(log);
     }
 
+    private void saveAbout(User admin, ActivityActionType actionType,
+                           @Nullable User subject, @Nullable String context) {
+        ActivityLog log = new ActivityLog(admin, actionType);
+        log.setSubject(subject);
+        // activity_logs.description is VARCHAR(500) and the entity does not clamp
+        log.setDescription(context != null && context.length() > 500 ? context.substring(0, 500) : context);
+        activityLogRepository.save(log);
+    }
+
     private ActivityLogDto toDto(ActivityLog log) {
         TimeSlot slot = log.getTimeSlot();
         Event event = log.getEvent();
+        User subject = log.getSubject();
 
         return new ActivityLogDto(
             log.getId(),
@@ -209,6 +228,9 @@ public class ActivityLogService {
             event != null ? event.getEndDate() : null,
             log.getParticipants(),
             log.getDescription(),
+            subject != null ? subject.getFullName() : null,
+            subject != null ? subject.getEmail() : null,
+            subject == null && log.getActionType().concernsAnotherUser(),
             log.getCreatedAt()
         );
     }

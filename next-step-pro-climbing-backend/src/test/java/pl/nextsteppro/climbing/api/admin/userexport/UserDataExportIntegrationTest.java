@@ -215,7 +215,9 @@ class UserDataExportIntegrationTest extends BaseIntegrationTest {
         List<ActivityLog> adminLog = activityLogRepository.findByUserIdWithDetails(admin.getId(), PageRequest.of(0, 10));
         assertEquals(1, adminLog.size());
         assertEquals(ActivityActionType.ADMIN_USER_DATA_EXPORTED, adminLog.getFirst().getActionType());
-        assertTrue(adminLog.getFirst().getDescription().contains("eksport@example.com"));
+        // Whose data it was rides as the subject FK, so erasing that account erases it from here too
+        assertEquals(user.getId(), adminLog.getFirst().getSubject().getId());
+        assertNull(adminLog.getFirst().getDescription());
         assertTrue(export.activity().isEmpty());
     }
 

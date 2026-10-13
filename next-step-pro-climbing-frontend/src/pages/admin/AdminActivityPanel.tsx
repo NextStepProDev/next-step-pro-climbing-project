@@ -113,6 +113,17 @@ export function AdminActivityPanel() {
                         {t(`activity.actions.${log.actionType}`)}
                       </span>
 
+                      {/* The person the admin acted on — gone once their account is deleted */}
+                      {log.subjectFullName && (
+                        <span className="text-surface-300 text-xs">
+                          {log.subjectFullName}
+                          {log.subjectEmail && <span className="text-surface-500"> ({log.subjectEmail})</span>}
+                        </span>
+                      )}
+                      {log.subjectErased && (
+                        <span className="text-surface-500 text-xs italic">{t('activity.subjectErased')}</span>
+                      )}
+
                       {/* Slot info */}
                       {log.slotDate && (
                         <span className="text-surface-300 text-xs">

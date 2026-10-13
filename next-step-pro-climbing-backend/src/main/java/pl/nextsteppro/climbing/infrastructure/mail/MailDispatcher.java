@@ -122,23 +122,36 @@ public class MailDispatcher {
 
                 mailSender.send(message);
                 if (attempt > 1) {
-                    log.info("Email sent to {} on attempt {}/{}", to, attempt, maxAttempts);
+                    log.info("Email sent to {} on attempt {}/{}", maskAddress(to), attempt, maxAttempts);
                 } else {
-                    log.info("Email sent to {}", to);
+                    log.info("Email sent to {}", maskAddress(to));
                 }
                 return;
             } catch (MailException | MessagingException e) {
                 if (attempt < maxAttempts) {
                     long delay = retryDelaysMs[attempt - 1];
                     log.warn("Email send to {} failed (attempt {}/{}), retrying in {} ms",
-                            to, attempt, maxAttempts, delay, e);
+                            maskAddress(to), attempt, maxAttempts, delay, e);
                     sleep(delay);
                 } else {
                     log.error("{}: dropping email to {} after {} failed attempts",
-                            FAILURE_MARKER, to, maxAttempts, e);
+                            FAILURE_MARKER, maskAddress(to), maxAttempts, e);
                 }
             }
         }
+    }
+
+    /**
+     * "j***@gmail.com". The server log outlives account deletion (it rotates by size, not by date),
+     * so a full address there is personal data the erasure cannot reach. The domain is what a
+     * delivery failure is usually about, and the first letter is enough to match a complaint.
+     */
+    static String maskAddress(String address) {
+        int at = address.lastIndexOf('@');
+        if (at <= 0) {
+            return "***";
+        }
+        return address.charAt(0) + "***" + address.substring(at);
     }
 
     private void sleep(long millis) {

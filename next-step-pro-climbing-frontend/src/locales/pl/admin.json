@@ -703,6 +703,7 @@
     "refresh": "Odśwież",
     "noActivity": "Brak aktywności do wyświetlenia",
     "loadMore": "Załaduj więcej",
+    "subjectErased": "konto usunięte",
     "actions": {
       "USER_ACCOUNT_CONFIRMED": "Nowe konto potwierdzone",
       "RESERVATION_CREATED": "Nowa rezerwacja",

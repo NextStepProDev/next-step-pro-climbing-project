@@ -701,6 +701,7 @@
     "refresh": "Refresh",
     "noActivity": "No activity to display",
     "loadMore": "Load more",
+    "subjectErased": "account deleted",
     "actions": {
       "USER_ACCOUNT_CONFIRMED": "New account confirmed",
       "RESERVATION_CREATED": "New reservation",

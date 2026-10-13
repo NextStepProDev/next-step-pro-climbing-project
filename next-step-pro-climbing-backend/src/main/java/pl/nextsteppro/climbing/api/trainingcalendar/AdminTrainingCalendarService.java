@@ -69,22 +69,23 @@ public class AdminTrainingCalendarService {
 
     public PersonalTrainingDto createForAthlete(UUID adminId, UUID athleteId, CreatePersonalTrainingRequest request) {
         PersonalTrainingDto dto = core.createForAthlete(athleteId, request);
-        activityLogService.logAdminTrainingCreated(admin(adminId), describe(athleteId, dto.title(), dto.date()));
+        activityLogService.logAdminTrainingCreated(admin(adminId), athlete(athleteId), describe(dto.title(), dto.date()));
         return dto;
     }
 
     public PersonalTrainingDto update(UUID adminId, UUID trainingId, CreatePersonalTrainingRequest request) {
         PersonalTrainingDto dto = core.updateAsAdmin(trainingId, request);
         UUID athleteId = core.requireTraining(trainingId).getAthlete().getId();
-        activityLogService.logAdminTrainingUpdated(admin(adminId), describe(athleteId, dto.title(), dto.date()));
+        activityLogService.logAdminTrainingUpdated(admin(adminId), athlete(athleteId), describe(dto.title(), dto.date()));
         return dto;
     }
 
     public void delete(UUID adminId, UUID trainingId) {
         PersonalTraining training = core.requireTraining(trainingId);
-        String description = describe(training.getAthlete().getId(), training.getTitle(), training.getTrainingDate());
+        UUID athleteId = training.getAthlete().getId();
+        String description = describe(training.getTitle(), training.getTrainingDate());
         core.deleteAsAdmin(trainingId);
-        activityLogService.logAdminTrainingDeleted(admin(adminId), description);
+        activityLogService.logAdminTrainingDeleted(admin(adminId), athlete(athleteId), description);
     }
 
     @Transactional(readOnly = true)
@@ -140,28 +141,29 @@ public class AdminTrainingCalendarService {
 
     public AthleteGoalDto createGoal(UUID adminId, UUID athleteId, SaveGoalRequest request) {
         AthleteGoalDto dto = goalService.createGoal(athleteId, request);
-        activityLogService.logAdminGoalCreated(admin(adminId), describeGoal(athleteId, dto));
+        activityLogService.logAdminGoalCreated(admin(adminId), athlete(athleteId), describeGoal(dto));
         return dto;
     }
 
     public AthleteGoalDto updateGoal(UUID adminId, UUID goalId, SaveGoalRequest request) {
         UUID athleteId = goalService.requireGoal(goalId).getAthlete().getId();
         AthleteGoalDto dto = goalService.updateGoal(goalId, request);
-        activityLogService.logAdminGoalUpdated(admin(adminId), describeGoal(athleteId, dto));
+        activityLogService.logAdminGoalUpdated(admin(adminId), athlete(athleteId), describeGoal(dto));
         return dto;
     }
 
     public void deleteGoal(UUID adminId, UUID goalId) {
         var goal = goalService.requireGoal(goalId);
-        String description = describe(goal.getAthlete().getId(), goal.getContent(), goal.getTargetDate());
+        UUID athleteId = goal.getAthlete().getId();
+        String description = describe(goal.getContent(), goal.getTargetDate());
         goalService.deleteGoal(goalId);
-        activityLogService.logAdminGoalDeleted(admin(adminId), description);
+        activityLogService.logAdminGoalDeleted(admin(adminId), athlete(athleteId), description);
     }
 
     public AthleteGoalDto achieveGoal(UUID adminId, UUID goalId, AchieveGoalRequest request) {
         UUID athleteId = goalService.requireGoal(goalId).getAthlete().getId();
         AthleteGoalDto dto = goalService.achieveGoal(goalId, request.achievedDate());
-        activityLogService.logAdminGoalAchieved(admin(adminId), describeGoal(athleteId, dto));
+        activityLogService.logAdminGoalAchieved(admin(adminId), athlete(athleteId), describeGoal(dto));
         return dto;
     }
 
@@ -175,24 +177,27 @@ public class AdminTrainingCalendarService {
         // description must reflect the same athlete either way
         UUID athleteId = goalService.requireGoal(goalId).getAthlete().getId();
         AthleteGoalDto dto = goalService.reopenGoal(goalId);
-        activityLogService.logAdminGoalReopened(admin(adminId), describeGoal(athleteId, dto));
+        activityLogService.logAdminGoalReopened(admin(adminId), athlete(athleteId), describeGoal(dto));
         return dto;
     }
 
-    private String describeGoal(UUID athleteId, AthleteGoalDto dto) {
-        return describe(athleteId, dto.content(), dto.targetDate());
+    private String describeGoal(AthleteGoalDto dto) {
+        return describe(dto.content(), dto.targetDate());
     }
 
     private User admin(UUID adminId) {
         return userRepository.findById(adminId).orElseThrow();
     }
 
-    private String describe(UUID athleteId, String title, LocalDate date) {
-        String athlete = userRepository.findById(athleteId)
-            .map(u -> u.getFullName() + " (" + u.getEmail() + ")")
-            .orElse(athleteId.toString());
-        String description = athlete + " — " + date + " " + title;
-        // activity_logs.description is VARCHAR(500) and the entity does not clamp
-        return description.length() > 500 ? description.substring(0, 500) : description;
+    // A reference, not a load: the athlete was just validated by the operation itself, and the log
+    // only needs the FK.
+    private User athlete(UUID athleteId) {
+        return userRepository.getReferenceById(athleteId);
+    }
+
+    // Context only — the athlete travels as the entry's subject, so deleting their account erases
+    // who this was about (ActivityLog.subject). Never put their name or e-mail back in here.
+    private String describe(String title, LocalDate date) {
+        return date + " " + title;
     }
 }

@@ -11,6 +11,7 @@ public interface ActivityLogRepository extends JpaRepository<ActivityLog, UUID> 
 
     @Query("SELECT a FROM ActivityLog a " +
            "JOIN FETCH a.user " +
+           "LEFT JOIN FETCH a.subject " +
            "LEFT JOIN FETCH a.timeSlot " +
            "LEFT JOIN FETCH a.event " +
            "ORDER BY a.createdAt DESC")
@@ -26,6 +27,7 @@ public interface ActivityLogRepository extends JpaRepository<ActivityLog, UUID> 
      */
     @Query("SELECT a FROM ActivityLog a " +
            "JOIN FETCH a.user " +
+           "LEFT JOIN FETCH a.subject " +
            "LEFT JOIN FETCH a.timeSlot " +
            "LEFT JOIN FETCH a.event " +
            "WHERE a.user.id = :userId " +

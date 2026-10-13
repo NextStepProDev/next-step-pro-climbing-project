@@ -25,7 +25,9 @@ Odtworzenie całego serwera od zera (Docker, NPM, firewall) — `SERVER-SETUP.md
   pory się nie zmieniły. Skasowanie pliku stanu wymusza archiwum przy najbliższym przebiegu.
 - 40 dni, nie 90: GDrive (15 GB) dzielą climbing, fire-academy i anovastudio, a ~150 MB
   archiwum plików co noc przy 90 dniach zapełniłoby konto w listopadzie 2026 (policzone
-  2026-10-09). Polityka prywatności obiecuje „do 90 dni” — 40 mieści się w tej obietnicy.
+  2026-10-09). Polityka prywatności podaje 40 dni dla kopii dobowych i 90 dla zrzutów
+  sprzed dużych zmian (`/backups/milestones`) — podniesienie którejkolwiek liczby wymaga
+  poprawienia polityki (PL i EN).
 
 - Zdalny remote jest typu `crypt` — pliki są zaszyfrowane **przed** wysłaniem. Bez
   `/root/.config/rclone/rclone.conf` (hasła crypt) **nie odczytasz ich w żaden sposób**,
@@ -299,11 +301,14 @@ przez cały czas.
 udanej kopii dobowej z niego. Do tego czasu jest Twoim jedynym **szybkim** wyjściem awaryjnym.
 
 ⚠️ **Gdy go skasujesz, wyjściem zostaje zrzut z kroku 1 — i dlatego leży w `/backups/milestones`,
-jedynym katalogu, którego retencja nie przycina** (ani siedmiodniowa lokalna, ani
-czterdziestodniowa na Drive). Zapisany do `db/` obok kopii dobowych żył **siedem dni**: przy
-migracji na 18 stary wolumen zniknął wcześniej, niż minął ten tydzień, i zrzut był jedną nocą od
-skasowania razem z całą drogą powrotu. Tego katalogu nie zapełnia nic automatycznie i nic go nie
-czyści — wkładasz do niego ręcznie, kasujesz ręcznie, a jeden zrzut to ~150 kB.
+którego nie przycina ani siedmiodniowa retencja lokalna, ani czterdziestodniowa na Drive.**
+Zapisany do `db/` obok kopii dobowych żył **siedem dni**: przy migracji na 18 stary wolumen zniknął
+wcześniej, niż minął ten tydzień, i zrzut był jedną nocą od skasowania razem z całą drogą powrotu.
+Tego katalogu nie zapełnia nic automatycznie — wkładasz do niego ręcznie, a jeden zrzut to ~150 kB.
+⚠️ **Ale żyje on 90 dni, nie wiecznie** (`MILESTONE_RETENTION_DAYS`, lokalnie i na Drive). Zrzut to
+pełna kopia wszystkich kont, więc trzymany bez końca przechowywałby każdego, kto usunął konto —
+a polityka prywatności obiecuje „najdłużej 90 dni” dla każdej kopii. Wycofanie, którego nikt nie
+potrzebował przez trzy miesiące, przestało być wycofaniem.
 
 ---
 

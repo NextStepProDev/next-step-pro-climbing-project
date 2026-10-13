@@ -25,6 +25,18 @@ public class ActivityLog {
     @Column(name = "action_type", nullable = false, length = 50)
     private ActivityActionType actionType;
 
+    /**
+     * The person an ADMIN_* action was taken ON, as opposed to {@link #user}, who took it.
+     * {@code ON DELETE SET NULL}: deleting that account erases their name and e-mail from every
+     * entry about them without any code having to remember to — which is why neither may ever be
+     * copied into {@link #description}. A null here on a type that names a person means the
+     * account is gone ({@link ActivityActionType#concernsAnotherUser()}).
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "subject_user_id")
+    @Nullable
+    private User subject;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "time_slot_id")
     @Nullable
@@ -63,6 +75,15 @@ public class ActivityLog {
 
     public ActivityActionType getActionType() {
         return actionType;
+    }
+
+    @Nullable
+    public User getSubject() {
+        return subject;
+    }
+
+    public void setSubject(@Nullable User subject) {
+        this.subject = subject;
     }
 
     @Nullable

@@ -1228,6 +1228,11 @@ export interface ActivityLog {
   eventEndDate: string | null
   participants: number | null
   description: string | null
+  // Who an ADMIN_* action was taken on, read live from their account. Both null with
+  // subjectErased once that account has been deleted (GDPR art. 17).
+  subjectFullName: string | null
+  subjectEmail: string | null
+  subjectErased: boolean
   createdAt: string
 }
 

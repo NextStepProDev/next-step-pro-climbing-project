@@ -4,8 +4,8 @@ import { useLocation } from 'react-router-dom'
 import { useThemeLogo } from '../hooks/useThemeLogo'
 import { CONTACT } from '../constants/contact'
 
-const LAST_UPDATED_PL = '21 sierpnia 2026'
-const LAST_UPDATED_EN = '21 August 2026'
+const LAST_UPDATED_PL = '13 października 2026'
+const LAST_UPDATED_EN = '13 October 2026'
 
 export function PrivacyPolicyPage() {
   const { i18n } = useTranslation()
@@ -137,6 +137,9 @@ function PrivacyPolicyPl({ logo }: { logo: string }) {
           <SubSection title="W trakcie korzystania z serwisu">
             <DataList items={[
               'Logi aktywności — historia rezerwacji i ich zmian (data, godzina, rodzaj akcji, np. utworzenie lub anulowanie rezerwacji)',
+              'Dziennik działań administratora — kiedy administrator zmienił coś na Twoim koncie (np. nadał rolę, wylogował Cię ze wszystkich urządzeń, przygotował eksport Twoich danych, dodał trening)',
+              'Rozliczenia — kwoty należne za zajęcia lub abonament oraz zapisane wpłaty (kwota i data); wpisuje je trener. Nie przechowujemy numerów kart ani rachunków bankowych',
+              'Logi techniczne serwera — adres IP, czas i adres żądania; zamiast adresu e-mail zapisujemy w nich wewnętrzny identyfikator konta albo adres skrócony do pierwszej litery i domeny (np. j***@gmail.com)',
               'Preferencje językowe',
               'Zgoda na newsletter i jej timestamp (wymagany przez RODO jako dowód zgody)',
               'Zdjęcie profilowe (awatar) — opcjonalne; jeśli je dodasz, jest przycinane do koła w Twojej przeglądarce i przechowywane na serwerze w EOG. Możesz je w każdej chwili zmienić lub usunąć w ustawieniach konta',
@@ -192,8 +195,12 @@ function PrivacyPolicyPl({ logo }: { logo: string }) {
               basis="Art. 6 ust. 1 lit. a RODO — zgoda (możesz ją cofnąć w każdej chwili bez wpływu na zgodność z prawem przetwarzania przed cofnięciem)"
             />
             <LegalBasis
-              purpose="Logi aktywności rezerwacyjnej"
-              basis="Art. 6 ust. 1 lit. f RODO — uzasadniony interes administratora (bezpieczeństwo systemu i rozwiązywanie sporów)"
+              purpose="Logi aktywności rezerwacyjnej, dziennik działań administratora i logi techniczne serwera"
+              basis="Art. 6 ust. 1 lit. f RODO — uzasadniony interes administratora (bezpieczeństwo systemu, rozwiązywanie sporów i rozliczalność działań na danych)"
+            />
+            <LegalBasis
+              purpose="Prowadzenie rozliczeń za zajęcia i abonament"
+              basis="Art. 6 ust. 1 lit. b RODO — wykonanie umowy (świadczenie odpłatnych usług szkoleniowych)"
             />
             <LegalBasis
               purpose="Weryfikacja konta e-mail i odzyskiwanie hasła"
@@ -377,16 +384,46 @@ function PrivacyPolicyPl({ logo }: { logo: string }) {
               usuwana razem z pozostałymi danymi.
             </p>
             <p>
+              <span className="text-surface-200 font-medium">Konto niepotwierdzone</span> — jeśli nie klikniesz linku
+              weryfikacyjnego, konto wraz ze wszystkimi danymi jest automatycznie usuwane po 7 dniach od rejestracji
+              (dzień wcześniej wysyłamy przypomnienie).
+            </p>
+            <p>
               <span className="text-surface-200 font-medium">Logi aktywności</span> — usuwane automatycznie razem z kontem
               (kaskadowe usunięcie na poziomie bazy danych). Nie ma możliwości ich odzyskania po usunięciu konta.
             </p>
             <p>
-              <span className="text-surface-200 font-medium">Kopie zapasowe</span> — przechowywane przez 7 dni na
-              serwerze i do 90 dni w zaszyfrowanym archiwum na Google Drive, po czym są automatycznie usuwane.
-              Oznacza to, że dane usunięte z bazy mogą pozostawać w kopiach najdłużej przez 90 dni. Dłuższy okres
-              jest konieczny, aby serwis dało się odtworzyć także po awarii wykrytej z opóźnieniem (np. błędzie,
-              który uszkodził dane kilka tygodni wcześniej). Kopie służą wyłącznie odtworzeniu serwisu po awarii,
-              nie są przeszukiwane w żadnym innym celu i nie są wykorzystywane do przywracania usuniętych kont.
+              <span className="text-surface-200 font-medium">Dziennik działań administratora</span> — sam wpis
+              (który administrator, co zrobił i kiedy) zostaje, bo dokumentuje działania na danych, także samo
+              usunięcie konta. W chwili usunięcia Twojego konta znika z niego jednak wszystko, co Cię identyfikuje:
+              imię, nazwisko i adres e-mail nie są zapisywane w treści wpisu, tylko odczytywane z konta, którego
+              już nie ma. Zostaje wyłącznie informacja „konto usunięte”.
+            </p>
+            <p>
+              <span className="text-surface-200 font-medium">Rozliczenia</span> — przechowywane przez czas istnienia
+              konta; trwale usuwane razem z nim.
+            </p>
+            <p>
+              <span className="text-surface-200 font-medium">Logi techniczne serwera</span> — nadpisywane automatycznie
+              w miarę przyrostu nowych wpisów. Nie zawierają Twojego imienia, nazwiska ani pełnego adresu e-mail.
+            </p>
+            <p>
+              <span className="text-surface-200 font-medium">Kopie zapasowe</span> — dobowe kopie bazy są przechowywane
+              przez 7 dni na serwerze i do 40 dni w zaszyfrowanym archiwum na Google Drive. Dodatkowo przed dużymi
+              zmianami technicznymi (np. aktualizacją bazy danych) wykonujemy jednorazową kopię, przechowywaną do
+              90 dni. Po tych terminach kopie są usuwane automatycznie i trwale (nie trafiają do kosza). Oznacza to,
+              że dane usunięte z bazy mogą pozostawać w kopiach najdłużej przez 40 dni, a jeśli w tym okresie
+              wykonano kopię przed zmianą techniczną — najdłużej przez 90 dni. Dłuższy okres jest konieczny, aby
+              serwis dało się odtworzyć także po awarii wykrytej z opóźnieniem (np. błędzie, który uszkodził dane
+              kilka tygodni wcześniej). Kopie służą wyłącznie odtworzeniu serwisu po awarii, nie są przeszukiwane
+              w żadnym innym celu i nie są wykorzystywane do przywracania usuniętych kont.
+            </p>
+            <p>
+              <span className="text-surface-200 font-medium">Wysłane wiadomości e-mail</span> — wiadomości wysłane
+              do Ciebie przez serwis zostają w Twojej skrzynce. Gdy sam usuniesz konto, administrator dostaje jedno
+              powiadomienie z Twoim imieniem i nazwiskiem, adresem e-mail i numerem telefonu oraz liczbą
+              zwolnionych miejsc na zajęciach — żeby wiedział, czyje rezerwacje zniknęły z grafiku. Nie jest ono
+              nigdzie dalej przetwarzane.
             </p>
             <p>
               <span className="text-surface-200 font-medium">Tokeny bezpieczeństwa</span> (weryfikacja e-mail: 24h, reset hasła: 1h,
@@ -437,15 +474,20 @@ function PrivacyPolicyPl({ logo }: { logo: string }) {
               title="Google LLC (logowanie przez Google oraz kopie zapasowe)"
               description="Jeśli wybierzesz logowanie przez Google, Twoje podstawowe dane profilowe są przekazywane zgodnie z warunkami Google OAuth 2.0. Ponadto zaszyfrowane kopie zapasowe bazy danych przechowywane są na prywatnym, niepublicznym dysku Google Drive."
             />
+            <InfoItem
+              title="Cloudflare, Inc. (sieć dostarczania treści i ochrona przed atakami)"
+              description="Ruch do serwisu przechodzi przez sieć Cloudflare, która chroni go przed atakami i przyspiesza ładowanie strony. Cloudflare przetwarza przy tym techniczne dane połączenia, w tym adres IP; nie dostaje dostępu do bazy danych."
+            />
           </div>
           <div className="mt-4 bg-surface-800/50 rounded-xl p-4">
             <p className="text-surface-200 font-medium text-sm mb-1">Przekazywanie danych poza EOG</p>
             <p className="text-surface-500 text-sm leading-relaxed">
               Serwer i baza danych pozostają w EOG. W zakresie usług Google (logowanie przez Google oraz kopie
-              zapasowe na Google Drive) — dostawcy z siedzibą w USA — niektóre dane mogą być przetwarzane poza EOG.
+              zapasowe na Google Drive) i Cloudflare — dostawców z siedzibą w USA — niektóre dane mogą być
+              przetwarzane poza EOG.
               Kopia zapasowa obejmuje całą bazę, a więc również dane kalendarza treningowego; jest zaszyfrowana
               przed wysłaniem i trafia na prywatny, niepubliczny dysk.
-              Transfer odbywa się na podstawie programu EU‑US Data Privacy Framework (Google jest certyfikowany)
+              Transfer odbywa się na podstawie programu EU‑US Data Privacy Framework (Google i Cloudflare są certyfikowane)
               oraz standardowych klauzul umownych zatwierdzonych przez Komisję Europejską (SCC), które zapewniają
               odpowiedni poziom ochrony. Kopię stosowanych zabezpieczeń możesz uzyskać, kontaktując się ze mną.
             </p>
@@ -460,7 +502,7 @@ function PrivacyPolicyPl({ logo }: { logo: string }) {
           <div className="space-y-3">
             <Right title="Prawo dostępu" description="Możesz w każdej chwili zapytać, jakie Twoje dane przechowujemy." />
             <Right title="Prawo do sprostowania" description="Jeśli Twoje dane są nieprawidłowe lub niekompletne, możesz je poprawić w ustawieniach konta." />
-            <Right title="Prawo do usunięcia" description='Możesz usunąć swoje konto w ustawieniach — wszystkie Twoje dane zostaną natychmiast i trwale usunięte. Nie ma możliwości ich przywrócenia.' />
+            <Right title="Prawo do usunięcia („prawo do bycia zapomnianym”)" description="Możesz usunąć swoje konto w ustawieniach albo poprosić o to mailowo na adres kontaktowy. Usunięcie jest natychmiastowe i trwałe: z bazy znikają konto, rezerwacje, listy rezerwowe, kalendarz treningowy, dziennik przejść, wiadomości, rozliczenia i przesłane pliki, a z dziennika działań administratora — Twoje imię, nazwisko i adres e-mail. Nie ma możliwości przywrócenia konta. Jedyne wyjątki opisuje sekcja 6: zaszyfrowane kopie zapasowe (najdłużej 40 dni, a jeśli w tym czasie wykonano kopię przed zmianą techniczną — 90 dni) oraz wiadomości e-mail, które już zostały wysłane." />
             <Right title="Prawo do ograniczenia przetwarzania" description="Możesz zażądać ograniczenia przetwarzania Twoich danych w określonych przypadkach." />
             <Right title="Prawo do przenoszalności" description="Możesz zażądać przekazania Twoich danych w ustrukturyzowanym, powszechnie używanym formacie." />
             <Right title="Prawo sprzeciwu" description="Możesz wnieść sprzeciw wobec przetwarzania danych opartego na uzasadnionym interesie." />
@@ -604,6 +646,9 @@ function PrivacyPolicyEn({ logo }: { logo: string }) {
           <SubSection title="During use of the service">
             <DataList items={[
               'Activity logs — booking history and changes (date, time, action type, e.g. reservation created or cancelled)',
+              'Administrator action log — when an administrator changed something on your account (e.g. granted a role, signed you out of all devices, prepared an export of your data, added a training session)',
+              'Settlements — amounts due for classes or a subscription and recorded payments (amount and date); entered by the coach. We do not store card or bank account numbers',
+              'Server technical logs — IP address, time and address of the request; instead of your e-mail address they hold an internal account identifier or the address shortened to its first letter and domain (e.g. j***@gmail.com)',
               'Language preferences',
               'Newsletter consent and its timestamp (required by GDPR as proof of consent)',
               'Profile picture (avatar) — optional; if you add one, it is cropped to a circle in your browser and stored on the server within the EEA. You can change or remove it at any time in account settings',
@@ -657,8 +702,12 @@ function PrivacyPolicyEn({ logo }: { logo: string }) {
               basis="Art. 6(1)(a) GDPR — consent (you may withdraw it at any time without affecting the lawfulness of processing prior to withdrawal)"
             />
             <LegalBasis
-              purpose="Booking activity logs"
-              basis="Art. 6(1)(f) GDPR — legitimate interest of the controller (system security and dispute resolution)"
+              purpose="Booking activity logs, the administrator action log and server technical logs"
+              basis="Art. 6(1)(f) GDPR — legitimate interest of the controller (system security, dispute resolution and accountability for actions on data)"
+            />
+            <LegalBasis
+              purpose="Keeping settlements for classes and subscriptions"
+              basis="Art. 6(1)(b) GDPR — performance of a contract (provision of paid training services)"
             />
             <LegalBasis
               purpose="E-mail verification and password recovery"
@@ -842,16 +891,45 @@ function PrivacyPolicyEn({ logo }: { logo: string }) {
               irreversibly removed together with your other data.
             </p>
             <p>
+              <span className="text-surface-200 font-medium">Unconfirmed account</span> — if you do not click the
+              verification link, the account and all its data are deleted automatically 7 days after registration
+              (we send a reminder the day before).
+            </p>
+            <p>
               <span className="text-surface-200 font-medium">Activity logs</span> — automatically deleted together with your account
               (cascading deletion at database level). They cannot be recovered after account deletion.
             </p>
             <p>
-              <span className="text-surface-200 font-medium">Backups</span> — kept for 7 days on the server and for
-              up to 90 days in an encrypted archive on Google Drive, after which they are deleted automatically. This
-              means data deleted from the database may persist in backups for up to 90 days. The longer period is
-              necessary so the service can also be restored after a failure discovered late (for example a fault that
-              corrupted data several weeks earlier). Backups exist solely to restore the service after a failure, are
-              not searched for any other purpose, and are never used to reinstate deleted accounts.
+              <span className="text-surface-200 font-medium">Administrator action log</span> — the entry itself (which
+              administrator did what, and when) remains, because it documents actions taken on data, including the
+              deletion of an account. The moment your account is deleted, however, everything that identifies you
+              disappears from it: your name and e-mail address are not stored in the entry but read from the
+              account, which no longer exists. All that remains is the note “account deleted”.
+            </p>
+            <p>
+              <span className="text-surface-200 font-medium">Settlements</span> — stored for the duration of the
+              account; permanently deleted together with it.
+            </p>
+            <p>
+              <span className="text-surface-200 font-medium">Server technical logs</span> — overwritten automatically
+              as new entries accumulate. They do not contain your name or your full e-mail address.
+            </p>
+            <p>
+              <span className="text-surface-200 font-medium">Backups</span> — daily database backups are kept for 7 days
+              on the server and for up to 40 days in an encrypted archive on Google Drive. In addition, before major
+              technical changes (such as a database upgrade) we take a one-off backup, kept for up to 90 days. After
+              these periods backups are deleted automatically and permanently (they do not go to a trash folder).
+              This means data deleted from the database may persist in backups for up to 40 days, or — if a backup
+              before a technical change was taken in that period — for up to 90 days. The longer period is necessary
+              so the service can also be restored after a failure discovered late (for example a fault that corrupted
+              data several weeks earlier). Backups exist solely to restore the service after a failure, are not
+              searched for any other purpose, and are never used to reinstate deleted accounts.
+            </p>
+            <p>
+              <span className="text-surface-200 font-medium">E-mails already sent</span> — messages the service sent
+              to you stay in your inbox. When you delete your account yourself, the administrator receives a single
+              notification with your name, e-mail address, phone number and the number of class places freed — so
+              they know whose bookings disappeared from the schedule. It is not processed any further.
             </p>
             <p>
               <span className="text-surface-200 font-medium">Security tokens</span> (email verification: 24h, password reset: 1h,
@@ -902,15 +980,19 @@ function PrivacyPolicyEn({ logo }: { logo: string }) {
               title="Google LLC (Google sign-in and backups)"
               description="If you choose to sign in with Google, your basic profile data is transmitted in accordance with the Google OAuth 2.0 terms. In addition, encrypted database backups are stored on a private, non-public Google Drive."
             />
+            <InfoItem
+              title="Cloudflare, Inc. (content delivery network and attack protection)"
+              description="Traffic to the service passes through the Cloudflare network, which protects it from attacks and speeds up page loading. In doing so Cloudflare processes technical connection data, including your IP address; it has no access to the database."
+            />
           </div>
           <div className="mt-4 bg-surface-800/50 rounded-xl p-4">
             <p className="text-surface-200 font-medium text-sm mb-1">Transfers outside the EEA</p>
             <p className="text-surface-500 text-sm leading-relaxed">
               The server and database remain within the EEA. For Google services (Google sign-in and backups on
-              Google Drive) — a provider based in the USA — some data may be processed outside the EEA. The backup
+              Google Drive) and Cloudflare — providers based in the USA — some data may be processed outside the EEA. The backup
               covers the whole database, and therefore training-calendar data as well; it is encrypted before
               upload and kept on a private, non-public drive. Such
-              transfers rely on the EU‑US Data Privacy Framework (Google is certified) and the Standard
+              transfers rely on the EU‑US Data Privacy Framework (Google and Cloudflare are certified) and the Standard
               Contractual Clauses approved by the European Commission (SCC), which ensure an adequate level of
               protection. You can obtain a copy of the safeguards in place by contacting me.
             </p>
@@ -923,7 +1005,7 @@ function PrivacyPolicyEn({ logo }: { logo: string }) {
           <div className="space-y-3">
             <Right title="Right of access" description="You may ask at any time what data we hold about you." />
             <Right title="Right to rectification" description="If your data is inaccurate or incomplete, you can correct it in account settings." />
-            <Right title="Right to erasure" description="You can delete your account in settings — all your data will be immediately and permanently deleted. It cannot be recovered." />
+            <Right title="Right to erasure (“right to be forgotten”)" description="You can delete your account in settings or ask for it by e-mail to the contact address. Deletion is immediate and permanent: your account, bookings, waitlist entries, training calendar, climbing logbook, messages, settlements and uploaded files are removed from the database, and your name and e-mail address disappear from the administrator action log. The account cannot be restored. The only exceptions are described in section 6: encrypted backups (up to 40 days, or 90 days if a backup before a technical change was taken in that period) and e-mails that have already been sent." />
             <Right title="Right to restriction of processing" description="You may request restriction of processing in certain circumstances." />
             <Right title="Right to data portability" description="You may request that your data be provided in a structured, commonly used format." />
             <Right title="Right to object" description="You may object to processing based on legitimate interest." />

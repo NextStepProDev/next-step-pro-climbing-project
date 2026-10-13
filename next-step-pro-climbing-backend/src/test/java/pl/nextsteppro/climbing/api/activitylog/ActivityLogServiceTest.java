@@ -341,7 +341,7 @@ class ActivityLogServiceTest {
     @Test
     void shouldLogAdminUserMakeAdmin() {
         // When
-        activityLogService.logAdminUserMakeAdmin(adminUser, "John Doe (user@example.com)");
+        activityLogService.logAdminUserMakeAdmin(adminUser, testUser);
 
         // Then
         ArgumentCaptor<ActivityLog> captor = ArgumentCaptor.forClass(ActivityLog.class);
@@ -349,13 +349,27 @@ class ActivityLogServiceTest {
 
         ActivityLog log = captor.getValue();
         assertEquals(ActivityActionType.ADMIN_USER_MAKE_ADMIN, log.getActionType());
-        assertEquals("John Doe (user@example.com)", log.getDescription());
+        assertSame(adminUser, log.getUser());
+        assertSame(testUser, log.getSubject());
+        // The person travels as the FK only — a copy in the text would survive their erasure
+        assertNull(log.getDescription());
+    }
+
+    @Test
+    void shouldKeepOnlyContextInTheDescriptionWhenTheAthleteFlagIsToggled() {
+        activityLogService.logAdminUserAthleteToggled(adminUser, testUser, true);
+
+        ArgumentCaptor<ActivityLog> captor = ArgumentCaptor.forClass(ActivityLog.class);
+        verify(activityLogRepository).save(captor.capture());
+
+        assertSame(testUser, captor.getValue().getSubject());
+        assertEquals("athlete", captor.getValue().getDescription());
     }
 
     @Test
     void shouldLogAdminUserAdminRemoved() {
         // When
-        activityLogService.logAdminUserAdminRemoved(adminUser, "John Doe (user@example.com)");
+        activityLogService.logAdminUserAdminRemoved(adminUser, testUser);
 
         // Then
         ArgumentCaptor<ActivityLog> captor = ArgumentCaptor.forClass(ActivityLog.class);
@@ -367,13 +381,47 @@ class ActivityLogServiceTest {
     @Test
     void shouldLogAdminUserDeleted() {
         // When
-        activityLogService.logAdminUserDeleted(adminUser, "John Doe (user@example.com)");
+        activityLogService.logAdminUserDeleted(adminUser);
 
         // Then
         ArgumentCaptor<ActivityLog> captor = ArgumentCaptor.forClass(ActivityLog.class);
         verify(activityLogRepository).save(captor.capture());
 
-        assertEquals(ActivityActionType.ADMIN_USER_DELETED, captor.getValue().getActionType());
+        ActivityLog log = captor.getValue();
+        assertEquals(ActivityActionType.ADMIN_USER_DELETED, log.getActionType());
+        // Records THAT an account was erased, never whose (GDPR art. 17)
+        assertNull(log.getSubject());
+        assertNull(log.getDescription());
+    }
+
+    @Test
+    void shouldReadTheSubjectLiveAndReportItErasedOnceTheAccountIsGone() {
+        ActivityLog aboutLiving = new ActivityLog(adminUser, ActivityActionType.ADMIN_TRAINING_CREATED);
+        aboutLiving.setSubject(testUser);
+        aboutLiving.setDescription("2026-06-15 Siła");
+        // ON DELETE SET NULL leaves exactly this behind after the athlete's account is deleted
+        ActivityLog aboutDeleted = new ActivityLog(adminUser, ActivityActionType.ADMIN_TRAINING_CREATED);
+        aboutDeleted.setDescription("2026-06-15 Siła");
+        ActivityLog aboutNobody = new ActivityLog(adminUser, ActivityActionType.ADMIN_SLOT_CREATED);
+        for (ActivityLog log : List.of(aboutLiving, aboutDeleted, aboutNobody)) {
+            setFieldViaReflection(log, ActivityLog.class, "id", UUID.randomUUID());
+        }
+        when(activityLogRepository.findRecentWithDetails(PageRequest.of(0, 20)))
+            .thenReturn(List.of(aboutLiving, aboutDeleted, aboutNobody));
+
+        List<ActivityLogDto> result = activityLogService.getRecentLogs(0, 20);
+
+        assertEquals("John Doe", result.get(0).subjectFullName());
+        assertEquals("user@example.com", result.get(0).subjectEmail());
+        assertFalse(result.get(0).subjectErased());
+
+        assertNull(result.get(1).subjectFullName());
+        assertNull(result.get(1).subjectEmail());
+        assertTrue(result.get(1).subjectErased());
+        assertEquals("2026-06-15 Siła", result.get(1).description());
+
+        // A slot action is about nobody, so a missing subject must not read as an erased account
+        assertFalse(result.get(2).subjectErased());
     }
 
     // ========== GET RECENT LOGS TESTS ==========

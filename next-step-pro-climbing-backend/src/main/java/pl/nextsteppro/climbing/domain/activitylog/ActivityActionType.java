@@ -37,5 +37,23 @@ public enum ActivityActionType {
     ADMIN_GOAL_DELETED,
     ADMIN_GOAL_ACHIEVED,
     // Undo of an AUTOMATIC weight-goal closure (mistyped weigh-in); manual closures are final
-    ADMIN_GOAL_REOPENED
+    ADMIN_GOAL_REOPENED;
+
+    /**
+     * Whether an entry of this type is about a person other than its actor. For these the person
+     * travels in {@code ActivityLog.subject}, never in the description, so a null subject reads as
+     * "that account was deleted". ADMIN_USER_DELETED is one of them from the start: its subject is
+     * gone by the time anyone reads the entry, and recording who it was is exactly what erasure
+     * forbids.
+     */
+    public boolean concernsAnotherUser() {
+        return switch (this) {
+            case ADMIN_USER_MAKE_ADMIN, ADMIN_USER_ADMIN_REMOVED, ADMIN_USER_DELETED,
+                 ADMIN_USER_FORCE_LOGOUT, ADMIN_USER_ATHLETE_TOGGLED, ADMIN_USER_DATA_EXPORTED,
+                 ADMIN_TRAINING_CREATED, ADMIN_TRAINING_UPDATED, ADMIN_TRAINING_DELETED,
+                 ADMIN_GOAL_CREATED, ADMIN_GOAL_UPDATED, ADMIN_GOAL_DELETED,
+                 ADMIN_GOAL_ACHIEVED, ADMIN_GOAL_REOPENED -> true;
+            default -> false;
+        };
+    }
 }
