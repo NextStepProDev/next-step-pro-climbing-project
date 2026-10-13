@@ -116,7 +116,7 @@ public class AuthService {
         }
 
         userRepository.save(user);
-        log.info("User registered: {}", user.getEmail());
+        log.info("User registered: {}", user.getId());
 
         if (Boolean.TRUE.equals(request.newsletterSubscribed())) {
             consentLogRepository.save(new NewsletterConsentLog(user, "SUBSCRIBED", "REGISTRATION"));
@@ -148,17 +148,17 @@ public class AuthService {
 
         // Check if account is locked due to too many failed attempts
         if (user.isAccountLocked()) {
-            log.warn("Login attempt for locked account: {}", request.email());
+            log.warn("Login attempt for locked account: {}", user.getId());
             throw new IllegalStateException(msg.get("auth.login.locked", user.getRemainingLockoutMinutes()));
         }
 
         if (!passwordEncoder.matches(request.password(), user.getPasswordHash())) {
-            log.debug("Invalid password attempt for: {}", request.email());
+            log.debug("Invalid password attempt for: {}", user.getId());
             // Increment failed attempts and potentially lock the account
             user.incrementFailedLoginAttempts();
             userRepository.save(user);
             if (user.isAccountLocked()) {
-                log.warn("Account locked due to failed attempts: {}", request.email());
+                log.warn("Account locked due to failed attempts: {}", user.getId());
                 throw new IllegalStateException(msg.get("auth.login.locked", user.getRemainingLockoutMinutes()));
             }
             throw new IllegalArgumentException(msg.get("auth.login.invalid"));
@@ -180,7 +180,7 @@ public class AuthService {
             log.info("AUTO-ADMIN-PROMOTION: {} promoted to ADMIN during login", user.getEmail());
         }
 
-        log.info("User logged in: {}", user.getEmail());
+        log.info("User logged in: {}", user.getId());
         return generateTokens(user);
     }
 
@@ -200,7 +200,7 @@ public class AuthService {
 
         authMailService.sendWelcomeEmail(user);
 
-        log.info("Email verified for: {}", user.getEmail());
+        log.info("Email verified for: {}", user.getId());
         return new MessageResponse(msg.get("auth.verify.success"));
     }
 
@@ -266,7 +266,7 @@ public class AuthService {
         }
 
         sendVerificationEmail(user);
-        log.info("Verification link renewed from an expired one for: {}", user.getEmail());
+        log.info("Verification link renewed from an expired one for: {}", user.getId());
         return new MessageResponse(msg.get("auth.resend.token.sent"));
     }
 
@@ -315,7 +315,7 @@ public class AuthService {
 
         authMailService.sendPasswordChangedNotification(user);
 
-        log.info("Password reset for: {}", user.getEmail());
+        log.info("Password reset for: {}", user.getId());
         return new MessageResponse(msg.get("auth.reset.success"));
     }
 
@@ -350,7 +350,7 @@ public class AuthService {
             authTokenRepository.save(storedToken);
         }
 
-        log.debug("Tokens refreshed for: {}", user.getEmail());
+        log.debug("Tokens refreshed for: {}", user.getId());
         return generateTokens(user);
     }
 

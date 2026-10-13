@@ -6,8 +6,8 @@
 #   2. tar of the uploads volume -> /backups/files/<date>.tar.gz — only when the
 #      uploads changed, or the newest archive is FILES_REFRESH_DAYS old
 #   3. upload to the encrypted Google Drive remote (gdrive-crypt:)
-#   4. prune: 7 days locally, 40 days on the remote — /backups/milestones is exempt,
-#      and the newest uploads archive is always kept locally
+#   4. prune: 7 days locally, 40 days on the remote, 90 days for /backups/milestones
+#      in both places — and the newest uploads archive is always kept locally
 #
 # Every artefact is written as <name>.part, verified, and only then renamed.
 # A half-written dump therefore never occupies the name a restore would reach for.
@@ -22,7 +22,7 @@ DATE=$(date +%Y-%m-%d)
 DB_DIR="/backups/db"
 FILES_DIR="/backups/files"
 # Dumps taken by hand before a risky operation (a major Postgres upgrade, a data
-# migration) live here and NO prune touches them, local or remote. They used to sit
+# migration) live here and the 7/40-day prunes do not touch them. They used to sit
 # in db/ next to the daily ones, where `-name '*.sql.gz' -mtime +7` cannot tell a
 # one-off safety net from yesterday's routine copy: the pre-upgrade dump of
 # 2026-09-05 was one night away from deletion while the rollback volume it backed up
@@ -40,6 +40,12 @@ LOCAL_RETENTION_DAYS=7
 # anovastudio, and this stack alone sent a ~150 MB uploads archive every night — at
 # 90 days the account would have filled up in November 2026 (measured 2026-10-09).
 REMOTE_RETENTION_DAYS=40
+# Milestones are exempt from the two prunes above, but not from time: a dump is a full
+# copy of every account, so one kept forever would hold every person who ever deleted
+# theirs (GDPR art. 17). 90 days is the ceiling the privacy policy states for ANY
+# backup, PL and EN — raising this without rewriting both makes the policy false.
+# A rollback nobody has needed in three months is not a rollback any more.
+MILESTONE_RETENTION_DAYS=90
 
 # The uploads archive is only made when the uploads changed. Every archive is a
 # complete copy, so a nightly archive of mostly the same photos spent ~150 MB of
@@ -178,6 +184,15 @@ log "Prune remote older than ${REMOTE_RETENTION_DAYS}d"
 # An expired backup has nothing worth undeleting.
 rclone delete "$REMOTE" --min-age "${REMOTE_RETENTION_DAYS}d" --drive-use-trash=false \
   --exclude "milestones/**" --log-file="$LOG" --log-level INFO
+
+log "Prune milestones older than ${MILESTONE_RETENTION_DAYS}d (remote and local)"
+# A filter on the root, not "${REMOTE}milestones": rclone copy does not create empty
+# directories, so on a server that never took a milestone that path does not exist —
+# and rclone delete on a missing directory exits non-zero, which set -e turns into a
+# failed backup.
+rclone delete "$REMOTE" --min-age "${MILESTONE_RETENTION_DAYS}d" --drive-use-trash=false \
+  --include "milestones/**" --log-file="$LOG" --log-level INFO
+find "$MILESTONE_DIR" -type f -mtime "+${MILESTONE_RETENTION_DAYS}" -delete
 
 log "Prune local older than ${LOCAL_RETENTION_DAYS}d"
 find "$DB_DIR"    -name '*.sql.gz' -mtime "+${LOCAL_RETENTION_DAYS}" -delete

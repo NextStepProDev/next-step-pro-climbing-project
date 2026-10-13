@@ -113,6 +113,13 @@ export function UserOverviewTab({ userId, user }: UserOverviewTabProps) {
                       <span className={`inline-flex px-2 py-0.5 text-xs rounded font-medium ${config.bgColor} ${config.color}`}>
                         {t(`activity.actions.${log.actionType}`)}
                       </span>
+                      {/* On an admin's card the rows are actions ON other people — name them */}
+                      {log.subjectFullName && (
+                        <span className="text-surface-300 text-xs">{log.subjectFullName}</span>
+                      )}
+                      {log.subjectErased && (
+                        <span className="text-surface-500 text-xs italic">{t('activity.subjectErased')}</span>
+                      )}
                       {log.slotDate && (
                         <span className="text-surface-300 text-xs">
                           {format(parseCalendarDate(log.slotDate), 'd MMM yyyy', { locale })}

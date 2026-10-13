@@ -20,7 +20,7 @@ Warstwę systemową stawia automat `provision-server.sh`; sekrety i dane wgrywa 
 
 - **`provision-server.sh`** — orkiestrator całości (idempotentny, `sudo bash`)
 - **`setup-swap.sh`** — 2 GB swap, swappiness 10
-- **`nsp-backup.sh`** + **`nsp-backup.logrotate`** — codzienny backup: `pg_dump` + tar uploadów (tylko gdy pliki się zmieniły, najrzadziej co 30 dni) → `rclone copy` na zaszyfrowany Google Drive (`gdrive-crypt:`). Retencja **7 dni lokalnie, 40 dni na GDrive** (archiwa starzeją się niezależnie; najnowsze archiwum plików zostaje lokalnie zawsze). Każdy artefakt jest weryfikowany przed nadaniem właściwej nazwy, a wynik przebiegu raportowany do healthchecks.io. Cron root `0 3 * * *`. **Odtwarzanie: `RESTORE.md`.**
+- **`nsp-backup.sh`** + **`nsp-backup.logrotate`** — codzienny backup: `pg_dump` + tar uploadów (tylko gdy pliki się zmieniły, najrzadziej co 30 dni) → `rclone copy` na zaszyfrowany Google Drive (`gdrive-crypt:`). Retencja **7 dni lokalnie, 40 dni na GDrive, 90 dni dla ręcznych zrzutów w `/backups/milestones`** (archiwa starzeją się niezależnie; najnowsze archiwum plików zostaje lokalnie zawsze). Wszystkie trzy liczby są obietnicą w polityce prywatności. Każdy artefakt jest weryfikowany przed nadaniem właściwej nazwy, a wynik przebiegu raportowany do healthchecks.io. Cron root `0 3 * * *`. **Odtwarzanie: `RESTORE.md`.**
 - **`cf-origin-firewall.sh`** + **`cf-origin-firewall.service`** — hardening: port 443 tylko z zakresów IP Cloudflare, 81 (panel NPM) zablokowany, 80 otwarty (renewal certów). Reaplikuje się przy każdym boocie (usługa `After=docker`).
 
 ---

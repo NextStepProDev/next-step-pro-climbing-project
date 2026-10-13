@@ -702,6 +702,7 @@
     "refresh": "Actualizar",
     "noActivity": "No hay actividad para mostrar",
     "loadMore": "Cargar más",
+    "subjectErased": "cuenta eliminada",
     "actions": {
       "USER_ACCOUNT_CONFIRMED": "Nueva cuenta confirmada",
       "RESERVATION_CREATED": "Nueva reserva",

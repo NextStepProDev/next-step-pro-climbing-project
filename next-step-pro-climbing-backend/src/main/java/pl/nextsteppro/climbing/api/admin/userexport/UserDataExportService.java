@@ -169,8 +169,7 @@ public class UserDataExportService {
 
         // Logged after the reads, so the export's own entry is not part of the file it describes.
         User admin = userRepository.findById(adminId).orElseThrow();
-        activityLogService.logAdminUserDataExported(admin,
-            user.getFullName() + " (" + user.getEmail() + ")");
+        activityLogService.logAdminUserDataExported(admin, user);
         return Optional.of(dto);
     }
 

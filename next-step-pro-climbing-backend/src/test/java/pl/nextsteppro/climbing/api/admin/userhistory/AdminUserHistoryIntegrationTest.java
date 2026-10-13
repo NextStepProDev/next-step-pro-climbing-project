@@ -255,11 +255,12 @@ class AdminUserHistoryIntegrationTest extends BaseIntegrationTest {
         TimeSlot slot = slotAt(nowWarsaw().toLocalDate().plusDays(2), LocalTime.of(18, 0), LocalTime.of(20, 0));
 
         // The user booked; then an admin cancelled it. logCancelledByAdmin files the entry under
-        // the affected user on purpose — that is what makes the card's timeline useful without a
-        // target-user column, and it is the one thing worth pinning down here.
+        // the affected user on purpose — that is what puts it on the card's timeline, which reads
+        // the actor column only (subject_user_id exists for erasure, not for this timeline), and
+        // it is the one thing worth pinning down here.
         activityLogService.logReservationCreated(user, slot, 1);
         activityLogService.logCancelledByAdmin(user, slot, 1);
-        activityLogService.logAdminUserForceLogout(admin, user.getFullName() + " (" + user.getEmail() + ")");
+        activityLogService.logAdminUserForceLogout(admin, user);
 
         List<ActivityLogDto> timeline = service.getActivity(user.getId(), 0, 20).orElseThrow();
 

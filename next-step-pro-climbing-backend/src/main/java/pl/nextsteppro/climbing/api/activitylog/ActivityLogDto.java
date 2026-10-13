@@ -21,5 +21,10 @@ public record ActivityLogDto(
     @Nullable LocalDate eventEndDate,
     @Nullable Integer participants,
     @Nullable String description,
+    // The person an ADMIN_* action was taken on, read live from their account. Both null with
+    // subjectErased = true once that account has been deleted.
+    @Nullable String subjectFullName,
+    @Nullable String subjectEmail,
+    boolean subjectErased,
     Instant createdAt
 ) {}

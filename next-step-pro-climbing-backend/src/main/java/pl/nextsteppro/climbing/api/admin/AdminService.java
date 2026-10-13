@@ -1011,7 +1011,7 @@ public class AdminService {
         jwtAuthenticationFilter.evictUser(userId);
 
         User admin = userRepository.findById(adminId).orElseThrow();
-        activityLogService.logAdminUserMakeAdmin(admin, user.getFullName() + " (" + user.getEmail() + ")");
+        activityLogService.logAdminUserMakeAdmin(admin, user);
     }
 
     public void removeAdmin(UUID adminId, UUID userId) {
@@ -1026,7 +1026,7 @@ public class AdminService {
         jwtAuthenticationFilter.evictUser(userId);
 
         User admin = userRepository.findById(adminId).orElseThrow();
-        activityLogService.logAdminUserAdminRemoved(admin, user.getFullName() + " (" + user.getEmail() + ")");
+        activityLogService.logAdminUserAdminRemoved(admin, user);
     }
 
     /** Toggles the coach-designated athlete flag (personal training calendar access). Data is kept on un-flag. */
@@ -1042,8 +1042,7 @@ public class AdminService {
         userRepository.save(user);
 
         User admin = userRepository.findById(adminId).orElseThrow();
-        activityLogService.logAdminUserAthleteToggled(admin,
-            user.getFullName() + " (" + user.getEmail() + ") -> " + (isAthlete ? "athlete" : "not athlete"));
+        activityLogService.logAdminUserAthleteToggled(admin, user, isAthlete);
     }
 
     public int sendMailToUsers(SendMailRequest request) {
@@ -1082,7 +1081,7 @@ public class AdminService {
         jwtAuthenticationFilter.evictUser(userId);
 
         User admin = userRepository.findById(adminId).orElseThrow();
-        activityLogService.logAdminUserForceLogout(admin, user.getFullName() + " (" + user.getEmail() + ")");
+        activityLogService.logAdminUserForceLogout(admin, user);
     }
 
     @Caching(evict = {
@@ -1101,8 +1100,6 @@ public class AdminService {
             throw new IllegalStateException(msg.get("admin.user.cannot.delete.admin"));
         }
 
-        String userDesc = user.getFullName() + " (" + user.getEmail() + ")";
-
         authMailService.sendAccountDeletedByAdminNotification(user);
         // Shared with UserService.deleteAccount: cancelling the reservations is only half the job —
         // the freed seats have to be offered to whoever is queued for them, and the user has to come
@@ -1120,7 +1117,8 @@ public class AdminService {
         jwtAuthenticationFilter.evictUser(userId);
 
         User admin = userRepository.findById(adminId).orElseThrow();
-        activityLogService.logAdminUserDeleted(admin, userDesc);
+        // Who it was is deliberately not recorded — see ActivityLogService.logAdminUserDeleted.
+        activityLogService.logAdminUserDeleted(admin);
     }
 
     private TimeSlotAdminDto toTimeSlotAdminDto(TimeSlot slot) {

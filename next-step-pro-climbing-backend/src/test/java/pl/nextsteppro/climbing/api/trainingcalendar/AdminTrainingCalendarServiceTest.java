@@ -59,6 +59,7 @@ class AdminTrainingCalendarServiceTest {
 
         lenient().when(userRepository.findById(adminId)).thenReturn(Optional.of(admin));
         lenient().when(userRepository.findById(athleteId)).thenReturn(Optional.of(athlete));
+        lenient().when(userRepository.getReferenceById(athleteId)).thenReturn(athlete);
     }
 
     @Test
@@ -73,7 +74,10 @@ class AdminTrainingCalendarServiceTest {
         service.createForAthlete(adminId, athleteId, request);
 
         // Then
-        verify(activityLogService).logAdminTrainingCreated(eq(admin), contains("Anna Wspinaczka"));
+        // The athlete is the entry's subject, and nothing that names them goes into the text —
+        // that copy would outlive the erasure of their account
+        verify(activityLogService).logAdminTrainingCreated(eq(admin), eq(athlete),
+            eq("2026-07-20 Trening siłowy"));
     }
 
     @Test
@@ -90,7 +94,7 @@ class AdminTrainingCalendarServiceTest {
 
         // Then
         verify(core).deleteAsAdmin(trainingId);
-        verify(activityLogService).logAdminTrainingDeleted(eq(admin), contains("Kampus"));
+        verify(activityLogService).logAdminTrainingDeleted(eq(admin), eq(athlete), contains("Kampus"));
     }
 
     @Test
@@ -123,7 +127,7 @@ class AdminTrainingCalendarServiceTest {
         service.createGoal(adminId, athleteId, request);
 
         // Then
-        verify(activityLogService).logAdminGoalCreated(eq(admin), contains("Przejść 7a"));
+        verify(activityLogService).logAdminGoalCreated(eq(admin), eq(athlete), contains("Przejść 7a"));
     }
 
     @Test
@@ -143,7 +147,7 @@ class AdminTrainingCalendarServiceTest {
         service.achieveGoal(adminId, goalId, new AchieveGoalRequest(null));
 
         // Then
-        verify(activityLogService).logAdminGoalAchieved(eq(admin), contains("Anna Wspinaczka"));
+        verify(activityLogService).logAdminGoalAchieved(eq(admin), eq(athlete), contains("7c przed 30-tką"));
     }
 
     @Test
@@ -160,7 +164,7 @@ class AdminTrainingCalendarServiceTest {
 
         // Then
         verify(goalService).deleteGoal(goalId);
-        verify(activityLogService).logAdminGoalDeleted(eq(admin), contains("Zawody PP"));
+        verify(activityLogService).logAdminGoalDeleted(eq(admin), eq(athlete), contains("Zawody PP"));
     }
 
     private PersonalTrainingDto dtoFor(CreatePersonalTrainingRequest request) {
