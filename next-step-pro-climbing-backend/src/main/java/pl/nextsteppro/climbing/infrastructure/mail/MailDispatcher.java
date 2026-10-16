@@ -16,11 +16,12 @@ import pl.nextsteppro.climbing.config.AppConfig;
 /**
  * Single point of outbound email delivery for the whole application.
  *
- * <p>Builds the HTML MIME message (with the shared inline logo and an optional iCalendar
- * attachment) and sends it through {@link JavaMailSender}, retrying on transient SMTP failures
- * with a fixed backoff. After all attempts are exhausted it logs an ERROR carrying the
- * {@link #FAILURE_MARKER} marker (easy to alert/grep on) and <strong>never throws</strong> —
- * a mail failure must not break the business transaction that triggered it.
+ * <p>Builds the MIME message (HTML plus a plain-text alternative derived by {@link MailPlainText},
+ * the shared inline logo and an optional iCalendar attachment) and sends it through
+ * {@link JavaMailSender}, retrying on transient SMTP failures with a fixed backoff. After all
+ * attempts are exhausted it logs an ERROR carrying the {@link #FAILURE_MARKER} marker (easy to
+ * alert/grep on) and <strong>never throws</strong> — a mail failure must not break the business
+ * transaction that triggered it.
  *
  * <p>For durable, restart-surviving delivery a database-backed outbox would be the next step;
  * in-memory retry is sufficient for the current volume and only covers transient blips.
@@ -106,7 +107,14 @@ public class MailDispatcher {
                 var helper = new MimeMessageHelper(message, true, "UTF-8");
                 helper.setTo(to);
                 helper.setSubject(subject);
-                helper.setText(body, true);
+                // multipart/alternative: clients render the HTML, the plain twin is for text-only
+                // readers and for spam filters that score an HTML-only message (MIME_HTML_ONLY).
+                String plain = plainTextOrNull(body);
+                if (plain != null) {
+                    helper.setText(plain, body);
+                } else {
+                    helper.setText(body, true);
+                }
                 helper.setFrom(appConfig.getMail().getFrom());
                 helper.addInline("logo", new ByteArrayResource(LOGO_BYTES), "image/png");
                 if (icsAttachment != null) {
@@ -138,6 +146,19 @@ public class MailDispatcher {
                             FAILURE_MARKER, maskAddress(to), maxAttempts, e);
                 }
             }
+        }
+    }
+
+    /**
+     * The plain part is a nicety; the mail is not. A converter bug must cost the alternative,
+     * never the message — the dispatcher's whole contract is that nothing here throws.
+     */
+    private static @Nullable String plainTextOrNull(String html) {
+        try {
+            return MailPlainText.fromHtml(html);
+        } catch (RuntimeException | StackOverflowError e) {
+            log.warn("Could not derive the plain-text part, sending HTML only", e);
+            return null;
         }
     }
 

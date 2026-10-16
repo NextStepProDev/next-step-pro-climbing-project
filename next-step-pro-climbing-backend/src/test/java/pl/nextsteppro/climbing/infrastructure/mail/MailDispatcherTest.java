@@ -14,6 +14,7 @@ import pl.nextsteppro.climbing.config.AppConfig;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -78,6 +79,45 @@ class MailDispatcherTest {
         verify(mailSender).send(sent.capture());
         assertNull(sent.getValue().getHeader("List-Unsubscribe"));
         assertNull(sent.getValue().getHeader("List-Unsubscribe-Post"));
+    }
+
+    @Test
+    @DisplayName("should send the HTML untouched with a plain-text alternative before it, keeping logo and ICS")
+    void shouldSendPlainTextAlternativeAlongsideHtml() throws Exception {
+        var sent = org.mockito.ArgumentCaptor.forClass(MimeMessage.class);
+        String html = "<html><body><a href=\"https://nextsteppro.pl\"><img src=\"cid:logo\" alt=\"Logo\"/></a>"
+                + "<p>Body</p><a href=\"https://nextsteppro.pl/x\">Open</a></body></html>";
+
+        dispatcher.sendHtml("user@example.com", "Subject", html, new byte[]{1, 2, 3});
+
+        verify(mailSender).send(sent.capture());
+        MimeMessage message = sent.getValue();
+        message.saveChanges();
+        var parts = new java.util.ArrayList<jakarta.mail.Part>();
+        collectLeaves(message, parts);
+
+        var types = parts.stream().map(p -> {
+            try {
+                return p.getContentType().split(";")[0].trim().toLowerCase();
+            } catch (jakarta.mail.MessagingException e) {
+                throw new IllegalStateException(e);
+            }
+        }).toList();
+        // Order matters: clients show the LAST alternative they can render, so HTML must follow plain.
+        assertEquals(java.util.List.of("text/plain", "text/html", "image/png", "text/calendar"), types);
+        assertEquals("Body\n\nOpen (https://nextsteppro.pl/x)\n", parts.get(0).getContent());
+        assertEquals(html, parts.get(1).getContent());
+        assertArrayEquals(new String[]{"<logo>"}, parts.get(2).getHeader("Content-ID"));
+    }
+
+    private static void collectLeaves(jakarta.mail.Part part, java.util.List<jakarta.mail.Part> out) throws Exception {
+        if (part.getContent() instanceof jakarta.mail.Multipart multipart) {
+            for (int i = 0; i < multipart.getCount(); i++) {
+                collectLeaves(multipart.getBodyPart(i), out);
+            }
+        } else {
+            out.add(part);
+        }
     }
 
     @Test
