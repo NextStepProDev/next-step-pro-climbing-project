@@ -455,8 +455,7 @@ class ReservationServiceTest {
 
         when(reservationRepository.findById(reservationId)).thenReturn(Optional.of(reservation));
         when(timeSlotRepository.findByIdForUpdate(slotId)).thenReturn(Optional.of(testSlot));
-        when(reservationRepository.countConfirmedByTimeSlotId(slotId)).thenReturn(4);
-        when(guestReservationRepository.sumParticipantsByTimeSlotId(slotId)).thenReturn(0);
+        when(reservationRepository.countConfirmedByTimeSlotIds(List.of(slotId))).thenReturn(List.of(new SlotParticipantCount(slotId, 4)));
         when(userRepository.findById(userId)).thenReturn(Optional.of(testUser));
 
         // When — client reduces 4 -> 2, freeing two spots
@@ -477,8 +476,7 @@ class ReservationServiceTest {
 
         when(reservationRepository.findById(reservationId)).thenReturn(Optional.of(reservation));
         when(timeSlotRepository.findByIdForUpdate(slotId)).thenReturn(Optional.of(testSlot));
-        when(reservationRepository.countConfirmedByTimeSlotId(slotId)).thenReturn(2);
-        when(guestReservationRepository.sumParticipantsByTimeSlotId(slotId)).thenReturn(0);
+        when(reservationRepository.countConfirmedByTimeSlotIds(List.of(slotId))).thenReturn(List.of(new SlotParticipantCount(slotId, 2)));
         when(userRepository.findById(userId)).thenReturn(Optional.of(testUser));
 
         // When — client increases 2 -> 5 (no spot is freed)
