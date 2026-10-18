@@ -32,7 +32,8 @@ public class AuthMailService {
         this.siteUrl = appConfig.getSiteUrl();
     }
 
-    @Async("mailExecutor")    public void sendVerificationEmail(User user, String token) {
+    @Async("mailExecutor")
+    public void sendVerificationEmail(User user, String token) {
         String lang = user.getPreferredLanguage();
         String verificationUrl = buildVerificationUrl(token);
         String subject = msg.getForLang("email.verification.subject", lang);
@@ -51,7 +52,8 @@ public class AuthMailService {
      * and the token expires alongside it. So the button confirms the address in one click rather
      * than sending the reader off to ask for a second mail.
      */
-    @Async("mailExecutor")    public void sendVerificationReminder(User user, String token) {
+    @Async("mailExecutor")
+    public void sendVerificationReminder(User user, String token) {
         String lang = user.getPreferredLanguage();
         String subject = msg.getForLang("email.verification.reminder.subject", lang);
         String body = buildVerificationReminderBody(lang, user.getFirstName(), buildVerificationUrl(token));
@@ -59,7 +61,8 @@ public class AuthMailService {
         sendEmail(user.getEmail(), subject, body);
     }
 
-    @Async("mailExecutor")    public void sendWelcomeEmail(User user) {
+    @Async("mailExecutor")
+    public void sendWelcomeEmail(User user) {
         String lang = user.getPreferredLanguage();
         String subject = msg.getForLang("email.welcome.subject", lang);
         String body = buildWelcomeEmailBody(lang, user.getFirstName());
@@ -67,7 +70,8 @@ public class AuthMailService {
         sendEmail(user.getEmail(), subject, body);
     }
 
-    @Async("mailExecutor")    public void sendPasswordResetEmail(User user, String token) {
+    @Async("mailExecutor")
+    public void sendPasswordResetEmail(User user, String token) {
         String lang = user.getPreferredLanguage();
         String resetUrl = buildPasswordResetUrl(token);
         String subject = msg.getForLang("email.reset.subject", lang);
@@ -76,7 +80,8 @@ public class AuthMailService {
         sendEmail(user.getEmail(), subject, body);
     }
 
-    @Async("mailExecutor")    public void sendAccountDeletedByAdminNotification(User user) {
+    @Async("mailExecutor")
+    public void sendAccountDeletedByAdminNotification(User user) {
         String lang = user.getPreferredLanguage();
         String subject = msg.getForLang("email.account.deleted.subject", lang);
         String body = buildAccountDeletedEmailBody(lang, user.getFirstName());
@@ -85,13 +90,15 @@ public class AuthMailService {
 
     // Notification to the ADMIN when a user deleted their own account.
     // affectedReservations = number of cancelled confirmed reservations (freed seats).
-    @Async("mailExecutor")    public void sendAccountSelfDeletedAdminNotification(User user, int affectedReservations) {
+    @Async("mailExecutor")
+    public void sendAccountSelfDeletedAdminNotification(User user, int affectedReservations) {
         String subject = msg.getForLang("email.admin.account.deleted.subject", ADMIN_LANG, user.getFullName());
         String body = buildAccountSelfDeletedAdminBody(user, affectedReservations);
         sendToAdmins(subject, body);
     }
 
-    @Async("mailExecutor")    public void sendPasswordChangedNotification(User user) {
+    @Async("mailExecutor")
+    public void sendPasswordChangedNotification(User user) {
         String lang = user.getPreferredLanguage();
         String subject = msg.getForLang("email.password.changed.subject", lang);
         String body = buildPasswordChangedEmailBody(lang, user.getFirstName());
