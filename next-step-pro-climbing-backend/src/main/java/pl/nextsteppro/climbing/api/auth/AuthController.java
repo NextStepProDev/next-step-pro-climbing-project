@@ -13,9 +13,11 @@ import pl.nextsteppro.climbing.api.auth.AuthDtos.*;
 public class AuthController {
 
     private final AuthService authService;
+    private final OAuthExchangeCodes exchangeCodes;
 
-    public AuthController(AuthService authService) {
+    public AuthController(AuthService authService, OAuthExchangeCodes exchangeCodes) {
         this.authService = authService;
+        this.exchangeCodes = exchangeCodes;
     }
 
     @PostMapping("/register")
@@ -65,5 +67,20 @@ public class AuthController {
     @Operation(summary = "Refresh tokens", description = "Returns new JWT tokens using a valid refresh token")
     public ResponseEntity<AuthTokensResponse> refreshTokens(@Valid @RequestBody RefreshTokenRequest request) {
         return ResponseEntity.ok(authService.refreshTokens(request));
+    }
+
+    @PostMapping("/logout")
+    @Operation(summary = "Log out", description = "Revokes this refresh token on the server. Idempotent; "
+        + "the token in the body is the credential, so no Authorization header is needed.")
+    public ResponseEntity<Void> logout(@Valid @RequestBody RefreshTokenRequest request) {
+        authService.logout(request.refreshToken());
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/oauth/exchange")
+    @Operation(summary = "Swap the one-time Google sign-in code for tokens",
+        description = "The code arrives in the URL fragment of /oauth-callback, works once and for a minute.")
+    public ResponseEntity<AuthTokensResponse> exchangeOAuthCode(@Valid @RequestBody OAuthExchangeRequest request) {
+        return ResponseEntity.ok(exchangeCodes.exchange(request.code()));
     }
 }

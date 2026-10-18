@@ -457,4 +457,32 @@ class JwtServiceTest {
         assertEquals("test+tag@example.co.uk", extractedEmail);
         assertTrue(jwtService.validateToken(token));
     }
+
+    @Test
+    void shouldRejectATokenIssuedForAnotherIssuer() {
+        // Same key, different issuer: a token minted for a sibling deployment (or by anything else
+        // that shares the secret) must not open this one. The issuer was set on every token and
+        // checked on none.
+        JwtConfig other = new JwtConfig();
+        other.setSecret("test-secret-key-minimum-32-characters-long-for-security");
+        other.setAccessTokenExpirationMs(15 * 60 * 1000);
+        other.setRefreshTokenExpirationMs(7 * 24 * 60 * 60 * 1000);
+        other.setIssuer("somebody-else.example");
+        String foreign = new JwtService(other).generateAccessToken(testUser);
+
+        assertFalse(jwtService.validateToken(foreign));
+        assertFalse(jwtService.isAccessToken(foreign));
+    }
+
+    @Test
+    void shouldNeverIssueTheSameTokenTwice() {
+        // Two refreshes in the same second (two tabs, the grace window that exists for them) built
+        // byte-identical tokens: same claims, iat in whole seconds, no jti. Both got stored, so the
+        // next refresh found two rows for one hash and answered 500 instead of tokens.
+        String first = jwtService.generateRefreshToken(testUser);
+        String second = jwtService.generateRefreshToken(testUser);
+
+        assertNotEquals(first, second);
+        assertNotEquals(jwtService.hashToken(first), jwtService.hashToken(second));
+    }
 }

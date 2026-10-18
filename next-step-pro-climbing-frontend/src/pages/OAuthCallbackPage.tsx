@@ -1,24 +1,25 @@
 import { useEffect, useRef, useState } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../context/AuthContext'
 import { consumeRedirectPath } from '../utils/redirect'
+import { exchangeOAuthCode } from '../api/auth'
 import { LoadingSpinner } from '../components/ui/LoadingSpinner'
+
+/**
+ * The one-time code Google sign-in hands back, read from the URL FRAGMENT. A fragment is never sent
+ * to any server, which is the point: the tokens used to arrive in the query string, i.e. in nginx
+ * logs and browser history.
+ */
+function readCode(): string | null {
+  return new URLSearchParams(window.location.hash.slice(1)).get('code')
+}
 
 export function OAuthCallbackPage() {
   const { t } = useTranslation('auth')
   const { loginWithTokens } = useAuth()
   const navigate = useNavigate()
-  const [searchParams] = useSearchParams()
-  const [error, setError] = useState<string | null>(() => {
-    const accessToken = searchParams.get('accessToken')
-    const refreshToken = searchParams.get('refreshToken')
-    const expiresIn = searchParams.get('expiresIn')
-    if (!accessToken || !refreshToken || !expiresIn) {
-      return t('oauth.callbackError')
-    }
-    return null
-  })
+  const [error, setError] = useState<string | null>(() => (readCode() ? null : t('oauth.callbackError')))
   const processed = useRef(false)
 
   useEffect(() => {
@@ -26,22 +27,17 @@ export function OAuthCallbackPage() {
     processed.current = true
     let redirectTimer: ReturnType<typeof setTimeout> | undefined
 
-    const accessToken = searchParams.get('accessToken')
-    const refreshToken = searchParams.get('refreshToken')
-    const expiresIn = searchParams.get('expiresIn')
+    const code = readCode()
+    // Gone from the address bar and from history before anything else runs; it works once anyway.
+    window.history.replaceState({}, '', '/oauth-callback')
 
-    if (!accessToken || !refreshToken || !expiresIn) {
+    if (!code) {
       redirectTimer = setTimeout(() => navigate('/login', { replace: true }), 2000)
       return
     }
 
-    window.history.replaceState({}, '', '/oauth-callback')
-
-    loginWithTokens({
-      accessToken,
-      refreshToken,
-      expiresIn: Number(expiresIn),
-    })
+    exchangeOAuthCode(code)
+      .then((tokens) => loginWithTokens(tokens))
       .then(() => {
         const redirect = consumeRedirectPath()
         navigate(redirect || '/', { replace: true })
@@ -54,7 +50,7 @@ export function OAuthCallbackPage() {
     // Both branches park a delayed navigate so the user can read the error first. Left uncleared,
     // a timer that outlives this page yanks whoever is already somewhere else back to /login.
     return () => clearTimeout(redirectTimer)
-  }, [searchParams, loginWithTokens, navigate, t])
+  }, [loginWithTokens, navigate, t])
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] px-4">

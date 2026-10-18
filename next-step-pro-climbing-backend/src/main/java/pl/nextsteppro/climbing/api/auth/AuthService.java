@@ -25,6 +25,7 @@ import org.springframework.context.i18n.LocaleContextHolder;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Set;
+import java.util.UUID;
 
 @Service
 public class AuthService {
@@ -60,6 +61,7 @@ public class AuthService {
      * cost-factor mismatch would re-open the timing side-channel it is meant to close.
      */
     private final String dummyHash;
+    private final SessionTokens sessionTokens;
 
     public AuthService(
             UserRepository userRepository,
@@ -72,7 +74,9 @@ public class AuthService {
             NewsletterConsentLogRepository consentLogRepository,
             PasswordPolicyValidator passwordPolicy,
             VerificationLinkIssuer verificationLinkIssuer,
-            AccountConfirmation accountConfirmation) {
+            AccountConfirmation accountConfirmation,
+            SessionTokens sessionTokens) {
+        this.sessionTokens = sessionTokens;
         this.userRepository = userRepository;
         this.authTokenRepository = authTokenRepository;
         this.passwordEncoder = passwordEncoder;
@@ -308,7 +312,7 @@ public class AuthService {
         authToken.markAsUsed();
 
         // Invalidate all refresh tokens for this user (force re-login on all devices)
-        authTokenRepository.deleteByUserIdAndTokenType(user.getId(), TokenType.REFRESH_TOKEN);
+        sessionTokens.revokeAll(user.getId());
 
         userRepository.save(user);
         authTokenRepository.save(authToken);
@@ -319,7 +323,11 @@ public class AuthService {
         return new MessageResponse(msg.get("auth.reset.success"));
     }
 
-    @Transactional
+    /**
+     * ⚠️ {@code noRollbackFor}: the reuse branch below revokes every session and THEN throws — under
+     * the default rollback rule the revocation would be undone by the very exception announcing it.
+     */
+    @Transactional(noRollbackFor = IllegalArgumentException.class)
     public AuthTokensResponse refreshTokens(RefreshTokenRequest request) {
         String refreshToken = request.refreshToken();
 
@@ -339,7 +347,10 @@ public class AuthService {
         Instant now = Instant.now();
         AuthToken storedToken = authTokenRepository
             .findRefreshableToken(tokenHash, TokenType.REFRESH_TOKEN, now, now.minus(REFRESH_ROTATION_GRACE))
-            .orElseThrow(() -> new IllegalArgumentException(msg.get("auth.refresh.revoked")));
+            .orElseThrow(() -> {
+                revokeOnReuse(tokenHash);
+                return new IllegalArgumentException(msg.get("auth.refresh.revoked"));
+            });
 
         User user = storedToken.getUser();
 
@@ -354,22 +365,38 @@ public class AuthService {
         return generateTokens(user);
     }
 
+    /**
+     * A refresh token that is not refreshable but DOES exist and was already used, past the grace
+     * window, is a token replayed after rotation — either a thief using the copy, or the owner
+     * using it after the thief rotated it. Neither can be told from the other, so every session of
+     * that person ends: the owner logs in again, the thief does not get to. (An expired or unknown
+     * token is not reuse and changes nothing.)
+     */
+    private void revokeOnReuse(String tokenHash) {
+        authTokenRepository.findFirstByTokenHashAndTokenTypeOrderByCreatedAtDesc(tokenHash, TokenType.REFRESH_TOKEN)
+            .filter(token -> token.getUsedAt() != null && token.getExpiresAt().isAfter(Instant.now()))
+            .ifPresent(token -> {
+                UUID userId = token.getUser().getId();
+                log.warn("REFRESH-TOKEN-REUSE: rotated refresh token presented again, all sessions revoked for user {}", userId);
+                sessionTokens.revokeAll(userId);
+            });
+    }
+
+    /**
+     * Ends THIS session on the server, not only in the browser. Before this, logging out only
+     * dropped the tokens client-side, so a copied refresh token stayed good for seven days after the
+     * owner pressed "log out". Idempotent and unauthenticated on purpose: the token is the
+     * credential, and a dead one deletes nothing.
+     */
+    @Transactional
+    public void logout(String refreshToken) {
+        authTokenRepository.findFirstByTokenHashAndTokenTypeOrderByCreatedAtDesc(
+                jwtService.hashToken(refreshToken), TokenType.REFRESH_TOKEN)
+            .ifPresent(authTokenRepository::delete);
+    }
+
     private AuthTokensResponse generateTokens(User user) {
-        String accessToken = jwtService.generateAccessToken(user);
-        String refreshToken = jwtService.generateRefreshToken(user);
-
-        // Store refresh token hash in database for revocation capability
-        String refreshTokenHash = jwtService.hashToken(refreshToken);
-        Instant refreshExpiration = Instant.now().plusMillis(jwtService.getRefreshTokenExpirationMs());
-
-        AuthToken storedRefreshToken = new AuthToken(user, refreshTokenHash, TokenType.REFRESH_TOKEN, refreshExpiration);
-        authTokenRepository.save(storedRefreshToken);
-
-        return new AuthTokensResponse(
-            accessToken,
-            refreshToken,
-            jwtService.getAccessTokenExpirationSeconds()
-        );
+        return sessionTokens.issue(user);
     }
 
     private void sendVerificationEmail(User user) {

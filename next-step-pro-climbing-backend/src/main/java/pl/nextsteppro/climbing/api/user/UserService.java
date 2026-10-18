@@ -8,11 +8,12 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+import pl.nextsteppro.climbing.api.auth.AuthDtos.AuthTokensResponse;
+import pl.nextsteppro.climbing.api.auth.SessionTokens;
 import pl.nextsteppro.climbing.api.reservation.UserSeatReleaseService;
 import pl.nextsteppro.climbing.api.trainingcalendar.CommentFileSupport;
 import pl.nextsteppro.climbing.api.trainingcalendar.AttachmentSupport;
 import pl.nextsteppro.climbing.domain.auth.AuthTokenRepository;
-import pl.nextsteppro.climbing.domain.auth.TokenType;
 import pl.nextsteppro.climbing.domain.newsletter.NewsletterConsentLog;
 import pl.nextsteppro.climbing.domain.newsletter.NewsletterConsentLogRepository;
 import pl.nextsteppro.climbing.domain.user.User;
@@ -46,6 +47,8 @@ public class UserService {
     private final AttachmentSupport attachmentSupport;
     private final FileStorageService fileStorageService;
     private final PasswordPolicyValidator passwordPolicy;
+    private final SessionTokens sessionTokens;
+    private final PasswordAttempts passwordAttempts;
 
     public UserService(UserRepository userRepository,
                        PasswordEncoder passwordEncoder,
@@ -57,7 +60,11 @@ public class UserService {
                        CommentFileSupport commentFileSupport,
                        AttachmentSupport attachmentSupport,
                        FileStorageService fileStorageService,
-                       PasswordPolicyValidator passwordPolicy) {
+                       PasswordPolicyValidator passwordPolicy,
+                       SessionTokens sessionTokens,
+                       PasswordAttempts passwordAttempts) {
+        this.sessionTokens = sessionTokens;
+        this.passwordAttempts = passwordAttempts;
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.authMailService = authMailService;
@@ -124,24 +131,52 @@ public class UserService {
         return userRepository.save(user);
     }
 
-    public void changePassword(UUID userId, String currentPassword, String newPassword) {
+    /**
+     * Changes the password and ends every OTHER session: all refresh tokens go, and the caller gets
+     * a fresh pair back so this device stays signed in.
+     *
+     * <p>⚠️ Before this, a stolen session survived the password change — the one thing a person
+     * does on suspecting theft — for the seven days its refresh token had left. Reset by e-mail
+     * always revoked; the change from Settings did not.
+     *
+     * <p>A wrong current password counts against the same lockout as login (5 → 15 minutes).
+     * Without it this endpoint was an unlimited password oracle for anyone holding a stolen access
+     * token. The count is written by {@link PasswordAttempts} in its own transaction — see there.
+     */
+    public AuthTokensResponse changePassword(UUID userId, String currentPassword, String newPassword) {
         User user = userRepository.findById(userId)
             .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
         if (!user.hasPassword()) {
             throw new IllegalStateException(msg.get("user.no.password"));
         }
-
-        if (!passwordEncoder.matches(currentPassword, user.getPasswordHash())) {
-            throw new IllegalStateException(msg.get("user.wrong.current.password"));
-        }
+        requireCurrentPassword(user, currentPassword, "user.wrong.current.password");
 
         passwordPolicy.validate(newPassword, user.getEmail(), user.getFirstName(), user.getLastName());
 
         user.setPasswordHash(passwordEncoder.encode(newPassword));
         userRepository.save(user);
+        sessionTokens.revokeAll(userId);
 
         authMailService.sendPasswordChangedNotification(user);
+        return sessionTokens.issue(user);
+    }
+
+    /** Same lockout as login: refused outright while locked, counted when wrong, reset when right. */
+    private void requireCurrentPassword(User user, @Nullable String password, String wrongKey) {
+        if (user.isAccountLocked()) {
+            throw new IllegalStateException(msg.get("auth.login.locked", user.getRemainingLockoutMinutes()));
+        }
+        if (password == null || !passwordEncoder.matches(password, user.getPasswordHash())) {
+            User counted = passwordAttempts.recordFailure(user.getId());
+            if (counted.isAccountLocked()) {
+                throw new IllegalStateException(msg.get("auth.login.locked", counted.getRemainingLockoutMinutes()));
+            }
+            throw new IllegalStateException(msg.get(wrongKey));
+        }
+        if (user.getFailedLoginAttempts() > 0) {
+            user.resetFailedLoginAttempts();
+        }
     }
 
     @Caching(evict = {
@@ -159,9 +194,7 @@ public class UserService {
             .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
         if (user.hasPassword()) {
-            if (!passwordEncoder.matches(password, user.getPasswordHash())) {
-                throw new IllegalStateException(msg.get("user.wrong.password"));
-            }
+            requireCurrentPassword(user, password, "user.wrong.password");
         }
 
         // 1-4. Free the seats and hand them to the queues. The ordering inside is load-bearing —
@@ -198,7 +231,7 @@ public class UserService {
      * no device can refresh the session → real logout everywhere within ≤15 min.
      */
     public void logoutAllDevices(UUID userId) {
-        authTokenRepository.deleteByUserIdAndTokenType(userId, TokenType.REFRESH_TOKEN);
+        sessionTokens.revokeAll(userId);
     }
 
     public void updateNotificationPreference(UUID userId, boolean enabled) {
