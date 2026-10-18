@@ -71,6 +71,7 @@ import type {
   PaymentResult,
   PayerSummary,
   Subscription,
+  MySubscription,
   PayoutSource,
   PayoutSourceHistory,
   UnassignedMarkers,
@@ -513,6 +514,11 @@ export const reservationApi = {
 }
 
 // Training requests
+// The caller's own coaching subscription. No id in the path: the token is the only address.
+export const mySubscriptionApi = {
+  get: () => fetchApi<MySubscription>('/user/subscription'),
+}
+
 export const trainingRequestApi = {
   create: (data: CreateTrainingRequest) =>
     fetchApi<{ id: string; message: string }>('/training-requests', {

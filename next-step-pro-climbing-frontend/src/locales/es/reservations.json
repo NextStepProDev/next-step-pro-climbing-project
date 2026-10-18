@@ -67,5 +67,18 @@
       "EXPIRED": "Caducada"
     }
   },
-  "skipToContent": "Saltar al contenido"
+  "skipToContent": "Saltar al contenido",
+  "subscription": {
+    "title": "Tu suscripción",
+    "perMonth": "/ mes",
+    "since": "desde {{month}}",
+    "ended": "{{from}} — {{to}}",
+    "due": "Pendiente: {{amount}}",
+    "waived": "sin cuota",
+    "paid": "pagado",
+    "paidOn": "pagado el {{date}}",
+    "short": "faltan {{amount}}",
+    "unpaid": "pendiente",
+    "hint": "Los pagos los registra tu entrenador. Un pago cubre primero la deuda más antigua, incluidas las sesiones fuera de la suscripción."
+  }
 }

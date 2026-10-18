@@ -107,13 +107,16 @@ class SettlementIsolationTest {
         "infrastructure/scheduler/SubscriptionBillingScheduler.java";
 
     /**
-     * The only two packages allowed to touch money: the entity's own home, and the admin API that
-     * serves it. Widening this list is a decision about who can read what clients were charged —
-     * make it deliberately, not by adding an import.
+     * The only packages allowed to touch money: the entity's own home, the admin API that serves it,
+     * and — decided 2026-10-18 — the client's view of their OWN subscription. That third one may
+     * because it is addressed by the token alone (no id in the path, so no other person to ask
+     * about) and feeds nothing shared or cached. Widening this list is a decision about who can
+     * read what clients were charged — make it deliberately, not by adding an import.
      */
     private static final Set<String> ALLOWED_PACKAGE_PATHS = Set.of(
         "pl/nextsteppro/climbing/domain/settlement",
-        "pl/nextsteppro/climbing/api/admin/settlement"
+        "pl/nextsteppro/climbing/api/admin/settlement",
+        "pl/nextsteppro/climbing/api/mysubscription"
     );
 
     @Test

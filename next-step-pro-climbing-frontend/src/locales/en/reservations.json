@@ -67,5 +67,18 @@
       "EXPIRED": "Expired"
     }
   },
-  "skipToContent": "Skip to content"
+  "skipToContent": "Skip to content",
+  "subscription": {
+    "title": "Your subscription",
+    "perMonth": "/ month",
+    "since": "since {{month}}",
+    "ended": "{{from}} — {{to}}",
+    "due": "Due: {{amount}}",
+    "waived": "no fee",
+    "paid": "paid",
+    "paidOn": "paid {{date}}",
+    "short": "{{amount}} short",
+    "unpaid": "due",
+    "hint": "Payments are recorded by your coach. A payment covers the oldest debt first — sessions outside the subscription included."
+  }
 }
