@@ -24,7 +24,7 @@ public class TokenCleanupScheduler {
      * Cleans up expired auth tokens every hour.
      * Runs at minute 0 of every hour (e.g., 1:00, 2:00, etc.)
      */
-    @Scheduled(cron = "0 0 * * * *")
+    @Scheduled(cron = "0 0 * * * *", zone = "UTC")
     @Transactional
     public void cleanupExpiredTokens() {
         Instant cutoff = Instant.now();

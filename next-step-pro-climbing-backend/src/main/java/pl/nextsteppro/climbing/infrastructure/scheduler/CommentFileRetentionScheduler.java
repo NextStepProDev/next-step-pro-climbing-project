@@ -31,7 +31,7 @@ public class CommentFileRetentionScheduler {
     }
 
     /** Daily at 03:35 — an idle hour, and offset from the other jobs so they do not pile up. */
-    @Scheduled(cron = "0 35 3 * * *")
+    @Scheduled(cron = "0 35 3 * * *", zone = "UTC")
     public void sweep() {
         int expired = retention.deleteExpired();
         int orphans = retention.deleteOrphans();
