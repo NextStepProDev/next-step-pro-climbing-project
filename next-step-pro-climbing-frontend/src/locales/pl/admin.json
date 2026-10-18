@@ -88,6 +88,8 @@
     "exitConfirm": "Wyjdź bez zapisu",
     "exitConfirmSave": "Zapisz zmiany",
     "deleteSingleVersion": "Usuń tylko wersję {{lang}}",
+    "deletePhotoConfirmTitle": "Usunąć zdjęcie?",
+    "deletePhotoConfirmMessage": "Zdjęcie zniknie z profilu. Jeśli to zdjęcie z galerii, w galerii zostaje.",
     "deleteSingleConfirmTitle": "Usuń wersję językową",
     "deleteSingleConfirmMessage": "Czy na pewno chcesz usunąć wersję {{lang}} ({{name}})? Pozostałe wersje językowe nie zostaną usunięte.",
     "deleteSingleConfirm": "Usuń",

@@ -82,6 +82,8 @@
     "duplicateAsTranslation": "Duplicate as translation",
     "translationExists": "All translations already exist",
     "deleteSingleVersion": "Delete {{lang}} version only",
+    "deletePhotoConfirmTitle": "Remove the photo?",
+    "deletePhotoConfirmMessage": "The photo disappears from the profile. A photo picked from the gallery stays in the gallery.",
     "deleteSingleConfirmTitle": "Delete language version",
     "deleteSingleConfirmMessage": "Are you sure you want to delete the {{lang}} version ({{name}})? Other language versions will not be affected.",
     "deleteSingleConfirm": "Delete",

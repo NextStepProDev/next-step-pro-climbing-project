@@ -47,6 +47,8 @@ class AdminGalleryServiceTest {
     @Mock
     private FileStorageService fileStorageService;
     @Mock
+    private pl.nextsteppro.climbing.infrastructure.storage.FileUrlReferences fileUrlReferences;
+    @Mock
     private MultipartFile mockFile;
 
     private AdminGalleryService adminGalleryService;
@@ -62,6 +64,7 @@ class AdminGalleryServiceTest {
             albumRepository,
             photoRepository,
             fileStorageService,
+            fileUrlReferences,
             BASE_URL
         );
 

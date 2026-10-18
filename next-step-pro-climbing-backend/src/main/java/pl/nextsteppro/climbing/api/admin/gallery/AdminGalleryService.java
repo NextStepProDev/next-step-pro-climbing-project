@@ -1,5 +1,6 @@
 package pl.nextsteppro.climbing.api.admin.gallery;
 
+import pl.nextsteppro.climbing.infrastructure.storage.FileUrlReferences;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,6 +20,7 @@ import pl.nextsteppro.climbing.infrastructure.storage.FileUrls;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.List;
+import java.util.Set;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -32,15 +34,18 @@ public class AdminGalleryService {
     private final AlbumRepository albumRepository;
     private final PhotoRepository photoRepository;
     private final FileStorageService fileStorageService;
+    private final FileUrlReferences fileUrlReferences;
     private final String baseUrl;
 
     public AdminGalleryService(AlbumRepository albumRepository,
                                PhotoRepository photoRepository,
                                FileStorageService fileStorageService,
+                               FileUrlReferences fileUrlReferences,
                                @Value("${app.base-url}") String baseUrl) {
         this.albumRepository = albumRepository;
         this.photoRepository = photoRepository;
         this.fileStorageService = fileStorageService;
+        this.fileUrlReferences = fileUrlReferences;
         this.baseUrl = baseUrl;
     }
 
@@ -127,7 +132,9 @@ public class AdminGalleryService {
                 .orElseThrow(() -> new IllegalArgumentException("Album not found"));
 
         List<Photo> photos = photoRepository.findByAlbumId(albumId);
+        Set<String> inUse = fileUrlReferences.referencedIn("gallery");
         for (Photo photo : photos) {
+            if (inUse.contains(photo.getFilename())) continue; // shown elsewhere by URL — keep the bytes
             try {
                 fileStorageService.delete(photo.getFilename(), "gallery");
             } catch (IOException e) {
@@ -148,7 +155,9 @@ public class AdminGalleryService {
 
         // Delete all photo files first (before CASCADE delete removes DB records)
         List<Photo> photos = photoRepository.findByAlbumId(id);
+        Set<String> inUse = fileUrlReferences.referencedIn("gallery");
         for (Photo photo : photos) {
+            if (inUse.contains(photo.getFilename())) continue; // shown elsewhere by URL — keep the bytes
             try {
                 fileStorageService.delete(photo.getFilename(), "gallery");
             } catch (IOException e) {
@@ -222,8 +231,12 @@ public class AdminGalleryService {
         Photo photo = photoRepository.findById(photoId)
                 .orElseThrow(() -> new IllegalArgumentException("Photo not found"));
 
-        // Delete file first
-        fileStorageService.delete(photo.getFilename(), "gallery");
+        // ⚠️ The picker hands out this photo's URL, which may be a news/course thumbnail, a block
+        // image or a homepage picture now. The gallery entry goes; the bytes stay while anything
+        // still shows them (FileUrlReferences), and the orphan audit picks them up once nothing does.
+        if (!fileUrlReferences.isReferenced("gallery", photo.getFilename())) {
+            fileStorageService.delete(photo.getFilename(), "gallery");
+        }
 
         // Delete record
         photoRepository.delete(photo);

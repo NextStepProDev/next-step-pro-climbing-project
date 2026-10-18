@@ -520,7 +520,6 @@ class AdminInstructorServiceTest {
         when(instructorRepository.findById(instructorId)).thenReturn(Optional.of(testInstructor));
         when(instructorRepository.existsByTranslationGroupIdAndLanguage(testInstructor.getTranslationGroupId(), "en"))
                 .thenReturn(false);
-        when(instructorRepository.findMinDisplayOrder()).thenReturn(Optional.of(0));
         when(instructorRepository.save(any(Instructor.class))).thenAnswer(inv -> {
             Instructor i = inv.getArgument(0);
             setInstructorIdViaReflection(i, UUID.randomUUID());
@@ -551,7 +550,6 @@ class AdminInstructorServiceTest {
         when(instructorRepository.findById(instructorId)).thenReturn(Optional.of(testInstructor));
         when(instructorRepository.existsByTranslationGroupIdAndLanguage(testInstructor.getTranslationGroupId(), "en"))
                 .thenReturn(false);
-        when(instructorRepository.findMinDisplayOrder()).thenReturn(Optional.of(0));
         when(instructorRepository.save(any(Instructor.class))).thenAnswer(inv -> {
             Instructor i = inv.getArgument(0);
             setInstructorIdViaReflection(i, UUID.randomUUID());
