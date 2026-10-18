@@ -126,6 +126,11 @@ public class EventWaitlistService {
         return new WaitlistResultDto(true, msg.get("waitlist.joined"));
     }
 
+    /** Event twin of {@link WaitlistService#forgetEntryOnceBooked}. */
+    public void forgetEntryOnceBooked(UUID userId, UUID eventId) {
+        eventWaitlistRepository.findByUserIdAndEventId(userId, eventId).ifPresent(eventWaitlistRepository::delete);
+    }
+
     public void leaveEventWaitlist(UUID eventId, UUID userId) {
         EventWaitlist entry = eventWaitlistRepository.findByUserIdAndEventId(userId, eventId)
             .orElseThrow(() -> new IllegalArgumentException(msg.get("waitlist.not.found")));
@@ -205,6 +210,14 @@ public class EventWaitlistService {
         User user = entry.getUser();
 
         List<TimeSlot> slots = timeSlotRepository.findByEventId(eventId);
+        // Already enrolled by another route — see the slot twin: the capacity check would count their
+        // own seat as taken and tell them they lost the race for it.
+        List<Reservation> booked = reservationRepository.findConfirmedByUserIdAndSlotIds(
+            userId, slots.stream().map(TimeSlot::getId).toList());
+        if (!booked.isEmpty()) {
+            eventWaitlistRepository.delete(entry);
+            return new EventReservationResultDto(eventId, true, msg.get("reservation.event.confirmed"), booked.size());
+        }
         int currentParticipants = occupancy.ofEvent(event.getId(), slots);
         // Seats held for other invitees still block — protects against confirming past the
         // limit when several queued people were offered at once and some seats are invitation-held.

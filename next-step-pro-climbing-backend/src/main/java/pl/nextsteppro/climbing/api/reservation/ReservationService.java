@@ -13,7 +13,6 @@ import pl.nextsteppro.climbing.domain.reservation.GuestReservationRepository;
 import pl.nextsteppro.climbing.domain.reservation.Reservation;
 import pl.nextsteppro.climbing.domain.reservation.ReservationRepository;
 import pl.nextsteppro.climbing.domain.reservation.ReservationStatus;
-import pl.nextsteppro.climbing.domain.reservation.SlotParticipantCount;
 import pl.nextsteppro.climbing.domain.reservedseat.ReservedSeat;
 import pl.nextsteppro.climbing.domain.reservedseat.ReservedSeatRepository;
 import pl.nextsteppro.climbing.domain.timeslot.TimeSlot;
@@ -31,7 +30,6 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -163,6 +161,7 @@ public class ReservationService {
             reservation.setComment(sanitizedComment);
         }
         reservation = reservationRepository.save(reservation);
+        waitlistService.forgetEntryOnceBooked(userId, slotId);
 
         String displayTitle = slot.getDisplayTitle();
         // The mail methods are @Async and read reservation.getUser()/getTimeSlot() on the mail
@@ -205,6 +204,11 @@ public class ReservationService {
         }
 
         TimeSlot slot = reservation.getTimeSlot();
+        // One day of an event is not cancelled on its own — that left the course half-booked, with
+        // the other days still held. The event is left through cancelEventReservation.
+        if (slot.belongsToEvent()) {
+            throw new IllegalStateException(msg.get("reservation.slot.belongs.to.event"));
+        }
         if (!BookingTimeValidator.isWithinBookingWindow(slot.getDate(), slot.getStartTime())) {
             throw new IllegalStateException(msg.get("reservation.cancel.window"));
         }
@@ -243,42 +247,20 @@ public class ReservationService {
             }
         }
 
-        // Batch query confirmed counts for standalone slots
-        Map<UUID, Integer> standaloneConfirmedCounts = Map.of();
-        if (!standaloneReservations.isEmpty()) {
-            List<UUID> slotIds = standaloneReservations.stream().map(r -> r.getTimeSlot().getId()).toList();
-            standaloneConfirmedCounts = reservationRepository.countConfirmedByTimeSlotIds(slotIds).stream()
-                .collect(Collectors.toMap(SlotParticipantCount::slotId, SlotParticipantCount::countAsInt));
-        }
-
-        final Map<UUID, Integer> standaloneCountsFinal = standaloneConfirmedCounts;
+        // The "+" on the edit form is capped by this number, so it is the very rule the update applies
+        // (guests and other people's held seats included) — it used to count bookings only and offer
+        // seats the server then refused. A few queries per row; the list is one person's upcoming bookings.
         List<UserReservationDto> standaloneSlots = standaloneReservations.stream()
-            .map(r -> {
-                int confirmed = standaloneCountsFinal.getOrDefault(r.getTimeSlot().getId(), 0);
-                int spotsAvailable = r.getTimeSlot().getMaxParticipants() - confirmed + r.getParticipants();
-                return toUserReservationDto(r, spotsAvailable);
-            })
+            .map(r -> toUserReservationDto(r, seatsToGrowInto(r.getTimeSlot(), r.getParticipants(), userId)))
             .toList();
 
-        // Batch query confirmed counts for all event slots
-        Map<UUID, Integer> eventSlotConfirmedCounts = Map.of();
-        if (!eventReservations.isEmpty()) {
-            List<UUID> allEventSlotIds = eventReservations.values().stream()
-                .flatMap(List::stream).map(r -> r.getTimeSlot().getId()).toList();
-            eventSlotConfirmedCounts = reservationRepository.countConfirmedByTimeSlotIds(allEventSlotIds).stream()
-                .collect(Collectors.toMap(SlotParticipantCount::slotId, SlotParticipantCount::countAsInt));
-        }
-
-        final Map<UUID, Integer> eventSlotCountsFinal = eventSlotConfirmedCounts;
         List<UserEventReservationDto> eventDtos = eventReservations.entrySet().stream()
             .map(entry -> {
                 List<Reservation> reservations = entry.getValue();
                 Reservation first = reservations.getFirst();
                 Event event = first.getTimeSlot().getEvent();
-                int maxConfirmedCount = reservations.stream()
-                    .mapToInt(r -> eventSlotCountsFinal.getOrDefault(r.getTimeSlot().getId(), 0))
-                    .max().orElse(0);
-                int spotsAvailable = event.getMaxParticipants() - maxConfirmedCount + first.getParticipants();
+                int spotsAvailable = seatsToGrowInto(event,
+                    reservations.stream().map(Reservation::getTimeSlot).toList(), first.getParticipants(), userId);
                 boolean cancelledByAdmin = reservations.stream()
                     .allMatch(r -> r.getStatus() == ReservationStatus.CANCELLED_BY_ADMIN);
                 return new UserEventReservationDto(
@@ -502,6 +484,8 @@ public class ReservationService {
             slotsReserved++;
         }
 
+        eventWaitlistService.forgetEntryOnceBooked(userId, eventId);
+
         mailService.sendEventReservationConfirmation(user, event, participants);
         mailService.sendEventAdminNotification(user, event, participants, sanitizedComment);
 
@@ -581,13 +565,15 @@ public class ReservationService {
         TimeSlot slot = timeSlotRepository.findByIdForUpdate(reservation.getTimeSlot().getId())
             .orElseThrow(() -> new IllegalArgumentException("Time slot not found"));
 
+        // Same reason as cancelReservation: every day of an event carries the same head count.
+        if (slot.belongsToEvent()) {
+            throw new IllegalStateException(msg.get("reservation.slot.belongs.to.event"));
+        }
         if (!BookingTimeValidator.isWithinBookingWindow(slot.getDate(), slot.getStartTime())) {
             throw new IllegalStateException(msg.get("reservation.cancel.window"));
         }
 
-        int totalParticipants = reservationRepository.countConfirmedByTimeSlotId(slot.getId())
-            + guestReservationRepository.sumParticipantsByTimeSlotId(slot.getId());
-        int availableForThisReservation = slot.getMaxParticipants() - totalParticipants + reservation.getParticipants();
+        int availableForThisReservation = seatsToGrowInto(slot, reservation.getParticipants(), userId);
         if (participants > availableForThisReservation) {
             throw new IllegalStateException(msg.get("reservation.spots.available", availableForThisReservation, participants));
         }
@@ -646,8 +632,7 @@ public class ReservationService {
         }
 
         int currentUserParticipants = userReservations.getFirst().getParticipants();
-        int currentMaxTotal = occupancy.ofEvent(eventId, slots);
-        int availableForThisGroup = event.getMaxParticipants() - currentMaxTotal + currentUserParticipants;
+        int availableForThisGroup = seatsToGrowInto(event, slots, currentUserParticipants, userId);
         if (participants > availableForThisGroup) {
             throw new IllegalStateException(msg.get("reservation.event.spots.available", availableForThisGroup, participants));
         }
@@ -672,6 +657,26 @@ public class ReservationService {
         }
 
         return new EventReservationResultDto(eventId, true, msg.get("reservation.updated"), userReservations.size());
+    }
+
+    /**
+     * How large this user's booking may grow to: the capacity minus everybody else's seats (guests
+     * included) minus seats held under an invitation for somebody else. New bookings always
+     * subtracted those holds; growing an existing one did not, so a group could swell into a seat the
+     * admin had promised to a named invitee. The edit form's "+" limit reads this same number, so
+     * the button cannot offer what the server then refuses.
+     */
+    private int seatsToGrowInto(TimeSlot slot, int ownParticipants, UUID userId) {
+        int taken = occupancy.perSlot(List.of(slot.getId())).getOrDefault(slot.getId(), 0);
+        int heldForOthers = reservedSeatRepository.countPendingBySlotIdExcludingUser(slot.getId(), userId);
+        return slot.getMaxParticipants() - taken - heldForOthers + ownParticipants;
+    }
+
+    /** Event twin of {@link #seatsToGrowInto(TimeSlot, int, UUID)}. */
+    private int seatsToGrowInto(Event event, List<TimeSlot> slots, int ownParticipants, UUID userId) {
+        int taken = occupancy.ofEvent(event.getId(), slots);
+        int heldForOthers = reservedSeatRepository.countPendingByEventIdExcludingUser(event.getId(), userId);
+        return event.getMaxParticipants() - taken - heldForOthers + ownParticipants;
     }
 
     private List<TimeSlot> createDefaultSlotsForEvent(Event event) {

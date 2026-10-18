@@ -1851,6 +1851,8 @@ public class AdminService {
             reservation.setCreatedByAdmin(true);
             reservation = reservationRepository.save(reservation);
         }
+        // Booked now, so no longer waiting — see WaitlistService.forgetEntryOnceBooked.
+        waitlistService.forgetEntryOnceBooked(user.getId(), slotId);
 
         String displayTitle = slot.getDisplayTitle();
         if (!BookingTimeValidator.isPast(slot.getDate(), slot.getEndTime())) {
@@ -1944,6 +1946,7 @@ public class AdminService {
             throw new IllegalStateException(
                 seatsUnavailableMessage(heldForOthers, available, request.participants()));
         }
+        eventWaitlistService.forgetEntryOnceBooked(user.getId(), eventId);
 
         if (!existingUserReservations.isEmpty()) {
             // User already has a reservation — add participants to the existing one

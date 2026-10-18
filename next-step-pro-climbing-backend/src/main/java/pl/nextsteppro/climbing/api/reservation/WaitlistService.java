@@ -95,6 +95,11 @@ public class WaitlistService {
         if (slot.getMaxParticipants() == 0) {
             throw new IllegalStateException(msg.get("reservation.slot.unavailable"));
         }
+        // An event's day-slot is queued for through the event — createReservation refuses booking it
+        // directly, and confirming an offer here would hand out exactly that: one day of a course.
+        if (slot.belongsToEvent()) {
+            throw new IllegalStateException(msg.get("reservation.slot.belongs.to.event"));
+        }
 
         User user = userRepository.findById(userId)
             .orElseThrow(() -> new IllegalArgumentException("User not found"));
@@ -131,6 +136,16 @@ public class WaitlistService {
 
         log.info("User {} joined waitlist for slot {} at position {}", userId, slotId, position);
         return new WaitlistResultDto(true, msg.get("waitlist.joined"));
+    }
+
+    /**
+     * Someone who now holds a seat is no longer waiting for one. Called from every path that books
+     * a slot: without it a client who booked directly, or whom the admin added by hand, stayed in
+     * the queue — listed under "my waitlists" for a session they already had, and offered their own
+     * seat at the next cancellation.
+     */
+    public void forgetEntryOnceBooked(UUID userId, UUID slotId) {
+        waitlistRepository.findByUserIdAndSlotId(userId, slotId).ifPresent(waitlistRepository::delete);
     }
 
     public void leaveWaitlist(UUID slotId, UUID userId) {
@@ -215,6 +230,19 @@ public class WaitlistService {
         }
         if (BookingTimeValidator.isPast(slot.getDate(), slot.getEndTime())) {
             throw new IllegalStateException(msg.get("reservation.slot.past"));
+        }
+        // An entry queued on a day-slot before joinWaitlist refused it must not book one day either.
+        if (slot.belongsToEvent()) {
+            throw new IllegalStateException(msg.get("reservation.slot.belongs.to.event"));
+        }
+
+        // Already booked by another route (the admin added them while the offer was out). The capacity
+        // check below counts their own seat as taken, so this used to answer "someone else was faster,
+        // you are back on the waitlist" — to the person holding the seat, who then stayed queued.
+        Reservation booked = reservationRepository.findByUserIdAndTimeSlotId(userId, slotId);
+        if (booked != null && booked.isConfirmed()) {
+            waitlistRepository.delete(entry);
+            return new ReservationResultDto(booked.getId(), true, msg.get("reservation.confirmed"));
         }
 
         int confirmedCount = reservationRepository.countConfirmedByTimeSlotId(slotId)
