@@ -134,8 +134,9 @@ import {
   isAccessTokenExpired,
   saveTokens,
   clearTokens,
+  type AuthTokens,
 } from '../utils/tokenStorage'
-import { refreshTokens } from './auth'
+import { refreshTokens, revokeSession } from './auth'
 
 const API_BASE = '/api'
 
@@ -377,13 +378,20 @@ async function uploadApi<T>(endpoint: string, formData: FormData): Promise<T> {
 export const authApi = {
   getCurrentUser: () => fetchApi<User>('/user/me'),
   logout: () => {
+    // Revoke on the server first-but-without-waiting: the token is read before it is cleared, and
+    // a failed call (offline, server down) must not keep anybody signed in on this device.
+    const refreshToken = getRefreshToken()
+    if (refreshToken) revokeSession(refreshToken).catch(() => {})
     clearTokens()
   },
-  changePassword: (currentPassword: string, newPassword: string) =>
-    fetchApi<void>('/user/me/password', {
+  // Every other session ends on the server; this one carries on with the fresh pair returned.
+  changePassword: async (currentPassword: string, newPassword: string) => {
+    const tokens = await fetchApi<AuthTokens>('/user/me/password', {
       method: 'PUT',
       body: JSON.stringify({ currentPassword, newPassword }),
-    }),
+    })
+    saveTokens(tokens)
+  },
   deleteAccount: (password: string | null) =>
     fetchApi<void>('/user/me', {
       method: 'DELETE',

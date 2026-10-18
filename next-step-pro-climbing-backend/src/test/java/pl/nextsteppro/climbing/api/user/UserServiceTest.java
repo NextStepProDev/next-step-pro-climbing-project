@@ -64,6 +64,10 @@ class UserServiceTest {
     private pl.nextsteppro.climbing.infrastructure.storage.FileStorageService fileStorageService;
     @Mock
     private pl.nextsteppro.climbing.infrastructure.security.PasswordPolicyValidator passwordPolicy;
+    @Mock
+    private pl.nextsteppro.climbing.api.auth.SessionTokens sessionTokens;
+    @Mock
+    private PasswordAttempts passwordAttempts;
 
     private UserService userService;
     private User testUser;
@@ -82,7 +86,9 @@ class UserServiceTest {
             commentFileSupport,
             attachmentSupport,
             fileStorageService,
-            passwordPolicy
+            passwordPolicy,
+            sessionTokens,
+            passwordAttempts
         );
 
         userId = UUID.randomUUID();
@@ -215,6 +221,7 @@ class UserServiceTest {
         when(userRepository.findById(userId)).thenReturn(Optional.of(testUser));
         when(passwordEncoder.matches("wrongPassword", "hashedPassword")).thenReturn(false);
         when(msg.get("user.wrong.current.password")).thenReturn("Wrong current password");
+        when(passwordAttempts.recordFailure(userId)).thenReturn(testUser);
 
         // When & Then
         IllegalStateException exception = assertThrows(
@@ -277,6 +284,7 @@ class UserServiceTest {
         when(userRepository.findById(userId)).thenReturn(Optional.of(testUser));
         when(passwordEncoder.matches("wrongPassword", "hashedPassword")).thenReturn(false);
         when(msg.get("user.wrong.password")).thenReturn("Wrong password");
+        when(passwordAttempts.recordFailure(userId)).thenReturn(testUser);
 
         // When & Then
         IllegalStateException exception = assertThrows(

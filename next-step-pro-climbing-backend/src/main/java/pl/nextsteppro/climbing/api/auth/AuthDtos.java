@@ -50,6 +50,10 @@ public final class AuthDtos {
         long expiresIn
     ) {}
 
+    public record OAuthExchangeRequest(
+        @NotBlank @Size(max = 128) String code
+    ) {}
+
     public record RefreshTokenRequest(
         @NotBlank(message = "{validation.refresh.token.required}")
         String refreshToken

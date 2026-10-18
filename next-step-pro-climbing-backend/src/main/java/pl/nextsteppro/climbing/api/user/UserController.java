@@ -14,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.util.HtmlUtils;
+import pl.nextsteppro.climbing.api.auth.AuthDtos.AuthTokensResponse;
 import pl.nextsteppro.climbing.config.AppConfig;
 import pl.nextsteppro.climbing.config.CurrentUserId;
 import pl.nextsteppro.climbing.domain.user.User;
@@ -77,17 +78,17 @@ public class UserController {
 
     @Operation(summary = "Change password", description = "Changes the logged-in user's password")
     @ApiResponses({
-        @ApiResponse(responseCode = "204", description = "Password changed"),
+        @ApiResponse(responseCode = "200", description = "Password changed; every other session ended, a fresh token pair for this one"),
         @ApiResponse(responseCode = "401", description = "User not authenticated"),
         @ApiResponse(responseCode = "400", description = "Invalid data")
     })
     @PutMapping("/me/password")
-    public ResponseEntity<Void> changePassword(
+    public ResponseEntity<AuthTokensResponse> changePassword(
             @Parameter(hidden = true) @CurrentUserId UUID userId,
             @Valid @RequestBody ChangePasswordRequest request) {
 
-        userService.changePassword(userId, request.currentPassword(), request.newPassword());
-        return ResponseEntity.noContent().build();
+        // Every other session ends here; this device carries on with the fresh pair returned.
+        return ResponseEntity.ok(userService.changePassword(userId, request.currentPassword(), request.newPassword()));
     }
 
     @Operation(summary = "Delete account", description = "Permanently deletes the user account and cancels all reservations")

@@ -87,7 +87,8 @@ class AuthServiceTest {
             consentLogRepository,
             passwordPolicy,
             verificationLinkIssuer,
-            accountConfirmation
+            accountConfirmation,
+            new SessionTokens(jwtService, authTokenRepository)
         );
 
         testUser = new User("test@example.com", "John", "Doe", "+48123456789", "johndoe");
