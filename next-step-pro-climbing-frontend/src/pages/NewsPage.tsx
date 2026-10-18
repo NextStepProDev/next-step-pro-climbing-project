@@ -17,7 +17,7 @@ import { useSearchParams } from 'react-router-dom'
 import { RecentAscentsFeed } from '../components/ascents/RecentAscentsFeed'
 
 export function NewsPage() {
-  const { t } = useTranslation('common')
+  const { t, i18n } = useTranslation('common')
   const { t: tAscents } = useTranslation('ascents')
   const { isAuthenticated } = useAuth()
   const queryClient = useQueryClient()
@@ -255,7 +255,7 @@ export function NewsPage() {
                       </div>
                     )}
                     <div className="absolute bottom-2 left-2 bg-surface-900/80 px-2 py-1 rounded text-xs text-surface-300">
-                      {new Date(article.publishedAt).toLocaleDateString('pl-PL', {
+                      {new Date(article.publishedAt).toLocaleDateString(i18n.language, {
                         day: 'numeric',
                         month: 'short',
                         year: 'numeric',
