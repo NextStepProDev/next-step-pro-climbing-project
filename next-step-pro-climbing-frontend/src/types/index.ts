@@ -773,6 +773,27 @@ export interface Subscription {
   skippedMonths: string[]
 }
 
+// The CLIENT's view of their own subscription (`GET /user/subscription`). Its own shape, not the
+// admin's: a field added to an admin screen must not reach the client by accident.
+// `current` is null when the person never had one — then the card is not shown at all.
+export interface MySubscription {
+  current: { amount: number; startedOn: string; endedOn: string | null; active: boolean } | null
+  // Newest first: the last twelve months, plus any older month still owed
+  months: MySubscriptionMonth[]
+  // Owed across those fees, after payments are applied oldest debt first (same as the coach sees)
+  due: number
+}
+
+export interface MySubscriptionMonth {
+  month: string
+  // null for a month the coach waived
+  amount: number | null
+  covered: number
+  remaining: number
+  paidOn: string | null
+  skipped: boolean
+}
+
 // One client's money, for their card in the Users panel. Whole history, not the tab's selected
 // year: "what do I have with this person" has no year in it.
 export interface PayerSummary {

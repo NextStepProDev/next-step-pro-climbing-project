@@ -69,5 +69,18 @@
       "EXPIRED": "Wygasła"
     }
   },
-  "skipToContent": "Przejdź do treści"
+  "skipToContent": "Przejdź do treści",
+  "subscription": {
+    "title": "Twój abonament",
+    "perMonth": "/ mies.",
+    "since": "od {{month}}",
+    "ended": "{{from}} — {{to}}",
+    "due": "Do zapłaty: {{amount}}",
+    "waived": "bez opłaty",
+    "paid": "opłacone",
+    "paidOn": "opłacone {{date}}",
+    "short": "brakuje {{amount}}",
+    "unpaid": "do zapłaty",
+    "hint": "Wpłaty zapisuje trener. Wpłata pokrywa najpierw najstarszą zaległość — także za zajęcia poza abonamentem."
+  }
 }

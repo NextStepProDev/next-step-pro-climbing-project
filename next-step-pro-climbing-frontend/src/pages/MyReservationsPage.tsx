@@ -20,6 +20,7 @@ import { EventSignupModal } from '../components/calendar/EventSignupModal'
 import { AddToCalendarButton } from '../components/ui/AddToCalendarButton'
 import { parseCalendarDate } from '../utils/calendarDate'
 import { AcceptedAtOtherTimeNotice, InvitationMovedNotice } from '../components/calendar/ProposalMovedNotice'
+import { MySubscriptionCard } from '../components/subscription/MySubscriptionCard'
 import type { MyReservations, MyInvitation, WaitlistEntry, EventWaitlistEntry, TrainingRequest } from '../types'
 
 const TrainingCalendarSection = lazy(() =>
@@ -297,6 +298,9 @@ export function MyReservationsPage() {
         )
       ) : (
       <>
+      {/* Only for somebody who has (or had) a coaching subscription; renders nothing otherwise */}
+      <MySubscriptionCard />
+
       {/* Invitations — held seats awaiting booking */}
       {hasInvitations && (
         <InvitationsSection
