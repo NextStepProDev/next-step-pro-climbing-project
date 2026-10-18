@@ -167,7 +167,7 @@ public class MailDispatcher {
      * so a full address there is personal data the erasure cannot reach. The domain is what a
      * delivery failure is usually about, and the first letter is enough to match a complaint.
      */
-    static String maskAddress(String address) {
+    public static String maskAddress(String address) {
         int at = address.lastIndexOf('@');
         if (at <= 0) {
             return "***";

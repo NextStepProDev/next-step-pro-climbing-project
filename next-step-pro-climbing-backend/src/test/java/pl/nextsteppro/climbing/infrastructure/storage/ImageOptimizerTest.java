@@ -52,6 +52,20 @@ class ImageOptimizerTest {
         assertNotNull(result.inputStream());
     }
 
+    @Test
+    void shouldGiveTheDecodeSlotBackWhenAnImageIsRejected() throws IOException {
+        // Uploads decode one at a time. A slot kept by a failed decode would make every later upload
+        // wait out the 30 s timeout and fail — a broken file would break the feature for everybody.
+        for (int i = 0; i < 3; i++) {
+            org.junit.jupiter.api.Assertions.assertThrows(IllegalArgumentException.class,
+                () -> optimizer.reencodeAsJpeg(new java.io.ByteArrayInputStream(new byte[]{1, 2, 3})));
+        }
+        long start = System.nanoTime();
+        optimizer.reencodeAsJpeg(new java.io.ByteArrayInputStream(createTestImage(40, 30)));
+        org.junit.jupiter.api.Assertions.assertTrue(System.nanoTime() - start < 5_000_000_000L,
+            "a decode slot leaked: the next upload waited for the timeout");
+    }
+
     private byte[] createTestImage(int width, int height) throws IOException {
         return createTestImage(width, height, "jpg");
     }

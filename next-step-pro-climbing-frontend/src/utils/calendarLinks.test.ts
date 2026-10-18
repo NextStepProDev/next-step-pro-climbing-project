@@ -23,6 +23,14 @@ describe('calendar export', () => {
     expect(ics).toContain('DESCRIPTION:buty\\, kask\\; lina')
   })
 
+  it('should not let a bare carriage return start a property of its own', () => {
+    const ics = buildIcsContent({ ...base, title: 'Trening\rATTENDEE:mailto:x@evil.example' })
+    for (const line of ics.split('\r\n')) {
+      expect(line).not.toMatch(/[\r\n]/)
+      expect(line.startsWith('ATTENDEE')).toBe(false)
+    }
+  })
+
   it('should escape a title carrying a separator too', () => {
     const ics = buildIcsContent({ ...base, title: 'Kurs: skały, Jura' })
     expect(ics).toContain('SUMMARY:Kurs: skały\\, Jura')

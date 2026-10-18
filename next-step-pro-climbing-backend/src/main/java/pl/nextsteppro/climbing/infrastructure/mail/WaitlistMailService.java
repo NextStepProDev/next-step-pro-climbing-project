@@ -96,7 +96,7 @@ public class WaitlistMailService {
             </html>
             """.formatted(
             siteUrl,
-            msg.getForLang("email.waitlist.offer.greeting", lang, user.getFirstName()),
+            msg.getForLang("email.waitlist.offer.greeting", lang, esc(user.getFirstName())),
             msg.getForLang("email.waitlist.offer.body", lang),
             msg.getForLang("email.reservation.date", lang), slot.getDate().format(DATE_FORMAT),
             msg.getForLang("email.reservation.time", lang), slot.getStartTime().format(TIME_FORMAT), slot.getEndTime().format(TIME_FORMAT),
@@ -131,7 +131,7 @@ public class WaitlistMailService {
             </html>
             """.formatted(
             siteUrl,
-            msg.getForLang("email.waitlist.confirmed.greeting", lang, user.getFirstName()),
+            msg.getForLang("email.waitlist.confirmed.greeting", lang, esc(user.getFirstName())),
             msg.getForLang("email.waitlist.confirmed.body", lang),
             msg.getForLang("email.reservation.date", lang), slot.getDate().format(DATE_FORMAT),
             msg.getForLang("email.reservation.time", lang), slot.getStartTime().format(TIME_FORMAT), slot.getEndTime().format(TIME_FORMAT),
@@ -197,9 +197,9 @@ public class WaitlistMailService {
             </html>
             """.formatted(
             siteUrl,
-            msg.getForLang("email.waitlist.offer.greeting", lang, user.getFirstName()),
+            msg.getForLang("email.waitlist.offer.greeting", lang, esc(user.getFirstName())),
             msg.getForLang("email.event.waitlist.offer.body", lang),
-            event.getTitle(),
+            esc(event.getTitle()),
             msg.getForLang("email.reservation.date", lang), dates,
             msg.getForLang("email.waitlist.offer.deadline.label", lang),
             msg.getForLang("email.waitlist.offer.deadline", lang, deadline),
@@ -236,9 +236,9 @@ public class WaitlistMailService {
             </html>
             """.formatted(
             siteUrl,
-            msg.getForLang("email.waitlist.confirmed.greeting", lang, user.getFirstName()),
+            msg.getForLang("email.waitlist.confirmed.greeting", lang, esc(user.getFirstName())),
             msg.getForLang("email.event.waitlist.confirmed.body", lang),
-            event.getTitle(),
+            esc(event.getTitle()),
             msg.getForLang("email.reservation.date", lang), dates,
             buildCalendarSection(lang, googleCalendarUrl),
             msg.getForLang("email.reservation.see.you", lang),
@@ -290,7 +290,7 @@ public class WaitlistMailService {
             </html>
             """.formatted(
             siteUrl,
-            msg.getForLang("email.waitlist.joined.greeting", lang, user.getFirstName()),
+            msg.getForLang("email.waitlist.joined.greeting", lang, esc(user.getFirstName())),
             msg.getForLang("email.waitlist.joined.body", lang),
             msg.getForLang("email.reservation.date", lang), slot.getDate().format(DATE_FORMAT),
             msg.getForLang("email.reservation.time", lang), slot.getStartTime().format(TIME_FORMAT), slot.getEndTime().format(TIME_FORMAT),
@@ -324,9 +324,9 @@ public class WaitlistMailService {
             </html>
             """.formatted(
             siteUrl,
-            msg.getForLang("email.event.waitlist.joined.greeting", lang, user.getFirstName()),
+            msg.getForLang("email.event.waitlist.joined.greeting", lang, esc(user.getFirstName())),
             msg.getForLang("email.event.waitlist.joined.body", lang),
-            event.getTitle(),
+            esc(event.getTitle()),
             msg.getForLang("email.reservation.date", lang), dates,
             msg.getForLang("email.reservation.team", lang)
         );
@@ -350,7 +350,7 @@ public class WaitlistMailService {
 
     private String buildWaitlistAdminBody(User user, TimeSlot slot) {
         String titleLine = slot.getDisplayTitle() != null
-            ? "<p><strong>%s</strong> %s</p>".formatted(msg.getForLang("email.slot.title.label", ADMIN_LANG), slot.getDisplayTitle())
+            ? "<p><strong>%s</strong> %s</p>".formatted(msg.getForLang("email.slot.title.label", ADMIN_LANG), esc(slot.getDisplayTitle()))
             : "";
         return """
             <html>

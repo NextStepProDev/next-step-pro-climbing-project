@@ -125,7 +125,7 @@ public class UnverifiedAccountRetentionService {
             // That is a signal worth seeing in the logs, not litter to sweep away — and the manual
             // path refuses to delete admins for the same reason.
             if (user.isAdmin()) {
-                log.warn("Unverified ADMIN account kept: {} (registered {})", user.getEmail(), user.getCreatedAt());
+                log.warn("Unverified ADMIN account kept: {} (registered {})", user.getId(), user.getCreatedAt());
                 continue;
             }
 

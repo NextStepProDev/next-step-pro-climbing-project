@@ -1,5 +1,6 @@
 package pl.nextsteppro.climbing.api.admin.instructor;
 
+import pl.nextsteppro.climbing.infrastructure.validation.HttpUrl;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import org.jspecify.annotations.Nullable;
@@ -16,7 +17,7 @@ public class AdminInstructorDtos {
             @Nullable String bio,
             @Nullable String certifications,
             @Nullable InstructorType memberType,
-            @Nullable String profile8aUrl,
+            @Nullable @HttpUrl String profile8aUrl,
             @Nullable String language
     ) {}
 
@@ -30,16 +31,16 @@ public class AdminInstructorDtos {
             @Nullable Float focalPointX,
             @Nullable Float focalPointY,
             @Nullable InstructorType memberType,
-            @Nullable String profile8aUrl
+            @Nullable @HttpUrl String profile8aUrl
     ) {}
 
     public record DuplicateAsTranslationRequest(
             @NotBlank @Size(max = 5) String targetLanguage
     ) {}
 
-    public record SetBadgeRequest(@Nullable String badgeUrl) {}
+    public record SetBadgeRequest(@Nullable @HttpUrl String badgeUrl) {}
 
-    public record SetPhotoUrlRequest(@Nullable String photoUrl) {}
+    public record SetPhotoUrlRequest(@Nullable @HttpUrl String photoUrl) {}
 
     public record SyncMediaResultDto(int updatedCount) {}
 

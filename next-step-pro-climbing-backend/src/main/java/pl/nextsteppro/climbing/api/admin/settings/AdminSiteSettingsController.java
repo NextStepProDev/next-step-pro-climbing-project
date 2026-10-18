@@ -1,5 +1,7 @@
 package pl.nextsteppro.climbing.api.admin.settings;
 
+import pl.nextsteppro.climbing.infrastructure.validation.HttpUrl;
+import jakarta.validation.Valid;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -62,7 +64,7 @@ public class AdminSiteSettingsController {
         @ApiResponse(responseCode = "200", description = "URL saved"),
         @ApiResponse(responseCode = "403", description = "Admin privileges required")
     })
-    public ResponseEntity<HeroImageDto> setHeroImageUrl(@RequestBody SetHeroUrlRequest request) {
+    public ResponseEntity<HeroImageDto> setHeroImageUrl(@Valid @RequestBody SetHeroUrlRequest request) {
         return ResponseEntity.ok(adminSiteSettingsService.setHeroImageUrl(request.url(), request.focalPointX(), request.focalPointY()));
     }
 
@@ -117,7 +119,7 @@ public class AdminSiteSettingsController {
         @ApiResponse(responseCode = "200", description = "URL saved"),
         @ApiResponse(responseCode = "403", description = "Admin privileges required")
     })
-    public ResponseEntity<HeroImageDto> setMobileHeroImageUrl(@RequestBody SetHeroUrlRequest request) {
+    public ResponseEntity<HeroImageDto> setMobileHeroImageUrl(@Valid @RequestBody SetHeroUrlRequest request) {
         return ResponseEntity.ok(adminSiteSettingsService.setMobileHeroImageUrl(request.url(), request.focalPointX(), request.focalPointY()));
     }
 
@@ -150,7 +152,7 @@ public class AdminSiteSettingsController {
 
     @PutMapping("/badge/url")
     @Operation(summary = "Set badge from the media library")
-    public ResponseEntity<BadgeImageDto> setBadgeImageUrl(@RequestBody SetBadgeUrlRequest request) {
+    public ResponseEntity<BadgeImageDto> setBadgeImageUrl(@Valid @RequestBody SetBadgeUrlRequest request) {
         return ResponseEntity.ok(adminSiteSettingsService.setBadgeImageUrl(request.url(), request.linkUrl()));
     }
 
@@ -169,7 +171,7 @@ public class AdminSiteSettingsController {
 
     @PutMapping("/badge-left/url")
     @Operation(summary = "Set left badge from the media library")
-    public ResponseEntity<BadgeImageDto> setBadgeLeftImageUrl(@RequestBody SetBadgeUrlRequest request) {
+    public ResponseEntity<BadgeImageDto> setBadgeLeftImageUrl(@Valid @RequestBody SetBadgeUrlRequest request) {
         return ResponseEntity.ok(adminSiteSettingsService.setBadgeLeftImageUrl(request.url(), request.linkUrl()));
     }
 
@@ -243,7 +245,7 @@ public class AdminSiteSettingsController {
 
     @PostMapping("/calendar-promo/presets")
     @Operation(summary = "Create or update a calendar promo template")
-    public ResponseEntity<CalendarPromoPresetDto> saveCalendarPromoPreset(@RequestBody CalendarPromoPresetDto preset) {
+    public ResponseEntity<CalendarPromoPresetDto> saveCalendarPromoPreset(@Valid @RequestBody CalendarPromoPresetDto preset) {
         return ResponseEntity.ok(adminSiteSettingsService.saveCalendarPromoPreset(preset));
     }
 
@@ -254,9 +256,9 @@ public class AdminSiteSettingsController {
         return ResponseEntity.noContent().build();
     }
 
-    public record SetHeroUrlRequest(String url, @Nullable Float focalPointX, @Nullable Float focalPointY) {}
+    public record SetHeroUrlRequest(@HttpUrl String url, @Nullable Float focalPointX, @Nullable Float focalPointY) {}
 
     public record SetFocalPointRequest(float x, float y) {}
 
-    public record SetBadgeUrlRequest(String url, @Nullable String linkUrl) {}
+    public record SetBadgeUrlRequest(@HttpUrl String url, @Nullable @HttpUrl(allowSitePath = true) String linkUrl) {}
 }

@@ -123,6 +123,10 @@ final class CalendarUtils {
                 .replace("\\", "\\\\")
                 .replace(",", "\\,")
                 .replace(";", "\\;")
+                // CR too, not only LF: a bare CR ends a content line for many parsers, so a title
+                // carrying one could start a property of its own (ATTENDEE, URL…) in the file.
+                .replace("\r\n", "\\n")
+                .replace("\r", "\\n")
                 .replace("\n", "\\n");
     }
 }

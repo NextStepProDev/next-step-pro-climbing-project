@@ -1,5 +1,7 @@
 package pl.nextsteppro.climbing.api.settings;
 
+import jakarta.validation.Valid;
+import pl.nextsteppro.climbing.infrastructure.validation.HttpUrl;
 import org.jspecify.annotations.Nullable;
 
 import java.util.List;
@@ -56,20 +58,20 @@ public class SiteSettingsDtos {
             String title,
             String description,
             String ctaLabel,
-            String ctaUrl
+            @HttpUrl(allowSitePath = true) String ctaUrl
     ) {}
 
     /** Active (displayed) calendar promo: visibility + content per language. */
     public record CalendarPromoSectionDto(
             boolean enabled,
-            Map<String, CalendarPromoContentDto> translations
+            Map<String, @Valid CalendarPromoContentDto> translations
     ) {}
 
     /** Saved calendar promo template (all languages), for reuse. */
     public record CalendarPromoPresetDto(
             @Nullable String id,
             String name,
-            Map<String, CalendarPromoContentDto> translations
+            Map<String, @Valid CalendarPromoContentDto> translations
     ) {}
 
     public record HomeSettingsDto(

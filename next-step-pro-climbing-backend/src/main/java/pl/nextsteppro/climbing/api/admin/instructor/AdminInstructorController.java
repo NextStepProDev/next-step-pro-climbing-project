@@ -174,7 +174,7 @@ public class AdminInstructorController {
     @PutMapping("/{id}/photo-url")
     public ResponseEntity<InstructorAdminDto> setPhotoUrl(
             @Parameter(description = "ID instruktora") @PathVariable UUID id,
-            @RequestBody SetPhotoUrlRequest request) {
+            @Valid @RequestBody SetPhotoUrlRequest request) {
         return ResponseEntity.ok(adminInstructorService.setPhotoUrl(id, request.photoUrl()));
     }
 
@@ -182,7 +182,7 @@ public class AdminInstructorController {
     @PutMapping("/{id}/badge")
     public ResponseEntity<InstructorAdminDto> setBadge(
             @Parameter(description = "ID instruktora") @PathVariable UUID id,
-            @RequestBody SetBadgeRequest request) {
+            @Valid @RequestBody SetBadgeRequest request) {
         return ResponseEntity.ok(adminInstructorService.setBadge(id, request.badgeUrl()));
     }
 

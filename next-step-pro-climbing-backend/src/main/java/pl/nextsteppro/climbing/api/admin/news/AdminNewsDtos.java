@@ -1,5 +1,6 @@
 package pl.nextsteppro.climbing.api.admin.news;
 
+import pl.nextsteppro.climbing.infrastructure.validation.HttpUrl;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import org.jspecify.annotations.Nullable;
@@ -83,12 +84,12 @@ public class AdminNewsDtos {
     ) {}
 
     public record AddImageBlockFromUrlRequest(
-            String imageUrl,
+            @HttpUrl String imageUrl,
             @Nullable String caption
     ) {}
 
     public record SetThumbnailUrlRequest(
-            String thumbnailUrl
+            @HttpUrl String thumbnailUrl
     ) {}
 
     public record AddVideoEmbedBlockRequest(

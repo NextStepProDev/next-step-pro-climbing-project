@@ -19,6 +19,8 @@ import java.util.UUID;
 @Tag(name = "News", description = "Public access to news")
 public class NewsController {
 
+    static final int MAX_PAGE_SIZE = 50;
+
     private final NewsService newsService;
 
     public NewsController(NewsService newsService) {
@@ -37,7 +39,11 @@ public class NewsController {
             @RequestParam(required = false) @Nullable String q,
             @RequestParam(defaultValue = "false") boolean starred,
             @Nullable @CurrentUserId UUID userId) {
-        return ResponseEntity.ok(newsService.getAllPublished(page, size, language, q, starred, userId));
+        // Clamped here, before the cached service: the parameters are the cache key, and an
+        // unbounded size let any visitor ask for every article at once under a fresh key.
+        int safePage = Math.max(0, page);
+        int safeSize = Math.clamp(size, 1, MAX_PAGE_SIZE);
+        return ResponseEntity.ok(newsService.getAllPublished(safePage, safeSize, language, q, starred, userId));
     }
 
     @Operation(summary = "Get news article details")

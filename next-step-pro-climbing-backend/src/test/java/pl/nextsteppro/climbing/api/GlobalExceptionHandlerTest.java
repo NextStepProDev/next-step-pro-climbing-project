@@ -224,4 +224,17 @@ class GlobalExceptionHandlerTest {
         assertEquals(HttpStatus.METHOD_NOT_ALLOWED, response.getStatusCode());
     }
 
+
+    @org.junit.jupiter.api.Test
+    void shouldNameTheConstraintButNotWhoseDataBrokeIt() {
+        String postgres = "ERROR: duplicate key value violates unique constraint \"users_email_key\"\n"
+            + "  Detail: Key (email)=(ola.skala@example.com) already exists.";
+        String redacted = GlobalExceptionHandler.redactKeyValues(postgres);
+
+        org.junit.jupiter.api.Assertions.assertFalse(redacted.contains("ola.skala@example.com"));
+        org.junit.jupiter.api.Assertions.assertTrue(redacted.contains("users_email_key"));
+        org.junit.jupiter.api.Assertions.assertTrue(redacted.contains("Key (email)=(…)"));
+        org.junit.jupiter.api.Assertions.assertEquals("Key (user_id, period_month)=(…)",
+            GlobalExceptionHandler.redactKeyValues("Key (user_id, period_month)=(4f2c…, 2026-10-01)"));
+    }
 }

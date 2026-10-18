@@ -1,5 +1,6 @@
 package pl.nextsteppro.climbing.api.reservation;
 
+import jakarta.validation.Valid;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
@@ -47,7 +48,7 @@ public class ReservationController {
     public ResponseEntity<ReservationResultDto> createReservation(
             @Parameter(description = "Slot UUID") @PathVariable UUID slotId,
             @Parameter(hidden = true) @CurrentUserId UUID userId,
-            @RequestBody(required = false) CreateReservationRequest body) {
+            @Valid @RequestBody(required = false) CreateReservationRequest body) {
 
         String comment = body != null ? body.comment() : null;
         int participants = (body != null && body.participants() != null) ? body.participants() : 1;
@@ -139,7 +140,7 @@ public class ReservationController {
     public ResponseEntity<EventReservationResultDto> createEventReservation(
             @Parameter(description = "Event UUID") @PathVariable UUID eventId,
             @Parameter(hidden = true) @CurrentUserId UUID userId,
-            @RequestBody(required = false) CreateReservationRequest body) {
+            @Valid @RequestBody(required = false) CreateReservationRequest body) {
 
         String comment = body != null ? body.comment() : null;
         int participants = (body != null && body.participants() != null) ? body.participants() : 1;
@@ -178,7 +179,7 @@ public class ReservationController {
     public ResponseEntity<ReservationResultDto> updateSlotParticipants(
             @Parameter(description = "Reservation UUID") @PathVariable UUID reservationId,
             @Parameter(hidden = true) @CurrentUserId UUID userId,
-            @RequestBody UpdateParticipantsRequest body) {
+            @Valid @RequestBody UpdateParticipantsRequest body) {
 
         return ResponseEntity.ok(reservationService.updateSlotParticipants(reservationId, userId, body.participants()));
     }
@@ -197,7 +198,7 @@ public class ReservationController {
     public ResponseEntity<EventReservationResultDto> updateEventParticipants(
             @Parameter(description = "Event UUID") @PathVariable UUID eventId,
             @Parameter(hidden = true) @CurrentUserId UUID userId,
-            @RequestBody UpdateParticipantsRequest body) {
+            @Valid @RequestBody UpdateParticipantsRequest body) {
 
         return ResponseEntity.ok(reservationService.updateEventParticipants(eventId, userId, body.participants()));
     }

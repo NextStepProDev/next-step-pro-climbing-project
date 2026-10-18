@@ -64,4 +64,19 @@ class CalendarUtilsTest {
         // Line breaks stay escaped, or the file stops parsing at the first bare line
         assertTrue(description.contains("\\n"), description);
     }
+
+    @Test
+    void shouldNotLetALoneCarriageReturnStartANewIcsProperty() {
+        // \n was escaped, \r was not — and a bare CR ends a content line for many parsers, so a title
+        // like "Trening\rATTENDEE:..." injected a property of its own into the calendar file.
+        String ics = new String(CalendarUtils.buildIcsFile("Trening\rATTENDEE:mailto:x@evil.example",
+            java.time.LocalDate.of(2026, 11, 3), null, java.time.LocalTime.of(18, 0), java.time.LocalTime.of(20, 0),
+            "Skała\r\nLOCATION:inne", null), java.nio.charset.StandardCharsets.UTF_8);
+
+        for (String line : ics.split("\r\n")) {
+            org.junit.jupiter.api.Assertions.assertFalse(line.contains("\r") || line.contains("\n"),
+                "every property must stay on its own line: " + line);
+            org.junit.jupiter.api.Assertions.assertFalse(line.startsWith("ATTENDEE"), "no injected property");
+        }
+    }
 }

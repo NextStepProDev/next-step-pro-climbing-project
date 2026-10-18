@@ -32,7 +32,8 @@ public class AdminEmailConfig {
         if (adminEmails.isEmpty()) {
             log.warn("No admin emails configured (app.admin.email). First admin must be set manually.");
         } else {
-            log.info("Admin auto-promotion configured for: {}", adminEmails);
+            log.info("Admin auto-promotion configured for: {}",
+                adminEmails.stream().map(pl.nextsteppro.climbing.infrastructure.mail.MailDispatcher::maskAddress).toList());
         }
     }
 
