@@ -66,6 +66,29 @@ class CalendarUtilsTest {
     }
 
     @Test
+    void shouldDefineTheZoneItsTimesReferToAndStampTheEvent() {
+        // The night the clocks go back (25.10.2026): a strict reader needs the zone's rules to know
+        // which 02:30 is meant, and without a VTIMEZONE it has none.
+        String ics = new String(CalendarUtils.buildIcsFile("Trening", LocalDate.of(2026, 10, 25), null,
+            LocalTime.of(18, 0), LocalTime.of(20, 0), null, null), StandardCharsets.UTF_8);
+
+        assertTrue(ics.contains("BEGIN:VTIMEZONE\r\nTZID:Europe/Warsaw\r\n"));
+        assertTrue(ics.indexOf("END:VTIMEZONE") < ics.indexOf("BEGIN:VEVENT"), "defined before it is used");
+        assertTrue(ics.contains("RRULE:FREQ=YEARLY;BYMONTH=10;BYDAY=-1SU"));
+        assertTrue(ics.matches("(?s).*\r\nDTSTAMP:\\d{8}T\\d{6}Z\r\n.*"), "DTSTAMP is required in a VEVENT");
+        assertTrue(ics.contains("DTSTART;TZID=Europe/Warsaw:20261025T180000"));
+    }
+
+    @Test
+    void shouldLeaveTheZoneOutOfAnAllDayEntry() {
+        String ics = new String(CalendarUtils.buildIcsFile("Kurs", LocalDate.of(2026, 10, 24), LocalDate.of(2026, 10, 25),
+            null, null, null, null), StandardCharsets.UTF_8);
+
+        assertFalse(ics.contains("VTIMEZONE"), "a floating date refers to no zone");
+        assertTrue(ics.contains("DTEND;VALUE=DATE:20261026"), "an all-day end is exclusive");
+    }
+
+    @Test
     void shouldNotLetALoneCarriageReturnStartANewIcsProperty() {
         // \n was escaped, \r was not — and a bare CR ends a content line for many parsers, so a title
         // like "Trening\rATTENDEE:..." injected a property of its own into the calendar file.

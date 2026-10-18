@@ -471,6 +471,8 @@ export interface UserEventReservation {
   eventType: EventType
   startDate: string
   endDate: string
+  startTime: string | null
+  endTime: string | null
   comment: string | null
   participants: number
   slotsCount: number

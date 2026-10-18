@@ -573,6 +573,9 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
             <AddToCalendarButton
               title={ev.title}
               date={ev.startDate}
+              endDate={ev.endDate}
+              startTime={ev.startTime}
+              endTime={ev.endTime}
               location={ev.location}
               description={ev.description}
             />

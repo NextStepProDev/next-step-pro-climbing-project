@@ -4,8 +4,10 @@ import org.jspecify.annotations.Nullable;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.UUID;
 
@@ -14,6 +16,34 @@ final class CalendarUtils {
     private static final DateTimeFormatter DATE_BASIC = DateTimeFormatter.ofPattern("yyyyMMdd");
     private static final DateTimeFormatter TIME_BASIC = DateTimeFormatter.ofPattern("HHmmss");
     private static final String TIMEZONE = "Europe/Warsaw";
+    private static final DateTimeFormatter DTSTAMP =
+        DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss'Z'").withZone(ZoneOffset.UTC);
+
+    /**
+     * The definition of the TZID the times refer to. RFC 5545 requires one for every TZID a file
+     * uses; Google and Apple fall back on the IANA name, but a strict reader has nothing to resolve
+     * "Europe/Warsaw" against — and every time in these files is a Polish wall clock, so a reader
+     * that guesses puts the session at the wrong hour. EU rules: last Sunday of March and October.
+     * Mirrored in the frontend's calendarLinks.ts.
+     */
+    static final String WARSAW_VTIMEZONE = String.join("\r\n",
+        "BEGIN:VTIMEZONE",
+        "TZID:Europe/Warsaw",
+        "BEGIN:DAYLIGHT",
+        "TZOFFSETFROM:+0100",
+        "TZOFFSETTO:+0200",
+        "TZNAME:CEST",
+        "DTSTART:19700329T020000",
+        "RRULE:FREQ=YEARLY;BYMONTH=3;BYDAY=-1SU",
+        "END:DAYLIGHT",
+        "BEGIN:STANDARD",
+        "TZOFFSETFROM:+0200",
+        "TZOFFSETTO:+0100",
+        "TZNAME:CET",
+        "DTSTART:19701025T030000",
+        "RRULE:FREQ=YEARLY;BYMONTH=10;BYDAY=-1SU",
+        "END:STANDARD",
+        "END:VTIMEZONE") + "\r\n";
 
     private CalendarUtils() {}
 
@@ -62,10 +92,16 @@ final class CalendarUtils {
         sb.append("PRODID:-//Next Step Pro Climbing//Reservation//EN\r\n");
         sb.append("CALSCALE:GREGORIAN\r\n");
         sb.append("METHOD:PUBLISH\r\n");
+        boolean timed = startTime != null && endTime != null;
+        if (timed) {
+            sb.append(WARSAW_VTIMEZONE);
+        }
         sb.append("BEGIN:VEVENT\r\n");
         sb.append("UID:").append(UUID.randomUUID()).append("@nextsteppro.pl\r\n");
+        // Required in every VEVENT (RFC 5545 §3.6.1); the browser-side export always had it.
+        sb.append("DTSTAMP:").append(DTSTAMP.format(Instant.now())).append("\r\n");
 
-        if (startTime != null && endTime != null) {
+        if (timed) {
             sb.append("DTSTART;TZID=").append(TIMEZONE).append(":").append(startDate.format(DATE_BASIC)).append("T").append(startTime.format(TIME_BASIC)).append("\r\n");
             LocalDate end = endDate != null ? endDate : startDate;
             sb.append("DTEND;TZID=").append(TIMEZONE).append(":").append(end.format(DATE_BASIC)).append("T").append(endTime.format(TIME_BASIC)).append("\r\n");
