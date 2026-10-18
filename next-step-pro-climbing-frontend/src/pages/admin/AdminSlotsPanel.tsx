@@ -11,6 +11,7 @@ import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
 import { QueryError } from '../../components/ui/QueryError'
 import { Button } from '../../components/ui/Button'
 import { DateInput } from '../../components/ui/DateInput'
+import { ModalCancelButton } from '../../components/ui/ModalCancelButton'
 import { Modal } from '../../components/ui/Modal'
 import { TimeScrollPicker } from '../../components/ui/TimeScrollPicker'
 import { UserSearchSelect } from '../../components/ui/UserSearchSelect'
@@ -620,7 +621,9 @@ function EditSlotModal({
   const canSendInvites = isRegular && canOfferSaveAndSend(invited, termChanged)
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={t('slots.editTitle')}>
+    // Asks before closing over edits — the form already knew it was dirty (it disables Save on it),
+    // it just never told the modal, so the cross, Escape or a stray backdrop click dropped them.
+    <Modal isOpen={isOpen} onClose={onClose} title={t('slots.editTitle')} confirmClose={() => isDirty}>
       <form
         onSubmit={(e) => {
           e.preventDefault()
@@ -695,9 +698,7 @@ function EditSlotModal({
           <Button type="submit" loading={updateMutation.isPending} disabled={!isDirty || !!timeError} className="flex-1">
             {t('slots.saveChanges')}
           </Button>
-          <Button type="button" variant="ghost" onClick={onClose}>
-            {t('slots.cancel')}
-          </Button>
+          <ModalCancelButton onClose={onClose}>{t('slots.cancel')}</ModalCancelButton>
           {/* A second action, not a checkbox on the first: mailing is not a property of saving,
               and saving quietly has to stay available. */}
           {canSendInvites && (

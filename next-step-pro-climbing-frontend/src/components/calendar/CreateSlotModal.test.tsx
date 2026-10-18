@@ -418,3 +418,27 @@ describe('CreateSlotModal — answering a proposal at other hours', () => {
     expect(screen.queryByRole('button', { name: 'createSlot.submitAndSend' })).not.toBeInTheDocument()
   })
 })
+
+describe('CreateSlotModal — unsaved work', () => {
+  it('asks before Escape throws a filled-in form away', async () => {
+    const onClose = vi.fn()
+    const user = userEvent.setup()
+    renderModal({ onClose })
+
+    await user.click(screen.getByRole('radio', { name: 'slotKind.UNAVAILABLE' }))
+    await user.keyboard('{Escape}')
+
+    expect(onClose).not.toHaveBeenCalled()
+    expect(screen.getByText('unsaved.title')).toBeInTheDocument()
+  })
+
+  it('closes without asking when nothing was touched', async () => {
+    const onClose = vi.fn()
+    const user = userEvent.setup()
+    renderModal({ onClose })
+
+    await user.keyboard('{Escape}')
+
+    expect(onClose).toHaveBeenCalledOnce()
+  })
+})

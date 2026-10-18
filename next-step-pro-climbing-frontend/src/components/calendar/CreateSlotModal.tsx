@@ -18,6 +18,8 @@ import { AlertTriangle } from 'lucide-react'
 import { formatTerm } from '../../utils/proposalTerm'
 import { useInviteSentToast } from '../../hooks/useInviteSentToast'
 import { CONTRACTOR_SEATS, slotKindFlags, type CreateSlotKind } from '../../utils/slotKind'
+import { useDirty } from '../../hooks/useDirty'
+import { ModalCancelButton } from '../ui/ModalCancelButton'
 import type { CreatedCalendarEntry } from '../../utils/createdEntry'
 import type { CreateEventRequest, CreateTimeSlotRequest, InvitedUser, NotifyInvitesResult } from '../../types'
 
@@ -124,6 +126,9 @@ export function CreateSlotModal({
   const [endDate, setEndDate] = useState(defaultDate)
   const [allDay, setAllDay] = useState(false)
   const [invited, setInvited] = useState<InvitedUser[]>(initial?.invited ?? [])
+  // Everything the form holds, so a stray backdrop click or Escape asks before dropping a filled-in
+  // form (nine fields and the invitations) — it used to close without a word.
+  const isDirty = useDirty({ form, kind, payoutSourceId, multiDay, endDate, allDay, invited })
 
   const queryClient = useQueryClient()
   const showInviteSent = useInviteSentToast()
@@ -301,7 +306,7 @@ export function CreateSlotModal({
   }
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={t('createSlot.title')}>
+    <Modal isOpen={isOpen} onClose={onClose} title={t('createSlot.title')} confirmClose={() => isDirty}>
       <form
         onSubmit={(e) => { e.preventDefault(); submitForm() }}
         className="space-y-4"
@@ -513,9 +518,7 @@ export function CreateSlotModal({
           >
             {t('createSlot.submit')}
           </Button>
-          <Button type="button" variant="ghost" onClick={onClose}>
-            {t('createSlot.cancel')}
-          </Button>
+          <ModalCancelButton onClose={onClose}>{t('createSlot.cancel')}</ModalCancelButton>
           {/* A second action, not a checkbox on the first — the same split as "save and send" in
               the edit forms: mailing is not a property of creating, and creating quietly stays. */}
           {canSendInvites && (
