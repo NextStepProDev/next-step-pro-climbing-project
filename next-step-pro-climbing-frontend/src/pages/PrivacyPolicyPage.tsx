@@ -400,6 +400,13 @@ function PrivacyPolicyPl({ logo }: { logo: string }) {
               już nie ma. Zostaje wyłącznie informacja „konto usunięte”.
             </p>
             <p>
+              <span className="text-surface-200 font-medium">Rozliczenia i wpłaty</span> — po usunięciu konta
+              zostają w ewidencji przychodów, ale bez danych osobowych: zostaje kwota, data i termin, którego
+              dotyczyły, a znikają imię, nazwisko, adres e-mail i powiązanie z kontem. Takich zapisów nie da się
+              już z nikim połączyć. Zachowujemy je, bo przepisy o rachunkowości i podatkach wymagają
+              przechowywania dokumentacji rozliczeniowej (art. 17 ust. 3 lit. b RODO).
+            </p>
+            <p>
               <span className="text-surface-200 font-medium">Rozliczenia</span> — przechowywane przez czas istnienia
               konta; trwale usuwane razem z nim.
             </p>
@@ -502,7 +509,7 @@ function PrivacyPolicyPl({ logo }: { logo: string }) {
           <div className="space-y-3">
             <Right title="Prawo dostępu" description="Możesz w każdej chwili zapytać, jakie Twoje dane przechowujemy." />
             <Right title="Prawo do sprostowania" description="Jeśli Twoje dane są nieprawidłowe lub niekompletne, możesz je poprawić w ustawieniach konta." />
-            <Right title="Prawo do usunięcia („prawo do bycia zapomnianym”)" description="Możesz usunąć swoje konto w ustawieniach albo poprosić o to mailowo na adres kontaktowy. Usunięcie jest natychmiastowe i trwałe: z bazy znikają konto, rezerwacje, listy rezerwowe, kalendarz treningowy, dziennik przejść, wiadomości, rozliczenia i przesłane pliki, a z dziennika działań administratora — Twoje imię, nazwisko i adres e-mail. Nie ma możliwości przywrócenia konta. Jedyne wyjątki opisuje sekcja 6: zaszyfrowane kopie zapasowe (najdłużej 40 dni, a jeśli w tym czasie wykonano kopię przed zmianą techniczną — 90 dni) oraz wiadomości e-mail, które już zostały wysłane." />
+            <Right title="Prawo do usunięcia („prawo do bycia zapomnianym”)" description="Możesz usunąć swoje konto w ustawieniach albo poprosić o to mailowo na adres kontaktowy. Usunięcie jest natychmiastowe i trwałe: z bazy znikają konto, rezerwacje, listy rezerwowe, kalendarz treningowy, dziennik przejść, wiadomości i przesłane pliki, a z dziennika działań administratora i z rozliczeń — Twoje imię, nazwisko i adres e-mail (kwoty i daty wpłat zostają bez nich, patrz sekcja 6). Nie ma możliwości przywrócenia konta. Jedyne wyjątki opisuje sekcja 6: zaszyfrowane kopie zapasowe (najdłużej 40 dni, a jeśli w tym czasie wykonano kopię przed zmianą techniczną — 90 dni) oraz wiadomości e-mail, które już zostały wysłane." />
             <Right title="Prawo do ograniczenia przetwarzania" description="Możesz zażądać ograniczenia przetwarzania Twoich danych w określonych przypadkach." />
             <Right title="Prawo do przenoszalności" description="Możesz zażądać przekazania Twoich danych w ustrukturyzowanym, powszechnie używanym formacie." />
             <Right title="Prawo sprzeciwu" description="Możesz wnieść sprzeciw wobec przetwarzania danych opartego na uzasadnionym interesie." />
@@ -907,6 +914,13 @@ function PrivacyPolicyEn({ logo }: { logo: string }) {
               account, which no longer exists. All that remains is the note “account deleted”.
             </p>
             <p>
+              <span className="text-surface-200 font-medium">Settlements and payments</span> — after account
+              deletion they stay in the revenue records, but without personal data: the amount, the date and the
+              session they concerned remain, while your name, e-mail address and the link to your account are
+              removed. Such records can no longer be connected to anyone. We keep them because accounting and tax
+              law require settlement records to be retained (Art. 17(3)(b) GDPR).
+            </p>
+            <p>
               <span className="text-surface-200 font-medium">Settlements</span> — stored for the duration of the
               account; permanently deleted together with it.
             </p>
@@ -1005,7 +1019,7 @@ function PrivacyPolicyEn({ logo }: { logo: string }) {
           <div className="space-y-3">
             <Right title="Right of access" description="You may ask at any time what data we hold about you." />
             <Right title="Right to rectification" description="If your data is inaccurate or incomplete, you can correct it in account settings." />
-            <Right title="Right to erasure (“right to be forgotten”)" description="You can delete your account in settings or ask for it by e-mail to the contact address. Deletion is immediate and permanent: your account, bookings, waitlist entries, training calendar, climbing logbook, messages, settlements and uploaded files are removed from the database, and your name and e-mail address disappear from the administrator action log. The account cannot be restored. The only exceptions are described in section 6: encrypted backups (up to 40 days, or 90 days if a backup before a technical change was taken in that period) and e-mails that have already been sent." />
+            <Right title="Right to erasure (“right to be forgotten”)" description="You can delete your account in settings or ask for it by e-mail to the contact address. Deletion is immediate and permanent: your account, bookings, waitlist entries, training calendar, climbing logbook, messages and uploaded files are removed from the database, and your name and e-mail address disappear from the administrator action log and from settlements (amounts and payment dates remain without them, see section 6). The account cannot be restored. The only exceptions are described in section 6: encrypted backups (up to 40 days, or 90 days if a backup before a technical change was taken in that period) and e-mails that have already been sent." />
             <Right title="Right to restriction of processing" description="You may request restriction of processing in certain circumstances." />
             <Right title="Right to data portability" description="You may request that your data be provided in a structured, commonly used format." />
             <Right title="Right to object" description="You may object to processing based on legitimate interest." />

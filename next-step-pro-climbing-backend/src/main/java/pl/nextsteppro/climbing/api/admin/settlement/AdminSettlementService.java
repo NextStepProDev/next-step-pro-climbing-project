@@ -535,10 +535,12 @@ public class AdminSettlementService {
      * which is the hardest kind of wrong figure to ever notice.
      */
     boolean hasPricedParticipants(SettlementTarget target, UUID targetId) {
-        return !(switch (target) {
+        // A deleted participant's charge (V104) is history, not somebody priced per head: the section
+        // does not show it, so letting it block bulk settlement would leave a lock nobody can see.
+        return (switch (target) {
             case SLOT -> settlementRepository.findRowsForSlot(targetId);
             case EVENT -> settlementRepository.findRowsForEvent(targetId);
-        }).isEmpty();
+        }).stream().anyMatch(row -> !row.isErased());
     }
 
     /** True when this session is settled in bulk, so nobody on it may be charged per head. */

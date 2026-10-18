@@ -5,10 +5,12 @@ import jakarta.persistence.PersistenceContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
 import pl.nextsteppro.climbing.domain.activitylog.ActivityActionType;
 import pl.nextsteppro.climbing.domain.activitylog.ActivityLogRepository;
 import pl.nextsteppro.climbing.domain.event.Event;
 import pl.nextsteppro.climbing.domain.event.EventType;
+import pl.nextsteppro.climbing.domain.reservation.GuestReservation;
 import pl.nextsteppro.climbing.domain.reservation.GuestReservationRepository;
 import pl.nextsteppro.climbing.domain.reservation.Reservation;
 import pl.nextsteppro.climbing.domain.timeslot.TimeSlot;
@@ -26,6 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /**
@@ -38,6 +41,7 @@ class AdminServiceReviewIntegrationTest extends BaseIntegrationTest {
     @Autowired private AdminService adminService;
     @Autowired private ActivityLogRepository activityLogRepository;
     @Autowired private GuestReservationRepository guestReservationRepository;
+    @Autowired private JdbcTemplate jdbc;
 
     private User admin;
     private User client;
@@ -151,6 +155,26 @@ class AdminServiceReviewIntegrationTest extends BaseIntegrationTest {
             .filter(e -> e.getActionType() == ActivityActionType.RESERVATION_CANCELLED_BY_ADMIN)
             .findFirst().orElseThrow().getDescription();
         assertEquals(slot.getDate() + " 10:00-12:00", term);
+    }
+
+    @Test
+    void shouldReleaseHandWrittenGuestsWhenBlockingButKeepOneWhoPaid() {
+        TimeSlot slot = timeSlotRepository.save(new TimeSlot(
+            LocalDate.now().plusDays(10), LocalTime.of(10, 0), LocalTime.of(12, 0), 6));
+        GuestReservation unpaid = guestReservationRepository.save(new GuestReservation(slot, "Tomek", 1));
+        GuestReservation paid = guestReservationRepository.save(new GuestReservation(slot, "Ola", 1));
+        flushAndClear();
+        // A recorded payment goes with the guest row (CASCADE) — releasing her would erase revenue.
+        jdbc.update("INSERT INTO payments (guest_reservation_id, amount, received_on) VALUES (?, 150, ?)",
+            paid.getId(), LocalDate.now());
+
+        adminService.blockTimeSlot(admin.getId(), slot.getId(), "choroba");
+        flushAndClear();
+
+        assertFalse(guestReservationRepository.existsById(unpaid.getId()),
+            "blocking means the session is not happening — nobody keeps a seat on it");
+        assertTrue(guestReservationRepository.existsById(paid.getId()));
+        assertEquals(1, jdbc.queryForObject("SELECT COUNT(*) FROM payments", Integer.class));
     }
 
     private long entries(ActivityActionType type) {

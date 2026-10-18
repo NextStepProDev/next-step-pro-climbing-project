@@ -21,7 +21,7 @@ public interface PaymentRepository extends JpaRepository<Payment, UUID> {
     String ROW_SELECT = """
         SELECT new pl.nextsteppro.climbing.domain.settlement.PaymentRow(
             p.id, u.id, u.firstName, u.lastName, g.id, g.note, p.amount, p.receivedOn,
-            es.id, ee.id, COALESCE(es.title, ee.title), COALESCE(es.date, ee.startDate), p.createdAt)
+            es.id, ee.id, COALESCE(es.title, ee.title), COALESCE(es.date, ee.startDate), p.createdAt, p.erasedPayerId)
         FROM Payment p
         LEFT JOIN p.user u
         LEFT JOIN p.guest g

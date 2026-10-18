@@ -67,6 +67,11 @@ public class Payment {
     @Nullable
     private Event enteredEvent;
 
+    /** Set only by the database, when the account behind this payment is deleted (V104). */
+    @Column(name = "erased_payer_id", insertable = false, updatable = false)
+    @Nullable
+    private UUID erasedPayerId;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 

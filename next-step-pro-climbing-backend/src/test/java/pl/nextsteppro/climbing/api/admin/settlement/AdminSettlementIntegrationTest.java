@@ -533,15 +533,20 @@ class AdminSettlementIntegrationTest extends BaseIntegrationTest {
     }
 
     @Test
-    @DisplayName("shouldDropThePaymentsWithTheirPayer")
-    void shouldDropThePaymentsWithTheirPayer() {
+    @DisplayName("shouldKeepThePaymentsButNotThePayer")
+    void shouldKeepThePaymentsButNotThePayer() {
+        // Reversed 2026-10-18 (V104): the cascade used to take the payments with the person, so
+        // deleting a subscriber's account shrank past revenue. Even a raw DELETE keeps them now.
         charge(slot, client, "150");
         pay(client, "150", date, slot);
 
         jdbc.update("DELETE FROM reservations WHERE user_id = ?", client.getId());
         jdbc.update("DELETE FROM users WHERE id = ?", client.getId());
 
-        assertEquals(0, jdbc.queryForObject("SELECT COUNT(*) FROM payments", Integer.class));
+        assertEquals(1, jdbc.queryForObject(
+            "SELECT COUNT(*) FROM payments WHERE user_id IS NULL AND erased_payer_id IS NOT NULL", Integer.class));
+        assertEquals(1, jdbc.queryForObject(
+            "SELECT COUNT(*) FROM settlements WHERE user_id IS NULL AND erased_payer_id IS NOT NULL", Integer.class));
     }
 
     // One violation per test on purpose: a failed statement aborts the surrounding transaction, so

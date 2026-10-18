@@ -349,6 +349,11 @@ public class AdminService {
             reservationRepository.save(reservation);
             activityLogService.logCancelledByAdmin(reservation.getUser(), slot, reservation.getParticipants());
         }
+        // Guests the admin wrote in by hand are cancelled too (owner's decision 2026-10-18): blocking
+        // means "this session is not happening", and a guest left behind kept a seat on it, still
+        // there after unblocking while every registered booking was gone. They have no address, so
+        // telling them stays the admin's phone call. A guest with money recorded stays — see the query.
+        guestReservationRepository.deleteAll(guestReservationRepository.findByTimeSlotIdWithoutMoney(slotId));
 
         slot.block(reason);
         timeSlotRepository.save(slot);

@@ -47,7 +47,7 @@ Aktualna zawartość — `ls`, nie ten plik. Dwa wyjątki warte zapamiętania, b
 
 ## Baza danych — Flyway
 
-**Stan: V103. Następna migracja: V104.** Wszystkie do V103 są na produkcji (103 wiersze w `flyway_schema_history`, sprawdzone 2026-10-18 po deployu 4.71.4; zrzut sprzed w `/backups/milestones/PRZED-V98-V103-*`).
+**Stan: V104. Następna migracja: V105.** Wszystkie do V103 są na produkcji (103 wiersze w `flyway_schema_history`, sprawdzone 2026-10-18 po deployu 4.71.4; zrzut sprzed w `/backups/milestones/PRZED-V98-V103-*`).
 Lista migracji: `ls backend/src/main/resources/db/migration/` — poniżej tylko to, czego ze schematu nie widać.
 
 ⚠️ **Nigdy nie modyfikuj zastosowanej migracji** — nawet zmiana komentarza łamie checksum na produkcji.
@@ -402,7 +402,8 @@ Notatnik właściciela do konkretnego terminu — slot, wydarzenie, wpis w kalen
 
 📄 **Cały dział mieszka w `docs/MONEY.md`** — należność (`settlements`) i wpłata (`payments`) jako dwa osobne fakty, podział wpłat wyliczany FIFO (`PaymentAllocator`), nadpłata, abonament miesięczny jako trzeci CEL rozliczenia, wypłaty zbiorcze i stawka za godzinę, zakładka `/admin/settlements`, blok pieniędzy w karcie użytkownika. **Ten plik NIE ładuje się sam**: zanim ruszysz `api/admin/settlement/`, `domain/settlement/` albo `components/admin/Settlement*` / `Payout*` / `Subscription*`, otwórz go.
 
-Trzy reguły zostają tutaj, bo wiążą kod **poza** działem pieniędzy:
+Te reguły zostają tutaj, bo wiążą kod **poza** działem pieniędzy:
+- ⚠️ **Usunięcie konta NIE kasuje jego pieniędzy** (V104): wyzwalacz w bazie przepina należności i wpłaty na anonimowy pseudonim — liczą się w przychodzie, nigdzie poza nim. Szczegóły: `docs/MONEY.md`.
 - ⚠️ **CEL TO SLOT XOR WYDARZENIE, NIGDY `reservation_id`** — zapis na wielodniowe wydarzenie zakłada jeden wiersz `reservations` **na dzień**, więc rozliczenie na rezerwacji policzyłoby 3-dniowy kurs trzy razy. Adresem jest **para (termin, osoba)** i to ta sama reguła, która rządzi wątkiem komentarzy pod terminem oraz `reserved_seats` — jedno rozliczenie na osobę wychodzi z konstrukcji, nie z odsiewania duplikatów, o którym ktoś zapomni. Slot z `event_id` nie jest celem (400): dobowe sloty to księgowość pierwszej rezerwacji, więc kwota tam byłaby drugą, niewidoczną ceną wydarzenia.
 - ⚠️ **Stawki na `time_slots`/`events` NIE MA i nie wolno jej dodać** — to kolumna pieniężna na kształcie serwowanym anonimom i **cache'owanym**. Dotyczy tak samo przypisania do płatnika zbiorczego, które dlatego jest osobną tabelą: inaczej wyciekłaby **nazwa szkoły przy publicznym terminie**. Podpowiedzią przy wycenie jest **ostatnia kwota tej osoby** (`PayerLastAmount`), nie stawka terminu — trafia częściej, bo cena zależy od osoby, nie od godziny.
 - ⚠️ **Klient widzi WYŁĄCZNIE własny abonament i to jest jedyny wyjątek od izolacji** (`api/mysubscription`, `GET /api/user/subscription`, decyzja 2026-10-18). Trzeci pakiet na allowliście `SettlementIsolationTest`, bo adresuje go sam token (brak id w ścieżce, więc nie ma kogo innego zapytać) i nie zasila niczego współdzielonego ani cache'owanego. „Opłacone” liczy ten sam `PaymentAllocator` co ekrany trenera — własna arytmetyka byłaby trzecią kopią reguły, która raz już się rozjechała, tym razem pokazaną klientowi. DTO są własne, nie reużyte z panelu.

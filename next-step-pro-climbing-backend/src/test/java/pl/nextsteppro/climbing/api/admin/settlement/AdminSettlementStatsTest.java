@@ -771,6 +771,53 @@ class AdminSettlementStatsTest extends BaseIntegrationTest {
     }
 
     @Test
+    @DisplayName("shouldKeepADeletedClientsMoneyInRevenueAndOutOfEveryList")
+    void shouldKeepADeletedClientsMoneyInRevenueAndOutOfEveryList() {
+        // Owner's decision 2026-10-18: deleting an account must not shrink past revenue. Until V104
+        // the cascade took the payments with the person.
+        settleSlot(LocalDate.of(2026, 4, 2), client, "300", LocalDate.of(2026, 4, 2));
+        monthlyFee(LocalDate.of(2026, 5, 1), client, "500", LocalDate.of(2026, 5, 3));
+        settleSlot(LocalDate.of(2026, 6, 9), client, "200", null);
+        jdbc.update("INSERT INTO payments (user_id, amount, received_on) VALUES (?, ?, ?)",
+            client.getId(), new BigDecimal("100"), LocalDate.of(2026, 6, 1));
+
+        userRepository.delete(client);
+        userRepository.flush();
+
+        SettlementOverviewDto overview = stats.buildOverview("2026", TODAY);
+        assertEquals(0, new BigDecimal("900.00").compareTo(overview.revenue().total()),
+            "Every złoty that arrived still arrived");
+        // 300 for the first session, plus the loose 100, which oldest-first puts on the unpaid one.
+        assertEquals(0, new BigDecimal("400.00").compareTo(overview.revenue().fromSlots()),
+            "The split survives: the pseudonym keeps the person's payments on the person's charges");
+        assertEquals(0, new BigDecimal("500.00").compareTo(overview.revenue().fromSubscriptions()));
+        assertEquals(0, overview.outstanding().count(), "Nobody left to chase for the unpaid 100");
+        assertEquals(0, overview.credits().total().signum(), "Nobody left to give anything back to");
+        assertTrue(overview.people().isEmpty(), "A ranking of people has no row for somebody who is gone");
+
+        List<Map<String, Object>> rows = jdbc.queryForList(
+            "SELECT user_id, erased_payer_id FROM payments UNION ALL SELECT user_id, erased_payer_id FROM settlements");
+        assertEquals(6, rows.size(), "three payments and three charges, none taken by the cascade");
+        assertTrue(rows.stream().allMatch(r -> r.get("user_id") == null), "no trace of the account");
+        assertEquals(1, rows.stream().map(r -> r.get("erased_payer_id")).distinct().count(),
+            "one pseudonym per deleted account — and never null");
+    }
+
+    @Test
+    @DisplayName("shouldGiveEveryDeletedAccountItsOwnPseudonym")
+    void shouldGiveEveryDeletedAccountItsOwnPseudonym() {
+        // One shared bucket would allocate one person's payments onto another's charges.
+        settleSlot(LocalDate.of(2026, 4, 2), client, "300", LocalDate.of(2026, 4, 2));
+        settleSlot(LocalDate.of(2026, 4, 3), other, "200", LocalDate.of(2026, 4, 3));
+
+        userRepository.deleteAll(List.of(client, other));
+        userRepository.flush();
+
+        assertEquals(2, jdbc.queryForObject(
+            "SELECT COUNT(DISTINCT erased_payer_id) FROM payments", Integer.class));
+    }
+
+    @Test
     @DisplayName("shouldNotCountAStandingMonthlyFeeAsSessionIncome")
     void shouldNotCountAStandingMonthlyFeeAsSessionIncome() {
         // ⚠️ A retainer is charged for the month, not for time in the calendar — the sessions it

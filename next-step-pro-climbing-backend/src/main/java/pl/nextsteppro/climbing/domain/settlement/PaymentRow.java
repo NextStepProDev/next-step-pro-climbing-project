@@ -9,7 +9,8 @@ import java.util.UUID;
 
 /**
  * One payment flattened for reading, with the payer's name so the export and the lists need no
- * second lookup. Exactly one of {@code userId} / {@code guestId} is set (CHECK in V100).
+ * second lookup. Exactly one of {@code userId} / {@code guestId} / {@code erasedPayerId} is set
+ * (CHECK in V100, V104) — the last one is a deleted account, see {@link SettlementRow#isErased()}.
  *
  * @param enteredSlotId  the session it was typed in at, if any — context for the modal, not a target
  * @param enteredEventId the same, for an event
@@ -29,7 +30,8 @@ public record PaymentRow(
     @Nullable UUID enteredEventId,
     @Nullable String enteredTitle,
     @Nullable LocalDate enteredDate,
-    Instant createdAt
+    Instant createdAt,
+    @Nullable UUID erasedPayerId
 ) {
 
     /** Who paid, as the screens print it. A guest has only the name that was written down. */
@@ -47,7 +49,12 @@ public record PaymentRow(
 
     /** Same key as {@link SettlementRow#payerKey()}, so charges and payments group together. */
     public String payerKey() {
-        return userId != null ? "u:" + userId : "g:" + guestId;
+        return userId != null ? "u:" + userId : guestId != null ? "g:" + guestId : "x:" + erasedPayerId;
+    }
+
+    /** See {@link SettlementRow#isErased()}. */
+    public boolean isErased() {
+        return erasedPayerId != null;
     }
 
     public boolean isGuest() {

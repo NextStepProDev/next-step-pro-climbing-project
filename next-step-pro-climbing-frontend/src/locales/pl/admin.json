@@ -366,7 +366,7 @@
     "blockTitle": "Zablokuj termin",
     "deleteTitle": "Usuń termin",
     "hasActiveReservations": "Ten termin ma aktywne rezerwacje!",
-    "blockWarning": "Zablokowanie terminu spowoduje anulowanie rezerwacji i powiadomienie użytkowników e-mailem.",
+    "blockWarning": "Zablokowanie terminu spowoduje anulowanie rezerwacji i powiadomienie użytkowników e-mailem. Ręcznie wpisani goście też zostaną wypisani — oni nie dostaną maila; gość z zapisaną kwotą lub wpłatą zostaje.",
     "deleteWarning": "Usunięcie terminu spowoduje anulowanie rezerwacji i powiadomienie użytkowników e-mailem.",
     "archivedDeleteWarning": "Ten termin już minął — usunięcie trwale skasuje archiwalne rezerwacje. Uczestnicy nie zostaną powiadomieni.",
     "registered": "Zapisani ({{count}})",
