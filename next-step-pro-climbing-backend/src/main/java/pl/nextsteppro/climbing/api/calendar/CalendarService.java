@@ -16,6 +16,8 @@ import pl.nextsteppro.climbing.domain.reservedseat.ReservedSeatCount;
 import pl.nextsteppro.climbing.domain.reservedseat.ReservedSeatRepository;
 import pl.nextsteppro.climbing.domain.timeslot.TimeSlot;
 import pl.nextsteppro.climbing.domain.timeslot.TimeSlotRepository;
+import pl.nextsteppro.climbing.domain.user.User;
+import pl.nextsteppro.climbing.domain.user.UserRepository;
 import pl.nextsteppro.climbing.domain.waitlist.EventWaitlist;
 import pl.nextsteppro.climbing.domain.waitlist.EventWaitlistRepository;
 import pl.nextsteppro.climbing.domain.waitlist.Waitlist;
@@ -42,6 +44,7 @@ public class CalendarService {
     private final WaitlistRepository waitlistRepository;
     private final EventWaitlistRepository eventWaitlistRepository;
     private final ReservedSeatRepository reservedSeatRepository;
+    private final UserRepository userRepository;
 
     public CalendarService(TimeSlotRepository timeSlotRepository,
                           ReservationRepository reservationRepository,
@@ -49,7 +52,8 @@ public class CalendarService {
                           EventRepository eventRepository,
                           WaitlistRepository waitlistRepository,
                           EventWaitlistRepository eventWaitlistRepository,
-                          ReservedSeatRepository reservedSeatRepository) {
+                          ReservedSeatRepository reservedSeatRepository,
+                          UserRepository userRepository) {
         this.timeSlotRepository = timeSlotRepository;
         this.reservationRepository = reservationRepository;
         this.guestReservationRepository = guestReservationRepository;
@@ -58,6 +62,7 @@ public class CalendarService {
         this.waitlistRepository = waitlistRepository;
         this.eventWaitlistRepository = eventWaitlistRepository;
         this.reservedSeatRepository = reservedSeatRepository;
+        this.userRepository = userRepository;
     }
 
     @Cacheable(value = "calendarMonth", key = "#yearMonth", condition = "#userId == null")
@@ -209,6 +214,14 @@ public class CalendarService {
 
         boolean isReservedForUser = eventData.userInvitedEventIds().contains(event.getId());
 
+        // `active` is the public-visibility switch. The listings honour it; this read did not, so a
+        // hidden event's title, description and location stayed one link away for anybody — a link
+        // shared before the event was hidden kept working. People it concerns still see it: whoever
+        // is booked or invited (their "my reservations" opens it) and the admin.
+        if (!event.isActive() && !isUserRegistered && !isReservedForUser && !isAdmin(userId)) {
+            throw new IllegalArgumentException("Event not found: " + eventId);
+        }
+
         LocalDateTime eventStart = LocalDateTime.of(
             event.getStartDate(),
             event.getStartTime() != null ? event.getStartTime() : LocalTime.of(0, 0)
@@ -326,7 +339,11 @@ public class CalendarService {
 
         return events.stream()
             .map(event -> {
-                int participants = eventData.participantsMap().getOrDefault(event.getId(), 0);
+                // Held invitation seats are taken for an anonymous reader, exactly as the calendar
+                // counts them — the course page used to announce "2 seats left" for seats the booking
+                // form then refused as reserved.
+                int participants = eventData.participantsMap().getOrDefault(event.getId(), 0)
+                    + eventData.inviteMap().getOrDefault(event.getId(), 0);
                 int availableSpots = Math.max(0, event.getMaxParticipants() - participants);
 
                 LocalDateTime eventStart = LocalDateTime.of(
@@ -552,6 +569,10 @@ public class CalendarService {
             : Set.of();
 
         return new EventData(participantsMap, userRegisteredEventIds, inviteMap, userInvitedEventIds);
+    }
+
+    private boolean isAdmin(@Nullable UUID userId) {
+        return userId != null && userRepository.findById(userId).map(User::isAdmin).orElse(false);
     }
 
     private Map<UUID, Integer> buildSlotInviteMap(List<UUID> slotIds) {
