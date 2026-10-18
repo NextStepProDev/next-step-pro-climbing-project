@@ -36,6 +36,25 @@ public interface SubscriptionRepository extends JpaRepository<Subscription, UUID
     @Query("SELECT s.periodMonth FROM Settlement s WHERE s.user.id = :userId AND s.periodMonth IS NOT NULL")
     List<LocalDate> findBilledMonths(@Param("userId") UUID userId);
 
+    /** Months this person is deliberately not charged for (V103), so the biller can step over them. */
+    @Query(value = "SELECT period_month FROM subscription_skipped_months WHERE user_id = :userId ORDER BY period_month",
+        nativeQuery = true)
+    List<LocalDate> findSkippedMonths(@Param("userId") UUID userId);
+
+    /** Idempotent: skipping a month twice is the same decision written down twice. */
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query(value = """
+        INSERT INTO subscription_skipped_months (user_id, period_month)
+        VALUES (:userId, CAST(:month AS DATE))
+        ON CONFLICT (user_id, period_month) DO NOTHING
+        """, nativeQuery = true)
+    void skipMonth(@Param("userId") UUID userId, @Param("month") LocalDate month);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query(value = "DELETE FROM subscription_skipped_months WHERE user_id = :userId AND period_month = CAST(:month AS DATE)",
+        nativeQuery = true)
+    int unskipMonth(@Param("userId") UUID userId, @Param("month") LocalDate month);
+
     /**
      * Drops the given fees. Which ones is decided by the caller from the allocation — whether a fee
      * is paid is no longer a column this statement could test (V100). Scoped to fees (the

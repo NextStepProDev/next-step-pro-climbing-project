@@ -209,6 +209,11 @@
     "title": "No trainings in this period",
     "hint": "Add a training with the button above or click a day in the calendar."
   },
+  "consentPending": {
+    "title": "Waiting for the athlete's consent",
+    "body": "This person has not consented to the training calendar yet (or the consent lapsed when their athlete status was removed). You can lay out the plan; weight, RPE ratings, feedback, statistics and the conversation will appear once the athlete accepts the consent on opening the calendar.",
+    "thread": "The conversation will be visible once the athlete consents to the training calendar."
+  },
   "deletions": {
     "titleAthlete": "The coach removed from your plan:",
     "titleCoach": "The athlete removed from their plan:"

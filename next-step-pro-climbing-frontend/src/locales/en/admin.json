@@ -592,12 +592,16 @@
           "from": "From month",
           "endLabel": "Last month",
           "newAmount": "New amount",
-          "saveAmount": "Change amount"
+          "saveAmount": "Change amount",
+          "skipped": "No fee:",
+          "restore": "Restore the fee for {{month}}",
+          "endTitle": "End the subscription?",
+          "endMessage": "The last billed month will be {{month}}. Unpaid fees for later months go; paid ones stay. Sessions marked as covered after that month go back to pricing."
         },
         "fee": {
           "remove": "Remove the fee for {{month}}",
           "removeTitle": "Remove the monthly fee?",
-          "removeMessage": "The fee for {{month}} of {{amount}} goes, along with anything paid against it. Do this only when it was billed by mistake — a subscription entered with the wrong start date, for instance."
+          "removeMessage": "This person will not be charged the subscription for {{month}} ({{amount}}) — the system remembers that and will not bill it again. Anything already paid stays on the account as credit. The fee can be restored next to the subscription."
         }
       }
     },
@@ -932,6 +936,11 @@
       "totals": "total: {{total}} · paid: {{paid}}",
       "bulk": "Settled in bulk · {{name}}",
       "bulkHint": "These sessions are not priced per participant — record the monthly transfer on the Settlements tab.",
+      "stale": {
+        "notParticipant": "{{name}} is no longer booked on this session — the subscription mark is out of date. Remove the mark to price the session.",
+        "shared": "Somebody besides {{name}} is now on this session and cannot be priced while it is marked as covered by the subscription. Remove the mark and price the participants one by one.",
+        "notCovered": "{{name}}'s subscription no longer covers this session's month. Remove the mark to price the session."
+      },
       "changeBulk": "Change payer",
       "clearBulk": "Remove mark",
       "markBulk": "Settled in bulk…",

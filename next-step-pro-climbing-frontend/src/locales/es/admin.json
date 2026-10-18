@@ -592,12 +592,16 @@
           "from": "Desde el mes",
           "endLabel": "Último mes",
           "newAmount": "Nuevo importe",
-          "saveAmount": "Cambiar importe"
+          "saveAmount": "Cambiar importe",
+          "skipped": "Sin cuota:",
+          "restore": "Restaurar la cuota de {{month}}",
+          "endTitle": "¿Terminar la suscripción?",
+          "endMessage": "El último mes facturado será {{month}}. Las cuotas sin pagar de meses posteriores desaparecerán; las pagadas se quedan. Las sesiones marcadas como cubiertas después de ese mes vuelven a valorarse."
         },
         "fee": {
           "remove": "Eliminar la cuota de {{month}}",
           "removeTitle": "¿Eliminar la cuota mensual?",
-          "removeMessage": "La cuota de {{month}} por {{amount}} desaparecerá junto con lo que se haya pagado a cuenta. Hazlo solo si se facturó por error, por ejemplo si la suscripción se registró con una fecha de inicio equivocada."
+          "removeMessage": "Esta persona no pagará la suscripción de {{month}} ({{amount}}): el sistema lo recordará y no volverá a facturarla. Lo que ya se haya pagado queda en la cuenta como saldo a favor. La cuota se puede restaurar junto a la suscripción."
         }
       }
     },
@@ -933,6 +937,11 @@
       "totals": "total: {{total}} · pagado: {{paid}}",
       "bulk": "Liquidado en bloque · {{name}}",
       "bulkHint": "Estas sesiones no se valoran por participante — registra la transferencia mensual en la pestaña Liquidaciones.",
+      "stale": {
+        "notParticipant": "{{name}} ya no está inscrito/a en esta sesión: la marca de suscripción está desactualizada. Quita la marca para valorar la sesión.",
+        "shared": "Hay alguien más que {{name}} en esta sesión y no se puede valorar mientras esté marcada como cubierta por la suscripción. Quita la marca y valora a cada participante por separado.",
+        "notCovered": "La suscripción de {{name}} ya no cubre el mes de esta sesión. Quita la marca para valorar la sesión."
+      },
       "changeBulk": "Cambiar pagador",
       "clearBulk": "Quitar marca",
       "markBulk": "Liquidado en bloque…",

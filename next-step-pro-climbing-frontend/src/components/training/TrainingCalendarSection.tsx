@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Plus, Lock, Trash2, X } from 'lucide-react'
+import { Plus, Lock, ShieldAlert, Trash2, X } from 'lucide-react'
 import { format, addDays } from 'date-fns'
 import clsx from 'clsx'
 import { Modal } from '../ui/Modal'
@@ -515,6 +515,8 @@ export function TrainingCalendarSection({ api, scopeKey, scopeLabel, isCoachView
   const reservations = rangeQuery.data?.reservations ?? []
   const invitations = rangeQuery.data?.invitations ?? []
   const deletions = rangeQuery.data?.deletions ?? []
+  // Coach only: the server sets it, and only for an athlete without (re)consent.
+  const healthHidden = !!isCoachView && !!rangeQuery.data?.healthDataHidden
 
   /**
    * The open booking, resolved against the CURRENT range rather than the snapshot that opened it.
@@ -551,7 +553,20 @@ export function TrainingCalendarSection({ api, scopeKey, scopeLabel, isCoachView
   return (
     <div className="space-y-4">
       {/* Personal goals (short/medium/long-term) + trophy chest — coach edits, athlete reads */}
-      <GoalsBanner api={api} scopeKey={scopeKey} isCoachView={isCoachView} />
+      <GoalsBanner api={api} scopeKey={scopeKey} isCoachView={isCoachView} healthHidden={healthHidden} />
+
+      {/* Coach view, athlete without (re)consent: the plan is workable, the health data is not —
+          and the screen has to say so, or the missing weight and RPE read as an athlete who
+          stopped logging anything. */}
+      {healthHidden && (
+        <div role="status" className="flex items-start gap-2 p-3 bg-amber-500/5 border border-amber-500/20 rounded-lg">
+          <ShieldAlert className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-medium text-surface-200">{t('consentPending.title')}</p>
+            <p className="text-xs text-surface-400 mt-0.5">{t('consentPending.body')}</p>
+          </div>
+        </div>
+      )}
 
       {/* Future trainings removed by the other side since the last visit —
           without this, the badge would point at a calendar with nothing visibly new */}
@@ -761,10 +776,12 @@ export function TrainingCalendarSection({ api, scopeKey, scopeLabel, isCoachView
           this tab for, and the daily weigh-in is a quick detour on the way to the statistics —
           not something that should push the week down the screen. The weight-goal cards stay up
           in the banner with the rest of the goals. */}
-      <WeightPanel api={api} scopeKey={scopeKey} isCoachView={isCoachView} />
+      {/* Both are refused by the server while consent is pending — not rendered, so they do not
+          fire requests that can only answer 409. */}
+      {!healthHidden && <WeightPanel api={api} scopeKey={scopeKey} isCoachView={isCoachView} />}
 
       {/* Live-derived statistics over completed trainings + attended reservations */}
-      <TrainingStatsSection api={api} scopeKey={scopeKey} isCoachView={isCoachView} />
+      {!healthHidden && <TrainingStatsSection api={api} scopeKey={scopeKey} isCoachView={isCoachView} />}
 
       {/* Add / edit */}
       <TrainingFormModal
@@ -793,6 +810,7 @@ export function TrainingCalendarSection({ api, scopeKey, scopeLabel, isCoachView
       <TrainingDetailModal
         training={detailTraining}
         vanished={detailVanished}
+        threadHidden={healthHidden}
         onClose={() => setDetailId(null)}
         api={api}
         isCoachView={isCoachView}
@@ -859,7 +877,12 @@ export function TrainingCalendarSection({ api, scopeKey, scopeLabel, isCoachView
         {/* Same conversation as under a plan entry. A multi-day course shares one thread, so the
             note above the composer says which days it covers — otherwise the second day looks like
             a thread that mysteriously already has messages in it. */}
-        {openReservation && (
+        {openReservation && healthHidden && (
+          <p className="mt-4 pt-4 border-t border-surface-700 text-sm text-surface-400">
+            {t('consentPending.thread')}
+          </p>
+        )}
+        {openReservation && !healthHidden && (
           <div className="mt-4 pt-4 border-t border-surface-700">
             {openReservation.eventId && (
               <p className="text-xs text-surface-400 mb-2">{t('overlay.threadCoversEvent')}</p>

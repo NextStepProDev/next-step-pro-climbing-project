@@ -42,8 +42,15 @@ record SettlementSectionDto(
  * sides, and the screen says the same sentence about either.
  *
  * @param kind {@code source} for an institution, {@code subscription} for a client's standing fee.
+ * @param staleReason why a subscription mark no longer holds, or {@code null} while it does:
+ *                    {@code not.participant} (the client is no longer booked on it), {@code shared}
+ *                    (somebody else booked since, and cannot be priced while the mark stands) or
+ *                    {@code not.covered} (no subscription of theirs reaches that month any more).
+ *                    ⚠️ The mark is checked once, when it is set, and bookings move without
+ *                    asking the settlement package — so the section re-checks it on every read
+ *                    instead of trusting it. Always {@code null} for an institution.
  */
-record SettlementCoverageDto(String kind, UUID id, String name) {}
+record SettlementCoverageDto(String kind, UUID id, String name, @Nullable String staleReason) {}
 
 /**
  * One payer on one entry.
@@ -712,13 +719,17 @@ record PayerLineDto(
  *
  * @param endedOn {@code null} while it runs. May be a past month: a collaboration ends in a
  *                conversation and gets written down a week later.
+ * @param skippedMonths months inside this subscription that are deliberately NOT charged — a fee
+ *                deleted by the admin. Recorded rather than inferred from a missing row, because the
+ *                nightly run fills every missing covered month and cannot tell the two apart.
  */
 record SubscriptionDto(
     UUID id,
     BigDecimal amount,
     LocalDate startedOn,
     @Nullable LocalDate endedOn,
-    boolean active
+    boolean active,
+    List<LocalDate> skippedMonths
 ) {}
 
 /**

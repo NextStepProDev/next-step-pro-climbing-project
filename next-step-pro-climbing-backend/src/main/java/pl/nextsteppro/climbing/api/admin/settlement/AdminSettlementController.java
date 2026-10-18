@@ -208,9 +208,9 @@ public class AdminSettlementController {
     }
 
     @Operation(summary = "Delete one monthly coaching fee",
-        description = "The exit from a fee billed by mistake. A fee's target is a month rather than "
-            + "a calendar entry, so the per-participant delete cannot address it, and ending the "
-            + "subscription always leaves the month it ends in.")
+        description = "The exit from a fee billed by mistake. When a subscription covers the month, "
+            + "the month is also remembered as not charged, so the nightly run does not bill it "
+            + "again; restoring it is a separate call.")
     @DeleteMapping("/monthly-fees/{userId}/{month}")
     public ResponseEntity<Void> deleteMonthlyFee(@PathVariable UUID userId,
                                                  @PathVariable LocalDate month) {
@@ -218,7 +218,18 @@ public class AdminSettlementController {
         // (`/{targetType}/{targetId}/{payerType}/{payerId}`, four) — the trap that made
         // `/api/admin/user-stats` its own base and left `GET /subscriptions/{userId}` resolving on
         // Spring's preference for a literal.
-        settlementService.deleteMonthlyFee(userId, month);
+        subscriptionService.skipMonth(userId, month);
+        return ResponseEntity.noContent().build();
+    }
+
+    @Operation(summary = "Charge a skipped month again",
+        description = "Takes back a deleted fee's skip and bills the month at once, if a "
+            + "subscription covers it.")
+    @PostMapping("/monthly-fees/{userId}/{month}/restore")
+    public ResponseEntity<Void> restoreMonthlyFee(@PathVariable UUID userId,
+                                                  @PathVariable LocalDate month) {
+        // POST, four segments: no POST catch-all exists, so nothing competes for the shape.
+        subscriptionService.restoreMonth(userId, month);
         return ResponseEntity.noContent().build();
     }
 

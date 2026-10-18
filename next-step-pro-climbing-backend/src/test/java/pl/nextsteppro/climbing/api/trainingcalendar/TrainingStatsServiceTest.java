@@ -552,7 +552,7 @@ class TrainingStatsServiceTest {
     void shouldRefuseCoachStatsWhenAthleteIsNotFlagged() {
         // Given
         UUID unknownId = UUID.randomUUID();
-        when(calendarService.requireFlaggedAthlete(unknownId))
+        when(calendarService.requireConsentedAthleteForCoach(unknownId))
             .thenThrow(new IllegalArgumentException("training.calendar.athlete.not.found"));
 
         // When / Then

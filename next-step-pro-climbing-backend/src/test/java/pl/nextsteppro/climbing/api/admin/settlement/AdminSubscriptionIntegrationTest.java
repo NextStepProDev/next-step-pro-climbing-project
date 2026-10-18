@@ -370,9 +370,214 @@ class AdminSubscriptionIntegrationTest extends BaseIntegrationTest {
         // per-participant delete cannot address it, and ending the rule leaves the month it started
         // in. Without this there is no way out of a mistyped subscription except editing the
         // database by hand.
-        settlements.deleteMonthlyFee(client.getId(), monthsAgo(1));
+        subscriptions.skipMonth(client.getId(), monthsAgo(1));
 
         assertEquals(1, feeCount());
+    }
+
+    @Test
+    @DisplayName("shouldNotBillADeletedFeeAgainOnTheNextNightlyRun")
+    void shouldNotBillADeletedFeeAgainOnTheNextNightlyRun() {
+        subscriptions.create(client.getId(), new SaveSubscriptionRequest(
+            new BigDecimal("400"), monthsAgo(1), null));
+
+        subscriptions.skipMonth(client.getId(), monthsAgo(1));
+        int created = subscriptions.billDueMonths();
+
+        // ⚠️ The catch-up run fills every covered month without a row — it could not tell "deleted
+        // on purpose" from "not billed yet", so the fee came back the very next night, at the
+        // subscription's CURRENT amount. Deleting means "this month is not charged", and stays so.
+        assertEquals(0, created);
+        assertEquals(1, feeCount());
+        assertEquals(java.util.List.of(monthsAgo(1)), subscriptions.forUser(client.getId())
+            .getFirst().skippedMonths());
+    }
+
+    @Test
+    @DisplayName("shouldBillASkippedMonthAgainOnceItIsRestored")
+    void shouldBillASkippedMonthAgainOnceItIsRestored() {
+        subscriptions.create(client.getId(), new SaveSubscriptionRequest(
+            new BigDecimal("400"), monthsAgo(1), null));
+        subscriptions.skipMonth(client.getId(), monthsAgo(1));
+
+        subscriptions.restoreMonth(client.getId(), monthsAgo(1));
+
+        assertEquals(2, feeCount(), "Restored straight away, not tomorrow night");
+        assertTrue(subscriptions.forUser(client.getId()).getFirst().skippedMonths().isEmpty());
+    }
+
+    @Test
+    @DisplayName("shouldNotRememberASkipForAMonthNoSubscriptionCovers")
+    void shouldNotRememberASkipForAMonthNoSubscriptionCovers() {
+        UUID id = subscriptions.create(client.getId(), new SaveSubscriptionRequest(
+            new BigDecimal("400"), monthsAgo(3), null)).id();
+        settlements.addPayment(new AddPaymentRequest("user", client.getId(), new BigDecimal("1600"),
+            monthsAgo(0), null, null));
+        subscriptions.end(id, new EndSubscriptionRequest(monthsAgo(2)));
+
+        // A paid fee left behind after a backdated end is a plain correction, not a free month: a
+        // skip recorded here would silently swallow that month in a subscription started later.
+        subscriptions.skipMonth(client.getId(), monthsAgo(1));
+        UUID later = subscriptions.create(client.getId(), new SaveSubscriptionRequest(
+            new BigDecimal("500"), monthsAgo(1), null)).id();
+
+        assertEquals(0, new BigDecimal("500.00").compareTo(jdbc.queryForObject(
+            "SELECT amount FROM settlements WHERE period_month = ?", BigDecimal.class, monthsAgo(1))));
+        assertTrue(subscriptions.forUser(client.getId()).stream()
+            .filter(s -> s.id().equals(later)).findFirst().orElseThrow().skippedMonths().isEmpty());
+    }
+
+    @Test
+    @DisplayName("shouldNotTouchAnotherSubscriptionsFeesWhenEndingOne")
+    void shouldNotTouchAnotherSubscriptionsFeesWhenEndingOne() {
+        UUID first = subscriptions.create(client.getId(), new SaveSubscriptionRequest(
+            new BigDecimal("300"), monthsAgo(6), monthsAgo(4))).id();
+        subscriptions.create(client.getId(), new SaveSubscriptionRequest(
+            new BigDecimal("500"), monthsAgo(2), null));
+        assertEquals(6, feeCount(), "Three months of the first, three of the second");
+
+        subscriptions.end(first, new EndSubscriptionRequest(monthsAgo(5)));
+
+        // ⚠️ The unpaid-after-the-end filter ran over the PERSON's fees, not this subscription's —
+        // so shortening an old, closed retainer wiped every month of the one running now.
+        assertEquals(5, feeCount(), "Only the first one's last month goes");
+        assertEquals(3, jdbc.queryForObject(
+            "SELECT COUNT(*) FROM settlements WHERE period_month >= ? AND amount = 500",
+            Integer.class, monthsAgo(2)));
+    }
+
+    @Test
+    @DisplayName("shouldRefuseASubscriptionThatOverlapsAnEndedOne")
+    void shouldRefuseASubscriptionThatOverlapsAnEndedOne() {
+        subscriptions.create(client.getId(), new SaveSubscriptionRequest(
+            new BigDecimal("300"), monthsAgo(3), monthsAgo(1)));
+
+        // The month both would cover was already billed at the first one's price, and DO NOTHING
+        // kept it: the new rate silently did not apply to the month it was entered for.
+        assertThrows(IllegalArgumentException.class, () -> subscriptions.create(client.getId(),
+            new SaveSubscriptionRequest(new BigDecimal("500"), monthsAgo(1), null)));
+        // The month after is free, and that is the way out the message names.
+        subscriptions.create(client.getId(),
+            new SaveSubscriptionRequest(new BigDecimal("500"), monthsAgo(0), null));
+    }
+
+    @Test
+    @DisplayName("shouldRefuseReopeningOverAMonthALaterSubscriptionCovers")
+    void shouldRefuseReopeningOverAMonthALaterSubscriptionCovers() {
+        UUID first = subscriptions.create(client.getId(), new SaveSubscriptionRequest(
+            new BigDecimal("300"), monthsAgo(6), monthsAgo(5))).id();
+        subscriptions.create(client.getId(), new SaveSubscriptionRequest(
+            new BigDecimal("500"), monthsAgo(3), monthsAgo(2)));
+        int before = feeCount();
+
+        // ⚠️ Reopening made the first one open-ended from its start, so the run filled the gap
+        // between them — and every month of the second — at the first one's price.
+        assertThrows(IllegalArgumentException.class, () -> subscriptions.reopen(first));
+        assertEquals(before, feeCount());
+    }
+
+    @Test
+    @DisplayName("shouldBillTheMonthsGainedWhenAnEndIsMovedLater")
+    void shouldBillTheMonthsGainedWhenAnEndIsMovedLater() {
+        UUID id = subscriptions.create(client.getId(), new SaveSubscriptionRequest(
+            new BigDecimal("400"), monthsAgo(3), monthsAgo(2))).id();
+
+        subscriptions.end(id, new EndSubscriptionRequest(monthsAgo(0)));
+
+        assertEquals(4, feeCount(), "A later end covers more months, and they owe their fee now");
+    }
+
+    @Test
+    @DisplayName("shouldRefuseMovingAnEndOverALaterSubscription")
+    void shouldRefuseMovingAnEndOverALaterSubscription() {
+        UUID first = subscriptions.create(client.getId(), new SaveSubscriptionRequest(
+            new BigDecimal("300"), monthsAgo(5), monthsAgo(4))).id();
+        subscriptions.create(client.getId(), new SaveSubscriptionRequest(
+            new BigDecimal("500"), monthsAgo(2), null));
+
+        assertThrows(IllegalArgumentException.class, () -> subscriptions.end(
+            first, new EndSubscriptionRequest(monthsAgo(1))));
+    }
+
+    @Test
+    @DisplayName("shouldRefuseChangingTheAmountOfAnEndedSubscription")
+    void shouldRefuseChangingTheAmountOfAnEndedSubscription() {
+        UUID id = subscriptions.create(client.getId(), new SaveSubscriptionRequest(
+            new BigDecimal("400"), monthsAgo(2), monthsAgo(1))).id();
+
+        // Forward-only on something with no forward: it would answer 204 and change nothing anybody
+        // can see, except the price of a month restored later.
+        assertThrows(IllegalArgumentException.class, () -> subscriptions.changeAmount(
+            id, new ChangeSubscriptionAmountRequest(new BigDecimal("450"))));
+    }
+
+    @Test
+    @DisplayName("shouldReleaseASessionFromASubscriptionThatNoLongerCoversIt")
+    void shouldReleaseASessionFromASubscriptionThatNoLongerCoversIt() {
+        UUID id = subscriptions.create(client.getId(), new SaveSubscriptionRequest(
+            new BigDecimal("400"), monthsAgo(2), null)).id();
+        TimeSlot slot = bookedSlot(monthsAgo(1).plusDays(3));
+        payouts.assignSource("slot", slot.getId(), new AssignPayoutSourceRequest(null, client.getId()));
+        assertEquals(0, unpricedCount());
+
+        subscriptions.end(id, new EndSubscriptionRequest(monthsAgo(2)));
+
+        // The mark claimed a retainer that no longer reaches that month: the session earned
+        // nothing and said so nowhere. Released, it is ordinary unpriced work again.
+        assertNull(settlements.getSection("slot", slot.getId()).coveredBy());
+        assertEquals(1, unpricedCount());
+    }
+
+    @Test
+    @DisplayName("shouldReleaseCoveredSessionsWhenTheSubscriptionIsDeleted")
+    void shouldReleaseCoveredSessionsWhenTheSubscriptionIsDeleted() {
+        UUID id = subscriptions.create(client.getId(), new SaveSubscriptionRequest(
+            new BigDecimal("400"), monthsAgo(1), null)).id();
+        TimeSlot slot = bookedSlot(monthsAgo(1).plusDays(3));
+        payouts.assignSource("slot", slot.getId(), new AssignPayoutSourceRequest(null, client.getId()));
+
+        subscriptions.delete(id);
+
+        assertNull(settlements.getSection("slot", slot.getId()).coveredBy());
+    }
+
+    @Test
+    @DisplayName("shouldSayWhenACoverageMarkNoLongerHolds")
+    void shouldSayWhenACoverageMarkNoLongerHolds() {
+        subscriptions.create(client.getId(), new SaveSubscriptionRequest(
+            new BigDecimal("400"), monthsAgo(1), null));
+        TimeSlot slot = bookedSlot(monthsAgo(1).plusDays(3));
+        payouts.assignSource("slot", slot.getId(), new AssignPayoutSourceRequest(null, client.getId()));
+        assertNull(settlements.getSection("slot", slot.getId()).coveredBy().staleReason());
+
+        // A second person booked after the mark: the session is out of per-participant pricing, so
+        // their amount cannot be entered — the very dead end the mark-time guard refuses. The mark
+        // is checked once, so the section has to say it no longer holds.
+        reservationRepository.saveAndFlush(new Reservation(saveOtherUser(), slot));
+        assertEquals("shared", settlements.getSection("slot", slot.getId()).coveredBy().staleReason());
+
+        reservationRepository.deleteAll();
+        assertEquals("not.participant",
+            settlements.getSection("slot", slot.getId()).coveredBy().staleReason());
+    }
+
+    @Test
+    @DisplayName("shouldNotPrefillASessionWithTheMonthlyFee")
+    void shouldNotPrefillASessionWithTheMonthlyFee() {
+        TimeSlot earlier = bookedSlot(monthsAgo(1).plusDays(3));
+        settlements.save("slot", earlier.getId(), "user", client.getId(),
+            new SaveSettlementRequest(new BigDecimal("150")));
+        subscriptions.create(client.getId(), new SaveSubscriptionRequest(
+            new BigDecimal("400"), monthsAgo(0), null));
+        // Pinned rather than left to the two clocks: the fee's created_at comes from the database's
+        // now(), the session's from the JVM, and the test container's clock is not the JVM's.
+        jdbc.update("UPDATE settlements SET created_at = now() + interval '1 hour' WHERE period_month IS NOT NULL");
+        TimeSlot next = bookedSlot(LocalDate.now(AdminSubscriptionService.WARSAW).minusDays(1));
+
+        // The fee is the newest charge on the 1st of every month, so the session field offered the
+        // retainer price — 400 where the person pays 150 a session.
+        SettlementLineDto line = settlements.getSection("slot", next.getId()).lines().getFirst();
+        assertEquals(0, new BigDecimal("150.00").compareTo(line.suggestedAmount()));
     }
 
     @Test

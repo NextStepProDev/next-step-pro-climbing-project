@@ -96,6 +96,34 @@ describe('CommentThread', () => {
     expect(addCommentWithFiles).not.toHaveBeenCalled()
   })
 
+  it('keeps what was typed while the message was on its way', async () => {
+    // The composer stays editable during the request, and success used to blank it — taking a
+    // second thought typed after pressing Send with it.
+    let resolve: (value: unknown) => void = () => {}
+    addComment.mockImplementation(() => new Promise((r) => { resolve = r }))
+    const user = userEvent.setup()
+    renderThread(makeApi())
+
+    const field = screen.getByPlaceholderText('comments.placeholder')
+    await user.type(field, 'Nogi dziś martwe')
+    await user.click(screen.getByLabelText('comments.send'))
+    await user.type(field, ' i plecy')
+    resolve({ id: 'c1', body: 'Nogi dziś martwe', files: [] })
+
+    await waitFor(() => expect(field).toHaveValue('i plecy'))
+  })
+
+  it('empties the composer when nothing was added during the send', async () => {
+    const user = userEvent.setup()
+    renderThread(makeApi())
+
+    const field = screen.getByPlaceholderText('comments.placeholder')
+    await user.type(field, 'Nogi dziś martwe')
+    await user.click(screen.getByLabelText('comments.send'))
+
+    await waitFor(() => expect(field).toHaveValue(''))
+  })
+
   it('behaves identically under a booked session, passing the target straight through', async () => {
     // The component must not learn what it is hanging under: whether the pair can talk cannot
     // depend on which tool the coach used to create the session.

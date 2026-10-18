@@ -194,12 +194,9 @@ public class TrainingCalendarService {
         if (reservation.getStatus() != ReservationStatus.CONFIRMED) {
             throw new IllegalStateException(msg.get("training.reservation.rpe.not.attended"));
         }
+        // Every reservation has a slot (NOT NULL) — an event booking hangs on one per day, so a
+        // multi-day course asks for one rating per day, as the stats count it.
         TimeSlot slot = reservation.getTimeSlot();
-        // Event reservations carry no time slot — they never surface a "rate" chip (the overlay is
-        // slot-only), but the endpoint is reachable by id, so guard against the NPE with a clear 409.
-        if (slot == null) {
-            throw new IllegalStateException(msg.get("training.reservation.rpe.not.attended"));
-        }
         // One reading of the clock, split into its two halves. Asking twice put the date and the
         // time a microsecond apart, and a request crossing midnight between the two calls compared
         // yesterday's date against 00:00 — telling an athlete that the session they finished an
@@ -321,18 +318,19 @@ public class TrainingCalendarService {
     @Transactional(readOnly = true)
     public CalendarRangeDto getRangeForAthlete(UUID adminId, UUID athleteId, LocalDate from, LocalDate to) {
         User athlete = requireFlaggedAthlete(athleteId);
-        return buildRange(athlete.getId(), adminId, true, from, to);
+        CalendarRangeDto range = buildRange(athlete.getId(), adminId, true, from, to);
+        return athlete.hasTrainingConsent() ? range : range.withoutHealthData();
     }
 
     public PersonalTrainingDto createForAthlete(UUID athleteId, CreatePersonalTrainingRequest request) {
         User athlete = requireFlaggedAthlete(athleteId);
-        return toDtoWithAttachments(createTraining(athlete, true, request), false, nowWarsaw());
+        return forCoach(toDtoWithAttachments(createTraining(athlete, true, request), false, nowWarsaw()), athlete);
     }
 
     public PersonalTrainingDto updateAsAdmin(UUID trainingId, CreatePersonalTrainingRequest request) {
         PersonalTraining training = requireTrainingOfFlaggedAthlete(trainingId);
         applyUpdate(training, true, request);
-        return toDtoWithAttachments(training, false, nowWarsaw());
+        return forCoach(toDtoWithAttachments(training, false, nowWarsaw()), training.getAthlete());
     }
 
     public void deleteAsAdmin(UUID trainingId) {
@@ -359,19 +357,19 @@ public class TrainingCalendarService {
 
     @Transactional(readOnly = true)
     public List<TrainingCommentDto> getCommentsAsAdmin(UUID adminId, UUID trainingId) {
-        requireTrainingOfFlaggedAthlete(trainingId);
+        requireTrainingThreadAsCoach(trainingId);
         return toCommentDtos(commentRepository.findThread(trainingId), adminId, true);
     }
 
     public TrainingCommentDto addCommentAsAdmin(UUID adminId, UUID trainingId, String body) {
-        PersonalTraining training = requireTrainingOfFlaggedAthlete(trainingId);
+        PersonalTraining training = requireTrainingThreadAsCoach(trainingId);
         User admin = requireUser(adminId);
         return addComment(CommentThread.of(training), admin, true, body, adminId, true);
     }
 
     public TrainingCommentDto addCommentWithFilesAsAdmin(UUID adminId, UUID trainingId,
                                                          @Nullable String body, List<MultipartFile> files) {
-        PersonalTraining training = requireTrainingOfFlaggedAthlete(trainingId);
+        PersonalTraining training = requireTrainingThreadAsCoach(trainingId);
         User admin = requireUser(adminId);
         return addCommentWithFiles(CommentThread.of(training), admin, true, body, files, adminId, true);
     }
@@ -417,7 +415,7 @@ public class TrainingCalendarService {
     }
 
     public void deleteCommentFile(UUID viewerId, boolean viewerIsAdmin, UUID fileId) {
-        TrainingCommentFile file = requireReadableCommentFile(viewerId, viewerIsAdmin, fileId);
+        TrainingCommentFile file = requireCommentFile(viewerId, viewerIsAdmin, fileId, true);
         if (!CommentFileSupport.canDelete(file.getComment(), viewerId, viewerIsAdmin)) {
             throw new IllegalStateException(msg.get("training.comment.file.not.yours"));
         }
@@ -467,7 +465,7 @@ public class TrainingCalendarService {
         TrainingComment comment = commentRepository.findById(commentId)
             .orElseThrow(() -> new IllegalArgumentException(msg.get("training.calendar.comment.not.found")));
         requireThreadAccess(comment.getAthlete(), viewerId, viewerIsAdmin,
-            "training.calendar.comment.not.found");
+            "training.calendar.comment.not.found", false);
         if (!comment.getAuthor().getId().equals(viewerId)) {
             throw new IllegalStateException(msg.get("training.calendar.comment.not.yours"));
         }
@@ -481,9 +479,14 @@ public class TrainingCalendarService {
      * by-id routes.
      */
     private TrainingCommentFile requireReadableCommentFile(UUID viewerId, boolean viewerIsAdmin, UUID fileId) {
+        return requireCommentFile(viewerId, viewerIsAdmin, fileId, false);
+    }
+
+    private TrainingCommentFile requireCommentFile(UUID viewerId, boolean viewerIsAdmin, UUID fileId,
+                                                   boolean forRemoval) {
         TrainingCommentFile file = commentFiles.requireFile(fileId);
         requireThreadAccess(file.getComment().getAthlete(), viewerId, viewerIsAdmin,
-            "training.comment.file.not.found");
+            "training.comment.file.not.found", forRemoval);
         return file;
     }
 
@@ -502,10 +505,16 @@ public class TrainingCalendarService {
      * that is about the caller's own account and says nothing about anyone else's data. Everything
      * else answers exactly as a made-up id would — a different reply is all it takes to enumerate.
      */
-    private void requireThreadAccess(User athlete, UUID viewerId, boolean viewerIsAdmin, String notFoundKey) {
+    private void requireThreadAccess(User athlete, UUID viewerId, boolean viewerIsAdmin, String notFoundKey,
+                                     boolean forRemoval) {
         if (viewerIsAdmin) {
             if (!athlete.isAthlete()) {
                 throw new IllegalArgumentException(msg.get(notFoundKey));
+            }
+            // Removal stays open without consent: deleting cannot disclose anything, and a gate
+            // here would leave the coach's own uploads with no path out while consent is pending.
+            if (!forRemoval) {
+                requireCoachMayReadHealthData(athlete);
             }
             return;
         }
@@ -638,6 +647,7 @@ public class TrainingCalendarService {
             if (!athlete.isAthlete()) {
                 throw new IllegalArgumentException(msg.get("training.calendar.athlete.not.found"));
             }
+            requireCoachMayReadHealthData(athlete);
         } else {
             requireAthlete(viewerId);
             if (!athlete.getId().equals(viewerId)) {
@@ -841,7 +851,7 @@ public class TrainingCalendarService {
                 d.getTitle(), d.isDeletedByAdmin(), d.getCreatedAt()))
             .toList();
 
-        return new CalendarRangeDto(trainingDtos, overlay, invitations, deletions);
+        return new CalendarRangeDto(trainingDtos, overlay, invitations, deletions, false);
     }
 
     /**
@@ -985,6 +995,44 @@ public class TrainingCalendarService {
         return userRepository.findById(athleteId)
             .filter(User::isAthlete)
             .orElseThrow(() -> new IllegalArgumentException(msg.get("training.calendar.athlete.not.found")));
+    }
+
+    /**
+     * The coach-side gate for HEALTH data: weight, RPE, feedback, the stats built from them, and the
+     * conversation — on top of the flag, the athlete's own consent.
+     *
+     * <p>⚠️ The flag alone was the whole coach gate. Un-flagging clears consent ({@link User#setAthlete})
+     * and the privacy policy promises that the calendar "stops being available" until it is given
+     * again — but re-flagging opened everything to the coach at once, history included, before the
+     * athlete had clicked anything. Owner's decision (2026-10-18): the PLAN stays workable before
+     * consent (a new athlete's first weeks can be laid out), the health data does not.
+     */
+    public User requireConsentedAthleteForCoach(UUID athleteId) {
+        User athlete = requireFlaggedAthlete(athleteId);
+        requireCoachMayReadHealthData(athlete);
+        return athlete;
+    }
+
+    /** Same check on an athlete already loaded through an association (no second findById). */
+    void requireCoachMayReadHealthData(User athlete) {
+        if (!athlete.hasTrainingConsent()) {
+            throw new IllegalStateException(msg.get("training.calendar.coach.consent.pending"));
+        }
+    }
+
+    /** Coach reading or writing the conversation under one plan entry: flag + consent. */
+    private PersonalTraining requireTrainingThreadAsCoach(UUID trainingId) {
+        PersonalTraining training = requireTrainingOfFlaggedAthlete(trainingId);
+        requireCoachMayReadHealthData(training.getAthlete());
+        return training;
+    }
+
+    /**
+     * What a coach may see of an entry while consent is pending: the plan, without what the athlete
+     * said about their body doing it.
+     */
+    private PersonalTrainingDto forCoach(PersonalTrainingDto dto, User athlete) {
+        return athlete.hasTrainingConsent() ? dto : dto.withoutHealthData();
     }
 
     private PersonalTraining requireOwnTraining(UUID trainingId, UUID userId) {

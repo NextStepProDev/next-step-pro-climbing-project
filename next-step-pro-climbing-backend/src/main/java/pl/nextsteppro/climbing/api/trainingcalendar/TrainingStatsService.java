@@ -77,7 +77,8 @@ public class TrainingStatsService {
     }
 
     public AthleteStatsDto getStatsForAthlete(UUID athleteId) {
-        calendarService.requireFlaggedAthlete(athleteId);
+        // RPE averages and completion are what the athlete said about their body — consent first.
+        calendarService.requireConsentedAthleteForCoach(athleteId);
         LocalDateTime now = LocalDateTime.now(WARSAW);
         return buildStats(athleteId, now);
     }

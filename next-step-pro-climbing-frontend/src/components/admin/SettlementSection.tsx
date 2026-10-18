@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { format } from 'date-fns'
-import { Building2, Coins, Lock, Trash2, X } from 'lucide-react'
+import { AlertTriangle, Building2, Coins, Lock, Trash2, X } from 'lucide-react'
 import { Button } from '../ui/Button'
 import { ConfirmModal } from '../ui/ConfirmModal'
 import { DateInput } from '../ui/DateInput'
@@ -18,6 +18,7 @@ import type {
   LinePayment,
   PayoutSource,
   PaymentShare,
+  SettlementCoverage,
   SettlementLine,
   SettlementTarget,
 } from '../../types'
@@ -50,6 +51,14 @@ interface Draft {
 }
 
 const payerKey = (line: SettlementLine) => `${line.payerType}:${line.payerId}`
+
+// The server's reason codes carry dots, which i18next would read as nesting — hence a map, not a
+// template string.
+const STALE_KEYS: Record<NonNullable<SettlementCoverage['staleReason']>, string> = {
+  'not.participant': 'settlements.section.stale.notParticipant',
+  shared: 'settlements.section.stale.shared',
+  'not.covered': 'settlements.section.stale.notCovered',
+}
 
 /**
  * What each participant owes for one session, and the money they hand over. Admin-only.
@@ -379,6 +388,14 @@ export function SettlementSection({ target, targetId, onDirtyChange }: Settlemen
             )}
           </p>
           <p className="text-xs text-surface-500">{t('settlements.section.bulkHint')}</p>
+          {/* The mark was checked when set; bookings move afterwards without telling it. Amber,
+              because it is work to do — and the way out ("remove the mark") is right below. */}
+          {data.coveredBy.staleReason && (
+            <p role="status" className="flex items-start gap-1.5 text-xs text-amber-500">
+              <AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+              {t(STALE_KEYS[data.coveredBy.staleReason], { name: data.coveredBy.name })}
+            </p>
+          )}
           {picking ? (
             <SourcePicker
               sources={sources ?? []}

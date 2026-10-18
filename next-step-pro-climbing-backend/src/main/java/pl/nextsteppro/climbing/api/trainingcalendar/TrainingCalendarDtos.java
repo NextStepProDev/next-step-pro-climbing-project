@@ -240,7 +240,14 @@ record PersonalTrainingDto(
     // (409) instead of quietly overwriting what the other side wrote in the meantime — the plan is
     // shared, and this is the only entity in the app two people really edit in parallel.
     long version
-) {}
+) {
+    /** The plan without what the athlete said about their body doing it — see {@code forCoach}. */
+    PersonalTrainingDto withoutHealthData() {
+        return new PersonalTrainingDto(id, kind, date, startTime, endTime, title, description,
+            targetCalories, createdByAdmin, status, completedAt, null, null, hasUnreadActivity,
+            createdAt, attachments, version);
+    }
+}
 
 /**
  * The athlete's confirmed booking from the public reservation system, overlaid on the plan.
@@ -269,7 +276,12 @@ record ReservationOverlayDto(
     // Messages from the OTHER side since the viewer's marker — same signal PersonalTrainingDto
     // carries, so a booked session cannot become the one place a message goes unnoticed
     boolean hasUnreadActivity
-) {}
+) {
+    ReservationOverlayDto withoutHealthData() {
+        return new ReservationOverlayDto(id, slotId, eventId, date, startTime, endTime, title, isNew,
+            null, null, canRate, hasUnreadActivity);
+    }
+}
 
 /** A future training removed by the OTHER side since the viewer's last visit ("deleted" strip). */
 record TrainingDeletionDto(
@@ -302,8 +314,19 @@ record CalendarRangeDto(
     // Held seats awaiting booking — visually distinct call-to-action, not a reservation
     List<InvitationOverlayDto> invitations,
     // Unseen deletions of FUTURE trainings made by the other side (any date, newest first)
-    List<TrainingDeletionDto> deletions
-) {}
+    List<TrainingDeletionDto> deletions,
+    // Coach view only: the athlete has not (re)consented, so RPE, feedback, weight, stats and the
+    // conversation are withheld and the screen says why. Always false for the athlete, who cannot
+    // reach the calendar at all without consent.
+    boolean healthDataHidden
+) {
+    CalendarRangeDto withoutHealthData() {
+        return new CalendarRangeDto(
+            trainings.stream().map(PersonalTrainingDto::withoutHealthData).toList(),
+            reservations.stream().map(ReservationOverlayDto::withoutHealthData).toList(),
+            invitations, deletions, true);
+    }
+}
 
 record TrainingCommentDto(
     UUID id,

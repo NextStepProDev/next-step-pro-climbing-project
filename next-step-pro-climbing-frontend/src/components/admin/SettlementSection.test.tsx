@@ -527,6 +527,34 @@ describe('SettlementSection — settled in bulk', () => {
     expect(screen.queryByRole('button', { name: 'settlements.actions.save' })).not.toBeInTheDocument()
   })
 
+  it('says when a subscription mark no longer holds, next to the button that clears it', async () => {
+    // The mark is checked once, when it is set. Somebody booking afterwards cannot be priced while
+    // it stands — so the section has to say so instead of only showing "covered by Anna".
+    getSection.mockResolvedValue({
+      targetDate: TARGET_DATE,
+      lines: [line(), line({ payerId: 'user-2', name: 'Marek Drugi' })],
+      coveredBy: { kind: 'subscription', id: 'user-1', name: 'Anna Kowalska', staleReason: 'shared' },
+    })
+
+    renderSection()
+
+    expect(await screen.findByText('settlements.section.stale.shared')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'settlements.section.clearBulk' })).toBeInTheDocument()
+  })
+
+  it('stays quiet about a mark that still holds', async () => {
+    getSection.mockResolvedValue({
+      targetDate: TARGET_DATE,
+      lines: [line()],
+      coveredBy: { kind: 'subscription', id: 'user-1', name: 'Anna Kowalska', staleReason: null },
+    })
+
+    renderSection()
+
+    expect(await screen.findByText('settlements.section.bulkSubscription')).toBeInTheDocument()
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
+  })
+
   it('marks an ordinary session as settled in bulk', async () => {
     getSection.mockResolvedValue({ ...bulkOff, targetDate: TARGET_DATE, lines: [line()] })
     const user = userEvent.setup()

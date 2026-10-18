@@ -85,12 +85,18 @@ public interface SettlementRepository extends JpaRepository<Settlement, UUID> {
      * of each in Java: a regular client accumulates hundreds of settlements, and the prefill is not
      * worth reading them. A tie on {@code createdAt} returns both rows and the caller keeps either
      * — two amounts written in the same instant are the same amount for this purpose.
+     *
+     * <p>⚠️ Sessions only, on BOTH sides of the correlation. A monthly fee is the newest charge a
+     * subscriber has on the first of every month, so including it prefilled a session with the
+     * retainer's price — 400 where the person pays 150 a visit.
      */
     @Query("""
         SELECT new pl.nextsteppro.climbing.domain.settlement.PayerLastAmount(s.user.id, s.amount)
         FROM Settlement s
         WHERE s.user.id IN :userIds
-          AND s.createdAt = (SELECT MAX(s2.createdAt) FROM Settlement s2 WHERE s2.user.id = s.user.id)
+          AND s.periodMonth IS NULL
+          AND s.createdAt = (SELECT MAX(s2.createdAt) FROM Settlement s2
+                             WHERE s2.user.id = s.user.id AND s2.periodMonth IS NULL)
         """)
     List<PayerLastAmount> findLastAmountsForUsers(@Param("userIds") Collection<UUID> userIds);
 
