@@ -263,6 +263,29 @@ class UserServiceTest {
     }
 
     @Test
+    void shouldRefuseToDeleteTheOnlyAdministratorAccount() {
+        testUser.setRole(pl.nextsteppro.climbing.domain.user.UserRole.ADMIN);
+        when(userRepository.findById(userId)).thenReturn(Optional.of(testUser));
+        when(passwordEncoder.matches("correctPassword", "hashedPassword")).thenReturn(true);
+        when(userRepository.countByRole(pl.nextsteppro.climbing.domain.user.UserRole.ADMIN)).thenReturn(1L);
+
+        assertThrows(IllegalStateException.class, () -> userService.deleteAccount(userId, "correctPassword"));
+        verify(userRepository, never()).delete(any());
+    }
+
+    @Test
+    void shouldLetAnAdministratorLeaveWhileAnotherOneRemains() {
+        testUser.setRole(pl.nextsteppro.climbing.domain.user.UserRole.ADMIN);
+        when(userRepository.findById(userId)).thenReturn(Optional.of(testUser));
+        when(passwordEncoder.matches("correctPassword", "hashedPassword")).thenReturn(true);
+        when(userRepository.countByRole(pl.nextsteppro.climbing.domain.user.UserRole.ADMIN)).thenReturn(2L);
+
+        userService.deleteAccount(userId, "correctPassword");
+
+        verify(userRepository).delete(testUser);
+    }
+
+    @Test
     void shouldDeleteOAuthAccountWithoutPassword() {
         // Given
         testUser.setPasswordHash(null);
