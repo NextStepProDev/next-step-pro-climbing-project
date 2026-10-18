@@ -18,6 +18,7 @@ import pl.nextsteppro.climbing.domain.newsletter.NewsletterConsentLog;
 import pl.nextsteppro.climbing.domain.newsletter.NewsletterConsentLogRepository;
 import pl.nextsteppro.climbing.domain.user.User;
 import pl.nextsteppro.climbing.domain.user.UserRepository;
+import pl.nextsteppro.climbing.domain.user.UserRole;
 import pl.nextsteppro.climbing.infrastructure.i18n.MessageService;
 import pl.nextsteppro.climbing.infrastructure.mail.AuthMailService;
 import pl.nextsteppro.climbing.infrastructure.security.PasswordPolicyValidator;
@@ -195,6 +196,11 @@ public class UserService {
 
         if (user.hasPassword()) {
             requireCurrentPassword(user, password, "user.wrong.password");
+        }
+        // Same lock-out as demoting the last admin (AdminService.removeAdmin): with the only admin
+        // gone nobody can promote anyone, and ADMIN_EMAIL works only at registration.
+        if (user.isAdmin() && userRepository.countByRole(UserRole.ADMIN) <= 1) {
+            throw new IllegalStateException(msg.get("user.delete.last.admin"));
         }
 
         // 1-4. Free the seats and hand them to the queues. The ordering inside is load-bearing —
