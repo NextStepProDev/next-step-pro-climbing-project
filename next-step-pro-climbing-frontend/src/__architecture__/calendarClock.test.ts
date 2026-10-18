@@ -75,6 +75,25 @@ function sourceFiles(): string[] {
   return out
 }
 
+/**
+ * Every source file, for the date-label rule. That one is not about the calendar: a date label
+ * renders a day early abroad wherever it is parsed, and the course page's term list — outside the
+ * watched folders — did exactly that until 2026-10.
+ */
+function allSourceFiles(dir: string = SRC): string[] {
+  const out: string[] = []
+  for (const name of readdirSync(dir)) {
+    const full = join(dir, name)
+    if (statSync(full).isDirectory()) {
+      if (name !== '__architecture__' && name !== 'test') out.push(...allSourceFiles(full))
+    } else if ((name.endsWith('.ts') || name.endsWith('.tsx'))
+      && !name.endsWith('.test.ts') && !name.endsWith('.test.tsx')) {
+      out.push(full)
+    }
+  }
+  return out
+}
+
 function stripComments(source: string): string {
   return source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '')
 }
@@ -110,7 +129,7 @@ describe('calendar clock', () => {
       'g',
     )
 
-    for (const file of sourceFiles()) {
+    for (const file of allSourceFiles()) {
       const source = stripComments(readFileSync(file, 'utf-8'))
       for (const hit of source.match(pattern) ?? []) {
         offenders.push(`${relative(file)}: ${hit.trim()}`)

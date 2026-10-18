@@ -108,7 +108,7 @@ export function Footer() {
           <p>&copy; {new Date().getFullYear()} Next Step Pro Climbing. {t('footer.copyright')}</p>
           <p className="mt-1 space-x-3">
             <Link to="/polityka-prywatnosci" className="text-surface-500 hover:text-surface-300 transition-colors text-xs">
-              Polityka prywatności
+              {t('footer.privacy')}
             </Link>
             <Link to="/faq" className="text-surface-500 hover:text-surface-300 transition-colors text-xs">
               {t('nav.help')}

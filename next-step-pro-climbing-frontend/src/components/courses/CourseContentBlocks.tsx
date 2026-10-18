@@ -5,6 +5,7 @@ import { Calendar, ArrowRight, Clock, ImageIcon } from 'lucide-react'
 import type { CourseDetail, CourseEvent } from '../../types'
 import { renderRichText } from '../../utils/renderRichText'
 import { useDateLocale } from '../../utils/dateFnsLocale'
+import { parseCalendarDate } from '../../utils/calendarDate'
 import clsx from 'clsx'
 
 export function CourseContentBlocks({ detail }: { detail: CourseDetail }) {
@@ -89,9 +90,10 @@ export function CourseEventRow({ event }: { event: CourseEvent }) {
   const { t } = useTranslation('common')
   const locale = useDateLocale()
 
-  const startDate = format(new Date(event.startDate), 'd MMMM yyyy', { locale })
+  // A 'yyyy-MM-dd' label, not a moment — new Date() read it as UTC midnight, a day early west of Greenwich.
+  const startDate = format(parseCalendarDate(event.startDate), 'd MMMM yyyy', { locale })
   const endDate = event.endDate !== event.startDate
-    ? format(new Date(event.endDate), 'd MMMM yyyy', { locale })
+    ? format(parseCalendarDate(event.endDate), 'd MMMM yyyy', { locale })
     : null
 
   const statusColor = event.status === 'AVAILABLE'

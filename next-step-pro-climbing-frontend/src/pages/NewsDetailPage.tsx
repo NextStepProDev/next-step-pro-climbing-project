@@ -154,7 +154,7 @@ export function NewsDetailPage() {
         </div>
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <p className="text-sm text-surface-400">
-            {t('news.published')}: {new Date(article.publishedAt).toLocaleDateString('pl-PL', {
+            {t('news.published')}: {new Date(article.publishedAt).toLocaleDateString(i18n.language, {
               day: 'numeric',
               month: 'long',
               year: 'numeric',

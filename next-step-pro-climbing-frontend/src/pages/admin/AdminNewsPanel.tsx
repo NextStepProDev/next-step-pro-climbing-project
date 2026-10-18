@@ -312,7 +312,7 @@ function TranslationGroupRow({
   onCreateTranslation: (sourceId: string, targetLang: string) => void
   isCreatingTranslation: boolean
 }) {
-  const { t } = useTranslation('admin')
+  const { t, i18n } = useTranslation('admin')
 
   const langMap = new Map(groupArticles.map(a => [a.language, a]))
 
@@ -346,7 +346,7 @@ function TranslationGroupRow({
           </span>
           {displayArticle.publishedAt && (
             <span className="text-xs text-surface-400">
-              {new Date(displayArticle.publishedAt).toLocaleDateString('pl-PL')}
+              {new Date(displayArticle.publishedAt).toLocaleDateString(i18n.language)}
             </span>
           )}
         </div>
