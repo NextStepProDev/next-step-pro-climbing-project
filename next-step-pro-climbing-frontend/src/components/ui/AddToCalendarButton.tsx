@@ -7,6 +7,8 @@ import { buildGoogleCalendarUrl, downloadIcs } from '../../utils/calendarLinks'
 interface AddToCalendarButtonProps {
   title: string
   date: string
+  /** Last day of a multi-day event. */
+  endDate?: string | null
   startTime?: string | null
   endTime?: string | null
   location?: string | null
@@ -23,6 +25,7 @@ export function AddToCalendarButton(props: AddToCalendarButtonProps) {
   const event = {
     title: props.title,
     date: props.date,
+    endDate: props.endDate,
     startTime: props.startTime,
     endTime: props.endTime,
     location: props.location,

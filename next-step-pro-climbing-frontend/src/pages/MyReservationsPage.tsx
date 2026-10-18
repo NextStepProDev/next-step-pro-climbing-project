@@ -599,6 +599,9 @@ function UpcomingReservations({
                       <AddToCalendarButton
                         title={event.eventTitle}
                         date={event.startDate}
+                        endDate={event.endDate}
+                        startTime={event.startTime}
+                        endTime={event.endTime}
                       />
                     </div>
                   )}

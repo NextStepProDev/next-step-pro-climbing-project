@@ -53,6 +53,10 @@ record UserEventReservationDto(
     String eventType,
     LocalDate startDate,
     LocalDate endDate,
+    // The event's hours (null = all day) — "add to calendar" needs them; without them every course
+    // was exported as a single all-day entry on its first day.
+    @Nullable LocalTime startTime,
+    @Nullable LocalTime endTime,
     @Nullable String comment,
     int participants,
     int slotsCount,
