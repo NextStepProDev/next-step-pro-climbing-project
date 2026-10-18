@@ -10,6 +10,7 @@ import { AchieveGoalModal } from './AchieveGoalModal'
 import { TrophyChestModal } from './TrophyChestModal'
 import { getErrorMessage } from '../../utils/errors'
 import { decodeHtmlEntities } from '../../utils/htmlEntities'
+import { weightProgress } from '../../utils/weightProgress'
 import { nowInWarsaw, parseCalendarDate, toWarsawWallClock } from '../../utils/calendarDate'
 import type { TrainingCalendarAdapter } from './trainingCalendarAdapter'
 import type { AthleteGoal, GoalHorizon, GoalKind, SaveGoal } from '../../types'
@@ -41,6 +42,8 @@ interface GoalsBannerProps {
   api: TrainingCalendarAdapter
   scopeKey: string
   isCoachView?: boolean
+  // Coach view of an athlete without (re)consent: no weight read, no weight row.
+  healthHidden?: boolean
 }
 
 /**
@@ -51,7 +54,7 @@ interface GoalsBannerProps {
  * <p>Weight goals differ in one way that matters: they close THEMSELVES when a weigh-in brings
  * the confirmed 7-day trend to target, which is why they — and only they — can be reopened.
  */
-export function GoalsBanner({ api, scopeKey, isCoachView }: GoalsBannerProps) {
+export function GoalsBanner({ api, scopeKey, isCoachView, healthHidden }: GoalsBannerProps) {
   const { t } = useTranslation('training')
   const queryClient = useQueryClient()
 
@@ -65,6 +68,8 @@ export function GoalsBanner({ api, scopeKey, isCoachView }: GoalsBannerProps) {
   const weightQuery = useQuery({
     queryKey: ['trainingCalendar', 'weight', scopeKey, 'RECENT'],
     queryFn: () => api.getWeights('RECENT'),
+    // Refused (409) while consent is pending — asking anyway only logs an error per visit.
+    enabled: !healthHidden,
   })
 
   const [formSlot, setFormSlot] = useState<{ kind: GoalKind; horizon: GoalHorizon } | null>(null)
@@ -153,7 +158,9 @@ export function GoalsBanner({ api, scopeKey, isCoachView }: GoalsBannerProps) {
 
       {actionError && <p className="text-sm text-rose-400/80">{actionError}</p>}
 
-      {SECTIONS.map(({ kind, titleKey }) => {
+      {/* Weight goals are health data: withheld while the athlete's consent is pending, so the
+          row would only offer "add" buttons the server refuses. */}
+      {SECTIONS.filter(({ kind }) => !(healthHidden && kind === 'WEIGHT')).map(({ kind, titleKey }) => {
         const slots = HORIZONS.map((horizon) => ({
           horizon,
           goal: activeBySlot.get(slotKey(kind, horizon)),
@@ -263,21 +270,6 @@ export function GoalsBanner({ api, scopeKey, isCoachView }: GoalsBannerProps) {
   )
 }
 
-/**
- * How far along a weight goal is, measured start → target against the current trend.
- * Null whenever any of the three numbers is missing — a half-known bar would just mislead.
- */
-function weightProgress(goal: AthleteGoal, currentTrendKg: number | null) {
-  if (goal.targetWeightKg == null || goal.startWeightKg == null || currentTrendKg == null) return null
-  const total = Math.abs(goal.targetWeightKg - goal.startWeightKg)
-  if (total === 0) return null
-  const done = Math.abs(currentTrendKg - goal.startWeightKg)
-  return {
-    percent: Math.min(100, Math.max(0, Math.round((done / total) * 100))),
-    remaining: Math.max(0, Math.abs(goal.targetWeightKg - currentTrendKg)),
-  }
-}
-
 interface GoalSlotProps {
   kind: GoalKind
   horizon: GoalHorizon
@@ -318,7 +310,9 @@ function GoalSlot({
   if (goal) {
     const daysLeft = differenceInCalendarDays(parseCalendarDate(goal.targetDate), today)
     const overdue = daysLeft < 0
-    const progress = kind === 'WEIGHT' ? weightProgress(goal, currentTrendKg) : null
+    const progress = kind === 'WEIGHT'
+      ? weightProgress(goal.targetWeightKg ?? null, goal.startWeightKg ?? null, currentTrendKg)
+      : null
     return (
       <div
         className={clsx(

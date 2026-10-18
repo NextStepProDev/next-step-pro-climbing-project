@@ -12,14 +12,14 @@ describe('travellingPayoutSource — what a copied slot may take with it', () =>
   it('carries the institution that settles the session', () => {
     // The case the whole thing exists for: a school session repeats weekly, and a copy without
     // its contractor rebuilds the invisible session once a week.
-    expect(travellingPayoutSource(section({ kind: 'source', id: 'source-1', name: 'SP nr 5' })))
+    expect(travellingPayoutSource(section({ kind: 'source', id: 'source-1', name: 'SP nr 5', staleReason: null })))
       .toEqual({ id: 'source-1', name: 'SP nr 5' })
   })
 
   it('leaves a retainer behind, because it covers a person and not the hour', () => {
     // Nobody is on the slot about to be created, so the server refuses this — carrying it would
     // turn every paste of such a session into an error about a copy that was fine.
-    expect(travellingPayoutSource(section({ kind: 'subscription', id: 'user-1', name: 'Anna' })))
+    expect(travellingPayoutSource(section({ kind: 'subscription', id: 'user-1', name: 'Anna', staleReason: null })))
       .toBeNull()
   })
 

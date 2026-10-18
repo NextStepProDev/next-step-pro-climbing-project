@@ -45,6 +45,9 @@ interface TrainingDetailModalProps {
    * would take whatever was being typed with it.
    */
   vanished?: boolean
+  // Coach view of an athlete who has not (re)consented: the server refuses the thread, so it is
+  // replaced by a sentence saying why instead of an error under every entry.
+  threadHidden?: boolean
   onCommentPosted?: () => void
   // Backend rejection of delete/complete/uncomplete — shown above the footer
   errorMessage?: string | null
@@ -73,7 +76,7 @@ function statusChip(status: PersonalTrainingStatus): string {
 
 export function TrainingDetailModal({
   training, onClose, api, isCoachView, onEdit, onDuplicate, onCopy, onCut, onSaveAsTemplate, onDelete,
-  onComplete, onUncomplete, mutating, vanished, onCommentPosted, errorMessage,
+  onComplete, onUncomplete, mutating, vanished, threadHidden, onCommentPosted, errorMessage,
 }: TrainingDetailModalProps) {
   const { t } = useTranslation('training')
   const locale = useDateLocale()
@@ -302,12 +305,16 @@ export function TrainingDetailModal({
         </div>
 
         {/* Comment thread */}
-        <CommentThread
-          target={{ kind: 'training', id: training.id }}
-          api={api}
-          onPosted={onCommentPosted}
-          onDirtyChange={reportThreadDirty}
-        />
+        {threadHidden ? (
+          <p className="text-sm text-surface-400">{t('consentPending.thread')}</p>
+        ) : (
+          <CommentThread
+            target={{ kind: 'training', id: training.id }}
+            api={api}
+            onPosted={onCommentPosted}
+            onDirtyChange={reportThreadDirty}
+          />
+        )}
 
         {/* Delete/uncomplete errors (no form open); the completion form renders its own error inline */}
         {errorMessage && !completionOpen && (

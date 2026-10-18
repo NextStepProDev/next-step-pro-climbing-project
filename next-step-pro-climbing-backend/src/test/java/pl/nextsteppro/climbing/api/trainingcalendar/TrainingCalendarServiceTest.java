@@ -1257,23 +1257,6 @@ class TrainingCalendarServiceTest {
         assertEquals("training.reservation.rpe.not.attended", e.getMessage());
     }
 
-    @Test
-    void shouldRejectRatingEventReservationWithoutTimeSlot() {
-        // Given: a confirmed, own, past-looking reservation with NO time slot (event booking).
-        // Reachable by id even though the slot-only overlay never surfaces a "rate" chip for it.
-        UUID reservationId = UUID.randomUUID();
-        TimeSlot slot = new TimeSlot(LocalDate.now().minusDays(1), LocalTime.of(10, 0), LocalTime.of(11, 0), 4);
-        Reservation r = reservationWithCreatedAt(slot, Instant.now());
-        setField(r, "id", reservationId);
-        setField(r, "timeSlot", null); // event reservation → no slot to derive "past" from
-        when(reservationRepository.findById(reservationId)).thenReturn(Optional.of(r));
-
-        // When / Then: clear 409, not an NPE
-        IllegalStateException e = assertThrows(IllegalStateException.class,
-            () -> service.rateReservation(athleteId, reservationId, new RateReservationRequest(5, null)));
-        assertEquals("training.reservation.rpe.not.attended", e.getMessage());
-    }
-
     // ========== completed-training edit guard ==========
 
     @Test

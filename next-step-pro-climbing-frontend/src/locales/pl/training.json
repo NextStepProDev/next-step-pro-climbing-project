@@ -215,6 +215,11 @@
     "title": "Brak treningów w tym okresie",
     "hint": "Dodaj trening przyciskiem powyżej albo kliknij dzień w kalendarzu."
   },
+  "consentPending": {
+    "title": "Czeka na zgodę zawodnika",
+    "body": "Ta osoba nie udzieliła jeszcze zgody na kalendarz treningowy (albo wygasła przy odebraniu statusu podopiecznego). Możesz układać plan; waga, oceny RPE, feedback, statystyki i rozmowa pojawią się, gdy zawodnik zaakceptuje zgodę przy wejściu do kalendarza.",
+    "thread": "Rozmowa będzie widoczna, gdy zawodnik udzieli zgody na kalendarz treningowy."
+  },
   "deletions": {
     "titleAthlete": "Trener usunął z Twojego planu:",
     "titleCoach": "Zawodnik usunął ze swojego planu:"

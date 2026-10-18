@@ -94,6 +94,23 @@ public interface SessionPayoutRepository extends JpaRepository<SessionPayout, UU
                      @Param("sourceId") @Nullable UUID sourceId,
                      @Param("userId") @Nullable UUID userId);
 
+    /**
+     * Every session marked as covered by this person's subscription, with the day that decides its
+     * month (an event by its first day, as {@code sessionMonth} reads it).
+     */
+    @Query("""
+        SELECT new pl.nextsteppro.climbing.domain.settlement.SubscriberSession(sp.id, COALESCE(ts.date, e.startDate))
+        FROM SessionPayout sp
+        LEFT JOIN sp.timeSlot ts
+        LEFT JOIN sp.event e
+        WHERE sp.user.id = :userId
+        """)
+    List<SubscriberSession> findSubscriberSessions(@Param("userId") UUID userId);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("DELETE FROM SessionPayout sp WHERE sp.id IN :ids")
+    int deleteByIdIn(@Param("ids") java.util.Collection<UUID> ids);
+
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("DELETE FROM SessionPayout sp WHERE sp.timeSlot.id = :slotId")
     int clearSlot(@Param("slotId") UUID slotId);

@@ -21,7 +21,7 @@ import pl.nextsteppro.climbing.domain.settlement.SettlementRow;
 import pl.nextsteppro.climbing.domain.settlement.PayoutSourceRepository;
 import pl.nextsteppro.climbing.domain.settlement.SessionCoverage;
 import pl.nextsteppro.climbing.domain.settlement.SessionPayoutRepository;
-import pl.nextsteppro.climbing.domain.settlement.Subscription;
+import pl.nextsteppro.climbing.domain.settlement.SubscriptionRepository;
 import pl.nextsteppro.climbing.domain.timeslot.TimeSlot;
 import pl.nextsteppro.climbing.domain.timeslot.TimeSlotRepository;
 import pl.nextsteppro.climbing.domain.user.UserRepository;
@@ -72,6 +72,7 @@ public class AdminSettlementService {
     private final UserRepository userRepository;
     private final SessionPayoutRepository sessionPayoutRepository;
     private final PayoutSourceRepository payoutSourceRepository;
+    private final SubscriptionRepository subscriptionRepository;
     private final MessageService msg;
 
     public AdminSettlementService(SettlementRepository settlementRepository,
@@ -83,6 +84,7 @@ public class AdminSettlementService {
                                   UserRepository userRepository,
                                   SessionPayoutRepository sessionPayoutRepository,
                                   PayoutSourceRepository payoutSourceRepository,
+                                  SubscriptionRepository subscriptionRepository,
                                   MessageService msg) {
         this.settlementRepository = settlementRepository;
         this.paymentRepository = paymentRepository;
@@ -93,6 +95,7 @@ public class AdminSettlementService {
         this.userRepository = userRepository;
         this.sessionPayoutRepository = sessionPayoutRepository;
         this.payoutSourceRepository = payoutSourceRepository;
+        this.subscriptionRepository = subscriptionRepository;
         this.msg = msg;
     }
 
@@ -175,17 +178,6 @@ public class AdminSettlementService {
                 }
             }
         }
-    }
-
-    /**
-     * Removes one monthly coaching fee — the exit from a fee billed by mistake.
-     *
-     * <p>Idempotent like the per-participant delete, and with no guard beyond the pair (payer,
-     * month) for the same reason: the statement cannot match anything else, and gating it would be
-     * the opposite of safety on a row whose whole problem is that it should not exist.
-     */
-    public void deleteMonthlyFee(UUID userId, LocalDate month) {
-        settlementRepository.deleteMonthlyFee(userId, Subscription.normalizeMonth(month));
     }
 
     /**
@@ -588,14 +580,38 @@ public class AdminSettlementService {
             return null;
         }
         if (found.bySubscription()) {
-            return userRepository.findById(Objects.requireNonNull(found.userId()))
+            UUID subscriberId = Objects.requireNonNull(found.userId());
+            String stale = staleReasonOf(target, targetId, subscriberId);
+            return userRepository.findById(subscriberId)
                 .map(user -> new SettlementCoverageDto("subscription", user.getId(),
-                    (user.getFirstName() + " " + user.getLastName()).trim()))
+                    (user.getFirstName() + " " + user.getLastName()).trim(), stale))
                 .orElse(null);
         }
         return payoutSourceRepository.findById(Objects.requireNonNull(found.sourceId()))
-            .map(source -> new SettlementCoverageDto("source", source.getId(), source.getName()))
+            .map(source -> new SettlementCoverageDto("source", source.getId(), source.getName(), null))
             .orElse(null);
+    }
+
+    /**
+     * The three conditions {@code AdminPayoutService.requireSubscriberOfSession} demands when the
+     * mark is set, re-asked on read. ⚠️ Bookings change without telling this package (the isolation
+     * gate keeps the calendar from naming it), so a mark that was true when set can stop being true
+     * silently: the client cancels, somebody else books — and then cannot be priced, because the
+     * session is out of per-participant pricing — or the subscription is cut short. The section is
+     * where that becomes visible, next to the button that clears it.
+     */
+    private @Nullable String staleReasonOf(SettlementTarget target, UUID targetId, UUID subscriberId) {
+        if (!isParticipant(target, targetId, subscriberId)) {
+            return "not.participant";
+        }
+        if (countPayers(target, targetId) > 1) {
+            return "shared";
+        }
+        LocalDate month = sessionMonth(target, targetId);
+        if (subscriptionRepository.findByUserId(subscriberId).stream().noneMatch(s -> s.covers(month))) {
+            return "not.covered";
+        }
+        return null;
     }
 
     private void requireTargetExists(SettlementTarget target, UUID targetId) {

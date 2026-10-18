@@ -65,13 +65,25 @@ public class AthleteGoalService {
 
     @Transactional(readOnly = true)
     public GoalsDto getGoalsForAthlete(UUID athleteId) {
-        calendarService.requireFlaggedAthlete(athleteId);
-        return buildGoals(athleteId);
+        User athlete = calendarService.requireFlaggedAthlete(athleteId);
+        GoalsDto goals = buildGoals(athleteId);
+        if (athlete.hasTrainingConsent()) {
+            return goals;
+        }
+        // A weight goal carries a target and a starting weight — health data, withheld from the
+        // coach until the athlete consents. General goals are part of the plan and stay.
+        return new GoalsDto(
+            goals.active().stream().filter(g -> !GoalKind.WEIGHT.name().equals(g.kind())).toList(),
+            goals.achieved().stream().filter(g -> !GoalKind.WEIGHT.name().equals(g.kind())).toList());
     }
 
     public AthleteGoalDto createGoal(UUID athleteId, SaveGoalRequest request) {
         User athlete = calendarService.requireFlaggedAthlete(athleteId);
         GoalKind kind = request.kind() != null ? request.kind() : GoalKind.GENERAL;
+        if (kind == GoalKind.WEIGHT) {
+            // Starts from the measured trend, so creating one reads the weight history.
+            calendarService.requireCoachMayReadHealthData(athlete);
+        }
         boolean slotTaken = goalRepository.findByAthleteIdAndAchievedAtIsNull(athleteId).stream()
             .anyMatch(g -> g.getKind() == kind && g.getHorizon() == request.horizon());
         if (slotTaken) {
@@ -170,7 +182,7 @@ public class AthleteGoalService {
      * a human decision, and the trophy chest must stay trustworthy.
      */
     public AthleteGoalDto reopenGoal(UUID goalId) {
-        AthleteGoal goal = requireGoal(goalId);
+        AthleteGoal goal = requireEditableGoal(goalId);
         if (!goal.isAchieved()) {
             throw new IllegalStateException(msg.get("training.goal.reopen.not.achieved"));
         }
@@ -220,9 +232,21 @@ public class AthleteGoalService {
         return goal;
     }
 
+    /**
+     * {@link #requireGoal} plus consent for a WEIGHT goal — the one goal kind that is health data.
+     * Deleting stays on the bare guard: removing cannot disclose anything.
+     */
+    private AthleteGoal requireEditableGoal(UUID goalId) {
+        AthleteGoal goal = requireGoal(goalId);
+        if (goal.getKind() == GoalKind.WEIGHT) {
+            calendarService.requireCoachMayReadHealthData(goal.getAthlete());
+        }
+        return goal;
+    }
+
     /** Achieved goals are trophies: no edit, no re-achieve. Deleting one is allowed (see above). */
     private AthleteGoal requireActiveGoal(UUID goalId) {
-        AthleteGoal goal = requireGoal(goalId);
+        AthleteGoal goal = requireEditableGoal(goalId);
         if (goal.isAchieved()) {
             throw new IllegalStateException(msg.get("training.goal.achieved.immutable"));
         }

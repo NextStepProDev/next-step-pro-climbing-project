@@ -28,6 +28,17 @@ const MAX_BODY = 1000
 const MAX_ROWS = 6
 
 /** Grows the box with the text: a one-row field building a five-item list is a peephole. */
+/**
+ * What is left in the composer once `sent` went out: nothing if it still holds exactly that, the
+ * part typed after it if it grew, and everything if it was rewritten — never a guess that deletes.
+ */
+function remainderAfterSent(current: string, sent: string): string {
+  const trimmed = current.trimStart()
+  if (current.trim() === sent) return ''
+  if (sent !== '' && trimmed.startsWith(sent)) return trimmed.slice(sent.length).trimStart()
+  return current
+}
+
 function rowsFor(text: string, min: number): number {
   return Math.min(MAX_ROWS, Math.max(min, text.split('\n').length))
 }
@@ -163,9 +174,12 @@ export function CommentThread({ target, api, onPosted, onDirtyChange }: CommentT
       files.length > 0
         ? api.addCommentWithFiles(target, body || null, files)
         : api.addComment(target, body),
-    onSuccess: () => {
-      setDraft('')
-      setStaged([])
+    // ⚠️ Clears only what was SENT. The composer stays editable while the request is in flight, so
+    // blanking it on success threw away whatever was typed (or attached) after pressing Send — a
+    // second thought lost without a trace. Whatever was added in the meantime stays.
+    onSuccess: (_result, sent) => {
+      setDraft((current) => remainderAfterSent(current, sent.body))
+      setStaged((current) => current.filter((file) => !sent.files.includes(file)))
       invalidate()
       onPosted?.()
     },

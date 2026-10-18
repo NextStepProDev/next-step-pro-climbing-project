@@ -24,11 +24,12 @@ const api = {
  * Mirrors how TrainingCalendarSection drives the modal: onComplete is a mutateAsync,
  * so a rejected save both throws into the modal and lands in the section's error state.
  */
-function Harness({ training, onComplete, isCoachView, vanished }: {
+function Harness({ training, onComplete, isCoachView, vanished, threadHidden }: {
   training: PersonalTraining
   onComplete: (training: PersonalTraining, data: { feedback?: string; rpe?: number }) => Promise<unknown>
   isCoachView?: boolean
   vanished?: boolean
+  threadHidden?: boolean
 }) {
   const [error, setError] = useState<string | null>(null)
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
@@ -40,6 +41,7 @@ function Harness({ training, onComplete, isCoachView, vanished }: {
         api={api}
         isCoachView={isCoachView}
         vanished={vanished}
+        threadHidden={threadHidden}
         onEdit={vi.fn()}
         onDuplicate={vi.fn()}
         onDelete={vi.fn()}
@@ -462,5 +464,18 @@ describe('TrainingDetailModal — arming the clipboard from the card', () => {
 
     expect(screen.queryByText('clipboard.copy')).not.toBeInTheDocument()
     expect(screen.queryByText('clipboard.cut')).not.toBeInTheDocument()
+  })
+})
+
+describe('TrainingDetailModal — coach view while consent is pending', () => {
+  it('replaces the conversation with a sentence instead of asking for it', async () => {
+    // The server refuses the thread until the athlete (re)consents. Asking anyway would put an
+    // error under every entry the coach opens.
+    vi.mocked(api.getComments).mockClear()
+    const training = makeTraining({ date: yesterday(), startTime: '10:00', endTime: '11:00' })
+    render(<Harness training={training} onComplete={vi.fn()} isCoachView threadHidden />)
+
+    expect(await screen.findByText('consentPending.thread')).toBeInTheDocument()
+    expect(api.getComments).not.toHaveBeenCalled()
   })
 })

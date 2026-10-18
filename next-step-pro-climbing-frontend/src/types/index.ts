@@ -656,6 +656,9 @@ export interface SettlementCoverage {
   kind: 'source' | 'subscription'
   id: string
   name: string
+  // Why a subscription mark no longer holds; null while it does (always null for an institution).
+  // The mark is checked once, when set, and bookings change afterwards without telling it.
+  staleReason: 'not.participant' | 'shared' | 'not.covered' | null
 }
 
 // A payer who settles a whole month at once — a school, a club. Archived ones still come back in the
@@ -765,6 +768,9 @@ export interface Subscription {
   startedOn: string
   endedOn: string | null
   active: boolean
+  // Months inside this subscription deliberately not charged (a fee the admin deleted). Recorded on
+  // the server so the nightly run does not bill them again; restoring one is a separate call.
+  skippedMonths: string[]
 }
 
 // One client's money, for their card in the Users panel. Whole history, not the tab's selected
@@ -1906,6 +1912,9 @@ export interface TrainingCalendarRange {
   reservations: ReservationOverlayItem[]
   invitations: InvitationOverlayItem[]
   deletions: TrainingDeletionItem[]
+  // Coach view only: the athlete has not (re)consented, so RPE, feedback, weight, stats and the
+  // conversation are withheld by the server. The plan itself stays workable.
+  healthDataHidden: boolean
 }
 
 export interface TrainingCommentItem {

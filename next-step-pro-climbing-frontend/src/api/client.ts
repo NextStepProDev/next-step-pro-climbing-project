@@ -1180,6 +1180,10 @@ export const adminSettlementsApi = {
   deleteMonthlyFee: (userId: string, month: string) =>
     fetchApi<void>(`/admin/settlements/monthly-fees/${userId}/${month}`, { method: 'DELETE' }),
 
+  // Takes back a deleted fee's skip; the server bills the month again at once.
+  restoreMonthlyFee: (userId: string, month: string) =>
+    fetchApi<void>(`/admin/settlements/monthly-fees/${userId}/${month}/restore`, { method: 'POST' }),
+
   // Any day of the month; the server snaps it. A past month is allowed and expected.
   endSubscription: (subscriptionId: string, endedOn: string) =>
     fetchApi<void>(`/admin/settlements/subscriptions/${subscriptionId}/end`, {

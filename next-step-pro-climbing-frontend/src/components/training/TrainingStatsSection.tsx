@@ -20,7 +20,7 @@ import {
 import { QueryError } from '../ui/QueryError'
 import { HEATMAP_LEGEND, levelClass } from './heatmapScale'
 import { useDateLocale } from '../../utils/dateFnsLocale'
-import { nowInWarsaw, parseCalendarDate } from '../../utils/calendarDate'
+import { nowInWarsaw, parseCalendarDate, todayInWarsaw } from '../../utils/calendarDate'
 import type { TrainingCalendarAdapter } from './trainingCalendarAdapter'
 import type { AthleteStats } from '../../types'
 
@@ -292,8 +292,12 @@ function ActivityHeatmap({ heatmap }: { heatmap: Record<string, number> }) {
     if (el) el.scrollLeft = el.scrollWidth
   }, [])
 
+  // Keyed on the Warsaw DAY as well as the locale: the stats refetch every minute, so a tab left
+  // open past midnight re-renders — and without the day in the deps the grid stayed on yesterday,
+  // putting today's activity in no column at all.
+  const todayKey = todayInWarsaw()
   const { weeks, monthLabels, windowStart, today } = useMemo(() => {
-    const today = nowInWarsaw()
+    const today = parseCalendarDate(todayKey)
     const windowStart = subDays(today, HEATMAP_DAYS - 1)
     const gridStart = startOfWeek(windowStart, { weekStartsOn: 1 })
     const weeks: Date[] = []
@@ -305,7 +309,7 @@ function ActivityHeatmap({ heatmap }: { heatmap: Record<string, number> }) {
         : null,
     )
     return { weeks, monthLabels, windowStart, today }
-  }, [locale])
+  }, [locale, todayKey])
 
   // Mon / Wed / Fri row labels, localized
   const dayLabels = useMemo(() => {

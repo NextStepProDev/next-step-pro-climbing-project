@@ -592,12 +592,16 @@
           "from": "Od miesiąca",
           "endLabel": "Ostatni miesiąc",
           "newAmount": "Nowa kwota",
-          "saveAmount": "Zmień kwotę"
+          "saveAmount": "Zmień kwotę",
+          "skipped": "Bez opłaty:",
+          "restore": "Przywróć opłatę za {{month}}",
+          "endTitle": "Zakończyć abonament?",
+          "endMessage": "Ostatnim naliczonym miesiącem będzie {{month}}. Nieopłacone opłaty za późniejsze miesiące znikną; opłacone zostają. Sesje oznaczone abonamentem po tym miesiącu wrócą do wyceny."
         },
         "fee": {
           "remove": "Usuń opłatę za {{month}}",
           "removeTitle": "Usunąć opłatę abonamentową?",
-          "removeMessage": "Opłata za {{month}} na {{amount}} zniknie razem z tym, co wpłynęło na jej poczet. Rób to tylko wtedy, gdy została naliczona omyłkowo — np. abonament wpisano z błędną datą początku."
+          "removeMessage": "Za {{month}} ta osoba nie zapłaci abonamentu ({{amount}}) — system zapamięta to i nie naliczy tej opłaty ponownie. To, co już wpłynęło, zostaje na koncie jako nadpłata. Przywrócić opłatę można przy abonamencie."
         }
       }
     },
@@ -939,6 +943,11 @@
       "totals": "razem: {{total}} · zapłacone: {{paid}}",
       "bulk": "Rozliczane zbiorczo · {{name}}",
       "bulkHint": "Kwoty za te zajęcia nie wpisuje się per uczestnik — wypłatę za cały miesiąc wpisujesz w zakładce Rozliczenia.",
+      "stale": {
+        "notParticipant": "{{name}} nie jest już zapisany(-a) na ten termin — oznaczenie abonamentem jest nieaktualne. Usuń oznaczenie, żeby wycenić termin.",
+        "shared": "Na terminie jest już ktoś poza {{name}} — tej osoby nie da się wycenić, dopóki termin jest oznaczony abonamentem. Usuń oznaczenie i wyceń uczestników osobno.",
+        "notCovered": "Abonament {{name}} nie obejmuje już miesiąca tego terminu. Usuń oznaczenie, żeby wycenić termin."
+      },
       "changeBulk": "Zmień kontrahenta",
       "clearBulk": "Usuń oznaczenie",
       "markBulk": "Rozliczane zbiorczo…",

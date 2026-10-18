@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { format } from 'date-fns'
-import { Coins, Trash2 } from 'lucide-react'
+import { Coins, RotateCcw, Trash2 } from 'lucide-react'
 import { adminSettlementsApi } from '../../../api/client'
 import { parseCalendarDate } from '../../../utils/calendarDate'
 import { useDateLocale } from '../../../utils/dateFnsLocale'
@@ -224,8 +224,19 @@ function SubscriptionRow({ userId }: { userId: string }) {
       refresh()
     },
   })
+  /**
+   * Asked first: ending deletes the unpaid fees of every month after the chosen one and releases the
+   * sessions marked as covered there — three consequences behind one button, none visible from it,
+   * and the month field beside it defaults to today, so a stray click ends the relationship now.
+   */
+  const [confirmingEnd, setConfirmingEnd] = useState<string | null>(null)
   const end = useMutation({
     mutationFn: (id: string) => adminSettlementsApi.endSubscription(id, endedOn),
+    onSuccess: refresh,
+    onSettled: () => setConfirmingEnd(null),
+  })
+  const restore = useMutation({
+    mutationFn: (month: string) => adminSettlementsApi.restoreMonthlyFee(userId, month),
     onSuccess: refresh,
   })
   const changeAmount = useMutation({
@@ -283,23 +294,68 @@ function SubscriptionRow({ userId }: { userId: string }) {
               >
                 {t('users.detail.money.subscription.saveAmount')}
               </Button>
+              {/* `min` mirrors the server's "end before start" refusal, so the field says no first. */}
               <DateInput
                 value={endedOn}
                 onChange={setEndedOn}
+                min={sub.startedOn}
                 aria-label={t('users.detail.money.subscription.endLabel')}
                 className="bg-surface-800 border border-surface-600 rounded px-2 py-1 text-xs text-surface-100 focus:outline-none focus:border-primary-500"
               />
-              <Button size="sm" variant="ghost" loading={end.isPending} onClick={() => end.mutate(sub.id)}>
+              <Button
+                size="sm"
+                variant="ghost"
+                disabled={endedOn === '' || endedOn < sub.startedOn}
+                loading={end.isPending}
+                onClick={() => setConfirmingEnd(sub.id)}
+              >
                 {t('users.detail.money.subscription.end')}
               </Button>
             </>
-          ) : (
+          ) : sub.id === subs[0].id ? (
+            /* Only the newest one (the list comes newest first): reopening runs it on from its own
+               start, so any later subscription would overlap it and the server refuses. A button
+               that can only answer with an error is not an offer. */
             <Button size="sm" variant="ghost" loading={reopen.isPending} onClick={() => reopen.mutate(sub.id)}>
               {t('users.detail.money.subscription.reopen')}
             </Button>
+          ) : null}
+          {sub.skippedMonths.length > 0 && (
+            <div className="basis-full flex flex-wrap items-center gap-1.5 text-xs text-surface-400">
+              <span>{t('users.detail.money.subscription.skipped')}</span>
+              {sub.skippedMonths.map((month) => {
+                const label = format(parseCalendarDate(month), 'LLLL yyyy', { locale })
+                return (
+                  <span key={month} className="inline-flex items-center gap-1 rounded bg-surface-800 px-1.5 py-0.5">
+                    {label}
+                    <button
+                      type="button"
+                      disabled={restore.isPending}
+                      onClick={() => restore.mutate(month)}
+                      aria-label={t('users.detail.money.subscription.restore', { month: label })}
+                      title={t('users.detail.money.subscription.restore', { month: label })}
+                      className="p-0.5 rounded text-surface-400 hover:text-surface-100 transition-colors disabled:opacity-50"
+                    >
+                      <RotateCcw className="w-3 h-3" />
+                    </button>
+                  </span>
+                )
+              })}
+            </div>
           )}
         </div>
       ))}
+
+      <ConfirmModal
+        isOpen={confirmingEnd !== null}
+        onClose={() => setConfirmingEnd(null)}
+        onConfirm={() => confirmingEnd && end.mutate(confirmingEnd)}
+        title={t('users.detail.money.subscription.endTitle')}
+        message={t('users.detail.money.subscription.endMessage', {
+          month: endedOn ? format(parseCalendarDate(endedOn), 'LLLL yyyy', { locale }) : '',
+        })}
+        variant="danger"
+      />
 
       {active === undefined && (adding ? (
         <div className="flex flex-wrap items-end gap-2">

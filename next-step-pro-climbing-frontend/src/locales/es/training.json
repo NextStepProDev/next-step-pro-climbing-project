@@ -210,6 +210,11 @@
     "title": "No hay entrenamientos en este período",
     "hint": "Añade un entrenamiento con el botón de arriba o haz clic en un día del calendario."
   },
+  "consentPending": {
+    "title": "Esperando el consentimiento del deportista",
+    "body": "Esta persona aún no ha dado su consentimiento para el calendario de entrenamiento (o caducó al retirarle el estatus de deportista). Puedes preparar el plan; el peso, las valoraciones RPE, el feedback, las estadísticas y la conversación aparecerán cuando el deportista acepte el consentimiento al abrir el calendario.",
+    "thread": "La conversación será visible cuando el deportista dé su consentimiento para el calendario de entrenamiento."
+  },
   "deletions": {
     "titleAthlete": "El entrenador eliminó de tu plan:",
     "titleCoach": "El atleta eliminó de su plan:"

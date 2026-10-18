@@ -67,7 +67,7 @@ public class AthleteWeightService {
 
     @Transactional(readOnly = true)
     public AthleteWeightSeriesDto getSeriesForAthlete(UUID athleteId, @Nullable WeightRange range) {
-        calendarService.requireFlaggedAthlete(athleteId);
+        calendarService.requireConsentedAthleteForCoach(athleteId);
         return buildSeries(athleteId, range);
     }
 
