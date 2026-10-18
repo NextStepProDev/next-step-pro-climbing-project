@@ -252,9 +252,18 @@ async function fetchApi<T>(
     }
   }
 
+  // ⚠️ Only a request that ends in the same state when sent twice may be retried. A timeout, a
+  // dropped connection or a 5xx says nothing about whether the server already did the work, and a
+  // retried POST booked the seat, recorded the payment or sent the newsletter twice. GET/HEAD read,
+  // PUT here always writes an absolute value, DELETE of a gone row is a no-op — those stay retried.
+  // The 401 → refresh → retry below is safe for every method: the server refused before acting.
+  const method = (options?.method ?? 'GET').toUpperCase()
+  const repeatable = method !== 'POST' && method !== 'PATCH'
+
   try {
     response = await doFetch()
-  } catch {
+  } catch (err) {
+    if (!repeatable) throw new Error(i18n.t('network', { ns: 'errors' }), { cause: err })
     console.warn(`[API] ${options?.method ?? 'GET'} ${endpoint} — network error, retrying in 1.5s…`)
     await new Promise(r => setTimeout(r, 1500))
     try {
@@ -289,7 +298,7 @@ async function fetchApi<T>(
   // Retry a few times with backoff so a redeploy degrades to a brief "updating" blip
   // (combined with React Query's own retries) instead of a hard error screen. A genuine
   // 500 (app error) gets a single quick retry — no point waiting on a real bug.
-  if (response.status >= 500 && response.status < 600) {
+  if (repeatable && response.status >= 500 && response.status < 600) {
     const isGateway = response.status === 502 || response.status === 503 || response.status === 504
     const backoffs = isGateway ? [1500, 3000, 5000] : [1000]
     for (const delay of backoffs) {
