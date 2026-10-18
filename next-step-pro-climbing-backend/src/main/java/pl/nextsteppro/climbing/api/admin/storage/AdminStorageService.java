@@ -1,5 +1,6 @@
 package pl.nextsteppro.climbing.api.admin.storage;
 
+import pl.nextsteppro.climbing.infrastructure.storage.FileUrlReferences;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -47,6 +48,7 @@ public class AdminStorageService {
     private final CourseContentBlockRepository courseBlockRepository;
     private final InstructorRepository instructorRepository;
     private final SharedAssetRepository sharedAssetRepository;
+    private final FileUrlReferences fileUrlReferences;
 
     public AdminStorageService(
             @Value("${app.storage.root:/app/uploads}") String rootPath,
@@ -56,7 +58,9 @@ public class AdminStorageService {
             CourseRepository courseRepository,
             CourseContentBlockRepository courseBlockRepository,
             InstructorRepository instructorRepository,
-            SharedAssetRepository sharedAssetRepository) {
+            SharedAssetRepository sharedAssetRepository,
+            FileUrlReferences fileUrlReferences) {
+        this.fileUrlReferences = fileUrlReferences;
         this.rootPath = Paths.get(rootPath);
         this.photoRepository = photoRepository;
         this.newsRepository = newsRepository;
@@ -83,6 +87,9 @@ public class AdminStorageService {
         for (Map.Entry<String, Set<String>> entry : diskFiles.entrySet()) {
             String folder = entry.getKey();
             Set<String> known = dbFiles.getOrDefault(folder, Set.of());
+            // Picked from the gallery or the media library, a file is in use through a URL column
+            // that the filename index above cannot see (FileUrlReferences).
+            Set<String> linked = fileUrlReferences.referencedIn(folder);
 
             for (String filename : entry.getValue()) {
                 totalOnDisk++;
@@ -95,7 +102,7 @@ public class AdminStorageService {
                 }
                 totalSizeBytes += size;
 
-                if (!known.contains(filename)) {
+                if (!known.contains(filename) && !linked.contains(filename) && !isFresh(filePath)) {
                     orphaned.add(new OrphanedFileDto(folder, filename, size));
                 }
             }
@@ -138,6 +145,21 @@ public class AdminStorageService {
 
         logger.info("Orphaned files cleanup complete: {}/{} deleted", deleted, audit.orphanedFiles().size());
         return deleted;
+    }
+
+    /**
+     * Upload writes the bytes before the row commits, so a file younger than this may simply not
+     * have its row yet — a sweep landing in that window used to delete the image being uploaded.
+     */
+    static final java.time.Duration ORPHAN_GRACE = java.time.Duration.ofHours(1);
+
+    private static boolean isFresh(Path file) {
+        try {
+            return Files.getLastModifiedTime(file).toInstant()
+                .isAfter(java.time.Instant.now().minus(ORPHAN_GRACE));
+        } catch (IOException e) {
+            return true; // unknown age: not ours to delete
+        }
     }
 
     private Map<String, Set<String>> buildDbIndex() {

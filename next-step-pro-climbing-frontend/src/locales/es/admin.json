@@ -82,6 +82,8 @@
     "duplicateAsTranslation": "Duplicar como traducción",
     "translationExists": "Todas las traducciones ya existen",
     "deleteSingleVersion": "Eliminar solo versión {{lang}}",
+    "deletePhotoConfirmTitle": "¿Quitar la foto?",
+    "deletePhotoConfirmMessage": "La foto desaparece del perfil. Si es una foto de la galería, sigue en la galería.",
     "deleteSingleConfirmTitle": "Eliminar versión de idioma",
     "deleteSingleConfirmMessage": "¿Estás seguro de que deseas eliminar la versión {{lang}} ({{name}})? Las otras versiones de idioma no se verán afectadas.",
     "deleteSingleConfirm": "Eliminar",

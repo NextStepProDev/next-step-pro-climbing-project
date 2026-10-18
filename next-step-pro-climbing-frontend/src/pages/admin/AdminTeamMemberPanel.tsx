@@ -106,6 +106,9 @@ export function AdminTeamMemberPanel({ memberType }: Props) {
   const [badgeTargetId, setBadgeTargetId] = useState<string | null>(null)
   const [photoGalleryOpen, setPhotoGalleryOpen] = useState(false)
   const [deleteSingleConfirm, setDeleteSingleConfirm] = useState(false)
+  // In-app confirmation rather than window.confirm: that one was hard-coded Polish and blocks the
+  // page (and the browser automation used to verify it).
+  const [confirmDeletePhoto, setConfirmDeletePhoto] = useState(false)
   const [showCreateExitConfirm, setShowCreateExitConfirm] = useState(false)
   const [showEditExitConfirm, setShowEditExitConfirm] = useState(false)
   const [showSyncMediaModal, setShowSyncMediaModal] = useState(false)
@@ -224,10 +227,10 @@ export function AdminTeamMemberPanel({ memberType }: Props) {
         await adminInstructorApi.delete(id)
       }
     },
-    onSuccess: () => {
-      invalidateAll()
-      setDeleteGroupMembers(null)
-    },
+    onSuccess: () => setDeleteGroupMembers(null),
+    // Settled, not success: the versions are deleted one by one, so a failure half-way has already
+    // removed some of them — and the list kept showing those as present.
+    onSettled: () => invalidateAll(),
   })
 
   const deleteSingleMutation = useMutation({
@@ -369,7 +372,9 @@ export function AdminTeamMemberPanel({ memberType }: Props) {
       setPendingMediaAction(action)
       setShowSyncMediaModal(true)
     } else {
-      executePendingAction(action, false)
+      // The failure is already reported by the global MutationCache toast; without a catch it
+      // also surfaced as an unhandled promise rejection.
+      executePendingAction(action, false).catch(() => {})
     }
   }
 
@@ -394,8 +399,10 @@ export function AdminTeamMemberPanel({ memberType }: Props) {
     const data: UpdateInstructorRequest = {
       firstName: editFirstName,
       lastName: editLastName,
-      bio: serializeBio(editBioBlocks) || undefined,
-      certifications: editCerts.filter(Boolean).join('\n') || undefined,
+      // Always sent on edit, "" included: the server reads blank as "clear" and null as "leave",
+      // so `|| undefined` made an emptied bio impossible to save.
+      bio: serializeBio(editBioBlocks),
+      certifications: editCerts.filter(Boolean).join('\n'),
       active: editActive,
       profile8aUrl: edit8aUrl.trim(),
       ...(selectedMember.photoUrl ? { focalPointX: focalPoint.x, focalPointY: focalPoint.y } : {}),
@@ -644,7 +651,7 @@ export function AdminTeamMemberPanel({ memberType }: Props) {
                       style={selectedMember.focalPointX != null ? { objectPosition: `${selectedMember.focalPointX * 100}% ${(selectedMember.focalPointY ?? 0.5) * 100}%` } : undefined} />
                     <div className="flex flex-col gap-1">
                       <span className="text-xs text-surface-400">Podgląd · przesuń punkt ostrości poniżej</span>
-                      <button type="button" onClick={() => { if (confirm('Czy na pewno usunąć zdjęcie?')) requestMediaAction({ type: 'deletePhoto', id: selectedMember.id }) }}
+                      <button type="button" onClick={() => setConfirmDeletePhoto(true)}
                         className="text-xs text-rose-400 hover:text-rose-300 text-left transition-colors">
                         Usuń zdjęcie
                       </button>
@@ -796,6 +803,16 @@ export function AdminTeamMemberPanel({ memberType }: Props) {
         message={t('team.deleteGroupConfirmMessage')}
         confirmText="Usuń" />
 
+      <ConfirmModal isOpen={confirmDeletePhoto}
+        onClose={() => setConfirmDeletePhoto(false)}
+        onConfirm={() => {
+          setConfirmDeletePhoto(false)
+          if (selectedMember) requestMediaAction({ type: 'deletePhoto', id: selectedMember.id })
+        }}
+        title={t('team.deletePhotoConfirmTitle')}
+        message={t('team.deletePhotoConfirmMessage')}
+        variant="danger" />
+
       {/* Delete single language version confirm */}
       <ConfirmModal isOpen={deleteSingleConfirm}
         onClose={() => setDeleteSingleConfirm(false)}
@@ -842,7 +859,7 @@ export function AdminTeamMemberPanel({ memberType }: Props) {
             loading={!syncMediaMutation.isPending && (uploadPhotoMutation.isPending || deletePhotoMutation.isPending || setBadgeMutation.isPending || deleteBadgeMutation.isPending || setPhotoUrlMutation.isPending)}
             onClick={async () => {
               if (pendingMediaAction) {
-                await executePendingAction(pendingMediaAction, false)
+                await executePendingAction(pendingMediaAction, false).catch(() => {})
               }
               setShowSyncMediaModal(false)
               setPendingMediaAction(null)
@@ -852,7 +869,7 @@ export function AdminTeamMemberPanel({ memberType }: Props) {
           <Button variant="primary" size="sm"
             onClick={async () => {
               if (pendingMediaAction) {
-                await executePendingAction(pendingMediaAction, true)
+                await executePendingAction(pendingMediaAction, true).catch(() => {})
               }
               setShowSyncMediaModal(false)
               setPendingMediaAction(null)

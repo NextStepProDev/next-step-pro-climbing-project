@@ -1,5 +1,6 @@
 package pl.nextsteppro.climbing.api.admin.assets;
 
+import pl.nextsteppro.climbing.infrastructure.storage.FileUrlReferences;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -25,13 +26,16 @@ public class AdminAssetsService {
 
     private final SharedAssetRepository sharedAssetRepository;
     private final FileStorageService fileStorageService;
+    private final FileUrlReferences fileUrlReferences;
     private final String baseUrl;
 
     public AdminAssetsService(SharedAssetRepository sharedAssetRepository,
                               FileStorageService fileStorageService,
+                              FileUrlReferences fileUrlReferences,
                               @Value("${app.base-url}") String baseUrl) {
         this.sharedAssetRepository = sharedAssetRepository;
         this.fileStorageService = fileStorageService;
+        this.fileUrlReferences = fileUrlReferences;
         this.baseUrl = baseUrl;
     }
 
@@ -58,8 +62,11 @@ public class AdminAssetsService {
         SharedAsset asset = sharedAssetRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Asset not found"));
 
+        // Same as a gallery photo: picked from the library, the URL may be in use on a page.
         try {
-            fileStorageService.delete(asset.getFilename(), FOLDER);
+            if (!fileUrlReferences.isReferenced(FOLDER, asset.getFilename())) {
+                fileStorageService.delete(asset.getFilename(), FOLDER);
+            }
         } catch (IOException e) {
             logger.warn("Failed to delete asset file: {}", e.getMessage());
         }

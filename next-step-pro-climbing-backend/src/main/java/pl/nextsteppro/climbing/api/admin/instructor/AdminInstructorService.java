@@ -85,11 +85,13 @@ public class AdminInstructorService {
         if (request.lastName() != null) {
             instructor.setLastName(request.lastName());
         }
+        // A blank value CLEARS the field (null still means "leave it"): the editor sends "" for an
+        // emptied bio, and dropping it here left the old text in place with no way to remove it.
         if (request.bio() != null) {
-            instructor.setBio(request.bio());
+            instructor.setBio(request.bio().isBlank() ? null : request.bio());
         }
         if (request.certifications() != null) {
-            instructor.setCertifications(request.certifications());
+            instructor.setCertifications(request.certifications().isBlank() ? null : request.certifications());
         }
         if (request.active() != null) {
             instructor.setActive(request.active());
@@ -143,19 +145,23 @@ public class AdminInstructorService {
         Instructor instructor = instructorRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Instructor not found"));
 
-        if (instructor.getPhotoFilename() != null) {
-            if (!instructorRepository.existsByPhotoFilenameAndIdNot(instructor.getPhotoFilename(), id)) {
-                try {
-                    fileStorageService.delete(instructor.getPhotoFilename(), "instructors");
-                } catch (IOException e) {
-                    logger.warn("Failed to delete old photo: {}", e.getMessage());
-                }
-            }
-        }
-
+        // ⚠️ Store the new file BEFORE removing the old one: the other way round, a failed store
+        // (bad image, full disk) left the row pointing at a file that was already gone.
+        String previous = instructor.getPhotoFilename();
         String filename = fileStorageService.store(file, "instructors");
         instructor.setPhotoFilename(filename);
+        // An external photo URL wins when both exist (FileUrls.preferExternal), so an upload over a
+        // photo picked from the gallery was saved and never shown. Uploading means "this photo".
+        instructor.setPhotoExternalUrl(null);
         instructorRepository.save(instructor);
+
+        if (previous != null && !instructorRepository.existsByPhotoFilenameAndIdNot(previous, id)) {
+            try {
+                fileStorageService.delete(previous, "instructors");
+            } catch (IOException e) {
+                logger.warn("Failed to delete old photo: {}", e.getMessage());
+            }
+        }
     }
 
     @CacheEvict(value = "instructorList", allEntries = true)
@@ -200,7 +206,9 @@ public class AdminInstructorService {
         copy.setProfile8aUrl(source.getProfile8aUrl());
         copy.setMemberType(source.getMemberType());
         copy.setActive(source.isActive());
-        copy.setDisplayOrder(instructorRepository.findMinDisplayOrder().orElse(1) - 1);
+        // The source's own position, so the member sits in the same place in every language. A
+        // fresh min-1 put every new translation at the top of its list.
+        copy.setDisplayOrder(source.getDisplayOrder());
 
         copy = instructorRepository.save(copy);
         return toAdminDto(copy);
@@ -214,12 +222,13 @@ public class AdminInstructorService {
                 .stream()
                 .filter(i -> i.getMemberType() == target.getMemberType() && i.getLanguage().equals(target.getLanguage()))
                 .toList();
+        renumber(group);
         int idx = indexOfId(group, id);
         if (idx > 0) {
             swap(group.get(idx), group.get(idx - 1));
             instructorRepository.saveAll(List.of(group.get(idx), group.get(idx - 1)));
-            syncDisplayOrder(group.get(idx));
-            syncDisplayOrder(group.get(idx - 1));
+            // Every member, not only the two swapped: renumbering may have moved them all.
+            group.forEach(this::syncDisplayOrder);
         }
         return instructorRepository.findAllByOrderByDisplayOrderAscCreatedAtAsc()
                 .stream().map(this::toAdminDto).toList();
@@ -233,12 +242,13 @@ public class AdminInstructorService {
                 .stream()
                 .filter(i -> i.getMemberType() == target.getMemberType() && i.getLanguage().equals(target.getLanguage()))
                 .toList();
+        renumber(group);
         int idx = indexOfId(group, id);
         if (idx >= 0 && idx < group.size() - 1) {
             swap(group.get(idx), group.get(idx + 1));
             instructorRepository.saveAll(List.of(group.get(idx), group.get(idx + 1)));
-            syncDisplayOrder(group.get(idx));
-            syncDisplayOrder(group.get(idx + 1));
+            // Every member, not only the two swapped: renumbering may have moved them all.
+            group.forEach(this::syncDisplayOrder);
         }
         return instructorRepository.findAllByOrderByDisplayOrderAscCreatedAtAsc()
                 .stream().map(this::toAdminDto).toList();
@@ -249,6 +259,20 @@ public class AdminInstructorService {
             if (!sibling.getId().equals(instructor.getId()) && sibling.getDisplayOrder() != instructor.getDisplayOrder()) {
                 sibling.setDisplayOrder(instructor.getDisplayOrder());
                 instructorRepository.save(sibling);
+            }
+        }
+    }
+
+    /**
+     * Gives a language/type group distinct consecutive positions before a swap. Positions are copied
+     * across languages ({@link #syncDisplayOrder}) into groups with other members, so two people can
+     * end up with the same number — and swapping two equal numbers is an arrow that does nothing.
+     */
+    private void renumber(List<Instructor> group) {
+        for (int i = 0; i < group.size(); i++) {
+            if (group.get(i).getDisplayOrder() != i) {
+                group.get(i).setDisplayOrder(i);
+                instructorRepository.save(group.get(i));
             }
         }
     }
