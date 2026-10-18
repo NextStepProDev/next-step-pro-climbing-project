@@ -12,6 +12,20 @@ public interface GuestReservationRepository extends JpaRepository<GuestReservati
 
     List<GuestReservation> findByTimeSlotId(UUID slotId);
 
+    /**
+     * A slot's guests with no money recorded against them — the ones blocking the slot may remove.
+     * ⚠️ A guest's charges and payments go with the guest row (ON DELETE CASCADE), so releasing one
+     * who had paid would erase revenue without a word. Existence only: no amount leaves the money
+     * tables through this query.
+     */
+    @Query(value = """
+        SELECT g.* FROM guest_reservations g
+        WHERE g.time_slot_id = :slotId
+          AND NOT EXISTS (SELECT 1 FROM settlements s WHERE s.guest_reservation_id = g.id)
+          AND NOT EXISTS (SELECT 1 FROM payments p WHERE p.guest_reservation_id = g.id)
+        """, nativeQuery = true)
+    List<GuestReservation> findByTimeSlotIdWithoutMoney(@Param("slotId") UUID slotId);
+
     List<GuestReservation> findByEventId(UUID eventId);
 
     /**

@@ -229,7 +229,8 @@ class AdminSettlementStatsService implements UnassignedSessionCounter {
         List<PaymentExportRowDto> payments = ledger.payments().stream()
             .filter(row -> !row.receivedOn().isBefore(from) && !row.receivedOn().isAfter(to))
             .sorted(Comparator.comparing(PaymentRow::receivedOn).thenComparing(PaymentRow::createdAt))
-            .map(row -> new PaymentExportRowDto(row.receivedOn(), row.payerName(), row.amount(),
+            .map(row -> new PaymentExportRowDto(row.receivedOn(),
+                row.isErased() ? ERASED_PAYER : row.payerName(), row.amount(),
                 row.enteredTitle()))
             .toList();
         return new SettlementExportDto(lines, payments);
@@ -400,6 +401,11 @@ class AdminSettlementStatsService implements UnassignedSessionCounter {
             .sorted(Comparator.comparing(SettlementRow::targetDate))
             .toList();
         for (SettlementRow row : sorted) {
+            // A deleted account owes nobody anything we could chase (V104) — the row stays only so
+            // its payments keep their split in revenue.
+            if (row.isErased()) {
+                continue;
+            }
             BigDecimal remaining = ledger.stateOf(row).remaining();
             if (remaining.signum() == 0) {
                 continue;
@@ -438,6 +444,10 @@ class AdminSettlementStatsService implements UnassignedSessionCounter {
         Map<String, BigDecimal> byPayer = new LinkedHashMap<>();
         List<PaymentRow> kept = new ArrayList<>();
         for (PaymentRow payment : ledger.payments()) {
+            // Nobody to give it back to, and nobody to price the next session for.
+            if (payment.isErased()) {
+                continue;
+            }
             BigDecimal unused = ledger.of(payment.payerKey()).unallocatedOf(payment.id());
             if (unused.signum() > 0) {
                 kept.add(payment);
@@ -882,7 +892,9 @@ class AdminSettlementStatsService implements UnassignedSessionCounter {
         // fill the ranking with every client ever, at 0 paid and 0 owed.
         for (PaymentRow payment : ledger.payments()) {
             LocalDate paidOn = payment.receivedOn();
-            if (paidOn.isBefore(from) || paidOn.isAfter(to)) {
+            // A ranking of people has no row for somebody who is no longer one (V104). Their money
+            // is in the revenue total above it; this list answers "who", and that answer is gone.
+            if (paidOn.isBefore(from) || paidOn.isAfter(to) || payment.isErased()) {
                 continue;
             }
             Accumulator acc = byPayer.computeIfAbsent(payment.payerKey(),
@@ -895,7 +907,7 @@ class AdminSettlementStatsService implements UnassignedSessionCounter {
             }
         }
         for (SettlementRow row : ledger.charges()) {
-            if (row.targetDate().isBefore(from) || row.targetDate().isAfter(to)) {
+            if (row.targetDate().isBefore(from) || row.targetDate().isAfter(to) || row.isErased()) {
                 continue;
             }
             BigDecimal remaining = ledger.stateOf(row).remaining();
@@ -968,6 +980,9 @@ class AdminSettlementStatsService implements UnassignedSessionCounter {
     // ------------------------------------------------------------------ shared
 
     private static String nameOf(SettlementRow row) {
+        if (row.isErased()) {
+            return ERASED_PAYER;
+        }
         if (row.isGuest()) {
             String note = row.guestNote();
             return note == null ? "" : note;
@@ -988,6 +1003,9 @@ class AdminSettlementStatsService implements UnassignedSessionCounter {
      * dominate a response it is repeated on once per row.
      */
     private static final int MAX_LABEL_LENGTH = 100;
+
+    /** The payer column for a deleted account (V104): language-neutral, since the file is built in any UI language. */
+    private static final String ERASED_PAYER = "—";
 
     /**
      * Truncates rather than rejects, because the label is decoration: a caller that sends something

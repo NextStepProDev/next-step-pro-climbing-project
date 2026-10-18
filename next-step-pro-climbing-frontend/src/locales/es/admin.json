@@ -366,7 +366,7 @@
     "blockTitle": "Bloquear franja horaria",
     "deleteTitle": "Eliminar franja horaria",
     "hasActiveReservations": "¡Esta franja horaria tiene reservas activas!",
-    "blockWarning": "Bloquear la franja horaria cancelará las reservas y notificará a los usuarios por email.",
+    "blockWarning": "Bloquear la franja horaria cancelará las reservas y notificará a los usuarios por email. Los invitados añadidos a mano también se eliminan (no reciben email); un invitado con un importe o pago registrado se mantiene.",
     "deleteWarning": "Eliminar la franja horaria cancelará las reservas y notificará a los usuarios por email.",
     "archivedDeleteWarning": "Esta franja horaria ya pasó — eliminarla borra permanentemente las reservas archivadas. Los participantes no serán notificados.",
     "registered": "Inscritos ({{count}})",

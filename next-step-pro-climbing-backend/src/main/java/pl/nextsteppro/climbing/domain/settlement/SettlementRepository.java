@@ -44,7 +44,7 @@ public interface SettlementRepository extends JpaRepository<Settlement, UUID> {
         SELECT new pl.nextsteppro.climbing.domain.settlement.SettlementRow(
             s.id, ts.id, e.id, s.periodMonth, u.id, u.firstName, u.lastName, g.id, g.note,
             COALESCE(ts.date, e.startDate, s.periodMonth), COALESCE(ts.title, e.title), e.eventType,
-            s.amount, s.createdAt)
+            s.amount, s.createdAt, s.erasedPayerId)
         FROM Settlement s
         LEFT JOIN s.timeSlot ts
         LEFT JOIN s.event e

@@ -16,9 +16,10 @@ import java.util.UUID;
  * {@code ReservationStatsRow} and {@code UserBookingAggregate} exist. The whole tab is built from
  * these in one pass in Java, so the query count stays constant in the number of settlements.
  *
- * <p>Exactly one of {@code slotId} / {@code eventId} is set, and exactly one of {@code userId} /
- * {@code guestId} — the CHECKs in V92 guarantee it, so a reader may branch on {@code eventId != null}
- * without a third case.
+ * <p>At most one of {@code slotId} / {@code eventId} is set (neither = a monthly fee), and exactly one
+ * of {@code userId} / {@code guestId} / {@code erasedPayerId} — the CHECKs in V92, V94 and V104
+ * guarantee it. ⚠️ The third payer is a deleted account: anything addressing a payer by type has to
+ * skip {@link #isErased()} rows rather than fall through to "guest".
  *
  * <p>A charge only — whether it is paid comes from {@link PaymentAllocator}, never from this row.
  *
@@ -41,7 +42,8 @@ public record SettlementRow(
     @Nullable String targetTitle,
     @Nullable EventType eventType,
     BigDecimal amount,
-    Instant createdAt
+    Instant createdAt,
+    @Nullable UUID erasedPayerId
 ) {
 
     /** This row as the allocator sees it. */
@@ -68,6 +70,14 @@ public record SettlementRow(
      * invent a client.
      */
     public String payerKey() {
-        return userId != null ? "u:" + userId : "g:" + guestId;
+        return userId != null ? "u:" + userId : guestId != null ? "g:" + guestId : "x:" + erasedPayerId;
+    }
+
+    /**
+     * The account behind this row was deleted (V104): the money stays for the books, the person does
+     * not. Counts in revenue, never in debt, credit or anything that names or chases somebody.
+     */
+    public boolean isErased() {
+        return erasedPayerId != null;
     }
 }
