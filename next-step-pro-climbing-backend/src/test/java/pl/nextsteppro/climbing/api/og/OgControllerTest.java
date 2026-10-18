@@ -95,6 +95,32 @@ class OgControllerTest {
     }
 
     @Test
+    void shouldNotLetAThumbnailUrlBreakOutOfItsAttribute() {
+        // The image URL is typed by an admin (a pasted external URL) and went into content="%s" raw,
+        // while the title next to it was escaped. Anyone can open /api/og/* directly, and a quote in
+        // the URL closed the attribute — enough for a meta refresh to a phishing page.
+        UUID id = UUID.randomUUID();
+        String payload = "https://x.pl/a.jpg\"><meta http-equiv=\"refresh\" content=\"0;url=https://evil.example\">";
+        when(newsService.getPublishedById(eq(id), any())).thenReturn(newsDto(id, "Tytuł", "opis", payload));
+
+        String html = controller.newsOg(id).getBody();
+
+        assertFalse(html.contains("evil.example\">"), "the payload must not close the attribute");
+        assertFalse(html.contains("<meta http-equiv=\"refresh\" content=\"0;url=https://evil"));
+    }
+
+    @Test
+    void shouldFallBackToTheDefaultImageForANonHttpThumbnail() {
+        UUID id = UUID.randomUUID();
+        when(newsService.getPublishedById(eq(id), any()))
+                .thenReturn(newsDto(id, "Tytuł", "opis", "javascript:alert(1)"));
+
+        String html = controller.newsOg(id).getBody();
+
+        assertTrue(html.contains("<meta property=\"og:image\" content=\"" + BASE + "/og-image.jpg\">"));
+    }
+
+    @Test
     void shouldFallBackToDefaultImageWhenThumbnailMissing() {
         // Given
         UUID id = UUID.randomUUID();

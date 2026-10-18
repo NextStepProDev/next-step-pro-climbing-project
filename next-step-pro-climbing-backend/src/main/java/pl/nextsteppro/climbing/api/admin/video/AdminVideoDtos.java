@@ -1,5 +1,6 @@
 package pl.nextsteppro.climbing.api.admin.video;
 
+import pl.nextsteppro.climbing.infrastructure.validation.HttpUrl;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import org.jspecify.annotations.Nullable;
@@ -29,13 +30,13 @@ public class AdminVideoDtos {
             @NotBlank @Size(max = 500) String title,
             @Nullable String excerpt,
             @Nullable String content,
-            @NotBlank @Size(max = 2048) String youtubeUrl
+            @NotBlank @Size(max = 2048) @HttpUrl String youtubeUrl
     ) {}
 
     public record UpdateVideoRequest(
             @Nullable @Size(max = 500) String title,
             @Nullable String excerpt,
             @Nullable String content,
-            @Nullable @Size(max = 2048) String youtubeUrl
+            @Nullable @Size(max = 2048) @HttpUrl String youtubeUrl
     ) {}
 }

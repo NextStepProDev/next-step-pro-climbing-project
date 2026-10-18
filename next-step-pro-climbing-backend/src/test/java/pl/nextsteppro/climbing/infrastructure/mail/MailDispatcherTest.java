@@ -147,4 +147,18 @@ class MailDispatcherTest {
         // 1 initial attempt + 2 retries
         verify(mailSender, times(3)).send(any(MimeMessage.class));
     }
+
+    @Test
+    void shouldKeepASubjectOnOneHeaderLine() throws Exception {
+        // Subjects carry names (admin notifications) and admin-typed text (bulk mail). A CR/LF in
+        // either must not reach the header as a line break.
+        var sent = org.mockito.ArgumentCaptor.forClass(MimeMessage.class);
+
+        dispatcher.sendHtml("user@example.com", "Nowa rezerwacja\r\nBcc: someone@evil.example", "<p>Body</p>");
+
+        verify(mailSender).send(sent.capture());
+        String subject = sent.getValue().getSubject();
+        org.junit.jupiter.api.Assertions.assertFalse(subject.contains("\r") || subject.contains("\n"));
+        assertNull(sent.getValue().getHeader("Bcc"));
+    }
 }

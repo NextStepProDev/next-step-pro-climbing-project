@@ -174,7 +174,16 @@ public class OgController {
         return escapeHtml(dateStr);
     }
 
-    private String buildHtml(String type, String title, String description, String image, String pageUrl) {
+    /**
+     * ⚠️ {@code image} and {@code pageUrl} arrive RAW and are escaped here, unlike title and
+     * description, which callers escape. The image is an admin-typed URL that used to go into
+     * {@code content="%s"} as it came: a quote in it closed the attribute, and these stubs are
+     * public — a meta refresh to a phishing page was one pasted URL away. Anything but http(s)
+     * falls back to the site image rather than being escaped into a working {@code javascript:}.
+     */
+    private String buildHtml(String type, String title, String description, String rawImage, String rawPageUrl) {
+        String image = escapeHtml(isHttpUrl(rawImage) ? rawImage : baseUrl + "/og-image.jpg");
+        String pageUrl = escapeHtml(rawPageUrl);
         return """
                 <!DOCTYPE html>
                 <html lang="pl">
@@ -200,6 +209,11 @@ public class OgController {
                 </html>
                 """.formatted(title, description, pageUrl, type, title, description, image, pageUrl,
                               title, description, image, pageUrl);
+    }
+
+    private static boolean isHttpUrl(String s) {
+        String lower = s.trim().toLowerCase(java.util.Locale.ROOT);
+        return lower.startsWith("https://") || lower.startsWith("http://");
     }
 
     private static String escapeHtml(String s) {

@@ -634,4 +634,14 @@ class NewsServiceTest {
             throw e;
         }
     }
+
+    @org.junit.jupiter.api.Test
+    void shouldSearchForWildcardCharactersAsThemselves() {
+        // "100%" matched every title, "a_b" any three-letter run: LIKE wildcards from the search box.
+        org.junit.jupiter.api.Assertions.assertEquals("100\\%", NewsService.likePattern("100%"));
+        org.junit.jupiter.api.Assertions.assertEquals("a\\_b", NewsService.likePattern("a_b"));
+        org.junit.jupiter.api.Assertions.assertEquals("c:\\\\x", NewsService.likePattern("c:\\x"));
+        org.junit.jupiter.api.Assertions.assertEquals(100, NewsService.likePattern("x".repeat(500)).length());
+        org.junit.jupiter.api.Assertions.assertNull(NewsService.likePattern(null));
+    }
 }

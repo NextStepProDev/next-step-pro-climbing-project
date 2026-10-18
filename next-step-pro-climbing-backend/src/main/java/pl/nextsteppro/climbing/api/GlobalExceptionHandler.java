@@ -73,7 +73,10 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<ErrorResponse> handleDataIntegrity(DataIntegrityViolationException ex) {
-        log.error("Data integrity violation", ex);
+        // ERROR on purpose (a broken FK must be loud) — but not the raw exception: Postgres puts
+        // the offending VALUES in it ("Key (email)=(ola@…) already exists"), and the register race
+        // reaches this handler with somebody's address.
+        log.error("Data integrity violation: {}", redactKeyValues(rootMessage(ex)));
         return ResponseEntity.status(HttpStatus.CONFLICT)
             .body(new ErrorResponse("CONFLICT", messageService.get("error.conflict"), Instant.now()));
     }
@@ -212,4 +215,18 @@ public class GlobalExceptionHandler {
     }
 
     record ErrorResponse(String code, String message, Instant timestamp) {}
+
+    static String rootMessage(Throwable ex) {
+        Throwable root = ex;
+        while (root.getCause() != null && root.getCause() != root) {
+            root = root.getCause();
+        }
+        String message = root.getMessage();
+        return root.getClass().getSimpleName() + ": " + (message == null ? "" : message);
+    }
+
+    /** "Key (email)=(ola@x.pl)" → "Key (email)=(…)": which constraint, never whose data. */
+    static String redactKeyValues(String message) {
+        return message.replaceAll("\\(([^()]*)\\)=\\(([^()]*(?:\\([^()]*\\)[^()]*)*)\\)", "($1)=(…)");
+    }
 }

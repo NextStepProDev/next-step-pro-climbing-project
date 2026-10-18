@@ -33,6 +33,16 @@ public class ImageOptimizer {
      */
     private static final long MAX_PIXELS = 40_000_000L;
 
+    /**
+     * One decode at a time. The pixel ceiling bounds ONE image (~160 MB of raster at 40 Mpx, twice
+     * that in {@link #reencodeAsJpeg}, which draws an opaque copy) — and nothing bounded how many ran
+     * at once: three concurrent uploads within the upload rate limit reach the heap (~846 MB) and
+     * {@code ExitOnOutOfMemoryError} restarts the backend for everybody. Uploads are rare and a
+     * decode takes well under a second, so serialising them costs nothing anybody would notice.
+     */
+    private static final java.util.concurrent.Semaphore DECODES = new java.util.concurrent.Semaphore(1, true);
+    private static final long DECODE_WAIT_SECONDS = 30;
+
     /** Quality for the forced re-encode. Higher than the CMS default: attachments are often
      *  screenshots of a watch or an app, where JPEG artefacts land on small digits and fine text. */
     private static final double ATTACHMENT_QUALITY = 0.9;
@@ -55,6 +65,15 @@ public class ImageOptimizer {
     public OptimizedImage reencodeAsJpeg(InputStream inputStream) throws IOException {
         byte[] originalBytes = inputStream.readAllBytes();
         guardPixelCount(originalBytes);
+        acquireDecodeSlot();
+        try {
+            return reencodeAsJpeg(originalBytes);
+        } finally {
+            DECODES.release();
+        }
+    }
+
+    private OptimizedImage reencodeAsJpeg(byte[] originalBytes) throws IOException {
         BufferedImage decoded = ImageIO.read(new ByteArrayInputStream(originalBytes));
         if (decoded == null) {
             // Reached when the bytes passed the signature check but no reader could handle them —
@@ -96,6 +115,15 @@ public class ImageOptimizer {
     public OptimizedImage optimize(InputStream inputStream, String extension) throws IOException {
         byte[] originalBytes = inputStream.readAllBytes();
         guardPixelCount(originalBytes);
+        acquireDecodeSlot();
+        try {
+            return optimize(originalBytes, extension);
+        } finally {
+            DECODES.release();
+        }
+    }
+
+    private OptimizedImage optimize(byte[] originalBytes, String extension) throws IOException {
         BufferedImage image = ImageIO.read(new ByteArrayInputStream(originalBytes));
 
         if (image == null) {
@@ -137,6 +165,17 @@ public class ImageOptimizer {
 
         String newExtension = "." + outputFormat;
         return new OptimizedImage(new ByteArrayInputStream(optimizedBytes), newExtension, width, height);
+    }
+
+    private static void acquireDecodeSlot() {
+        try {
+            if (!DECODES.tryAcquire(DECODE_WAIT_SECONDS, java.util.concurrent.TimeUnit.SECONDS)) {
+                throw new IllegalStateException("The server is busy processing other images, try again");
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("Image processing was interrupted", e);
+        }
     }
 
     /** Reads only the header — {@code getWidth}/{@code getHeight} never decode the raster. */

@@ -1,5 +1,6 @@
 package pl.nextsteppro.climbing.config;
 
+import pl.nextsteppro.climbing.infrastructure.mail.MailDispatcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.i18n.LocaleContextHolder;
@@ -72,8 +73,8 @@ public class OAuth2UserService extends DefaultOAuth2UserService {
                 // account. Google sets email_verified=true for consumer accounts, so this rejects
                 // nobody today; it exists so a second provider cannot open the hole silently.
                 if (!emailVerified) {
-                    log.warn("OAUTH-LINK-REJECTED: {} presented an unverified {} e-mail matching an existing account",
-                        email, provider);
+                    log.warn("OAUTH-LINK-REJECTED: {} presented an unverified {} e-mail matching account {}",
+                        MailDispatcher.maskAddress(email), provider, userByEmail.get().getId());
                     throw new OAuth2AuthenticationException(
                         "This e-mail is already registered. Verify it with your provider, or sign in with your password.");
                 }
@@ -110,7 +111,7 @@ public class OAuth2UserService extends DefaultOAuth2UserService {
         user.setPreferredLanguage(detectLanguage());
         user.setRole(adminEmailConfig.isAdminEmail(email) ? UserRole.ADMIN : UserRole.USER);
         if (user.isAdmin()) {
-            log.info("AUTO-ADMIN-PROMOTION: {} promoted to ADMIN during OAuth2 registration", email);
+            log.info("AUTO-ADMIN-PROMOTION: {} promoted to ADMIN during OAuth2 registration", MailDispatcher.maskAddress(email));
         }
         User savedUser = userRepository.save(user);
         // A fresh account is safe to create either way — nobody else owns this address yet. But we
@@ -133,7 +134,7 @@ public class OAuth2UserService extends DefaultOAuth2UserService {
         if (!user.isAdmin() && adminEmailConfig.isAdminEmail(user.getEmail())) {
             user.setRole(UserRole.ADMIN);
             userRepository.save(user);
-            log.info("AUTO-ADMIN-PROMOTION: {} promoted to ADMIN during OAuth2 login", user.getEmail());
+            log.info("AUTO-ADMIN-PROMOTION: {} promoted to ADMIN during OAuth2 login", user.getId());
         }
     }
 
@@ -195,7 +196,27 @@ public class OAuth2UserService extends DefaultOAuth2UserService {
 
     private String getStringOrDefault(Map<String, Object> map, String key, String defaultValue) {
         Object value = map.get(key);
-        return value instanceof String s ? s : defaultValue;
+        if (!(value instanceof String s)) return defaultValue;
+        String clean = cleanName(s);
+        return clean.isEmpty() ? defaultValue : clean;
+    }
+
+    /**
+     * A name as Google sends it is not a name as registration accepts it: no pattern was applied,
+     * so control characters (CR/LF straight into mail subjects) arrived as they came, and anything
+     * over the 100-character columns failed the INSERT — a sign-in that ends in a 500. Rendering is
+     * escaped separately; this keeps the stored value inside what the column and a header can hold.
+     */
+    static String cleanName(String raw) {
+        String noControls = raw.codePoints()
+            .map(cp -> Character.isISOControl(cp) ? ' ' : cp)
+            .collect(StringBuilder::new, StringBuilder::appendCodePoint, StringBuilder::append)
+            .toString()
+            .replaceAll("\\s+", " ")
+            .strip();
+        return noControls.codePointCount(0, noControls.length()) <= 100
+            ? noControls
+            : noControls.substring(0, noControls.offsetByCodePoints(0, 100));
     }
 
     private String detectLanguage() {

@@ -229,4 +229,13 @@ class OAuth2UserServiceTest {
             throw new IllegalStateException(e);
         }
     }
+
+    @Test
+    void shouldStripControlCharactersAndCapAGoogleNameToItsColumn() {
+        // No pattern ever touched given_name: CR/LF reached admin mail subjects as sent, and a name
+        // over 100 characters failed the INSERT, i.e. a Google sign-in ending in a 500.
+        assertEquals("Ola Bcc: x", OAuth2UserService.cleanName("Ola\r\nBcc: x"));
+        assertEquals(100, OAuth2UserService.cleanName("a".repeat(250)).length());
+        assertEquals("Zoë", OAuth2UserService.cleanName("  Zoë \t"));
+    }
 }

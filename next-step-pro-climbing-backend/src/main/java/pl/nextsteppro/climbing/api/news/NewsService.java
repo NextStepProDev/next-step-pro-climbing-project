@@ -47,6 +47,7 @@ public class NewsService {
         }
 
         Set<UUID> starredIds = starred ? newsStarRepository.findNewsIdsByIdUserId(userId) : Set.of();
+        q = likePattern(q);
 
         if (starred && starredIds.isEmpty()) {
             return new NewsPageDto(List.of(), page, size, 0, false);
@@ -157,5 +158,16 @@ public class NewsService {
 
     private @Nullable String imageUrl(@Nullable String externalUrl, @Nullable String filename) {
         return FileUrls.preferExternal(externalUrl, baseUrl, "news", filename);
+    }
+
+    /**
+     * The search text as a LIKE fragment: `%` and `_` are wildcards, so "100%" or "a_b" matched
+     * everything instead of themselves. Backslash is Postgres's default LIKE escape. Capped so a
+     * query string cannot become a megabyte pattern.
+     */
+    static @Nullable String likePattern(@Nullable String q) {
+        if (q == null || q.isBlank()) return q;
+        String capped = q.length() > 100 ? q.substring(0, 100) : q;
+        return capped.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
     }
 }

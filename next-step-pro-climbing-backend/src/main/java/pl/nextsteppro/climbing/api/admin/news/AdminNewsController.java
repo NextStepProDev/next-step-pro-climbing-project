@@ -174,7 +174,7 @@ public class AdminNewsController {
     @PutMapping("/{id}/thumbnail-url")
     public ResponseEntity<Void> setThumbnailUrl(
             @Parameter(description = "News article ID") @PathVariable UUID id,
-            @RequestBody AdminNewsDtos.SetThumbnailUrlRequest request) {
+            @Valid @RequestBody AdminNewsDtos.SetThumbnailUrlRequest request) {
         adminNewsService.setThumbnailUrl(id, request);
         return ResponseEntity.noContent().build();
     }
@@ -227,7 +227,7 @@ public class AdminNewsController {
     @PostMapping("/{id}/blocks/image-from-url")
     public ResponseEntity<AdminNewsDtos.ContentBlockAdminDto> addImageBlockFromUrl(
             @Parameter(description = "News article ID") @PathVariable UUID id,
-            @RequestBody AdminNewsDtos.AddImageBlockFromUrlRequest request) {
+            @Valid @RequestBody AdminNewsDtos.AddImageBlockFromUrlRequest request) {
         return ResponseEntity.ok(adminNewsService.addImageBlockFromUrl(id, request));
     }
 

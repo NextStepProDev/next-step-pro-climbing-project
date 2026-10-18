@@ -41,7 +41,8 @@ function escapeIcs(value: string): string {
     .replace(/\\/g, '\\\\')
     .replace(/,/g, '\\,')
     .replace(/;/g, '\\;')
-    .replace(/\r?\n/g, '\\n')
+    // A bare CR as well: many parsers end a content line on it, so it could start a property
+    .replace(/\r\n|\r|\n/g, '\\n')
 }
 
 export function buildGoogleCalendarUrl(event: CalendarEvent): string {

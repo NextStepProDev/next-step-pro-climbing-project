@@ -151,7 +151,7 @@ public class AdminCourseController {
     @PutMapping("/{id}/thumbnail-url")
     public ResponseEntity<Void> setThumbnailUrl(
             @Parameter(description = "ID kursu") @PathVariable UUID id,
-            @RequestBody AdminCourseDtos.SetThumbnailUrlRequest request) {
+            @Valid @RequestBody AdminCourseDtos.SetThumbnailUrlRequest request) {
         adminCourseService.setThumbnailUrl(id, request);
         return ResponseEntity.noContent().build();
     }
@@ -196,7 +196,7 @@ public class AdminCourseController {
     @PostMapping("/{id}/blocks/image-from-url")
     public ResponseEntity<ContentBlockAdminDto> addImageBlockFromUrl(
             @Parameter(description = "ID kursu") @PathVariable UUID id,
-            @RequestBody AdminCourseDtos.AddImageBlockFromUrlRequest request) {
+            @Valid @RequestBody AdminCourseDtos.AddImageBlockFromUrlRequest request) {
         return ResponseEntity.ok(adminCourseService.addImageBlockFromUrl(id, request));
     }
 

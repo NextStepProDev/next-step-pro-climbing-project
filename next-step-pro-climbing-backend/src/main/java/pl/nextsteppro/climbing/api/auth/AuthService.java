@@ -116,7 +116,7 @@ public class AuthService {
 
         if (adminEmailConfig.isAdminEmail(user.getEmail())) {
             user.setRole(UserRole.ADMIN);
-            log.info("AUTO-ADMIN-PROMOTION: {} promoted to ADMIN during registration", user.getEmail());
+            log.info("AUTO-ADMIN-PROMOTION: {} promoted to ADMIN during registration", user.getId());
         }
 
         userRepository.save(user);
@@ -181,7 +181,7 @@ public class AuthService {
         if (!user.isAdmin() && adminEmailConfig.isAdminEmail(user.getEmail())) {
             user.setRole(UserRole.ADMIN);
             userRepository.save(user);
-            log.info("AUTO-ADMIN-PROMOTION: {} promoted to ADMIN during login", user.getEmail());
+            log.info("AUTO-ADMIN-PROMOTION: {} promoted to ADMIN during login", user.getId());
         }
 
         log.info("User logged in: {}", user.getId());

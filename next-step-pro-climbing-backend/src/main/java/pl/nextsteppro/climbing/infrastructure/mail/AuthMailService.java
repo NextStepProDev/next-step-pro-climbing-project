@@ -196,7 +196,7 @@ public class AuthMailService {
             </html>
             """.formatted(
             siteUrl,
-            msg.getForLang("email.welcome.greeting", lang, firstName),
+            msg.getForLang("email.welcome.greeting", lang, esc(firstName)),
             msg.getForLang("email.welcome.body", lang),
             msg.getForLang("email.welcome.see.you", lang),
             msg.getForLang("email.footer", lang),
@@ -231,7 +231,7 @@ public class AuthMailService {
             </html>
             """.formatted(
             siteUrl,
-            msg.getForLang("email.account.deleted.greeting", lang, firstName),
+            msg.getForLang("email.account.deleted.greeting", lang, esc(firstName)),
             msg.getForLang("email.account.deleted.body", lang),
             msg.getForLang("email.account.deleted.contact", lang),
             msg.getForLang("email.footer", lang),
@@ -290,7 +290,7 @@ public class AuthMailService {
             </html>
             """.formatted(
             siteUrl,
-            msg.getForLang("email.verification.reminder.greeting", lang, firstName),
+            msg.getForLang("email.verification.reminder.greeting", lang, esc(firstName)),
             msg.getForLang("email.verification.reminder.body", lang),
             msg.getForLang("email.verification.reminder.deadline", lang),
             verificationUrl,
@@ -347,7 +347,7 @@ public class AuthMailService {
             </html>
             """.formatted(
             siteUrl,
-            msg.getForLang("email.verification.greeting", lang, firstName),
+            msg.getForLang("email.verification.greeting", lang, esc(firstName)),
             msg.getForLang("email.verification.body", lang),
             msg.getForLang("email.verification.action", lang),
             verificationUrl,
@@ -405,7 +405,7 @@ public class AuthMailService {
             </html>
             """.formatted(
             siteUrl,
-            msg.getForLang("email.reset.greeting", lang, firstName),
+            msg.getForLang("email.reset.greeting", lang, esc(firstName)),
             msg.getForLang("email.reset.body", lang),
             msg.getForLang("email.reset.action", lang),
             resetUrl,
@@ -444,7 +444,7 @@ public class AuthMailService {
             </html>
             """.formatted(
             siteUrl,
-            msg.getForLang("email.password.changed.greeting", lang, firstName),
+            msg.getForLang("email.password.changed.greeting", lang, esc(firstName)),
             msg.getForLang("email.password.changed.body", lang),
             msg.getForLang("email.password.changed.warning", lang),
             msg.getForLang("email.footer", lang),

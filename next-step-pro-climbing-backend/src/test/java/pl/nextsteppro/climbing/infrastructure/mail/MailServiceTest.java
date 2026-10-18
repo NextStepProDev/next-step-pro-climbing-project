@@ -292,6 +292,26 @@ class MailServiceTest {
     }
 
     /** The HTML part of a sent message, wherever the multipart structure put it. */
+    @Test
+    void shouldEscapeANameInTheGreeting() {
+        // Names typed at registration are pattern-checked, but a Google sign-up stores given_name as
+        // Google sends it, and the greeting interpolated it into the HTML raw. Asserted on the body
+        // handed to the dispatcher: the plain-text twin built from it rightly shows the name as text.
+        MailDispatcher dispatcher = mock(MailDispatcher.class);
+        MailService service = new MailService(dispatcher, appConfig, adminEmailConfig, msg, userService);
+        doAnswer(inv -> "Cześć " + inv.getArgument(2))
+                .when(msg).getForLang(eq("email.reservation.greeting"), any(String.class), any());
+        User user = new User("user@example.com", "<b>Ola</b><img src=x>", "K", "+48123456789", "ola");
+        user.setEmailNotificationsEnabled(true);
+
+        service.sendReservationConfirmation(createReservation(user), "Slot Title");
+
+        ArgumentCaptor<String> body = ArgumentCaptor.forClass(String.class);
+        verify(dispatcher).sendHtml(eq("user@example.com"), any(String.class), body.capture(), any());
+        assertFalse(body.getValue().contains("<img src=x>"), "a name must not become markup");
+        assertTrue(body.getValue().contains("&lt;b&gt;Ola&lt;/b&gt;"));
+    }
+
     private static String htmlOf(Part part) throws Exception {
         Object content = part.getContent();
         if (content instanceof String text) return text;
