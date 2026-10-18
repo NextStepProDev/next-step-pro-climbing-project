@@ -47,7 +47,7 @@ Aktualna zawartość — `ls`, nie ten plik. Dwa wyjątki warte zapamiętania, b
 
 ## Baza danych — Flyway
 
-**Stan: V104. Następna migracja: V105.** Wszystkie do V103 są na produkcji (103 wiersze w `flyway_schema_history`, sprawdzone 2026-10-18 po deployu 4.71.4; zrzut sprzed w `/backups/milestones/PRZED-V98-V103-*`).
+**Stan: V104. Następna migracja: V105.** Wszystkie do V104 są na produkcji (104 wiersze w `flyway_schema_history`, sprawdzone 2026-10-18 po deployu 4.72.15; zrzut sprzed w `/backups/milestones/PRZED-V104-*`).
 Lista migracji: `ls backend/src/main/resources/db/migration/` — poniżej tylko to, czego ze schematu nie widać.
 
 ⚠️ **Nigdy nie modyfikuj zastosowanej migracji** — nawet zmiana komentarza łamie checksum na produkcji.
