@@ -63,6 +63,18 @@ class CalendarReviewIntegrationTest extends BaseIntegrationTest {
     }
 
     @Test
+    void shouldStillOpenAHiddenEventFromACancelledBookingInMyReservations() {
+        // My Reservations lists cancelled bookings too (by the client and by the admin), and a card
+        // opens the event. Being no longer "registered" must not turn that click into "not found".
+        Reservation booking = reservationRepository.findAll().getFirst();
+        booking.cancelByAdmin();
+        reservationRepository.save(booking);
+        flushAndClear();
+
+        assertDoesNotThrow(() -> calendarService.getEventSummary(hidden.getId(), participant.getId()));
+    }
+
+    @Test
     void shouldCountHeldInvitationSeatsOnTheCoursePage() {
         Course course = new Course("Kurs skałkowy");
         UUID group = UUID.randomUUID();

@@ -217,8 +217,11 @@ public class CalendarService {
         // `active` is the public-visibility switch. The listings honour it; this read did not, so a
         // hidden event's title, description and location stayed one link away for anybody — a link
         // shared before the event was hidden kept working. People it concerns still see it: whoever
-        // is booked or invited (their "my reservations" opens it) and the admin.
-        if (!event.isActive() && !isUserRegistered && !isReservedForUser && !isAdmin(userId)) {
+        // is invited or holds ANY booking row on it — My Reservations opens cancelled bookings too,
+        // so "confirmed" alone turned those cards into "not found" — and the admin.
+        if (!event.isActive() && !isUserRegistered && !isReservedForUser
+            && !(userId != null && reservationRepository.existsAnyByUserIdAndEventId(userId, eventId))
+            && !isAdmin(userId)) {
             throw new IllegalArgumentException("Event not found: " + eventId);
         }
 
