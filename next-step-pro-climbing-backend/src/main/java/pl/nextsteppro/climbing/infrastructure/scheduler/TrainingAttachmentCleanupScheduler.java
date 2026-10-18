@@ -32,7 +32,7 @@ public class TrainingAttachmentCleanupScheduler {
     }
 
     /** Every 6 hours at :20 (exact hour is not important for cleanup; pairs with the 6h grace). */
-    @Scheduled(cron = "0 20 */6 * * *")
+    @Scheduled(cron = "0 20 */6 * * *", zone = "UTC")
     @Transactional
     public void sweepAbandonedUploads() {
         int deleted = attachmentSupport.sweepOrphanUploads(GRACE);
@@ -52,7 +52,7 @@ public class TrainingAttachmentCleanupScheduler {
      * "nobody ever saved this", this one "its year is up", and the day one of those windows is
      * reconsidered the other must not move with it.
      */
-    @Scheduled(cron = "0 45 3 * * *")
+    @Scheduled(cron = "0 45 3 * * *", zone = "UTC")
     @Transactional
     public void sweepExpiredMaterials() {
         int deleted = attachmentSupport.deleteExpired();

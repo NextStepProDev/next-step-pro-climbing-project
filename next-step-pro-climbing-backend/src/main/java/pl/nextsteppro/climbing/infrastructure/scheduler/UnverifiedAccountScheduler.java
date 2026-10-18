@@ -31,7 +31,7 @@ public class UnverifiedAccountScheduler {
     }
 
     /** Daily at 04:15 — an idle hour, offset from the other jobs so they do not pile up. */
-    @Scheduled(cron = "0 15 4 * * *")
+    @Scheduled(cron = "0 15 4 * * *", zone = "UTC")
     public void sweep() {
         int reminded = retention.sendReminders();
         int deleted = retention.deleteExpired();

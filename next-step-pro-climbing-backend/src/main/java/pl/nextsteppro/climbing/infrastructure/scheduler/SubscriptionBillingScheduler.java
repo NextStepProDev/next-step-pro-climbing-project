@@ -31,7 +31,7 @@ public class SubscriptionBillingScheduler {
         this.subscriptionService = subscriptionService;
     }
 
-    @Scheduled(cron = "0 50 3 * * *")
+    @Scheduled(cron = "0 50 3 * * *", zone = "UTC")
     public void billDueMonths() {
         int created = subscriptionService.billDueMonths();
         if (created > 0) {

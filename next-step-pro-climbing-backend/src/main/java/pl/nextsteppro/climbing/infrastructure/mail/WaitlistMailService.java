@@ -41,8 +41,7 @@ public class WaitlistMailService {
         this.siteUrl = appConfig.getSiteUrl();
     }
 
-    @Async
-    public void sendWaitlistOfferNotification(User user, TimeSlot slot, Instant deadline) {
+    @Async("mailExecutor")    public void sendWaitlistOfferNotification(User user, TimeSlot slot, Instant deadline) {
         if (!user.isEmailNotificationsEnabled()) return;
 
         String lang = user.getPreferredLanguage();
@@ -54,8 +53,7 @@ public class WaitlistMailService {
         sendEmail(user.getEmail(), subject, body);
     }
 
-    @Async
-    public void sendWaitlistReservationConfirmed(User user, TimeSlot slot) {
+    @Async("mailExecutor")    public void sendWaitlistReservationConfirmed(User user, TimeSlot slot) {
         if (!user.isEmailNotificationsEnabled()) return;
 
         String lang = user.getPreferredLanguage();
@@ -141,8 +139,7 @@ public class WaitlistMailService {
         );
     }
 
-    @Async
-    public void sendEventWaitlistOfferNotification(User user, Event event, Instant deadline) {
+    @Async("mailExecutor")    public void sendEventWaitlistOfferNotification(User user, Event event, Instant deadline) {
         if (!user.isEmailNotificationsEnabled()) return;
 
         String lang = user.getPreferredLanguage();
@@ -153,8 +150,7 @@ public class WaitlistMailService {
         sendEmail(user.getEmail(), subject, body);
     }
 
-    @Async
-    public void sendEventWaitlistReservationConfirmed(User user, Event event) {
+    @Async("mailExecutor")    public void sendEventWaitlistReservationConfirmed(User user, Event event) {
         if (!user.isEmailNotificationsEnabled()) return;
 
         String lang = user.getPreferredLanguage();
@@ -246,8 +242,7 @@ public class WaitlistMailService {
         );
     }
 
-    @Async
-    public void sendWaitlistJoinedConfirmation(User user, TimeSlot slot) {
+    @Async("mailExecutor")    public void sendWaitlistJoinedConfirmation(User user, TimeSlot slot) {
         if (!user.isEmailNotificationsEnabled()) return;
 
         String lang = user.getPreferredLanguage();
@@ -257,8 +252,7 @@ public class WaitlistMailService {
         sendEmail(user.getEmail(), subject, body);
     }
 
-    @Async
-    public void sendEventWaitlistJoinedConfirmation(User user, Event event) {
+    @Async("mailExecutor")    public void sendEventWaitlistJoinedConfirmation(User user, Event event) {
         if (!user.isEmailNotificationsEnabled()) return;
 
         String lang = user.getPreferredLanguage();
@@ -334,15 +328,13 @@ public class WaitlistMailService {
 
     // Admin notifications go through this service, not MailService — injecting MailService
     // into Waitlist/EventWaitlistService would create a cycle (MailService → UserService → WaitlistService).
-    @Async
-    public void sendWaitlistAdminNotification(User user, TimeSlot slot) {
+    @Async("mailExecutor")    public void sendWaitlistAdminNotification(User user, TimeSlot slot) {
         String subject = msg.getForLang("email.admin.waitlist.confirmed.subject", ADMIN_LANG, user.getFullName());
         String body = buildWaitlistAdminBody(user, slot);
         sendToAdmins(subject, body);
     }
 
-    @Async
-    public void sendEventWaitlistAdminNotification(User user, Event event) {
+    @Async("mailExecutor")    public void sendEventWaitlistAdminNotification(User user, Event event) {
         String subject = msg.getForLang("email.admin.event.waitlist.confirmed.subject", ADMIN_LANG, user.getFullName());
         String body = buildEventWaitlistAdminBody(user, event);
         sendToAdmins(subject, body);

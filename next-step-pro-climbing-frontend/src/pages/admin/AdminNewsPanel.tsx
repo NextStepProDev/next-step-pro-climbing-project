@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useToast } from '../../context/ToastContext'
 import { getErrorMessage } from '../../utils/errors'
+import { dateTimeLocalChanged, toDateTimeLocalValue } from '../../utils/dateTimeLocal'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import {
@@ -862,12 +863,11 @@ function EditView({
               <div className="flex items-center gap-2">
                 <input
                   type="datetime-local"
-                  defaultValue={new Date(new Date(detail.publishedAt).getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16)}
+                  defaultValue={toDateTimeLocalValue(detail.publishedAt)}
                   onBlur={(e) => {
-                    if (!e.target.value) return
-                    const newDate = new Date(e.target.value).toISOString()
-                    if (newDate !== detail.publishedAt) {
-                      updatePublishedAtMutation.mutate(newDate)
+                    if (!e.target.value || !detail.publishedAt) return
+                    if (dateTimeLocalChanged(e.target.value, detail.publishedAt)) {
+                      updatePublishedAtMutation.mutate(new Date(e.target.value).toISOString())
                     }
                   }}
                   className="bg-surface-700 border border-surface-600 rounded px-3 py-2 text-surface-100 text-sm focus:outline-none focus:border-primary-500"
