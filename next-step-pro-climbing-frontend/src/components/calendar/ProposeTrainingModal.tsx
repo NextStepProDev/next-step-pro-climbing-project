@@ -16,6 +16,8 @@ import { getErrorMessage } from '../../utils/errors'
 import { useDateLocale } from '../../utils/dateFnsLocale'
 import { nowInWarsaw, parseCalendarDate, todayInWarsaw } from '../../utils/calendarDate'
 import { minutesToTime, timeToMinutes } from '../../utils/timeOfDay'
+import { useDirty } from '../../hooks/useDirty'
+import { ModalCancelButton } from '../ui/ModalCancelButton'
 
 /** Availability window the request is submitted in — constrains the date and times. */
 export interface ProposeWindow {
@@ -73,6 +75,7 @@ export function ProposeTrainingModal({ isOpen, onClose, defaultDate, window: pro
     comment: '',
   })
   const [showSuccess, setShowSuccess] = useState(false)
+  const isDirty = useDirty(form) && !showSuccess
 
   const { data: courses = [] } = useQuery({
     queryKey: ['courses', i18n.language],
@@ -115,7 +118,9 @@ export function ProposeTrainingModal({ isOpen, onClose, defaultDate, window: pro
   return (
     <>
       {showSuccess && <SuccessCheckmark onDone={() => { setShowSuccess(false); onClose() }} />}
-      <Modal isOpen={isOpen} onClose={onClose} title={t('propose.title')}>
+      {/* The client may have typed a long comment (up to 1000 characters) — a misplaced tap outside
+          the dialog used to throw it away. */}
+      <Modal isOpen={isOpen} onClose={onClose} title={t('propose.title')} confirmClose={() => isDirty}>
         {!isAuthenticated ? (
           <div className="text-center py-6">
             <LogIn className="w-10 h-10 text-primary-500 mx-auto mb-3" />
@@ -215,9 +220,7 @@ export function ProposeTrainingModal({ isOpen, onClose, defaultDate, window: pro
               <Button type="submit" loading={createMutation.isPending} className="flex-1">
                 {t('propose.submit')}
               </Button>
-              <Button type="button" variant="ghost" onClick={onClose}>
-                {t('propose.cancel')}
-              </Button>
+              <ModalCancelButton onClose={onClose}>{t('propose.cancel')}</ModalCancelButton>
             </div>
 
             {createMutation.isError && (
