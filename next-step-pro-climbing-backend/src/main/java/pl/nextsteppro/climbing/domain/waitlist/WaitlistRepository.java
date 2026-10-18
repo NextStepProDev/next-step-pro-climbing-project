@@ -57,11 +57,11 @@ public interface WaitlistRepository extends JpaRepository<Waitlist, UUID> {
     @Query("SELECT COUNT(w) FROM Waitlist w WHERE w.createdAt > :since AND w.status <> 'EXPIRED'")
     int countActiveCreatedAfter(Instant since);
 
-    @Modifying(clearAutomatically = true)
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("DELETE FROM Waitlist w WHERE w.timeSlot.id = :slotId")
     void deleteByTimeSlotId(UUID slotId);
 
-    @Modifying(clearAutomatically = true)
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("DELETE FROM Waitlist w WHERE w.timeSlot.id IN :slotIds")
     void deleteByTimeSlotIdIn(Collection<UUID> slotIds);
 }

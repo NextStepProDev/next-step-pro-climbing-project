@@ -35,6 +35,8 @@ public interface UserRepository extends JpaRepository<User, UUID> {
      */
     int countByEmailVerifiedAtAfter(Instant seenAt);
 
+    long countByRole(UserRole role);
+
     /**
      * Accounts that never confirmed their address and were registered before {@code cutoff}.
      * Serves both retention passes: the reminder reads the [6d, 7d) band, the deletion everything

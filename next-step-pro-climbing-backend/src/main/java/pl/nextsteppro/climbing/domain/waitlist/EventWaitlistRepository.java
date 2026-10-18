@@ -54,7 +54,7 @@ public interface EventWaitlistRepository extends JpaRepository<EventWaitlist, UU
     @Query("SELECT COUNT(w) FROM EventWaitlist w WHERE w.createdAt > :since AND w.status <> 'EXPIRED'")
     int countActiveCreatedAfter(Instant since);
 
-    @Modifying(clearAutomatically = true)
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("DELETE FROM EventWaitlist w WHERE w.event.id = :eventId")
     void deleteByEventId(UUID eventId);
 }
