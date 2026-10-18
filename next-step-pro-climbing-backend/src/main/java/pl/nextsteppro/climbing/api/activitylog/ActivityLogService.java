@@ -73,6 +73,15 @@ public class ActivityLogService {
         save(user, ActivityActionType.RESERVATION_CANCELLED_BY_ADMIN, timeSlot, null, participants, null);
     }
 
+    /**
+     * For a cancellation that deletes the term itself. The slot reference goes {@code SET NULL} with
+     * the row, so without a written-down term the client's timeline said "cancelled by admin" about
+     * nothing at all — the same snapshot the admin's own deletion entry keeps.
+     */
+    public void logCancelledByAdmin(User user, TimeSlot timeSlot, int participants, String deletedTerm) {
+        save(user, ActivityActionType.RESERVATION_CANCELLED_BY_ADMIN, timeSlot, null, participants, deletedTerm);
+    }
+
     public void logAdminSlotCreated(User admin, TimeSlot slot) {
         save(admin, ActivityActionType.ADMIN_SLOT_CREATED, slot, null, null, null);
     }

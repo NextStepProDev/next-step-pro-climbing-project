@@ -200,7 +200,8 @@ public class AdminService {
         @CacheEvict(value = "calendarDay", allEntries = true)
     })
     public SlotUpdateResultDto updateTimeSlot(UUID adminId, UUID slotId, UpdateTimeSlotRequest request) {
-        TimeSlot slot = requireSlot(slotId);
+        // Locked: lowering the capacity checks it against the seats taken right now.
+        TimeSlot slot = requireSlotForUpdate(slotId);
 
         LocalDate oldDate = slot.getDate();
         LocalTime oldStart = slot.getStartTime();
@@ -409,7 +410,7 @@ public class AdminService {
         for (Reservation reservation : confirmed) {
             reservation.getUser();     // force-load user proxy while still managed
             reservation.getTimeSlot(); // force-load timeSlot proxy while still managed
-            activityLogService.logCancelledByAdmin(reservation.getUser(), slot, reservation.getParticipants());
+            activityLogService.logCancelledByAdmin(reservation.getUser(), slot, reservation.getParticipants(), slotDesc);
         }
 
         // Since V97 a slot can hold athlete <-> coach threads, and their attachments have to be
@@ -688,7 +689,8 @@ public class AdminService {
         @CacheEvict(value = "calendarDay", allEntries = true)
     })
     public EventUpdateResultDto updateEvent(UUID adminId, UUID eventId, UpdateEventRequest request) {
-        Event event = requireEvent(eventId);
+        // Locked for the same reason as the slot twin: the capacity check reads live occupancy.
+        Event event = requireEventForUpdate(eventId);
 
         String oldTitle = event.getTitle();
         String oldLocation = event.getLocation();
@@ -872,12 +874,19 @@ public class AdminService {
         Map<UUID, User> notifiedUsers = new LinkedHashMap<>();
         if (!slotIds.isEmpty()) {
             List<Reservation> confirmed = reservationRepository.findConfirmedByTimeSlotIds(slotIds);
+            // One entry per person, not per day: a three-day course is one booking everywhere the
+            // user looks (one mail, one cancellation of their own), so the timeline said "cancelled"
+            // three times for one decision.
+            Set<UUID> logged = new HashSet<>();
             for (Reservation reservation : confirmed) {
                 User user = reservation.getUser(); // force-load lazy proxy while still managed
                 if (!isPast) {
                     notifiedUsers.putIfAbsent(user.getId(), user);
                 }
-                activityLogService.logCancelledByAdmin(user, reservation.getTimeSlot(), reservation.getParticipants());
+                if (logged.add(user.getId())) {
+                    activityLogService.logCancelledByAdmin(user, reservation.getTimeSlot(),
+                        reservation.getParticipants(), eventDesc);
+                }
             }
         }
 
@@ -932,7 +941,13 @@ public class AdminService {
         User admin = userRepository.findById(adminId).orElseThrow();
         Instant newSince = admin.getAdminReservationsSeenAt();
         LocalDate today = LocalDate.now(WARSAW);
-        List<TimeSlot> slots = timeSlotRepository.findByDateRangeOrdered(today, today.plusYears(1));
+        LocalTime now = LocalTime.now(WARSAW);
+        // The date range alone starts at today's midnight, so a session that ended this morning
+        // sat in this list AND in the past one (findPastOrdered takes today's ended slots) — the
+        // same booking twice, on both tabs. Same cut as getUpcomingSlots.
+        List<TimeSlot> slots = timeSlotRepository.findByDateRangeOrdered(today, today.plusYears(1)).stream()
+            .filter(slot -> slot.getDate().isAfter(today) || slot.getEndTime().isAfter(now))
+            .toList();
         return buildReservationAdminDtos(slots, newSince);
     }
 
@@ -1019,6 +1034,12 @@ public class AdminService {
 
         if (!user.isAdmin()) {
             throw new IllegalStateException(msg.get("admin.user.not.admin"));
+        }
+        // The panel offers this button on every admin row, the caller's own included. Demoting the
+        // only admin leaves nobody who can promote anyone back — ADMIN_EMAIL only works at
+        // registration — so the way out would be SQL on the production database.
+        if (userRepository.countByRole(UserRole.ADMIN) <= 1) {
+            throw new IllegalStateException(msg.get("admin.user.last.admin"));
         }
 
         user.setRole(UserRole.USER);
@@ -1345,6 +1366,34 @@ public class AdminService {
             .orElseThrow(() -> new IllegalArgumentException("Time slot not found"));
     }
 
+    /**
+     * The slot row, locked for the rest of the transaction — the same lock {@code ReservationService}
+     * takes before it books. Every admin path that spends or resizes seats goes through here: read
+     * unlocked, "is there still room" raced a client booking the last seat at the same moment, and
+     * both writes went through.
+     */
+    private TimeSlot requireSlotForUpdate(UUID slotId) {
+        return timeSlotRepository.findByIdForUpdate(slotId)
+            .orElseThrow(() -> new IllegalArgumentException("Time slot not found"));
+    }
+
+    /** Event twin of {@link #requireSlotForUpdate} — the lock event booking takes. */
+    private Event requireEventForUpdate(UUID eventId) {
+        return eventRepository.findByIdForUpdate(eventId)
+            .orElseThrow(() -> new IllegalArgumentException("Event not found"));
+    }
+
+    /**
+     * A day-slot of an event is booked through the event — ReservationService refuses it for
+     * clients with the same message. Adding someone to one directly would book a single day of a
+     * multi-day course, against the event's capacity check, on a slot no calendar view shows.
+     */
+    private void requireStandaloneSlot(TimeSlot slot) {
+        if (slot.belongsToEvent()) {
+            throw new IllegalStateException(msg.get("reservation.slot.belongs.to.event"));
+        }
+    }
+
     private User requireUser(UUID userId) {
         return userRepository.findById(userId)
             .orElseThrow(() -> new IllegalArgumentException("User not found"));
@@ -1467,6 +1516,11 @@ public class AdminService {
         }
         if (removedAny) {
             eventWaitlistService.notifyAll(event.getId());
+            // A released seat frees every day of the event, and people can queue on a day-slot too —
+            // the slot twin and every other seat-freeing path here wake both queues.
+            for (TimeSlot eventSlot : timeSlotRepository.findByEventId(event.getId())) {
+                waitlistService.notifyAll(eventSlot.getId());
+            }
         }
     }
 
@@ -1597,12 +1651,13 @@ public class AdminService {
             .stream().filter(r -> r.getUser().getId().equals(userId)).toList();
         if (userReservations.isEmpty()) return;
         User user = userReservations.getFirst().getUser();
+        int participants = userReservations.getFirst().getParticipants();
         for (Reservation reservation : userReservations) {
-            int participants = reservation.getParticipants();
             reservation.cancelByAdmin();
             reservationRepository.save(reservation);
-            activityLogService.logCancelledByAdmin(user, reservation.getTimeSlot(), participants);
         }
+        // Once, like deleteEvent — one decision about one booking, however many days it spans.
+        activityLogService.logCancelledByAdmin(user, userReservations.getFirst().getTimeSlot(), participants);
         if (!BookingTimeValidator.dayHasPassed(event.getEndDate())) {
             mailService.sendAdminEventParticipantRemovedNotification(user, event);
         }
@@ -1623,8 +1678,11 @@ public class AdminService {
         if (!reservation.isConfirmed()) {
             throw new IllegalStateException("Reservation is not confirmed");
         }
-        TimeSlot slot = reservation.getTimeSlot();
+        // The event twin always locked; this one only claimed to be its model.
+        TimeSlot slot = requireSlotForUpdate(reservation.getTimeSlot().getId());
         int oldParticipants = reservation.getParticipants();
+        // Saving the form untouched used to mail "2 → 2" to the client.
+        if (newParticipants == oldParticipants) return;
         int currentTotal = reservationRepository.countConfirmedByTimeSlotId(slot.getId())
             + guestReservationRepository.sumParticipantsByTimeSlotId(slot.getId());
         // Growing a booking spends a seat exactly as adding a participant does, so it has to respect
@@ -1646,6 +1704,9 @@ public class AdminService {
         if (!BookingTimeValidator.isPast(slot.getDate(), slot.getEndTime())) {
             mailService.sendAdminParticipantReductionNotification(user, slot, oldParticipants, newParticipants);
         }
+        // The event twin logs this, and so does the client's own change — without it an admin's
+        // edit was the one change to a booking missing from the user card's timeline.
+        activityLogService.logReservationUpdated(user, slot, newParticipants);
         if (newParticipants < oldParticipants) {
             waitlistService.notifyAll(slot.getId());
             if (slot.belongsToEvent()) {
@@ -1672,6 +1733,7 @@ public class AdminService {
         if (userReservations.isEmpty()) throw new IllegalStateException("No confirmed reservation found for this user");
 
         int oldParticipants = userReservations.getFirst().getParticipants();
+        if (newParticipants == oldParticipants) return;
         int currentMaxTotal = occupancy.ofEvent(eventId, slots);
         // Same rule as the slot twin: a seat held under an invitation is not free to grow into.
         int heldForOthers = pendingSeatsHeldForOthers(
@@ -1748,7 +1810,8 @@ public class AdminService {
         @CacheEvict(value = "calendarDay", allEntries = true)
     })
     public void addRegisteredParticipantToSlot(UUID slotId, AddRegisteredParticipantRequest request) {
-        TimeSlot slot = requireSlot(slotId);
+        TimeSlot slot = requireSlotForUpdate(slotId);
+        requireStandaloneSlot(slot);
 
         if (slot.isBlocked()) {
             throw new IllegalStateException(msg.get("admin.slot.blocked"));
@@ -1803,7 +1866,8 @@ public class AdminService {
         @CacheEvict(value = "calendarDay", allEntries = true)
     })
     public GuestParticipantDto addGuestParticipantToSlot(UUID slotId, AddGuestParticipantRequest request) {
-        TimeSlot slot = requireSlot(slotId);
+        TimeSlot slot = requireSlotForUpdate(slotId);
+        requireStandaloneSlot(slot);
 
         if (slot.isBlocked()) {
             throw new IllegalStateException(msg.get("admin.slot.blocked"));
@@ -1854,7 +1918,7 @@ public class AdminService {
         @CacheEvict(value = "calendarDay", allEntries = true)
     })
     public void addRegisteredParticipantToEvent(UUID eventId, AddRegisteredParticipantRequest request) {
-        Event event = requireEvent(eventId);
+        Event event = requireEventForUpdate(eventId);
 
         User user = requireUser(request.userId());
         requireVerifiedAccount(user);
@@ -2003,7 +2067,7 @@ public class AdminService {
         @CacheEvict(value = "calendarDay", allEntries = true)
     })
     public GuestParticipantDto addGuestParticipantToEvent(UUID eventId, AddGuestParticipantRequest request) {
-        Event event = requireEvent(eventId);
+        Event event = requireEventForUpdate(eventId);
 
         int occupied = occupancy.ofEvent(eventId, timeSlotRepository.findByEventId(eventId));
         int heldForOthers = pendingSeatsHeldForOthers(

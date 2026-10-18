@@ -175,7 +175,7 @@ class AdminServiceInviteSyncTest {
     @Test
     void shouldUpdateFullSlotWhenInvitedUserAlreadyBooked() {
         // Given: max 1, the single confirmed booking belongs to the invited user
-        when(timeSlotRepository.findById(slotId)).thenReturn(Optional.of(slot));
+        when(timeSlotRepository.findByIdForUpdate(slotId)).thenReturn(Optional.of(slot));
         when(timeSlotRepository.save(slot)).thenReturn(slot);
         when(reservationRepository.countConfirmedByTimeSlotId(slotId)).thenReturn(1);
         when(guestReservationRepository.sumParticipantsByTimeSlotId(slotId)).thenReturn(0);
@@ -197,7 +197,7 @@ class AdminServiceInviteSyncTest {
     @Test
     void shouldRejectSlotUpdateWhenPendingInvitesExceedCapacity() {
         // Given: max 1, confirmed booking belongs to someone else, invite is pending
-        when(timeSlotRepository.findById(slotId)).thenReturn(Optional.of(slot));
+        when(timeSlotRepository.findByIdForUpdate(slotId)).thenReturn(Optional.of(slot));
         when(timeSlotRepository.save(slot)).thenReturn(slot);
         when(reservationRepository.countConfirmedByTimeSlotId(slotId)).thenReturn(1);
         when(guestReservationRepository.sumParticipantsByTimeSlotId(slotId)).thenReturn(0);
@@ -218,7 +218,7 @@ class AdminServiceInviteSyncTest {
         TimeSlot eventSlot = new TimeSlot(event, event.getStartDate(), LocalTime.of(10, 0), LocalTime.of(11, 0), 1);
         setId(eventSlot, UUID.randomUUID());
 
-        when(eventRepository.findById(eventId)).thenReturn(Optional.of(event));
+        when(eventRepository.findByIdForUpdate(eventId)).thenReturn(Optional.of(event));
         when(eventRepository.save(event)).thenReturn(event);
         when(timeSlotRepository.findByEventId(eventId)).thenReturn(List.of(eventSlot));
         when(reservationRepository.countConfirmedByTimeSlotIds(List.of(eventSlot.getId())))
@@ -244,7 +244,7 @@ class AdminServiceInviteSyncTest {
         TimeSlot eventSlot = new TimeSlot(event, event.getStartDate(), LocalTime.of(10, 0), LocalTime.of(11, 0), 1);
         setId(eventSlot, UUID.randomUUID());
 
-        when(eventRepository.findById(eventId)).thenReturn(Optional.of(event));
+        when(eventRepository.findByIdForUpdate(eventId)).thenReturn(Optional.of(event));
         when(eventRepository.save(event)).thenReturn(event);
         when(timeSlotRepository.findByEventId(eventId)).thenReturn(List.of(eventSlot));
         when(reservationRepository.countConfirmedByTimeSlotIds(List.of(eventSlot.getId())))
@@ -258,6 +258,26 @@ class AdminServiceInviteSyncTest {
             adminService.updateEvent(adminId, eventId, eventRequestWithInvites(List.of(invitedUser.getId()))));
     }
 
+    @Test
+    void shouldWakeTheDaySlotQueuesWhenAnEventInvitationIsWithdrawn() {
+        // A released event seat frees every day, and a client can queue on a single day-slot. The
+        // slot twin wakes both queues; this path woke only the event's.
+        TimeSlot eventSlot = new TimeSlot(event, event.getStartDate(), LocalTime.of(10, 0), LocalTime.of(11, 0), 1);
+        setId(eventSlot, UUID.randomUUID());
+
+        when(eventRepository.findByIdForUpdate(eventId)).thenReturn(Optional.of(event));
+        when(eventRepository.save(event)).thenReturn(event);
+        when(timeSlotRepository.findByEventId(eventId)).thenReturn(List.of(eventSlot));
+        when(reservedSeatRepository.findByEventIdWithUser(eventId))
+            .thenReturn(List.of(new ReservedSeat(event, invitedUser)));
+        when(userRepository.findById(adminId)).thenReturn(Optional.of(admin));
+
+        adminService.updateEvent(adminId, eventId, eventRequestWithInvites(List.of()));
+
+        verify(eventWaitlistService).notifyAll(eventId);
+        verify(waitlistService).notifyAll(eventSlot.getId());
+    }
+
     // ========== A held seat is a promise, and adding a participant must not spend it ==========
 
     @Test
@@ -269,7 +289,7 @@ class AdminServiceInviteSyncTest {
         // handed to somebody else — after which the invitee sees FULL and "held for you" at once,
         // booking answers "no seats free", their only route is the waitlist, and the panel still
         // offers to mail them "a seat is being held for you".
-        when(timeSlotRepository.findById(slotId)).thenReturn(Optional.of(slot));
+        when(timeSlotRepository.findByIdForUpdate(slotId)).thenReturn(Optional.of(slot));
         when(userRepository.findById(invitedUser.getId())).thenReturn(Optional.of(invitedUser));
         when(reservationRepository.existsByUserIdAndTimeSlotIdAndStatus(
             invitedUser.getId(), slotId, ReservationStatus.CONFIRMED)).thenReturn(false);
@@ -290,7 +310,7 @@ class AdminServiceInviteSyncTest {
     void shouldLetTheInviteeThemselvesTakeTheSeatBeingHeldForThem() {
         // The seat exists FOR this person, so their own held seat cannot be what blocks them —
         // otherwise an admin signing up the very guest they invited would be refused.
-        when(timeSlotRepository.findById(slotId)).thenReturn(Optional.of(slot));
+        when(timeSlotRepository.findByIdForUpdate(slotId)).thenReturn(Optional.of(slot));
         when(userRepository.findById(invitedUser.getId())).thenReturn(Optional.of(invitedUser));
         when(reservationRepository.existsByUserIdAndTimeSlotIdAndStatus(
             invitedUser.getId(), slotId, ReservationStatus.CONFIRMED)).thenReturn(false);
@@ -311,7 +331,7 @@ class AdminServiceInviteSyncTest {
         TimeSlot eventSlot = new TimeSlot(event, event.getStartDate(), LocalTime.of(10, 0), LocalTime.of(11, 0), 1);
         setId(eventSlot, UUID.randomUUID());
 
-        when(eventRepository.findById(eventId)).thenReturn(Optional.of(event));
+        when(eventRepository.findByIdForUpdate(eventId)).thenReturn(Optional.of(event));
         when(timeSlotRepository.findByEventId(eventId)).thenReturn(List.of(eventSlot));
         when(userRepository.findById(invitedUser.getId())).thenReturn(Optional.of(invitedUser));
         when(guestReservationRepository.sumParticipantsByEventId(eventId)).thenReturn(0);
@@ -336,7 +356,7 @@ class AdminServiceInviteSyncTest {
         slot = new TimeSlot(LocalDate.now().minusDays(7), LocalTime.of(10, 0), LocalTime.of(11, 0), 2);
         setId(slot, slotId);
 
-        when(timeSlotRepository.findById(slotId)).thenReturn(Optional.of(slot));
+        when(timeSlotRepository.findByIdForUpdate(slotId)).thenReturn(Optional.of(slot));
         when(userRepository.findById(invitedUser.getId())).thenReturn(Optional.of(invitedUser));
         when(reservationRepository.existsByUserIdAndTimeSlotIdAndStatus(
             invitedUser.getId(), slotId, ReservationStatus.CONFIRMED)).thenReturn(false);
@@ -358,7 +378,7 @@ class AdminServiceInviteSyncTest {
     @Test
     void shouldRejectNewSlotInviteWhenAccountIsUnverified() {
         // Given: an empty slot and an account that never confirmed its address
-        when(timeSlotRepository.findById(slotId)).thenReturn(Optional.of(slot));
+        when(timeSlotRepository.findByIdForUpdate(slotId)).thenReturn(Optional.of(slot));
         when(timeSlotRepository.save(slot)).thenReturn(slot);
         when(reservationRepository.countConfirmedByTimeSlotId(slotId)).thenReturn(0);
         when(guestReservationRepository.sumParticipantsByTimeSlotId(slotId)).thenReturn(0);
@@ -377,7 +397,7 @@ class AdminServiceInviteSyncTest {
     void shouldStillAllowEditingSlotWhoseExistingInviteIsUnverified() {
         // Given: an invitation issued before the guard existed. The front resubmits the full
         // invitee list on every edit, so checking all of them would make this slot uneditable.
-        when(timeSlotRepository.findById(slotId)).thenReturn(Optional.of(slot));
+        when(timeSlotRepository.findByIdForUpdate(slotId)).thenReturn(Optional.of(slot));
         when(timeSlotRepository.save(slot)).thenReturn(slot);
         when(reservationRepository.countConfirmedByTimeSlotId(slotId)).thenReturn(0);
         when(guestReservationRepository.sumParticipantsByTimeSlotId(slotId)).thenReturn(0);
@@ -395,7 +415,7 @@ class AdminServiceInviteSyncTest {
     @Test
     void shouldRejectNewEventInviteWhenAccountIsUnverified() {
         // Given
-        when(eventRepository.findById(eventId)).thenReturn(Optional.of(event));
+        when(eventRepository.findByIdForUpdate(eventId)).thenReturn(Optional.of(event));
         when(eventRepository.save(event)).thenReturn(event);
         when(timeSlotRepository.findByEventId(eventId)).thenReturn(List.of());
         when(guestReservationRepository.sumParticipantsByEventId(eventId)).thenReturn(0);
@@ -413,7 +433,7 @@ class AdminServiceInviteSyncTest {
     @Test
     void shouldRejectManualSlotSignUpWhenAccountIsUnverified() {
         // Given
-        when(timeSlotRepository.findById(slotId)).thenReturn(Optional.of(slot));
+        when(timeSlotRepository.findByIdForUpdate(slotId)).thenReturn(Optional.of(slot));
         when(userRepository.findById(unverifiedUser.getId())).thenReturn(Optional.of(unverifiedUser));
         when(msg.get("admin.user.unverified", unverifiedUser.getFullName())).thenReturn("unverified");
 
@@ -427,7 +447,7 @@ class AdminServiceInviteSyncTest {
     @Test
     void shouldRejectManualEventSignUpWhenAccountIsUnverified() {
         // Given
-        when(eventRepository.findById(eventId)).thenReturn(Optional.of(event));
+        when(eventRepository.findByIdForUpdate(eventId)).thenReturn(Optional.of(event));
         when(userRepository.findById(unverifiedUser.getId())).thenReturn(Optional.of(unverifiedUser));
         when(msg.get("admin.user.unverified", unverifiedUser.getFullName())).thenReturn("unverified");
 
@@ -628,7 +648,7 @@ class AdminServiceInviteSyncTest {
         ReservedSeat seat = new ReservedSeat(slot, invitedUser);
         seat.markNotified();
 
-        when(timeSlotRepository.findById(slotId)).thenReturn(Optional.of(slot));
+        when(timeSlotRepository.findByIdForUpdate(slotId)).thenReturn(Optional.of(slot));
         when(timeSlotRepository.save(slot)).thenReturn(slot);
         when(reservedSeatRepository.findBySlotIdWithUser(slotId)).thenReturn(List.of(seat));
         when(userRepository.findById(adminId)).thenReturn(Optional.of(admin));
@@ -650,7 +670,7 @@ class AdminServiceInviteSyncTest {
         ReservedSeat seat = new ReservedSeat(slot, invitedUser);
         seat.markNotified();
 
-        when(timeSlotRepository.findById(slotId)).thenReturn(Optional.of(slot));
+        when(timeSlotRepository.findByIdForUpdate(slotId)).thenReturn(Optional.of(slot));
         when(timeSlotRepository.save(slot)).thenReturn(slot);
         when(userRepository.findById(adminId)).thenReturn(Optional.of(admin));
 
@@ -669,7 +689,7 @@ class AdminServiceInviteSyncTest {
         ReservedSeat seat = new ReservedSeat(event, invitedUser);
         seat.markNotified();
 
-        when(eventRepository.findById(eventId)).thenReturn(Optional.of(event));
+        when(eventRepository.findByIdForUpdate(eventId)).thenReturn(Optional.of(event));
         when(eventRepository.save(event)).thenReturn(event);
         when(reservedSeatRepository.findByEventIdWithUser(eventId)).thenReturn(List.of(seat));
         when(timeSlotRepository.findByEventId(eventId)).thenReturn(List.of());

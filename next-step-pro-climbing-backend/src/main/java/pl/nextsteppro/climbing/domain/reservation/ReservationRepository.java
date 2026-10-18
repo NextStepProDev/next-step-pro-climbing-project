@@ -123,7 +123,7 @@ public interface ReservationRepository extends JpaRepository<Reservation, UUID> 
     @Query("SELECT DISTINCT r.user.id FROM Reservation r WHERE r.timeSlot.event.id = :eventId AND r.status = 'CONFIRMED'")
     List<UUID> findConfirmedUserIdsByEventId(UUID eventId);
 
-    @Modifying(clearAutomatically = true)
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("DELETE FROM Reservation r WHERE r.timeSlot.id IN :slotIds")
     void deleteByTimeSlotIds(Collection<UUID> slotIds);
 

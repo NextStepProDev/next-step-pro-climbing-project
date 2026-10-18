@@ -142,7 +142,7 @@ class AdminServiceEditMailCountTest {
     @Test
     void shouldCountOnlyMailedParticipantsWhenSlotIsMoved() {
         // Given — two bookings, one of them from someone who turned mail notifications off
-        when(timeSlotRepository.findById(slotId)).thenReturn(Optional.of(slot));
+        when(timeSlotRepository.findByIdForUpdate(slotId)).thenReturn(Optional.of(slot));
         when(timeSlotRepository.save(slot)).thenReturn(slot);
         when(userRepository.findById(adminId)).thenReturn(Optional.of(admin));
         when(reservationRepository.findConfirmedByTimeSlotIds(List.of(slotId)))
@@ -162,7 +162,7 @@ class AdminServiceEditMailCountTest {
     void shouldReportParticipantsPresentWhenEveryBookerOptedOutOfMail() {
         // Given — somebody's booking is being moved, but nobody can be written to. That is a
         // different answer from "the slot was empty", and the panel says so.
-        when(timeSlotRepository.findById(slotId)).thenReturn(Optional.of(slot));
+        when(timeSlotRepository.findByIdForUpdate(slotId)).thenReturn(Optional.of(slot));
         when(timeSlotRepository.save(slot)).thenReturn(slot);
         when(userRepository.findById(adminId)).thenReturn(Optional.of(admin));
         when(reservationRepository.findConfirmedByTimeSlotIds(List.of(slotId)))
@@ -181,7 +181,7 @@ class AdminServiceEditMailCountTest {
     @Test
     void shouldReportNoParticipantsWhenAnEmptySlotIsMoved() {
         // Given — an empty slot: mentioning notifications at all would be noise
-        when(timeSlotRepository.findById(slotId)).thenReturn(Optional.of(slot));
+        when(timeSlotRepository.findByIdForUpdate(slotId)).thenReturn(Optional.of(slot));
         when(timeSlotRepository.save(slot)).thenReturn(slot);
         when(userRepository.findById(adminId)).thenReturn(Optional.of(admin));
 
@@ -197,7 +197,7 @@ class AdminServiceEditMailCountTest {
     @Test
     void shouldReportZeroNotifiedWhenSlotEditChangesNothingParticipantsCareAbout() {
         // Given — the edit touches only the seat count, which builds no change list
-        when(timeSlotRepository.findById(slotId)).thenReturn(Optional.of(slot));
+        when(timeSlotRepository.findByIdForUpdate(slotId)).thenReturn(Optional.of(slot));
         when(timeSlotRepository.save(slot)).thenReturn(slot);
         when(userRepository.findById(adminId)).thenReturn(Optional.of(admin));
         when(reservationRepository.countConfirmedByTimeSlotId(slotId)).thenReturn(0);
@@ -217,7 +217,7 @@ class AdminServiceEditMailCountTest {
         TimeSlot eventSlot = new TimeSlot(event, event.getStartDate(), LocalTime.of(10, 0), LocalTime.of(11, 0), 5);
         setId(eventSlot, UUID.randomUUID());
 
-        when(eventRepository.findById(eventId)).thenReturn(Optional.of(event));
+        when(eventRepository.findByIdForUpdate(eventId)).thenReturn(Optional.of(event));
         when(eventRepository.save(event)).thenReturn(event);
         when(userRepository.findById(adminId)).thenReturn(Optional.of(admin));
         when(timeSlotRepository.findByEventId(eventId)).thenReturn(List.of(eventSlot));
