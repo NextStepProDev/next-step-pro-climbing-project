@@ -10,10 +10,14 @@ import { useModalClose } from './modalClose'
  * itself cannot call it at its own level (it would get null and fall back to the bare close). Placed
  * inside the modal, this does.
  */
-export function ModalCancelButton({ onClose, children }: { onClose: () => void; children: ReactNode }) {
+export function ModalCancelButton({ onClose, children, disabled = false }: {
+  onClose: () => void
+  children: ReactNode
+  disabled?: boolean
+}) {
   const guardedClose = useModalClose()
   return (
-    <Button type="button" variant="ghost" onClick={() => (guardedClose ?? onClose)()}>
+    <Button type="button" variant="ghost" disabled={disabled} onClick={() => (guardedClose ?? onClose)()}>
       {children}
     </Button>
   )

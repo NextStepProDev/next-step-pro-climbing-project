@@ -6,6 +6,7 @@ import { adminGalleryApi } from '../../api/client'
 import type { AlbumAdmin, CreateAlbumRequest, UpdateAlbumRequest, UpdatePhotoRequest } from '../../types'
 import { Button } from '../../components/ui/Button'
 import { Modal } from '../../components/ui/Modal'
+import { ModalCancelButton } from '../../components/ui/ModalCancelButton'
 import { ConfirmModal } from '../../components/ui/ConfirmModal'
 import { FileUpload } from '../../components/ui/FileUpload'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
@@ -38,6 +39,7 @@ export function AdminGalleryPanel() {
   const [editAlbumDescription, setEditAlbumDescription] = useState('')
   const [editPhotoCaption, setEditPhotoCaption] = useState('')
 
+  const createAlbumFormRef = useRef<HTMLFormElement>(null)
   const albumDirty = selectedAlbum != null && (
     editAlbumName !== selectedAlbum.name ||
     editAlbumDescription !== (selectedAlbum.description || '')
@@ -598,8 +600,13 @@ export function AdminGalleryPanel() {
         isOpen={createAlbumModalOpen}
         onClose={() => setCreateAlbumModalOpen(false)}
         title="Nowy Album"
+        // The fields are uncontrolled, so the question reads them at the moment of closing.
+        confirmClose={() => {
+          const form = createAlbumFormRef.current
+          return !!form && [...new FormData(form).values()].some((v) => String(v).trim() !== '')
+        }}
       >
-        <form onSubmit={handleCreateAlbum} className="space-y-4">
+        <form ref={createAlbumFormRef} onSubmit={handleCreateAlbum} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-surface-200 mb-1">
               Nazwa albumu *
@@ -625,13 +632,7 @@ export function AdminGalleryPanel() {
           </div>
 
           <div className="flex gap-2 justify-end">
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => setCreateAlbumModalOpen(false)}
-            >
-              Anuluj
-            </Button>
+            <ModalCancelButton onClose={() => setCreateAlbumModalOpen(false)}>Anuluj</ModalCancelButton>
             <Button type="submit" loading={createAlbumMutation.isPending}>
               Utwórz
             </Button>
@@ -652,6 +653,7 @@ export function AdminGalleryPanel() {
             setSelectedAlbum(null)
           }}
           title="Edytuj Album"
+          confirmClose={() => albumDirty}
         >
           <form onSubmit={handleUpdateAlbum} className="space-y-4">
             <div>
@@ -683,16 +685,14 @@ export function AdminGalleryPanel() {
             </div>
 
             <div className="flex gap-2 justify-end">
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => {
+              <ModalCancelButton
+                onClose={() => {
                   setEditAlbumModalOpen(false)
                   setSelectedAlbum(null)
                 }}
               >
                 Anuluj
-              </Button>
+              </ModalCancelButton>
               <Button type="submit" loading={updateAlbumMutation.isPending} disabled={!albumDirty}>
                 Zapisz
               </Button>
@@ -709,6 +709,8 @@ export function AdminGalleryPanel() {
       {selectedAlbum && (
         <Modal
           isOpen={uploadPhotoModalOpen}
+          // Photos already picked (and optimised in the browser) would be lost to a stray tap.
+          confirmClose={() => selectedFiles.length > 0 && !uploadPhotoMutation.isPending}
           onClose={() => {
             setUploadPhotoModalOpen(false)
             setSelectedAlbum(null)
@@ -757,10 +759,8 @@ export function AdminGalleryPanel() {
             )}
 
             <div className="flex gap-2 justify-end">
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => {
+              <ModalCancelButton
+                onClose={() => {
                   setUploadPhotoModalOpen(false)
                   setSelectedAlbum(null)
                   setPhotoPreviews([])
@@ -770,7 +770,7 @@ export function AdminGalleryPanel() {
                 disabled={uploadPhotoMutation.isPending}
               >
                 Anuluj
-              </Button>
+              </ModalCancelButton>
               <Button
                 type="submit"
                 disabled={selectedFiles.length === 0 || uploadPhotoMutation.isPending}
@@ -796,6 +796,7 @@ export function AdminGalleryPanel() {
             setSelectedPhoto(null)
           }}
           title="Edytuj Zdjęcie"
+          confirmClose={() => photoDirty}
         >
           <form onSubmit={handleUpdatePhoto} className="space-y-4">
             <div>
@@ -847,16 +848,14 @@ export function AdminGalleryPanel() {
             </button>
 
             <div className="flex gap-2 justify-end">
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => {
+              <ModalCancelButton
+                onClose={() => {
                   setEditPhotoModalOpen(false)
                   setSelectedPhoto(null)
                 }}
               >
                 Anuluj
-              </Button>
+              </ModalCancelButton>
               <Button
                 type="submit"
                 loading={updatePhotoMutation.isPending}
