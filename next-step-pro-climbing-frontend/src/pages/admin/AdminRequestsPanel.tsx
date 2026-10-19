@@ -13,6 +13,7 @@ import { getErrorMessage } from '../../utils/errors'
 import { useDateLocale } from '../../utils/dateFnsLocale'
 import { Button } from '../../components/ui/Button'
 import { Modal } from '../../components/ui/Modal'
+import { ModalCancelButton } from '../../components/ui/ModalCancelButton'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
 import { QueryError } from '../../components/ui/QueryError'
 import { CreateSlotModal } from '../../components/calendar/CreateSlotModal'
@@ -440,10 +441,13 @@ function StatusModal({
   const [notifyUser, setNotifyUser] = useState(action === 'REJECTED')
 
   return (
+    // Asks only once a note is written: it is the message the client receives, and a tap beside
+    // the dialog used to throw it away.
     <Modal
       isOpen
       onClose={onClose}
       title={action === 'CONTACTED' ? t('requests.contactedTitle') : t('requests.rejectTitle')}
+      confirmClose={() => note.trim() !== ''}
     >
       <form onSubmit={(e) => { e.preventDefault(); onSubmit(note.trim(), notifyUser) }} className="space-y-4">
         <p className="text-sm text-surface-400">
@@ -491,9 +495,7 @@ function StatusModal({
           >
             {action === 'CONTACTED' ? t('requests.confirmContacted') : t('requests.confirmReject')}
           </Button>
-          <Button type="button" variant="ghost" onClick={onClose}>
-            {t('requests.cancel')}
-          </Button>
+          <ModalCancelButton onClose={onClose}>{t('requests.cancel')}</ModalCancelButton>
         </div>
 
         {error && <p className="text-sm text-rose-400/80">{error}</p>}
