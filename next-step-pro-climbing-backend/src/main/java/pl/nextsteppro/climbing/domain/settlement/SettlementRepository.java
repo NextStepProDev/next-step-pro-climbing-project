@@ -109,6 +109,12 @@ public interface SettlementRepository extends JpaRepository<Settlement, UUID> {
      * names {@code Settlement}, and that type is not reachable outside this package —
      * {@code SettlementIsolationTest} enforces it.
      *
+     * <p>⚠️ A bulk mark hides a payer only when it actually covers them: an institution's mark covers
+     * everyone on the session, a subscription mark only the subscriber. Somebody who joined a
+     * subscription-marked session afterwards (the mark is checked only when set) stays listed —
+     * the row leads to the section that names the stale mark and clears it. Hiding the whole session
+     * left that person visible nowhere but inside the slot.
+     *
      * <p>The past predicate is the same one {@code findPastByUserId} uses: a session is over when
      * its last minute has passed, so one still running today does not count as unpriced work.
      */
@@ -122,7 +128,9 @@ public interface SettlementRepository extends JpaRepository<Settlement, UUID> {
           AND (ts.date < :today OR (ts.date = :today AND ts.endTime <= :now))
           AND NOT EXISTS (
             SELECT 1 FROM Settlement s WHERE s.timeSlot.id = ts.id AND s.user.id = r.user.id)
-          AND NOT EXISTS (SELECT 1 FROM SessionPayout sp WHERE sp.timeSlot.id = ts.id)
+          AND NOT EXISTS (
+            SELECT 1 FROM SessionPayout sp WHERE sp.timeSlot.id = ts.id
+              AND (sp.user IS NULL OR sp.user.id = r.user.id))
         """)
     List<UnpricedPayer> findUnpricedSlotUsers(@Param("from") LocalDate from,
                                               @Param("today") LocalDate today,
@@ -136,7 +144,7 @@ public interface SettlementRepository extends JpaRepository<Settlement, UUID> {
           AND ts.date >= :from
           AND (ts.date < :today OR (ts.date = :today AND ts.endTime <= :now))
           AND NOT EXISTS (SELECT 1 FROM Settlement s WHERE s.guest.id = g.id)
-          AND NOT EXISTS (SELECT 1 FROM SessionPayout sp WHERE sp.timeSlot.id = ts.id)
+          AND NOT EXISTS (SELECT 1 FROM SessionPayout sp WHERE sp.timeSlot.id = ts.id AND sp.user IS NULL)
         """)
     List<UnpricedPayer> findUnpricedSlotGuests(@Param("from") LocalDate from,
                                                @Param("today") LocalDate today,
@@ -151,7 +159,9 @@ public interface SettlementRepository extends JpaRepository<Settlement, UUID> {
           AND e.endDate >= :from AND e.endDate < :today
           AND NOT EXISTS (
             SELECT 1 FROM Settlement s WHERE s.event.id = e.id AND s.user.id = r.user.id)
-          AND NOT EXISTS (SELECT 1 FROM SessionPayout sp WHERE sp.event.id = e.id)
+          AND NOT EXISTS (
+            SELECT 1 FROM SessionPayout sp WHERE sp.event.id = e.id
+              AND (sp.user IS NULL OR sp.user.id = r.user.id))
         """)
     List<UnpricedPayer> findUnpricedEventUsers(@Param("from") LocalDate from,
                                                @Param("today") LocalDate today);
@@ -175,7 +185,7 @@ public interface SettlementRepository extends JpaRepository<Settlement, UUID> {
           AND COALESCE(ge.endDate, gtse.endDate) < :today
           AND NOT EXISTS (SELECT 1 FROM Settlement s WHERE s.guest.id = g.id)
           AND NOT EXISTS (
-            SELECT 1 FROM SessionPayout sp WHERE sp.event.id = COALESCE(ge.id, gtse.id))
+            SELECT 1 FROM SessionPayout sp WHERE sp.event.id = COALESCE(ge.id, gtse.id) AND sp.user IS NULL)
         """)
     List<UnpricedPayer> findUnpricedEventGuests(@Param("from") LocalDate from,
                                                 @Param("today") LocalDate today);
