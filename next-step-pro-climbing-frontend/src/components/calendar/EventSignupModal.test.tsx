@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -27,8 +27,11 @@ vi.mock('../../context/AuthContext', () => ({
 // The note has its own tests; here it would only be a second source of the same signal.
 vi.mock('../admin/AdminPrivateNote', () => ({ AdminPrivateNote: () => null }))
 
+let summary: () => EventSummary = () => event()
+const cancelForEvent = vi.fn().mockResolvedValue(undefined)
+
 vi.mock('../../api/client', () => ({
-  calendarApi: { getEventSummary: () => Promise.resolve(event()) },
+  calendarApi: { getEventSummary: () => Promise.resolve(summary()) },
   adminSettlementsApi: {
     getSection: vi.fn().mockResolvedValue({
       targetDate: '2030-06-10', lines: [], payoutSourceId: null, payoutSourceName: null,
@@ -44,7 +47,11 @@ vi.mock('../../api/client', () => ({
     getAllUsers: () => Promise.resolve([]),
     deleteEvent: vi.fn(),
   },
-  reservationApi: { createForEvent: vi.fn(), updateEventParticipants: vi.fn() },
+  reservationApi: {
+    createForEvent: vi.fn(),
+    updateEventParticipants: vi.fn(),
+    cancelForEvent: (...args: unknown[]) => cancelForEvent(...args),
+  },
 }))
 
 function event(overrides: Partial<EventSummary> = {}): EventSummary {
@@ -145,5 +152,26 @@ describe('EventSignupModal — reopened on a different event', () => {
     rerender(tree(event({ id: 'event-2', title: 'Inny wyjazd' }), true, onClose, client))
 
     expect(await screen.findByPlaceholderText('event.commentPlaceholder')).toHaveValue('')
+  })
+})
+
+/* The twin of the slot modal's confirmation: signing out of a full course hands the seat to the
+   waitlist, and that cannot be taken back. */
+describe('EventSignupModal — signing out', () => {
+  it('asks before giving the seat back, and signs out only once confirmed', async () => {
+    const user = userEvent.setup()
+    cancelForEvent.mockClear()
+    const registered = event({ isUserRegistered: true, userParticipants: 1, currentParticipants: 1 })
+    summary = () => registered
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    render(tree(registered, true, vi.fn(), client))
+
+    await user.click(await screen.findByText('event.cancelSignup'))
+    expect(cancelForEvent).not.toHaveBeenCalled()
+    expect(screen.getByText('confirmCancel.eventMessage')).toBeTruthy()
+
+    await user.click(screen.getByText('confirmCancel.confirm'))
+    await waitFor(() => expect(cancelForEvent).toHaveBeenCalledWith('event-1'))
+    summary = () => event()
   })
 })

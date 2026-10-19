@@ -28,6 +28,7 @@ vi.mock('../../hooks/useInviteSentToast', () => ({ useInviteSentToast: () => vi.
 vi.mock('../admin/AdminPrivateNote', () => ({ AdminPrivateNote: () => null }))
 
 const updateTimeSlot = vi.fn().mockResolvedValue({ notifiedCount: 0, hadParticipants: false })
+const cancelReservation = vi.fn().mockResolvedValue(undefined)
 let invitesPromise: Promise<InvitedUser[]>
 
 vi.mock('../../api/client', () => ({
@@ -62,7 +63,10 @@ vi.mock('../../api/client', () => ({
     deleteTimeSlot: () => Promise.resolve(),
     notifySlotInvites: () => Promise.resolve({ notifiedCount: 0, skippedNotificationsOff: 0 }),
   },
-  reservationApi: { createReservation: vi.fn() },
+  reservationApi: {
+    createReservation: vi.fn(),
+    cancel: (...args: unknown[]) => cancelReservation(...args),
+  },
 }))
 
 function slot(overrides: Partial<TimeSlotDetail> = {}): TimeSlotDetail {
@@ -261,5 +265,23 @@ describe('SlotDetailModal — reopened on a different slot', () => {
     // Save writes the first slot's hours onto the second.
     expect(screen.queryByPlaceholderText('slots.titlePlaceholder')).not.toBeInTheDocument()
     expect(screen.getByText('slots.editSlot')).toBeInTheDocument()
+  })
+})
+
+/* Giving the seat back is the one booking action that cannot be undone: on a full session the
+   freed seat goes straight out to the waitlist. "My reservations" always asked first; this modal
+   cancelled on a single tap. */
+describe('SlotDetailModal — cancelling a booking', () => {
+  it('asks before giving the seat back, and cancels only once confirmed', async () => {
+    const user = userEvent.setup()
+    cancelReservation.mockClear()
+    renderModal(slot({ isUserRegistered: true, reservationId: 'res-1', currentParticipants: 1 }))
+
+    await user.click(screen.getByText('slot.cancelReservation'))
+    expect(cancelReservation).not.toHaveBeenCalled()
+    expect(screen.getByText('confirmCancel.slotMessage')).toBeTruthy()
+
+    await user.click(screen.getByText('confirmCancel.confirm'))
+    await waitFor(() => expect(cancelReservation).toHaveBeenCalledWith('res-1'))
   })
 })

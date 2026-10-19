@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { useFocusTrap } from '../../utils/useFocusTrap'
+import { useBodyScrollLock } from './scrollLock'
 import { AlertTriangle } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Button } from './Button'
@@ -31,16 +32,7 @@ export function ConfirmModal({
   const { t } = useTranslation('common')
   const trapRef = useFocusTrap(isOpen)
 
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden'
-    } else {
-      document.body.style.overflow = ''
-    }
-    return () => {
-      document.body.style.overflow = ''
-    }
-  }, [isOpen])
+  useBodyScrollLock(isOpen)
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {

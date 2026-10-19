@@ -5,6 +5,7 @@ import { Calendar, ExternalLink, MapPin, Users, Trash2, AlertTriangle, Pencil } 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { Modal } from '../ui/Modal'
+import { ConfirmModal } from '../ui/ConfirmModal'
 import { Button } from '../ui/Button'
 import { SuccessCheckmark } from '../ui/SuccessCheckmark'
 import { ShareButtons } from '../ui/ShareButtons'
@@ -50,6 +51,7 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
   const { t } = useTranslation('calendar')
   const { t: tc } = useTranslation('common')
   const { t: ta } = useTranslation('admin')
+  const { t: tr } = useTranslation('reservations')
   const { isAuthenticated, isAdmin, user } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
@@ -61,6 +63,9 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
   const [userEditParticipants, setUserEditParticipants] = useState<number | null>(null)
   const [showCompleteProfile, setShowCompleteProfile] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  // Signing out of a full course hands the seat to the waitlist and cannot be taken back, so it
+  // asks first — the twin of the slot modal, and what "My reservations" always did.
+  const [confirmSignOut, setConfirmSignOut] = useState(false)
   const [showEditEvent, setShowEditEvent] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
   const pendingAction = useRef<(() => void) | null>(null)
@@ -378,7 +383,7 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
             variant="danger"
             className="flex-1"
             loading={cancelMutation.isPending}
-            onClick={() => cancelMutation.mutate(ev.id)}
+            onClick={() => setConfirmSignOut(true)}
           >
             {t('event.cancelSignup')}
           </Button>
@@ -847,6 +852,16 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
         </div>
       </Modal>
     )}
+      <ConfirmModal
+        isOpen={confirmSignOut}
+        onClose={() => setConfirmSignOut(false)}
+        onConfirm={() => {
+          if (ev) cancelMutation.mutate(ev.id)
+        }}
+        title={tr('confirmCancel.title')}
+        message={tr('confirmCancel.eventMessage')}
+        confirmText={tr('confirmCancel.confirm')}
+      />
     </>
   )
 }

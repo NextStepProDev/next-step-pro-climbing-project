@@ -7,6 +7,7 @@ import clsx from "clsx";
 import { useAuth } from "../../context/AuthContext";
 import { useTheme } from "../../context/ThemeContext";
 import { useFocusTrap } from "../../utils/useFocusTrap";
+import { useBodyScrollLock } from "../ui/scrollLock";
 import { Avatar } from "../ui/Avatar";
 import { Button } from "../ui/Button";
 import { LanguageSwitcher } from "../ui/LanguageSwitcher";
@@ -95,13 +96,7 @@ export function MobileNavPanel({ open, onClose, sections, isActive, onLogout }: 
   // `open` prop would run the effect one render too early, on a null ref, and never focus anything.
   const trapRef = useFocusTrap(open && mounted);
 
-  useEffect(() => {
-    if (!mounted) return;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = "";
-    };
-  }, [mounted]);
+  useBodyScrollLock(mounted);
 
   useEffect(() => {
     if (!open) return;

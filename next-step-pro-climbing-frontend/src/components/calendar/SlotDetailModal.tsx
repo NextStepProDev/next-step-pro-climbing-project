@@ -5,6 +5,7 @@ import { Building2, Clock, Users, Calendar, Clock3, Phone, Trash2, AlertTriangle
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { Modal } from "../ui/Modal";
+import { ConfirmModal } from "../ui/ConfirmModal";
 import { Button } from "../ui/Button";
 import { SuccessCheckmark } from "../ui/SuccessCheckmark";
 import { ShareButtons } from "../ui/ShareButtons";
@@ -49,6 +50,7 @@ export function SlotDetailModal({
 }: SlotDetailModalProps) {
   const { t } = useTranslation('calendar');
   const { t: ta } = useTranslation('admin');
+  const { t: tr } = useTranslation('reservations');
   const locale = useDateLocale();
   const editSaved = useEditSavedToast();
   const inviteSent = useInviteSentToast();
@@ -60,6 +62,9 @@ export function SlotDetailModal({
   const [showParticipants, setShowParticipants] = useState(false);
   const [showCompleteProfile, setShowCompleteProfile] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  // Giving a seat back cannot be undone — on a full session it goes straight to the waitlist —
+  // so it asks first, as "My reservations" always did.
+  const [confirmCancel, setConfirmCancel] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [editMode, setEditMode] = useState(false);
   // Invitations: server baseline, a local override only once the admin changes something
@@ -830,9 +835,7 @@ export function SlotDetailModal({
               variant="danger"
               className="flex-1"
               loading={cancelMutation.isPending}
-              onClick={() =>
-                cancelMutation.mutate(slot.reservationId as string)
-              }
+              onClick={() => setConfirmCancel(true)}
             >
               {t('slot.cancelReservation')}
             </Button>
@@ -905,6 +908,17 @@ export function SlotDetailModal({
         }}
       />
     )}
+
+    <ConfirmModal
+      isOpen={confirmCancel}
+      onClose={() => setConfirmCancel(false)}
+      onConfirm={() => {
+        if (slot.reservationId) cancelMutation.mutate(slot.reservationId);
+      }}
+      title={tr('confirmCancel.title')}
+      message={tr('confirmCancel.slotMessage')}
+      confirmText={tr('confirmCancel.confirm')}
+    />
 
     {showDeleteConfirm && deleteConfirmParticipants && (
       <Modal

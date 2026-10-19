@@ -178,3 +178,30 @@ describe('Modal — confirmClose as a getter', () => {
     expect(onClose).toHaveBeenCalledOnce()
   })
 })
+
+/* A confirmation stacked over an open modal used to reset `body` overflow to '' on closing, so
+   the page behind the still-open modal scrolled again. The lock is counted: the page comes back
+   only when the LAST dialog goes. */
+describe('Modal — page scroll behind stacked dialogs', () => {
+  it('keeps the page locked while the modal under a closed confirmation is still open', async () => {
+    const { ConfirmModal } = await import('./ConfirmModal')
+    const { rerender, unmount } = render(
+      <>
+        <Modal isOpen onClose={vi.fn()} title="Rezerwacja"><p>treść</p></Modal>
+        <ConfirmModal isOpen onClose={vi.fn()} onConfirm={vi.fn()} title="Anuluj" message="Na pewno?" />
+      </>,
+    )
+    expect(document.body.style.overflow).toBe('hidden')
+
+    rerender(
+      <>
+        <Modal isOpen onClose={vi.fn()} title="Rezerwacja"><p>treść</p></Modal>
+        <ConfirmModal isOpen={false} onClose={vi.fn()} onConfirm={vi.fn()} title="Anuluj" message="Na pewno?" />
+      </>,
+    )
+    expect(document.body.style.overflow).toBe('hidden')
+
+    unmount()
+    expect(document.body.style.overflow).toBe('')
+  })
+})
