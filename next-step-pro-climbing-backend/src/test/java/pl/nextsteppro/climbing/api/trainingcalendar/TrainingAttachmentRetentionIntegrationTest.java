@@ -97,6 +97,7 @@ class TrainingAttachmentRetentionIntegrationTest extends BaseIntegrationTest {
         expireAll();
 
         assertEquals(1, attachments.deleteExpired());
+        unlinkDeletedFiles(); // storage unlinks on COMMIT, and this test rolls back
         assertEquals(0, attachmentRepository.count());
         assertFalse(fileStorageService.exists(filename, AttachmentSupport.FOLDER));
     }

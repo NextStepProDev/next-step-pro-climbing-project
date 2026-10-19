@@ -5,6 +5,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.multipart.MultipartFile;
 import pl.nextsteppro.climbing.infrastructure.i18n.LocalizedMessage;
 
@@ -235,9 +237,47 @@ public class LocalFileStorageService implements FileStorageService {
                 ? rootPath.resolve(folder).resolve(filename)
                 : rootPath.resolve(filename);
 
+        // ⚠️ Inside a transaction the unlink waits for the COMMIT. Every caller deletes as part of
+        // a row change (a replaced thumbnail, a removed photo, a deleted account), and deleting at
+        // once meant a rollback kept the row and lost the bytes — a broken image nobody can fix
+        // from the UI. A crash between commit and unlink leaves an orphan instead, which the
+        // orphan sweeps exist to collect: the cheaper of the two failures.
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new DeferredDelete(filePath, filename, folder));
+            return;
+        }
+        unlink(filePath, filename, folder);
+    }
+
+    private static void unlink(Path filePath, String filename, @Nullable String folder) throws IOException {
         if (Files.exists(filePath)) {
             Files.delete(filePath);
             logger.info("Deleted file: {} from folder: {}", filename, folder);
+        }
+    }
+
+    /**
+     * An unlink waiting for its transaction to commit. Named, not anonymous, so a test that rolls
+     * its transaction back can still run exactly these and nothing else Spring registered.
+     */
+    public static final class DeferredDelete implements TransactionSynchronization {
+        private final Path filePath;
+        private final String filename;
+        private final @Nullable String folder;
+
+        DeferredDelete(Path filePath, String filename, @Nullable String folder) {
+            this.filePath = filePath;
+            this.filename = filename;
+            this.folder = folder;
+        }
+
+        @Override
+        public void afterCommit() {
+            try {
+                unlink(filePath, filename, folder);
+            } catch (IOException e) {
+                logger.warn("Could not delete {} from {} after commit: {}", filename, folder, e.getMessage());
+            }
         }
     }
 

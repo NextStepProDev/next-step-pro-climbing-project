@@ -47,10 +47,12 @@ public interface FileStorageService {
                       @Nullable Integer width, @Nullable Integer height) {}
 
     /**
-     * Delete a file from the specified folder
+     * Delete a file from the specified folder. Inside a transaction the file goes only once it
+     * COMMITS (a rollback keeps the bytes its surviving row points at); a failure then is logged,
+     * since nobody is left to throw to.
      * @param filename the filename to delete
      * @param folder optional subfolder
-     * @throws IOException if file cannot be deleted
+     * @throws IOException if the file cannot be deleted right away (outside a transaction)
      */
     void delete(String filename, @Nullable String folder) throws IOException;
 

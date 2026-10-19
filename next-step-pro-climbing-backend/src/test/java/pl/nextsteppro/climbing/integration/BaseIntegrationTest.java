@@ -49,6 +49,18 @@ public abstract class BaseIntegrationTest {
         postgres.start();
     }
 
+    /**
+     * Runs the file unlinks this test's code asked for. Storage deletes a file only after the
+     * transaction COMMITS (a rollback must not take the bytes of a row that survives), and these
+     * tests roll back — so a test asserting "the file is gone" calls this first. Only the storage
+     * callbacks run; nothing else Spring registered on the transaction is touched.
+     */
+    protected static void unlinkDeletedFiles() {
+        org.springframework.transaction.support.TransactionSynchronizationManager.getSynchronizations().stream()
+            .filter(sync -> sync instanceof pl.nextsteppro.climbing.infrastructure.storage.LocalFileStorageService.DeferredDelete)
+            .forEach(org.springframework.transaction.support.TransactionSynchronization::afterCommit);
+    }
+
     @DynamicPropertySource
     static void configureProperties(DynamicPropertyRegistry registry) {
         registry.add("spring.datasource.url", postgres::getJdbcUrl);

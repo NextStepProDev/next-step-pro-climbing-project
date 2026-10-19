@@ -335,6 +335,7 @@ class CommentAttachmentIntegrationTest extends BaseIntegrationTest {
         assertTrue(fileStorageService.exists(filename, CommentFileSupport.FOLDER));
 
         adminService.deleteTimeSlot(coach.getId(), slot.getId());
+        unlinkDeletedFiles(); // storage unlinks on COMMIT, and this test rolls back
 
         // Asserted row by row rather than on a table count: this suite shares one database, so a
         // global count answers a question about every other test as well as this one.
@@ -363,6 +364,7 @@ class CommentAttachmentIntegrationTest extends BaseIntegrationTest {
         assertNotNull(trainingCommentRepository.findAll().getFirst().eventId());
 
         adminService.deleteEvent(coach.getId(), event.getId());
+        unlinkDeletedFiles(); // storage unlinks on COMMIT, and this test rolls back
 
         assertFalse(eventRepository.existsById(event.getId()));
         assertFalse(trainingCommentRepository.existsById(comment.id()), "the thread went with the event");
@@ -394,6 +396,7 @@ class CommentAttachmentIntegrationTest extends BaseIntegrationTest {
         assertEquals(2, filenames.size());
 
         commentFileSupport.purgeForUser(athlete.getId());
+        unlinkDeletedFiles(); // storage unlinks on COMMIT, and this test rolls back
 
         for (String filename : filenames) {
             assertFalse(fileStorageService.exists(filename, CommentFileSupport.FOLDER), filename);
@@ -409,6 +412,7 @@ class CommentAttachmentIntegrationTest extends BaseIntegrationTest {
         // Comment rows vanish through the DB cascade without Hibernate loading them, so nothing
         // but an explicit purge can reach the files.
         trainingCalendarService.deleteMy(athlete.getId(), trainingId);
+        unlinkDeletedFiles(); // storage unlinks on COMMIT, and this test rolls back
 
         assertFalse(fileStorageService.exists(filename, CommentFileSupport.FOLDER));
     }
