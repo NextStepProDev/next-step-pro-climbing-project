@@ -413,7 +413,7 @@ export function WeekCalendar({
                             <button
                               onClick={(e) => { e.stopPropagation(); onEventCopy(event) }}
                               className="absolute top-0.5 right-0.5 p-0.5 rounded bg-surface-900/70 text-surface-300 hover:text-primary-300 opacity-0 group-hover/unavail:opacity-100 transition-opacity"
-                              title="Kopiuj wydarzenie"
+                              title={t('slotActions.copyEvent')}
                             >
                               <Copy className="w-2.5 h-2.5" />
                             </button>
@@ -513,7 +513,7 @@ export function WeekCalendar({
                             <button
                               onClick={(e) => { e.stopPropagation(); onEventCopy(event) }}
                               className="absolute top-0 right-0 h-full px-1 bg-surface-900/70 text-surface-300 hover:text-primary-300 opacity-0 group-hover/event:opacity-100 transition-opacity"
-                              title="Kopiuj wydarzenie"
+                              title={t('slotActions.copyEvent')}
                             >
                               <Copy className="w-2.5 h-2.5" />
                             </button>
@@ -634,7 +634,7 @@ export function WeekCalendar({
                                   data-admin-action
                                   onClick={(e) => { e.stopPropagation(); onConfirmSlotMove?.(slot.id) }}
                                   className="p-1.5 sm:p-0.5 rounded bg-green-900/80 text-green-300 hover:text-green-100 transition-colors"
-                                  title="Zatwierdź"
+                                  title={t('slotActions.confirmMove')}
                                 >
                                   <Check className="w-4 h-4 sm:w-3 sm:h-3" />
                                 </button>
@@ -642,7 +642,7 @@ export function WeekCalendar({
                                   data-admin-action
                                   onClick={(e) => { e.stopPropagation(); onCancelSlotMove?.(slot.id) }}
                                   className="p-1.5 sm:p-0.5 rounded bg-red-900/80 text-red-300 hover:text-red-100 transition-colors"
-                                  title="Anuluj"
+                                  title={t('slotActions.cancelMove')}
                                 >
                                   <X className="w-4 h-4 sm:w-3 sm:h-3" />
                                 </button>
@@ -654,7 +654,7 @@ export function WeekCalendar({
                                     data-admin-action
                                     onClick={(e) => { e.stopPropagation(); onNotifyParticipants(slot.id) }}
                                     className="p-0.5 rounded bg-surface-900/70 text-surface-300 hover:text-amber-300 transition-colors"
-                                    title="Powiadom uczestników"
+                                    title={t('slotActions.notify')}
                                   >
                                     <Bell className="w-2.5 h-2.5" />
                                   </button>
@@ -664,7 +664,7 @@ export function WeekCalendar({
                                     data-admin-action
                                     onClick={(e) => { e.stopPropagation(); onSlotCopy(slot, day.date) }}
                                     className="p-0.5 rounded bg-surface-900/70 text-surface-300 hover:text-primary-300 transition-colors"
-                                    title="Kopiuj slot"
+                                    title={t('slotActions.copySlot')}
                                   >
                                     <Copy className="w-2.5 h-2.5" />
                                   </button>
@@ -674,7 +674,7 @@ export function WeekCalendar({
                                     data-admin-action
                                     onClick={(e) => { e.stopPropagation(); onSlotCut(slot, day.date) }}
                                     className="p-0.5 rounded bg-surface-900/70 text-surface-300 hover:text-amber-300 transition-colors"
-                                    title="Wytnij slot"
+                                    title={t('slotActions.cutSlot')}
                                   >
                                     <Scissors className="w-2.5 h-2.5" />
                                   </button>

@@ -34,7 +34,7 @@ export function ShareButtons({ title, url: urlProp, description, compact }: { ti
         <button
           onClick={() => setOpen(o => !o)}
           className="flex items-center gap-1.5 text-surface-400 hover:text-surface-200 transition-colors"
-          aria-label="Share"
+          aria-label={t('a11y.share')}
         >
           <Share2 className="w-4 h-4" />
         </button>

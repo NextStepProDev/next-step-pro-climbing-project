@@ -49,7 +49,7 @@ export function UserSearchSelect({ users, value, onChange, placeholder }: UserSe
           </div>
           <button
             type="button"
-            aria-label="Clear selection"
+            aria-label={t('editorUi.clearSelection')}
             onClick={handleClear}
             className="ml-2 shrink-0 text-surface-400 hover:text-surface-200 transition-colors"
           >
@@ -73,7 +73,7 @@ export function UserSearchSelect({ users, value, onChange, placeholder }: UserSe
       {open && (
         <div className="absolute z-50 w-full mt-1 bg-surface-800 border border-surface-700 rounded-lg shadow-lg overflow-hidden">
           {filtered.length === 0 ? (
-            <div className="px-3 py-2 text-sm text-surface-500">Brak wyników</div>
+            <div className="px-3 py-2 text-sm text-surface-500">{t('editorUi.noResults')}</div>
           ) : (
             <ul className="max-h-48 overflow-y-auto">
               {filtered.map((u) => (

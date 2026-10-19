@@ -275,5 +275,27 @@
     "windowInfo": "Availability window {{from}} – {{to}} — propose hours within this range.",
     "loginRequired": "Log in to propose a training time.",
     "loginButton": "Log in"
+  },
+  "slotActions": {
+    "confirmMove": "Confirm the move",
+    "cancelMove": "Cancel the move",
+    "notify": "Notify participants",
+    "copyEvent": "Copy event",
+    "copySlot": "Copy slot",
+    "cutSlot": "Cut slot"
+  },
+  "adminBanners": {
+    "moved": "Slot <b>{{range}}</b> moved — confirm or cancel the change",
+    "cut": "Slot <b>{{range}}</b> cut — click an empty spot in the calendar to paste it",
+    "copied": "Slot <b>{{range}}</b>{{payer}} copied — click an empty spot in the calendar to paste a copy",
+    "copiedEvent": "Event <b>{{title}}</b>{{days}} copied — click the day the copy should start on{{hour}}",
+    "eventDays_one": " ({{count}} day)",
+    "eventDays_other": " ({{count}} days)",
+    "hourFromClick": " (time taken from where you click)",
+    "cancel": "Cancel",
+    "notifiedNone": "No participants with notifications switched on",
+    "notified_one": "Sent {{count}} notification",
+    "notified_other": "Sent {{count}} notifications",
+    "notifyFailed": "Could not send the notifications"
   }
 }

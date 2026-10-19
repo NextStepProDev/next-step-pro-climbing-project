@@ -276,5 +276,27 @@
     "windowInfo": "Ventana de disponibilidad {{from}} – {{to}} — propón horas dentro de este rango.",
     "loginRequired": "Inicia sesión para proponer un horario de entrenamiento.",
     "loginButton": "Iniciar sesión"
+  },
+  "slotActions": {
+    "confirmMove": "Confirmar el traslado",
+    "cancelMove": "Cancelar el traslado",
+    "notify": "Avisar a los participantes",
+    "copyEvent": "Copiar evento",
+    "copySlot": "Copiar franja",
+    "cutSlot": "Cortar franja"
+  },
+  "adminBanners": {
+    "moved": "Franja <b>{{range}}</b> movida: confirma o cancela el cambio",
+    "cut": "Franja <b>{{range}}</b> cortada: haz clic en un hueco libre del calendario para pegarla",
+    "copied": "Franja <b>{{range}}</b>{{payer}} copiada: haz clic en un hueco libre del calendario para pegar la copia",
+    "copiedEvent": "Evento <b>{{title}}</b>{{days}} copiado: haz clic en el día en que debe empezar la copia{{hour}}",
+    "eventDays_one": " ({{count}} día)",
+    "eventDays_other": " ({{count}} días)",
+    "hourFromClick": " (la hora se toma del lugar del clic)",
+    "cancel": "Cancelar",
+    "notifiedNone": "No hay participantes con avisos activados",
+    "notified_one": "Se envió {{count}} aviso",
+    "notified_other": "Se enviaron {{count}} avisos",
+    "notifyFailed": "No se pudieron enviar los avisos"
   }
 }

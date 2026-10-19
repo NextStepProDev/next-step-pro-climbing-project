@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef, useEffect, useMemo, lazy, Suspense } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams, useLocation, useNavigate, Link } from "react-router-dom";
-import { useTranslation } from "react-i18next";
+import { Trans, useTranslation } from "react-i18next";
 import { PageHead } from "../components/ui/PageHead";
 import { format, startOfWeek, addWeeks, subWeeks, addDays, differenceInCalendarDays, startOfMonth, endOfMonth } from "date-fns";
 import { calendarApi, reservationApi, adminApi, adminSettlementsApi } from "../api/client";
@@ -379,14 +379,15 @@ export function CalendarPage() {
     mutationFn: (slotId: string) => adminApi.notifySlotParticipants(slotId, lastSlotMoveRef.current.get(slotId)),
     onSuccess: (data, slotId) => {
       lastSlotMoveRef.current.delete(slotId);
+      // Plural forms from i18n: the hand-rolled "< 5" said "Wysłano 22 powiadomień" (22–24, 32–34… take "powiadomienia").
       const msg = data.notifiedCount === 0
-        ? 'Brak uczestników z włączonymi powiadomieniami'
-        : `Wysłano ${data.notifiedCount} ${data.notifiedCount === 1 ? 'powiadomienie' : data.notifiedCount < 5 ? 'powiadomienia' : 'powiadomień'}`;
+        ? t('adminBanners.notifiedNone')
+        : t('adminBanners.notified', { count: data.notifiedCount });
       setNotifyToast({ type: 'success', message: msg });
       setTimeout(() => setNotifyToast(null), 4000);
     },
     onError: () => {
-      setNotifyToast({ type: 'error', message: 'Nie udało się wysłać powiadomień' });
+      setNotifyToast({ type: 'error', message: t('adminBanners.notifyFailed') });
       setTimeout(() => setNotifyToast(null), 4000);
     },
   });
@@ -785,7 +786,8 @@ export function CalendarPage() {
             {isAdmin && pendingSlotMove && (
               <div className="mb-3 flex items-center gap-3 px-4 py-2.5 bg-red-500/10 border border-red-500/30 rounded-lg">
                 <span className="text-sm text-red-300 flex-1">
-                  Slot <strong>{pendingSlotMove.originalStartTime.slice(0, 5)}–{pendingSlotMove.originalEndTime.slice(0, 5)}</strong> przeniesiony — zatwierdź lub anuluj zmiany
+                  <Trans t={t} i18nKey="adminBanners.moved" components={{ b: <strong /> }}
+                    values={{ range: `${pendingSlotMove.originalStartTime.slice(0, 5)}–${pendingSlotMove.originalEndTime.slice(0, 5)}` }} />
                 </span>
               </div>
             )}
@@ -795,12 +797,13 @@ export function CalendarPage() {
               <div className="mb-3 flex items-center gap-3 px-4 py-2.5 bg-amber-500/10 border border-amber-500/30 rounded-lg">
                 <Scissors className="w-4 h-4 text-amber-400 shrink-0" />
                 <span className="text-sm text-amber-300 flex-1">
-                  Slot <strong>{cutSlot.startTime.slice(0, 5)}–{cutSlot.endTime.slice(0, 5)}</strong> wytnięty — kliknij w wolne miejsce w kalendarzu, aby wkleić
+                  <Trans t={t} i18nKey="adminBanners.cut" components={{ b: <strong /> }}
+                    values={{ range: `${cutSlot.startTime.slice(0, 5)}–${cutSlot.endTime.slice(0, 5)}` }} />
                 </span>
                 <button
                   onClick={() => setCutSlot(null)}
                   className="p-1 text-amber-400 hover:text-amber-200 transition-colors"
-                  title="Anuluj"
+                  title={t('adminBanners.cancel')}
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -812,15 +815,18 @@ export function CalendarPage() {
               <div className="mb-3 flex items-center gap-3 px-4 py-2.5 bg-primary-500/10 border border-primary-500/30 rounded-lg">
                 <Copy className="w-4 h-4 text-primary-400 shrink-0" />
                 <span className="text-sm text-primary-300 flex-1">
-                  Slot <strong>{copiedSlot.startTime.slice(0, 5)}–{copiedSlot.endTime.slice(0, 5)}</strong>
-                  {/* Named, because the copy carries it: pasting a session under a contractor is
-                      a decision, and one made silently is one nobody can correct. */}
-                  {copiedSlot.payoutSource && <> ({copiedSlot.payoutSource.name})</>} skopiowany — kliknij w wolne miejsce w kalendarzu, aby wkleić kopię
+                  {/* The contractor is named, because the copy carries it: pasting a session under
+                      a contractor is a decision, and one made silently is one nobody can correct. */}
+                  <Trans t={t} i18nKey="adminBanners.copied" components={{ b: <strong /> }}
+                    values={{
+                      range: `${copiedSlot.startTime.slice(0, 5)}–${copiedSlot.endTime.slice(0, 5)}`,
+                      payer: copiedSlot.payoutSource ? ` (${copiedSlot.payoutSource.name})` : '',
+                    }} />
                 </span>
                 <button
                   onClick={() => setCopiedSlot(null)}
                   className="p-1 text-primary-400 hover:text-primary-200 transition-colors"
-                  title="Anuluj"
+                  title={t('adminBanners.cancel')}
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -832,17 +838,23 @@ export function CalendarPage() {
               <div className="mb-3 flex items-center gap-3 px-4 py-2.5 bg-primary-500/10 border border-primary-500/30 rounded-lg">
                 <Copy className="w-4 h-4 text-primary-400 shrink-0" />
                 <span className="text-sm text-primary-300 flex-1">
-                  Wydarzenie <strong>{copiedEvent.title}</strong>
-                  {copiedEvent.isMultiDay && ` (${differenceInCalendarDays(parseCalendarDate(copiedEvent.endDate), parseCalendarDate(copiedEvent.startDate)) + 1} dni)`}
-                  {' '}skopiowane — kliknij w kalendarzu w dzień, od którego ma się zacząć kopia
-                  {copiedEvent.startTime && copiedEvent.endTime && !copiedEvent.isMultiDay
-                    ? ' (godzina z miejsca kliknięcia)'
-                    : ''}
+                  <Trans t={t} i18nKey="adminBanners.copiedEvent" components={{ b: <strong /> }}
+                    values={{
+                      title: copiedEvent.title,
+                      days: copiedEvent.isMultiDay
+                        ? t('adminBanners.eventDays', {
+                            count: differenceInCalendarDays(parseCalendarDate(copiedEvent.endDate), parseCalendarDate(copiedEvent.startDate)) + 1,
+                          })
+                        : '',
+                      hour: copiedEvent.startTime && copiedEvent.endTime && !copiedEvent.isMultiDay
+                        ? t('adminBanners.hourFromClick')
+                        : '',
+                    }} />
                 </span>
                 <button
                   onClick={() => setCopiedEvent(null)}
                   className="p-1 text-primary-400 hover:text-primary-200 transition-colors"
-                  title="Anuluj"
+                  title={t('adminBanners.cancel')}
                 >
                   <X className="w-4 h-4" />
                 </button>

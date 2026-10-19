@@ -1,4 +1,5 @@
-import { useState, useRef, type DragEvent, type ChangeEvent } from 'react'
+import { useState, useRef, type DragEvent, type ChangeEvent, type KeyboardEvent } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Upload, X, Image as ImageIcon, Loader2 } from 'lucide-react'
 import clsx from 'clsx'
 import { Button } from './Button'
@@ -21,6 +22,7 @@ export function FileUpload({
   multiple = false,
   previews = [],
 }: FileUploadProps) {
+  const { t } = useTranslation('admin')
   const [dragActive, setDragActive] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [compressing, setCompressing] = useState(false)
@@ -53,7 +55,7 @@ export function FileUpload({
       if (validateFile(file)) {
         validFiles.push(file)
       } else {
-        errors.push(`${file.name}: nieprawidłowy typ lub rozmiar`)
+        errors.push(t('editorUi.fileUpload.invalid', { name: file.name }))
       }
     })
 
@@ -68,6 +70,10 @@ export function FileUpload({
       try {
         const compressed = await Promise.all(validFiles.map(compressImage))
         onFileSelect(compressed)
+      } catch {
+        // Without this the rejection went nowhere: the spinner stopped and nothing was selected,
+        // with no word on screen about why.
+        setError(t('editorUi.fileUpload.optimizeFailed'))
       } finally {
         setCompressing(false)
       }
@@ -104,6 +110,14 @@ export function FileUpload({
     fileInputRef.current?.click()
   }
 
+  // The drop zone is the only way to the hidden file input, so it has to work from the keyboard too.
+  const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault()
+      handleClick()
+    }
+  }
+
   const handleClear = () => {
     setError(null)
     if (fileInputRef.current) {
@@ -121,7 +135,7 @@ export function FileUpload({
               <div key={index} className="relative">
                 <img
                   src={preview}
-                  alt={`Preview ${index + 1}`}
+                  alt={t('editorUi.fileUpload.preview', { n: index + 1 })}
                   className="w-full h-32 object-cover rounded-lg border border-surface-700"
                 />
               </div>
@@ -134,7 +148,7 @@ export function FileUpload({
             onClick={handleClear}
           >
             <X className="h-4 w-4 mr-1" />
-            Wyczyść wszystkie
+            {t('editorUi.fileUpload.clearAll')}
           </Button>
         </div>
       ) : (
@@ -151,6 +165,9 @@ export function FileUpload({
           onDragOver={handleDrag}
           onDrop={handleDrop}
           onClick={handleClick}
+          onKeyDown={handleKeyDown}
+          role="button"
+          tabIndex={0}
         >
           <input
             ref={fileInputRef}
@@ -171,20 +188,20 @@ export function FileUpload({
             )}
             <div className="text-surface-300">
               {compressing ? (
-                <span className="font-medium text-primary-400">Optymalizacja zdjęć...</span>
+                <span className="font-medium text-primary-400">{t('editorUi.fileUpload.optimizing')}</span>
               ) : (
                 <>
                   <span className="font-medium text-surface-100">
-                    Kliknij aby wybrać {multiple ? 'pliki' : 'plik'}
+                    {t(multiple ? 'editorUi.fileUpload.chooseMany' : 'editorUi.fileUpload.chooseOne')}
                   </span>
-                  {' lub przeciągnij i upuść'}
+                  {' '}{t('editorUi.fileUpload.orDrop')}
                 </>
               )}
             </div>
             <div className="text-sm text-surface-400">
               {accept.split(',').map((type) => type.split('/')[1].toUpperCase()).join(', ')}
               {' '}
-              (max {maxSizeMB}MB {multiple ? 'każdy' : ''})
+              {t(multiple ? 'editorUi.fileUpload.maxEach' : 'editorUi.fileUpload.maxOne', { mb: maxSizeMB })}
             </div>
           </div>
         </div>

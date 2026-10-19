@@ -276,5 +276,29 @@
     "windowInfo": "Okno dostępności {{from}} – {{to}} — zaproponuj godziny w tych ramach.",
     "loginRequired": "Zaloguj się, aby zaproponować termin treningu.",
     "loginButton": "Zaloguj się"
+  },
+  "slotActions": {
+    "confirmMove": "Zatwierdź przeniesienie",
+    "cancelMove": "Anuluj przeniesienie",
+    "notify": "Powiadom uczestników",
+    "copyEvent": "Kopiuj wydarzenie",
+    "copySlot": "Kopiuj slot",
+    "cutSlot": "Wytnij slot"
+  },
+  "adminBanners": {
+    "moved": "Slot <b>{{range}}</b> przeniesiony — zatwierdź lub anuluj zmiany",
+    "cut": "Slot <b>{{range}}</b> wycięty — kliknij w wolne miejsce w kalendarzu, aby wkleić",
+    "copied": "Slot <b>{{range}}</b>{{payer}} skopiowany — kliknij w wolne miejsce w kalendarzu, aby wkleić kopię",
+    "copiedEvent": "Wydarzenie <b>{{title}}</b>{{days}} skopiowane — kliknij w kalendarzu w dzień, od którego ma się zacząć kopia{{hour}}",
+    "eventDays_one": " ({{count}} dzień)",
+    "eventDays_few": " ({{count}} dni)",
+    "eventDays_many": " ({{count}} dni)",
+    "hourFromClick": " (godzina z miejsca kliknięcia)",
+    "cancel": "Anuluj",
+    "notifiedNone": "Brak uczestników z włączonymi powiadomieniami",
+    "notified_one": "Wysłano {{count}} powiadomienie",
+    "notified_few": "Wysłano {{count}} powiadomienia",
+    "notified_many": "Wysłano {{count}} powiadomień",
+    "notifyFailed": "Nie udało się wysłać powiadomień"
   }
 }

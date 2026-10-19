@@ -49,6 +49,7 @@ function MemberTile({
   member: InstructorPublic
   onClick: () => void
 }) {
+  const { t } = useTranslation('common')
   return (
     <button
       onClick={onClick}
@@ -77,7 +78,7 @@ function MemberTile({
       {member.badgeUrl && (
         <img
           src={member.badgeUrl}
-          alt="badge"
+          alt={t('a11y.badge')}
           className="absolute top-3 right-3 w-14 h-14 rounded-full object-contain drop-shadow-lg"
         />
       )}
@@ -155,7 +156,7 @@ function MemberModal({
           {member.badgeUrl && (
             <img
               src={member.badgeUrl}
-              alt="badge"
+              alt={t('a11y.badge')}
               className="absolute top-4 right-14 w-16 h-16 rounded-full object-contain drop-shadow-lg"
             />
           )}
