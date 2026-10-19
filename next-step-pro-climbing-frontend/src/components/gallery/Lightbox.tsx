@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { X, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useFocusTrap } from '../../utils/useFocusTrap'
+import { useBodyScrollLock } from '../ui/scrollLock'
 import { Button } from '../ui/Button'
 import type { Photo } from '../../types'
 
@@ -35,12 +36,7 @@ export function Lightbox({ photos, currentIndex, onClose, onNavigate }: Lightbox
   }, [currentIndex, hasPrevious, hasNext, onClose, onNavigate])
 
   // Prevent body scroll when lightbox is open
-  useEffect(() => {
-    document.body.style.overflow = 'hidden'
-    return () => {
-      document.body.style.overflow = ''
-    }
-  }, [])
+  useBodyScrollLock(true)
 
   return (
     <div

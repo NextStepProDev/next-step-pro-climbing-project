@@ -4,6 +4,7 @@ import { X } from 'lucide-react'
 import { createPortal } from 'react-dom'
 import { useTranslation } from 'react-i18next'
 import { useFocusTrap } from '../../utils/useFocusTrap'
+import { useBodyScrollLock } from './scrollLock'
 import { Button } from './Button'
 
 interface ModalProps {
@@ -44,16 +45,7 @@ export function Modal({ isOpen, onClose, title, children, size = 'md', confirmCl
     setConfirmingClose(false)
   }
 
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden'
-    } else {
-      document.body.style.overflow = ''
-    }
-    return () => {
-      document.body.style.overflow = ''
-    }
-  }, [isOpen])
+  useBodyScrollLock(isOpen)
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
