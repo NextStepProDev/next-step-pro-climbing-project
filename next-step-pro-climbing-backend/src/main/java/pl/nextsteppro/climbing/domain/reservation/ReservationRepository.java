@@ -119,6 +119,10 @@ public interface ReservationRepository extends JpaRepository<Reservation, UUID> 
     @Query("SELECT COUNT(r) > 0 FROM Reservation r WHERE r.user.id = :userId AND r.timeSlot.event.id = :eventId")
     boolean existsAnyByUserIdAndEventId(UUID userId, UUID eventId);
 
+    /** A confirmed booking on any day of the event — every day is booked together, so one is enough. */
+    @Query("SELECT COUNT(r) > 0 FROM Reservation r WHERE r.user.id = :userId AND r.timeSlot.event.id = :eventId AND r.status = 'CONFIRMED'")
+    boolean existsConfirmedByUserIdAndEventId(UUID userId, UUID eventId);
+
     // Invitees who already booked are counted among confirmed — the invitation limit guard
     // must filter them out of the invitation list to avoid double-counting.
     @Query("SELECT r.user.id FROM Reservation r WHERE r.timeSlot.id = :timeSlotId AND r.status = 'CONFIRMED'")
