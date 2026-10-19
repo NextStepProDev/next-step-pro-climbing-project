@@ -469,7 +469,31 @@ public class TrainingCalendarService {
         if (!comment.getAuthor().getId().equals(viewerId)) {
             throw new IllegalStateException(msg.get("training.calendar.comment.not.yours"));
         }
+        requireSessionStillBooked(comment);
         return comment;
+    }
+
+    /**
+     * The by-id twin of the confirmed check in {@link #requireSessionThread}. The thread routes are
+     * addressed by reservation and close the moment it is cancelled — the thread is then neither
+     * readable nor writable — but an edit is addressed by comment id and skipped that check, so a
+     * cancelled athlete could still rewrite words under a session they no longer attend, and ring
+     * the coach's badge from a thread neither side can open. Same predicate both ways: rebooking
+     * reopens the thread, and with it the edit.
+     */
+    private void requireSessionStillBooked(TrainingComment comment) {
+        if (comment.trainingId() != null) {
+            return;
+        }
+        UUID athleteId = comment.athleteId();
+        UUID slotId = comment.timeSlotId();
+        UUID eventId = comment.eventId();
+        boolean booked = slotId != null
+            ? reservationRepository.existsByUserIdAndTimeSlotIdAndStatus(athleteId, slotId, ReservationStatus.CONFIRMED)
+            : eventId != null && reservationRepository.existsConfirmedByUserIdAndEventId(athleteId, eventId);
+        if (!booked) {
+            throw new IllegalStateException(msg.get("training.calendar.reservation.not.confirmed"));
+        }
     }
 
     /**

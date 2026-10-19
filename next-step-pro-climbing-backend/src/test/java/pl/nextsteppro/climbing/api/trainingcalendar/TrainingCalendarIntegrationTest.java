@@ -558,6 +558,51 @@ class TrainingCalendarIntegrationTest extends BaseIntegrationTest {
     }
 
     /**
+     * The thread routes close the moment the booking is cancelled, but an edit is addressed by
+     * comment id and never asked — so words could still be rewritten, and the other side's badge
+     * rung, under a session neither of them could open any more.
+     */
+    @Test
+    void shouldCloseEditingTogetherWithTheThreadWhenTheBookingIsCancelled() {
+        LocalDate date = LocalDate.now().minusDays(1);
+        TimeSlot slot = timeSlotRepository.save(new TimeSlot(date, LocalTime.of(10, 0), LocalTime.of(12, 0), 5));
+        Reservation booking = reservationRepository.save(new Reservation(athlete, slot));
+        TrainingCommentDto mine = trainingCalendarService.addMySessionComment(athlete.getId(), booking.getId(), "Bolało kolano");
+        TrainingCommentDto coachs = adminTrainingCalendarService.addSessionComment(coach.getId(), booking.getId(), "Odpocznij");
+
+        booking.cancel();
+        reservationRepository.saveAndFlush(booking);
+
+        assertThrows(IllegalStateException.class,
+            () -> trainingCalendarService.editComment(athlete.getId(), false, mine.id(), "Bolało bardzo"));
+        assertThrows(IllegalStateException.class,
+            () -> trainingCalendarService.editComment(coach.getId(), true, coachs.id(), "Odpocznij tydzień"));
+
+        // Rebooking (the same row, confirmed again) reopens the thread, and the edit with it
+        booking.confirm();
+        reservationRepository.saveAndFlush(booking);
+        assertEquals("Bolało bardzo",
+            trainingCalendarService.editComment(athlete.getId(), false, mine.id(), "Bolało bardzo").body());
+    }
+
+    @Test
+    void shouldCloseEditingUnderAnEventOnceEveryDayOfItIsCancelled() {
+        LocalDate start = LocalDate.now().minusDays(3);
+        var event = eventRepository.save(new pl.nextsteppro.climbing.domain.event.Event(
+            "Kurs skalny", pl.nextsteppro.climbing.domain.event.EventType.COURSE, start, start.plusDays(1), 8));
+        TimeSlot dayOne = timeSlotRepository.save(
+            new TimeSlot(event, start, LocalTime.of(10, 0), LocalTime.of(16, 0), 8));
+        Reservation first = reservationRepository.save(new Reservation(athlete, dayOne));
+        TrainingCommentDto mine = trainingCalendarService.addMySessionComment(athlete.getId(), first.getId(), "Mokro");
+
+        first.cancel();
+        reservationRepository.saveAndFlush(first);
+
+        assertThrows(IllegalStateException.class,
+            () -> trainingCalendarService.editComment(athlete.getId(), false, mine.id(), "Bardzo mokro"));
+    }
+
+    /**
      * A slot can hold several people, so the address of a thread is the PAIR (session, athlete).
      * Dropping the athlete half would publish one client's conversation to everyone else booked on
      * the same session.
