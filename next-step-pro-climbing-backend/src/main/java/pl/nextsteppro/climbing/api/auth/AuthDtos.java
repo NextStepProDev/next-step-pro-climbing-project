@@ -65,6 +65,15 @@ public final class AuthDtos {
         String email
     ) {}
 
+    /**
+     * A one-time token from an e-mailed link, in the BODY. It used to travel as {@code ?token=} on a
+     * POST, which every proxy access log records — the reset-password request always carried it here.
+     */
+    public record TokenRequest(
+        @NotBlank(message = "{validation.token.required}")
+        String token
+    ) {}
+
     public record ResetPasswordRequest(
         @NotBlank(message = "{validation.token.required}")
         String token,

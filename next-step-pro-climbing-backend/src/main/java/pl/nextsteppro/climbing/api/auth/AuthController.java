@@ -34,15 +34,15 @@ public class AuthController {
 
     @PostMapping("/verify-email")
     @Operation(summary = "Verify email address", description = "Verifies the email using token from verification email")
-    public ResponseEntity<MessageResponse> verifyEmail(@RequestParam String token) {
-        return ResponseEntity.ok(authService.verifyEmail(token));
+    public ResponseEntity<MessageResponse> verifyEmail(@Valid @RequestBody TokenRequest request) {
+        return ResponseEntity.ok(authService.verifyEmail(request.token()));
     }
 
     @PostMapping("/verify-email/resend")
     @Operation(summary = "Renew an expired verification link",
         description = "Takes the token from a link that no longer works and mails a fresh one to the same account")
-    public ResponseEntity<MessageResponse> resendVerificationByToken(@RequestParam String token) {
-        return ResponseEntity.ok(authService.resendVerificationByToken(token));
+    public ResponseEntity<MessageResponse> resendVerificationByToken(@Valid @RequestBody TokenRequest request) {
+        return ResponseEntity.ok(authService.resendVerificationByToken(request.token()));
     }
 
     @PostMapping("/resend-verification")
