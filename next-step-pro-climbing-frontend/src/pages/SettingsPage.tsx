@@ -1,4 +1,4 @@
-import { useRef, useState, type ChangeEvent } from 'react'
+import { useId, useRef, useState, type ChangeEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useMutation } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
@@ -281,10 +281,13 @@ function ThemeSection() {
     <section className="bg-surface-900 rounded-lg border border-surface-800 p-6">
       <h2 className="text-lg font-semibold text-surface-100 mb-1">{t('theme.title')}</h2>
       <p className="text-sm text-surface-400 mb-4">{t('theme.description')}</p>
-      <div className="flex gap-3">
+      {/* Wraps: three buttons in a row were 391 px on a 390 px phone in Polish, more in longer languages. */}
+      <div className="flex flex-wrap gap-3">
         {THEME_OPTIONS.map(({ value, labelKey, Icon }) => (
           <button
             key={value}
+            type="button"
+            aria-pressed={choice === value}
             onClick={() => setTheme(value)}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${
               choice === value
@@ -473,24 +476,13 @@ function NotificationsSection({
   return (
     <section className="bg-surface-900 rounded-lg border border-surface-800 p-6">
       <h2 className="text-lg font-semibold text-surface-100 mb-4">{t('notifications.title')}</h2>
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-surface-200">{t('notifications.reservations')}</p>
-          <p className="text-sm text-surface-400">
-            {t('notifications.description')}
-          </p>
-        </div>
-        <label className="relative inline-flex items-center cursor-pointer">
-          <input
-            type="checkbox"
-            checked={enabled}
-            onChange={(e) => mutation.mutate(e.target.checked)}
-            disabled={mutation.isPending}
-            className="sr-only peer"
-          />
-          <div className="w-11 h-6 bg-surface-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-500"></div>
-        </label>
-      </div>
+      <SettingSwitch
+        label={t('notifications.reservations')}
+        hint={t('notifications.description')}
+        checked={enabled}
+        disabled={mutation.isPending}
+        onChange={(value) => mutation.mutate(value)}
+      />
       {mutation.isError && (
         <p className="text-sm text-rose-400/80 mt-2">
           {getErrorMessage(mutation.error)}
@@ -526,22 +518,13 @@ function AscentVisibilitySection({
   return (
     <section className="bg-surface-900 rounded-lg border border-surface-800 p-6">
       <h2 className="text-lg font-semibold text-surface-100 mb-4">{t('feed.title')}</h2>
-      <div className="flex items-center justify-between gap-4">
-        <div>
-          <p className="text-surface-200">{t('privacy.settingLabel')}</p>
-          <p className="text-sm text-surface-400">{t('privacy.settingHint')}</p>
-        </div>
-        <label className="relative inline-flex items-center cursor-pointer shrink-0">
-          <input
-            type="checkbox"
-            checked={publicVisible}
-            onChange={(e) => mutation.mutate(e.target.checked)}
-            disabled={mutation.isPending}
-            className="sr-only peer"
-          />
-          <div className="w-11 h-6 bg-surface-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-500"></div>
-        </label>
-      </div>
+      <SettingSwitch
+        label={t('privacy.settingLabel')}
+        hint={t('privacy.settingHint')}
+        checked={publicVisible}
+        disabled={mutation.isPending}
+        onChange={(value) => mutation.mutate(value)}
+      />
       {mutation.isError && (
         <p className="text-sm text-rose-400/80 mt-2">
           {getErrorMessage(mutation.error)}
@@ -571,22 +554,13 @@ function NewsletterSection({
   return (
     <section className="bg-surface-900 rounded-lg border border-surface-800 p-6">
       <h2 className="text-lg font-semibold text-surface-100 mb-4">{t('newsletter.title')}</h2>
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-surface-200">{t('newsletter.label')}</p>
-          <p className="text-sm text-surface-400">{t('newsletter.description')}</p>
-        </div>
-        <label className="relative inline-flex items-center cursor-pointer">
-          <input
-            type="checkbox"
-            checked={subscribed}
-            onChange={(e) => mutation.mutate(e.target.checked)}
-            disabled={mutation.isPending}
-            className="sr-only peer"
-          />
-          <div className="w-11 h-6 bg-surface-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-500"></div>
-        </label>
-      </div>
+      <SettingSwitch
+        label={t('newsletter.label')}
+        hint={t('newsletter.description')}
+        checked={subscribed}
+        disabled={mutation.isPending}
+        onChange={(value) => mutation.mutate(value)}
+      />
       {mutation.isError && (
         <p className="text-sm text-rose-400/80 mt-2">
           {getErrorMessage(mutation.error)}
@@ -706,5 +680,42 @@ function DeleteAccountSection({ onDeleted, hasPassword }: { onDeleted: () => voi
         </div>
       </Modal>
     </section>
+  )
+}
+
+/**
+ * One on/off setting. ⚠️ The three switches here used to be a bare checkbox inside a label holding
+ * only the drawn track, so a screen reader announced "checkbox, checked" with no name at all: the
+ * text beside it was not tied to the control. The label and hint are now its accessible name and
+ * description, and `role="switch"` makes it read as the toggle it looks like.
+ */
+function SettingSwitch({ label, hint, checked, disabled, onChange }: {
+  label: string
+  hint: string
+  checked: boolean
+  disabled: boolean
+  onChange: (value: boolean) => void
+}) {
+  const id = useId()
+  return (
+    <div className="flex items-center justify-between gap-4">
+      <div>
+        <p id={`${id}-label`} className="text-surface-200">{label}</p>
+        <p id={`${id}-hint`} className="text-sm text-surface-400">{hint}</p>
+      </div>
+      <label className="relative inline-flex items-center cursor-pointer shrink-0">
+        <input
+          type="checkbox"
+          role="switch"
+          checked={checked}
+          onChange={(e) => onChange(e.target.checked)}
+          disabled={disabled}
+          aria-labelledby={`${id}-label`}
+          aria-describedby={`${id}-hint`}
+          className="sr-only peer"
+        />
+        <div className="w-11 h-6 bg-surface-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-500"></div>
+      </label>
+    </div>
   )
 }
