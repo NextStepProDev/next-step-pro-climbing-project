@@ -138,7 +138,9 @@ export function UserMoneyCard({ userId }: { userId: string }) {
                     aria-label={t('users.detail.money.fee.remove', {
                       month: format(parseCalendarDate(line.date), 'LLLL yyyy', { locale }),
                     })}
-                    className="shrink-0 p-1 rounded text-rose-400/70 hover:text-rose-400 transition-colors"
+                    // 28 px hit area around a 14 px icon: below 24 px (WCAG 2.5.8) a thumb deleting a
+                    // month of fees lands on the neighbouring row as often as on this one.
+                    className="shrink-0 inline-flex items-center justify-center min-w-7 min-h-7 rounded text-rose-400/70 hover:text-rose-400 transition-colors"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
@@ -334,7 +336,7 @@ function SubscriptionRow({ userId }: { userId: string }) {
                       onClick={() => restore.mutate(month)}
                       aria-label={t('users.detail.money.subscription.restore', { month: label })}
                       title={t('users.detail.money.subscription.restore', { month: label })}
-                      className="p-0.5 rounded text-surface-400 hover:text-surface-100 transition-colors disabled:opacity-50"
+                      className="inline-flex items-center justify-center min-w-6 min-h-6 rounded text-surface-400 hover:text-surface-100 transition-colors disabled:opacity-50"
                     >
                       <RotateCcw className="w-3 h-3" />
                     </button>
