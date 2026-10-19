@@ -12,6 +12,7 @@ import pl.nextsteppro.climbing.domain.assets.SharedAsset;
 import pl.nextsteppro.climbing.domain.assets.SharedAssetRepository;
 import pl.nextsteppro.climbing.infrastructure.storage.FileStorageService;
 import pl.nextsteppro.climbing.infrastructure.storage.FileUrls;
+import pl.nextsteppro.climbing.infrastructure.i18n.LocalizedMessage;
 
 import java.io.IOException;
 import java.util.List;
@@ -60,7 +61,7 @@ public class AdminAssetsService {
 
     public void delete(UUID id) throws IOException {
         SharedAsset asset = sharedAssetRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Asset not found"));
+                .orElseThrow(() -> new LocalizedMessage.Rejected("error.not.found.asset"));
 
         // Same as a gallery photo: picked from the library, the URL may be in use on a page.
         try {

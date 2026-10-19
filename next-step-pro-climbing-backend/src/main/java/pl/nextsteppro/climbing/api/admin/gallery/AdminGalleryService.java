@@ -16,6 +16,7 @@ import pl.nextsteppro.climbing.domain.gallery.Photo;
 import pl.nextsteppro.climbing.domain.gallery.PhotoRepository;
 import pl.nextsteppro.climbing.infrastructure.storage.FileStorageService;
 import pl.nextsteppro.climbing.infrastructure.storage.FileUrls;
+import pl.nextsteppro.climbing.infrastructure.i18n.LocalizedMessage;
 
 import java.io.IOException;
 import java.time.Instant;
@@ -59,7 +60,7 @@ public class AdminGalleryService {
 
     public AlbumDetailAdminDto getAlbum(UUID id) {
         Album album = albumRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Album not found"));
+                .orElseThrow(() -> new LocalizedMessage.Rejected("error.not.found.album"));
 
         List<Photo> photos = photoRepository.findByAlbumIdOrderByDisplayOrderAscCreatedAtAsc(id);
 
@@ -86,7 +87,7 @@ public class AdminGalleryService {
     public void reorderAlbums(List<UUID> orderedIds) {
         List<Album> albums = albumRepository.findAllById(orderedIds);
         if (albums.size() != orderedIds.size()) {
-            throw new IllegalArgumentException("One or more album IDs not found");
+            throw new LocalizedMessage.Rejected("error.not.found.album");
         }
 
         Map<UUID, Album> albumMap = albums.stream()
@@ -101,7 +102,7 @@ public class AdminGalleryService {
 
     public AlbumAdminDto setAlbumPublished(UUID id, boolean publish) {
         Album album = albumRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Album not found"));
+                .orElseThrow(() -> new LocalizedMessage.Rejected("error.not.found.album"));
 
         if (publish && album.getPublishedAt() == null) {
             album.setPublishedAt(Instant.now());
@@ -114,7 +115,7 @@ public class AdminGalleryService {
 
     public AlbumAdminDto updateAlbum(UUID id, UpdateAlbumRequest request) {
         Album album = albumRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Album not found"));
+                .orElseThrow(() -> new LocalizedMessage.Rejected("error.not.found.album"));
 
         if (request.name() != null) {
             album.setName(request.name());
@@ -129,7 +130,7 @@ public class AdminGalleryService {
 
     public void deleteAllPhotos(UUID albumId) {
         Album album = albumRepository.findById(albumId)
-                .orElseThrow(() -> new IllegalArgumentException("Album not found"));
+                .orElseThrow(() -> new LocalizedMessage.Rejected("error.not.found.album"));
 
         List<Photo> photos = photoRepository.findByAlbumId(albumId);
         Set<String> inUse = fileUrlReferences.referencedIn("gallery");
@@ -151,7 +152,7 @@ public class AdminGalleryService {
 
     public void deleteAlbum(UUID id) {
         Album album = albumRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Album not found"));
+                .orElseThrow(() -> new LocalizedMessage.Rejected("error.not.found.album"));
 
         // Delete all photo files first (before CASCADE delete removes DB records)
         List<Photo> photos = photoRepository.findByAlbumId(id);
@@ -175,13 +176,13 @@ public class AdminGalleryService {
 
     public void setThumbnailPhoto(UUID albumId, UUID photoId) {
         Album album = albumRepository.findById(albumId)
-                .orElseThrow(() -> new IllegalArgumentException("Album not found"));
+                .orElseThrow(() -> new LocalizedMessage.Rejected("error.not.found.album"));
 
         Photo photo = photoRepository.findById(photoId)
-                .orElseThrow(() -> new IllegalArgumentException("Photo not found"));
+                .orElseThrow(() -> new LocalizedMessage.Rejected("error.not.found.photo"));
 
         if (!photo.getAlbum().getId().equals(albumId)) {
-            throw new IllegalArgumentException("Photo does not belong to this album");
+            throw new LocalizedMessage.Rejected("error.photo.not.in.album");
         }
 
         album.setThumbnailPhotoId(photoId);
@@ -191,7 +192,7 @@ public class AdminGalleryService {
     // Photo operations
     public UploadPhotoResponse uploadPhoto(UUID albumId, MultipartFile file, @Nullable String caption) throws IOException {
         Album album = albumRepository.findById(albumId)
-                .orElseThrow(() -> new IllegalArgumentException("Album not found"));
+                .orElseThrow(() -> new LocalizedMessage.Rejected("error.not.found.album"));
 
         String filename = fileStorageService.store(file, "gallery");
 
@@ -209,7 +210,7 @@ public class AdminGalleryService {
 
     public void updatePhoto(UUID photoId, UpdatePhotoRequest request) {
         Photo photo = photoRepository.findById(photoId)
-                .orElseThrow(() -> new IllegalArgumentException("Photo not found"));
+                .orElseThrow(() -> new LocalizedMessage.Rejected("error.not.found.photo"));
 
         if (request.caption() != null) {
             photo.setCaption(request.caption());
@@ -229,7 +230,7 @@ public class AdminGalleryService {
 
     public void deletePhoto(UUID photoId) throws IOException {
         Photo photo = photoRepository.findById(photoId)
-                .orElseThrow(() -> new IllegalArgumentException("Photo not found"));
+                .orElseThrow(() -> new LocalizedMessage.Rejected("error.not.found.photo"));
 
         // ⚠️ The picker hands out this photo's URL, which may be a news/course thumbnail, a block
         // image or a homepage picture now. The gallery entry goes; the bytes stay while anything

@@ -74,6 +74,29 @@ class GlobalExceptionHandlerTest {
         assertEquals("bad input", body.message());
     }
 
+    /** Code with no MessageService refuses with a key; the reply must carry the translation, never the key. */
+    @Test
+    void shouldTranslateALocalizedRejectionWithItsArguments() {
+        when(messageService.get("file.too.large.max", 5L)).thenReturn("Plik jest za duży. Maksymalny rozmiar to 5 MB.");
+
+        var response = handler.handleIllegalArgument(
+            new pl.nextsteppro.climbing.infrastructure.i18n.LocalizedMessage.Rejected("file.too.large.max", 5L));
+
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        assertEquals("Plik jest za duży. Maksymalny rozmiar to 5 MB.", response.getBody().message());
+    }
+
+    @Test
+    void shouldTranslateALocalizedConflict() {
+        when(messageService.get("image.server.busy")).thenReturn("Serwer przetwarza teraz inne zdjęcia");
+
+        var response = handler.handleIllegalState(
+            new pl.nextsteppro.climbing.infrastructure.i18n.LocalizedMessage.Conflict("image.server.busy"));
+
+        assertEquals(HttpStatus.CONFLICT, response.getStatusCode());
+        assertEquals("Serwer przetwarza teraz inne zdjęcia", response.getBody().message());
+    }
+
     @Test
     void shouldReturn409ForIllegalState() {
         var response = handler.handleIllegalState(new IllegalStateException("conflict"));

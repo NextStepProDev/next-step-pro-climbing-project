@@ -15,6 +15,7 @@ import pl.nextsteppro.climbing.domain.event.Event;
 import pl.nextsteppro.climbing.domain.event.EventRepository;
 import pl.nextsteppro.climbing.infrastructure.storage.FileStorageService;
 import pl.nextsteppro.climbing.infrastructure.storage.FileUrls;
+import pl.nextsteppro.climbing.infrastructure.i18n.LocalizedMessage;
 
 import java.io.IOException;
 import java.time.Instant;
@@ -77,11 +78,11 @@ public class AdminCourseService {
         Course source = findCourse(courseId);
 
         if (source.getLanguage().equals(targetLanguage)) {
-            throw new IllegalArgumentException("Target language is the same as source language");
+            throw new LocalizedMessage.Rejected("error.translation.same.language");
         }
 
         if (courseRepository.existsByTranslationGroupIdAndLanguage(source.getTranslationGroupId(), targetLanguage)) {
-            throw new IllegalArgumentException("Translation in this language already exists");
+            throw new LocalizedMessage.Rejected("error.translation.exists");
         }
 
         Course copy = new Course(source.getTitle());
@@ -118,7 +119,7 @@ public class AdminCourseService {
     public void reorderCourses(List<UUID> orderedIds) {
         List<Course> courses = courseRepository.findAllById(orderedIds);
         if (courses.size() != orderedIds.size()) {
-            throw new IllegalArgumentException("One or more course IDs not found");
+            throw new LocalizedMessage.Rejected("error.not.found.course");
         }
 
         Map<UUID, Course> courseMap = courses.stream()
@@ -273,7 +274,7 @@ public class AdminCourseService {
         Course course = findCourse(id);
 
         if (course.getThumbnailFilename() == null && course.getThumbnailUrl() == null) {
-            throw new IllegalStateException("No thumbnail to delete");
+            throw new LocalizedMessage.Conflict("error.thumbnail.none");
         }
 
         String oldFilename = course.getThumbnailFilename();
@@ -371,7 +372,7 @@ public class AdminCourseService {
         CourseContentBlock block = findBlock(blockId);
 
         if (block.getBlockType() != CourseBlockType.TEXT) {
-            throw new IllegalArgumentException("Block is not a TEXT block");
+            throw new LocalizedMessage.Rejected("error.block.wrong.type");
         }
 
         block.setContent(request.content());
@@ -383,7 +384,7 @@ public class AdminCourseService {
         CourseContentBlock block = findBlock(blockId);
 
         if (block.getBlockType() != CourseBlockType.IMAGE) {
-            throw new IllegalArgumentException("Block is not an IMAGE block");
+            throw new LocalizedMessage.Rejected("error.block.wrong.type");
         }
 
         block.setCaption(request.caption());
@@ -534,12 +535,12 @@ public class AdminCourseService {
 
     private Course findCourse(UUID id) {
         return courseRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Course not found"));
+                .orElseThrow(() -> new LocalizedMessage.Rejected("error.not.found.course"));
     }
 
     private CourseContentBlock findBlock(UUID id) {
         return blockRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Block not found"));
+                .orElseThrow(() -> new LocalizedMessage.Rejected("error.not.found.block"));
     }
 
     private CourseAdminDto toAdminDto(CourseSummaryProjection projection) {

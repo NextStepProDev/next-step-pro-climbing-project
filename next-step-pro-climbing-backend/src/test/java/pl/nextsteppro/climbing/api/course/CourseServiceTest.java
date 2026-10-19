@@ -162,7 +162,7 @@ class CourseServiceTest {
                 IllegalArgumentException.class,
                 () -> courseService.getPublishedById(courseId)
         );
-        assertEquals("Course not found", ex.getMessage());
+        assertEquals("error.not.found.course", ex.getMessage());
     }
 
     @Test
@@ -177,7 +177,7 @@ class CourseServiceTest {
                 IllegalArgumentException.class,
                 () -> courseService.getPublishedById(courseId)
         );
-        assertEquals("Course not found", ex.getMessage());
+        assertEquals("error.not.found.course", ex.getMessage());
         verify(blockRepository, never()).findByCourseIdOrderByDisplayOrderAsc(any());
     }
 

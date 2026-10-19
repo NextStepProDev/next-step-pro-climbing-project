@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 import pl.nextsteppro.climbing.api.news.NewsDtos.*;
 import pl.nextsteppro.climbing.domain.news.*;
 import pl.nextsteppro.climbing.infrastructure.storage.FileUrls;
+import pl.nextsteppro.climbing.infrastructure.i18n.LocalizedMessage;
 
 import java.util.List;
 import java.util.Set;
@@ -79,10 +80,10 @@ public class NewsService {
     @Cacheable(value = "newsDetail", key = "#id", condition = "#userId == null")
     public NewsDetailDto getPublishedById(UUID id, @Nullable UUID userId) {
         var news = newsRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("News not found"));
+                .orElseThrow(() -> new LocalizedMessage.Rejected("error.not.found.news"));
 
         if (!news.isPublished()) {
-            throw new IllegalArgumentException("News not found");
+            throw new LocalizedMessage.Rejected("error.not.found.news");
         }
 
         List<NewsContentBlock> blocks = blockRepository.findByNewsIdOrderByDisplayOrderAsc(id);
@@ -117,7 +118,7 @@ public class NewsService {
     public void starNews(UUID newsId, UUID userId) {
         newsRepository.findById(newsId)
                 .filter(News::isPublished)
-                .orElseThrow(() -> new IllegalArgumentException("News not found"));
+                .orElseThrow(() -> new LocalizedMessage.Rejected("error.not.found.news"));
 
         NewsStarId starId = new NewsStarId(userId, newsId);
         if (!newsStarRepository.existsById(starId)) {

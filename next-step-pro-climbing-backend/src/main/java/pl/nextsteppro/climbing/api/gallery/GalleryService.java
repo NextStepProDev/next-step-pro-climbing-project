@@ -9,6 +9,7 @@ import pl.nextsteppro.climbing.domain.gallery.AlbumRepository;
 import pl.nextsteppro.climbing.domain.gallery.Photo;
 import pl.nextsteppro.climbing.domain.gallery.PhotoRepository;
 import pl.nextsteppro.climbing.infrastructure.storage.FileUrls;
+import pl.nextsteppro.climbing.infrastructure.i18n.LocalizedMessage;
 
 import java.util.List;
 import java.util.UUID;
@@ -43,10 +44,10 @@ public class GalleryService {
 
     public AlbumDetailDto getAlbum(UUID id) {
         Album album = albumRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Album not found"));
+                .orElseThrow(() -> new LocalizedMessage.Rejected("error.not.found.album"));
 
         if (!album.isPublished()) {
-            throw new IllegalArgumentException("Album not found");
+            throw new LocalizedMessage.Rejected("error.not.found.album");
         }
 
         List<Photo> photos = photoRepository.findByAlbumIdOrderByDisplayOrderAscCreatedAtAsc(id);

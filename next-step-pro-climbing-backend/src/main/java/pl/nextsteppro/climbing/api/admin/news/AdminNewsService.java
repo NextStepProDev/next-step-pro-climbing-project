@@ -18,6 +18,7 @@ import pl.nextsteppro.climbing.infrastructure.mail.NewsletterMailService;
 import pl.nextsteppro.climbing.infrastructure.media.VideoEmbedUrls;
 import pl.nextsteppro.climbing.infrastructure.storage.FileStorageService;
 import pl.nextsteppro.climbing.infrastructure.storage.FileUrls;
+import pl.nextsteppro.climbing.infrastructure.i18n.LocalizedMessage;
 
 import java.io.IOException;
 import java.time.Instant;
@@ -168,11 +169,11 @@ public class AdminNewsService {
         News source = findNews(id);
 
         if (source.getLanguage().equals(targetLanguage)) {
-            throw new IllegalArgumentException("Target language must be different from source language");
+            throw new LocalizedMessage.Rejected("error.translation.same.language");
         }
 
         if (newsRepository.existsByTranslationGroupIdAndLanguage(source.getTranslationGroupId(), targetLanguage)) {
-            throw new IllegalArgumentException("Translation already exists for language: " + targetLanguage);
+            throw new LocalizedMessage.Rejected("error.translation.exists");
         }
 
         News copy = new News(source.getTitle());
@@ -235,7 +236,7 @@ public class AdminNewsService {
         News news = findNews(id);
 
         if (news.getThumbnailFilename() == null && news.getThumbnailUrl() == null) {
-            throw new IllegalStateException("No thumbnail to delete");
+            throw new LocalizedMessage.Conflict("error.thumbnail.none");
         }
 
         String oldFilename = news.getThumbnailFilename();
@@ -328,7 +329,7 @@ public class AdminNewsService {
         NewsContentBlock block = findBlock(blockId);
 
         if (block.getBlockType() != BlockType.VIDEO_EMBED) {
-            throw new IllegalArgumentException("Block is not a VIDEO_EMBED block");
+            throw new LocalizedMessage.Rejected("error.block.wrong.type");
         }
 
         block.setContent(normalizeVideoEmbedUrl(request.url()));
@@ -360,7 +361,7 @@ public class AdminNewsService {
         NewsContentBlock block = findBlock(blockId);
 
         if (block.getBlockType() != BlockType.TEXT) {
-            throw new IllegalArgumentException("Block is not a TEXT block");
+            throw new LocalizedMessage.Rejected("error.block.wrong.type");
         }
 
         block.setContent(request.content());
@@ -372,7 +373,7 @@ public class AdminNewsService {
         NewsContentBlock block = findBlock(blockId);
 
         if (block.getBlockType() != BlockType.IMAGE) {
-            throw new IllegalArgumentException("Block is not an IMAGE block");
+            throw new LocalizedMessage.Rejected("error.block.wrong.type");
         }
 
         block.setCaption(request.caption());
@@ -505,7 +506,7 @@ public class AdminNewsService {
     public NewsletterSentDto sendNewsNewsletter(UUID id) {
         News news = findNews(id);
         if (!news.isPublished()) {
-            throw new IllegalStateException("News must be published before sending newsletter");
+            throw new LocalizedMessage.Conflict("error.news.newsletter.unpublished");
         }
         List<NewsContentBlock> blocks = blockRepository.findByNewsIdOrderByDisplayOrderAsc(id);
         List<User> subscribers = userRepository.findAllByNewsletterSubscribedTrue();
@@ -541,12 +542,12 @@ public class AdminNewsService {
 
     private News findNews(UUID id) {
         return newsRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("News not found"));
+                .orElseThrow(() -> new LocalizedMessage.Rejected("error.not.found.news"));
     }
 
     private NewsContentBlock findBlock(UUID id) {
         return blockRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Block not found"));
+                .orElseThrow(() -> new LocalizedMessage.Rejected("error.not.found.block"));
     }
 
     private NewsAdminDto toAdminDto(NewsSummaryProjection projection) {
@@ -627,8 +628,7 @@ public class AdminNewsService {
     private String normalizeVideoEmbedUrl(String inputUrl) {
         String embed = VideoEmbedUrls.toEmbedUrlOrNull(inputUrl);
         if (embed == null) {
-            throw new IllegalArgumentException(
-                    "Nieobsługiwany URL wideo. Użyj linku z YouTube lub Instagram.");
+            throw new LocalizedMessage.Rejected("error.video.url.unsupported");
         }
         return embed;
     }

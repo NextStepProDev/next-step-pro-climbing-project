@@ -5,6 +5,7 @@ import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
+import pl.nextsteppro.climbing.infrastructure.i18n.LocalizedMessage;
 
 import javax.imageio.ImageIO;
 import javax.imageio.ImageReader;
@@ -78,7 +79,7 @@ public class ImageOptimizer {
         if (decoded == null) {
             // Reached when the bytes passed the signature check but no reader could handle them —
             // a truncated or corrupt file. Storing it would serve a broken image forever.
-            throw new IllegalArgumentException("Image file is damaged or unreadable");
+            throw new LocalizedMessage.Rejected("image.damaged");
         }
 
         BufferedImage opaque = new BufferedImage(decoded.getWidth(), decoded.getHeight(),
@@ -170,11 +171,11 @@ public class ImageOptimizer {
     private static void acquireDecodeSlot() {
         try {
             if (!DECODES.tryAcquire(DECODE_WAIT_SECONDS, java.util.concurrent.TimeUnit.SECONDS)) {
-                throw new IllegalStateException("The server is busy processing other images, try again");
+                throw new LocalizedMessage.Conflict("image.server.busy");
             }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            throw new IllegalStateException("Image processing was interrupted", e);
+            throw new LocalizedMessage.Conflict("image.interrupted", e);
         }
     }
 
@@ -193,7 +194,7 @@ public class ImageOptimizer {
                 reader.setInput(iis);
                 long pixels = (long) reader.getWidth(0) * reader.getHeight(0);
                 if (pixels > MAX_PIXELS) {
-                    throw new IllegalArgumentException("Image resolution is too large");
+                    throw new LocalizedMessage.Rejected("image.resolution.too.large");
                 }
             } catch (IOException e) {
                 // Unreadable header: let the normal decode path produce the error instead.

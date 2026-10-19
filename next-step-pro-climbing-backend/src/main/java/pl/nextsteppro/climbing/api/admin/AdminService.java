@@ -667,7 +667,7 @@ public class AdminService {
 
         if (request.courseId() != null) {
             Course course = courseRepository.findById(request.courseId())
-                .orElseThrow(() -> new IllegalArgumentException("Course not found"));
+                .orElseThrow(() -> new IllegalArgumentException(msg.get("error.not.found.course")));
             event.setCourse(course);
             event.setTitle(course.getTitle());
         }
@@ -762,7 +762,7 @@ public class AdminService {
         }
         if (request.courseId() != null) {
             Course course = courseRepository.findById(request.courseId())
-                .orElseThrow(() -> new IllegalArgumentException("Course not found"));
+                .orElseThrow(() -> new IllegalArgumentException(msg.get("error.not.found.course")));
             event.setCourse(course);
             event.setTitle(course.getTitle());
         } else if (Boolean.TRUE.equals(request.removeCourse())) {
@@ -1079,7 +1079,7 @@ public class AdminService {
             users = userRepository.findAllByNewsletterSubscribedTrue();
         } else {
             if (request.userIds() == null || request.userIds().isEmpty()) {
-                throw new IllegalArgumentException("User IDs required for SELECTED recipient type");
+                throw new IllegalArgumentException(msg.get("error.mail.recipients.required"));
             }
             users = userRepository.findAllById(request.userIds());
         }
@@ -1363,12 +1363,12 @@ public class AdminService {
 
     private Event requireEvent(UUID eventId) {
         return eventRepository.findById(eventId)
-            .orElseThrow(() -> new IllegalArgumentException("Event not found"));
+            .orElseThrow(() -> new IllegalArgumentException(msg.get("error.not.found.event")));
     }
 
     private TimeSlot requireSlot(UUID slotId) {
         return timeSlotRepository.findById(slotId)
-            .orElseThrow(() -> new IllegalArgumentException("Time slot not found"));
+            .orElseThrow(() -> new IllegalArgumentException(msg.get("error.not.found.slot")));
     }
 
     /**
@@ -1379,13 +1379,13 @@ public class AdminService {
      */
     private TimeSlot requireSlotForUpdate(UUID slotId) {
         return timeSlotRepository.findByIdForUpdate(slotId)
-            .orElseThrow(() -> new IllegalArgumentException("Time slot not found"));
+            .orElseThrow(() -> new IllegalArgumentException(msg.get("error.not.found.slot")));
     }
 
     /** Event twin of {@link #requireSlotForUpdate} — the lock event booking takes. */
     private Event requireEventForUpdate(UUID eventId) {
         return eventRepository.findByIdForUpdate(eventId)
-            .orElseThrow(() -> new IllegalArgumentException("Event not found"));
+            .orElseThrow(() -> new IllegalArgumentException(msg.get("error.not.found.event")));
     }
 
     /**
@@ -1401,7 +1401,7 @@ public class AdminService {
 
     private User requireUser(UUID userId) {
         return userRepository.findById(userId)
-            .orElseThrow(() -> new IllegalArgumentException("User not found"));
+            .orElseThrow(() -> new IllegalArgumentException(msg.get("error.not.found.user")));
     }
 
     /**
@@ -1470,7 +1470,7 @@ public class AdminService {
         for (UUID uid : desired) {
             if (!existingUserIds.contains(uid)) {
                 User user = userRepository.findById(uid)
-                    .orElseThrow(() -> new IllegalArgumentException("User not found: " + uid));
+                    .orElseThrow(() -> new IllegalArgumentException(msg.get("error.not.found.user")));
                 // Only the newly added are checked. The front always submits the full invitee list,
                 // so validating all of them would turn a slot carrying an invitation issued before
                 // this guard existed into a slot nobody can edit — the same trap the invitation
@@ -1513,7 +1513,7 @@ public class AdminService {
         for (UUID uid : desired) {
             if (!existingUserIds.contains(uid)) {
                 User user = userRepository.findById(uid)
-                    .orElseThrow(() -> new IllegalArgumentException("User not found: " + uid));
+                    .orElseThrow(() -> new IllegalArgumentException(msg.get("error.not.found.user")));
                 // Newly added only — see the note in syncSlotInvites.
                 requireVerifiedAccount(user);
                 reservedSeatRepository.save(new ReservedSeat(event, user));
@@ -1576,9 +1576,9 @@ public class AdminService {
     })
     public void cancelReservationByAdmin(UUID reservationId) {
         Reservation reservation = reservationRepository.findById(reservationId)
-            .orElseThrow(() -> new IllegalArgumentException("Reservation not found"));
+            .orElseThrow(() -> new IllegalArgumentException(msg.get("reservation.not.found")));
         if (!reservation.isConfirmed()) {
-            throw new IllegalStateException("Reservation is not confirmed");
+            throw new IllegalStateException(msg.get("error.reservation.not.confirmed"));
         }
         User user = reservation.getUser();
         TimeSlot slot = reservation.getTimeSlot();
@@ -1613,10 +1613,10 @@ public class AdminService {
     })
     public void deleteReservationPermanently(UUID reservationId) {
         Reservation reservation = reservationRepository.findById(reservationId)
-            .orElseThrow(() -> new IllegalArgumentException("Reservation not found"));
+            .orElseThrow(() -> new IllegalArgumentException(msg.get("reservation.not.found")));
         TimeSlot slot = reservation.getTimeSlot();
         if (!BookingTimeValidator.isPast(slot.getDate(), slot.getEndTime())) {
-            throw new IllegalStateException("Only past reservations can be permanently deleted");
+            throw new IllegalStateException(msg.get("error.reservation.delete.not.past"));
         }
         reservationRepository.delete(reservation);
     }
@@ -1634,7 +1634,7 @@ public class AdminService {
     public void deletePastEventReservations(UUID eventId) {
         Event event = requireEvent(eventId);
         if (!BookingTimeValidator.dayHasPassed(event.getEndDate())) {
-            throw new IllegalStateException("Only past events can have their reservations permanently deleted");
+            throw new IllegalStateException(msg.get("error.event.reservations.delete.not.past"));
         }
         List<TimeSlot> slots = timeSlotRepository.findByEventId(eventId);
         if (slots.isEmpty()) return;
@@ -1679,9 +1679,9 @@ public class AdminService {
     })
     public void updateReservationParticipants(UUID reservationId, int newParticipants) {
         Reservation reservation = reservationRepository.findById(reservationId)
-            .orElseThrow(() -> new IllegalArgumentException("Reservation not found"));
+            .orElseThrow(() -> new IllegalArgumentException(msg.get("reservation.not.found")));
         if (!reservation.isConfirmed()) {
-            throw new IllegalStateException("Reservation is not confirmed");
+            throw new IllegalStateException(msg.get("error.reservation.not.confirmed"));
         }
         // The event twin always locked; this one only claimed to be its model.
         TimeSlot slot = requireSlotForUpdate(reservation.getTimeSlot().getId());
@@ -1705,7 +1705,7 @@ public class AdminService {
         reservation.setParticipants(newParticipants);
         reservationRepository.save(reservation);
         User user = userRepository.findById(reservation.getUser().getId())
-            .orElseThrow(() -> new IllegalStateException("User not found"));
+            .orElseThrow(() -> new IllegalStateException(msg.get("error.not.found.user")));
         if (!BookingTimeValidator.isPast(slot.getDate(), slot.getEndTime())) {
             mailService.sendAdminParticipantReductionNotification(user, slot, oldParticipants, newParticipants);
         }
@@ -1728,14 +1728,14 @@ public class AdminService {
     public void updateEventReservationParticipants(UUID eventId, UUID userId, int newParticipants) {
         // Locked like the slot twin — a raise read against an unlocked capacity can overshoot.
         Event event = eventRepository.findByIdForUpdate(eventId)
-            .orElseThrow(() -> new IllegalArgumentException("Event not found"));
+            .orElseThrow(() -> new IllegalArgumentException(msg.get("error.not.found.event")));
         List<TimeSlot> slots = timeSlotRepository.findByEventId(eventId);
-        if (slots.isEmpty()) throw new IllegalStateException("Event has no slots");
+        if (slots.isEmpty()) throw new IllegalStateException(msg.get("error.event.no.slots"));
 
         List<UUID> slotIds = slots.stream().map(TimeSlot::getId).toList();
         List<Reservation> userReservations = reservationRepository.findConfirmedByTimeSlotIds(slotIds)
             .stream().filter(r -> r.getUser().getId().equals(userId)).toList();
-        if (userReservations.isEmpty()) throw new IllegalStateException("No confirmed reservation found for this user");
+        if (userReservations.isEmpty()) throw new IllegalStateException(msg.get("error.reservation.none.for.user"));
 
         int oldParticipants = userReservations.getFirst().getParticipants();
         if (newParticipants == oldParticipants) return;
@@ -1753,7 +1753,7 @@ public class AdminService {
         }
 
         User user = userRepository.findById(userReservations.getFirst().getUser().getId())
-            .orElseThrow(() -> new IllegalStateException("User not found"));
+            .orElseThrow(() -> new IllegalStateException(msg.get("error.not.found.user")));
         for (Reservation reservation : userReservations) {
             reservation.setParticipants(newParticipants);
             reservationRepository.save(reservation);
@@ -1906,9 +1906,9 @@ public class AdminService {
     })
     public void deleteGuestParticipantFromSlot(UUID slotId, UUID guestId) {
         GuestReservation guest = guestReservationRepository.findById(guestId)
-            .orElseThrow(() -> new IllegalArgumentException("Guest reservation not found"));
+            .orElseThrow(() -> new IllegalArgumentException(msg.get("error.not.found.guest")));
         if (guest.getTimeSlot() == null || !guest.getTimeSlot().getId().equals(slotId)) {
-            throw new IllegalArgumentException("Guest reservation does not belong to this slot");
+            throw new IllegalArgumentException(msg.get("error.guest.not.on.target"));
         }
         guestReservationRepository.delete(guest);
         waitlistService.notifyAll(slotId);
@@ -2100,9 +2100,9 @@ public class AdminService {
     })
     public void deleteGuestParticipantFromEvent(UUID eventId, UUID guestId) {
         GuestReservation guest = guestReservationRepository.findById(guestId)
-            .orElseThrow(() -> new IllegalArgumentException("Guest reservation not found"));
+            .orElseThrow(() -> new IllegalArgumentException(msg.get("error.not.found.guest")));
         if (guest.getEvent() == null || !guest.getEvent().getId().equals(eventId)) {
-            throw new IllegalArgumentException("Guest reservation does not belong to this event");
+            throw new IllegalArgumentException(msg.get("error.guest.not.on.target"));
         }
         guestReservationRepository.delete(guest);
         eventWaitlistService.notifyAll(eventId);

@@ -23,6 +23,7 @@ import pl.nextsteppro.climbing.domain.waitlist.EventWaitlistRepository;
 import pl.nextsteppro.climbing.domain.waitlist.Waitlist;
 import pl.nextsteppro.climbing.domain.waitlist.WaitlistRepository;
 import pl.nextsteppro.climbing.domain.waitlist.WaitlistStatus;
+import pl.nextsteppro.climbing.infrastructure.i18n.LocalizedMessage;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -189,7 +190,7 @@ public class CalendarService {
 
     public EventSummaryDto getEventSummary(UUID eventId, @Nullable UUID userId) {
         Event event = eventRepository.findById(eventId)
-            .orElseThrow(() -> new IllegalArgumentException("Event not found: " + eventId));
+            .orElseThrow(() -> new LocalizedMessage.Rejected("error.not.found.event"));
 
         EventData eventData = computeEventData(List.of(event), userId);
         int currentParticipants = eventData.participantsMap().getOrDefault(event.getId(), 0);
@@ -222,7 +223,7 @@ public class CalendarService {
         if (!event.isActive() && !isUserRegistered && !isReservedForUser
             && !(userId != null && reservationRepository.existsAnyByUserIdAndEventId(userId, eventId))
             && !isAdmin(userId)) {
-            throw new IllegalArgumentException("Event not found: " + eventId);
+            throw new LocalizedMessage.Rejected("error.not.found.event");
         }
 
         LocalDateTime eventStart = LocalDateTime.of(
@@ -271,7 +272,7 @@ public class CalendarService {
 
     public TimeSlotDetailDto getSlotDetails(UUID slotId, @Nullable UUID userId) {
         TimeSlot slot = timeSlotRepository.findById(slotId)
-            .orElseThrow(() -> new IllegalArgumentException("Time slot not found: " + slotId));
+            .orElseThrow(() -> new LocalizedMessage.Rejected("error.not.found.slot"));
 
         int confirmedCount = reservationRepository.countConfirmedByTimeSlotId(slotId)
             + guestReservationRepository.sumParticipantsByTimeSlotId(slotId);

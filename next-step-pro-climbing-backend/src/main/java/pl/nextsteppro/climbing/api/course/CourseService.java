@@ -11,6 +11,7 @@ import pl.nextsteppro.climbing.domain.course.CourseContentBlockRepository;
 import pl.nextsteppro.climbing.domain.course.CourseRepository;
 import pl.nextsteppro.climbing.domain.course.CourseSummaryProjection;
 import pl.nextsteppro.climbing.infrastructure.storage.FileUrls;
+import pl.nextsteppro.climbing.infrastructure.i18n.LocalizedMessage;
 
 import java.util.List;
 import java.util.UUID;
@@ -42,10 +43,10 @@ public class CourseService {
     @Cacheable(value = "courseDetail", key = "#id")
     public CourseDetailDto getPublishedById(UUID id) {
         var course = courseRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Course not found"));
+                .orElseThrow(() -> new LocalizedMessage.Rejected("error.not.found.course"));
 
         if (!course.isPublished()) {
-            throw new IllegalArgumentException("Course not found");
+            throw new LocalizedMessage.Rejected("error.not.found.course");
         }
 
         List<CourseContentBlock> blocks = blockRepository.findByCourseIdOrderByDisplayOrderAsc(id);

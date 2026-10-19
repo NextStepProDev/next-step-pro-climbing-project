@@ -120,7 +120,7 @@ public class AscentService {
     @CacheEvict(value = PublicAscentService.CACHE, allEntries = true)
     public AscentDto createMyAscent(UUID userId, SaveAscentRequest request) {
         User owner = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+                .orElseThrow(() -> new IllegalArgumentException(msg.get("error.not.found.user")));
         validate(request, request.terrainOrRock());
 
         ClimbingAscent ascent = request.terrainOrRock() == AscentTerrain.MOUNTAIN

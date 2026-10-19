@@ -249,7 +249,7 @@ class AdminInstructorServiceTest {
             IllegalArgumentException.class,
             () -> adminInstructorService.updateInstructor(instructorId, request)
         );
-        assertEquals("Instructor not found", exception.getMessage());
+        assertEquals("error.not.found.instructor", exception.getMessage());
     }
 
     @Test
@@ -362,7 +362,7 @@ class AdminInstructorServiceTest {
             IllegalArgumentException.class,
             () -> adminInstructorService.deleteInstructor(instructorId)
         );
-        assertEquals("Instructor not found", exception.getMessage());
+        assertEquals("error.not.found.instructor", exception.getMessage());
     }
 
     // ========== UPLOAD PHOTO TESTS ==========
@@ -431,7 +431,7 @@ class AdminInstructorServiceTest {
             IllegalArgumentException.class,
             () -> adminInstructorService.uploadPhoto(instructorId, mockFile)
         );
-        assertEquals("Instructor not found", exception.getMessage());
+        assertEquals("error.not.found.instructor", exception.getMessage());
     }
 
     @Test
@@ -476,7 +476,7 @@ class AdminInstructorServiceTest {
             IllegalStateException.class,
             () -> adminInstructorService.deletePhoto(instructorId)
         );
-        assertEquals("Instructor has no photo", exception.getMessage());
+        assertEquals("error.instructor.no.photo", exception.getMessage());
     }
 
     @Test
@@ -489,7 +489,7 @@ class AdminInstructorServiceTest {
             IllegalArgumentException.class,
             () -> adminInstructorService.deletePhoto(instructorId)
         );
-        assertEquals("Instructor not found", exception.getMessage());
+        assertEquals("error.not.found.instructor", exception.getMessage());
     }
 
     @Test
@@ -574,7 +574,7 @@ class AdminInstructorServiceTest {
                 IllegalArgumentException.class,
                 () -> adminInstructorService.duplicateAsTranslation(instructorId, "pl")
         );
-        assertEquals("Target language is the same as source language", ex.getMessage());
+        assertEquals("error.translation.same.language", ex.getMessage());
     }
 
     @Test
@@ -590,7 +590,7 @@ class AdminInstructorServiceTest {
                 IllegalArgumentException.class,
                 () -> adminInstructorService.duplicateAsTranslation(instructorId, "en")
         );
-        assertEquals("Translation in this language already exists", ex.getMessage());
+        assertEquals("error.translation.exists", ex.getMessage());
     }
 
     // ========== REFERENCE COUNTING TESTS ==========

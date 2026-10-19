@@ -66,7 +66,7 @@ public class AdminTrainingRequestService {
         try {
             newStatus = TrainingRequestStatus.valueOf(request.status());
         } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Invalid status: " + request.status());
+            throw new IllegalArgumentException(msg.get("error.bad.request"));
         }
 
         String note = sanitizeNote(request.adminNote());
@@ -83,7 +83,7 @@ public class AdminTrainingRequestService {
                         tr.getUser(), tr.getRequestedDate(), tr.getStartTime(), tr.getEndTime(), note);
                 }
             }
-            default -> throw new IllegalArgumentException("Invalid status: " + request.status());
+            default -> throw new IllegalArgumentException(msg.get("error.bad.request"));
         }
 
         return toDto(tr);

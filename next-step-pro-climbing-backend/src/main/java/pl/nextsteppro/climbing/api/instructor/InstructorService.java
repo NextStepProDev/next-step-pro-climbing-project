@@ -9,6 +9,7 @@ import pl.nextsteppro.climbing.api.instructor.InstructorDtos.InstructorPublicDto
 import pl.nextsteppro.climbing.domain.instructor.Instructor;
 import pl.nextsteppro.climbing.domain.instructor.InstructorRepository;
 import pl.nextsteppro.climbing.infrastructure.storage.FileUrls;
+import pl.nextsteppro.climbing.infrastructure.i18n.LocalizedMessage;
 
 import java.util.List;
 import java.util.UUID;
@@ -36,10 +37,10 @@ public class InstructorService {
 
     public InstructorPublicDto getInstructor(UUID id) {
         Instructor instructor = instructorRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Instructor not found"));
+                .orElseThrow(() -> new LocalizedMessage.Rejected("error.not.found.instructor"));
 
         if (!instructor.isActive()) {
-            throw new IllegalArgumentException("Instructor not found");
+            throw new LocalizedMessage.Rejected("error.not.found.instructor");
         }
 
         return toPublicDto(instructor);

@@ -60,7 +60,7 @@ public class TrainingRequestService {
         }
 
         User user = userRepository.findById(userId)
-            .orElseThrow(() -> new IllegalArgumentException("User not found"));
+            .orElseThrow(() -> new IllegalArgumentException(msg.get("error.not.found.user")));
 
         TrainingRequest tr = new TrainingRequest(
             user, request.requestedDate(), request.startTime(), request.endTime(), request.participants());
@@ -86,7 +86,7 @@ public class TrainingRequestService {
         String courseTitle = null;
         if (request.courseId() != null) {
             Course course = courseRepository.findById(request.courseId())
-                .orElseThrow(() -> new IllegalArgumentException("Course not found"));
+                .orElseThrow(() -> new IllegalArgumentException(msg.get("error.not.found.course")));
             tr.setCourse(course);
             courseTitle = course.getTitle();
         }

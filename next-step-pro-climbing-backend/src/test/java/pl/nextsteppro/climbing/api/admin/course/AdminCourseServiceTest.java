@@ -227,7 +227,7 @@ class AdminCourseServiceTest {
                 IllegalArgumentException.class,
                 () -> adminCourseService.deleteCourse(courseId)
         );
-        assertEquals("Course not found", ex.getMessage());
+        assertEquals("error.not.found.course", ex.getMessage());
     }
 
     // ========== THUMBNAIL ==========
