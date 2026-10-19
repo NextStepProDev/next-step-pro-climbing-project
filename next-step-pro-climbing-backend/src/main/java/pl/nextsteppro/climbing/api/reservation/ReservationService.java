@@ -90,7 +90,7 @@ public class ReservationService {
         }
 
         TimeSlot slot = timeSlotRepository.findByIdForUpdate(slotId)
-            .orElseThrow(() -> new IllegalArgumentException("Time slot not found"));
+            .orElseThrow(() -> new IllegalArgumentException(msg.get("error.not.found.slot")));
 
         if (BookingTimeValidator.isPast(slot.getDate(), slot.getStartTime())) {
             throw new IllegalArgumentException(msg.get("reservation.slot.past"));
@@ -102,10 +102,10 @@ public class ReservationService {
         }
 
         User user = userRepository.findById(userId)
-            .orElseThrow(() -> new IllegalArgumentException("User not found"));
+            .orElseThrow(() -> new IllegalArgumentException(msg.get("error.not.found.user")));
 
         if (slot.isBlocked()) {
-            throw new IllegalStateException("This time slot is blocked");
+            throw new IllegalStateException(msg.get("admin.slot.blocked"));
         }
 
         // An availability window is an informational block ("call to arrange a time") — clients
@@ -193,14 +193,14 @@ public class ReservationService {
     })
     public void cancelReservation(UUID reservationId, UUID userId) {
         Reservation reservation = reservationRepository.findById(reservationId)
-            .orElseThrow(() -> new IllegalArgumentException("Reservation not found"));
+            .orElseThrow(() -> new IllegalArgumentException(msg.get("reservation.not.found")));
 
         if (!reservation.getUser().getId().equals(userId)) {
-            throw new IllegalStateException("You can only cancel your own reservations");
+            throw new IllegalStateException(msg.get("error.reservation.not.yours"));
         }
 
         if (reservation.isCancelled()) {
-            throw new IllegalStateException("This reservation is already cancelled");
+            throw new IllegalStateException(msg.get("error.reservation.already.cancelled"));
         }
 
         TimeSlot slot = reservation.getTimeSlot();
@@ -432,7 +432,7 @@ public class ReservationService {
         }
 
         User user = userRepository.findById(userId)
-            .orElseThrow(() -> new IllegalArgumentException("User not found"));
+            .orElseThrow(() -> new IllegalArgumentException(msg.get("error.not.found.user")));
 
         List<TimeSlot> allSlots = timeSlotRepository.findByEventId(eventId);
 
@@ -529,9 +529,9 @@ public class ReservationService {
         }
 
         User user = userRepository.findById(userId)
-            .orElseThrow(() -> new IllegalArgumentException("User not found"));
+            .orElseThrow(() -> new IllegalArgumentException(msg.get("error.not.found.user")));
         Event event = eventRepository.findById(eventId)
-            .orElseThrow(() -> new IllegalArgumentException("Event not found"));
+            .orElseThrow(() -> new IllegalArgumentException(msg.get("error.not.found.event")));
 
         mailService.sendEventCancellationConfirmation(user, event);
         mailService.sendUserEventCancellationAdminNotification(user, event);
@@ -559,7 +559,7 @@ public class ReservationService {
             .orElseThrow(() -> new IllegalArgumentException(msg.get("reservation.not.found")));
 
         if (!reservation.getUser().getId().equals(userId)) {
-            throw new IllegalStateException("You can only update your own reservations");
+            throw new IllegalStateException(msg.get("error.reservation.not.yours"));
         }
 
         if (!reservation.isConfirmed()) {
@@ -567,7 +567,7 @@ public class ReservationService {
         }
 
         TimeSlot slot = timeSlotRepository.findByIdForUpdate(reservation.getTimeSlot().getId())
-            .orElseThrow(() -> new IllegalArgumentException("Time slot not found"));
+            .orElseThrow(() -> new IllegalArgumentException(msg.get("error.not.found.slot")));
 
         // Same reason as cancelReservation: every day of an event carries the same head count.
         if (slot.belongsToEvent()) {
@@ -587,7 +587,7 @@ public class ReservationService {
         reservationRepository.save(reservation);
 
         User user = userRepository.findById(userId)
-            .orElseThrow(() -> new IllegalArgumentException("User not found"));
+            .orElseThrow(() -> new IllegalArgumentException(msg.get("error.not.found.user")));
         mailService.sendReservationUpdateConfirmation(user, slot, oldParticipants, participants);
         activityLogService.logReservationUpdated(user, slot, participants);
 
@@ -647,7 +647,7 @@ public class ReservationService {
         }
 
         User user = userRepository.findById(userId)
-            .orElseThrow(() -> new IllegalArgumentException("User not found"));
+            .orElseThrow(() -> new IllegalArgumentException(msg.get("error.not.found.user")));
         mailService.sendEventReservationUpdateConfirmation(user, event, currentUserParticipants, participants);
         activityLogService.logEventReservationUpdated(user, event, participants);
 

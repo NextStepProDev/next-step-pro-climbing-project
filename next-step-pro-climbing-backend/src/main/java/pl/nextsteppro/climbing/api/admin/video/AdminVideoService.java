@@ -6,6 +6,7 @@ import org.springframework.transaction.annotation.Transactional;
 import pl.nextsteppro.climbing.api.admin.video.AdminVideoDtos.*;
 import pl.nextsteppro.climbing.domain.video.Video;
 import pl.nextsteppro.climbing.domain.video.VideoRepository;
+import pl.nextsteppro.climbing.infrastructure.i18n.LocalizedMessage;
 
 import java.time.Instant;
 import java.util.List;
@@ -101,7 +102,7 @@ public class AdminVideoService {
 
     private Video findVideo(UUID id) {
         return videoRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Video not found"));
+                .orElseThrow(() -> new LocalizedMessage.Rejected("error.not.found.video"));
     }
 
     private int indexOfId(List<Video> list, UUID id) {

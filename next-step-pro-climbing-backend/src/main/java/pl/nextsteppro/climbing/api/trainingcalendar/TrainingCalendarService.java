@@ -610,7 +610,7 @@ public class TrainingCalendarService {
 
     private User requireUser(UUID userId) {
         return userRepository.findById(userId)
-            .orElseThrow(() -> new IllegalArgumentException("User not found"));
+            .orElseThrow(() -> new IllegalArgumentException(msg.get("error.not.found.user")));
     }
 
     public void markCoachSeen(UUID adminId, UUID athleteId) {

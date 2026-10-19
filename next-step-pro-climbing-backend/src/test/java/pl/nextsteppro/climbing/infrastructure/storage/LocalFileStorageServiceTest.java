@@ -80,7 +80,7 @@ class LocalFileStorageServiceTest {
                 IllegalArgumentException.class,
                 () -> service.store(file, "instructors")
         );
-        assertTrue(exception.getMessage().contains("exceeds maximum"));
+        assertEquals("file.too.large.max", exception.getMessage());
     }
 
     @Test
@@ -99,7 +99,7 @@ class LocalFileStorageServiceTest {
                 IllegalArgumentException.class,
                 () -> service.store(file, "instructors")
         );
-        assertTrue(exception.getMessage().contains("Invalid file type"));
+        assertEquals("file.type.images", exception.getMessage());
     }
 
     @Test

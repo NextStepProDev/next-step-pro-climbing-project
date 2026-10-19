@@ -92,7 +92,7 @@ public class EventWaitlistService {
         }
 
         User user = userRepository.findById(userId)
-            .orElseThrow(() -> new IllegalArgumentException("User not found"));
+            .orElseThrow(() -> new IllegalArgumentException(msg.get("error.not.found.user")));
 
         List<TimeSlot> slots = timeSlotRepository.findByEventId(eventId);
         boolean alreadyRegistered = slots.stream()
@@ -181,7 +181,7 @@ public class EventWaitlistService {
             .orElseThrow(() -> new IllegalArgumentException(msg.get("waitlist.not.found")));
 
         if (!entry.getUser().getId().equals(userId)) {
-            throw new IllegalStateException("You can only confirm your own waitlist offer");
+            throw new IllegalStateException(msg.get("error.waitlist.offer.not.yours"));
         }
         if (!entry.isPendingConfirmation()) {
             throw new IllegalStateException(msg.get("waitlist.offer.not.pending"));
@@ -194,7 +194,7 @@ public class EventWaitlistService {
         // Lock the event before reading capacity, mirroring the slot path in WaitlistService.
         // Two people confirming at once would otherwise both pass the guard below.
         Event event = eventRepository.findByIdForUpdate(eventId)
-            .orElseThrow(() -> new IllegalArgumentException("Event not found"));
+            .orElseThrow(() -> new IllegalArgumentException(msg.get("error.not.found.event")));
 
         // An offer outlives the event state it was made under: updateEvent can deactivate or
         // reclassify an event without purging the queue (only deleteEvent purges it). joinEventWaitlist

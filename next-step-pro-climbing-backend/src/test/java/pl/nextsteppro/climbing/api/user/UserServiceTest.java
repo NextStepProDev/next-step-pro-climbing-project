@@ -125,7 +125,7 @@ class UserServiceTest {
             IllegalArgumentException.class,
             () -> userService.getProfile(unknownId)
         );
-        assertEquals("User not found", exception.getMessage());
+        verify(msg).get("error.not.found.user");
     }
 
     // ========== UPDATE PROFILE TESTS ==========
@@ -528,7 +528,7 @@ class UserServiceTest {
             IllegalArgumentException.class,
             () -> userService.unsubscribeByToken(unknown.toString())
         );
-        assertEquals("Invalid unsubscribe token", exception.getMessage());
+        verify(msg).get("error.unsubscribe.token.invalid");
     }
 
     /** A truncated or mangled link is not a lookup at all — it must not reach the repository. */
@@ -538,7 +538,7 @@ class UserServiceTest {
             IllegalArgumentException.class,
             () -> userService.unsubscribeByToken("not-a-uuid")
         );
-        assertEquals("Invalid unsubscribe token", exception.getMessage());
+        verify(msg).get("error.unsubscribe.token.invalid");
         verify(userRepository, never()).findByNewsletterUnsubscribeToken(any(UUID.class));
     }
 

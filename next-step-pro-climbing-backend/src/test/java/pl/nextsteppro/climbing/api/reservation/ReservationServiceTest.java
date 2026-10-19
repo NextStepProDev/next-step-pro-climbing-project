@@ -255,7 +255,7 @@ class ReservationServiceTest {
             IllegalStateException.class,
             () -> reservationService.createReservation(slotId, userId, null, 1)
         );
-        assertEquals("This time slot is blocked", exception.getMessage());
+        verify(msg).get("admin.slot.blocked");
     }
 
     @Test
@@ -538,7 +538,7 @@ class ReservationServiceTest {
             IllegalStateException.class,
             () -> reservationService.cancelReservation(reservationId, otherUserId)
         );
-        assertEquals("You can only cancel your own reservations", exception.getMessage());
+        verify(msg).get("error.reservation.not.yours");
     }
 
     @Test
@@ -556,7 +556,7 @@ class ReservationServiceTest {
             IllegalStateException.class,
             () -> reservationService.cancelReservation(reservationId, userId)
         );
-        assertEquals("This reservation is already cancelled", exception.getMessage());
+        verify(msg).get("error.reservation.already.cancelled");
     }
 
     @Test

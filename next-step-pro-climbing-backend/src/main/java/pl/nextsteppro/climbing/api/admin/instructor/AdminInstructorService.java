@@ -15,6 +15,7 @@ import pl.nextsteppro.climbing.domain.instructor.InstructorRepository;
 import pl.nextsteppro.climbing.domain.instructor.InstructorType;
 import pl.nextsteppro.climbing.infrastructure.storage.FileStorageService;
 import pl.nextsteppro.climbing.infrastructure.storage.FileUrls;
+import pl.nextsteppro.climbing.infrastructure.i18n.LocalizedMessage;
 
 import java.io.IOException;
 import java.util.List;
@@ -77,7 +78,7 @@ public class AdminInstructorService {
     @CacheEvict(value = "instructorList", allEntries = true)
     public InstructorAdminDto updateInstructor(UUID id, UpdateInstructorRequest request) {
         Instructor instructor = instructorRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Instructor not found"));
+                .orElseThrow(() -> new LocalizedMessage.Rejected("error.not.found.instructor"));
 
         if (request.firstName() != null) {
             instructor.setFirstName(request.firstName());
@@ -125,7 +126,7 @@ public class AdminInstructorService {
     @CacheEvict(value = "instructorList", allEntries = true)
     public void deleteInstructor(UUID id) {
         Instructor instructor = instructorRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Instructor not found"));
+                .orElseThrow(() -> new LocalizedMessage.Rejected("error.not.found.instructor"));
 
         if (instructor.getPhotoFilename() != null) {
             if (!instructorRepository.existsByPhotoFilenameAndIdNot(instructor.getPhotoFilename(), id)) {
@@ -143,7 +144,7 @@ public class AdminInstructorService {
     @CacheEvict(value = "instructorList", allEntries = true)
     public void uploadPhoto(UUID id, MultipartFile file) throws IOException {
         Instructor instructor = instructorRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Instructor not found"));
+                .orElseThrow(() -> new LocalizedMessage.Rejected("error.not.found.instructor"));
 
         // ⚠️ Store the new file BEFORE removing the old one: the other way round, a failed store
         // (bad image, full disk) left the row pointing at a file that was already gone.
@@ -167,10 +168,10 @@ public class AdminInstructorService {
     @CacheEvict(value = "instructorList", allEntries = true)
     public void deletePhoto(UUID id) throws IOException {
         Instructor instructor = instructorRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Instructor not found"));
+                .orElseThrow(() -> new LocalizedMessage.Rejected("error.not.found.instructor"));
 
         if (instructor.getPhotoFilename() == null) {
-            throw new IllegalStateException("Instructor has no photo");
+            throw new LocalizedMessage.Conflict("error.instructor.no.photo");
         }
 
         if (!instructorRepository.existsByPhotoFilenameAndIdNot(instructor.getPhotoFilename(), id)) {
@@ -183,14 +184,14 @@ public class AdminInstructorService {
     @CacheEvict(value = "instructorList", allEntries = true)
     public InstructorAdminDto duplicateAsTranslation(UUID id, String targetLanguage) {
         Instructor source = instructorRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Instructor not found"));
+                .orElseThrow(() -> new LocalizedMessage.Rejected("error.not.found.instructor"));
 
         if (source.getLanguage().equals(targetLanguage)) {
-            throw new IllegalArgumentException("Target language is the same as source language");
+            throw new LocalizedMessage.Rejected("error.translation.same.language");
         }
 
         if (instructorRepository.existsByTranslationGroupIdAndLanguage(source.getTranslationGroupId(), targetLanguage)) {
-            throw new IllegalArgumentException("Translation in this language already exists");
+            throw new LocalizedMessage.Rejected("error.translation.exists");
         }
 
         Instructor copy = new Instructor(source.getFirstName(), source.getLastName());
@@ -217,7 +218,7 @@ public class AdminInstructorService {
     @CacheEvict(value = "instructorList", allEntries = true)
     public List<InstructorAdminDto> moveUp(UUID id) {
         Instructor target = instructorRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Instructor not found"));
+                .orElseThrow(() -> new LocalizedMessage.Rejected("error.not.found.instructor"));
         List<Instructor> group = instructorRepository.findAllByOrderByDisplayOrderAscCreatedAtAsc()
                 .stream()
                 .filter(i -> i.getMemberType() == target.getMemberType() && i.getLanguage().equals(target.getLanguage()))
@@ -237,7 +238,7 @@ public class AdminInstructorService {
     @CacheEvict(value = "instructorList", allEntries = true)
     public List<InstructorAdminDto> moveDown(UUID id) {
         Instructor target = instructorRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Instructor not found"));
+                .orElseThrow(() -> new LocalizedMessage.Rejected("error.not.found.instructor"));
         List<Instructor> group = instructorRepository.findAllByOrderByDisplayOrderAscCreatedAtAsc()
                 .stream()
                 .filter(i -> i.getMemberType() == target.getMemberType() && i.getLanguage().equals(target.getLanguage()))
@@ -293,7 +294,7 @@ public class AdminInstructorService {
     @CacheEvict(value = "instructorList", allEntries = true)
     public AdminInstructorDtos.SyncMediaResultDto syncMediaToTranslations(UUID sourceId) {
         Instructor source = instructorRepository.findById(sourceId)
-                .orElseThrow(() -> new IllegalArgumentException("Instructor not found"));
+                .orElseThrow(() -> new LocalizedMessage.Rejected("error.not.found.instructor"));
 
         List<Instructor> siblings = instructorRepository.findByTranslationGroupId(source.getTranslationGroupId())
                 .stream()
@@ -337,7 +338,7 @@ public class AdminInstructorService {
     @CacheEvict(value = "instructorList", allEntries = true)
     public InstructorAdminDto setBadge(UUID id, @Nullable String badgeUrl) {
         Instructor instructor = instructorRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Instructor not found"));
+                .orElseThrow(() -> new LocalizedMessage.Rejected("error.not.found.instructor"));
         instructor.setBadgeUrl(badgeUrl);
         instructor = instructorRepository.save(instructor);
         return toAdminDto(instructor);
@@ -346,7 +347,7 @@ public class AdminInstructorService {
     @CacheEvict(value = "instructorList", allEntries = true)
     public InstructorAdminDto setPhotoUrl(UUID id, @Nullable String url) {
         Instructor instructor = instructorRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Instructor not found"));
+                .orElseThrow(() -> new LocalizedMessage.Rejected("error.not.found.instructor"));
         instructor.setPhotoExternalUrl(url);
         instructor = instructorRepository.save(instructor);
         return toAdminDto(instructor);

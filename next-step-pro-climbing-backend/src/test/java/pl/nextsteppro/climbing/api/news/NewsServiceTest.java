@@ -418,7 +418,7 @@ class NewsServiceTest {
             IllegalArgumentException.class,
             () -> newsService.getPublishedById(id, null)
         );
-        assertEquals("News not found", exception.getMessage());
+        assertEquals("error.not.found.news", exception.getMessage());
     }
 
     @Test
@@ -435,7 +435,7 @@ class NewsServiceTest {
             IllegalArgumentException.class,
             () -> newsService.getPublishedById(id, null)
         );
-        assertEquals("News not found", exception.getMessage());
+        assertEquals("error.not.found.news", exception.getMessage());
 
         verify(blockRepository, never()).findByNewsIdOrderByDisplayOrderAsc(any());
     }

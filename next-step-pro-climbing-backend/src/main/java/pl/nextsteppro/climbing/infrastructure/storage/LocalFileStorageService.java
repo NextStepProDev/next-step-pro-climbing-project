@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import pl.nextsteppro.climbing.infrastructure.i18n.LocalizedMessage;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -94,9 +95,7 @@ public class LocalFileStorageService implements FileStorageService {
         // Validate folder name (strict: only lowercase letters)
         if (folder != null) {
             if (folder.isBlank() || !VALID_FOLDER_PATTERN.matcher(folder).matches()) {
-                throw new IllegalArgumentException(
-                        "Invalid folder name. Expected: lowercase letters only (e.g., instructors, gallery)"
-                );
+                throw new LocalizedMessage.Rejected("error.bad.request");
             }
         }
 
@@ -125,15 +124,14 @@ public class LocalFileStorageService implements FileStorageService {
     @Override
     public StoredFile storeAttachment(MultipartFile file, String folder, long maxBytes) throws IOException {
         if (file.isEmpty()) {
-            throw new IllegalArgumentException("File is empty");
+            throw new LocalizedMessage.Rejected("file.empty");
         }
         if (file.getSize() > maxBytes) {
-            throw new IllegalArgumentException("File size exceeds maximum allowed size ("
-                    + (maxBytes / (1024 * 1024)) + "MB)");
+            throw new LocalizedMessage.Rejected("file.too.large.max", maxBytes / (1024 * 1024));
         }
         String contentType = file.getContentType();
         if (contentType == null || !ALLOWED_ATTACHMENT_TYPES.contains(contentType.toLowerCase())) {
-            throw new IllegalArgumentException("Invalid file type. Only PDF, JPEG and PNG are allowed");
+            throw new LocalizedMessage.Rejected("file.type.attachments");
         }
         validateFolderName(folder);
 
@@ -209,13 +207,13 @@ public class LocalFileStorageService implements FileStorageService {
         }
         FileSignatures.Format format = FileSignatures.sniff(header);
         if (format == null || !allowedContentTypes.contains(format.contentType())) {
-            throw new IllegalArgumentException("File content is not a supported image or PDF");
+            throw new LocalizedMessage.Rejected("file.content.unsupported");
         }
         if (!format.matchesContentType(file.getContentType())) {
-            throw new IllegalArgumentException("File content does not match its declared type");
+            throw new LocalizedMessage.Rejected("file.content.mismatch");
         }
         if (!extension.isEmpty() && !format.matchesExtension(extension)) {
-            throw new IllegalArgumentException("File content does not match its extension");
+            throw new LocalizedMessage.Rejected("file.content.mismatch");
         }
         return format;
     }
@@ -306,37 +304,35 @@ public class LocalFileStorageService implements FileStorageService {
 
     private void validateFile(MultipartFile file) {
         if (file.isEmpty()) {
-            throw new IllegalArgumentException("File is empty");
+            throw new LocalizedMessage.Rejected("file.empty");
         }
 
         if (file.getSize() > MAX_FILE_SIZE) {
-            throw new IllegalArgumentException("File size exceeds maximum allowed size (10MB)");
+            throw new LocalizedMessage.Rejected("file.too.large.max", MAX_FILE_SIZE / (1024 * 1024));
         }
 
         String contentType = file.getContentType();
         if (contentType == null || !ALLOWED_CONTENT_TYPES.contains(contentType.toLowerCase())) {
-            throw new IllegalArgumentException("Invalid file type. Only JPEG, PNG, and WebP are allowed");
+            throw new LocalizedMessage.Rejected("file.type.images");
         }
     }
 
     private void validateDocument(MultipartFile file) {
         if (file.isEmpty()) {
-            throw new IllegalArgumentException("File is empty");
+            throw new LocalizedMessage.Rejected("file.empty");
         }
         if (file.getSize() > MAX_FILE_SIZE) {
-            throw new IllegalArgumentException("File size exceeds maximum allowed size (10MB)");
+            throw new LocalizedMessage.Rejected("file.too.large.max", MAX_FILE_SIZE / (1024 * 1024));
         }
         String contentType = file.getContentType();
         if (contentType == null || !ALLOWED_DOCUMENT_TYPES.contains(contentType.toLowerCase())) {
-            throw new IllegalArgumentException("Invalid file type. Only PDF, JPEG, PNG, and WebP are allowed");
+            throw new LocalizedMessage.Rejected("file.type.documents");
         }
     }
 
     private void validateFolderName(@Nullable String folder) {
         if (folder != null && (folder.isBlank() || !VALID_FOLDER_PATTERN.matcher(folder).matches())) {
-            throw new IllegalArgumentException(
-                    "Invalid folder name. Expected: lowercase letters only (e.g., instructors, gallery)"
-            );
+            throw new LocalizedMessage.Rejected("error.bad.request");
         }
     }
 
@@ -349,15 +345,13 @@ public class LocalFileStorageService implements FileStorageService {
 
     private void validateFilename(String filename) {
         if (filename == null || filename.isBlank()) {
-            throw new IllegalArgumentException("Filename cannot be null or empty");
+            throw new LocalizedMessage.Rejected("error.bad.request");
         }
 
         // Strict validation: must match UUID + extension format
         // This prevents ALL path traversal attacks by enforcing expected format
         if (!VALID_FILENAME_PATTERN.matcher(filename).matches()) {
-            throw new IllegalArgumentException(
-                    "Invalid filename format. Expected: UUID.extension (e.g., 550e8400-e29b-41d4-a716-446655440000.jpg)"
-            );
+            throw new LocalizedMessage.Rejected("error.bad.request");
         }
     }
 
@@ -367,9 +361,7 @@ public class LocalFileStorageService implements FileStorageService {
         // Strict folder validation: only lowercase letters
         if (folder != null) {
             if (folder.isBlank() || !VALID_FOLDER_PATTERN.matcher(folder).matches()) {
-                throw new IllegalArgumentException(
-                        "Invalid folder name. Expected: lowercase letters only (e.g., instructors, gallery)"
-                );
+                throw new LocalizedMessage.Rejected("error.bad.request");
             }
         }
 

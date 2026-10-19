@@ -22,6 +22,7 @@ import org.springframework.web.multipart.MultipartException;
 import org.springframework.web.multipart.support.MissingServletRequestPartException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 import pl.nextsteppro.climbing.api.auth.EmailNotVerifiedException;
+import pl.nextsteppro.climbing.infrastructure.i18n.LocalizedMessage;
 import pl.nextsteppro.climbing.infrastructure.i18n.MessageService;
 
 import java.time.Instant;
@@ -42,7 +43,14 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleIllegalArgument(IllegalArgumentException ex) {
         log.warn("Bad request: {}", ex.getMessage());
         return ResponseEntity.badRequest()
-            .body(new ErrorResponse("BAD_REQUEST", ex.getMessage(), Instant.now()));
+            .body(new ErrorResponse("BAD_REQUEST", replyText(ex), Instant.now()));
+    }
+
+    /** A {@link LocalizedMessage} carries a key; everything else already carries translated text. */
+    private String replyText(RuntimeException ex) {
+        return ex instanceof LocalizedMessage localized
+            ? messageService.get(localized.messageKey(), localized.messageArgs())
+            : ex.getMessage();
     }
 
     /**
@@ -63,7 +71,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleIllegalState(IllegalStateException ex) {
         log.warn("Conflict: {}", ex.getMessage());
         return ResponseEntity.status(HttpStatus.CONFLICT)
-            .body(new ErrorResponse("CONFLICT", ex.getMessage(), Instant.now()));
+            .body(new ErrorResponse("CONFLICT", replyText(ex), Instant.now()));
     }
 
     /**

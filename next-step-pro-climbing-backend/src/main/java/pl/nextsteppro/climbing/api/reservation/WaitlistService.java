@@ -70,13 +70,13 @@ public class WaitlistService {
 
     public WaitlistResultDto joinWaitlist(UUID slotId, UUID userId) {
         TimeSlot slot = timeSlotRepository.findById(slotId)
-            .orElseThrow(() -> new IllegalArgumentException("Time slot not found"));
+            .orElseThrow(() -> new IllegalArgumentException(msg.get("error.not.found.slot")));
 
         if (BookingTimeValidator.isPast(slot.getDate(), slot.getStartTime())) {
             throw new IllegalArgumentException(msg.get("reservation.slot.past"));
         }
         if (slot.isBlocked()) {
-            throw new IllegalStateException("This time slot is blocked");
+            throw new IllegalStateException(msg.get("admin.slot.blocked"));
         }
 
         // No queue for an absence — the seat it would wait for does not exist.
@@ -102,7 +102,7 @@ public class WaitlistService {
         }
 
         User user = userRepository.findById(userId)
-            .orElseThrow(() -> new IllegalArgumentException("User not found"));
+            .orElseThrow(() -> new IllegalArgumentException(msg.get("error.not.found.user")));
 
         if (reservationRepository.existsByUserIdAndTimeSlotIdAndStatus(userId, slotId, ReservationStatus.CONFIRMED)) {
             throw new IllegalStateException(msg.get("waitlist.already.reserved"));
@@ -202,7 +202,7 @@ public class WaitlistService {
             .orElseThrow(() -> new IllegalArgumentException(msg.get("waitlist.not.found")));
 
         if (!entry.getUser().getId().equals(userId)) {
-            throw new IllegalStateException("You can only confirm your own waitlist offer");
+            throw new IllegalStateException(msg.get("error.waitlist.offer.not.yours"));
         }
         if (!entry.isPendingConfirmation()) {
             throw new IllegalStateException(msg.get("waitlist.offer.not.pending"));
@@ -215,7 +215,7 @@ public class WaitlistService {
 
         // Pessimistic lock on the slot — prevents race conditions on concurrent confirmations
         TimeSlot slot = timeSlotRepository.findByIdForUpdate(slotId)
-            .orElseThrow(() -> new IllegalArgumentException("Time slot not found"));
+            .orElseThrow(() -> new IllegalArgumentException(msg.get("error.not.found.slot")));
 
         // An offer outlives the slot state it was made under. blockTimeSlot cancels the confirmed
         // reservations but leaves PENDING_CONFIRMATION offers alive, so the seats it frees make the
@@ -223,7 +223,7 @@ public class WaitlistService {
         // term. joinWaitlist guards all three of these; confirming has to as well.
         if (slot.isBlocked()) {
             // Same literal as joinWaitlist and createReservation — no message key exists for this one.
-            throw new IllegalStateException("This time slot is blocked");
+            throw new IllegalStateException(msg.get("admin.slot.blocked"));
         }
         if (slot.isUnavailable()) {
             throw new IllegalStateException(msg.get("reservation.slot.unavailable"));

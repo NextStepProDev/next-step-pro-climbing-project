@@ -82,7 +82,7 @@ public class UserService {
     @Transactional
     public User uploadAvatar(UUID userId, MultipartFile file) throws IOException {
         User user = userRepository.findById(userId)
-            .orElseThrow(() -> new IllegalArgumentException("User not found"));
+            .orElseThrow(() -> new IllegalArgumentException(msg.get("error.not.found.user")));
         String oldFilename = user.getAvatarFilename();
         String filename = fileStorageService.store(file, AVATAR_FOLDER);
         user.setAvatarFilename(filename);
@@ -96,7 +96,7 @@ public class UserService {
     @Transactional
     public User deleteAvatar(UUID userId) {
         User user = userRepository.findById(userId)
-            .orElseThrow(() -> new IllegalArgumentException("User not found"));
+            .orElseThrow(() -> new IllegalArgumentException(msg.get("error.not.found.user")));
         String oldFilename = user.getAvatarFilename();
         if (oldFilename != null) {
             user.setAvatarFilename(null);
@@ -117,12 +117,12 @@ public class UserService {
     @Transactional(readOnly = true)
     public User getProfile(UUID userId) {
         return userRepository.findById(userId)
-            .orElseThrow(() -> new IllegalArgumentException("User not found"));
+            .orElseThrow(() -> new IllegalArgumentException(msg.get("error.not.found.user")));
     }
 
     public User updateProfile(UUID userId, String firstName, String lastName, String phone, String nickname) {
         User user = userRepository.findById(userId)
-            .orElseThrow(() -> new IllegalArgumentException("User not found"));
+            .orElseThrow(() -> new IllegalArgumentException(msg.get("error.not.found.user")));
 
         if (firstName != null) user.setFirstName(firstName);
         if (lastName != null) user.setLastName(lastName);
@@ -146,7 +146,7 @@ public class UserService {
      */
     public AuthTokensResponse changePassword(UUID userId, String currentPassword, String newPassword) {
         User user = userRepository.findById(userId)
-            .orElseThrow(() -> new IllegalArgumentException("User not found"));
+            .orElseThrow(() -> new IllegalArgumentException(msg.get("error.not.found.user")));
 
         if (!user.hasPassword()) {
             throw new IllegalStateException(msg.get("user.no.password"));
@@ -192,7 +192,7 @@ public class UserService {
     })
     public void deleteAccount(UUID userId, @Nullable String password) {
         User user = userRepository.findById(userId)
-            .orElseThrow(() -> new IllegalArgumentException("User not found"));
+            .orElseThrow(() -> new IllegalArgumentException(msg.get("error.not.found.user")));
 
         if (user.hasPassword()) {
             requireCurrentPassword(user, password, "user.wrong.password");
@@ -242,7 +242,7 @@ public class UserService {
 
     public void updateNotificationPreference(UUID userId, boolean enabled) {
         User user = userRepository.findById(userId)
-            .orElseThrow(() -> new IllegalArgumentException("User not found"));
+            .orElseThrow(() -> new IllegalArgumentException(msg.get("error.not.found.user")));
 
         user.setEmailNotificationsEnabled(enabled);
         userRepository.save(user);
@@ -257,7 +257,7 @@ public class UserService {
     @CacheEvict(value = "publicAscents", allEntries = true)
     public void updateAscentsVisibility(UUID userId, boolean publicVisible) {
         User user = userRepository.findById(userId)
-            .orElseThrow(() -> new IllegalArgumentException("User not found"));
+            .orElseThrow(() -> new IllegalArgumentException(msg.get("error.not.found.user")));
 
         user.setAscentsPublic(publicVisible);
         userRepository.save(user);
@@ -265,7 +265,7 @@ public class UserService {
 
     public void updateLanguagePreference(UUID userId, String language) {
         User user = userRepository.findById(userId)
-            .orElseThrow(() -> new IllegalArgumentException("User not found"));
+            .orElseThrow(() -> new IllegalArgumentException(msg.get("error.not.found.user")));
 
         user.setPreferredLanguage(language);
         userRepository.save(user);
@@ -273,7 +273,7 @@ public class UserService {
 
     public void updateNewsletterSubscription(UUID userId, boolean subscribed) {
         User user = userRepository.findById(userId)
-            .orElseThrow(() -> new IllegalArgumentException("User not found"));
+            .orElseThrow(() -> new IllegalArgumentException(msg.get("error.not.found.user")));
 
         user.setNewsletterSubscribed(subscribed);
         user.setNewsletterChoiceMade(true);
@@ -310,10 +310,10 @@ public class UserService {
             parsed = UUID.fromString(token);
         } catch (IllegalArgumentException e) {
             // Anything that is not a UUID is a mangled link, not a lookup — same answer either way.
-            throw new IllegalArgumentException("Invalid unsubscribe token");
+            throw new IllegalArgumentException(msg.get("error.unsubscribe.token.invalid"));
         }
         return userRepository.findByNewsletterUnsubscribeToken(parsed)
-            .orElseThrow(() -> new IllegalArgumentException("Invalid unsubscribe token"));
+            .orElseThrow(() -> new IllegalArgumentException(msg.get("error.unsubscribe.token.invalid")));
     }
 
     /**

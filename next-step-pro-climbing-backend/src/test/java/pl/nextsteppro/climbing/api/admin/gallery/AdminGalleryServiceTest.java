@@ -165,7 +165,7 @@ class AdminGalleryServiceTest {
             IllegalArgumentException.class,
             () -> adminGalleryService.getAlbum(albumId)
         );
-        assertEquals("Album not found", exception.getMessage());
+        assertEquals("error.not.found.album", exception.getMessage());
     }
 
     @Test
@@ -279,7 +279,7 @@ class AdminGalleryServiceTest {
             IllegalArgumentException.class,
             () -> adminGalleryService.updateAlbum(albumId, request)
         );
-        assertEquals("Album not found", exception.getMessage());
+        assertEquals("error.not.found.album", exception.getMessage());
     }
 
     // ========== DELETE ALBUM TESTS ==========
@@ -344,7 +344,7 @@ class AdminGalleryServiceTest {
             IllegalArgumentException.class,
             () -> adminGalleryService.deleteAlbum(albumId)
         );
-        assertEquals("Album not found", exception.getMessage());
+        assertEquals("error.not.found.album", exception.getMessage());
     }
 
     // ========== UPLOAD PHOTO TESTS ==========
@@ -412,7 +412,7 @@ class AdminGalleryServiceTest {
             IllegalArgumentException.class,
             () -> adminGalleryService.uploadPhoto(albumId, mockFile, null)
         );
-        assertEquals("Album not found", exception.getMessage());
+        assertEquals("error.not.found.album", exception.getMessage());
     }
 
     @Test
@@ -496,7 +496,7 @@ class AdminGalleryServiceTest {
             IllegalArgumentException.class,
             () -> adminGalleryService.updatePhoto(photoId, request)
         );
-        assertEquals("Photo not found", exception.getMessage());
+        assertEquals("error.not.found.photo", exception.getMessage());
     }
 
     // ========== DELETE PHOTO TESTS ==========
@@ -525,7 +525,7 @@ class AdminGalleryServiceTest {
             IllegalArgumentException.class,
             () -> adminGalleryService.deletePhoto(photoId)
         );
-        assertEquals("Photo not found", exception.getMessage());
+        assertEquals("error.not.found.photo", exception.getMessage());
     }
 
     @Test

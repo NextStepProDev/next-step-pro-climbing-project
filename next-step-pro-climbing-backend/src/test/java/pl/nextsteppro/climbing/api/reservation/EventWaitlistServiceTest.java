@@ -538,7 +538,7 @@ class EventWaitlistServiceTest {
             IllegalStateException.class,
             () -> eventWaitlistService.confirmEventOffer(waitlistId, otherUserId)
         );
-        assertEquals("You can only confirm your own waitlist offer", exception.getMessage());
+        verify(msg).get("error.waitlist.offer.not.yours");
     }
 
     @Test
