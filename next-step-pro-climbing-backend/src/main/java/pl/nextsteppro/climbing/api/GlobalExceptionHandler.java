@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.MultipartException;
 import org.springframework.web.multipart.support.MissingServletRequestPartException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 import pl.nextsteppro.climbing.api.auth.EmailNotVerifiedException;
@@ -174,6 +175,19 @@ public class GlobalExceptionHandler {
     @ExceptionHandler({MissingServletRequestPartException.class, MissingServletRequestParameterException.class})
     public ResponseEntity<ErrorResponse> handleMissingInput(Exception ex) {
         log.warn("Incomplete request: {}", ex.getMessage());
+        return ResponseEntity.badRequest()
+            .body(new ErrorResponse("BAD_REQUEST", messageService.get("error.bad.request"), Instant.now()));
+    }
+
+    /**
+     * An upload endpoint reached without a multipart body ("Current request is not a multipart
+     * request"). Found 2026-10-19 by calling every operation in the API spec with junk: eighteen
+     * admin upload routes answered 500 and logged ERROR with a stack trace. The size limit is a
+     * subclass with its own, more specific handler above (413), and still wins.
+     */
+    @ExceptionHandler(MultipartException.class)
+    public ResponseEntity<ErrorResponse> handleNotMultipart(MultipartException ex) {
+        log.warn("Not a usable multipart request: {}", ex.getMessage());
         return ResponseEntity.badRequest()
             .body(new ErrorResponse("BAD_REQUEST", messageService.get("error.bad.request"), Instant.now()));
     }
