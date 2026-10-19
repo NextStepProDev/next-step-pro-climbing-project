@@ -109,6 +109,10 @@ class FileUrlReferenceIntegrationTest extends BaseIntegrationTest {
         Photo photo = photoRepository.saveAndFlush(new Photo(album, name));
 
         galleryService.deletePhoto(photo.getId());
+        // Not committed yet, so the bytes must still be there: had the transaction rolled back
+        // here, the photo row would survive and point at a file that no longer existed.
+        assertTrue(Files.exists(onDisk), "Nothing may be unlinked before the commit");
+        unlinkDeletedFiles(); // storage unlinks on COMMIT, and this test rolls back
 
         assertFalse(Files.exists(onDisk));
     }

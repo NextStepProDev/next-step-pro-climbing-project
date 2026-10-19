@@ -130,6 +130,7 @@ class CommentFileRetentionIntegrationTest extends BaseIntegrationTest {
 
         expire(comment.files().getFirst().id());
         retention.deleteExpired();
+        unlinkDeletedFiles(); // storage unlinks on COMMIT, and this test rolls back
 
         assertFalse(fileStorageService.exists(filename, CommentFileSupport.FOLDER));
     }
@@ -143,6 +144,7 @@ class CommentFileRetentionIntegrationTest extends BaseIntegrationTest {
         backdate(orphan, Duration.ofHours(12));
 
         assertEquals(1, retention.deleteOrphans());
+        unlinkDeletedFiles(); // storage unlinks on COMMIT, and this test rolls back
         assertFalse(Files.exists(orphan));
     }
 
@@ -177,6 +179,7 @@ class CommentFileRetentionIntegrationTest extends BaseIntegrationTest {
         // deletion paths. The orphan sweep would eventually catch a miss — but "eventually" is the
         // wrong answer to an erasure request.
         userService.deleteAccount(athlete.getId(), "hash");
+        unlinkDeletedFiles(); // storage unlinks on COMMIT, and this test rolls back
 
         assertFalse(fileStorageService.exists(filename, CommentFileSupport.FOLDER));
     }

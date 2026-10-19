@@ -286,7 +286,7 @@ Do 3 na wiadomość, do 20 na trening, 5 MB na plik (mniej niż 10 MB materiał�
 
 - **Retencja 12 miesięcy**, `expires_at` **zapisane przy wgraniu, nie wyliczane** — front pokazuje prawdziwą datę, a zmiana okna nie przepisuje losu starych plików.
 - **Wygasa plik, nie rozmowa:** tekst zostaje, a wiadomość, która była samym plikiem, znika w całości. Ręczne kasowanie i retencja idą **jedną** metodą (`CommentFileSupport.deleteFile`).
-- **Dwa przebiegi zamiatania** (`CommentFileRetentionService`, cron `0 35 3 * * *`): wygasłe wiersze + uzgodnienie folderu z bazą (karencja 6 h). Drugi przebieg czyni obietnicę sprawdzalną — każdy jawny unlink siedzi w transakcji, która może się wycofać, a `LocalFileStorageService.delete` błędy loguje, a nie rzuca.
+- **Dwa przebiegi zamiatania** (`CommentFileRetentionService`, cron `0 35 3 * * *`): wygasłe wiersze + uzgodnienie folderu z bazą (karencja 6 h). Drugi przebieg czyni obietnicę sprawdzalną — unlink idzie dopiero po COMMIT-cie (niżej, File Storage), więc padnięcie między commitem a unlinkiem zostawia sierotę, a błąd unlinku jest tylko logowany.
 - ⚠️ Przebiegi są **osobnym beanem**, scheduler tylko je woła. `@Scheduled` wołające `@Transactional` na własnej klasie omija proxy AOP i transakcja po cichu nie działa — a test wołający te metody wprost i tak przechodzi.
 - Kasowanie: autor swoje, admin wszystko. Kaskady w bazie nie dosięgają dysku, więc `purgeForTraining` stoi przed usunięciem treningu, a `purgeForUser` w **obu** ścieżkach usuwania konta.
 
@@ -464,6 +464,7 @@ Podfoldery: `gallery/`, `instructors/`, `news/`, `courses/`, `assets/`, `avatars
 - `storeAttachment()` — załączniki komentarzy: **zawsze przekodowuje obraz do JPEG** (to usuwa EXIF razem z GPS), własny limit rozmiaru, zwraca wymiary odczytane z zapisanych bajtów.
 - **Sygnatura bajtowa musi zgadzać się z content-type i rozszerzeniem** (`FileSignatures`). Zadeklarowany typ i rozszerzenie pisze klient — bajty są jedyną częścią, o której nie może skłamać. Wcześniej gałąź PDF zapisywała **cokolwiek** jako `.pdf`.
 - **Ogranicznik bomby dekompresyjnej**: wymiary z nagłówka przed dekodowaniem, limit 40 mln pikseli.
+- ⚠️ **`delete()` w transakcji kasuje plik dopiero PO COMMIT-cie** (`DeferredDelete`, audyt 2026-10-19). Wszystkie 27 wywołań kasuje plik razem ze zmianą wiersza, a natychmiastowy unlink przy rollbacku zostawiał wiersz wskazujący na bajty, których już nie ma — zepsuty obrazek nienaprawialny z UI. Odwrotna awaria (sierota po padnięciu między commitem a unlinkiem) jest tańsza, bo zbierają ją zamiatacze. Testy dziedziczące `BaseIntegrationTest` się wycofują, więc sprawdzając „plik zniknął”, wołają najpierw `unlinkDeletedFiles()`.
 - **Strict regex na nazwie** (`UUID.ext`) + folder `^[a-z]+$` — to zabezpieczenie przed path traversal, nie kosmetyka.
 - Serwowanie publiczne: `InputStreamResource` (streaming, 0 MB RAM — **nie** `byte[]`), `Cache-Control: max-age=604800, public`.
 - ⚠️ `FileController` ma **osobne mapowanie per folder**, nie generyczne `{folder}` — i ta lista **jest** kontrolą dostępu: folder jest publiczny dokładnie wtedy, gdy któraś metoda go wymienia.

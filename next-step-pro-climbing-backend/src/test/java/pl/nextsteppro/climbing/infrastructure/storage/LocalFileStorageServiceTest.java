@@ -225,6 +225,40 @@ class LocalFileStorageServiceTest {
     }
 
     @Test
+    void shouldKeepTheFileWhenTheTransactionThatDeletedItRollsBack() throws IOException {
+        // A row change that rolls back must find its file still there: deleting at once left a
+        // thumbnail, photo or attachment row pointing at bytes that were already gone.
+        String filename = service.store(new MockMultipartFile("file", "t.jpg", "image/jpeg", TestImages.jpeg()), "gallery");
+        org.springframework.transaction.support.TransactionSynchronizationManager.initSynchronization();
+        try {
+            service.delete(filename, "gallery");
+            assertTrue(service.exists(filename, "gallery"), "Nothing may be unlinked before the commit");
+
+            org.springframework.transaction.support.TransactionSynchronizationUtils.invokeAfterCompletion(
+                org.springframework.transaction.support.TransactionSynchronizationManager.getSynchronizations(),
+                org.springframework.transaction.support.TransactionSynchronization.STATUS_ROLLED_BACK);
+        } finally {
+            org.springframework.transaction.support.TransactionSynchronizationManager.clearSynchronization();
+        }
+        assertTrue(service.exists(filename, "gallery"), "A rollback keeps the file");
+    }
+
+    @Test
+    void shouldDeleteTheFileOnceTheTransactionCommits() throws IOException {
+        String filename = service.store(new MockMultipartFile("file", "t.jpg", "image/jpeg", TestImages.jpeg()), "gallery");
+        org.springframework.transaction.support.TransactionSynchronizationManager.initSynchronization();
+        try {
+            service.delete(filename, "gallery");
+            assertTrue(service.exists(filename, "gallery"));
+
+            org.springframework.transaction.support.TransactionSynchronizationUtils.triggerAfterCommit();
+        } finally {
+            org.springframework.transaction.support.TransactionSynchronizationManager.clearSynchronization();
+        }
+        assertFalse(service.exists(filename, "gallery"), "After the commit the file goes");
+    }
+
+    @Test
     void shouldDeleteExistingFile() throws IOException {
         // Given
         byte[] content = TestImages.jpeg();
