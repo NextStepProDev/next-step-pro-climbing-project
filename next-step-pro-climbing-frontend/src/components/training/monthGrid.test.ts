@@ -14,6 +14,20 @@ describe('monthGridDays — a fixed six-row grid', () => {
     expect(monthGridDays(new Date(2026, 2, 15))).toHaveLength(MONTH_GRID_DAYS)
   })
 
+  it('should include the leap day in February 2028', () => {
+    const days = monthGridDays(new Date(2028, 1, 10)).map((d) => format(d, 'yyyy-MM-dd'))
+    expect(days).toHaveLength(MONTH_GRID_DAYS)
+    expect(days).toContain('2028-02-29')
+    // ...followed directly by 1 March, with nothing skipped or doubled
+    expect(days[days.indexOf('2028-02-29') + 1]).toBe('2028-03-01')
+  })
+
+  it('should run the December grid on into January of the next year', () => {
+    const range = monthGridRange(new Date(2026, 11, 15))
+    expect(range.from).toBe('2026-11-30')
+    expect(range.to).toBe('2027-01-10')
+  })
+
   it('should return 42 days for February in a non-leap year', () => {
     // 28 days starting on a Sunday is the smallest month a calendar can be asked to draw
     expect(monthGridDays(new Date(2026, 1, 15))).toHaveLength(MONTH_GRID_DAYS)
@@ -141,6 +155,14 @@ describe('weekRange / stepWeek — paging must actually move', () => {
     const anchor = parseCalendarDate('2026-07-13')
     expect(format(stepWeek(anchor, 1), 'yyyy-MM-dd')).toBe('2026-07-20')
     expect(format(stepWeek(anchor, -1), 'yyyy-MM-dd')).toBe('2026-07-06')
+  })
+
+  it('should page from the last week of 2026 into the first week of 2027', () => {
+    // 2026 has an ISO week 53 (28 Dec – 3 Jan); week-of-year maths would wrap it to week 1 of 2026
+    const lastWeek = parseISO('2026-12-30')
+    expect(weekRange(lastWeek)).toEqual({ from: '2026-12-28', to: '2027-01-03', weekStart: '2026-12-28' })
+    expect(format(stepWeek(lastWeek, 1), 'yyyy-MM-dd')).toBe('2027-01-04')
+    expect(format(stepWeek(parseISO('2027-01-05'), -1), 'yyyy-MM-dd')).toBe('2026-12-28')
   })
 
   it('should never write back the anchor it was given — the dead "next week" arrow', () => {
