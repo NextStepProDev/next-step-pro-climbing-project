@@ -176,6 +176,17 @@ class GlobalExceptionHandlerTest {
     }
 
     @Test
+    void shouldReturn400WhenAnUploadArrivesWithoutAMultipartBody() {
+        when(messageService.get("error.bad.request")).thenReturn("Nieprawidłowe żądanie");
+        var ex = new org.springframework.web.multipart.MultipartException("Current request is not a multipart request");
+
+        var response = handler.handleNotMultipart(ex);
+
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        assertEquals("BAD_REQUEST", response.getBody().code());
+    }
+
+    @Test
     void shouldReturn400WhenARequiredQueryParameterIsMissing() {
         when(messageService.get("error.bad.request")).thenReturn("Nieprawidłowe żądanie");
         var ex = new MissingServletRequestParameterException("from", "LocalDate");
