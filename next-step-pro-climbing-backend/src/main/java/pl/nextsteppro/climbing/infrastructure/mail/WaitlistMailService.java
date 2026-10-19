@@ -379,8 +379,8 @@ public class WaitlistMailService {
             msg.getForLang("email.admin.waitlist.confirmed.title", ADMIN_LANG),
             msg.getForLang("email.admin.waitlist.confirmed.body", ADMIN_LANG),
             msg.getForLang("email.admin.client", ADMIN_LANG), esc(user.getFullName()),
-            msg.getForLang("email.admin.email", ADMIN_LANG), user.getEmail(),
-            msg.getForLang("email.admin.phone", ADMIN_LANG), user.getPhone(),
+            msg.getForLang("email.admin.email", ADMIN_LANG), esc(user.getEmail()),
+            msg.getForLang("email.admin.phone", ADMIN_LANG), esc(user.getPhone()),
             titleLine,
             msg.getForLang("email.admin.date", ADMIN_LANG), slot.getDate().format(DATE_FORMAT),
             msg.getForLang("email.admin.time", ADMIN_LANG), slot.getStartTime().format(TIME_FORMAT), slot.getEndTime().format(TIME_FORMAT)
@@ -418,8 +418,8 @@ public class WaitlistMailService {
             msg.getForLang("email.admin.event.waitlist.confirmed.title", ADMIN_LANG),
             msg.getForLang("email.admin.waitlist.confirmed.body", ADMIN_LANG),
             msg.getForLang("email.admin.client", ADMIN_LANG), esc(user.getFullName()),
-            msg.getForLang("email.admin.email", ADMIN_LANG), user.getEmail(),
-            msg.getForLang("email.admin.phone", ADMIN_LANG), user.getPhone(),
+            msg.getForLang("email.admin.email", ADMIN_LANG), esc(user.getEmail()),
+            msg.getForLang("email.admin.phone", ADMIN_LANG), esc(user.getPhone()),
             msg.getForLang("email.admin.event.event", ADMIN_LANG), esc(event.getTitle()),
             msg.getForLang("email.admin.event.dates", ADMIN_LANG), dates
         );
