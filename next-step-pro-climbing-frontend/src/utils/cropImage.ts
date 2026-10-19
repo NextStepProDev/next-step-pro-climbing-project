@@ -1,6 +1,8 @@
 // Bakes the cropped image fragment into a square JPEG (output OUTPUT_SIZE×OUTPUT_SIZE),
 // so the saved avatar is exactly what the user framed in the circle.
 
+import i18n from '../i18n'
+
 export interface PixelCrop {
   x: number
   y: number
@@ -15,7 +17,7 @@ function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const image = new Image()
     image.addEventListener('load', () => resolve(image))
-    image.addEventListener('error', () => reject(new Error('Nie udało się wczytać obrazu')))
+    image.addEventListener('error', () => reject(new Error(i18n.t('imageLoadFailed', { ns: 'errors' }))))
     image.src = src
   })
 }
@@ -42,7 +44,7 @@ export async function getCroppedBlob(imageSrc: string, crop: PixelCrop): Promise
 
   return new Promise((resolve, reject) => {
     canvas.toBlob(
-      blob => (blob ? resolve(blob) : reject(new Error('Nie udało się wygenerować obrazu'))),
+      blob => (blob ? resolve(blob) : reject(new Error(i18n.t('imageCropFailed', { ns: 'errors' })))),
       'image/jpeg',
       OUTPUT_QUALITY,
     )

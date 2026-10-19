@@ -383,7 +383,7 @@ function TranslationGroupRow({
         </button>
         <button
           onClick={() => displayCourse.published ? onUnpublish(displayCourse.id) : onPublish(displayCourse.id)}
-          title={(displayCourse.published ? t('courses.unpublish') : t('courses.publish')) + ' (wszystkie języki)'}
+          title={(displayCourse.published ? t('courses.unpublish') : t('courses.publish')) + ' ' + t('editorUi.allLanguages')}
           className={`p-2 transition-colors ${displayCourse.published ? 'text-green-400 hover:text-orange-400' : 'text-surface-400 hover:text-surface-100'}`}
         >
           {displayCourse.published ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
@@ -1093,7 +1093,7 @@ function EditView({
               <X className="h-4 w-4 mr-1.5" />
               {t('courses.cancel')}
             </Button>
-            <span className="text-[10px] text-surface-500 hidden sm:block">Publikacja dotyczy wszystkich języków</span>
+            <span className="text-[10px] text-surface-500 hidden sm:block">{t('editorUi.publishAffectsAll')}</span>
             {published ? (
               <>
                 <Button

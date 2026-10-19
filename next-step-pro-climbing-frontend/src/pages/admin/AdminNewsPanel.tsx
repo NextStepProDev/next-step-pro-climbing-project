@@ -402,7 +402,7 @@ function TranslationGroupRow({
         )}
         <button
           onClick={() => displayArticle.published ? onUnpublish(displayArticle.id) : onPublish(displayArticle.id)}
-          title={(displayArticle.published ? t('news.unpublish') : t('news.publish')) + ' (wszystkie języki)'}
+          title={(displayArticle.published ? t('news.unpublish') : t('news.publish')) + ' ' + t('editorUi.allLanguages')}
           className={`p-2 transition-colors ${displayArticle.published ? 'text-green-400 hover:text-orange-400' : 'text-surface-400 hover:text-surface-100'}`}
         >
           {displayArticle.published ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
@@ -1185,7 +1185,7 @@ function EditView({
               <X className="h-4 w-4 mr-1.5" />
               {t('news.cancel')}
             </Button>
-            <span className="text-[10px] text-surface-500 hidden sm:block">Publikacja dotyczy wszystkich języków</span>
+            <span className="text-[10px] text-surface-500 hidden sm:block">{t('editorUi.publishAffectsAll')}</span>
             {published ? (
               <>
                 <Button

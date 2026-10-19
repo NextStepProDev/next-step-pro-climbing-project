@@ -187,5 +187,14 @@
     "title": "No hemos podido confirmar tu sesión",
     "description": "No hemos podido conectar con el servidor para comprobar tu cuenta. No has cerrado sesión: sigues en esta página. Inténtalo de nuevo en un momento.",
     "retry": "Inténtalo de nuevo"
+  },
+  "a11y": {
+    "lightbox": "Visor de fotos",
+    "close": "Cerrar",
+    "previousPhoto": "Foto anterior",
+    "nextPhoto": "Foto siguiente",
+    "scrollToTop": "Volver arriba",
+    "share": "Compartir",
+    "badge": "Insignia"
   }
 }

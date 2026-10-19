@@ -186,5 +186,14 @@
     "title": "We could not confirm your session",
     "description": "We could not reach the server to check your account. You have not been logged out — you are still on this page. Try again in a moment.",
     "retry": "Try again"
+  },
+  "a11y": {
+    "lightbox": "Photo viewer",
+    "close": "Close",
+    "previousPhoto": "Previous photo",
+    "nextPhoto": "Next photo",
+    "scrollToTop": "Scroll to top",
+    "share": "Share",
+    "badge": "Badge"
   }
 }

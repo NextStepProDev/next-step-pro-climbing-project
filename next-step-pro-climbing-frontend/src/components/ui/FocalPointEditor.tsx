@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import clsx from 'clsx'
 
 interface FocalPoint {
@@ -15,6 +16,7 @@ interface FocalPointEditorProps {
 }
 
 export function FocalPointEditor({ imageUrl, value, onChange, aspectRatio = '1/1', className }: FocalPointEditorProps) {
+  const { t } = useTranslation('admin')
   const containerRef = useRef<HTMLDivElement>(null)
   const isDragging = useRef(false)
   const lastPos = useRef({ x: 0, y: 0 })
@@ -92,7 +94,7 @@ export function FocalPointEditor({ imageUrl, value, onChange, aspectRatio = '1/1
         }}
       />
       <div className="absolute bottom-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded pointer-events-none">
-        Przeciągnij aby ustawić kadr
+        {t('editorUi.focalDrag')}
       </div>
     </div>
   )

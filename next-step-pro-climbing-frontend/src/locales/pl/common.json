@@ -187,5 +187,14 @@
     "title": "Nie udało się potwierdzić sesji",
     "description": "Nie mogliśmy połączyć się z serwerem, żeby sprawdzić Twoje konto. Nie wylogowaliśmy Cię — zostajesz na tej stronie. Spróbuj ponownie za chwilę.",
     "retry": "Spróbuj ponownie"
+  },
+  "a11y": {
+    "lightbox": "Podgląd zdjęcia",
+    "close": "Zamknij",
+    "previousPhoto": "Poprzednie zdjęcie",
+    "nextPhoto": "Następne zdjęcie",
+    "scrollToTop": "Przewiń na górę",
+    "share": "Udostępnij",
+    "badge": "Odznaka"
   }
 }

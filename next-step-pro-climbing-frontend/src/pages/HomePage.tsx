@@ -46,10 +46,11 @@ function usePreloadImage(url: string | null | undefined) {
 }
 
 function BadgeImg({ src, href, className }: { src: string; href?: string | null; className?: string }) {
+  const { t } = useTranslation('common')
   const img = (
     <img
       src={src}
-      alt="Badge"
+      alt={t('a11y.badge')}
       className={`${className} object-contain opacity-90 drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)] transition-opacity duration-500`}
     />
   );
@@ -58,7 +59,7 @@ function BadgeImg({ src, href, className }: { src: string; href?: string | null;
       <a href={href} target="_blank" rel="noopener noreferrer" className={`${className} block cursor-pointer`}>
         <img
           src={src}
-          alt="Badge"
+          alt={t('a11y.badge')}
           className="w-full h-full object-contain opacity-90 hover:opacity-100 drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)] transition-opacity duration-300"
         />
       </a>

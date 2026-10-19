@@ -80,10 +80,11 @@ interface Props { memberType: InstructorType }
 export function AdminTeamMemberPanel({ memberType }: Props) {
   const { t } = useTranslation('admin')
   const isInstructor = memberType === 'INSTRUCTOR'
-  const entityLabel = isInstructor ? 'Instruktora' : 'Zawodnika'
-  const certLabel = isInstructor ? 'Certyfikaty' : 'Osiągnięcia'
-  const certAddLabel = isInstructor ? 'Dodaj certyfikat' : 'Dodaj osiągnięcie'
-  const headerTitle = isInstructor ? 'Zarządzanie Instruktorami' : 'Zarządzanie Zawodnikami'
+  // Whole phrases per kind, never "Dodaj" + a noun: word order and case differ between languages.
+  const kind = isInstructor ? 'instructor' : 'athlete'
+  const certLabel = t(`teamAdmin.${kind}.certs`)
+  const certAddLabel = t(`teamAdmin.${kind}.addCert`)
+  const headerTitle = t(`teamAdmin.${kind}.title`)
 
   const queryClient = useQueryClient()
   const [createModalOpen, setCreateModalOpen] = useState(false)
@@ -442,14 +443,14 @@ export function AdminTeamMemberPanel({ memberType }: Props) {
         <h2 className="text-2xl font-bold text-surface-100">{headerTitle}</h2>
         <Button onClick={() => { setCreateBioBlocks([]); setCreateCerts([]); setCreate8aUrl(''); setCreateModalOpen(true) }}>
           <Plus className="h-4 w-4 mr-2" />
-          Dodaj {isInstructor ? 'Instruktora' : 'Zawodnika'}
+          {t(`teamAdmin.${kind}.add`)}
         </Button>
       </div>
 
       {/* List */}
       {groups.length === 0 ? (
         <div className="text-center py-12 text-surface-400">
-          Brak {isInstructor ? 'instruktorów' : 'zawodników'}. Dodaj pierwszego używając przycisku powyżej.
+          {t(`teamAdmin.${kind}.empty`)}
         </div>
       ) : (
         <div className="space-y-3">
@@ -473,7 +474,7 @@ export function AdminTeamMemberPanel({ memberType }: Props) {
                     </div>
                   )}
                   {isInstructor && displayMember.badgeUrl && (
-                    <img src={displayMember.badgeUrl} alt="badge" className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full object-contain drop-shadow" />
+                    <img src={displayMember.badgeUrl} alt={t('teamAdmin.badgeAlt')} className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full object-contain drop-shadow" />
                   )}
                 </div>
 
@@ -481,7 +482,7 @@ export function AdminTeamMemberPanel({ memberType }: Props) {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
                     <span className={clsx('text-xs px-2 py-0.5 rounded-full', displayMember.active ? 'bg-green-900/40 text-green-400' : 'bg-rose-900/40 text-rose-400')}>
-                      {displayMember.active ? 'Aktywny' : 'Nieaktywny'}
+                      {displayMember.active ? t('teamAdmin.active') : t('teamAdmin.inactive')}
                     </span>
                   </div>
                   <p className="font-medium text-surface-100 truncate">{displayMember.firstName} {displayMember.lastName}</p>
@@ -503,7 +504,7 @@ export function AdminTeamMemberPanel({ memberType }: Props) {
                               setEdit8aUrl(member.profile8aUrl ?? '')
                               setEditModalOpen(true)
                             }}
-                            title={`Edytuj (${lang.toUpperCase()})`}
+                            title={t('teamAdmin.editLanguage', { lang: lang.toUpperCase() })}
                             className={clsx(
                               'text-[10px] font-bold uppercase px-2 py-0.5 rounded border cursor-pointer transition-colors',
                               lang === 'pl' && 'bg-blue-900/40 text-blue-400 border-blue-700 hover:bg-blue-900/60',
@@ -548,7 +549,7 @@ export function AdminTeamMemberPanel({ memberType }: Props) {
                   </button>
                   <button
                     onClick={() => setDeleteGroupMembers(groupMembers.map(m => m.id))}
-                    title="Usuń"
+                    title={t('teamAdmin.remove')}
                     className="p-2 text-surface-400 hover:text-red-400 transition-colors">
                     <Trash2 className="h-4 w-4" />
                   </button>
@@ -560,14 +561,14 @@ export function AdminTeamMemberPanel({ memberType }: Props) {
       )}
 
       {/* ── Create Modal ── */}
-      <Modal isOpen={createModalOpen} onClose={handleCreateClose} title={`Dodaj ${entityLabel}`} size="lg">
+      <Modal isOpen={createModalOpen} onClose={handleCreateClose} title={t(`teamAdmin.${kind}.add`)} size="lg">
         <form onSubmit={handleCreate} data-form="create-member" className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-surface-200 mb-1">Imię *</label>
+            <label className="block text-sm font-medium text-surface-200 mb-1">{t('teamAdmin.firstName')}</label>
             <input type="text" name="firstName" required maxLength={100} className={inputCls} />
           </div>
           <div>
-            <label className="block text-sm font-medium text-surface-200 mb-1">Nazwisko *</label>
+            <label className="block text-sm font-medium text-surface-200 mb-1">{t('teamAdmin.lastName')}</label>
             <input type="text" name="lastName" required maxLength={100} className={inputCls} />
           </div>
           <div>
@@ -575,7 +576,7 @@ export function AdminTeamMemberPanel({ memberType }: Props) {
             <CertificationsEditor items={createCerts} onChange={setCreateCerts} addLabel={certAddLabel} />
           </div>
           <div>
-            <label className="block text-sm font-medium text-surface-200 mb-1">Profil na 8a.nu</label>
+            <label className="block text-sm font-medium text-surface-200 mb-1">{t('teamAdmin.profile8a')}</label>
             <input
               type="url"
               value={create8aUrl}
@@ -585,7 +586,7 @@ export function AdminTeamMemberPanel({ memberType }: Props) {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-surface-200 mb-2">Bio</label>
+            <label className="block text-sm font-medium text-surface-200 mb-2">{t('teamAdmin.bio')}</label>
             <BioBlockEditor blocks={createBioBlocks} onChange={setCreateBioBlocks} />
           </div>
           <div className="flex items-center gap-2 text-sm text-surface-400">
@@ -593,8 +594,8 @@ export function AdminTeamMemberPanel({ memberType }: Props) {
             <LanguageBadge language="pl" />
           </div>
           <div className="flex gap-2 justify-end">
-            <Button type="button" variant="ghost" onClick={handleCreateClose}>Anuluj</Button>
-            <Button type="submit" loading={createMutation.isPending}>Dodaj</Button>
+            <Button type="button" variant="ghost" onClick={handleCreateClose}>{t('teamAdmin.cancel')}</Button>
+            <Button type="submit" loading={createMutation.isPending}>{t('teamAdmin.add')}</Button>
           </div>
           {createMutation.error && <div className="text-rose-400 text-sm">{String(createMutation.error)}</div>}
         </form>
@@ -602,7 +603,7 @@ export function AdminTeamMemberPanel({ memberType }: Props) {
 
       {/* ── Edit Modal ── */}
       {selectedMember && (
-        <Modal isOpen={editModalOpen} onClose={handleEditClose} title={`Edytuj ${entityLabel}`} size="lg">
+        <Modal isOpen={editModalOpen} onClose={handleEditClose} title={t(`teamAdmin.${kind}.edit`)} size="lg">
           <form ref={editFormRef} onSubmit={handleUpdate} className="space-y-4">
             {/* Language badge + duplication */}
             <div className="flex items-center justify-between">
@@ -637,10 +638,10 @@ export function AdminTeamMemberPanel({ memberType }: Props) {
             {/* Photo */}
             <div>
               <div className="flex items-center justify-between mb-2">
-                <label className="block text-sm font-medium text-surface-200">Zdjęcie profilowe</label>
+                <label className="block text-sm font-medium text-surface-200">{t('teamAdmin.profilePhoto')}</label>
                 <Button type="button" variant="ghost" size="sm"
                   onClick={() => { setUploadPhotoModalOpen(true) }}>
-                  <Upload className="w-3.5 h-3.5 mr-1" /> Zmień zdjęcie
+                  <Upload className="w-3.5 h-3.5 mr-1" /> {t('teamAdmin.changePhoto')}
                 </Button>
               </div>
               {selectedMember.photoUrl ? (
@@ -650,17 +651,17 @@ export function AdminTeamMemberPanel({ memberType }: Props) {
                       className="w-16 h-16 rounded-full object-cover border-2 border-primary-500/20 shrink-0"
                       style={selectedMember.focalPointX != null ? { objectPosition: `${selectedMember.focalPointX * 100}% ${(selectedMember.focalPointY ?? 0.5) * 100}%` } : undefined} />
                     <div className="flex flex-col gap-1">
-                      <span className="text-xs text-surface-400">Podgląd · przesuń punkt ostrości poniżej</span>
+                      <span className="text-xs text-surface-400">{t('teamAdmin.previewHint')}</span>
                       <button type="button" onClick={() => setConfirmDeletePhoto(true)}
                         className="text-xs text-rose-400 hover:text-rose-300 text-left transition-colors">
-                        Usuń zdjęcie
+                        {t('teamAdmin.deletePhoto')}
                       </button>
                     </div>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-surface-400">Kadrowanie</span>
+                    <span className="text-xs text-surface-400">{t('teamAdmin.crop')}</span>
                     <button type="button" onClick={() => setFocalPoint({ x: 0.5, y: 0.5 })}
-                      className="text-xs text-primary-400 hover:text-primary-300 transition-colors">Resetuj</button>
+                      className="text-xs text-primary-400 hover:text-primary-300 transition-colors">{t('teamAdmin.reset')}</button>
                   </div>
                   <FocalPointEditor imageUrl={selectedMember.photoUrl} value={focalPoint} onChange={setFocalPoint} aspectRatio="1/1" className="max-h-[50vh]" />
                 </div>
@@ -669,7 +670,7 @@ export function AdminTeamMemberPanel({ memberType }: Props) {
                   <div className="w-16 h-16 rounded-full bg-surface-700 border-2 border-surface-600 flex items-center justify-center shrink-0">
                     <User className="h-8 w-8 text-surface-400" />
                   </div>
-                  <span className="text-sm text-surface-400">Brak zdjęcia — kliknij "Zmień zdjęcie" aby dodać</span>
+                  <span className="text-sm text-surface-400">{t('teamAdmin.noPhoto')}</span>
                 </div>
               )}
             </div>
@@ -677,11 +678,11 @@ export function AdminTeamMemberPanel({ memberType }: Props) {
             {isInstructor && (
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <label className="block text-sm font-medium text-surface-200">Naklejka / badge</label>
+                  <label className="block text-sm font-medium text-surface-200">{t('teamAdmin.badge')}</label>
                 </div>
                 <div className="flex items-center gap-3">
                   {selectedMember.badgeUrl && (
-                    <img src={selectedMember.badgeUrl} alt="badge" className="w-10 h-10 rounded-full object-contain" />
+                    <img src={selectedMember.badgeUrl} alt={t('teamAdmin.badgeAlt')} className="w-10 h-10 rounded-full object-contain" />
                   )}
                   <Button type="button" variant="ghost" size="sm"
                     onClick={() => { setBadgeTargetId(selectedMember.id); setBadgePickerOpen(true) }}>
@@ -691,7 +692,7 @@ export function AdminTeamMemberPanel({ memberType }: Props) {
                     <Button type="button" variant="ghost" size="sm"
                       onClick={() => requestMediaAction({ type: 'deleteBadge', id: selectedMember.id })}
                       loading={deleteBadgeMutation.isPending}>
-                      <Trash2 className="w-3.5 h-3.5 text-rose-400 mr-1" /> Usuń
+                      <Trash2 className="w-3.5 h-3.5 text-rose-400 mr-1" /> {t('teamAdmin.remove')}
                     </Button>
                   )}
                 </div>
@@ -699,11 +700,11 @@ export function AdminTeamMemberPanel({ memberType }: Props) {
             )}
 
             <div>
-              <label className="block text-sm font-medium text-surface-200 mb-1">Imię *</label>
+              <label className="block text-sm font-medium text-surface-200 mb-1">{t('teamAdmin.firstName')}</label>
               <input type="text" name="firstName" value={editFirstName} onChange={(e) => setEditFirstName(e.target.value)} required maxLength={100} className={inputCls} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-surface-200 mb-1">Nazwisko *</label>
+              <label className="block text-sm font-medium text-surface-200 mb-1">{t('teamAdmin.lastName')}</label>
               <input type="text" name="lastName" value={editLastName} onChange={(e) => setEditLastName(e.target.value)} required maxLength={100} className={inputCls} />
             </div>
             <div>
@@ -711,7 +712,7 @@ export function AdminTeamMemberPanel({ memberType }: Props) {
               <CertificationsEditor items={editCerts} onChange={setEditCerts} addLabel={certAddLabel} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-surface-200 mb-1">Profil na 8a.nu</label>
+              <label className="block text-sm font-medium text-surface-200 mb-1">{t('teamAdmin.profile8a')}</label>
               <input
                 type="url"
                 value={edit8aUrl}
@@ -721,15 +722,15 @@ export function AdminTeamMemberPanel({ memberType }: Props) {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-surface-200 mb-2">Bio</label>
+              <label className="block text-sm font-medium text-surface-200 mb-2">{t('teamAdmin.bio')}</label>
               <BioBlockEditor blocks={editBioBlocks} onChange={setEditBioBlocks} />
             </div>
 
             <label className="flex items-center gap-2 cursor-pointer">
               <input type="checkbox" name="active" checked={editActive} onChange={(e) => setEditActive(e.target.checked)}
                 className="w-4 h-4 rounded border-surface-600 bg-surface-700 text-primary-500 focus:ring-2 focus:ring-primary-500" />
-              <span className="text-sm text-surface-200">Aktywny</span>
-              <span className="text-xs text-surface-500">(wszystkie języki)</span>
+              <span className="text-sm text-surface-200">{t('teamAdmin.activeLabel')}</span>
+              <span className="text-xs text-surface-500">{t('editorUi.allLanguages')}</span>
             </label>
 
             {existingLanguages.length > 1 && (
@@ -745,8 +746,8 @@ export function AdminTeamMemberPanel({ memberType }: Props) {
             )}
 
             <div className="flex gap-2 justify-end">
-              <Button type="button" variant="ghost" onClick={handleEditClose}>Anuluj</Button>
-              <Button type="submit" loading={updateMutation.isPending} disabled={!isEditDirty()}>Zapisz</Button>
+              <Button type="button" variant="ghost" onClick={handleEditClose}>{t('teamAdmin.cancel')}</Button>
+              <Button type="submit" loading={updateMutation.isPending} disabled={!isEditDirty()}>{t('teamAdmin.save')}</Button>
             </div>
             {updateMutation.error && <div className="text-rose-400 text-sm">{String(updateMutation.error)}</div>}
           </form>
@@ -757,13 +758,13 @@ export function AdminTeamMemberPanel({ memberType }: Props) {
       {selectedMember && (
         <Modal isOpen={uploadPhotoModalOpen}
           onClose={() => { setUploadPhotoModalOpen(false); setSelectedMember(null); setPhotoPreview(null); setSelectedFile(null) }}
-          title="Prześlij Zdjęcie">
+          title={t('teamAdmin.uploadPhotoTitle')}>
           <div className="space-y-4">
             <FileUpload onFileSelect={handleFileSelect}
               onClear={() => { setPhotoPreview(null); setSelectedFile(null) }}
               previews={photoPreview ? [photoPreview] : []} />
             <div className="flex items-center gap-2">
-              <span className="text-xs text-surface-400">lub wybierz:</span>
+              <span className="text-xs text-surface-400">{t('teamAdmin.orChoose')}</span>
               <Button type="button" variant="ghost" size="sm"
                 onClick={() => { setPhotoGalleryOpen(true) }}>
                 <Images className="w-4 h-4 mr-1" /> Z galerii
@@ -772,9 +773,9 @@ export function AdminTeamMemberPanel({ memberType }: Props) {
             <div className="flex gap-2 justify-end">
               <Button type="button" variant="ghost" onClick={() => {
                 setUploadPhotoModalOpen(false); setSelectedMember(null); setPhotoPreview(null); setSelectedFile(null)
-              }}>Anuluj</Button>
+              }}>{t('teamAdmin.cancel')}</Button>
               <Button onClick={() => { if (selectedMember && selectedFile) requestMediaAction({ type: 'uploadPhoto', id: selectedMember.id, file: selectedFile }) }}
-                disabled={!selectedFile} loading={uploadPhotoMutation.isPending}>Prześlij</Button>
+                disabled={!selectedFile} loading={uploadPhotoMutation.isPending}>{t('teamAdmin.upload')}</Button>
             </div>
             {uploadPhotoMutation.error && <div className="text-rose-400 text-sm">{String(uploadPhotoMutation.error)}</div>}
           </div>
@@ -799,9 +800,9 @@ export function AdminTeamMemberPanel({ memberType }: Props) {
       <ConfirmModal isOpen={!!deleteGroupMembers}
         onClose={() => setDeleteGroupMembers(null)}
         onConfirm={() => deleteGroupMembers && deleteGroupMutation.mutate(deleteGroupMembers)}
-        title={`Usuń ${entityLabel}`}
+        title={t(`teamAdmin.${kind}.delete`)}
         message={t('team.deleteGroupConfirmMessage')}
-        confirmText="Usuń" />
+        confirmText={t('teamAdmin.remove')} />
 
       <ConfirmModal isOpen={confirmDeletePhoto}
         onClose={() => setConfirmDeletePhoto(false)}

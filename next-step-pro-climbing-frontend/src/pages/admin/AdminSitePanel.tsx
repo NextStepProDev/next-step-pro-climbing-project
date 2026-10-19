@@ -403,7 +403,7 @@ function BadgeSection() {
           <div className="inline-flex items-center gap-4 bg-surface-900 border border-surface-700 rounded-lg p-4">
             <img
               src={savedUrl}
-              alt="Badge"
+              alt={t('teamAdmin.badgeAlt')}
               className="w-20 h-20 object-contain rounded"
             />
           </div>
@@ -547,7 +547,7 @@ function BadgeLeftSection() {
           <div className="inline-flex items-center gap-4 bg-surface-900 border border-surface-700 rounded-lg p-4">
             <img
               src={savedUrl}
-              alt="Badge"
+              alt={t('teamAdmin.badgeAlt')}
               className="w-20 h-20 object-contain rounded"
             />
           </div>

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useFocusTrap } from '../../utils/useFocusTrap'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Image as ImageIcon, Plus, Pencil, Trash2, Upload, ChevronUp, ChevronDown, Star, Eye, EyeOff, ChevronLeft, ChevronRight, X } from 'lucide-react'
@@ -14,6 +15,7 @@ import { QueryError } from '../../components/ui/QueryError'
 import { FocalPointEditor } from '../../components/ui/FocalPointEditor'
 
 export function AdminGalleryPanel() {
+  const { t } = useTranslation('admin')
   const queryClient = useQueryClient()
   const [localOrder, setLocalOrder] = useState<AlbumAdmin[] | null>(null)
   const [createAlbumModalOpen, setCreateAlbumModalOpen] = useState(false)
@@ -306,17 +308,17 @@ export function AdminGalleryPanel() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-surface-100">Zarządzanie Galerią</h2>
+        <h2 className="text-2xl font-bold text-surface-100">{t('galleryAdmin.title')}</h2>
         <Button onClick={() => setCreateAlbumModalOpen(true)}>
           <Plus className="h-4 w-4 mr-2" />
-          Nowy album
+          {t('galleryAdmin.newAlbum')}
         </Button>
       </div>
 
       {/* Albums List */}
       {orderedAlbums.length === 0 && !isLoading ? (
         <div className="text-center py-12 text-surface-400">
-          Brak albumów. Dodaj pierwszy używając przycisku powyżej.
+          {t('galleryAdmin.noAlbums')}
         </div>
       ) : (
         <div className="space-y-4">
@@ -364,17 +366,17 @@ export function AdminGalleryPanel() {
                           {album.published ? (
                             <span className="flex items-center gap-1 text-xs text-green-400 font-medium">
                               <Eye className="h-3 w-3" />
-                              Opublikowany
+                              {t('galleryAdmin.published')}
                             </span>
                           ) : (
                             <span className="flex items-center gap-1 text-xs text-surface-400 font-medium bg-surface-700 px-2 py-0.5 rounded-full">
                               <EyeOff className="h-3 w-3" />
-                              Szkic
+                              {t('galleryAdmin.draft')}
                             </span>
                           )}
                         </div>
                         <p className="text-sm text-surface-400 mt-1">
-                          {album.photoCount} {album.photoCount === 1 ? 'zdjęcie' : 'zdjęć'}
+                          {t('galleryAdmin.photoCount', { count: album.photoCount })}
                         </p>
                         {album.description && (
                           <p className="text-surface-300 mt-2 text-sm">{album.description}</p>
@@ -386,7 +388,7 @@ export function AdminGalleryPanel() {
                           size="sm"
                           onClick={() => handleMove(index, 'up')}
                           disabled={index === 0 || reorderMutation.isPending}
-                          title="Przesuń wyżej"
+                          title={t('galleryAdmin.moveUp')}
                         >
                           <ChevronUp className="h-4 w-4" />
                         </Button>
@@ -395,7 +397,7 @@ export function AdminGalleryPanel() {
                           size="sm"
                           onClick={() => handleMove(index, 'down')}
                           disabled={index === orderedAlbums.length - 1 || reorderMutation.isPending}
-                          title="Przesuń niżej"
+                          title={t('galleryAdmin.moveDown')}
                         >
                           <ChevronDown className="h-4 w-4" />
                         </Button>
@@ -406,7 +408,7 @@ export function AdminGalleryPanel() {
                             setExpandedAlbumId(expandedAlbumId === album.id ? null : album.id)
                           }}
                         >
-                          {expandedAlbumId === album.id ? 'Zwiń' : 'Rozwiń'}
+                          {expandedAlbumId === album.id ? t('galleryAdmin.collapse') : t('galleryAdmin.expand')}
                         </Button>
                         {album.published ? (
                           <Button
@@ -414,7 +416,7 @@ export function AdminGalleryPanel() {
                             size="sm"
                             onClick={() => unpublishAlbumMutation.mutate(album.id)}
                             disabled={unpublishAlbumMutation.isPending}
-                            title="Cofnij publikację (schowaj publicznie)"
+                            title={t('galleryAdmin.unpublish')}
                             className="text-green-400 hover:text-orange-400"
                           >
                             <Eye className="h-4 w-4" />
@@ -425,7 +427,7 @@ export function AdminGalleryPanel() {
                             size="sm"
                             onClick={() => publishAlbumMutation.mutate(album.id)}
                             disabled={publishAlbumMutation.isPending}
-                            title="Opublikuj (pokaż publicznie)"
+                            title={t('galleryAdmin.publish')}
                           >
                             <EyeOff className="h-4 w-4" />
                           </Button>
@@ -462,7 +464,7 @@ export function AdminGalleryPanel() {
               {expandedAlbumId === album.id && albumDetail && (
                 <div className="border-t border-surface-700 p-6 bg-surface-900/50">
                   <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
-                    <h4 className="font-semibold text-surface-100">Zdjęcia w albumie</h4>
+                    <h4 className="font-semibold text-surface-100">{t('galleryAdmin.photosInAlbum')}</h4>
                     <div className="flex gap-2">
                       {albumDetail.photos.length > 0 && (
                         <Button
@@ -474,7 +476,7 @@ export function AdminGalleryPanel() {
                           }}
                         >
                           <Trash2 className="h-4 w-4 mr-2" />
-                          Usuń wszystkie
+                          {t('galleryAdmin.deleteAll')}
                         </Button>
                       )}
                       <Button
@@ -485,14 +487,14 @@ export function AdminGalleryPanel() {
                         }}
                       >
                         <Upload className="h-4 w-4 mr-2" />
-                        Dodaj zdjęcie
+                        {t('galleryAdmin.addPhoto')}
                       </Button>
                     </div>
                   </div>
 
                   {albumDetail.photos.length === 0 ? (
                     <div className="text-center py-8 text-surface-400 text-sm">
-                      Ten album nie zawiera jeszcze zdjęć
+                      {t('galleryAdmin.noPhotos')}
                     </div>
                   ) : (
                     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -527,7 +529,7 @@ export function AdminGalleryPanel() {
                           {albumDetail.thumbnailPhotoId === photo.id && (
                             <div
                               className="absolute top-2 left-2 bg-amber-400 rounded-full p-1 shadow-md"
-                              title="Miniaturka albumu"
+                              title={t('galleryAdmin.albumThumbnail')}
                             >
                               <Star className="h-3 w-3 text-surface-900" fill="currentColor" />
                             </div>
@@ -544,7 +546,7 @@ export function AdminGalleryPanel() {
                                 }
                               }}
                               disabled={setThumbnailMutation.isPending}
-                              title={albumDetail.thumbnailPhotoId === photo.id ? 'Aktualnie ustawiona miniaturka' : 'Ustaw jako miniaturkę'}
+                              title={albumDetail.thumbnailPhotoId === photo.id ? t('galleryAdmin.currentThumbnail') : t('galleryAdmin.setThumbnail')}
                               className={`bg-surface-800/80 hover:bg-surface-700${albumDetail.thumbnailPhotoId === photo.id ? ' text-amber-400' : ''}`}
                             >
                               <Star
@@ -599,7 +601,7 @@ export function AdminGalleryPanel() {
       <Modal
         isOpen={createAlbumModalOpen}
         onClose={() => setCreateAlbumModalOpen(false)}
-        title="Nowy Album"
+        title={t('galleryAdmin.createTitle')}
         // The fields are uncontrolled, so the question reads them at the moment of closing.
         confirmClose={() => {
           const form = createAlbumFormRef.current
@@ -609,7 +611,7 @@ export function AdminGalleryPanel() {
         <form ref={createAlbumFormRef} onSubmit={handleCreateAlbum} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-surface-200 mb-1">
-              Nazwa albumu *
+              {t('galleryAdmin.albumName')}
             </label>
             <input
               type="text"
@@ -622,7 +624,7 @@ export function AdminGalleryPanel() {
 
           <div>
             <label className="block text-sm font-medium text-surface-200 mb-1">
-              Opis
+              {t('galleryAdmin.description')}
             </label>
             <textarea
               name="description"
@@ -634,7 +636,7 @@ export function AdminGalleryPanel() {
           <div className="flex gap-2 justify-end">
             <ModalCancelButton onClose={() => setCreateAlbumModalOpen(false)}>Anuluj</ModalCancelButton>
             <Button type="submit" loading={createAlbumMutation.isPending}>
-              Utwórz
+              {t('galleryAdmin.create')}
             </Button>
           </div>
 
@@ -652,13 +654,13 @@ export function AdminGalleryPanel() {
             setEditAlbumModalOpen(false)
             setSelectedAlbum(null)
           }}
-          title="Edytuj Album"
+          title={t('galleryAdmin.editTitle')}
           confirmClose={() => albumDirty}
         >
           <form onSubmit={handleUpdateAlbum} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-surface-200 mb-1">
-                Nazwa albumu *
+                {t('galleryAdmin.albumName')}
               </label>
               <input
                 type="text"
@@ -673,7 +675,7 @@ export function AdminGalleryPanel() {
 
             <div>
               <label className="block text-sm font-medium text-surface-200 mb-1">
-                Opis
+                {t('galleryAdmin.description')}
               </label>
               <textarea
                 name="description"
@@ -691,10 +693,10 @@ export function AdminGalleryPanel() {
                   setSelectedAlbum(null)
                 }}
               >
-                Anuluj
+                {t('galleryAdmin.cancel')}
               </ModalCancelButton>
               <Button type="submit" loading={updateAlbumMutation.isPending} disabled={!albumDirty}>
-                Zapisz
+                {t('galleryAdmin.save')}
               </Button>
             </div>
 
@@ -718,7 +720,7 @@ export function AdminGalleryPanel() {
             setSelectedFiles([])
             setUploadProgress(0)
           }}
-          title="Dodaj Zdjęcia"
+          title={t('galleryAdmin.uploadTitle')}
         >
           <form onSubmit={handleUploadPhoto} className="space-y-4">
             <FileUpload
@@ -733,7 +735,7 @@ export function AdminGalleryPanel() {
 
             <div>
               <label className="block text-sm font-medium text-surface-200 mb-1">
-                Podpis (opcjonalnie, tylko dla pojedynczego zdjęcia)
+                {t('galleryAdmin.uploadCaption')}
               </label>
               <input
                 type="text"
@@ -746,7 +748,7 @@ export function AdminGalleryPanel() {
             {uploadProgress > 0 && uploadProgress < 100 && (
               <div className="space-y-2">
                 <div className="flex justify-between text-sm text-surface-300">
-                  <span>Przesyłanie...</span>
+                  <span>{t('galleryAdmin.uploading')}</span>
                   <span>{uploadProgress}%</span>
                 </div>
                 <div className="w-full bg-surface-700 rounded-full h-2 overflow-hidden">
@@ -769,14 +771,14 @@ export function AdminGalleryPanel() {
                 }}
                 disabled={uploadPhotoMutation.isPending}
               >
-                Anuluj
+                {t('galleryAdmin.cancel')}
               </ModalCancelButton>
               <Button
                 type="submit"
                 disabled={selectedFiles.length === 0 || uploadPhotoMutation.isPending}
                 loading={uploadPhotoMutation.isPending}
               >
-                Prześlij {selectedFiles.length > 1 ? `(${selectedFiles.length})` : ''}
+                {t('galleryAdmin.upload')} {selectedFiles.length > 1 ? `(${selectedFiles.length})` : ''}
               </Button>
             </div>
 
@@ -795,13 +797,13 @@ export function AdminGalleryPanel() {
             setEditPhotoModalOpen(false)
             setSelectedPhoto(null)
           }}
-          title="Edytuj Zdjęcie"
+          title={t('galleryAdmin.editPhotoTitle')}
           confirmClose={() => photoDirty}
         >
           <form onSubmit={handleUpdatePhoto} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-surface-200 mb-1">
-                Podpis
+                {t('galleryAdmin.caption')}
               </label>
               <textarea
                 name="caption"
@@ -809,21 +811,21 @@ export function AdminGalleryPanel() {
                 onChange={(e) => setEditPhotoCaption(e.target.value)}
                 rows={2}
                 className="w-full px-3 py-2 bg-surface-700 border border-surface-600 rounded-lg text-surface-100 focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
-                placeholder="Dodaj opis zdjęcia..."
+                placeholder={t('galleryAdmin.captionPlaceholder')}
               />
             </div>
 
             <div>
               <div className="flex items-center justify-between mb-2">
                 <label className="block text-sm font-medium text-surface-200">
-                  Kadrowanie
+                  {t('galleryAdmin.crop')}
                 </label>
                 <button
                   type="button"
                   onClick={() => setFocalPoint({ x: 0.5, y: 0.5 })}
                   className="text-xs text-primary-400 hover:text-primary-300 transition-colors"
                 >
-                  Resetuj
+                  {t('galleryAdmin.reset')}
                 </button>
               </div>
               <FocalPointEditor
@@ -844,7 +846,7 @@ export function AdminGalleryPanel() {
               className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-red-600/20 hover:bg-red-600/40 text-red-400 rounded-lg transition-colors text-sm"
             >
               <Trash2 className="w-4 h-4" />
-              Usuń zdjęcie
+              {t('galleryAdmin.deletePhoto')}
             </button>
 
             <div className="flex gap-2 justify-end">
@@ -854,14 +856,14 @@ export function AdminGalleryPanel() {
                   setSelectedPhoto(null)
                 }}
               >
-                Anuluj
+                {t('galleryAdmin.cancel')}
               </ModalCancelButton>
               <Button
                 type="submit"
                 loading={updatePhotoMutation.isPending}
                 disabled={!photoDirty}
               >
-                Zapisz
+                {t('galleryAdmin.save')}
               </Button>
             </div>
 
@@ -884,9 +886,9 @@ export function AdminGalleryPanel() {
             deleteAlbumMutation.mutate(selectedAlbum.id)
           }
         }}
-        title="Usuń Album"
-        message={`Czy na pewno chcesz usunąć album "${selectedAlbum?.name}"? Wszystkie zdjęcia w tym albumie zostaną bezpowrotnie usunięte. Tej operacji nie można cofnąć.`}
-        confirmText="Usuń album"
+        title={t('galleryAdmin.deleteAlbumTitle')}
+        message={t('galleryAdmin.deleteAlbumMessage', { name: selectedAlbum?.name ?? '' })}
+        confirmText={t('galleryAdmin.deleteAlbumConfirm')}
       />
 
       {/* Delete Photo Confirm */}
@@ -901,9 +903,9 @@ export function AdminGalleryPanel() {
             deletePhotoMutation.mutate(selectedPhotoId)
           }
         }}
-        title="Usuń Zdjęcie"
-        message="Czy na pewno chcesz usunąć to zdjęcie? Tej operacji nie można cofnąć."
-        confirmText="Usuń"
+        title={t('galleryAdmin.deletePhotoTitle')}
+        message={t('galleryAdmin.deletePhotoMessage')}
+        confirmText={t('galleryAdmin.deletePhotoConfirm')}
       />
 
       {/* Delete All Photos Confirm */}
@@ -918,9 +920,9 @@ export function AdminGalleryPanel() {
             deleteAllPhotosMutation.mutate(selectedAlbum.id)
           }
         }}
-        title="Usuń wszystkie zdjęcia"
-        message={`Czy na pewno chcesz usunąć wszystkie zdjęcia z albumu "${selectedAlbum?.name}"? Album zostanie zachowany. Tej operacji nie można cofnąć.`}
-        confirmText="Usuń wszystkie zdjęcia"
+        title={t('galleryAdmin.deleteAllTitle')}
+        message={t('galleryAdmin.deleteAllMessage', { name: selectedAlbum?.name ?? '' })}
+        confirmText={t('galleryAdmin.deleteAllConfirm')}
       />
 
       {/* Photo Lightbox */}
@@ -929,12 +931,12 @@ export function AdminGalleryPanel() {
           ref={lightboxTrapRef}
           role="dialog"
           aria-modal="true"
-          aria-label="Photo lightbox"
+          aria-label={t('galleryAdmin.lightbox')}
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/90"
           onClick={() => setLightboxIndex(null)}
         >
           <button
-            aria-label="Close"
+            aria-label={t('galleryAdmin.close')}
             onClick={(e) => { e.stopPropagation(); setLightboxIndex(null) }}
             className="absolute top-4 right-4 text-white/70 hover:text-white transition-colors z-10"
           >
@@ -947,7 +949,7 @@ export function AdminGalleryPanel() {
 
           {lightboxIndex > 0 && (
             <button
-              aria-label="Previous photo"
+              aria-label={t('galleryAdmin.previous')}
               onClick={(e) => { e.stopPropagation(); handleLightboxPrev() }}
               className="absolute left-4 top-1/2 -translate-y-1/2 text-white/50 hover:text-white transition-colors z-10"
             >
@@ -957,7 +959,7 @@ export function AdminGalleryPanel() {
 
           {lightboxIndex < lightboxPhotos.length - 1 && (
             <button
-              aria-label="Next photo"
+              aria-label={t('galleryAdmin.next')}
               onClick={(e) => { e.stopPropagation(); handleLightboxNext() }}
               className="absolute right-4 top-1/2 -translate-y-1/2 text-white/50 hover:text-white transition-colors z-10"
             >
@@ -983,7 +985,7 @@ export function AdminGalleryPanel() {
                   }
                 }}
                 disabled={setThumbnailMutation.isPending}
-                title={albumDetail?.thumbnailPhotoId === lightboxPhotos[lightboxIndex].id ? 'Aktualnie ustawiona miniaturka' : 'Ustaw jako miniaturkę'}
+                title={albumDetail?.thumbnailPhotoId === lightboxPhotos[lightboxIndex].id ? t('galleryAdmin.currentThumbnail') : t('galleryAdmin.setThumbnail')}
                 className={`bg-surface-800/80 hover:bg-surface-700 text-white${albumDetail?.thumbnailPhotoId === lightboxPhotos[lightboxIndex].id ? ' !text-amber-400' : ''}`}
               >
                 <Star

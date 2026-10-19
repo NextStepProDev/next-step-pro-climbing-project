@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { ChevronUp, ChevronDown, X, Plus, Library, Images, HardDriveUpload } from 'lucide-react'
 import { RichTextEditor } from './RichTextEditor'
 import { MediaPickerModal } from './MediaPickerModal'
@@ -19,6 +20,7 @@ export function BioBlockEditor({
   blocks: BioBlock[]
   onChange: (blocks: BioBlock[]) => void
 }) {
+  const { t } = useTranslation('admin')
   const [mediaPickerAction, setMediaPickerAction] = useState<PickerAction | null>(null)
   const [galleryPickerAction, setGalleryPickerAction] = useState<PickerAction | null>(null)
   const [isUploading, setIsUploading] = useState(false)
@@ -83,7 +85,7 @@ export function BioBlockEditor({
     <div className="space-y-3">
       {blocks.length === 0 && (
         <p className="text-sm text-surface-500 italic">
-          Brak bloków. Dodaj tekst lub zdjęcie poniżej.
+          {t('editorUi.bio.empty')}
         </p>
       )}
 
@@ -91,10 +93,10 @@ export function BioBlockEditor({
         <div key={idx} className="flex gap-2 items-start">
           {/* Order arrows */}
           <div className="flex flex-col gap-0.5 shrink-0 pt-1">
-            <button type="button" onClick={() => moveUp(idx)} disabled={idx === 0} className={arrowCls} title="W górę">
+            <button type="button" onClick={() => moveUp(idx)} disabled={idx === 0} className={arrowCls} title={t('editorUi.bio.moveUp')}>
               <ChevronUp className="w-4 h-4" />
             </button>
-            <button type="button" onClick={() => moveDown(idx)} disabled={idx === blocks.length - 1} className={arrowCls} title="W dół">
+            <button type="button" onClick={() => moveDown(idx)} disabled={idx === blocks.length - 1} className={arrowCls} title={t('editorUi.bio.moveDown')}>
               <ChevronDown className="w-4 h-4" />
             </button>
           </div>
@@ -112,15 +114,15 @@ export function BioBlockEditor({
                 <img src={block.url} alt={block.alt} className="max-h-56 w-full object-contain" />
                 {/* Replace buttons overlay */}
                 <div className="absolute top-2 right-2 flex gap-1">
-                  <button type="button" className={btnCls} title="Zamień (z biblioteki)"
+                  <button type="button" className={btnCls} title={t('editorUi.bio.replaceLibrary')}
                     onClick={() => setMediaPickerAction({ action: 'replace', blockIdx: idx })}>
                     <Library className="w-3.5 h-3.5" />
                   </button>
-                  <button type="button" className={btnCls} title="Zamień (z galerii)"
+                  <button type="button" className={btnCls} title={t('editorUi.bio.replaceGallery')}
                     onClick={() => setGalleryPickerAction({ action: 'replace', blockIdx: idx })}>
                     <Images className="w-3.5 h-3.5" />
                   </button>
-                  <button type="button" className={btnCls} title="Zamień (z dysku)"
+                  <button type="button" className={btnCls} title={t('editorUi.bio.replaceDisk')}
                     onClick={() => openDisk({ action: 'replace', blockIdx: idx })}>
                     <HardDriveUpload className="w-3.5 h-3.5" />
                   </button>
@@ -132,7 +134,7 @@ export function BioBlockEditor({
           {/* Delete */}
           <button type="button" onClick={() => remove(idx)}
             className="p-1.5 mt-1 shrink-0 rounded text-surface-500 hover:text-rose-400 transition-colors"
-            title="Usuń blok">
+            title={t('editorUi.bio.remove')}>
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -143,31 +145,31 @@ export function BioBlockEditor({
         <button type="button"
           onClick={() => onChange([...blocks, { type: 'text', content: '' }])}
           className="flex items-center gap-1.5 text-sm text-primary-400 hover:text-primary-300 transition-colors">
-          <Plus className="w-3.5 h-3.5" /> Dodaj tekst
+          <Plus className="w-3.5 h-3.5" /> {t('editorUi.bio.addText')}
         </button>
 
         <span className="text-surface-600 text-xs">|</span>
-        <span className="text-xs text-surface-400">Dodaj zdjęcie:</span>
+        <span className="text-xs text-surface-400">{t('editorUi.bio.addPhoto')}</span>
 
         <button type="button"
           onClick={() => setMediaPickerAction({ action: 'add' })}
           className="flex items-center gap-1 text-sm text-surface-300 hover:text-surface-100 transition-colors"
-          title="Z biblioteki mediów">
-          <Library className="w-3.5 h-3.5" /> Biblioteka
+          title={t('editorUi.bio.fromLibrary')}>
+          <Library className="w-3.5 h-3.5" /> {t('editorUi.bio.library')}
         </button>
         <button type="button"
           onClick={() => setGalleryPickerAction({ action: 'add' })}
           className="flex items-center gap-1 text-sm text-surface-300 hover:text-surface-100 transition-colors"
-          title="Z galerii">
-          <Images className="w-3.5 h-3.5" /> Galeria
+          title={t('editorUi.bio.fromGallery')}>
+          <Images className="w-3.5 h-3.5" /> {t('editorUi.bio.gallery')}
         </button>
         <button type="button"
           onClick={() => openDisk({ action: 'add' })}
           disabled={isUploading}
           className="flex items-center gap-1 text-sm text-surface-300 hover:text-surface-100 disabled:opacity-50 transition-colors"
-          title="Z dysku">
+          title={t('editorUi.bio.fromDisk')}>
           <HardDriveUpload className="w-3.5 h-3.5" />
-          {isUploading ? 'Wgrywanie…' : 'Dysk'}
+          {isUploading ? t('editorUi.bio.uploading') : t('editorUi.bio.disk')}
         </button>
       </div>
 

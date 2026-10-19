@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { X, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useFocusTrap } from '../../utils/useFocusTrap'
 import { Button } from '../ui/Button'
@@ -12,6 +13,7 @@ interface LightboxProps {
 }
 
 export function Lightbox({ photos, currentIndex, onClose, onNavigate }: LightboxProps) {
+  const { t } = useTranslation('common')
   const trapRef = useFocusTrap(true)
   const currentPhoto = photos[currentIndex]
   const hasPrevious = currentIndex > 0
@@ -45,7 +47,7 @@ export function Lightbox({ photos, currentIndex, onClose, onNavigate }: Lightbox
       ref={trapRef}
       role="dialog"
       aria-modal="true"
-      aria-label="Photo lightbox"
+      aria-label={t('a11y.lightbox')}
       className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center"
       onClick={onClose}
     >
@@ -53,7 +55,7 @@ export function Lightbox({ photos, currentIndex, onClose, onNavigate }: Lightbox
       <Button
         variant="ghost"
         size="sm"
-        aria-label="Close"
+        aria-label={t('a11y.close')}
         onClick={onClose}
         className="absolute top-4 right-4 text-white hover:bg-white/10"
       >
@@ -70,7 +72,7 @@ export function Lightbox({ photos, currentIndex, onClose, onNavigate }: Lightbox
         <Button
           variant="ghost"
           size="sm"
-          aria-label="Previous photo"
+          aria-label={t('a11y.previousPhoto')}
           onClick={(e) => {
             e.stopPropagation()
             onNavigate(currentIndex - 1)
@@ -86,7 +88,7 @@ export function Lightbox({ photos, currentIndex, onClose, onNavigate }: Lightbox
         <Button
           variant="ghost"
           size="sm"
-          aria-label="Next photo"
+          aria-label={t('a11y.nextPhoto')}
           onClick={(e) => {
             e.stopPropagation()
             onNavigate(currentIndex + 1)
