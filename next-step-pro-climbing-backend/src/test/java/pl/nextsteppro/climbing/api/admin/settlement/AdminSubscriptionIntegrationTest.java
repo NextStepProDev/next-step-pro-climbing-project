@@ -35,6 +35,7 @@ class AdminSubscriptionIntegrationTest extends BaseIntegrationTest {
     @Autowired private AdminPayoutService payouts;
     @Autowired private AdminSettlementService settlements;
     @Autowired private JdbcTemplate jdbc;
+    @Autowired private pl.nextsteppro.climbing.domain.reservation.GuestReservationRepository guests;
 
     private User client;
 
@@ -288,6 +289,44 @@ class AdminSubscriptionIntegrationTest extends BaseIntegrationTest {
         // And the other participant can still be priced, which is the point of refusing.
         settlements.save("slot", group.getId(), "user", cashPayer.getId(),
             new SaveSettlementRequest(new BigDecimal("150")));
+    }
+
+    @Test
+    @DisplayName("shouldPutSomebodyWhoJoinedAMarkedSessionBackInThePricingQueue")
+    void shouldPutSomebodyWhoJoinedAMarkedSessionBackInThePricingQueue() {
+        // The mark is checked only when it is set; somebody added afterwards made it stale, and the
+        // queue skipped the whole session — so that person was seen only by opening the slot. The
+        // queue now lists them (the subscriber still not), and the row leads to the section that
+        // names the problem and holds the button that clears the mark.
+        subscriptions.create(client.getId(), new SaveSubscriptionRequest(
+            new BigDecimal("400"), monthsAgo(1), null));
+        TimeSlot slot = bookedSlot(monthsAgo(1).plusDays(3));
+        payouts.assignSource("slot", slot.getId(), new AssignPayoutSourceRequest(null, client.getId()));
+        assertEquals(0, unpricedCount());
+
+        reservationRepository.saveAndFlush(new Reservation(saveOtherUser(), slot));
+
+        var unpriced = stats.buildOverview("all", LocalDate.now(AdminSubscriptionService.WARSAW)).unpriced();
+        assertEquals(1, unpriced.count());
+        assertEquals(1, unpriced.sessions().get(0).payerCount(), "The newcomer, not the subscriber");
+        assertEquals("shared", settlements.getSection("slot", slot.getId()).coveredBy().staleReason());
+
+        // A guest is never the subscriber either, so a guest added later is listed the same way
+        guests.saveAndFlush(new pl.nextsteppro.climbing.domain.reservation.GuestReservation(slot, "Tomek", 1));
+        assertEquals(2, stats.buildOverview("all", LocalDate.now(AdminSubscriptionService.WARSAW))
+            .unpriced().sessions().get(0).payerCount());
+    }
+
+    @Test
+    @DisplayName("shouldKeepAGuestOfAnInstitutionMarkedSessionOutOfThePricingQueue")
+    void shouldKeepAGuestOfAnInstitutionMarkedSessionOutOfThePricingQueue() {
+        TimeSlot group = bookedSlot(monthsAgo(1).plusDays(3));
+        guests.saveAndFlush(new pl.nextsteppro.climbing.domain.reservation.GuestReservation(group, "Tomek", 1));
+        UUID sourceId = payouts.createSource(new SavePayoutSourceRequest("Szkola XYZ")).id();
+
+        payouts.assignSource("slot", group.getId(), new AssignPayoutSourceRequest(sourceId, null));
+
+        assertEquals(0, unpricedCount(), "A school pays for everyone in the room, guests included");
     }
 
     @Test
