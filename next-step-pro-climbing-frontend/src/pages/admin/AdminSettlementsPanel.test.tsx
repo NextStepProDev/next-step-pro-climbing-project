@@ -305,6 +305,35 @@ describe('AdminSettlementsPanel', () => {
       .toBeDisabled()
   })
 
+  it('offers what is still owed after a partial payment, not what was typed last time', async () => {
+    const debt = (amount: number) => makeOverview({
+      outstanding: {
+        total: amount,
+        count: 1,
+        oldest: '2026-08-05',
+        items: [{
+          targetType: 'slot', targetId: 'slot-1', date: '2026-08-05', title: 'Trening 1:1',
+          payerType: 'user', payerId: 'anna', name: 'Anna Kowalska', amount,
+        }],
+      },
+    })
+    getOverview.mockResolvedValueOnce(debt(100)).mockResolvedValue(debt(40))
+    const user = userEvent.setup()
+
+    renderPanel()
+
+    const received = await screen.findByLabelText('settlements.tab.outstanding.receivedLabel')
+    await user.clear(received)
+    await user.type(received, '60')
+    await user.click(screen.getByRole('button', { name: 'settlements.tab.outstanding.settleAll' }))
+
+    // 60 of 100 paid, 40 left. The field used to keep "60", and a second click turned 20 of it into
+    // an overpayment nobody meant.
+    await waitFor(() =>
+      expect(screen.getByLabelText('settlements.tab.outstanding.receivedLabel')).toHaveValue('40.00'),
+    )
+  })
+
   it('offers a round amount even when the debts add up to a float tail', async () => {
     // 299.23 + 44.95 + 326.98 is 671.1600000000001 in binary floating point, and roughly three
     // groups in ten land somewhere like it. The heading beside this field renders 671,16 zł through
