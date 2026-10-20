@@ -867,6 +867,9 @@ function ParticipantsModal({
     queryClient.invalidateQueries({ queryKey: ['admin', 'slots', 'upcoming'] })
     queryClient.invalidateQueries({ queryKey: ['admin', 'slots', 'past'] })
     queryClient.invalidateQueries({ queryKey: ['calendar'] })
+    // A participant added or removed is a row on the Settlements tab ("to price") — the calendar's
+    // ParticipantsSection invalidates this for the same reason.
+    queryClient.invalidateQueries({ queryKey: ['admin', 'settlements'] })
   }
 
   const { data: allUsers } = useQuery({
@@ -1240,7 +1243,7 @@ function SlotTemplatesSection() {
           {templates.map((tpl, i) => (
             <li key={i} className="flex items-center gap-3 bg-surface-900 border border-surface-800 rounded-lg px-4 py-2">
               <span className="flex-1 text-surface-100 font-medium">{tpl.name}</span>
-              <span className="text-sm text-surface-400">{tpl.maxParticipants} os.</span>
+              <span className="text-sm text-surface-400">{t('slots.templateSeats', { count: tpl.maxParticipants })}</span>
               <button
                 onClick={() => removeTemplate(i)}
                 disabled={saveMutation.isPending}

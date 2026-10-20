@@ -25,7 +25,9 @@ export function InvitedUsersPicker({ value, onChange, maxSeats }: InvitedUsersPi
   const [search, setSearch] = useState('')
 
   const { data: users = [] } = useQuery({
-    queryKey: ['admin', 'allUsers'],
+    // The same key as every other user list in the panel: a second key for the same endpoint was a
+    // second cache that the users panel's invalidation never reached.
+    queryKey: ['admin', 'users'],
     queryFn: adminApi.getAllUsers,
   })
 

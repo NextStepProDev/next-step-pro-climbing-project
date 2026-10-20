@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useId, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useFocusTrap } from '../../utils/useFocusTrap'
 import { useTranslation } from 'react-i18next'
@@ -9,6 +9,7 @@ import { useAuth } from '../../context/AuthContext'
 import { getErrorMessage } from '../../utils/errors'
 import { validatePhone, validateName } from '../../utils/validation'
 import { Button } from './Button'
+import { useBodyScrollLock } from './scrollLock'
 
 interface Props {
   onCompleted: () => void
@@ -17,6 +18,8 @@ interface Props {
 
 export function CompleteProfileModal({ onCompleted, onClose }: Props) {
   const trapRef = useFocusTrap(true)
+  const titleId = useId()
+  useBodyScrollLock(true)
   const { t } = useTranslation('settings')
   const { user, refreshUser } = useAuth()
 
@@ -26,11 +29,6 @@ export function CompleteProfileModal({ onCompleted, onClose }: Props) {
   const [firstNameError, setFirstNameError] = useState<string | null>(null)
   const [lastNameError, setLastNameError] = useState<string | null>(null)
   const [phoneError, setPhoneError] = useState<string | null>(null)
-
-  const canSubmit =
-    validateName(firstName) === null &&
-    validateName(lastName) === null &&
-    validatePhone(phone) === null
 
   const mutation = useMutation({
     mutationFn: () =>
@@ -44,12 +42,12 @@ export function CompleteProfileModal({ onCompleted, onClose }: Props) {
   return createPortal(
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div ref={trapRef} role="dialog" aria-modal="true" className="relative bg-surface-900 border border-surface-700 rounded-xl p-6 max-w-sm w-full shadow-2xl">
+      <div ref={trapRef} role="dialog" aria-modal="true" aria-labelledby={titleId} className="relative bg-surface-900 border border-surface-700 rounded-xl p-6 max-w-sm w-full shadow-2xl">
         <div className="flex items-center justify-center w-12 h-12 bg-primary-500/15 rounded-full mx-auto mb-4">
           <UserCircle className="w-6 h-6 text-primary-400" />
         </div>
 
-        <h2 className="text-lg font-semibold text-surface-100 text-center mb-2">
+        <h2 id={titleId} className="text-lg font-semibold text-surface-100 text-center mb-2">
           {t('completeProfile.title')}
         </h2>
         <p className="text-sm text-surface-400 text-center mb-6 leading-relaxed">
@@ -101,7 +99,9 @@ export function CompleteProfileModal({ onCompleted, onClose }: Props) {
             variant="primary"
             className="w-full"
             loading={mutation.isPending}
-            disabled={!canSubmit}
+            // Never disabled for invalid input: the click is what shows WHY. A button greyed out
+            // until the form was valid kept the field messages below unreachable — somebody who
+            // typed a short phone number saw a dead button and no reason.
             onClick={() => {
               const fnErr = validateName(firstName)
               if (fnErr) { setFirstNameError(fnErr); return }
