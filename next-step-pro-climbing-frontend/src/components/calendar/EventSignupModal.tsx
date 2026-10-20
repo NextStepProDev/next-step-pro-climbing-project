@@ -18,7 +18,7 @@ import { adminApi, calendarApi, reservationApi } from '../../api/client'
 import { getErrorMessage } from '../../utils/errors'
 import { parseCalendarDate, todayInWarsaw } from '../../utils/calendarDate'
 import { useChildDirty } from '../../hooks/useChildDirty'
-import { formatEventWhen } from '../../utils/events'
+import { formatEventWhen, seatsFreeForViewer } from '../../utils/events'
 import { AdminPrivateNote } from '../admin/AdminPrivateNote'
 import { ParticipantsSection } from '../admin/ParticipantsSection'
 import { MailedInvitesWarning } from '../ui/MailedInvitesWarning'
@@ -233,7 +233,8 @@ export function EventSignupModal({ event, isOpen, onClose }: EventSignupModalPro
   // Invitation-held seats — unavailable to non-invitees; one's own invitation does not block.
   const reservedSeats = ev.reservedSeats ?? 0
   const reservedForOthers = Math.max(0, reservedSeats - (ev.isReservedForUser ? 1 : 0))
-  const spotsLeft = ev.maxParticipants - ev.currentParticipants - reservedForOthers
+  // ...and seats on offer to the waitlist, unless the offer is this viewer's (server-side count).
+  const spotsLeft = seatsFreeForViewer(ev)
   const isFull = spotsLeft <= 0
   const blockedByReserved = isFull && reservedForOthers > 0 && !ev.isReservedForUser && !ev.isUserRegistered
   // Full for this viewer (`isFull`) = can join the queue, also when only invitation-held seats

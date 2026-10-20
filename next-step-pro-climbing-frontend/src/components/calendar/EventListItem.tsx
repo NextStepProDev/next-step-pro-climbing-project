@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { format } from 'date-fns'
 import { ExternalLink } from 'lucide-react'
-import { formatAvailability } from '../../utils/events'
+import { formatAvailability, seatsFreeForViewer } from '../../utils/events'
 import { parseCalendarDate } from '../../utils/calendarDate'
 import type { EventSummary } from '../../types'
 
@@ -23,9 +23,8 @@ interface EventListItemProps {
 export function EventListItem({ event, dotClass, courseReturnTo, onSelect }: EventListItemProps) {
   const { t } = useTranslation('calendar')
   const { label, badgeClass } = formatAvailability(event)
-  // Full also when other people's invitations hold the remaining seats — then the waitlist.
-  const reservedForOthers = Math.max(0, (event.reservedSeats ?? 0) - (event.isReservedForUser ? 1 : 0))
-  const isFull = event.currentParticipants + reservedForOthers >= event.maxParticipants
+  // Full also when other people's invitations or a waitlist offer hold the remaining seats.
+  const isFull = seatsFreeForViewer(event) <= 0
 
   const status =
     event.eventType === 'UNAVAILABLE'

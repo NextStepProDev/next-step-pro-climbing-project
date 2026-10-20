@@ -24,6 +24,27 @@ public interface WaitlistRepository extends JpaRepository<Waitlist, UUID> {
     @Query("SELECT COALESCE(COUNT(w), 0) FROM Waitlist w WHERE w.timeSlot.id = :slotId AND w.status = 'PENDING_CONFIRMATION'")
     int countPendingConfirmationBySlotId(UUID slotId);
 
+    /**
+     * Offers still open on these slots — the people a freed seat currently belongs to. An offer
+     * whose deadline has passed holds nothing, even before the five-minute sweep returns it to
+     * WAITING.
+     */
+    @Query("""
+        SELECT new pl.nextsteppro.climbing.domain.waitlist.OpenOfferCount(w.timeSlot.id, COUNT(w))
+        FROM Waitlist w
+        WHERE w.timeSlot.id IN :slotIds AND w.status = 'PENDING_CONFIRMATION' AND w.confirmationDeadline > :now
+        GROUP BY w.timeSlot.id
+        """)
+    List<OpenOfferCount> countOpenOffersBySlotIds(Collection<UUID> slotIds, Instant now);
+
+    /** The slots, among these, on which this viewer holds an open offer themselves. */
+    @Query("""
+        SELECT w.timeSlot.id FROM Waitlist w
+        WHERE w.user.id = :userId AND w.timeSlot.id IN :slotIds
+          AND w.status = 'PENDING_CONFIRMATION' AND w.confirmationDeadline > :now
+        """)
+    List<UUID> findSlotIdsWithOpenOfferFor(UUID userId, Collection<UUID> slotIds, Instant now);
+
     @Query("SELECT w FROM Waitlist w JOIN FETCH w.user JOIN FETCH w.timeSlot WHERE w.status = 'PENDING_CONFIRMATION' AND w.confirmationDeadline < :now")
     List<Waitlist> findExpiredPendingConfirmations(Instant now);
 

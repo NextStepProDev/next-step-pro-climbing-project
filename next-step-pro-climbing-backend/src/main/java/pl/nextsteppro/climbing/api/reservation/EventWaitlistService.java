@@ -131,6 +131,12 @@ public class EventWaitlistService {
         eventWaitlistRepository.findByUserIdAndEventId(userId, eventId).ifPresent(eventWaitlistRepository::delete);
     }
 
+    // Declining an open offer gives the seat it held back — the cached anonymous calendar must see it.
+    @Caching(evict = {
+        @CacheEvict(value = "calendarMonth", allEntries = true),
+        @CacheEvict(value = "calendarWeek", allEntries = true),
+        @CacheEvict(value = "calendarDay", allEntries = true)
+    })
     public void leaveEventWaitlist(UUID eventId, UUID userId) {
         EventWaitlist entry = eventWaitlistRepository.findByUserIdAndEventId(userId, eventId)
             .orElseThrow(() -> new IllegalArgumentException(msg.get("waitlist.not.found")));
@@ -260,12 +266,17 @@ public class EventWaitlistService {
 
         eventWaitlistRepository.delete(entry);
 
-        // Remaining PENDING people go back to the queue
+        // Remaining PENDING people go back to the queue only once no seat is left — see the slot twin.
         List<EventWaitlist> otherPending = eventWaitlistRepository.findByEventIdAndStatusWithUser(eventId, WaitlistStatus.PENDING_CONFIRMATION);
-        for (EventWaitlist other : otherPending) {
-            other.returnToWaiting();
+        int taken = currentParticipants + 1 + reservedSeatRepository.countPendingByEventId(eventId);
+        if (taken >= event.getMaxParticipants()) {
+            for (EventWaitlist other : otherPending) {
+                other.returnToWaiting();
+            }
+            eventWaitlistRepository.saveAll(otherPending);
+        } else {
+            otherPending = List.of();
         }
-        eventWaitlistRepository.saveAll(otherPending);
 
         waitlistMailService.sendEventWaitlistReservationConfirmed(user, event);
         waitlistMailService.sendEventWaitlistAdminNotification(user, event);

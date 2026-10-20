@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { formatEventWhen } from './events'
+import { formatEventWhen, seatsFreeForViewer } from './events'
 import type { EventSummary } from '../types'
 
 type When = Pick<EventSummary, 'startDate' | 'endDate' | 'startTime' | 'endTime' | 'isMultiDay'>
@@ -70,5 +70,22 @@ describe('formatEventWhen', () => {
   it('should print the labelled day, not a moment shifted by the device zone', () => {
     expect(formatEventWhen(event({ startDate: '2026-01-01' }), opts))
       .toBe('01.01.2026 · Cały dzień')
+  })
+})
+
+describe('seatsFreeForViewer', () => {
+  const base = { maxParticipants: 4, currentParticipants: 1 }
+
+  it('subtracts other people\'s invitations but not the viewer\'s own', () => {
+    expect(seatsFreeForViewer({ ...base, reservedSeats: 2 })).toBe(1)
+    expect(seatsFreeForViewer({ ...base, reservedSeats: 2, isReservedForUser: true })).toBe(2)
+  })
+
+  it('subtracts the seats on offer to the waitlist', () => {
+    expect(seatsFreeForViewer({ ...base, heldForWaitlist: 3 })).toBe(0)
+  })
+
+  it('treats a server that does not send the hold yet as holding nothing', () => {
+    expect(seatsFreeForViewer(base)).toBe(3)
   })
 })

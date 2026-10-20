@@ -312,6 +312,8 @@ export interface TimeSlot {
   // Invitation-held seats
   reservedSeats: number
   isReservedForUser: boolean
+  // Free seats an open waitlist offer holds for the queue, from this viewer's side
+  heldForWaitlist?: number
 }
 
 export interface TimeSlotDetail {
@@ -338,6 +340,8 @@ export interface TimeSlotDetail {
   // Invitation-held seats
   reservedSeats: number
   isReservedForUser: boolean
+  // Free seats an open waitlist offer holds for the queue, from this viewer's side
+  heldForWaitlist?: number
 }
 
 // CLOSED = no seats at all: work run for somebody else, or an hour deliberately made unbookable.
@@ -386,6 +390,8 @@ export interface EventSummary {
   // Invitation-held seats
   reservedSeats: number
   isReservedForUser: boolean
+  // Free seats an open waitlist offer holds for the queue, from this viewer's side
+  heldForWaitlist?: number
 }
 
 export interface EventWaitlistEntry {

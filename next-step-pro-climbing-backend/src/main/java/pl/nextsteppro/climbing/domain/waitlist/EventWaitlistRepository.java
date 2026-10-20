@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -22,6 +23,23 @@ public interface EventWaitlistRepository extends JpaRepository<EventWaitlist, UU
 
     @Query("SELECT COALESCE(COUNT(w), 0) FROM EventWaitlist w WHERE w.event.id = :eventId AND w.status = 'PENDING_CONFIRMATION'")
     int countPendingConfirmationByEventId(UUID eventId);
+
+    /** Event twin of {@link WaitlistRepository#countOpenOffersBySlotIds}. */
+    @Query("""
+        SELECT new pl.nextsteppro.climbing.domain.waitlist.OpenOfferCount(w.event.id, COUNT(w))
+        FROM EventWaitlist w
+        WHERE w.event.id IN :eventIds AND w.status = 'PENDING_CONFIRMATION' AND w.confirmationDeadline > :now
+        GROUP BY w.event.id
+        """)
+    List<OpenOfferCount> countOpenOffersByEventIds(Collection<UUID> eventIds, Instant now);
+
+    /** Event twin of {@link WaitlistRepository#findSlotIdsWithOpenOfferFor}. */
+    @Query("""
+        SELECT w.event.id FROM EventWaitlist w
+        WHERE w.user.id = :userId AND w.event.id IN :eventIds
+          AND w.status = 'PENDING_CONFIRMATION' AND w.confirmationDeadline > :now
+        """)
+    List<UUID> findEventIdsWithOpenOfferFor(UUID userId, Collection<UUID> eventIds, Instant now);
 
     @Query("SELECT w FROM EventWaitlist w JOIN FETCH w.user JOIN FETCH w.event WHERE w.status = 'PENDING_CONFIRMATION' AND w.confirmationDeadline < :now")
     List<EventWaitlist> findExpiredPendingConfirmations(Instant now);
