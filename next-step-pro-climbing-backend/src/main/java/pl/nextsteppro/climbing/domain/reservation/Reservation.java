@@ -100,6 +100,10 @@ public class Reservation {
     public void touchForAsyncMail() {
         getUser().getEmail();
         getTimeSlot().getDate();
+        // getDisplayTitle() falls back to the event's title, so the event is read on the mail thread too
+        if (getTimeSlot().getEvent() != null) {
+            getTimeSlot().getEvent().getTitle();
+        }
     }
 
     public ReservationStatus getStatus() {

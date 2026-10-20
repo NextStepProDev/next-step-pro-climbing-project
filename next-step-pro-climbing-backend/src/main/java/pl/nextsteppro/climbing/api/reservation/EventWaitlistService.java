@@ -22,6 +22,7 @@ import pl.nextsteppro.climbing.domain.waitlist.EventWaitlist;
 import pl.nextsteppro.climbing.domain.waitlist.EventWaitlistRepository;
 import pl.nextsteppro.climbing.domain.waitlist.WaitlistStatus;
 import pl.nextsteppro.climbing.infrastructure.i18n.MessageService;
+import pl.nextsteppro.climbing.infrastructure.mail.AsyncMailEntities;
 import pl.nextsteppro.climbing.infrastructure.mail.WaitlistMailService;
 
 import java.time.Instant;
@@ -120,7 +121,7 @@ public class EventWaitlistService {
         EventWaitlist entry = new EventWaitlist(user, event, position);
         eventWaitlistRepository.save(entry);
 
-        waitlistMailService.sendEventWaitlistJoinedConfirmation(user, event);
+        waitlistMailService.sendEventWaitlistJoinedConfirmation(AsyncMailEntities.loaded(user), AsyncMailEntities.loaded(event));
 
         log.info("User {} joined event waitlist for event {} at position {}", userId, eventId, position);
         return new WaitlistResultDto(true, msg.get("waitlist.joined"));
@@ -278,8 +279,11 @@ public class EventWaitlistService {
             otherPending = List.of();
         }
 
-        waitlistMailService.sendEventWaitlistReservationConfirmed(user, event);
-        waitlistMailService.sendEventWaitlistAdminNotification(user, event);
+        // Loaded here, not on the mail thread — see AsyncMailEntities.
+        User mailUser = AsyncMailEntities.loaded(user);
+        Event mailEvent = AsyncMailEntities.loaded(event);
+        waitlistMailService.sendEventWaitlistReservationConfirmed(mailUser, mailEvent);
+        waitlistMailService.sendEventWaitlistAdminNotification(mailUser, mailEvent);
         activityLogService.logEventReservationCreated(user, event, 1);
 
         log.info("User {} confirmed event waitlist offer for event {} — {} slots reserved, {} others returned to waiting",
@@ -317,7 +321,7 @@ public class EventWaitlistService {
         eventWaitlistRepository.saveAll(waiting);
 
         for (EventWaitlist entry : waiting) {
-            waitlistMailService.sendEventWaitlistOfferNotification(entry.getUser(), event, deadline);
+            waitlistMailService.sendEventWaitlistOfferNotification(AsyncMailEntities.loaded(entry.getUser()), AsyncMailEntities.loaded(event), deadline);
         }
 
         log.info("Notified {} event waitlist users for event {}, deadline: {}", waiting.size(), eventId, deadline);
