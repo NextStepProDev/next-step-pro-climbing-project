@@ -1,5 +1,5 @@
-import { useState, useCallback } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useMemo } from 'react'
+import { useInfiniteQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { format } from 'date-fns'
 import { RefreshCw, ChevronDown } from 'lucide-react'
@@ -16,40 +16,32 @@ const PAGE_SIZE = 20
 export function AdminActivityPanel() {
   const { t } = useTranslation('admin')
   const locale = useDateLocale()
-  const [allLogs, setAllLogs] = useState<ActivityLog[]>([])
-  const [page, setPage] = useState(0)
-  const [hasMore, setHasMore] = useState(true)
-  const [loadingMore, setLoadingMore] = useState(false)
-
-  const { isLoading, isError, error, refetch } = useQuery({
+  // Pages owned by React Query, not copied into local state. The list used to live in useState and
+  // the 30-second poll rewrote it with page 0 alone, so whoever had loaded older entries to read
+  // them watched the list fold back to twenty under their eyes. An infinite query refetches every
+  // page it holds.
+  const { data, isLoading, isError, error, refetch, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
     queryKey: ['admin', 'activity-logs'],
-    queryFn: async () => {
-      const logs = await adminApi.getActivityLogs(0, PAGE_SIZE)
-      setAllLogs(logs)
-      setPage(0)
-      setHasMore(logs.length === PAGE_SIZE)
-      return logs
-    },
+    queryFn: ({ pageParam }) => adminApi.getActivityLogs(pageParam, PAGE_SIZE),
+    initialPageParam: 0,
+    getNextPageParam: (last, all) => (last.length === PAGE_SIZE ? all.length : undefined),
     refetchInterval: 30_000,
   })
 
-  const loadMore = useCallback(async () => {
-    const nextPage = page + 1
-    setLoadingMore(true)
-    try {
-      const moreLogs = await adminApi.getActivityLogs(nextPage, PAGE_SIZE)
-      setAllLogs((prev) => [...prev, ...moreLogs])
-      setPage(nextPage)
-      setHasMore(moreLogs.length === PAGE_SIZE)
-    } finally {
-      setLoadingMore(false)
+  // Pages are offsets, so a new entry on top pushes the last row of one page onto the next —
+  // shown twice, with a duplicate React key. Once per id, newest first as served.
+  const allLogs = useMemo(() => {
+    const seen = new Set<string>()
+    const out: ActivityLog[] = []
+    for (const entry of data?.pages.flat() ?? []) {
+      if (seen.has(entry.id)) continue
+      seen.add(entry.id)
+      out.push(entry)
     }
-  }, [page])
+    return out
+  }, [data])
 
-  const handleRefresh = useCallback(() => {
-    setPage(0)
-    refetch()
-  }, [refetch])
+  const handleRefresh = () => { refetch() }
 
   return (
     <div>
@@ -186,14 +178,14 @@ export function AdminActivityPanel() {
           </div>
 
           {/* Load more */}
-          {hasMore && (
+          {hasNextPage && (
             <div className="mt-4 text-center">
               <button
-                onClick={loadMore}
-                disabled={loadingMore}
+                onClick={() => fetchNextPage()}
+                disabled={isFetchingNextPage}
                 className="inline-flex items-center gap-2 px-4 py-2 text-sm text-surface-300 hover:text-surface-100 bg-surface-800 hover:bg-surface-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {loadingMore ? (
+                {isFetchingNextPage ? (
                   <LoadingSpinner />
                 ) : (
                   <>

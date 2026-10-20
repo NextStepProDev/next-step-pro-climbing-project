@@ -130,8 +130,10 @@ export function AdminVideosPanel() {
       id: editingVideo.id,
       data: {
         title: formTitle || undefined,
-        excerpt: formExcerpt || undefined,
-        content: formContent || undefined,
+        // Sent as typed, "" included: undefined means "leave it" to the server, so an emptied
+        // excerpt or description used to come back on the next load.
+        excerpt: formExcerpt,
+        content: formContent,
         youtubeUrl: formYoutubeUrl || undefined,
       },
     })
@@ -310,6 +312,17 @@ export function AdminVideosPanel() {
             )}
           </div>
         </div>
+
+        {/* Here and not with the list below: this view returns early, so a confirmation rendered
+            only in the list never appeared — "back" on an edited form silently did nothing. */}
+        <ConfirmModal
+          isOpen={showExitConfirm}
+          onClose={() => setShowExitConfirm(false)}
+          onConfirm={leaveEditor}
+          title={t('videos.exitConfirmTitle')}
+          message={t('videos.exitConfirmMessage')}
+          confirmText={t('videos.exitConfirm')}
+        />
       </div>
     )
   }
@@ -436,16 +449,6 @@ export function AdminVideosPanel() {
           ))}
         </div>
       )}
-
-      {/* Confirm: leave without saving — same wording as the article and course editors */}
-      <ConfirmModal
-        isOpen={showExitConfirm}
-        onClose={() => setShowExitConfirm(false)}
-        onConfirm={leaveEditor}
-        title={t('videos.exitConfirmTitle')}
-        message={t('videos.exitConfirmMessage')}
-        confirmText={t('videos.exitConfirm')}
-      />
 
       <ConfirmModal
         isOpen={deleteConfirm.open}

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Upload, Copy, Check, Trash2 } from 'lucide-react'
@@ -23,21 +23,36 @@ export function AdminAssetsPanel() {
   const [uploadProgress, setUploadProgress] = useState(0)
   const [assetToDelete, setAssetToDelete] = useState<AssetDto | null>(null)
   const [copiedId, setCopiedId] = useState<string | null>(null)
+  const uploadedRef = useRef(0)
 
   const { data: assets, isLoading, error } = useQuery({
     queryKey: ['admin', 'assets'],
     queryFn: adminAssetsApi.list,
   })
 
+  // One request per file, so a failure part-way leaves the earlier ones uploaded. On a failure those
+  // leave the selection — retrying used to send them all again (duplicates in the library) — and
+  // the list refreshes either way: it used to refresh only on full success, hiding what arrived.
   const uploadMutation = useMutation({
     mutationFn: async (files: File[]) => {
+      uploadedRef.current = 0
       for (let i = 0; i < files.length; i++) {
         await adminAssetsApi.upload(files[i])
+        uploadedRef.current = i + 1
         setUploadProgress(Math.round(((i + 1) / files.length) * 100))
       }
     },
-    onSuccess: () => {
+    onError: () => {
+      const done = uploadedRef.current
+      if (done === 0) return
+      previews.slice(0, done).forEach((p) => URL.revokeObjectURL(p))
+      setSelectedFiles((current) => current.slice(done))
+      setPreviews((current) => current.slice(done))
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'assets'] })
+    },
+    onSuccess: () => {
       closeUploadModal()
     },
   })
@@ -54,7 +69,7 @@ export function AdminAssetsPanel() {
     navigator.clipboard.writeText(asset.url).then(() => {
       setCopiedId(asset.id)
       setTimeout(() => setCopiedId(null), 2000)
-    })
+    }).catch(() => { /* no clipboard (insecure context, denied) — the URL is still on the card */ })
   }
 
   const handleFileSelect = (files: File[]) => {
@@ -110,7 +125,9 @@ export function AdminAssetsPanel() {
               </div>
 
               {/* Hover overlay */}
-              <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+              {/* Revealed by hover on a mouse, and always there on touch and under keyboard focus: a
+                  hover-only overlay never appears on a phone, yet its buttons stay tappable blind. */}
+              <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 focus-within:opacity-100 pointer-coarse:opacity-100 pointer-coarse:bg-black/30 transition-opacity flex items-center justify-center gap-2">
                 <Button
                   size="sm"
                   variant="secondary"

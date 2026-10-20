@@ -45,6 +45,9 @@ export function AdminUserDetailPanel() {
     queryKey: ['admin', 'userHistory', userId],
     queryFn: () => adminUserHistoryApi.getUser(userId!),
     enabled: !!userId,
+    // A card by id opts out of the global keepPreviousData (main.tsx): the previous person's name
+    // and tabs must not stand under the next person's address while it loads.
+    placeholderData: undefined,
   })
 
   const user = userQuery.data

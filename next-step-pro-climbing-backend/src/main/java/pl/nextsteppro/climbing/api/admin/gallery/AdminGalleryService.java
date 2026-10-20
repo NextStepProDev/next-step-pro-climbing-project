@@ -120,8 +120,9 @@ public class AdminGalleryService {
         if (request.name() != null) {
             album.setName(request.name());
         }
+        // null = leave it, "" = the admin emptied the field (the AdminInstructorService convention)
         if (request.description() != null) {
-            album.setDescription(request.description());
+            album.setDescription(request.description().isBlank() ? null : request.description());
         }
 
         album = albumRepository.save(album);
@@ -213,7 +214,7 @@ public class AdminGalleryService {
                 .orElseThrow(() -> new LocalizedMessage.Rejected("error.not.found.photo"));
 
         if (request.caption() != null) {
-            photo.setCaption(request.caption());
+            photo.setCaption(request.caption().isBlank() ? null : request.caption());
         }
         if (request.displayOrder() != null) {
             photo.setDisplayOrder(request.displayOrder());
