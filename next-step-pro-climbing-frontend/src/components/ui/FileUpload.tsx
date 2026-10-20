@@ -104,6 +104,9 @@ export function FileUpload({
     if (e.target.files) {
       void handleFiles(e.target.files)
     }
+    // A refused file (wrong type, too big) left its name in the input, so picking the same file
+    // again after fixing it fired no change at all. handleFiles copies the list synchronously first.
+    e.target.value = ''
   }
 
   const handleClick = () => {

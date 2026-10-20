@@ -403,6 +403,8 @@
     "templateParticipantsLabel": "Máx. participantes",
     "templateSave": "Guardar plantilla",
     "templateRemove": "Eliminar plantilla",
+    "templateSeats_one": "{{count}} persona",
+    "templateSeats_other": "{{count}} personas",
     "archiveAllDay": "todo el día",
     "archiveEventRange": "{{from}} – {{to}}",
     "archiveEventBadge": "evento",

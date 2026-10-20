@@ -1,10 +1,11 @@
-import { useState } from 'react'
+import { useId, useState } from 'react'
 import { Trans, useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { useFocusTrap } from '../../utils/useFocusTrap'
 import { Mail } from 'lucide-react'
 import { authApi } from '../../api/client'
 import { Button } from './Button'
+import { useBodyScrollLock } from './scrollLock'
 
 interface Props {
   onDone: () => Promise<void>
@@ -14,12 +15,19 @@ export function NewsletterChoiceModal({ onDone }: Props) {
   const trapRef = useFocusTrap(true)
   const { t } = useTranslation('common')
   const [loading, setLoading] = useState(false)
+  const [failed, setFailed] = useState(false)
+  const titleId = useId()
+  useBodyScrollLock(true)
 
   const handleChoice = async (subscribed: boolean) => {
     setLoading(true)
+    setFailed(false)
     try {
       await authApi.updateNewsletter(subscribed)
       await onDone()
+    } catch {
+      // Said on screen: the dialog used to just stay, with the rejection going nowhere.
+      setFailed(true)
     } finally {
       setLoading(false)
     }
@@ -28,12 +36,12 @@ export function NewsletterChoiceModal({ onDone }: Props) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
-      <div ref={trapRef} role="dialog" aria-modal="true" className="relative bg-surface-900 border border-surface-700 rounded-xl p-6 max-w-sm w-full shadow-2xl">
+      <div ref={trapRef} role="dialog" aria-modal="true" aria-labelledby={titleId} className="relative bg-surface-900 border border-surface-700 rounded-xl p-6 max-w-sm w-full shadow-2xl">
         <div className="flex items-center justify-center w-12 h-12 bg-primary-500/15 rounded-full mx-auto mb-4">
           <Mail className="w-6 h-6 text-primary-400" />
         </div>
 
-        <h2 className="text-lg font-semibold text-surface-100 text-center mb-2">
+        <h2 id={titleId} className="text-lg font-semibold text-surface-100 text-center mb-2">
           {t('newsletter.modalTitle')}
         </h2>
         <p className="text-sm text-surface-400 text-center mb-6 leading-relaxed">
@@ -56,6 +64,7 @@ export function NewsletterChoiceModal({ onDone }: Props) {
           >
             {t('newsletter.modalNo')}
           </button>
+          {failed && <p role="alert" className="text-sm text-rose-400 text-center">{t('newsletter.modalError')}</p>}
         </div>
 
         {/* GDPR information duty (art. 13): the privacy policy is shown at account creation

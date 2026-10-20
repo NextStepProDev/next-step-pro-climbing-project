@@ -27,6 +27,9 @@ export function GalleryPickerModal({ isOpen, onClose, onSelect }: GalleryPickerM
     queryKey: ['gallery', 'album', selectedAlbumId],
     queryFn: () => galleryApi.getAlbum(selectedAlbumId!),
     enabled: isOpen && selectedAlbumId !== null,
+    // Detail by id opts out of the global keepPreviousData: album B must not show album A's photos
+    // while it loads — a click in that moment picked a photo from the wrong album.
+    placeholderData: undefined,
   })
 
   function handleSelectPhoto(photo: Photo) {
