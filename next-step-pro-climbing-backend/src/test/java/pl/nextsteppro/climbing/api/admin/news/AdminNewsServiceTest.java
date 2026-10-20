@@ -536,6 +536,7 @@ class AdminNewsServiceTest {
         setField(testNews, "publishedAt", Instant.now());
 
         User subscriber = mock(User.class);
+        when(subscriber.isEmailVerified()).thenReturn(true);
         when(newsRepository.findById(newsId)).thenReturn(Optional.of(testNews));
         when(blockRepository.findByNewsIdOrderByDisplayOrderAsc(newsId)).thenReturn(List.of());
         when(userRepository.findAllByNewsletterSubscribedTrue()).thenReturn(List.of(subscriber));
@@ -546,6 +547,59 @@ class AdminNewsServiceTest {
         // Then
         assertEquals(1, result.subscriberCount());
         verify(newsletterMailService).sendToAll(eq(testNews), anyList(), eq(List.of(subscriber)), eq(BASE_URL));
+    }
+
+    // A newsletter is consent-based marketing: an address nobody confirmed (a typo, someone else's)
+    // can carry the tick from the registration form for the seven days before it is deleted.
+    @Test
+    void shouldNotSendTheNewsletterToAnAddressNobodyConfirmed() {
+        setField(testNews, "published", true);
+        User unconfirmed = mock(User.class);
+        when(unconfirmed.isEmailVerified()).thenReturn(false);
+        when(newsRepository.findById(newsId)).thenReturn(Optional.of(testNews));
+        when(userRepository.findAllByNewsletterSubscribedTrue()).thenReturn(List.of(unconfirmed));
+
+        NewsletterSentDto result = adminNewsService.sendNewsNewsletter(newsId);
+
+        assertEquals(0, result.subscriberCount());
+        verify(newsletterMailService, never()).sendToAll(any(), any(), any(), any());
+    }
+
+    // Each subscriber reads the article in their language when it exists; the version the admin sent
+    // stands in for a language with no translation. It used to go out in one language to everybody.
+    @Test
+    void shouldSendEachSubscriberTheTranslationInTheirLanguage() {
+        UUID group = UUID.randomUUID();
+        setField(testNews, "published", true);
+        setField(testNews, "translationGroupId", group);
+        testNews.setLanguage("pl");
+        News english = new News("Test Article EN");
+        UUID englishId = UUID.randomUUID();
+        setField(english, "id", englishId);
+        setField(english, "published", true);
+        setField(english, "translationGroupId", group);
+        english.setLanguage("en");
+
+        User pl = subscriber("pl");
+        User en = subscriber("en");
+        User es = subscriber("es");
+        when(newsRepository.findById(newsId)).thenReturn(Optional.of(testNews));
+        when(newsRepository.findByTranslationGroupId(group)).thenReturn(List.of(testNews, english));
+        when(blockRepository.findByNewsIdOrderByDisplayOrderAsc(any())).thenReturn(List.of());
+        when(userRepository.findAllByNewsletterSubscribedTrue()).thenReturn(List.of(pl, en, es));
+
+        NewsletterSentDto result = adminNewsService.sendNewsNewsletter(newsId);
+
+        assertEquals(3, result.subscriberCount());
+        verify(newsletterMailService).sendToAll(eq(testNews), anyList(), eq(List.of(pl, es)), eq(BASE_URL));
+        verify(newsletterMailService).sendToAll(eq(english), anyList(), eq(List.of(en)), eq(BASE_URL));
+    }
+
+    private static User subscriber(String language) {
+        User user = mock(User.class);
+        when(user.isEmailVerified()).thenReturn(true);
+        when(user.getPreferredLanguage()).thenReturn(language);
+        return user;
     }
 
     @Test
