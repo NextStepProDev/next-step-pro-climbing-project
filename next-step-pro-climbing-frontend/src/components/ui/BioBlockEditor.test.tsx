@@ -24,13 +24,13 @@ vi.mock('../../api/client', () => ({
 }))
 
 let latest: BioBlock[] = []
-function Harness() {
-  const [blocks, setBlocks] = useState<BioBlock[]>([{ type: 'text', content: 'Bio' }])
+function Harness({ initial = [{ type: 'text', content: 'Bio' }] }: { initial?: BioBlock[] }) {
+  const [blocks, setBlocks] = useState<BioBlock[]>(initial)
   return <BioBlockEditor blocks={blocks} onChange={(next) => { latest = next; setBlocks(next) }} />
 }
 
-function Wrapped() {
-  return <QueryClientProvider client={new QueryClient()}><Harness /></QueryClientProvider>
+function Wrapped({ initial }: { initial?: BioBlock[] }) {
+  return <QueryClientProvider client={new QueryClient()}><Harness initial={initial} /></QueryClientProvider>
 }
 
 function pickFromDisk(container: HTMLElement) {
@@ -65,3 +65,24 @@ describe('BioBlockEditor — a photo uploaded from disk', () => {
     expect(screen.getByRole('alert')).toBeInTheDocument()
   })
 })
+
+describe('BioBlockEditor — replacing a photo from disk', () => {
+  // The block to replace was remembered by POSITION. Remove a block above it while the new photo
+  // uploads and the photo landed on a different block; remove the photo's own row and it wrote past
+  // the end of the list — a hole that crashed the editor.
+  it('replaces the photo that was clicked, wherever it has moved to', async () => {
+    const user = userEvent.setup()
+    const { container } = render(<Wrapped initial={[
+      { type: 'text', content: 'Wstęp' },
+      { type: 'image', url: '/old.png', alt: '' },
+    ]} />)
+    await user.click(screen.getByTitle('editorUi.bio.replaceDisk'))
+    pickFromDisk(container)
+
+    await user.click(screen.getAllByTitle('editorUi.bio.remove')[0])
+    await act(async () => finishUpload('/new.png'))
+
+    expect(latest).toEqual([{ type: 'image', url: '/new.png', alt: '' }])
+  })
+})
+

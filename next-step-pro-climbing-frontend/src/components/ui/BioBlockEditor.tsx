@@ -12,7 +12,10 @@ export type { BioBlock } from './bioBlocks'
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-type PickerAction = { action: 'add' } | { action: 'replace'; blockIdx: number }
+// A replacement remembers the BLOCK, not its position: the upload from disk takes seconds, and a
+// block removed or moved above it meanwhile sent the photo onto another block — or, past the end of
+// the list, into a hole that crashed the editor.
+type PickerAction = { action: 'add' } | { action: 'replace'; target: BioBlock }
 
 export function BioBlockEditor({
   blocks,
@@ -63,9 +66,10 @@ export function BioBlockEditor({
     if (action.action === 'add') {
       onChange([...current, { type: 'image', url, alt: '' }])
     } else {
-      const next = [...current]
-      next[action.blockIdx] = { type: 'image', url, alt: '' }
-      onChange(next)
+      const at = current.indexOf(action.target)
+      const image: BioBlock = { type: 'image', url, alt: '' }
+      // Gone meanwhile: keep the photo rather than drop an upload that already happened
+      onChange(at < 0 ? [...current, image] : current.map((b, i) => (i === at ? image : b)))
     }
   }
 
@@ -128,15 +132,15 @@ export function BioBlockEditor({
                 {/* Replace buttons overlay */}
                 <div className="absolute top-2 right-2 flex gap-1">
                   <button type="button" className={btnCls} title={t('editorUi.bio.replaceLibrary')}
-                    onClick={() => setMediaPickerAction({ action: 'replace', blockIdx: idx })}>
+                    onClick={() => setMediaPickerAction({ action: 'replace', target: block })}>
                     <Library className="w-3.5 h-3.5" />
                   </button>
                   <button type="button" className={btnCls} title={t('editorUi.bio.replaceGallery')}
-                    onClick={() => setGalleryPickerAction({ action: 'replace', blockIdx: idx })}>
+                    onClick={() => setGalleryPickerAction({ action: 'replace', target: block })}>
                     <Images className="w-3.5 h-3.5" />
                   </button>
                   <button type="button" className={btnCls} title={t('editorUi.bio.replaceDisk')}
-                    onClick={() => openDisk({ action: 'replace', blockIdx: idx })}>
+                    onClick={() => openDisk({ action: 'replace', target: block })}>
                     <HardDriveUpload className="w-3.5 h-3.5" />
                   </button>
                 </div>
