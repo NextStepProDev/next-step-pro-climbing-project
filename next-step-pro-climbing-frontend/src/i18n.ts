@@ -84,6 +84,11 @@ i18n
       },
     },
     fallbackLng: 'en',
+    // ⚠️ The three codes the rest of the app compares against. Browsers report a region ("pl-PL"),
+    // and passed through, that read as "not Polish" everywhere a code is compared: a Polish visitor
+    // got the English news, courses and team pages, the wrong date-fns locale and no highlighted
+    // language. Cut to two letters at detection (below), checked against this list here.
+    supportedLngs: ['pl', 'en', 'es'],
     defaultNS: 'common',
     ns: ['common', 'auth', 'calendar', 'reservations', 'admin', 'settings', 'home', 'errors', 'faq', 'training', 'ascents'],
     interpolation: {
@@ -97,6 +102,8 @@ i18n
       order: ['querystring', 'localStorage', 'navigator'],
       lookupQuerystring: 'language',
       caches: ['localStorage'],
+      // Also rewrites a regional code an earlier visit cached in localStorage.
+      convertDetectedLanguage: (lng: string) => lng.split('-')[0].toLowerCase(),
       lookupLocalStorage: 'i18nextLng',
     },
   })
