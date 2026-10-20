@@ -12,3 +12,14 @@ export function useMoney() {
   const { i18n } = useTranslation()
   return (amount: number) => formatPln(amount, i18n.language)
 }
+
+/**
+ * Worked hours (a sum of session lengths, not a clock time) with the reader's decimal separator:
+ * "12,5" in Polish and Spanish, "12.5" in English. They used to be `toFixed(1)` — a dot in every
+ * language, beside amounts that Intl already printed with a comma.
+ */
+export function useHours() {
+  const { i18n } = useTranslation()
+  return (minutes: number) =>
+    (minutes / 60).toLocaleString(i18n.language, { minimumFractionDigits: 1, maximumFractionDigits: 1 })
+}

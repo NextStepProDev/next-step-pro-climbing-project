@@ -7,7 +7,7 @@ import { adminSettlementsApi } from '../../api/client'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
 import { QueryError } from '../../components/ui/QueryError'
 import { PayoutPeriodRow } from '../../components/admin/PayoutPeriodRow'
-import { useMoney } from '../../components/admin/useMoney'
+import { useHours, useMoney } from '../../components/admin/useMoney'
 import { STATS_FILL } from '../../components/admin/userstats/statsPalette'
 import { parseCalendarDate } from '../../utils/calendarDate'
 import { useDateLocale } from '../../utils/dateFnsLocale'
@@ -81,6 +81,7 @@ export function AdminPayoutSourcePanel() {
 function Header({ history }: { history: PayoutSourceHistory }) {
   const { t } = useTranslation('admin')
   const money = useMoney()
+  const hours = useHours()
   const locale = useDateLocale()
 
   return (
@@ -110,7 +111,7 @@ function Header({ history }: { history: PayoutSourceHistory }) {
         <Figure label={t('settlements.source.received')} value={money(history.totalAmount)} />
         <Figure
           label={t('settlements.source.hours')}
-          value={(history.totalMinutes / 60).toFixed(1)}
+          value={hours(history.totalMinutes)}
           /* The denominator's own gap, named here as it is in every row below. */
           note={history.sessionsWithoutHours > 0
             ? t('settlements.tab.payouts.withoutHours', { n: history.sessionsWithoutHours })
@@ -214,6 +215,7 @@ function MonthlyChart({ chart }: { chart: MonthlyRevenue[] }) {
 function YearTable({ years }: { years: PayoutYear[] }) {
   const { t } = useTranslation('admin')
   const money = useMoney()
+  const hours = useHours()
 
   return (
     <div className="bg-surface-900 rounded-xl border border-surface-800 p-4 space-y-3">
@@ -235,7 +237,7 @@ function YearTable({ years }: { years: PayoutYear[] }) {
                 <td className="py-2 text-surface-200 tabular-nums">{year.year}</td>
                 <td className="py-2 text-right text-surface-400 tabular-nums">{year.sessions}</td>
                 <td className="py-2 text-right text-surface-400 tabular-nums">
-                  {(year.minutes / 60).toFixed(1)}
+                  {hours(year.minutes)}
                   {year.sessionsWithoutHours > 0 && (
                     <span className="text-amber-500">
                       {' '}

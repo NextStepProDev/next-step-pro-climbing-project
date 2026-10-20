@@ -21,13 +21,16 @@ const article = {
 const addTextBlock = vi.fn()
 const updatePublishedAt = vi.fn()
 let publishedAt: string | null = null
+let thumbnailUrl: string | null = null
+const deleteThumbnail = vi.fn()
 
 vi.mock('../../api/client', () => ({
   adminNewsApi: {
     getAll: () => Promise.resolve({ content: [article] }),
     getById: () => Promise.resolve({
-      ...article, publishedAt, published: publishedAt !== null, blocks: [], thumbnailFocalPointX: null, thumbnailFocalPointY: null,
+      ...article, publishedAt, published: publishedAt !== null, thumbnailUrl, blocks: [], thumbnailFocalPointX: null, thumbnailFocalPointY: null,
     }),
+    deleteThumbnail: (id: string) => deleteThumbnail(id),
     updatePublishedAt: (id: string, at: string) => { publishedAt = at; return updatePublishedAt(id, at) },
     addTextBlock: (id: string, data: { content: string }) => addTextBlock(id, data),
   },
@@ -39,6 +42,8 @@ beforeEach(() => {
   addTextBlock.mockReset()
   updatePublishedAt.mockReset().mockResolvedValue({})
   publishedAt = null
+  thumbnailUrl = null
+  deleteThumbnail.mockReset().mockResolvedValue(undefined)
 })
 
 describe('AdminNewsPanel — a save that fails part-way through the new blocks', () => {
@@ -90,6 +95,28 @@ describe('AdminNewsPanel — the publication date field', () => {
     field.blur()
 
     expect(updatePublishedAt).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('AdminNewsPanel — deleting the thumbnail', () => {
+  // Every other image delete in the panel asks first; this one took the thumbnail off every
+  // language version on a single click.
+  it('asks first, and deletes only once confirmed', async () => {
+    thumbnailUrl = 'https://example.com/t.jpg'
+    const user = userEvent.setup()
+    render(
+      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+        <MemoryRouter><ToastProvider><AdminNewsPanel /></ToastProvider></MemoryRouter>
+      </QueryClientProvider>,
+    )
+    await user.click(await screen.findByTitle('news.edit (PL)'))
+    await user.click(await screen.findByText('news.deleteThumbnail'))
+
+    expect(deleteThumbnail).not.toHaveBeenCalled()
+    expect(screen.getByText('news.deleteThumbnailConfirmMessage')).toBeInTheDocument()
+
+    await user.click(screen.getAllByText('news.deleteThumbnail').at(-1)!)
+    await waitFor(() => expect(deleteThumbnail).toHaveBeenCalledWith('n1'))
   })
 })
 

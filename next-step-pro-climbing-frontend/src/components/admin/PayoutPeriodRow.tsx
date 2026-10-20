@@ -8,7 +8,7 @@ import { adminSettlementsApi } from '../../api/client'
 import { parseCalendarDate } from '../../utils/calendarDate'
 import { useDateLocale } from '../../utils/dateFnsLocale'
 import { ConfirmModal } from '../ui/ConfirmModal'
-import { useMoney } from './useMoney'
+import { useHours, useMoney } from './useMoney'
 import type { PayoutEntry, PayoutPeriod, PayoutPeriodStatus } from '../../types'
 
 /**
@@ -47,6 +47,7 @@ export function PayoutPeriodRow({
 }) {
   const { t } = useTranslation('admin')
   const money = useMoney()
+  const hours = useHours()
   const locale = useDateLocale()
   const location = useLocation()
   const year = new URLSearchParams(location.search).get('year')
@@ -98,7 +99,7 @@ export function PayoutPeriodRow({
         </td>
         <td className="py-2 text-right text-surface-400 tabular-nums">{period.sessions}</td>
         <td className="py-2 text-right text-surface-400 tabular-nums">
-          {(period.minutes / 60).toFixed(1)}
+          {hours(period.minutes)}
           {/* The denominator's own gap, stated rather than hidden. */}
           {period.sessionsWithoutHours > 0 && (
             <span className="text-amber-500">
@@ -157,7 +158,7 @@ export function PayoutPeriodRow({
             {session.minutes === null ? (
               <span className="text-amber-500">{t('settlements.tab.payouts.noHours')}</span>
             ) : (
-              t('settlements.tab.payouts.sessionHours', { hours: (session.minutes / 60).toFixed(1) })
+              t('settlements.tab.payouts.sessionHours', { hours: hours(session.minutes) })
             )}
           </td>
         </tr>
