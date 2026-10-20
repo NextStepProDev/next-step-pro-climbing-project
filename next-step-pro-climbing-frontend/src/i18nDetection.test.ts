@@ -33,6 +33,6 @@ describe('detected language', () => {
   it('falls back to English for a language the site does not have', async () => {
     localStorage.setItem('i18nextLng', 'de-DE')
     const i18n = await freshI18n()
-    expect(i18n.resolvedLanguage).toBe('en')
+    expect(i18n.language).toBe('en')
   })
 })
