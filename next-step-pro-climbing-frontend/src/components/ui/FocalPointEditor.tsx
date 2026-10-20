@@ -72,7 +72,9 @@ export function FocalPointEditor({ imageUrl, value, onChange, aspectRatio = '1/1
   return (
     <div
       ref={containerRef}
-      className={clsx('relative overflow-hidden rounded-lg cursor-grab active:cursor-grabbing select-none ring-2 ring-primary-500/40', className)}
+      // touch-none: React registers touchmove as passive, so preventDefault below is ignored and a
+      // finger dragging the crop scrolled the page instead. The browser has to be told up front.
+      className={clsx('relative overflow-hidden rounded-lg cursor-grab active:cursor-grabbing select-none touch-none ring-2 ring-primary-500/40', className)}
       style={{ aspectRatio }}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
