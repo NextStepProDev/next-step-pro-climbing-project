@@ -920,7 +920,10 @@ export function EditEventModal({
     } else if (event.courseId) {
       payload.removeCourse = true
     }
-    payload.invitedUserIds = form.eventType === 'UNAVAILABLE' ? [] : invited.map((u) => u.userId)
+    // Left out until the invitations have loaded — see the slot twin (EditSlotModal): absent means
+    // "leave them alone", and [] sent before the list arrived withdrew every held seat.
+    if (form.eventType === 'UNAVAILABLE') payload.invitedUserIds = []
+    else if (invitesData !== undefined) payload.invitedUserIds = invited.map((u) => u.userId)
     payload.sendInvites = sendInvites
     updateMutation.mutate(payload)
   }
@@ -1074,9 +1077,10 @@ export function EditEventModal({
           />
         </div>
 
-        {form.eventType !== 'UNAVAILABLE' && (
-          <InvitedUsersPicker value={invited} onChange={setEditedInvited} maxSeats={form.maxParticipants} />
-        )}
+        {/* Only once the current invitations are known — see the slot twin */}
+        {form.eventType !== 'UNAVAILABLE' && (invitesData !== undefined
+          ? <InvitedUsersPicker value={invited} onChange={setEditedInvited} maxSeats={form.maxParticipants} />
+          : <p className="text-xs text-surface-500">{t('loading', { ns: 'common' })}</p>)}
 
         {form.eventType !== 'UNAVAILABLE' && !invitedDirty && event && (
           <InviteNotifySection target={{ type: 'event', eventId: event.id }} invites={baselineInvited} />

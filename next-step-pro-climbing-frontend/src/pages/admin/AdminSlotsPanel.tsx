@@ -601,7 +601,14 @@ function EditSlotModal({
       ...(isUnavailable ? {} : { maxParticipants: isRegular ? form.maxParticipants : 1 }),
       title: form.title || '',
       ...slotKindFlags(form.kind),
-      invitedUserIds: isRegular ? invited.map((u) => u.userId) : [],
+      // Left out until the invitations have loaded: absent means "leave them alone", [] means
+      // "withdraw them all" — and a save before the list arrived (or after it failed) sent [] for
+      // a title change. The same guard as SlotDetailModal.
+      ...(!isRegular
+        ? { invitedUserIds: [] }
+        : invitesData !== undefined
+          ? { invitedUserIds: invited.map((u) => u.userId) }
+          : {}),
       sendInvites,
     })
   }
@@ -687,9 +694,11 @@ function EditSlotModal({
           </div>
         )}
 
-        {isRegular && (
-          <InvitedUsersPicker value={invited} onChange={setEditedInvited} maxSeats={form.maxParticipants} />
-        )}
+        {/* Only once the current invitations are known: picking people into an empty list that
+            is not the real one would be thrown away on save (see submitEdit). */}
+        {isRegular && (invitesData !== undefined
+          ? <InvitedUsersPicker value={invited} onChange={setEditedInvited} maxSeats={form.maxParticipants} />
+          : <p className="text-xs text-surface-500">{t('loading', { ns: 'common' })}</p>)}
 
         {isRegular && !invitedDirty && (
           <InviteNotifySection target={{ type: 'slot', slotId: slot.id }} invites={baselineInvited} />
