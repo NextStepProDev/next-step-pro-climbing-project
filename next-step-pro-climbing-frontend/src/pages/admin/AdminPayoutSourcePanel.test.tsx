@@ -76,6 +76,15 @@ describe('AdminPayoutSourcePanel', () => {
     expect(getSourceHistory).toHaveBeenCalledWith('src-1')
   })
 
+  // Worked hours, not a clock time: 270 minutes is "4,5" in Polish. It was printed "4.5" in every
+  // language, beside amounts already written with a comma.
+  it('writes worked hours with the reader\'s decimal comma', async () => {
+    renderPanel()
+
+    expect(await screen.findAllByText('4,5')).not.toHaveLength(0)
+    expect(screen.queryByText('4.5')).toBeNull()
+  })
+
   it('draws a bar per month of the collaboration, empty ones included', async () => {
     renderPanel()
 

@@ -712,6 +712,8 @@ function EditView({
     },
   })
 
+  const [deleteThumbnailConfirm, setDeleteThumbnailConfirm] = useState(false)
+
   const deleteThumbnailMutation = useMutation({
     mutationFn: () => adminCoursesApi.deleteThumbnail(courseId),
     onSuccess: () => invalidate(),
@@ -960,7 +962,9 @@ function EditView({
 
           {detail.thumbnailUrl && !thumbnailFile && !thumbnailFromLibrary && (
             <button
-              onClick={() => deleteThumbnailMutation.mutate()}
+              // Asks first, like every other image delete in the panel (team photo, gallery photo,
+              // home-page image) — and it takes the thumbnail off every language version at once.
+              onClick={() => setDeleteThumbnailConfirm(true)}
               disabled={deleteThumbnailMutation.isPending}
               className="text-sm text-red-400 hover:text-red-300 transition-colors"
             >
@@ -1149,6 +1153,16 @@ function EditView({
         confirmText={t('courses.delete')}
         onConfirm={() => deleteBlockConfirmId && deleteBlockMutation.mutate(deleteBlockConfirmId)}
         onClose={() => setDeleteBlockConfirmId(null)}
+      />
+
+      {/* Confirm: delete the thumbnail */}
+      <ConfirmModal
+        isOpen={deleteThumbnailConfirm}
+        title={t('courses.deleteThumbnailConfirmTitle')}
+        message={t('courses.deleteThumbnailConfirmMessage')}
+        confirmText={t('courses.deleteThumbnail')}
+        onConfirm={() => deleteThumbnailMutation.mutate()}
+        onClose={() => setDeleteThumbnailConfirm(false)}
       />
 
       {/* Confirm: leave without saving */}
