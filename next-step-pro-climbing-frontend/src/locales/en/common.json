@@ -188,6 +188,8 @@
     "retry": "Try again"
   },
   "a11y": {
+    "themeToLight": "Switch to light mode",
+    "themeToDark": "Switch to dark mode",
     "lightbox": "Photo viewer",
     "close": "Close",
     "previousPhoto": "Previous photo",

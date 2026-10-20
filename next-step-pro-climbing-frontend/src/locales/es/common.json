@@ -189,6 +189,8 @@
     "retry": "Inténtalo de nuevo"
   },
   "a11y": {
+    "themeToLight": "Cambiar al modo claro",
+    "themeToDark": "Cambiar al modo oscuro",
     "lightbox": "Visor de fotos",
     "close": "Cerrar",
     "previousPhoto": "Foto anterior",

@@ -447,7 +447,7 @@ export function AdminUsersPanel() {
 
             {paged.length === 0 && (
               <div className="p-8 text-center text-surface-400">
-                {search.trim() || newsletterFilter !== 'all'
+                {search.trim() || newsletterFilter !== 'all' || unverifiedOnly
                   ? t('users.noSearchResults')
                   : t('users.noUsers')}
               </div>

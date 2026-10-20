@@ -30,6 +30,7 @@ import { canOfferSaveAndSend, sameInvitees } from '../../utils/inviteStatus'
 import { todayInWarsaw } from '../../utils/calendarDate'
 import { buildArchiveDays } from './archiveDays'
 import type { EventDetail, InvitedUser, SlotParticipants, SlotTemplate, TimeSlotAdmin } from '../../types'
+import { decodeHtmlEntities } from '../../utils/htmlEntities'
 
 const ARCHIVE_PAGE_SIZE = 15
 
@@ -980,7 +981,7 @@ function ParticipantsModal({
                         <div className="text-sm text-surface-400">{p.email}</div>
                         <div className="text-sm text-surface-400">{p.phone}</div>
                         {p.comment && (
-                          <div className="text-sm text-amber-400 mt-1">"{p.comment}"</div>
+                          <div className="text-sm text-amber-400 mt-1">"{decodeHtmlEntities(p.comment)}"</div>
                         )}
                         {p.participants > 1 && (
                           <span className="inline-block mt-1 text-xs text-primary-400 bg-primary-500/10 px-2 py-0.5 rounded-full">

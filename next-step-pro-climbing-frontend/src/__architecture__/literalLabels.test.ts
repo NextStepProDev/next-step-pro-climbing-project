@@ -46,6 +46,31 @@ describe('literal labels', () => {
     expect(offenders, 'Use t(...) — the i18n parity gate only sees strings that became keys').toEqual([])
   })
 
+  // The same strings in expression form slipped past the check above (found 2026-10-20): every
+  // modal's close button said "Close …" in all three languages, the theme switch said "Switch to
+  // light mode", and the user picker's placeholder was Polish everywhere. A sentence is what gives
+  // them away — a capitalised word or two words with a space — while the keys, enum values and
+  // `=== 'dark'` comparisons that share these expressions are single lower-case or dotted words.
+  it('never hard-codes one inside an expression either', () => {
+    const offenders: string[] = []
+    for (const file of sourceFiles()) {
+      const name = file.slice(SRC.length + 1)
+      if (ALLOWED_FILES.has(name)) continue
+      const source = readFileSync(file, 'utf-8')
+      for (const m of source.matchAll(/\b(title|aria-label|alt|placeholder)=\{((?:[^{}]|\{(?:[^{}]|\{[^{}]*\})*\})*)\}/g)) {
+        const expression = m[2].replace(/\bt\(\s*(['"`])[^'"`]*\1/g, 't(')
+        for (const literal of expression.matchAll(/'([^']*)'|"([^"]*)"|`([^`]*)`/g)) {
+          const text = (literal[1] ?? literal[2] ?? literal[3]).replace(/\$\{[^}]*\}/g, '').trim()
+          if (!/[a-zà-ž]{3}/.test(text) || ALLOWED_VALUES.has(text)) continue
+          if (/^[dMyLEHhmsaoQ.,:\-/ ']+$/.test(text)) continue // a date-fns pattern, not words
+          if (!/\s/.test(text) && !/^[A-ZÀ-Ž][a-zà-ž]/.test(text)) continue
+          offenders.push(`${name}: ${m[1]}={… '${text}' …}`)
+        }
+      }
+    }
+    expect(offenders, 'Use t(...) — the i18n parity gate only sees strings that became keys').toEqual([])
+  })
+
   // The admin editors carried some eighty Polish strings straight in the JSX until 2026-10-19 —
   // including a hand-rolled plural that said "Wysłano 22 powiadomień". Polish letters outside a
   // comment are the cheapest tell of a string that skipped the translations.

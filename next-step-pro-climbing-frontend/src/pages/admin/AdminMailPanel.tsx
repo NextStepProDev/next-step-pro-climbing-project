@@ -9,6 +9,7 @@ import { QueryError } from '../../components/ui/QueryError'
 import { Button } from '../../components/ui/Button'
 import { ConfirmModal } from '../../components/ui/ConfirmModal'
 import { RichTextEditor } from '../../components/ui/RichTextEditor'
+import { useUnsavedChangesWarning } from '../../hooks/useUnsavedChangesWarning'
 
 type RecipientType = 'ALL' | 'NEWSLETTER' | 'SELECTED'
 
@@ -45,6 +46,11 @@ export function AdminMailPanel() {
     )
   }, [users, search])
 
+  // A long announcement lives only in this component until it is sent; a refresh or a closed tab
+  // used to take it along without a word, while the CMS editors next door asked first.
+  // A successful send clears both fields, which switches this off by itself.
+  useUnsavedChangesWarning(subject.trim() !== '' || body.trim() !== '')
+
   const sendMutation = useMutation({
     mutationFn: adminApi.sendMail,
     onSuccess: (data) => {
@@ -58,6 +64,12 @@ export function AdminMailPanel() {
       showToast(t('mail.errorMessage'), 'error')
     },
   })
+
+  // The same two filters the server applies (AdminService#sendMailToUsers), so the number in the
+  // confirmation is the number of mails that go out. An irreversible send to "everyone" used to be
+  // confirmed without saying how many people that is — the one check that the right group was picked.
+  const allCount = users?.filter((u) => u.emailVerified).length
+  const newsletterCount = users?.filter((u) => u.emailVerified && u.newsletterSubscribed).length
 
   const toggleUser = (id: string) => {
     setSelectedIds((prev) => {
@@ -242,9 +254,13 @@ export function AdminMailPanel() {
         title={t('mail.confirmTitle')}
         message={
           recipientType === 'ALL'
-            ? t('mail.confirmAllMessage')
+            ? allCount === undefined
+              ? t('mail.confirmAllMessage')
+              : t('mail.confirmAllCount', { total: allCount })
             : recipientType === 'NEWSLETTER'
-              ? t('mail.confirmNewsletterMessage')
+              ? newsletterCount === undefined
+                ? t('mail.confirmNewsletterMessage')
+                : t('mail.confirmNewsletterCount', { total: newsletterCount })
               : t('mail.confirmMessage', { count: selectedIds.size })
         }
       />

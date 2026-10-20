@@ -791,6 +791,8 @@
     "confirmMessage": "Wiadomość zostanie wysłana do {{count}} odbiorców (zweryfikowane konta). Kontynuować?",
     "confirmAllMessage": "Wiadomość zostanie wysłana do wszystkich użytkowników z zweryfikowanym adresem email. Kontynuować?",
     "confirmNewsletterMessage": "Wiadomość zostanie wysłana do wszystkich użytkowników zapisanych na newsletter. Kontynuować?",
+    "confirmAllCount": "Wiadomość zostanie wysłana do wszystkich użytkowników z potwierdzonym adresem e-mail — odbiorców: {{total}}. Kontynuować?",
+    "confirmNewsletterCount": "Wiadomość zostanie wysłana do wszystkich zapisanych na newsletter — odbiorców: {{total}}. Kontynuować?",
     "successMessage": "Wiadomość wysłana do {{count}} odbiorców.",
     "errorMessage": "Błąd podczas wysyłania wiadomości."
   },

@@ -29,6 +29,7 @@ import { TimeScrollPicker } from '../../components/ui/TimeScrollPicker'
 import type { CreateEventRequest, EventDetail, EventType, InvitedUser } from '../../types'
 import { getEventColorByType } from '../../utils/events'
 import { nowInWarsaw, parseCalendarDate, todayInWarsaw } from '../../utils/calendarDate'
+import { decodeHtmlEntities } from '../../utils/htmlEntities'
 
 export function AdminEventsPanel() {
   const { t } = useTranslation('admin')
@@ -459,7 +460,7 @@ function EventCard({
                           )}
                         </div>
                         {p.comment && (
-                          <div className="text-surface-500 text-xs mt-1">"{p.comment}"</div>
+                          <div className="text-surface-500 text-xs mt-1">"{decodeHtmlEntities(p.comment)}"</div>
                         )}
                       </div>
                       <div className="flex items-center gap-1 shrink-0">

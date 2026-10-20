@@ -107,7 +107,7 @@ function renderSection(target: 'slot' | 'event' = 'slot', canAdd = true) {
 /** Open the add form and pick the one account the user list offers. */
 async function pickTheAccount(user: ReturnType<typeof userEvent.setup>) {
   await user.click(screen.getByText('slots.addParticipant'))
-  await user.click(await screen.findByPlaceholderText(/Szukaj/))
+  await user.click(await screen.findByPlaceholderText('users.searchPlaceholder'))
   // The picker's option is the only BUTTON carrying the address: the same person may already be
   // on the roster above, where the name is plain text and the only button is a bare trash icon.
   const option = await waitFor(() => {

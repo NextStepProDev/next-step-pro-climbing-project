@@ -790,6 +790,8 @@
     "confirmMessage": "El mensaje se enviará a {{count}} destinatarios (cuentas verificadas). ¿Continuar?",
     "confirmAllMessage": "El mensaje se enviará a todos los usuarios con correo verificado. ¿Continuar?",
     "confirmNewsletterMessage": "El mensaje se enviará a todos los usuarios suscritos al newsletter. ¿Continuar?",
+    "confirmAllCount": "El mensaje se enviará a todos los usuarios con correo verificado — destinatarios: {{total}}. ¿Continuar?",
+    "confirmNewsletterCount": "El mensaje se enviará a todos los suscritos al newsletter — destinatarios: {{total}}. ¿Continuar?",
     "successMessage": "Mensaje enviado a {{count}} destinatarios.",
     "errorMessage": "Error al enviar el mensaje."
   },

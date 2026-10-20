@@ -11,6 +11,7 @@ import { getErrorMessage } from '../../utils/errors'
 import { useDateLocale } from '../../utils/dateFnsLocale'
 import { parseCalendarDate } from '../../utils/calendarDate'
 import type { AdminWaitlists, ReservationAdmin, WaitlistAdminEntry } from '../../types'
+import { decodeHtmlEntities } from '../../utils/htmlEntities'
 
 function isMultiDayEvent(r: ReservationAdmin) {
   return r.eventStartDate && r.eventEndDate && r.eventStartDate !== r.eventEndDate
@@ -39,7 +40,9 @@ function groupReservations(reservations: ReservationAdmin[]) {
 
   for (const r of reservations) {
     if (isMultiDayEvent(r)) {
-      const eventKey = `${r.title}-${r.eventStartDate}-${r.eventEndDate}`
+      // By id: two courses with the same name on the same dates (two groups of one course) are two
+      // events, and keyed by title they merged into one card whose delete button reached only one.
+      const eventKey = r.eventId ?? `${r.title}-${r.eventStartDate}-${r.eventEndDate}`
       const existing = eventMap.get(eventKey)
       if (existing) {
         if (!existing.reservations.some(er => er.userEmail === r.userEmail)) {
@@ -469,7 +472,7 @@ function EventReservationCard({ group, onDelete }: { group: EventGroup; onDelete
                 )}
               </div>
               {r.comment && (
-                <div className="text-surface-500 text-xs mt-1">"{r.comment}"</div>
+                <div className="text-surface-500 text-xs mt-1">"{decodeHtmlEntities(r.comment)}"</div>
               )}
             </div>
           ))}
@@ -517,7 +520,7 @@ function SlotReservationCard({ r, onDelete }: { r: ReservationAdmin; onDelete?: 
           </div>
         )}
         {r.comment && (
-          <div className="text-sm text-amber-400 mt-1">"{r.comment}"</div>
+          <div className="text-sm text-amber-400 mt-1">"{decodeHtmlEntities(r.comment)}"</div>
         )}
       </div>
       <div className="flex items-start gap-2 shrink-0">

@@ -189,6 +189,8 @@
     "retry": "Spróbuj ponownie"
   },
   "a11y": {
+    "themeToLight": "Przełącz na jasny motyw",
+    "themeToDark": "Przełącz na ciemny motyw",
     "lightbox": "Podgląd zdjęcia",
     "close": "Zamknij",
     "previousPhoto": "Poprzednie zdjęcie",
