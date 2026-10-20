@@ -332,3 +332,20 @@ describe('ParticipantsSection — two of it on one page', () => {
   })
 })
 
+describe('ParticipantsSection — the waiting list next to it', () => {
+  // A cancelled booking or fewer seats frees a place, and the server offers it to the queue there
+  // and then. The queues the panels draw beside this list kept saying "waiting".
+  it('refreshes the queues once a person is taken off', async () => {
+    getSlotParticipants.mockReset().mockResolvedValue(slotRoster({ participants: [participant()] }))
+    cancelReservationByAdmin.mockReset().mockResolvedValue(undefined)
+    const user = userEvent.setup()
+    const { invalidate } = renderSection('slot')
+
+    await user.click(await screen.findByTitle('slots.cancelReservation'))
+    await user.click(screen.getByRole('button', { name: 'slots.cancelReservation' }))
+
+    await waitFor(() => expect(invalidate).toHaveBeenCalledWith({ queryKey: ['admin', 'slotWaitlist', 'target-1'] }))
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['admin', 'waitlists'] })
+  })
+})
+
