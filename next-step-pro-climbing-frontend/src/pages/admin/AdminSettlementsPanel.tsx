@@ -475,6 +475,14 @@ function PayerDebtGroup({ group }: { group: PayerDebt }) {
   // this field renders the same number as `671,16 zł` through `Intl`. A money screen that disagrees
   // with itself by eleven decimal places is not one anybody should have to trust.
   const [received, setReceived] = useState(() => group.total.toFixed(2))
+  // ⚠️ Follows the debt when it changes. The row outlives a partial payment (same payer, same key),
+  // and the field kept whatever was typed: 60 paid on 100 left "60" offered against the 40 still
+  // owed, so a second click quietly turned 20 into an overpayment. Render-phase reset, like Modal.
+  const [shownTotal, setShownTotal] = useState(group.total)
+  if (group.total !== shownTotal) {
+    setShownTotal(group.total)
+    setReceived(group.total.toFixed(2))
+  }
   // `parseAmount` with the settlement ceiling, NOT the payout one: a payment is capped like a
   // charge. The higher transfer ceiling would leave the button live on an amount the server refuses.
   const receivedAmount = parseAmount(received)
