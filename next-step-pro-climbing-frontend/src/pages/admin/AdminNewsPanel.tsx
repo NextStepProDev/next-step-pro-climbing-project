@@ -660,6 +660,9 @@ function EditView({
         await adminNewsApi.addImageBlock(newsId, pending.file, pending.caption || undefined)
         if (pending.preview) URL.revokeObjectURL(pending.preview)
       }
+      // Out of the queue as soon as it is saved: a failure on a later block used to leave the
+      // earlier ones queued, and the next "Save" added them to the article a second time.
+      setPendingBlocks((prev) => prev.filter((b) => b.tempId !== pending.tempId))
     }
 
     // 5. Sync media to translations if requested
@@ -862,6 +865,10 @@ function EditView({
               <label className="block text-sm text-surface-300 mb-1">{t('news.publishedAtLabel')}</label>
               <div className="flex items-center gap-2">
                 <input
+                  // Remounted when the saved date changes: the field is uncontrolled, so after "now"
+                  // it kept showing the old date — and the next blur read that as an edit and wrote
+                  // the old date straight back.
+                  key={detail.publishedAt}
                   type="datetime-local"
                   defaultValue={toDateTimeLocalValue(detail.publishedAt)}
                   onBlur={(e) => {

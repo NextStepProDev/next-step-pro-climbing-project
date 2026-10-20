@@ -583,6 +583,9 @@ function EditView({
         await adminCoursesApi.addImageBlock(courseId, pending.file, pending.caption || undefined)
         if (pending.preview) URL.revokeObjectURL(pending.preview)
       }
+      // Out of the queue as soon as it is saved: a failure on a later block used to leave the
+      // earlier ones queued, and the next "Save" added them to the article a second time.
+      setPendingBlocks((prev) => prev.filter((b) => b.tempId !== pending.tempId))
     }
 
     // 5. Sync media to translations if requested
