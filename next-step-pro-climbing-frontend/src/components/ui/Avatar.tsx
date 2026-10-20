@@ -12,6 +12,13 @@ interface AvatarProps {
 
 export function Avatar({ src, name, className = 'w-9 h-9', textClassName = 'text-sm' }: AvatarProps) {
   const [failed, setFailed] = useState(false)
+  // A failure belongs to the address that failed: a new photo (a fresh upload) gets its own try,
+  // where it used to stay hidden behind the initial until the page was reloaded.
+  const [failedSrc, setFailedSrc] = useState(src)
+  if (src !== failedSrc) {
+    setFailedSrc(src)
+    setFailed(false)
+  }
   const initial = name?.trim().charAt(0).toUpperCase() || '?'
   const showImage = src && !failed
 

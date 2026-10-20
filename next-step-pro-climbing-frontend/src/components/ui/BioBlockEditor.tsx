@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ChevronUp, ChevronDown, X, Plus, Library, Images, HardDriveUpload } from 'lucide-react'
 import { RichTextEditor } from './RichTextEditor'
@@ -6,6 +6,7 @@ import { MediaPickerModal } from './MediaPickerModal'
 import { GalleryPickerModal } from './GalleryPickerModal'
 import { adminAssetsApi } from '../../api/client'
 import type { BioBlock } from './bioBlocks'
+import { getErrorMessage } from '../../utils/errors'
 
 export type { BioBlock } from './bioBlocks'
 
@@ -26,6 +27,13 @@ export function BioBlockEditor({
   const [isUploading, setIsUploading] = useState(false)
   const diskRef = useRef<HTMLInputElement>(null)
   const diskActionRef = useRef<PickerAction | null>(null)
+  const [uploadError, setUploadError] = useState<string | null>(null)
+  // The blocks as they are NOW, for the upload that finishes later. Built from the blocks captured
+  // at the click, the new photo reverted everything typed into the bio while it was uploading.
+  const latestBlocks = useRef(blocks)
+  useEffect(() => {
+    latestBlocks.current = blocks
+  }, [blocks])
 
   const moveUp = (idx: number) => {
     if (idx === 0) return
@@ -51,10 +59,11 @@ export function BioBlockEditor({
 
   const applyImageUrl = (url: string, action: PickerAction | null) => {
     if (!action) return
+    const current = latestBlocks.current
     if (action.action === 'add') {
-      onChange([...blocks, { type: 'image', url, alt: '' }])
+      onChange([...current, { type: 'image', url, alt: '' }])
     } else {
-      const next = [...blocks]
+      const next = [...current]
       next[action.blockIdx] = { type: 'image', url, alt: '' }
       onChange(next)
     }
@@ -65,9 +74,13 @@ export function BioBlockEditor({
     if (!file) return
     e.target.value = ''
     setIsUploading(true)
+    setUploadError(null)
     try {
       const asset = await adminAssetsApi.upload(file)
       applyImageUrl(asset.url, diskActionRef.current)
+    } catch (err) {
+      // Said here: a refused file (too big, wrong type) used to end the spinner and nothing else
+      setUploadError(getErrorMessage(err))
     } finally {
       setIsUploading(false)
     }
@@ -172,6 +185,8 @@ export function BioBlockEditor({
           {isUploading ? t('editorUi.bio.uploading') : t('editorUi.bio.disk')}
         </button>
       </div>
+
+      {uploadError && <p role="alert" className="text-sm text-rose-400">{uploadError}</p>}
 
       {/* Hidden disk input */}
       <input ref={diskRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={handleDiskChange} />
