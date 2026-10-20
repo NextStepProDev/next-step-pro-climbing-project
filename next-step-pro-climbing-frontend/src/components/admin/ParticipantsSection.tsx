@@ -80,6 +80,7 @@ export function ParticipantsSection({ target, targetId, canAdd = true, onDirtyCh
         hostKey: ['slot'],
         adminListKey: ['admin', 'slots'],
         invitesKey: ['admin', 'slotInvites', targetId],
+        waitlistKey: ['admin', 'slotWaitlist', targetId],
         confirmRemoveKey: 'slots.confirmCancelReservation',
         removeActionKey: 'slots.cancelReservation',
         list: (): Promise<SlotParticipants | EventParticipants> =>
@@ -99,6 +100,7 @@ export function ParticipantsSection({ target, targetId, canAdd = true, onDirtyCh
       hostKey: ['eventSummary'],
       adminListKey: ['admin', 'events'],
       invitesKey: ['admin', 'eventInvites', targetId],
+      waitlistKey: ['admin', 'eventWaitlist', targetId],
       confirmRemoveKey: 'events.confirmCancelParticipant',
       removeActionKey: 'events.cancelParticipant',
       list: (): Promise<SlotParticipants | EventParticipants> =>
@@ -145,6 +147,11 @@ export function ParticipantsSection({ target, targetId, canAdd = true, onDirtyCh
     // own "my reservations" list is the one screen that would otherwise still say otherwise.
     queryClient.invalidateQueries({ queryKey: ['reservations'] })
     queryClient.invalidateQueries({ queryKey: ['admin', 'settlements'] })
+    // A freed place (a cancellation, fewer seats) is offered to the waiting list there and then;
+    // the queues the panels draw next to this list, and the Reservations tab's, would keep saying
+    // "waiting" without these.
+    queryClient.invalidateQueries({ queryKey: ops.waitlistKey })
+    queryClient.invalidateQueries({ queryKey: ['admin', 'waitlists'] })
   }
 
   const closeAddForm = () => {
