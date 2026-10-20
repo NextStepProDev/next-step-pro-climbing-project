@@ -141,6 +141,31 @@ class MailServiceTest {
     }
 
     // ============================================================
+    // We cancelled their booking — goes out whatever the toggle says (owner's decision, 2026-10-20)
+    // ============================================================
+
+    @Test
+    void shouldTellSomeoneWeCancelledTheirSlotEvenWithNotificationsOff() {
+        mailService.sendAdminCancellationNotification(createReservation(createUser("user@example.com", false)));
+
+        verify(mailSender).send(any(MimeMessage.class));
+    }
+
+    @Test
+    void shouldTellSomeoneWeCancelledTheirEventEvenWithNotificationsOff() {
+        mailService.sendAdminEventCancellationNotification(createUser("user@example.com", false), createEvent());
+
+        verify(mailSender).send(any(MimeMessage.class));
+    }
+
+    @Test
+    void shouldTellSomeoneWeRemovedThemFromAnEventEvenWithNotificationsOff() {
+        mailService.sendAdminEventParticipantRemovedNotification(createUser("user@example.com", false), createEvent());
+
+        verify(mailSender).send(any(MimeMessage.class));
+    }
+
+    // ============================================================
     // resolveAdminEmails — via sendAdminNotification
     // ============================================================
 
@@ -329,6 +354,12 @@ class MailServiceTest {
         User user = new User(email, "Jan", "Kowalski", "+48123456789", "jankowalski");
         user.setEmailNotificationsEnabled(emailNotificationsEnabled);
         return user;
+    }
+
+    private pl.nextsteppro.climbing.domain.event.Event createEvent() {
+        LocalDate start = LocalDate.now().plusDays(7);
+        return new pl.nextsteppro.climbing.domain.event.Event(
+            "Kurs", pl.nextsteppro.climbing.domain.event.EventType.COURSE, start, start.plusDays(1), 6);
     }
 
     private Reservation createReservation(User user) {
