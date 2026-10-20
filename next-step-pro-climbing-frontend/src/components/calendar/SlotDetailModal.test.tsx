@@ -285,3 +285,15 @@ describe('SlotDetailModal — cancelling a booking', () => {
     await waitFor(() => expect(cancelReservation).toHaveBeenCalledWith('res-1'))
   })
 })
+
+/* While a waitlist offer is open the freed seat belongs to the queue. The server already answers
+   FULL for everybody but the people offered it; the seat count under it must not still say
+   "1 free" from the raw arithmetic. */
+describe('SlotDetailModal — a seat on offer to the waitlist', () => {
+  it('shows no free seat and offers the queue to a walk-in', () => {
+    renderModal(slot({ maxParticipants: 1, status: 'FULL', heldForWaitlist: 1 }))
+
+    expect(screen.queryByText(/^slot\.spotsFree/)).toBeNull()
+    expect(screen.getByText('slot.waitlist.join')).toBeTruthy()
+  })
+})

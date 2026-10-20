@@ -21,6 +21,8 @@ import pl.nextsteppro.climbing.domain.trainingrequest.TrainingRequest;
 import pl.nextsteppro.climbing.domain.trainingrequest.TrainingRequestRepository;
 import pl.nextsteppro.climbing.domain.user.User;
 import pl.nextsteppro.climbing.domain.user.UserRepository;
+import pl.nextsteppro.climbing.domain.waitlist.EventWaitlistRepository;
+import pl.nextsteppro.climbing.domain.waitlist.WaitlistRepository;
 import pl.nextsteppro.climbing.infrastructure.i18n.MessageService;
 import pl.nextsteppro.climbing.infrastructure.mail.MailService;
 import pl.nextsteppro.climbing.api.activitylog.ActivityLogService;
@@ -51,6 +53,7 @@ public class ReservationService {
     private final EventWaitlistService eventWaitlistService;
     private final ReservedSeatRepository reservedSeatRepository;
     private final TrainingRequestRepository trainingRequestRepository;
+    private final WaitlistHold waitlistHold;
 
     public ReservationService(ReservationRepository reservationRepository,
                              GuestReservationRepository guestReservationRepository,
@@ -63,8 +66,11 @@ public class ReservationService {
                              WaitlistService waitlistService,
                              EventWaitlistService eventWaitlistService,
                              ReservedSeatRepository reservedSeatRepository,
-                             TrainingRequestRepository trainingRequestRepository) {
+                             TrainingRequestRepository trainingRequestRepository,
+                             WaitlistRepository waitlistRepository,
+                             EventWaitlistRepository eventWaitlistRepository) {
         this.trainingRequestRepository = trainingRequestRepository;
+        this.waitlistHold = new WaitlistHold(waitlistRepository, eventWaitlistRepository);
         this.reservationRepository = reservationRepository;
         this.guestReservationRepository = guestReservationRepository;
         this.occupancy = new Occupancy(reservationRepository, guestReservationRepository);
@@ -137,8 +143,13 @@ public class ReservationService {
         // Seats held for OTHER invitees are unavailable to this user; their own invitation
         // (if any) is not subtracted, so they can take their held seat.
         int reservedForOthers = reservedSeatRepository.countPendingBySlotIdExcludingUser(slotId, userId);
-        int spotsLeft = slot.getMaxParticipants() - currentCount - reservedForOthers;
+        int free = slot.getMaxParticipants() - currentCount - reservedForOthers;
+        int heldForQueue = WaitlistHold.held(waitlistHold.openOffersOnSlot(slotId, userId), free);
+        int spotsLeft = free - heldForQueue;
         if (spotsLeft <= 0) {
+            if (heldForQueue > 0) {
+                throw new IllegalStateException(msg.get("reservation.no.spots.waitlist"));
+            }
             boolean onlyReservedLeft = slot.getMaxParticipants() - currentCount > 0;
             throw new IllegalStateException(msg.get(onlyReservedLeft ? "reservation.no.spots.reserved" : "reservation.no.spots"));
         }
@@ -459,8 +470,13 @@ public class ReservationService {
         int currentParticipants = occupancy.ofEvent(eventId, activeSlots);
 
         int reservedForOthers = reservedSeatRepository.countPendingByEventIdExcludingUser(eventId, userId);
-        int spotsLeft = event.getMaxParticipants() - currentParticipants - reservedForOthers;
+        int free = event.getMaxParticipants() - currentParticipants - reservedForOthers;
+        int heldForQueue = WaitlistHold.held(waitlistHold.openOffersOnEvent(eventId, userId), free);
+        int spotsLeft = free - heldForQueue;
         if (spotsLeft <= 0) {
+            if (heldForQueue > 0) {
+                throw new IllegalStateException(msg.get("reservation.event.no.spots.waitlist"));
+            }
             boolean onlyReservedLeft = event.getMaxParticipants() - currentParticipants > 0;
             throw new IllegalStateException(msg.get(onlyReservedLeft ? "reservation.event.no.spots.reserved" : "reservation.event.no.spots"));
         }
@@ -668,19 +684,24 @@ public class ReservationService {
      * included) minus seats held under an invitation for somebody else. New bookings always
      * subtracted those holds; growing an existing one did not, so a group could swell into a seat the
      * admin had promised to a named invitee. The edit form's "+" limit reads this same number, so
-     * the button cannot offer what the server then refuses.
+     * the button cannot offer what the server then refuses. A seat offered to the waitlist is held
+     * the same way — growing a group into it would be the same walk-in a new booking is refused.
      */
     private int seatsToGrowInto(TimeSlot slot, int ownParticipants, UUID userId) {
         int taken = occupancy.perSlot(List.of(slot.getId())).getOrDefault(slot.getId(), 0);
         int heldForOthers = reservedSeatRepository.countPendingBySlotIdExcludingUser(slot.getId(), userId);
-        return slot.getMaxParticipants() - taken - heldForOthers + ownParticipants;
+        int free = slot.getMaxParticipants() - taken - heldForOthers;
+        int heldForQueue = WaitlistHold.held(waitlistHold.openOffersOnSlot(slot.getId(), userId), free);
+        return free - heldForQueue + ownParticipants;
     }
 
     /** Event twin of {@link #seatsToGrowInto(TimeSlot, int, UUID)}. */
     private int seatsToGrowInto(Event event, List<TimeSlot> slots, int ownParticipants, UUID userId) {
         int taken = occupancy.ofEvent(event.getId(), slots);
         int heldForOthers = reservedSeatRepository.countPendingByEventIdExcludingUser(event.getId(), userId);
-        return event.getMaxParticipants() - taken - heldForOthers + ownParticipants;
+        int free = event.getMaxParticipants() - taken - heldForOthers;
+        int heldForQueue = WaitlistHold.held(waitlistHold.openOffersOnEvent(event.getId(), userId), free);
+        return free - heldForQueue + ownParticipants;
     }
 
     private List<TimeSlot> createDefaultSlotsForEvent(Event event) {

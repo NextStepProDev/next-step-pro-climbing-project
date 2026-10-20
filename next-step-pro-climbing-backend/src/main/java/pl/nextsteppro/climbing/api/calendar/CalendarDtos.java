@@ -60,7 +60,9 @@ record TimeSlotDto(
     boolean isUnavailable,
     // Invitation-held seats: number of pending invitations + whether the current viewer is one of the invitees
     int reservedSeats,
-    boolean isReservedForUser
+    boolean isReservedForUser,
+    // Free seats an open waitlist offer holds for the queue, from this viewer's side (WaitlistHold)
+    int heldForWaitlist
 ) implements CalendarDtos {}
 
 record TimeSlotDetailDto(
@@ -85,7 +87,8 @@ record TimeSlotDetailDto(
     boolean isUnavailable,
     @Nullable String title,
     int reservedSeats,
-    boolean isReservedForUser
+    boolean isReservedForUser,
+    int heldForWaitlist
 ) implements CalendarDtos {}
 
 record CourseEventDto(
@@ -124,7 +127,8 @@ record EventSummaryDto(
     int userParticipants,
     // Invitation-held seats: number of pending invitations + whether the current viewer is invited
     int reservedSeats,
-    boolean isReservedForUser
+    boolean isReservedForUser,
+    int heldForWaitlist
 ) implements CalendarDtos {}
 
 record WeekViewDto(

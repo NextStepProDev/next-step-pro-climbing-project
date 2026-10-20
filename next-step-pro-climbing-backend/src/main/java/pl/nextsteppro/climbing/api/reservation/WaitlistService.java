@@ -148,6 +148,12 @@ public class WaitlistService {
         waitlistRepository.findByUserIdAndSlotId(userId, slotId).ifPresent(waitlistRepository::delete);
     }
 
+    // Declining an open offer gives the seat it held back — the cached anonymous calendar must see it.
+    @Caching(evict = {
+        @CacheEvict(value = "calendarMonth", allEntries = true),
+        @CacheEvict(value = "calendarWeek", allEntries = true),
+        @CacheEvict(value = "calendarDay", allEntries = true)
+    })
     public void leaveWaitlist(UUID slotId, UUID userId) {
         Waitlist entry = waitlistRepository.findByUserIdAndSlotId(userId, slotId)
             .orElseThrow(() -> new IllegalArgumentException(msg.get("waitlist.not.found")));
@@ -273,12 +279,20 @@ public class WaitlistService {
 
         waitlistRepository.delete(entry);
 
-        // Remaining PENDING people go back to the queue (the race for this seat is over)
+        // Remaining PENDING people go back to the queue once the race is over — that is, once no seat
+        // is left. While one is (two seats freed, one confirmed), their offers stay open: the seat
+        // belongs to the queue during the offer (WaitlistHold), and returning them to WAITING here
+        // would hand that second seat to the first walk-in instead, with nobody re-notified.
         List<Waitlist> otherPending = waitlistRepository.findBySlotIdAndStatusWithUser(slotId, WaitlistStatus.PENDING_CONFIRMATION);
-        for (Waitlist other : otherPending) {
-            other.returnToWaiting();
+        int taken = confirmedCount + reservation.getParticipants() + reservedSeatRepository.countPendingBySlotId(slotId);
+        if (taken >= slot.getMaxParticipants()) {
+            for (Waitlist other : otherPending) {
+                other.returnToWaiting();
+            }
+            waitlistRepository.saveAll(otherPending);
+        } else {
+            otherPending = List.of();
         }
-        waitlistRepository.saveAll(otherPending);
 
         waitlistMailService.sendWaitlistReservationConfirmed(user, slot);
         waitlistMailService.sendWaitlistAdminNotification(user, slot);

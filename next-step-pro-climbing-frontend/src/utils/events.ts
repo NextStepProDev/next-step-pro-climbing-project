@@ -11,6 +11,24 @@ type EventAccentColor = {
 
 export type EventColorMap = Map<string, EventAccentColor>
 
+type SeatCounts = {
+  maxParticipants: number
+  currentParticipants: number
+  reservedSeats?: number
+  isReservedForUser?: boolean
+  heldForWaitlist?: number
+}
+
+/**
+ * Seats this viewer could book: capacity minus the headcount, minus seats held under OTHER people's
+ * invitations, minus seats on offer to the waitlist (which the server already counts per viewer —
+ * zero for the people the offer went to). May go below zero; callers clamp where they display it.
+ */
+export function seatsFreeForViewer(x: SeatCounts): number {
+  const reservedForOthers = Math.max(0, (x.reservedSeats ?? 0) - (x.isReservedForUser ? 1 : 0))
+  return x.maxParticipants - x.currentParticipants - reservedForOthers - (x.heldForWaitlist ?? 0)
+}
+
 const EVENT_TYPE_COLORS: Record<string, EventAccentColor> = {
   COURSE: {
     text: 'text-primary-400', border: 'border-primary-500/30', bg: 'bg-primary-500/5',
@@ -170,10 +188,9 @@ export function formatAvailability(event: EventSummary) {
     return { label: i18n.t('availability.closed', { ns: 'calendar' }), badgeClass: "bg-surface-700 text-surface-400" };
   }
 
-  // Seats invitation-held for OTHER people are not free for this viewer — otherwise the label
-  // would show "1 free seat" where a walk-in cannot book (consistent with the modal).
-  const reservedForOthers = Math.max(0, (event.reservedSeats ?? 0) - (event.isReservedForUser ? 1 : 0));
-  const free = Math.max(0, event.maxParticipants - event.currentParticipants - reservedForOthers);
+  // Seats invitation-held for OTHER people, or on offer to the waitlist, are not free for this
+  // viewer — otherwise the label would show "1 free seat" where a walk-in cannot book.
+  const free = Math.max(0, seatsFreeForViewer(event));
 
   if (free === 0) return { label: i18n.t('availability.noSpots', { ns: 'calendar' }), badgeClass: "bg-amber-500/10 text-amber-400" };
   if (free === 1) return { label: i18n.t('availability.oneSpot', { ns: 'calendar' }), badgeClass: "bg-green-500/15 text-green-300" };

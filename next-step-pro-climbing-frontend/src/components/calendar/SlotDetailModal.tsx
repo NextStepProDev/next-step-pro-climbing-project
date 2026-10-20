@@ -28,6 +28,7 @@ import { useInviteSentToast } from "../../hooks/useInviteSentToast";
 import { MailedInvitesWarning } from "../ui/MailedInvitesWarning";
 import { canOfferSaveAndSend, sameInvitees } from "../../utils/inviteStatus";
 import { nowInWarsaw, parseCalendarDate, parseCalendarDateTime } from '../../utils/calendarDate'
+import { seatsFreeForViewer } from '../../utils/events'
 import { AdminPrivateNote } from '../admin/AdminPrivateNote'
 import { ParticipantsSection } from '../admin/ParticipantsSection'
 import { SettlementSection } from '../admin/SettlementSection'
@@ -281,8 +282,14 @@ export function SlotDetailModal({
   // block — that is why we subtract only OTHER people's invitations.
   const reservedSeats = slot.reservedSeats ?? 0;
   const reservedForOthers = Math.max(0, reservedSeats - (slot.isReservedForUser ? 1 : 0));
-  const spotsLeft =
-    (slot.maxParticipants ?? 0) - (slot.currentParticipants ?? 0) - reservedForOthers;
+  // ...and seats on offer to the waitlist, unless the offer is this viewer's (server-side count).
+  const spotsLeft = seatsFreeForViewer({
+    maxParticipants: slot.maxParticipants ?? 0,
+    currentParticipants: slot.currentParticipants ?? 0,
+    reservedSeats,
+    isReservedForUser: slot.isReservedForUser,
+    heldForWaitlist: slot.heldForWaitlist,
+  });
 
   const isPast = slot.status === "PAST";
   // PAST status arrives from the START time — for the admin a slot is "finished" only after

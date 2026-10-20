@@ -5,7 +5,7 @@ import { ArrowLeft, Building2, Clock, Calendar, CalendarPlus, Users, Plus, Exter
 import { Link, useLocation } from "react-router-dom";
 import clsx from "clsx";
 import type { TimeSlot, EventSummary } from "../../types";
-import { formatAvailability, getEventColorByIndex } from "../../utils/events";
+import { formatAvailability, getEventColorByIndex, seatsFreeForViewer } from "../../utils/events";
 import { useDateLocale } from "../../utils/dateFnsLocale";
 import { useAuth } from "../../context/AuthContext";
 import { parseCalendarDate } from '../../utils/calendarDate'
@@ -368,9 +368,8 @@ export function DayView({
               /* Event WITH time slots */
               if (eventSlots && eventSlots.length > 0) {
                 // Full for the viewer also when the remaining seats are held by other people's
-                // invitations (consistent with EventSignupModal — then the waitlist is available, not booking).
-                const reservedForOthers = Math.max(0, (event.reservedSeats ?? 0) - (event.isReservedForUser ? 1 : 0));
-                const isFull = event.currentParticipants + reservedForOthers >= event.maxParticipants;
+                // invitations or by a waitlist offer (consistent with EventSignupModal — then the waitlist, not booking).
+                const isFull = seatsFreeForViewer(event) <= 0;
                 return (
                   <div
                     key={event.id}
@@ -455,9 +454,8 @@ export function DayView({
               /* Event WITHOUT slots on this day → show availability from EventSummary */
               {
                 // Full for the viewer also when the remaining seats are held by other people's
-                // invitations (consistent with EventSignupModal — then the waitlist is available, not booking).
-                const reservedForOthers = Math.max(0, (event.reservedSeats ?? 0) - (event.isReservedForUser ? 1 : 0));
-                const isFull = event.currentParticipants + reservedForOthers >= event.maxParticipants;
+                // invitations or by a waitlist offer (consistent with EventSignupModal — then the waitlist, not booking).
+                const isFull = seatsFreeForViewer(event) <= 0;
                 return (
                   <div
                     key={event.id}
