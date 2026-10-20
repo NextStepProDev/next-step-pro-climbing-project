@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { format, parseISO } from 'date-fns'
 import type { Locale } from 'date-fns'
-import { Plus, Lock, LockOpen, Trash2, Users, Pencil, AlertTriangle, X, UserPlus, ChevronDown, ChevronRight, ChevronLeft, Save, Hourglass } from 'lucide-react'
+import { Plus, Lock, LockOpen, Trash2, Users, Pencil, AlertTriangle, X, ChevronDown, ChevronRight, ChevronLeft, Save, Hourglass } from 'lucide-react'
 import { adminApi, adminSiteApi } from '../../api/client'
 import { getErrorMessage } from '../../utils/errors'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
@@ -14,9 +14,9 @@ import { DateInput } from '../../components/ui/DateInput'
 import { ModalCancelButton } from '../../components/ui/ModalCancelButton'
 import { Modal } from '../../components/ui/Modal'
 import { TimeScrollPicker } from '../../components/ui/TimeScrollPicker'
-import { UserSearchSelect } from '../../components/ui/UserSearchSelect'
 import { InvitedUsersPicker } from '../../components/ui/InvitedUsersPicker'
 import { InviteNotifySection } from '../../components/ui/InviteNotifySection'
+import { ParticipantsSection } from '../../components/admin/ParticipantsSection'
 import { CreateSlotModal } from '../../components/calendar/CreateSlotModal'
 import { SlotKindPicker } from '../../components/calendar/SlotKindPicker'
 import { slotKindOf, slotKindFlags, type SlotKind } from '../../utils/slotKind'
@@ -30,7 +30,6 @@ import { canOfferSaveAndSend, sameInvitees } from '../../utils/inviteStatus'
 import { todayInWarsaw } from '../../utils/calendarDate'
 import { buildArchiveDays } from './archiveDays'
 import type { EventDetail, InvitedUser, SlotParticipants, SlotTemplate, TimeSlotAdmin } from '../../types'
-import { decodeHtmlEntities } from '../../utils/htmlEntities'
 
 const ARCHIVE_PAGE_SIZE = 15
 
@@ -42,6 +41,8 @@ export function AdminSlotsPanel() {
   const [showParticipantsModal, setShowParticipantsModal] = useState(false)
   const [editingSlot, setEditingSlot] = useState<TimeSlotAdmin | null>(null)
   const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null)
+  // A blocked slot is refused by the server, so the add form is not offered (as in the calendar)
+  const [selectedSlotBlocked, setSelectedSlotBlocked] = useState(false)
   const [confirmAction, setConfirmAction] = useState<{ slotId: string; action: 'block' | 'delete'; archived?: boolean } | null>(null)
   const [showArchive, setShowArchive] = useState(false)
   const [archivePage, setArchivePage] = useState(1)
@@ -149,8 +150,9 @@ export function AdminSlotsPanel() {
   const pastPagedDays = pastSortedDays.slice((pastSafePage - 1) * ARCHIVE_PAGE_SIZE, pastSafePage * ARCHIVE_PAGE_SIZE)
 
   const slotHandlers = {
-    onShowParticipants: (slotId: string) => {
+    onShowParticipants: (slotId: string, blocked: boolean) => {
       setSelectedSlotId(slotId)
+      setSelectedSlotBlocked(blocked)
       setShowParticipantsModal(true)
     },
     onEdit: (slot: TimeSlotAdmin) => setEditingSlot(slot),
@@ -208,7 +210,7 @@ export function AdminSlotsPanel() {
                     key={slot.id}
                     slot={slot}
                     t={t}
-                    onShowParticipants={() => slotHandlers.onShowParticipants(slot.id)}
+                    onShowParticipants={() => slotHandlers.onShowParticipants(slot.id, slot.blocked)}
                     onEdit={() => slotHandlers.onEdit(slot)}
                     onBlock={() => slotHandlers.onBlock(slot.id)}
                     onUnblock={() => slotHandlers.onUnblock(slot.id)}
@@ -272,7 +274,7 @@ export function AdminSlotsPanel() {
                           slot={slot}
                           t={t}
                           archived
-                          onShowParticipants={() => slotHandlers.onShowParticipants(slot.id)}
+                          onShowParticipants={() => slotHandlers.onShowParticipants(slot.id, slot.blocked)}
                           onEdit={() => slotHandlers.onEdit(slot)}
                           onBlock={() => slotHandlers.onBlock(slot.id)}
                           onUnblock={() => slotHandlers.onUnblock(slot.id)}
@@ -339,6 +341,7 @@ export function AdminSlotsPanel() {
           }}
           data={participants}
           slotId={selectedSlotId!}
+          canAdd={!selectedSlotBlocked}
         />
       )}
 
@@ -839,83 +842,20 @@ function ParticipantsModal({
   onClose,
   data,
   slotId,
+  canAdd,
 }: {
   isOpen: boolean
   onClose: () => void
   data: SlotParticipants
   slotId: string
+  canAdd: boolean
 }) {
   const { t } = useTranslation('admin')
   const locale = useDateLocale()
-  const queryClient = useQueryClient()
-  const [confirmCancelFor, setConfirmCancelFor] = useState<string | null>(null)
-  const [editingSpotsFor, setEditingSpotsFor] = useState<string | null>(null)
-  const [editedSpots, setEditedSpots] = useState<number>(1)
-  const [showAddForm, setShowAddForm] = useState(false)
-  const [addMode, setAddMode] = useState<'registered' | 'guest'>('registered')
-  const [selectedUserId, setSelectedUserId] = useState('')
-  const [addParticipants, setAddParticipants] = useState(1)
-  const [addComment, setAddComment] = useState('')
-  const [guestNote, setGuestNote] = useState('')
-  const [confirmDeleteGuestId, setConfirmDeleteGuestId] = useState<string | null>(null)
 
-  const totalSpots = data.participants.reduce((s, p) => s + p.participants, 0)
-    + data.guestParticipants.reduce((s, g) => s + g.participants, 0)
-
-  const invalidate = () => {
-    queryClient.invalidateQueries({ queryKey: ['admin', 'participants', slotId] })
-    queryClient.invalidateQueries({ queryKey: ['admin', 'slots', 'upcoming'] })
-    queryClient.invalidateQueries({ queryKey: ['admin', 'slots', 'past'] })
-    queryClient.invalidateQueries({ queryKey: ['calendar'] })
-    // A participant added or removed is a row on the Settlements tab ("to price") — the calendar's
-    // ParticipantsSection invalidates this for the same reason.
-    queryClient.invalidateQueries({ queryKey: ['admin', 'settlements'] })
-  }
-
-  const { data: allUsers } = useQuery({
-    queryKey: ['admin', 'users'],
-    queryFn: () => adminApi.getAllUsers(),
-    enabled: showAddForm && addMode === 'registered',
-  })
-
-  const cancelReservationMutation = useMutation({
-    mutationFn: (reservationId: string) => adminApi.cancelReservationByAdmin(reservationId),
-    onSuccess: () => { invalidate(); setConfirmCancelFor(null) },
-  })
-
-  const updateParticipantsMutation = useMutation({
-    mutationFn: ({ reservationId, participants }: { reservationId: string; participants: number }) =>
-      adminApi.updateReservationParticipants(reservationId, participants),
-    onSuccess: () => { invalidate(); setEditingSpotsFor(null) },
-  })
-
-  const addRegisteredMutation = useMutation({
-    mutationFn: () => adminApi.addRegisteredParticipantToSlot(slotId, selectedUserId, addParticipants, addComment || undefined),
-    onSuccess: () => {
-      invalidate()
-      setShowAddForm(false)
-      setSelectedUserId('')
-      setAddParticipants(1)
-      setAddComment('')
-    },
-  })
-
-  const addGuestMutation = useMutation({
-    mutationFn: () => adminApi.addGuestParticipantToSlot(slotId, guestNote, addParticipants),
-    onSuccess: () => {
-      invalidate()
-      setShowAddForm(false)
-      setGuestNote('')
-      setAddParticipants(1)
-    },
-  })
-
-  const deleteGuestMutation = useMutation({
-    mutationFn: (guestId: string) => adminApi.deleteGuestParticipantFromSlot(slotId, guestId),
-    onSuccess: () => { invalidate(); setConfirmDeleteGuestId(null) },
-  })
-
-  // This slot's waiting queue — a section below the participants, only when someone is waiting
+  // This slot's waiting queue — a section below the participants, only when someone is waiting.
+  // Kept here rather than in ParticipantsSection: that one rides in the calendar chunk every
+  // visitor downloads, and the queue's renderer lives in a panel (see its doc).
   const { data: waitlist } = useQuery({
     queryKey: ['admin', 'slotWaitlist', slotId],
     queryFn: () => adminApi.getSlotWaitlist(slotId),
@@ -930,261 +870,10 @@ function ParticipantsModal({
           {data.startTime.slice(0, 5)} - {data.endTime.slice(0, 5)}
         </div>
 
-        {/* Confirmed participants */}
-        <div>
-          <h3 className="text-sm font-medium text-surface-300 mb-2">
-            {t('slots.registeredOf', { count: totalSpots, max: data.maxParticipants })}
-          </h3>
-          {data.participants.length === 0 && data.guestParticipants.length === 0 ? (
-            <p className="text-surface-500 text-sm">{t('slots.noRegisteredShort')}</p>
-          ) : (
-            <ul className="space-y-2">
-              {data.participants.map((p) => (
-                <li key={p.userId} className="bg-surface-800 rounded-lg p-3">
-                  {confirmCancelFor === p.reservationId ? (
-                    <div className="space-y-2">
-                      <p className="text-sm text-rose-400">{t('slots.confirmCancelReservation')}</p>
-                      <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          variant="danger"
-                          loading={cancelReservationMutation.isPending}
-                          onClick={() => cancelReservationMutation.mutate(p.reservationId)}
-                        >
-                          {t('slots.cancelReservation')}
-                        </Button>
-                        <Button size="sm" variant="ghost" onClick={() => setConfirmCancelFor(null)}>
-                          {t('slots.cancelEdit')}
-                        </Button>
-                      </div>
-                    </div>
-                  ) : editingSpotsFor === p.reservationId ? (
-                    <div className="space-y-2">
-                      <p className="text-sm text-surface-300">{p.fullName} — {t('slots.editSpots')}</p>
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="number"
-                          min={1}
-                          max={data.maxParticipants}
-                          value={editedSpots}
-                          onChange={(e) => setEditedSpots(Number(e.target.value))}
-                          className="w-20 bg-surface-700 border border-surface-600 rounded px-2 py-1 text-surface-100 text-sm"
-                        />
-                        <Button
-                          size="sm"
-                          variant="primary"
-                          loading={updateParticipantsMutation.isPending}
-                          onClick={() => updateParticipantsMutation.mutate({ reservationId: p.reservationId, participants: editedSpots })}
-                        >
-                          {t('slots.saveSpots')}
-                        </Button>
-                        <Button size="sm" variant="ghost" onClick={() => setEditingSpotsFor(null)}>
-                          {t('slots.cancelEdit')}
-                        </Button>
-                      </div>
-                      {updateParticipantsMutation.isError && (
-                        <p className="text-xs text-rose-400">{getErrorMessage(updateParticipantsMutation.error)}</p>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0">
-                        <div className="font-medium text-surface-100">{p.fullName}</div>
-                        <div className="text-sm text-surface-400">{p.email}</div>
-                        <div className="text-sm text-surface-400">{p.phone}</div>
-                        {p.comment && (
-                          <div className="text-sm text-amber-400 mt-1">"{decodeHtmlEntities(p.comment)}"</div>
-                        )}
-                        {p.participants > 1 && (
-                          <span className="inline-block mt-1 text-xs text-primary-400 bg-primary-500/10 px-2 py-0.5 rounded-full">
-                            {t('slots.spotsLabel', { count: p.participants })}
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex gap-1 shrink-0">
-                        <button
-                          onClick={() => { setEditingSpotsFor(p.reservationId); setEditedSpots(p.participants) }}
-                          title={t('slots.editSpots')}
-                          className="p-1 text-surface-400 hover:text-primary-400 transition-colors"
-                        >
-                          <Pencil className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          onClick={() => setConfirmCancelFor(p.reservationId)}
-                          title={t('slots.cancelReservation')}
-                          className="p-1 text-surface-400 hover:text-rose-400 transition-colors"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </li>
-              ))}
+        {/* The same section as the calendar's slot window — this panel kept a copy of its own, and a
+            fix kept landing in one of them only (the Settlements refresh did, 2026-10-20). */}
+        <ParticipantsSection target="slot" targetId={slotId} canAdd={canAdd} />
 
-              {/* Guest reservations */}
-              {data.guestParticipants.map((g) => (
-                <li key={g.id} className="bg-amber-500/5 border border-amber-500/20 rounded-lg p-3">
-                  {confirmDeleteGuestId === g.id ? (
-                    <div className="space-y-2">
-                      <p className="text-sm text-rose-400">{t('slots.confirmCancelReservation')}</p>
-                      <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          variant="danger"
-                          loading={deleteGuestMutation.isPending}
-                          onClick={() => deleteGuestMutation.mutate(g.id)}
-                        >
-                          {t('slots.cancelReservation')}
-                        </Button>
-                        <Button size="sm" variant="ghost" onClick={() => setConfirmDeleteGuestId(null)}>
-                          {t('slots.cancelEdit')}
-                        </Button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded">
-                            {t('slots.guest')}
-                          </span>
-                          <span className="font-medium text-surface-100">{g.note}</span>
-                        </div>
-                        {g.participants > 1 && (
-                          <span className="inline-block mt-1 text-xs text-amber-400/80 bg-amber-500/10 px-2 py-0.5 rounded-full">
-                            {t('slots.spotsLabel', { count: g.participants })}
-                          </span>
-                        )}
-                      </div>
-                      <button
-                        onClick={() => setConfirmDeleteGuestId(g.id)}
-                        title={t('slots.cancelReservation')}
-                        className="p-1 text-surface-400 hover:text-rose-400 transition-colors shrink-0"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  )}
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-
-        {/* Add participant */}
-        {!showAddForm ? (
-          <button
-            onClick={() => setShowAddForm(true)}
-            className="flex items-center gap-2 text-sm text-primary-400 hover:text-primary-300 transition-colors"
-          >
-            <UserPlus className="w-4 h-4" />
-            {t('slots.addParticipant')}
-          </button>
-        ) : (
-          <div className="border border-surface-700 rounded-lg p-3 space-y-3">
-            {/* Mode tabs */}
-            <div className="flex gap-2">
-              <button
-                onClick={() => setAddMode('registered')}
-                className={`text-xs px-3 py-1 rounded-full transition-colors ${addMode === 'registered' ? 'bg-primary-500/20 text-primary-300' : 'text-surface-400 hover:text-surface-200'}`}
-              >
-                {t('slots.addRegistered')}
-              </button>
-              <button
-                onClick={() => setAddMode('guest')}
-                className={`text-xs px-3 py-1 rounded-full transition-colors ${addMode === 'guest' ? 'bg-amber-500/20 text-amber-300' : 'text-surface-400 hover:text-surface-200'}`}
-              >
-                {t('slots.addGuest')}
-              </button>
-            </div>
-
-            {addMode === 'registered' ? (
-              <form className="space-y-2" onSubmit={(e) => { e.preventDefault(); addRegisteredMutation.mutate() }}>
-                <UserSearchSelect
-                  users={allUsers ?? []}
-                  value={selectedUserId}
-                  onChange={setSelectedUserId}
-                />
-                <div className="flex items-center gap-2">
-                  <label className="text-xs text-surface-400 shrink-0">{t('slots.spots')}:</label>
-                  <input
-                    type="number"
-                    min={1}
-                    max={20}
-                    value={addParticipants}
-                    onChange={(e) => setAddParticipants(Number(e.target.value))}
-                    className="w-16 bg-surface-800 border border-surface-700 rounded px-2 py-1 text-surface-100 text-sm"
-                  />
-                </div>
-                <input
-                  type="text"
-                  value={addComment}
-                  onChange={(e) => setAddComment(e.target.value)}
-                  placeholder={t('slots.commentOptional')}
-                  maxLength={500}
-                  className="w-full bg-surface-800 border border-surface-700 rounded-lg px-3 py-2 text-surface-100 text-sm"
-                />
-                {addRegisteredMutation.isError && (
-                  <p className="text-xs text-rose-400">{getErrorMessage(addRegisteredMutation.error)}</p>
-                )}
-                <div className="flex gap-2">
-                  <Button
-                    type="submit"
-                    size="sm"
-                    loading={addRegisteredMutation.isPending}
-                    disabled={!selectedUserId}
-                  >
-                    {t('slots.addParticipantConfirm')}
-                  </Button>
-                  <Button size="sm" variant="ghost" type="button" onClick={() => setShowAddForm(false)}>
-                    {t('slots.cancelEdit')}
-                  </Button>
-                </div>
-              </form>
-            ) : (
-              <form className="space-y-2" onSubmit={(e) => { e.preventDefault(); addGuestMutation.mutate() }}>
-                <input
-                  type="text"
-                  value={guestNote}
-                  onChange={(e) => setGuestNote(e.target.value)}
-                  placeholder={t('slots.guestNotePlaceholder')}
-                  maxLength={500}
-                  className="w-full bg-surface-800 border border-surface-700 rounded-lg px-3 py-2 text-surface-100 text-sm"
-                />
-                <div className="flex items-center gap-2">
-                  <label className="text-xs text-surface-400 shrink-0">{t('slots.spots')}:</label>
-                  <input
-                    type="number"
-                    min={1}
-                    max={20}
-                    value={addParticipants}
-                    onChange={(e) => setAddParticipants(Number(e.target.value))}
-                    className="w-16 bg-surface-800 border border-surface-700 rounded px-2 py-1 text-surface-100 text-sm"
-                  />
-                </div>
-                {addGuestMutation.isError && (
-                  <p className="text-xs text-rose-400">{getErrorMessage(addGuestMutation.error)}</p>
-                )}
-                <div className="flex gap-2">
-                  <Button
-                    type="submit"
-                    size="sm"
-                    loading={addGuestMutation.isPending}
-                    disabled={!guestNote.trim()}
-                  >
-                    {t('slots.addParticipantConfirm')}
-                  </Button>
-                  <Button size="sm" variant="ghost" type="button" onClick={() => setShowAddForm(false)}>
-                    {t('slots.cancelEdit')}
-                  </Button>
-                </div>
-              </form>
-            )}
-          </div>
-        )}
-
-        {/* Waitlist */}
         {waitlist && waitlist.entries.length > 0 && (
           <div>
             <h3 className="flex items-center gap-1.5 text-sm font-medium text-amber-400 mb-1">
@@ -1194,7 +883,6 @@ function ParticipantsModal({
             <WaitlistEntryList entries={waitlist.entries} />
           </div>
         )}
-
       </div>
     </Modal>
   )

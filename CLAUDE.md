@@ -318,7 +318,7 @@ Toast ma **trzy** stany, bo zero powstaje na dwa sposoby: pusty slot („Zapisan
 
 `ParticipantsSection` (lista + dodaj/usuń) stoi obok notatki i rozliczenia w obu modalach kalendarza; różnica slot/event siedzi w adapterze `ops`. Bramki jak przy notatce (`!slot.eventId` plus `isBookable`), ale **bez** bramki na miniony termin — wtedy właśnie spisuje się, kto przyszedł, a serwer nie mailuje o przeszłość.
 - ⚠️ **Każda mutacja unieważnia też `['admin','settlements']`** — sekcja rozliczeń stoi tuż pod spodem, a dopisany uczestnik jest w niej nowym wierszem.
-- ⚠️ **Bez `WaitlistEntryList`** (eksport z `AdminReservationsPanel`) — ta sekcja jedzie w chunku `/kalendarz`. Kolejkę i zmianę liczby miejsc rysują panele, u siebie.
+- ⚠️ **Bez `WaitlistEntryList`** (eksport z `AdminReservationsPanel`) — ta sekcja jedzie w chunku `/kalendarz`. Kolejkę rysują panele, u siebie. ⚠️ **To jedyna lista uczestników w aplikacji** — panele Terminy i Wydarzenia osadzają tę samą sekcję (do 2026-10-20 miały własne kopie i poprawki trafiały tylko do jednej); zmiana liczby miejsc też mieszka tutaj. Id pól są z `useId`, bo panel Wydarzeń rozwija kilka sekcji naraz.
 
 ### Prywatne notatki admina (V89)
 

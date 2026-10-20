@@ -26,6 +26,8 @@ const deleteGuestParticipantFromSlot = vi.fn()
 const deleteGuestParticipantFromEvent = vi.fn()
 const cancelReservationByAdmin = vi.fn()
 const cancelEventParticipant = vi.fn()
+const updateReservationParticipants = vi.fn()
+const updateEventReservationParticipants = vi.fn()
 
 vi.mock('../../api/client', () => ({
   adminApi: {
@@ -40,6 +42,8 @@ vi.mock('../../api/client', () => ({
     deleteGuestParticipantFromEvent: (...a: unknown[]) => deleteGuestParticipantFromEvent(...a),
     cancelReservationByAdmin: (...a: unknown[]) => cancelReservationByAdmin(...a),
     cancelEventParticipant: (...a: unknown[]) => cancelEventParticipant(...a),
+    updateReservationParticipants: (...a: unknown[]) => updateReservationParticipants(...a),
+    updateEventReservationParticipants: (...a: unknown[]) => updateEventReservationParticipants(...a),
   },
 }))
 
@@ -131,6 +135,8 @@ describe('ParticipantsSection', () => {
     deleteGuestParticipantFromEvent.mockReset().mockResolvedValue(undefined)
     cancelReservationByAdmin.mockReset().mockResolvedValue(undefined)
     cancelEventParticipant.mockReset().mockResolvedValue(undefined)
+    updateReservationParticipants.mockReset().mockResolvedValue(undefined)
+    updateEventReservationParticipants.mockReset().mockResolvedValue(undefined)
   })
 
   it('should count held seats, not rows, in the heading', async () => {
@@ -263,3 +269,66 @@ describe('ParticipantsSection', () => {
     await waitFor(() => expect(getAllUsers).toHaveBeenCalled())
   })
 })
+
+/* The admin panels (Slots, Events) each kept their own copy of this list, and those copies could
+   change a booking's number of seats; this one could not. Folding the panels onto it brings that
+   along — for the calendar too. */
+describe('ParticipantsSection — changing how many seats a booking holds', () => {
+  beforeEach(() => {
+    updateReservationParticipants.mockReset().mockResolvedValue(undefined)
+    updateEventReservationParticipants.mockReset().mockResolvedValue(undefined)
+    getAllUsers.mockReset().mockResolvedValue([])
+  })
+
+  it('changes a slot booking by its reservation', async () => {
+    getSlotParticipants.mockReset().mockResolvedValue(slotRoster({ participants: [participant({ participants: 2 })] }))
+    const user = userEvent.setup()
+    renderSection('slot')
+
+    await user.click(await screen.findByTitle('slots.editSpots'))
+    const field = screen.getByRole('spinbutton')
+    await user.clear(field)
+    await user.type(field, '3')
+    await user.click(screen.getByText('slots.saveSpots'))
+
+    await waitFor(() => expect(updateReservationParticipants).toHaveBeenCalledWith('res-1', 3))
+  })
+
+  it('changes an event booking for the person, on every day', async () => {
+    getEventParticipants.mockReset().mockResolvedValue(eventRoster({ participants: [participant()] }))
+    const user = userEvent.setup()
+    renderSection('event')
+
+    await user.click(await screen.findByTitle('slots.editSpots'))
+    const field = screen.getByRole('spinbutton')
+    await user.clear(field)
+    await user.type(field, '2')
+    await user.click(screen.getByText('slots.saveSpots'))
+
+    await waitFor(() => expect(updateEventReservationParticipants).toHaveBeenCalledWith('target-1', 'user-1', 2))
+  })
+})
+
+describe('ParticipantsSection — two of it on one page', () => {
+  // The events panel can unfold several events at once; fixed ids made every label point at the
+  // first section's field.
+  it('gives each section its own field ids', async () => {
+    getSlotParticipants.mockReset().mockResolvedValue(slotRoster())
+    const user = userEvent.setup()
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    render(
+      <QueryClientProvider client={client}>
+        <ParticipantsSection target="slot" targetId="a" />
+        <ParticipantsSection target="slot" targetId="b" />
+      </QueryClientProvider>,
+    )
+    await waitFor(() => expect(screen.getAllByText('slots.addParticipant')).toHaveLength(2))
+    await user.click(screen.getAllByText('slots.addParticipant')[0])
+    await user.click(screen.getAllByText('slots.addParticipant')[0])
+
+    const ids = [...document.querySelectorAll('input[id]')].map((el) => el.id)
+    expect(ids.length).toBeGreaterThan(1)
+    expect(new Set(ids).size).toBe(ids.length)
+  })
+})
+

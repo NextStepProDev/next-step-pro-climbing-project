@@ -1,7 +1,7 @@
-import { useMemo, useState } from 'react'
+import { useId, useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { Trash2, UserPlus, Users } from 'lucide-react'
+import { Pencil, Trash2, UserPlus, Users } from 'lucide-react'
 import { Button } from '../ui/Button'
 import { UserSearchSelect } from '../ui/UserSearchSelect'
 import { adminApi } from '../../api/client'
@@ -57,6 +57,11 @@ export function ParticipantsSection({ target, targetId, canAdd = true, onDirtyCh
   const [guestNote, setGuestNote] = useState('')
   const [confirmCancelFor, setConfirmCancelFor] = useState<string | null>(null)
   const [confirmDeleteGuestId, setConfirmDeleteGuestId] = useState<string | null>(null)
+  const [editingSpotsFor, setEditingSpotsFor] = useState<string | null>(null)
+  const [editedSpots, setEditedSpots] = useState(1)
+  // Per instance: the events panel can unfold several of these at once, and fixed ids made every
+  // label point at the first section's field.
+  const fieldId = useId()
 
   /**
    * The only place the two shapes differ.
@@ -85,6 +90,8 @@ export function ParticipantsSection({ target, targetId, canAdd = true, onDirtyCh
           adminApi.addGuestParticipantToSlot(targetId, note, participants),
         removeGuest: (guestId: string) => adminApi.deleteGuestParticipantFromSlot(targetId, guestId),
         removeRegistered: (p: Participant) => adminApi.cancelReservationByAdmin(p.reservationId),
+        updateSpots: (p: Participant, participants: number) =>
+          adminApi.updateReservationParticipants(p.reservationId, participants),
       }
     }
     return {
@@ -102,6 +109,9 @@ export function ParticipantsSection({ target, targetId, canAdd = true, onDirtyCh
         adminApi.addGuestParticipantToEvent(targetId, note, participants),
       removeGuest: (guestId: string) => adminApi.deleteGuestParticipantFromEvent(targetId, guestId),
       removeRegistered: (p: Participant) => adminApi.cancelEventParticipant(targetId, p.userId),
+      // The person on every day of the event, like removing them
+      updateSpots: (p: Participant, participants: number) =>
+        adminApi.updateEventReservationParticipants(targetId, p.userId, participants),
     }
   }, [target, targetId])
 
@@ -160,6 +170,11 @@ export function ParticipantsSection({ target, targetId, canAdd = true, onDirtyCh
     onSuccess: () => { refresh(); setConfirmCancelFor(null) },
   })
 
+  const updateSpotsMutation = useMutation({
+    mutationFn: ({ p, participants }: { p: Participant; participants: number }) => ops.updateSpots(p, participants),
+    onSuccess: () => { refresh(); setEditingSpotsFor(null) },
+  })
+
   const removeGuestMutation = useMutation({
     mutationFn: (guestId: string) => ops.removeGuest(guestId),
     onSuccess: () => { refresh(); setConfirmDeleteGuestId(null) },
@@ -170,7 +185,9 @@ export function ParticipantsSection({ target, targetId, canAdd = true, onDirtyCh
   // The seat stepper alone does not count: a number with nobody attached to it is not work, and
   // it resets with the form (closeAddForm clears all four fields together).
   onDirtyChange?.(
-    showAddForm && (selectedUserId !== '' || addComment.trim() !== '' || guestNote.trim() !== '')
+    (showAddForm && (selectedUserId !== '' || addComment.trim() !== '' || guestNote.trim() !== ''))
+      || (editingSpotsFor !== null
+        && data?.participants.find((p) => p.reservationId === editingSpotsFor)?.participants !== editedSpots)
   )
 
   if (isLoading || !data) return null
@@ -218,6 +235,35 @@ export function ParticipantsSection({ target, targetId, canAdd = true, onDirtyCh
                     <p className="text-xs text-rose-400">{getErrorMessage(removeRegisteredMutation.error)}</p>
                   )}
                 </div>
+              ) : editingSpotsFor === p.reservationId ? (
+                <div className="space-y-2">
+                  <p className="text-xs text-surface-300">{p.fullName} — {t('slots.editSpots')}</p>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      min={1}
+                      max={data.maxParticipants}
+                      value={editedSpots}
+                      onChange={(e) => setEditedSpots(Number(e.target.value))}
+                      aria-label={`${t('slots.editSpots')} — ${p.fullName}`}
+                      className="w-16 bg-surface-700 border border-surface-600 rounded px-2 py-1 text-surface-100 text-sm"
+                    />
+                    <Button
+                      size="sm"
+                      loading={updateSpotsMutation.isPending}
+                      disabled={!Number.isInteger(editedSpots) || editedSpots < 1}
+                      onClick={() => updateSpotsMutation.mutate({ p, participants: editedSpots })}
+                    >
+                      {t('slots.saveSpots')}
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={() => setEditingSpotsFor(null)}>
+                      {t('slots.cancelEdit')}
+                    </Button>
+                  </div>
+                  {updateSpotsMutation.isError && (
+                    <p className="text-xs text-rose-400">{getErrorMessage(updateSpotsMutation.error)}</p>
+                  )}
+                </div>
               ) : (
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
@@ -233,15 +279,30 @@ export function ParticipantsSection({ target, targetId, canAdd = true, onDirtyCh
                       </span>
                     )}
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => setConfirmCancelFor(p.reservationId)}
-                    title={t(ops.removeActionKey)}
-                    aria-label={`${t(ops.removeActionKey)} — ${p.fullName}`}
-                    className="p-1 shrink-0 text-surface-400 hover:text-rose-400 transition-colors"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
+                  <div className="flex gap-1 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingSpotsFor(p.reservationId)
+                        setEditedSpots(p.participants)
+                        updateSpotsMutation.reset()
+                      }}
+                      title={t('slots.editSpots')}
+                      aria-label={`${t('slots.editSpots')} — ${p.fullName}`}
+                      className="p-1 text-surface-400 hover:text-primary-400 transition-colors"
+                    >
+                      <Pencil className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setConfirmCancelFor(p.reservationId)}
+                      title={t(ops.removeActionKey)}
+                      aria-label={`${t(ops.removeActionKey)} — ${p.fullName}`}
+                      className="p-1 text-surface-400 hover:text-rose-400 transition-colors"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
               )}
             </li>
@@ -344,11 +405,11 @@ export function ParticipantsSection({ target, targetId, canAdd = true, onDirtyCh
                 </p>
               )}
               <div className="flex items-center gap-2">
-                <label className="text-xs text-surface-400 shrink-0" htmlFor="participants-spots">
+                <label className="text-xs text-surface-400 shrink-0" htmlFor={`${fieldId}-spots`}>
                   {t('slots.spots')}:
                 </label>
                 <input
-                  id="participants-spots"
+                  id={`${fieldId}-spots`}
                   type="number"
                   min={1}
                   max={MAX_SPOTS}
@@ -396,11 +457,11 @@ export function ParticipantsSection({ target, targetId, canAdd = true, onDirtyCh
                 className="w-full bg-surface-800 border border-surface-700 rounded-lg px-3 py-2 text-surface-100 text-sm"
               />
               <div className="flex items-center gap-2">
-                <label className="text-xs text-surface-400 shrink-0" htmlFor="participants-guest-spots">
+                <label className="text-xs text-surface-400 shrink-0" htmlFor={`${fieldId}-guest-spots`}>
                   {t('slots.spots')}:
                 </label>
                 <input
-                  id="participants-guest-spots"
+                  id={`${fieldId}-guest-spots`}
                   type="number"
                   min={1}
                   max={MAX_SPOTS}
