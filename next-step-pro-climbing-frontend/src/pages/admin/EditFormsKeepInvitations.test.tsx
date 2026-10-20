@@ -90,3 +90,23 @@ describe('admin edit forms — invitations not loaded yet', () => {
     expect(updateEvent.mock.calls[0][1]).not.toHaveProperty('invitedUserIds')
   })
 })
+
+describe('admin event forms — their own Cancel button', () => {
+  it('asks before throwing away an edited event, like the cross and Escape do', async () => {
+    const user = userEvent.setup()
+    const onClose = vi.fn()
+    const event: EditableEvent = {
+      id: 'event-2', title: 'Kurs', description: '', location: '', eventType: 'COURSE',
+      startDate: '2030-06-10', endDate: '2030-06-11', startTime: null, endTime: null,
+      maxParticipants: 6, courseId: null,
+    }
+    wrap(<EditEventModal event={event} isOpen onClose={onClose} />)
+    await user.type(screen.getByDisplayValue('Kurs'), '!')
+
+    await user.click(screen.getByText('events.cancel'))
+
+    expect(onClose).not.toHaveBeenCalled()
+    expect(screen.getByText('unsaved.title')).toBeInTheDocument()
+  })
+})
+

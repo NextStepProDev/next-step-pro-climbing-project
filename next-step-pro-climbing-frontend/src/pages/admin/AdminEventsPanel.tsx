@@ -24,12 +24,14 @@ import { QueryError } from '../../components/ui/QueryError'
 import { Button } from '../../components/ui/Button'
 import { DateInput } from '../../components/ui/DateInput'
 import { Modal } from '../../components/ui/Modal'
+import { ModalCancelButton } from '../../components/ui/ModalCancelButton'
 import { RichTextEditor } from '../../components/ui/RichTextEditor'
 import { TimeScrollPicker } from '../../components/ui/TimeScrollPicker'
 import type { CreateEventRequest, EventDetail, EventType, InvitedUser } from '../../types'
 import { getEventColorByType } from '../../utils/events'
 import { nowInWarsaw, parseCalendarDate, todayInWarsaw } from '../../utils/calendarDate'
 import { decodeHtmlEntities } from '../../utils/htmlEntities'
+import { toPlainText } from '../../utils/renderRichText'
 
 export function AdminEventsPanel() {
   const { t } = useTranslation('admin')
@@ -74,7 +76,9 @@ export function AdminEventsPanel() {
     return false
   }
   const upcoming = events?.filter(e => !isEventPast(e)) ?? []
-  const archive = events?.filter(e => isEventPast(e)) ?? []
+  // Newest first, like the reservations and slots archives: the server lists by start date
+  // ascending, so the event that just ended sat on the LAST page.
+  const archive = (events?.filter(e => isEventPast(e)) ?? []).reverse()
 
   return (
     <div>
@@ -243,6 +247,8 @@ function EventCard({
     queryClient.invalidateQueries({ queryKey: ['admin', 'events', event.id, 'participants'] })
     queryClient.invalidateQueries({ queryKey: ['admin', 'events'] })
     queryClient.invalidateQueries({ queryKey: ['calendar'] })
+    // A participant added or removed is a row on the Settlements tab — see ParticipantsSection
+    queryClient.invalidateQueries({ queryKey: ['admin', 'settlements'] })
   }
 
   const cancelEventParticipantMutation = useMutation({
@@ -326,7 +332,8 @@ function EventCard({
           )}
           {event.description && (
             <div className="text-sm text-surface-500 mt-1 line-clamp-2">
-              {event.description}
+              {/* A preview, not the rendered description: the markers ("## Co zabrać") stay out */}
+              {toPlainText(event.description)}
             </div>
           )}
           <div className="flex items-center gap-3 mt-0.5 flex-wrap">
@@ -368,7 +375,7 @@ function EventCard({
           <Button variant="ghost" size="sm" onClick={onToggleActive} title={event.active ? t('events.deactivate') : t('events.activate')}>
             {event.active ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
           </Button>
-          <Button variant="ghost" size="sm" onClick={() => setShowDeleteConfirm(true)}>
+          <Button variant="ghost" size="sm" onClick={() => setShowDeleteConfirm(true)} title={t('events.deleteTitle')}>
             <Trash2 className="w-4 h-4 text-rose-400/80" />
           </Button>
         </div>
@@ -1090,9 +1097,9 @@ export function EditEventModal({
           <Button type="submit" loading={updateMutation.isPending} disabled={!isDirty} className="flex-1">
             {t('events.saveChanges')}
           </Button>
-          <Button type="button" variant="ghost" onClick={onClose}>
-            {t('events.cancel')}
-          </Button>
+          {/* Through the modal's guard: a plain onClose here skipped the "discard changes?" question
+              the cross, Escape and the backdrop all ask */}
+          <ModalCancelButton onClose={onClose}>{t('events.cancel')}</ModalCancelButton>
           {/* A second action, not a checkbox on the first: mailing is not a property of saving,
               and saving quietly has to stay available. */}
           {canSendInvites && (
@@ -1394,9 +1401,9 @@ export function CreateEventModal({
           <Button type="submit" loading={createMutation.isPending} className="flex-1">
             {t('events.createEvent')}
           </Button>
-          <Button type="button" variant="ghost" onClick={onClose}>
-            {t('events.cancel')}
-          </Button>
+          {/* Through the modal's guard: a plain onClose here skipped the "discard changes?" question
+              the cross, Escape and the backdrop all ask */}
+          <ModalCancelButton onClose={onClose}>{t('events.cancel')}</ModalCancelButton>
           {canSendInvites && (
             <Button
               type="button"
