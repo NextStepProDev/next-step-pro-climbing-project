@@ -59,6 +59,10 @@
   },
   "confirm": "Potwierdź",
   "cancel": "Anuluj",
+  "timePicker": {
+    "hour": "godzina",
+    "minute": "minuty"
+  },
   "close": "Zamknij",
   "unsaved": {
     "title": "Odrzucić zmiany?",
