@@ -58,7 +58,7 @@
   "notifications": {
     "title": "Powiadomienia email",
     "reservations": "Powiadomienia o rezerwacjach",
-    "description": "Potwierdzenia rezerwacji, anulowania i powiadomienia z listy rezerwowej",
+    "description": "Potwierdzenia rezerwacji i anulowań, zmiany terminów, zaproszenia i powiadomienia z listy rezerwowej. Jeśli to my odwołamy Twoją rezerwację, napiszemy zawsze.",
     "success": "Ustawienia powiadomień zostały zapisane"
   },
   "newsletter": {

@@ -117,6 +117,12 @@ public class MailService {
         sendToAdmins(subject, body);
     }
 
+    /**
+     * No {@code isEmailNotificationsEnabled()} guard here, nor in the event twin and the "removed from
+     * the event" mail — deliberately (owner's decision, 2026-10-20). The toggle silences mail about
+     * what the client did themselves; a booking WE took away is news they need, or they turn up for a
+     * session that is not happening. The settings text says so ({@code notifications.description}).
+     */
     @Async("mailExecutor")
     public void sendAdminCancellationNotification(Reservation reservation) {
         User user = reservation.getUser();

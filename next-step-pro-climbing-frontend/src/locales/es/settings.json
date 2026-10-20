@@ -58,7 +58,7 @@
   "notifications": {
     "title": "Notificaciones por email",
     "reservations": "Notificaciones de reservas",
-    "description": "Confirmaciones de reservas, cancelaciones y notificaciones de lista de espera",
+    "description": "Confirmaciones de reservas y cancelaciones, cambios de horario, invitaciones y avisos de la lista de espera. Si cancelamos tu reserva, te escribiremos siempre.",
     "success": "Configuración de notificaciones guardada"
   },
   "newsletter": {
