@@ -109,7 +109,7 @@ export function Modal({ isOpen, onClose, title, children, size = 'md', confirmCl
           <h2 id="modal-title" className="text-lg font-semibold text-surface-100">{title}</h2>
           <button
             onClick={requestClose}
-            aria-label={title ? `Close ${title}` : 'Close'}
+            aria-label={t('close')}
             className="text-surface-400 hover:text-surface-200 transition-colors"
           >
             <X className="w-5 h-5" />

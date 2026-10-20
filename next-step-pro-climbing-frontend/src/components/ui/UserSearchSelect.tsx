@@ -64,7 +64,7 @@ export function UserSearchSelect({ users, value, onChange, placeholder }: UserSe
             value={query}
             onChange={(e) => { setQuery(e.target.value); setOpen(true) }}
             onFocus={() => setOpen(true)}
-            placeholder={placeholder ?? 'Szukaj po imieniu, nazwisku lub emailu...'}
+            placeholder={placeholder ?? t('users.searchPlaceholder')}
             className="w-full bg-surface-800 border border-surface-700 rounded-lg pl-9 pr-3 py-2 text-surface-100 text-sm focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500"
           />
         </div>

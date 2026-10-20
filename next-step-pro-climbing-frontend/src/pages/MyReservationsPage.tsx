@@ -22,6 +22,7 @@ import { parseCalendarDate } from '../utils/calendarDate'
 import { AcceptedAtOtherTimeNotice, InvitationMovedNotice } from '../components/calendar/ProposalMovedNotice'
 import { MySubscriptionCard } from '../components/subscription/MySubscriptionCard'
 import type { MyReservations, MyInvitation, WaitlistEntry, EventWaitlistEntry, TrainingRequest } from '../types'
+import { decodeHtmlEntities } from '../utils/htmlEntities'
 
 const TrainingCalendarSection = lazy(() =>
   import('../components/training/TrainingCalendarSection')
@@ -591,7 +592,7 @@ function UpcomingReservations({
                   {event.comment && (
                     <div className="flex items-start gap-2 mt-2 text-sm text-surface-400">
                       <MessageSquare className="w-4 h-4 mt-0.5 shrink-0" />
-                      <span>"{event.comment}"</span>
+                      <span>"{decodeHtmlEntities(event.comment)}"</span>
                     </div>
                   )}
                   {!isCancelledByAdmin && (
@@ -732,7 +733,7 @@ function UpcomingReservations({
                     {reservation.comment && (
                       <div className="flex items-start gap-2 mt-2 text-sm text-surface-400">
                         <MessageSquare className="w-4 h-4 mt-0.5 shrink-0" />
-                        <span>"{reservation.comment}"</span>
+                        <span>"{decodeHtmlEntities(reservation.comment)}"</span>
                       </div>
                     )}
                     {!isCancelledByAdmin && (
@@ -1377,7 +1378,7 @@ function TrainingRequestsSection({ requests }: { requests: TrainingRequest[] }) 
               {req.comment && (
                 <p className="mt-2 text-sm text-surface-400 flex items-start gap-1.5">
                   <MessageSquare className="w-4 h-4 mt-0.5 shrink-0" />
-                  {req.comment}
+                  {decodeHtmlEntities(req.comment)}
                 </p>
               )}
 

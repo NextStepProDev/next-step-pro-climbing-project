@@ -10,6 +10,7 @@ import { Button } from '../../ui/Button'
 import { useDateLocale } from '../../../utils/dateFnsLocale'
 import { parseCalendarDate } from '../../../utils/calendarDate'
 import type { HistoryReservation } from '../../../types'
+import { decodeHtmlEntities } from '../../../utils/htmlEntities'
 
 interface UserReservationsTabProps {
   userId: string
@@ -87,7 +88,7 @@ export function UserReservationsTab({ userId }: UserReservationsTabProps) {
             {r.eventTitle && r.eventTitle !== r.title && <> · {r.eventTitle}</>}
             {r.participants > 1 && <> · {t('users.detail.participants', { count: r.participants })}</>}
           </div>
-          {r.comment && <p className="text-xs text-surface-500 mt-1 break-words">{r.comment}</p>}
+          {r.comment && <p className="text-xs text-surface-500 mt-1 break-words">{decodeHtmlEntities(r.comment)}</p>}
         </div>
       </li>
     ))
@@ -167,7 +168,7 @@ export function UserReservationsTab({ userId }: UserReservationsTabProps) {
               </span>
               {r.courseTitle && <span className="text-xs text-surface-400 truncate">{r.courseTitle}</span>}
             </div>
-            {r.comment && <p className="text-xs text-surface-500 mt-1 break-words">{r.comment}</p>}
+            {r.comment && <p className="text-xs text-surface-500 mt-1 break-words">{decodeHtmlEntities(r.comment)}</p>}
             {r.adminNote && (
               <p className="text-xs text-surface-400 mt-1 break-words">
                 {t('users.detail.adminNote')}: {r.adminNote}

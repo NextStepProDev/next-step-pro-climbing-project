@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useId } from 'react'
 import { createPortal } from 'react-dom'
 import { useFocusTrap } from '../../utils/useFocusTrap'
 import { useBodyScrollLock } from './scrollLock'
@@ -31,6 +31,8 @@ export function ConfirmModal({
 }: ConfirmModalProps) {
   const { t } = useTranslation('common')
   const trapRef = useFocusTrap(isOpen)
+  // Named by its own title — a dialog without a name is announced to a screen reader as just "dialog".
+  const titleId = useId()
 
   useBodyScrollLock(isOpen)
 
@@ -52,7 +54,7 @@ export function ConfirmModal({
         className="absolute inset-0 bg-black/60 backdrop-blur-sm"
         onClick={onClose}
       />
-      <div ref={trapRef} role="dialog" aria-modal="true" className="relative bg-surface-900 rounded-xl border border-surface-800 shadow-xl max-w-sm w-full mx-4">
+      <div ref={trapRef} role="dialog" aria-modal="true" aria-labelledby={titleId} className="relative bg-surface-900 rounded-xl border border-surface-800 shadow-xl max-w-sm w-full mx-4">
         <div className="p-5">
           <div className="flex items-start gap-3 mb-4">
             <div className={`p-2 rounded-lg shrink-0 ${
@@ -63,7 +65,7 @@ export function ConfirmModal({
               <AlertTriangle className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-surface-100">{title}</h3>
+              <h3 id={titleId} className="text-lg font-semibold text-surface-100">{title}</h3>
               <p className="text-sm text-surface-400 mt-1">{message}</p>
             </div>
           </div>

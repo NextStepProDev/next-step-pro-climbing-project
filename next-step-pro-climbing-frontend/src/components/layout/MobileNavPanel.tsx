@@ -266,7 +266,7 @@ export function MobileNavPanel({ open, onClose, sections, isActive, onLogout }: 
             <button
               type="button"
               onClick={toggleTheme}
-              aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+              aria-label={theme === "dark" ? t("a11y.themeToLight") : t("a11y.themeToDark")}
               className="shrink-0 p-2.5 rounded-lg border border-surface-800 text-surface-300 hover:text-surface-100 hover:bg-surface-800 transition-colors active:scale-95"
             >
               {theme === "dark" ? <Moon className="w-4.5 h-4.5" /> : <Sun className="w-4.5 h-4.5" />}

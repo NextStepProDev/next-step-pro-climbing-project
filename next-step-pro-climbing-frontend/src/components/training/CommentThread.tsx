@@ -549,7 +549,7 @@ function CommentAttachment({ file, onDelete }: { file: TrainingCommentFile; onDe
 
   return (
     <div className="space-y-1">
-      <PrivateFileCard url={file.url} fileName={file.fileName} sizeBytes={file.sizeBytes} />
+      <PrivateFileCard url={file.url} fileName={file.fileName === null ? null : decodeHtmlEntities(file.fileName)} sizeBytes={file.sizeBytes} />
       <div className="flex items-center justify-between gap-3">
         {expiry}
         {remove}

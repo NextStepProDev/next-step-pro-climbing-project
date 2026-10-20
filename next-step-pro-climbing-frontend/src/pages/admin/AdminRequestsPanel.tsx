@@ -21,6 +21,7 @@ import { DayAgendaSummary } from '../../components/calendar/DayAgendaPreview'
 import { CreateEventModal } from './AdminEventsPanel'
 import { parseCalendarDate } from '../../utils/calendarDate'
 import type { AdminTrainingRequest, TrainingRequestStatus } from '../../types'
+import { decodeHtmlEntities } from '../../utils/htmlEntities'
 
 type Filter = 'PENDING' | 'ALL'
 
@@ -361,7 +362,7 @@ function RequestCard({
       {req.comment && (
         <p className="mt-2 text-sm text-surface-400 flex items-start gap-1.5">
           <MessageSquare className="w-4 h-4 mt-0.5 shrink-0" />
-          {req.comment}
+          {decodeHtmlEntities(req.comment)}
         </p>
       )}
 

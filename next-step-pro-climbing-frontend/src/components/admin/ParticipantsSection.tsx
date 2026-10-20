@@ -7,6 +7,7 @@ import { UserSearchSelect } from '../ui/UserSearchSelect'
 import { adminApi } from '../../api/client'
 import { getErrorMessage } from '../../utils/errors'
 import type { EventParticipants, Participant, SlotParticipants } from '../../types'
+import { decodeHtmlEntities } from '../../utils/htmlEntities'
 
 const MAX_SPOTS = 20
 
@@ -224,7 +225,7 @@ export function ParticipantsSection({ target, targetId, canAdd = true, onDirtyCh
                     <div className="text-xs text-surface-400">{p.email}</div>
                     <div className="text-xs text-surface-400">{p.phone}</div>
                     {p.comment && (
-                      <div className="text-xs text-amber-400 mt-1">"{p.comment}"</div>
+                      <div className="text-xs text-amber-400 mt-1">"{decodeHtmlEntities(p.comment)}"</div>
                     )}
                     {p.participants > 1 && (
                       <span className="inline-block mt-1 text-xs text-primary-400 bg-primary-500/10 px-2 py-0.5 rounded-full">

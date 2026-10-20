@@ -789,6 +789,8 @@
     "confirmMessage": "The message will be sent to {{count}} recipients (verified accounts). Continue?",
     "confirmAllMessage": "The message will be sent to all users with a verified email address. Continue?",
     "confirmNewsletterMessage": "The message will be sent to all users subscribed to the newsletter. Continue?",
+    "confirmAllCount": "The message will be sent to every user with a verified email address — recipients: {{total}}. Continue?",
+    "confirmNewsletterCount": "The message will be sent to everyone subscribed to the newsletter — recipients: {{total}}. Continue?",
     "successMessage": "Message sent to {{count}} recipients.",
     "errorMessage": "Error sending message."
   },
