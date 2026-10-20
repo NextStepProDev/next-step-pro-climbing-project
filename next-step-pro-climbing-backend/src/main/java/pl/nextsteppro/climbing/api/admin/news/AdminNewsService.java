@@ -22,7 +22,11 @@ import pl.nextsteppro.climbing.infrastructure.i18n.LocalizedMessage;
 
 import java.io.IOException;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -508,9 +512,31 @@ public class AdminNewsService {
         if (!news.isPublished()) {
             throw new LocalizedMessage.Conflict("error.news.newsletter.unpublished");
         }
-        List<NewsContentBlock> blocks = blockRepository.findByNewsIdOrderByDisplayOrderAsc(id);
-        List<User> subscribers = userRepository.findAllByNewsletterSubscribedTrue();
-        newsletterMailService.sendToAll(news, blocks, subscribers, baseUrl);
+        // Confirmed addresses only, as in AdminService#sendMailToUsers: the tick can come from the
+        // registration form, so an unconfirmed account (a typo, somebody else's address) would get
+        // marketing it never agreed to for the seven days before it is deleted.
+        List<User> subscribers = userRepository.findAllByNewsletterSubscribedTrue().stream()
+            .filter(User::isEmailVerified)
+            .toList();
+
+        // Each reader gets the article in their own language when that translation is published;
+        // the version the admin sent stands in where there is none. It used to go out in one
+        // language to everybody, framed in the reader's language around somebody else's text.
+        Map<String, News> byLanguage = new HashMap<>();
+        for (News version : newsRepository.findByTranslationGroupId(news.getTranslationGroupId())) {
+            if (version.isPublished()) byLanguage.put(version.getLanguage(), version);
+        }
+        Map<News, List<User>> recipients = new LinkedHashMap<>();
+        recipients.put(news, new ArrayList<>());
+        for (User subscriber : subscribers) {
+            News version = byLanguage.getOrDefault(subscriber.getPreferredLanguage(), news);
+            recipients.computeIfAbsent(version, v -> new ArrayList<>()).add(subscriber);
+        }
+        recipients.forEach((version, readers) -> {
+            if (readers.isEmpty()) return;
+            List<NewsContentBlock> blocks = blockRepository.findByNewsIdOrderByDisplayOrderAsc(version.getId());
+            newsletterMailService.sendToAll(version, blocks, List.copyOf(readers), baseUrl);
+        });
         return new NewsletterSentDto(subscribers.size());
     }
 
