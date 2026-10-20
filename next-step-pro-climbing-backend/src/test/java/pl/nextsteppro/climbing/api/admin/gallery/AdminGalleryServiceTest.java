@@ -466,6 +466,28 @@ class AdminGalleryServiceTest {
         verify(photoRepository).save(testPhoto);
     }
 
+    // The editor sends an emptied field as "" ("leave it" is null). Both of these used to be
+    // impossible to clear: the panel turned "" into undefined, and the service skipped it.
+    @Test
+    void shouldClearAnAlbumDescriptionSentEmpty() {
+        when(albumRepository.findById(albumId)).thenReturn(Optional.of(testAlbum));
+        when(albumRepository.save(any(Album.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        AlbumAdminDto result = adminGalleryService.updateAlbum(albumId, new UpdateAlbumRequest(null, "  "));
+
+        assertNull(result.description());
+    }
+
+    @Test
+    void shouldClearAPhotoCaptionSentEmpty() {
+        when(photoRepository.findById(photoId)).thenReturn(Optional.of(testPhoto));
+        when(photoRepository.save(any(Photo.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        adminGalleryService.updatePhoto(photoId, new UpdatePhotoRequest("", null, null, null));
+
+        assertNull(testPhoto.getCaption());
+    }
+
     @Test
     void shouldUpdateDisplayOrderOnly() {
         // Given

@@ -13,6 +13,8 @@ import { FileUpload } from '../../components/ui/FileUpload'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
 import { QueryError } from '../../components/ui/QueryError'
 import { FocalPointEditor } from '../../components/ui/FocalPointEditor'
+import { useBodyScrollLock } from '../../components/ui/scrollLock'
+import { getErrorMessage } from '../../utils/errors'
 
 export function AdminGalleryPanel() {
   const { t } = useTranslation('admin')
@@ -35,6 +37,8 @@ export function AdminGalleryPanel() {
   const [uploadProgress, setUploadProgress] = useState<number>(0)
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
   const lightboxTrapRef = useFocusTrap(lightboxIndex !== null)
+  useBodyScrollLock(lightboxIndex !== null)
+  const [uploadError, setUploadError] = useState<string | null>(null)
 
   // Controlled edit fields so the "Zapisz" dirty state can be derived during render.
   const [editAlbumName, setEditAlbumName] = useState('')
@@ -144,6 +148,9 @@ export function AdminGalleryPanel() {
       await queryClient.invalidateQueries({ queryKey: ['admin', 'gallery', 'albums'] })
       setLocalOrder(null)
     },
+    // The swapped order is drawn before the server answers; a refusal has to put it back, or the
+    // list keeps showing an order nobody saved.
+    onError: () => setLocalOrder(null),
   })
 
   const publishAlbumMutation = useMutation({
@@ -184,7 +191,8 @@ export function AdminGalleryPanel() {
     if (!selectedAlbum) return
     const data: UpdateAlbumRequest = {
       name: editAlbumName,
-      description: editAlbumDescription || undefined,
+      // "" clears it; undefined would mean "leave it" to the server
+      description: editAlbumDescription,
     }
     updateAlbumMutation.mutate({ id: selectedAlbum.id, data })
   }
@@ -197,8 +205,12 @@ export function AdminGalleryPanel() {
     const caption = formData.get('caption') as string
 
     setUploadProgress(0)
+    setUploadError(null)
 
-    // Upload all files sequentially
+    // Sequentially, one request per photo. A failure part-way used to close the dialog and drop
+    // the whole selection, so the admin had to work out which photos had not made it and pick
+    // them again. Now the uploaded ones leave the selection and the rest stay, with the reason.
+    let uploaded = 0
     for (let i = 0; i < selectedFiles.length; i++) {
       try {
         await uploadPhotoMutation.mutateAsync({
@@ -206,19 +218,24 @@ export function AdminGalleryPanel() {
           file: selectedFiles[i],
           caption: selectedFiles.length === 1 ? caption : undefined,
         })
+        uploaded = i + 1
         setUploadProgress(Math.round(((i + 1) / selectedFiles.length) * 100))
       } catch (error) {
-        if (import.meta.env.DEV) console.error('Failed to upload photo:', error)
+        setUploadError(getErrorMessage(error))
         break
       }
     }
 
-    // Cleanup and close
     queryClient.invalidateQueries({ queryKey: ['admin', 'gallery'] })
+    setUploadProgress(0)
+    if (uploaded < selectedFiles.length) {
+      setSelectedFiles(selectedFiles.slice(uploaded))
+      setPhotoPreviews(photoPreviews.slice(uploaded))
+      return
+    }
     setUploadPhotoModalOpen(false)
     setPhotoPreviews([])
     setSelectedFiles([])
-    setUploadProgress(0)
   }
 
   const handleFileSelect = (files: File[]) => {
@@ -285,7 +302,7 @@ export function AdminGalleryPanel() {
     updatePhotoMutation.mutate({
       photoId: selectedPhoto.id,
       data: {
-        caption: editPhotoCaption || undefined,
+        caption: editPhotoCaption,
         focalPointX: focalPoint.x,
         focalPointY: focalPoint.y,
       },
@@ -441,6 +458,7 @@ export function AdminGalleryPanel() {
                             setEditAlbumDescription(album.description || '')
                             setEditAlbumModalOpen(true)
                           }}
+                          title={t('galleryAdmin.editTitle')}
                         >
                           <Pencil className="h-4 w-4" />
                         </Button>
@@ -451,6 +469,7 @@ export function AdminGalleryPanel() {
                             setSelectedAlbum(album)
                             setDeleteAlbumConfirmOpen(true)
                           }}
+                          title={t('galleryAdmin.deleteAlbumTitle')}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -483,6 +502,7 @@ export function AdminGalleryPanel() {
                         size="sm"
                         onClick={() => {
                           setSelectedAlbum(album)
+                          setUploadError(null)
                           setUploadPhotoModalOpen(true)
                         }}
                       >
@@ -534,7 +554,8 @@ export function AdminGalleryPanel() {
                               <Star className="h-3 w-3 text-surface-900" fill="currentColor" />
                             </div>
                           )}
-                          <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                          {/* Hover on a mouse; always shown on touch and under keyboard focus (see AdminAssetsPanel) */}
+                          <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 focus-within:opacity-100 pointer-coarse:opacity-100 pointer-coarse:bg-black/30 transition-opacity flex items-center justify-center gap-2">
                             {/* Set as thumbnail */}
                             <Button
                               variant="ghost"
@@ -564,6 +585,7 @@ export function AdminGalleryPanel() {
                                 setFocalPoint({ x: photo.focalPointX ?? 0.5, y: photo.focalPointY ?? 0.5 })
                                 setEditPhotoModalOpen(true)
                               }}
+                              title={t('galleryAdmin.editPhotoTitle')}
                               className="bg-surface-800/80 hover:bg-surface-700"
                             >
                               <Pencil className="h-4 w-4" />
@@ -576,6 +598,7 @@ export function AdminGalleryPanel() {
                                 setSelectedPhotoId(photo.id)
                                 setDeletePhotoConfirmOpen(true)
                               }}
+                              title={t('galleryAdmin.deletePhoto')}
                               className="bg-surface-800/80 hover:bg-surface-700"
                             >
                               <Trash2 className="h-4 w-4" />
@@ -634,14 +657,14 @@ export function AdminGalleryPanel() {
           </div>
 
           <div className="flex gap-2 justify-end">
-            <ModalCancelButton onClose={() => setCreateAlbumModalOpen(false)}>Anuluj</ModalCancelButton>
+            <ModalCancelButton onClose={() => setCreateAlbumModalOpen(false)}>{t('galleryAdmin.cancel')}</ModalCancelButton>
             <Button type="submit" loading={createAlbumMutation.isPending}>
               {t('galleryAdmin.create')}
             </Button>
           </div>
 
           {createAlbumMutation.error && (
-            <div className="text-rose-400 text-sm">{String(createAlbumMutation.error)}</div>
+            <div className="text-rose-400 text-sm">{getErrorMessage(createAlbumMutation.error)}</div>
           )}
         </form>
       </Modal>
@@ -701,7 +724,7 @@ export function AdminGalleryPanel() {
             </div>
 
             {updateAlbumMutation.error && (
-              <div className="text-rose-400 text-sm">{String(updateAlbumMutation.error)}</div>
+              <div className="text-rose-400 text-sm">{getErrorMessage(updateAlbumMutation.error)}</div>
             )}
           </form>
         </Modal>
@@ -782,8 +805,8 @@ export function AdminGalleryPanel() {
               </Button>
             </div>
 
-            {uploadPhotoMutation.error && (
-              <div className="text-rose-400 text-sm">{String(uploadPhotoMutation.error)}</div>
+            {uploadError && (
+              <div className="text-rose-400 text-sm">{uploadError}</div>
             )}
           </form>
         </Modal>
@@ -868,7 +891,7 @@ export function AdminGalleryPanel() {
             </div>
 
             {updatePhotoMutation.error && (
-              <div className="text-rose-400 text-sm">{String(updatePhotoMutation.error)}</div>
+              <div className="text-rose-400 text-sm">{getErrorMessage(updatePhotoMutation.error)}</div>
             )}
           </form>
         </Modal>
@@ -1004,6 +1027,7 @@ export function AdminGalleryPanel() {
                   setLightboxIndex(null)
                   setEditPhotoModalOpen(true)
                 }}
+                title={t('galleryAdmin.editPhotoTitle')}
                 className="bg-surface-800/80 hover:bg-surface-700 text-white"
               >
                 <Pencil className="h-4 w-4" />
@@ -1016,6 +1040,7 @@ export function AdminGalleryPanel() {
                   setLightboxIndex(null)
                   setDeletePhotoConfirmOpen(true)
                 }}
+                title={t('galleryAdmin.deletePhoto')}
                 className="bg-surface-800/80 hover:bg-surface-700 text-white"
               >
                 <Trash2 className="h-4 w-4" />

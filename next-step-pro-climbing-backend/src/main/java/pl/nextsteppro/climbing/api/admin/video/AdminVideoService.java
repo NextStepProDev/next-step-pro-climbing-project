@@ -46,11 +46,12 @@ public class AdminVideoService {
         if (request.title() != null) {
             video.setTitle(request.title());
         }
+        // null = leave it, "" = the admin emptied the field (the AdminInstructorService convention)
         if (request.excerpt() != null) {
-            video.setExcerpt(request.excerpt());
+            video.setExcerpt(request.excerpt().isBlank() ? null : request.excerpt());
         }
         if (request.content() != null) {
-            video.setContent(request.content());
+            video.setContent(request.content().isBlank() ? null : request.content());
         }
         if (request.youtubeUrl() != null) {
             video.setYoutubeUrl(request.youtubeUrl());
