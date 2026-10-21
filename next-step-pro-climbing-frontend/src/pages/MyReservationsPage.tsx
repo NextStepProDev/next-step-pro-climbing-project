@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { format } from 'date-fns'
 import { useDateLocale } from '../utils/dateFnsLocale'
-import { Calendar, CalendarPlus, Clock, MapPin, MessageSquare, Sparkles, Users, X, Ban, ChevronDown, ChevronRight, ChevronLeft, Clock3, ListX, ExternalLink, Pencil, Check } from 'lucide-react'
+import { Calendar, CalendarClock, CalendarPlus, Clock, MapPin, MessageSquare, Sparkles, Users, X, Ban, ChevronDown, ChevronRight, ChevronLeft, Clock3, ListX, ExternalLink, Pencil, Check } from 'lucide-react'
 import { reservationApi, calendarApi, trainingRequestApi, trainingCalendarApi } from '../api/client'
 import { useAuth } from '../context/AuthContext'
 import { athleteAdapter } from '../components/training/trainingCalendarAdapter'
@@ -21,6 +21,9 @@ import { AddToCalendarButton } from '../components/ui/AddToCalendarButton'
 import { parseCalendarDate } from '../utils/calendarDate'
 import { AcceptedAtOtherTimeNotice, InvitationMovedNotice } from '../components/calendar/ProposalMovedNotice'
 import { MySubscriptionCard } from '../components/subscription/MySubscriptionCard'
+import { RescheduleRequestModal, type RescheduleTarget } from '../components/calendar/RescheduleRequestModal'
+import { PendingRescheduleNotice } from '../components/calendar/PendingRescheduleNotice'
+import { useMyPendingReschedules } from '../hooks/useMyPendingReschedules'
 import type { MyReservations, MyInvitation, WaitlistEntry, EventWaitlistEntry, TrainingRequest } from '../types'
 import { decodeHtmlEntities } from '../utils/htmlEntities'
 
@@ -460,6 +463,10 @@ function UpcomingReservations({
   const [confirmCancel, setConfirmCancel] = useState<{ type: 'slot' | 'event'; id: string } | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editCount, setEditCount] = useState(1)
+  const [rescheduleTarget, setRescheduleTarget] = useState<RescheduleTarget | null>(null)
+  const { data: pendingReschedules = [] } = useMyPendingReschedules()
+  const pendingForSlot = (slotId: string) => pendingReschedules.find((r) => r.timeSlotId === slotId)
+  const pendingForEvent = (eventId: string) => pendingReschedules.find((r) => r.eventId === eventId)
 
   const updateParticipantsMutation = useMutation({
     mutationFn: ({ id, participants }: { id: string; participants: number }) =>
@@ -606,10 +613,34 @@ function UpcomingReservations({
                       />
                     </div>
                   )}
+                  {!isCancelledByAdmin && pendingForEvent(event.eventId) && (
+                    <PendingRescheduleNotice request={pendingForEvent(event.eventId)!} />
+                  )}
                 </div>
 
                 {!isCancelledByAdmin && (
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    {!pendingForEvent(event.eventId) && (
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setRescheduleTarget({
+                            kind: 'event',
+                            eventId: event.eventId,
+                            title: event.eventTitle,
+                            startDate: event.startDate,
+                            endDate: event.endDate,
+                            startTime: event.startTime,
+                            endTime: event.endTime,
+                          })
+                        }}
+                      >
+                        <CalendarClock className="w-4 h-4 mr-1" aria-hidden="true" />
+                        {t('reschedule.button')}
+                      </Button>
+                    )}
                     <Button
                       variant="danger"
                       size="sm"
@@ -746,10 +777,33 @@ function UpcomingReservations({
                         />
                       </div>
                     )}
+                    {!isCancelledByAdmin && pendingForSlot(reservation.timeSlotId) && (
+                      <PendingRescheduleNotice request={pendingForSlot(reservation.timeSlotId)!} />
+                    )}
                   </div>
 
                   {!isCancelledByAdmin && (
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                      {!pendingForSlot(reservation.timeSlotId) && (
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setRescheduleTarget({
+                              kind: 'slot',
+                              reservationId: reservation.id,
+                              title: reservation.eventTitle,
+                              date: reservation.date,
+                              startTime: reservation.startTime,
+                              endTime: reservation.endTime,
+                            })
+                          }}
+                        >
+                          <CalendarClock className="w-4 h-4 mr-1" aria-hidden="true" />
+                          {t('reschedule.button')}
+                        </Button>
+                      )}
                       <Button
                         variant="danger"
                         size="sm"
@@ -789,6 +843,8 @@ function UpcomingReservations({
         }
         confirmText={t('confirmCancel.confirm')}
       />
+
+      <RescheduleRequestModal target={rescheduleTarget} onClose={() => setRescheduleTarget(null)} />
     </div>
   )
 }

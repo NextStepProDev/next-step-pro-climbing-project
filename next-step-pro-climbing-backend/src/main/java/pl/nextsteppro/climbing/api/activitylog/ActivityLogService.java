@@ -181,6 +181,19 @@ public class ActivityLogService {
         saveAbout(admin, ActivityActionType.ADMIN_GOAL_REOPENED, athlete, context);
     }
 
+    /** {@code change} is "old → new term" — dates only, never a name. */
+    public void logRescheduleRequested(User user, @Nullable TimeSlot slot, @Nullable Event event, String change) {
+        save(user, ActivityActionType.RESCHEDULE_REQUESTED, slot, event, null, change);
+    }
+
+    public void logAdminRescheduleAccepted(User admin, User requester, @Nullable TimeSlot slot, @Nullable Event event, String change) {
+        saveAboutTerm(admin, ActivityActionType.ADMIN_RESCHEDULE_ACCEPTED, requester, slot, event, change);
+    }
+
+    public void logAdminRescheduleRejected(User admin, User requester, @Nullable TimeSlot slot, @Nullable Event event, String change) {
+        saveAboutTerm(admin, ActivityActionType.ADMIN_RESCHEDULE_REJECTED, requester, slot, event, change);
+    }
+
     @Transactional(readOnly = true)
     public List<ActivityLogDto> getRecentLogs(int page, int size) {
         List<ActivityLog> logs = activityLogRepository.findRecentWithDetails(PageRequest.of(page, size));
@@ -215,6 +228,17 @@ public class ActivityLogService {
         log.setSubject(subject);
         // activity_logs.description is VARCHAR(500) and the entity does not clamp
         log.setDescription(context != null && context.length() > 500 ? context.substring(0, 500) : context);
+        activityLogRepository.save(log);
+    }
+
+    /** {@link #saveAbout} for an action on a term: the slot/event rides along like in {@link #save}. */
+    private void saveAboutTerm(User admin, ActivityActionType actionType, User subject,
+                               @Nullable TimeSlot timeSlot, @Nullable Event event, String context) {
+        ActivityLog log = new ActivityLog(admin, actionType);
+        log.setSubject(subject);
+        log.setTimeSlot(timeSlot);
+        log.setEvent(event);
+        log.setDescription(context.length() > 500 ? context.substring(0, 500) : context);
         activityLogRepository.save(log);
     }
 

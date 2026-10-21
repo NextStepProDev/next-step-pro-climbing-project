@@ -35,6 +35,7 @@ record UserDataExportDto(
     List<ExportWaitlistDto> waitlists,
     List<ExportInvitationDto> invitations,
     List<ExportTrainingRequestDto> trainingRequests,
+    List<ExportRescheduleRequestDto> rescheduleRequests,
     List<ExportStarredNewsDto> starredNews,
     List<ExportActivityDto> activity,
     List<ExportTrainingDto> trainingPlan,
@@ -126,6 +127,20 @@ record ExportTrainingRequestDto(
     String status,
     @Nullable String adminNote,
     @Nullable String course,
+    @Nullable Instant resolvedAt,
+    Instant createdAt
+) {}
+
+/** A request to move a booked term; {@code oldTerm}/{@code newTerm} are "dd.MM.yyyy, HH:mm – HH:mm". */
+record ExportRescheduleRequestDto(
+    UUID id,
+    String targetType,
+    @Nullable String title,
+    String oldTerm,
+    String newTerm,
+    @Nullable String comment,
+    String status,
+    @Nullable String adminNote,
     @Nullable Instant resolvedAt,
     Instant createdAt
 ) {}

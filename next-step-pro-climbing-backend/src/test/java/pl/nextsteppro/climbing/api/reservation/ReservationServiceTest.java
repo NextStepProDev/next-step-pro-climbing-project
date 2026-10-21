@@ -105,7 +105,8 @@ class ReservationServiceTest {
             reservedSeatRepository,
             trainingRequestRepository,
             waitlistRepository,
-            eventWaitlistRepository
+            eventWaitlistRepository,
+            mock(pl.nextsteppro.climbing.domain.reschedule.RescheduleRequestRepository.class)
         );
 
         userId = UUID.randomUUID();

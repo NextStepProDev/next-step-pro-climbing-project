@@ -3,6 +3,7 @@ import {
   CalendarPlus,
   CalendarX,
   CalendarCheck,
+  CalendarClock,
   Download,
   ShieldAlert,
   Settings,
@@ -207,5 +208,20 @@ export const ACTION_CONFIG: Record<
     icon: RotateCcw,
     color: 'text-amber-400',
     bgColor: 'bg-amber-500/10',
+  },
+  RESCHEDULE_REQUESTED: {
+    icon: CalendarClock,
+    color: 'text-sky-400',
+    bgColor: 'bg-sky-500/10',
+  },
+  ADMIN_RESCHEDULE_ACCEPTED: {
+    icon: CalendarCheck,
+    color: 'text-sky-400',
+    bgColor: 'bg-sky-500/10',
+  },
+  ADMIN_RESCHEDULE_REJECTED: {
+    icon: CalendarX,
+    color: 'text-sky-400',
+    bgColor: 'bg-sky-500/10',
   },
 }

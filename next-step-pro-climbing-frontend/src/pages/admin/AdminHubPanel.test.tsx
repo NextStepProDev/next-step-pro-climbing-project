@@ -25,6 +25,7 @@ const NOTHING_PENDING: AdminNotifications = {
   athleteActivity: 0,
   newUsers: 0,
   unassignedSessions: 0,
+  pendingReschedules: 0,
 }
 
 async function renderHub(notifications: AdminNotifications) {
@@ -78,6 +79,7 @@ describe('AdminHubPanel', () => {
       athleteActivity: 0,
       newUsers: 0,
       unassignedSessions: 0,
+      pendingReschedules: 0,
     })
 
     const attention = (await screen.findByText('hub.attention')).parentElement as HTMLElement

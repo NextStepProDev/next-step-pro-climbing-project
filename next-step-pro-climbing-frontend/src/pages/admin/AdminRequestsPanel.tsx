@@ -18,6 +18,7 @@ import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
 import { QueryError } from '../../components/ui/QueryError'
 import { CreateSlotModal } from '../../components/calendar/CreateSlotModal'
 import { DayAgendaSummary } from '../../components/calendar/DayAgendaPreview'
+import { RescheduleRequestsSection } from '../../components/admin/RescheduleRequestsSection'
 import { CreateEventModal } from './AdminEventsPanel'
 import { parseCalendarDate } from '../../utils/calendarDate'
 import type { AdminTrainingRequest, TrainingRequestStatus } from '../../types'
@@ -107,6 +108,9 @@ export function AdminRequestsPanel() {
 
   return (
     <div>
+      {/* Booked clients asking to move their term — answered first: somebody is already coming. */}
+      <RescheduleRequestsSection />
+
       <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
         <h2 className="text-lg font-semibold text-surface-100">
           {t('requests.title')}

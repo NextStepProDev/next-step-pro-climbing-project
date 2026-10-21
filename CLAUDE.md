@@ -47,7 +47,7 @@ Aktualna zawartość — `ls`, nie ten plik. Dwa wyjątki warte zapamiętania, b
 
 ## Baza danych — Flyway
 
-**Stan: V104. Następna migracja: V105.** Wszystkie do V104 są na produkcji (104 wiersze w `flyway_schema_history`, sprawdzone 2026-10-18 po deployu 4.72.15; zrzut sprzed w `/backups/milestones/PRZED-V104-*`).
+**Stan: V105. Następna migracja: V106.** V105 (`reschedule_requests`) czeka na deploy; wszystkie do V104 są na produkcji (104 wiersze w `flyway_schema_history`, sprawdzone 2026-10-18 po deployu 4.72.15; zrzut sprzed w `/backups/milestones/PRZED-V104-*`).
 Lista migracji: `ls backend/src/main/resources/db/migration/` — poniżej tylko to, czego ze schematu nie widać.
 
 ⚠️ **Nigdy nie modyfikuj zastosowanej migracji** — nawet zmiana komentarza łamie checksum na produkcji.
@@ -298,6 +298,19 @@ Zalogowany użytkownik proponuje termin: w oknie dostępności (godziny ogranicz
 Przy odrzuceniu użyć `findByIdWithUser` (JOIN FETCH) — mail leci async i czyta usera poza sesją Hibernate.
 ⚠️ **Akceptacja NIE wysyła maila** — klient dowiaduje się z zaproszenia (ręcznego, albo „Utwórz i wyślij zaproszenie” w formularzu tworzenia) i z karty „Moje propozycje”. Dlatego **przyjęcie w innym terminie niż zaproponowany** nie może wyglądać jak przyjęcie jego godzin: czy termin się różni, rozstrzyga jedna metoda, `TrainingRequest.agreedTermDiffers()` (liczona **na żywo** z utworzonego slotu/wydarzenia, więc późniejsza edycja też się liczy), a pytają o nią trzy miejsca — DTO propozycji (`termChanged` + `agreed*`), zaproszenie w „Moich rezerwacjach” (`proposed*`, wypełniane **tylko** przy różnicy) i mail zaproszenia (bursztynowa ramka „Twoja propozycja…”). Front niczego nie przelicza — tylko renderuje flagę serwera.
 🙂 Polska etykieta przycisku to **żart**: „Zaproponuj termin nie do odrzucenia" (`day.proposeTraining`, `customSlot.propose` tylko w `pl/calendar.json`; EN/ES mają normalne „Propose a time"). Nie „poprawiać" przy syncu tłumaczeń.
+
+### Prośba o zmianę terminu (V105)
+
+Zapisana osoba prosi o przeniesienie **istniejącego** terminu („Zmień termin" na karcie w „Moich rezerwacjach"); trener akceptuje albo odrzuca w zakładce Propozycje. Osobna tabela, nie rodzaj `training_requests`: tamta akceptacja TWORZY termin, ta go PRZESUWA.
+- ⚠️ **Akceptacja przesuwa CAŁY slot/wydarzenie, ze wszystkimi zapisanymi** (decyzja 2026-10-21) — warunkiem było, że to nigdy nie jest niespodzianka: karta i potwierdzenie wymieniają pozostałe osoby (`OtherParticipants`), a agenda nowego dnia stoi na karcie (`DayAgendaPreview` z `excludeId`, inaczej przesunięcie o godzinę w tym samym dniu „koliduje samo ze sobą").
+- **Przesunięcie idzie ścieżką edycji z panelu** (`AdminService.rescheduleSlot/rescheduleEvent` → ten sam `updateTimeSlot/updateEvent`): zaproszenia, `reconcileEventSlots`, cache, maile. Jedyna różnica: wnioskodawca jest **pomijany** w zwykłym mailu o zmianie i dostaje własny („trener zaakceptował", z ICS). Dwa maile o jednym przesunięciu czytają się jak dwa przesunięcia. Pozostali dostają zwykły mail **bez informacji, kto prosił**.
+- Cel to **para (termin, osoba)**, nigdy `reservation_id` — ta sama reguła co wątki i rozliczenia; rezerwacja jest tylko adresem na drucie. Max jedna PENDING na parę (partial unique).
+- ⚠️ **Prośba trzyma migawkę starego terminu i akceptacja ją porównuje z żywym terminem** (`termStillMatches`, 409 `reschedule.stale`). Trener, który sam przesunął termin, zanim odpowiedział, inaczej wykonałby drugie, ciche przesunięcie opisane datami, których już nie ma.
+- ⚠️ **W `accept` wszystko do maila i logu czyta się PRZED przesunięciem**, a status ustawia przed nim: ścieżka wydarzenia kasuje sloty z `clearAutomatically`, więc encje załadowane wcześniej są potem odłączone.
+- Wydarzenie: prośba nie może dodać ani zdjąć godzin (całodniowe zostaje całodniowe) — w `UpdateEventRequest` `null` znaczy „nie ruszaj", więc takiej zmiany nie dałoby się przenieść.
+- Zamykanie: anulowanie rezerwacji (klient i admin, slot i wydarzenie) i blokada slotu → WITHDRAWN, **zwykłym update encji, nie bulk UPDATE** (te ścieżki trzymają encje dla maili async); minięty stary termin → EXPIRED w `TrainingRequestScheduler`; skasowanie terminu/konta → kaskada. ⚠️ Admin zdejmujący **jeden dzień** wydarzenia prośby NIE zamyka — osoba ma dalej pozostałe dni.
+- ⚠️ **Akceptacja, odrzucenie i wycofanie czytają prośbę `findByIdForUpdate` (blokada wiersza).** Bez niej dwuklik „Akceptuj" przesuwał termin i wysyłał maile dwa razy — pilnuje `RescheduleAcceptRaceIntegrationTest` (widziany czerwony). Bez fetch joinów: Postgres odrzuca `FOR UPDATE` po nullowalnej stronie outer joina.
+- Licznik `pendingReschedules` w `AdminNotificationsDto` (stan, bez „seen") — suma w navbarze i w badge zakładki Propozycje.
 
 ### Powiadomienia admina
 

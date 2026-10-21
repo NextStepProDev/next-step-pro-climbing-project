@@ -107,7 +107,8 @@ export const adminTabs: AdminTab[] = adminTabGroups.flatMap((group) => group.tab
  */
 export function adminTabBadges(notifications: AdminNotifications | undefined): Record<string, number> {
   return {
-    '/admin/requests': notifications?.pendingRequests ?? 0,
+    // Both kinds of client request are answered in this tab: new times and moves of booked ones
+    '/admin/requests': (notifications?.pendingRequests ?? 0) + (notifications?.pendingReschedules ?? 0),
     // Waitlist joins count together with new reservations — both views (the "Waitlists"
     // section and the reservation list) live in this tab, and entering it clears both
     '/admin/reservations': (notifications?.newReservations ?? 0) + (notifications?.newWaitlistEntries ?? 0),

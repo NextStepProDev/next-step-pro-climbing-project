@@ -37,6 +37,8 @@ const SESSION_WRITES = [
   'adminApi.createEvent',
   'adminApi.updateEvent',
   'adminApi.deleteEvent',
+  // An accepted reschedule request moves the slot or event through the same server path as an edit
+  'adminApi.acceptRescheduleRequest',
 ]
 
 const INVALIDATES_SETTLEMENTS =
