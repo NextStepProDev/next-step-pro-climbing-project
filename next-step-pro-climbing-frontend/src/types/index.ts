@@ -1143,6 +1143,69 @@ export interface AdminNotifications {
   // Closed sessions with no contractor named. A STATE count with no "seen" marker — it stays lit
   // until the payer is assigned, because opening the Settlements tab fixes nothing
   unassignedSessions: number
+  // Clients asking to move a booked term — a STATE count, lit until answered
+  pendingReschedules: number
+}
+
+/** A booked client's request to move their term — the card in "My reservations". */
+export interface MyRescheduleRequest {
+  id: string
+  timeSlotId: string | null
+  eventId: string | null
+  newDate: string
+  newEndDate: string | null
+  newStartTime: string | null
+  newEndTime: string | null
+  comment: string | null
+  createdAt: string
+}
+
+export interface CreateRescheduleRequest {
+  reservationId?: string
+  eventId?: string
+  newDate: string
+  newEndDate?: string
+  newStartTime?: string
+  newEndTime?: string
+  comment?: string
+}
+
+export type RescheduleStatus = 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'EXPIRED' | 'WITHDRAWN'
+
+export interface AdminRescheduleRequest {
+  id: string
+  userId: string
+  userFullName: string
+  userEmail: string
+  userPhone: string | null
+  targetType: 'SLOT' | 'EVENT'
+  timeSlotId: string | null
+  eventId: string | null
+  title: string
+  oldDate: string
+  oldEndDate: string | null
+  oldStartTime: string | null
+  oldEndTime: string | null
+  newDate: string
+  newEndDate: string | null
+  newStartTime: string | null
+  newEndTime: string | null
+  // HTML-escaped by the backend at save time
+  comment: string | null
+  status: RescheduleStatus
+  adminNote: string | null
+  createdAt: string
+  resolvedAt: string | null
+  // Everybody else accepting would move along (pending requests only)
+  otherParticipants: string[]
+  otherGuests: number
+  // The term was moved after the request was made — accepting is refused
+  stale: boolean
+}
+
+export interface AdminRescheduleList {
+  pending: AdminRescheduleRequest[]
+  recent: AdminRescheduleRequest[]
 }
 
 // Waitlist entry in admin views (participants modal + Reservations tab)
@@ -1248,6 +1311,9 @@ export type ActivityActionType =
   | 'ADMIN_GOAL_DELETED'
   | 'ADMIN_GOAL_ACHIEVED'
   | 'ADMIN_GOAL_REOPENED'
+  | 'RESCHEDULE_REQUESTED'
+  | 'ADMIN_RESCHEDULE_ACCEPTED'
+  | 'ADMIN_RESCHEDULE_REJECTED'
 
 export interface ActivityLog {
   id: string

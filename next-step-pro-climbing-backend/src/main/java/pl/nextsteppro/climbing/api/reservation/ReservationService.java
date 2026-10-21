@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 import pl.nextsteppro.climbing.domain.BookingTimeValidator;
 import pl.nextsteppro.climbing.domain.event.Event;
 import pl.nextsteppro.climbing.domain.event.EventRepository;
+import pl.nextsteppro.climbing.domain.reschedule.RescheduleRequestRepository;
 import pl.nextsteppro.climbing.domain.reservation.GuestReservationRepository;
 import pl.nextsteppro.climbing.domain.reservation.Reservation;
 import pl.nextsteppro.climbing.domain.reservation.ReservationRepository;
@@ -54,6 +55,7 @@ public class ReservationService {
     private final ReservedSeatRepository reservedSeatRepository;
     private final TrainingRequestRepository trainingRequestRepository;
     private final WaitlistHold waitlistHold;
+    private final RescheduleRequestRepository rescheduleRequestRepository;
 
     public ReservationService(ReservationRepository reservationRepository,
                              GuestReservationRepository guestReservationRepository,
@@ -68,7 +70,9 @@ public class ReservationService {
                              ReservedSeatRepository reservedSeatRepository,
                              TrainingRequestRepository trainingRequestRepository,
                              WaitlistRepository waitlistRepository,
-                             EventWaitlistRepository eventWaitlistRepository) {
+                             EventWaitlistRepository eventWaitlistRepository,
+                             RescheduleRequestRepository rescheduleRequestRepository) {
+        this.rescheduleRequestRepository = rescheduleRequestRepository;
         this.trainingRequestRepository = trainingRequestRepository;
         this.waitlistHold = new WaitlistHold(waitlistRepository, eventWaitlistRepository);
         this.reservationRepository = reservationRepository;
@@ -226,6 +230,8 @@ public class ReservationService {
 
         reservation.cancel();
         reservationRepository.save(reservation);
+        // A booking that is gone has nothing left to move.
+        rescheduleRequestRepository.withdrawPendingForSlot(userId, slot.getId());
 
         // See touchForAsyncMail: findById gives lazy user/timeSlot proxies, and getUser().getId()
         // above does NOT initialise one (Hibernate serves the identifier straight off the proxy).
@@ -543,6 +549,7 @@ public class ReservationService {
         if (cancelledSlotIds.isEmpty()) {
             throw new IllegalStateException(msg.get("reservation.event.not.found.cancel"));
         }
+        rescheduleRequestRepository.withdrawPendingForEvent(userId, eventId);
 
         User user = userRepository.findById(userId)
             .orElseThrow(() -> new IllegalArgumentException(msg.get("error.not.found.user")));

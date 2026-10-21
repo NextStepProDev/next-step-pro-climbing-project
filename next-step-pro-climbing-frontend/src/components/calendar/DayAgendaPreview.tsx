@@ -18,7 +18,7 @@ import { buildDayAgenda, type AgendaEntry, type ProposedRange } from '../../util
 // A native date field can be emptied, and is half-typed mid-edit: never query or format that.
 const isDateLabel = (date: string) => /^\d{4}-\d{2}-\d{2}$/.test(date)
 
-function useDayAgenda(date: string, proposed: ProposedRange | null) {
+function useDayAgenda(date: string, proposed: ProposedRange | null, excludeId?: string) {
   const usable = isDateLabel(date)
   const query = useQuery({
     queryKey: ['calendar', 'day', date],
@@ -30,8 +30,10 @@ function useDayAgenda(date: string, proposed: ProposedRange | null) {
   const start = proposed?.start
   const end = proposed?.end
   const entries = useMemo(
-    () => query.data ? buildDayAgenda(query.data, start && end ? { start, end } : null) : null,
-    [query.data, start, end],
+    () => query.data
+      ? buildDayAgenda(query.data, start && end ? { start, end } : null).filter((e) => e.id !== excludeId)
+      : null,
+    [query.data, start, end, excludeId],
   )
   return { usable, query, entries }
 }
@@ -51,14 +53,21 @@ function hours(entry: AgendaEntry, allDayLabel: string) {
 }
 
 /** The full list — inside the form that answers a proposal. The proposed hours ride along as a row. */
-export function DayAgendaPreview({ date, proposed }: {
+export function DayAgendaPreview({ date, proposed, excludeId, proposedLabel }: {
   date: string
   /** The hours in the form right now, or `null` for a whole-day entry. */
   proposed: ProposedRange | null
+  /**
+   * An agenda entry id (`slot-…` / `event-…`) to leave out — the term being MOVED, which would
+   * otherwise collide with its own new hours on the same day.
+   */
+  excludeId?: string
+  /** Replaces "Proposed" on the dashed row. */
+  proposedLabel?: string
 }) {
   const { t } = useTranslation('calendar')
   const label = useEntryLabel()
-  const { usable, query, entries } = useDayAgenda(date, proposed)
+  const { usable, query, entries } = useDayAgenda(date, proposed, excludeId)
 
   if (!usable) return null
 
@@ -67,7 +76,7 @@ export function DayAgendaPreview({ date, proposed }: {
       <span className="w-24 shrink-0 tabular-nums text-primary-300">
         {proposed ? `${proposed.start}–${proposed.end}` : t('dayAgenda.allDay')}
       </span>
-      <span className="font-medium text-primary-300">{t('dayAgenda.proposed')}</span>
+      <span className="font-medium text-primary-300">{proposedLabel ?? t('dayAgenda.proposed')}</span>
     </li>
   )
 

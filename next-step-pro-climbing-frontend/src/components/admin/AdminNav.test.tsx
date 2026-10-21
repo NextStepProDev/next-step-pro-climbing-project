@@ -17,6 +17,7 @@ const NOTHING_PENDING: AdminNotifications = {
   athleteActivity: 0,
   newUsers: 0,
   unassignedSessions: 0,
+  pendingReschedules: 0,
 }
 
 function renderNav(pathname: string, notifications: AdminNotifications = NOTHING_PENDING) {
@@ -106,6 +107,7 @@ describe('AdminNav', () => {
       athleteActivity: 0,
       newUsers: 3,
       unassignedSessions: 2,
+      pendingReschedules: 0,
     })
 
     expect(screen.getByRole('button', { name: /tabGroups.calendar/ })).toHaveTextContent('6')

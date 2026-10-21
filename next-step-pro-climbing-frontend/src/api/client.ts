@@ -127,6 +127,10 @@ import type {
   LocationPresetDto,
   CalendarPromoSectionDto,
   CalendarPromoPresetDto,
+  MyRescheduleRequest,
+  CreateRescheduleRequest,
+  AdminRescheduleRequest,
+  AdminRescheduleList,
 } from '../types'
 import {
   getAccessToken,
@@ -548,6 +552,21 @@ export const trainingRequestApi = {
 
   cancel: (requestId: string) =>
     fetchApi<void>(`/training-requests/${requestId}`, { method: 'DELETE' }),
+}
+
+/** A booked client asking to move their term. The booking stands unchanged until the coach accepts. */
+export const rescheduleApi = {
+  create: (data: CreateRescheduleRequest) =>
+    fetchApi<{ id: string; message: string }>('/reservations/reschedule-requests', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  getMyPending: () =>
+    fetchApi<MyRescheduleRequest[]>('/reservations/my/reschedule-requests'),
+
+  withdraw: (requestId: string) =>
+    fetchApi<void>(`/reservations/reschedule-requests/${requestId}`, { method: 'DELETE' }),
 }
 
 /**
@@ -977,6 +996,21 @@ export const adminApi = {
   updateTrainingRequestStatus: (requestId: string, data: { status: 'PENDING' | 'CONTACTED' | 'REJECTED'; adminNote?: string; notifyUser?: boolean }) =>
     fetchApi<AdminTrainingRequest>(`/admin/training-requests/${requestId}/status`, {
       method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+
+  // Reschedule requests (a booked client asks to move their term)
+  getRescheduleRequests: () =>
+    fetchApi<AdminRescheduleList>('/admin/reschedule-requests'),
+
+  /** Moves the WHOLE slot/event, everyone on it included. */
+  acceptRescheduleRequest: (requestId: string) =>
+    fetchApi<{ request: AdminRescheduleRequest; notifiedOthers: number }>(
+      `/admin/reschedule-requests/${requestId}/accept`, { method: 'POST' }),
+
+  rejectRescheduleRequest: (requestId: string, data: { adminNote?: string; notifyUser: boolean }) =>
+    fetchApi<AdminRescheduleRequest>(`/admin/reschedule-requests/${requestId}/reject`, {
+      method: 'POST',
       body: JSON.stringify(data),
     }),
 

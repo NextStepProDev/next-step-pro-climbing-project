@@ -34,6 +34,7 @@ class UserDataExportCoverageTest extends BaseIntegrationTest {
         "newsletter_consent_log.user_id",
         "personal_trainings.athlete_id",
         "reservations.user_id",
+        "reschedule_requests.user_id",
         "reserved_seats.user_id",
         "training_comments.athlete_id",
         "training_requests.user_id",

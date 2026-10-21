@@ -11,6 +11,8 @@ import pl.nextsteppro.climbing.domain.course.CourseRepository;
 import pl.nextsteppro.climbing.domain.event.Event;
 import pl.nextsteppro.climbing.domain.event.EventRepository;
 import pl.nextsteppro.climbing.domain.event.EventType;
+import pl.nextsteppro.climbing.domain.reschedule.RescheduleRequestRepository;
+import pl.nextsteppro.climbing.domain.reschedule.RescheduleRequestStatus;
 import pl.nextsteppro.climbing.domain.reservation.GuestReservation;
 import pl.nextsteppro.climbing.domain.reservation.GuestReservationRepository;
 import pl.nextsteppro.climbing.domain.reservation.Reservation;
@@ -95,6 +97,7 @@ public class AdminService {
     private final TrainingRequestRepository trainingRequestRepository;
     private final pl.nextsteppro.climbing.api.trainingcalendar.TrainingCalendarService trainingCalendarService;
     private final UnassignedSessionCounter unassignedSessionCounter;
+    private final RescheduleRequestRepository rescheduleRequestRepository;
 
     public AdminService(TimeSlotRepository timeSlotRepository,
                        EventRepository eventRepository,
@@ -118,7 +121,9 @@ public class AdminService {
                        ReservedSeatRepository reservedSeatRepository,
                        TrainingRequestRepository trainingRequestRepository,
                        pl.nextsteppro.climbing.api.trainingcalendar.TrainingCalendarService trainingCalendarService,
-                       UnassignedSessionCounter unassignedSessionCounter) {
+                       UnassignedSessionCounter unassignedSessionCounter,
+                       RescheduleRequestRepository rescheduleRequestRepository) {
+        this.rescheduleRequestRepository = rescheduleRequestRepository;
         this.timeSlotRepository = timeSlotRepository;
         this.eventRepository = eventRepository;
         this.courseRepository = courseRepository;
@@ -200,6 +205,31 @@ public class AdminService {
         @CacheEvict(value = "calendarDay", allEntries = true)
     })
     public SlotUpdateResultDto updateTimeSlot(UUID adminId, UUID slotId, UpdateTimeSlotRequest request) {
+        return updateTimeSlot(adminId, slotId, request, null);
+    }
+
+    /**
+     * Moves a slot because its booked client asked for it — the accepted reschedule request.
+     * The very same path as an edit in the panel (lock, invitations, cache, activity log, the
+     * "term changed" mail to everybody else), except that the requester is left out of that mail:
+     * they get the "your request was accepted" one instead, and two mails about one move read as
+     * two moves.
+     *
+     * @return how many OTHER people were mailed about the change
+     */
+    @Caching(evict = {
+        @CacheEvict(value = "calendarMonth", allEntries = true),
+        @CacheEvict(value = "calendarWeek", allEntries = true),
+        @CacheEvict(value = "calendarDay", allEntries = true)
+    })
+    public int rescheduleSlot(UUID adminId, UUID slotId, LocalDate date, LocalTime startTime, LocalTime endTime,
+                              UUID requesterId) {
+        var request = new UpdateTimeSlotRequest(date, startTime, endTime, null, null, null, null, true, null);
+        return updateTimeSlot(adminId, slotId, request, requesterId).notifiedCount();
+    }
+
+    private SlotUpdateResultDto updateTimeSlot(UUID adminId, UUID slotId, UpdateTimeSlotRequest request,
+                                               @Nullable UUID silentUserId) {
         // Locked: lowering the capacity checks it against the seats taken right now.
         TimeSlot slot = requireSlotForUpdate(slotId);
 
@@ -310,6 +340,7 @@ public class AdminService {
                 List<Reservation> confirmed = reservationRepository.findConfirmedByTimeSlotIds(List.of(slot.getId()));
                 String displayTitle = slot.getDisplayTitle();
                 for (Reservation reservation : confirmed) {
+                    if (reservation.getUser().getId().equals(silentUserId)) continue;
                     // Same predicate MailService applies before sending — asking it here is what
                     // keeps the number reported to the admin equal to the number of mails sent.
                     if (!reservation.getUser().isEmailNotificationsEnabled()) continue;
@@ -354,6 +385,8 @@ public class AdminService {
         // there after unblocking while every registered booking was gone. They have no address, so
         // telling them stays the admin's phone call. A guest with money recorded stays — see the query.
         guestReservationRepository.deleteAll(guestReservationRepository.findByTimeSlotIdWithoutMoney(slotId));
+        // Nobody is booked any more, so nobody is asking to move it.
+        rescheduleRequestRepository.withdrawAllPendingForSlot(slotId);
 
         slot.block(reason);
         timeSlotRepository.save(slot);
@@ -694,6 +727,28 @@ public class AdminService {
         @CacheEvict(value = "calendarDay", allEntries = true)
     })
     public EventUpdateResultDto updateEvent(UUID adminId, UUID eventId, UpdateEventRequest request) {
+        return updateEvent(adminId, eventId, request, null);
+    }
+
+    /**
+     * The event twin of {@link #rescheduleSlot}: the edit path (slots follow the dates through
+     * {@code reconcileEventSlots}), minus the ordinary change mail for the requester.
+     * Null hours mean "leave as they are" — the request service only sends hours an event already has.
+     */
+    @Caching(evict = {
+        @CacheEvict(value = "calendarMonth", allEntries = true),
+        @CacheEvict(value = "calendarWeek", allEntries = true),
+        @CacheEvict(value = "calendarDay", allEntries = true)
+    })
+    public int rescheduleEvent(UUID adminId, UUID eventId, LocalDate startDate, LocalDate endDate,
+                               @Nullable LocalTime startTime, @Nullable LocalTime endTime, UUID requesterId) {
+        var request = new UpdateEventRequest(null, null, null, null, startDate, endDate, null, null,
+            startTime, endTime, null, null, null);
+        return updateEvent(adminId, eventId, request, requesterId).notifiedCount();
+    }
+
+    private EventUpdateResultDto updateEvent(UUID adminId, UUID eventId, UpdateEventRequest request,
+                                             @Nullable UUID silentUserId) {
         // Locked for the same reason as the slot twin: the capacity check reads live occupancy.
         Event event = requireEventForUpdate(eventId);
 
@@ -842,6 +897,7 @@ public class AdminService {
                 for (Reservation reservation : confirmed) {
                     notifiedUsers.putIfAbsent(reservation.getUser().getId(), reservation.getUser());
                 }
+                if (silentUserId != null) notifiedUsers.remove(silentUserId);
                 for (User user : notifiedUsers.values()) {
                     // See the slot twin: counting only who MailService will actually write to.
                     if (!user.isEmailNotificationsEnabled()) continue;
@@ -1317,8 +1373,9 @@ public class AdminService {
         // confirmed account, and the badge clears on the first visit to the Users list anyway.
         int newUsers = userRepository.countByEmailVerifiedAtAfter(admin.getAdminUsersSeenAt());
         int unassignedSessions = unassignedSessionCounter.countUnassigned(LocalDate.now(WARSAW));
+        int pendingReschedules = rescheduleRequestRepository.countByStatus(RescheduleRequestStatus.PENDING);
         return new AdminNotificationsDto(pendingRequests, newReservations, newWaitlistEntries,
-            athleteActivity, newUsers, unassignedSessions);
+            athleteActivity, newUsers, unassignedSessions, pendingReschedules);
     }
 
     public void markReservationsSeen(UUID adminId) {
@@ -1585,6 +1642,11 @@ public class AdminService {
         int participants = reservation.getParticipants();
         reservation.cancelByAdmin();
         reservationRepository.save(reservation);
+        // Only a standalone slot: one day of an event going leaves the person booked on the others,
+        // and their request about the whole event still stands (accept re-checks the booking anyway).
+        if (!slot.belongsToEvent()) {
+            rescheduleRequestRepository.withdrawPendingForSlot(user.getId(), slot.getId());
+        }
         // Over = the slot has ENDED. Keyed off the start time, a cancellation sent while the
         // session was still running went silent — to someone who may well be on their way to it.
         if (!BookingTimeValidator.isPast(slot.getDate(), slot.getEndTime())) {
@@ -1661,6 +1723,7 @@ public class AdminService {
             reservation.cancelByAdmin();
             reservationRepository.save(reservation);
         }
+        rescheduleRequestRepository.withdrawPendingForEvent(userId, eventId);
         // Once, like deleteEvent — one decision about one booking, however many days it spans.
         activityLogService.logCancelledByAdmin(user, userReservations.getFirst().getTimeSlot(), participants);
         if (!BookingTimeValidator.dayHasPassed(event.getEndDate())) {

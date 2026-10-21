@@ -40,6 +40,7 @@ class AdminServiceNotificationsTest {
     @Mock private TrainingRequestRepository trainingRequestRepository;
     @Mock private pl.nextsteppro.climbing.api.trainingcalendar.TrainingCalendarService trainingCalendarService;
     @Mock private UnassignedSessionCounter unassignedSessionCounter;
+    @Mock private pl.nextsteppro.climbing.domain.reschedule.RescheduleRequestRepository rescheduleRequestRepository;
 
     private AdminService adminService;
 
@@ -49,7 +50,8 @@ class AdminServiceNotificationsTest {
             null, null, null, reservationRepository, null,
             userRepository, null, null, null, null, null,
             waitlistRepository, eventWaitlistRepository, null, null, null, null, null, null, null,
-            trainingRequestRepository, trainingCalendarService, unassignedSessionCounter);
+            trainingRequestRepository, trainingCalendarService, unassignedSessionCounter,
+            rescheduleRequestRepository);
     }
 
     /**

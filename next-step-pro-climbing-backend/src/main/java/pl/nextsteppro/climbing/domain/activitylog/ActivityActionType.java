@@ -37,7 +37,12 @@ public enum ActivityActionType {
     ADMIN_GOAL_DELETED,
     ADMIN_GOAL_ACHIEVED,
     // Undo of an AUTOMATIC weight-goal closure (mistyped weigh-in); manual closures are final
-    ADMIN_GOAL_REOPENED;
+    ADMIN_GOAL_REOPENED,
+    // A booked client asked to move their term (actor = the client)
+    RESCHEDULE_REQUESTED,
+    // The coach's answer to it; the move itself is logged separately as ADMIN_SLOT/EVENT_UPDATED
+    ADMIN_RESCHEDULE_ACCEPTED,
+    ADMIN_RESCHEDULE_REJECTED;
 
     /**
      * Whether an entry of this type is about a person other than its actor. For these the person
@@ -52,7 +57,8 @@ public enum ActivityActionType {
                  ADMIN_USER_FORCE_LOGOUT, ADMIN_USER_ATHLETE_TOGGLED, ADMIN_USER_DATA_EXPORTED,
                  ADMIN_TRAINING_CREATED, ADMIN_TRAINING_UPDATED, ADMIN_TRAINING_DELETED,
                  ADMIN_GOAL_CREATED, ADMIN_GOAL_UPDATED, ADMIN_GOAL_DELETED,
-                 ADMIN_GOAL_ACHIEVED, ADMIN_GOAL_REOPENED -> true;
+                 ADMIN_GOAL_ACHIEVED, ADMIN_GOAL_REOPENED,
+                 ADMIN_RESCHEDULE_ACCEPTED, ADMIN_RESCHEDULE_REJECTED -> true;
             default -> false;
         };
     }

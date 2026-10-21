@@ -32,6 +32,8 @@ import pl.nextsteppro.climbing.domain.reservation.ReservationRpeRepository;
 import pl.nextsteppro.climbing.domain.reservedseat.ReservedSeat;
 import pl.nextsteppro.climbing.domain.reservedseat.ReservedSeatRepository;
 import pl.nextsteppro.climbing.domain.timeslot.TimeSlot;
+import pl.nextsteppro.climbing.domain.reschedule.RescheduleRequest;
+import pl.nextsteppro.climbing.domain.reschedule.RescheduleRequestRepository;
 import pl.nextsteppro.climbing.domain.trainingrequest.TrainingRequest;
 import pl.nextsteppro.climbing.domain.trainingrequest.TrainingRequestRepository;
 import pl.nextsteppro.climbing.domain.user.User;
@@ -71,7 +73,8 @@ import java.util.stream.Stream;
 @Service
 public class UserDataExportService {
 
-    static final int SCHEMA_VERSION = 1;
+    // 2: rescheduleRequests section added (2026-10-21)
+    static final int SCHEMA_VERSION = 2;
 
     private final UserRepository userRepository;
     private final NewsletterConsentLogRepository consentLogRepository;
@@ -81,6 +84,7 @@ public class UserDataExportService {
     private final EventWaitlistRepository eventWaitlistRepository;
     private final ReservedSeatRepository reservedSeatRepository;
     private final TrainingRequestRepository trainingRequestRepository;
+    private final RescheduleRequestRepository rescheduleRequestRepository;
     private final NewsStarRepository newsStarRepository;
     private final ActivityLogRepository activityLogRepository;
     private final PersonalTrainingRepository trainingRepository;
@@ -109,7 +113,9 @@ public class UserDataExportService {
                                  AthleteGoalRepository goalRepository,
                                  AthleteWeightRepository weightRepository,
                                  ClimbingAscentRepository ascentRepository,
-                                 ActivityLogService activityLogService) {
+                                 ActivityLogService activityLogService,
+                                 RescheduleRequestRepository rescheduleRequestRepository) {
+        this.rescheduleRequestRepository = rescheduleRequestRepository;
         this.userRepository = userRepository;
         this.consentLogRepository = consentLogRepository;
         this.reservationRepository = reservationRepository;
@@ -149,6 +155,8 @@ public class UserDataExportService {
                 .map(UserDataExportService::toInvitation).toList(),
             trainingRequestRepository.findByUserIdWithDetails(userId).stream()
                 .map(UserDataExportService::toRequest).toList(),
+            rescheduleRequestRepository.findAllByUserId(userId).stream()
+                .map(UserDataExportService::toReschedule).toList(),
             newsStarRepository.findStarredRows(userId).stream()
                 .map(row -> new ExportStarredNewsDto(row.newsId(), row.title(), row.starredAt()))
                 .toList(),
@@ -269,6 +277,22 @@ public class UserDataExportService {
             request.getStatus().name(),
             request.getAdminNote(),
             course != null ? course.getTitle() : null,
+            request.getResolvedAt(),
+            request.getCreatedAt());
+    }
+
+    private static ExportRescheduleRequestDto toReschedule(RescheduleRequest request) {
+        TimeSlot slot = request.getTimeSlot();
+        Event event = request.getEvent();
+        return new ExportRescheduleRequestDto(
+            request.getId(),
+            slot != null ? "SLOT" : "EVENT",
+            slot != null ? slot.getDisplayTitle() : event != null ? event.getTitle() : null,
+            request.oldTerm().label(),
+            request.newTerm().label(),
+            plainOrNull(request.getComment()),
+            request.getStatus().name(),
+            request.getAdminNote(),
             request.getResolvedAt(),
             request.getCreatedAt());
     }

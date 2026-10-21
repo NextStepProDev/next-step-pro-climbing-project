@@ -314,7 +314,9 @@ record AdminNotificationsDto(
     int newUsers,
     // Closed sessions with no payer named (see UnassignedSessionCounter). A STATE count with no
     // "seen" marker: it stays lit until the payer is assigned, because visiting the tab fixes nothing
-    int unassignedSessions
+    int unassignedSessions,
+    // Clients asking to move a booked term — a STATE count like pendingRequests: lit until answered
+    int pendingReschedules
 ) {}
 
 record NotifyParticipantsResult(int notifiedCount) {}
