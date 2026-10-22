@@ -581,6 +581,11 @@ public class AdminSettlementService {
         if (found == null) {
             return null;
         }
+        // ⚠️ Before the payer branches: a free session has neither id, and the source branch below
+        // dereferences one unconditionally.
+        if (found.free()) {
+            return SettlementCoverageDto.free();
+        }
         if (found.bySubscription()) {
             UUID subscriberId = Objects.requireNonNull(found.userId());
             String stale = staleReasonOf(target, targetId, subscriberId);

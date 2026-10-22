@@ -21,11 +21,11 @@ public interface SessionPayoutRepository extends JpaRepository<SessionPayout, UU
      * Both payer kinds in one read. Two separate lookups would let a caller ask about a source, get
      * nothing back, and conclude the session is unmarked while a subscription covers it.
      */
-    @Query("SELECT new pl.nextsteppro.climbing.domain.settlement.SessionCoverage(sp.source.id, sp.user.id) "
+    @Query("SELECT new pl.nextsteppro.climbing.domain.settlement.SessionCoverage(sp.source.id, sp.user.id, sp.free) "
         + "FROM SessionPayout sp WHERE sp.timeSlot.id = :slotId")
     Optional<SessionCoverage> findCoverageForSlot(@Param("slotId") UUID slotId);
 
-    @Query("SELECT new pl.nextsteppro.climbing.domain.settlement.SessionCoverage(sp.source.id, sp.user.id) "
+    @Query("SELECT new pl.nextsteppro.climbing.domain.settlement.SessionCoverage(sp.source.id, sp.user.id, sp.free) "
         + "FROM SessionPayout sp WHERE sp.event.id = :eventId")
     Optional<SessionCoverage> findCoverageForEvent(@Param("eventId") UUID eventId);
 
@@ -67,32 +67,34 @@ public interface SessionPayoutRepository extends JpaRepository<SessionPayout, UU
     List<SessionPayoutRow> findSessionsForSource(@Param("sourceId") UUID sourceId);
 
     /**
-     * ⚠️ Every upsert sets BOTH payer columns, one of them to NULL. Setting only the one being
-     * assigned would leave the previous payer of the other kind in place — tripping
+     * ⚠️ Every upsert sets ALL THREE mark columns (both payers and the free flag). Setting only the
+     * one being assigned would leave the previous mark of another kind in place — tripping
      * {@code chk_session_payouts_single_payer}, or worse, quietly keeping a session marked for a
      * school after it was moved onto a client's subscription.
      */
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query(value = """
-        INSERT INTO session_payouts (time_slot_id, payout_source_id, user_id)
-        VALUES (:slotId, :sourceId, :userId)
+        INSERT INTO session_payouts (time_slot_id, payout_source_id, user_id, is_free)
+        VALUES (:slotId, :sourceId, :userId, :free)
         ON CONFLICT (time_slot_id) WHERE time_slot_id IS NOT NULL
-        DO UPDATE SET payout_source_id = :sourceId, user_id = :userId
+        DO UPDATE SET payout_source_id = :sourceId, user_id = :userId, is_free = :free
         """, nativeQuery = true)
     void assignSlot(@Param("slotId") UUID slotId,
                     @Param("sourceId") @Nullable UUID sourceId,
-                    @Param("userId") @Nullable UUID userId);
+                    @Param("userId") @Nullable UUID userId,
+                    @Param("free") boolean free);
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query(value = """
-        INSERT INTO session_payouts (event_id, payout_source_id, user_id)
-        VALUES (:eventId, :sourceId, :userId)
+        INSERT INTO session_payouts (event_id, payout_source_id, user_id, is_free)
+        VALUES (:eventId, :sourceId, :userId, :free)
         ON CONFLICT (event_id) WHERE event_id IS NOT NULL
-        DO UPDATE SET payout_source_id = :sourceId, user_id = :userId
+        DO UPDATE SET payout_source_id = :sourceId, user_id = :userId, is_free = :free
         """, nativeQuery = true)
     void assignEvent(@Param("eventId") UUID eventId,
                      @Param("sourceId") @Nullable UUID sourceId,
-                     @Param("userId") @Nullable UUID userId);
+                     @Param("userId") @Nullable UUID userId,
+                     @Param("free") boolean free);
 
     /**
      * Every session marked as covered by this person's subscription, with the day that decides its

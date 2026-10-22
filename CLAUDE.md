@@ -47,7 +47,7 @@ Aktualna zawartość — `ls`, nie ten plik. Dwa wyjątki warte zapamiętania, b
 
 ## Baza danych — Flyway
 
-**Stan: V105. Następna migracja: V106.** V105 (`reschedule_requests`) czeka na deploy; wszystkie do V104 są na produkcji (104 wiersze w `flyway_schema_history`, sprawdzone 2026-10-18 po deployu 4.72.15; zrzut sprzed w `/backups/milestones/PRZED-V104-*`).
+**Stan: V106. Następna migracja: V107.** V105 (`reschedule_requests`) i V106 (`session_payouts.is_free`) czekają na deploy; wszystkie do V104 są na produkcji (104 wiersze w `flyway_schema_history`, sprawdzone 2026-10-18 po deployu 4.72.15; zrzut sprzed w `/backups/milestones/PRZED-V104-*`).
 Lista migracji: `ls backend/src/main/resources/db/migration/` — poniżej tylko to, czego ze schematu nie widać.
 
 ⚠️ **Nigdy nie modyfikuj zastosowanej migracji** — nawet zmiana komentarza łamie checksum na produkcji.
@@ -67,7 +67,7 @@ Lista migracji: `ls backend/src/main/resources/db/migration/` — poniżej tylko
 - **`admin_private_notes`** (V89) — notatnik właściciela. `time_slot_id` XOR `event_id` XOR `training_id` (CHECK) + partial unique **`(author_id, cel)`**. `author_id` jest w kluczu, bo to notatnik jednej osoby, nie wspólna adnotacja back office. FK z `ON DELETE CASCADE` są **mechanizmem**, nie ozdobą — patrz „Prywatne notatki admina".
 - **`settlements`** (V92, V94, V100) — **należność** dla pary **(cel, płatnik)**: `time_slot_id` XOR `event_id` XOR `period_month` + `user_id` XOR `guest_reservation_id` (dwa osobne CHECK-i, bo to dwa niezależne pytania) + trzy partial unique. `amount NUMERIC(10,2)` NOT NULL. **Celem NIGDY nie jest rezerwacja** — patrz `docs/MONEY.md`.
 - **`payments`** (V100) — **wpłata**, niezmienna (korekta = usuń i wpisz); `entered_*` to tylko „gdzie wpisano” (`SET NULL`). Podział na należności (FIFO) **wylicza `PaymentAllocator` i nigdzie go nie zapisujemy** — patrz `docs/MONEY.md`.
-- **`payout_sources` / `session_payouts` / `payouts`** (V93) — praca rozliczana zbiorczo przez kogoś innego: kto płaci, które terminy były dla niego, co wpłynęło. Patrz `docs/MONEY.md`.
+- **`payout_sources` / `session_payouts` / `payouts`** (V93) — praca rozliczana zbiorczo przez kogoś innego: kto płaci, które terminy były dla niego, co wpłynęło. **`session_payouts` ma trzy rodzaje oznaczenia** (CHECK: dokładnie jedno) — kontrahent, abonament albo **`is_free`** (V106, zajęcia bezpłatne); każde wyjmuje termin z wyceny per uczestnik. Patrz `docs/MONEY.md`.
 - **`subscriptions`** (V94) — reguła naliczania stałej opłaty miesięcznej; sama opłata to wiersz w `settlements` z `period_month`. Patrz `docs/MONEY.md`.
 - **`training_deletions`** — rejestr usunięć **przyszłych** treningów (migawka tytułu/terminu). Zasila pasek alertu „druga strona coś skasowała"; `deleted_by_admin` kierunkuje komunikat. Przycinane po 60 dniach.
 - **`athlete_goals`** — cele w 3 horyzontach × 2 rodzajach (`kind` GENERAL/WEIGHT, `horizon` SHORT/MEDIUM/LONG). **Partial unique `(athlete_id, kind, horizon)` WHERE `achieved_at IS NULL`** = max 1 aktywny cel na slot; cel treningowy i wagowy mogą dzielić horyzont. `achieved_automatically` rozstrzyga, czy trener może cofnąć osiągnięcie.

@@ -1013,7 +1013,12 @@
       "groupSubscriptionShared": "Suscripción del participante — solo sesiones de una persona",
       "subscriptionSharedHint": "Una suscripción cubre a una sola persona y en esta sesión hay más, así que las demás no tendrían cómo pagar. Cobra a cada participante por separado o elige un contratante.",
       "groupSource": "Entidad",
-      "bulkSaved": "Liquidado en bloque por {{name}}."
+      "bulkSaved": "Liquidado en bloque por {{name}}.",
+      "markFree": "Sesión gratuita",
+      "free": "Sesión gratuita",
+      "freeHint": "Sin importes ni pagos — no aparece en «Por valorar».",
+      "unmarkFree": "Deshacer — sesión de pago",
+      "freeSaved": "Marcada como sesión gratuita."
     },
     "line": {
       "people": "({{n}} pers.)",

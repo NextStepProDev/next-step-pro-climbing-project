@@ -20,6 +20,6 @@ export function travellingPayoutSource(
   section: SettlementSection | null,
 ): { id: string; name: string } | null {
   const coveredBy = section?.coveredBy
-  if (!coveredBy || coveredBy.kind !== 'source') return null
+  if (!coveredBy || coveredBy.kind !== 'source' || coveredBy.id === null) return null
   return { id: coveredBy.id, name: coveredBy.name }
 }

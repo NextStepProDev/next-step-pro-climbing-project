@@ -1314,10 +1314,12 @@ export const adminSettlementsApi = {
     targetId: string,
     sourceId: string | null,
     subscriberId: string | null = null,
+    // A free session: the third kind of the same mark, exclusive with both payers.
+    free = false,
   ) =>
     fetchApi<void>(`/admin/settlements/${target}/${targetId}/payout-source`, {
       method: 'PUT',
-      body: JSON.stringify({ sourceId, subscriberId }),
+      body: JSON.stringify({ sourceId, subscriberId, free }),
     }),
 
   // periodMonth is any day of the month the work was done in — the server snaps it to the first.

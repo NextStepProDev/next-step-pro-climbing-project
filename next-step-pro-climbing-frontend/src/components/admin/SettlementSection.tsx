@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { format } from 'date-fns'
-import { AlertTriangle, Building2, Coins, Lock, Trash2, X } from 'lucide-react'
+import { AlertTriangle, Building2, Coins, Gift, Lock, Trash2, X } from 'lucide-react'
 import { Button } from '../ui/Button'
 import { ConfirmModal } from '../ui/ConfirmModal'
 import { DateInput } from '../ui/DateInput'
@@ -48,6 +48,18 @@ interface Draft {
   amount: string
   payment: string
   paidOn: string
+}
+
+/**
+ * What the session-level mark is set to. `free` is the third kind beside the two payers: a session
+ * nobody pays for, so — like one a school settles — it has no per-participant fields at all.
+ * `name` never reaches the server; it is what the toast says was written down.
+ */
+interface AssignChoice {
+  sourceId: string | null
+  subscriberId: string | null
+  free?: boolean
+  name?: string
 }
 
 const payerKey = (line: SettlementLine) => `${line.payerType}:${line.payerId}`
@@ -121,8 +133,10 @@ export function SettlementSection({ target, targetId, onDirtyChange }: Settlemen
   })
 
   const assignMutation = useMutation({
-    mutationFn: (choice: { sourceId: string | null; subscriberId: string | null; name?: string }) =>
-      adminSettlementsApi.assignSource(target, targetId, choice.sourceId, choice.subscriberId),
+    mutationFn: (choice: AssignChoice) =>
+      adminSettlementsApi.assignSource(
+        target, targetId, choice.sourceId, choice.subscriberId, choice.free ?? false,
+      ),
     onSuccess: (_result, choice) => {
       setPicking(false)
       queryClient.invalidateQueries({ queryKey: ['admin', 'settlements'] })
@@ -133,11 +147,15 @@ export function SettlementSection({ target, targetId, onDirtyChange }: Settlemen
       // leaves the same way — one click back to wherever the admin came from, and a toast that
       // says what was written, because a modal that simply vanishes confirms nothing.
       //
-      // ⚠️ Only when a payer was named. Clearing one puts the session back into per-participant
-      // pricing, which is done HERE — closing then would take away the fields the admin just
-      // asked for.
-      if (choice.sourceId || choice.subscriberId) {
-        showToast(t('settlements.section.bulkSaved', { name: choice.name ?? '' }))
+      // ⚠️ Only when a payer was named, or the session marked free. Clearing either puts the
+      // session back into per-participant pricing, which is done HERE — closing then would take
+      // away the fields the admin just asked for.
+      if (choice.sourceId || choice.subscriberId || choice.free) {
+        showToast(
+          choice.free
+            ? t('settlements.section.freeSaved')
+            : t('settlements.section.bulkSaved', { name: choice.name ?? '' }),
+        )
         // ⚠️ Pushed before closing, not left to the next render. This section's close is the
         // modal's GUARDED close, and the guard reads the last value reported — which is still the
         // one from before this write. Without this, finishing the work would ask whether to
@@ -329,6 +347,20 @@ export function SettlementSection({ target, targetId, onDirtyChange }: Settlemen
 
   const day = (date: string) => format(parseCalendarDate(date), 'dd.MM.yyyy', { locale })
 
+  const markFree = () => assignMutation.mutate({ sourceId: null, subscriberId: null, free: true })
+
+  /**
+   * Why the server refused "free" — in practice, amounts already typed for somebody (decided with
+   * the owner: refuse, never delete them behind the click). The picker shows its own errors, so
+   * this only speaks while the picker is closed, and a refused click is otherwise silent: the
+   * section looks exactly as it did before it.
+   */
+  const freeRefusal = assignMutation.isError && !picking && (
+    <p role="alert" className="text-sm text-rose-400/80">
+      {getErrorMessage(assignMutation.error)}
+    </p>
+  )
+
   const describeShare = (share: PaymentShare) => {
     if (share.thisEntry) return t('settlements.payment.shareThis', { amount: money(share.amount) })
     if (share.monthlyFee) {
@@ -374,7 +406,31 @@ export function SettlementSection({ target, targetId, onDirtyChange }: Settlemen
         {t('settlements.section.onlyYouHint')}
       </p>
 
-      {data?.coveredBy ? (
+      {data?.coveredBy?.kind === 'free' ? (
+        /* Free: nobody to charge and nothing to receive, so — exactly as with a bulk payer — the
+           per-participant fields are absent, not disabled. Undoing it stays in the modal: it
+           brings those fields back here, and closing would take them away again. */
+        <div className="space-y-2">
+          <p className="flex items-center gap-2 text-sm text-surface-200">
+            <Gift className="w-4 h-4 text-emerald-500 shrink-0" />
+            {t('settlements.section.free')}
+          </p>
+          <p className="text-xs text-surface-500">{t('settlements.section.freeHint')}</p>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => assignMutation.mutate({ sourceId: null, subscriberId: null })}
+            loading={assignMutation.isPending}
+          >
+            {t('settlements.section.unmarkFree')}
+          </Button>
+          {assignMutation.isError && (
+            <p role="alert" className="text-sm text-rose-400/80">
+              {getErrorMessage(assignMutation.error)}
+            </p>
+          )}
+        </div>
+      ) : data?.coveredBy ? (
         /* Settled in bulk: there is nobody here to charge per head, so the per-participant fields
            are not merely disabled but absent — offering them would invite an invented amount. */
         <div className="space-y-2">
@@ -433,9 +489,16 @@ export function SettlementSection({ target, targetId, onDirtyChange }: Settlemen
       ) : lines.length === 0 && !picking ? (
         <div className="space-y-2">
           <p className="text-sm text-surface-400">{t('settlements.section.empty')}</p>
-          <Button size="sm" variant="ghost" onClick={() => setPicking(true)}>
-            {t('settlements.section.markBulk')}
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button size="sm" variant="ghost" onClick={() => setPicking(true)}>
+              {t('settlements.section.markBulk')}
+            </Button>
+            <Button size="sm" variant="ghost" className="gap-1.5" onClick={markFree} loading={assignMutation.isPending}>
+              <Gift className="w-3.5 h-3.5" />
+              {t('settlements.section.markFree')}
+            </Button>
+          </div>
+          {freeRefusal}
         </div>
       ) : picking ? (
         <SourcePicker
@@ -695,10 +758,18 @@ export function SettlementSection({ target, targetId, onDirtyChange }: Settlemen
             </p>
           )}
 
-          <div className="flex items-center justify-between gap-2">
-            <Button size="sm" variant="ghost" onClick={() => setPicking(true)}>
-              {t('settlements.section.markBulk')}
-            </Button>
+          {freeRefusal}
+
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex flex-wrap gap-2">
+              <Button size="sm" variant="ghost" onClick={() => setPicking(true)}>
+                {t('settlements.section.markBulk')}
+              </Button>
+              <Button size="sm" variant="ghost" className="gap-1.5" onClick={markFree} loading={assignMutation.isPending}>
+                <Gift className="w-3.5 h-3.5" />
+                {t('settlements.section.markFree')}
+              </Button>
+            </div>
             <Button
               size="sm"
               variant="primary"

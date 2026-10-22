@@ -59,6 +59,13 @@ public class SessionPayout {
     @Nullable
     private User user;
 
+    /**
+     * A free session: nobody pays, so it is not priced per participant either. The third kind of
+     * mark, exclusive with both payers ({@code chk_session_payouts_single_payer}).
+     */
+    @Column(name = "is_free", nullable = false)
+    private boolean free;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 

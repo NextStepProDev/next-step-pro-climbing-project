@@ -112,8 +112,9 @@ public class AdminSettlementController {
     }
 
     @Operation(summary = "Mark a session as work for a bulk payer",
-        description = "Send a null sourceId to unmark it. A marked session is not priced per "
-            + "participant — there is nobody to charge — so it stays out of the pricing queue.")
+        description = "Send a null sourceId to unmark it, or free=true to mark it as a free session. "
+            + "A marked session is not priced per participant — there is nobody to charge — so it "
+            + "stays out of the pricing queue.")
     @ApiResponses({
         @ApiResponse(responseCode = "204", description = "Saved"),
         @ApiResponse(responseCode = "400", description = "Unknown target, a slot belonging to an event, or an unknown payer")

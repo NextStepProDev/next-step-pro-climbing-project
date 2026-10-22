@@ -569,7 +569,7 @@ describe('SettlementSection — settled in bulk', () => {
     await user.selectOptions(screen.getByLabelText('settlements.section.bulkPayer'), 'src-1')
     await user.click(screen.getByRole('button', { name: 'settlements.actions.save' }))
 
-    await waitFor(() => expect(assignSource).toHaveBeenCalledWith('slot', 'target-1', 'src-1', null))
+    await waitFor(() => expect(assignSource).toHaveBeenCalledWith('slot', 'target-1', 'src-1', null, false))
     // Naming a payer ends the work on this session exactly as saving the amounts does, so it leaves
     // the same way — and the toast names who was written down, since a vanished modal confirms
     // nothing. The two Save buttons of this section used to behave differently.
@@ -621,7 +621,7 @@ describe('SettlementSection — settled in bulk', () => {
     // The institution stays available — a school really does pay for a whole group.
     await user.selectOptions(screen.getByLabelText('settlements.section.bulkPayer'), 'src-1')
     await user.click(screen.getByRole('button', { name: 'settlements.actions.save' }))
-    await waitFor(() => expect(assignSource).toHaveBeenCalledWith('slot', 'target-1', 'src-1', null))
+    await waitFor(() => expect(assignSource).toHaveBeenCalledWith('slot', 'target-1', 'src-1', null, false))
   })
 
   it('still offers the subscription when a cancelled booking is the only other line', async () => {
@@ -695,7 +695,7 @@ describe('SettlementSection — settled in bulk', () => {
     renderSection()
 
     await user.click(await screen.findByRole('button', { name: 'settlements.section.clearBulk' }))
-    await waitFor(() => expect(assignSource).toHaveBeenCalledWith('slot', 'target-1', null, null))
+    await waitFor(() => expect(assignSource).toHaveBeenCalledWith('slot', 'target-1', null, null, false))
     // ⚠️ Clearing does NOT close, unlike naming a payer: it hands the session back to
     // per-participant pricing, which happens in this very section — closing would take away the
     // fields it just asked for.
@@ -719,7 +719,7 @@ describe('SettlementSection — settled in bulk', () => {
     await user.click(screen.getByRole('button', { name: 'settlements.actions.save' }))
 
     await waitFor(() =>
-      expect(assignSource).toHaveBeenCalledWith('slot', 'target-1', null, 'user-1'),
+      expect(assignSource).toHaveBeenCalledWith('slot', 'target-1', null, 'user-1', false),
     )
   })
 
@@ -737,5 +737,84 @@ describe('SettlementSection — settled in bulk', () => {
     await waitFor(() => expect(listSources).toHaveBeenCalled())
 
     expect(screen.queryByRole('option', { name: 'Marek' })).not.toBeInTheDocument()
+  })
+})
+
+describe('SettlementSection — free session', () => {
+  beforeEach(() => {
+    closeModal.mockReset()
+    getSection.mockReset()
+    assignSource.mockReset().mockResolvedValue(undefined)
+  })
+
+  it('marks a session free in one click, and leaves the way saving does', async () => {
+    getSection.mockResolvedValue({ ...bulkOff, targetDate: TARGET_DATE, lines: [line()] })
+    const user = userEvent.setup()
+
+    renderSection()
+
+    await user.click(await screen.findByRole('button', { name: 'settlements.section.markFree' }))
+
+    await waitFor(() => expect(assignSource).toHaveBeenCalledWith('slot', 'target-1', null, null, true))
+    await waitFor(() => expect(closeModal).toHaveBeenCalled())
+    expect(await screen.findByText('settlements.section.freeSaved')).toBeInTheDocument()
+  })
+
+  it('offers it on a session nobody has booked yet', async () => {
+    getSection.mockResolvedValue({ ...bulkOff, targetDate: TARGET_DATE, lines: [] })
+
+    renderSection()
+
+    expect(await screen.findByRole('button', { name: 'settlements.section.markFree' })).toBeInTheDocument()
+  })
+
+  it('shows no amount or payment fields on a free session', async () => {
+    getSection.mockResolvedValue({
+      targetDate: TARGET_DATE,
+      lines: [line()],
+      coveredBy: { kind: 'free', id: null, name: '', staleReason: null },
+    })
+
+    renderSection()
+
+    expect(await screen.findByText('settlements.section.free')).toBeInTheDocument()
+    expect(screen.queryByLabelText('settlements.line.amountLabel')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'settlements.actions.save' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'settlements.section.markFree' })).not.toBeInTheDocument()
+  })
+
+  it('undoes it in place, keeping the modal open for the fields that come back', async () => {
+    getSection.mockResolvedValue({
+      targetDate: TARGET_DATE,
+      lines: [line()],
+      coveredBy: { kind: 'free', id: null, name: '', staleReason: null },
+    })
+    const user = userEvent.setup()
+
+    renderSection()
+
+    await user.click(await screen.findByRole('button', { name: 'settlements.section.unmarkFree' }))
+
+    await waitFor(() => expect(assignSource).toHaveBeenCalledWith('slot', 'target-1', null, null, false))
+    expect(closeModal).not.toHaveBeenCalled()
+  })
+
+  it('says why it was refused when somebody is already priced', async () => {
+    // Decided with the owner: refuse, never delete the amounts behind the click — and a refusal
+    // that said nothing would look exactly like the section before the click.
+    getSection.mockResolvedValue({
+      ...bulkOff,
+      targetDate: TARGET_DATE,
+      lines: [line({ amount: 140, remaining: 140 })],
+    })
+    assignSource.mockRejectedValue(new Error('Najpierw usuń kwoty'))
+    const user = userEvent.setup()
+
+    renderSection()
+
+    await user.click(await screen.findByRole('button', { name: 'settlements.section.markFree' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Najpierw usuń kwoty')
+    expect(closeModal).not.toHaveBeenCalled()
   })
 })

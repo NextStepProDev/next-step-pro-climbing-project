@@ -111,7 +111,11 @@ class AdminPayoutService {
     // ------------------------------------------------------------- assignments
 
     /**
-     * Marks a session as work for a bulk payer, or unmarks it when {@code sourceId} is null.
+     * Marks a session as work for a bulk payer, or as free, or unmarks it when nothing is named.
+     *
+     * <p>Free is the third kind of the same mark, not a separate switch: all three take the session
+     * out of per-participant pricing, and the one-mark-per-session unique keeps a free session from
+     * also having a payer.
      *
      * <p>Reuses the settlement service's own target guard, so the two features agree on what an
      * addressable session is: an event is one engagement however many days it spans, and its per-day
@@ -122,6 +126,21 @@ class AdminPayoutService {
         UUID sourceId = request.sourceId();
         UUID userId = request.subscriberId();
 
+        if (request.isFree()) {
+            if (sourceId != null || userId != null) {
+                throw new IllegalArgumentException(msg.get("admin.payout.session.two.payers"));
+            }
+            // The same refusal as for a payer, worded for this click: a free mark would hide
+            // amounts that go on counting, and the admin asked for a decision, not a deletion.
+            if (settlementService.hasPricedParticipants(target, targetId)) {
+                throw new IllegalArgumentException(msg.get("admin.payout.session.free.has.amounts"));
+            }
+            switch (target) {
+                case SLOT -> sessionPayoutRepository.assignSlot(targetId, null, null, true);
+                case EVENT -> sessionPayoutRepository.assignEvent(targetId, null, null, true);
+            }
+            return;
+        }
         if (sourceId == null && userId == null) {
             switch (target) {
                 case SLOT -> sessionPayoutRepository.clearSlot(targetId);
@@ -143,8 +162,8 @@ class AdminPayoutService {
             requireSubscriberOfSession(target, targetId, userId);
         }
         switch (target) {
-            case SLOT -> sessionPayoutRepository.assignSlot(targetId, sourceId, userId);
-            case EVENT -> sessionPayoutRepository.assignEvent(targetId, sourceId, userId);
+            case SLOT -> sessionPayoutRepository.assignSlot(targetId, sourceId, userId, false);
+            case EVENT -> sessionPayoutRepository.assignEvent(targetId, sourceId, userId, false);
         }
     }
 
