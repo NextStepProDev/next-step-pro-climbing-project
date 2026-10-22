@@ -47,7 +47,7 @@ Aktualna zawartość — `ls`, nie ten plik. Dwa wyjątki warte zapamiętania, b
 
 ## Baza danych — Flyway
 
-**Stan: V106. Następna migracja: V107.** V105 (`reschedule_requests`) i V106 (`session_payouts.is_free`) czekają na deploy; wszystkie do V104 są na produkcji (104 wiersze w `flyway_schema_history`, sprawdzone 2026-10-18 po deployu 4.72.15; zrzut sprzed w `/backups/milestones/PRZED-V104-*`).
+**Stan: V106. Następna migracja: V107.** Wszystkie do V106 są na produkcji (deploy 4.74.0, 2026-10-23).
 Lista migracji: `ls backend/src/main/resources/db/migration/` — poniżej tylko to, czego ze schematu nie widać.
 
 ⚠️ **Nigdy nie modyfikuj zastosowanej migracji** — nawet zmiana komentarza łamie checksum na produkcji.
