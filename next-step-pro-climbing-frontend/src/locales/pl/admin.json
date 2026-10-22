@@ -1025,7 +1025,12 @@
       "groupSubscriptionShared": "Abonament uczestnika — tylko przy jednej osobie",
       "subscriptionSharedHint": "Abonament obejmuje jedną osobę, a na tym terminie jest ich więcej — pozostali nie mieliby jak zapłacić. Wyceń uczestników pojedynczo albo wskaż kontrahenta.",
       "groupSource": "Kontrahent",
-      "bulkSaved": "Rozliczane zbiorczo: {{name}}."
+      "bulkSaved": "Rozliczane zbiorczo: {{name}}.",
+      "markFree": "Zajęcia bezpłatne",
+      "free": "Zajęcia bezpłatne",
+      "freeHint": "Bez kwot i wpłat — termin nie trafia do „Do wyceny”.",
+      "unmarkFree": "Cofnij — zajęcia płatne",
+      "freeSaved": "Oznaczono jako zajęcia bezpłatne."
     },
     "line": {
       "people": "({{n}} os.)",

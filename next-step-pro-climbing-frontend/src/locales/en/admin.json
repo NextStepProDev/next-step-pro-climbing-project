@@ -1008,7 +1008,12 @@
       "groupSubscriptionShared": "Client subscription — single-payer sessions only",
       "subscriptionSharedHint": "A subscription covers one person and this session has more than one, so the others would have no way to pay. Price the participants individually, or pick a payer.",
       "groupSource": "Institution",
-      "bulkSaved": "Settled in bulk by {{name}}."
+      "bulkSaved": "Settled in bulk by {{name}}.",
+      "markFree": "Free session",
+      "free": "Free session",
+      "freeHint": "No amounts or payments — it stays out of “To be priced”.",
+      "unmarkFree": "Undo — paid session",
+      "freeSaved": "Marked as a free session."
     },
     "line": {
       "people": "({{n}} people)",

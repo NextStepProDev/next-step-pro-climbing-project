@@ -247,7 +247,7 @@ class AdminSubscriptionIntegrationTest extends BaseIntegrationTest {
         assertEquals(1, unpricedCount(), "Before the mark it is ordinary unpriced work");
 
         payouts.assignSource("slot", slot.getId(),
-            new AssignPayoutSourceRequest(null, client.getId()));
+            new AssignPayoutSourceRequest(null, client.getId(), null));
 
         // The whole point: it leaves the queue WITHOUT a zero, so zero keeps meaning "free of
         // charge" and the revenue split does not claim one-to-one work earns nothing.
@@ -266,7 +266,7 @@ class AdminSubscriptionIntegrationTest extends BaseIntegrationTest {
             monthsAgo(1).plusDays(3), LocalTime.of(18, 0), LocalTime.of(20, 0), 4));
 
         assertThrows(IllegalArgumentException.class, () -> payouts.assignSource(
-            "slot", empty.getId(), new AssignPayoutSourceRequest(null, client.getId())));
+            "slot", empty.getId(), new AssignPayoutSourceRequest(null, client.getId(), null)));
     }
 
     @Test
@@ -284,7 +284,7 @@ class AdminSubscriptionIntegrationTest extends BaseIntegrationTest {
         reservationRepository.saveAndFlush(new Reservation(cashPayer, group));
 
         assertThrows(IllegalArgumentException.class, () -> payouts.assignSource(
-            "slot", group.getId(), new AssignPayoutSourceRequest(null, client.getId())));
+            "slot", group.getId(), new AssignPayoutSourceRequest(null, client.getId(), null)));
 
         // And the other participant can still be priced, which is the point of refusing.
         settlements.save("slot", group.getId(), "user", cashPayer.getId(),
@@ -301,7 +301,7 @@ class AdminSubscriptionIntegrationTest extends BaseIntegrationTest {
         subscriptions.create(client.getId(), new SaveSubscriptionRequest(
             new BigDecimal("400"), monthsAgo(1), null));
         TimeSlot slot = bookedSlot(monthsAgo(1).plusDays(3));
-        payouts.assignSource("slot", slot.getId(), new AssignPayoutSourceRequest(null, client.getId()));
+        payouts.assignSource("slot", slot.getId(), new AssignPayoutSourceRequest(null, client.getId(), null));
         assertEquals(0, unpricedCount());
 
         reservationRepository.saveAndFlush(new Reservation(saveOtherUser(), slot));
@@ -324,7 +324,7 @@ class AdminSubscriptionIntegrationTest extends BaseIntegrationTest {
         guests.saveAndFlush(new pl.nextsteppro.climbing.domain.reservation.GuestReservation(group, "Tomek", 1));
         UUID sourceId = payouts.createSource(new SavePayoutSourceRequest("Szkola XYZ")).id();
 
-        payouts.assignSource("slot", group.getId(), new AssignPayoutSourceRequest(sourceId, null));
+        payouts.assignSource("slot", group.getId(), new AssignPayoutSourceRequest(sourceId, null, null));
 
         assertEquals(0, unpricedCount(), "A school pays for everyone in the room, guests included");
     }
@@ -339,7 +339,7 @@ class AdminSubscriptionIntegrationTest extends BaseIntegrationTest {
         UUID sourceId = payouts.createSource(new SavePayoutSourceRequest("Szkola XYZ")).id();
 
         payouts.assignSource("slot", group.getId(),
-            new AssignPayoutSourceRequest(sourceId, null));
+            new AssignPayoutSourceRequest(sourceId, null, null));
 
         assertEquals(0, unpricedCount(), "Marked in bulk, so it leaves the pricing queue");
     }
@@ -361,7 +361,7 @@ class AdminSubscriptionIntegrationTest extends BaseIntegrationTest {
         // Otherwise the mark takes the session out of the queue and files it under a retainer that
         // never covered it — work that earns nothing and says so nowhere.
         assertThrows(IllegalArgumentException.class, () -> payouts.assignSource(
-            "slot", lastYear.getId(), new AssignPayoutSourceRequest(null, client.getId())));
+            "slot", lastYear.getId(), new AssignPayoutSourceRequest(null, client.getId(), null)));
     }
 
     @Test
@@ -372,7 +372,7 @@ class AdminSubscriptionIntegrationTest extends BaseIntegrationTest {
         TimeSlot slot = bookedSlot(monthsAgo(1).plusDays(3));
 
         assertThrows(IllegalArgumentException.class, () -> payouts.assignSource(
-            "slot", slot.getId(), new AssignPayoutSourceRequest(UUID.randomUUID(), client.getId())));
+            "slot", slot.getId(), new AssignPayoutSourceRequest(UUID.randomUUID(), client.getId(), null)));
     }
 
     @Test
@@ -556,7 +556,7 @@ class AdminSubscriptionIntegrationTest extends BaseIntegrationTest {
         UUID id = subscriptions.create(client.getId(), new SaveSubscriptionRequest(
             new BigDecimal("400"), monthsAgo(2), null)).id();
         TimeSlot slot = bookedSlot(monthsAgo(1).plusDays(3));
-        payouts.assignSource("slot", slot.getId(), new AssignPayoutSourceRequest(null, client.getId()));
+        payouts.assignSource("slot", slot.getId(), new AssignPayoutSourceRequest(null, client.getId(), null));
         assertEquals(0, unpricedCount());
 
         subscriptions.end(id, new EndSubscriptionRequest(monthsAgo(2)));
@@ -573,7 +573,7 @@ class AdminSubscriptionIntegrationTest extends BaseIntegrationTest {
         UUID id = subscriptions.create(client.getId(), new SaveSubscriptionRequest(
             new BigDecimal("400"), monthsAgo(1), null)).id();
         TimeSlot slot = bookedSlot(monthsAgo(1).plusDays(3));
-        payouts.assignSource("slot", slot.getId(), new AssignPayoutSourceRequest(null, client.getId()));
+        payouts.assignSource("slot", slot.getId(), new AssignPayoutSourceRequest(null, client.getId(), null));
 
         subscriptions.delete(id);
 
@@ -586,7 +586,7 @@ class AdminSubscriptionIntegrationTest extends BaseIntegrationTest {
         subscriptions.create(client.getId(), new SaveSubscriptionRequest(
             new BigDecimal("400"), monthsAgo(1), null));
         TimeSlot slot = bookedSlot(monthsAgo(1).plusDays(3));
-        payouts.assignSource("slot", slot.getId(), new AssignPayoutSourceRequest(null, client.getId()));
+        payouts.assignSource("slot", slot.getId(), new AssignPayoutSourceRequest(null, client.getId(), null));
         assertNull(settlements.getSection("slot", slot.getId()).coveredBy().staleReason());
 
         // A second person booked after the mark: the session is out of per-participant pricing, so

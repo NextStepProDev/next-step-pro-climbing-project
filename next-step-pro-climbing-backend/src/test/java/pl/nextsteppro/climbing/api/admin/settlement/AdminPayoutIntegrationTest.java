@@ -117,7 +117,7 @@ class AdminPayoutIntegrationTest extends BaseIntegrationTest {
         Event allDay = eventRepository.saveAndFlush(
             new Event("Wyjazd", EventType.WORKSHOP, OCTOBER.plusDays(5), OCTOBER.plusDays(5), 8));
         payoutService.assignSource("event", allDay.getId(),
-            new AssignPayoutSourceRequest(school, null));
+            new AssignPayoutSourceRequest(school, null, null));
         payoutService.createPayout(new SavePayoutRequest(
             school, OCTOBER, new BigDecimal("200"), LocalDate.of(2026, 11, 8)));
 
@@ -215,12 +215,12 @@ class AdminPayoutIntegrationTest extends BaseIntegrationTest {
         assertEquals(1, stats.buildOverview("2026", TODAY).unpriced().count(),
             "Before it is marked it is ordinary unpriced work");
 
-        payoutService.assignSource("slot", slot.getId(), new AssignPayoutSourceRequest(school, null));
+        payoutService.assignSource("slot", slot.getId(), new AssignPayoutSourceRequest(school, null, null));
 
         // Nobody to charge per head, so asking to price it would be asking for a made-up number.
         assertEquals(0, stats.buildOverview("2026", TODAY).unpriced().count());
 
-        payoutService.assignSource("slot", slot.getId(), new AssignPayoutSourceRequest(null, null));
+        payoutService.assignSource("slot", slot.getId(), new AssignPayoutSourceRequest(null, null, null));
         assertEquals(1, stats.buildOverview("2026", TODAY).unpriced().count(),
             "Unmarking puts it back — the queue follows the mark, not a one-way flag");
     }
@@ -233,7 +233,7 @@ class AdminPayoutIntegrationTest extends BaseIntegrationTest {
 
         assertNull(settlementService.getSection("slot", slot.getId()).coveredBy());
 
-        payoutService.assignSource("slot", slot.getId(), new AssignPayoutSourceRequest(school, null));
+        payoutService.assignSource("slot", slot.getId(), new AssignPayoutSourceRequest(school, null, null));
 
         SettlementSectionDto section = settlementService.getSection("slot", slot.getId());
         assertEquals("source", section.coveredBy().kind());
@@ -252,7 +252,7 @@ class AdminPayoutIntegrationTest extends BaseIntegrationTest {
 
         // Same addressable-session rule as the per-participant half, from the same guard.
         assertThrows(IllegalArgumentException.class, () -> payoutService.assignSource(
-            "slot", eventDay.getId(), new AssignPayoutSourceRequest(school, null)));
+            "slot", eventDay.getId(), new AssignPayoutSourceRequest(school, null, null)));
     }
 
     @Test
@@ -262,8 +262,8 @@ class AdminPayoutIntegrationTest extends BaseIntegrationTest {
         TimeSlot slot = timeSlotRepository.saveAndFlush(
             new TimeSlot(TODAY.plusDays(3), LocalTime.of(16, 0), LocalTime.of(17, 0), 10));
 
-        payoutService.assignSource("slot", slot.getId(), new AssignPayoutSourceRequest(school, null));
-        payoutService.assignSource("slot", slot.getId(), new AssignPayoutSourceRequest(club, null));
+        payoutService.assignSource("slot", slot.getId(), new AssignPayoutSourceRequest(school, null, null));
+        payoutService.assignSource("slot", slot.getId(), new AssignPayoutSourceRequest(club, null, null));
 
         assertEquals(1, jdbc.queryForObject("SELECT COUNT(*) FROM session_payouts", Integer.class),
             "One session belongs to one payer — reassigning overwrites rather than adding");
@@ -283,10 +283,10 @@ class AdminPayoutIntegrationTest extends BaseIntegrationTest {
         // ⚠️ Otherwise the amount stays in the table, the section stops showing it, and it goes on
         // counting in revenue and in outstanding debt — money visible in the totals and nowhere else.
         assertThrows(IllegalArgumentException.class, () -> payoutService.assignSource(
-            "slot", slot.getId(), new AssignPayoutSourceRequest(school, null)));
+            "slot", slot.getId(), new AssignPayoutSourceRequest(school, null, null)));
 
         settlementService.delete("slot", slot.getId(), "user", pupil.getId());
-        payoutService.assignSource("slot", slot.getId(), new AssignPayoutSourceRequest(school, null));
+        payoutService.assignSource("slot", slot.getId(), new AssignPayoutSourceRequest(school, null, null));
         assertEquals(school, settlementService.getSection("slot", slot.getId()).coveredBy().id(),
             "Clearing the amounts is what unblocks it — the guard rejects the change, not the state");
     }
@@ -298,12 +298,117 @@ class AdminPayoutIntegrationTest extends BaseIntegrationTest {
         TimeSlot slot = timeSlotRepository.saveAndFlush(
             new TimeSlot(TODAY.plusDays(3), LocalTime.of(16, 0), LocalTime.of(17, 0), 10));
         reservationRepository.saveAndFlush(new Reservation(pupil, slot));
-        payoutService.assignSource("slot", slot.getId(), new AssignPayoutSourceRequest(school, null));
+        payoutService.assignSource("slot", slot.getId(), new AssignPayoutSourceRequest(school, null, null));
 
         // The mirror direction. The front hides the fields, but the endpoint must not depend on that.
         assertThrows(IllegalArgumentException.class, () -> settlementService.save(
             "slot", slot.getId(), "user", pupil.getId(),
             new SaveSettlementRequest(new BigDecimal("150"))));
+    }
+
+    // ------------------------------------------------------------- free sessions
+
+    @Test
+    @DisplayName("shouldMarkASessionFreeAndTakeItOutOfThePricingQueue")
+    void shouldMarkASessionFreeAndTakeItOutOfThePricingQueue() {
+        User pupil = saveUser("free1@example.com");
+        TimeSlot slot = timeSlotRepository.saveAndFlush(
+            new TimeSlot(TODAY.minusDays(3), LocalTime.of(16, 0), LocalTime.of(17, 0), 10));
+        reservationRepository.saveAndFlush(new Reservation(pupil, slot));
+        assertEquals(1, stats.buildOverview("2026", TODAY).unpriced().count());
+
+        payoutService.assignSource("slot", slot.getId(), new AssignPayoutSourceRequest(null, null, true));
+
+        SettlementCoverageDto coverage = settlementService.getSection("slot", slot.getId()).coveredBy();
+        assertNotNull(coverage);
+        assertEquals("free", coverage.kind());
+        assertNull(coverage.id(), "There is no payer to name");
+        assertEquals(0, stats.buildOverview("2026", TODAY).unpriced().count(),
+            "Free is a decision, not a price nobody typed in");
+
+        payoutService.assignSource("slot", slot.getId(), new AssignPayoutSourceRequest(null, null, null));
+        assertNull(settlementService.getSection("slot", slot.getId()).coveredBy());
+        assertEquals(1, stats.buildOverview("2026", TODAY).unpriced().count(),
+            "Undoing it puts the session back into per-participant pricing");
+    }
+
+    @Test
+    @DisplayName("shouldRefuseAmountsAndPaymentsOnAFreeSession")
+    void shouldRefuseAmountsAndPaymentsOnAFreeSession() {
+        User pupil = saveUser("free2@example.com");
+        TimeSlot slot = timeSlotRepository.saveAndFlush(
+            new TimeSlot(TODAY.plusDays(3), LocalTime.of(16, 0), LocalTime.of(17, 0), 10));
+        reservationRepository.saveAndFlush(new Reservation(pupil, slot));
+        payoutService.assignSource("slot", slot.getId(), new AssignPayoutSourceRequest(null, null, true));
+
+        assertThrows(IllegalArgumentException.class, () -> settlementService.save(
+            "slot", slot.getId(), "user", pupil.getId(),
+            new SaveSettlementRequest(new BigDecimal("150"))));
+        assertThrows(IllegalArgumentException.class, () -> settlementService.addPayment(
+            new AddPaymentRequest("user", pupil.getId(), new BigDecimal("150"), TODAY,
+                "slot", slot.getId())));
+    }
+
+    @Test
+    @DisplayName("shouldRefuseToMarkAPricedSessionFree")
+    void shouldRefuseToMarkAPricedSessionFree() {
+        User pupil = saveUser("free3@example.com");
+        TimeSlot slot = timeSlotRepository.saveAndFlush(
+            new TimeSlot(TODAY.plusDays(3), LocalTime.of(16, 0), LocalTime.of(17, 0), 10));
+        reservationRepository.saveAndFlush(new Reservation(pupil, slot));
+        settlementService.save("slot", slot.getId(), "user", pupil.getId(),
+            new SaveSettlementRequest(new BigDecimal("150")));
+
+        // Decided with the owner (2026-10-23): refuse, never delete the amounts behind the click.
+        IllegalArgumentException refused = assertThrows(IllegalArgumentException.class,
+            () -> payoutService.assignSource(
+                "slot", slot.getId(), new AssignPayoutSourceRequest(null, null, true)));
+        assertTrue(refused.getMessage().contains("bezpłatne") || refused.getMessage().contains("free"),
+            "The refusal names this click, not the bulk-payer one: " + refused.getMessage());
+        assertNull(settlementService.getSection("slot", slot.getId()).coveredBy());
+    }
+
+    @Test
+    @DisplayName("shouldRefuseAFreeSessionThatAlsoNamesAPayer")
+    void shouldRefuseAFreeSessionThatAlsoNamesAPayer() {
+        TimeSlot slot = timeSlotRepository.saveAndFlush(
+            new TimeSlot(TODAY.plusDays(3), LocalTime.of(16, 0), LocalTime.of(17, 0), 10));
+
+        assertThrows(IllegalArgumentException.class, () -> payoutService.assignSource(
+            "slot", slot.getId(), new AssignPayoutSourceRequest(school, null, true)));
+    }
+
+    @Test
+    @DisplayName("shouldSwitchBetweenFreeAndAPayerWithoutLeavingTwoMarks")
+    void shouldSwitchBetweenFreeAndAPayerWithoutLeavingTwoMarks() {
+        TimeSlot slot = timeSlotRepository.saveAndFlush(
+            new TimeSlot(TODAY.plusDays(3), LocalTime.of(16, 0), LocalTime.of(17, 0), 0));
+
+        payoutService.assignSource("slot", slot.getId(), new AssignPayoutSourceRequest(null, null, true));
+        // ⚠️ The upsert has to clear the free flag, or the single-payer CHECK fails on a payer + free.
+        payoutService.assignSource("slot", slot.getId(), new AssignPayoutSourceRequest(school, null, null));
+        assertEquals("source", settlementService.getSection("slot", slot.getId()).coveredBy().kind());
+
+        payoutService.assignSource("slot", slot.getId(), new AssignPayoutSourceRequest(null, null, true));
+        assertEquals("free", settlementService.getSection("slot", slot.getId()).coveredBy().kind());
+        assertEquals(1, jdbc.queryForObject("SELECT COUNT(*) FROM session_payouts", Integer.class));
+    }
+
+    @Test
+    @DisplayName("shouldKeepAFreeClosedSessionOffTheNoPayerListAndOutOfTheRate")
+    void shouldKeepAFreeClosedSessionOffTheNoPayerListAndOutOfTheRate() {
+        TimeSlot closed = timeSlotRepository.saveAndFlush(
+            new TimeSlot(OCTOBER.plusDays(2), LocalTime.of(16, 0), LocalTime.of(17, 0), 0));
+        LocalDate november = LocalDate.of(2026, 11, 30);
+        assertEquals(1, stats.buildOverview("2026", november).unassigned().count(),
+            "Zero seats and no payer is the shape the backlog list reports");
+
+        payoutService.assignSource("slot", closed.getId(), new AssignPayoutSourceRequest(null, null, true));
+
+        assertEquals(0, stats.buildOverview("2026", november).unassigned().count(),
+            "A free session has an answer to 'who pays' — nobody");
+        assertTrue(stats.buildOverview("2026", november).payouts().periods().isEmpty(),
+            "No institution, so it is no month of anybody's rate");
     }
 
     @Test
@@ -362,7 +467,7 @@ class AdminPayoutIntegrationTest extends BaseIntegrationTest {
 
     private void assignSlot(LocalDate date, UUID sourceId, LocalTime from, LocalTime to) {
         TimeSlot slot = timeSlotRepository.saveAndFlush(new TimeSlot(date, from, to, 10));
-        payoutService.assignSource("slot", slot.getId(), new AssignPayoutSourceRequest(sourceId, null));
+        payoutService.assignSource("slot", slot.getId(), new AssignPayoutSourceRequest(sourceId, null, null));
     }
 
     private PayoutPeriodDto periodOf(LocalDate today, LocalDate month) {

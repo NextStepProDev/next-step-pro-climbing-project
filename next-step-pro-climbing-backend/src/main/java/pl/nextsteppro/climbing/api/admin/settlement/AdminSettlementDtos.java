@@ -41,7 +41,9 @@ record SettlementSectionDto(
  * for a month and a client whose subscription covers the session are the same phenomenon from two
  * sides, and the screen says the same sentence about either.
  *
- * @param kind {@code source} for an institution, {@code subscription} for a client's standing fee.
+ * @param kind {@code source} for an institution, {@code subscription} for a client's standing fee,
+ *             {@code free} for a session nobody pays for — then {@code id} is null and
+ *             {@code name} empty, because there is no payer to name.
  * @param staleReason why a subscription mark no longer holds, or {@code null} while it does:
  *                    {@code not.participant} (the client is no longer booked on it), {@code shared}
  *                    (somebody else booked since, and cannot be priced while the mark stands) or
@@ -50,7 +52,12 @@ record SettlementSectionDto(
  *                    asking the settlement package — so the section re-checks it on every read
  *                    instead of trusting it. Always {@code null} for an institution.
  */
-record SettlementCoverageDto(String kind, UUID id, String name, @Nullable String staleReason) {}
+record SettlementCoverageDto(String kind, @Nullable UUID id, String name, @Nullable String staleReason) {
+
+    static SettlementCoverageDto free() {
+        return new SettlementCoverageDto("free", null, "", null);
+    }
+}
 
 /**
  * One payer on one entry.
@@ -460,8 +467,18 @@ record SavePayoutSourceRequest(
 record AssignPayoutSourceRequest(
     @Nullable UUID sourceId,
     /** A client whose standing subscription covers the session. Exclusive with {@code sourceId}. */
-    @Nullable UUID subscriberId
-) {}
+    @Nullable UUID subscriberId,
+    /**
+     * A free session: no payer and no per-participant pricing. Exclusive with both payers. Null and
+     * false mean the same, so a client that predates the field still clears or assigns as before.
+     */
+    @Nullable Boolean free
+) {
+
+    boolean isFree() {
+        return Boolean.TRUE.equals(free);
+    }
+}
 
 /**
  * One transfer. {@code periodMonth} is any day of the month the work was done in — the server snaps

@@ -659,10 +659,11 @@ export interface SettlementSection {
 }
 
 // One shape for both payer kinds: an institution paying a lump for a month, and a client whose
-// standing subscription covers the session, are the same thing from two sides.
+// standing subscription covers the session, are the same thing from two sides. `free` is the third
+// kind of the mark — nobody pays — and then `id` is null and `name` empty.
 export interface SettlementCoverage {
-  kind: 'source' | 'subscription'
-  id: string
+  kind: 'source' | 'subscription' | 'free'
+  id: string | null
   name: string
   // Why a subscription mark no longer holds; null while it does (always null for an institution).
   // The mark is checked once, when set, and bookings change afterwards without telling it.
