@@ -5,6 +5,7 @@ import { authApi } from '../api/client'
 import { loginUser as apiLogin } from '../api/auth'
 import { saveTokens, clearTokens, hasTokens, type AuthTokens } from '../utils/tokenStorage'
 import { ApiError } from '../utils/errors'
+import { clearAllDrafts, pruneDrafts } from '../utils/draftStorage'
 import type { User } from '../types'
 
 /**
@@ -146,8 +147,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     syncLanguage(currentUser.preferredLanguage)
   }, [syncLanguage])
 
+  // Whoever signs in on this device never inherits another account's unsaved writing.
+  const userId = user?.id ?? null
+  useEffect(() => {
+    if (userId) pruneDrafts(userId)
+  }, [userId])
+
   const logout = useCallback(() => {
     authApi.logout()
+    clearAllDrafts()
     setUser(null)
     setSessionUnknown(false)
     queryClient.clear()
@@ -171,6 +179,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       {children}
     </AuthContext.Provider>
   )
+}
+
+/**
+ * The signed-in user's id, or null — and null outside an AuthProvider too, instead of throwing.
+ * For helpers that only enrich a screen (editor drafts) and must not make every component that
+ * hosts them demand a provider.
+ */
+// eslint-disable-next-line react-refresh/only-export-components
+export function useCurrentUserId(): string | null {
+  return useContext(AuthContext)?.user?.id ?? null
 }
 
 // eslint-disable-next-line react-refresh/only-export-components

@@ -181,6 +181,11 @@ function PrivacyPolicyPl({ logo }: { logo: string }) {
           <p className="text-surface-500 text-sm mt-4">
             Nie korzystamy z plików cookies śledzących, Google Analytics, Facebook Pixel ani żadnych innych narzędzi analitycznych.
           </p>
+          <p className="text-surface-500 text-sm mt-2">
+            Niezapisany tekst — np. rozpoczętą wiadomość do trenera albo opis treningu — aplikacja przechowuje
+            wyłącznie w pamięci Twojej przeglądarki, na tym urządzeniu, żeby nie przepadł przy przypadkowym
+            wyjściu. Nie trafia on na nasz serwer i znika po zapisaniu lub wysłaniu, po wylogowaniu albo po 7 dniach.
+          </p>
         </Section>
 
         {/* 3. Cel i podstawa prawna */}
@@ -694,6 +699,11 @@ function PrivacyPolicyEn({ logo }: { logo: string }) {
           </SubSection>
           <p className="text-surface-500 text-sm mt-4">
             We do not use tracking cookies, Google Analytics, Facebook Pixel, or any other analytics tools.
+          </p>
+          <p className="text-surface-500 text-sm mt-2">
+            Unsaved text — such as a message to your coach you have started or a training description — is kept
+            only in your browser's storage on this device, so that it is not lost if you leave by accident. It is
+            never sent to our server and disappears once saved or sent, when you log out, or after 7 days.
           </p>
         </Section>
 

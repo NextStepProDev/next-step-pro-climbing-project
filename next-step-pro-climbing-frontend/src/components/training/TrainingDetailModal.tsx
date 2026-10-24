@@ -309,6 +309,8 @@ export function TrainingDetailModal({
           <p className="text-sm text-surface-400">{t('consentPending.thread')}</p>
         ) : (
           <CommentThread
+            // One mount per conversation: the composer seeds itself from that thread's draft once
+            key={training.id}
             target={{ kind: 'training', id: training.id }}
             api={api}
             onPosted={onCommentPosted}

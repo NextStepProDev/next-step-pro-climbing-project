@@ -70,6 +70,13 @@
     "discard": "Odrzuć zmiany",
     "keep": "Wróć do edycji"
   },
+  "draft": {
+    "found": "Masz niezapisany szkic z {{time}}.",
+    "stale": "Od tego czasu zapisano nowszą wersję — przywrócenie szkicu ją nadpisze.",
+    "filesDropped": "Zdjęć wgranych z dysku szkic nie przechowuje — do ponownego dodania: {{n}}.",
+    "restore": "Przywróć",
+    "discard": "Odrzuć"
+  },
   "save": "Zapisz",
   "delete": "Usuń",
   "edit": "Edytuj",

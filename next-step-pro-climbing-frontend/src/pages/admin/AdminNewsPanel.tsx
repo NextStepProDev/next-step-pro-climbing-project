@@ -45,6 +45,9 @@ import { QueryError } from '../../components/ui/QueryError'
 import { RichTextEditor } from '../../components/ui/RichTextEditor'
 import clsx from 'clsx'
 import { useUnsavedChangesWarning } from '../../hooks/useUnsavedChangesWarning'
+import { useDraft } from '../../hooks/useDraft'
+import { DraftBanner } from '../../components/ui/DraftBanner'
+import { keepablePendingBlocks } from '../../utils/pendingBlockDraft'
 
 type View = 'list' | 'edit'
 
@@ -73,6 +76,40 @@ type PendingVideoBlock = {
 }
 
 type PendingBlock = PendingTextBlock | PendingImageBlock | PendingVideoBlock
+
+type BlockEdit = { content?: string; caption?: string }
+
+interface ArticleDraft {
+  title: string
+  excerpt: string
+  blockEdits: Record<string, BlockEdit>
+  pendingBlocks: PendingBlock[]
+  thumbnailFromLibrary: string | null
+  focalPoint: { x: number; y: number } | null
+  /** Device images (new blocks + a new thumbnail) the draft could not keep. */
+  droppedFiles: number
+}
+
+function toArticleDraft(s: {
+  title: string
+  excerpt: string
+  blockEdits: Record<string, BlockEdit>
+  pendingBlocks: PendingBlock[]
+  thumbnailFile: File | null
+  thumbnailFromLibrary: string | null
+  focalPoint: { x: number; y: number } | null
+}): ArticleDraft {
+  const { kept, dropped } = keepablePendingBlocks(s.pendingBlocks)
+  return {
+    title: s.title,
+    excerpt: s.excerpt,
+    blockEdits: s.blockEdits,
+    pendingBlocks: kept,
+    thumbnailFromLibrary: s.thumbnailFromLibrary,
+    focalPoint: s.focalPoint,
+    droppedFiles: dropped + (s.thumbnailFile ? 1 : 0),
+  }
+}
 
 // Normalizes a raw URL (YouTube/Instagram) to an embed URL — identical logic to the backend
 function normalizeVideoUrlForPreview(url: string): string | undefined {
@@ -479,6 +516,7 @@ function EditView({
   const deleteSingleMutation = useMutation({
     mutationFn: () => adminNewsApi.delete(newsId),
     onSuccess: () => {
+      draft.discard()
       invalidate()
       onBack()
     },
@@ -572,6 +610,29 @@ function EditView({
 
   // The editor's own "back to list" already confirms; this covers a refresh or a closed tab
   useUnsavedChangesWarning(isDirty)
+
+  // ---------- Draft (survives a navbar click, a back gesture, a crash) ----------
+  const draft = useDraft<ArticleDraft>({
+    scope: `news:${newsId}`,
+    value: toArticleDraft({ title, excerpt, blockEdits, pendingBlocks, thumbnailFile, thumbnailFromLibrary, focalPoint }),
+    dirty: isDirty,
+    baseline: detail.updatedAt,
+  })
+  const restoreDraft = () => {
+    const data = draft.restore()
+    if (!data) return
+    setTitle(data.title)
+    setExcerpt(data.excerpt)
+    // Only blocks the article still has: one deleted since the draft has nothing to edit.
+    setBlockEdits((prev) => {
+      const next = { ...prev }
+      for (const [id, edit] of Object.entries(data.blockEdits)) if (id in next) next[id] = edit
+      return next
+    })
+    setPendingBlocks(data.pendingBlocks)
+    setThumbnailFromLibrary(data.thumbnailFromLibrary)
+    setFocalPoint(data.focalPoint)
+  }
 
   // ---------- Preview ----------
   const [showPreview, setShowPreview] = useState(false)
@@ -682,6 +743,7 @@ function EditView({
     setSaveError(null)
     try {
       await performSave(syncMedia)
+      draft.clear()
       if (pendingSyncAction === 'publish') {
         publishMutation.mutate()
       }
@@ -719,6 +781,7 @@ function EditView({
       setSaveError(null)
       try {
         await performSave(false)
+        draft.clear()
       } catch (err) {
         setSaveError(getErrorMessage(err))
         setIsSaving(false)
@@ -831,6 +894,13 @@ function EditView({
         <ArrowLeft className="h-4 w-4" />
         {t('news.backToList')}
       </button>
+
+      <DraftBanner
+        offer={draft.offer}
+        onRestore={restoreDraft}
+        onDiscard={draft.discard}
+        droppedFiles={draft.offer?.data.droppedFiles}
+      />
 
       {/* Section 1: Metadata */}
       <section className="bg-surface-800 border border-surface-700 rounded-lg p-6">
@@ -1267,7 +1337,10 @@ function EditView({
         title={t('news.exitConfirmTitle')}
         message={t('news.exitConfirmMessage')}
         confirmText={t('news.exitConfirm')}
-        onConfirm={() => onBack()}
+        onConfirm={() => {
+          draft.discard()
+          onBack()
+        }}
         onClose={() => setShowExitConfirm(false)}
       />
 

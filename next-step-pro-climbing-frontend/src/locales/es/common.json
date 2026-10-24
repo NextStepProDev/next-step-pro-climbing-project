@@ -70,6 +70,13 @@
     "discard": "Descartar cambios",
     "keep": "Volver a editar"
   },
+  "draft": {
+    "found": "Tienes un borrador sin guardar del {{time}}.",
+    "stale": "Desde entonces se ha guardado una versión más reciente: restaurar el borrador la sobrescribirá.",
+    "filesDropped": "Las imágenes subidas desde tu dispositivo no se guardan en el borrador; por volver a añadir: {{n}}.",
+    "restore": "Restaurar",
+    "discard": "Descartar"
+  },
   "save": "Guardar",
   "delete": "Eliminar",
   "edit": "Editar",

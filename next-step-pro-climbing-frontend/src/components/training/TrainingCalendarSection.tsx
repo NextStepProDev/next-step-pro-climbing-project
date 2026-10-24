@@ -804,6 +804,7 @@ export function TrainingCalendarSection({ api, scopeKey, scopeLabel, isCoachView
         onUpload={api.uploadAttachment}
         templatesEnabled={isCoachView}
         submitError={saveMutation.isError ? getErrorMessage(saveMutation.error) : null}
+        draftOwner={scopeKey}
       />
 
       {/* Detail: completion + comment thread + edit/delete */}

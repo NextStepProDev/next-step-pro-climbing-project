@@ -70,6 +70,13 @@
     "discard": "Discard changes",
     "keep": "Back to editing"
   },
+  "draft": {
+    "found": "You have an unsaved draft from {{time}}.",
+    "stale": "A newer version has been saved since — restoring the draft will overwrite it.",
+    "filesDropped": "Images uploaded from your device are not kept in a draft — to add again: {{n}}.",
+    "restore": "Restore",
+    "discard": "Discard"
+  },
   "save": "Save",
   "delete": "Delete",
   "edit": "Edit",

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
 vi.mock('react-i18next', () => ({
@@ -18,6 +18,7 @@ vi.mock('../api/client', () => ({
 import { AuthProvider, useAuth } from './AuthContext'
 import { ApiError } from '../utils/errors'
 import { hasTokens, saveTokens } from '../utils/tokenStorage'
+import { readDraft, writeDraft } from '../utils/draftStorage'
 
 function Probe() {
   const { user, isLoading, sessionUnknown } = useAuth()
@@ -155,5 +156,54 @@ describe('AuthProvider tells the guards apart from a real logout', () => {
 
     await waitFor(() => expect(screen.getByText('user:coach@nextsteppro.pl')).toBeInTheDocument())
     expect(screen.getByText('session:known')).toBeInTheDocument()
+  })
+})
+
+/**
+ * Editor drafts can hold health data (training plans, thread messages) on a device that may be
+ * shared. Signing in drops every other account's; signing out drops all of them.
+ */
+describe('AuthProvider and editor drafts', () => {
+  beforeEach(() => {
+    localStorage.clear()
+    saveTokens({ accessToken: 'access-token', refreshToken: 'refresh-token', expiresIn: 900 })
+    getCurrentUser.mockReset()
+  })
+
+  afterEach(() => {
+    localStorage.clear()
+  })
+
+  function LogoutProbe() {
+    const { user, logout } = useAuth()
+    return user ? <button onClick={logout}>logout</button> : <span>anonymous</span>
+  }
+
+  it('shouldDropAnotherAccountsDraftsWhenSomeoneSignsIn', async () => {
+    writeDraft('someone-else', 'mail', { savedAt: Date.now(), baseline: null, data: 'theirs' })
+    writeDraft('u1', 'mail', { savedAt: Date.now(), baseline: null, data: 'mine' })
+    getCurrentUser.mockResolvedValue({ id: 'u1', email: 'coach@nextsteppro.pl', preferredLanguage: 'pl' })
+
+    renderProvider()
+
+    await waitFor(() => expect(readDraft('someone-else', 'mail')).toBeNull())
+    expect(readDraft('u1', 'mail')?.data).toBe('mine')
+  })
+
+  it('shouldClearEveryDraftOnLogout', async () => {
+    writeDraft('u1', 'mail', { savedAt: Date.now(), baseline: null, data: 'mine' })
+    getCurrentUser.mockResolvedValue({ id: 'u1', email: 'coach@nextsteppro.pl', preferredLanguage: 'pl' })
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    render(
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <LogoutProbe />
+        </AuthProvider>
+      </QueryClientProvider>,
+    )
+
+    fireEvent.click(await screen.findByText('logout'))
+
+    await waitFor(() => expect(readDraft('u1', 'mail')).toBeNull())
   })
 })

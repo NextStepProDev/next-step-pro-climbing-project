@@ -18,6 +18,8 @@ import { decodeHtmlEntities } from '../../utils/htmlEntities'
 import { useDirty } from '../../hooks/useDirty'
 import { useChildDirty } from '../../hooks/useChildDirty'
 import { useUnsavedChangesWarning } from '../../hooks/useUnsavedChangesWarning'
+import { useDraft } from '../../hooks/useDraft'
+import { DraftBanner } from '../ui/DraftBanner'
 import { nowInWarsaw } from '../../utils/calendarDate'
 import { addMinutes } from '../../utils/timeOfDay'
 import type { AttachmentInput, CreatePersonalTraining, PersonalTraining, TrainingKind } from '../../types'
@@ -69,9 +71,12 @@ interface TrainingFormModalProps {
   templatesEnabled?: boolean
   // Backend rejection (e.g. athlete flag revoked mid-session) — shown above the buttons
   submitError?: string | null
+  // Whose plan a NEW entry goes into ('me' / athleteId), so a coach's half-written entry for one
+  // athlete is never offered back on another's calendar. Omitted = no draft for new entries.
+  draftOwner?: string
 }
 
-export function TrainingFormModal({ isOpen, onClose, training, initialDate, initialTime, prefill, onSubmit, saving, allowInstantComplete, onUpload, templatesEnabled, submitError }: TrainingFormModalProps) {
+export function TrainingFormModal({ isOpen, onClose, training, initialDate, initialTime, prefill, onSubmit, saving, allowInstantComplete, onUpload, templatesEnabled, submitError, draftOwner }: TrainingFormModalProps) {
   const { t } = useTranslation('training')
   // Reported up by the form below, so closing a half-written plan asks first
   const [isDirty, reportDirty] = useChildDirty(isOpen)
@@ -102,16 +107,31 @@ export function TrainingFormModal({ isOpen, onClose, training, initialDate, init
           onUpload={onUpload}
           templatesEnabled={templatesEnabled}
           submitError={submitError}
+          draftOwner={draftOwner}
         />
       )}
     </Modal>
   )
 }
 
+interface TrainingDraft {
+  kind: TrainingKind
+  date: string
+  allDay: boolean
+  startTime: string
+  endTime: string
+  calories: string
+  title: string
+  description: string
+  attachments: AttachmentInput[]
+  /** Files uploaded in the unsaved session — not kept, see the draft below. */
+  droppedFiles: number
+}
+
 const DEFAULT_START = '17:00'
 const DEFAULT_DURATION_MIN = 90
 
-function TrainingForm({ onDirtyChange, training, initialDate, initialTime, prefill, onClose, onSubmit, saving, allowInstantComplete, onUpload, templatesEnabled, submitError }: {
+function TrainingForm({ onDirtyChange, training, initialDate, initialTime, prefill, onClose, onSubmit, saving, allowInstantComplete, onUpload, templatesEnabled, submitError, draftOwner }: {
   onDirtyChange: (dirty: boolean) => void
   training?: PersonalTraining | null
   initialDate?: string
@@ -124,6 +144,7 @@ function TrainingForm({ onDirtyChange, training, initialDate, initialTime, prefi
   onUpload: (file: File) => Promise<{ filename: string; originalName: string; mimeType: string; sizeBytes: number }>
   templatesEnabled?: boolean
   submitError?: string | null
+  draftOwner?: string
 }) {
   const { t } = useTranslation('training')
 
@@ -194,6 +215,48 @@ function TrainingForm({ onDirtyChange, training, initialDate, initialTime, prefi
   // …and the browser owns the other exits: a refresh, a closed tab, a typed address. No modal in
   // this app guarded those before, so Cmd+R over a half-written plan threw it away in silence.
   useUnsavedChangesWarning(isDirty)
+
+  // A draft keeps the plan when none of the above gets a say: a navbar click, iOS dropping the tab.
+  // A duplicate gets none — its text came from another entry, and an older draft offered over it
+  // would only muddle which content is on screen.
+  const draftScope = training
+    ? `training:${training.id}`
+    : !prefill && draftOwner ? `training:new:${draftOwner}` : null
+  // A file uploaded but never saved is an orphan the sweeper removes, so only files the entry
+  // already had (and links) are safe to bring back.
+  const savedFiles = new Set(training?.attachments.map((a) => a.filename).filter(Boolean))
+  const keptAttachments = attachments.filter((a) => a.kind === 'LINK' || (a.filename != null && savedFiles.has(a.filename)))
+  const draft = useDraft<TrainingDraft>({
+    scope: draftScope,
+    value: {
+      kind, date, allDay, startTime, endTime, calories, title, description,
+      attachments: keptAttachments,
+      droppedFiles: attachments.length - keptAttachments.length,
+    },
+    dirty: isDirty,
+    baseline: training ? String(training.version) : null,
+  })
+  const restoreDraft = () => {
+    const data = draft.restore()
+    if (!data) return
+    // The kind is fixed once an entry exists (see TrainingKind); a draft cannot change it.
+    if (!training) setKind(data.kind)
+    setDate(data.date)
+    setAllDay(data.allDay)
+    setStartTime(data.startTime)
+    setEndTime(data.endTime)
+    setCalories(data.calories)
+    setTitle(data.title)
+    setDescription(data.description)
+    setAttachments(data.attachments)
+  }
+  // The save is the parent's: a draft cleared on submit comes back if the parent reports a failure.
+  const [seenSubmitError, setSeenSubmitError] = useState(submitError)
+  if (submitError !== seenSubmitError) {
+    setSeenSubmitError(submitError)
+    if (submitError) draft.resume()
+  }
+
   // Cancel sits next to Save, so a mis-click there is both the likeliest and the costliest.
   // Route it through the modal's guard rather than closing outright — see modalClose.
   const guardedClose = useModalClose()
@@ -277,6 +340,7 @@ function TrainingForm({ onDirtyChange, training, initialDate, initialTime, prefi
       return
     }
     setError(null)
+    draft.clear()
     const completion = instantCompleteAvailable && markDone
       ? { feedback: feedback.trim() || undefined, rpe: isTask ? undefined : (rpe ?? undefined) }
       : null
@@ -300,6 +364,12 @@ function TrainingForm({ onDirtyChange, training, initialDate, initialTime, prefi
 
   return (
     <form onSubmit={submit} className="space-y-4">
+      <DraftBanner
+        offer={draft.offer}
+        onRestore={restoreDraft}
+        onDiscard={draft.discard}
+        droppedFiles={draft.offer?.data.droppedFiles}
+      />
       {showTemplates && (templatesQuery.data?.length ?? 0) > 0 && (
         <div>
           <label className="flex items-center gap-1.5 text-sm text-surface-400 mb-1">

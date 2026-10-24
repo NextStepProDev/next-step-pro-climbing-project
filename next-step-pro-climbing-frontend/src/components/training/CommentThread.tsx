@@ -11,6 +11,7 @@ import { decodeHtmlEntities } from '../../utils/htmlEntities'
 import { renderRichText } from '../../utils/renderRichText'
 import { continueList, normalizeBulletMarker, type TextEdit } from '../../utils/richTextInput'
 import { getErrorMessage } from '../../utils/errors'
+import { useDraft, useInitialDraft } from '../../hooks/useDraft'
 import {
   ATTACHMENT_INPUT_TYPES,
   isImageInput,
@@ -139,7 +140,13 @@ interface CommentThreadProps {
 export function CommentThread({ target, api, onPosted, onDirtyChange }: CommentThreadProps) {
   const { t } = useTranslation('training')
   const queryClient = useQueryClient()
-  const [draft, setDraft] = useState('')
+  // A half-written message survives what the modal's guard cannot see — iOS dropping the tab while
+  // you check something in another app is the common one — and comes back by itself, as in any
+  // messenger: there is no saved version it could overwrite, so there is nothing to ask.
+  // Text only; staged photos are Files and cannot be stored. Mounted once per thread (keyed).
+  const draftScope = `comment:${target.kind}:${target.id}`
+  const [draft, setDraft] = useState(useInitialDraft<string>(draftScope) ?? '')
+  useDraft({ scope: draftScope, value: draft, dirty: draft.trim().length > 0, offer: false })
   const [staged, setStaged] = useState<File[]>([])
   const [pickError, setPickError] = useState<string | null>(null)
   const [picking, setPicking] = useState(false)
